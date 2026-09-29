@@ -28,14 +28,21 @@
     <span style="color:var(--yellow);font-weight:600">Tidak ada IP sumber untuk diblokir.</span>
     <span style="font-size:13px;color:var(--dim)"> Tidak terdeteksi IP pelaku pada data keamanan terakhir.</span>
   {% elif act == 'reboot' %}
-    <span style="color:var(--blue);font-weight:600">Perintah Reboot OS telah dikirim ke Agen Pantau.</span>
-    <span style="font-size:13px;color:var(--dim)"> Server akan reboot ±4 detik; dashboard terputus sementara dari server ini.</span>
+    <span style="color:var(--yellow);font-weight:600">Perintah Reboot OS dikirim — server sedang restart.</span>
+    <span style="font-size:13px;color:var(--dim)"> Koneksi terputus sementara (biasanya di bawah 2 menit) sampai server menyala kembali. Konfirmasi otomatis di bawah.</span>
   {% elif act == 'poweroff' %}
-    <span style="color:var(--red);font-weight:600">Perintah POWER OFF telah dikirim ke Agen Pantau.</span>
-    <span style="font-size:13px;color:var(--dim)"> Server akan mati ±4 detik dan perlu dinyalakan manual.</span>
+    <span style="color:var(--red);font-weight:600">Perintah POWER OFF dikirim — server sedang dipadamkan.</span>
+    <span style="font-size:13px;color:var(--dim)"> Mesin mati dalam ±4 detik dan hilang dari dashboard sampai dinyalakan manual (fisik/IPMI).</span>
   {% else %}
     <span style="color:var(--blue);font-weight:600">Perintah restart telah dikirim ke Agen Pantau.</span>
     <span style="font-size:13px;color:var(--dim)"> Status service akan di-update dalam beberapa detik setelah agent mengeksekusi.</span>
+  {% endif %}
+  {% if act in ('reboot', 'poweroff') %}
+  <div id="host-ack" data-mode="{{ act }}" data-start="{{ '1' if is_online else '0' }}"
+       style="margin-top:10px;font-size:13px;font-weight:600;display:flex;gap:8px;align-items:center">
+    <span id="ack-badge" class="badge badge-inactive">menunggu</span>
+    <span id="ack-text" style="color:var(--dim);font-weight:400"></span>
+  </div>
   {% endif %}
 </div>
 {% endif %}
@@ -765,6 +772,13 @@ function patch(data) {
       aver.className = 'badge badge-inactive';
     }
   }
+  const hd = document.getElementById('hero-dot');
+  const ho = document.getElementById('hero-online');
+  if (hd && ho && typeof data.online === 'boolean') {
+    hd.className = 'dot ' + (data.online ? 'up' : 'down');
+    ho.textContent = data.online ? 'online' : 'offline';
+    ho.className = 'hero-online ' + (data.online ? 'on' : 'off');
+  }
   if (data.services) primeSvcGraph(data.services);
   for (const s of data.services) {
     const sts = document.getElementById('sts-' + s.id);
@@ -823,6 +837,71 @@ async function pollSystem() {
     }
   } catch (e) { /* polling lanjut */ }
   finally { _sysFetching = false; }
+}
+
+// ---------- konfirmasi live Reboot OS / Power Off ----------
+const ackEl = document.getElementById('host-ack');
+if (ackEl) {
+  const ackMode = ackEl.dataset.mode;             // 'reboot' | 'poweroff'
+  let ackPrev = ackEl.dataset.start === '1';      // online saat halaman dimuat?
+  let ackOfflineSeen = ackMode !== 'reboot';      // poweroff: fase offline = final
+  let ackFinished = false;
+  const ackT0 = Date.now();
+
+  function ackSet(label, text, cls) {
+    const b = document.getElementById('ack-badge');
+    const t = document.getElementById('ack-text');
+    if (b) { b.textContent = label; b.className = 'badge badge-' + cls; }
+    if (t) t.textContent = text || '';
+  }
+
+  async function ackPoll() {
+    if (ackFinished) return;
+    if (Date.now() - ackT0 > 150000) {
+      ackSet('tidak terkonfirmasi',
+        'Server tidak kunjung ' + (ackMode === 'poweroff' ? 'MATI' : 'reboot') +
+        ' dalam 2,5 menit. Periksa di server klien: sudo tail -n 30 /var/log/pantau-host.log', 'warn');
+      ackFinished = true;
+      return;
+    }
+    let cur = ackPrev;
+    try {
+      const r = await fetch('/api/servers/' + SID + '/overview', { credentials: 'same-origin' });
+      if (r.ok) cur = (await r.json()).online === true;
+    } catch (e) { /* biarkan nilai lama */ }
+
+    if (ackMode === 'poweroff') {
+      if (!cur) {
+        ackSet('MATI', 'Server sudah offline — Power Off terkonfirmasi. Nyalakan manual (fisik/IPMI).', 'danger');
+        ackFinished = true;
+      } else {
+        ackSet('memadamkan…', 'server masih online; menunggu mesin benar-benar mati (batas 2,5 menit).', 'inactive');
+      }
+    } else {
+      if (ackOfflineSeen) {
+        if (cur) {
+          ackSet('KEMBALI ONLINE', 'Server berhasil reboot dan kembali online.', 'up');
+          ackFinished = true;
+        } else {
+          ackSet('rebooting…', 'server offline — menunggu ia kembali online.', 'inactive');
+        }
+      } else if (!cur) {
+        ackOfflineSeen = true;
+        ackSet('rebooting…', 'server baru terlihat offline — menunggu ia kembali online.', 'inactive');
+      } else {
+        ackSet('restarting…', 'server masih online; menunggu fase reboot dimulai.', 'inactive');
+      }
+    }
+    ackPrev = cur;
+    if (!ackFinished) setTimeout(ackPoll, 2000);
+  }
+
+  if (ackPrev || ackMode === 'reboot') {
+    ackPoll();
+  } else {
+    ackSet('MATI', 'Server sudah offline (sejak halaman dimuat) — Power Off terkonfirmasi. Nyalakan manual (fisik/IPMI).', 'danger');
+    ackFinished = true;
+  }
 }
 
 // ---------- hardware / network / accounts ----------
