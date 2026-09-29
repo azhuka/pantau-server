@@ -1231,7 +1231,8 @@ def _host_control(request: Request, sid: int, db: Session, action: str) -> Redir
            f"{server.hostname} ({server.ip_address})", "dikirim ke agen")
     db.commit()
     flag = "reboot" if action == "reboot_host" else "poweroff"
-    return RedirectResponse(f"/servers/{sid}/services?action={flag}", status_code=303)
+    at_epoch = int(datetime.now(timezone.utc).timestamp())
+    return RedirectResponse(f"/servers/{sid}/services?action={flag}&at={at_epoch}", status_code=303)
 
 
 @app.post("/servers/{sid}/host/reboot")

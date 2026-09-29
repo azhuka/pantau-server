@@ -28,17 +28,18 @@
     <span style="color:var(--yellow);font-weight:600">Tidak ada IP sumber untuk diblokir.</span>
     <span style="font-size:13px;color:var(--dim)"> Tidak terdeteksi IP pelaku pada data keamanan terakhir.</span>
   {% elif act == 'reboot' %}
-    <span style="color:var(--yellow);font-weight:600">Perintah Reboot OS dikirim — server klien sedang restart.</span>
-    <span style="font-size:13px;color:var(--dim)"> Konfirmasi otomatis di bawah.</span>
+    <span style="color:var(--yellow);font-weight:600">Perintah Reboot OS dikirim ke server klien.</span>
+    <span style="font-size:13px;color:var(--dim)"> Server akan restart; status di bawah ini diperbarui otomatis.</span>
   {% elif act == 'poweroff' %}
-    <span style="color:var(--red);font-weight:600">Perintah POWER OFF dikirim — server klien dipadamkan.</span>
-    <span style="font-size:13px;color:var(--dim)"> Konfirmasi otomatis di bawah. Untuk menghidupkan kembali: nyalakan manual (fisik/IPMI/host).</span>
+    <span style="color:var(--red);font-weight:600">Perintah POWER OFF dikirim ke server klien.</span>
+    <span style="font-size:13px;color:var(--dim)"> Server akan mati; hidupkan kembali manual (fisik/IPMI/host). Status di bawah ini diperbarui otomatis.</span>
   {% else %}
     <span style="color:var(--blue);font-weight:600">Perintah restart telah dikirim ke Agen Pantau.</span>
     <span style="font-size:13px;color:var(--dim)"> Status service akan di-update dalam beberapa detik setelah agent mengeksekusi.</span>
   {% endif %}
   {% if act in ('reboot', 'poweroff') %}
-  <div id="host-ack" data-mode="{{ act }}" data-start="{{ '1' if is_online else '0' }}"
+  {% set ack_at = request.query_params.get('at') %}
+  <div id="host-ack" data-mode="{{ act }}" data-start="{{ '1' if is_online else '0' }}" data-at="{{ ack_at }}"
        style="margin-top:10px;font-size:13px;font-weight:600;display:flex;gap:8px;align-items:center">
     <span id="ack-badge" class="badge badge-inactive">menunggu</span>
     <span id="ack-text" style="color:var(--dim);font-weight:400"></span>
@@ -849,6 +850,9 @@ const ackEl = document.getElementById('host-ack');
 if (ackEl) {
   const ackMode = ackEl.dataset.mode;             // 'reboot' | 'poweroff'
   const ackInitOnline = ackEl.dataset.start === '1';
+  const ackAt = parseInt(ackEl.dataset.at || '0', 10) || 0;   // epoch waktu perintah dikirim
+  const AGE_MS = ackAt ? Date.now() - ackAt * 1000 : 0;
+  const OP_DONE_MS = 75000;   // >75 dtk sejak perintah = proses dianggap sudah selesai/berlalu
   let ackDown = false;                            // sudah dianggap berhenti melapor?
   let ackDownStreak = 0;                          // siklus polling berturut2 di zona 'tanpa laporan'
   let ackFinished = false;
@@ -950,12 +954,32 @@ if (ackEl) {
     if (!ackFinished) setTimeout(ackPoll, 1000);
   }
 
-  // Poweroff: bila sejak halaman dimuat server SUDAH tidak pernah online
-  // (ambang 60 dtk), tampilkan MATI langsung.
-  if (ackMode === 'poweroff' && !ackInitOnline) {
-    ackSet('MATI', 'server klien sudah berhenti melapor sejak halaman dimuat — Power Off terlaksana.', 'danger');
-    ackFinished = true;
+  // Halaman dibuka/di-reload SETELAH proses berlalu (mis. mesin sudah reboot atau
+  // mati & dibuka lagi jauh kemudian) -> jangan tampilkan 'menunggu konfirmasi…'.
+  if (ackAt && AGE_MS > OP_DONE_MS) {
+    if (ackInitOnline) {
+      ackFinished = true;
+      ackSet(ackMode === 'reboot' ? 'REBOOT SUKSES' : 'HIDUP KEMBALI',
+        ackMode === 'reboot'
+          ? 'server klien kembali online — reboot selesai.'
+          : 'server klien dihidupkan kembali dan sudah online (proses Power Off telah berakhir).',
+        'up');
+      ackFadeOut();
+    } else {
+      // masih offline setelah lama: tampilkan statusnya, tetap pantau bila dihidupkan lagi
+      ackDown = true;
+      ackSet(ackMode === 'reboot' ? 'REBOOTING…' : 'MATI',
+        ackMode === 'reboot'
+          ? 'server klien sedang restart (berhenti melapor sementara).'
+          : 'server klien benar-benar mati (berhenti melapor).',
+        ackMode === 'reboot' ? 'inactive' : 'danger');
+      ackPoll();
+    }
+  } else if (ackMode === 'poweroff' && !ackInitOnline) {
+    ackDown = true;
+    ackSet('MATI', 'server klien benar-benar mati (berhenti melapor).', 'danger');
     ackFadeOut();
+    ackPoll();   // tetap pantau bila kelak dihidupkan lagi
   } else {
     ackPoll();
   }
