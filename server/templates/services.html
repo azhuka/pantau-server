@@ -2,7 +2,9 @@
 {% block title %}Rincian - {{ server.hostname }}{% endblock %}
 {% block content %}
 <div class="topbar">
-  <h2>Rincian — {{ server.hostname }}</h2>
+  <h2>Rincian — {{ server.hostname }}
+    <span id="agent-ver" class="badge {{ 'badge-info' if agent_version else 'badge-inactive' }}">agen {{ ('v' + agent_version) if agent_version else 'tidak dikenal' }}</span>
+  </h2>
   <div>
     <a href="/servers" class="btn btn-ghost">&larr; Servers</a>
     <a href="/servers/{{ server.id }}/metrics" class="btn btn-ghost">Metrik</a>
@@ -655,6 +657,16 @@ async function aptAction(kind) {
 
 // ---------- service patch (existing) ----------
 function patch(data) {
+  const aver = document.getElementById('agent-ver');
+  if (aver) {
+    if (data.agent_version) {
+      aver.textContent = 'agen v' + data.agent_version;
+      aver.className = 'badge badge-info';
+    } else {
+      aver.textContent = 'agen tidak dikenal';
+      aver.className = 'badge badge-inactive';
+    }
+  }
   if (data.services) primeSvcGraph(data.services);
   for (const s of data.services) {
     const sts = document.getElementById('sts-' + s.id);

@@ -410,6 +410,7 @@ def agent_report(
     extras.kernel = _clean_str(body.get("kernel"), None, 100) or None
     extras.os_label = _clean_str(body.get("os_label"), None, 120) or None
     extras.arch = _clean_str(body.get("arch"), None, 24) or None
+    extras.agent_version = _clean_str(body.get("agent_version"), None, 16) or None
     if isinstance(body.get("units"), list):
         extras.units = json.dumps(body["units"])
     if isinstance(body.get("accounts"), list):
@@ -566,6 +567,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "last_seen": server.last_seen.isoformat() if server.last_seen else None,
         "apt_upgradable": extras.apt_upgradable if extras else None,
         "apt_last_update": extras.apt_last_update.isoformat() if extras and extras.apt_last_update else None,
+        "agent_version": extras.agent_version if extras else None,
     }
 
 
@@ -1042,6 +1044,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
             r["action"] = None
     return tpl(request, "services.html", {
         "user": user, "server": server, "services": services, "commands": commands,
+        "agent_version": extra.agent_version if extra else None,
         "problem_level": problem_level, "open_problems": open_problems,
         "problem_history": problem_history,
     })

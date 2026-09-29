@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agen Pantau v3.4 - Server Monitoring Agent (Production Package)
+Agen Pantau v3.5 - Server Monitoring Agent (Production Package)
 ================================================================
 - Auto-detect semua layanan listening (via sudo ss bila non-root)
 - Health check dalam: HTTP response time, TCP response time
@@ -321,6 +321,9 @@ APT_AGENT_OUTPUT_MAX = 4_000_000
 # Tampilan LIVE hanya ekor output (seperti `tail -f`); hasil final tetap penuh.
 APT_PROGRESS_TAIL_CHARS = 200_000
 
+# Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
+AGENT_VERSION = "3.5"
+
 
 def tcp_health_check(port: int, addr: str) -> dict:
     """TCP connect check: ukur response time."""
@@ -424,6 +427,7 @@ def send_report(cfg: dict, services: list, system: dict,
         "kernel": _kernel_release(),
         "os_label": _os_pretty(),
         "arch": platform.machine(),
+        "agent_version": AGENT_VERSION,
     }
     if accounts is not None:
         payload["accounts"] = accounts
@@ -1441,7 +1445,7 @@ _tick = 0
 
 def main():
     print("=" * 60)
-    print("  Agen Pantau v3.4 (Production Package)")
+    print(f"  Agen Pantau v{AGENT_VERSION} (Production Package)")
     print("=" * 60)
 
     cfg = load_config()

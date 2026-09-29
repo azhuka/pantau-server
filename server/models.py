@@ -169,6 +169,7 @@ class ServerExtras(Base):
     kernel = Column(String(100), nullable=True)
     os_label = Column(String(120), nullable=True)   # nama distro + versi (mis. "Ubuntu 22.04.3 LTS")
     arch = Column(String(24), nullable=True)        # arsitektur (mis. x86_64, aarch64)
+    agent_version = Column(String(16), nullable=True)  # versi agen yang melapor (mis. "3.4")
     units = Column(Text, nullable=True)    # JSON: ["sshd","mariadb",...]
     accounts = Column(Text, nullable=True) # JSON: [{"user","uid","shell","last_login","sessions"}]
     apt_upgradable = Column(Integer, nullable=True)      # jumlah paket OS yang dapat di-upgrade
