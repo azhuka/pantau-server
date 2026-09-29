@@ -785,6 +785,13 @@ function patch(data) {
     ho.textContent = online ? 'online' : 'offline';
     ho.className = 'hero-online ' + (online ? 'on' : 'off');
   }
+  const ackx = document.getElementById('host-ack');
+  if (ackx && typeof ackLive === 'function') {
+    const recent = typeof data.last_seen_ago_ms === 'number'
+      ? data.last_seen_ago_ms < 30000
+      : data.online === true;
+    ackLive(ackx.dataset.mode, recent);
+  }
   if (data.services) primeSvcGraph(data.services);
   for (const s of data.services) {
     const sts = document.getElementById('sts-' + s.id);
@@ -846,144 +853,38 @@ async function pollSystem() {
 }
 
 // ---------- konfirmasi live Reboot OS / Power Off ----------
-const ackEl = document.getElementById('host-ack');
-if (ackEl) {
-  const ackMode = ackEl.dataset.mode;             // 'reboot' | 'poweroff'
-  const ackInitOnline = ackEl.dataset.start === '1';
-  const ackAt = parseInt(ackEl.dataset.at || '0', 10) || 0;   // epoch waktu perintah dikirim
-  const AGE_MS = ackAt ? Date.now() - ackAt * 1000 : 0;
-  const OP_DONE_MS = 75000;   // >75 dtk sejak perintah = proses dianggap sudah selesai/berlalu
-  let ackDown = false;                            // sudah dianggap berhenti melapor?
-  let ackDownStreak = 0;                          // siklus polling berturut2 di zona 'tanpa laporan'
-  let ackFinished = false;
-  const ackT0 = Date.now();
-  const NO_REPORT_MS = 16000;   // normal agen lapor ±10 dtk; 2 siklus >16 dtk = berhenti melapor
-  const HARD_DOWN_MS = 25000;   // >25 dtk tanpa laporan = jelas down (langsung)
-  const REVIVE_MS = 12000;      // kembali melapor (<12 dtk) = server hidup lagi
-  const WINDOW_MS = 90000;      // rentang mesin diperkirakan drop setelah perintah
-
-  function ackSet(label, text, cls) {
-    const b = document.getElementById('ack-badge');
-    const t = document.getElementById('ack-text');
-    if (b) { b.textContent = label; b.className = 'badge badge-' + cls; }
-    if (t) t.textContent = text || '';
-  }
-
-  function ackFadeOut() {
-    setTimeout(() => {
-      if (!ackEl) return;
-      ackEl.style.transition = 'opacity .6s';
-      ackEl.style.opacity = '0';
-      setTimeout(() => { if (ackEl) ackEl.style.display = 'none'; }, 600);
-    }, 8000);
-  }
-
-  const ackClose = document.getElementById('ack-close');
-  if (ackClose) ackClose.addEventListener('click', () => {
-    ackFinished = true;
-    if (ackEl) ackEl.style.display = 'none';
-  });
-
-  // Konfirmasi berbasis "selang sejak laporan terakhir" (last_seen_ago_ms) —
-  // bukan ambang offline 60 dtk, supaya reboot cepat ikut terdeteksi.
-  function ackRecency(j) {
-    return (typeof j.last_seen_ago_ms === 'number')
-      ? j.last_seen_ago_ms
-      : (j.online === true ? 0 : null);
-  }
-
-  async function ackTick() {
-    if (!ackDown && Date.now() - ackT0 > WINDOW_MS) {
-      ackSet('tidak terkonfirmasi', 'server tidak kunjung berhenti melapor dalam jangka yang diharapkan. Cek di server klien: sudo tail -n 30 /var/log/pantau-host.log', 'warn');
-      ackFinished = true;
-      ackFadeOut();
-      return;
-    }
-    let r = null;
-    try {
-      const res = await fetch('/api/servers/' + SID + '/overview', { credentials: 'same-origin' });
-      if (res.ok) r = ackRecency(await res.json());
-    } catch (e) { /* data belum tersedia; jangan ubah status */ }
-
-    // Deteksi 'berhenti melapor' dengan data nyata; hindari salah tangkap jitter
-    // (laporan sesekali terlambat) dengan menuntut 2 siklus berturut >16 dtk.
-    let downNow = false;
-    if (r !== null) {
-      if (r > HARD_DOWN_MS) { downNow = true; ackDownStreak = 2; }
-      else if (r > NO_REPORT_MS) { ackDownStreak++; if (ackDownStreak >= 2) downNow = true; }
-      else ackDownStreak = 0;
-    }
-
-    if (ackMode === 'poweroff') {
-      if (!ackDown && downNow) {
-        ackDown = true;
-        ackSet('MATI', 'server klien benar-benar mati (berhenti melapor).', 'danger');
-        ackFadeOut();
-      } else if (ackDown) {
-        if (r !== null && r <= REVIVE_MS) {
-          ackFinished = true;
-          ackSet('HIDUP KEMBALI', 'server klien dihidupkan kembali dan sudah online.', 'up');
-          ackFadeOut();
-        } else {
-          ackSet('MATI', 'server klien benar-benar mati (berhenti melapor).', 'danger');
-        }
-      } else {
-        ackSet('menunggu konfirmasi…', 'server sedang dipadamkan. Normal berhenti melapor dalam ±20-30 dtk.', 'inactive');
-      }
+// ---------- status Reboot OS / Power Off (simpel: ikuti kondisi server saat ini) ----------
+function ackLive(mode, recent) {
+  const b = document.getElementById('ack-badge');
+  const t = document.getElementById('ack-text');
+  if (!b || !t) return;
+  if (mode === 'poweroff') {
+    if (recent) {
+      b.textContent = 'ONLINE';
+      b.className = 'badge badge-up';
+      t.textContent = 'Server klien online — jika tadi mati, sudah dihidupkan kembali.';
     } else {
-      if (!ackDown && downNow) {
-        ackDown = true;
-        ackSet('REBOOTING…', 'server klien sedang restart (berhenti melapor sementara).', 'inactive');
-      } else if (ackDown) {
-        if (r !== null && r <= REVIVE_MS) {
-          ackFinished = true;
-          ackSet('REBOOT SUKSES', 'server klien kembali online — reboot selesai.', 'up');
-          ackFadeOut();
-        } else {
-          ackSet('REBOOTING…', 'server klien sedang restart (berhenti melapor sementara).', 'inactive');
-        }
-      } else {
-        ackSet('menunggu konfirmasi…', 'server sedang di-reboot. Normal kembali online dalam ±1-2 menit.', 'inactive');
-      }
+      b.textContent = 'MATI / OFFLINE';
+      b.className = 'badge badge-danger';
+      t.textContent = 'Server klien tidak melapor — kemungkinan mati (Power Off berjalan).';
     }
-  }
-
-  async function ackPoll() {
-    if (ackFinished) return;
-    try { await ackTick(); } catch (e) { /* tetap lanjut polling */ }
-    if (!ackFinished) setTimeout(ackPoll, 1000);
-  }
-
-  // Halaman dibuka/di-reload SETELAH proses berlalu (mis. mesin sudah reboot atau
-  // mati & dibuka lagi jauh kemudian) -> jangan tampilkan 'menunggu konfirmasi…'.
-  if (ackAt && AGE_MS > OP_DONE_MS) {
-    if (ackInitOnline) {
-      ackFinished = true;
-      ackSet(ackMode === 'reboot' ? 'REBOOT SUKSES' : 'HIDUP KEMBALI',
-        ackMode === 'reboot'
-          ? 'server klien kembali online — reboot selesai.'
-          : 'server klien dihidupkan kembali dan sudah online (proses Power Off telah berakhir).',
-        'up');
-      ackFadeOut();
-    } else {
-      // masih offline setelah lama: tampilkan statusnya, tetap pantau bila dihidupkan lagi
-      ackDown = true;
-      ackSet(ackMode === 'reboot' ? 'REBOOTING…' : 'MATI',
-        ackMode === 'reboot'
-          ? 'server klien sedang restart (berhenti melapor sementara).'
-          : 'server klien benar-benar mati (berhenti melapor).',
-        ackMode === 'reboot' ? 'inactive' : 'danger');
-      ackPoll();
-    }
-  } else if (ackMode === 'poweroff' && !ackInitOnline) {
-    ackDown = true;
-    ackSet('MATI', 'server klien benar-benar mati (berhenti melapor).', 'danger');
-    ackFadeOut();
-    ackPoll();   // tetap pantau bila kelak dihidupkan lagi
   } else {
-    ackPoll();
+    if (recent) {
+      b.textContent = 'ONLINE';
+      b.className = 'badge badge-up';
+      t.textContent = 'Server klien online — reboot selesai.';
+    } else {
+      b.textContent = 'REBOOTING…';
+      b.className = 'badge badge-inactive';
+      t.textContent = 'Server klien tidak melapor — sedang proses reboot.';
+    }
   }
 }
+
+const ackEl = document.getElementById('host-ack');
+const ackClose = document.getElementById('ack-close');
+if (ackClose) ackClose.addEventListener('click', () => { if (ackEl) ackEl.style.display = 'none'; });
+if (ackEl) ackLive(ackEl.dataset.mode, ackEl.dataset.start === '1');
 
 // ---------- hardware / network / accounts ----------
 function pctBar(id, val) {
