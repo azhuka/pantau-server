@@ -430,6 +430,8 @@ let aptLastCount = null;
 let aptArmed = false;   // Upgrade baru aktif setelah user menekan Update & tuntas
 let aptUpdated = false; // Update SUDAH ditekan & sukses di sesi ini (berapa pun hasilnya)
 let aptRunning = false; // sedang ada proses Update/Upgrade berjalan
+let aptFollowActive = false;  // satu loop live pada satu waktu (manual vs resume)
+let aptFollowCooldown = 0;    // jeda pasca "batas waktu habis" agar tidak loop-resume
 
 function matchAptByName(name) {
   return lastAptPkgs.find(q => pkgName(q) === name) || null;
@@ -559,8 +561,24 @@ async function aptAction(kind) {
     aptLiveStatus('<b style="color:var(--red)">Gagal mengirim perintah.</b> ' + escapeHtml(e.message), 'var(--red)');
     return;
   }
+  aptFollow(rid, kind, Date.now());
+}
 
-  const start = Date.now();
+// Ikuti live dari sebuah request apt. Dipakai saat baru memulai ATAU saat
+// halaman dimuat ulang padahal proses masih berjalan (resume otomatis).
+async function aptFollow(rid, kind, startedMs) {
+  if (aptFollowActive) return;
+  aptFollowActive = true;
+  aptRunning = true;
+  const upD = document.getElementById('apt-update-btn');
+  const upG = document.getElementById('apt-upgrade-btn');
+  if (upD) upD.disabled = true;
+  if (upG) upG.disabled = true;
+  const label = kind === 'APT_UPGRADE' ? 'apt upgrade' : 'apt update';
+  aptLiveShow(kind);
+  aptLiveStatus('menyambung proses ' + label + ' yang masih berjalan…', 'var(--dim)');
+
+  const start = startedMs || Date.now();
   const limit = kind === 'APT_UPDATE' ? 320000 : 920000;
   let j = null;
   while (Date.now() - start < limit) {
@@ -584,14 +602,16 @@ async function aptAction(kind) {
     if (j && (j.status === 'success' || j.status === 'failed')) break;
   }
 
-  if (upD) upD.disabled = false;
   aptRunning = false;
+  aptFollowActive = false;
+  if (upD) upD.disabled = false;
 
   if (!j || j.status !== 'success') {
     if (upG) upG.disabled = !(aptArmed && aptLastCount > 0);
     if (Date.now() - start >= limit) {
       aptLiveStatus('<b style="color:var(--red)">Gagal — batas waktu habis.</b> Periksa status agen.', 'var(--red)');
       aptMsg('<b>Agen tidak merespons dalam batas waktu — periksa status agen.</b>', 'var(--red)');
+      aptFollowCooldown = Date.now() + 120000; // tunda resume agar tidak langsung mengulang
     } else if (j) {
       aptLiveShow(kind);
       aptLiveAppend('[status: ' + j.status + ']\n' + escapeHtml(j.result || ''), false);
@@ -657,6 +677,12 @@ async function aptAction(kind) {
 
 // ---------- service patch (existing) ----------
 function patch(data) {
+  // Resume otomatis: bila proses apt masih berjalan di server (mis. karena
+  // halaman sempat di-reload / dibuka ulang), sambungkan tampilan live lagi.
+  const aptrun = data.apt_exec;
+  if (aptrun && !aptFollowActive && !aptRunning && Date.now() > aptFollowCooldown) {
+    aptFollow(aptrun.id, aptrun.kind, aptrun.started_ms);
+  }
   const aver = document.getElementById('agent-ver');
   if (aver) {
     if (data.agent_version) {

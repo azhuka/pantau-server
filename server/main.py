@@ -561,6 +561,16 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "created_at": c.created_at.isoformat() if c.created_at else None,
     } for c in commands]
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    apt_run = (
+        db.query(LogRequest)
+        .filter(
+            LogRequest.server_id == sid,
+            LogRequest.unit.in_(["APT_UPDATE", "APT_UPGRADE"]),
+            LogRequest.status.in_(["pending", "executing"]),
+        )
+        .order_by(LogRequest.created_at)
+        .first()
+    )
     return {
         "services": svc_list, "commands": cmd_list,
         "online": not _server_stale(server),
@@ -568,6 +578,13 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "apt_upgradable": extras.apt_upgradable if extras else None,
         "apt_last_update": extras.apt_last_update.isoformat() if extras and extras.apt_last_update else None,
         "agent_version": extras.agent_version if extras else None,
+        # Proses apt yang sedang berjalan (memenuhi polling resume bila halaman reload).
+        "apt_exec": {
+            "id": apt_run.id,
+            "kind": apt_run.unit,
+            "started_ms": int(apt_run.created_at.replace(tzinfo=timezone.utc).timestamp() * 1000)
+            if apt_run.created_at else None,
+        } if apt_run else None,
     }
 
 
