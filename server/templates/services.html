@@ -32,7 +32,7 @@
     <span style="font-size:13px;color:var(--dim)"> Koneksi terputus sementara (biasanya di bawah 2 menit) sampai server menyala kembali. Konfirmasi otomatis di bawah.</span>
   {% elif act == 'poweroff' %}
     <span style="color:var(--red);font-weight:600">Perintah POWER OFF dikirim — server sedang dipadamkan.</span>
-    <span style="font-size:13px;color:var(--dim)"> Mesin mati dalam ±4 detik dan hilang dari dashboard sampai dinyalakan manual (fisik/IPMI).</span>
+    <span style="font-size:13px;color:var(--dim)"> Mesin seharusnya padam ±4 detik. Bila laporannya terus berjalan setelah itu, Power Off tidak bertahan di mesin tersebut (periksa host/auto-restart).</span>
   {% else %}
     <span style="color:var(--blue);font-weight:600">Perintah restart telah dikirim ke Agen Pantau.</span>
     <span style="font-size:13px;color:var(--dim)"> Status service akan di-update dalam beberapa detik setelah agent mengeksekusi.</span>
@@ -848,11 +848,13 @@ const ackEl = document.getElementById('host-ack');
 if (ackEl) {
   const ackMode = ackEl.dataset.mode;             // 'reboot' | 'poweroff'
   const ackInitOnline = ackEl.dataset.start === '1';
-  let ackDown = false;                            // sudah terlihat berhenti melapor?
+  let ackDown = false;                            // sudah dianggap berhenti melapor?
+  let ackDownStreak = 0;                          // siklus polling berturut2 di zona 'tanpa laporan'
   let ackFinished = false;
   const ackT0 = Date.now();
-  const NO_REPORT_MS = 15000;   // normal agen lapor tiap ±10 dtk; >15 dtk = berhenti melapor
-  const REVIVE_MS = 12000;      // melapor lagi (<12 dtk) = server hidup
+  const NO_REPORT_MS = 20000;   // normal agen lapor ±10 dtk; >20 dtk berhenti melapor (harus 2 siklus berturut)
+  const HARD_DOWN_MS = 30000;   // >30 dtk = jelas tanpa laporan (langsung dianggap down)
+  const REVIVE_MS = 15000;      // kembali melapor (<15 dtk) = server hidup lagi
   const WINDOW_MS = 120000;     // rentang mesin diperkirakan drop setelah perintah
 
   function ackSet(label, text, cls) {
@@ -874,8 +876,8 @@ if (ackEl) {
     if (ackFinished) return;
     if (!ackDown && Date.now() - ackT0 > WINDOW_MS) {
       ackSet('tidak terkonfirmasi',
-        'Server tidak terlihat ' + (ackMode === 'poweroff' ? 'padam' : 'reboot') +
-        ' dalam rentang yang diharapkan. Periksa di server klien: sudo tail -n 30 /var/log/pantau-host.log', 'warn');
+        'Server tidak kunjung berhenti melapor dalam rentang yang diharapkan. '
+        + 'Periksa di server klien: sudo tail -n 30 /var/log/pantau-host.log', 'warn');
       ackFinished = true;
       return;
     }
@@ -884,22 +886,36 @@ if (ackEl) {
       const res = await fetch('/api/servers/' + SID + '/overview', { credentials: 'same-origin' });
       if (res.ok) r = ackRecency(await res.json());
     } catch (e) { /* coba lagi di siklus berikutnya */ }
-    const downNow = r !== null && r > NO_REPORT_MS;
+
+    // Deteksi 'berhenti melapor': andalkan data nyata, hindari salah tangkap
+    // karena laporan yang sesekali terlambat (jitter). Perlu 2 siklus polling
+    // berturut-turut di atas 20 dtk, atau langsung bila >30 dtk.
+    let downNow = false;
+    if (r !== null) {
+      if (r > HARD_DOWN_MS) {
+        downNow = true;
+        ackDownStreak = 2;
+      } else if (r > NO_REPORT_MS) {
+        ackDownStreak++;
+        if (ackDownStreak >= 2) downNow = true;
+      } else {
+        ackDownStreak = 0;
+      }
+    }
 
     if (ackMode === 'poweroff') {
       if (!ackDown && downNow) {
         ackDown = true;
-        ackSet('MATI', 'Server berhenti melapor (+' + (r / 1000).toFixed(0) + ' dtk) — Power Off terkonfirmasi. Menunggu bila dinyalakan ulang manual…', 'danger');
+        ackSet('MATI', 'Server berhenti melapor (±' + (r / 1000).toFixed(0) + ' dtk) — Power Off berjalan. Bila mesin benar padam, nyalakan ulang manual (fisik/IPMI/host).', 'danger');
       } else if (ackDown) {
         if (r !== null && r <= REVIVE_MS) {
-          ackSet('HIDUP KEMBALI', 'Server melapor lagi — mesin telah dinyalakan ulang secara manual.', 'up');
+          ackSet('HIDUP KEMBALI', 'Server melapor lagi — mesin kembali online. Jika bukan Anda yang menyalakan: matikan auto-restart/host, atau Power Off tidak bertahan di mesin ini.', 'up');
           ackFinished = true;
         } else {
-          ackSet('MATI', 'Server berhenti melapor — Power Off terkonfirmasi. Nyalakan manual (fisik/IPMI); banner ini menunggu kebangkitan.', 'danger');
+          ackSet('MATI', 'Server berhenti melapor — Power Off berjalan. Menunggu bila ada kebangkitan…', 'danger');
         }
       } else {
-        const wait = Math.max(0, NO_REPORT_MS - (r || 0));
-        ackSet('memadamkan…', 'menunggu server berhenti melapor (batas ±' + Math.ceil(wait / 1000) + ' dtk lagi).', 'inactive');
+        ackSet('memadamkan…', 'menunggu server berhenti melapor (normal ±4-10 dtk setelah perintah).', 'inactive');
       }
     } else {
       if (!ackDown && downNow) {
