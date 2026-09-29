@@ -28,11 +28,13 @@ Cek: `systemctl status pantau-server.service`
 ```bash
 sudo curl -fsSL -o /tmp/pantau-install.sh \
   https://raw.githubusercontent.com/azhuka/pantau-server/master/package/install.sh
-sudo bash /tmp/pantau-install.sh http://<ip-dashboard>:8400 <APIKEY64hex>
+sudo bash /tmp/pantau-install.sh
 ```
 
-URL dashboard dan API key di atas dikirim langsung ke installer (tidak ada
-pertanyaan). Tanpa kedua argumen itu, installer akan bertanya interaktif.
+Installer akan **bertanya interaktif**: URL dashboard lalu API key (64 hex),
+menguji key-nya dulu ke dashboard, baru memasang segalanya dan menyalakan agen.
+
+>(Opsi otomasi/CI tanpa interaksi: `sudo bash /tmp/pantau-install.sh http://<ip>:8400 <APIKEY64hex>`).
 
 Cek dashboard web app Pantau Server untuk memvalidasi server klien yang sudah
 dipasang agen. Jika ada masalah, cek status layanan agen:

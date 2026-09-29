@@ -180,8 +180,8 @@ fi
 
 if [ -z "$URL" ] || [ -z "$KEY" ]; then
     if [ -t 0 ]; then
-        read -rp "URL Dashboard pantau server   : " URL
-        read -rp "API key 64 hex (key LENGKAP)   : " KEY
+        read -rp $'URL Dashboard pantau server (contoh: http://172.30.1.40:8400)\n  > ' URL
+        read -rp $'API key 64 hex (salin key LENGKAP, bukan "xxxx…xxxx")\n  > ' KEY
     else
         echo "[ERROR] Tidak ada konfigurasi valid & tidak ada input (TTY/env).
         Berikan: sudo bash install.sh <URL> <APIKEY64hex>"
