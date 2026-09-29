@@ -28,11 +28,11 @@
     <span style="color:var(--yellow);font-weight:600">Tidak ada IP sumber untuk diblokir.</span>
     <span style="font-size:13px;color:var(--dim)"> Tidak terdeteksi IP pelaku pada data keamanan terakhir.</span>
   {% elif act == 'reboot' %}
-    <span style="color:var(--yellow);font-weight:600">Perintah Reboot OS dikirim — server sedang restart.</span>
-    <span style="font-size:13px;color:var(--dim)"> Koneksi terputus sementara (biasanya di bawah 2 menit) sampai server menyala kembali. Konfirmasi otomatis di bawah.</span>
+    <span style="color:var(--yellow);font-weight:600">Perintah Reboot OS dikirim — server klien sedang restart.</span>
+    <span style="font-size:13px;color:var(--dim)"> Konfirmasi otomatis di bawah.</span>
   {% elif act == 'poweroff' %}
-    <span style="color:var(--red);font-weight:600">Perintah POWER OFF dikirim — server sedang dipadamkan.</span>
-    <span style="font-size:13px;color:var(--dim)"> Mesin seharusnya padam ±4 detik. Bila laporannya terus berjalan setelah itu, Power Off tidak bertahan di mesin tersebut (periksa host/auto-restart).</span>
+    <span style="color:var(--red);font-weight:600">Perintah POWER OFF dikirim — server klien dipadamkan.</span>
+    <span style="font-size:13px;color:var(--dim)"> Konfirmasi otomatis di bawah. Untuk menghidupkan kembali: nyalakan manual (fisik/IPMI/host).</span>
   {% else %}
     <span style="color:var(--blue);font-weight:600">Perintah restart telah dikirim ke Agen Pantau.</span>
     <span style="font-size:13px;color:var(--dim)"> Status service akan di-update dalam beberapa detik setelah agent mengeksekusi.</span>
@@ -906,30 +906,30 @@ if (ackEl) {
     if (ackMode === 'poweroff') {
       if (!ackDown && downNow) {
         ackDown = true;
-        ackSet('MATI', 'Server berhenti melapor (±' + (r / 1000).toFixed(0) + ' dtk) — Power Off berjalan. Bila mesin benar padam, nyalakan ulang manual (fisik/IPMI/host).', 'danger');
+        ackSet('MATI', 'server klien benar-benar mati (berhenti melapor). Nyalakan manual (fisik/IPMI/host) untuk menghidupkannya.', 'danger');
       } else if (ackDown) {
         if (r !== null && r <= REVIVE_MS) {
-          ackSet('HIDUP KEMBALI', 'Server melapor lagi — mesin kembali online. Jika bukan Anda yang menyalakan: matikan auto-restart/host, atau Power Off tidak bertahan di mesin ini.', 'up');
+          ackSet('HIDUP KEMBALI', 'server klien dihidupkan kembali dan sudah online.', 'up');
           ackFinished = true;
         } else {
-          ackSet('MATI', 'Server berhenti melapor — Power Off berjalan. Menunggu bila ada kebangkitan…', 'danger');
+          ackSet('MATI', 'server klien benar-benar mati (berhenti melapor). Nyalakan manual (fisik/IPMI/host) untuk menghidupkannya.', 'danger');
         }
       } else {
-        ackSet('memadamkan…', 'menunggu server berhenti melapor (normal ±4-10 dtk setelah perintah).', 'inactive');
+        ackSet('memadamkan…', 'menunggu server klien benar-benar mati.', 'inactive');
       }
     } else {
       if (!ackDown && downNow) {
         ackDown = true;
-        ackSet('rebooting…', 'server berhenti melapor — proses reboot sedang berlangsung. Menunggu ia kembali online…', 'inactive');
+        ackSet('rebooting…', 'server klien sedang restart (berhenti melapor sementara).', 'inactive');
       } else if (ackDown) {
         if (r !== null && r <= REVIVE_MS) {
-          ackSet('KEMBALI ONLINE', 'Server melapor kembali — reboot sukses.', 'up');
+          ackSet('REBOOT SUKSES', 'server klien kembali online — reboot selesai.', 'up');
           ackFinished = true;
         } else {
-          ackSet('rebooting…', 'menunggu server kembali melapor…', 'inactive');
+          ackSet('rebooting…', 'server klien sedang restart (berhenti melapor sementara).', 'inactive');
         }
       } else {
-        ackSet('restarting…', 'server masih melapor; menunggu fase reboot dimulai.', 'inactive');
+        ackSet('restarting…', 'menunggu server klien benar-benar restart.', 'inactive');
       }
     }
     if (!ackFinished) setTimeout(ackPoll, 1500);
@@ -938,7 +938,7 @@ if (ackEl) {
   // Poweroff: bila sejak halaman dimuat server SUDAH tidak pernah online
   // (is_online ambang 60 dtk menyala), tampilkan MATI langsung.
   if (ackMode === 'poweroff' && !ackInitOnline) {
-    ackSet('MATI', 'Server sudah offline sejak halaman dimuat — Power Off sepertinya terlaksana. Bila tidak, cek /var/log/pantau-host.log.', 'danger');
+    ackSet('MATI', 'server klien sudah berhenti melapor sejak halaman dimuat — Power Off terlaksana. Nyalakan manual (fisik/IPMI/host) untuk menghidupkannya.', 'danger');
     ackFinished = true;
   } else {
     ackPoll();
