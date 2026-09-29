@@ -1062,6 +1062,9 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     return tpl(request, "services.html", {
         "user": user, "server": server, "services": services, "commands": commands,
         "agent_version": extra.agent_version if extra else None,
+        "os_label": extra.os_label if extra else None,
+        "kernel": extra.kernel if extra else None,
+        "is_online": not _server_stale(server),
         "problem_level": problem_level, "open_problems": open_problems,
         "problem_history": problem_history,
     })
@@ -2681,6 +2684,7 @@ def api_server_system(
             for s in series
         ],
         "kernel": (extra.kernel if extra else None),
+        "os_label": (extra.os_label if extra else None),
         "units": parse_list(extra.units if extra else None),
         "accounts": parse_list(extra.accounts if extra else None),
         "apt_upgradable": (extra.apt_upgradable if extra else None),

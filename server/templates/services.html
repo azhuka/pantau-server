@@ -8,16 +8,6 @@
   <div>
     <a href="/servers" class="btn btn-ghost">&larr; Servers</a>
     <a href="/servers/{{ server.id }}/metrics" class="btn btn-ghost">Metrik</a>
-    {% if user.role == 'admin' %}
-    <form method="post" action="/servers/{{ server.id }}/host/reboot"
-          onsubmit="return confirm('Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard ke server ini terputus ±1-2 menit sampai server kembali.') && confirm('Yakin 100%?')" style="display:inline">
-      <button class="btn btn-ghost btn-sm" type="submit">Reboot OS</button>
-    </form>
-    <form method="post" action="/servers/{{ server.id }}/host/poweroff"
-          onsubmit="return confirm('MATIKAN server {{ server.hostname }} SEKARANG? Mesin akan poweroff — TIDAK menyala sendiri — sampai seseorang menyalakannya secara manual (fisik/IPMI).')" style="display:inline">
-      <button class="btn btn-danger btn-sm" type="submit">Power Off</button>
-    </form>
-    {% endif %}
   </div>
 </div>
 
@@ -50,8 +40,51 @@
 </div>
 {% endif %}
 
+<div class="hero-card card">
+  <div class="hero-row">
+    <div class="hero-ident">
+      <div class="hero-host">
+        <span class="dot {{ 'up' if is_online else 'down' }}" id="hero-dot"></span>
+        <strong>{{ server.hostname }}</strong>
+        <span class="mono" style="font-size:12px">{{ server.ip_address }}</span>
+        <span id="hero-online" class="hero-online {{ 'on' if is_online else 'off' }}">{{ 'online' if is_online else 'offline' }}</span>
+      </div>
+      <div class="hero-meta" id="hero-meta">{% if os_label %}{{ os_label }}{% endif %}{% if kernel %} · kernel {{ kernel }}{% endif %}{% if not os_label and not kernel %}memuat data sistem…{% endif %}</div>
+    </div>
+    <div class="hero-actions">
+      {% if user.role == 'admin' %}
+      <button class="btn btn-success" id="apt-update-btn" onclick="aptAction('APT_UPDATE')">&#8635;&nbsp;Update OS</button>
+      <button class="btn btn-danger" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE')" disabled>Upgrade&nbsp;&#9650;</button>
+      {% else %}
+      <span class="badge badge-inactive">Update OS aktif untuk Admin</span>
+      {% endif %}
+      <a href="/servers/{{ server.id }}/metrics" class="btn btn-ghost btn-sm">Metrik</a>
+      {% if user.role == 'admin' %}
+      <span class="hero-sep"></span>
+      <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline"
+            onsubmit="return confirm('Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali.') && confirm('Yakin 100%?')">
+        <button class="btn btn-ghost btn-sm" type="submit" title="Restart sistem operasi">&#8635;&nbsp;Reboot OS</button>
+      </form>
+      <form method="post" action="/servers/{{ server.id }}/host/poweroff" style="display:inline"
+            onsubmit="return confirm('MATIKAN server {{ server.hostname }} SEKARANG? Mesin akan poweroff — TIDAK menyala sendiri — sampai dinyalakan manual (fisik/IPMI).')">
+        <button class="btn btn-danger btn-sm" type="submit" title="Matikan sistem operasi">&#9416;&nbsp;Power Off</button>
+      </form>
+      {% endif %}
+      <span class="badge badge-inactive" id="apt-badge">—</span>
+    </div>
+  </div>
+  <div class="hero-aptline">
+    <span id="apt-hint" style="font-size:12px;color:var(--dim)">belum ada info apt — tekan Update OS untuk menyegarkan.</span>
+  </div>
+  <div id="apt-live" style="display:none;margin-top:14px">
+    <div id="apt-status" style="font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--blue);margin-bottom:6px">—</div>
+    <pre id="apt-out" class="apt-terminal"></pre>
+  </div>
+  <div id="apt-msg" style="display:none;font-size:12px;line-height:1.5;margin-top:10px"></div>
+</div>
+
 <div class="card">
-  <div class="card-header"><h3>Perangkat Keras &amp; Performa</h3>
+  <div class="card-header"><h3>Performa Sekarang — Perangkat Keras</h3>
     <span id="sys-ts" style="font-size:12px;color:var(--dim)"></span>
   </div>
   <div id="sys-empty" class="empty-msg" style="display:none">
@@ -110,6 +143,16 @@
   </div>
 </div>
 
+<div class="tabbar" id="detail-tabs" role="tablist">
+  <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true">Performa</button>
+  <button class="tab" data-tab="layanan" role="tab">Layanan</button>
+  <button class="tab" data-tab="masalah" role="tab">Masalah</button>
+  <button class="tab" data-tab="jaringan" role="tab">Jaringan</button>
+  <button class="tab" data-tab="akun" role="tab">Akun</button>
+  <button class="tab" data-tab="log" role="tab">Log</button>
+</div>
+
+<div class="tab-body" id="tab-perf">
 <div class="card">
   <div class="card-header"><h3>Grafik Kinerja</h3>
     <div id="perf-ranges" style="display:flex;gap:6px;flex-wrap:wrap">
@@ -142,14 +185,16 @@
     </div>
   </div>
 </div>
+</div>
 
+<div class="tab-body" id="tab-layanan" hidden>
 <div class="card">
   <div class="card-header"><h3>Grafik Layanan</h3>
     <select id="svc-graph-sel"
             style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;margin-right:8px">
       <option value="">memuat layanan…</option>
     </select>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <div id="svc-ranges" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-sm" data-range="1h">1 Jam</button>
       <button class="btn btn-sm is-on" data-range="24h">24 Jam</button>
       <button class="btn btn-sm" data-range="7d">7 Hari</button>
@@ -170,6 +215,88 @@
   </div>
 </div>
 
+<div class="card">
+  <div class="card-header"><h3>Daftar Services</h3></div>
+  {% if services %}
+  <table>
+    <thead><tr><th>Service</th><th>Port</th><th>Process</th><th>Status</th><th>Conns</th><th>Resp (ms)</th><th>Health</th><th>Uptime 24h</th><th>Aksi</th></tr></thead>
+    <tbody>
+    {% for svc in services %}
+    <tr>
+      <td><strong>{{ svc.service_name }}</strong></td>
+      <td class="mono">{{ svc.port }}</td>
+      <td class="mono">{{ svc.process_name }}</td>
+      <td id="sts-{{ svc.id }}"><span class="badge badge-{{ svc._status }}">{{ svc._status }}</span></td>
+      <td id="conns-{{ svc.id }}">{{ svc._conns }}</td>
+      <td id="resp-{{ svc.id }}" class="mono">{{ svc._response_time if svc._response_time is not none else '-' }}</td>
+      <td id="health-{{ svc.id }}" style="font-size:12px;color:var(--dim)">{{ svc._health_msg or 'no data' }}</td>
+      <td>
+        {% if svc._uptime.uptime_pct is not none %}
+          {{ svc._uptime.uptime_pct }}%
+          {% if svc._uptime.downtime_seconds > 0 %}
+            <span style="font-size:11px;color:var(--red)">(down {{ svc._uptime.downtime_seconds }}s)</span>
+          {% endif %}
+        {% else %}
+          <span style="color:var(--dim)">-</span>
+        {% endif %}
+      </td>
+      <td style="white-space:nowrap">
+        <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}">
+          {% if svc._pending_cmd %}
+          <span class="badge badge-inactive">Menunggu Agent</span>
+          {% elif user.role == 'admin' %}
+          <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/restart" style="display:inline"
+                onsubmit="return confirmDelete('Restart service {{ svc.service_name }} di server {{ server.hostname }}?')">
+            <button class="btn btn-primary btn-sm">Restart</button>
+          </form>
+          {% endif %}
+        </span>
+        {% if user.role == 'admin' %}
+        <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/delete" style="display:inline;margin-left:4px"
+              onsubmit="return confirmDelete('Hapus service {{ svc.service_name }}?')">
+          <button class="btn btn-danger btn-sm">Hapus</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-msg">Belum ada service terdeteksi. Jalankan Agen Pantau di server ini.</div>
+  {% endif %}
+</div>
+
+{% if commands %}
+<div class="card">
+  <div class="card-header"><h3>Riwayat Perintah</h3></div>
+  <table>
+    <thead><tr><th>Waktu</th><th>Service</th><th>Aksi</th><th>Status</th><th>Hasil</th></tr></thead>
+    <tbody>
+    {% for c in commands %}
+    <tr id="cmd-{{ c.id }}">
+      <td class="mono">{{ c.created_at.strftime('%d %b %H:%M:%S') }}</td>
+      <td>
+        {% set svc = services|selectattr('id','equalto',c.service_id)|first %}
+        {{ svc.service_name if svc else '?' }}
+      </td>
+      <td><span class="badge badge-inactive">{{ c.action }}</span></td>
+      <td id="cmd-st-{{ c.id }}">
+        {% if c.status == 'success' %}<span class="badge badge-up">success</span>
+        {% elif c.status == 'failed' %}<span class="badge badge-down">failed</span>
+        {% elif c.status == 'executing' %}<span class="badge badge-inactive">executing</span>
+        {% else %}<span class="badge badge-inactive">pending</span>{% endif %}
+      </td>
+      <td id="cmd-rs-{{ c.id }}" data-status="{{ c.status }}" style="font-size:12px;color:var(--dim);max-width:300px">{{ c.result or c.status }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+</div>
+
+<div class="tab-body" id="tab-masalah" hidden>
 <div class="card">
   <div class="card-header"><h3>Status Masalah</h3>
     {% if problem_level is none %}
@@ -253,7 +380,9 @@
   </div>
   {% endif %}
 </div>
+</div>
 
+<div class="tab-body" id="tab-jaringan" hidden>
 <div class="card">
   <div class="card-header"><h3>Jaringan</h3></div>
   <div id="net-empty" class="empty-msg" style="display:none">Belum ada data jaringan.</div>
@@ -262,25 +391,9 @@
     <tbody></tbody>
   </table>
 </div>
-
-<div class="card">
-  <div class="card-header"><h3>Paket OS Update</h3>
-    <span id="apt-badge" class="badge badge-inactive">—</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-    {% if user.role == 'admin' %}
-    <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="aptAction('APT_UPDATE')">Update</button>
-    <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE')" disabled>Upgrade</button>
-    {% endif %}
-    <span id="apt-hint" style="font-size:11px;color:var(--dim)">belum ada info apt.</span>
-  </div>
-  <div id="apt-live" style="display:none;margin-bottom:10px">
-    <div id="apt-status" style="font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--blue);margin-bottom:6px">—</div>
-    <pre id="apt-out" class="apt-terminal"></pre>
-  </div>
-  <div id="apt-msg" style="display:none;font-size:12px;line-height:1.5;margin-bottom:8px"></div>
 </div>
 
+<div class="tab-body" id="tab-akun" hidden>
 <div class="card">
   <div class="card-header"><h3>Akun / User</h3></div>
   <div id="acc-empty" class="empty-msg" style="display:none">Belum ada data akun.</div>
@@ -289,7 +402,9 @@
     <tbody></tbody>
   </table>
 </div>
+</div>
 
+<div class="tab-body" id="tab-log" hidden>
 <div class="card" id="log-card">
   <div class="card-header"><h3>Log Layanan</h3>
     <span id="log-state" style="font-size:12px;color:var(--dim)"></span>
@@ -307,86 +422,7 @@
   </div>
   <pre id="log-pre" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;height:55vh;overflow:auto;white-space:pre;color:var(--text);display:none"></pre>
 </div>
-
-<div class="card">
-  <div class="card-header"><h3>Daftar Services</h3></div>
-  {% if services %}
-  <table>
-    <thead><tr><th>Service</th><th>Port</th><th>Process</th><th>Status</th><th>Conns</th><th>Resp (ms)</th><th>Health</th><th>Uptime 24h</th><th>Aksi</th></tr></thead>
-    <tbody>
-    {% for svc in services %}
-    <tr>
-      <td><strong>{{ svc.service_name }}</strong></td>
-      <td class="mono">{{ svc.port }}</td>
-      <td class="mono">{{ svc.process_name }}</td>
-      <td id="sts-{{ svc.id }}"><span class="badge badge-{{ svc._status }}">{{ svc._status }}</span></td>
-      <td id="conns-{{ svc.id }}">{{ svc._conns }}</td>
-      <td id="resp-{{ svc.id }}" class="mono">{{ svc._response_time if svc._response_time is not none else '-' }}</td>
-      <td id="health-{{ svc.id }}" style="font-size:12px;color:var(--dim)">{{ svc._health_msg or 'no data' }}</td>
-      <td>
-        {% if svc._uptime.uptime_pct is not none %}
-          {{ svc._uptime.uptime_pct }}%
-          {% if svc._uptime.downtime_seconds > 0 %}
-            <span style="font-size:11px;color:var(--red)">(down {{ svc._uptime.downtime_seconds }}s)</span>
-          {% endif %}
-        {% else %}
-          <span style="color:var(--dim)">-</span>
-        {% endif %}
-      </td>
-      <td style="white-space:nowrap">
-        <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}">
-          {% if svc._pending_cmd %}
-          <span class="badge badge-inactive">Menunggu Agent</span>
-          {% elif user.role == 'admin' %}
-          <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/restart" style="display:inline"
-                onsubmit="return confirmDelete('Restart service {{ svc.service_name }} di server {{ server.hostname }}?')">
-            <button class="btn btn-primary btn-sm">Restart</button>
-          </form>
-          {% endif %}
-        </span>
-        {% if user.role == 'admin' %}
-        <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/delete" style="display:inline;margin-left:4px"
-              onsubmit="return confirmDelete('Hapus service {{ svc.service_name }}?')">
-          <button class="btn btn-danger btn-sm">Hapus</button>
-        </form>
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <div class="empty-msg">Belum ada service terdeteksi. Jalankan Agen Pantau di server ini.</div>
-  {% endif %}
 </div>
-
-{% if commands %}
-<div class="card">
-  <div class="card-header"><h3>Riwayat Perintah</h3></div>
-  <table>
-    <thead><tr><th>Waktu</th><th>Service</th><th>Aksi</th><th>Status</th><th>Hasil</th></tr></thead>
-    <tbody>
-    {% for c in commands %}
-    <tr id="cmd-{{ c.id }}">
-      <td class="mono">{{ c.created_at.strftime('%d %b %H:%M:%S') }}</td>
-      <td>
-        {% set svc = services|selectattr('id','equalto',c.service_id)|first %}
-        {{ svc.service_name if svc else '?' }}
-      </td>
-      <td><span class="badge badge-inactive">{{ c.action }}</span></td>
-      <td id="cmd-st-{{ c.id }}">
-        {% if c.status == 'success' %}<span class="badge badge-up">success</span>
-        {% elif c.status == 'failed' %}<span class="badge badge-down">failed</span>
-        {% elif c.status == 'executing' %}<span class="badge badge-inactive">executing</span>
-        {% else %}<span class="badge badge-inactive">pending</span>{% endif %}
-      </td>
-      <td id="cmd-rs-{{ c.id }}" data-status="{{ c.status }}" style="font-size:12px;color:var(--dim);max-width:300px">{{ c.result or c.status }}</td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -394,6 +430,26 @@
 const SID = {{ server.id }};
 const POLL_MS = 3000;
 const IS_ADMIN = {{ 'true' if user.role == 'admin' else 'false' }};
+
+// ---------- tab ringkasan ----------
+function showTab(name) {
+  document.querySelectorAll('#detail-tabs .tab').forEach(b =>
+    b.classList.toggle('is-on', b.dataset.tab === name));
+  document.querySelectorAll('.tab-body').forEach(body => {
+    body.hidden = body.id !== 'tab-' + name;
+  });
+  if (name === 'layanan' && typeof primeSvcGraph === 'function') {
+    const sel = document.getElementById('svc-graph-sel');
+    if (sel && sel.options.length === 1) {
+      fetch('/api/servers/' + SID + '/overview', {credentials: 'same-origin'})
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) primeSvcGraph(d.services); })
+        .catch(() => {});
+    }
+  }
+}
+document.querySelectorAll('#detail-tabs .tab').forEach(b =>
+  b.addEventListener('click', () => showTab(b.dataset.tab)));
 
 // ---------- helpers ----------
 function badgeHtml(status) {
@@ -845,6 +901,16 @@ function renderSys(data) {
   document.getElementById('sys-procs').textContent = sys.procs ?? '-';
   document.getElementById('sys-uptime').textContent = fmtUptime(sys.uptime);
   document.getElementById('sys-kernel').textContent = data.kernel ? 'kernel ' + data.kernel : '';
+
+  const heroMeta = document.getElementById('hero-meta');
+  if (heroMeta) {
+    const parts = [];
+    if (data.os_label) parts.push(String(data.os_label));
+    if (data.kernel) parts.push('kernel ' + data.kernel);
+    if (sys.uptime != null) parts.push('uptime ' + fmtUptime(sys.uptime));
+    if (sys.load1 != null) parts.push('beban ' + sys.load1.toFixed(2));
+    heroMeta.textContent = parts.length ? parts.join(' · ') : 'memuat data sistem…';
+  }
 
   renderApt(data);
 

@@ -101,6 +101,30 @@ tr:hover td{background:var(--hover)}
 
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 
+/* ---------- Halaman Rincian: hero ringkasan + tab ---------- */
+.hero-card{padding:18px 20px;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+.hero-row{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap}
+.hero-ident{display:flex;flex-direction:column;gap:5px;min-width:250px}
+.hero-host{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.hero-host strong{font-size:16px}
+.hero-host .dot{width:9px;height:9px}
+.hero-online{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.hero-online.on{color:var(--green)}
+.hero-online.off{color:var(--red)}
+.hero-meta{font-size:12px;color:var(--dim);line-height:1.6}
+.hero-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hero-aptline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.hero-sep{width:1px;height:26px;background:var(--border);margin:0 4px}
+@media(max-width:820px){.hero-row{flex-direction:column;align-items:flex-start}}
+
+.tabbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.tab{appearance:none;background:#151a28;color:var(--dim);border:1px solid var(--border);padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.tab:hover{color:var(--text);border-color:var(--blue)}
+.tab.is-on{background:var(--blue-bg);color:var(--blue);border-color:var(--blue)}
+.tab-body[hidden]{display:none}
+.tab-body:not([hidden]){animation:tabIn .18s ease}
+@keyframes tabIn{from{opacity:.4;transform:translateY(3px)}to{opacity:1;transform:none}}
+
 @media(min-width:821px){
   .sb-toggle{display:block}
   body.sb-collapsed .sidebar{width:64px}
@@ -312,6 +336,7 @@ function jumpToLog(unit){
   if (!sel) return;
   const ok = !!unit && Array.from(sel.options).some(o => o.value === unit);
   if (!ok){ alert('Unit ' + (unit || '') + ' tidak tersedia di Agen Pantau.'); return; }
+  if (window.showTab) showTab('log');
   sel.value = unit;
   if (typeof changeUnit === 'function') changeUnit();
   const card = document.getElementById('log-card');
