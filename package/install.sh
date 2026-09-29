@@ -81,7 +81,8 @@ fi
 #                                                            rel:file-sumber
 # ---------------------------------------------------------------------------
 get_file() {
-    local rel="$1" dst="$2" mode="$3" owner="$4" group="$5"
+    local rel="$1" dst="$2" mode="$3" owner_group="$4"
+    local owner="${owner_group%%:*}" group="${owner_group##*:}"
     local tmp; tmp="$(mktemp)"
     if [ "$SRC_MODE" = "local" ]; then
         if [ ! -f "$PKG/$rel" ]; then rm -f "$tmp"; echo "[ERROR] Tidak ada $rel di paket."; return 1; fi
