@@ -847,10 +847,13 @@ async function pollSystem() {
 const ackEl = document.getElementById('host-ack');
 if (ackEl) {
   const ackMode = ackEl.dataset.mode;             // 'reboot' | 'poweroff'
-  let ackPrev = ackEl.dataset.start === '1';      // online saat halaman dimuat?
-  let ackOfflineSeen = ackMode !== 'reboot';      // poweroff: fase offline = final
+  const ackInitOnline = ackEl.dataset.start === '1';
+  let ackDown = false;                            // sudah terlihat berhenti melapor?
   let ackFinished = false;
   const ackT0 = Date.now();
+  const NO_REPORT_MS = 15000;   // normal agen lapor tiap ±10 dtk; >15 dtk = berhenti melapor
+  const REVIVE_MS = 12000;      // melapor lagi (<12 dtk) = server hidup
+  const WINDOW_MS = 120000;     // rentang mesin diperkirakan drop setelah perintah
 
   function ackSet(label, text, cls) {
     const b = document.getElementById('ack-badge');
@@ -859,59 +862,70 @@ if (ackEl) {
     if (t) t.textContent = text || '';
   }
 
+  // Konfirmasi berbasis "selang sejak laporan terakhir" (last_seen_ago_ms) —
+  // bukan ambang offline 60 dtk, supaya reboot cepat (<60 dtk) ikut terdeteksi.
+  function ackRecency(j) {
+    return (typeof j.last_seen_ago_ms === 'number')
+      ? j.last_seen_ago_ms
+      : (j.online === true ? 0 : null);
+  }
+
   async function ackPoll() {
     if (ackFinished) return;
-    if (Date.now() - ackT0 > 150000) {
+    if (!ackDown && Date.now() - ackT0 > WINDOW_MS) {
       ackSet('tidak terkonfirmasi',
-        'Server tidak kunjung ' + (ackMode === 'poweroff' ? 'MATI' : 'reboot') +
-        ' dalam 2,5 menit. Periksa di server klien: sudo tail -n 30 /var/log/pantau-host.log', 'warn');
+        'Server tidak terlihat ' + (ackMode === 'poweroff' ? 'padam' : 'reboot') +
+        ' dalam rentang yang diharapkan. Periksa di server klien: sudo tail -n 30 /var/log/pantau-host.log', 'warn');
       ackFinished = true;
       return;
     }
-    let cur = ackPrev;
+    let r = null;
     try {
-      const r = await fetch('/api/servers/' + SID + '/overview', { credentials: 'same-origin' });
-      if (r.ok) {
-        const j = await r.json();
-        // Konfirmasi berbasis kesegaran last_seen (jendela 30 dtk), bukan
-        // ambang offline 60 dtk: poweroff cepat & reboot (<60 dtk) jadi terdeteksi.
-        cur = typeof j.last_seen_ago_ms === 'number'
-          ? j.last_seen_ago_ms < 30000
-          : (j.online === true);
-      }
-    } catch (e) { /* biarkan nilai lama */ }
+      const res = await fetch('/api/servers/' + SID + '/overview', { credentials: 'same-origin' });
+      if (res.ok) r = ackRecency(await res.json());
+    } catch (e) { /* coba lagi di siklus berikutnya */ }
+    const downNow = r !== null && r > NO_REPORT_MS;
 
     if (ackMode === 'poweroff') {
-      if (!cur) {
-        ackSet('MATI', 'Server sudah offline — Power Off terkonfirmasi. Nyalakan manual (fisik/IPMI).', 'danger');
-        ackFinished = true;
-      } else {
-        ackSet('memadamkan…', 'server masih online; menunggu mesin benar-benar mati (batas 2,5 menit).', 'inactive');
-      }
-    } else {
-      if (ackOfflineSeen) {
-        if (cur) {
-          ackSet('KEMBALI ONLINE', 'Server berhasil reboot dan kembali online.', 'up');
+      if (!ackDown && downNow) {
+        ackDown = true;
+        ackSet('MATI', 'Server berhenti melapor (+' + (r / 1000).toFixed(0) + ' dtk) — Power Off terkonfirmasi. Menunggu bila dinyalakan ulang manual…', 'danger');
+      } else if (ackDown) {
+        if (r !== null && r <= REVIVE_MS) {
+          ackSet('HIDUP KEMBALI', 'Server melapor lagi — mesin telah dinyalakan ulang secara manual.', 'up');
           ackFinished = true;
         } else {
-          ackSet('rebooting…', 'server offline — menunggu ia kembali online.', 'inactive');
+          ackSet('MATI', 'Server berhenti melapor — Power Off terkonfirmasi. Nyalakan manual (fisik/IPMI); banner ini menunggu kebangkitan.', 'danger');
         }
-      } else if (!cur) {
-        ackOfflineSeen = true;
-        ackSet('rebooting…', 'server baru terlihat offline — menunggu ia kembali online.', 'inactive');
       } else {
-        ackSet('restarting…', 'server masih online; menunggu fase reboot dimulai.', 'inactive');
+        const wait = Math.max(0, NO_REPORT_MS - (r || 0));
+        ackSet('memadamkan…', 'menunggu server berhenti melapor (batas ±' + Math.ceil(wait / 1000) + ' dtk lagi).', 'inactive');
+      }
+    } else {
+      if (!ackDown && downNow) {
+        ackDown = true;
+        ackSet('rebooting…', 'server berhenti melapor — proses reboot sedang berlangsung. Menunggu ia kembali online…', 'inactive');
+      } else if (ackDown) {
+        if (r !== null && r <= REVIVE_MS) {
+          ackSet('KEMBALI ONLINE', 'Server melapor kembali — reboot sukses.', 'up');
+          ackFinished = true;
+        } else {
+          ackSet('rebooting…', 'menunggu server kembali melapor…', 'inactive');
+        }
+      } else {
+        ackSet('restarting…', 'server masih melapor; menunggu fase reboot dimulai.', 'inactive');
       }
     }
-    ackPrev = cur;
-    if (!ackFinished) setTimeout(ackPoll, 2000);
+    if (!ackFinished) setTimeout(ackPoll, 1500);
   }
 
-  if (ackPrev || ackMode === 'reboot') {
-    ackPoll();
-  } else {
-    ackSet('MATI', 'Server sudah offline (sejak halaman dimuat) — Power Off terkonfirmasi. Nyalakan manual (fisik/IPMI).', 'danger');
+  // Poweroff: bila sejak halaman dimuat server SUDAH tidak pernah online
+  // (is_online ambang 60 dtk menyala), tampilkan MATI langsung.
+  if (ackMode === 'poweroff' && !ackInitOnline) {
+    ackSet('MATI', 'Server sudah offline sejak halaman dimuat — Power Off sepertinya terlaksana. Bila tidak, cek /var/log/pantau-host.log.', 'danger');
     ackFinished = true;
+  } else {
+    ackPoll();
   }
 }
 
