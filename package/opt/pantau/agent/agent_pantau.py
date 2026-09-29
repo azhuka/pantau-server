@@ -323,7 +323,7 @@ APT_AGENT_OUTPUT_MAX = 4_000_000
 APT_PROGRESS_TAIL_CHARS = 200_000
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.6"
+AGENT_VERSION = "3.6.1"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -567,8 +567,12 @@ def _exec_host_control(action: str) -> dict:
     if not IS_ROOT:
         label = f"/usr/bin/sudo -n {label}"
     try:
+        # PENTING: tanpa redirect shell ('>> log') di sini — redirect dijalankan
+        # SELAKU user pantau (sebelum sudo) dan gagal karena log milik root,
+        # sehingga poweroff tak pernah dieksekusi. Wrapper yang menulis log
+        # (lewat sudo, sebagai root) setelah memvalidasi argumen.
         subprocess.Popen(
-            ["/bin/sh", "-c", f"sleep 4; {label} >> /var/log/pantau-host.log 2>&1"],
+            ["/bin/sh", "-c", f"sleep 4; {label}"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             start_new_session=True, close_fds=True,
         )
