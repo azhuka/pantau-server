@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Users - Pantau Server{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h2>User Management</h2>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><h3>Daftar Users</h3></div>
+    <table>
+      <thead><tr><th>Username</th><th>Role</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+      {% for u in users %}
+      <tr>
+        <td><strong>{{ u.username }}</strong></td>
+        <td><span class="badge {% if u.role=='admin' %}badge-up{% else %}badge-inactive{% endif %}">{{ u.role }}</span></td>
+        <td class="mono">{{ u.created_at.strftime('%d %b %Y') }}</td>
+        <td>
+          {% if u.id != user.id %}
+          <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline" onsubmit="return confirmDelete('Hapus user {{ u.username }}?')">
+            <button class="btn btn-danger btn-sm">Hapus</button>
+          </form>
+          {% else %}
+          <span class="mono">(you)</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>Tambah User</h3></div>
+    <form method="POST" action="/users/add">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" name="username" required minlength="3">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password" required minlength="6">
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <select name="role">
+          <option value="viewer">Viewer (read only)</option>
+          <option value="admin">Admin (full access)</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Tambah User</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

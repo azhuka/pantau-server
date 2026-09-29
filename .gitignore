@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+env/
+.venv/
+
+# Secrets
+.env
+
+# Logs
+*.log
+/tmp/*.log
+
+# System & editor
+.DS_Store
+*.swp
+
+# Legacy / prototype files (tetap di disk, tidak di-commit)
+/agent/
+/app_ui.py
+/app_ui.py.V1
+/build.sh
+/setup_db.sh
+/server-monitor.service.example
+/templates/
+/uploads/

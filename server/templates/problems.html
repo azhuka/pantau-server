@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Masalah - Pantau Server{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h2>Masalah Server</h2>
+  <div>
+    <span style="font-size:12px;color:var(--dim)">{{ danger_open }} danger · {{ warning_open }} warning · {{ info_open }} info · {{ ok_count }} server sehat</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Masalah Terbuka</h3>
+    <span style="font-size:12px;color:var(--dim)">{{ open_problems|length }} masalah</span>
+  </div>
+  {% if open_problems %}
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <select id="prob-filter" onchange="probFilter()"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
+      <option value="">Semua level</option>
+      <option value="danger">Danger</option>
+      <option value="warning">Warning</option>
+      <option value="info">Info</option>
+    </select>
+    <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari server / kejadian…"
+           style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:220px">
+    <span style="font-size:11px;color:var(--dim);align-self:center" id="prob-count"></span>
+  </div>
+  <table id="probtable">
+    <thead><tr><th>Waktu</th><th>Server</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Aksi</th><th>Tips</th></tr></thead>
+    <tbody>
+    {% for p in open_problems %}
+    <tr data-sev="{{ p.severity }}" data-text="{{ (p.hostname ~ ' ' ~ p.message ~ ' ' ~ p.key) | lower }}">
+      <td style="white-space:nowrap" class="mono">{{ p.started_at.strftime('%d %b %H:%M') }}</td>
+      <td><strong>{{ p.hostname }}</strong></td>
+      <td><span class="badge badge-{{ {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}">{{ p.severity }}</span></td>
+      <td>
+        <span>{{ p.message }}</span>
+        {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-inactive" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
+      </td>
+      <td class="mono" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">{{ p.durasi }}</td>
+      <td>
+        {% if p.acknowledged_by %}
+          <span class="badge badge-up" title="Diakui {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}" style="cursor:help">✓</span>
+        {% elif p.severity == 'danger' and p.is_open %}
+          <a href="/problems" class="btn btn-danger btn-sm" onclick="return ackProblem({{ p.server_id }}, {{ p.id }})">Tandai</a>
+        {% else %}
+          <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
+        {% endif %}
+      </td>
+      <td style="font-size:12px;color:var(--dim);max-width:360px">
+        {% if p.acknowledged_by %}
+          <span style="color:var(--green)">✓ diakui {{ p.acknowledged_by }}</span><br>
+        {% endif %}
+        {{ p.tip or '—' }}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px">
+    <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
+    Tidak ada masalah terbuka saat ini.
+  </div>
+  {% endif %}
+</div>
+
+{% if recent_resolved %}
+<div class="card">
+  <div class="card-header"><h3>Teratasi (24 jam terakhir)</h3>
+    <span style="font-size:12px;color:var(--dim)">{{ recent_resolved|length }} masalah</span>
+  </div>
+  <table>
+    <thead><tr><th>Waktu</th><th>Server</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Aksi</th></tr></thead>
+    <tbody>
+    {% for p in recent_resolved %}
+    <tr style="opacity:.65">
+      <td style="white-space:nowrap" class="mono">
+        {{ p.started_at.strftime('%d %b %H:%M') }}
+        <span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>
+      </td>
+      <td><strong>{{ p.hostname }}</strong></td>
+      <td><span class="badge badge-{{ {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}">{{ p.severity }}</span></td>
+      <td><span style="color:var(--green)">✓</span> <span style="text-decoration:line-through">{{ p.message }}</span>
+        {% if p.resolved_note == 'auto' %}
+          <span class="badge badge-inactive" title="Tidak ada deteksi baru selama jendela tenang">otomatis berakhir</span>
+        {% endif %}
+      </td>
+      <td class="mono">{{ p.durasi }}</td>
+      <td><a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+<script>
+function ackProblem(sid, id){
+  if (!confirm('Tandai peringatan DANGER ini sebagai sudah diketahui?')) return false;
+  fetch('/api/alerts/' + id + '/ack', {method:'POST', credentials:'same-origin'})
+    .then(function(r){ if (r.ok) location.reload(); });
+  window.scrollTo(0, 0);
+  return false;
+}
+</script>
+{% endblock %}

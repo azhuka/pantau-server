@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}API Key Baru{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h2>API Key {{ server.hostname }}</h2>
+  <a href="/servers" class="btn btn-ghost">&larr; Kembali</a>
+</div>
+
+<div class="card" style="border-color:var(--green)">
+  <div style="color:var(--green);font-weight:600;margin-bottom:8px">Key baru berhasil dibuat.</div>
+  <p style="font-size:13px;color:var(--dim)">
+    <strong>Salin sekarang — key ini hanya ditampilkan sekali dan tidak dapat dilihat lagi.</strong><br>
+    Pasang pada config agent (server_url + api_key), lalu jalankan install script di server tujuan.
+  </p>
+  <div class="api-key-box" style="margin-top:12px">
+    <span class="key-text">{{ api_key }}</span>
+    <button type="button" class="btn btn-ghost btn-sm copy-btn" onclick="copyKey(this)">Copy</button>
+  </div>
+</div>
+
+<div class="card" style="display:flex;gap:12px;align-items:center">
+  <a href="/servers" class="btn btn-primary">Selesai, ke daftar server</a>
+  <a href="/servers/{{ server.id }}/edit" class="btn btn-ghost">Edit server ini</a>
+</div>
+{% endblock %}

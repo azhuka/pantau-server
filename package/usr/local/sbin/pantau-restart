@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+#
+# pantau-restart - Wrapper restart/start/stop service untuk Agen Pantau.
+#
+# Alasan wrapper ini ada:
+#   - Menyediakan jalur sudo NOPASSWD yang SEMPIT (bukan "systemctl *")
+#   - Memvalidasi argumen (tanpa shell passthrough / wildcard)
+#   - Menolak unit kritis infrastruktur lewat deny-list
+#
+# Penggunaan (hanya dipanggil agent):
+#   pantau-restart restart|start|stop <unit>
+#
+# Unit adalah nama service yang dinormalisasi agent (mis. sshd, mysql, uvicorn).
+# Attempt: systemctl <action> <unit> yang mengikuti deny-list & alias mapping.
+#
+set -u
+
+ACTION="${1:-}"
+UNIT="${2:-}"
+DENY_FILE="/etc/pantau/restart.deny"
+
+# Alias umum nama process -> unit systemd
+alias_unit() {
+    local name="$1"
+    case "$name" in
+        mysql|mysqld|mariadbd|mariadb) printf 'mariadb' ;;
+        ssh|sshd)                      printf 'ssh' ;;
+        *)                             printf '%s' "$name" ;;
+    esac
+}
+
+fail() {
+    echo "$*" >&2
+    exit 1
+}
+
+# --- Validasi aksi ---
+case "$ACTION" in
+    restart|start|stop) ;;
+    *) fail "Aksi tidak dikenal: '${ACTION}' (harus restart/start/stop)" ;;
+esac
+
+# --- Sanitasi nama unit: hanya karakter aman, panjang wajar ---
+[ -n "$UNIT" ] || fail "Nama unit kosong"
+[ "${#UNIT}" -le 64 ] || fail "Nama unit terlalu panjang"
+case "$UNIT" in
+    *[!a-zA-Z0-9@._-]*) fail "Nama unit mengandung karakter tidak valid: '$UNIT'" ;;
+esac
+
+# --- Deny-list (prefix match) ---
+[ -r "$DENY_FILE" ] || fail "File deny-list tidak terbaca: $DENY_FILE"
+while IFS= read -r pat; do
+    pat="${pat%%#*}"          # buang komentar
+    [ -z "$pat" ] && continue
+    pat="${pat// /}"          # buang spasi
+    [ -z "$pat" ] && continue
+    case "$UNIT" in
+        "${pat}"*) fail "Unit '$UNIT' masuk deny-list (pola '$pat'), ditolak." ;;
+    esac
+done < "$DENY_FILE"
+
+# --- Eksekusi: coba unit asli, lalu alias ---
+ERR=""
+run_unit() {
+    local unit="$1" out rc
+    out="$(/usr/bin/systemctl "$ACTION" "$unit" 2>&1)"
+    rc=$?
+    # Jangan tampilkan error percobaan gagal bila nanti ada yang berhasil
+    if [ $rc -ne 0 ]; then
+        ERR="${ERR}${out}"$'\n'
+    fi
+    return $rc
+}
+
+if run_unit "$UNIT"; then
+    echo "OK: systemctl $ACTION $UNIT"
+    exit 0
+fi
+
+ALIAS="$(alias_unit "$UNIT")"
+if [ "$ALIAS" != "$UNIT" ]; then
+    if run_unit "$ALIAS"; then
+        echo "OK: systemctl $ACTION $UNIT (resolved -> $ALIAS)"
+        exit 0
+    fi
+fi
+
+printf '%s' "$ERR" >&2
+fail "systemctl $ACTION $UNIT gagal"

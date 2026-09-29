@@ -1,0 +1,34 @@
+[Unit]
+Description=Pantau Monitoring Agent (agent_pantau)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=pantau
+Group=pantau
+ExecStart=/opt/pantau/agent/agent_pantau.py
+Restart=always
+RestartSec=5
+# tanpa batas laju restart: sekali crash tidak membuat systemd menyerah
+StartLimitIntervalSec=0
+Nice=5
+StandardOutput=journal
+StandardError=journal
+
+# Hardening sandbox.
+# CATATAN: ProtectSystem sengaja TIDAK dipakai — unit ini menjalankan
+# "apt-get update/upgrade" (lewat sudo NOPASSWD untuk apt-get saja), yang
+# sah menulis ke /var/lib/apt, /var/cache/apt, /var/lib/dpkg, /usr, /etc.
+# Proteksi baca-tulis seluruh-fs (ProtectSystem=strict/full) akan membuat
+# apt gagal. Hak root melalui sudo tetap disempitkan di /etc/sudoers.d.
+# ProtectHome juga dilepas: fitur "riwayat perintah (history)" membaca
+# /home/<user>/.bash_history lewat wrapper sudo. Arah baca diawasi wrapper.
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+
+[Install]
+WantedBy=multi-user.target

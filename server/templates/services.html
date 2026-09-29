@@ -1,0 +1,1138 @@
+{% extends "base.html" %}
+{% block title %}Rincian - {{ server.hostname }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h2>Rincian — {{ server.hostname }}</h2>
+  <div>
+    <a href="/servers" class="btn btn-ghost">&larr; Servers</a>
+    <a href="/servers/{{ server.id }}/metrics" class="btn btn-ghost">Metrik</a>
+  </div>
+</div>
+
+{% set pmeta = {'ok': ('OK', 'up', 'green'), 'info': ('Info', 'info', 'var(--blue)'),
+                'warning': ('Warning', 'warn', 'var(--yellow)'),
+                'danger': ('Danger', 'danger', 'var(--red)')} %}
+{% set act = request.query_params.get('action') %}
+{% set acted = act in ('block', 'agent', 'noips') or request.query_params.get('restarted') %}
+{% if acted %}
+<div class="card" style="border-color:var(--blue);padding:12px 16px">
+  {% if act == 'block' %}
+    <span style="color:var(--blue);font-weight:600">Perintah Blokir IP (iptables) telah dikirim ke Agen Pantau.</span>
+    <span style="font-size:13px;color:var(--dim)"> Aturan tampil ~beberapa detik lalu. Bersifat volatile hingga reboot — untuk permanen gunakan iptables-persistent.</span>
+  {% elif act == 'agent' %}
+    <span style="color:var(--blue);font-weight:600">Perintah Restart Agen telah dikirim ke Agen Pantau.</span>
+    <span style="font-size:13px;color:var(--dim)"> Agen akan restart otomatis ~2 detik setelah menerima.</span>
+  {% elif act == 'noips' %}
+    <span style="color:var(--yellow);font-weight:600">Tidak ada IP sumber untuk diblokir.</span>
+    <span style="font-size:13px;color:var(--dim)"> Tidak terdeteksi IP pelaku pada data keamanan terakhir.</span>
+  {% else %}
+    <span style="color:var(--blue);font-weight:600">Perintah restart telah dikirim ke Agen Pantau.</span>
+    <span style="font-size:13px;color:var(--dim)"> Status service akan di-update dalam beberapa detik setelah agent mengeksekusi.</span>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><h3>Perangkat Keras &amp; Performa</h3>
+    <span id="sys-ts" style="font-size:12px;color:var(--dim)"></span>
+  </div>
+  <div id="sys-empty" class="empty-msg" style="display:none">
+    Belum ada data kinerja — pastikan Agen Pantau v3.4+ (via package install.sh) berjalan di server ini.
+  </div>
+  <div id="sys-body">
+    <div class="stats-grid" style="margin-bottom:16px">
+      <div class="stat-card">
+        <div class="label">CPU</div>
+        <div class="value" id="sys-cpu">-</div>
+        <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-cpu-bar" style="width:0%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Load Average (1/5/15)</div>
+        <div class="value" style="font-size:18px" id="sys-load">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Memori</div>
+        <div class="value" id="sys-mem">-</div>
+        <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-mem-bar" style="width:0%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Swap</div>
+        <div class="value" id="sys-swap">-</div>
+        <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-swap-bar" style="width:0%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Proses</div>
+        <div class="value" id="sys-procs">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Uptime</div>
+        <div class="value" style="font-size:16px" id="sys-uptime">-</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:4px" id="sys-kernel">-</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px" class="grid-2">
+      <div>
+        <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">CPU (riwayat ±10 mnt)</div>
+        <div id="spark-cpu"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Memori Terpakai (riwayat ±10 mnt)</div>
+        <div id="spark-mem"></div>
+      </div>
+    </div>
+
+    <div id="disks-wrap" style="display:none">
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Penyimpanan (Disk)</div>
+      <table id="disks-table">
+        <thead><tr><th>Mount</th><th>Type</th><th>Terpakai</th><th style="width:40%">Pemakaian</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Grafik Kinerja</h3>
+    <div id="perf-ranges" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-sm" data-range="1h">1 Jam</button>
+      <button class="btn btn-sm" data-range="6h">6 Jam</button>
+      <button class="btn btn-sm is-on" data-range="24h">24 Jam</button>
+      <button class="btn btn-sm" data-range="7d">7 Hari</button>
+      <button class="btn btn-sm" data-range="30d">30 Hari</button>
+    </div>
+  </div>
+  <div id="perf-empty" class="empty-msg" style="display:none">
+    Belum ada data riwayat — grafik terisi setelah agen aktif beberapa menit/jam.
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="grid-2">
+    <div>
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">CPU</div>
+      <div id="chart-cpu"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Memori Terpakai</div>
+      <div id="chart-mem"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Swap Terpakai</div>
+      <div id="chart-swap"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Beban Sistem (load 1)</div>
+      <div id="chart-load"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Grafik Layanan</h3>
+    <select id="svc-graph-sel"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;margin-right:8px">
+      <option value="">memuat layanan…</option>
+    </select>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-sm" data-range="1h">1 Jam</button>
+      <button class="btn btn-sm is-on" data-range="24h">24 Jam</button>
+      <button class="btn btn-sm" data-range="7d">7 Hari</button>
+    </div>
+  </div>
+  <div id="svc-current" style="font-size:12px;color:var(--dim);margin-bottom:10px"></div>
+  <div id="svc-status-strip" title="Ketersediaan per titik" style="margin-bottom:14px"></div>
+  <div id="svc-empty" class="empty-msg" style="display:none">Belum ada data riwayat service.</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="grid-2">
+    <div>
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Waktu Respon (ms)</div>
+      <div id="chart-svc-rt"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Koneksi Aktif</div>
+      <div id="chart-svc-conn"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Status Masalah</h3>
+    {% if problem_level is none %}
+      <span class="badge badge-inactive">belum ada data</span>
+    {% else %}
+      <span class="badge badge-{{ pmeta[problem_level][1] }}">{{ pmeta[problem_level][0] }}</span>
+      <span style="font-size:12px;color:var(--dim)">{{ open_problems|length }} masalah terbuka</span>
+    {% endif %}
+  </div>
+  {% set rows = open_problems + problem_history %}
+  {% if rows %}
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <select id="prob-filter" onchange="probFilter()"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
+      <option value="">Semua level</option>
+      <option value="danger">Danger</option>
+      <option value="warning">Warning</option>
+      <option value="info">Info</option>
+    </select>
+    <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari kejadian…"
+           style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:220px">
+    <span style="font-size:11px;color:var(--dim);align-self:center" id="prob-count"></span>
+  </div>
+  <table id="probtable">
+    <thead><tr><th>Waktu</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Aksi</th><th>Tips</th></tr></thead>
+    <tbody>
+    {% for p in rows %}
+    <tr{% if not p.is_open %} style="opacity:.65"{% endif %}
+        data-sev="{{ p.severity }}"
+        data-text="{{ (p.message ~ ' ' ~ p.key) | lower }}">
+      <td style="white-space:nowrap" class="mono">
+        {{ p.started_at.strftime('%d %b %H:%M') }}
+        {% if p.resolved_at %}<span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>{% endif %}
+      </td>
+      <td><span class="badge badge-{{ {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}">{{ p.severity }}</span></td>
+      <td>
+        {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
+        <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
+        {% if p.acknowledged_by %}<span class="badge badge-up" title="Diakui {{ p.acknowledged_by }}">✓ diakui</span>{% endif %}
+        {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-inactive" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
+      </td>
+      <td class="mono"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
+      <td style="white-space:nowrap">
+        {% if p.is_open and p.action == 'restart' %}
+          <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline">
+            <button class="btn btn-primary btn-sm">Restart</button>
+          </form>
+          {% if p.log_unit %}
+            <button class="btn btn-ghost btn-sm" onclick="jumpToLog('{{ p.log_unit }}')" style="margin-left:4px">Log</button>
+          {% endif %}
+        {% elif p.is_open and p.action == 'log' and p.log_unit %}
+          <button class="btn btn-ghost btn-sm" onclick="jumpToLog('{{ p.log_unit }}')">Log</button>
+        {% elif p.is_open and p.action == 'mitigate' %}
+          {% if user.role == 'admin' and p.ip_count and p.ip_count > 0 %}
+            <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline"
+                  onsubmit="return confirm('Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?')">
+              <button class="btn btn-danger btn-sm">Blokir IP ({{ p.ip_count }})</button>
+            </form>
+          {% endif %}
+          <button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>
+        {% elif p.is_open and p.action == 'agent_restart' and user.role == 'admin' %}
+          <form method="post" action="/servers/{{ server.id }}/problems/restart-agent" style="display:inline"
+                onsubmit="return confirm('Restart agen (agent_pantau) di {{ server.hostname }}?')">
+            <button class="btn btn-ghost btn-sm">Restart agen</button>
+          </form>
+        {% elif p.is_open and p.action == 'apt_update' %}
+          <button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">Update</button>
+        {% else %}
+          <span style="color:var(--dim)">—</span>
+        {% endif %}
+      </td>
+      <td style="font-size:12px;line-height:1.55;max-width:360px">{{ p.tip or '—' }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px">
+    <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
+    Tidak ada masalah terdeteksi saat ini.
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Jaringan</h3></div>
+  <div id="net-empty" class="empty-msg" style="display:none">Belum ada data jaringan.</div>
+  <table id="net-table" style="display:none">
+    <thead><tr><th>Interface</th><th>Status</th><th>RX Total</th><th>TX Total</th><th>RX Rate</th><th>TX Rate</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Paket OS Update</h3>
+    <span id="apt-badge" class="badge badge-inactive">—</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+    {% if user.role == 'admin' %}
+    <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="aptAction('APT_UPDATE')">Update</button>
+    <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE')" disabled>Upgrade</button>
+    {% endif %}
+    <span id="apt-hint" style="font-size:11px;color:var(--dim)">belum ada info apt.</span>
+  </div>
+  <div id="apt-live" style="display:none;margin-bottom:10px">
+    <div id="apt-status" style="font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--blue);margin-bottom:6px">—</div>
+    <pre id="apt-out" class="apt-terminal"></pre>
+  </div>
+  <div id="apt-msg" style="display:none;font-size:12px;line-height:1.5;margin-bottom:8px"></div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Akun / User</h3></div>
+  <div id="acc-empty" class="empty-msg" style="display:none">Belum ada data akun.</div>
+  <table id="acc-table" style="display:none">
+    <thead><tr><th>User</th><th>UID</th><th>Shell</th><th>Login Terakhir</th><th>Sesi Aktif</th><th>Aksi</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="card" id="log-card">
+  <div class="card-header"><h3>Log Layanan</h3>
+    <span id="log-state" style="font-size:12px;color:var(--dim)"></span>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <label style="font-size:12px;color:var(--dim);align-self:center">Unit:</label>
+    <select id="log-unit" onchange="changeUnit()" style="min-width:220px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px">
+      <option value="">— memuat —</option>
+    </select>
+    <label style="font-size:12px;color:var(--dim);align-self:center">Baris:</label>
+    <input type="number" id="log-lines" value="200" min="10" max="2000" style="width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px">
+  </div>
+  <div id="log-empty" class="empty-msg" style="display:none">Menunggu data unit dari Agen Pantau…<br>
+    <span style="font-size:12px">SYSLOG &amp; AUTH = log sistem khusus (perlu grup adm pada Agen).</span>
+  </div>
+  <pre id="log-pre" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;height:55vh;overflow:auto;white-space:pre;color:var(--text);display:none"></pre>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Daftar Services</h3></div>
+  {% if services %}
+  <table>
+    <thead><tr><th>Service</th><th>Port</th><th>Process</th><th>Status</th><th>Conns</th><th>Resp (ms)</th><th>Health</th><th>Uptime 24h</th><th>Aksi</th></tr></thead>
+    <tbody>
+    {% for svc in services %}
+    <tr>
+      <td><strong>{{ svc.service_name }}</strong></td>
+      <td class="mono">{{ svc.port }}</td>
+      <td class="mono">{{ svc.process_name }}</td>
+      <td id="sts-{{ svc.id }}"><span class="badge badge-{{ svc._status }}">{{ svc._status }}</span></td>
+      <td id="conns-{{ svc.id }}">{{ svc._conns }}</td>
+      <td id="resp-{{ svc.id }}" class="mono">{{ svc._response_time if svc._response_time is not none else '-' }}</td>
+      <td id="health-{{ svc.id }}" style="font-size:12px;color:var(--dim)">{{ svc._health_msg or 'no data' }}</td>
+      <td>
+        {% if svc._uptime.uptime_pct is not none %}
+          {{ svc._uptime.uptime_pct }}%
+          {% if svc._uptime.downtime_seconds > 0 %}
+            <span style="font-size:11px;color:var(--red)">(down {{ svc._uptime.downtime_seconds }}s)</span>
+          {% endif %}
+        {% else %}
+          <span style="color:var(--dim)">-</span>
+        {% endif %}
+      </td>
+      <td style="white-space:nowrap">
+        <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}">
+          {% if svc._pending_cmd %}
+          <span class="badge badge-inactive">Menunggu Agent</span>
+          {% elif user.role == 'admin' %}
+          <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/restart" style="display:inline"
+                onsubmit="return confirmDelete('Restart service {{ svc.service_name }} di server {{ server.hostname }}?')">
+            <button class="btn btn-primary btn-sm">Restart</button>
+          </form>
+          {% endif %}
+        </span>
+        {% if user.role == 'admin' %}
+        <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/delete" style="display:inline;margin-left:4px"
+              onsubmit="return confirmDelete('Hapus service {{ svc.service_name }}?')">
+          <button class="btn btn-danger btn-sm">Hapus</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-msg">Belum ada service terdeteksi. Jalankan Agen Pantau di server ini.</div>
+  {% endif %}
+</div>
+
+{% if commands %}
+<div class="card">
+  <div class="card-header"><h3>Riwayat Perintah</h3></div>
+  <table>
+    <thead><tr><th>Waktu</th><th>Service</th><th>Aksi</th><th>Status</th><th>Hasil</th></tr></thead>
+    <tbody>
+    {% for c in commands %}
+    <tr id="cmd-{{ c.id }}">
+      <td class="mono">{{ c.created_at.strftime('%d %b %H:%M:%S') }}</td>
+      <td>
+        {% set svc = services|selectattr('id','equalto',c.service_id)|first %}
+        {{ svc.service_name if svc else '?' }}
+      </td>
+      <td><span class="badge badge-inactive">{{ c.action }}</span></td>
+      <td id="cmd-st-{{ c.id }}">
+        {% if c.status == 'success' %}<span class="badge badge-up">success</span>
+        {% elif c.status == 'failed' %}<span class="badge badge-down">failed</span>
+        {% elif c.status == 'executing' %}<span class="badge badge-inactive">executing</span>
+        {% else %}<span class="badge badge-inactive">pending</span>{% endif %}
+      </td>
+      <td id="cmd-rs-{{ c.id }}" data-status="{{ c.status }}" style="font-size:12px;color:var(--dim);max-width:300px">{{ c.result or c.status }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const SID = {{ server.id }};
+const POLL_MS = 3000;
+const IS_ADMIN = {{ 'true' if user.role == 'admin' else 'false' }};
+
+// ---------- helpers ----------
+function badgeHtml(status) {
+  const cls = status === 'up' || status === 'success' ? 'badge-up'
+            : status === 'down' || status === 'failed' ? 'badge-down'
+            : 'badge-inactive';
+  return '<span class="badge ' + cls + '">' + status + '</span>';
+}
+
+function restartFormHtml(sid, svcId, name) {
+  return '<form method="POST" action="/servers/' + sid + '/services/' + svcId + '/restart" style="display:inline" '
+       + 'onsubmit="return confirmDelete(\'Restart service ' + name + ' di server ini?\')">'
+       + '<button class="btn btn-primary btn-sm">Restart</button></form>';
+}
+
+const resultLabel = {
+  pending: 'Pending', executing: 'Menjalankan…',
+  success: 'success', failed: 'failed',
+};
+
+function fmtAptLast(v) {
+  if (!v) return 'tidak diketahui';
+  const d = new Date(v);
+  return isNaN(d) ? 'tidak diketahui' : d.toLocaleString('id-ID');
+}
+
+function fmtBytes(v) {
+  if (v == null || isNaN(v)) return '-';
+  if (v < 1024) return v + ' B';
+  const u = ['kB', 'MB', 'GB', 'TB', 'PB'];
+  let i = -1;
+  do { v /= 1024; i++; } while (v >= 1024 && i < u.length - 1);
+  return v.toFixed(v >= 100 ? 0 : 1) + ' ' + u[i];
+}
+
+function fmtUptime(sec) {
+  if (sec == null) return '-';
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  let s = '';
+  if (d) s += d + 'h ';
+  if (d || h) s += h + 'j ';
+  return s + m + 'm';
+}
+
+// ---------- paket OS update (tombol Update / Upgrade) ----------
+let lastAptPkgs = [];
+let aptLastCount = null;
+let aptArmed = false;   // Upgrade baru aktif setelah user menekan Update & tuntas
+let aptUpdated = false; // Update SUDAH ditekan & sukses di sesi ini (berapa pun hasilnya)
+let aptRunning = false; // sedang ada proses Update/Upgrade berjalan
+
+function matchAptByName(name) {
+  return lastAptPkgs.find(q => pkgName(q) === name) || null;
+}
+
+function renderApt(data) {
+  const aptN = (data.apt_upgradable == null) ? null : data.apt_upgradable;
+  aptLastCount = aptN;
+  const pkgs = data.apt_packages || [];
+  lastAptPkgs = pkgs; // dipakai untuk melengkapi daftar hasil klik Update
+  const bad = document.getElementById('apt-badge');
+  const hint = document.getElementById('apt-hint');
+  const upBtn = document.getElementById('apt-upgrade-btn');
+  if (!bad) return;
+  if (aptN == null) {
+    bad.textContent = '—';
+    bad.className = 'badge badge-inactive';
+    hint.textContent = 'belum ada info apt — tekan Update untuk menyegarkan.';
+  } else if (aptN === 0) {
+    bad.textContent = 'up to date';
+    bad.className = 'badge badge-up';
+    hint.textContent = 'Semua paket OS sudah mutakhir (terakhir apt update: ' + fmtAptLast(data.apt_last_update) + ').';
+  } else {
+    bad.textContent = aptN + ' paket';
+    bad.className = 'badge badge-warn';
+    const shown = pkgs.slice(0, 5).map(pkgName).join(', ');
+    hint.textContent = 'Terakhir apt update: ' + fmtAptLast(data.apt_last_update)
+      + (shown ? '. Antara lain: ' + shown + (pkgs.length > 5 ? '…' : '') : '.');
+  }
+  // Upgrade hanya aktif bila: sudah pernah tekan Update (aptArmed), tidak ada
+  // proses berjalan (aptRunning), DAN ada paket/layanan yang perlu di-upgrade.
+  if (upBtn) {
+    upBtn.disabled = aptRunning || !(aptArmed && aptN > 0);
+    upBtn.title = aptRunning ? 'Ada proses Update/Upgrade sedang berjalan…'
+      : (aptArmed && aptN > 0) ? 'Upgrade semua paket tertunda'
+      : !aptUpdated ? 'Update Terlebih Dahulu'
+      : 'Tidak ada paket yang perlu di-upgrade';
+  }
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c => (
+    {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]
+  ));
+}
+
+function pkgName(p) { return typeof p === 'string' ? p : (p && p.name ? p.name : ''); }
+function pkgVersion(p) { return (typeof p === 'string' || !p) ? '' : (p.version || ''); }
+function pkgServices(p) { return (typeof p === 'string' || !p) ? [] : (p.services || []); }
+
+function pkgItemHtml(p) {
+  let out = '&nbsp;•&nbsp;' + escapeHtml(pkgName(p));
+  const ver = pkgVersion(p);
+  if (ver) out += ' <span style="color:var(--dim)">' + escapeHtml(ver) + '</span>';
+  const svcs = pkgServices(p);
+  if (svcs.length) out += ' <span style="color:var(--blue)">→ ' + svcs.map(escapeHtml).join(', ') + '</span>';
+  return out;
+}
+
+function aptMsg(html, color) {
+  const m = document.getElementById('apt-msg');
+  if (!m) return;
+  m.innerHTML = html;
+  m.style.display = 'block';
+  m.style.color = color || 'var(--text)';
+}
+
+// ---------- output live apt DI DALAM KARTU (Update / Upgrade) ----------
+let aptLiveBuf = '';
+
+function aptLiveShow(kind) {
+  aptLiveBuf = '';
+  const box = document.getElementById('apt-live');
+  if (box) box.style.display = '';
+  const out = document.getElementById('apt-out');
+  if (out) out.textContent = '';
+  aptLiveStatus('mengirim perintah ke server…', 'var(--dim)');
+}
+
+function aptLiveStatus(html, color) {
+  const st = document.getElementById('apt-status');
+  if (!st) return;
+  st.style.color = color || 'var(--blue)';
+  st.innerHTML = html;
+}
+
+function aptLiveAppend(text, replace) {
+  if (!text) return;
+  if (replace) aptLiveBuf = String(text);
+  else aptLiveBuf += String(text);
+  if (aptLiveBuf.length > 2000000) aptLiveBuf = aptLiveBuf.slice(-2000000);
+  const out = document.getElementById('apt-out');
+  if (out) {
+    out.textContent = aptLiveBuf;
+    out.scrollTop = out.scrollHeight;
+  }
+}
+
+async function aptAction(kind) {
+  const upD = document.getElementById('apt-update-btn');
+  const upG = document.getElementById('apt-upgrade-btn');
+  const label = kind === 'APT_UPGRADE' ? 'apt upgrade' : 'apt update';
+  if (kind === 'APT_UPGRADE'
+      && !confirm('Jalankan "apt upgrade -y" pada server ini sekarang? Semua paket tertunda akan ditingkatkan.')) {
+    return;
+  }
+  aptRunning = true;
+  if (upD) upD.disabled = true;
+  if (upG) upG.disabled = true;
+  aptLiveShow(kind);
+  aptLiveStatus('mengirim perintah ke server…', 'var(--dim)');
+
+  let rid;
+  try {
+    const r = await fetch('/api/logs/request', {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({server_id: SID, unit: kind, lines: 10}),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status));
+    rid = j.id;
+  } catch (e) {
+    aptRunning = false;
+    if (upD) upD.disabled = false;
+    if (upG) upG.disabled = !(aptArmed && aptLastCount > 0);
+    aptLiveStatus('<b style="color:var(--red)">Gagal mengirim perintah.</b> ' + escapeHtml(e.message), 'var(--red)');
+    return;
+  }
+
+  const start = Date.now();
+  const limit = kind === 'APT_UPDATE' ? 320000 : 920000;
+  let j = null;
+  while (Date.now() - start < limit) {
+    await sleepMs(750);
+    try {
+      const r = await fetch('/api/logs/request/' + rid, {credentials: 'same-origin'});
+      j = await r.json();
+    } catch (e) {
+      continue;
+    }
+    if (j && j.status === 'executing') {
+      const secs = Math.round((Date.now() - start) / 1000);
+      const live = j.result || '';
+      if (live !== aptLiveBuf) aptLiveAppend(live, true);
+      const spin = secs % 2 === 0 ? '●' : '○';
+      aptLiveStatus('<span style="color:var(--blue)">' + spin + '&nbsp;' + label +
+        '</span>&nbsp;berjalan <b>' + secs + '</b> dtk'
+        + ' &nbsp;<span style="color:var(--dim)">' + fmtBytes(aptLiveBuf.length) + ' live</span>', 'var(--blue)');
+      continue;
+    }
+    if (j && (j.status === 'success' || j.status === 'failed')) break;
+  }
+
+  if (upD) upD.disabled = false;
+  aptRunning = false;
+
+  if (!j || j.status !== 'success') {
+    if (upG) upG.disabled = !(aptArmed && aptLastCount > 0);
+    if (Date.now() - start >= limit) {
+      aptLiveStatus('<b style="color:var(--red)">Gagal — batas waktu habis.</b> Periksa status agen.', 'var(--red)');
+      aptMsg('<b>Agen tidak merespons dalam batas waktu — periksa status agen.</b>', 'var(--red)');
+    } else if (j) {
+      aptLiveShow(kind);
+      aptLiveAppend('[status: ' + j.status + ']\n' + escapeHtml(j.result || ''), false);
+      aptLiveStatus('<b style="color:var(--red)">Gagal (' + escapeHtml(j.status) + ').</b>', 'var(--red)');
+      aptMsg('Status: ' + escapeHtml(j.status) + (j.result ? ' — ' + escapeHtml(j.result) : ''), 'var(--red)');
+    } else {
+      aptLiveStatus('<b style="color:var(--red)">Gagal mengambil hasil.</b>', 'var(--red)');
+      aptMsg('Gagal mengambil hasil.', 'var(--red)');
+    }
+  } else {
+    let info = null;
+    try { info = JSON.parse(j.result); } catch (e) { /* hasil teks biasa */ }
+    if (info && info.apt) {
+      const apt = info.apt;
+      const final = info.output || '';
+      aptLiveAppend(final, true);
+      if (apt.upgradable > 0) {
+        const pkgs = apt.packages || [];
+        const enriched = pkgs.map(p => {
+          const matched = matchAptByName(pkgName(p));
+          return {
+            name: pkgName(p),
+            version: pkgVersion(p),
+            services: (pkgServices(matched).length ? pkgServices(matched) : pkgServices(p)),
+          };
+        });
+        const listHtml = enriched.length
+          ? '<div style="margin-top:6px;max-height:160px;overflow:auto;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:monospace;font-size:11px">'
+            + enriched.slice(0, 60).map(pkgItemHtml).join('<br>') + '</div>'
+          : '';
+        aptMsg('<b>' + apt.upgradable + ' paket siap untuk di-upgrade.</b>' + listHtml, 'var(--yellow)');
+        aptLiveStatus('<b style="color:var(--yellow)">Selesai — ' + apt.upgradable + ' paket siap di-upgrade.</b> Klik tombol Upgrade untuk mengeksekusi.', 'var(--yellow)');
+      } else if (kind === 'APT_UPGRADE') {
+        aptMsg('<b>Proses upgrade selesai — semua paket sudah ditingkatkan.</b>', 'var(--green)');
+        aptLiveStatus('<b style="color:var(--green)">Selesai — upgrade berhasil.</b> Tidak ada sisa paket yang perlu di-upgrade.', 'var(--green)');
+      } else {
+        aptMsg('<b>Semua paket OS sudah mutakhir.</b> (terakhir apt update: ' + fmtAptLast(apt.last_update) + ')', 'var(--green)');
+        aptLiveStatus('<b style="color:var(--green)">Selesai — semua paket OS sudah mutakhir.</b>', 'var(--green)');
+      }
+      aptUpdated = true; // Update (atau Upgrade) sudah dijalankan & tuntas di sesi ini
+      aptArmed = (apt.upgradable > 0);
+      if (upG) upG.disabled = !aptArmed;
+    } else if (info) {
+      const final = info.output || j.result || '';
+      aptLiveAppend(final, true);
+      aptLiveStatus('<b style="color:var(--green)">Selesai.</b>', 'var(--green)');
+      aptMsg('<b>Selesai.</b>', 'var(--green)');
+    } else {
+      aptLiveAppend(String(j.result || ''), true);
+      aptLiveStatus('<b style="color:var(--green)">Selesai.</b>', 'var(--green)');
+      aptMsg('<b>Selesai.</b> ' + escapeHtml(String(j.result || '').slice(-400)), 'var(--green)');
+    }
+    // sinkronkan angka/badge dari data agent terbaru
+    try {
+      const rs = await fetch('/api/servers/' + SID + '/system', {credentials: 'same-origin'});
+      if (rs.ok) {
+        const d = await rs.json();
+        renderApt(d);
+      }
+    } catch (e) { /* polling berkala tetap berjalan */ }
+  }
+}
+
+// ---------- service patch (existing) ----------
+function patch(data) {
+  if (data.services) primeSvcGraph(data.services);
+  for (const s of data.services) {
+    const sts = document.getElementById('sts-' + s.id);
+    if (sts) {
+      const st = s.status === 'unknown' ? 'inactive' : s.status;
+      sts.innerHTML = '<span class="badge badge-' + st + '">' + s.status + '</span>';
+    }
+    const conns = document.getElementById('conns-' + s.id);
+    if (conns) conns.textContent = s.connections;
+    const resp = document.getElementById('resp-' + s.id);
+    if (resp) resp.textContent = s.response_time_ms === null ? '-' : s.response_time_ms;
+    const health = document.getElementById('health-' + s.id);
+    if (health) {
+      health.textContent = s.health_message || 'no data';
+      health.style.color = s.health_message ? '' : 'var(--dim)';
+    }
+    const act = document.getElementById('act-' + s.id);
+    if (act) {
+      const hasPending = s.pending;
+      const isPending = !!act.querySelector('.badge-inactive');
+      if (hasPending && !isPending) {
+        act.innerHTML = '<span class="badge badge-inactive">Menunggu Agent</span>';
+      } else if (!hasPending && isPending) {
+        act.innerHTML = IS_ADMIN
+          ? restartFormHtml(act.dataset.sid, act.dataset.svc, act.dataset.name)
+          : '&nbsp;';
+      }
+    }
+  }
+
+  for (const c of data.commands) {
+    const row = document.getElementById('cmd-' + c.id);
+    if (!row) continue;
+    const st = document.getElementById('cmd-st-' + c.id);
+    if (st) st.innerHTML = badgeHtml(c.status);
+    const rs = document.getElementById('cmd-rs-' + c.id);
+    if (rs) {
+      rs.dataset.status = c.status;
+      rs.textContent = c.status === 'success' || c.status === 'failed'
+        ? (c.result || c.status)
+        : (resultLabel[c.status] || c.status);
+    }
+  }
+}
+
+let _sysFetching = false;
+async function pollSystem() {
+  if (document.hidden || _sysFetching) return;
+  _sysFetching = true;
+  try {
+    const r = await fetch('/api/servers/' + SID + '/system', {credentials: 'same-origin'});
+    if (r.ok) {
+      const data = await r.json();
+      startAutoLog(data.units, data.extras);
+      renderSys(data);
+    }
+  } catch (e) { /* polling lanjut */ }
+  finally { _sysFetching = false; }
+}
+
+// ---------- hardware / network / accounts ----------
+function pctBar(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.style.width = Math.max(0, Math.min(100, val || 0)) + '%';
+}
+
+function sparkline(elId, values, color, maxVal) {
+  const svg = document.getElementById(elId);
+  if (!svg) return;
+  if (!values || values.length < 2) {
+    svg.innerHTML = '<span style="font-size:12px;color:var(--dim)">belum ada data</span>';
+    return;
+  }
+  const w = 300, h = 48;
+  const max = maxVal || Math.max(...values, 1);
+  const pts = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * w;
+    const y = h - (v / max) * (h - 4) - 2;
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  svg.innerHTML = '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" style="width:100%;height:48px;display:block">'
+    + '<rect width="' + w + '" height="' + h + '" rx="6" fill="var(--bg)"/>'
+    + '<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linejoin="round"/>'
+    + '</svg>';
+}
+
+function syncUnits(units, extras) {
+  const sel = document.getElementById('log-unit');
+  const current = new Set(Array.from(sel.options).map(o => o.value));
+  let changed = false;
+  const add = (u) => {
+    if (!u || current.has(u)) return;
+    const o = document.createElement('option');
+    o.value = u; o.textContent = u;
+    sel.appendChild(o);
+    current.add(u);
+    changed = true;
+  };
+  (extras || []).forEach(add);
+  (units || []).forEach(add);
+  return changed;
+}
+
+function renderSys(data) {
+  const sys = data.system || {};
+  const empty = document.getElementById('sys-empty');
+  const body = document.getElementById('sys-body');
+  const hasData = sys.cpu !== null && sys.cpu !== undefined;
+
+  empty.style.display = hasData ? 'none' : 'block';
+  body.style.display = hasData ? 'block' : 'none';
+  if (!hasData) return;
+
+  document.getElementById('sys-ts').textContent = data.ts ? 'update: ' + new Date(data.ts).toLocaleTimeString('id-ID') : '';
+
+  const cpu = sys.cpu;
+  document.getElementById('sys-cpu').textContent = cpu.toFixed(1) + '%';
+  pctBar('sys-cpu-bar', cpu);
+
+  const load1 = (sys.load1 !== null && sys.load1 !== undefined) ? sys.load1 : 0;
+  document.getElementById('sys-load').textContent =
+    '(' + (sys.load1 ?? 0).toFixed(2) + ' ' + (sys.load5 ?? 0).toFixed(2) + ' ' + (sys.load15 ?? 0).toFixed(2) + ')';
+
+  const memPct = (sys.mem_total > 0) ? (sys.mem_used / sys.mem_total) * 100 : 0;
+  document.getElementById('sys-mem').textContent = fmtBytes(sys.mem_used) + ' / ' + fmtBytes(sys.mem_total);
+  pctBar('sys-mem-bar', memPct);
+
+  const swapPct = (sys.swap_total > 0) ? (sys.swap_used / sys.swap_total) * 100 : 0;
+  document.getElementById('sys-swap').textContent = (sys.swap_total > 0)
+    ? fmtBytes(sys.swap_used) + ' / ' + fmtBytes(sys.swap_total)
+    : 'tidak ada';
+  pctBar('sys-swap-bar', swapPct);
+
+  document.getElementById('sys-procs').textContent = sys.procs ?? '-';
+  document.getElementById('sys-uptime').textContent = fmtUptime(sys.uptime);
+  document.getElementById('sys-kernel').textContent = data.kernel ? 'kernel ' + data.kernel : '';
+
+  renderApt(data);
+
+  // riwayat
+  const series = data.series || [];
+  sparkline('spark-cpu', series.map(s => s.cpu), 'var(--blue)', 100);
+  sparkline('spark-mem', series.map(s => s.mem_total > 0 ? (s.mem_used / s.mem_total) * 100 : 0), 'var(--green)', 100);
+
+  // disk
+  const disks = sys.disks || [];
+  const dw = document.getElementById('disks-wrap');
+  const dt = document.getElementById('disks-table').querySelector('tbody');
+  dw.style.display = disks.length ? 'block' : 'none';
+  dt.innerHTML = disks.map(d =>
+    '<tr><td class="mono">' + d.mount + '</td><td class="mono">' + d.type + '</td>'
+    + '<td>' + fmtBytes(d.used) + ' / ' + fmtBytes(d.total) + '</td>'
+    + '<td><div class="meter"><div class="meter-bar" style="width:' + Math.min(100, d.pct) + '%;'
+    + (d.pct >= 90 ? 'background:var(--red)' : '') + '"></div></div>'
+    + '<span style="font-size:11px;color:var(--dim)">' + d.pct + '%</span></td></tr>'
+  ).join('');
+
+  // jaringan
+  const net = sys.net || [];
+  const nt = document.getElementById('net-table');
+  const ne = document.getElementById('net-empty');
+  nt.style.display = net.length ? 'table' : 'none';
+  ne.style.display = net.length ? 'none' : 'block';
+  nt.querySelector('tbody').innerHTML = net.map(n =>
+    '<tr><td class="mono"><strong>' + n.iface + '</strong></td>'
+    + '<td><span class="dot ' + (n.is_up ? 'up' : 'down') + '"></span> ' + (n.is_up ? 'up' : 'down') + '</td>'
+    + '<td class="mono">' + fmtBytes(n.rx) + '</td>'
+    + '<td class="mono">' + fmtBytes(n.tx) + '</td>'
+    + '<td class="mono">' + fmtBytes(n.rx_rate) + '/s</td>'
+    + '<td class="mono">' + fmtBytes(n.tx_rate) + '/s</td></tr>'
+  ).join('');
+
+  // akun
+  const acc = data.accounts || [];
+  const at = document.getElementById('acc-table');
+  const ae = document.getElementById('acc-empty');
+  at.style.display = acc.length ? 'table' : 'none';
+  ae.style.display = acc.length ? 'none' : 'block';
+  at.querySelector('tbody').innerHTML = acc.map(a =>
+    '<tr><td><strong>' + a.user + '</strong></td>'
+    + '<td class="mono">' + a.uid + '</td>'
+    + '<td class="mono">' + (a.shell || '-') + '</td>'
+    + '<td style="font-size:12px;color:var(--dim)">' + (a.last_login || '-') + '</td>'
+    + '<td style="font-size:12px;color:var(--dim)">'
+    + (a.sessions && a.sessions.length ? a.sessions.map(s =>
+        (s.tty || '') + (s.from ? ' @ ' + s.from : '')).join('<br>') : '-')
+    + '</td>'
+    + '<td><a href="/servers/' + SID + '/user/' + encodeURIComponent(a.user) + '" class="btn btn-ghost btn-sm">Rincian</a></td></tr>'
+  ).join('');
+
+  syncUnits(data.units, data.extras);
+}
+
+// ---------- grafik kinerja (riwayat) ----------
+const PERF_COLORS = {cpu: 'var(--blue)', mem: 'var(--green)', swap: 'var(--yellow)', load: 'var(--red)'};
+let perfRange = '24h';
+
+function fmtAxisTime(t) {
+  const d = new Date(t * 1000);
+  const hh = ('0' + d.getHours()).slice(-2), mm = ('0' + d.getMinutes()).slice(-2);
+  const now = Date.now() / 1000;
+  if (now - t > 48 * 3600) {
+    return d.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+  }
+  return hh + ':' + mm;
+}
+
+function renderLineChart(elId, points, valueOf, yfmt, color, fixedMax) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const W = 600, H = 150, PL = 46, PR = 12, PT = 10, PB = 22;
+  const items = [];
+  for (const p of points) {
+    const v = valueOf(p);
+    if (v === null || v === undefined || isNaN(v)) continue;
+    items.push({p, v});
+  }
+  if (!items.length) {
+    el.innerHTML = '<span style="font-size:12px;color:var(--dim)">belum ada data</span>';
+    return;
+  }
+  const maxV = fixedMax || (Math.max(...items.map(i => i.v)) * 1.15 || 1);
+  const t0 = points[0].t, t1 = Math.max(points[points.length - 1].t, t0 + 1);
+  const iw = W - PL - PR, ih = H - PT - PB;
+  const X = t => PL + ((t - t0) / (t1 - t0)) * iw;
+  const Y = v => PT + ih - (Math.min(v, maxV) / maxV) * ih;
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:150px;display:block">';
+  const steps = 4;
+  for (let g = 0; g <= steps; g++) {
+    const v = maxV * g / steps;
+    const y = Y(v);
+    svg += '<line x1="' + PL + '" y1="' + y + '" x2="' + (W - PR) + '" y2="' + y + '" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 3"/>';
+    svg += '<text x="' + (PL - 6) + '" y="' + (y + 3) + '" text-anchor="end" fill="var(--dim)" font-size="10" font-family="monospace">' + yfmt(v) + '</text>';
+  }
+  const TICKS = 4;
+  for (let g = 0; g < TICKS; g++) {
+    const t = t0 + (t1 - t0) * g / (TICKS - 1);
+    const x = X(t);
+    const anchor = g === 0 ? 'start' : (g === TICKS - 1 ? 'end' : 'middle');
+    svg += '<text x="' + x + '" y="' + (H - 5) + '" text-anchor="' + anchor + '" fill="var(--dim)" font-size="10" font-family="monospace">' + fmtAxisTime(t) + '</text>';
+  }
+  const ptsPoly = items.map(i => X(i.p.t).toFixed(1) + ',' + Y(i.v).toFixed(1)).join(' ');
+  svg += '<polyline points="' + ptsPoly + '" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>';
+  svg += '<text x="' + (W - PR) + '" y="' + (PT + 10) + '" text-anchor="end" fill="' + color + '" font-size="11" font-family="monospace">' + yfmt(items[items.length - 1].v) + '</text>';
+  svg += '</svg>';
+  el.innerHTML = svg;
+}
+
+function pctOf(p) {
+  return p.mem_total > 0 ? (p.mem_used / p.mem_total) * 100 : null;
+}
+function swapPct(p) {
+  return p.swap_total > 0 ? (p.swap_used / p.swap_total) * 100 : null;
+}
+
+async function loadPerf(range) {
+  perfRange = range || perfRange;
+  document.querySelectorAll('#perf-ranges .btn').forEach(b => {
+    const on = b.dataset.range === perfRange;
+    b.classList.toggle('is-on', on);
+  });
+  let data;
+  try {
+    const r = await fetch('/api/servers/' + SID + '/perf?range=' + perfRange, {credentials: 'same-origin'});
+    if (!r.ok) return;
+    data = await r.json();
+  } catch (e) { return; }
+  const pts = data.points || [];
+  document.getElementById('perf-empty').style.display = pts.length ? 'none' : 'block';
+  renderLineChart('chart-cpu', pts, p => p.cpu, v => v.toFixed(0) + '%', PERF_COLORS.cpu, 100);
+  renderLineChart('chart-mem', pts, pctOf, v => v.toFixed(0) + '%', PERF_COLORS.mem, 100);
+  renderLineChart('chart-swap', pts, swapPct, v => v.toFixed(0) + '%', PERF_COLORS.swap, 100);
+  renderLineChart('chart-load', pts, p => p.load, v => v.toFixed(2), PERF_COLORS.load, 0);
+}
+
+// ---------- grafik layanan (riwayat per-service) ----------
+let svcRange = '24h';
+
+function renderSvcStrip(elId, points) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (!points || points.length < 2) { el.innerHTML = ''; return; }
+  const W = 600, H = 18, PL = 46, PR = 12;
+  const t0 = points[0].t, t1 = points[points.length - 1].t;
+  const iw = W - PL - PR;
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:18px;display:block">';
+  const seg = t1 - t0;
+  const eachW = iw / (points.length - 1 || 1) * 0.9;
+  for (const p of points) {
+    const x0 = PL + ((p.t - t0) / (seg || 1)) * iw;
+    const ratio = p.up_ratio === null || p.up_ratio === undefined ? null : p.up_ratio;
+    const col = ratio === null ? 'var(--dim)'
+      : ratio >= 0.5 ? 'var(--green)' : 'var(--red)';
+    s += '<rect x="' + x0.toFixed(1) + '" y="0" width="' + Math.max(1, eachW).toFixed(1) + '" height="' + H + '" fill="' + col + '" opacity="0.6" rx="1"/>';
+  }
+  s += '<text x="' + (PL - 6) + '" y="' + (H - 4) + '" text-anchor="end" fill="var(--dim)" font-size="9" font-family="monospace">status</text>';
+  s += '</svg>';
+  el.innerHTML = s;
+}
+
+async function loadSvcHistory() {
+  const sel = document.getElementById('svc-graph-sel');
+  if (!sel || !sel.value) return;
+  document.querySelectorAll('#svc-ranges .btn').forEach(b =>
+    b.classList.toggle('is-on', b.dataset.range === svcRange));
+  let data;
+  try {
+    const r = await fetch('/api/servers/' + SID + '/services/' + sel.value + '/history?range=' + svcRange, {credentials: 'same-origin'});
+    if (!r.ok) return;
+    data = await r.json();
+  } catch (e) { return; }
+  const svc = data.service || {};
+  const now = data.now || {};
+  const pts = data.points || [];
+  document.getElementById('svc-empty').style.display = pts.length ? 'none' : 'block';
+  document.getElementById('svc-current').textContent =
+    (svc.name || '') + ' — sekarang: ' + (now.status || '-')
+    + (now.connections ? ' · ' + now.connections + ' koneksi' : '')
+    + (now.response_time_ms !== null && now.response_time_ms !== undefined ? ' · ' + now.response_time_ms + ' ms' : '');
+  renderLineChart('chart-svc-rt', pts, p => p.rt, v => v.toFixed(0) + ' ms', 'var(--blue)', 0);
+  renderLineChart('chart-svc-conn', pts, p => p.conns, v => Math.round(v) + '', 'var(--green)', 0);
+  renderSvcStrip('svc-status-strip', pts);
+}
+
+function primeSvcGraph(services) {
+  const sel = document.getElementById('svc-graph-sel');
+  if (!sel || !services || !services.length || sel.options.length > 1) return;
+  const prev = sel.value;
+  sel.innerHTML = services.map(s => '<option value="' + s.id + '">' + s.name + ' (port ' + s.port + ')</option>').join('');
+  sel.value = prev && services.some(s => String(s.id) === prev) ? prev : String(services[0].id);
+  loadSvcHistory();
+}
+
+// ---------- log layanan (auto muat + refresh berkala) ----------
+let logVersion = 0;
+let logRunning = false;
+
+function sleepMs(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function setLogState(t) {
+  const el = document.getElementById('log-state');
+  if (el) el.textContent = t || '';
+}
+
+let logPinned = true;
+{
+  const pre = document.getElementById('log-pre');
+  pre.addEventListener('scroll', () => {
+    logPinned = pre.scrollHeight - pre.scrollTop - pre.clientHeight < 60;
+  });
+}
+
+function pickDefaultUnit(units, extras) {
+  const saved = localStorage.getItem('pantau-unit-' + SID);
+  if (saved && (units.includes(saved) || (extras || []).includes(saved))) return saved;
+  const priority = ['mariadb', 'mysql', 'nginx', 'sshd', 'ssh', 'docker'];
+  for (const p of priority) if (units.includes(p)) return p;
+  return units[0] || (extras && extras[0]) || '';
+}
+
+function changeUnit() {
+  const sel = document.getElementById('log-unit');
+  const pre = document.getElementById('log-pre');
+  if (sel.value) {
+    try { localStorage.setItem('pantau-unit-' + SID, sel.value); } catch (e) {}
+    pre.textContent = 'Memuat log ' + sel.value + '…';
+    pre.style.display = 'block';
+    document.getElementById('log-empty').style.display = 'none';
+  }
+  logVersion++;               // membatalkan rangkaian lama
+  chainNext(logVersion);      // mulai rangkaian baru segera
+}
+
+async function chainNext(version) {
+  const sel = document.getElementById('log-unit');
+  const unit = sel.value;
+  if (!unit || version !== logVersion) return;
+  const lines = parseInt(document.getElementById('log-lines').value, 10) || 200;
+
+  let rid;
+  try {
+    const r = await fetch('/api/logs/request', {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({server_id: SID, unit: unit, lines: lines}),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status));
+    rid = j.id;
+  } catch (e) {
+    setLogState('gagal kirim: ' + e.message);
+    scheduleNext(version);
+    return;
+  }
+
+  setLogState('memuat…');
+  const started = Date.now();
+  while (true) {
+    if (version !== logVersion) return;   // unit diganti di tengah proses
+    if (Date.now() - started > 45000) {   // agent offline / tidak merespons
+      const pre = document.getElementById('log-pre');
+      pre.style.display = 'block';
+      pre.textContent = '[Agen Pantau tidak merespons dalam 45 detik — periksa status agen di server ini. Pilih unit lain untuk mencoba lagi.]';
+      setLogState('offline');
+      logRunning = false;                 // izinkan coba lagi saat unit diganti
+      return;
+    }
+    await sleepMs(1200);
+    let j;
+    try {
+      const r = await fetch('/api/logs/request/' + rid, {credentials: 'same-origin'});
+      j = await r.json();
+    } catch (e) {
+      continue;
+    }
+    if (version !== logVersion) return;
+
+    if (j.status === 'success') {
+      const pre = document.getElementById('log-pre');
+      pre.style.display = 'block';
+      document.getElementById('log-empty').style.display = 'none';
+      pre.textContent = j.result || '[log kosong]';
+      if (logPinned) pre.scrollTop = pre.scrollHeight;   // kunci ke bagian terbaru
+      setLogState('');
+      scheduleNext(version);
+      return;
+    }
+    if (j.status === 'failed') {
+      const pre = document.getElementById('log-pre');
+      pre.style.display = 'block';
+      document.getElementById('log-empty').style.display = 'none';
+      pre.textContent = j.result || '[gagal membaca log]';
+      setLogState('gagal');
+      scheduleNext(version);
+      return;
+    }
+    setLogState(j.status === 'executing' ? 'memproses…' : 'antrian…');
+  }
+}
+
+function scheduleNext(version) {
+  setTimeout(() => {
+    if (version === logVersion) chainNext(version);
+  }, 4000);
+}
+
+function startAutoLog(units, extras) {
+  if (logRunning) return;
+  const sel = document.getElementById('log-unit');
+  if (!sel.options.length || !units.length) return;
+  sel.value = pickDefaultUnit(units, extras);
+  if (!sel.value) return;
+  logRunning = true;
+  logVersion++;
+  chainNext(logVersion);
+}
+
+async function poll() {
+  try {
+    const r = await fetch('/api/servers/' + SID + '/overview', {credentials: 'same-origin'});
+    if (r.ok) patch(await r.json());
+  } catch (e) { /* polling lanjut */ }
+}
+
+setInterval(poll, POLL_MS);
+setTimeout(poll, 500);
+setInterval(pollSystem, 5000);
+setTimeout(pollSystem, 700);
+
+document.querySelectorAll('#perf-ranges .btn').forEach(b =>
+  b.addEventListener('click', () => loadPerf(b.dataset.range)));
+setTimeout(() => loadPerf('24h'), 900);
+setInterval(() => { if (!document.hidden) loadPerf(); }, 30000);
+
+const svcSel = document.getElementById('svc-graph-sel');
+if (svcSel) svcSel.addEventListener('change', loadSvcHistory);
+document.querySelectorAll('#svc-ranges .btn').forEach(b =>
+  b.addEventListener('click', () => { svcRange = b.dataset.range; loadSvcHistory(); }));
+setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
+</script>
+{% endblock %}

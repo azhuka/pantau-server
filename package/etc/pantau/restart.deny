@@ -1,0 +1,37 @@
+# pantau-restart deny-list
+# =========================
+# Daftar unit/pattern yang TIDAK boleh di-restart/start/stop lewat dashboard.
+# Matching: PREFIX — baris "systemd-" memblokir semua unit diawali "systemd-".
+#
+# Aturan baku: service yang listen di port boleh dikelola.
+# Unit kritis infra di bawah TIDAK listen, tapi restart-nya berisiko
+# memutus jaringan/logging/autentikasi sistem.
+
+# Systemd & layanan dasar
+systemd-
+journald
+dbus
+polkit
+udev
+
+# Jaringan (restart bisa memutus semua koneksi)
+NetworkManager
+networkd
+netplan
+systemd-resolved
+systemd-networkd
+
+# Logging & waktu
+rsyslog
+chrony
+ntpd
+systemd-timesyncd
+
+# Penjadwal & sistem dasar
+cron
+crond
+anacron
+getty
+serial-getty
+console-getty
+login

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if server else 'Tambah' }} Server{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h2>{{ 'Edit' if server else 'Tambah' }} Server</h2>
+  <a href="/servers" class="btn btn-ghost">&larr; Kembali</a>
+</div>
+
+<div class="card">
+  <form method="POST" action="{{ '/servers/%d/edit'|format(server.id) if server else '/servers/add' }}">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Hostname</label>
+        <input type="text" name="hostname" value="{{ server.hostname if server else '' }}" required placeholder="web-prod-01">
+      </div>
+      <div class="form-group">
+        <label>IP Address</label>
+        <input type="text" name="ip_address" value="{{ server.ip_address if server else '' }}" required placeholder="192.168.1.10">
+      </div>
+    </div>
+    {% if server %}
+    <div class="form-group">
+      <label>Status</label>
+      <select name="is_active">
+        <option value="1" {% if server.is_active %}selected{% endif %}>Active</option>
+        <option value="0" {% if not server.is_active %}selected{% endif %}>Disabled</option>
+      </select>
+    </div>
+    {% endif %}
+    <button type="submit" class="btn btn-primary">{{ 'Simpan Perubahan' if server else 'Tambah Server' }}</button>
+  </form>
+</div>
+
+{% if server %}
+<div class="card" style="border-color:var(--border)">
+  <div class="card-header">
+    <h3>API Key</h3>
+    <form method="POST" action="/servers/{{ server.id }}/regenerate-key" onsubmit="return confirmDelete('Generate API Key baru? Agent harus di-update dengan key baru, dan key lama dibatalkan.')">
+      <button class="btn btn-danger btn-sm">Regenerate Key</button>
+    </form>
+  </div>
+  <div class="api-key-box">{{ server._key_fp }}</div>
+  <p style="font-size:12px;color:var(--dim);margin-top:8px">
+    Key disimpan sebagai hash (tidak bisa ditampilkan lagi). Untuk melihat key baru, gunakan <strong>Regenerate Key</strong> — key akan ditampilkan satu kali.
+  </p>
+</div>
+{% endif %}
+{% endblock %}

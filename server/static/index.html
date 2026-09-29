@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pantau Server</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e4e6eb;
+    --dim: #8b8fa3;
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,0.12);
+    --red: #ef4444;
+    --red-bg: rgba(239,68,68,0.12);
+    --blue: #3b82f6;
+    --blue-bg: rgba(59,130,246,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .header { padding: 20px 32px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 20px; font-weight: 600; }
+  .header h1 span { color: var(--blue); }
+  .header-right { display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--dim); }
+  .refresh-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .summary { display: flex; gap: 16px; padding: 20px 32px; }
+  .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 24px; flex: 1; }
+  .summary-card .label { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .summary-card .value { font-size: 28px; font-weight: 700; }
+  .summary-card .value.green { color: var(--green); }
+  .summary-card .value.red { color: var(--red); }
+
+  .content { padding: 0 32px 32px; }
+  .section-title { font-size: 14px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; margin-top: 8px; }
+
+  .server-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); gap: 16px; }
+
+  .server-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .server-card.up { border-left: 3px solid var(--green); }
+  .server-card.down { border-left: 3px solid var(--red); }
+  .server-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+  .server-name { font-size: 16px; font-weight: 600; }
+  .server-ip { font-size: 12px; color: var(--dim); margin-top: 2px; font-family: monospace; }
+  .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+  .status-badge.up { background: var(--green-bg); color: var(--green); }
+  .status-badge.down { background: var(--red-bg); color: var(--red); }
+
+  .services-table { width: 100%; }
+  .services-table th { text-align: left; padding: 10px 20px; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
+  .services-table td { padding: 12px 20px; font-size: 13px; border-top: 1px solid var(--border); }
+  .services-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .svc-status { display: inline-flex; align-items: center; gap: 6px; }
+  .svc-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .svc-dot.up { background: var(--green); }
+  .svc-dot.down { background: var(--red); }
+  .svc-dot.unknown { background: var(--dim); }
+  .mono { font-family: monospace; font-size: 12px; color: var(--dim); }
+  .conn-count { font-weight: 600; font-size: 14px; }
+
+  .last-seen { font-size: 11px; color: var(--dim); padding: 8px 20px; text-align: right; border-top: 1px solid var(--border); }
+
+  .empty-state { text-align: center; padding: 80px 20px; color: var(--dim); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state p { font-size: 14px; max-width: 400px; margin: 0 auto; line-height: 1.6; }
+
+  .chart-section { margin-top: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+  canvas { width: 100% !important; height: 200px !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>&#9673;</span> Pantau Server</h1>
+  <div class="header-right">
+    <span><span class="refresh-dot"></span> Auto-refresh 10s</span>
+    <span id="clock"></span>
+  </div>
+</div>
+
+<div class="summary" id="summary"></div>
+
+<div class="content">
+  <div class="section-title">Monitored Servers</div>
+  <div class="server-grid" id="servers"></div>
+  <div class="empty-state" id="empty" style="display:none">
+    <div class="icon">&#9881;</div>
+    <p>Belum ada server yang terdaftar.<br>Jalankan agent Go di server target untuk mulai monitoring.</p>
+  </div>
+</div>
+
+<script>
+const API = '';
+let previousData = null;
+
+function timeAgo(iso) {
+  if (!iso) return 'never';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 5) return 'just now';
+  if (diff < 60) return Math.floor(diff) + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+function renderSummary(servers) {
+  const total = servers.length;
+  const up = servers.filter(s => s.overall_status === 'up').length;
+  const down = total - up;
+  let totalConns = 0;
+  servers.forEach(s => s.services.forEach(svc => totalConns += svc.connections));
+
+  document.getElementById('summary').innerHTML = `
+    <div class="summary-card"><div class="label">Total Servers</div><div class="value">${total}</div></div>
+    <div class="summary-card"><div class="label">Online</div><div class="value green">${up}</div></div>
+    <div class="summary-card"><div class="label">Offline</div><div class="value red">${down}</div></div>
+    <div class="summary-card"><div class="label">Active Connections</div><div class="value">${totalConns}</div></div>
+  `;
+}
+
+function renderServers(servers) {
+  const el = document.getElementById('servers');
+  const empty = document.getElementById('empty');
+
+  if (servers.length === 0) {
+    el.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  el.innerHTML = servers.map(s => {
+    const svcRows = s.services.map(svc => `
+      <tr>
+        <td><span class="svc-status"><span class="svc-dot ${svc.status}"></span>${svc.name}</span></td>
+        <td class="mono">${svc.port}</td>
+        <td class="mono">${svc.process}</td>
+        <td class="conn-count">${svc.connections}</td>
+        <td class="mono">${timeAgo(svc.last_check)}</td>
+      </tr>
+    `).join('');
+
+    return `
+      <div class="server-card ${s.overall_status}">
+        <div class="server-header">
+          <div>
+            <div class="server-name">${s.hostname}</div>
+            <div class="server-ip">${s.ip_address}</div>
+          </div>
+          <span class="status-badge ${s.overall_status}">${s.overall_status}</span>
+        </div>
+        <table class="services-table">
+          <thead><tr><th>Service</th><th>Port</th><th>Process</th><th>Conns</th><th>Last Check</th></tr></thead>
+          <tbody>${svcRows}</tbody>
+        </table>
+        <div class="last-seen">Last seen: ${timeAgo(s.last_seen)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function fetchData() {
+  try {
+    const res = await fetch(API + '/api/servers');
+    if (!res.ok) throw new Error(res.statusText);
+    const data = await res.json();
+    previousData = data;
+    renderSummary(data);
+    renderServers(data);
+  } catch (e) {
+    console.error('Fetch error:', e);
+  }
+}
+
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('id-ID');
+}
+
+fetchData();
+setInterval(fetchData, 10000);
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+</body>
+</html>

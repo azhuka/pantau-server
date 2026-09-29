@@ -1,0 +1,22 @@
+# Hak minimal untuk user 'pantau' (Agen Pantau)
+#
+# 1. Read-only "ss" — supaya agent non-root tetap bisa melihat nama proses
+#    milik user lain (deteksi service lengkap). /usr/bin/ss hanya membaca
+#    info jaringan; tidak bisa menulis file / mengeksekusi sesuatu.
+# 2. Wrapper pantau-restart — jalur terbatas untuk restart/start/stop.
+#    Argumen divalidasi & dibatasi deny-list; bukan shell passthrough.
+# 3. Wrapper pantau-history — jalur terbatas baca ~/.bash_history user
+#    (nama user divalidasi; hanya path /home/<user>/.bash_history).
+# 4. pantau-apt — wrapper sempit utk tombol "Update"/"Upgrade" paket OS pada
+#    Dashboard. Hanya menerima argumen update/upgrade (divalidasi wrapper,
+#    bukan shell passthrough); sudo NOPASSWD satu perintah eksplisit.
+# 5. pantau-firewall — jalur sempit blokir IP (iptables) utk mitigasi
+#    serangan SSH. IP divalidasi keras (IPv4 publik saja, bukan privat).
+#
+# Perintah lain TIDAK diizinkan (sudo biasa tetap butuh password root).
+Defaults:pantau !requiretty
+pantau ALL=(root) NOPASSWD:/usr/bin/ss
+pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-restart
+pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-history
+pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-apt
+pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-firewall

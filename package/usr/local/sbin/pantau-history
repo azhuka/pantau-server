@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+#
+# pantau-history - Wrapper baca riwayat perintah untuk Agen Pantau.
+#
+# Alasan wrapper ini ada:
+#   - Home user lain umumnya mode 700 -> hanya root yang bisa membaca.
+#   - Jalur sudo NOPASSWD yang SEMPIT (bukan "cat *").
+#   - Validasi nama user ketat; hanya membaca file history di bawah
+#     /home/<user> atau /root. Mendukung bash, zsh, dan fish.
+#
+# Penggunaan (hanya dipanggil agent):
+#   pantau-history <user>
+#
+# Precedensi file: .bash_history -> .zsh_history -> .local/share/fish/fish_history
+# Output: isi mentah file terpilih (rc 0). Kode keluar:
+#   2 = argumen tidak valid, 3 = home/history tidak ditemukan
+#
+set -u
+
+USER_="${1:-}"
+
+# --- Sanitasi nama user ---
+[ -n "$USER_" ] || { echo "nama user kosong" >&2; exit 2; }
+[ "${#USER_}" -le 32 ] || { echo "nama user terlalu panjang" >&2; exit 2; }
+case "$USER_" in
+    *[!a-zA-Z0-9_.-]*) echo "nama user tidak valid: '$USER_'" >&2; exit 2 ;;
+esac
+
+# --- Petakan user -> direktori home (hanya dua lokasi yang sah) ---
+case "$USER_" in
+    root) HOME_DIR="/root" ;;
+    *)    HOME_DIR="/home/$USER_" ;;
+esac
+[ -d "$HOME_DIR" ] || { echo "home tidak ditemukan" >&2; exit 3; }
+
+# --- Cari file history pertama yang ada & berisi (urutan tetap) ---
+SRC=""
+for p in \
+    "$HOME_DIR/.bash_history" \
+    "$HOME_DIR/.zsh_history" \
+    "$HOME_DIR/.local/share/fish/fish_history"; do
+    if [ -s "$p" ] && [ -r "$p" ]; then SRC="$p"; break; fi
+done
+[ -n "$SRC" ] || { echo "history tidak ditemukan" >&2; exit 3; }
+
+# Batasi ukuran agar agen tidak kewalahan memori (maks 512 KB).
+head -c 524288 "$SRC"

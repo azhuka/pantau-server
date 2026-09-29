@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Log Dashboard - Pantau Server{% endblock %}
+{% block content %}
+<div class="topbar">
+  <h2>Log &amp; Performa Server Pusat</h2>
+  <div class="mono" style="font-size:12px"><span id="sys-host">-</span> &middot; up <span id="sys-up">-</span></div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="label">CPU Usage</div>
+    <div class="value" id="sys-cpu">-</div>
+    <div style="margin-top:8px" class="meter"><div class="meter-bar" id="sys-cpu-bar" style="width:0%"></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Memory</div>
+    <div class="value" id="sys-mem">-</div>
+    <div style="margin-top:8px" class="meter"><div class="meter-bar" id="sys-mem-bar" style="width:0%"></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Load Average (1/5/15)</div>
+    <div class="value" id="sys-load" style="font-size:16px">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Swap</div>
+    <div class="value" id="sys-swap" style="font-size:16px">-</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Top Proses (CPU)</h3></div>
+  <table>
+    <thead><tr><th>PID</th><th>Proses</th><th>State</th><th>CPU %</th><th>Mem RSS</th></tr></thead>
+    <tbody id="sys-procs"><tr><td colspan="5" class="mono">memuat…</td></tr></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Disk</h3></div>
+  <table>
+    <thead><tr><th>Mount</th><th>Type</th><th>Total</th><th>Terpakai</th><th>%</th></tr></thead>
+    <tbody id="sys-disks"><tr><td colspan="5" class="mono">memuat…</td></tr></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Log Service (journald) — tail live per unit</h3>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="svc-unit" style="padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px"></select>
+      <button class="btn btn-ghost btn-sm" onclick="svcLoad()">Muat ulang</button>
+    </div>
+  </div>
+  <pre id="svclog" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;height:55vh;overflow:auto;white-space:pre;color:var(--text)">Memuat daftar service…</pre>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Log Aplikasi Pusat — {{ log_file }}</h3>
+    <span id="status" class="badge badge-up" style="opacity:.2;transition:opacity .3s">live</span>
+  </div>
+  <pre id="logview" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;height:60vh;overflow:auto;white-space:pre;color:var(--text)">Memuat…</pre>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const LINES = 400, POLL_MS = 3000;
+const el = document.getElementById('logview');
+let pinned = true;
+
+const svc = document.getElementById('svclog');
+const unitSel = document.getElementById('svc-unit');
+let svcPinned = true, svcUnit = 'mariadb';
+svc.addEventListener('scroll', () => { svcPinned = svc.scrollHeight - svc.scrollTop - svc.clientHeight < 60; });
+
+function nearBottom() {
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+}
+el.addEventListener('scroll', () => { pinned = nearBottom(); });
+
+function renderLog(lines) {
+  el.textContent = lines.length ? lines.join('\n') : '(log kosong)';
+  if (pinned) el.scrollTop = el.scrollHeight;
+}
+
+function fmtBytes(b) {
+  if (b == null) return '-';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+  return (b / 1073741824).toFixed(2) + ' GB';
+}
+
+function fmtUptime(s) {
+  if (s == null) return '-';
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+  return d + 'd ' + h + 'h ' + m + 'm';
+}
+
+function pctBar(id, barId, pct) {
+  const t = document.getElementById(id);
+  if (t) t.textContent = pct == null ? '-' : pct.toFixed(1) + '%';
+  const b = document.getElementById(barId);
+  if (b) b.style.width = Math.min(100, Math.max(0, pct == null ? 0 : pct)) + '%';
+}
+
+function patchSys(d) {
+  document.getElementById('sys-host').textContent = d.hostname;
+  document.getElementById('sys-up').textContent = fmtUptime(d.uptime);
+  pctBar('sys-cpu', 'sys-cpu-bar', d.cpu.cpu_percent);
+  const m = d.memory;
+  pctBar('sys-mem', 'sys-mem-bar', m.total ? m.used / m.total * 100 : 0);
+  document.getElementById('sys-mem').textContent = fmtBytes(m.used) + ' / ' + fmtBytes(m.total);
+  const sw = d.memory.swap_total;
+  document.getElementById('sys-swap').textContent = sw ? fmtBytes(d.memory.swap_used) + ' / ' + fmtBytes(sw) : 'disabled';
+  document.getElementById('sys-load').textContent = d.loadavg.length ? d.loadavg.map(x => x.toFixed(2)).join(' / ') : '-';
+
+  const pt = document.getElementById('sys-procs');
+  if (d.processes.length) {
+    pt.innerHTML = d.processes.map(p =>
+      '<tr><td class="mono">' + p.pid + '</td><td><strong>' + p.comm + '</strong></td>'
+      + '<td class="mono">' + p.state + '</td>'
+      + '<td class="mono">' + p.cpu.toFixed(1) + '</td>'
+      + '<td class="mono">' + fmtBytes(p.rss) + '</td></tr>'
+    ).join('');
+  } else {
+    pt.innerHTML = '<tr><td colspan="5" class="mono">menghitung…</td></tr>';
+  }
+
+  const dt = document.getElementById('sys-disks');
+  dt.innerHTML = d.disks.map(x =>
+    '<tr><td class="mono">' + x.mount + '</td><td>' + x.fstype + '</td>'
+    + '<td class="mono">' + fmtBytes(x.total) + '</td>'
+    + '<td class="mono">' + fmtBytes(x.used) + '</td>'
+    + '<td>' + x.percent.toFixed(1) + '%</td></tr>'
+  ).join('') || '<tr><td colspan="5" class="mono">tidak ada disk terdeteksi</td></tr>';
+}
+
+async function pollLog() {
+  try {
+    const r = await fetch('/api/logs/dashboard?lines=' + LINES, {credentials: 'same-origin'});
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d.exists) {
+      el.textContent = '(file log belum ada: ' + (d.path || '-') + ')';
+      return;
+    }
+    renderLog(d.lines);
+    const st = document.getElementById('status');
+    st.style.opacity = 1;
+    setTimeout(() => { st.style.opacity = .2; }, 300);
+  } catch (e) { /* abaikan */ }
+}
+
+async function pollSys() {
+  try {
+    const r = await fetch('/api/system/status', {credentials: 'same-origin'});
+    if (r.ok) patchSys(await r.json());
+  } catch (e) { /* abaikan */ }
+}
+
+const extraLabels = {SYSLOG: 'syslog (file)', AUTH: 'auth.log (file)', SYSTEM: 'journal boot (semua)'};
+
+async function svcInit() {
+  try {
+    const r = await fetch('/api/logs/services', {credentials: 'same-origin'});
+    if (!r.ok) return;
+    const d = await r.json();
+    unitSel.innerHTML = ['', ...d.units, ...d.extras].map(u =>
+      u ? '<option value="' + u + '">' + (extraLabels[u] || u) + '</option>' : ''
+    ).join('');
+    svcUnit = (d.units.includes('mariadb') ? 'mariadb' : (d.units.includes('ssh') ? 'ssh' : d.units[0] || 'SYSTEM'));
+    unitSel.value = svcUnit;
+  } catch (e) { /* abaikan */ }
+  svcLoad();
+}
+
+unitSel.addEventListener('change', () => {
+  svcUnit = unitSel.value || 'mariadb';
+  svc.innerHTML = 'memuat…';
+  svcLoad();
+});
+
+async function svcLoad() {
+  try {
+    const r = await fetch('/api/logs/service?unit=' + encodeURIComponent(svcUnit) + '&lines=300', {credentials: 'same-origin'});
+    if (!r.ok) { svc.textContent = '(gagal memuat log service)'; return; }
+    const d = await r.json();
+    svc.textContent = d.lines.length ? d.lines.join('\n') : '(log kosong)';
+    if (svcPinned) svc.scrollTop = svc.scrollHeight;
+  } catch (e) { /* abaikan */ }
+}
+
+setInterval(pollLog, POLL_MS);
+setTimeout(pollLog, 300);
+setInterval(pollSys, POLL_MS);
+setTimeout(pollSys, 300);
+setInterval(() => { if (unitSel.value) { svcUnit = unitSel.value; svcLoad(); } }, 5000);
+svcInit();
+</script>
+{% endblock %}

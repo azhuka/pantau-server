@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 style="margin:0 0 6px">Audit Log</h2>
+<p style="color:var(--dim);font-size:13px;margin:0 0 20px">
+  Jejak aksi admin: login, kelola server/service/user, dan perintah remote (restart, blokir IP, update paket, restart agen)
+  beserta siapa yang mengeluarkannya dan hasilnya.
+</p>
+
+<div class="card">
+  <form method="get" action="/audit" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    <select name="action" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
+      <option value="">Semua aksi</option>
+      {% for key, label in actions %}
+      <option value="{{ key }}" {% if action == key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="search" name="q" value="{{ q }}" placeholder="Cari user / target / hasil…"
+           style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:240px;flex:1">
+    <button class="btn btn-ghost btn-sm" type="submit">Terapkan</button>
+    <a href="/audit" class="btn btn-ghost btn-sm" style="margin-left:auto{% if not q and not action %};display:none{% endif %}">Reset</a>
+  </form>
+
+  <table>
+    <thead>
+      <tr><th style="width:150px">Waktu</th><th>User</th><th>Aksi</th><th>Target</th><th style="width:80px">Status</th><th>Hasil</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="mono" style="white-space:nowrap">{{ r.t.strftime('%d %b %Y %H:%M:%S') }}</td>
+        <td><span class="mono">{{ r.user }}</span></td>
+        <td>
+          {% if r.kind == 'cmd' %}
+            <span class="badge badge-inactive">{{ r.label }}</span>
+          {% else %}
+            {{ r.label }}
+          {% endif %}
+        </td>
+        <td style="font-size:13px">{{ r.target }}</td>
+        <td>
+          {% if r.status %}
+            <span class="badge badge-{{ {'PENDING':'inactive','EXECUTING':'inactive','SUCCESS':'up','FAILED':'danger'}.get(r.status, 'inactive') }}">{{ r.status }}</span>
+          {% else %}<span style="color:var(--dim)">—</span>{% endif %}
+        </td>
+        <td style="font-size:12px;color:var(--dim)">{{ r.result }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="empty-msg">Belum ada jejak audit.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p style="font-size:12px;color:var(--dim)">Menampilkan maks 250 baris terbaru. Status perintah remote diperbarui otomatis setelah agen mengeksekusi.</p>
+{% endblock %}

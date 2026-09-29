@@ -1,0 +1,19 @@
+#!/bin/sh
+# pantau-apt — Cangkang sempit utk tombol Update/Upgrade paket OS.
+# Dipanggil agen 'pantau' via sudo NOPASSWD (lihat /etc/sudoers.d/pantau-agent).
+# Dijalankan lewat pty (script -qfc) supaya output PERSIS seperti terminal SSH:
+# baris progress \r ikut terlihat. Argumen divalidasi di sini; BUKAN shell
+# passthrough. URL/repo tetap apa adanya.
+set -e
+case "${1:-}" in
+    update)
+        exec /usr/bin/script -qfc "/usr/bin/apt update" /dev/null
+        ;;
+    upgrade)
+        exec /usr/bin/script -qfc "/usr/bin/apt upgrade -y" /dev/null
+        ;;
+    *)
+        echo "pantau-apt: argumen tidak dikenal: '${1:-}' (hanya: update | upgrade)" >&2
+        exit 2
+        ;;
+esac

@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}Aktivitas {{ username }} - Pantau Server{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <a href="/servers/{{ server.id }}/services" class="btn btn-ghost">&larr; Kembali ke Rincian</a>
+    <h2 style="margin-top:10px">Aktivitas User: <span class="mono">{{ username }}</span>
+      <span style="font-size:13px;color:var(--dim)">@ {{ server.hostname }}</span></h2>
+  </div>
+  <div class="user-info">{{ user.username }}</div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="label">UID</div>
+    <div class="value">{{ account.uid if account and account.uid is not none else '—' }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Shell</div>
+    <div class="value" style="font-size:16px">{{ account.shell if account and account.shell else '—' }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Login Terakhir</div>
+    <div class="value" style="font-size:16px">{{ account.last_login if account and account.last_login else '—' }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Sesi Aktif</div>
+    <div class="value" style="font-size:16px">{{ account.sessions|length if account and account.sessions else 0 }}</div>
+  </div>
+</div>
+
+<div id="chip-row" style="display:none;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+  <span class="chip chip-up">Login Sukses: <b id="chip-sukses">0</b></span>
+  <span class="chip chip-down">Login Gagal: <b id="chip-gagal">0</b></span>
+  <span class="chip chip-inactive">Sesi Baru: <b id="chip-sesi">0</b></span>
+  <span class="chip chip-warn">Sudo: <b id="chip-sudo">0</b></span>
+  <span class="chip chip-inactive">Perintah: <b id="chip-cmd">0</b></span>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Aktivitas Login &amp; Sudo</h3>
+    <span id="ll-state" style="font-size:12px;color:var(--dim)"></span>
+  </div>
+  <div id="ll-empty" class="empty-msg" style="display:none">Belum ada aktivitas login untuk user ini.</div>
+  <div id="ll-scroll" style="display:none;max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:6px">
+    <table id="ll-table">
+      <thead><tr><th>Waktu</th><th>User</th><th>Jenis</th><th>Dari</th><th>Metode / Perintah</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Riwayat Perintah (history)</h3>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <input id="hist-filter" type="search" placeholder="Filter perintah…"
+        style="padding:6px 10px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);min-width:220px">
+      <button class="btn btn-ghost btn-sm" onclick="loadActivity()">Muat ulang</button>
+      <button id="hist-more" class="btn btn-ghost btn-sm" style="display:none" onclick="historyLines=1000;loadActivity()">Muat lebih banyak</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportCsv()">Ekspor CSV</button>
+      <span id="hist-state" style="font-size:12px;color:var(--dim)"></span>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--dim);margin-bottom:8px">Dari riwayat shell (bash / zsh / fish) user {{ username }} di server terpantau — urutan terbaru di atas. Waktu tampil bila shell mencatat timestamp (<span class="mono">HISTTIMEFORMAT</span>/zsh/fish); tanpa itu hanya urutan.</div>
+  <pre id="hist-pre" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;max-height:52vh;overflow:auto;white-space:pre;color:var(--text);display:none"></pre>
+  <div id="hist-empty" class="empty-msg" style="display:none">File history tidak ditemukan / belum ada perintah.</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const SID = {{ server.id }};
+const USERNAME = '{{ username }}';
+
+function sleepMs(ms) { return new Promise(r => setTimeout(r, ms)); }
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c => (
+    {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]
+  ));
+}
+function fmtTs(epoch) {
+  if (!epoch) return '';
+  try {
+    const d = new Date(epoch * 1000);
+    const p = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+      + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  } catch (e) { return ''; }
+}
+
+let activityBusy = false;
+let historyLines = 200;
+let llCount = 0;
+let cmdCount = 0;
+
+function renderChips(logins, history) {
+  const c = {sukses: 0, gagal: 0, sesi: 0, sudo: 0};
+  for (const x of logins) if (c.hasOwnProperty(x.type)) c[x.type]++;
+  llCount = logins.length; cmdCount = history.length;
+  const chip = document.getElementById('chip-row');
+  chip.style.display = 'flex';
+  document.getElementById('chip-sukses').textContent = c.sukses;
+  document.getElementById('chip-gagal').textContent = c.gagal;
+  document.getElementById('chip-sesi').textContent = c.sesi;
+  document.getElementById('chip-sudo').textContent = c.sudo;
+  document.getElementById('chip-cmd').textContent = history.length;
+}
+
+function renderHistory(history) {
+  const pre = document.getElementById('hist-pre');
+  const em2 = document.getElementById('hist-empty');
+  const filt = (document.getElementById('hist-filter').value || '').trim().toLowerCase();
+  const shown = history.filter(h => !filt || String(h.cmd).toLowerCase().includes(filt));
+  if (shown.length) {
+    pre.textContent = shown.map(h => {
+      const t = fmtTs(h.ts);
+      return (t ? '[' + t + '] ' : '') + h.cmd;
+    }).join('\n');
+    pre.style.display = 'block';
+    em2.style.display = 'none';
+  } else {
+    pre.style.display = 'none';
+    em2.style.display = 'block';
+  }
+  document.getElementById('hist-state').textContent =
+    shown.length ? shown.length + ' perintah (dari ' + history.length + ')' : '';
+  document.getElementById('hist-more').style.display =
+    history.length >= historyLines && historyLines < 1000 ? 'inline-flex' : 'none';
+}
+
+async function loadActivity() {
+  if (activityBusy) return;
+  activityBusy = true;
+  const st1 = document.getElementById('ll-state');
+  const st2 = document.getElementById('hist-state');
+  if (st1) st1.textContent = 'memuat…';
+  if (st2) st2.textContent = 'memuat…';
+  let rid;
+  try {
+    const r = await fetch('/api/logs/request', {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({server_id: SID, unit: 'USER_ACTIVITY', detail: USERNAME, lines: historyLines}),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status));
+    rid = j.id;
+  } catch (e) {
+    activityBusy = false;
+    if (st1) st1.textContent = 'gagal: ' + escapeHtml(e.message);
+    if (st2) st2.textContent = '';
+    return;
+  }
+  const start = Date.now();
+  while (Date.now() - start < 45000) {
+    await sleepMs(1200);
+    let j;
+    try {
+      const r = await fetch('/api/logs/request/' + rid, {credentials: 'same-origin'});
+      j = await r.json();
+    } catch (e) { continue; }
+    if (j.status === 'success' || j.status === 'failed') {
+      activityBusy = false;
+      if (j.status === 'failed') {
+        if (st1) st1.textContent = 'gagal: ' + escapeHtml(String(j.result || '').slice(0, 200));
+        return;
+      }
+      let data = null;
+      try { data = JSON.parse(j.result); } catch (e) {}
+      const logins = (data && data.logins) || [];
+      const history = (data && data.history) || [];
+
+      const wrap = document.getElementById('ll-scroll');
+      wrap.style.display = logins.length ? 'block' : 'none';
+      document.getElementById('ll-empty').style.display = logins.length ? 'none' : 'block';
+      if (logins.length) {
+        document.getElementById('ll-table').querySelector('tbody').innerHTML = logins.map(x => {
+          const cls = x.type === 'gagal' ? 'badge-down'
+                    : x.type === 'sukses' ? 'badge-up'
+                    : x.type === 'sudo' ? 'badge-warn' : 'badge-inactive';
+          const method = x.type === 'sudo'
+            ? '<span title="' + escapeHtml(x.method || '') + '" style="max-width:70ch;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:bottom">'
+              + escapeHtml((x.method || '').slice(0, 90)) + ((x.method || '').length > 90 ? '…' : '') + '</span>'
+            : escapeHtml(x.method || '-');
+          return '<tr><td class="mono">' + escapeHtml(x.ts || '-') + '</td>'
+            + '<td><strong>' + escapeHtml(x.user || '-') + '</strong></td>'
+            + '<td><span class="badge ' + cls + '">' + escapeHtml(x.type || '-') + '</span></td>'
+            + '<td class="mono">' + escapeHtml(x.from || '-') + '</td>'
+            + '<td>' + method + '</td></tr>';
+        }).join('');
+      }
+      if (st1) st1.textContent = logins.length ? logins.length + ' aktivitas' : '';
+
+      renderChips(logins, history);
+      renderHistory(history);
+      window.__llLast = logins;
+      window.__hlLast = history;
+      return;
+    }
+  }
+  activityBusy = false;
+  if (st1) st1.textContent = 'agen tidak merespons';
+}
+
+function exportCsv() {
+  let rows = [];
+  const seenLogin = new Set();
+  for (const x of window.__llLast || []) {
+    let key = '';
+    try { key = JSON.stringify(x); } catch (e) { key = String(x); }
+    if (seenLogin.has(key)) continue;
+    seenLogin.add(key);
+    rows.push({jenis: x.type || 'login', waktu: x.ts || '', user: x.user || '',
+               dari: x.from || '', metode: x.method || '', perintah: ''});
+  }
+  for (const h of window.__hlLast || []) {
+    rows.push({jenis: 'history', waktu: fmtTs(h.ts), user: USERNAME,
+               dari: '', metode: '', perintah: h.cmd});
+  }
+  const csvRows = [['jenis', 'waktu', 'user', 'dari', 'metode', 'perintah']]
+    .concat(rows.map(r => [r.jenis, r.waktu, r.user, r.dari, r.metode, r.perintah]
+      .map(v => '"' + String(v).replace(/"/g, '""') + '"')));
+  const blob = new Blob(['\ufeff' + csvRows.join('\r\n')], {type: 'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'aktivitas_' + USERNAME + '_' + SID + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(a.href);
+  a.remove();
+}
+
+document.getElementById('hist-filter').addEventListener('input', () => {
+  if (window.__hlLast) renderHistory(window.__hlLast);
+});
+
+loadActivity();
+setInterval(loadActivity, 60000);
+</script>
+{% endblock %}
