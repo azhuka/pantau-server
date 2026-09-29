@@ -575,6 +575,15 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "services": svc_list, "commands": cmd_list,
         "online": not _server_stale(server),
         "last_seen": server.last_seen.isoformat() if server.last_seen else None,
+        # Kesegaran akurat (ms sejak laporan terakhir) — dipakai banner konfirmasi
+        # Reboot/Power Off dengan jendela pendek (~30 dtk), bukan ambang offline 60 dtk.
+        "last_seen_ago_ms": (
+            int((datetime.now(timezone.utc)
+                 - (server.last_seen.replace(tzinfo=timezone.utc)
+                    if server.last_seen.tzinfo is None else server.last_seen)
+                 ).total_seconds() * 1000)
+            if server.last_seen else None
+        ),
         "apt_upgradable": extras.apt_upgradable if extras else None,
         "apt_last_update": extras.apt_last_update.isoformat() if extras and extras.apt_last_update else None,
         "agent_version": extras.agent_version if extras else None,

@@ -774,10 +774,14 @@ function patch(data) {
   }
   const hd = document.getElementById('hero-dot');
   const ho = document.getElementById('hero-online');
-  if (hd && ho && typeof data.online === 'boolean') {
-    hd.className = 'dot ' + (data.online ? 'up' : 'down');
-    ho.textContent = data.online ? 'online' : 'offline';
-    ho.className = 'hero-online ' + (data.online ? 'on' : 'off');
+  if (hd && ho) {
+    // Jendela kesegaran 30 dtk (agen lapor tiap 10 dtk); jangan tunggu ambang offline 60 dtk
+    const online = typeof data.last_seen_ago_ms === 'number'
+      ? data.last_seen_ago_ms < 30000
+      : data.online === true;
+    hd.className = 'dot ' + (online ? 'up' : 'down');
+    ho.textContent = online ? 'online' : 'offline';
+    ho.className = 'hero-online ' + (online ? 'on' : 'off');
   }
   if (data.services) primeSvcGraph(data.services);
   for (const s of data.services) {
@@ -867,7 +871,14 @@ if (ackEl) {
     let cur = ackPrev;
     try {
       const r = await fetch('/api/servers/' + SID + '/overview', { credentials: 'same-origin' });
-      if (r.ok) cur = (await r.json()).online === true;
+      if (r.ok) {
+        const j = await r.json();
+        // Konfirmasi berbasis kesegaran last_seen (jendela 30 dtk), bukan
+        // ambang offline 60 dtk: poweroff cepat & reboot (<60 dtk) jadi terdeteksi.
+        cur = typeof j.last_seen_ago_ms === 'number'
+          ? j.last_seen_ago_ms < 30000
+          : (j.online === true);
+      }
     } catch (e) { /* biarkan nilai lama */ }
 
     if (ackMode === 'poweroff') {
