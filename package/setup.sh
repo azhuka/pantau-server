@@ -27,6 +27,23 @@ fi
 
 command -v python3 >/dev/null 2>&1 || { echo "ERROR: python3 tidak ada (butuh untuk validasi JSON)"; exit 1; }
 
+# Agen belum pernah dipasang? setup.sh TIDAK memasang agen — itu tugas install.sh.
+# (grup 'pantau' dibuat oleh install.sh via useradd; unit agent_pantau.service
+#  dipasang oleh install.sh juga). Menggagalkan lebih jujur daripada lanjut
+#  sampai tahap tulis config lalu gagal diam-diam.
+if ! id -g pantau >/dev/null 2>&1 || \
+   ! { systemctl cat "$UNIT" >/dev/null 2>&1 || [ -f "/etc/systemd/system/$UNIT" ]; }; then
+    echo
+    echo "[ERROR] Agen pantau BELUM terpasang di mesin ini"
+    echo "        (user/grup 'pantau' atau unit '$UNIT' tidak ada)."
+    echo
+    echo "   Jalankan dulu (dari folder paket klien):"
+    echo "       sudo bash install.sh"
+    echo "   lalu ulangi langkah ini:"
+    echo "       sudo bash setup.sh"
+    exit 1
+fi
+
 # --- 1. default dari config lama ---
 DEF_URL=""; DEF_KEY=""; DEF_INT="10"; DEF_EXCL="[]"
 if [ -f "$CFG" ]; then
@@ -155,20 +172,35 @@ url, key, interval, excl, out = sys.argv[1], sys.argv[2], int(sys.argv[3]), json
 doc = {"server_url": url, "api_key": key, "interval_seconds": interval, "exclude_ports": excl}
 open(out, "w").write(json.dumps(doc, indent=2) + "\n")
 PY
-install -o root -g pantau -m 640 "$TMP" "$CFG"
+install -o root -g pantau -m 640 "$TMP" "$CFG" || {
+    rm -f "$TMP"
+    echo "[ERROR] Gagal menulis $CFG (grup 'pantau' / izin / ruang disk)."
+    echo "        Cek: ls -ld /etc/pantau && id pantau"
+    exit 1
+}
 rm -f "$TMP"
 echo "[OK]   $CFG ditulis (root:pantau, 640)."
 
-systemctl daemon-reload >/dev/null 2>&1 || true
-if systemctl list-units --all "$UNIT" >/dev/null 2>&1 || [ -f "/etc/systemd/system/$UNIT" ]; then
-    systemctl restart "$UNIT"
-    echo "[OK]   $UNIT di-restart."
+if systemctl cat "$UNIT" >/dev/null 2>&1; then
+    if systemctl restart "$UNIT"; then
+        echo "[OK]   $UNIT di-restart."
+        UNIT_OK=1
+    else
+        echo "[ERROR] Gagal restart $UNIT — cek: journalctl -u ${UNIT%.service} -e"
+        exit 1
+    fi
 else
-    echo "[WARN] unit $UNIT tidak ada — jalankan 'sudo bash install.sh' dulu untuk memasang agent."
+    echo "[FAIL] Unit $UNIT tidak terpasang."
+    echo "        Jalankan 'sudo bash install.sh' dulu, lalu 'sudo bash setup.sh' lagi."
+    UNIT_OK=0
 fi
 
 echo
 echo "== Selesai (fp key: ${KEY:0:8}...${KEY: -8}) =="
-echo "   Verifikasi: dashboard -> server ini -> status harus online dalam $((_INT + 5)) detik."
-echo "   Log : journalctl -u ${UNIT%.service} -f"
+if [ "${UNIT_OK:-0}" = "1" ]; then
+    echo "   Verifikasi: dashboard -> server ini -> status harus online dalam $((_INT + 5)) detik."
+    echo "   Log : journalctl -u ${UNIT%.service} -f"
+else
+    echo "   CATATAN: agen BELUM berjalan (unit tidak ada)."
+fi
 exit 0
