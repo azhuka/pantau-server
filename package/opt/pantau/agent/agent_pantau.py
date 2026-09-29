@@ -323,7 +323,7 @@ APT_AGENT_OUTPUT_MAX = 4_000_000
 APT_PROGRESS_TAIL_CHARS = 200_000
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.5"
+AGENT_VERSION = "3.6"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -482,6 +482,12 @@ def execute_command(cfg: dict, command: dict) -> dict:
         result = _exec_restart_agent()
     elif action in ("reboot_host", "poweroff_host"):
         result = _exec_host_control(action)
+    elif action not in ("restart", "start", "stop"):
+        result = {
+            "ok": False,
+            "output": f"Aksi tidak dikenal oleh agen ini ('{action}') "
+                      "— indikasi agen versi lama. Update agen: jalankan ulang install.sh.",
+        }
     else:
         result = _exec_service_action(action, command)
 
@@ -528,18 +534,41 @@ def _exec_block_ip(command: dict) -> dict:
 def _exec_host_control(action: str) -> dict:
     """Reboot/poweroff OS — ditunda ~4 dtk agar respon ack sempat terkirim ke Dashboard.
 
-    Modelnya sama seperti restart_agent: proses terpisah (start_new_session)
-    mengambil alih setelah agen selesai mengirim hasil; sistem operasi (systemd)
-    yang melakukan reboot/poweroff lewat wrapper pantau-host.
+    SEBELUM menjadwalkan, lakukan preflight 'check' via wrapper pantau-host:
+    - kalau wrapper/sudoers belum terpasang, sudo -n gagal -> lapor kegagalan NYATA
+      (jangan asal "akan dimatikan") supaya admin tahu harus update agen.
+    - kalau systemd tidak terpasang (container/WSL), lapor jelas.
+    Baru proses nyata dijadwalkan (pola sama seperti restart_agent) via wrapper.
     """
     sub_action = "reboot" if action == "reboot_host" else "poweroff"
-    if IS_ROOT:
-        label = f"{PANTUAN_HOST_CMD} {sub_action}"
-    else:
-        label = f"/usr/bin/sudo -n {PANTUAN_HOST_CMD} {sub_action}"
+
+    def _run_wrapper(*args: str) -> tuple[bool, str]:
+        if IS_ROOT:
+            p = subprocess.run([PANTUAN_HOST_CMD, *args],
+                               capture_output=True, text=True, timeout=30)
+        else:
+            p = subprocess.run(["/usr/bin/sudo", "-n", PANTUAN_HOST_CMD, *args],
+                               capture_output=True, text=True, timeout=30)
+        out = (p.stdout or "").strip() or p.stderr.strip() or ""
+        return p.returncode == 0, out[:1200]
+
+    # Preflight check (tanpa efek samping)
+    ok_check, msg_check = _run_wrapper("check")
+    if not ok_check:
+        return {"ok": False,
+                "output": f"Perintah {sub_action} DIBATALKAN: wrapper pantau-host belum "
+                          f"terpasang/diizinkan di server ini. {msg_check} "
+                          "-- jalankan ulang package install.sh (agen v3.6+)."}
+    if "systemd TIDAK berjalan" in msg_check or "TIDAK berjalan" in msg_check:
+        return {"ok": False,
+                "output": f"Perintah {sub_action} DIBATALKAN: {msg_check}"}
+
+    label = f"{PANTUAN_HOST_CMD} {sub_action}"
+    if not IS_ROOT:
+        label = f"/usr/bin/sudo -n {label}"
     try:
         subprocess.Popen(
-            ["/bin/sh", "-c", f"sleep 4; {label}"],
+            ["/bin/sh", "-c", f"sleep 4; {label} >> /var/log/pantau-host.log 2>&1"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
             start_new_session=True, close_fds=True,
         )

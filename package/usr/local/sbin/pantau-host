@@ -2,26 +2,70 @@
 #
 # pantau-host - Wrapper sempit reboot/poweroff server klien untuk Agen Pantau.
 #
-# Hanya menerima SATU argumen: reboot | poweroff. Tidak ada passthrough shell.
-# Agen menjalankan wrapper ini secara TERTUNDA (beberapa detik) setelah ack
-# hasil terkirim, sehingga admin tetap mendapat konfirmasi sebelum mesin mati.
+# Hanya menerima SATU argumen: reboot | poweroff | check. Tidak ada passthrough
+# shell. Agen menjalankan wrapper ini secara TERTUNDA (beberapa detik) setelah
+# ack hasil terkirim, sehingga admin tetap mendapat konfirmasi sebelum mesin mati.
+#
+# Sub-perintah 'check' TIDAK memiliki efek samping: hanya memastikan sudoers &
+# wrapper terpasang benar dan systemd aktif sebagai host (bukan container),
+# lalu keluar rc=0. Berguna untuk diagnosis cepat.
+#
+# Semua eksekusi dicatat ke /var/log/pantau-host.log (dibuat oleh agen via sudo).
 #
 # Sudoers: pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-host
 set -u
 
 ACTION="${1:-}"
+LOG="/var/log/pantau-host.log"
 
 fail() {
     echo "$*" >&2
+    echo "FAIL $(date -Is) [${ACTION}] $*" >> "$LOG" 2>/dev/null
     exit 1
 }
 
+# --- Validasi aksi ---
 case "$ACTION" in
-    reboot)   CMD="/usr/bin/systemctl -i reboot" ;;
-    poweroff) CMD="/usr/bin/systemctl -i poweroff" ;;
-    *)        fail "Aksi tidak dikenal: '${ACTION}' (harus reboot|poweroff)" ;;
+    reboot)
+        CMD="/usr/bin/systemctl -i reboot"
+        ;;
+    poweroff)
+        CMD="/usr/bin/systemctl -i poweroff"
+        ;;
+    check)
+        CMD=""
+        ;;
+    *)
+        fail "Aksi tidak dikenal: '${ACTION}' (harus reboot|poweroff|check)"
+        ;;
 esac
 
 [ -x /usr/bin/systemctl ] || fail "/usr/bin/systemctl tidak ditemukan"
 
-exec /bin/sh -c "$CMD"
+mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
+
+if [ -z "$CMD" ]; then
+    # --- check ---
+    echo "INFO $(date -Is) [check] dipanggil oleh: ${SUDO_USER:-<langsung>}" >> "$LOG" 2>/dev/null
+    if /usr/bin/systemctl is-system-running >/dev/null 2>&1; then
+        state="$(/usr/bin/systemctl is-system-running 2>/dev/null || true)"
+        if [ "$state" = "running" ]; then
+            echo "systemd OK ($state) — siap terima reboot|poweroff."
+            exit 0
+        fi
+        echo "systemd aktif namun state='$state' — reboot/poweroff mungkin terhalang. Periksa: systemctl --failed"
+        exit 0
+    fi
+    echo "systemd TIDAK berjalan sebagai host (mis. container/WSL) — reboot/poweroff TIDAK akan mematikan mesin ini."
+    exit 0
+fi
+
+# --- Eksekusi sebenarnya ---
+echo "INFO $(date -Is) [${ACTION}] mengeksekusi: $CMD" >> "$LOG" 2>/dev/null
+/bin/sh -c "$CMD"
+rc=$?
+if [ $rc -ne 0 ]; then
+    fail "gagal (rc=$rc): $CMD"
+fi
+echo "OK   $(date -Is) [${ACTION}] sukses: $CMD" >> "$LOG" 2>/dev/null
+echo "OK: $ACTION dieksekusi."

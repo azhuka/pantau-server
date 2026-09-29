@@ -58,6 +58,10 @@ journalctl -u agent_pantau -f
 - **Dashboard:** unduh versi terbaru repo, lalu jalankan ulang `sudo bash install-server.sh`.
 - **Agen pantau:** jalankan ulang 2 baris installer di atas (kode agen diperbarui, konfigurasi tidak ditimpa).
 
+> Tombol **Reboot OS / Power Off** di halaman Rincian memerlukan agen pantau **v3.6+**
+> (badge di halaman Rincian menampilkan "agen v3.6" setelah update). Kode agen lama
+> menolak perintah itu dan menampilkan hasil "Aksi tidak dikenal".
+
 ## Catatan keamanan
 
 - API key disimpan hash sha256; password bcrypt; akses sudo agen dibatasi
