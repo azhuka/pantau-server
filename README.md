@@ -90,28 +90,27 @@ journalctl -u pantau-server -n 50 -f
 ## 2) Pasang Agent di tiap server klien
 
 Siapkan dulu dari dashboard: **Menu Server → Tambah Server** (isi hostname/IP) →
-salin **API key** (64 hex). Lalu di mesin klien jalankan **SATU file saja**:
-`install.sh` (memeriksa prasyarat → membuat user `pantau` → memasang agen,
-config, sudoers & unit systemd → menanyakan **URL dashboard + API key**,
-mengujinya dulu ke server, baru menyimpan → menjalankan agen).
-
-Cara A — dari folder paket (bila repo di-`clone`/diunduh):
+salin **API key** (64 hex). Lalu di mesin klien, **satu blok perintah**:
 
 ```bash
-cd pantau-server/package
-sudo bash install.sh
-```
-
-Cara B — tanpa mengunduh folder sama sekali (tidak butuh git; agen tidak
-membawa app server):
-
-```bash
+# Baris 1: unduh SATU file installer ke mesin klien (baru ada setelah ini).
 sudo curl -fsSL -o /tmp/pantau-install.sh \
   https://raw.githubusercontent.com/azhuka/pantau-server/master/package/install.sh
+
+# Baris 2: jalankan — installer sendiri yang mengambil file agen lain,
+# bertanya URL dashboard & API key, lalu memasang segalanya.
 sudo bash /tmp/pantau-install.sh
 ```
 
-Tanpa interaksi (otomasi/CI): `sudo bash install.sh http://<ip-dashboard>:8400 <APIKEY64hex>`
+Selesai — tidak butuh git, tidak men-download seluruh repo, tidak butuh
+membawa file apa pun sebelumnya.
+
+Tanpa interaksi (otomasi/CI): `sudo bash /tmp/pantau-install.sh http://<ip-dashboard>:8400 <APIKEY64hex>`
+
+> **Kenapa ada "Cara A" di atas?** Itu hanya untuk kasus khusus bila repo
+> sudah ada di mesin tersebut (misal dari `git clone`), Anda cukup menjalankan
+> `package/install.sh` dari dalamnya. Untuk pemasangan klien biasa, pakai
+> blok 2 baris di atas — baris pertama justru yang menaruh installer ke mesin.
 
 Detail:
 
