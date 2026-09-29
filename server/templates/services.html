@@ -17,7 +17,7 @@
 {% set act = request.query_params.get('action') %}
 {% set acted = act in ('block', 'agent', 'noips', 'reboot', 'poweroff') or request.query_params.get('restarted') %}
 {% if acted %}
-<div class="card" style="border-color:var(--blue);padding:12px 16px">
+<div class="card" id="flash-act" style="border-color:var(--blue);padding:12px 16px">
   {% if act == 'block' %}
     <span style="color:var(--blue);font-weight:600">Perintah Blokir IP (iptables) telah dikirim ke Agen Pantau.</span>
     <span style="font-size:13px;color:var(--dim)"> Aturan tampil ~beberapa detik lalu. Bersifat volatile hingga reboot — untuk permanen gunakan iptables-persistent.</span>
@@ -885,6 +885,21 @@ const ackEl = document.getElementById('host-ack');
 const ackClose = document.getElementById('ack-close');
 if (ackClose) ackClose.addEventListener('click', () => { if (ackEl) ackEl.style.display = 'none'; });
 if (ackEl) ackLive(ackEl.dataset.mode, ackEl.dataset.start === '1');
+
+// Pesan 'Perintah … dikirim' tidak menempel di URL: tampil ±6 dtk lalu hilang,
+// dan param ?action/at dibersihkan dari address bar supaya reload tak mengembalikannya.
+(function () {
+  const card = document.getElementById('flash-act');
+  if (!card) return;
+  setTimeout(() => { card.style.transition = 'opacity .5s'; card.style.opacity = '0'; }, 6000);
+  setTimeout(() => { if (card.parentNode) card.parentNode.removeChild(card); }, 6600);
+  try {
+    const u = new URL(window.location.href);
+    u.searchParams.delete('action');
+    u.searchParams.delete('at');
+    window.history.replaceState({}, '', u.toString());
+  } catch (e) { /* abaikan */ }
+})();
 
 // ---------- hardware / network / accounts ----------
 function pctBar(id, val) {
