@@ -15,8 +15,20 @@ cd pantau-server
 sudo bash install-server.sh
 ```
 
-Installer membuat user, database (dengan password acak), unit systemd, lalu meminta
-password admin. Buka `http://<ip-dashboard>:8400` dan login.
+Installer membuat user, database (dengan password acak), unit systemd, lalu
+**meminta password untuk user admin** (username default: `admin`). Selesai
+instalasi, buka `http://<ip-dashboard>:8400` dan login dengan:
+
+- **Username:** `admin`
+- **Password:** password yang Anda masukkan saat installer bertanya
+  "Password untuk user 'admin':"
+
+Lupa password? Atur ulang dari mesin dashboard:
+
+```bash
+sudo /opt/pantau/server/env/bin/python /opt/pantau/server/seed_admin.py \
+  --username admin --role admin --password '<password-baru>'
+```
 
 Cek: `systemctl status pantau-server.service`
 
