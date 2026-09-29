@@ -20,7 +20,7 @@
 #   1) sudo bash install-server.sh
 #   2) Buka http://<ip>:8400 , login dengan admin yang tadi dibuat
 #   3) Menu Server -> Tambah server -> salin API key
-#   4) Di tiap mesin klien: jalankan package/install.sh lalu package/setup.sh
+#   4) Di tiap mesin klien: jalankan package/install.sh (SATU FILE, tanpa repo)
 #
 set -euo pipefail
 
@@ -130,10 +130,10 @@ echo "  Dashboard : http://$(hostname -I | awk '{print $1}'):${APP_PORT}  (login
 echo
 echo '  Langkah selanjutnya:'
 echo '   1) Buka dashboard, menu Server -> Tambah Server -> simpan API key.'
-echo '   2) Di tiap mesin yang mau dipantau:'
-echo "        git clone https://github.com/azhuka/pantau-server.git  (atau curl tar.gz)"
-echo '        cd pantau-server/package'
-echo '        sudo bash install.sh     ;   sudo bash setup.sh'
-echo '        (setup.sh meminta alamat dashboard ini + API key tsb)'
+echo '   2) Di tiap mesin yang mau dipantau, SATU file saja:'
+echo "        sudo curl -fsSL -o /tmp/pantau-install.sh \\"
+echo "          https://raw.githubusercontent.com/azhuka/pantau-server/master/package/install.sh"
+echo '        sudo bash /tmp/pantau-install.sh'
+echo '        (akan diminta alamat dashboard ini + API key tsb)'
 echo '   3) Backups:  mysqldump pantau_db > backup.sql'
 echo '================================================================'

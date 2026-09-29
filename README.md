@@ -39,10 +39,8 @@ server/                 Web app (back-end FastAPI + template/static)
   seed_admin.py         CLI buat/update akun admin
   pantau-server.service unit systemd generic (dipasang install-server.sh)
 database/schema.sql     skema acuan (untuk referensi)
-package/                Paket AGEN yang bisa di-`git clone` ke mesin klien
-  install.sh            pasang agen + nilai kesiapan (idempotent)
-  setup.sh              arahkan agen ke dashboard (uji API key dulu)
-  preflight.sh          cek prasyarat klien (PASS/WARN/FAIL)
+package/                Paket AGEN untuk mesin klien
+  install.sh            SATU file: periksa, pasang, arahkan dashboard, jalankan
   opt/pantau/agent/     kode agen Python
   etc/                  config, sudoers, unit systemd, wrapper
   usr/local/sbin/       wrapper: pantau-restart, pantau-history,
@@ -92,30 +90,36 @@ journalctl -u pantau-server -n 50 -f
 ## 2) Pasang Agent di tiap server klien
 
 Siapkan dulu dari dashboard: **Menu Server → Tambah Server** (isi hostname/IP) →
-salin **API key** (64 hex). Lalu di mesin klien:
+salin **API key** (64 hex). Lalu di mesin klien jalankan **SATU file saja**:
+`install.sh` (memeriksa prasyarat → membuat user `pantau` → memasang agen,
+config, sudoers & unit systemd → menanyakan **URL dashboard + API key**,
+mengujinya dulu ke server, baru menyimpan → menjalankan agen).
+
+Cara A — dari folder paket (bila repo di-`clone`/diunduh):
 
 ```bash
-git clone https://github.com/azhuka/pantau-server.git
 cd pantau-server/package
-sudo bash install.sh      # pasang agen + nilai kesiapan (LAYAK?)
-sudo bash setup.sh        # arahkan ke dashboard: alamat + API key
+sudo bash install.sh
 ```
 
-Tanpa git di klien? Unduh arsip langsung (public, tanpa kredensial):
+Cara B — tanpa mengunduh folder sama sekali (tidak butuh git; agen tidak
+membawa app server):
 
 ```bash
-curl -L https://github.com/azhuka/pantau-server/archive/refs/heads/master.tar.gz | tar xz
-cd pantau-server-master/package
-sudo bash install.sh && sudo bash setup.sh
+sudo curl -fsSL -o /tmp/pantau-install.sh \
+  https://raw.githubusercontent.com/azhuka/pantau-server/master/package/install.sh
+sudo bash /tmp/pantau-install.sh
 ```
+
+Tanpa interaksi (otomasi/CI): `sudo bash install.sh http://<ip-dashboard>:8400 <APIKEY64hex>`
 
 Detail:
 
-- `install.sh` memasang user `pantau`, kode agen → `/opt/pantau/agent/`,
-  config `/etc/pantau/config.json`, wrapper sudo, dan `agent_pantau.service`
-  (systemd, `User=pantau`) — **idempotent**, aman diulang.
-- `setup.sh` **menguji API key ke dashboard dulu** sebelum menyimpan.
-- Verifikasi akhir: di dashboard, server klien tampil **online**; atau jalankan
+- `install.sh` **idempotent** & satu-langkah: pasang user `pantau`, kode agen →
+  `/opt/pantau/agent/`, config `/etc/pantau/config.json`, wrapper sudo, dan
+  `agent_pantau.service` (systemd, `User=pantau`).
+- API key **diuji ke dashboard dulu** (HTTP 200) sebelum disimpan.
+- Verifikasi akhir: di dashboard, server klien tampil **online**; atau
   `sudo bash install.sh` lagi dan lihat verdict `LAYAK`.
 
 Cek agen di klien:
@@ -125,8 +129,8 @@ systemctl status agent_pantau.service
 journalctl -u agent_pantau -f
 ```
 
-Perbarui agen tanpa kiriman manual: `git pull` di mesin klien lalu
-`sudo bash install.sh` (menimpa kode, tidak menimpa config).
+Perbarui agen tanpa kiriman manual: ulangi `install.sh` (menimpa kode agen,
+tidak menimpa config yang valid).
 
 ## Penggunaan singkat
 
