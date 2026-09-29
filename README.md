@@ -20,7 +20,7 @@ password admin. Buka `http://<ip-dashboard>:8400` dan login.
 
 Cek: `systemctl status pantau-server.service`
 
-## 2) Install Agent-pantau (tiap server klien)
+## 2) Install Agen Pantau (tiap server klien)
 
 1. Di dashboard: **Menu Server → Tambah Server** → salin **API key** (simpan di tempat sementara).
 2. Di server klien, jalankan 2 baris di bawah ini (unduh installer, lalu jalankan installer):
@@ -32,12 +32,9 @@ sudo bash /tmp/pantau-install.sh
 ```
 
 Installer akan **bertanya interaktif**: URL dashboard lalu API key (64 hex),
-menguji key-nya dulu ke dashboard, baru memasang segalanya dan menyalakan agen.
-
->(Opsi otomasi/CI tanpa interaksi: `sudo bash /tmp/pantau-install.sh http://<ip>:8400 <APIKEY64hex>`).
-
-Cek dashboard web app Pantau Server untuk memvalidasi server klien yang sudah
-dipasang agen. Jika ada masalah, cek status layanan agen:
+menguji key-nya dulu ke dashboard, lalu memasang agen pantau serta menghidupkan
+layanan agen pantau. Cek dashboard web app Pantau Server untuk memvalidasi
+server klien yang sudah dipasang agen. Jika ada masalah, cek status layanan agen:
 
 ```bash
 systemctl status agent_pantau.service
@@ -46,17 +43,8 @@ journalctl -u agent_pantau -f
 
 ## Update
 
-- **Dashboard:** `git pull && sudo bash install-server.sh`
-- **Agent:** ulangi 2 baris installer di atas (kode agen akan diperbarui, tanpa menimpa konfigurasi agent pantau).
-
-## Struktur
-
-```
-server/          web app dashboard (FastAPI + template) Pantau Server & unit systemd
-package/         paket agen pantau klien + file installer (install.sh)
-database/        skema SQL referensi
-install-server.sh  instalasi dashboard dalam 1 perintah
-```
+- **Dashboard:** unduh versi terbaru repo, lalu jalankan ulang `sudo bash install-server.sh`.
+- **Agen pantau:** jalankan ulang 2 baris installer di atas (kode agen diperbarui, konfigurasi tidak ditimpa).
 
 ## Catatan keamanan
 
