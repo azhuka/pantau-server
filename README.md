@@ -62,10 +62,12 @@ sudo systemctl enable --now mariadb
 Ambil kode & jalankan installer:
 
 ```bash
-git clone <url-repo-pantau>
+git clone https://github.com/azhuka/pantau-server.git
 cd pantau-server
 sudo bash install-server.sh
 ```
+
+Repo ini **public** — tidak perlu akun/kredensial untuk mengunduh.
 
 Flow installer:
 
@@ -93,10 +95,18 @@ Siapkan dulu dari dashboard: **Menu Server → Tambah Server** (isi hostname/IP)
 salin **API key** (64 hex). Lalu di mesin klien:
 
 ```bash
-git clone <url-repo-pantau>
+git clone https://github.com/azhuka/pantau-server.git
 cd pantau-server/package
 sudo bash install.sh      # pasang agen + nilai kesiapan (LAYAK?)
 sudo bash setup.sh        # arahkan ke dashboard: alamat + API key
+```
+
+Tanpa git di klien? Unduh arsip langsung (public, tanpa kredensial):
+
+```bash
+curl -L https://github.com/azhuka/pantau-server/archive/refs/heads/master.tar.gz | tar xz
+cd pantau-server-master/package
+sudo bash install.sh && sudo bash setup.sh
 ```
 
 Detail:

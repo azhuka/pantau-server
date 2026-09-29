@@ -131,8 +131,9 @@ echo
 echo '  Langkah selanjutnya:'
 echo '   1) Buka dashboard, menu Server -> Tambah Server -> simpan API key.'
 echo '   2) Di tiap mesin yang mau dipantau:'
-echo "        git clone <repo pantau>  ;  cd pantau/package"
-echo '        sudo bash install.sh     ;  sudo bash setup.sh'
+echo "        git clone https://github.com/azhuka/pantau-server.git  (atau curl tar.gz)"
+echo '        cd pantau-server/package'
+echo '        sudo bash install.sh     ;   sudo bash setup.sh'
 echo '        (setup.sh meminta alamat dashboard ini + API key tsb)'
 echo '   3) Backups:  mysqldump pantau_db > backup.sql'
 echo '================================================================'
