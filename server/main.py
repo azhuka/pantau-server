@@ -1207,6 +1207,33 @@ def problem_restart_agent(request: Request, sid: int, db: Session = Depends(get_
     return RedirectResponse(f"/servers/{sid}/services?action=agent", status_code=303)
 
 
+def _host_control(request: Request, sid: int, db: Session, action: str) -> RedirectResponse:
+    user = get_current_user(request, db)
+    if not user or user.role != "admin":
+        return RedirectResponse("/", status_code=303)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        return RedirectResponse("/servers", status_code=303)
+    _enqueue_mitigation(db, sid, action, issued_by=user.username)
+    _audit(db, user.username, action,
+           f"{server.hostname} ({server.ip_address})", "dikirim ke agen")
+    db.commit()
+    flag = "reboot" if action == "reboot_host" else "poweroff"
+    return RedirectResponse(f"/servers/{sid}/services?action={flag}", status_code=303)
+
+
+@app.post("/servers/{sid}/host/reboot")
+def host_reboot(request: Request, sid: int, db: Session = Depends(get_db)):
+    """Reboot OS server klien (admin). Tegas: mesin restart seketika ±4 detik."""
+    return _host_control(request, sid, db, "reboot_host")
+
+
+@app.post("/servers/{sid}/host/poweroff")
+def host_poweroff(request: Request, sid: int, db: Session = Depends(get_db)):
+    """Poweroff OS server klien (admin). Tegas: mesin mati sampai dinyalakan manual."""
+    return _host_control(request, sid, db, "poweroff_host")
+
+
 @app.post("/servers/{sid}/services/{svc_id}/delete")
 def service_delete(request: Request, sid: int, svc_id: int, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
@@ -2055,6 +2082,8 @@ AUDIT_ACTION_LABELS = {
     "cmd:restart": "Restart service",
     "cmd:block_ip": "Blokir IP",
     "cmd:restart_agent": "Restart agen",
+    "cmd:reboot_host": "Reboot server",
+    "cmd:poweroff_host": "Power off server",
     "cmd:start": "Start service",
     "cmd:stop": "Stop service",
 }
@@ -2085,6 +2114,7 @@ def _audit_rows(db, limit: int = 250, q: str = "", action: str = ""):
     label_map = {
         "restart": "cmd:restart", "start": "cmd:start", "stop": "cmd:stop",
         "block_ip": "cmd:block_ip", "restart_agent": "cmd:restart_agent",
+        "reboot_host": "cmd:reboot_host", "poweroff_host": "cmd:poweroff_host",
     }
     for c in cmds:
         key = label_map.get(c.action, f"cmd:{c.action}")

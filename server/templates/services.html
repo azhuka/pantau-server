@@ -8,6 +8,16 @@
   <div>
     <a href="/servers" class="btn btn-ghost">&larr; Servers</a>
     <a href="/servers/{{ server.id }}/metrics" class="btn btn-ghost">Metrik</a>
+    {% if user.role == 'admin' %}
+    <form method="post" action="/servers/{{ server.id }}/host/reboot"
+          onsubmit="return confirm('Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard ke server ini terputus ±1-2 menit sampai server kembali.') && confirm('Yakin 100%?')" style="display:inline">
+      <button class="btn btn-ghost btn-sm" type="submit">Reboot OS</button>
+    </form>
+    <form method="post" action="/servers/{{ server.id }}/host/poweroff"
+          onsubmit="return confirm('MATIKAN server {{ server.hostname }} SEKARANG? Mesin akan poweroff — TIDAK menyala sendiri — sampai seseorang menyalakannya secara manual (fisik/IPMI).')" style="display:inline">
+      <button class="btn btn-danger btn-sm" type="submit">Power Off</button>
+    </form>
+    {% endif %}
   </div>
 </div>
 
@@ -15,7 +25,7 @@
                 'warning': ('Warning', 'warn', 'var(--yellow)'),
                 'danger': ('Danger', 'danger', 'var(--red)')} %}
 {% set act = request.query_params.get('action') %}
-{% set acted = act in ('block', 'agent', 'noips') or request.query_params.get('restarted') %}
+{% set acted = act in ('block', 'agent', 'noips', 'reboot', 'poweroff') or request.query_params.get('restarted') %}
 {% if acted %}
 <div class="card" style="border-color:var(--blue);padding:12px 16px">
   {% if act == 'block' %}
@@ -27,6 +37,12 @@
   {% elif act == 'noips' %}
     <span style="color:var(--yellow);font-weight:600">Tidak ada IP sumber untuk diblokir.</span>
     <span style="font-size:13px;color:var(--dim)"> Tidak terdeteksi IP pelaku pada data keamanan terakhir.</span>
+  {% elif act == 'reboot' %}
+    <span style="color:var(--blue);font-weight:600">Perintah Reboot OS telah dikirim ke Agen Pantau.</span>
+    <span style="font-size:13px;color:var(--dim)"> Server akan reboot ±4 detik; dashboard terputus sementara dari server ini.</span>
+  {% elif act == 'poweroff' %}
+    <span style="color:var(--red);font-weight:600">Perintah POWER OFF telah dikirim ke Agen Pantau.</span>
+    <span style="font-size:13px;color:var(--dim)"> Server akan mati ±4 detik dan perlu dinyalakan manual.</span>
   {% else %}
     <span style="color:var(--blue);font-weight:600">Perintah restart telah dikirim ke Agen Pantau.</span>
     <span style="font-size:13px;color:var(--dim)"> Status service akan di-update dalam beberapa detik setelah agent mengeksekusi.</span>

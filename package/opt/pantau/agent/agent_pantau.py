@@ -313,6 +313,7 @@ _svc_fail_streak: dict[int, int] = {}
 # Wrapper sudo sempit yang dipasang install.sh (hak minimum, idempoten).
 PANTUAN_APT_CMD = "/usr/local/sbin/pantau-apt"
 PANTUAN_HISTORY_CMD = "/usr/local/sbin/pantau-history"
+PANTUAN_HOST_CMD = "/usr/local/sbin/pantau-host"
 
 # Kuota output apt update/upgrade (praktis penuh; MEDIUMTEXT baseline 16MB,
 # streaming server punya kuota sama).
@@ -465,6 +466,8 @@ def execute_command(cfg: dict, command: dict) -> dict:
     - restart/start/stop : service via systemctl (root) / wrapper pantau-restart.
     - block_ip           : blokir IP sumber serangan via iptables (wrapper pantau-firewall).
     - restart_agent      : restart agen sendiri secara tertunda (respon terkirim dulu).
+    - reboot_host/poweroff_host : reboot / poweroff OS via wrapper pantau-host.
+                                 Eksekusi TERTUNDA ~4 dtk agar ack hasil sempat terkirim.
     """
     action = command.get("action", "restart")
     cmd_id = command.get("id")
@@ -477,6 +480,8 @@ def execute_command(cfg: dict, command: dict) -> dict:
         result = _exec_block_ip(command)
     elif action == "restart_agent":
         result = _exec_restart_agent()
+    elif action in ("reboot_host", "poweroff_host"):
+        result = _exec_host_control(action)
     else:
         result = _exec_service_action(action, command)
 
@@ -518,6 +523,32 @@ def _exec_block_ip(command: dict) -> dict:
         outs.append(f"{ip}: {res['output']}")
     note = " | aturan iptables volatile (hilang saat reboot): utk permanen gunakan iptables-persistent"
     return {"ok": ok_all, "output": ("; ".join(outs) + note)[:2000]}
+
+
+def _exec_host_control(action: str) -> dict:
+    """Reboot/poweroff OS — ditunda ~4 dtk agar respon ack sempat terkirim ke Dashboard.
+
+    Modelnya sama seperti restart_agent: proses terpisah (start_new_session)
+    mengambil alih setelah agen selesai mengirim hasil; sistem operasi (systemd)
+    yang melakukan reboot/poweroff lewat wrapper pantau-host.
+    """
+    sub_action = "reboot" if action == "reboot_host" else "poweroff"
+    if IS_ROOT:
+        label = f"{PANTUAN_HOST_CMD} {sub_action}"
+    else:
+        label = f"/usr/bin/sudo -n {PANTUAN_HOST_CMD} {sub_action}"
+    try:
+        subprocess.Popen(
+            ["/bin/sh", "-c", f"sleep 4; {label}"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True, close_fds=True,
+        )
+        verb = "di-reboot" if sub_action == "reboot" else "di-matikan (poweroff)"
+        return {"ok": True,
+                "output": f"Perintah diterima: server akan {verb} dalam ±4 detik. "
+                          "Dashboard akan terputus dari server ini."}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "output": f"Gagal menjadwalkan {sub_action}: {e}"}
 
 
 def _exec_restart_agent() -> dict:

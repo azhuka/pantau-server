@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#
+# pantau-host - Wrapper sempit reboot/poweroff server klien untuk Agen Pantau.
+#
+# Hanya menerima SATU argumen: reboot | poweroff. Tidak ada passthrough shell.
+# Agen menjalankan wrapper ini secara TERTUNDA (beberapa detik) setelah ack
+# hasil terkirim, sehingga admin tetap mendapat konfirmasi sebelum mesin mati.
+#
+# Sudoers: pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-host
+set -u
+
+ACTION="${1:-}"
+
+fail() {
+    echo "$*" >&2
+    exit 1
+}
+
+case "$ACTION" in
+    reboot)   CMD="/usr/bin/systemctl -i reboot" ;;
+    poweroff) CMD="/usr/bin/systemctl -i poweroff" ;;
+    *)        fail "Aksi tidak dikenal: '${ACTION}' (harus reboot|poweroff)" ;;
+esac
+
+[ -x /usr/bin/systemctl ] || fail "/usr/bin/systemctl tidak ditemukan"
+
+exec /bin/sh -c "$CMD"
