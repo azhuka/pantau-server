@@ -61,25 +61,45 @@ journalctl -u agent_pantau -f
 - **Agen pantau:** jalankan ulang 2 baris installer di atas (kode agen diperbarui, konfigurasi tidak ditimpa).
 
 > Tombol **Reboot OS / Power Off** di halaman Rincian memerlukan agen pantau **v3.7+**
+> (upgrade interaktif memerlukan **v3.8+**)
 > (badge di halaman Rincian menampilkan versi agen setelah update). Kode agen lama
 > menolak perintah itu dan menampilkan hasil "Aksi tidak dikenal".
 
 ## Update OS dari Dashboard (tombol Update / Upgrade di halaman Rincian)
 
-Agen menjalankan `apt-get` **non-interaktif** lewat wrapper `pantau-apt`, sehingga
-tidak pernah menggantung menunggu jawaban di terminal yang tidak bisa diketik:
+Ada dua cara menjalankan upgrade paket, keduanya lewat wrapper `pantau-apt`:
 
-- File konfigurasi yang **sudah diubah manual** (mis. `/etc/zabbix/zabbix_agent2.conf`)
-  **tidak ditimpa** — versi lokal Anda dipertahankan (setara menjawab "N" pada
-  prompt `dpkg`, perilaku bawaan Ubuntu).
-- File konfigurasi **baru** memakai versi bawaan paket.
-- `needrestart` direstart otomatis tanpa bertanya.
+### 1. Tombol **Upgrade** — interaktif (default)
+
+- `apt-get upgrade` berjalan di pty sungguhan, jadi kalau `dpkg` bertanya
+  (mis. `Configuration file '/etc/zabbix/zabbix_agent2.conf' ... [default=N] ?`),
+  pertanyaannya **muncul di kotak terminal** di halaman Rincian.
+- Anda menjawab lewat **kotak jawaban** di bawah terminal (tombol cepat
+  `Y` / `N` / `⏎ bawaan` / `D` / `Z`, atau ketik bebas lalu Enter). Karakter
+  kontrol dibuang; satu jawaban hanya terkirim sekali.
+- **Agen tidak menebak jawaban Anda** — kalau proses diam, terminal hanya menampilkan
+  pengingat "Menunggu jawaban Anda". Timeout 1 jam, lalu proses dihentikan paksa.
+- Paket yang perlu-an perlu keputusan Anda (mis. paket vendor) bisa ditolak
+  dengan `N`; konfigurasi lokal Anda tidak ditimpa diam-diam.
+- Jangan menutup halaman/proses sebelum selesai; halaman boleh di-refresh —
+  kotak jawaban ikut tersambung kembali.
+
+### 2. Tombol **otomatis** — non-interaktif
+
+- Tanpa pertanyaan sama sekali: konfigurasi yang sudah Anda ubah sendiri
+  **tidak ditimpa** (setara menjawab "N" pada prompt `dpkg`), file konfigurasi
+  baru memakai bawaan paket, dan `needrestart` merestart tanpa bertanya.
+- Cocok untuk update terjadwal/massal di banyak server.
+
+### Keduanya
+
+- **Update OS** hanya menyegarkan daftar paket — selalu aman, tanpa pertanyaan.
 - Kalau ada proses `apt`/`dpkg` lain yang sedang jalan, update **ditolak** dengan
   pesan jelas — bukan merusak paket. Tunggu proses itu selesai lalu ulangi.
-- Bila ada prompt dari skrip post-install vendor yang tidak dikenali, agen
-  **tidak menebak**; outputnya diberi petunjuk: `sudo dpkg --configure -a`.
+- Bila proses menggantung tanpa prompt yang dikenali, selesaikan manual:
+  `sudo dpkg --configure -a` lalu `sudo apt-get -f install`.
 
-Butuh agen **v3.7+**.
+Butuh agen **v3.8+** untuk kotak jawaban interaktif.
 
 ### Kalau update sempat menggantung / terputus
 

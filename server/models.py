@@ -222,6 +222,10 @@ class LogRequest(Base):
         nullable=False, default="pending",
     )
     result = Column(MEDIUMTEXT, nullable=True)
+    # Jalur interaktif: jawaban admin (mis. "N\n" saat dpkg menanyakan file
+    # konfigurasi) disimpan di sini lalu diambil agent lewat /api/logs/{id}/input.
+    input_data = Column(String(500), nullable=True)
+    input_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
 

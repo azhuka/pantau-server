@@ -8,8 +8,10 @@
 # 3. Wrapper pantau-history — jalur terbatas baca ~/.bash_history user
 #    (nama user divalidasi; hanya path /home/<user>/.bash_history).
 # 4. pantau-apt — wrapper sempit utk tombol "Update"/"Upgrade" paket OS pada
-#    Dashboard. Hanya menerima argumen update/upgrade (divalidasi wrapper,
-#    bukan shell passthrough); sudo NOPASSWD satu perintah eksplisit.
+#    Dashboard. Hanya menerima argumen update/upgrade/upgrade-interact
+#    (divalidasi wrapper, bukan shell passthrough); sudo NOPASSWD satu perintah
+#    eksplisit. Mode upgrade-interact sengaja membiarkan dpkg BERHENTI dan
+#    bertanya; jawabannya dikirim admin dari Dashboard lewat stdin proses.
 # 5. pantau-firewall — jalur sempit blokir IP (iptables) utk mitigasi
 #    serangan SSH. IP divalidasi keras (IPv4 publik saja, bukan privat).
 # 6. pantau-host — jalur sempit reboot/poweroff dari Dashboard (admin).

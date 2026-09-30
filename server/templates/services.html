@@ -63,7 +63,8 @@
     <div class="hero-actions">
       {% if user.role == 'admin' %}
       <button class="btn btn-success" id="apt-update-btn" onclick="aptAction('APT_UPDATE')">&#8635;&nbsp;Update OS</button>
-      <button class="btn btn-danger" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE')" disabled>Upgrade&nbsp;&#9650;</button>
+      <button class="btn btn-danger" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled>Upgrade&nbsp;&#9650;</button>
+      <button class="btn btn-ghost btn-sm" id="apt-auto-btn" onclick="aptAction('APT_UPGRADE')" disabled title="Upgrade tanpa pertanyaan sama sekali: konfigurasi lokal selalu dipertahankan">otomatis</button>
       {% else %}
       <span class="badge badge-inactive">Update OS aktif untuk Admin</span>
       {% endif %}
@@ -87,18 +88,34 @@
     <summary style="font-size:11px;color:var(--dim);cursor:pointer">Bagaimana Update/Upgrade OS berjalan di sini? (aman, tidak menggantung)</summary>
     <div style="font-size:12px;color:var(--dim);line-height:1.6;margin-top:8px;max-width:820px">
       <ul style="margin:0;padding-left:18px">
-        <li>Berjalan <b>non-interaktif</b>: tidak ada pertanyaan yang menggantung, keluaran mengalir langsung ke kotak terminal di bawah ini.</li>
-        <li>File konfigurasi yang <b>sudah Anda ubah sendiri</b> (contoh <span class="mono">/etc/zabbix/zabbix_agent2.conf</span>) <b>tidak ditimpa</b> — versi lokal Anda dipertahankan.</li>
-        <li>File konfigurasi <b>baru</b> (belum pernah ada) memakai versi bawaan paket.</li>
-        <li>Layanan/perpustakaan yang perlu di-restart direstart otomatis setelah paket terpasang.</li>
+        <li><b>Update OS</b> hanya menyegarkan daftar paket — selalu aman, tanpa pertanyaan.</li>
+        <li><b>Upgrade</b> berjalan <b>interaktif</b>: kalau <span class="mono">dpkg</span> bertanya (mis. file konfigurasi paket), Anda yang memilih jawabannya lewat <b>kotak jawaban</b> di bawah terminal — persis seperti mengetik di SSH. Tekan <span class="mono">Enter</span> saja untuk memakai pilihan bawaan.</li>
+        <li>Tombol <b>otomatis</b> = upgrade tanpa pertanyaan sama sekali: file konfigurasi yang sudah Anda ubah sendiri tidak ditimpa, file baru memakai bawaan paket, dan layanan yang perlu di-restart direstart diam-diam.</li>
         <li>Kalau ada proses apt lain yang sedang berjalan, update <b>ditolak</b> (tidak merusak paket) — coba lagi nanti.</li>
-        <li>Butuh versi agen <b>v3.7+</b>. Bila masih v3.6, jalankan ulang installer di server ini.</li>
+        <li>Kalau proses menggantung tanpa prompt yang dikenali, selesaikan manual di server: <span class="mono">sudo dpkg --configure -a</span>.</li>
+        <li>Butuh versi agen <b>v3.8+</b> (kotak jawaban). Bila masih versi lama, jalankan ulang installer di server ini.</li>
       </ul>
     </div>
   </details>
   <div id="apt-live" style="display:none;margin-top:14px">
     <div id="apt-status" style="font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--blue);margin-bottom:6px">—</div>
     <pre id="apt-out" class="apt-terminal"></pre>
+    <div id="apt-input" style="display:none;margin-top:10px;padding:10px;border:1px solid var(--yellow);border-radius:8px;background:var(--bg)">
+      <div style="font-size:12px;color:var(--yellow);font-weight:600;margin-bottom:8px">Mode interaktif &mdash; kalau <span class="mono">dpkg</span> bertanya, balas di sini lalu Enter.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <input id="apt-answer" type="text" maxlength="120" autocomplete="off" spellcheck="false"
+               placeholder="mis. N  (pakai konfigurasi bawaan paket)"
+               aria-label="Jawaban untuk prompt dpkg"
+               style="flex:1 1 200px;min-width:150px;padding:7px 10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px">
+        <button class="btn btn-primary btn-sm" type="button" onclick="aptSendAnswer()">Kirim</button>
+        <span style="font-size:11px;color:var(--dim)">cepat:</span>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="aptSendAnswer('Y')" title="Ya / pakai konfigurasi dari maintainer">Y</button>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="aptSendAnswer('N')" title="Tidak / pakai konfigurasi lokal">N</button>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="aptSendAnswer('')" title="Enter = pakai bawaan">&#9166; bawaan</button>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="aptSendAnswer('D')" title="Bandingkan tampilan">&Delta;</button>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="aptSendAnswer('Z')" title="Buka editor (memicu vim/nano di terminal)">Z</button>
+      </div>
+    </div>
   </div>
   <div id="apt-msg" style="display:none;font-size:12px;line-height:1.5;margin-top:10px"></div>
 </div>
@@ -520,6 +537,21 @@ let aptUpdated = false; // Update SUDAH ditekan & sukses di sesi ini (berapa pun
 let aptRunning = false; // sedang ada proses Update/Upgrade berjalan
 let aptFollowActive = false;  // satu loop live pada satu waktu (manual vs resume)
 let aptFollowCooldown = 0;    // jeda pasca "batas waktu habis" agar tidak loop-resume
+let aptRid = null;            // id request apt yang sedang dilacak (untuk kirim jawaban)
+let aptInteractive = false;   // proses berjalan mode interaktif → tampilkan kotak jawaban
+
+function aptLabel(kind) {
+  if (kind === 'APT_UPGRADE_INTERACT') return 'apt upgrade (interaktif)';
+  if (kind === 'APT_UPGRADE') return 'apt upgrade (otomatis)';
+  return 'apt update';
+}
+
+function aptSetUpgradeEnabled(ok) {
+  ['apt-upgrade-btn', 'apt-auto-btn'].forEach(function (id) {
+    const b = document.getElementById(id);
+    if (b) b.disabled = !ok;
+  });
+}
 
 function matchAptByName(name) {
   return lastAptPkgs.find(q => pkgName(q) === name) || null;
@@ -554,10 +586,11 @@ function renderApt(data) {
   if (upBtn) {
     upBtn.disabled = aptRunning || !(aptArmed && aptN > 0);
     upBtn.title = aptRunning ? 'Ada proses Update/Upgrade sedang berjalan…'
-      : (aptArmed && aptN > 0) ? 'Upgrade semua paket tertunda'
+      : (aptArmed && aptN > 0) ? 'Upgrade semua paket tertunda (interaktif — Anda menjawab prompt dpkg)'
       : !aptUpdated ? 'Update Terlebih Dahulu'
       : 'Tidak ada paket yang perlu di-upgrade';
   }
+  aptSetUpgradeEnabled(!aptRunning && aptArmed && aptN > 0);
 }
 
 function escapeHtml(s) {
@@ -596,7 +629,43 @@ function aptLiveShow(kind) {
   if (box) box.style.display = '';
   const out = document.getElementById('apt-out');
   if (out) out.textContent = '';
+  aptInputShow(kind === 'APT_UPGRADE_INTERACT');
   aptLiveStatus('mengirim perintah ke server…', 'var(--dim)');
+}
+
+// ---------- kotak jawaban (khusus mode interaktif) ----------
+function aptInputShow(on) {
+  const box = document.getElementById('apt-input');
+  if (box) box.style.display = on ? '' : 'none';
+  const inp = document.getElementById('apt-answer');
+  if (inp) {
+    inp.value = '';
+    if (on && !document.hidden) inp.focus();
+  }
+}
+
+async function aptSendAnswer(val) {
+  if (!aptRid || !aptInteractive) return;
+  const inp = document.getElementById('apt-answer');
+  const data = (val === undefined) ? (inp ? inp.value : '') : val;
+  if (inp) inp.value = '';
+  const shown = String(data).trim();
+  try {
+    const r = await fetch('/api/logs/' + aptRid + '/input', {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({data: String(data)}),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      aptLiveStatus('<b style="color:var(--red)">Jawaban gagal terkirim.</b> ' + escapeHtml(j.detail || ''), 'var(--red)');
+      return;
+    }
+    aptLiveAppend('[dashboard] terkirim: ' + (shown || '(Enter — pakai bawaan)') + '\n', false);
+    if (inp) inp.focus();
+  } catch (e) {
+    aptLiveStatus('<b style="color:var(--red)">Jawaban gagal terkirim.</b> ' + escapeHtml(e.message), 'var(--red)');
+  }
 }
 
 function aptLiveStatus(html, color) {
@@ -620,15 +689,23 @@ function aptLiveAppend(text, replace) {
 
 async function aptAction(kind) {
   const upD = document.getElementById('apt-update-btn');
-  const upG = document.getElementById('apt-upgrade-btn');
-  const label = kind === 'APT_UPGRADE' ? 'apt upgrade' : 'apt update';
-  if (kind === 'APT_UPGRADE'
-      && !confirm('Jalankan "apt upgrade -y" pada server ini sekarang? Semua paket tertunda akan ditingkatkan.')) {
+  if (kind === 'APT_UPGRADE_INTERACT') {
+    if (!confirm('Jalankan "apt upgrade" INTERAKTIF pada server ini sekarang?\n\n'
+        + 'Semua paket tertunda akan ditingkatkan. Kalau dpkg bertanya '
+        + '(mis. file konfigurasi), Anda jawab sendiri lewat kotak jawaban di bawah terminal.'
+        + '\n\nJangan tutup halaman ini selama proses berjalan.')) {
+      return;
+    }
+  } else if (kind === 'APT_UPGRADE'
+      && !confirm('Jalankan "apt upgrade -y" TANPA pertanyaan pada server ini sekarang?\n\n'
+        + 'Konfigurasi lokal Anda dipertahankan otomatis; file baru memakai bawaan paket.')) {
     return;
   }
   aptRunning = true;
   if (upD) upD.disabled = true;
-  if (upG) upG.disabled = true;
+  aptSetUpgradeEnabled(false);
+  aptRid = null;
+  aptInteractive = (kind === 'APT_UPGRADE_INTERACT');
   aptLiveShow(kind);
   aptLiveStatus('mengirim perintah ke server…', 'var(--dim)');
 
@@ -645,10 +722,11 @@ async function aptAction(kind) {
   } catch (e) {
     aptRunning = false;
     if (upD) upD.disabled = false;
-    if (upG) upG.disabled = !(aptArmed && aptLastCount > 0);
+    aptSetUpgradeEnabled(aptArmed && aptLastCount > 0);
     aptLiveStatus('<b style="color:var(--red)">Gagal mengirim perintah.</b> ' + escapeHtml(e.message), 'var(--red)');
     return;
   }
+  aptRid = rid;
   aptFollow(rid, kind, Date.now());
 }
 
@@ -659,15 +737,17 @@ async function aptFollow(rid, kind, startedMs) {
   aptFollowActive = true;
   aptRunning = true;
   const upD = document.getElementById('apt-update-btn');
-  const upG = document.getElementById('apt-upgrade-btn');
-  if (upD) upD.disabled = true;
-  if (upG) upG.disabled = true;
-  const label = kind === 'APT_UPGRADE' ? 'apt upgrade' : 'apt update';
+  const label = aptLabel(kind);
+  aptRid = rid;
+  aptInteractive = (kind === 'APT_UPGRADE_INTERACT');
   aptLiveShow(kind);
   aptLiveStatus('menyambung proses ' + label + ' yang masih berjalan…', 'var(--dim)');
+  if (upD) upD.disabled = true;
+  aptSetUpgradeEnabled(false);
 
   const start = startedMs || Date.now();
-  const limit = kind === 'APT_UPDATE' ? 320000 : 920000;
+  const limit = kind === 'APT_UPGRADE_INTERACT' ? 3700000
+    : (kind === 'APT_UPGRADE' ? 920000 : 320000);
   let j = null;
   while (Date.now() - start < limit) {
     await sleepMs(750);
@@ -684,7 +764,9 @@ async function aptFollow(rid, kind, startedMs) {
       const spin = secs % 2 === 0 ? '●' : '○';
       aptLiveStatus('<span style="color:var(--blue)">' + spin + '&nbsp;' + label +
         '</span>&nbsp;berjalan <b>' + secs + '</b> dtk'
-        + ' &nbsp;<span style="color:var(--dim)">' + fmtBytes(aptLiveBuf.length) + ' live</span>', 'var(--blue)');
+        + ' &nbsp;<span style="color:var(--dim)">' + fmtBytes(aptLiveBuf.length) + ' live</span>'
+        + (aptInteractive ? ' &nbsp;<span style="color:var(--yellow)">mode interaktif — jawab prompt lewat kotak di bawah</span>' : ''),
+        'var(--blue)');
       continue;
     }
     if (j && (j.status === 'success' || j.status === 'failed')) break;
@@ -692,16 +774,20 @@ async function aptFollow(rid, kind, startedMs) {
 
   aptRunning = false;
   aptFollowActive = false;
+  aptRid = null;
+  aptInteractive = false;
+  aptInputShow(false);
   if (upD) upD.disabled = false;
+  aptSetUpgradeEnabled(aptArmed && aptLastCount > 0);
 
   if (!j || j.status !== 'success') {
-    if (upG) upG.disabled = !(aptArmed && aptLastCount > 0);
     if (Date.now() - start >= limit) {
       aptLiveStatus('<b style="color:var(--red)">Gagal — batas waktu habis.</b> Periksa status agen.', 'var(--red)');
       aptMsg('<b>Agen tidak merespons dalam batas waktu — periksa status agen.</b>', 'var(--red)');
       aptFollowCooldown = Date.now() + 120000; // tunda resume agar tidak langsung mengulang
     } else if (j) {
       aptLiveShow(kind);
+      aptInputShow(false);   // proses sudah berhenti — jangan tampilkan kotak jawaban
       aptLiveAppend('[status: ' + j.status + ']\n' + escapeHtml(j.result || ''), false);
       aptLiveStatus('<b style="color:var(--red)">Gagal (' + escapeHtml(j.status) + ').</b>', 'var(--red)');
       aptMsg('Status: ' + escapeHtml(j.status) + (j.result ? ' — ' + escapeHtml(j.result) : ''), 'var(--red)');
@@ -732,7 +818,7 @@ async function aptFollow(rid, kind, startedMs) {
           : '';
         aptMsg('<b>' + apt.upgradable + ' paket siap untuk di-upgrade.</b>' + listHtml, 'var(--yellow)');
         aptLiveStatus('<b style="color:var(--yellow)">Selesai — ' + apt.upgradable + ' paket siap di-upgrade.</b> Klik tombol Upgrade untuk mengeksekusi.', 'var(--yellow)');
-      } else if (kind === 'APT_UPGRADE') {
+      } else if (kind === 'APT_UPGRADE' || kind === 'APT_UPGRADE_INTERACT') {
         aptMsg('<b>Proses upgrade selesai — semua paket sudah ditingkatkan.</b>', 'var(--green)');
         aptLiveStatus('<b style="color:var(--green)">Selesai — upgrade berhasil.</b> Tidak ada sisa paket yang perlu di-upgrade.', 'var(--green)');
       } else {
@@ -741,7 +827,7 @@ async function aptFollow(rid, kind, startedMs) {
       }
       aptUpdated = true; // Update (atau Upgrade) sudah dijalankan & tuntas di sesi ini
       aptArmed = (apt.upgradable > 0);
-      if (upG) upG.disabled = !aptArmed;
+      aptSetUpgradeEnabled(aptArmed);
     } else if (info) {
       const final = info.output || j.result || '';
       aptLiveAppend(final, true);
@@ -1338,5 +1424,13 @@ if (svcSel) svcSel.addEventListener('change', loadSvcHistory);
 document.querySelectorAll('#svc-ranges .btn').forEach(b =>
   b.addEventListener('click', () => { svcRange = b.dataset.range; loadSvcHistory(); }));
 setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
+
+// Enter di kotak jawaban = kirim ke proses apt yang sedang berjalan
+const aptAnswerEl = document.getElementById('apt-answer');
+if (aptAnswerEl) {
+  aptAnswerEl.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); aptSendAnswer(); }
+  });
+}
 </script>
 {% endblock %}

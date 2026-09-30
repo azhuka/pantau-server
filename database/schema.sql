@@ -66,6 +66,8 @@ CREATE TABLE `log_requests` (
   `detail` varchar(128) DEFAULT NULL,
   `status` enum('pending','executing','success','failed') NOT NULL,
   `result` mediumtext DEFAULT NULL,
+  `input_data` varchar(500) DEFAULT NULL,
+  `input_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),

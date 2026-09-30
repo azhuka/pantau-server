@@ -323,7 +323,7 @@ APT_AGENT_OUTPUT_MAX = 4_000_000
 APT_PROGRESS_TAIL_CHARS = 200_000
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.7.0"
+AGENT_VERSION = "3.8.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -999,6 +999,10 @@ def _apt_cmd(kind: str):
         return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "update"], 300
     if kind == "APT_UPGRADE":
         return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "upgrade"], 900
+    if kind == "APT_UPGRADE_INTERACT":
+        # Interaktif menunggu admin mengetik; timeout lebih longgar, dan HANYA
+        # diakhiri bila proses benar-benar tidak bergerak (mis. admin lupa).
+        return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "upgrade-interact"], 3600
     raise ValueError(f"unit apt tidak dikenal: {kind}")
 
 
@@ -1056,6 +1060,37 @@ def _looks_like_prompt(tail: str) -> bool:
         return False
     last = tail.rstrip().splitlines()[-1] if tail.rstrip() else ""
     return last.rstrip().endswith(("?", "??", "):", "]:"))
+
+
+def _stdin_writer_thread(cfg: dict, rid: int, proc) -> None:
+    """Terus ambil jawaban admin dari dashboard lalu tulis ke stdin proses.
+
+    Berhenti saat proses selesai. Semua error ditelan supaya tidak mematikan
+    proses apt; admin cukup mengetik ulang bila gagal terkirim.
+    """
+    while True:
+        time.sleep(0.4)
+        if proc.poll() is not None:
+            return
+        try:
+            code, data = http_json_request(cfg, f"/api/logs/{rid}/input", "GET", timeout=8)
+        except Exception:  # noqa: BLE001 — loop diagnostik, jangan matikan apa pun
+            continue
+        if code != 200:
+            continue
+        text = data.get("data")
+        if not text:
+            continue
+        try:
+            proc.stdin.write(text.encode("utf-8", errors="replace"))
+            proc.stdin.flush()
+            shown = text.strip()
+            print(f"[APT] jawaban terkirim ke proses: {shown!r}")
+            http_json_request(cfg, f"/api/logs/{rid}/progress", "POST",
+                              {"chunk": f"[pantau] jawaban Anda dikirim: {shown}\n",
+                               "replace": False})
+        except (OSError, ValueError):
+            return  # proses sudah mati / pipe tertutup
 
 
 def _clean_output_chunk(text: str) -> str:
@@ -1182,6 +1217,7 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
     hint_shown = False
     failed = False
     errmsg = ""
+    interactive = (kind == "APT_UPGRADE_INTERACT")
 
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -1189,6 +1225,14 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
     except OSError as e:
         proc = None
         failed, errmsg = True, f"[gagal menjalankan apt: {e}]"
+
+    if proc is not None and interactive:
+        # Mode interaktif: admin yang menjawab, agen TIDAK menebak. Thread ini
+        # hanya menyalin jawaban dari Dashboard ke stdin proses.
+        input_thread = threading.Thread(
+            target=_stdin_writer_thread, args=(cfg, rid, proc),
+            name=f"apt-input-{rid}", daemon=True)
+        input_thread.start()
 
     if proc is not None:
         while True:
@@ -1225,7 +1269,14 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
                 tail = termify(_tail_parts(output_parts, 2000))
                 answer, why = _apt_prompt_answer(tail)
                 note = ""
-                if answer and prompt_answers < 3:
+                if interactive:
+                    # JANGAN menjawab sendiri: mode interaktif exist justru
+                    # supaya admin yang memutuskan. Cukup ingatkan di terminal.
+                    if _looks_like_prompt(tail) and not hint_shown:
+                        hint_shown = True
+                        note = ("\n[pantau] Menunggu jawaban Anda — ketik di kotak "
+                                "jawaban di bawah terminal (Enter = pakai bawaan).\n")
+                elif answer and prompt_answers < 3:
                     try:
                         proc.stdin.write(answer.encode())
                         proc.stdin.flush()
@@ -1566,7 +1617,7 @@ def poll_log_requests(cfg: dict):
 
         if not re.fullmatch(r"[A-Za-z0-9@_.:+-]{1,100}", unit):
             result = {"status": "failed", "result": "Nama unit tidak valid"}
-        elif unit in ("APT_UPDATE", "APT_UPGRADE"):
+        elif unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT"):
             threading.Thread(
                 target=_run_apt_in_thread, args=(cfg, rid, unit), daemon=True
             ).start()

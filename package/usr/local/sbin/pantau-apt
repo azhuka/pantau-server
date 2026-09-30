@@ -2,52 +2,65 @@
 # pantau-apt — Cangkang sempit utk tombol Update/Upgrade paket OS.
 # Dipanggil agen 'pantau' via sudo NOPASSWD (lihat /etc/sudoers.d/pantau-agent).
 # Dijalankan lewat pty (script -qfc) supaya output PERSIS seperti terminal SSH:
-# baris progress \r ikut terlihat. Argumen divalidasi di sini; BUKAN shell
-# passthrough. URL/repo tetap apa adanya.
+# baris progress \r ikut terlihat, dan dpkg bisa BERINTERAKSI lewat stdin.
+# Argumen divalidasi di sini; BUKAN shell passthrough. URL/repo tetap apa adanya.
 #
-# PENTING — mode NON-INTERAKTIF wajib:
-# Output dialirkan ke Dashboard, bukan ke terminal yang bisa diketik admin.
-# Tanpa setelan di bawah, dpkg akan BERHENTI dan menunggu jawaban (mis. saat
-# ada file konfigurasi yang dimodifikasi lokal, seperti /etc/zabbix/*.conf)
-# -> update menggantung sampai timeout. 먹는 jawaban standarnya:
-#   --force-confdef : file konfigurasi baru -> versi bawaan paket
-#   --force-confold : file konfigurasi yang sudah diubah admin -> VERSI LAMA
-#                     DIPERTAHANKAN (tidak ditimpa)
-# Jadi ini perilaku "aman": setelan lokal Anda tidak ditimpa diam-diam.
+# Pemakaian:
+#   pantau-apt update            -> sinkron, non-interaktif
+#   pantau-apt upgrade           -> upgrade NON-INTERAKTIF (aman, tak menggantung)
+#   pantau-apt upgrade-interact  -> upgrade INTERAKTIF: admin mengetik jawaban
+#                                   sendiri lewat kotak input di Dashboard
+#                                   (dpkg boleh bertanya apa pun)
+#
+# Kenapa ada dua mode? Non-interaktif cocok untuk update terjadwal/massal.
+# Interaktif dipakai admin yang ingin memutuskan sendiri tiap prompt dpkg
+# (mis. memakai konfigurasi bawaan paket, bukan miliknya).
 set -e
 
-# needrestart: 'a' = restart otomatis paket/perpustakaan yang perlu, tanpa
-# pertanyaan. 'l' hanya menampilkan daftar. Default distro sering/pkg butuh
-# ENV agar tidak menggantung di prompt.
-export DEBIAN_FRONTEND=noninteractive
-export NEEDRESTART_MODE="${PANTAU_NEEDRESTART_MODE:-a}"
-export NEEDRESTART_SUSPEND=
-export DEBCONF_NONINTERACTIVE_SEEN=true
-export APT_LISTCHANGES_FRONTEND=none
+DPKG_KEEP_LOCAL="-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
+DPKG_COMMON="-o Dpkg::Use-Pty=0 -o Dpkg::Lock::Timeout=600"
 
-DPKG_OPTS="-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
-DPKG_OPTS="$DPKG_OPTS -o Dpkg::Use-Pty=0"
-DPKG_OPTS="$DPKG_OPTS -o Dpkg::Lock::Timeout=600"
-
-# Tolak jalan bila proses apt/dpkg lain sedang memegang lock (instead of
-# menunggu lalu gagal setengah jalan). Lock depan = dpkg akan mengubah paket.
-if [ -e /var/lib/dpkg/lock-frontend ]; then
-    if fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
-        echo "pantau-apt: proses apt/dpkg lain sedang berjalan (lock /var/lib/dpkg/lock-frontend dipegang)." >&2
-        echo "           Tunggu proses itu selesai, lalu ulangi. Tidak ada yang dirusak." >&2
-        exit 3
-    fi
+# Tolak jalan bila proses apt/dpkg lain sedang memegang lock, alih-alih
+# menunggu lalu gagal setengah jalan. Lock depan = dpkg sedang mengubah paket.
+if [ -e /var/lib/dpkg/lock-frontend ] && fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
+    echo "pantau-apt: proses apt/dpkg lain sedang berjalan (lock /var/lib/dpkg/lock-frontend dipegang)." >&2
+    echo "           Tunggu proses itu selesai, lalu ulangi. Tidak ada yang dirusak." >&2
+    exit 3
 fi
 
 case "${1:-}" in
     update)
-        exec /usr/bin/script -qfc "/usr/bin/apt-get update $DPKG_OPTS" /dev/null
+        # Sinkron daftar paket: aman non-interaktif, tanpa bisa menggantung.
+        export DEBIAN_FRONTEND=noninteractive
+        export NEEDRESTART_MODE=l
+        export APT_LISTCHANGES_FRONTEND=none
+        exec /usr/bin/script -qfc "/usr/bin/apt-get update -o Dpkg::Lock::Timeout=600" /dev/null
         ;;
     upgrade)
-        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 $DPKG_OPTS upgrade" /dev/null
+        # Tanpa prompt: konfigurasi lokal admin dipertahankan, konfigurasi baru
+        # memakai bawaan paket; needrestart merestart diam-diam.
+        export DEBIAN_FRONTEND=noninteractive
+        export NEEDRESTART_MODE=a
+        export APT_LISTCHANGES_FRONTEND=none
+        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON upgrade" /dev/null
+        ;;
+    upgrade-interact)
+        # Tanpa --force-confold & tanpa DEBIAN_FRONTEND=noninteractive, sehingga
+        # dpkg benar-benar BERHENTI dan bertanya; jawabannya datang dari admin
+        # melalui stdin proses (dikirim agen dari kotak input Dashboard).
+        unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
+        export NEEDRESTART_MODE=a
+        export APT_LISTCHANGES_FRONTEND=none
+        # -o Dpkg::Use-Pty=1: dpkg menulis prompt ke pty sehingga kelihatan di UI.
+        echo "== MODE INTERAKTIF =="
+        echo "Jawab setiap pertanyaan yang muncul di kotak terminal bawah."
+        echo "Membatalkan:   Ctrl+C di server, atau tombol Hentikan di Dashboard."
+        echo
+        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 upgrade" /dev/null
         ;;
     *)
-        echo "pantau-apt: argumen tidak dikenal: '${1:-}' (hanya: update | upgrade)" >&2
+        echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2
+        echo "            (hanya: update | upgrade | upgrade-interact)" >&2
         exit 2
         ;;
 esac

@@ -268,10 +268,43 @@ def migrate_api_keys():
         db.close()
 
 
+def migrate_log_request_input():
+    """Sekali pakai: tambah kolom input admin ke log_requests (mode interaktif).
+
+    create_all() hanya membuat TABEL yang hilang, tidak menambah kolom, jadi
+    instalasi lama perlu ALTER TABLE manual. Idempoten: cek dulu via inspector.
+    """
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    if "log_requests" not in inspector.get_table_names():
+        return
+    existing = {c["name"] for c in inspector.get_columns("log_requests")}
+    wanted = {
+        "input_data": "VARCHAR(500) NULL",
+        "input_at": "DATETIME NULL",
+    }
+    missing = {k: v for k, v in wanted.items() if k not in existing}
+    if not missing:
+        return
+    db = SessionLocal()
+    try:
+        for col, ddl in missing.items():
+            db.execute(text(f"ALTER TABLE log_requests ADD COLUMN {col} {ddl}"))
+        db.commit()
+        print(f"[startup] Kolom baru log_requests: {', '.join(missing)}", flush=True)
+    except Exception as exc:  # noqa: BLE001 -- startup tak boleh gagal karena migrasi
+        db.rollback()
+        print(f"[startup] Migrasi kolom input gagal: {exc}", flush=True)
+    finally:
+        db.close()
+
+
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
     migrate_api_keys()
+    migrate_log_request_input()
     try:
         with SessionLocal() as sess:
             _prune_expired_sessions(sess)
@@ -610,7 +643,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         db.query(LogRequest)
         .filter(
             LogRequest.server_id == sid,
-            LogRequest.unit.in_(["APT_UPDATE", "APT_UPGRADE"]),
+            LogRequest.unit.in_(APT_UNITS),
             LogRequest.status.in_(["pending", "executing"]),
         )
         .order_by(LogRequest.created_at)
@@ -1642,6 +1675,9 @@ def api_system_status(user: User = Depends(require_user), db: Session = Depends(
 
 
 VALID_UNIT_RE = re.compile(r"^[A-Za-z0-9@_.:+-]{1,100}$")
+# Unit log khusus OS: bisa butuh jawaban admin saat berjalan (mode interaktif),
+# jadi tidak boleh dianggap "stale" seperti permintaan log biasa.
+APT_UNITS = ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT")
 SYSLOG_FILE = "/var/log/syslog"
 AUTH_FILE = "/var/log/auth.log"
 STALE_LOG_SECONDS = 600
@@ -2195,6 +2231,7 @@ AUDIT_ACTION_LABELS = {
     "user_delete": "Hapus user",
     "apt_update": "Apt update",
     "apt_upgrade": "Apt upgrade",
+    "apt_upgrade_interact": "Apt upgrade (interaktif)",
     "alert_ack": "Akui peringatan (alert)",
     "cmd:restart": "Restart service",
     "cmd:block_ip": "Blokir IP",
@@ -2452,7 +2489,7 @@ def _expire_stale_logs(db: Session, server_id: int):
         .filter(
             LogRequest.server_id == server_id,
             LogRequest.status.in_(["pending", "executing"]),
-            LogRequest.unit.notin_(["APT_UPDATE", "APT_UPGRADE"]),
+            LogRequest.unit.notin_(APT_UNITS),
             LogRequest.created_at < cutoff,
         )
         .all()
@@ -2524,6 +2561,65 @@ def api_logs_progress(
     req.updated_at = datetime.utcnow()
     db.commit()
     return {"ok": True}
+
+
+@app.post("/api/logs/{rid}/input")
+def api_logs_input(
+    rid: int,
+    body: dict = Body(...),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Admin mengirim jawaban untuk proses apt yang sedang berjalan (mode interaktif).
+
+    Jawaban disimpan di `input_data`; agent mengambilnya lewat GET
+    /api/logs/{rid}/input (khusus agen, pakai X-Api-Key) lalu menulis ke stdin
+    proses. Jawaban selalu diakhiri baris baru; pty menerjemahkannya jadi
+    tombol Enter. Jawaban kosong = Enter saja (pakai pilihan bawaan dpkg).
+    """
+    req = db.query(LogRequest).filter(LogRequest.id == rid).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Permintaan tidak ditemukan")
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Hanya admin")
+    if req.status != "executing" or req.unit not in APT_UNITS:
+        raise HTTPException(status_code=409, detail="Proses tidak sedang berjalan")
+
+    text = body.get("data")
+    if not isinstance(text, str):
+        raise HTTPException(status_code=400, detail="data harus string")
+    # Buang karakter kontrol (kecuali baris baru/tab) agar admin tidak bisa
+    # menyuntik perintah lain ke terminal yang sedang berjalan.
+    text = _CLEAN_CTRL_RE.sub("", text.replace("\r", ""))
+    text = text.replace("\n", "").replace("\t", " ")[:200].strip()
+    # Jawaban kosong = tekan Enter saja → pakai pilihan bawaan dpkg.
+    req.input_data = (text + "\n") if text else "\n"
+    req.input_at = datetime.utcnow()
+    req.updated_at = req.input_at
+    db.commit()
+    return {"ok": True}
+
+
+@app.get("/api/logs/{rid}/input")
+def api_logs_input_take(
+    rid: int,
+    x_api_key: str = Header(alias="X-Api-Key"),
+    db: Session = Depends(get_db),
+):
+    """Ambil jawaban admin (sekali ambil lalu dikosongkan). Dipanggil agent."""
+    server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
+    if not server:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    req = db.query(LogRequest).filter(
+        LogRequest.id == rid, LogRequest.server_id == server.id
+    ).first()
+    if not req or not req.input_data or req.status != "executing":
+        return {"data": None}
+    data = req.input_data
+    req.input_data = None      # sekali ambil: mencegah pengiriman berulang
+    req.input_at = None
+    db.commit()
+    return {"data": data}
 
 
 @app.post("/api/logs/{rid}/result")
@@ -2830,7 +2926,7 @@ def api_logs_request(
     if not VALID_UNIT_RE.match(unit):
         raise HTTPException(status_code=400, detail="Invalid unit name")
 
-    is_apt = unit in ("APT_UPDATE", "APT_UPGRADE")
+    is_apt = unit in APT_UNITS
     if is_apt and user.role != "admin":
         raise HTTPException(status_code=403, detail="Update/Upgrade hanya untuk admin")
     if is_apt:
@@ -2838,7 +2934,7 @@ def api_logs_request(
             db.query(LogRequest)
             .filter(
                 LogRequest.server_id == sid,
-                LogRequest.unit.in_(["APT_UPDATE", "APT_UPGRADE"]),
+                LogRequest.unit.in_(APT_UNITS),
                 LogRequest.status.in_(["pending", "executing"]),
             )
             .first()
@@ -2851,7 +2947,7 @@ def api_logs_request(
     logreq = LogRequest(server_id=sid, unit=unit, lines=lines, detail=detail or None)
     db.add(logreq)
     if is_apt:
-        _audit(db, user.username, f"apt_{'upgrade' if unit == 'APT_UPGRADE' else 'update'}",
+        _audit(db, user.username, f"apt_{unit.removeprefix('APT_').lower()}",
                server.hostname, "dikirim ke agen")
     db.commit()
     db.refresh(logreq)
