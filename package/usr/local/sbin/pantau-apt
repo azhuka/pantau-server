@@ -4,13 +4,47 @@
 # Dijalankan lewat pty (script -qfc) supaya output PERSIS seperti terminal SSH:
 # baris progress \r ikut terlihat. Argumen divalidasi di sini; BUKAN shell
 # passthrough. URL/repo tetap apa adanya.
+#
+# PENTING — mode NON-INTERAKTIF wajib:
+# Output dialirkan ke Dashboard, bukan ke terminal yang bisa diketik admin.
+# Tanpa setelan di bawah, dpkg akan BERHENTI dan menunggu jawaban (mis. saat
+# ada file konfigurasi yang dimodifikasi lokal, seperti /etc/zabbix/*.conf)
+# -> update menggantung sampai timeout. 먹는 jawaban standarnya:
+#   --force-confdef : file konfigurasi baru -> versi bawaan paket
+#   --force-confold : file konfigurasi yang sudah diubah admin -> VERSI LAMA
+#                     DIPERTAHANKAN (tidak ditimpa)
+# Jadi ini perilaku "aman": setelan lokal Anda tidak ditimpa diam-diam.
 set -e
+
+# needrestart: 'a' = restart otomatis paket/perpustakaan yang perlu, tanpa
+# pertanyaan. 'l' hanya menampilkan daftar. Default distro sering/pkg butuh
+# ENV agar tidak menggantung di prompt.
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE="${PANTAU_NEEDRESTART_MODE:-a}"
+export NEEDRESTART_SUSPEND=
+export DEBCONF_NONINTERACTIVE_SEEN=true
+export APT_LISTCHANGES_FRONTEND=none
+
+DPKG_OPTS="-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
+DPKG_OPTS="$DPKG_OPTS -o Dpkg::Use-Pty=0"
+DPKG_OPTS="$DPKG_OPTS -o Dpkg::Lock::Timeout=600"
+
+# Tolak jalan bila proses apt/dpkg lain sedang memegang lock (instead of
+# menunggu lalu gagal setengah jalan). Lock depan = dpkg akan mengubah paket.
+if [ -e /var/lib/dpkg/lock-frontend ]; then
+    if fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
+        echo "pantau-apt: proses apt/dpkg lain sedang berjalan (lock /var/lib/dpkg/lock-frontend dipegang)." >&2
+        echo "           Tunggu proses itu selesai, lalu ulangi. Tidak ada yang dirusak." >&2
+        exit 3
+    fi
+fi
+
 case "${1:-}" in
     update)
-        exec /usr/bin/script -qfc "/usr/bin/apt update" /dev/null
+        exec /usr/bin/script -qfc "/usr/bin/apt-get update $DPKG_OPTS" /dev/null
         ;;
     upgrade)
-        exec /usr/bin/script -qfc "/usr/bin/apt upgrade -y" /dev/null
+        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 $DPKG_OPTS upgrade" /dev/null
         ;;
     *)
         echo "pantau-apt: argumen tidak dikenal: '${1:-}' (hanya: update | upgrade)" >&2

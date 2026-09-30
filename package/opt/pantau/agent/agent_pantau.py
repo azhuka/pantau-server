@@ -1016,6 +1016,47 @@ def _apt_sudo_denied_hint(err: str) -> str:
 
 _ANSI_RE = re.compile(r"\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|.)")
 
+# Pola prompt interaktif yang masih mungkin muncul walau wrapper sudah
+# non-interaktif (mis. skrip post-install milik vendor). Offset [ ... ] adalah
+# jawaban default yang dipakai, jadi kita TIDAK menebak: kalau polanya tak
+# dikenal, proses dibiarkan dan admin diberi petunjuk cara memperbaikinya.
+_APT_PROMPT_RULES: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"What would you like to do about it \?"), "N\n"),
+    (re.compile(r"^\s*(?:Y or I)\s*:\s*install the package maintainer's version", re.M), "N\n"),
+    (re.compile(r"\[default=N\]", re.I), "N\n"),
+    (re.compile(r"Press \[Enter\] to continue", re.I), "\n"),
+    (re.compile(r"Do you want to continue\? \[Y/n\]", re.I), "y\n"),
+]
+# Diam tanpa output > detik ini = anggap sedang menunggu input.
+_APT_PROMPT_IDLE_SECS = 45.0
+
+
+def _apt_prompt_answer(tail: str) -> tuple[str | None, str]:
+    """Deteksi prompt interaktif pada output terakhir.
+
+    Kembalikan (jawaban, penjelasan) bila polanya dikenali; (None, "") bila
+    tidak ada prompt atau polanya tak dikenal (biarkan, jangan menebak).
+    """
+    if not tail:
+        return None, ""
+    # Hanya baris terakhir yang relevan: prompt selalu di ujung output.
+    last = tail.rstrip().splitlines()[-1] if tail.rstrip() else ""
+    if not last.strip():
+        return None, ""
+    for pat, answer in _APT_PROMPT_RULES:
+        if pat.search(last):
+            return answer, ("prompt dpkg interaktif terdeteksi "
+                            f"(jawaban otomatis: {answer.strip() or 'Enter'})")
+    return None, ""
+
+
+def _looks_like_prompt(tail: str) -> bool:
+    """Heuristik: baris terakhir mirip prompt yang belum terjawab."""
+    if not tail:
+        return False
+    last = tail.rstrip().splitlines()[-1] if tail.rstrip() else ""
+    return last.rstrip().endswith(("?", "??", "):", "]:"))
+
 
 def _clean_output_chunk(text: str) -> str:
     """Bersihkan chunk output mentah: buang kode ANSI & NUL saja (KEEP \r)."""
@@ -1136,12 +1177,15 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
     truncated = False
     last_post = 0.0
     started = time.monotonic()
+    last_activity = started
+    prompt_answers = 0
+    hint_shown = False
     failed = False
     errmsg = ""
 
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                start_new_session=True)
+                                stdin=subprocess.PIPE, start_new_session=True)
     except OSError as e:
         proc = None
         failed, errmsg = True, f"[gagal menjalankan apt: {e}]"
@@ -1173,8 +1217,32 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
                     if text:
                         output_parts.append(text)
                         raw_len += len(text)
+                        last_activity = time.monotonic()
                 elif proc.poll() is not None:
                     break
+            # --- Jaring pengaman: proses diam lama = mungkin menunggu jawaban ---
+            if raw_len and (now - last_activity) >= _APT_PROMPT_IDLE_SECS:
+                tail = termify(_tail_parts(output_parts, 2000))
+                answer, why = _apt_prompt_answer(tail)
+                note = ""
+                if answer and prompt_answers < 3:
+                    try:
+                        proc.stdin.write(answer.encode())
+                        proc.stdin.flush()
+                        prompt_answers += 1
+                        note = f"\n[pantau] {why}\n"
+                    except (OSError, ValueError):
+                        note = ""
+                elif not answer and not hint_shown and _looks_like_prompt(tail):
+                    hint_shown = True
+                    note = ("\n[pantau] Proses berhenti & menunggu jawaban pada prompt yang tidak "
+                            "dikenali, sehingga tidak bisa dilanjut otomatis.\n"
+                            "         Selesaikan manual di server ini:  sudo dpkg --configure -a\n"
+                            "         lalu ulangi Update OS dari Dashboard.\n")
+                if note:
+                    output_parts.append(note)
+                    raw_len += len(note)
+                    last_activity = time.monotonic()
             if raw_len and (time.monotonic() - last_post >= 1.2):
                 tail = termify(_tail_parts(output_parts, APT_PROGRESS_TAIL_CHARS))
                 if tail:

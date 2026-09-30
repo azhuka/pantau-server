@@ -83,6 +83,19 @@
   <div class="hero-aptline">
     <span id="apt-hint" style="font-size:12px;color:var(--dim)">belum ada info apt — tekan Update OS untuk menyegarkan.</span>
   </div>
+  <details id="apt-policy" style="margin-top:8px">
+    <summary style="font-size:11px;color:var(--dim);cursor:pointer">Bagaimana Update/Upgrade OS berjalan di sini? (aman, tidak menggantung)</summary>
+    <div style="font-size:12px;color:var(--dim);line-height:1.6;margin-top:8px;max-width:820px">
+      <ul style="margin:0;padding-left:18px">
+        <li>Berjalan <b>non-interaktif</b>: tidak ada pertanyaan yang menggantung, keluaran mengalir langsung ke kotak terminal di bawah ini.</li>
+        <li>File konfigurasi yang <b>sudah Anda ubah sendiri</b> (contoh <span class="mono">/etc/zabbix/zabbix_agent2.conf</span>) <b>tidak ditimpa</b> — versi lokal Anda dipertahankan.</li>
+        <li>File konfigurasi <b>baru</b> (belum pernah ada) memakai versi bawaan paket.</li>
+        <li>Layanan/perpustakaan yang perlu di-restart direstart otomatis setelah paket terpasang.</li>
+        <li>Kalau ada proses apt lain yang sedang berjalan, update <b>ditolak</b> (tidak merusak paket) — coba lagi nanti.</li>
+        <li>Butuh versi agen <b>v3.7+</b>. Bila masih v3.6, jalankan ulang installer di server ini.</li>
+      </ul>
+    </div>
+  </details>
   <div id="apt-live" style="display:none;margin-top:14px">
     <div id="apt-status" style="font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--blue);margin-bottom:6px">—</div>
     <pre id="apt-out" class="apt-terminal"></pre>

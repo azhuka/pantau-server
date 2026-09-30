@@ -64,6 +64,32 @@ journalctl -u agent_pantau -f
 > (badge di halaman Rincian menampilkan versi agen setelah update). Kode agen lama
 > menolak perintah itu dan menampilkan hasil "Aksi tidak dikenal".
 
+## Update OS dari Dashboard (tombol Update / Upgrade di halaman Rincian)
+
+Agen menjalankan `apt-get` **non-interaktif** lewat wrapper `pantau-apt`, sehingga
+tidak pernah menggantung menunggu jawaban di terminal yang tidak bisa diketik:
+
+- File konfigurasi yang **sudah diubah manual** (mis. `/etc/zabbix/zabbix_agent2.conf`)
+  **tidak ditimpa** — versi lokal Anda dipertahankan (setara menjawab "N" pada
+  prompt `dpkg`, perilaku bawaan Ubuntu).
+- File konfigurasi **baru** memakai versi bawaan paket.
+- `needrestart` direstart otomatis tanpa bertanya.
+- Kalau ada proses `apt`/`dpkg` lain yang sedang jalan, update **ditolak** dengan
+  pesan jelas — bukan merusak paket. Tunggu proses itu selesai lalu ulangi.
+- Bila ada prompt dari skrip post-install vendor yang tidak dikenali, agen
+  **tidak menebak**; outputnya diberi petunjuk: `sudo dpkg --configure -a`.
+
+Butuh agen **v3.7+**.
+
+### Kalau update sempat menggantung / terputus
+
+1. Tunggu atau hentikan proses: `sudo systemctl restart agent_pantau.service`
+   (membunuh proses `apt` yang menggantung).
+2. Rapikan paket yang mungkin terpotong: `sudo dpkg --configure -a` lalu
+   `sudo apt-get -f install`.
+3. Update ulang agen: jalankan ulang 2 baris installer, lalu tekan **Update OS**
+   lagi.
+
 ## HTTPS (disarankan untuk produksi)
 
 Dashboard memakai HTTP biasa secara bawaan. Untuk akses lewat internet, pasang
