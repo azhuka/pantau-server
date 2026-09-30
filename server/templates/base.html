@@ -12,7 +12,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .sidebar{width:220px;background:var(--sidebar);border-right:1px solid var(--border);padding:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:10;transition:width .2s ease}
 .sidebar-brand{padding:20px;font-size:15px;font-weight:700;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;white-space:nowrap}
 .sidebar-brand .brand-dot{color:var(--blue)}
-.sb-toggle{margin-left:auto;cursor:pointer;color:var(--dim);font-size:15px;line-height:1;padding:4px 7px;border-radius:6px;user-select:none}
+.sb-toggle{margin-left:auto;cursor:pointer;color:var(--dim);font-size:15px;line-height:1;padding:4px 7px;border-radius:6px;user-select:none;background:none;border:1px solid transparent;font-family:inherit}
 .sb-toggle:hover{color:var(--text);background:var(--hover)}
 .sidebar-nav{flex:1;padding:12px 0}
 .nav-section{padding:8px 16px;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
@@ -85,6 +85,18 @@ tr:hover td{background:var(--hover)}
 .form-group label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
 .form-group input,.form-group select{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;outline:none;transition:border .15s}
 .form-group input:focus,.form-group select:focus{border-color:var(--blue)}
+
+/* ---------- Aksesibilitas: fokus keyboard terlihat jelas ---------- */
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
+.btn:focus-visible,.sb-toggle:focus-visible,.tab:focus-visible,.nav-link:focus-visible,
+input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,button:focus-visible{
+  outline:2px solid var(--blue);outline-offset:2px
+}
+
+/* Hormati preferensi pengguna yang mengurangi animasi/motion */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
+}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 
 .api-key-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px 16px;font-family:monospace;font-size:12px;word-break:break-all;color:var(--green);position:relative}
@@ -100,6 +112,12 @@ tr:hover td{background:var(--hover)}
 .dot.offline{background:var(--yellow)}
 
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ---------- Toast notifikasi (feedback aksi dari redirect) ---------- */
+.toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:9999;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 6px 24px rgba(0,0,0,.35);max-width:90vw;text-align:center;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.ok{background:#14321f;border:1px solid #2e8b57;color:#c9f2d6}
+.toast.err{background:#3a1515;border:1px solid #c0392b;color:#ffd7d2}
+.toast.show{opacity:1}
 
 /* ---------- Halaman Rincian: hero ringkasan + tab ---------- */
 .hero-card{padding:18px 20px;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
@@ -192,7 +210,7 @@ body.show-alert-banner .main{padding-top:68px}
   <div class="sidebar-brand">
     <span class="brand-dot">&#9673;</span>
     <span class="brand-label">Pantau Server</span>
-    <span class="sb-toggle" id="sbToggle" onclick="toggleSb()" title="Minimalkan / perluas sidebar" role="button">&#9776;</span>
+    <button class="sb-toggle" id="sbToggle" onclick="toggleSb()" title="Minimalkan / perluas sidebar" aria-label="Minimalkan / perluas sidebar navvigasi" type="button">&#9776;</button>
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section">Menu</div>
@@ -233,6 +251,8 @@ body.show-alert-banner .main{padding-top:68px}
   <span>⛔</span>
   <span><b id="alertBannerCount">0</b> masalah DANGER belum selesai — butuh penanganan segera. Klik untuk buka Masalah.</span>
 </div>
+
+<div id="toast" class="toast ok" role="status" aria-live="polite" hidden></div>
 
 <div id="alertOverlay" class="alert-overlay">
   <div class="alert-panel">
@@ -287,6 +307,30 @@ function copyKey(el){
   }
 }
 function confirmDelete(msg){return confirm(msg||'Yakin ingin menghapus?')}
+
+// ---------- Toast: umpan balik global (bacaan ?msg= / ?err= dari redirect) ----------
+function showToast(msg, ok){
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.className = 'toast ' + (ok ? 'ok' : 'err');
+  t.textContent = msg;
+  t.hidden = false;
+  requestAnimationFrame(() => t.classList.add('show'));
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => { t.hidden = true; }, 300);
+  }, 6000);
+}
+(function(){
+  const qs = new URLSearchParams(location.search);
+  const msg = qs.get('msg');
+  const err = qs.get('err');
+  const clean = qs.has('msg') || qs.has('err');
+  if (msg) showToast(decodeURIComponent(msg), true);
+  else if (err) showToast(decodeURIComponent(err), false);
+  if (clean) history.replaceState({}, '', location.pathname + location.hash);
+})();
 // Konfirmasi destruktif via data-confirm/data-msg pada <form>. Aman terhadap injeksi:
 // pesan disimpan di data-attribute (bukan disisipkan ke string JS), lalu dibaca DOM.
 document.addEventListener('submit', function(ev){

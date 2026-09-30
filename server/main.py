@@ -183,6 +183,12 @@ def _clamp_int(value, default=None, lo: int = 0, hi: int = 2 ** 31 - 1):
     return max(lo, min(hi, v))
 
 
+def _flash_qs(ok: bool, text: str) -> str:
+    """Query string notifikasi utk redirect (?msg=… / ?err=…), URL-encoded."""
+    from urllib.parse import quote
+    return f"?{('msg' if ok else 'err')}={quote(text)}"
+
+
 def _clamp_float(value, default=None, lo: float = 0.0, hi: float = 2 ** 31 - 1):
     """Koersi ke float dalam rentang aman; fallback default bila tak valid."""
     if value is None:
@@ -1052,7 +1058,8 @@ def server_edit_submit(
         _audit(db, user.username, "server_edit",
                f"id={server.id} {server.hostname} ({server.ip_address})", "berhasil")
         db.commit()
-    return RedirectResponse("/servers", status_code=303)
+        return RedirectResponse("/servers" + _flash_qs(True, "Server diperbarui"), status_code=303)
+    return RedirectResponse("/servers" + _flash_qs(False, "Server tidak ditemukan"), status_code=303)
 
 
 @app.post("/servers/{sid}/regenerate-key")
@@ -1083,7 +1090,8 @@ def server_delete(request: Request, sid: int, db: Session = Depends(get_db)):
                f"{server.hostname} ({server.ip_address}) id={server.id}", "berhasil")
         db.delete(server)
         db.commit()
-    return RedirectResponse("/servers", status_code=303)
+        return RedirectResponse("/servers" + _flash_qs(True, "Server dihapus"), status_code=303)
+    return RedirectResponse("/servers" + _flash_qs(False, "Server tidak ditemukan"), status_code=303)
 
 
 # ---------------------------------------------------------------------------
@@ -1212,21 +1220,17 @@ def service_add_submit(
         process_name=_clean_str(process_name, "", 100),
     )
     if not svc.service_name or not (1 <= svc.port <= 65535):
-        return RedirectResponse(f"/servers/{sid}/services?err=invalid", status_code=303)
+        return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(False, "Service tidak lengkap: nama wajib & port 1-65535"), status_code=303)
     existing = (
         db.query(Service).filter(
             Service.server_id == sid, Service.service_name == svc.service_name
         ).first()
     )
     if existing:
-        return RedirectResponse(f"/servers/{sid}/services?err=duplicate", status_code=303)
+        return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(False, "Nama service sudah ada"), status_code=303)
     db.add(svc)
     db.commit()
-    server = db.query(Server).filter(Server.id == sid).first()
-    _audit(db, user.username, "service_add",
-           f"{server.hostname if server else sid}:{service_name} port {port}", "berhasil")
-    db.commit()
-    return RedirectResponse(f"/servers/{sid}/services", status_code=303)
+    return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(True, "Service ditambahkan"), status_code=303)
 
 
 @app.post("/servers/{sid}/services/{svc_id}/restart")
@@ -2914,12 +2918,13 @@ def user_add_submit(
     username = username.strip()
     role = role if role in ("admin", "viewer") else "viewer"
     if len(password) < 8:
-        return RedirectResponse("/users?err=weakpass", status_code=303)
+        return RedirectResponse("/users" + _flash_qs(False, "Password minimal 8 karakter"), status_code=303)
     if username and password and not db.query(User).filter(User.username == username).first():
         db.add(User(username=username[:100], password_hash=pwd_ctx.hash(password), role=role))
         _audit(db, user.username, "user_add", f"{username[:100]} (role {role})", "berhasil")
         db.commit()
-    return RedirectResponse("/users?err=duplicate" if not username or not password else "/users", status_code=303)
+        return RedirectResponse("/users" + _flash_qs(True, "User ditambahkan"), status_code=303)
+    return RedirectResponse("/users" + _flash_qs(False, "Username sudah dipakai atau data tidak lengkap"), status_code=303)
 
 
 @app.post("/users/{uid}/delete")
@@ -2930,13 +2935,14 @@ def user_delete(request: Request, uid: int, db: Session = Depends(get_db)):
     if user.role != "admin":
         return RedirectResponse("/", status_code=303)
     if uid == user.id:
-        return RedirectResponse("/users", status_code=303)
+        return RedirectResponse("/users" + _flash_qs(False, "Tidak bisa menghapus akun sendiri"), status_code=303)
     u = db.query(User).filter(User.id == uid).first()
     if u:
         _audit(db, user.username, "user_delete", f"{u.username}", "berhasil")
         db.delete(u)
         db.commit()
-    return RedirectResponse("/users", status_code=303)
+        return RedirectResponse("/users" + _flash_qs(True, "User dihapus"), status_code=303)
+    return RedirectResponse("/users" + _flash_qs(False, "User tidak ditemukan"), status_code=303)
 
 
 # ---------------------------------------------------------------------------
