@@ -35,7 +35,7 @@
 <div class="card" style="border-color:var(--border)">
   <div class="card-header">
     <h3>API Key</h3>
-    <form method="POST" action="/servers/{{ server.id }}/regenerate-key" onsubmit="return confirmDelete('Generate API Key baru? Agent harus di-update dengan key baru, dan key lama dibatalkan.')">
+    <form method="POST" action="/servers/{{ server.id }}/regenerate-key" data-confirm data-msg="Generate API Key baru? Agent harus di-update dengan key baru, dan key lama dibatalkan.">
       <button class="btn btn-danger btn-sm">Regenerate Key</button>
     </form>
   </div>

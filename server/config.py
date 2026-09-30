@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     SERVER_HOST: str = "0.0.0.0"
     SERVER_PORT: int = 8400
 
+    # Setel True bila dashboard diakses via HTTPS (reverse proxy) agar cookie
+    # sesi hanya dikirim lewat koneksi terenkripsi.
+    SESSION_COOKIE_SECURE: bool = False
+
     LOG_FILE: str = "/tmp/uvicorn-pantau.log"
 
     POOL_SIZE: int = 10

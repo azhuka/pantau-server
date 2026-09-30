@@ -70,12 +70,10 @@
       <a href="/servers/{{ server.id }}/metrics" class="btn btn-ghost btn-sm">Metrik</a>
       {% if user.role == 'admin' %}
       <span class="hero-sep"></span>
-      <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline"
-            onsubmit="return confirm('Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali.') && confirm('Yakin 100%?')">
+      <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
         <button class="btn btn-ghost btn-sm" type="submit" title="Restart sistem operasi">&#8635;&nbsp;Reboot OS</button>
       </form>
-      <form method="post" action="/servers/{{ server.id }}/host/poweroff" style="display:inline"
-            onsubmit="return confirm('MATIKAN server {{ server.hostname }} SEKARANG? Mesin akan poweroff — TIDAK menyala sendiri — sampai dinyalakan manual (fisik/IPMI).')">
+      <form method="post" action="/servers/{{ server.id }}/host/poweroff" style="display:inline" data-confirm data-msg="MATIKAN server {{ server.hostname }} SEKARANG? Mesin akan poweroff — TIDAK menyala sendiri — sampai dinyalakan manual (fisik/IPMI).">
         <button class="btn btn-danger btn-sm" type="submit" title="Matikan sistem operasi">&#9416;&nbsp;Power Off</button>
       </form>
       {% endif %}
@@ -254,15 +252,13 @@
           {% if svc._pending_cmd %}
           <span class="badge badge-inactive">Menunggu Agent</span>
           {% elif user.role == 'admin' %}
-          <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/restart" style="display:inline"
-                onsubmit="return confirmDelete('Restart service {{ svc.service_name }} di server {{ server.hostname }}?')">
+          <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/restart" style="display:inline" data-confirm data-msg="Restart service {{ svc.service_name }} di server {{ server.hostname }}?">
             <button class="btn btn-primary btn-sm">Restart</button>
           </form>
           {% endif %}
         </span>
         {% if user.role == 'admin' %}
-        <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/delete" style="display:inline;margin-left:4px"
-              onsubmit="return confirmDelete('Hapus service {{ svc.service_name }}?')">
+        <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/delete" style="display:inline;margin-left:4px" data-confirm data-msg="Hapus service {{ svc.service_name }}?">
           <button class="btn btn-danger btn-sm">Hapus</button>
         </form>
         {% endif %}
@@ -350,25 +346,23 @@
       <td class="mono"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
       <td style="white-space:nowrap">
         {% if p.is_open and p.action == 'restart' %}
-          <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline">
+          <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline" data-confirm data-msg="Restart service ini di {{ server.hostname }}?">
             <button class="btn btn-primary btn-sm">Restart</button>
           </form>
           {% if p.log_unit %}
-            <button class="btn btn-ghost btn-sm" onclick="jumpToLog('{{ p.log_unit }}')" style="margin-left:4px">Log</button>
+            <button class="btn btn-ghost btn-sm" onclick='jumpToLog({{ p.log_unit|tojson }})' style="margin-left:4px">Log</button>
           {% endif %}
         {% elif p.is_open and p.action == 'log' and p.log_unit %}
-          <button class="btn btn-ghost btn-sm" onclick="jumpToLog('{{ p.log_unit }}')">Log</button>
+          <button class="btn btn-ghost btn-sm" onclick='jumpToLog({{ p.log_unit|tojson }})'>Log</button>
         {% elif p.is_open and p.action == 'mitigate' %}
           {% if user.role == 'admin' and p.ip_count and p.ip_count > 0 %}
-            <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline"
-                  onsubmit="return confirm('Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?')">
+            <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline" data-confirm data-msg="Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?">
               <button class="btn btn-danger btn-sm">Blokir IP ({{ p.ip_count }})</button>
             </form>
           {% endif %}
           <button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>
         {% elif p.is_open and p.action == 'agent_restart' and user.role == 'admin' %}
-          <form method="post" action="/servers/{{ server.id }}/problems/restart-agent" style="display:inline"
-                onsubmit="return confirm('Restart agen (agent_pantau) di {{ server.hostname }}?')">
+          <form method="post" action="/servers/{{ server.id }}/problems/restart-agent" style="display:inline" data-confirm data-msg="Restart agen (agent_pantau) di {{ server.hostname }}?">
             <button class="btn btn-ghost btn-sm">Restart agen</button>
           </form>
         {% elif p.is_open and p.action == 'apt_update' %}
@@ -470,7 +464,7 @@ function badgeHtml(status) {
 
 function restartFormHtml(sid, svcId, name) {
   return '<form method="POST" action="/servers/' + sid + '/services/' + svcId + '/restart" style="display:inline" '
-       + 'onsubmit="return confirmDelete(\'Restart service ' + name + ' di server ini?\')">'
+       + 'data-confirm data-msg="' + escHtml('Restart service ' + name + ' di server ini?') + '">'
        + '<button class="btn btn-primary btn-sm">Restart</button></form>';
 }
 
@@ -797,7 +791,7 @@ function patch(data) {
     const sts = document.getElementById('sts-' + s.id);
     if (sts) {
       const st = s.status === 'unknown' ? 'inactive' : s.status;
-      sts.innerHTML = '<span class="badge badge-' + st + '">' + s.status + '</span>';
+      sts.innerHTML = '<span class="badge badge-' + st + '">' + escHtml(s.status) + '</span>';
     }
     const conns = document.getElementById('conns-' + s.id);
     if (conns) conns.textContent = s.connections;
@@ -1001,7 +995,7 @@ function renderSys(data) {
   const dt = document.getElementById('disks-table').querySelector('tbody');
   dw.style.display = disks.length ? 'block' : 'none';
   dt.innerHTML = disks.map(d =>
-    '<tr><td class="mono">' + d.mount + '</td><td class="mono">' + d.type + '</td>'
+    '<tr><td class="mono">' + escHtml(d.mount) + '</td><td class="mono">' + escHtml(d.type) + '</td>'
     + '<td>' + fmtBytes(d.used) + ' / ' + fmtBytes(d.total) + '</td>'
     + '<td><div class="meter"><div class="meter-bar" style="width:' + Math.min(100, d.pct) + '%;'
     + (d.pct >= 90 ? 'background:var(--red)' : '') + '"></div></div>'
@@ -1015,7 +1009,7 @@ function renderSys(data) {
   nt.style.display = net.length ? 'table' : 'none';
   ne.style.display = net.length ? 'none' : 'block';
   nt.querySelector('tbody').innerHTML = net.map(n =>
-    '<tr><td class="mono"><strong>' + n.iface + '</strong></td>'
+    '<tr><td class="mono"><strong>' + escHtml(n.iface) + '</strong></td>'
     + '<td><span class="dot ' + (n.is_up ? 'up' : 'down') + '"></span> ' + (n.is_up ? 'up' : 'down') + '</td>'
     + '<td class="mono">' + fmtBytes(n.rx) + '</td>'
     + '<td class="mono">' + fmtBytes(n.tx) + '</td>'
@@ -1030,13 +1024,13 @@ function renderSys(data) {
   at.style.display = acc.length ? 'table' : 'none';
   ae.style.display = acc.length ? 'none' : 'block';
   at.querySelector('tbody').innerHTML = acc.map(a =>
-    '<tr><td><strong>' + a.user + '</strong></td>'
-    + '<td class="mono">' + a.uid + '</td>'
-    + '<td class="mono">' + (a.shell || '-') + '</td>'
-    + '<td style="font-size:12px;color:var(--dim)">' + (a.last_login || '-') + '</td>'
+    '<tr><td><strong>' + escHtml(a.user) + '</strong></td>'
+    + '<td class="mono">' + escHtml(a.uid) + '</td>'
+    + '<td class="mono">' + escHtml(a.shell || '-') + '</td>'
+    + '<td style="font-size:12px;color:var(--dim)">' + escHtml(a.last_login || '-') + '</td>'
     + '<td style="font-size:12px;color:var(--dim)">'
     + (a.sessions && a.sessions.length ? a.sessions.map(s =>
-        (s.tty || '') + (s.from ? ' @ ' + s.from : '')).join('<br>') : '-')
+        escHtml((s.tty || '') + (s.from ? ' @ ' + s.from : ''))).join('<br>') : '-')
     + '</td>'
     + '<td><a href="/servers/' + SID + '/user/' + encodeURIComponent(a.user) + '" class="btn btn-ghost btn-sm">Rincian</a></td></tr>'
   ).join('');
@@ -1179,7 +1173,8 @@ function primeSvcGraph(services) {
   const sel = document.getElementById('svc-graph-sel');
   if (!sel || !services || !services.length || sel.options.length > 1) return;
   const prev = sel.value;
-  sel.innerHTML = services.map(s => '<option value="' + s.id + '">' + s.name + ' (port ' + s.port + ')</option>').join('');
+  sel.replaceChildren(...services.map(s =>
+    new Option(escHtml(s.name) + ' (port ' + s.port + ')', s.id)));
   sel.value = prev && services.some(s => String(s.id) === prev) ? prev : String(services[0].id);
   loadSvcHistory();
 }

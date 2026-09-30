@@ -18,7 +18,7 @@
         <td class="mono">{{ u.created_at.strftime('%d %b %Y') }}</td>
         <td>
           {% if u.id != user.id %}
-          <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline" onsubmit="return confirmDelete('Hapus user {{ u.username }}?')">
+          <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline" data-confirm data-msg="Hapus user {{ u.username }}?">
             <button class="btn btn-danger btn-sm">Hapus</button>
           </form>
           {% else %}

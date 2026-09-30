@@ -248,3 +248,32 @@ class AuditLog(Base):
         Index("idx_audit_created", "created_at"),
         Index("idx_audit_username", "username"),
     )
+
+
+class AppSession(Base):
+    """Sesi login persisten di DB (aman terhadap restart server).
+
+    Bukan cookie-session: server hanya menyimpan token acak di cookie, data
+    sesi (user, masa berlaku) dicatat di DB sehingga bisa dicabut per-sesi.
+    """
+
+    __tablename__ = "sessions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sid = Column(String(64), nullable=False, unique=True)
+    user_id = Column(INTEGER_UNSIGNED, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(String(255), nullable=True)
+    expires_at = Column(DateTime, nullable=False, index=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+
+class LoginAttempt(Base):
+    """Penghitung gagal login per IP (rate-limit, di DB agar persisten)."""
+
+    __tablename__ = "login_attempts"
+
+    ip_address = Column(String(45), primary_key=True)
+    fails = Column(Integer, nullable=False, default=0)
+    lock_until = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

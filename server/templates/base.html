@@ -287,6 +287,17 @@ function copyKey(el){
   }
 }
 function confirmDelete(msg){return confirm(msg||'Yakin ingin menghapus?')}
+// Konfirmasi destruktif via data-confirm/data-msg pada <form>. Aman terhadap injeksi:
+// pesan disimpan di data-attribute (bukan disisipkan ke string JS), lalu dibaca DOM.
+document.addEventListener('submit', function(ev){
+  const f = ev.target && ev.target.tagName === 'FORM' ? ev.target : ev.target.closest('form');
+  if (!f || !f.hasAttribute('data-confirm')) return;
+  const msg = f.getAttribute('data-msg') || 'Yakin?';
+  const extra = f.getAttribute('data-msg-extra');
+  if ((!window.confirm(msg)) || (extra && !window.confirm(extra))) {
+    ev.preventDefault();
+  }
+}, true);
 
 // ---------- problems: filter ----------
 function probFilter(){

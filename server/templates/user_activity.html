@@ -70,7 +70,7 @@
 {% block scripts %}
 <script>
 const SID = {{ server.id }};
-const USERNAME = '{{ username }}';
+const USERNAME = {{ username|tojson }};
 
 function sleepMs(ms) { return new Promise(r => setTimeout(r, ms)); }
 function escapeHtml(s) {

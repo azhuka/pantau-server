@@ -14,6 +14,7 @@ import socket
 import subprocess
 import threading
 import time
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from fastapi import (
@@ -27,8 +28,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from config import settings
 from models import (
-    AuditLog, Base, Command, LogRequest, Metric, Server, ServerExtras,
-    ServerProblem, Service, SysSnapshotHour, SystemSnapshot, User,
+    AppSession, AuditLog, Base, Command, LogRequest, LoginAttempt, Metric,
+    Server, ServerExtras, ServerProblem, Service, SysSnapshotHour,
+    SystemSnapshot, User,
 )
 
 # ---------------------------------------------------------------------------
@@ -51,31 +53,44 @@ def get_db():
 
 
 # ---------------------------------------------------------------------------
-# Auth helpers
+# Auth helpers (sesi persisten di DB — tahan restart server)
 # ---------------------------------------------------------------------------
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SESSION_COOKIE = "session_id"
 SESSION_TTL = timedelta(hours=12)
-sessions: dict[str, dict] = {}
 
 _last_metrics_prune = datetime.utcnow() - timedelta(days=1)
 
 
-def create_session(user_id: int) -> str:
+def _prune_expired_sessions(db: Session) -> None:
+    """Hapus sesi kedaluwarsa (dipanggil ringan saat login/startup/maintanen)."""
+    db.query(AppSession).filter(AppSession.expires_at < datetime.utcnow()).delete(
+        synchronize_session=False)
+
+
+def create_session(db: Session, user_id: int, ip: str, user_agent: str | None = None) -> str:
     sid = secrets.token_hex(32)
-    sessions[sid] = {"user_id": user_id, "expires": datetime.utcnow() + SESSION_TTL}
+    db.add(AppSession(
+        sid=sid, user_id=user_id, ip_address=_clean_str(ip, None, 45),
+        user_agent=_clean_str(user_agent, None, 255),
+        expires_at=datetime.utcnow() + SESSION_TTL,
+    ))
     return sid
 
 
 def get_current_user(request: Request, db: Session) -> User | None:
     sid = request.cookies.get(SESSION_COOKIE)
-    if not sid or sid not in sessions:
+    if not sid:
         return None
-    sess = sessions[sid]
-    if datetime.utcnow() > sess["expires"]:
-        sessions.pop(sid, None)
+    row = db.query(AppSession).filter(AppSession.sid == sid).first()
+    if not row:
         return None
-    return db.query(User).filter(User.id == sess["user_id"]).first()
+    if datetime.utcnow() > row.expires_at:
+        # Jangan commit di jalur baca berulang; buang sekali lalu abaikan.
+        db.delete(row)
+        db.commit()
+        return None
+    return db.query(User).filter(User.id == row.user_id).first()
 
 
 def require_user(request: Request, db: Session = Depends(get_db)) -> User:
@@ -204,6 +219,28 @@ def api_key_fingerprint(api_key: str) -> str:
 app = FastAPI(title="Pantau Server", docs_url=None, redoc_url=None)
 templates = Jinja2Templates(directory=settings.templates_dir)
 
+_SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "same-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Content-Security-Policy": (
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+        "font-src 'self'; connect-src 'self'; form-action 'self'; "
+        "base-uri 'self'; frame-ancestors 'none'; object-src 'none'"
+    ),
+}
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    resp = await call_next(request)
+    for k, v in _SECURITY_HEADERS.items():
+        if k not in resp.headers:
+            resp.headers[k] = v
+    return resp
+
 
 def tpl(request: Request, name: str, context: dict) -> HTMLResponse:
     ctx = dict(context) if context else {}
@@ -229,6 +266,12 @@ def migrate_api_keys():
 def on_startup():
     Base.metadata.create_all(bind=engine)
     migrate_api_keys()
+    try:
+        with SessionLocal() as sess:
+            _prune_expired_sessions(sess)
+            sess.commit()
+    except Exception as exc:  # noqa: BLE001 -- startup tak boleh gagal karena cleanup
+        print(f"[startup] prune sesi gagal: {exc}", flush=True)
 
 
 # ---------------------------------------------------------------------------
@@ -481,12 +524,10 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
     result = []
     for srv in servers:
         services = db.query(Service).filter(Service.server_id == srv.id).all()
+        latest_map = _latest_metrics(db, (s.id for s in services))
         svc_list = []
         for svc in services:
-            latest = (
-                db.query(Metric).filter(Metric.service_id == svc.id)
-                .order_by(desc(Metric.timestamp)).first()
-            )
+            latest = latest_map.get(svc.id)
             svc_list.append({
                 "id": svc.id, "name": svc.service_name, "port": svc.port,
                 "process": svc.process_name,
@@ -532,12 +573,10 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             Command.server_id == sid, Command.status == "pending"
         ).all()
     }
+    latest_map = _latest_metrics(db, (s.id for s in services))
     svc_list = []
     for svc in services:
-        latest = (
-            db.query(Metric).filter(Metric.service_id == svc.id)
-            .order_by(desc(Metric.timestamp)).first()
-        )
+        latest = latest_map.get(svc.id)
         svc_list.append({
             "id": svc.id, "name": svc.service_name, "port": svc.port,
             "status": latest.status if latest else "unknown",
@@ -744,6 +783,22 @@ def get_uptime_stats(db: Session, service_id: int, hours: int = 24) -> dict:
     return compute_uptime(metrics)
 
 
+def _latest_metrics(db: Session, service_ids) -> dict[int, Metric]:
+    """Satu query SQL utk metric terbaru per service (hindari N+1)."""
+    if not service_ids:
+        return {}
+    sub = (
+        db.query(Metric.service_id.label("service_id"), func.max(Metric.timestamp).label("max_ts"))
+        .filter(Metric.service_id.in_(list(service_ids)))
+        .group_by(Metric.service_id)
+        .subquery()
+    )
+    rows = db.query(Metric).join(
+        sub, (Metric.service_id == sub.c.service_id) & (Metric.timestamp == sub.c.max_ts)
+    ).all()
+    return {m.service_id: m for m in rows}
+
+
 # ---------------------------------------------------------------------------
 # LOGIN / LOGOUT
 # ---------------------------------------------------------------------------
@@ -754,11 +809,35 @@ def login_page(request: Request):
 
 LOGIN_MAX_FAILS = 5
 LOGIN_LOCK_SECONDS = 60
-login_attempts: dict[str, dict] = {}
 
 
 def _client_ip(request: Request) -> str:
+    # Hormati proxy terpercaya bila ada; fallback alamat socket.
+    xff = request.headers.get("X-Forwarded-For")
+    if xff:
+        return xff.split(",")[0].strip()[:45]
     return request.client.host if request.client else "unknown"
+
+
+def _login_trial(db: Session, ip: str) -> LoginAttempt:
+    row = db.query(LoginAttempt).filter(LoginAttempt.ip_address == ip).first()
+    if row is None:
+        row = LoginAttempt(ip_address=ip)
+        db.add(row)
+        db.flush()
+    return row
+
+
+@dataclass
+class _Trial:
+    fails: int
+    lock_until: datetime | None
+
+
+def _lock_remaining(row: LoginAttempt) -> int:
+    if row.lock_until is None:
+        return 0
+    return max(0, int((row.lock_until - datetime.utcnow()).total_seconds()))
 
 
 @app.post("/login")
@@ -769,36 +848,46 @@ def login_submit(
     db: Session = Depends(get_db),
 ):
     ip = _client_ip(request)
-    now = time.time()
-    trial = login_attempts.get(ip, {"fails": 0, "lock_until": 0})
-    if now < trial["lock_until"]:
-        wait = int(trial["lock_until"] - now)
+    row = _login_trial(db, ip)
+    if _lock_remaining(row) > 0:
+        wait = int((row.lock_until - datetime.utcnow()).total_seconds())
+        db.rollback()  # buang baris baru bila belum pernah ada
         return tpl(request, "login.html", {"error": f"Terlalu banyak percobaan. Coba lagi dalam {wait} detik."})
 
     user = db.query(User).filter(User.username == username).first()
     if not user or not pwd_ctx.verify(password, user.password_hash):
-        trial["fails"] += 1
-        if trial["fails"] >= LOGIN_MAX_FAILS:
-            trial["lock_until"] = now + LOGIN_LOCK_SECONDS
-            trial["fails"] = 0
-        login_attempts[ip] = trial
+        row.fails += 1
+        row.updated_at = datetime.utcnow()
+        if row.fails >= LOGIN_MAX_FAILS:
+            row.lock_until = datetime.utcnow() + timedelta(seconds=LOGIN_LOCK_SECONDS)
+            row.fails = 0
+        db.commit()
         return tpl(request, "login.html", {"error": "Username atau password salah"})
 
-    login_attempts[ip] = {"fails": 0, "lock_until": 0}
-    sid = create_session(user.id)
+    row.fails = 0
+    row.lock_until = None
+    row.updated_at = datetime.utcnow()
+    _prune_expired_sessions(db)
+    sid = create_session(db, user.id, ip, request.headers.get("user-agent"))
     _audit(db, user.username, "login", f"masuk dari {ip}", "berhasil")
     db.commit()
     resp = RedirectResponse("/", status_code=303)
-    resp.set_cookie(SESSION_COOKIE, sid, httponly=True, samesite="lax")
+    resp.set_cookie(
+        SESSION_COOKIE, sid, httponly=True, samesite="lax",
+        secure=settings.SESSION_COOKIE_SECURE,
+        max_age=int(SESSION_TTL.total_seconds()), path="/",
+    )
     return resp
 
 
 @app.get("/logout")
-def logout(request: Request):
+def logout(request: Request, db: Session = Depends(get_db)):
     sid = request.cookies.get(SESSION_COOKIE)
-    sessions.pop(sid, None)
+    if sid:
+        db.query(AppSession).filter(AppSession.sid == sid).delete(synchronize_session=False)
+        db.commit()
     resp = RedirectResponse("/login", status_code=303)
-    resp.delete_cookie(SESSION_COOKIE)
+    resp.delete_cookie(SESSION_COOKIE, path="/")
     return resp
 
 
@@ -825,12 +914,10 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         srv._arch = ex.arch if ex else None
         srv._kernel = ex.kernel if ex else None
         services = db.query(Service).filter(Service.server_id == srv.id).all()
+        latest_map = _latest_metrics(db, (s.id for s in services))
         srv._svc_data = []
         for svc in services:
-            latest = (
-                db.query(Metric).filter(Metric.service_id == svc.id)
-                .order_by(desc(Metric.timestamp)).first()
-            )
+            latest = latest_map.get(svc.id)
             d = {
                 "name": svc.service_name, "port": svc.port, "process": svc.process_name,
                 "status": latest.status if latest else "unknown",
@@ -888,12 +975,11 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
         srv._os_label = ex.os_label if ex else None
         srv._arch = ex.arch if ex else None
         srv._online = not _server_stale(srv)
+        services = db.query(Service).filter(Service.server_id == srv.id).all()
+        latest_map = _latest_metrics(db, (s.id for s in services))
         svc_data = []
-        for svc in db.query(Service).filter(Service.server_id == srv.id).all():
-            latest = (
-                db.query(Metric).filter(Metric.service_id == svc.id)
-                .order_by(desc(Metric.timestamp)).first()
-            )
+        for svc in services:
+            latest = latest_map.get(svc.id)
             svc_data.append({
                 "name": svc.service_name,
                 "status": latest.status if latest else "unknown",
@@ -929,7 +1015,9 @@ def server_add_submit(
     db.commit()
     _audit(db, user.username, "server_add", f"{hostname} ({ip_address})", "berhasil")
     db.commit()
-    return tpl(request, "key_reveal.html", {"user": user, "server": srv, "api_key": raw})
+    resp = tpl(request, "key_reveal.html", {"user": user, "server": srv, "api_key": raw})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 
 @app.get("/servers/{sid}/edit", response_class=HTMLResponse)
@@ -957,9 +1045,9 @@ def server_edit_submit(
         return RedirectResponse("/", status_code=303)
     server = db.query(Server).filter(Server.id == sid).first()
     if server:
-        server.hostname = hostname
-        server.ip_address = ip_address
-        server.is_active = is_active
+        server.hostname = _clean_str(hostname, server.hostname, 255)
+        server.ip_address = _clean_str(ip_address, server.ip_address, 45)[:45]
+        server.is_active = 1 if is_active else 0
         db.commit()
         _audit(db, user.username, "server_edit",
                f"id={server.id} {server.hostname} ({server.ip_address})", "berhasil")
@@ -978,7 +1066,9 @@ def server_regenerate_key(request: Request, sid: int, db: Session = Depends(get_
         server.api_key = hash_api_key(raw)
         _audit(db, user.username, "key_regenerate", f"{server.hostname} (id={server.id})", "berhasil")
         db.commit()
-        return tpl(request, "key_reveal.html", {"user": user, "server": server, "api_key": raw})
+        resp = tpl(request, "key_reveal.html", {"user": user, "server": server, "api_key": raw})
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
     return RedirectResponse("/servers", status_code=303)
 
 
@@ -1008,11 +1098,9 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     if not server:
         return RedirectResponse("/servers", status_code=303)
     services = db.query(Service).filter(Service.server_id == sid).all()
+    latest_map = _latest_metrics(db, (s.id for s in services))
     for svc in services:
-        latest = (
-            db.query(Metric).filter(Metric.service_id == svc.id)
-            .order_by(desc(Metric.timestamp)).first()
-        )
+        latest = latest_map.get(svc.id)
         svc._status = latest.status if latest else "unknown"
         svc._conns = latest.active_connections if latest else 0
         svc._response_time = latest.response_time_ms if latest else None
@@ -1117,7 +1205,21 @@ def service_add_submit(
     user = get_current_user(request, db)
     if not user or user.role != "admin":
         return RedirectResponse("/", status_code=303)
-    svc = Service(server_id=sid, service_name=service_name, port=port, process_name=process_name)
+    svc = Service(
+        server_id=sid,
+        service_name=_clean_str(service_name, "", 100),
+        port=_clamp_int(port, 0, 1, 65535),
+        process_name=_clean_str(process_name, "", 100),
+    )
+    if not svc.service_name or not (1 <= svc.port <= 65535):
+        return RedirectResponse(f"/servers/{sid}/services?err=invalid", status_code=303)
+    existing = (
+        db.query(Service).filter(
+            Service.server_id == sid, Service.service_name == svc.service_name
+        ).first()
+    )
+    if existing:
+        return RedirectResponse(f"/servers/{sid}/services?err=duplicate", status_code=303)
     db.add(svc)
     db.commit()
     server = db.query(Server).filter(Server.id == sid).first()
@@ -2030,12 +2132,10 @@ def problems_aggregate(db):
     for srv in servers:
         ex = extras_map.get(srv.id)
         services = db.query(Service).filter(Service.server_id == srv.id).all()
+        latest_map = _latest_metrics(db, (s.id for s in services))
         svc_data = []
         for svc in services:
-            latest = (
-                db.query(Metric).filter(Metric.service_id == svc.id)
-                .order_by(desc(Metric.timestamp)).first()
-            )
+            latest = latest_map.get(svc.id)
             svc_data.append({"name": svc.service_name,
                              "status": latest.status if latest else "unknown"})
         if _server_stale(srv):
@@ -2809,16 +2909,17 @@ def user_add_submit(
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    if user.role != "admin":
+    if not user or user.role != "admin":
         return RedirectResponse("/", status_code=303)
     username = username.strip()
+    role = role if role in ("admin", "viewer") else "viewer"
+    if len(password) < 8:
+        return RedirectResponse("/users?err=weakpass", status_code=303)
     if username and password and not db.query(User).filter(User.username == username).first():
-        db.add(User(username=username, password_hash=pwd_ctx.hash(password), role=role))
-        _audit(db, user.username, "user_add", f"{username} (role {role})", "berhasil")
+        db.add(User(username=username[:100], password_hash=pwd_ctx.hash(password), role=role))
+        _audit(db, user.username, "user_add", f"{username[:100]} (role {role})", "berhasil")
         db.commit()
-    return RedirectResponse("/users", status_code=303)
+    return RedirectResponse("/users?err=duplicate" if not username or not password else "/users", status_code=303)
 
 
 @app.post("/users/{uid}/delete")
@@ -2852,6 +2953,47 @@ def _problem_bg_loop() -> None:
             print(f"[bg-problems] error: {exc}", flush=True)
 
 
+# Retensi data: bersihkan sesi/login-attempt/riwayat yang sudah terlalu tua
+# setiap jam supaya tabel tidak bertumbuh tanpa batas (disk + query lambat).
+_RETENTION_LIMITS = {
+    "login_attempts_days": 1,
+    "audit_logs_days": 365,
+    "commands_days": 180,      # hanya status sukses/gagal (bukan yang berjalan)
+    "log_requests_days": 30,   # hanya yang sudah selesai
+}
+
+
+def _retention_prune(db: Session) -> None:
+    now = datetime.utcnow()
+    _prune_expired_sessions(db)
+    db.query(LoginAttempt).filter(
+        LoginAttempt.updated_at < now - timedelta(days=_RETENTION_LIMITS["login_attempts_days"])
+    ).delete(synchronize_session=False)
+    db.query(AuditLog).filter(
+        AuditLog.created_at < now - timedelta(days=_RETENTION_LIMITS["audit_logs_days"])
+    ).delete(synchronize_session=False)
+    db.query(Command).filter(
+        Command.status.in_(["success", "failed"]),
+        Command.created_at < now - timedelta(days=_RETENTION_LIMITS["commands_days"]),
+    ).delete(synchronize_session=False)
+    db.query(LogRequest).filter(
+        LogRequest.status.in_(["success", "failed"]),
+        LogRequest.updated_at < now - timedelta(days=_RETENTION_LIMITS["log_requests_days"]),
+    ).delete(synchronize_session=False)
+    db.commit()
+
+
+def _retention_loop() -> None:
+    while True:
+        time.sleep(3600)  # tiap jam
+        try:
+            with SessionLocal() as sess:
+                _retention_prune(sess)
+        except Exception as exc:  # noqa: BLE001 -- jangan matikan thread
+            print(f"[retention] error: {exc}", flush=True)
+
+
 if not os.environ.get("PANTAU_BG_DISABLED"):
     threading.Thread(target=_problem_bg_loop, name="bg-problems", daemon=True).start()
+    threading.Thread(target=_retention_loop, name="retention", daemon=True).start()
     print("[bg-problems] evaluator aktif (tiap %ds)" % BG_PROBLEM_EVAL_SECS, flush=True)
