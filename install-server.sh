@@ -36,9 +36,11 @@ APP_PORT="${SERVER_PORT:-8400}"
 DB_NAME="pantau_db"
 DB_USER="pantau_dash"
 
-for c in mysql openssl python3; do
+for c in mysql openssl python3 rsync; do
     command -v "$c" >/dev/null 2>&1 || { echo "[ERROR] '$c' tidak ada. Install dulu." >&2; exit 1; }
 done
+python3 -c 'import venv' >/dev/null 2>&1 \
+    || { echo "[ERROR] Python venv (python3-venv) tidak tersedia. Install dulu." >&2; exit 1; }
 
 echo '================================================================'
 echo '  PANTAU SERVER — INSTALASI DASHBOARD'
@@ -65,32 +67,43 @@ echo "[OK]   Kode web app -> $APP_DIR"
 
 # --- 3. Virtualenv + dependensi ---
 if [[ ! -x "$APP_DIR/env/bin/uvicorn" ]]; then
-    echo "==> Membuat virtualenv & install dependensi (bisa beberapa menit)..."
+    echo "==> Membuat virtualenv ..."
     python3 -m venv "$APP_DIR/env"
-    "$APP_DIR/env/bin/pip" install --upgrade pip -q
-    "$APP_DIR/env/bin/pip" install -r "$APP_DIR/requirements.txt" -q
-    echo "[OK]   Virtualenv siap"
-else
-    echo "[SKIP] Virtualenv sudah ada"
 fi
+echo "==> Install/update dependensi (bisa beberapa menit)..."
+"$APP_DIR/env/bin/pip" install --upgrade pip -q
+"$APP_DIR/env/bin/pip" install -r "$APP_DIR/requirements.txt" -q
+echo "[OK]   Virtualenv siap (dependensi selalu dikunci ke requirements.txt)"
 
 # --- 4. Database MariaDB ---
-DB_PASS="$(openssl rand -hex 16)"
+# Rerun (pemasangan ulang) HARUS memakai password yang sama dengan .env lama;
+# kalau tidak, user MariaDB tetap ber-password lama sementara .env tertulis yang
+# baru → aplikasi gagal konek. Baca .env lama bila ada, buat baru bila belum.
+OLD_PASS="$(awk -F= '/^DB_PASS=/{print $2}' "$APP_DIR/.env" 2>/dev/null || true)"
+DB_PASS="${OLD_PASS:-$(openssl rand -hex 16)}"
 if ! mysql -u root "${DB_ROOT_PASS:+-p$DB_ROOT_PASS}" -e "SELECT 1" >/dev/null 2>&1; then
     echo "[ERROR] Tidak bisa konek ke MariaDB sebagai root. Periksa service / beri DB_ROOT_PASS." >&2
     exit 1
 fi
-mysql -u root ${DB_ROOT_PASS:+-p"$DB_ROOT_PASS"} <<SQL
+MYSQL_ROOT=(-u root)
+[[ -n "${DB_ROOT_PASS:-}" ]] && MYSQL_ROOT+=(-p"$DB_ROOT_PASS")
+mysql "${MYSQL_ROOT[@]}" <<SQL
 CREATE DATABASE IF NOT EXISTS ${DB_NAME}
     CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';
+ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+ALTER USER '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';
 GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';
+GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'127.0.0.1';
 FLUSH PRIVILEGES;
 SQL
 echo "[OK]   Database ${DB_NAME} + user ${DB_USER} siap"
 
-# --- 5. .env (bukan plaintext hex; hanya terbaca user instance) ---
-cat > "$APP_DIR/.env" <<EOF
+# --- 5. .env (rahasia; tulis dengan umask ketat biar tak pernah kebaca user lain) ---
+TMP_ENV="$(mktemp)"
+umask 077
+cat > "$TMP_ENV" <<EOF
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_USER=${DB_USER}
@@ -99,8 +112,8 @@ DB_NAME=${DB_NAME}
 SERVER_HOST=0.0.0.0
 SERVER_PORT=${APP_PORT}
 EOF
-chown "$APP_USER":"$APP_USER" "$APP_DIR/.env"
-chmod 640 "$APP_DIR/.env"
+install -o "$APP_USER" -g "$APP_USER" -m 640 "$TMP_ENV" "$APP_DIR/.env"
+rm -f "$TMP_ENV"
 echo "[OK]   Konfigurasi -> $APP_DIR/.env (rahasia, mode 640)"
 
 # --- 6. Systemd ---
@@ -110,6 +123,18 @@ systemctl daemon-reload
 systemctl enable pantau-server.service >/dev/null 2>&1
 systemctl restart pantau-server.service
 echo "[OK]   pantau-server.service aktif (port ${APP_PORT})"
+
+# Health check HTTP: tunggu sampai server benar-benar merespons.
+for i in $(seq 1 20); do
+    if curl -fsS --max-time 2 "http://127.0.0.1:${APP_PORT}/login" >/dev/null 2>&1; then
+        echo "[OK]   Health check: dashboard merespons di 127.0.0.1:${APP_PORT}"
+        break
+    fi
+    if [ "$i" = "20" ]; then
+        echo "[WARN] Health check belum merespons — cek: journalctl -u pantau-server -e" >&2
+    fi
+    sleep 1
+done
 
 # --- 7. Akun admin ---
 ADMIN_USER="${ADMIN_USER:-admin}"

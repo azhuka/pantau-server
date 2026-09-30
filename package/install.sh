@@ -64,7 +64,14 @@ check() {
 }
 if command -v python3 >/dev/null 2>&1; then
     PVER="$(python3 -c 'import sys;print(sys.version_info[:2])' 2>/dev/null || echo '?')"
-    check "OK   " "Python $PVER"
+    PY3M="${PVER%,*}"; PY3M="${PVER%%,*}"
+    if [ "$PY3M" == "?" ] || [ "$PVER" == "(3, 9)" ] || [ "$PVER" == "(3, 8)" ] || [ "$PVER" == "(3, 7)" ] \
+       || [ "$PVER" == "(3, 6)" ] || [ "$PVER" == "(3, 5)" ]; then
+        check "FAIL " "Python $PVER — butuh 3.10+ (fitur type syntax agen v3.7+)."
+        FAIL=1
+    else
+        check "OK   " "Python ${PVER} (3.10+ disyaratkan)"
+    fi
 else
     check "FAIL " "python3 tidak ada (wajib)"; FAIL=1
 fi
@@ -123,7 +130,7 @@ echo "[OK]   restart.deny terpasang"
 
 install -d -o root -g root -m 755 /usr/local/sbin
 for wr in pantau-restart pantau-history pantau-firewall pantau-host pantau-apt; do
-    get_file usr/local/sbin/$wr /usr/local/sbin/$wr 750 root:root
+    get_file usr/local/sbin/$wr /usr/local/sbin/$wr 750 root:root || exit 1
     echo "[OK]   Wrapper $wr"
 done
 
@@ -146,6 +153,9 @@ echo "[OK]   Sudoers -> /etc/sudoers.d/pantau-agent"
 get_file etc/systemd/system/agent_pantau.service /etc/systemd/system/agent_pantau.service 644 root:root
 systemctl daemon-reload
 echo "[OK]   Unit manager daemon-reload"
+
+get_file etc/logrotate.d/pantau-agent /etc/logrotate.d/pantau-agent 644 root:root
+echo "[OK]   Logrotate /etc/logrotate.d/pantau-agent"
 
 # ---------------------------------------------------------------------------
 # 3. Arahkan ke Dashboard (config) — pakai lama bila valid, selain itu minta.
@@ -243,11 +253,6 @@ if ! systemctl restart agent_pantau.service; then
     exit 1
 fi
 echo "[OK]   agent_pantau.service aktif (jalan sebagai 'pantau')."
-
-if pgrep -f "/home/bos/rj45/agent/agent_pantau.py" >/dev/null 2>&1; then
-    pkill -f "/home/bos/rj45/agent/agent_pantau.py"
-    echo "[OK]   Agent dev lama dihentikan."
-fi
 
 echo
 echo "=================================================================="

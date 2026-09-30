@@ -323,7 +323,7 @@ APT_AGENT_OUTPUT_MAX = 4_000_000
 APT_PROGRESS_TAIL_CHARS = 200_000
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.6.1"
+AGENT_VERSION = "3.7.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -608,13 +608,14 @@ def _exec_service_action(action: str, command: dict) -> dict:
     if not process_name:
         return {"ok": False, "output": "process_name kosong dari dashboard"}
 
-    if IS_ROOT:
-        result = _run_native(["systemctl", action, process_name], f"systemctl {action} {process_name}")
-    else:
-        result = _run_native(
-            ["/usr/bin/sudo", "-n", PANTUAN_RESTART, action, process_name],
-            f"sudo -n {PANTUAN_RESTART} {action} {process_name}",
-        )
+    # SELALU lewat wrapper pantau-restart (deny-list + sanitasi unit), termasuk
+    # saat berjalan sebagai root — deny-list tidak boleh terlewati.
+    cmd = [PANTUAN_RESTART, action, process_name]
+    label = f"{PANTUAN_RESTART} {action} {process_name}"
+    if not IS_ROOT:
+        cmd = ["/usr/bin/sudo", "-n", *cmd]
+        label = f"sudo -n {label}"
+    result = _run_native(cmd, label)
     del service_name
     return result
 
@@ -1091,7 +1092,29 @@ def _tail_parts(parts: list[str], budget: int) -> str:
     return "".join(out)
 
 
+_APT_RUN_LOCK = threading.Lock()
+_APT_RUNNING = False
+
+
 def _run_apt_in_thread(cfg: dict, rid: int, kind: str):
+    """Rekan thread utk _run_apt_inner dengan jaminan TIDAK tumpang-tindih dua apt."""
+    global _APT_RUNNING
+    with _APT_RUN_LOCK:
+        if _APT_RUNNING:
+            print(f"[APT] {kind} (rid={rid}) DITOLAK: proses apt lain sedang berjalan")
+            http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
+                              {"status": "failed",
+                               "result": "Dibatalkan: proses apt lain masih berjalan di server ini."})
+            return
+        _APT_RUNNING = True
+    try:
+        _run_apt_inner(cfg, rid, kind)
+    finally:
+        with _APT_RUN_LOCK:
+            _APT_RUNNING = False
+
+
+def _run_apt_inner(cfg: dict, rid: int, kind: str):
     """Jalankan apt update/upgrade DENGAN STREAMING live ke Dashboard.
 
     Proses dijalankan lewat wrapper pantau-apt -> script (pty), jadi outputnya
@@ -1117,7 +1140,8 @@ def _run_apt_in_thread(cfg: dict, rid: int, kind: str):
     errmsg = ""
 
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                start_new_session=True)
     except OSError as e:
         proc = None
         failed, errmsg = True, f"[gagal menjalankan apt: {e}]"
@@ -1127,8 +1151,10 @@ def _run_apt_in_thread(cfg: dict, rid: int, kind: str):
             now = time.monotonic()
             if now - started > timeout:
                 try:
-                    proc.kill()
-                except OSError:
+                    # Bunuh SELURUH grup proses apt/dpkg (bukan hanya sh), biar
+                    # tidak ada anak proses yang tertinggal/orphan.
+                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                except (OSError, ProcessLookupError, PermissionError):
                     pass
                 failed, errmsg = True, f"timeout {int(timeout)} dtk, proses apt dihentikan paksa"
                 try:
@@ -1463,7 +1489,10 @@ def poll_log_requests(cfg: dict):
         except (KeyError, TypeError, ValueError):
             continue
         unit = str(req.get("unit", ""))
-        lines = int(req.get("lines", 200))
+        try:
+            lines = int(req.get("lines", 200))
+        except (TypeError, ValueError):
+            lines = 200
         lines = max(10, min(lines, 2000))
         http_json_request(cfg, f"/api/logs/{rid}/status", "POST", {"status": "executing"})
 

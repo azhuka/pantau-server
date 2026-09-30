@@ -18,7 +18,7 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(INTEGER_UNSIGNED, primary_key=True, autoincrement=True)
     username = Column(String(100), nullable=False, unique=True)
     password_hash = Column(String(255), nullable=False)
     role = Column(Enum("admin", "viewer", name="user_role"), nullable=False, default="admin")
@@ -28,7 +28,7 @@ class User(Base):
 class Server(Base):
     __tablename__ = "servers"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(INTEGER_UNSIGNED, primary_key=True, autoincrement=True)
     hostname = Column(String(255), nullable=False)
     ip_address = Column(String(45), nullable=False)
     # Menyimpan sha256(key) berprefix "sha256:" agar raw key tidak bocor bila DB diretas

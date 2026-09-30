@@ -1,0 +1,15 @@
+# Rotasi log journal agen Pantau tidak diperlukan (journald mengelola rotasinya).
+# File ini menjaga /var/log/pantau (mis. log wrapper pantau-host/pantau-apt
+# bila menampilkan output besar) tetap terbatas ukurannya.
+
+/var/log/pantau/*.log {
+    su root adm
+    daily
+    rotate 14
+    maxsize 10M
+    compress
+    delaycompress
+    notifempty
+    missingok
+    create 0640 root adm
+}

@@ -1,16 +1,27 @@
 -- ============================================================
--- HELPER: Generate API key untuk server baru
--- Jalankan: mysql -u root -p < generate_api_keys.sql
--- Output akan menunjukkan contoh INSERT statement
+-- CATAHAN UNTUK SEED / TEST DATA
 -- ============================================================
-
--- Contoh API Key untuk testing (dibuat dengan hex random 64 char)
--- Ganti dengan key yang di-generate secara runtime di Python
-
--- Contoh generate via SQL:
-SELECT HEX(RANDOM_BYTES(32)) AS api_key_example;
-
--- Contoh seed data (ganti api_key dengan hasil generate di atas):
--- INSERT INTO servers (hostname, ip_address, api_key) VALUES
--- ('web-prod-01', '192.168.1.10', '<paste_api_key_disini>'),
--- ('db-prod-01',  '192.168.1.20', '<paste_api_key_disini>');
+-- Dashboard TIDAK menyimpan API key mentah: kolom servers.api_key berisi
+-- "sha256:<hex64>" (hash). Karena itu API key HANYA boleh dibuat lewat
+-- Dashboard (menu Server -> Tambah Server). Jangan inset key mentah lewat SQL.
+--
+-- Untuk membuat server contoh lewat SQL (hanya untuk uji coba lokal):
+--
+-- 1) Generate hash yang sesuai SHA256 64 hex:
+--      printf 'abcdef...64hex...\n' | sha256sum
+--    lalu simpan dengan awalan "sha256:"
+--
+-- 2) INSERT server + layanan contoh:
+--   SET @raw = '0000000000000000000000000000000000000000000000000000000000000001';
+--   SET @hash = CONCAT('sha256:', SHA2(@raw, 256));
+--   INSERT INTO servers (hostname, ip_address, api_key, is_active)
+--     VALUES ('web-prod-01', '192.168.1.10', @hash, 1);
+--   INSERT INTO services (server_id, service_name, port, process_name) VALUES
+--     (LAST_INSERT_ID(), 'nginx', 80,   'nginx'),
+--     (LAST_INSERT_ID(), 'pgsql', 5432, 'postgres');
+--
+-- 3) Untuk menghubungkan agen ke server contoh tsb, agen harus dikonfigurasi
+--    dengan @raw (bukan hash) di /etc/pantau/config.json -> api_key.
+--
+-- Lihat juga: database/schema.sql dan package/install.sh.
+-- ============================================================
