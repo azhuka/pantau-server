@@ -2348,6 +2348,8 @@ def audit_page(
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse("/login", status_code=303)
+    if user.role != "admin":
+        return RedirectResponse("/", status_code=303)
     rows = _audit_rows(db, limit=250, q=q, action=action)
     return tpl(request, "audit.html", {
         "user": user, "rows": rows,

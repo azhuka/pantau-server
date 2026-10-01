@@ -1,10 +1,25 @@
 # Pantau Server
 
-Dashboard monitoring terpusat (FastAPI + MariaDB) untuk memantau layanan,
-kinerja, log, dan keamanan pada multi-server dari satu halaman + agen pantau dari Python
-di tiap server klien.
+Dashboard monitoring terpusat (FastAPI + MariaDB) untuk memantau kondisi,
+kinerja, log, dan keamanan banyak server dari satu halaman, ditambah **agen
+Pantau** (Python) yang jalan di tiap server klien.
 
-## 1) Install Dashboard (Server Web App "Pantau Server")
+## Daftar isi
+
+- [1. Install Dashboard](#1-install-dashboard-server-web-app-pantau-server)
+- [2. Install Agen di Server Klien](#2-install-agen-di-server-klien)
+- [Halaman & Fitur](#halaman--fitur)
+- [Peran Admin vs Viewer](#peran-admin-vs-viewer)
+- [Update Dashboard](#update-dashboard)
+- [Update Agen](#update-agen)
+- [Kebutuhan Versi Agen](#kebutuhan-versi-agen)
+- [Update OS dari Dashboard](#update-os-dari-dashboard)
+- [Kalau Update OS Menggantung](#kalau-update-os-menggantung--terputus)
+- [HTTPS untuk Produksi](#https-untuk-produksi)
+- [Backup & Restore](#backup--restore)
+- [Catatan Keamanan](#catatan-keamanan)
+
+## 1. Install Dashboard (Server Web App "Pantau Server")
 
 ```bash
 sudo apt update && sudo apt install -y git python3 python3-venv python3-pip mariadb-server rsync
@@ -15,9 +30,9 @@ cd pantau-server
 sudo bash install-server.sh
 ```
 
-Installer membuat user, database (dengan password acak), unit systemd, lalu
-meminta password untuk user admin (username default: `admin`). Selesai
-instalasi, buka `http://<ip-dashboard>:8400` dan login dengan:
+Installer membuat user, database (password acak), unit systemd, lalu meminta
+password untuk user admin. Selesai instalasi, buka `http://<ip-dashboard>:8400`
+dan login:
 
 - **Username:** `admin`
 - **Password:** password yang Anda masukkan saat installer bertanya
@@ -32,10 +47,11 @@ sudo /opt/pantau/server/env/bin/python /opt/pantau/server/seed_admin.py \
 
 Cek: `systemctl status pantau-server.service`
 
-## 2) Install Agen Pantau (tiap server klien)
+## 2. Install Agen di Server Klien
 
-1. Di dashboard: **Menu Server → Tambah Server** → salin **API key** (simpan di tempat sementara).
-2. Di server klien, jalankan 2 baris di bawah ini (unduh installer, lalu jalankan installer):
+1. Di dashboard: menu **Servers → Tambah Server** → salin **Kunci API**
+   (disimpan di tempat sementara).
+2. Di server klien, unduh lalu jalankan installer:
 
 ```bash
 sudo curl -fsSL -o /tmp/pantau-install.sh \
@@ -43,79 +59,196 @@ sudo curl -fsSL -o /tmp/pantau-install.sh \
 sudo bash /tmp/pantau-install.sh
 ```
 
-Installer akan **bertanya interaktif**: URL dashboard lalu API key (64 hex),
-menguji key-nya dulu ke dashboard, lalu memasang agen pantau serta menghidupkan
-layanan agen pantau. Cek dashboard web app Pantau Server untuk memvalidasi
-server klien yang sudah dipasang agen. Jika ada masalah, cek status layanan agen:
+Installer bertanya interaktif: URL dashboard lalu Kunci API (64 hex), menguji
+key-nya dulu ke dashboard, lalu memasang agen dan menghidupkan layanannya.
+Verifikasi di dashboard — daftar server berubah dari "belum ada data" jadi
+online dalam ±10 detik.
+
+Kalau ada masalah:
 
 ```bash
 systemctl status agent_pantau.service
 journalctl -u agent_pantau -f
 ```
 
-## Update
+Installer aman dijalankan ulang: kalau `/etc/pantau/config.json` sudah ada dan
+isinya valid, URL + Kunci API diambil dari sana sehingga **tidak ditanya lagi**.
+Kalau belum ada, installer memintanya (dan bisa dilewati dengan
+`sudo bash install.sh <URL> <KUNCI_API>`, atau non-interaktif lewat
+`SETUP_SERVER_URL=... SETUP_API_KEY=...`).
 
-- **Dashboard:** unduh versi terbaru repo, lalu jalankan ulang `sudo bash install-server.sh`.
-  Aman dijalankan ulang: `.env` (termasuk password database) dipertahankan, dependensi
-  di-*pip install* ulang dari `requirements.txt`, tabel baru dibuat otomatis.
-- **Agen pantau:** jalankan ulang 2 baris installer di atas (kode agen diperbarui, konfigurasi tidak ditimpa).
+> Kalau Anda menjalankan `curl | bash`, ONLY THE AGENT FILE yang diunduh per-file
+> dari GitHub, bukan satu repo penuh. Kalau Anda menjalankan installer dari dalam
+> clone lokal, semua file diambil dari folder lokal — pakai mode ini kalau
+> butuh versi yang pasti.
 
-> Tombol **Reboot OS / Power Off** di halaman Rincian memerlukan agen pantau **v3.7+**
-> (terminal upgrade interaktif memerlukan **v3.9+**)
-> (badge di halaman Rincian menampilkan versi agen setelah update). Kode agen lama
-> menolak perintah itu dan menampilkan hasil "Aksi tidak dikenal".
+## Halaman & Fitur
 
-## Update OS dari Dashboard (tombol Update / Upgrade di halaman Rincian)
+| Halaman | Isi |
+|---|---|
+| **Dashboard** | Ringkasan semua server: jumlah online/offline, layanan yang down, laporan terakhir. Tabel per server dengan status, jumlah masalah, paket OS update, dan terakhir dilihat. |
+| **Servers** | Kelola server: tambah, edit, hapus, lihat kunci API. Daftar ringkas untuk manajemen. |
+| **Rincian server** | Halaman utama tiap server. Tab **Riwayat** (grafik kinerja 1 jam–30 hari + riwayat tiap service), **Layanan** (daftar service: port, proses, status, koneksi, respons, uptime 24 jam, restart), **Masalah**, **Jaringan**, **Akun**, **Log**. Kartu CPU / beban / memori / swap, OS & kernel, uptime, jumlah proses. |
+| **Masalah** | Semua masalah terbuka lintas server dengan level (Danger / Warning / Info), durasi, dan tips penanganan. Bisa ditandai sudah ditangani, dan tiap baris punya tautan ke Rincian server terkait. |
+| **Log** | Log server pusat: CPU/memori/beban/swap, proses teratas, disk, log service (pilih unit), dan log aplikasi dashboard. Diperbarui otomatis tiap 3 detik (log service tiap 5 detik). |
+| **Audit** | Jejak aksi admin: login, kelola server/service/user, dan perintah remote (restart, blokir IP, update paket, restart agen). Diperbarui otomatis; status perintah remote berubah sendiri setelah agen mengeksekusinya. |
+| **Users** | *(Admin)* Kelola user dashboard: tambah, ubah peran, reset password, cabut sesi. |
 
-Kotak terminal di halaman Rincian adalah **terminal sungguhan**: output streamed
-dari server — termasuk warna dan karakter `\r` yang menimpa baris, sama seperti
-SSH — dan pada mode interaktif Anda **mengetik jawaban langsung di dalam kotak
-itu**, tepat setelah prompt (`? `), lalu `Enter`.
+Semua angka pada Dashboard, Rincian, dan Masalah berasal dari satu sumber
+status yang sama, jadi satu server tidak pernah tampil berbeda di dua halaman.
 
-### 1. Tombol **Update OS**
+Warna badge punya arti yang konsisten: **hijau** sehat/berhasil, **merah**
+bermasalah, **kuning** perlu perhatian, **biru** informasi, **abu-abu** netral
+(menunggu / belum ada data / tidak berlaku).
+
+> Halaman Metrik tidak lagi ada. Semua metrik per-service (status, connection,
+> response time) kini berada di tab **Layanan** pada halaman Rincian. Tautan lama
+> `/servers/<id>/metrics` otomatis dialihkan ke sana.
+
+## Peran Admin vs Viewer
+
+| | Admin | Viewer |
+|---|---|---|
+| Lihat Dashboard, Servers, Rincian, Masalah, Log | Ya | Ya |
+| Tambah / edit / hapus server & service | Ya | Tidak |
+| Update OS, Upgrade, Reboot OS, Power Off | Ya | Tidak |
+| Restart / hapus service | Ya | Tidak |
+| Blokir IP (& mitigasi lain) / restart agen | Ya | Tidak |
+| Halaman Audit & Users | Ya | Tidak |
+
+Viewer yang membuka Rincian akan melihat badge "Update OS aktif untuk Admin"
+di tempat tombol, bukan tombol mati yang tidak melakukan apa pun.
+
+## Update Dashboard
+
+```bash
+git pull
+sudo bash install-server.sh
+```
+
+Aman dijalankan ulang: `.env` (termasuk password database) dipertahankan,
+dependensi di-*pip install* ulang, tabel baru dibuat otomatis.
+
+## Update Agen
+
+**Dashboard tidak punya akses ke server klien** — tidak ada SSH, tidak ada
+mekanisme push. Dashboard hanya mengirim perintah lewat agen yang sudah
+melapor. Jadi **upgrade agen selalu manual, di shell server tersebut**.
+
+### Server klien
+
+Jalankan ulang installer yang sama (lihat
+[Install Agen](#2-install-agen-di-server-klien)). Konfigurasi tidak ditimpa.
+Untuk banyak server, jalankan dari Ansible, parallel SSH, atau tools konfigurasi
+yang Anda pakai.
+
+### Host dashboard sendiri
+
+Kalau dashboard juga dipantau oleh agennya sendiri, update agen di sana
+dengan cara yang sama persis — salin file dari repo:
+
+```bash
+cd pantau-server
+sudo install -m 755 -o root -g root package/opt/pantau/agent/agent_pantau.py \
+  /opt/pantau/agent/agent_pantau.py
+sudo install -m 750 -o root -g root package/usr/local/sbin/pantau-apt \
+  /usr/local/sbin/pantau-apt
+sudo python3 -m py_compile /opt/pantau/agent/agent_pantau.py
+sudo systemctl restart agent_pantau.service
+```
+
+Verifikasi: badge di Rincian host tersebut harus berubah ke versi baru
+(`agen v3.9.0`), dan `server_extras.agent_version` ikut terisi.
+
+> **Installer menarik dari branch `master`, bukan tag.** Isinya bisa berubah
+> setiap kali ada commit baru, termasuk commit Anda sendiri. Kalau butuh versi
+> yang pasti, jalankan installer dari clone lokal repo Anda (mode `local`).
+
+### Setelah update apa pun
+
+Restart agen **tidak menghapus data**. Yang perlu dicek:
+
+1. Badge versi di Rincian sudah versi baru.
+2. Server kembali online dalam ±10 detik.
+3. Kalau agente upgrade OS, tekan **Update OS** sekali — jawabannya langsung
+   tampil tanpa perlu polling ulang.
+
+## Kebutuhan Versi Agen
+
+Badge versi agen ada di bagian atas halaman Rincian tiap server.
+
+| Fitur | Agen minimum |
+|---|---|
+| Monitoring, log, service, restart service | v3.6 |
+| Reboot OS / Power Off dari dashboard | v3.6 |
+| Terminal Update/Upgrade OS (warna + `\r` seperti SSH) | v3.7 |
+| Terminal Upgrade **interaktif** (jawab prompt dpkg) | v3.9 |
+
+Agen lebih lama dari requirements **tetap jalan untuk fitur lain** — hanya
+fitur terkait yang menolak dengan pesan jelas, bukan gagal diam-diam. Contoh:
+agen v3.7 yang menerima perintah Upgrade interaktif akan menampilkan "Aksi tidak
+dikenal".
+
+Untuk mengecek versi semua server sekaligus:
+
+```sql
+SELECT s.hostname, x.agent_version
+FROM servers s
+LEFT JOIN server_extras x ON x.server_id = s.id
+ORDER BY x.agent_version, s.hostname;
+```
+
+`NULL` atau versi kosong artinya agen belum pernah mengirim laporan extras.
+
+## Update OS dari Dashboard
+
+Kotak terminal di halaman Rincian adalah **terminal sungguhan**: output
+di-stream dari server — termasuk warna dan karakter `\r` yang menimpa baris,
+sama seperti SSH — dan pada mode interaktif Anda **mengetik jawaban langsung di
+dalam kotak itu**, tepat setelah prompt, lalu `Enter`.
+
+### Tombol **Update OS**
 
 - Hanya menyegarkan daftar paket (`apt update`) — selalu aman, tanpa pertanyaan.
-- Setelah selesai, baris status tepat di bawah tombol langsung menunjukkan
-  berapa paket yang bisa di-upgrade beserta namanya, jadi tidak perlu menunggu.
+- Setelah selesai, baris status tepat di bawah tombol langsung menampilkan
+  berapa paket yang bisa di-upgrade beserta namanya.
 
-### 2. Tombol **Upgrade** — interaktif
+### Tombol **Upgrade** — interaktif
 
+- **Tombol ini aktif setelah Update OS selesai** dan ada paket yang bisa
+  di-upgrade. Sebelum itu tombolnya disable, bukan bisa diklik lalu gagal.
 - Berjalan di pty, jadi `dpkg` boleh berhenti dan bertanya:
   `zabbix_agent2.conf (Y/I/N/O/D/Z) [default=N] ?`
-- Kursor muncul tepat setelah tanda tanya — ketik jawabannya lalu `Enter`.
-  `↑`/`↓` memanggil baris sebelumnya, `Enter` saja memakai pilihan bawaan.
-- **Agen tidak menebak**: tidak ada auto-answer pada mode ini, dan terminal pun
-  tidak disisipkan catatan tambahan — karakternya digema pty seperti di SSH.
-  Timeout 1 jam kalau dibiarkan sampai selesai.
-- Laju dashboard menyalin semua yang diketik ke proses di server; jawaban sampai
-  ke sana apa adanya (kontrol/ESC dibuang, maks 200 karakter).
+- Kursor muncul tepat setelah tanda tanya. Ketik jawabannya lalu `Enter`.
+- **Agen tidak menebak**: tidak ada auto-answer, dan terminal tidak disisipkan
+  catatan tambahan — karakternya digema pty seperti di SSH. Timeout 1 jam.
+- Semua yang diketik disalin ke proses di server apa adanya (kontrol/ESC
+  dibuang, maks 200 karakter per kiriman).
 
 ### Catatan
 
-- Kalau ada proses `apt`/`dpkg` lain yang sedang jalan, update **ditolak** dengan
+- Kalau ada proses `apt`/`dpkg` lain sedang jalan, update **ditolak** dengan
   pesan jelas — bukan merusak paket. Tunggu proses itu selesai lalu ulangi.
 - Halaman boleh di-refresh di tengah jalan; terminal & kursor ikut tersambung.
 
-Butuh agen **v3.9+** untuk terminal interaktif.
+## Kalau Update OS Menggantung / Terputus
 
-### Kalau update sempat menggantung / terputus
+1. Hentikan prosesnya dari server klien:
+   `sudo systemctl restart agent_pantau.service`
+2. Rapikan paket yang mungkin terpotong:
+   `sudo dpkg --configure -a` lalu `sudo apt-get -f install`.
+3. Tekan **Update OS** lagi.
 
-1. Tunggu atau hentikan proses: `sudo systemctl restart agent_pantau.service`
-   (membunuh proses `apt` yang menggantung).
-2. Rapikan paket yang mungkin terpotong: `sudo dpkg --configure -a` lalu
-   `sudo apt-get -f install`.
-3. Update ulang agen: jalankan ulang 2 baris installer, lalu tekan **Update OS**
-   lagi.
-
-## HTTPS (disarankan untuk produksi)
+## HTTPS untuk Produksi
 
 Dashboard memakai HTTP biasa secara bawaan. Untuk akses lewat internet, pasang
 reverse-proxy TLS (contoh Nginx + Let's Encrypt) di depan port 8400, lalu:
 
-1. Set `SESSION_COOKIE_SECURE=True` di `/opt/pantau/server/.env` (agar cookie sesi
-   hanya terkirim lewat koneksi terenkripsi), lalu `sudo systemctl restart pantau-server`.
-2. Blokir akses langsung ke port 8400 dari luar (listen hanya di `127.0.0.1` pada
-   sisi proxy).
+1. Set `SESSION_COOKIE_SECURE=True` di `/opt/pantau/server/.env` (agar cookie
+   sesi hanya dikirim lewat koneksi terenkripsi), lalu
+   `sudo systemctl restart pantau-server`.
+2. Blokir akses langsung ke port 8400 dari luar (listen hanya di `127.0.0.1`
+   pada sisi proxy).
 
 Contoh petak Nginx:
 
@@ -135,30 +268,41 @@ server {
 }
 ```
 
-## Backup & restore
+## Backup & Restore
 
-Semua data ada di database MariaDB (`pantau_db`) dan konfigurasi `/opt/pantau/server/.env`.
+Semua data ada di database MariaDB (`pantau_db`) dan konfigurasi
+`/opt/pantau/server/.env`. Keduanya perlu di-backup.
 
 ```bash
 # Backup
 sudo mysqldump -u root pantau_db | gzip > pantau_db-$(date +%F).sql.gz
+sudo cp /opt/pantau/server/.env ".env-$(date +%F)"
 
 # Restore
 gunzip -c pantau_db-2026-01-01.sql.gz | sudo mysql -u root pantau_db
 sudo systemctl restart pantau-server
 ```
 
-> Untuk instalasi dari nol tanpa `install-server.sh`, gunakan `database/schema.sql`
-> (13 tabel, sudah sinkron dengan `server/models.py`).
+Untuk instalasi dari nol tanpa `install-server.sh`, gunakan
+`database/schema.sql` (13 tabel, sudah sinkron dengan `server/models.py`).
 
-## Catatan keamanan
+Data historis dibersihkan otomatis agar tabel tidak tumbuh tanpa batas:
+percobaan login 1 hari, log request 30 hari, perintah 180 hari, audit 1 tahun.
 
-- API key disimpan hash sha256; password bcrypt; akses sudo agen dibatasi
-  hanya ke wrapper tertentu (`/etc/sudoers.d/pantau-agent`).
-- Semua aksi service dari dashboard (restart/start/stop) SELALU lewat wrapper
-  `pantau-restart` yang menerapkan deny-list unit kritis — termasuk saat agen
-  berjalan sebagai root.
+## Catatan Keamanan
+
+- API key disimpan hash sha256; password bcrypt; akses sudo agen dibatasi hanya
+  ke wrapper tertentu (`/etc/sudoers.d/pantau-agent`).
+- Semua aksi service dari dashboard **selalu** lewat wrapper `pantau-restart`
+  yang menerapkan deny-list unit kritis — termasuk saat agen berjalan sebagai
+  root. Aksi reboot/poweroff lewat wrapper `pantau-host`, dengan preflight yang
+  menolak perintah bila wrapper/sudoers belum terpasang — jadi tidak pernah
+  menjanjikan "akan dimatikan" lalu gagal diam-diam.
+- Aksi berisiko (hapus server, reboot, poweroff, blokir IP, tandai semua
+  ditangani) selalu minta konfirmasi.
 - Sesi login disimpan di database (bertahan restart server) dan bisa dicabut;
   rate-limit login juga persisten.
 - Header keamanan aktif (CSP, X-Frame-Options, nosniff, Referrer-Policy).
+- Waktu ditampilkan dalam **UTC** (terlihat di sidebar) supaya tidak ambigu
+  di semua server.
 - Jangan ekspos port 8400 ke internet terbuka tanpa reverse-proxy + HTTPS.
