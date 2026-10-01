@@ -64,44 +64,29 @@
       {% if user.role == 'admin' %}
       <button class="btn btn-success" id="apt-update-btn" onclick="aptAction('APT_UPDATE')">&#8635;&nbsp;Update OS</button>
       <button class="btn btn-danger" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled>Upgrade&nbsp;&#9650;</button>
-      <button class="btn btn-ghost btn-sm" id="apt-auto-btn" onclick="aptAction('APT_UPGRADE')" disabled title="Upgrade tanpa pertanyaan sama sekali: konfigurasi lokal selalu dipertahankan">otomatis</button>
+      <span class="hero-sep"></span>
+      <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
+        <button class="btn btn-ghost btn-sm" type="submit" title="Restart sistem operasi">&#8634;&nbsp;Reboot OS</button>
+      </form>
+      <form method="post" action="/servers/{{ server.id }}/host/poweroff" style="display:inline" data-confirm data-msg="MATIKAN server {{ server.hostname }} SEKARANG? Mesin akan poweroff — TIDAK menyala sendiri — sampai dinyalakan manual (fisik/IPMI).">
+        <button class="btn btn-danger btn-sm" type="submit" title="Matikan sistem operasi">&#9211;&nbsp;Power Off</button>
+      </form>
       {% else %}
       <span class="badge badge-inactive">Update OS aktif untuk Admin</span>
       {% endif %}
-      <a href="/servers/{{ server.id }}/metrics" class="btn btn-ghost btn-sm">Metrik</a>
-      {% if user.role == 'admin' %}
-      <span class="hero-sep"></span>
-      <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
-        <button class="btn btn-ghost btn-sm" type="submit" title="Restart sistem operasi">&#8635;&nbsp;Reboot OS</button>
-      </form>
-      <form method="post" action="/servers/{{ server.id }}/host/poweroff" style="display:inline" data-confirm data-msg="MATIKAN server {{ server.hostname }} SEKARANG? Mesin akan poweroff — TIDAK menyala sendiri — sampai dinyalakan manual (fisik/IPMI).">
-        <button class="btn btn-danger btn-sm" type="submit" title="Matikan sistem operasi">&#9416;&nbsp;Power Off</button>
-      </form>
-      {% endif %}
-      <span class="badge badge-inactive" id="apt-badge">—</span>
     </div>
   </div>
-  <div class="hero-aptline">
-    <span id="apt-hint" style="font-size:12px;color:var(--dim)">belum ada info apt — tekan Update OS untuk menyegarkan.</span>
+  <div class="apt-state" id="apt-state">
+    <span id="apt-state-text">Memeriksa pembaruan…</span>
   </div>
-  <details id="apt-policy" style="margin-top:8px">
-    <summary style="font-size:11px;color:var(--dim);cursor:pointer">Cara kerja Update/Upgrade OS</summary>
-    <div style="font-size:12px;color:var(--dim);line-height:1.6;margin-top:8px;max-width:820px">
-      <ul style="margin:0;padding-left:18px">
-        <li><b>Update OS</b> hanya menyegarkan daftar paket — aman, tanpa pertanyaan.</li>
-        <li><b>Upgrade</b> interaktif: kalau ada pertanyaan, kursor muncul di baris baru — ketik jawaban lalu <span class="mono">Enter</span>.</li>
-        <li><b>Otomatis</b> upgrade tanpa pertanyaan: konfigurasi Anda sendiri tidak ditimpa, file baru memakai bawaan paket.</li>
-        <li>Kalau ada proses apt lain sedang berjalan, update ditolak — coba lagi nanti.</li>
-      </ul>
-    </div>
-  </details>
   <div id="apt-live" style="display:none;margin-top:14px">
-    <div id="apt-status" style="font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--blue);margin-bottom:6px">—</div>
+    <div id="apt-status" style="font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--blue);margin-bottom:6px"></div>
     <div class="apt-term" id="apt-term" tabindex="0" aria-label="Terminal Update/Upgrade OS">
-      <pre id="apt-out"></pre>
-      <input id="apt-answer" type="text" maxlength="200" autocomplete="off" autocapitalize="off"
-             autocorrect="off" spellcheck="false" class="apt-term-in" style="display:none"
-             aria-label="Ketik jawaban lalu Enter">
+      <span id="apt-out"></span><span id="apt-prompt" class="apt-prompt" style="display:none">
+        <span class="apt-prompt-sign" aria-hidden="true">&#8250;</span>
+        <input id="apt-answer" type="text" maxlength="200" autocomplete="off" autocapitalize="off"
+               autocorrect="off" spellcheck="false" class="apt-term-in"
+               aria-label="Ketik jawaban lalu Enter"></span>
     </div>
   </div>
   <div id="apt-msg" style="display:none;font-size:12px;line-height:1.5;margin-top:10px"></div>
@@ -160,7 +145,7 @@
     <div id="disks-wrap" style="display:none">
       <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Penyimpanan (Disk)</div>
       <table id="disks-table">
-        <thead><tr><th>Mount</th><th>Type</th><th>Terpakai</th><th style="width:40%">Pemakaian</th></tr></thead>
+        <thead><tr><th>Mount</th><th>Tipe</th><th>Terpakai</th><th style="width:40%">Pemakaian</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -168,7 +153,7 @@
 </div>
 
 <div class="tabbar" id="detail-tabs" role="tablist">
-  <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true">Performa</button>
+  <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true">Riwayat</button>
   <button class="tab" data-tab="layanan" role="tab">Layanan</button>
   <button class="tab" data-tab="masalah" role="tab">Masalah</button>
   <button class="tab" data-tab="jaringan" role="tab">Jaringan</button>
@@ -178,7 +163,7 @@
 
 <div class="tab-body" id="tab-perf">
 <div class="card">
-  <div class="card-header"><h3>Grafik Kinerja</h3>
+  <div class="card-header"><h3>Riwayat Kinerja</h3>
     <div id="perf-ranges" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-sm" data-range="1h">1 Jam</button>
       <button class="btn btn-sm" data-range="6h">6 Jam</button>
@@ -213,7 +198,7 @@
 
 <div class="tab-body" id="tab-layanan" hidden>
 <div class="card">
-  <div class="card-header"><h3>Grafik Layanan</h3>
+  <div class="card-header"><h3>Riwayat Layanan</h3>
     <select id="svc-graph-sel"
             style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;margin-right:8px">
       <option value="">memuat layanan…</option>
@@ -240,10 +225,10 @@
 </div>
 
 <div class="card">
-  <div class="card-header"><h3>Daftar Services</h3></div>
+  <div class="card-header"><h3>Daftar Layanan</h3></div>
   {% if services %}
   <table>
-    <thead><tr><th>Service</th><th>Port</th><th>Process</th><th>Status</th><th>Conns</th><th>Resp (ms)</th><th>Health</th><th>Uptime 24h</th><th>Aksi</th></tr></thead>
+    <thead><tr><th>Layanan</th><th>Port</th><th>Proses</th><th>Status</th><th>Koneksi</th><th>Respons (ms)</th><th>Kesehatan</th><th>Uptime 24j</th><th>Aksi</th></tr></thead>
     <tbody>
     {% for svc in services %}
     <tr>
@@ -293,7 +278,7 @@
 <div class="card">
   <div class="card-header"><h3>Riwayat Perintah</h3></div>
   <table>
-    <thead><tr><th>Waktu</th><th>Service</th><th>Aksi</th><th>Status</th><th>Hasil</th></tr></thead>
+    <thead><tr><th>Waktu</th><th>Layanan</th><th>Aksi</th><th>Status</th><th>Hasil</th></tr></thead>
     <tbody>
     {% for c in commands %}
     <tr id="cmd-{{ c.id }}">
@@ -302,7 +287,7 @@
         {% set svc = services|selectattr('id','equalto',c.service_id)|first %}
         {{ svc.service_name if svc else '?' }}
       </td>
-      <td><span class="badge badge-inactive">{{ c.action }}</span></td>
+      <td><span class="badge badge-inactive">{{ {'restart':'Restart','start':'Start','stop':'Stop','delete':'Hapus'}.get(c.action, c.action) }}</span></td>
       <td id="cmd-st-{{ c.id }}">
         {% if c.status == 'success' %}<span class="badge badge-up">success</span>
         {% elif c.status == 'failed' %}<span class="badge badge-down">failed</span>
@@ -383,7 +368,7 @@
             <button class="btn btn-ghost btn-sm">Restart agen</button>
           </form>
         {% elif p.is_open and p.action == 'apt_update' %}
-          <button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">Update</button>
+          <button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">Update OS</button>
         {% else %}
           <span style="color:var(--dim)">—</span>
         {% endif %}
@@ -407,7 +392,7 @@
   <div class="card-header"><h3>Jaringan</h3></div>
   <div id="net-empty" class="empty-msg" style="display:none">Belum ada data jaringan.</div>
   <table id="net-table" style="display:none">
-    <thead><tr><th>Interface</th><th>Status</th><th>RX Total</th><th>TX Total</th><th>RX Rate</th><th>TX Rate</th></tr></thead>
+    <thead><tr><th>Antarmuka</th><th>Status</th><th>RX Total</th><th>TX Total</th><th>RX Laju</th><th>TX Laju</th></tr></thead>
     <tbody></tbody>
   </table>
 </div>
@@ -437,9 +422,7 @@
     <label style="font-size:12px;color:var(--dim);align-self:center">Baris:</label>
     <input type="number" id="log-lines" value="200" min="10" max="2000" style="width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px">
   </div>
-  <div id="log-empty" class="empty-msg" style="display:none">Menunggu data unit dari Agen Pantau…<br>
-    <span style="font-size:12px">SYSLOG &amp; AUTH = log sistem khusus (perlu grup adm pada Agen).</span>
-  </div>
+  <div id="log-empty" class="empty-msg" style="display:none">Menunggu data log dari Agen Pantau…</div>
   <pre id="log-pre" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;height:55vh;overflow:auto;white-space:pre;color:var(--text);display:none"></pre>
 </div>
 </div>
@@ -534,10 +517,17 @@ function aptLabel(kind) {
 }
 
 function aptSetUpgradeEnabled(ok) {
-  ['apt-upgrade-btn', 'apt-auto-btn'].forEach(function (id) {
-    const b = document.getElementById(id);
-    if (b) b.disabled = !ok;
-  });
+  const b = document.getElementById('apt-upgrade-btn');
+  if (b) b.disabled = !ok;
+}
+
+// Baris status tunggal tepat di bawah tombol Update/Upgrade: jelas dan instan.
+function aptSetState(kind, html) {
+  const el = document.getElementById('apt-state');
+  const tx = document.getElementById('apt-state-text');
+  if (!el || !tx) return;
+  el.className = 'apt-state' + (kind ? ' apt-state-' + kind : '');
+  tx.innerHTML = html;
 }
 
 function matchAptByName(name) {
@@ -549,32 +539,25 @@ function renderApt(data) {
   aptLastCount = aptN;
   const pkgs = data.apt_packages || [];
   lastAptPkgs = pkgs; // dipakai untuk melengkapi daftar hasil klik Update
-  const bad = document.getElementById('apt-badge');
-  const hint = document.getElementById('apt-hint');
   const upBtn = document.getElementById('apt-upgrade-btn');
-  if (!bad) return;
-  if (aptN == null) {
-    bad.textContent = '—';
-    bad.className = 'badge badge-inactive';
-    hint.textContent = 'belum ada info apt — tekan Update untuk menyegarkan.';
+  if (aptRunning) {
+    // jangan timpa status proses yang sedang berjalan
+  } else if (aptN == null) {
+    aptSetState('', 'Belum ada info paket — klik <b>Update OS</b> untuk menyegarkan.');
   } else if (aptN === 0) {
-    bad.textContent = 'up to date';
-    bad.className = 'badge badge-up';
-    hint.textContent = 'Semua paket OS sudah mutakhir (terakhir apt update: ' + fmtAptLast(data.apt_last_update) + ').';
+    aptSetState('ok', 'Semua paket OS sudah mutakhir.'
+      + (data.apt_last_update ? ' <span class="dim">Terakhir diperiksa ' + fmtAptLast(data.apt_last_update) + '.</span>' : ''));
   } else {
-    bad.textContent = aptN + ' paket';
-    bad.className = 'badge badge-warn';
-    const shown = pkgs.slice(0, 5).map(pkgName).join(', ');
-    hint.textContent = 'Terakhir apt update: ' + fmtAptLast(data.apt_last_update)
-      + (shown ? '. Antara lain: ' + shown + (pkgs.length > 5 ? '…' : '') : '.');
+    const names = pkgs.slice(0, 8).map(pkgName).filter(Boolean).join(', ');
+    aptSetState('pending', '<b>' + aptN + ' paket</b> dapat di-upgrade'
+      + (names ? ': <span class="mono dim">' + escapeHtml(names) + (pkgs.length > 8 ? '…' : '') + '</span>' : '.'));
   }
-  // Upgrade hanya aktif bila: sudah pernah tekan Update (aptArmed), tidak ada
-  // proses berjalan (aptRunning), DAN ada paket/layanan yang perlu di-upgrade.
+  // Upgrade hanya aktif setelah Update dijalankan dan ada paket tertunda.
   if (upBtn) {
     upBtn.disabled = aptRunning || !(aptArmed && aptN > 0);
-    upBtn.title = aptRunning ? 'Ada proses Update/Upgrade sedang berjalan…'
-      : (aptArmed && aptN > 0) ? 'Upgrade semua paket tertunda'
-      : !aptUpdated ? 'Update Terlebih Dahulu'
+    upBtn.title = aptRunning ? 'Proses Update/Upgrade sedang berjalan…'
+      : (aptArmed && aptN > 0) ? 'Tingkatkan semua paket tertunda'
+      : !aptUpdated ? 'Klik Update OS terlebih dahulu'
       : 'Tidak ada paket yang perlu di-upgrade';
   }
   aptSetUpgradeEnabled(!aptRunning && aptArmed && aptN > 0);
@@ -686,12 +669,14 @@ function aptLiveShow(kind) {
 let aptHistory = [], aptHistIdx = -1;
 
 function aptInputShow(on) {
+  const row = document.getElementById('apt-prompt');
   const inp = document.getElementById('apt-answer');
-  if (!inp) return;
-  inp.style.display = on ? '' : 'none';
-  inp.value = '';
+  if (row) row.style.display = on ? '' : 'none';
+  if (inp) {
+    inp.value = '';
+    if (on && !document.hidden) setTimeout(() => inp.focus(), 30);
+  }
   aptHistIdx = -1;
-  if (on && !document.hidden) setTimeout(() => inp.focus(), 30);
 }
 
 async function aptSendLine() {
@@ -759,15 +744,12 @@ function aptLiveAppend(text, replace) {
 
 async function aptAction(kind) {
   const upD = document.getElementById('apt-update-btn');
-  if (kind === 'APT_UPGRADE_INTERACT') {
-    if (!confirm('Tingkatkan semua paket tertunda di server ini sekarang?')) return;
-  } else if (kind === 'APT_UPGRADE'
-      && !confirm('Tingkatkan semua paket tertunda tanpa ada pertanyaan?')) {
-    return;
-  }
+  if (kind === 'APT_UPGRADE_INTERACT'
+      && !confirm('Tingkatkan semua paket tertunda di server ini sekarang?')) return;
   aptRunning = true;
   if (upD) upD.disabled = true;
   aptSetUpgradeEnabled(false);
+  aptSetState('busy', 'Memproses <span class="dim">' + aptLabel(kind) + '</span>…');
   aptRid = null;
   aptInteractive = (kind === 'APT_UPGRADE_INTERACT');
   aptLiveShow(kind);
@@ -845,6 +827,7 @@ async function aptFollow(rid, kind, startedMs) {
 
   if (!j || j.status !== 'success') {
     if (Date.now() - start >= limit) {
+      aptSetState('error', 'Gagal — agen tidak merespons dalam batas waktu.');
       aptLiveStatus('<b style="color:var(--red)">Gagal — batas waktu habis.</b> Periksa status agen.', 'var(--red)');
       aptMsg('<b>Agen tidak merespons dalam batas waktu — periksa status agen.</b>', 'var(--red)');
       aptFollowCooldown = Date.now() + 120000; // tunda resume agar tidak langsung mengulang
@@ -852,9 +835,11 @@ async function aptFollow(rid, kind, startedMs) {
       aptLiveShow(kind);
       aptInputShow(false);   // proses sudah berhenti — ambil kursor input
       aptLiveAppend('[status: ' + j.status + ']\n' + escapeHtml(j.result || ''), false);
+      aptSetState('error', 'Gagal (' + escapeHtml(j.status) + ').');
       aptLiveStatus('<b style="color:var(--red)">Gagal (' + escapeHtml(j.status) + ').</b>', 'var(--red)');
       aptMsg('Status: ' + escapeHtml(j.status) + (j.result ? ' — ' + escapeHtml(j.result) : ''), 'var(--red)');
     } else {
+      aptSetState('error', 'Gagal mengambil hasil.');
       aptLiveStatus('<b style="color:var(--red)">Gagal mengambil hasil.</b>', 'var(--red)');
       aptMsg('Gagal mengambil hasil.', 'var(--red)');
     }
@@ -866,6 +851,7 @@ async function aptFollow(rid, kind, startedMs) {
       const final = info.output || '';
       aptLiveAppend(final, true);
       if (apt.upgradable > 0) {
+        aptSetState('pending', '<b>' + apt.upgradable + ' paket</b> siap di-upgrade. <span class="dim">Lihat daftar di bawah.</span>');
         const pkgs = apt.packages || [];
         const enriched = pkgs.map(p => {
           const matched = matchAptByName(pkgName(p));
@@ -882,10 +868,13 @@ async function aptFollow(rid, kind, startedMs) {
         aptMsg('<b>' + apt.upgradable + ' paket siap untuk di-upgrade.</b>' + listHtml, 'var(--yellow)');
         aptLiveStatus('<b style="color:var(--yellow)">Selesai — ' + apt.upgradable + ' paket siap di-upgrade.</b> Klik tombol Upgrade untuk mengeksekusi.', 'var(--yellow)');
       } else if (kind === 'APT_UPGRADE' || kind === 'APT_UPGRADE_INTERACT') {
+        aptSetState('ok', 'Proses upgrade selesai — semua paket sudah ditingkatkan.');
         aptMsg('<b>Proses upgrade selesai — semua paket sudah ditingkatkan.</b>', 'var(--green)');
-        aptLiveStatus('<b style="color:var(--green)">Selesai — upgrade berhasil.</b> Tidak ada sisa paket yang perlu di-upgrade.', 'var(--green)');
+        aptLiveStatus('<b style="color:var(--green)">Selesai — upgrade berhasil.</b>', 'var(--green)');
       } else {
-        aptMsg('<b>Semua paket OS sudah mutakhir.</b> (terakhir apt update: ' + fmtAptLast(apt.last_update) + ')', 'var(--green)');
+        aptSetState('ok', 'Semua paket OS sudah mutakhir.'
+          + (apt.last_update ? ' <span class="dim">Terakhir diperiksa ' + fmtAptLast(apt.last_update) + '.</span>' : ''));
+        aptMsg('<b>Semua paket OS sudah mutakhir.</b>', 'var(--green)');
         aptLiveStatus('<b style="color:var(--green)">Selesai — semua paket OS sudah mutakhir.</b>', 'var(--green)');
       }
       aptUpdated = true; // Update (atau Upgrade) sudah dijalankan & tuntas di sesi ini

@@ -68,34 +68,30 @@ journalctl -u agent_pantau -f
 ## Update OS dari Dashboard (tombol Update / Upgrade di halaman Rincian)
 
 Kotak terminal di halaman Rincian adalah **terminal sungguhan**: output streamed
-dari server (termasuk warna dan `
-` progress yang menimpa baris, sama seperti
-SSH), dan pada mode interaktif Anda **mengetik jawaban langsung di dalamnya**.
+dari server — termasuk warna dan karakter `\r` yang menimpa baris, sama seperti
+SSH — dan pada mode interaktif Anda **mengetik jawaban langsung di dalam kotak
+itu**, tepat setelah prompt (`? `), lalu `Enter`.
 
-### 1. Tombol **Upgrade** — interaktif (default)
+### 1. Tombol **Update OS**
+
+- Hanya menyegarkan daftar paket (`apt update`) — selalu aman, tanpa pertanyaan.
+- Setelah selesai, baris status tepat di bawah tombol langsung menunjukkan
+  berapa paket yang bisa di-upgrade beserta namanya, jadi tidak perlu menunggu.
+
+### 2. Tombol **Upgrade** — interaktif
 
 - Berjalan di pty, jadi `dpkg` boleh berhenti dan bertanya:
   `zabbix_agent2.conf (Y/I/N/O/D/Z) [default=N] ?`
-- Kursor berkedip muncul di baris baru di bawah output — ketik jawabannya lalu
-  `Enter`. `↑`/`↓` memanggil baris sebelumnya, `Enter` saja memakai pilihan bawaan.
+- Kursor muncul tepat setelah tanda tanya — ketik jawabannya lalu `Enter`.
+  `↑`/`↓` memanggil baris sebelumnya, `Enter` saja memakai pilihan bawaan.
 - **Agen tidak menebak**: tidak ada auto-answer pada mode ini, dan terminal pun
   tidak disisipkan catatan tambahan — karakternya digema pty seperti di SSH.
   Timeout 1 jam kalau dibiarkan sampai selesai.
 - Laju dashboard menyalin semua yang diketik ke proses di server; jawaban sampai
   ke sana apa adanya (kontrol/ESC dibuang, maks 200 karakter).
 
-### 2. Tombol **otomatis** — non-interaktif
+### Catatan
 
-- Tanpa pertanyaan sama sekali: konfigurasi yang sudah Anda ubah sendiri
-  **tidak ditimpa** (setara menjawab "N"), file baru memakai bawaan paket,
-  `needrestart` merestart tanpa bertanya. Layak untuk update terjadwal/massal.
-- Mode ini tetap dijaga *watchdog* agen: kalau muncul prompt tak dikenal,
-  agen menjawabkan sekali dan menjelaskan lewat output (atau memberi petunjuk
-  `sudo dpkg --configure -a`).
-
-### Keduanya
-
-- **Update OS** hanya menyegarkan daftar paket — selalu aman, tanpa pertanyaan.
 - Kalau ada proses `apt`/`dpkg` lain yang sedang jalan, update **ditolak** dengan
   pesan jelas — bukan merusak paket. Tunggu proses itu selesai lalu ulangi.
 - Halaman boleh di-refresh di tengah jalan; terminal & kursor ikut tersambung.
