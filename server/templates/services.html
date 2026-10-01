@@ -85,15 +85,13 @@
     <span id="apt-hint" style="font-size:12px;color:var(--dim)">belum ada info apt — tekan Update OS untuk menyegarkan.</span>
   </div>
   <details id="apt-policy" style="margin-top:8px">
-    <summary style="font-size:11px;color:var(--dim);cursor:pointer">Bagaimana Update/Upgrade OS berjalan di sini? (aman, tidak menggantung)</summary>
+    <summary style="font-size:11px;color:var(--dim);cursor:pointer">Cara kerja Update/Upgrade OS</summary>
     <div style="font-size:12px;color:var(--dim);line-height:1.6;margin-top:8px;max-width:820px">
       <ul style="margin:0;padding-left:18px">
-        <li><b>Update OS</b> hanya menyegarkan daftar paket — selalu aman, tanpa pertanyaan.</li>
-        <li><b>Upgrade</b> berjalan <b>interaktif</b> di kotak terminal ini: kalau <span class="mono">dpkg</span> berhenti bertanya, <b>kursor muncul di baris baru</b> — Anda tinggal mengetik jawabannya lalu <span class="mono">Enter</span>, persis seperti di SSH. <span class="mono">↑</span>/<span class="mono">↓</span> memanggil jawaban sebelumnya, <span class="mono">Enter</span> saja memakai pilihan bawaan.</li>
-        <li>Tombol <b>otomatis</b> = upgrade tanpa pertanyaan sama sekali: file konfigurasi yang sudah Anda ubah sendiri tidak ditimpa, file baru memakai bawaan paket, dan layanan yang perlu di-restart direstart diam-diam.</li>
-        <li>Kalau ada proses apt lain yang sedang berjalan, update <b>ditolak</b> (tidak merusak paket) — coba lagi nanti.</li>
-        <li>Kalau proses menggantung tanpa prompt yang dikenali, selesaikan manual di server: <span class="mono">sudo dpkg --configure -a</span>.</li>
-        <li>Butuh versi agen <b>v3.9+</b> (terminal interaktif). Bila masih versi lama, jalankan ulang installer di server ini.</li>
+        <li><b>Update OS</b> hanya menyegarkan daftar paket — aman, tanpa pertanyaan.</li>
+        <li><b>Upgrade</b> interaktif: kalau ada pertanyaan, kursor muncul di baris baru — ketik jawaban lalu <span class="mono">Enter</span>.</li>
+        <li><b>Otomatis</b> upgrade tanpa pertanyaan: konfigurasi Anda sendiri tidak ditimpa, file baru memakai bawaan paket.</li>
+        <li>Kalau ada proses apt lain sedang berjalan, update ditolak — coba lagi nanti.</li>
       </ul>
     </div>
   </details>
@@ -101,12 +99,9 @@
     <div id="apt-status" style="font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--blue);margin-bottom:6px">—</div>
     <div class="apt-term" id="apt-term" tabindex="0" aria-label="Terminal Update/Upgrade OS">
       <pre id="apt-out"></pre>
-      <div id="apt-line" style="display:none">
-        <span id="apt-typed" aria-hidden="true"></span><span class="apt-term-caret" aria-hidden="true"></span>
-        <input id="apt-answer" type="text" maxlength="200" autocomplete="off" autocapitalize="off"
-               autocorrect="off" spellcheck="false" class="apt-term-in"
-               aria-label="Ketik jawaban di sini lalu Enter">
-      </div>
+      <input id="apt-answer" type="text" maxlength="200" autocomplete="off" autocapitalize="off"
+             autocorrect="off" spellcheck="false" class="apt-term-in" style="display:none"
+             aria-label="Ketik jawaban lalu Enter">
     </div>
   </div>
   <div id="apt-msg" style="display:none;font-size:12px;line-height:1.5;margin-top:10px"></div>
@@ -117,7 +112,7 @@
     <span id="sys-ts" style="font-size:12px;color:var(--dim)"></span>
   </div>
   <div id="sys-empty" class="empty-msg" style="display:none">
-    Belum ada data kinerja — pastikan Agen Pantau v3.4+ (via package install.sh) berjalan di server ini.
+    Belum ada data kinerja dari server ini.
   </div>
   <div id="sys-body">
     <div class="stats-grid" style="margin-bottom:16px">
@@ -578,7 +573,7 @@ function renderApt(data) {
   if (upBtn) {
     upBtn.disabled = aptRunning || !(aptArmed && aptN > 0);
     upBtn.title = aptRunning ? 'Ada proses Update/Upgrade sedang berjalan…'
-      : (aptArmed && aptN > 0) ? 'Upgrade semua paket tertunda (interaktif — Anda menjawab prompt dpkg)'
+      : (aptArmed && aptN > 0) ? 'Upgrade semua paket tertunda'
       : !aptUpdated ? 'Update Terlebih Dahulu'
       : 'Tidak ada paket yang perlu di-upgrade';
   }
@@ -691,21 +686,12 @@ function aptLiveShow(kind) {
 let aptHistory = [], aptHistIdx = -1;
 
 function aptInputShow(on) {
-  const line = document.getElementById('apt-line');
-  if (line) line.style.display = on ? '' : 'none';
   const inp = document.getElementById('apt-answer');
-  if (inp) {
-    inp.value = '';
-    if (on && !document.hidden) setTimeout(() => inp.focus(), 30);
-  }
+  if (!inp) return;
+  inp.style.display = on ? '' : 'none';
+  inp.value = '';
   aptHistIdx = -1;
-}
-
-function aptTypedRender() {
-  const inp = document.getElementById('apt-answer');
-  const span = document.getElementById('apt-typed');
-  if (span && inp) span.textContent = inp.value;
-  aptTermScroll();
+  if (on && !document.hidden) setTimeout(() => inp.focus(), 30);
 }
 
 async function aptSendLine() {
@@ -714,8 +700,6 @@ async function aptSendLine() {
   if (!inp) return;
   const line = inp.value.trim();
   inp.value = '';
-  const span = document.getElementById('apt-typed');
-  if (span) span.textContent = '';
   if (line) { aptHistory.push(line); aptHistIdx = aptHistory.length; }
   try {
     const r = await fetch('/api/logs/' + aptRid + '/input', {
@@ -736,19 +720,21 @@ async function aptSendLine() {
 
 function aptLineKey(ev) {
   if (!aptInteractive || !aptRunning) return;
+  const inp = document.getElementById('apt-answer');
+  if (!inp) return;
   if (ev.key === 'Enter') { ev.preventDefault(); aptSendLine(); return; }
   if (ev.key === 'ArrowUp' && aptHistory.length) {
     ev.preventDefault();
     aptHistIdx = Math.max(0, aptHistIdx - 1);
-    document.getElementById('apt-answer').value = aptHistory[aptHistIdx] || '';
-    aptTypedRender();
+    inp.value = aptHistory[aptHistIdx] || '';
+    aptTermScroll();
     return;
   }
   if (ev.key === 'ArrowDown' && aptHistory.length) {
     ev.preventDefault();
     aptHistIdx = Math.min(aptHistory.length, aptHistIdx + 1);
-    document.getElementById('apt-answer').value = aptHistory[aptHistIdx] || '';
-    aptTypedRender();
+    inp.value = aptHistory[aptHistIdx] || '';
+    aptTermScroll();
   }
 }
 
@@ -774,15 +760,9 @@ function aptLiveAppend(text, replace) {
 async function aptAction(kind) {
   const upD = document.getElementById('apt-update-btn');
   if (kind === 'APT_UPGRADE_INTERACT') {
-    if (!confirm('Jalankan "apt upgrade" INTERAKTIF pada server ini sekarang?\n\n'
-        + 'Semua paket tertunda akan ditingkatkan. Kalau dpkg bertanya '
-        + '(mis. file konfigurasi), Anda ketik jawabannya sendiri di terminal ini.'
-        + '\n\nJangan tutup halaman ini selama proses berjalan.')) {
-      return;
-    }
+    if (!confirm('Tingkatkan semua paket tertunda di server ini sekarang?')) return;
   } else if (kind === 'APT_UPGRADE'
-      && !confirm('Jalankan "apt upgrade -y" TANPA pertanyaan pada server ini sekarang?\n\n'
-        + 'Konfigurasi lokal Anda dipertahankan otomatis; file baru memakai bawaan paket.')) {
+      && !confirm('Tingkatkan semua paket tertunda tanpa ada pertanyaan?')) {
     return;
   }
   aptRunning = true;
@@ -848,8 +828,7 @@ async function aptFollow(rid, kind, startedMs) {
       const spin = secs % 2 === 0 ? '●' : '○';
       aptLiveStatus('<span style="color:var(--blue)">' + spin + '&nbsp;' + label +
         '</span>&nbsp;berjalan <b>' + secs + '</b> dtk'
-        + ' &nbsp;<span style="color:var(--dim)">' + fmtBytes(aptLiveBuf.length) + ' live</span>'
-        + (aptInteractive ? ' &nbsp;<span style="color:var(--yellow)">interaktif — ketik jawaban di terminal &#9166;</span>' : ''),
+        + ' &nbsp;<span style="color:var(--dim)">' + fmtBytes(aptLiveBuf.length) + ' live</span>',
         'var(--blue)');
       continue;
     }
@@ -1513,7 +1492,7 @@ setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
 const aptAnswerEl = document.getElementById('apt-answer');
 if (aptAnswerEl) {
   aptAnswerEl.addEventListener('keydown', aptLineKey);
-  aptAnswerEl.addEventListener('input', aptTypedRender);
+  aptAnswerEl.addEventListener('input', aptTermScroll);
 }
 const aptTermEl = document.getElementById('apt-term');
 if (aptTermEl) {
