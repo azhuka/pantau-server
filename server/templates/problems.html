@@ -4,7 +4,12 @@
 <div class="topbar">
   <h2>Masalah Server</h2>
   <div>
-    <span style="font-size:12px;color:var(--dim)">{{ danger_open }} danger · {{ warning_open }} warning · {{ info_open }} info · {{ ok_count }} server sehat</span>
+    <span style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      {% if danger_open %}<span class="badge badge-danger">Danger {{ danger_open }}</span>{% endif %}
+      {% if warning_open %}<span class="badge badge-warn">Warning {{ warning_open }}</span>{% endif %}
+      {% if info_open %}<span class="badge badge-info">Info {{ info_open }}</span>{% endif %}
+      <span class="badge badge-up">{{ ok_count }} server tanpa masalah</span>
+    </span>
   </div>
 </div>
 
@@ -38,18 +43,17 @@
         {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-inactive" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
       <td class="mono" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">{{ p.durasi }}</td>
-      <td>
+      <td style="white-space:nowrap">
+        <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
         {% if p.acknowledged_by %}
-          <span class="badge badge-up" title="Diakui {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}" style="cursor:help">✓</span>
+          <span class="badge badge-up" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">Ditangani</span>
         {% elif p.severity == 'danger' and p.is_open %}
-          <a href="/problems" class="btn btn-danger btn-sm" onclick="return ackProblem({{ p.server_id }}, {{ p.id }})">Tandai</a>
-        {% else %}
-          <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
+          <button type="button" class="btn btn-danger btn-sm" onclick="ackProblem({{ p.server_id }}, {{ p.id }}, this)">Tandai ditangani</button>
         {% endif %}
       </td>
       <td style="font-size:12px;color:var(--dim);max-width:360px">
         {% if p.acknowledged_by %}
-          <span style="color:var(--green)">✓ diakui {{ p.acknowledged_by }}</span><br>
+          <span style="color:var(--green)">Ditangani oleh {{ p.acknowledged_by }}</span><br>
         {% endif %}
         {{ p.tip or '—' }}
       </td>
@@ -94,13 +98,23 @@
   </table>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
 <script>
-function ackProblem(sid, id){
-  if (!confirm('Tandai peringatan DANGER ini sebagai sudah diketahui?')) return false;
-  fetch('/api/alerts/' + id + '/ack', {method:'POST', credentials:'same-origin'})
-    .then(function(r){ if (r.ok) location.reload(); });
-  window.scrollTo(0, 0);
-  return false;
+async function ackProblem(sid, id, btn){
+  if (!confirm('Tandai masalah DANGER ini sudah ditangani?')) return;
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Menyimpan…';
+  try {
+    const r = await fetch('/api/alerts/' + id + '/ack', {method:'POST', credentials:'same-origin'});
+    if (r.ok) { location.reload(); return; }
+    btn.disabled = false; btn.textContent = label;
+    alert('Gagal menyimpan. Coba lagi.');
+  } catch (e) {
+    btn.disabled = false; btn.textContent = label;
+    alert('Gagal menyimpan. Coba lagi.');
+  }
 }
 </script>
 {% endblock %}

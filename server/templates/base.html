@@ -289,7 +289,7 @@ body.show-alert-banner .main{padding-top:68px}
     <div class="alert-list"></div>
     <div class="alert-panel-foot">
       <a class="btn btn-ghost btn-sm" href="/problems">Buka halaman Masalah</a>
-      <button class="btn btn-danger btn-sm" onclick="alertAckAll()">Saya sudah paham semua — lanjutkan</button>
+      <button class="btn btn-danger btn-sm" onclick="return alertAckAll()">Tandai semua ditangani</button>
     </div>
   </div>
 </div>
@@ -431,7 +431,7 @@ function escHtml(s){
 }
 function alertCardHtml(a){
   const acked = a.acknowledged
-    ? '<div class="alert-sub">Sudah diakui oleh <b>' + escHtml(a.acknowledged_by) + '</b> — masih berlangsung.</div>'
+    ? '<div class="alert-sub">Sudah ditangani oleh <b>' + escHtml(a.acknowledged_by) + '</b> — masih berlangsung.</div>'
     : '';
   return '<div class="alert-item">'
     + '<div class="alert-h"><span class="alert-srv">' + escHtml(a.hostname) + '</span>'
@@ -440,7 +440,7 @@ function alertCardHtml(a){
     + '<div class="alert-msg">' + escHtml(a.message) + '</div>'
     + (a.tip ? '<div class="alert-tip">💡 ' + escHtml(a.tip) + '</div>' : '')
     + acked
-    + '<button class="btn btn-danger btn-sm ack-btn" data-id="' + a.id + '" onclick="alertAck(this,' + a.id + ')">Saya Menangani — tandai diakui</button>'
+    + '<button class="btn btn-danger btn-sm ack-btn" data-id="' + a.id + '" onclick="alertAck(this,' + a.id + ')">Tandai ditangani</button>'
     + '</div>';
 }
 function renderAlerts(d){
@@ -482,15 +482,28 @@ async function alertFetch(){
   } catch (e) {}
 }
 async function alertAck(btn, id){
-  btn.disabled = true; btn.textContent = 'Mengakui…';
-  try { await fetch('/api/alerts/' + id + '/ack', {method: 'POST', credentials: 'same-origin'}); } catch (e) {}
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Menyimpan…';
+  try {
+    const r = await fetch('/api/alerts/' + id + '/ack', {method: 'POST', credentials: 'same-origin'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = label;
+    showToast('Gagal menyimpan. Coba lagi.', false);
+    return;
+  }
   const ov = document.getElementById('alertOverlay');
   if (ov) ov._key = '';
   alertFetch();
 }
 async function alertAckAll(){
   const btns = Array.from(document.querySelectorAll('#alertOverlay .ack-btn'));
+  if (!btns.length) return false;
+  const n = btns.length;
+  if (!confirm('Tandai ' + n + ' masalah DANGER sebagai sudah ditangani?\n\n'
+    + 'Ini hanya menandai sudah ditangani, bukan menyelesaikan masalahnya.')) return false;
   for (const b of btns) await alertAck(b, b.dataset.id);
+  return false;
 }
 setTimeout(alertFetch, 1500);
 setInterval(alertFetch, 10000);
