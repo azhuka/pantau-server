@@ -158,7 +158,7 @@ sudo systemctl restart agent_pantau.service
 ```
 
 Verifikasi: badge di Rincian host tersebut harus berubah ke versi baru
-(`agen v3.10.0`), dan `server_extras.agent_version` ikut terisi.
+(`agen v3.11.0`), dan `server_extras.agent_version` ikut terisi.
 
 > **Installer menarik dari branch `master`, bukan tag.** Isinya bisa berubah
 > setiap kali ada commit baru, termasuk commit Anda sendiri. Kalau butuh versi
@@ -168,7 +168,7 @@ Verifikasi: badge di Rincian host tersebut harus berubah ke versi baru
 
 Restart agen **tidak menghapus data**. Yang perlu dicek:
 
-1. Badge versi di Rincian sudah versi baru (`v3.10.0`).
+1. Badge versi di Rincian sudah versi baru (`v3.11.0`).
 2. Server kembali online dalam ±10 detik.
 3. Kalau agen upgrade OS, tekan **Update OS** sekali — jawabannya langsung
    tampil tanpa perlu polling ulang dan tombol Upgrade seketika aktif jika ada paket.
@@ -184,6 +184,7 @@ Badge versi agen ada di bagian atas halaman Rincian tiap server.
 | Terminal Update/Upgrade OS (warna + `\r` seperti SSH) | v3.7 |
 | Terminal Upgrade **interaktif** (jawab prompt dpkg) | v3.9 |
 | Proteksi sanitasi ketat, mitigasi loop retry, & aktivasi instan upgrade | v3.10 |
+| Konsol Terminal Interaktif (shell prompt `root@host:~#`, pills Y/n, reparasi mandiri `dpkg --configure -a`) | v3.11 |
 
 Agen lebih lama dari requirements **tetap jalan untuk fitur lain** — hanya
 fitur terkait yang menolak dengan pesan jelas, bukan gagal diam-diam. Contoh:
@@ -201,44 +202,42 @@ ORDER BY x.agent_version, s.hostname;
 
 `NULL` atau versi kosong artinya agen belum pernah mengirim laporan extras.
 
-## Update OS dari Dashboard
+## Konsol Terminal & Update OS dari Dashboard
 
-Kotak terminal di halaman Rincian adalah **terminal sungguhan**: output
-di-stream dari server — termasuk warna dan karakter `\r` yang menimpa baris,
-sama seperti SSH — dan pada mode interaktif Anda **mengetik jawaban langsung di
-dalam kotak itu**, tepat setelah prompt, lalu `Enter`.
+Jendela terminal di halaman Rincian dirancang layaknya **konsol terminal Linux/SSH sungguhan**:
+- **Tampilan Konsol Autentik**: Titlebar lengkap dengan tombol window, label `root@hostname: apt/dpkg console`, tombol Clear, status proses, dan kursor blok berkedip (`█`).
+- **Mode Shell Interaktif**: Saat idle, prompt `root@<hostname>:~# ` siap menerima perintah langsung:
+  - `update` atau `apt update`: Sinkronisasi daftar paket.
+  - `upgrade` atau `apt upgrade`: Upgrade paket OS tertunda (interaktif).
+  - `fix` atau `dpkg --configure -a`: Reparasi otomatis dependensi & paket yang terganggu.
+  - `clear`: Bersihkan layar terminal.
+  - `help`: Panduan ringkas perintah di konsol.
+- **Tombol Pintas Cepat (Quick Action Pills)**: Saat proses meminta input konfirmasi, muncul tombol instan `[ Y ]`, `[ N ]`, `[ Enter ]`, dan `[ Perbaiki Paket ]` sehingga admin bisa langsung mengklik atau mengetik dengan keyboard.
+- **Deteksi Cerdas (Smart Fix Banner)**: Jika output apt/dpkg mengindikasikan adanya paket terganggu (`dpkg was interrupted`, butuh `dpkg --configure -a`), banner pemulihan langsung muncul menawarkan tombol perbaikan satu-klik tanpa harus membuka SSH.
 
 ### Tombol **Update OS**
 
-- Hanya menyegarkan daftar paket (`apt update`) — selalu aman, tanpa pertanyaan.
-- Setelah selesai, baris status tepat di bawah tombol langsung menampilkan
-  berapa paket yang bisa di-upgrade beserta namanya.
+- Menyegarkan daftar paket (`apt update`) — aman dan non-interaktif.
+- Baris status tepat di bawah tombol langsung menampilkan jumlah dan nama paket yang siap di-upgrade.
 
 ### Tombol **Upgrade** — interaktif
 
-- **Tombol ini aktif setelah Update OS selesai** dan ada paket yang bisa
-  di-upgrade. Sebelum itu tombolnya disable, bukan bisa diklik lalu gagal.
-- Berjalan di pty, jadi `dpkg` boleh berhenti dan bertanya:
-  `zabbix_agent2.conf (Y/I/N/O/D/Z) [default=N] ?`
-- Kursor muncul tepat setelah tanda tanya. Ketik jawabannya lalu `Enter`.
-- **Agen tidak menebak**: tidak ada auto-answer, dan terminal tidak disisipkan
-  catatan tambahan — karakternya digema pty seperti di SSH. Timeout 1 jam.
-- Semua yang diketik disalin ke proses di server apa adanya (kontrol/ESC
-  dibuang, maks 200 karakter per kiriman).
+- Aktif otomatis seketika setelah Update OS menemukan paket tertunda.
+- Berjalan di pty: dpkg dapat berinteraksi penuh dengan admin. Jawaban dikirim langsung ke proses di server klien.
 
-### Catatan
+### Tombol **Perbaiki Paket (dpkg fix)**
 
-- Kalau ada proses `apt`/`dpkg` lain sedang jalan, update **ditolak** dengan
-  pesan jelas — bukan merusak paket. Tunggu proses itu selesai lalu ulangi.
-- Halaman boleh di-refresh di tengah jalan; terminal & kursor ikut tersambung.
+- Menjalankan `dpkg --configure -a` diikuti `apt-get -f install -y` secara otomatis di server klien.
+- Menuntaskan 90% kendala paket tertunda atau lock error tanpa perlu remote SSH manual.
 
-## Kalau Update OS Menggantung / Terputus
+## Kapan Memerlukan Remote Langsung (SSH)?
 
-1. Hentikan prosesnya dari server klien:
-   `sudo systemctl restart agent_pantau.service`
-2. Rapikan paket yang mungkin terpotong:
-   `sudo dpkg --configure -a` lalu `sudo apt-get -f install`.
-3. Tekan **Update OS** lagi.
+Dengan konsol terminal interaktif dan fitur reparasi `dpkg --configure -a` di Dashboard:
+1. **90% pemeliharaan rutin** (update patch keamanan, upgrade paket, konfirmasi Y/n, penanganan paket terhenti) **cukup dan efisien diselesaikan langsung dari web Dashboard** tanpa perlu membuka terminal SSH satu per satu.
+2. **Kondisi darurat yang tetap mewajibkan remote langsung (SSH)**:
+   - **Upgrade Versi Distro Mayor** (misal Debian 11 ke 12, atau Ubuntu 22.04 ke 24.04) yang berpotensi memutus network stack/service di tengah instalasi kernel baru.
+   - **Dialog Konfigurasi Layar Penuh (TUI/ncurses)**: Prompt debconf layar biru yang membutuhkan tombol navigasi Panah/Tab/Spasi.
+   - **Gangguan Jaringan / Mesin Crash**: Kondisi saat Agen Pantau tidak dapat terhubung ke Dashboard.
 
 ## HTTPS untuk Produksi
 

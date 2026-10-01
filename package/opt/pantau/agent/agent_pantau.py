@@ -420,7 +420,7 @@ APT_AGENT_OUTPUT_MAX = 4_000_000
 APT_PROGRESS_TAIL_CHARS = 200_000
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.10.0"
+AGENT_VERSION = "3.11.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1108,6 +1108,9 @@ def _apt_cmd(kind: str):
         # Interaktif menunggu admin mengetik; timeout lebih longgar, dan HANYA
         # diakhiri bila proses benar-benar tidak bergerak (mis. admin lupa).
         return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "upgrade-interact"], 3600
+    if kind == "APT_FIX":
+        # Reparasi dpkg & pemulihan paket rusak
+        return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "fix"], 1800
     raise ValueError(f"unit apt tidak dikenal: {kind}")
 
 
@@ -1391,7 +1394,7 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
     hint_shown = False
     failed = False
     errmsg = ""
-    interactive = (kind == "APT_UPGRADE_INTERACT")
+    interactive = (kind in ("APT_UPGRADE_INTERACT", "APT_FIX"))
 
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -1791,7 +1794,7 @@ def poll_log_requests(cfg: dict):
 
         if not re.fullmatch(r"[A-Za-z0-9@_.:+-]{1,100}", unit):
             result = {"status": "failed", "result": "Nama unit tidak valid"}
-        elif unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT"):
+        elif unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_FIX"):
             threading.Thread(
                 target=_run_apt_in_thread, args=(cfg, rid, unit), daemon=True
             ).start()

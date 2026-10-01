@@ -2019,7 +2019,7 @@ def api_system_status(user: User = Depends(require_user), db: Session = Depends(
 VALID_UNIT_RE = re.compile(r"^[A-Za-z0-9@_.:+-]{1,100}$")
 # Unit log khusus OS: bisa butuh jawaban admin saat berjalan (mode interaktif),
 # jadi tidak boleh dianggap "stale" seperti permintaan log biasa.
-APT_UNITS = ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT")
+APT_UNITS = ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_FIX")
 SYSLOG_FILE = "/var/log/syslog"
 AUTH_FILE = "/var/log/auth.log"
 STALE_LOG_SECONDS = 600
@@ -3016,7 +3016,7 @@ def api_logs_result(
     req.updated_at = datetime.utcnow()
 
     # Segera sinkronkan status apt ke ServerExtras agar dashboard & tombol upgrade langsung aktif tanpa jeda
-    if req.unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT") and status == "success":
+    if req.unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_FIX") and status == "success":
         try:
             raw_res = body.get("result", "")
             parsed = json.loads(raw_res) if isinstance(raw_res, str) else raw_res

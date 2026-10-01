@@ -200,17 +200,45 @@ body.show-alert-banner .main{padding-top:68px}
 .alert-list{padding:8px 18px}
 .alert-item{border:1px solid var(--border);border-left:4px solid var(--red);border-radius:8px;padding:12px 14px;margin:12px 0;background:rgba(239,68,68,.05)}
 
-/* Terminal live Update/Upgrade — satu kotak, persis seperti SSH */
-.apt-term{background:#0b0e15;border:1px solid var(--border);border-radius:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;color:#c9d4e6;overflow:auto;max-height:52vh;padding:10px 12px;margin:0;width:100%;scrollbar-width:thin}
+/* Terminal live Update/Upgrade — Gaya Konsol Terminal Linux Modern */
+.terminal-window{background:#0b0e14;border:1px solid #282f3e;border-radius:10px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.5);margin:0;width:100%}
+.terminal-titlebar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#131822;border-bottom:1px solid #232a38;user-select:none}
+.terminal-dots{display:flex;gap:7px;align-items:center}
+.t-dot{width:11px;height:11px;border-radius:50%;display:inline-block;cursor:pointer;transition:opacity .15s}
+.t-dot:hover{opacity:.8}
+.t-dot-red{background:#ff5f56;box-shadow:0 0 6px rgba(255,95,86,.4)}
+.t-dot-yellow{background:#ffbd2e;box-shadow:0 0 6px rgba(255,189,46,.4)}
+.t-dot-green{background:#27c93f;box-shadow:0 0 6px rgba(39,201,63,.4)}
+.terminal-title{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#94a3b8;display:flex;align-items:center;gap:6px;font-weight:600}
+.terminal-actions{display:flex;align-items:center;gap:10px}
+.terminal-status-badge{font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--blue)}
+.terminal-btn-icon{background:#1e2533;border:1px solid #333d52;color:#94a3b8;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:ui-monospace,Menlo,Consolas,monospace;display:inline-flex;align-items:center;gap:4px;transition:all .15s}
+.terminal-btn-icon:hover{color:#fff;border-color:#60a5fa;background:#283245}
+.apt-smart-fix-banner{background:rgba(234,179,8,.1);border-bottom:1px solid rgba(234,179,8,.25);padding:8px 14px;font-size:12px;color:#fde047;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.apt-term{background:#0b0e14;border:none;border-radius:0;font-family:ui-monospace,Menlo,Consolas,"SF Mono","Courier New",monospace;font-size:11.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;color:#cbd5e1;overflow-y:auto;max-height:54vh;padding:12px 14px;margin:0;width:100%;scrollbar-width:thin;cursor:text}
 .apt-term::-webkit-scrollbar{width:8px;height:8px}
-.apt-term::-webkit-scrollbar-thumb{background:#2b3245;border-radius:4px}
+.apt-term::-webkit-scrollbar-thumb{background:#232a38;border-radius:4px}
 .apt-term #apt-out{font:inherit;color:inherit;white-space:inherit;word-break:inherit}
-/* Baris input terminal: baris baru bersih persis SSH / konsol (tanpa kotak biru) */
-.apt-prompt{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:6px;border-top:1px dashed #23273a;width:100%}
+.apt-quick-pills{display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:8px;border-top:1px dashed #232a38;flex-wrap:wrap;user-select:none}
+.pill-label{font-size:11px;color:#64748b;font-family:ui-monospace,Menlo,Consolas,monospace;margin-right:2px}
+.quick-pill{background:#171d29;border:1px solid #2d3748;color:#94a3b8;border-radius:4px;padding:3px 9px;font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;cursor:pointer;transition:all .15s}
+.quick-pill:hover{border-color:#60a5fa;color:#fff;background:#242f44}
+.pill-yes{border-color:rgba(74,222,128,.4);color:#4ade80}
+.pill-yes:hover{background:rgba(74,222,128,.15);border-color:#4ade80;color:#86efac}
+.pill-no{border-color:rgba(248,113,113,.4);color:#f87171}
+.pill-no:hover{background:rgba(248,113,113,.15);border-color:#f87171;color:#fca5a5}
+.pill-enter{border-color:rgba(96,165,250,.4);color:#60a5fa}
+.pill-enter:hover{background:rgba(96,165,250,.15);border-color:#60a5fa;color:#93c5fd}
+.pill-fix{border-color:rgba(251,191,36,.4);color:#fbbf24}
+.pill-fix:hover{background:rgba(251,191,36,.15);border-color:#fbbf24;color:#fde047}
+/* Baris input terminal: persis konsol SSH tanpa kotak biru */
+.apt-prompt{display:flex;align-items:center;gap:7px;margin-top:8px;padding-top:8px;border-top:1px dashed #232a38;width:100%}
 .apt-prompt-sign{color:#4ade80;font-weight:700;user-select:none;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap;font-size:12px}
-.apt-term-in{flex:1;background:transparent !important;border:none !important;outline:none !important;box-shadow:none !important;color:#4ade80;font:inherit;font-size:12px;caret-color:#4ade80;caret-shape:block;padding:2px 0;margin:0;appearance:none;-webkit-appearance:none}
+.apt-term-in{flex:1;background:transparent !important;border:none !important;outline:none !important;box-shadow:none !important;color:#4ade80;font:inherit;font-size:12px;caret-color:#4ade80;padding:2px 0;margin:0;appearance:none;-webkit-appearance:none}
 .apt-term-in:focus,.apt-term-in:focus-visible{outline:none !important;border:none !important;box-shadow:none !important}
-.apt-term-in::placeholder{color:rgba(107,112,148,0.7);font-size:11px}
+.apt-term-in::placeholder{color:#475569;font-size:11px}
+.terminal-cursor{display:inline-block;color:#4ade80;animation:termblink 1s step-end infinite;font-size:13px;line-height:1;user-select:none}
+@keyframes termblink{0%,100%{opacity:1}50%{opacity:0}}
 /* Status Update/Upgrade: satu baris jelas tepat di bawah tombol */
 .apt-state{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--text)}
 .apt-state::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--dim);flex:none}
@@ -269,7 +297,7 @@ body.show-alert-banner .main{padding-top:68px}
     <a href="/logout" class="nav-link mob-logout"><span class="nav-icon">&#9099;</span> <span class="nav-label">Logout</span></a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:4px">v{{ app_version or '3.10.0' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:4px">v{{ app_version or '3.11.0' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     {{ user.username }} ({{ user.role }})<br>
     <a href="/logout">Logout</a>
