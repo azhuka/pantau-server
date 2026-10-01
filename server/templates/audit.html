@@ -79,6 +79,7 @@ function auditPatch(html) {
 }
 
 async function auditRefresh() {
+  if (document.hidden) return;
   try {
     const r = await fetch(location.pathname + location.search, {credentials: 'same-origin'});
     if (!r.ok) return;

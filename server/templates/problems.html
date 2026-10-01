@@ -107,7 +107,11 @@ async function ackProblem(sid, id, btn){
   const label = btn.textContent;
   btn.disabled = true; btn.textContent = 'Menyimpan…';
   try {
-    const r = await fetch('/api/alerts/' + id + '/ack', {method:'POST', credentials:'same-origin'});
+    const r = await fetch('/api/alerts/' + id + '/ack', {
+      method: 'POST',
+      headers: {'X-CSRF-Token': getCsrf()},
+      credentials: 'same-origin'
+    });
     if (r.ok) { location.reload(); return; }
     btn.disabled = false; btn.textContent = label;
     alert('Gagal menyimpan. Coba lagi.');

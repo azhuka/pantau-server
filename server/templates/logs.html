@@ -120,9 +120,9 @@ function patchSys(d) {
   const pt = document.getElementById('sys-procs');
   if (d.processes.length) {
     pt.innerHTML = d.processes.map(p =>
-      '<tr><td class="mono">' + p.pid + '</td><td><strong>' + p.comm + '</strong></td>'
-      + '<td class="mono">' + p.state + '</td>'
-      + '<td class="mono">' + p.cpu.toFixed(1) + '</td>'
+      '<tr><td class="mono">' + escHtml(p.pid) + '</td><td><strong>' + escHtml(p.comm) + '</strong></td>'
+      + '<td class="mono">' + escHtml(p.state) + '</td>'
+      + '<td class="mono">' + (typeof p.cpu === 'number' ? p.cpu.toFixed(1) : escHtml(p.cpu)) + '</td>'
       + '<td class="mono">' + fmtBytes(p.rss) + '</td></tr>'
     ).join('');
   } else {
@@ -131,14 +131,15 @@ function patchSys(d) {
 
   const dt = document.getElementById('sys-disks');
   dt.innerHTML = d.disks.map(x =>
-    '<tr><td class="mono">' + x.mount + '</td><td>' + x.fstype + '</td>'
+    '<tr><td class="mono">' + escHtml(x.mount) + '</td><td>' + escHtml(x.fstype) + '</td>'
     + '<td class="mono">' + fmtBytes(x.total) + '</td>'
     + '<td class="mono">' + fmtBytes(x.used) + '</td>'
-    + '<td>' + x.percent.toFixed(1) + '%</td></tr>'
+    + '<td>' + (typeof x.percent === 'number' ? x.percent.toFixed(1) : escHtml(x.percent)) + '%</td></tr>'
   ).join('') || '<tr><td colspan="5" class="mono">tidak ada disk terdeteksi</td></tr>';
 }
 
 async function pollLog() {
+  if (document.hidden) return;
   try {
     const r = await fetch('/api/logs/dashboard?lines=' + LINES, {credentials: 'same-origin'});
     if (!r.ok) return;
@@ -156,6 +157,7 @@ async function pollLog() {
 }
 
 async function pollSys() {
+  if (document.hidden) return;
   try {
     const r = await fetch('/api/system/status', {credentials: 'same-origin'});
     if (r.ok) patchSys(await r.json());
@@ -170,7 +172,7 @@ async function svcInit() {
     if (!r.ok) return;
     const d = await r.json();
     unitSel.innerHTML = ['', ...d.units, ...d.extras].map(u =>
-      u ? '<option value="' + u + '">' + (extraLabels[u] || u) + '</option>' : ''
+      u ? '<option value="' + escHtml(u) + '">' + escHtml(extraLabels[u] || u) + '</option>' : ''
     ).join('');
     svcUnit = (d.units.includes('mariadb') ? 'mariadb' : (d.units.includes('ssh') ? 'ssh' : d.units[0] || 'SYSTEM'));
     unitSel.value = svcUnit;
@@ -185,6 +187,7 @@ unitSel.addEventListener('change', () => {
 });
 
 async function svcLoad() {
+  if (document.hidden) return;
   try {
     const r = await fetch('/api/logs/service?unit=' + encodeURIComponent(svcUnit) + '&lines=300', {credentials: 'same-origin'});
     if (!r.ok) { svc.textContent = '(gagal memuat log service)'; return; }

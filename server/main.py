@@ -5,8 +5,10 @@ Full-featured web app for server monitoring.
 """
 
 import hashlib
+import hmac as _hmac
 import ipaddress
 import json
+import logging
 import os
 import re
 import secrets
@@ -14,8 +16,11 @@ import socket
 import subprocess
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 
 from fastapi import (
     Body, Depends, FastAPI, Form, Header, HTTPException, Request, Response,
@@ -25,6 +30,7 @@ from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
 from sqlalchemy import create_engine, desc, func
 from sqlalchemy.orm import Session, sessionmaker
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from config import settings
 from models import (
@@ -32,6 +38,19 @@ from models import (
     Server, ServerExtras, ServerProblem, Service, SysSnapshotHour,
     SystemSnapshot, User,
 )
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("pantau")
+
+# Secret key (resolusi saat startup)
+_SECRET_KEY: str = ""  # diisi saat startup
 
 # ---------------------------------------------------------------------------
 # Database
@@ -60,6 +79,7 @@ SESSION_COOKIE = "session_id"
 SESSION_TTL = timedelta(hours=12)
 
 _last_metrics_prune = datetime.utcnow() - timedelta(days=1)
+_prune_lock = threading.Lock()
 
 
 def _prune_expired_sessions(db: Session) -> None:
@@ -98,6 +118,16 @@ def require_user(request: Request, db: Session = Depends(get_db)) -> User:
     user = get_current_user(request, db)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
+    return user
+
+
+def require_admin(request: Request, db: Session = Depends(get_db)) -> User:
+    """Dependency FastAPI: wajib login sebagai admin. Raise 401/403 jika tidak berhak."""
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Silakan login terlebih dahulu")
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Akses ditolak: hanya admin")
     return user
 
 
@@ -224,8 +254,16 @@ def _clamp_int(value, default=None, lo: int = 0, hi: int = 2 ** 31 - 1):
 
 def _flash_qs(ok: bool, text: str) -> str:
     """Query string notifikasi utk redirect (?msg=… / ?err=…), URL-encoded."""
-    from urllib.parse import quote
     return f"?{('msg' if ok else 'err')}={quote(text)}"
+
+
+def _validate_ip(value: str) -> bool:
+    """Cek apakah string adalah IPv4 atau IPv6 yang valid."""
+    try:
+        ipaddress.ip_address(value.strip())
+        return True
+    except ValueError:
+        return False
 
 
 def _clamp_float(value, default=None, lo: float = 0.0, hi: float = 2 ** 31 - 1):
@@ -259,37 +297,38 @@ def api_key_fingerprint(api_key: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# App & templates
+# CSRF protection (HMAC berbasis session ID)
 # ---------------------------------------------------------------------------
-app = FastAPI(title="Pantau Server", docs_url=None, redoc_url=None)
-templates = Jinja2Templates(directory=settings.templates_dir)
-
-_SECURITY_HEADERS = {
-    "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
-    "Referrer-Policy": "same-origin",
-    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-    "Content-Security-Policy": (
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; "
-        "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
-        "font-src 'self'; connect-src 'self'; form-action 'self'; "
-        "base-uri 'self'; frame-ancestors 'none'; object-src 'none'"
-    ),
-}
+def _csrf_token(sid: str) -> str:
+    """Generate CSRF token dari session ID menggunakan HMAC-SHA256."""
+    if not sid or not _SECRET_KEY:
+        return ""
+    return _hmac.new(
+        _SECRET_KEY.encode("utf-8"),
+        sid.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
 
 
-@app.middleware("http")
-async def security_headers(request: Request, call_next):
-    resp = await call_next(request)
-    for k, v in _SECURITY_HEADERS.items():
-        if k not in resp.headers:
-            resp.headers[k] = v
-    return resp
+def _verify_csrf_form(request: Request, form_token: str) -> None:
+    """Validasi CSRF token dari form field. Raise 403 jika tidak valid."""
+    sid = request.cookies.get(SESSION_COOKIE, "")
+    if not sid:
+        return  # belum login, auth lain yang akan menolak
+    expected = _csrf_token(sid)
+    if not expected or not form_token or not _hmac.compare_digest(expected, form_token):
+        raise HTTPException(status_code=403, detail="CSRF token tidak valid. Muat ulang halaman dan coba lagi.")
 
 
-def tpl(request: Request, name: str, context: dict) -> HTMLResponse:
-    ctx = dict(context) if context else {}
-    return templates.TemplateResponse(request, name, ctx)
+def _verify_csrf_header(request: Request) -> None:
+    """Validasi CSRF token dari header X-CSRF-Token (untuk fetch/AJAX). Raise 403 jika tidak valid."""
+    sid = request.cookies.get(SESSION_COOKIE, "")
+    if not sid:
+        return
+    expected = _csrf_token(sid)
+    header_token = request.headers.get("X-CSRF-Token", "")
+    if not expected or not header_token or not _hmac.compare_digest(expected, header_token):
+        raise HTTPException(status_code=403, detail="CSRF token tidak valid.")
 
 
 def migrate_api_keys():
@@ -302,17 +341,13 @@ def migrate_api_keys():
             migrated += 1
         if migrated:
             db.commit()
-            print(f"[startup] API key lama di-hash: {migrated} server")
+            logger.info("[startup] API key lama di-hash: %d server", migrated)
     finally:
         db.close()
 
 
 def migrate_log_request_input():
-    """Sekali pakai: tambah kolom input admin ke log_requests (mode interaktif).
-
-    create_all() hanya membuat TABEL yang hilang, tidak menambah kolom, jadi
-    instalasi lama perlu ALTER TABLE manual. Idempoten: cek dulu via inspector.
-    """
+    """Sekali pakai: tambah kolom input admin ke log_requests (mode interaktif)."""
     from sqlalchemy import inspect, text
 
     inspector = inspect(engine)
@@ -331,16 +366,18 @@ def migrate_log_request_input():
         for col, ddl in missing.items():
             db.execute(text(f"ALTER TABLE log_requests ADD COLUMN {col} {ddl}"))
         db.commit()
-        print(f"[startup] Kolom baru log_requests: {', '.join(missing)}", flush=True)
+        logger.info("[startup] Kolom baru log_requests: %s", ", ".join(missing))
     except Exception as exc:  # noqa: BLE001 -- startup tak boleh gagal karena migrasi
         db.rollback()
-        print(f"[startup] Migrasi kolom input gagal: {exc}", flush=True)
+        logger.warning("[startup] Migrasi kolom input gagal: %s", exc)
     finally:
         db.close()
 
 
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _SECRET_KEY
+    _SECRET_KEY = settings.resolve_secret_key()
     Base.metadata.create_all(bind=engine)
     migrate_api_keys()
     migrate_log_request_input()
@@ -348,8 +385,135 @@ def on_startup():
         with SessionLocal() as sess:
             _prune_expired_sessions(sess)
             sess.commit()
-    except Exception as exc:  # noqa: BLE001 -- startup tak boleh gagal karena cleanup
-        print(f"[startup] prune sesi gagal: {exc}", flush=True)
+    except Exception as exc:
+        logger.warning("[startup] prune sesi gagal: %s", exc)
+
+    if not os.environ.get("PANTAU_BG_DISABLED"):
+        threading.Thread(target=_problem_bg_loop, name="bg-problems", daemon=True).start()
+        threading.Thread(target=_retention_loop, name="retention", daemon=True).start()
+        logger.info("[bg-problems] evaluator aktif (tiap %ds)", BG_PROBLEM_EVAL_SECS)
+
+    logger.info("[startup] Pantau Server siap")
+    yield
+    logger.info("[shutdown] Pantau Server berhenti")
+
+
+# ---------------------------------------------------------------------------
+# App & templates
+# ---------------------------------------------------------------------------
+app = FastAPI(title="Pantau Server", docs_url=None, redoc_url=None, lifespan=lifespan)
+templates = Jinja2Templates(directory=settings.templates_dir)
+
+_SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block",
+    "Referrer-Policy": "same-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Content-Security-Policy": (
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+        "font-src 'self'; connect-src 'self'; form-action 'self'; "
+        "base-uri 'self'; frame-ancestors 'none'; object-src 'none'"
+    ),
+}
+# Tambahkan HSTS hanya jika HTTPS aktif
+if settings.SESSION_COOKIE_SECURE:
+    _SECURITY_HEADERS["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    resp = await call_next(request)
+    for k, v in _SECURITY_HEADERS.items():
+        if k not in resp.headers:
+            resp.headers[k] = v
+    return resp
+
+
+def tpl(request: Request, name: str, context: dict, status_code: int = 200) -> HTMLResponse:
+    ctx = dict(context) if context else {}
+    # Injeksi CSRF token otomatis dan app_version ke semua template
+    sid = request.cookies.get(SESSION_COOKIE, "")
+    ctx.setdefault("csrf_token", _csrf_token(sid) if sid else "")
+    ctx.setdefault("app_version", settings.APP_VERSION)
+    return templates.TemplateResponse(request, name, ctx, status_code=status_code)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    accept = request.headers.get("accept", "")
+    if "text/html" in accept:
+        db = SessionLocal()
+        user = None
+        try:
+            user = get_current_user(request, db)
+        except Exception:
+            pass
+        finally:
+            db.close()
+
+        status_code = exc.status_code
+        if status_code == 404:
+            title = "Halaman Tidak Ditemukan"
+            msg = "Halaman atau tautan yang Anda tuju tidak ditemukan atau sudah dipindahkan."
+        elif status_code == 403:
+            title = "Akses Dibatasi"
+            msg = str(exc.detail) if exc.detail else "Anda tidak memiliki izin untuk mengakses halaman ini."
+        else:
+            title = f"Kendala Permintaan ({status_code})"
+            msg = str(exc.detail) if exc.detail else "Permintaan tidak dapat diproses."
+
+        return tpl(request, "error.html", {
+            "status_code": status_code,
+            "title": title,
+            "message": msg,
+            "user": user,
+        }, status_code=status_code)
+
+    return Response(
+        content=json.dumps({"detail": exc.detail}),
+        status_code=exc.status_code,
+        media_type="application/json",
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("[unhandled_exception] Kendala pada %s %s: %s", request.method, request.url.path, exc)
+    accept = request.headers.get("accept", "")
+    if "text/html" in accept:
+        db = SessionLocal()
+        user = None
+        try:
+            user = get_current_user(request, db)
+        except Exception:
+            pass
+        finally:
+            db.close()
+
+        title = "Terjadi Kendala Sesaat (500)"
+        msg = (
+            "Aplikasi Pantau Server mendeteksi kendala internal saat memproses halaman ini. "
+            "Data server Anda tetap aman. Silakan muat ulang halaman atau kembali ke Dashboard."
+        )
+        detail_info = str(exc) if (user and getattr(user, "role", "") == "admin") else None
+
+        return tpl(request, "error.html", {
+            "status_code": 500,
+            "title": title,
+            "message": msg,
+            "detail_info": detail_info,
+            "user": user,
+        }, status_code=500)
+
+    return Response(
+        content=json.dumps({"detail": "Internal Server Error"}),
+        status_code=500,
+        media_type="application/json",
+    )
+
+
 
 
 # ---------------------------------------------------------------------------
@@ -410,6 +574,43 @@ def _apt_pkg_services(pkg_name: str, services: list[str]) -> list[str]:
     return sorted(hits)
 
 
+def _sanitize_disk_list(raw) -> str | None:
+    """Sanitasi list disk dari agen — validasi field dan tipe data."""
+    if not isinstance(raw, list):
+        return None
+    cleaned = []
+    for d in raw[:100]:
+        if not isinstance(d, dict):
+            continue
+        cleaned.append({
+            "mount": _clean_str(d.get("mount"), "", 255),
+            "type": _clean_str(d.get("type"), "", 32),
+            "total": _clamp_int(d.get("total"), 0, 0, 2 ** 63 - 1),
+            "used": _clamp_int(d.get("used"), 0, 0, 2 ** 63 - 1),
+            "pct": _clamp_float(d.get("pct"), 0.0, 0.0, 100.0),
+        })
+    return json.dumps(cleaned) if cleaned else None
+
+
+def _sanitize_net_list(raw) -> str | None:
+    """Sanitasi list interface jaringan dari agen — validasi field dan tipe data."""
+    if not isinstance(raw, list):
+        return None
+    cleaned = []
+    for n in raw[:50]:
+        if not isinstance(n, dict):
+            continue
+        cleaned.append({
+            "iface": _clean_str(n.get("iface"), "", 32),
+            "rx": _clamp_int(n.get("rx"), 0, 0, 2 ** 63 - 1),
+            "tx": _clamp_int(n.get("tx"), 0, 0, 2 ** 63 - 1),
+            "rx_rate": _clamp_float(n.get("rx_rate"), 0.0, 0.0, 1e12),
+            "tx_rate": _clamp_float(n.get("tx_rate"), 0.0, 0.0, 1e12),
+            "is_up": bool(n.get("is_up")),
+        })
+    return json.dumps(cleaned) if cleaned else None
+
+
 @app.post("/api/report")
 def agent_report(
     request: Request,
@@ -419,7 +620,7 @@ def agent_report(
 ):
     server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
     if not server:
-        print(f"[AUTH] /api/report 401: hash={hash_api_key(x_api_key)} fp={api_key_fingerprint(x_api_key)} header_present={x_api_key is not None}")
+        logger.warning("[AUTH] /api/report 401: fp=%s", api_key_fingerprint(x_api_key))
         raise HTTPException(status_code=401, detail="Invalid API key")
 
     server.hostname = _clean_str(body.get("hostname", server.hostname), server.hostname, 255)
@@ -510,8 +711,8 @@ def agent_report(
             swap_used=_clamp_int(sysd.get("swap_used"), 0, 0, 2 ** 63 - 1),
             procs=_clamp_int(sysd.get("procs"), None, 0, 2 ** 31 - 1),
             uptime_secs=_clamp_int(sysd.get("uptime"), None, 0, 2 ** 63 - 1),
-            disks=json.dumps(sysd.get("disks")) if isinstance(sysd.get("disks"), list) else None,
-            net=json.dumps(sysd.get("net")) if isinstance(sysd.get("net"), list) else None,
+            disks=_sanitize_disk_list(sysd.get("disks")),
+            net=_sanitize_net_list(sysd.get("net")),
         )
         db.add(snap)
         # Prune snapshot > 24 jam (hemat disk)
@@ -532,10 +733,26 @@ def agent_report(
     extras.os_label = _clean_str(body.get("os_label"), None, 120) or None
     extras.arch = _clean_str(body.get("arch"), None, 24) or None
     extras.agent_version = _clean_str(body.get("agent_version"), None, 16) or None
+
+    _VALID_UNIT_RE = re.compile(r'^[A-Za-z0-9@_.\-:]{1,100}$')
     if isinstance(body.get("units"), list):
-        extras.units = json.dumps(body["units"])
+        clean_units = [
+            str(u)[:100] for u in body["units"][:200]
+            if isinstance(u, str) and _VALID_UNIT_RE.match(str(u))
+        ]
+        extras.units = json.dumps(clean_units)
     if isinstance(body.get("accounts"), list):
-        extras.accounts = json.dumps(body["accounts"])
+        clean_accounts = []
+        for acc in body["accounts"][:100]:
+            if isinstance(acc, dict):
+                clean_accounts.append({
+                    "user": _clean_str(acc.get("user"), "", 64),
+                    "uid": _clamp_int(acc.get("uid"), None, 0, 2 ** 31),
+                    "shell": _clean_str(acc.get("shell"), "", 50),
+                    "last_login": _clean_str(acc.get("last_login"), None, 32),
+                    "sessions": _clamp_int(acc.get("sessions"), 0, 0, 9999),
+                })
+        extras.accounts = json.dumps(clean_accounts)
     # Info paket OS yang bisa di-upgrade (dari agen)
     if isinstance(body.get("apt"), dict):
         apt = body["apt"]
@@ -582,7 +799,7 @@ def agent_report(
             "invalid_users": _clamp_int(sec.get("invalid_users"), 0, 0, 10 ** 9),
             "source_ips": {str(k)[:45]: _clamp_int(v, 0, 0, 10 ** 9)
                            for k, v in (sec.get("source_ips") or {}).items()
-                           if isinstance(v, (int, float))},
+                           if isinstance(v, (int, float)) and _validate_ip(str(k))},
             "last_seen": last_seen,
         }
         extras.security = json.dumps(clean)
@@ -886,15 +1103,18 @@ def login_page(request: Request):
 
 
 LOGIN_MAX_FAILS = 5
-LOGIN_LOCK_SECONDS = 60
+LOGIN_LOCK_DURATIONS = [60, 300, 1800, 7200]  # 1 menit, 5 menit, 30 menit, 2 jam
 
 
 def _client_ip(request: Request) -> str:
-    # Hormati proxy terpercaya bila ada; fallback alamat socket.
-    xff = request.headers.get("X-Forwarded-For")
-    if xff:
-        return xff.split(",")[0].strip()[:45]
-    return request.client.host if request.client else "unknown"
+    """Dapatkan IP klien. Hanya percaya X-Forwarded-For dari proxy terpercaya."""
+    real_ip = request.client.host if request.client else "unknown"
+    if real_ip in settings.trusted_proxy_set:
+        xff = request.headers.get("X-Forwarded-For")
+        if xff:
+            candidate = xff.split(",")[0].strip()[:45]
+            return candidate
+    return real_ip
 
 
 def _login_trial(db: Session, ip: str) -> LoginAttempt:
@@ -934,11 +1154,19 @@ def login_submit(
 
     user = db.query(User).filter(User.username == username).first()
     if not user or not pwd_ctx.verify(password, user.password_hash):
-        row.fails += 1
+        # Gunakan fails negatif untuk menyimpan lock_count jika belum di-reset
+        lock_count = -row.fails if row.fails < 0 else 0
+        if row.fails < 0:
+            row.fails = 1
+        else:
+            row.fails += 1
+            
         row.updated_at = datetime.utcnow()
         if row.fails >= LOGIN_MAX_FAILS:
-            row.lock_until = datetime.utcnow() + timedelta(seconds=LOGIN_LOCK_SECONDS)
-            row.fails = 0
+            lock_secs = LOGIN_LOCK_DURATIONS[min(lock_count, len(LOGIN_LOCK_DURATIONS) - 1)]
+            row.lock_until = datetime.utcnow() + timedelta(seconds=lock_secs)
+            row.fails = -(lock_count + 1)
+            logger.warning("[AUTH] Login gagal terlalu banyak dari IP %s — kunci %d detik", request.client.host if request.client else "unknown", lock_secs)
         db.commit()
         return tpl(request, "login.html", {"error": "Username atau password salah"})
 
@@ -959,6 +1187,7 @@ def login_submit(
 
 
 @app.get("/logout")
+@app.post("/logout")
 def logout(request: Request, db: Session = Depends(get_db)):
     sid = request.cookies.get(SESSION_COOKIE)
     if sid:
@@ -1044,8 +1273,16 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login", status_code=303)
     servers = db.query(Server).order_by(desc(Server.last_seen)).all()
     extras_map = {ex.server_id: ex for ex in db.query(ServerExtras).all()}
+    server_ids = [s.id for s in servers]
+    svc_counts = dict(
+        db.query(Service.server_id, func.count(Service.id))
+        .filter(Service.server_id.in_(server_ids))
+        .group_by(Service.server_id)
+        .all()
+    ) if server_ids else {}
+
     for srv in servers:
-        srv._service_count = db.query(func.count(Service.id)).filter(Service.server_id == srv.id).scalar()
+        srv._service_count = svc_counts.get(srv.id, 0)
         srv._key_fp = api_key_fingerprint(srv.api_key)
         ex = extras_map.get(srv.id)
         srv._apt_upgradable = ex.apt_upgradable if ex else None
@@ -1065,7 +1302,7 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
         srv._status_label, srv._status_cls = _server_status(
             srv, not srv._online, bool(svc_data), any(d["status"] == "up" for d in svc_data))
         srv._problem_level, srv._problems, _ph = sync_server_problems(
-db, srv, _problem_instances(srv, ex, svc_data, db))
+            db, srv, _problem_instances(srv, ex, svc_data, db))
     return tpl(request, "servers.html", {"user": user, "servers": servers})
 
 
@@ -1082,17 +1319,23 @@ def server_add_submit(
     request: Request,
     hostname: str = Form(...),
     ip_address: str = Form(...),
+    csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
     if not user or user.role != "admin":
         return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
     hostname = _clean_str(hostname, "", 255)
     ip_address = _clean_str(ip_address, "", 45)[:45]
+    if ip_address and not _validate_ip(ip_address):
+        return tpl(request, "server_form.html", {
+            "user": user, "server": None, "mode": "add",
+            "error": "Format IP address tidak valid. Gunakan IPv4 (contoh: 192.168.1.1) atau IPv6."
+        })
     raw = secrets.token_hex(32)
     srv = Server(hostname=hostname, ip_address=ip_address, api_key=hash_api_key(raw))
     db.add(srv)
-    db.commit()
     _audit(db, user.username, "server_add", f"{hostname} ({ip_address})", "berhasil")
     db.commit()
     resp = tpl(request, "key_reveal.html", {"user": user, "server": srv, "api_key": raw})
@@ -1118,17 +1361,26 @@ def server_edit_submit(
     hostname: str = Form(...),
     ip_address: str = Form(...),
     is_active: int = Form(1),
+    csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
     if not user or user.role != "admin":
         return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
     server = db.query(Server).filter(Server.id == sid).first()
     if server:
-        server.hostname = _clean_str(hostname, server.hostname, 255)
-        server.ip_address = _clean_str(ip_address, server.ip_address, 45)[:45]
+        hostname = _clean_str(hostname, server.hostname, 255)
+        ip_address = _clean_str(ip_address, server.ip_address, 45)[:45]
+        if ip_address and not _validate_ip(ip_address):
+            server._key_fp = api_key_fingerprint(server.api_key)
+            return tpl(request, "server_form.html", {
+                "user": user, "server": server, "mode": "edit",
+                "error": "Format IP address tidak valid. Gunakan IPv4 (contoh: 192.168.1.1) atau IPv6."
+            })
+        server.hostname = hostname
+        server.ip_address = ip_address
         server.is_active = 1 if is_active else 0
-        db.commit()
         _audit(db, user.username, "server_edit",
                f"id={server.id} {server.hostname} ({server.ip_address})", "berhasil")
         db.commit()
@@ -1137,10 +1389,15 @@ def server_edit_submit(
 
 
 @app.post("/servers/{sid}/regenerate-key")
-def server_regenerate_key(request: Request, sid: int, db: Session = Depends(get_db)):
+def server_regenerate_key(
+    request: Request, sid: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
     user = get_current_user(request, db)
     if not user or user.role != "admin":
         return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
     server = db.query(Server).filter(Server.id == sid).first()
     if server:
         raw = secrets.token_hex(32)
@@ -1154,10 +1411,15 @@ def server_regenerate_key(request: Request, sid: int, db: Session = Depends(get_
 
 
 @app.post("/servers/{sid}/delete")
-def server_delete(request: Request, sid: int, db: Session = Depends(get_db)):
+def server_delete(
+    request: Request, sid: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
     user = get_current_user(request, db)
     if not user or user.role != "admin":
         return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
     server = db.query(Server).filter(Server.id == sid).first()
     if server:
         _audit(db, user.username, "server_delete",
@@ -1308,12 +1570,23 @@ def service_add_submit(
 
 
 @app.post("/servers/{sid}/services/{svc_id}/restart")
-def service_restart(request: Request, sid: int, svc_id: int, db: Session = Depends(get_db)):
+def service_restart(
+    request: Request, sid: int, svc_id: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
     user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
     if not user or user.role != "admin":
+        if is_json:
+            return Response(json.dumps({"ok": False, "detail": "Akses ditolak (hanya admin)"}), status_code=403, media_type="application/json")
         return RedirectResponse("/", status_code=303)
+    token = csrf_token or request.headers.get("X-CSRF-Token", "")
+    _verify_csrf_form(request, token)
     svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
     if not svc:
+        if is_json:
+            return Response(json.dumps({"ok": False, "detail": "Service tidak ditemukan"}), status_code=404, media_type="application/json")
         return RedirectResponse(f"/servers/{sid}/services", status_code=303)
 
     existing = (
@@ -1331,6 +1604,8 @@ def service_restart(request: Request, sid: int, svc_id: int, db: Session = Depen
             issued_by=user.username,
         ))
         db.commit()
+    if is_json:
+        return Response(json.dumps({"ok": True, "detail": f"Perintah restart {svc.service_name} telah dikirim ke Agen Pantau."}), media_type="application/json")
     return RedirectResponse(f"/servers/{sid}/services?restarted=1", status_code=303)
 
 
@@ -1355,11 +1630,16 @@ def _enqueue_mitigation(db, sid: int, action: str, params: dict | None = None, i
 
 
 @app.post("/servers/{sid}/problems/block")
-def problem_block_ip(request: Request, sid: int, db: Session = Depends(get_db)):
+def problem_block_ip(
+    request: Request, sid: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
     """Mitigasi: blokir IP sumber serangan SSH (iptables) via agen."""
     user = get_current_user(request, db)
     if not user or user.role != "admin":
         return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         return RedirectResponse("/servers", status_code=303)
@@ -1367,8 +1647,6 @@ def problem_block_ip(request: Request, sid: int, db: Session = Depends(get_db)):
     sec = _parse_extras_security(extra)
 
     def _safe_block_ip(s: str) -> bool:
-        # Jangan blokir alamat liar/loopback/self (hindari self-DOS); IP privat
-        # (RFC1918) tetap boleh diblokir karena serangan dari intranet nyata.
         try:
             a = ipaddress.ip_address(s)
         except ValueError:
@@ -1387,11 +1665,16 @@ def problem_block_ip(request: Request, sid: int, db: Session = Depends(get_db)):
 
 
 @app.post("/servers/{sid}/problems/restart-agent")
-def problem_restart_agent(request: Request, sid: int, db: Session = Depends(get_db)):
+def problem_restart_agent(
+    request: Request, sid: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
     """Mitigasi: restart agen (agent_pantau) jika tidak lagi melapor."""
     user = get_current_user(request, db)
     if not user or user.role != "admin":
         return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         return RedirectResponse("/servers", status_code=303)
@@ -1399,10 +1682,11 @@ def problem_restart_agent(request: Request, sid: int, db: Session = Depends(get_
     return RedirectResponse(f"/servers/{sid}/services?action=agent", status_code=303)
 
 
-def _host_control(request: Request, sid: int, db: Session, action: str) -> RedirectResponse:
+def _host_control(request: Request, sid: int, db: Session, action: str, csrf_token: str = "") -> RedirectResponse:
     user = get_current_user(request, db)
     if not user or user.role != "admin":
         return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         return RedirectResponse("/servers", status_code=303)
@@ -1416,22 +1700,39 @@ def _host_control(request: Request, sid: int, db: Session, action: str) -> Redir
 
 
 @app.post("/servers/{sid}/host/reboot")
-def host_reboot(request: Request, sid: int, db: Session = Depends(get_db)):
+def host_reboot(
+    request: Request, sid: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
     """Reboot OS server klien (admin). Tegas: mesin restart seketika ±4 detik."""
-    return _host_control(request, sid, db, "reboot_host")
+    return _host_control(request, sid, db, "reboot_host", csrf_token)
 
 
 @app.post("/servers/{sid}/host/poweroff")
-def host_poweroff(request: Request, sid: int, db: Session = Depends(get_db)):
+def host_poweroff(
+    request: Request, sid: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
     """Poweroff OS server klien (admin). Tegas: mesin mati sampai dinyalakan manual."""
-    return _host_control(request, sid, db, "poweroff_host")
+    return _host_control(request, sid, db, "poweroff_host", csrf_token)
 
 
 @app.post("/servers/{sid}/services/{svc_id}/delete")
-def service_delete(request: Request, sid: int, svc_id: int, db: Session = Depends(get_db)):
+def service_delete(
+    request: Request, sid: int, svc_id: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
     user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
     if not user or user.role != "admin":
+        if is_json:
+            return Response(json.dumps({"ok": False, "detail": "Akses ditolak (hanya admin)"}), status_code=403, media_type="application/json")
         return RedirectResponse("/", status_code=303)
+    token = csrf_token or request.headers.get("X-CSRF-Token", "")
+    _verify_csrf_form(request, token)
     svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
     if svc:
         server = db.query(Server).filter(Server.id == sid).first()
@@ -1439,6 +1740,10 @@ def service_delete(request: Request, sid: int, svc_id: int, db: Session = Depend
                f"{server.hostname if server else sid}:{svc.service_name}", "berhasil")
         db.delete(svc)
         db.commit()
+        if is_json:
+            return Response(json.dumps({"ok": True, "detail": f"Service {svc.service_name} dihapus"}), media_type="application/json")
+    elif is_json:
+        return Response(json.dumps({"ok": False, "detail": "Service tidak ditemukan"}), status_code=404, media_type="application/json")
     return RedirectResponse(f"/servers/{sid}/services", status_code=303)
 
 
@@ -1485,28 +1790,26 @@ def metrics_page(request: Request, sid: int, db: Session = Depends(get_db)):
 # DASHBOARD LOGS (log aplikasi pusat, dibaca lokal)
 # ---------------------------------------------------------------------------
 def tail_lines(path: str, n: int = 300) -> list[str]:
-    """Ambil N baris terakhir dari file log dengan aman."""
+    """Ambil N baris terakhir dari file log dengan aman (satu kali buka file)."""
     try:
-        size = os.path.getsize(path)
-    except OSError:
-        return []
-    if size == 0:
-        return []
-    n = max(1, n)
-    block = 4096
-    data = b""
-    offset = size
-    while offset > 0 and len(data) < n * 1024:
-        read_bytes = min(block, offset)
-        offset -= read_bytes
-        try:
-            with open(path, "rb") as f:
+        with open(path, "rb") as f:
+            f.seek(0, 2)
+            size = f.tell()
+            if size == 0:
+                return []
+            n = max(1, n)
+            block = 4096
+            data = b""
+            offset = size
+            while offset > 0 and len(data) < n * 1024:
+                read_bytes = min(block, offset)
+                offset -= read_bytes
                 f.seek(offset)
                 data = f.read(read_bytes) + data
-        except OSError:
-            break
-    lines = data.decode("utf-8", errors="replace").splitlines()
-    return lines[-n:]
+            lines = data.decode("utf-8", errors="replace").splitlines()
+            return lines[-n:]
+    except OSError:
+        return []
 
 
 @app.get("/logs", response_class=HTMLResponse)
@@ -1771,10 +2074,11 @@ def _rollup_sys_hours(db, server_id):
     now = datetime.utcnow()
     this_hour = now.replace(minute=0, second=0, microsecond=0)
 
-    if now - _last_metrics_prune > timedelta(hours=24):
-        mcut = now - timedelta(days=7)
-        db.query(Metric).filter(Metric.timestamp < mcut).delete(synchronize_session=False)
-        _last_metrics_prune = now
+    with _prune_lock:
+        if now - _last_metrics_prune > timedelta(hours=24):
+            mcut = now - timedelta(days=7)
+            db.query(Metric).filter(Metric.timestamp < mcut).delete(synchronize_session=False)
+            _last_metrics_prune = now
 
     latest = (
         db.query(func.max(SysSnapshotHour.bucket))
@@ -2140,7 +2444,7 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
         ServerProblem.resolved_at.isnot(None),
         ServerProblem.resolved_at < stale,
     ).delete(synchronize_session=False)
-    db.commit()
+    db.flush()  # Sinkronkan state ke session tanpa commit prematur
 
     open_rows = (
         db.query(ServerProblem).filter(
@@ -2406,10 +2710,12 @@ def api_alerts(
 @app.post("/api/alerts/{pid}/ack")
 def api_alert_ack(
     pid: int,
+    request: Request,
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     """Acknowledge peringatan danger agar popup tidak menghalangi terus-menerus."""
+    _verify_csrf_header(request)
     row = db.query(ServerProblem).filter(
         ServerProblem.id == pid,
         ServerProblem.severity == "danger",
@@ -2606,10 +2912,12 @@ def api_logs_progress(
 @app.post("/api/logs/{rid}/input")
 def api_logs_input(
     rid: int,
+    request: Request,
     body: dict = Body(...),
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
+    _verify_csrf_header(request)
     """Admin mengirim jawaban untuk proses apt yang sedang berjalan (mode interaktif).
 
     Jawaban disimpan di `input_data`; agent mengambilnya lewat GET
@@ -2688,6 +2996,27 @@ def api_logs_result(
     clean = _clean_terminal if req.unit in APT_UNITS else _clean_result
     req.result = clean(body.get("result"), APT_STREAM_MAXCHARS, APT_STREAM_MAXLINES)
     req.updated_at = datetime.utcnow()
+
+    # Segera sinkronkan status apt ke ServerExtras agar dashboard & tombol upgrade langsung aktif tanpa jeda
+    if req.unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT") and status == "success":
+        try:
+            raw_res = body.get("result", "")
+            parsed = json.loads(raw_res) if isinstance(raw_res, str) else raw_res
+            if isinstance(parsed, dict) and "apt" in parsed:
+                apt_info = parsed.get("apt")
+                if isinstance(apt_info, dict):
+                    extras = db.query(ServerExtras).filter(ServerExtras.server_id == server.id).first()
+                    if not extras:
+                        extras = ServerExtras(server_id=server.id)
+                        db.add(extras)
+                    if "upgradable" in apt_info:
+                        extras.apt_upgradable = _clamp_int(apt_info.get("upgradable"), 0)
+                    if "packages" in apt_info and isinstance(apt_info["packages"], list):
+                        extras.apt_packages_json = json.dumps(apt_info["packages"][:200])
+                    extras.apt_last_update = datetime.utcnow()
+        except Exception as exc:
+            logger.warning("[apt_result_sync] Gagal sinkronkan ServerExtras: %s", exc)
+
     db.commit()
     return {"ok": True}
 
@@ -2952,6 +3281,7 @@ def api_logs_request(
     db: Session = Depends(get_db),
 ):
     """Buat permintaan log layanan (dieksekusi agent klien)."""
+    _verify_csrf_header(request)
     sid = _clamp_int(body.get("server_id"), None, 0, 2 ** 31 - 1)
     unit = _clean_str(body.get("unit"), "", 100)
     lines = _clamp_int(body.get("lines"), 200, 10, 2000)
@@ -3018,6 +3348,9 @@ def api_logs_request_status(
     logreq = db.query(LogRequest).filter(LogRequest.id == rid).first()
     if not logreq:
         raise HTTPException(status_code=404, detail="Log request tidak ditemukan")
+    server = db.query(Server.id).filter(Server.id == logreq.server_id).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
     return {
         "id": logreq.id,
         "status": logreq.status,
@@ -3045,11 +3378,13 @@ def user_add_submit(
     username: str = Form(...),
     password: str = Form(...),
     role: str = Form("viewer"),
+    csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
     if not user or user.role != "admin":
         return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
     username = username.strip()
     role = role if role in ("admin", "viewer") else "viewer"
     if len(password) < 8:
@@ -3063,12 +3398,17 @@ def user_add_submit(
 
 
 @app.post("/users/{uid}/delete")
-def user_delete(request: Request, uid: int, db: Session = Depends(get_db)):
+def user_delete(
+    request: Request, uid: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse("/login", status_code=303)
     if user.role != "admin":
         return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
     if uid == user.id:
         return RedirectResponse("/users" + _flash_qs(False, "Tidak bisa menghapus akun sendiri"), status_code=303)
     u = db.query(User).filter(User.id == uid).first()
@@ -3131,10 +3471,4 @@ def _retention_loop() -> None:
             with SessionLocal() as sess:
                 _retention_prune(sess)
         except Exception as exc:  # noqa: BLE001 -- jangan matikan thread
-            print(f"[retention] error: {exc}", flush=True)
-
-
-if not os.environ.get("PANTAU_BG_DISABLED"):
-    threading.Thread(target=_problem_bg_loop, name="bg-problems", daemon=True).start()
-    threading.Thread(target=_retention_loop, name="retention", daemon=True).start()
-    print("[bg-problems] evaluator aktif (tiap %ds)" % BG_PROBLEM_EVAL_SECS, flush=True)
+            logger.error("[retention] error: %s", exc)

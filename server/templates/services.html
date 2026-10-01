@@ -54,7 +54,7 @@
       <div class="hero-host">
         <span class="dot {{ 'up' if is_online else 'down' }}" id="hero-dot"></span>
         <strong>{{ server.hostname }}</strong>
-        <span class="mono" style="font-size:12px">{{ server.ip_address }}</span>
+        <span class="mono copyable-ip" style="font-size:12px" onclick="copyIp('{{ server.ip_address }}', event)" title="Klik untuk salin IP">{{ server.ip_address }}</span>
         <span id="hero-online" class="hero-online {{ 'on' if is_online else 'off' }}">{{ 'online' if is_online else 'offline' }}</span>
       </div>
       <div class="hero-meta" id="hero-meta">{% if os_label %}{{ os_label }}{% endif %}{% if kernel %} · kernel {{ kernel }}{% endif %}{% if not os_label and not kernel %}memuat data sistem…{% endif %}</div>
@@ -65,9 +65,11 @@
       <button class="btn btn-danger" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled>Upgrade&nbsp;&#9650;</button>
       <span class="hero-sep"></span>
       <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="btn btn-ghost btn-sm" type="submit" title="Restart sistem operasi">&#8634;&nbsp;Reboot OS</button>
       </form>
       <form method="post" action="/servers/{{ server.id }}/host/poweroff" style="display:inline" data-confirm data-msg="MATIKAN server {{ server.hostname }} SEKARANG? Mesin akan poweroff — TIDAK menyala sendiri — sampai dinyalakan manual (fisik/IPMI).">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="btn btn-danger btn-sm" type="submit" title="Matikan sistem operasi">&#9211;&nbsp;Power Off</button>
       </form>
       {% else %}
@@ -81,11 +83,13 @@
   <div id="apt-live" style="display:none;margin-top:14px">
     <div id="apt-status" style="font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--blue);margin-bottom:6px"></div>
     <div class="apt-term" id="apt-term" tabindex="0" aria-label="Terminal Update/Upgrade OS">
-      <span id="apt-out"></span><span id="apt-prompt" class="apt-prompt" style="display:none">
-        <span class="apt-prompt-sign" aria-hidden="true">&#8250;</span>
+      <div id="apt-out"></div>
+      <div id="apt-prompt" class="apt-prompt" style="display:none">
+        <span class="apt-prompt-sign" aria-hidden="true">[Ketik Y/n lalu Enter] &#8250;</span>
         <input id="apt-answer" type="text" maxlength="200" autocomplete="off" autocapitalize="off"
                autocorrect="off" spellcheck="false" class="apt-term-in"
-               aria-label="Ketik jawaban lalu Enter"></span>
+               placeholder="mis. Y lalu Enter" aria-label="Ketik jawaban lalu Enter">
+      </div>
     </div>
   </div>
   <div id="apt-msg" style="display:none;font-size:12px;line-height:1.5;margin-top:10px"></div>
@@ -253,15 +257,11 @@
           {% if svc._pending_cmd %}
           <span class="badge badge-muted">Menunggu Agent</span>
           {% elif user.role == 'admin' %}
-          <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/restart" style="display:inline" data-confirm data-msg="Restart service {{ svc.service_name }} di server {{ server.hostname }}?">
-            <button class="btn btn-primary btn-sm">Restart</button>
-          </form>
+          <button type="button" class="btn btn-primary btn-sm" onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Restart</button>
           {% endif %}
         </span>
         {% if user.role == 'admin' %}
-        <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/delete" style="display:inline;margin-left:4px" data-confirm data-msg="Hapus service {{ svc.service_name }}?">
-          <button class="btn btn-danger btn-sm">Hapus</button>
-        </form>
+        <button type="button" class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Hapus</button>
         {% endif %}
       </td>
     </tr>
@@ -348,6 +348,7 @@
       <td style="white-space:nowrap">
         {% if p.is_open and p.action == 'restart' %}
           <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline" data-confirm data-msg="Restart service ini di {{ server.hostname }}?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button class="btn btn-primary btn-sm">Restart</button>
           </form>
           {% if p.log_unit %}
@@ -358,12 +359,14 @@
         {% elif p.is_open and p.action == 'mitigate' %}
           {% if user.role == 'admin' and p.ip_count and p.ip_count > 0 %}
             <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline" data-confirm data-msg="Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <button class="btn btn-danger btn-sm">Blokir IP ({{ p.ip_count }})</button>
             </form>
           {% endif %}
           <button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>
         {% elif p.is_open and p.action == 'agent_restart' and user.role == 'admin' %}
           <form method="post" action="/servers/{{ server.id }}/problems/restart-agent" style="display:inline" data-confirm data-msg="Restart agen (agent_pantau) di {{ server.hostname }}?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button class="btn btn-ghost btn-sm">Restart agen</button>
           </form>
         {% elif p.is_open and p.action == 'apt_update' %}
@@ -432,6 +435,7 @@
 const SID = {{ server.id }};
 const POLL_MS = 3000;
 const IS_ADMIN = {{ 'true' if user.role == 'admin' else 'false' }};
+const SERVER_NAME = {{ server.hostname | tojson }};
 
 // ---------- tab ringkasan ----------
 function showTab(name) {
@@ -475,9 +479,70 @@ function badgeHtml(status) {
 }
 
 function restartFormHtml(sid, svcId, name) {
-  return '<form method="POST" action="/servers/' + sid + '/services/' + svcId + '/restart" style="display:inline" '
-       + 'data-confirm data-msg="' + escHtml('Restart service ' + name + ' di server ini?') + '">'
-       + '<button class="btn btn-primary btn-sm">Restart</button></form>';
+  return '<button type="button" class="btn btn-primary btn-sm" onclick="restartService(' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)">Restart</button>';
+}
+
+async function restartService(sid, svcId, svcName, btn) {
+  if (!confirm('Restart service ' + svcName + ' di server ' + SERVER_NAME + '?')) return;
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite">&#8635;</span> Memproses…';
+  try {
+    const r = await fetch('/servers/' + sid + '/services/' + svcId + '/restart', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-Token': getCsrf(),
+      },
+      credentials: 'same-origin',
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) {
+      showToast(j.detail || ('Perintah restart service ' + svcName + ' telah dikirim ke Agen Pantau.'), true);
+      const act = document.getElementById('act-' + svcId);
+      if (act) act.innerHTML = '<span class="badge badge-muted">Menunggu Agent</span>';
+      setTimeout(poll, 700);
+    } else {
+      showToast(j.detail || 'Gagal mengirim perintah restart.', false);
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  } catch (e) {
+    showToast('Kendala jaringan: ' + e.message, false);
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
+async function deleteService(sid, svcId, svcName, btn) {
+  if (!confirm('Hapus service ' + svcName + '?')) return;
+  const tr = btn.closest('tr');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'Menghapus…';
+  try {
+    const r = await fetch('/servers/' + sid + '/services/' + svcId + '/delete', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-Token': getCsrf(),
+      },
+      credentials: 'same-origin',
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) {
+      showToast('Service ' + svcName + ' telah dihapus.', true);
+      if (tr) tr.remove();
+    } else {
+      showToast(j.detail || 'Gagal menghapus service.', false);
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  } catch (e) {
+    showToast('Kendala jaringan: ' + e.message, false);
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
 }
 
 const resultLabel = {
@@ -547,10 +612,15 @@ function matchAptByName(name) {
 }
 
 function renderApt(data) {
-  const aptN = (data.apt_upgradable == null) ? null : data.apt_upgradable;
-  aptLastCount = aptN;
-  const pkgs = data.apt_packages || [];
-  lastAptPkgs = pkgs; // dipakai untuk melengkapi daftar hasil klik Update
+  let aptN = data.apt_upgradable;
+  // Jika aptArmed sudah bernilai true dari hasil update instan, jangan biarkan data lama menimpanya
+  if (aptArmed && (aptN == null || aptN === 0) && aptLastCount > 0) {
+    aptN = aptLastCount;
+  } else if (aptN != null) {
+    aptLastCount = aptN;
+  }
+  const pkgs = (data.apt_packages && data.apt_packages.length) ? data.apt_packages : (lastAptPkgs || []);
+  lastAptPkgs = pkgs;
   const upBtn = document.getElementById('apt-upgrade-btn');
   if (aptRunning) {
     // jangan timpa status proses yang sedang berjalan
@@ -564,15 +634,15 @@ function renderApt(data) {
     aptSetState('pending', '<b>' + aptN + ' paket</b> dapat di-upgrade'
       + (names ? ': <span class="mono dim">' + escapeHtml(names) + (pkgs.length > 8 ? '…' : '') + '</span>' : '.'));
   }
-  // Upgrade hanya aktif setelah Update dijalankan dan ada paket tertunda.
+  const canUpgrade = !aptRunning && (aptArmed || aptUpdated) && aptN > 0;
   if (upBtn) {
-    upBtn.disabled = aptRunning || !(aptArmed && aptN > 0);
+    upBtn.disabled = !canUpgrade;
     upBtn.title = aptRunning ? 'Proses Update/Upgrade sedang berjalan…'
-      : (aptArmed && aptN > 0) ? 'Tingkatkan semua paket tertunda'
+      : canUpgrade ? 'Tingkatkan semua paket tertunda'
       : !aptUpdated ? 'Klik Update OS terlebih dahulu'
       : 'Tidak ada paket yang perlu di-upgrade';
   }
-  aptSetUpgradeEnabled(!aptRunning && aptArmed && aptN > 0);
+  aptSetUpgradeEnabled(canUpgrade);
 }
 
 function escapeHtml(s) {
@@ -696,12 +766,15 @@ async function aptSendLine() {
   const inp = document.getElementById('apt-answer');
   if (!inp) return;
   const line = inp.value.trim();
-  inp.value = '';
-  if (line) { aptHistory.push(line); aptHistIdx = aptHistory.length; }
+  if (line) {
+    aptHistory.push(line);
+    aptHistIdx = aptHistory.length;
+    aptLiveAppend('\n[jawaban admin] › ' + line + '\n', false);
+  }
   try {
     const r = await fetch('/api/logs/' + aptRid + '/input', {
       method: 'POST', credentials: 'same-origin',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
       body: JSON.stringify({data: line}),
     });
     if (!r.ok) {
@@ -771,7 +844,7 @@ async function aptAction(kind) {
   try {
     const r = await fetch('/api/logs/request', {
       method: 'POST', credentials: 'same-origin',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
       body: JSON.stringify({server_id: SID, unit: kind, lines: 10}),
     });
     const j = await r.json();
@@ -835,7 +908,6 @@ async function aptFollow(rid, kind, startedMs) {
   aptInteractive = false;
   aptInputShow(false);
   if (upD) upD.disabled = false;
-  aptSetUpgradeEnabled(aptArmed && aptLastCount > 0);
 
   if (!j || j.status !== 'success') {
     if (Date.now() - start >= limit) {
@@ -890,6 +962,7 @@ async function aptFollow(rid, kind, startedMs) {
         aptLiveStatus('<b style="color:var(--green)">Selesai — semua paket OS sudah mutakhir.</b>', 'var(--green)');
       }
       aptUpdated = true; // Update (atau Upgrade) sudah dijalankan & tuntas di sesi ini
+      aptLastCount = apt.upgradable;
       aptArmed = (apt.upgradable > 0);
       aptSetUpgradeEnabled(aptArmed);
     } else if (info) {
@@ -1392,7 +1465,7 @@ async function chainNext(version) {
   try {
     const r = await fetch('/api/logs/request', {
       method: 'POST', credentials: 'same-origin',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
       body: JSON.stringify({server_id: SID, unit: unit, lines: lines}),
     });
     const j = await r.json();
@@ -1467,6 +1540,7 @@ function startAutoLog(units, extras) {
 }
 
 async function poll() {
+  if (document.hidden) return;
   try {
     const r = await fetch('/api/servers/' + SID + '/overview', {credentials: 'same-origin'});
     if (r.ok) patch(await r.json());

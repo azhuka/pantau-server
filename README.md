@@ -86,12 +86,12 @@ Kalau belum ada, installer memintanya (dan bisa dilewati dengan
 
 | Halaman | Isi |
 |---|---|
-| **Dashboard** | Ringkasan semua server: jumlah online/offline, layanan yang down, laporan terakhir. Tabel per server dengan status, jumlah masalah, paket OS update, dan terakhir dilihat. |
-| **Servers** | Kelola server: tambah, edit, hapus, lihat kunci API. Daftar ringkas untuk manajemen. |
-| **Rincian server** | Halaman utama tiap server. Tab **Riwayat** (grafik kinerja 1 jam–30 hari + riwayat tiap service), **Layanan** (daftar service: port, proses, status, koneksi, respons, uptime 24 jam, restart), **Masalah**, **Jaringan**, **Akun**, **Log**. Kartu CPU / beban / memori / swap, OS & kernel, uptime, jumlah proses. |
-| **Masalah** | Semua masalah terbuka lintas server dengan level (Danger / Warning / Info), durasi, dan tips penanganan. Bisa ditandai sudah ditangani, dan tiap baris punya tautan ke Rincian server terkait. |
-| **Log** | Log server pusat: CPU/memori/beban/swap, proses teratas, disk, log service (pilih unit), dan log aplikasi dashboard. Diperbarui otomatis tiap 3 detik (log service tiap 5 detik). |
-| **Audit** | Jejak aksi admin: login, kelola server/service/user, dan perintah remote (restart, blokir IP, update paket, restart agen). Diperbarui otomatis; status perintah remote berubah sendiri setelah agen mengeksekusinya. |
+| **Dashboard** | Ringkasan semua server: jumlah online/offline, layanan down, laporan terakhir. Kotak pencarian instan (*real-time* server/IP/OS) dan shortcut satu-klik salin IP ke clipboard. |
+| **Servers** | Kelola server: tambah, edit, hapus, lihat kunci API, kotak pencarian instan, dan shortcut salin IP. |
+| **Rincian server** | Halaman utama tiap server. Tab **Riwayat**, **Layanan** (restart dan hapus service instan via AJAX tanpa reload halaman), **Masalah**, **Jaringan**, **Akun**, **Log**. Terminal Update/Upgrade OS live ala konsol. |
+| **Masalah** | Semua masalah terbuka lintas server dengan level (Danger / Warning / Info), durasi, dan tips penanganan. |
+| **Log** | Log server pusat: CPU/memori/beban/swap, proses teratas, disk, log service (pilih unit), dan log aplikasi. |
+| **Audit** | Jejak aksi admin: login, kelola server/service/user, perintah remote (restart, blokir IP, update paket, restart agen). |
 | **Users** | *(Admin)* Kelola user dashboard: tambah, ubah peran, reset password, cabut sesi. |
 
 Semua angka pada Dashboard, Rincian, dan Masalah berasal dari satu sumber
@@ -158,7 +158,7 @@ sudo systemctl restart agent_pantau.service
 ```
 
 Verifikasi: badge di Rincian host tersebut harus berubah ke versi baru
-(`agen v3.9.0`), dan `server_extras.agent_version` ikut terisi.
+(`agen v3.10.0`), dan `server_extras.agent_version` ikut terisi.
 
 > **Installer menarik dari branch `master`, bukan tag.** Isinya bisa berubah
 > setiap kali ada commit baru, termasuk commit Anda sendiri. Kalau butuh versi
@@ -168,10 +168,10 @@ Verifikasi: badge di Rincian host tersebut harus berubah ke versi baru
 
 Restart agen **tidak menghapus data**. Yang perlu dicek:
 
-1. Badge versi di Rincian sudah versi baru.
+1. Badge versi di Rincian sudah versi baru (`v3.10.0`).
 2. Server kembali online dalam ±10 detik.
-3. Kalau agente upgrade OS, tekan **Update OS** sekali — jawabannya langsung
-   tampil tanpa perlu polling ulang.
+3. Kalau agen upgrade OS, tekan **Update OS** sekali — jawabannya langsung
+   tampil tanpa perlu polling ulang dan tombol Upgrade seketika aktif jika ada paket.
 
 ## Kebutuhan Versi Agen
 
@@ -183,6 +183,7 @@ Badge versi agen ada di bagian atas halaman Rincian tiap server.
 | Reboot OS / Power Off dari dashboard | v3.6 |
 | Terminal Update/Upgrade OS (warna + `\r` seperti SSH) | v3.7 |
 | Terminal Upgrade **interaktif** (jawab prompt dpkg) | v3.9 |
+| Proteksi sanitasi ketat, mitigasi loop retry, & aktivasi instan upgrade | v3.10 |
 
 Agen lebih lama dari requirements **tetap jalan untuk fitur lain** — hanya
 fitur terkait yang menolak dengan pesan jelas, bukan gagal diam-diam. Contoh:
@@ -289,20 +290,15 @@ Untuk instalasi dari nol tanpa `install-server.sh`, gunakan
 Data historis dibersihkan otomatis agar tabel tidak tumbuh tanpa batas:
 percobaan login 1 hari, log request 30 hari, perintah 180 hari, audit 1 tahun.
 
-## Catatan Keamanan
+## Catatan Keamanan & Praktik Terbaik
 
-- API key disimpan hash sha256; password bcrypt; akses sudo agen dibatasi hanya
-  ke wrapper tertentu (`/etc/sudoers.d/pantau-agent`).
-- Semua aksi service dari dashboard **selalu** lewat wrapper `pantau-restart`
-  yang menerapkan deny-list unit kritis — termasuk saat agen berjalan sebagai
-  root. Aksi reboot/poweroff lewat wrapper `pantau-host`, dengan preflight yang
-  menolak perintah bila wrapper/sudoers belum terpasang — jadi tidak pernah
-  menjanjikan "akan dimatikan" lalu gagal diam-diam.
-- Aksi berisiko (hapus server, reboot, poweroff, blokir IP, tandai semua
-  ditangani) selalu minta konfirmasi.
-- Sesi login disimpan di database (bertahan restart server) dan bisa dicabut;
-  rate-limit login juga persisten.
-- Header keamanan aktif (CSP, X-Frame-Options, nosniff, Referrer-Policy).
-- Waktu ditampilkan dalam **UTC** (terlihat di sidebar) supaya tidak ambigu
-  di semua server.
+- **Proteksi CSRF**: Seluruh form POST dan request AJAX dilindungi token CSRF berbasis HMAC-SHA256 yang divalidasi ketat pada backend.
+- **Penanganan Error Terpadu**: Halaman kendala kustom (`error.html`) untuk status HTTP 404, 500, dan 403 dengan pesan berbahasa Indonesia yang jelas serta tombol navigasi mandiri.
+- **Sanitasi Data Ketat**: Seluruh laporan agen (disk, net, proses, log stream) disanitasi dari karakter berbahaya sebelum disimpan ke database atau dirender ke DOM (pencegahan injeksi XSS).
+- API key disimpan hash sha256; password bcrypt; akses sudo agen dibatasi hanya ke wrapper tertentu (`/etc/sudoers.d/pantau-agent`).
+- Semua aksi service dari dashboard **selalu** lewat wrapper `pantau-restart` yang menerapkan deny-list unit kritis — termasuk saat agen berjalan sebagai root. Aksi reboot/poweroff lewat wrapper `pantau-host`, dengan preflight yang menolak perintah bila wrapper/sudoers belum terpasang.
+- Aksi berisiko (hapus server, reboot, poweroff, blokir IP, tandai semua ditangani) selalu meminta konfirmasi pengguna.
+- Sesi login disimpan di database (bertahan restart server) dan bisa dicabut; rate-limit login juga persisten.
+- Header keamanan aktif (CSP, X-Frame-Options, nosniff, Referrer-Policy, IP proxy filtering).
+- Waktu ditampilkan dalam **UTC** (terlihat di sidebar) supaya tidak ambigu di semua server.
 - Jangan ekspos port 8400 ke internet terbuka tanpa reverse-proxy + HTTPS.

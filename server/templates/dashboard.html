@@ -31,14 +31,20 @@
 <div class="card">
   <div class="card-header">
     <h3>Server Status</h3>
-    <a href="/servers" class="btn btn-ghost btn-sm">Kelola Server</a>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      {% if servers %}
+      <input type="search" id="dash-search" placeholder="Cari server atau IP…" oninput="dashFilter(this.value)"
+             style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 12px;font-size:12px;width:220px;outline:none">
+      {% endif %}
+      <a href="/servers" class="btn btn-ghost btn-sm">Kelola Server</a>
+    </div>
   </div>
   {% if servers %}
-  <table>
+  <table id="dash-table">
     <thead><tr><th>Server</th><th>IP</th><th>Status</th><th>Masalah</th><th>Update OS</th><th>Terakhir Dilihat</th><th>Aksi</th></tr></thead>
     <tbody>
     {% for srv in servers %}
-    <tr>
+    <tr data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv._os_label or '')) | lower }}">
       <td>
         <strong>{{ srv.hostname }}</strong>
         {% if srv._os_label %}
@@ -48,7 +54,9 @@
         <div style="font-size:10px;color:var(--dim);opacity:.8">kernel {{ srv._kernel }}</div>
         {% endif %}
       </td>
-      <td class="mono">{{ srv.ip_address }}</td>
+      <td class="mono">
+        <span class="copyable-ip" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
+      </td>
       <td><span class="badge {{ srv._status_cls }}">{{ srv._status_label }}</span></td>
       <td>
         {% if srv._problem_level is none %}
@@ -76,6 +84,9 @@
       </td>
     </tr>
     {% endfor %}
+    <tr id="dash-no-match" style="display:none">
+      <td colspan="7" class="empty-msg" style="padding:24px">Tidak ada server yang sesuai dengan kata kunci.</td>
+    </tr>
     </tbody>
   </table>
   {% else %}
@@ -84,4 +95,22 @@
   </div>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function dashFilter(query){
+  const q = (query || '').toLowerCase().trim();
+  const rows = document.querySelectorAll('#dash-table tbody tr[data-srv-filter]');
+  let visible = 0;
+  rows.forEach(tr => {
+    const text = tr.getAttribute('data-srv-filter') || '';
+    const match = !q || text.indexOf(q) !== -1;
+    tr.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  const noMatch = document.getElementById('dash-no-match');
+  if (noMatch) noMatch.style.display = (visible === 0 && rows.length > 0) ? '' : 'none';
+}
+</script>
 {% endblock %}

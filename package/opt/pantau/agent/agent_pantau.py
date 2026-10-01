@@ -26,11 +26,13 @@ Environment variable (override config):
     MONITOR_INTERVAL    - Interval laporan (detik)
 """
 
+import http.client
 import ipaddress
 import json
 import os
 import pwd
 import platform
+import random
 import re
 import select
 import signal
@@ -47,6 +49,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 IS_ROOT = os.geteuid() == 0
+
+ALLOWED_SYSTEMCTL_ACTIONS = frozenset({"restart", "start", "stop"})
+VALID_PROCESS_NAME_RE = re.compile(r'^[a-zA-Z0-9@._:\-]{1,64}$')
 
 PANTUAN_RESTART = "/usr/local/sbin/pantau-restart"
 PANTUAN_FIREWALL = "/usr/local/sbin/pantau-firewall"
@@ -86,7 +91,7 @@ def load_config():
         base["api_key"] = v
     if v := os.environ.get("MONITOR_INTERVAL"):
         try:
-            base["interval_seconds"] = int(v)
+            base["interval_seconds"] = max(5, int(v))
         except ValueError:
             pass
 
@@ -267,10 +272,58 @@ def _connect_host(addr: str | None) -> str:
     return addr
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Redirect TIDAK diikuti oleh health check.
+
+    Probe harus menilai web server-nya sendiri, bukan isi halaman yang
+    dialingihkan. Mengikuti redirect pernah membuat nginx yang `active`
+    ditandai `down`: 301 -> https://domain-publik, lalu probe ikut gagal
+    karena DNS/CDN publik tidak terjangkau dari server tersebut.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+# ProxyHandler({}) mematikan proxies dari environment (http_proxy/https_proxy).
+# Tanpa ini probe bisa keluar lewat proxy dan mengukur koneksi proxy, bukan
+# service lokal yang sedang diukur.
+_HTTP_OPENER = urllib.request.build_opener(
+    urllib.request.ProxyHandler({}), _NoRedirect
+)
+
+# Server membalas lalu menutup koneksi tanpa HTTP response yang valid
+# (port nginx dibuka dengan `return 444`, keepalive salah, dsb). Port-nya
+# hidup, jadi ini BUKAN "service mati" - hanya respons halamannya tidak benar.
+_HTTP_BAD_RESPONSE = (
+    http.client.RemoteDisconnected,
+    http.client.BadStatusLine,
+    http.client.IncompleteRead,
+    http.client.ResponseNotReady,
+    http.client.LineTooLong,
+)
+
+# TCP-nya sendiri gagal: ini baru service yang benar-benar tidak melayani.
+_CONNECT_FAIL = (
+    ConnectionRefusedError,
+    ConnectionResetError,
+    socket.timeout,
+    TimeoutError,
+    socket.gaierror,
+    OSError,
+)
+
+
 def http_health_check(port: int, addr: str) -> dict:
     """
-    HTTP health check: GET / dan ukur response time.
+    HTTP health check: GET / tanpa follow redirect, ukur response time.
+
     Return: {response_time_ms, health_message, healthy}
+
+    Setiap respons HTTP (200/301/403/404/500) berarti web server hidup dan
+    dihitung `healthy` - yang penting service-nya melayani atau tidak.
+    hanya kalau tidak ada satu byte pun yang kembali, atau handshake TLS gagal
+    total karena sertifikat tidak bisa diverifikasi.
     """
     scheme = "https" if port in (443, 8443) else "http"
     host = _connect_host(addr)
@@ -279,23 +332,67 @@ def http_health_check(port: int, addr: str) -> dict:
     start = time.monotonic()
     try:
         req = urllib.request.Request(url, method="GET")
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        req.add_header("Host", f"{host}:{port}")
+        req.add_header("User-Agent", "pantau-agent/health-check")
+        req.add_header("Connection", "close")
+        with _HTTP_OPENER.open(req, timeout=5) as resp:
             elapsed = (time.monotonic() - start) * 1000
+            code = resp.status
+            note = ""
+            if code >= 500:
+                note = " (halaman error, service hidup)"
+            elif code in (301, 302, 307, 308):
+                note = " (redirect, service hidup)"
             return {
                 "response_time_ms": int(elapsed),
-                "health_message": f"HTTP {resp.status}",
-                "healthy": resp.status < 500,
+                "health_message": f"HTTP {code}{note}",
+                "healthy": True,
             }
     except urllib.error.HTTPError as e:
+        # 4xx/5xx tetap berarti ada proses yang melayani di port ini.
         elapsed = (time.monotonic() - start) * 1000
-        # HTTP error code masih berarti service hidup (misal 404)
         return {
             "response_time_ms": int(elapsed),
             "health_message": f"HTTP {e.code} (service hidup)",
             "healthy": True,
         }
+    except _HTTP_BAD_RESPONSE as e:
+        # TCP connect jalan, tapi tidak ada HTTP response yang benar.
+        elapsed = (time.monotonic() - start) * 1000
+        return {
+            "response_time_ms": int(elapsed),
+            "health_message": f"Port terbuka, respons HTTP tidak valid: {type(e).__name__}",
+            "healthy": True,
+        }
+    except ssl.SSLError as e:
+        elapsed = (time.monotonic() - start) * 1000
+        # TLS handshake gagal: port hidup, sertifikat/HTTPS-nya yang bermasalah.
+        return {
+            "response_time_ms": int(elapsed),
+            "health_message": f"TLS gagal ({e.reason or type(e).__name__}), service hidup",
+            "healthy": True,
+        }
     except (urllib.error.URLError, OSError, ValueError) as e:
         elapsed = (time.monotonic() - start) * 1000
+        reason = getattr(e, "reason", None)
+        if isinstance(reason, ssl.SSLError):
+            return {
+                "response_time_ms": int(elapsed),
+                "health_message": f"TLS gagal ({reason.reason or type(reason).__name__}), service hidup",
+                "healthy": True,
+            }
+        if isinstance(reason, _HTTP_BAD_RESPONSE):
+            return {
+                "response_time_ms": int(elapsed),
+                "health_message": f"Port terbuka, respons HTTP tidak valid: {type(reason).__name__}",
+                "healthy": True,
+            }
+        if isinstance(reason, _CONNECT_FAIL):
+            return {
+                "response_time_ms": int(elapsed),
+                "health_message": f"Tidak ada yang melayani: {reason}",
+                "healthy": False,
+            }
         return {
             "response_time_ms": int(elapsed),
             "health_message": f"Gagal connect: {e}",
@@ -323,7 +420,7 @@ APT_AGENT_OUTPUT_MAX = 4_000_000
 APT_PROGRESS_TAIL_CHARS = 200_000
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.9.0"
+AGENT_VERSION = "3.10.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -420,6 +517,8 @@ def http_json_request(cfg: dict, path: str, method: str = "GET", data: dict | No
 def send_report(cfg: dict, services: list, system: dict,
                 accounts: list | None = None, units: list | None = None,
                 apt: dict | None = None) -> bool:
+    if len(services) > 100:
+        services = services[:100]
     payload = {
         "hostname": get_hostname(),
         "ip_address": get_local_ip(),
@@ -445,7 +544,7 @@ def send_report(cfg: dict, services: list, system: dict,
         if attempt == 3:
             print(f"[ERROR] Gagal kirim laporan (HTTP {code})")
             break
-        time.sleep(2 * attempt)
+        time.sleep(2 * attempt + random.uniform(0, 1.5))
     return False
 
 
@@ -605,8 +704,14 @@ def _exec_service_action(action: str, command: dict) -> dict:
     process_name = command.get("process_name", "")
     service_name = command.get("service_name", "")
 
+    if action not in ALLOWED_SYSTEMCTL_ACTIONS:
+        return {"ok": False, "output": f"Aksi tidak diizinkan: {action}"}
+
     if not process_name:
         return {"ok": False, "output": "process_name kosong dari dashboard"}
+
+    if not VALID_PROCESS_NAME_RE.match(process_name):
+        return {"ok": False, "output": f"Nama proses tidak valid: {process_name}"}
 
     # SELALU lewat wrapper pantau-restart (deny-list + sanitasi unit), termasuk
     # saat berjalan sebagai root — deny-list tidak boleh terlewati.
@@ -1730,6 +1835,16 @@ def main():
     print("=" * 60)
 
     cfg = load_config()
+    server_url = cfg.get("server_url", "")
+    if (server_url.startswith("http://")
+            and "127.0.0.1" not in server_url
+            and "localhost" not in server_url):
+        print(
+            f"[PERINGATAN KEAMANAN] server_url menggunakan HTTP (bukan HTTPS): {server_url}. "
+            "API key dikirim tanpa enkripsi! Pertimbangkan untuk menggunakan HTTPS "
+            "dengan reverse proxy (Nginx + TLS) di sisi server."
+        )
+
     print(f"[INFO] Server URL  : {cfg['server_url']}")
     print(f"[INFO] Interval    : {cfg['interval_seconds']} detik")
     print(f"[INFO] Hostname    : {get_hostname()}")
