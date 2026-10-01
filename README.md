@@ -204,16 +204,15 @@ ORDER BY x.agent_version, s.hostname;
 
 ## Konsol Terminal & Update OS dari Dashboard
 
-Jendela terminal di halaman Rincian dirancang layaknya **konsol terminal Linux/SSH sungguhan**:
+Jendela terminal di halaman Rincian dirancang layaknya **konsol terminal Linux/SSH sungguhan** yang bersih dan bebas distraksi:
 - **Tampilan Konsol Autentik**: Titlebar lengkap dengan tombol window, label `root@hostname: apt/dpkg console`, tombol Clear, status proses, dan kursor blok berkedip (`█`).
-- **Mode Shell Interaktif**: Saat idle, prompt `root@<hostname>:~# ` siap menerima perintah langsung:
+- **Input Universal**: Menerima **semua** jenis input interaktif saat proses berjalan (angka pilihan konfigurasi seperti `1`, `2`, `35`, huruf `Y`/`n`/`I`/`O`, maupun `Enter`).
+- **Mode Shell Langsung**: Saat idle, prompt `root@<hostname>:~# ` siap menerima perintah langsung:
   - `update` atau `apt update`: Sinkronisasi daftar paket.
   - `upgrade` atau `apt upgrade`: Upgrade paket OS tertunda (interaktif).
-  - `fix` atau `dpkg --configure -a`: Reparasi otomatis dependensi & paket yang terganggu.
-  - `clear`: Bersihkan layar terminal.
+  - `dpkg --configure -a` atau `fix`: Reparasi mandiri paket terhenti & dependensi rusak.
+  - `clear`: Bersihkan isi layar terminal.
   - `help`: Panduan ringkas perintah di konsol.
-- **Tombol Pintas Cepat (Quick Action Pills)**: Saat proses meminta input konfirmasi, muncul tombol instan `[ Y ]`, `[ N ]`, `[ Enter ]`, dan `[ Perbaiki Paket ]` sehingga admin bisa langsung mengklik atau mengetik dengan keyboard.
-- **Deteksi Cerdas (Smart Fix Banner)**: Jika output apt/dpkg mengindikasikan adanya paket terganggu (`dpkg was interrupted`, butuh `dpkg --configure -a`), banner pemulihan langsung muncul menawarkan tombol perbaikan satu-klik tanpa harus membuka SSH.
 
 ### Tombol **Update OS**
 
@@ -223,12 +222,7 @@ Jendela terminal di halaman Rincian dirancang layaknya **konsol terminal Linux/S
 ### Tombol **Upgrade** — interaktif
 
 - Aktif otomatis seketika setelah Update OS menemukan paket tertunda.
-- Berjalan di pty: dpkg dapat berinteraksi penuh dengan admin. Jawaban dikirim langsung ke proses di server klien.
-
-### Tombol **Perbaiki Paket (dpkg fix)**
-
-- Menjalankan `dpkg --configure -a` diikuti `apt-get -f install -y` secara otomatis di server klien.
-- Menuntaskan 90% kendala paket tertunda atau lock error tanpa perlu remote SSH manual.
+- Berjalan di pty: dpkg dapat berinteraksi penuh dengan admin melalui konsol terminal. Jawaban (angka/huruf/Enter) dikirim langsung ke proses di server klien.
 
 ## Kapan Memerlukan Remote Langsung (SSH)?
 
