@@ -621,8 +621,8 @@ let aptRid = null;            // id request apt yang sedang dilacak (untuk kirim
 let aptInteractive = false;   // proses mode interaktif → baris input aktif di terminal
 
 function aptLabel(kind) {
-  if (kind === 'APT_UPGRADE_INTERACT') return 'apt upgrade (interaktif)';
-  if (kind === 'APT_UPGRADE') return 'apt upgrade (otomatis)';
+  if (kind === 'APT_DIST_UPGRADE') return 'apt dist-upgrade';
+  if (kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_UPGRADE') return 'apt upgrade';
   if (kind === 'APT_FIX') return 'reparasi paket (dpkg & apt fix)';
   return 'apt update';
 }
@@ -790,9 +790,6 @@ function toggleTerminalView() {
   const isHidden = (box.style.display === 'none');
   box.style.display = isHidden ? '' : 'none';
   if (isHidden) {
-    if (!aptLiveBuf) {
-      aptLiveAppend('== Konsol Manajemen Paket · ' + SERVER_NAME + ' ==\nKetik perintah (update | upgrade | fix | clear | help) atau gunakan tombol di atas.\n\n');
-    }
     aptInputShow(true);
     setTimeout(focusAptInput, 40);
   }
@@ -833,17 +830,41 @@ function aptInputShow(on) {
   const inp = document.getElementById('apt-answer');
   if (!row || !inp) return;
 
-  row.style.display = on ? 'flex' : 'none';
-
-  if (sign) sign.textContent = 'root@' + SERVER_NAME + ':~#';
-  if (aptRunning) {
-    inp.placeholder = 'Ketik input / pilihan (angka, huruf, atau Enter)...';
-  } else {
-    inp.placeholder = 'Ketik perintah (update, upgrade, dpkg --configure -a) lalu Enter...';
+  if (!on) {
+    row.style.display = 'none';
+    inp.disabled = true;
+    return;
   }
-  inp.disabled = false;
 
-  if (on && !document.hidden) {
+  if (aptRunning) {
+    if (!aptInteractive) {
+      // Proses non-interaktif sedang berjalan (mis. apt update):
+      // Di SSH asli, shell prompt tidak ada saat proses berjalan di foreground.
+      row.style.display = 'none';
+      inp.disabled = true;
+      return;
+    }
+    // Proses interaktif (apt upgrade, dist-upgrade, fix):
+    // Tampilkan baris input bersih tanpa shell prompt palsu
+    row.style.display = 'flex';
+    if (sign) {
+      sign.textContent = '›';
+      sign.style.color = '#38bdf8';
+    }
+    inp.placeholder = 'Ketik jawaban / pilihan (angka, Y/N, atau Enter)...';
+    inp.disabled = false;
+  } else {
+    // Shell idle: tampilkan prompt standar root@hostname:~#
+    row.style.display = 'flex';
+    if (sign) {
+      sign.textContent = 'root@' + SERVER_NAME + ':~#';
+      sign.style.color = '#4ade80';
+    }
+    inp.placeholder = 'Ketik perintah (update, upgrade, dist-upgrade, fix, clear)...';
+    inp.disabled = false;
+  }
+
+  if (row.style.display !== 'none' && !document.hidden && !inp.disabled) {
     setTimeout(() => inp.focus(), 30);
   }
   aptHistIdx = -1;
@@ -852,15 +873,16 @@ function aptInputShow(on) {
 async function aptSendLine() {
   const inp = document.getElementById('apt-answer');
   if (!inp) return;
-  const line = inp.value.trim();
+  const line = inp.value;
   inp.value = '';
 
   if (aptRunning) {
     if (!aptRid) return;
-    if (line) {
-      aptHistory.push(line);
+    const cleanLine = line.trim();
+    if (cleanLine) {
+      aptHistory.push(cleanLine);
       aptHistIdx = aptHistory.length;
-      aptLiveAppend(line + '\n', false);
+      aptLiveAppend(cleanLine + '\n', false);
     } else {
       aptLiveAppend('\n', false);
     }
@@ -868,7 +890,7 @@ async function aptSendLine() {
       const r = await fetch('/api/logs/' + aptRid + '/input', {
         method: 'POST', credentials: 'same-origin',
         headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
-        body: JSON.stringify({data: line}),
+        body: JSON.stringify({data: cleanLine}),
       });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
@@ -883,43 +905,50 @@ async function aptSendLine() {
   }
 
   // Konsol Terminal Mode Idle: Jalankan perintah langsung layaknya shell Linux
-  if (!line) return;
-  aptHistory.push(line);
+  const trimmed = line.trim();
+  if (!trimmed) return;
+  aptHistory.push(trimmed);
   aptHistIdx = aptHistory.length;
-  aptLiveAppend('\nroot@' + SERVER_NAME + ':~# ' + line + '\n', false);
+  aptLiveAppend('\nroot@' + SERVER_NAME + ':~# ' + trimmed + '\n', false);
 
-  const cmd = line.toLowerCase();
-  if (cmd === 'clear') {
+  const rawCmd = trimmed.toLowerCase();
+  const c = rawCmd.replace(/^sudo\s+/, '').trim();
+
+  if (c === 'clear') {
     clearAptTerminal();
     return;
   }
-  if (cmd === 'help') {
+  if (c === 'help') {
     aptLiveAppend(
-      '== Panduan Konsol Manajemen Paket ' + SERVER_NAME + ' ==\n' +
       'Perintah yang didukung:\n' +
-      '  • update / apt update               : Sinkronkan daftar paket OS\n' +
-      '  • upgrade / apt upgrade             : Upgrade paket tertunda (interaktif)\n' +
-      '  • dpkg --configure -a (atau fix)    : Perbaiki paket terhenti & dependensi rusak\n' +
-      '  • clear                             : Bersihkan isi layar konsol\n' +
-      '  • help                              : Tampilkan panduan ini\n\n'
+      '  update / apt update           : Sinkronkan daftar paket OS\n' +
+      '  upgrade / apt upgrade         : Upgrade paket tertunda (interaktif)\n' +
+      '  dist-upgrade                  : Upgrade penuh & paket baru/kernel\n' +
+      '  dpkg --configure -a / fix     : Perbaiki paket terhenti & dependensi rusak\n' +
+      '  clear                         : Bersihkan layar konsol\n' +
+      '  help                          : Bantuan\n\n'
     );
     aptTermScroll();
     return;
   }
-  if (cmd === 'fix' || cmd.includes('dpkg --configure') || cmd.includes('fix-broken')) {
+  if (c === 'fix' || c.startsWith('dpkg --configure') || c.includes('fix-broken')) {
     aptAction('APT_FIX');
     return;
   }
-  if (cmd === 'update' || cmd === 'apt update' || cmd === 'apt-get update') {
+  if (c === 'update' || c === 'apt update' || c === 'apt-get update') {
     aptAction('APT_UPDATE');
     return;
   }
-  if (cmd === 'upgrade' || cmd === 'apt upgrade' || cmd === 'apt-get upgrade') {
+  if (c === 'dist-upgrade' || c === 'apt dist-upgrade' || c === 'apt-get dist-upgrade') {
+    aptAction('APT_DIST_UPGRADE');
+    return;
+  }
+  if (c === 'upgrade' || c === 'apt upgrade' || c === 'apt-get upgrade') {
     aptAction('APT_UPGRADE_INTERACT');
     return;
   }
 
-  aptLiveAppend('Perintah "' + escapeHtml(line) + '" tidak dikenal di konsol paket ini.\nKetik "help" untuk daftar perintah yang didukung.\n\n');
+  aptLiveAppend('bash: ' + escapeHtml(trimmed) + ': perintah tidak ditemukan (ketik "help" untuk daftar perintah)\n\n');
   aptTermScroll();
 }
 
@@ -944,16 +973,20 @@ function aptLineKey(ev) {
 
 async function aptAction(kind) {
   const upD = document.getElementById('apt-update-btn');
+  if (kind === 'APT_DIST_UPGRADE'
+      && !confirm('Jalankan apt dist-upgrade (upgrade penuh termasuk dependensi & kernel baru) di server ini?')) return;
   if (kind === 'APT_UPGRADE_INTERACT'
       && !confirm('Tingkatkan semua paket tertunda di server ini sekarang?')) return;
   if (kind === 'APT_FIX'
       && !confirm('Jalankan reparasi paket (dpkg --configure -a & apt -f install) di server ini?')) return;
   aptRunning = true;
+  aptInteractive = (kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_DIST_UPGRADE' || kind === 'APT_FIX');
   if (upD) upD.disabled = true;
   aptSetUpgradeEnabled(false);
   aptSetState('busy', 'Memproses <span class="dim">' + aptLabel(kind) + '</span>…');
   aptRid = null;
   aptLiveShow(kind);
+  aptInputShow(true);
   aptLiveStatus('mengirim perintah ke server…', 'var(--dim)');
 
   let rid;
@@ -968,9 +1001,10 @@ async function aptAction(kind) {
     rid = j.id;
   } catch (e) {
     aptRunning = false;
+    aptInteractive = false;
     if (upD) upD.disabled = false;
     aptSetUpgradeEnabled(aptArmed && aptLastCount > 0);
-    aptLiveStatus('<b style="color:var(--red)">Gagal mengirim perintah.</b> ' + escapeHtml(e.message), 'var(--red)');
+    aptLiveStatus('<b style="color:var(--red)">Gagal mengirim perintah:</b> ' + escapeHtml(e.message), 'var(--red)');
     aptInputShow(true);
     return;
   }
@@ -984,16 +1018,18 @@ async function aptFollow(rid, kind, startedMs) {
   if (aptFollowActive) return;
   aptFollowActive = true;
   aptRunning = true;
+  aptInteractive = (kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_DIST_UPGRADE' || kind === 'APT_FIX');
   const upD = document.getElementById('apt-update-btn');
   const label = aptLabel(kind);
   aptRid = rid;
   aptLiveShow(kind);
+  aptInputShow(true);
   aptLiveStatus('menyambung proses ' + label + ' yang masih berjalan…', 'var(--dim)');
   if (upD) upD.disabled = true;
   aptSetUpgradeEnabled(false);
 
   const start = startedMs || Date.now();
-  const limit = (kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_FIX') ? 3700000
+  const limit = (kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_DIST_UPGRADE' || kind === 'APT_FIX') ? 3700000
     : (kind === 'APT_UPGRADE' ? 920000 : 320000);
   let j = null;
   while (Date.now() - start < limit) {
@@ -1019,6 +1055,7 @@ async function aptFollow(rid, kind, startedMs) {
   }
 
   aptRunning = false;
+  aptInteractive = false;
   aptFollowActive = false;
   aptRid = null;
   aptInputShow(true);
@@ -1026,14 +1063,15 @@ async function aptFollow(rid, kind, startedMs) {
 
   if (!j || j.status !== 'success') {
     if (Date.now() - start >= limit) {
-      aptSetState('error', 'Gagal — agen tidak merespons dalam batas waktu.');
+      aptSetState('error', 'Gagal — batas waktu habis.');
       aptLiveStatus('<b style="color:var(--red)">Gagal — batas waktu habis.</b> Periksa status agen.', 'var(--red)');
       aptMsg('<b>Agen tidak merespons dalam batas waktu — periksa status agen.</b>', 'var(--red)');
       aptFollowCooldown = Date.now() + 120000; // tunda resume agar tidak langsung mengulang
     } else if (j) {
       aptLiveShow(kind);
-      aptInputShow(true);   // tetap sediakan prompt terminal untuk troubleshooting
-      aptLiveAppend('[status: ' + j.status + ']\n' + escapeHtml(j.result || ''), false);
+      if (j.result && !aptLiveBuf.includes(j.result)) {
+        aptLiveAppend(j.result + '\n', false);
+      }
       aptSetState('error', 'Gagal (' + escapeHtml(j.status) + ').');
       aptLiveStatus('<b style="color:var(--red)">Gagal (' + escapeHtml(j.status) + ').</b>', 'var(--red)');
       aptMsg('Status: ' + escapeHtml(j.status) + (j.result ? ' — ' + escapeHtml(j.result) : ''), 'var(--red)');
@@ -1066,7 +1104,7 @@ async function aptFollow(rid, kind, startedMs) {
           : '';
         aptMsg('<b>' + apt.upgradable + ' paket siap untuk di-upgrade.</b>' + listHtml, 'var(--yellow)');
         aptLiveStatus('<b style="color:var(--yellow)">Selesai — ' + apt.upgradable + ' paket siap di-upgrade.</b> Klik tombol Upgrade untuk mengeksekusi.', 'var(--yellow)');
-      } else if (kind === 'APT_UPGRADE' || kind === 'APT_UPGRADE_INTERACT') {
+      } else if (kind === 'APT_UPGRADE' || kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_DIST_UPGRADE') {
         aptSetState('ok', 'Proses upgrade selesai — semua paket sudah ditingkatkan.');
         aptMsg('<b>Proses upgrade selesai — semua paket sudah ditingkatkan.</b>', 'var(--green)');
         aptLiveStatus('<b style="color:var(--green)">Selesai — upgrade berhasil.</b>', 'var(--green)');
@@ -1701,9 +1739,9 @@ if (aptTermEl) {
   aptTermEl.addEventListener('mousedown', ev => {
     // biarkan seleksi teks tetap normal; fokus kursor hanya saat klik area kosong
     if (window.getSelection && String(window.getSelection())) return;
-    if (aptInteractive && aptRunning) {
+    if (!aptRunning || aptInteractive) {
       const inp = document.getElementById('apt-answer');
-      if (inp && ev.target !== inp) { ev.preventDefault(); inp.focus(); }
+      if (inp && !inp.disabled && ev.target !== inp) { ev.preventDefault(); inp.focus(); }
     }
   });
 }

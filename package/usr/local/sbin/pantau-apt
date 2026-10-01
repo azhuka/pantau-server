@@ -42,37 +42,34 @@ case "${1:-}" in
         export DEBIAN_FRONTEND=noninteractive
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON upgrade" /dev/null
+        exec /usr/bin/script -qfc "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON upgrade" /dev/null
         ;;
     upgrade-interact)
-        # Tanpa --force-confold & tanpa DEBIAN_FRONTEND=noninteractive, sehingga
-        # dpkg benar-benar BERHENTI dan bertanya; jawabannya datang dari admin
-        # melalui stdin proses (dikirim agen dari kotak input Dashboard).
+        # Interaktif murni: dpkg berinteraksi langsung via stdin.
+        # --with-new-pkgs: memastikan kernel/paket dependensi baru ikut ter-upgrade (tidak kept back).
         unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        # -o Dpkg::Use-Pty=1: dpkg menulis prompt ke pty sehingga kelihatan di UI.
-        echo "== MODE INTERAKTIF =="
-        echo "Jawab setiap pertanyaan yang muncul di kotak terminal bawah."
-        echo "Membatalkan:   Ctrl+C di server, atau tombol Hentikan di Dashboard."
-        echo
-        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 upgrade" /dev/null
+        exec /usr/bin/script -qfc "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 upgrade" /dev/null
+        ;;
+    dist-upgrade)
+        # Dist-upgrade interaktif: upgrade penuh termasuk resolusi dependensi kompleks.
+        unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
+        export NEEDRESTART_MODE=a
+        export APT_LISTCHANGES_FRONTEND=none
+        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 dist-upgrade" /dev/null
         ;;
     fix)
-        # Mode reparasi: pulihkan dpkg yang terinterupsi & perbaiki dependensi rusak
+        # Reparasi dpkg terputus & pemulihan dependensi rusak tanpa pesan banner
         unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        echo "== MEMULIHKAN PAKET SISTEM (REPARASI DPKG & DEPENDENSI) =="
-        echo "[1/2] Menjalankan: dpkg --configure -a ..."
         /usr/bin/script -qfc "/usr/bin/dpkg --configure -a" /dev/null || true
-        echo
-        echo "[2/2] Memperbaiki dependensi paket: apt-get -f install ..."
         exec /usr/bin/script -qfc "/usr/bin/apt-get -y -f -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 install" /dev/null
         ;;
     *)
         echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2
-        echo "            (hanya: update | upgrade | upgrade-interact | fix)" >&2
+        echo "            (hanya: update | upgrade | upgrade-interact | dist-upgrade | fix)" >&2
         exit 2
         ;;
 esac

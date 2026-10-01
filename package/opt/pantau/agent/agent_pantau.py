@@ -1108,6 +1108,8 @@ def _apt_cmd(kind: str):
         # Interaktif menunggu admin mengetik; timeout lebih longgar, dan HANYA
         # diakhiri bila proses benar-benar tidak bergerak (mis. admin lupa).
         return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "upgrade-interact"], 3600
+    if kind == "APT_DIST_UPGRADE":
+        return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "dist-upgrade"], 3600
     if kind == "APT_FIX":
         # Reparasi dpkg & pemulihan paket rusak
         return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "fix"], 1800
@@ -1394,7 +1396,7 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
     hint_shown = False
     failed = False
     errmsg = ""
-    interactive = (kind in ("APT_UPGRADE_INTERACT", "APT_FIX"))
+    interactive = (kind in ("APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX"))
 
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -1510,15 +1512,6 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
                           {"chunk": live, "replace": True})
 
     # Hasil terminal (persis SSH): frame progress sudah "menimpa" via termify.
-    if kind == "APT_UPDATE":
-        detail = _run_cmd(["/usr/bin/apt", "list", "--upgradable"], timeout=30)
-        if detail is not None and detail.stdout.strip():
-            body = "\n".join(
-                l for l in detail.stdout.splitlines()
-                if l.strip() and l.strip().lower() != "listing..."
-            )
-            if body:
-                full = (full + "\n\n== Paket yang bisa di-upgrade ==\n" + body).strip("\n")
 
     try:
         apt = collect_apt()
@@ -1794,7 +1787,7 @@ def poll_log_requests(cfg: dict):
 
         if not re.fullmatch(r"[A-Za-z0-9@_.:+-]{1,100}", unit):
             result = {"status": "failed", "result": "Nama unit tidak valid"}
-        elif unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_FIX"):
+        elif unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX"):
             threading.Thread(
                 target=_run_apt_in_thread, args=(cfg, rid, unit), daemon=True
             ).start()
