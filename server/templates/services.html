@@ -3,7 +3,15 @@
 {% block content %}
 <div class="topbar">
   <h2>Rincian — {{ server.hostname }}
-    <span id="agent-ver" class="badge {{ 'badge-info' if agent_version else 'badge-muted' }}">agen {{ ('v' + agent_version) if agent_version else 'tidak dikenal' }}</span>
+    {% if agent_version %}
+      {% if is_agent_outdated %}
+        <span id="agent-ver" class="badge badge-warn" title="Versi agen di server klien (v{{ agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Silakan perbarui agen.">agen v{{ agent_version }} (perlu update)</span>
+      {% else %}
+        <span id="agent-ver" class="badge badge-info" title="Versi agen mutakhir">agen v{{ agent_version }}</span>
+      {% endif %}
+    {% else %}
+      <span id="agent-ver" class="badge badge-muted" title="Agen belum melaporkan versi">agen tidak dikenal</span>
+    {% endif %}
   </h2>
   <div>
     <a href="/servers" class="btn btn-ghost">&larr; Servers</a>
@@ -77,6 +85,12 @@
       {% endif %}
     </div>
   </div>
+  {% if is_agent_outdated and user.role == 'admin' %}
+  <div style="background:var(--yellow-bg);border:1px solid rgba(234,179,8,.3);border-radius:6px;padding:8px 12px;margin-top:12px;font-size:12px;color:var(--yellow);display:flex;align-items:center;gap:8px">
+    <span>⚠️</span>
+    <span>Versi Agen Pantau di server ini (<b>v{{ agent_version }}</b>) lebih lama dari dashboard (<b>v{{ app_version }}</b>). Jalankan pembaruan agen di server klien untuk fitur dan keandalan optimal.</span>
+  </div>
+  {% endif %}
   <div class="apt-state" id="apt-state">
     <span id="apt-state-text">Memeriksa pembaruan…</span>
   </div>
@@ -997,11 +1011,19 @@ function patch(data) {
   const aver = document.getElementById('agent-ver');
   if (aver) {
     if (data.agent_version) {
-      aver.textContent = 'agen v' + data.agent_version;
-      aver.className = 'badge badge-info';
+      if (data.agent_outdated) {
+        aver.textContent = 'agen v' + data.agent_version + ' (perlu update)';
+        aver.className = 'badge badge-warn';
+        aver.title = 'Versi agen di server klien lebih lama dari versi dashboard. Disarankan untuk memperbarui agen.';
+      } else {
+        aver.textContent = 'agen v' + data.agent_version;
+        aver.className = 'badge badge-info';
+        aver.title = 'Versi agen mutakhir';
+      }
     } else {
       aver.textContent = 'agen tidak dikenal';
       aver.className = 'badge badge-muted';
+      aver.title = 'Agen belum melaporkan versi';
     }
   }
   const hd = document.getElementById('hero-dot');

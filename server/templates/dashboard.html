@@ -44,12 +44,21 @@
     <thead><tr><th>Server</th><th>IP</th><th>Status</th><th>Masalah</th><th>Update OS</th><th>Terakhir Dilihat</th><th>Aksi</th></tr></thead>
     <tbody>
     {% for srv in servers %}
-    <tr data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv._os_label or '')) | lower }}">
+    <tr data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv._os_label or '') ~ ' agen v' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '')) | lower }}">
       <td>
         <strong>{{ srv.hostname }}</strong>
-        {% if srv._os_label %}
-        <div style="font-size:11px;color:var(--dim);line-height:1.4">{{ srv._os_label }}{% if srv._arch %} · {{ srv._arch }}{% endif %}</div>
-        {% endif %}
+        <div style="font-size:11px;color:var(--dim);line-height:1.4">
+          {% if srv._os_label %}{{ srv._os_label }}{% if srv._arch %} · {{ srv._arch }}{% endif %} · {% endif %}
+          {% if srv._agent_version %}
+            {% if srv._agent_outdated %}
+              <span class="badge badge-warn" style="font-size:10px;padding:1px 6px" title="Versi agen di server klien (v{{ srv._agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Perlu update.">agen v{{ srv._agent_version }} (perlu update)</span>
+            {% else %}
+              <span class="badge badge-info" style="font-size:10px;padding:1px 6px" title="Versi agen mutakhir">agen v{{ srv._agent_version }}</span>
+            {% endif %}
+          {% else %}
+            <span class="badge badge-muted" style="font-size:10px;padding:1px 6px" title="Agen belum melaporkan versi">agen tidak dikenal</span>
+          {% endif %}
+        </div>
         {% if srv._kernel %}
         <div style="font-size:10px;color:var(--dim);opacity:.8">kernel {{ srv._kernel }}</div>
         {% endif %}

@@ -279,6 +279,18 @@ def _clamp_float(value, default=None, lo: float = 0.0, hi: float = 2 ** 31 - 1):
     return max(lo, min(hi, v))
 
 
+def _is_agent_outdated(agent_ver: str | None, current_ver: str) -> bool:
+    """Cek apakah versi agen lebih lama dari versi dashboard saat ini."""
+    if not agent_ver:
+        return False
+    try:
+        v_agent = tuple(int(x) for x in re.findall(r"\d+", str(agent_ver)))
+        v_curr = tuple(int(x) for x in re.findall(r"\d+", str(current_ver)))
+        return v_agent < v_curr
+    except Exception:
+        return False
+
+
 # ---------------------------------------------------------------------------
 # API key: simpan sha256 (berprefix) di DB, bukan plaintext
 # ---------------------------------------------------------------------------
@@ -921,6 +933,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "apt_upgradable": extras.apt_upgradable if extras else None,
         "apt_last_update": extras.apt_last_update.isoformat() if extras and extras.apt_last_update else None,
         "agent_version": extras.agent_version if extras else None,
+        "agent_outdated": _is_agent_outdated(extras.agent_version if extras else None, settings.APP_VERSION),
         # Proses apt yang sedang berjalan (memenuhi polling resume bila halaman reload).
         "apt_exec": {
             "id": apt_run.id,
@@ -1220,6 +1233,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         srv._os_label = ex.os_label if ex else None
         srv._arch = ex.arch if ex else None
         srv._kernel = ex.kernel if ex else None
+        srv._agent_version = ex.agent_version if ex else None
+        srv._agent_outdated = _is_agent_outdated(srv._agent_version, settings.APP_VERSION)
         services = db.query(Service).filter(Service.server_id == srv.id).all()
         latest_map = _latest_metrics(db, (s.id for s in services))
         srv._svc_data = []
@@ -1289,6 +1304,8 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
         srv._apt_last_update = ex.apt_last_update if ex and ex.apt_last_update else None
         srv._os_label = ex.os_label if ex else None
         srv._arch = ex.arch if ex else None
+        srv._agent_version = ex.agent_version if ex else None
+        srv._agent_outdated = _is_agent_outdated(srv._agent_version, settings.APP_VERSION)
         srv._online = not _server_stale(srv)
         services = db.query(Service).filter(Service.server_id == srv.id).all()
         latest_map = _latest_metrics(db, (s.id for s in services))
@@ -1503,6 +1520,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     return tpl(request, "services.html", {
         "user": user, "server": server, "services": services, "commands": commands,
         "agent_version": extra.agent_version if extra else None,
+        "is_agent_outdated": _is_agent_outdated(extra.agent_version if extra else None, settings.APP_VERSION),
         "os_label": extra.os_label if extra else None,
         "kernel": extra.kernel if extra else None,
         "is_online": not _server_stale(server),
