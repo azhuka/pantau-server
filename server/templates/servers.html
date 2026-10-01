@@ -2,63 +2,30 @@
 {% block title %}Servers - Pantau Server{% endblock %}
 {% block content %}
 <div class="topbar">
-  <h2>Server Management</h2>
+  <h2>Servers</h2>
   {% if user.role == 'admin' %}<a href="/servers/add" class="btn btn-primary">+ Tambah Server</a>{% endif %}
 </div>
 
 <div class="card">
   {% if servers %}
   <table>
-    <thead><tr><th>Hostname</th><th>IP Address</th><th>API Key</th><th>Services</th><th>Status</th><th>Masalah</th><th>OS Update</th><th>Last Seen</th><th>Aksi</th></tr></thead>
+    <thead><tr><th>Hostname</th><th>IP</th><th>Status</th><th>Layanan</th><th>Kunci API</th><th>Terakhir Dilihat</th><th>Aksi</th></tr></thead>
     <tbody>
     {% for srv in servers %}
     <tr>
       <td><strong>{{ srv.hostname }}</strong></td>
       <td class="mono">{{ srv.ip_address }}</td>
-      <td>
-        <span class="mono" style="font-size:10px">{{ srv._key_fp }}</span>
-      </td>
+      <td><span class="badge {{ srv._status_cls }}">{{ srv._status_label }}</span></td>
       <td>{{ srv._service_count }}</td>
       <td>
-        {% if srv.is_active %}
-          {% if srv._online %}
-            <span class="badge badge-up">active</span>
-          {% elif srv.last_seen %}
-            <span class="badge badge-offline">offline</span>
-          {% else %}
-            <span class="badge badge-inactive">no data</span>
-          {% endif %}
-        {% else %}
-          <span class="badge badge-inactive">disabled</span>
-        {% endif %}
+        <span class="mono" style="font-size:10px;color:var(--dim)"
+              title="Sidik jari kunci API — bukan kunci penuh. Kunci hanya ditampilkan sekali, saat dibuat.">{{ srv._key_fp }}</span>
       </td>
-      <td>
-        {% if srv._problem_level is none %}
-          <span style="color:var(--dim)">—</span>
-        {% else %}
-          {% set plabel = {'ok':'OK','info':'Info','warning':'Warning','danger':'Danger'}[srv._problem_level] %}
-          {% set pcls = {'ok':'up','info':'info','warning':'warn','danger':'danger'}[srv._problem_level] %}
-          <span class="badge badge-{{ pcls }}" title="{{ srv._problems | map(attribute='message') | join(' • ') }}">{{ plabel }}</span>
-        {% endif %}
-      </td>
-      <td>
-        {% if srv._apt_upgradable is not none %}
-          {% if srv._apt_upgradable > 0 %}
-            <span class="badge badge-warn" title="Terakhir apt update: {{ srv._apt_last_update.strftime('%d %b %Y %H:%M') if srv._apt_last_update else 'tidak diketahui' }}&#10;Masuk ke server & jalankan:&#10;sudo apt update && sudo apt upgrade">{{ srv._apt_upgradable }} paket</span>
-          {% else %}
-            <span class="badge badge-up">up to date</span>
-          {% endif %}
-        {% else %}
-          <span style="color:var(--dim)">—</span>
-        {% endif %}
-      </td>
-      <td class="mono">{{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'never' }}</td>
+      <td class="mono">{{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}</td>
       <td style="white-space:nowrap">
-        {% if user.role == 'admin' %}
-        <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm">Edit</a>
-        {% endif %}
         <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
         {% if user.role == 'admin' %}
+        <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm">Edit</a>
         <form method="POST" action="/servers/{{ srv.id }}/delete" style="display:inline" data-confirm data-msg="Hapus server {{ srv.hostname }}? Semua data miliknya ikut terhapus.">
           <button class="btn btn-danger btn-sm">Hapus</button>
         </form>
@@ -69,7 +36,9 @@
     </tbody>
   </table>
   {% else %}
-  <div class="empty-msg">Belum ada server. Klik "Tambah Server" untuk memulai.</div>
+  <div class="empty-msg">Belum ada server.
+    {% if user.role == 'admin' %} Klik "Tambah Server" untuk memulai.{% endif %}
+  </div>
   {% endif %}
 </div>
 {% endblock %}

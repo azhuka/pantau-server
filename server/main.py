@@ -1007,13 +1007,13 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             srv._svc_data.append(d)
             if latest and latest.status != "up":
                 down_services += 1
-        if _server_stale(srv):
+        stale = _server_stale(srv)
+        if stale:
             for d in srv._svc_data:
                 d["status"] = "offline"
-        srv._overall = "up" if any(d["status"] == "up" for d in srv._svc_data) else "down"
-        if _server_stale(srv):
-            srv._overall = "offline"
-        if srv._overall == "up":
+        srv._status_label, srv._status_cls = _server_status(
+            srv, stale, bool(srv._svc_data), any(d["status"] == "up" for d in srv._svc_data))
+        if srv._status_cls == "badge-up":
             up_count += 1
         srv._problem_level, srv._problems, _ph = sync_server_problems(
             db, srv, _problem_instances(srv, ex, srv._svc_data, db))
@@ -1062,6 +1062,8 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
                 "name": svc.service_name,
                 "status": latest.status if latest else "unknown",
             })
+        srv._status_label, srv._status_cls = _server_status(
+            srv, not srv._online, bool(svc_data), any(d["status"] == "up" for d in svc_data))
         srv._problem_level, srv._problems, _ph = sync_server_problems(
 db, srv, _problem_instances(srv, ex, svc_data, db))
     return tpl(request, "servers.html", {"user": user, "servers": servers})
@@ -2233,6 +2235,22 @@ def _server_stale(srv) -> bool:
     if ls.tzinfo is None:
         ls = ls.replace(tzinfo=timezone.utc)
     return (datetime.now(timezone.utc) - ls).total_seconds() > OFFLINE_AFTER_SECONDS
+
+
+def _server_status(srv, stale: bool, has_services: bool, any_up: bool):
+    """Status server dalam satu kosakata untuk semua halaman.
+
+    Kembalikan (label, kelas_badge) supaya Dashboard, Servers, dan Rincian
+    tidak lagi berbeda-beda menampilkan server yang sama.
+    """
+    if not srv.is_active:
+        return "nonaktif", "badge-inactive"
+    if stale:
+        return ("offline", "badge-down") if srv.last_seen else ("belum ada data", "badge-inactive")
+    if not has_services:
+        # agen melapor normal, hanya belum ada service yang terdeteksi
+        return "online", "badge-up"
+    return ("online", "badge-up") if any_up else ("service down", "badge-down")
 
 
 # ---------------------------------------------------------------------------

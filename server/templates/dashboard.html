@@ -3,12 +3,11 @@
 {% block content %}
 <div class="topbar">
   <h2>Dashboard</h2>
-  <div class="user-info">{{ user.username }}</div>
 </div>
 
 <div class="stats-grid">
   <div class="stat-card">
-    <div class="label">Total Servers</div>
+    <div class="label">Total Server</div>
     <div class="value">{{ total }}</div>
   </div>
   <div class="stat-card">
@@ -20,11 +19,11 @@
     <div class="value" style="color:var(--red)">{{ down_count }}</div>
   </div>
   <div class="stat-card">
-    <div class="label">Servis Down</div>
+    <div class="label">Layanan Down</div>
     <div class="value" style="color:var(--red)">{{ down_services }}</div>
   </div>
   <div class="stat-card">
-    <div class="label">Update Terakhir</div>
+    <div class="label">Laporan Terakhir</div>
     <div class="value" style="font-size:18px">{% if last_update_secs < 0 %}—{% elif last_update_secs < 60 %}{{ last_update_secs }}<span style="font-size:11px;color:var(--dim)"> dtk</span>{% elif last_update_secs < 3600 %}{{ last_update_secs // 60 }}<span style="font-size:11px;color:var(--dim)"> mnt</span>{% else %}{{ last_update_secs // 3600 }}<span style="font-size:11px;color:var(--dim)"> jam</span>{% endif %}</div>
   </div>
 </div>
@@ -32,11 +31,11 @@
 <div class="card">
   <div class="card-header">
     <h3>Server Status</h3>
-    <a href="/servers" class="btn btn-ghost btn-sm">Kelola Servers</a>
+    <a href="/servers" class="btn btn-ghost btn-sm">Kelola Server</a>
   </div>
   {% if servers %}
   <table>
-    <thead><tr><th>Server</th><th>IP Address</th><th>Status</th><th>Masalah</th><th>OS Update</th><th>Last Seen</th><th></th></tr></thead>
+    <thead><tr><th>Server</th><th>IP</th><th>Status</th><th>Masalah</th><th>Update OS</th><th>Terakhir Dilihat</th><th>Aksi</th></tr></thead>
     <tbody>
     {% for srv in servers %}
     <tr>
@@ -50,7 +49,7 @@
         {% endif %}
       </td>
       <td class="mono">{{ srv.ip_address }}</td>
-      <td><span class="badge badge-{{ srv._overall }}">{{ srv._overall }}</span></td>
+      <td><span class="badge {{ srv._status_cls }}">{{ srv._status_label }}</span></td>
       <td>
         {% if srv._problem_level is none %}
           <span style="color:var(--dim)">—</span>
@@ -63,15 +62,15 @@
       <td>
         {% if srv._apt_upgradable is not none %}
           {% if srv._apt_upgradable > 0 %}
-            <span class="badge badge-warn" title="Terakhir apt update: {{ srv._apt_last_update.strftime('%d %b %Y %H:%M') if srv._apt_last_update else 'tidak diketahui' }}&#10;Masuk ke server & jalankan:&#10;sudo apt update && sudo apt upgrade">{{ srv._apt_upgradable }} paket</span>
+            <span class="badge badge-warn" title="{{ srv._apt_upgradable }} paket tersedia{% if srv._apt_last_update %} &#10;Terakhir diperiksa {{ srv._apt_last_update.strftime('%d %b %Y %H:%M') }}{% endif %}&#10;Buka Rincian untuk menjalankan Update/Upgrade">{{ srv._apt_upgradable }} paket</span>
           {% else %}
-            <span class="badge badge-up">up to date</span>
+            <span class="badge badge-up">mutakhir</span>
           {% endif %}
         {% else %}
           <span style="color:var(--dim)">—</span>
         {% endif %}
       </td>
-      <td class="mono">{{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'never' }}</td>
+      <td class="mono">{{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}</td>
       <td>
         <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
       </td>
@@ -80,7 +79,9 @@
     </tbody>
   </table>
   {% else %}
-  <div class="empty-msg">Belum ada server terdaftar. <a href="/servers/add" style="color:var(--blue)">Tambah server pertama</a></div>
+  <div class="empty-msg">Belum ada server terdaftar.
+    {% if user.role == 'admin' %} <a href="/servers/add" style="color:var(--blue)">Tambah server pertama</a>{% endif %}
+  </div>
   {% endif %}
 </div>
 {% endblock %}
