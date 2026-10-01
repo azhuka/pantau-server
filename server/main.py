@@ -1465,38 +1465,18 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 # METRICS
 # ---------------------------------------------------------------------------
+# Halaman Metrik tidak lagi terpisah: seluruh data metrik per-layanan sudah
+# ada di tab "Layanan" halaman Rincian (grafik + daftar + uptime), dengan
+# versi yang lebih baik. Tautan lama dialihkan ke sana supaya tidak hilang.
 @app.get("/servers/{sid}/metrics", response_class=HTMLResponse)
-def metrics_page(request: Request, sid: int, db: Session = Depends(get_db), hours: int = 24):
+def metrics_page(request: Request, sid: int, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse("/login", status_code=303)
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         return RedirectResponse("/servers", status_code=303)
-    hours = _clamp_int(hours, 24, 1, 720)  # jendela aman: 1 jam s/d 30 hari
-    services = db.query(Service).filter(Service.server_id == sid).all()
-    since = datetime.utcnow() - timedelta(hours=hours)
-    metrics_data = []
-    for svc in services:
-        metrics = (
-            db.query(Metric).filter(Metric.service_id == svc.id, Metric.timestamp >= since)
-            .order_by(Metric.timestamp).all()
-        )
-        uptime = compute_uptime(metrics)
-        metrics_data.append({
-            "service": svc.service_name, "port": svc.port,
-            "uptime": uptime,
-            "data": [{
-                "time": m.timestamp.isoformat(), "status": m.status,
-                "conns": m.active_connections,
-                "response_time_ms": m.response_time_ms,
-                "health_message": m.health_message,
-            } for m in metrics],
-        })
-    return tpl(request, "metrics.html", {
-        "user": user, "server": server,
-        "metrics_data": metrics_data, "hours": hours,
-    })
+    return RedirectResponse(f"/servers/{sid}/services?tab=layanan", status_code=303)
 
 
 # ---------------------------------------------------------------------------

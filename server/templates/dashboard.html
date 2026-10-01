@@ -74,7 +74,6 @@
       <td class="mono">{{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'never' }}</td>
       <td>
         <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
-        <a href="/servers/{{ srv.id }}/metrics" class="btn btn-ghost btn-sm">Metrics</a>
       </td>
     </tr>
     {% endfor %}

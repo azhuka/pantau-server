@@ -7,7 +7,6 @@
   </h2>
   <div>
     <a href="/servers" class="btn btn-ghost">&larr; Servers</a>
-    <a href="/servers/{{ server.id }}/metrics" class="btn btn-ghost">Metrik</a>
   </div>
 </div>
 
@@ -453,6 +452,14 @@ function showTab(name) {
 }
 document.querySelectorAll('#detail-tabs .tab').forEach(b =>
   b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+// Deep-link tab via ?tab=layanan (dipakai tautan Metrik lama & menu lain)
+(function () {
+  const want = new URLSearchParams(location.search).get('tab');
+  if (!want) return;
+  const b = document.querySelector('#detail-tabs .tab[data-tab="' + want + '"]');
+  if (b) showTab(want);
+})();
 
 // ---------- helpers ----------
 function badgeHtml(status) {

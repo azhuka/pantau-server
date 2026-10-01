@@ -58,7 +58,6 @@
         <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm">Edit</a>
         {% endif %}
         <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
-        <a href="/servers/{{ srv.id }}/metrics" class="btn btn-ghost btn-sm">Metrics</a>
         {% if user.role == 'admin' %}
         <form method="POST" action="/servers/{{ srv.id }}/delete" style="display:inline" data-confirm data-msg="Hapus server {{ srv.hostname }}? Semua data miliknya ikut terhapus.">
           <button class="btn btn-danger btn-sm">Hapus</button>
