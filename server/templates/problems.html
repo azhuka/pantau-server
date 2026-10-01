@@ -40,7 +40,7 @@
       <td><span class="badge badge-{{ {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}">{{ p.severity }}</span></td>
       <td>
         <span>{{ p.message }}</span>
-        {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-inactive" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
+        {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
       <td class="mono" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">{{ p.durasi }}</td>
       <td style="white-space:nowrap">
@@ -87,7 +87,7 @@
       <td><span class="badge badge-{{ {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}">{{ p.severity }}</span></td>
       <td><span style="color:var(--green)">✓</span> <span style="text-decoration:line-through">{{ p.message }}</span>
         {% if p.resolved_note == 'auto' %}
-          <span class="badge badge-inactive" title="Tidak ada deteksi baru selama jendela tenang">otomatis berakhir</span>
+          <span class="badge badge-muted" title="Tidak ada deteksi baru selama jendela tenang">otomatis berakhir</span>
         {% endif %}
       </td>
       <td class="mono">{{ p.durasi }}</td>

@@ -2244,9 +2244,9 @@ def _server_status(srv, stale: bool, has_services: bool, any_up: bool):
     tidak lagi berbeda-beda menampilkan server yang sama.
     """
     if not srv.is_active:
-        return "nonaktif", "badge-inactive"
+        return "nonaktif", "badge-muted"
     if stale:
-        return ("offline", "badge-down") if srv.last_seen else ("belum ada data", "badge-inactive")
+        return ("offline", "badge-down") if srv.last_seen else ("belum ada data", "badge-muted")
     if not has_services:
         # agen melapor normal, hanya belum ada service yang terdeteksi
         return "online", "badge-up"

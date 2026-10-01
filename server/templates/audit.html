@@ -45,7 +45,7 @@
         <td><span class="mono">{{ r.user }}</span></td>
         <td>
           {% if r.kind == 'cmd' %}
-            <span class="badge badge-inactive">{{ r.label }}</span>
+            <span class="badge badge-muted">{{ r.label }}</span>
           {% else %}
             {{ r.label }}
           {% endif %}

@@ -7,7 +7,6 @@
     <h2 style="margin-top:10px">Aktivitas User: <span class="mono">{{ username }}</span>
       <span style="font-size:13px;color:var(--dim)">@ {{ server.hostname }}</span></h2>
   </div>
-  <div class="user-info">{{ user.username }}</div>
 </div>
 
 <div class="stats-grid">
@@ -55,15 +54,14 @@
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <input id="hist-filter" type="search" placeholder="Filter perintah…"
         style="padding:6px 10px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);min-width:220px">
-      <button class="btn btn-ghost btn-sm" onclick="loadActivity()">Muat ulang</button>
       <button id="hist-more" class="btn btn-ghost btn-sm" style="display:none" onclick="historyLines=1000;loadActivity()">Muat lebih banyak</button>
       <button class="btn btn-ghost btn-sm" onclick="exportCsv()">Ekspor CSV</button>
       <span id="hist-state" style="font-size:12px;color:var(--dim)"></span>
     </div>
   </div>
-  <div style="font-size:11px;color:var(--dim);margin-bottom:8px">Dari riwayat shell (bash / zsh / fish) user {{ username }} di server terpantau — urutan terbaru di atas. Waktu tampil bila shell mencatat timestamp (<span class="mono">HISTTIMEFORMAT</span>/zsh/fish); tanpa itu hanya urutan.</div>
+  <div style="font-size:11px;color:var(--dim);margin-bottom:8px">Riwayat perintah shell user {{ username }} di server ini, terbaru di atas. Waktu hanya tampil untuk perintah yang shellnya mencatat jam; selebihnya hanya urutannya.</div>
   <pre id="hist-pre" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;max-height:52vh;overflow:auto;white-space:pre;color:var(--text);display:none"></pre>
-  <div id="hist-empty" class="empty-msg" style="display:none">File history tidak ditemukan / belum ada perintah.</div>
+  <div id="hist-empty" class="empty-msg" style="display:none">Riwayat perintah tidak ditemukan atau belum ada perintah.</div>
 </div>
 {% endblock %}
 
@@ -78,13 +76,13 @@ function escapeHtml(s) {
     {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]
   ));
 }
+const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 function fmtTs(epoch) {
   if (!epoch) return '';
   try {
     const d = new Date(epoch * 1000);
     const p = n => String(n).padStart(2, '0');
-    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
-      + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+    return p(d.getDate()) + ' ' + BULAN[d.getMonth()] + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   } catch (e) { return ''; }
 }
 
@@ -177,14 +175,16 @@ async function loadActivity() {
         document.getElementById('ll-table').querySelector('tbody').innerHTML = logins.map(x => {
           const cls = x.type === 'gagal' ? 'badge-down'
                     : x.type === 'sukses' ? 'badge-up'
-                    : x.type === 'sudo' ? 'badge-warn' : 'badge-inactive';
+                    : x.type === 'sudo' ? 'badge-warn' : 'badge-muted';
           const method = x.type === 'sudo'
             ? '<span title="' + escapeHtml(x.method || '') + '" style="max-width:70ch;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:bottom">'
               + escapeHtml((x.method || '').slice(0, 90)) + ((x.method || '').length > 90 ? '…' : '') + '</span>'
             : escapeHtml(x.method || '-');
+          const typeLabel = {sukses: 'Login sukses', gagal: 'Login gagal',
+                             sudo: 'Sudo', sesi: 'Sesi baru'}[x.type] || x.type || '-';
           return '<tr><td class="mono">' + escapeHtml(x.ts || '-') + '</td>'
             + '<td><strong>' + escapeHtml(x.user || '-') + '</strong></td>'
-            + '<td><span class="badge ' + cls + '">' + escapeHtml(x.type || '-') + '</span></td>'
+            + '<td><span class="badge ' + cls + '">' + escapeHtml(typeLabel) + '</span></td>'
             + '<td class="mono">' + escapeHtml(x.from || '-') + '</td>'
             + '<td>' + method + '</td></tr>';
         }).join('');

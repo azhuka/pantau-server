@@ -3,7 +3,7 @@
 {% block content %}
 <div class="topbar">
   <h2>Rincian — {{ server.hostname }}
-    <span id="agent-ver" class="badge {{ 'badge-info' if agent_version else 'badge-inactive' }}">agen {{ ('v' + agent_version) if agent_version else 'tidak dikenal' }}</span>
+    <span id="agent-ver" class="badge {{ 'badge-info' if agent_version else 'badge-muted' }}">agen {{ ('v' + agent_version) if agent_version else 'tidak dikenal' }}</span>
   </h2>
   <div>
     <a href="/servers" class="btn btn-ghost">&larr; Servers</a>
@@ -40,7 +40,7 @@
   {% set ack_at = request.query_params.get('at') %}
   <div id="host-ack" data-mode="{{ act }}" data-start="{{ '1' if is_online else '0' }}" data-at="{{ ack_at }}"
        style="margin-top:10px;font-size:13px;font-weight:600;display:flex;gap:8px;align-items:center">
-    <span id="ack-badge" class="badge badge-inactive">menunggu</span>
+    <span id="ack-badge" class="badge badge-muted">menunggu</span>
     <span id="ack-text" style="color:var(--dim);font-weight:400"></span>
     <button type="button" id="ack-close" style="margin-left:auto;background:none;border:0;color:var(--dim);cursor:pointer;font-size:15px;line-height:1" title="Tutup banner">&times;</button>
   </div>
@@ -71,7 +71,7 @@
         <button class="btn btn-danger btn-sm" type="submit" title="Matikan sistem operasi">&#9211;&nbsp;Power Off</button>
       </form>
       {% else %}
-      <span class="badge badge-inactive">Update OS aktif untuk Admin</span>
+      <span class="badge badge-muted">Update OS aktif untuk Admin</span>
       {% endif %}
     </div>
   </div>
@@ -251,7 +251,7 @@
       <td style="white-space:nowrap">
         <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}">
           {% if svc._pending_cmd %}
-          <span class="badge badge-inactive">Menunggu Agent</span>
+          <span class="badge badge-muted">Menunggu Agent</span>
           {% elif user.role == 'admin' %}
           <form method="POST" action="/servers/{{ server.id }}/services/{{ svc.id }}/restart" style="display:inline" data-confirm data-msg="Restart service {{ svc.service_name }} di server {{ server.hostname }}?">
             <button class="btn btn-primary btn-sm">Restart</button>
@@ -286,12 +286,12 @@
         {% set svc = services|selectattr('id','equalto',c.service_id)|first %}
         {{ svc.service_name if svc else '?' }}
       </td>
-      <td><span class="badge badge-inactive">{{ {'restart':'Restart','start':'Start','stop':'Stop','delete':'Hapus'}.get(c.action, c.action) }}</span></td>
+      <td><span class="badge badge-muted">{{ {'restart':'Restart','start':'Start','stop':'Stop','delete':'Hapus'}.get(c.action, c.action) }}</span></td>
       <td id="cmd-st-{{ c.id }}">
-        {% if c.status == 'success' %}<span class="badge badge-up">success</span>
-        {% elif c.status == 'failed' %}<span class="badge badge-down">failed</span>
-        {% elif c.status == 'executing' %}<span class="badge badge-inactive">executing</span>
-        {% else %}<span class="badge badge-inactive">pending</span>{% endif %}
+        {% if c.status == 'success' %}<span class="badge badge-up">berhasil</span>
+        {% elif c.status == 'failed' %}<span class="badge badge-down">gagal</span>
+        {% elif c.status == 'executing' %}<span class="badge badge-muted">dijalankan</span>
+        {% else %}<span class="badge badge-muted">menunggu</span>{% endif %}
       </td>
       <td id="cmd-rs-{{ c.id }}" data-status="{{ c.status }}" style="font-size:12px;color:var(--dim);max-width:300px">{{ c.result or c.status }}</td>
     </tr>
@@ -306,7 +306,7 @@
 <div class="card">
   <div class="card-header"><h3>Status Masalah</h3>
     {% if problem_level is none %}
-      <span class="badge badge-inactive">belum ada data</span>
+      <span class="badge badge-muted">belum ada data</span>
     {% else %}
       <span class="badge badge-{{ pmeta[problem_level][1] }}">{{ pmeta[problem_level][0] }}</span>
       <span style="font-size:12px;color:var(--dim)">{{ open_problems|length }} masalah terbuka</span>
@@ -342,7 +342,7 @@
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
         {% if p.acknowledged_by %}<span class="badge badge-up" title="Diakui {{ p.acknowledged_by }}">✓ diakui</span>{% endif %}
-        {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-inactive" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
+        {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
       <td class="mono"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
       <td style="white-space:nowrap">
@@ -465,7 +465,7 @@ document.querySelectorAll('#detail-tabs .tab').forEach(b =>
 function badgeHtml(status) {
   const cls = status === 'up' || status === 'success' ? 'badge-up'
             : status === 'down' || status === 'failed' ? 'badge-down'
-            : 'badge-inactive';
+            : 'badge-muted';
   return '<span class="badge ' + cls + '">' + status + '</span>';
 }
 
@@ -923,7 +923,7 @@ function patch(data) {
       aver.className = 'badge badge-info';
     } else {
       aver.textContent = 'agen tidak dikenal';
-      aver.className = 'badge badge-inactive';
+      aver.className = 'badge badge-muted';
     }
   }
   const hd = document.getElementById('hero-dot');
@@ -963,9 +963,9 @@ function patch(data) {
     const act = document.getElementById('act-' + s.id);
     if (act) {
       const hasPending = s.pending;
-      const isPending = !!act.querySelector('.badge-inactive');
+      const isPending = !!act.querySelector('.badge-muted');
       if (hasPending && !isPending) {
-        act.innerHTML = '<span class="badge badge-inactive">Menunggu Agent</span>';
+        act.innerHTML = '<span class="badge badge-muted">Menunggu Agent</span>';
       } else if (!hasPending && isPending) {
         act.innerHTML = IS_ADMIN
           ? restartFormHtml(act.dataset.sid, act.dataset.svc, act.dataset.name)
@@ -1012,22 +1012,22 @@ function ackLive(mode, recent) {
   if (!b || !t) return;
   if (mode === 'poweroff') {
     if (recent) {
-      b.textContent = 'ONLINE';
+      b.textContent = 'online';
       b.className = 'badge badge-up';
       t.textContent = 'Server klien online — jika tadi mati, sudah dihidupkan kembali.';
     } else {
-      b.textContent = 'MATI / OFFLINE';
+      b.textContent = 'offline';
       b.className = 'badge badge-danger';
       t.textContent = 'Server klien tidak melapor — kemungkinan mati (Power Off berjalan).';
     }
   } else {
     if (recent) {
-      b.textContent = 'ONLINE';
+      b.textContent = 'online';
       b.className = 'badge badge-up';
       t.textContent = 'Server klien online — reboot selesai.';
     } else {
-      b.textContent = 'REBOOTING…';
-      b.className = 'badge badge-inactive';
+      b.textContent = 'reboot…';
+      b.className = 'badge badge-muted';
       t.textContent = 'Server klien tidak melapor — sedang proses reboot.';
     }
   }
