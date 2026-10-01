@@ -190,10 +190,22 @@ body.show-alert-banner .main{padding-top:68px}
 .alert-list{padding:8px 18px}
 .alert-item{border:1px solid var(--border);border-left:4px solid var(--red);border-radius:8px;padding:12px 14px;margin:12px 0;background:rgba(239,68,68,.05)}
 
-/* Modal output live apt update/upgrade */
-.apt-terminal{background:#0b0e15;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:#c9d4e6;overflow:auto;max-height:46vh;margin:0;width:100%}
-.apt-terminal::-webkit-scrollbar{width:8px;height:8px}
-.apt-terminal::-webkit-scrollbar-thumb{background:#2b3245;border-radius:4px}
+/* Terminal live Update/Upgrade — satu kotak, persis seperti SSH */
+.apt-term{background:#0b0e15;border:1px solid var(--border);border-radius:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;color:#c9d4e6;overflow:auto;max-height:52vh;padding:10px 12px;margin:0;width:100%;scrollbar-width:thin}
+.apt-term::-webkit-scrollbar{width:8px;height:8px}
+.apt-term::-webkit-scrollbar-thumb{background:#2b3245;border-radius:4px}
+.apt-term pre{margin:0;padding:0;font:inherit;color:inherit;white-space:inherit;word-break:inherit}
+/* Baris input: menyatu dengan baris terakhir, persis seperti terminal */
+.apt-term-in{display:block;width:100%;background:transparent;border:0;outline:0;color:#e8eefc;font:inherit;caret-color:#4ade80;padding:0;margin:0}
+.apt-term-in::placeholder{color:#4a5468}
+.apt-term-caret{display:inline-block;width:7px;height:1.05em;vertical-align:-2px;background:#4ade80;margin-left:1px;animation:caret 1.05s steps(1) infinite}
+@keyframes caret{0%,50%{opacity:1}51%,100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.apt-term-caret{animation:none}}
+/* Warna SGR ala terminal */
+.t-b{font-weight:700}.t-d{opacity:.65}.t-i{font-style:italic}.t-u{text-decoration:underline}
+.t-bl{background:#3b82f6;color:#0b0e15}
+.t-r{color:#f87171}.t-g{color:#4ade80}.t-y{color:#fbbf24}.t-b2{color:#60a5fa}.t-m{color:#c084fc}.t-c{color:#22d3ee}.t-w{color:#e2e8f0}
+.t-br{color:#fb7185}.t-bg{color:#86efac}.t-by{color:#fde047}.t-bb{color:#93c5fd}.t-bm{color:#d8b4fe}.t-bc{color:#67e8f9}
 .alert-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;margin-bottom:6px}
 .alert-srv{font-weight:700;color:var(--text)}
 .alert-key{font-family:monospace;font-size:11px;color:var(--dim);background:var(--bg);padding:2px 6px;border-radius:4px}

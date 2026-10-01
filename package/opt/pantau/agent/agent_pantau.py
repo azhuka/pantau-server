@@ -323,7 +323,7 @@ APT_AGENT_OUTPUT_MAX = 4_000_000
 APT_PROGRESS_TAIL_CHARS = 200_000
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.8.0"
+AGENT_VERSION = "3.9.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1019,6 +1019,38 @@ def _apt_sudo_denied_hint(err: str) -> str:
 
 
 _ANSI_RE = re.compile(r"\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|.)")
+_SGR_RE = re.compile(r"\x1b\[([0-9;]*)m")
+
+
+def _keep_sgr(text: str) -> str:
+    """Buang semua escape sequence KECUALI SGR (warna), sisakan \\r \\b \\t \\n.
+
+    Untuk stream apt: dashboard merender ulang kodenya sendiri supaya output
+    di kotak terminal terlihat sama seperti di SSH (warna + gerak kursor),
+    bukan teks polos. Escape lain (kursor, layar, OSC) dibuang karena tidak
+    berarti apa-apa di luar terminal sungguhan.
+    """
+    if not text:
+        return ""
+
+    def _repl(m: re.Match) -> str:
+        return m.group(0) if _SGR_RE.fullmatch(m.group(0)) else ""
+
+    cleaned = _ANSI_RE.sub(_repl, text).replace("\x00", "")
+    # SGR disisihkan dulu pakai placeholder, baru karakter kontrol (termasuk
+    # ESC) dibuang, lalu placeholder dikembalikan menjadi escape sungguhan.
+    kept: list[str] = []
+
+    def _stash(m: re.Match) -> str:
+        kept.append(m.group(0))
+        return f"\ue000{len(kept) - 1}\ue001"
+
+    cleaned = _SGR_RE.sub(_stash, cleaned)
+    cleaned = "".join(c for c in cleaned
+                      if c >= " " or c in "\n\r\b\t\ue000\ue001")
+    for idx, code in enumerate(kept):
+        cleaned = cleaned.replace(f"\ue000{idx}\ue001", code)
+    return cleaned
 
 # Pola prompt interaktif yang masih mungkin muncul walau wrapper sudah
 # non-interaktif (mis. skrip post-install milik vendor). Offset [ ... ] adalah
@@ -1084,11 +1116,9 @@ def _stdin_writer_thread(cfg: dict, rid: int, proc) -> None:
         try:
             proc.stdin.write(text.encode("utf-8", errors="replace"))
             proc.stdin.flush()
-            shown = text.strip()
-            print(f"[APT] jawaban terkirim ke proses: {shown!r}")
-            http_json_request(cfg, f"/api/logs/{rid}/progress", "POST",
-                              {"chunk": f"[pantau] jawaban Anda dikirim: {shown}\n",
-                               "replace": False})
+            # Tidak ada baris tambahan di output: pty sudah menggema karakter
+            # yang diketik, persis seperti di terminal. Hanya log agen.
+            print(f"[APT] jawaban terkirim ke proses: {text.strip()!r}")
         except (OSError, ValueError):
             return  # proses sudah mati / pipe tertutup
 
@@ -1100,28 +1130,67 @@ def _clean_output_chunk(text: str) -> str:
     return _ANSI_RE.sub("", text).replace("\x1b", "").replace("\x00", "")
 
 
-def termify(raw: str) -> str:
-    """Emulasi layar terminal utk output yang memakai \r (frame progress).
+def _sgr_on(prev: str, params: str) -> str:
+    """Gaya aktif setelah kode SGR baru (kode kosong / 0 = reset)."""
+    return "" if params in ("", "0") else params
 
-    Di terminal SSH, `\r` hanya memindahkan kursor ke awal baris; isi yang lama
-    TETAP terlihat kecuali ditimpa huruf baru. `\n` menutup baris. Fungsi ini
+
+def _render_cells(cells: list[tuple[str, str]], upto: int) -> str:
+    """Rakit baris dari sel (gaya, karakter) sambil menyisipkan kode SGR.
+
+    SGR diteruskan ke dashboard agar kotak terminal di browser bisa mewarnai
+    teks persis seperti di SSH — jadi hasilnya tetap "seperti terminal".
+    """
+    parts: list[str] = []
+    run: str | None = None
+    for idx in range(upto):
+        style, ch = cells[idx]
+        if style != run:
+            if run is not None:            # hanya reset bila memang ada gaya
+                parts.append("\x1b[0m")
+            if style:
+                parts.append("\x1b[%sm" % style)
+            run = style
+        parts.append(ch)
+    if run:
+        parts.append("\x1b[0m")
+    return "".join(parts).rstrip("\t ")
+
+
+def termify(raw: str) -> str:
+    """Emulasi layar terminal utk output yang memakai \\r (frame progress).
+
+    Di terminal SSH, `\\r` hanya memindahkan kursor ke awal baris; isi yang lama
+    TETAP terlihat kecuali ditimpa huruf baru. `\\n` menutup baris. Fungsi ini
     meniru persis itu (buffer sel + posisi kursor), sehingga hasilnya sama
     dengan yang tampil di layar saat menjalankan apt update/upgrade via SSH:
     frame `Reading package lists... 81%` → `82%` … → `Done` hanya jadi satu
     baris, dan baris "Reading package lists... Done" tidak hilang.
+
+    Warna (SGR) ikut dipertahankan: tiap sel menyimpan gaya aktifnya, lalu
+    `_render_cells` menyisipkan ulang kode SGR per rentang warna.
     """
     out: list[str] = []
-    cells: list[str] = []
+    cells: list[tuple[str, str]] = []
+    style = ""
     p = 0
     i, n = 0, len(raw)
     while i < n:
         c = raw[i]
+        if c == "\x1b":
+            m = _SGR_RE.match(raw, i)
+            if m:
+                style = _sgr_on(style, m.group(1))
+                i = m.end()
+                continue
+            i += 1  # escape lain: abaikan
+            continue
         if c == "\r":
             p = 0
             i += 1
             continue
         if c == "\n":
-            out.append("".join(cells).rstrip("\t ") + "\n")
+            out.append(_render_cells(cells, len(cells)) + "\n")
             cells = []
             p = 0
             i += 1
@@ -1133,9 +1202,9 @@ def termify(raw: str) -> str:
         if c == "\t":
             while True:
                 if p >= len(cells):
-                    cells.append(" ")
+                    cells.append((style, " "))
                 else:
-                    cells[p] = " "
+                    cells[p] = (style, " ")
                 p += 1
                 if p % 8 == 0:
                     break
@@ -1146,13 +1215,13 @@ def termify(raw: str) -> str:
             continue
         if p >= len(cells):
             while len(cells) < p:
-                cells.append(" ")
-            cells.append(c)
+                cells.append((style, " "))
+            cells.append((style, c))
         else:
-            cells[p] = c
+            cells[p] = (style, c)
         p += 1
         i += 1
-    return "".join(out) + "".join(cells).rstrip("\t ")
+    return "".join(out) + _render_cells(cells, len(cells))
 
 
 def _tail_parts(parts: list[str], budget: int) -> str:
@@ -1257,7 +1326,9 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
             if rdy:
                 raw = proc.stdout.read1(4096)
                 if raw:
-                    text = _clean_output_chunk(raw.decode("utf-8", errors="replace"))
+                    # Stream apt: biarkan \r + warna SGR lewat agar dashboard
+                    # bisa merender terminal sungguhan (bukan teks polos).
+                    text = _keep_sgr(raw.decode("utf-8", errors="replace"))
                     if text:
                         output_parts.append(text)
                         raw_len += len(text)
@@ -1270,12 +1341,10 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
                 answer, why = _apt_prompt_answer(tail)
                 note = ""
                 if interactive:
-                    # JANGAN menjawab sendiri: mode interaktif exist justru
-                    # supaya admin yang memutuskan. Cukup ingatkan di terminal.
-                    if _looks_like_prompt(tail) and not hint_shown:
-                        hint_shown = True
-                        note = ("\n[pantau] Menunggu jawaban Anda — ketik di kotak "
-                                "jawaban di bawah terminal (Enter = pakai bawaan).\n")
+                    # JANGAN menjawab dan jangan juga menulis apa pun: seperti
+                    # di terminal, proses diam sampai admin mengetik baris
+                    # berikutnya (kursor berkedip di UI yang menandakan).
+                    pass
                 elif answer and prompt_answers < 3:
                     try:
                         proc.stdin.write(answer.encode())
@@ -1348,7 +1417,7 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
     except Exception:
         apt = None
 
-    partial = "".join(output_parts).strip("\n")[:40000]
+    partial = termify(_tail_parts(output_parts, 40000)).strip("\n")
     if failed:
         result_ok = False
         msg = (errmsg + ("\n\n[output sebagian]\n" + partial)) if partial else errmsg

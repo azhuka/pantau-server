@@ -61,45 +61,46 @@ journalctl -u agent_pantau -f
 - **Agen pantau:** jalankan ulang 2 baris installer di atas (kode agen diperbarui, konfigurasi tidak ditimpa).
 
 > Tombol **Reboot OS / Power Off** di halaman Rincian memerlukan agen pantau **v3.7+**
-> (upgrade interaktif memerlukan **v3.8+**)
+> (terminal upgrade interaktif memerlukan **v3.9+**)
 > (badge di halaman Rincian menampilkan versi agen setelah update). Kode agen lama
 > menolak perintah itu dan menampilkan hasil "Aksi tidak dikenal".
 
 ## Update OS dari Dashboard (tombol Update / Upgrade di halaman Rincian)
 
-Ada dua cara menjalankan upgrade paket, keduanya lewat wrapper `pantau-apt`:
+Kotak terminal di halaman Rincian adalah **terminal sungguhan**: output streamed
+dari server (termasuk warna dan `
+` progress yang menimpa baris, sama seperti
+SSH), dan pada mode interaktif Anda **mengetik jawaban langsung di dalamnya**.
 
 ### 1. Tombol **Upgrade** — interaktif (default)
 
-- `apt-get upgrade` berjalan di pty sungguhan, jadi kalau `dpkg` bertanya
-  (mis. `Configuration file '/etc/zabbix/zabbix_agent2.conf' ... [default=N] ?`),
-  pertanyaannya **muncul di kotak terminal** di halaman Rincian.
-- Anda menjawab lewat **kotak jawaban** di bawah terminal (tombol cepat
-  `Y` / `N` / `⏎ bawaan` / `D` / `Z`, atau ketik bebas lalu Enter). Karakter
-  kontrol dibuang; satu jawaban hanya terkirim sekali.
-- **Agen tidak menebak jawaban Anda** — kalau proses diam, terminal hanya menampilkan
-  pengingat "Menunggu jawaban Anda". Timeout 1 jam, lalu proses dihentikan paksa.
-- Paket yang perlu-an perlu keputusan Anda (mis. paket vendor) bisa ditolak
-  dengan `N`; konfigurasi lokal Anda tidak ditimpa diam-diam.
-- Jangan menutup halaman/proses sebelum selesai; halaman boleh di-refresh —
-  kotak jawaban ikut tersambung kembali.
+- Berjalan di pty, jadi `dpkg` boleh berhenti dan bertanya:
+  `zabbix_agent2.conf (Y/I/N/O/D/Z) [default=N] ?`
+- Kursor berkedip muncul di baris baru di bawah output — ketik jawabannya lalu
+  `Enter`. `↑`/`↓` memanggil baris sebelumnya, `Enter` saja memakai pilihan bawaan.
+- **Agen tidak menebak**: tidak ada auto-answer pada mode ini, dan terminal pun
+  tidak disisipkan catatan tambahan — karakternya digema pty seperti di SSH.
+  Timeout 1 jam kalau dibiarkan sampai selesai.
+- Laju dashboard menyalin semua yang diketik ke proses di server; jawaban sampai
+  ke sana apa adanya (kontrol/ESC dibuang, maks 200 karakter).
 
 ### 2. Tombol **otomatis** — non-interaktif
 
 - Tanpa pertanyaan sama sekali: konfigurasi yang sudah Anda ubah sendiri
-  **tidak ditimpa** (setara menjawab "N" pada prompt `dpkg`), file konfigurasi
-  baru memakai bawaan paket, dan `needrestart` merestart tanpa bertanya.
-- Cocok untuk update terjadwal/massal di banyak server.
+  **tidak ditimpa** (setara menjawab "N"), file baru memakai bawaan paket,
+  `needrestart` merestart tanpa bertanya. Layak untuk update terjadwal/massal.
+- Mode ini tetap dijaga *watchdog* agen: kalau muncul prompt tak dikenal,
+  agen menjawabkan sekali dan menjelaskan lewat output (atau memberi petunjuk
+  `sudo dpkg --configure -a`).
 
 ### Keduanya
 
 - **Update OS** hanya menyegarkan daftar paket — selalu aman, tanpa pertanyaan.
 - Kalau ada proses `apt`/`dpkg` lain yang sedang jalan, update **ditolak** dengan
   pesan jelas — bukan merusak paket. Tunggu proses itu selesai lalu ulangi.
-- Bila proses menggantung tanpa prompt yang dikenali, selesaikan manual:
-  `sudo dpkg --configure -a` lalu `sudo apt-get -f install`.
+- Halaman boleh di-refresh di tengah jalan; terminal & kursor ikut tersambung.
 
-Butuh agen **v3.8+** untuk kotak jawaban interaktif.
+Butuh agen **v3.9+** untuk terminal interaktif.
 
 ### Kalau update sempat menggantung / terputus
 

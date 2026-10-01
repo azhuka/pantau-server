@@ -151,6 +151,9 @@ def _parse_iso_dt(value, default=None):
 
 
 _CLEAN_CTRL_RE = re.compile(r"[\x00-\x08\x0b-\x1f]")
+# Kode warna SGR (ESC[...m) — dipertahankan untuk render terminal
+_TERM_SGR_RE = re.compile(r"\x1b\[[0-9;]*m")
+_ANSI_ANY_RE = re.compile(r"\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|.)")
 
 
 def _clean_result(value, maxchars: int = 40000, maxlines: int = 2000) -> str:
@@ -170,6 +173,42 @@ def _clean_result(value, maxchars: int = 40000, maxlines: int = 2000) -> str:
         clean_lines = clean_lines[-maxlines:]
     clean = "\n".join(clean_lines)
     return clean[-maxchars:]
+
+
+def _clean_terminal(value, maxchars: int = 200000, maxlines: int = 4000) -> str:
+    """Sanitasi stream terminal (apt) TANPA merusak tampilan.
+
+    Berbeda dengan `_clean_result`, carriage return, backspace, dan kode warna
+    SGR HARUS dipertahankan: kotak terminal di dashboard merender ulang
+    kodenya supaya hasilnya sama seperti menjalankan apt lewat SSH (progress
+    `\r` menimpa baris yang sama, warna tetap tampil). Escape sequence lain
+    dan karakter kontrol lain dibuang.
+    """
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        value = str(value)
+
+    def _sgr_only(m: re.Match) -> str:
+        return m.group(0) if _TERM_SGR_RE.fullmatch(m.group(0)) else ""
+
+    value = _ANSI_ANY_RE.sub(_sgr_only, value)
+    # SGR disisihkan dulu dengan placeholder, baru karakter kontrol dibuang
+    # (ESC pun ikut terbuang), lalu placeholder dikembalikan sebagai escape.
+    kept: list[str] = []
+
+    def _stash(m: re.Match) -> str:
+        kept.append(m.group(0))
+        return f"\ue000{len(kept) - 1}\ue001"
+
+    value = _TERM_SGR_RE.sub(_stash, value)
+    value = "".join(c for c in value if c >= " " or c in "\n\r\b\t\ue000\ue001")
+    for idx, code in enumerate(kept):
+        value = value.replace(f"\ue000{idx}\ue001", code)
+    lines = value.split("\n")
+    if len(lines) > maxlines:
+        lines = lines[-maxlines:]
+    return "\n".join(lines)[-maxchars:]
 
 
 def _clamp_int(value, default=None, lo: int = 0, hi: int = 2 ** 31 - 1):
@@ -2557,7 +2596,8 @@ def api_logs_progress(
         return {"ok": True, "ignored": True}  # proses sudah selesai/kedaluwarsa
 
     new_result = str(chunk) if body.get("replace") else (req.result or "") + str(chunk)
-    req.result = _clean_result(new_result, APT_STREAM_MAXCHARS, APT_STREAM_MAXLINES)
+    # stream terminal: CR + warna SGR harus utuh (dirender ulang di UI)
+    req.result = _clean_terminal(new_result, APT_STREAM_MAXCHARS, APT_STREAM_MAXLINES)
     req.updated_at = datetime.utcnow()
     db.commit()
     return {"ok": True}
@@ -2645,9 +2685,8 @@ def api_logs_result(
         raise HTTPException(status_code=404, detail="Log request not found")
 
     req.status = status
-    req.result = _clean_result(
-        body.get("result"), APT_STREAM_MAXCHARS, APT_STREAM_MAXLINES,
-    )
+    clean = _clean_terminal if req.unit in APT_UNITS else _clean_result
+    req.result = clean(body.get("result"), APT_STREAM_MAXCHARS, APT_STREAM_MAXLINES)
     req.updated_at = datetime.utcnow()
     db.commit()
     return {"ok": True}
