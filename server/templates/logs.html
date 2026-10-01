@@ -1,24 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Log Dashboard - Pantau Server{% endblock %}
+{% block title %}Log Server - Pantau Server{% endblock %}
 {% block content %}
 <div class="topbar">
-  <h2>Log &amp; Performa Server Pusat</h2>
-  <div class="mono" style="font-size:12px"><span id="sys-host">-</span> &middot; up <span id="sys-up">-</span></div>
+  <h2>Log Server Pusat</h2>
+  <div class="mono" style="font-size:12px"><span id="sys-host">-</span> &middot; aktif selama <span id="sys-up">-</span></div>
 </div>
 
 <div class="stats-grid">
   <div class="stat-card">
-    <div class="label">CPU Usage</div>
+    <div class="label">CPU</div>
     <div class="value" id="sys-cpu">-</div>
     <div style="margin-top:8px" class="meter"><div class="meter-bar" id="sys-cpu-bar" style="width:0%"></div></div>
   </div>
   <div class="stat-card">
-    <div class="label">Memory</div>
+    <div class="label">Memori</div>
     <div class="value" id="sys-mem">-</div>
     <div style="margin-top:8px" class="meter"><div class="meter-bar" id="sys-mem-bar" style="width:0%"></div></div>
   </div>
   <div class="stat-card">
-    <div class="label">Load Average (1/5/15)</div>
+    <div class="label">Beban (1/5/15 menit)</div>
     <div class="value" id="sys-load" style="font-size:16px">-</div>
   </div>
   <div class="stat-card">
@@ -30,7 +30,7 @@
 <div class="card">
   <div class="card-header"><h3>Top Proses (CPU)</h3></div>
   <table>
-    <thead><tr><th>PID</th><th>Proses</th><th>State</th><th>CPU %</th><th>Mem RSS</th></tr></thead>
+    <thead><tr><th>PID</th><th>Proses</th><th>Status</th><th>CPU %</th><th>Memori</th></tr></thead>
     <tbody id="sys-procs"><tr><td colspan="5" class="mono">memuat…</td></tr></tbody>
   </table>
 </div>
@@ -38,17 +38,18 @@
 <div class="card">
   <div class="card-header"><h3>Disk</h3></div>
   <table>
-    <thead><tr><th>Mount</th><th>Type</th><th>Total</th><th>Terpakai</th><th>%</th></tr></thead>
+    <thead><tr><th>Lokasi</th><th>Tipe</th><th>Total</th><th>Terpakai</th><th>Terpakai %</th></tr></thead>
     <tbody id="sys-disks"><tr><td colspan="5" class="mono">memuat…</td></tr></tbody>
   </table>
 </div>
 
 <div class="card">
   <div class="card-header">
-    <h3>Log Service (journald) — tail live per unit</h3>
+    <h3>Log Service Pusat</h3>
     <div style="display:flex;gap:8px;align-items:center">
-      <select id="svc-unit" style="padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px"></select>
-      <button class="btn btn-ghost btn-sm" onclick="svcLoad()">Muat ulang</button>
+      <select id="svc-unit" aria-label="Pilih service"
+              style="padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px"></select>
+      <span style="font-size:11px;color:var(--dim)">diperbarui otomatis</span>
     </div>
   </div>
   <pre id="svclog" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;height:55vh;overflow:auto;white-space:pre;color:var(--text)">Memuat daftar service…</pre>
@@ -56,8 +57,9 @@
 
 <div class="card">
   <div class="card-header">
-    <h3>Log Aplikasi Pusat — {{ log_file }}</h3>
-    <span id="status" class="badge badge-up" style="opacity:.2;transition:opacity .3s">live</span>
+    <h3>Log Aplikasi Pusat</h3>
+    <span id="status" class="badge badge-up" style="opacity:.35;transition:opacity .3s"
+          title="Diperbarui otomatis setiap 3 detik">live</span>
   </div>
   <pre id="logview" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;height:60vh;overflow:auto;white-space:pre;color:var(--text)">Memuat…</pre>
 </div>
@@ -142,13 +144,14 @@ async function pollLog() {
     if (!r.ok) return;
     const d = await r.json();
     if (!d.exists) {
-      el.textContent = '(file log belum ada: ' + (d.path || '-') + ')';
+      el.textContent = '(belum ada log)';
       return;
     }
     renderLog(d.lines);
     const st = document.getElementById('status');
     st.style.opacity = 1;
-    setTimeout(() => { st.style.opacity = .2; }, 300);
+    st.textContent = 'live \u00b7 ' + new Date().toLocaleTimeString('id-ID', {hour12: false});
+    setTimeout(() => { st.style.opacity = .35; }, 1200);
   } catch (e) { /* abaikan */ }
 }
 
@@ -159,7 +162,7 @@ async function pollSys() {
   } catch (e) { /* abaikan */ }
 }
 
-const extraLabels = {SYSLOG: 'syslog (file)', AUTH: 'auth.log (file)', SYSTEM: 'journal boot (semua)'};
+const extraLabels = {SYSLOG: 'Log sistem (syslog)', AUTH: 'Log login (auth.log)', SYSTEM: 'Semua log boot'};
 
 async function svcInit() {
   try {

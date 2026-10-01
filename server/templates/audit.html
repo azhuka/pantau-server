@@ -1,12 +1,26 @@
 {% extends "base.html" %}
+{% block title %}Audit - Pantau Server{% endblock %}
+{% set st_label = {'PENDING': 'Menunggu', 'EXECUTING': 'Dinyalakan', 'SUCCESS': 'Berhasil', 'FAILED': 'Gagal'} %}
+{% set st_cls = {'PENDING': 'inactive', 'EXECUTING': 'inactive', 'SUCCESS': 'up', 'FAILED': 'danger'} %}
 {% block content %}
-<h2 style="margin:0 0 6px">Audit Log</h2>
-<p style="color:var(--dim);font-size:13px;margin:0 0 20px">
-  Jejak aksi admin: login, kelola server/service/user, dan perintah remote (restart, blokir IP, update paket, restart agen)
-  beserta siapa yang mengeluarkannya dan hasilnya.
-</p>
+<div class="topbar">
+  <h2>Audit</h2>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span id="audit-live" class="badge badge-up" style="opacity:.35;transition:opacity .3s" title="Diperbarui otomatis setiap 5 detik">live</span>
+    <button type="button" class="btn btn-ghost btn-sm" id="audit-refresh">Perbarui</button>
+  </div>
+</div>
 
 <div class="card">
+  <div class="card-header">
+    <h3>Jejak Aksi Admin</h3>
+    <span style="font-size:12px;color:var(--dim)">{{ rows|length }} terbaru</span>
+  </div>
+  <p style="font-size:12px;color:var(--dim);margin:0 0 14px">
+    Login, kelola server/service/user, dan perintah remote (restart, blokir IP, update paket,
+    restart agen) — beserta siapa yang mengeluarkannya dan hasilnya.
+  </p>
+
   <form method="get" action="/audit" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
     <select name="action" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
       <option value="">Semua aksi</option>
@@ -22,9 +36,9 @@
 
   <table>
     <thead>
-      <tr><th style="width:150px">Waktu</th><th>User</th><th>Aksi</th><th>Target</th><th style="width:80px">Status</th><th>Hasil</th></tr>
+      <tr><th style="width:150px">Waktu</th><th>User</th><th>Aksi</th><th>Target</th><th style="width:90px">Status</th><th>Hasil</th></tr>
     </thead>
-    <tbody>
+    <tbody id="audit-tbody">
       {% for r in rows %}
       <tr>
         <td class="mono" style="white-space:nowrap">{{ r.t.strftime('%d %b %Y %H:%M:%S') }}</td>
@@ -39,7 +53,7 @@
         <td style="font-size:13px">{{ r.target }}</td>
         <td>
           {% if r.status %}
-            <span class="badge badge-{{ {'PENDING':'inactive','EXECUTING':'inactive','SUCCESS':'up','FAILED':'danger'}.get(r.status, 'inactive') }}">{{ r.status }}</span>
+            <span class="badge badge-{{ st_cls.get(r.status, 'inactive') }}">{{ st_label.get(r.status, r.status) }}</span>
           {% else %}<span style="color:var(--dim)">—</span>{% endif %}
         </td>
         <td style="font-size:12px;color:var(--dim)">{{ r.result }}</td>
@@ -51,5 +65,35 @@
   </table>
 </div>
 
-<p style="font-size:12px;color:var(--dim)">Menampilkan maks 250 baris terbaru. Status perintah remote diperbarui otomatis setelah agen mengeksekusi.</p>
+<p style="font-size:12px;color:var(--dim)">Menampilkan maks 250 baris terbaru. Status perintah remote berubah otomatis setelah agen mengeksekusinya.</p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Perbarui isi tabel tanpa reload penuh supaya filter, posisi scroll,
+// dan fokus input pencarian tidak hilang.
+function auditPatch(html) {
+  const from = new DOMParser().parseFromString(html, 'text/html').getElementById('audit-tbody');
+  const to = document.getElementById('audit-tbody');
+  if (from && to && from.innerHTML !== to.innerHTML) to.innerHTML = from.innerHTML;
+}
+
+async function auditRefresh() {
+  try {
+    const r = await fetch(location.pathname + location.search, {credentials: 'same-origin'});
+    if (!r.ok) return;
+    auditPatch(await r.text());
+    const badge = document.getElementById('audit-live');
+    if (badge) {
+      badge.style.opacity = 1;
+      badge.textContent = 'live · ' + new Date().toLocaleTimeString('id-ID', {hour12: false});
+      setTimeout(() => { badge.style.opacity = .35; }, 1200);
+    }
+  } catch (e) { /* abaikan, coba lagi 5 detik lagi */ }
+}
+
+document.getElementById('audit-refresh').addEventListener('click', auditRefresh);
+setInterval(auditRefresh, 5000);
+setTimeout(auditRefresh, 400);
+</script>
 {% endblock %}
