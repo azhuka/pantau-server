@@ -106,7 +106,7 @@
         <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-cpu-bar" style="width:0%"></div></div>
       </div>
       <div class="stat-card">
-        <div class="label">Load Average (1/5/15)</div>
+        <div class="label">Beban (1/5/15 menit)</div>
         <div class="value" style="font-size:18px" id="sys-load">-</div>
       </div>
       <div class="stat-card">
@@ -462,11 +462,16 @@ document.querySelectorAll('#detail-tabs .tab').forEach(b =>
 })();
 
 // ---------- helpers ----------
+const badgeText = {
+  up: 'up', down: 'down', success: 'berhasil', failed: 'gagal',
+  pending: 'menunggu', executing: 'dijalankan', unknown: 'tidak diketahui',
+};
 function badgeHtml(status) {
   const cls = status === 'up' || status === 'success' ? 'badge-up'
             : status === 'down' || status === 'failed' ? 'badge-down'
             : 'badge-muted';
-  return '<span class="badge ' + cls + '">' + status + '</span>';
+  return '<span class="badge ' + cls + '">'
+       + (badgeText[status] || status) + '</span>';
 }
 
 function restartFormHtml(sid, svcId, name) {
@@ -476,8 +481,8 @@ function restartFormHtml(sid, svcId, name) {
 }
 
 const resultLabel = {
-  pending: 'Pending', executing: 'Menjalankan…',
-  success: 'success', failed: 'failed',
+  pending: 'menunggu', executing: 'dijalankan…',
+  success: 'berhasil', failed: 'gagal',
 };
 
 function fmtAptLast(v) {

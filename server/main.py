@@ -1849,8 +1849,8 @@ SECURITY_TIPS = {
     "warning": "Login SSH gagal dalam jumlah mencurigakan — cek IP sumber & akun; blokir bila repetitif; pasang fail2ban.",
     "info": "Ada login SSH gagal — bisa typo password; tetap pantau aktivitas di halaman Aktivitas User.",
 }
-APT_TIP = ("Update paket aman dari Dashboard (kartu Paket OS Update) "
-           "atau manual: sudo apt update && sudo apt upgrade")
+APT_TIP = ("Buka Rincian server lalu pilih Update OS atau Upgrade. "
+           "Di server bisa juga manual: sudo apt update && sudo apt upgrade")
 SVC_DOWN_TIP = ("Cek status: sudo systemctl status {name} | Balik hidupkan: "
                 "sudo systemctl restart {name} | Log: journalctl -u {name} -n 50")
 SVC_NODATA_TIP = "Pastikan service benar-benar ada & port terbuka (ss -tlnp); agen memindai ulang tiap siklus."
