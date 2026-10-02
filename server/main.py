@@ -3864,6 +3864,23 @@ async def api_agent_terminal_close(
     return {"ok": True}
 
 
+@app.get("/servers/{sid}/files", response_class=HTMLResponse)
+def page_server_files(request: Request, sid: int, db: Session = Depends(get_db)):
+    """Halaman antarmuka dedicated File Manager untuk server klien."""
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Akses ditolak: File Manager hanya untuk admin")
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+    return tpl(request, "file_manager.html", {
+        "server": server,
+        "user": user,
+    })
+
+
 @app.get("/api/servers/{sid}/files/ls")
 async def api_server_files_ls(
     sid: int,
