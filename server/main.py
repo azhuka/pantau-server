@@ -922,9 +922,16 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             LogRequest.unit == SHELL_UNIT,
             LogRequest.status.in_(["pending", "executing"]),
         )
-        .order_by(LogRequest.created_at)
+        .order_by(LogRequest.created_at.desc())
         .first()
     )
+    if shell_run:
+        stale_limit = datetime.utcnow() - timedelta(seconds=25)
+        if (shell_run.updated_at and shell_run.updated_at < stale_limit) or (shell_run.created_at < stale_limit and shell_run.status == "pending"):
+            shell_run.status = "failed"
+            shell_run.result = (shell_run.result or "").strip() + "\n[sesi shell kedaluwarsa]"
+            db.commit()
+            shell_run = None
     return {
         "services": svc_list, "commands": cmd_list,
         "online": not _server_stale(server),
@@ -2890,7 +2897,25 @@ def _expire_stale_logs(db: Session, server_id: int):
         r.status = "failed"
         r.result = "timeout: agen tidak merespons"
         r.updated_at = datetime.utcnow()
-    if stale:
+
+    # Expire sesi SHELL yang sudah mati / agen tidak lagi polling input
+    shell_cutoff = datetime.utcnow() - timedelta(seconds=25)
+    stale_shells = (
+        db.query(LogRequest)
+        .filter(
+            LogRequest.server_id == server_id,
+            LogRequest.unit == SHELL_UNIT,
+            LogRequest.status.in_(["pending", "executing"]),
+            (LogRequest.updated_at < shell_cutoff) | (LogRequest.created_at < shell_cutoff),
+        )
+        .all()
+    )
+    for r in stale_shells:
+        r.status = "failed"
+        r.result = (r.result or "").strip() + "\n[sesi shell terputus: tidak ada respons dari agen]"
+        r.updated_at = datetime.utcnow()
+
+    if stale or stale_shells:
         db.commit()
 
 
@@ -3415,8 +3440,6 @@ def api_logs_request(
         if busy:
             raise HTTPException(status_code=409, detail="Proses apt lain masih berjalan")
     if is_shell:
-        # Satu sesi shell per server: output dialirkan lewat kanal yang sama,
-        # jadi dua sesi akan saling menimpa tampilan.
         busy = (
             db.query(LogRequest)
             .filter(
@@ -3427,7 +3450,15 @@ def api_logs_request(
             .first()
         )
         if busy:
-            raise HTTPException(status_code=409, detail="Sesi shell sudah terbuka di server ini")
+            stale_limit = datetime.utcnow() - timedelta(seconds=20)
+            is_stale = (busy.updated_at and busy.updated_at < stale_limit) or (busy.created_at < stale_limit and busy.status == "pending")
+            if is_stale or body.get("force"):
+                busy.status = "failed"
+                busy.result = (busy.result or "").strip() + "\n[sesi shell lama ditutup untuk membuka sesi baru]"
+                busy.updated_at = datetime.utcnow()
+                db.commit()
+            else:
+                raise HTTPException(status_code=409, detail="Sesi shell sudah terbuka di server ini")
 
     _expire_stale_logs(db, sid)
 
@@ -3736,6 +3767,33 @@ async def api_server_files_rm(
         raise HTTPException(status_code=400, detail=res.get("error", "Gagal menghapus"))
 
     _audit(db, user.username, "file_rm", f"{server.hostname}:{path}", "berhasil")
+    db.commit()
+    return res
+
+
+@app.post("/api/servers/{sid}/files/rename")
+async def api_server_files_rename(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    old_path = str(body.get("old_path", "")).strip()
+    new_path = str(body.get("new_path", "")).strip()
+    if not old_path or not new_path:
+        raise HTTPException(status_code=400, detail="Path asal dan tujuan tidak boleh kosong")
+
+    res = await file_dispatcher.dispatch(sid, "rename", {"old_path": old_path, "new_path": new_path})
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal mengganti nama file/folder"))
+
+    _audit(db, user.username, "file_rename", f"{server.hostname}:{old_path} -> {new_path}", "berhasil")
     db.commit()
     return res
 

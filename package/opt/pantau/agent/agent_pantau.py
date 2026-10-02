@@ -1289,6 +1289,8 @@ def termify(raw: str) -> str:
     Fungsi ini mereplikasi sel kursor dan buffer layar sehingga hasil yang
     tampil di dashboard persis sama dengan layar SSH yang sesungguhnya.
     """
+    if "Session terminated" in raw:
+        raw = re.sub(r"\n?Session terminated, killing shell\.\.\..*$", "", raw, flags=re.MULTILINE)
     out: list[str] = []
     cells: list[tuple[str, str]] = []
     style = ""

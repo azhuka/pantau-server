@@ -356,6 +356,31 @@ def action_rm(path: str) -> None:
     ok_exit({"path": path, "deleted": True})
 
 
+def action_rename(old_path: str, new_path: str) -> None:
+    old_path = os.path.abspath(old_path)
+    new_path = os.path.abspath(new_path)
+    real_old = os.path.realpath(old_path)
+
+    if real_old in PROTECTED_PATHS or old_path in PROTECTED_PATHS:
+        err_exit(f"Aksi ditolak: '{old_path}' adalah direktori sistem kritis yang dilindungi.")
+    if not os.path.exists(old_path) and not os.path.islink(old_path):
+        err_exit(f"File atau folder asal tidak ditemukan: {old_path}")
+    if os.path.exists(new_path) or os.path.islink(new_path):
+        err_exit(f"Target '{new_path}' sudah ada")
+    parent_new = os.path.dirname(new_path)
+    if not os.path.exists(parent_new):
+        err_exit(f"Direktori target tidak ditemukan: {parent_new}")
+
+    try:
+        shutil.move(old_path, new_path)
+    except PermissionError:
+        err_exit(f"Akses ditolak memindahkan/mengganti nama: {old_path}")
+    except OSError as e:
+        err_exit(f"Gagal memindahkan/mengganti nama: {e}")
+
+    ok_exit({"old_path": old_path, "new_path": new_path, "renamed": True})
+
+
 def action_chmod(path: str, mode: str) -> None:
     path = os.path.abspath(path)
     if not os.path.exists(path):
@@ -493,6 +518,9 @@ def main():
                 params["mode"] = sys.argv[3]
         elif action == "rm" and len(sys.argv) > 2:
             params["path"] = sys.argv[2]
+        elif action == "rename" and len(sys.argv) > 3:
+            params["old_path"] = sys.argv[2]
+            params["new_path"] = sys.argv[3]
         elif action == "chmod" and len(sys.argv) > 3:
             params["path"] = sys.argv[2]
             params["mode"] = sys.argv[3]
@@ -514,6 +542,8 @@ def main():
         action_touch(params.get("path", ""))
     elif action == "rm":
         action_rm(params.get("path", ""))
+    elif action == "rename":
+        action_rename(params.get("old_path", ""), params.get("new_path", ""))
     elif action == "chmod":
         action_chmod(params.get("path", ""), params.get("mode", "0644"))
     elif action == "chown":

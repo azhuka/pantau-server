@@ -72,6 +72,7 @@
       <button class="btn btn-success" id="apt-update-btn" onclick="aptAction('APT_UPDATE')">&#8635;&nbsp;Update OS</button>
       <button class="btn btn-danger" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled>Upgrade&nbsp;&#9650;</button>
       <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" title="Buka / sembunyikan terminal bawaan" style="border:1px solid #334155;color:#38bdf8">&#62;_&nbsp;Terminal</button>
+      <button class="btn btn-ghost btn-sm" onclick="openFileManager()" title="Buka Manajer Berkas" style="border:1px solid #334155;color:#a78bfa">&#128193;&nbsp;Berkas</button>
       <span class="hero-sep"></span>
       <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -109,7 +110,7 @@
       </div>
       <div class="terminal-actions">
         <span id="apt-status" class="terminal-status-badge"></span>
-        <button type="button" class="terminal-btn-icon terminal-btn-reconnect" id="term-reconnect-btn" onclick="getTerm().connect()" style="display:none" title="Buka Sesi Shell Baru">&#8635;&nbsp;Sambung Ulang</button>
+        <button type="button" class="terminal-btn-icon terminal-btn-reconnect" id="term-reconnect-btn" onclick="getTerm().connect(true)" style="display:none" title="Buka Sesi Shell Baru">&#8635;&nbsp;Sambung Ulang</button>
         <button type="button" class="terminal-btn-icon" onclick="getTerm().clearScreen()" title="Bersihkan Layar Konsol">&#10005;&nbsp;Clear</button>
         <button type="button" class="terminal-btn-icon" onclick="toggleTerminalView()" title="Sembunyikan Terminal">&#x2715;&nbsp;Tutup</button>
       </div>
@@ -466,59 +467,86 @@
   </div>
   {% else %}
   <style>
-    .fm-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-    .fm-breadcrumbs { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 13px; padding: 6px 10px; background: var(--bg); border-radius: 6px; border: 1px solid var(--border); flex: 1; min-width: 220px; }
-    .fm-crumb { color: var(--dim); cursor: pointer; text-decoration: none; padding: 2px 4px; border-radius: 4px; }
+    .fm-wrapper { display: flex; flex-direction: column; gap: 12px; }
+    .fm-toolbar-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .fm-nav-group { display: flex; align-items: center; gap: 4px; }
+    .fm-nav-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); cursor: pointer; transition: all 0.15s ease; font-size: 14px; }
+    .fm-nav-btn:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); background: var(--hover); }
+    .fm-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    
+    .fm-address-bar { display: flex; align-items: center; flex: 1; min-width: 260px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; position: relative; height: 34px; box-sizing: border-box; }
+    .fm-address-bar:focus-within { border-color: var(--blue); }
+    .fm-breadcrumbs { display: flex; align-items: center; gap: 2px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; flex: 1; }
+    .fm-breadcrumbs::-webkit-scrollbar { display: none; }
+    .fm-crumb { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 4px; color: var(--dim); cursor: pointer; font-size: 13px; font-weight: 500; text-decoration: none; user-select: none; }
     .fm-crumb:hover { color: var(--blue); background: var(--hover); }
-    .fm-crumb-sep { color: var(--border); user-select: none; }
     .fm-crumb.active { color: var(--text); font-weight: 600; cursor: default; }
-    .fm-table th { padding: 8px 12px; text-align: left; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+    .fm-crumb-sep { color: var(--border); font-size: 11px; margin: 0 1px; user-select: none; }
+    .fm-address-toggle { padding: 4px 6px; font-size: 12px; color: var(--dim); background: none; border: none; cursor: pointer; border-radius: 4px; }
+    .fm-address-toggle:hover { color: var(--text); background: var(--hover); }
+    
+    .fm-path-form { display: none; width: 100%; align-items: center; gap: 6px; }
+    .fm-path-input { width: 100%; background: transparent; border: none; color: var(--text); font-size: 13px; font-family: monospace; outline: none; }
+    
+    .fm-search-input { width: 180px; height: 34px; padding: 6px 10px; font-size: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); outline: none; }
+    .fm-search-input:focus { border-color: var(--blue); }
+
+    .fm-status-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--dim); padding: 8px 12px; background: var(--bg); border-radius: 6px; border: 1px solid var(--border); flex-wrap: wrap; }
+    .fm-disk-meter { display: flex; align-items: center; gap: 8px; }
+    .fm-disk-bar { width: 120px; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; }
+    .fm-disk-fill { height: 100%; background: var(--blue); border-radius: 4px; transition: width 0.3s ease; }
+
+    .fm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .fm-table th { padding: 10px 12px; text-align: left; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; }
     .fm-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     .fm-row:hover td { background: var(--hover); }
     .fm-item-name { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; color: var(--text); text-decoration: none; word-break: break-all; }
     .fm-item-name:hover { color: var(--blue); }
-    .fm-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+    .fm-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; user-select: none; }
+    .fm-actions-cell { text-align: right; white-space: nowrap; }
+    .fm-act-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: 4px; background: transparent; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+    .fm-act-btn:hover { background: var(--hover); border-color: var(--border); }
+
     .fm-modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(3px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    .fm-modal-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 16px 40px rgba(0,0,0,0.6); overflow: hidden; }
-    .fm-modal-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
-    .fm-modal-body { padding: 18px; overflow-y: auto; flex: 1; }
-    .fm-modal-footer { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
-    .fm-editor-textarea { width: 100%; height: 60vh; background: var(--bg); color: #f8fafc; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; line-height: 1.55; border: 1px solid var(--border); border-radius: 6px; padding: 12px; resize: vertical; tab-size: 2; outline: none; }
+    .fm-modal-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 16px 40px rgba(0,0,0,0.6); overflow: hidden; transition: all 0.2s ease; }
+    .fm-modal-card.is-fullscreen { max-width: 98vw; width: 98vw; height: 96vh; max-height: 96vh; border-radius: 8px; }
+    .fm-modal-header { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 14px; background: var(--bg); }
+    .fm-modal-body { padding: 16px 18px; overflow-y: auto; flex: 1; }
+    .fm-modal-footer { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; background: var(--bg); }
+    .fm-editor-textarea { width: 100%; height: 60vh; background: #0f172a; color: #f8fafc; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; line-height: 1.55; border: 1px solid var(--border); border-radius: 6px; padding: 12px; resize: none; tab-size: 2; outline: none; flex: 1; box-sizing: border-box; }
     .fm-editor-textarea:focus { border-color: var(--blue); }
   </style>
 
-  <div class="card" id="fm-container" style="padding:16px">
-    <!-- Toolbar Atas -->
-    <div class="fm-toolbar">
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex:1">
-        <!-- Quick Jump Select -->
-        <select id="fm-quick-jump" onchange="fmJump(this.value)" style="font-size:12px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer">
-          <option value="">⚡ Lompat Cepat...</option>
-          <option value="/var/www">/var/www (Web)</option>
-          <option value="/etc/nginx">/etc/nginx (Nginx)</option>
-          <option value="/etc/apache2">/etc/apache2 (Apache)</option>
-          <option value="/var/log">/var/log (Logs)</option>
-          <option value="/etc/pantau">/etc/pantau (Pantau)</option>
-          <option value="/opt">/opt (Aplikasi)</option>
-          <option value="/home">/home (Pengguna)</option>
-          <option value="/root">/root (Root Home)</option>
-          <option value="/tmp">/tmp (Temp)</option>
-          <option value="/">/ (Root FS)</option>
-        </select>
-
-        <!-- Breadcrumbs bar -->
-        <div id="fm-breadcrumbs" class="fm-breadcrumbs">
-          <!-- Diisi via JS -->
+  <div class="card fm-wrapper" id="fm-container" style="padding:16px">
+    <!-- Toolbar Navigasi & Aksi -->
+    <div class="fm-toolbar-top">
+      <div style="display:flex;gap:8px;align-items:center;flex:1;min-width:320px;flex-wrap:wrap">
+        <!-- Navigation buttons: Back, Forward, Up, Home, Refresh -->
+        <div class="fm-nav-group">
+          <button type="button" class="fm-nav-btn" id="fm-btn-back" onclick="fmGoBack()" title="Kembali" disabled>&larr;</button>
+          <button type="button" class="fm-nav-btn" id="fm-btn-forward" onclick="fmGoForward()" title="Maju" disabled>&rarr;</button>
+          <button type="button" class="fm-nav-btn" id="fm-btn-up" onclick="fmGoUp()" title="Ke Folder Induk">&uarr;</button>
+          <button type="button" class="fm-nav-btn" id="fm-btn-home" onclick="fmGoHome()" title="Ke Direktori Root (/)">&#8962;</button>
+          <button type="button" class="fm-nav-btn" onclick="fmRefresh()" title="Muat Ulang Direktori">&#8635;</button>
         </div>
 
-        <button type="button" class="btn btn-sm" onclick="fmRefresh()" title="Muat Ulang Direktori" style="padding:6px 10px">
-          ↻ Segarkan
-        </button>
+        <!-- Address Bar (Dual mode: Breadcrumbs + Text input) -->
+        <div class="fm-address-bar" id="fm-address-bar">
+          <div id="fm-breadcrumbs" class="fm-breadcrumbs">
+            <!-- Diisi via JS -->
+          </div>
+          <form id="fm-path-form" class="fm-path-form" onsubmit="fmSubmitPathInput(event)">
+            <span style="font-family:monospace;color:var(--blue);font-weight:600">&gt;</span>
+            <input type="text" id="fm-path-input" class="fm-path-input" placeholder="/path/ke/direktori" autocomplete="off" spellcheck="false">
+            <button type="button" class="fm-address-toggle" onclick="fmTogglePathInput(false)" title="Batal">&times;</button>
+          </form>
+          <button type="button" class="fm-address-toggle" id="fm-address-pencil" onclick="fmTogglePathInput(true)" title="Ketik / Tempel Path Manual">&#9998;</button>
+        </div>
       </div>
 
-      <!-- Action Buttons -->
+      <!-- Action & Search Toolbar -->
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input type="text" id="fm-filter" oninput="fmFilterItems(this.value)" placeholder="Cari di folder ini..." style="padding:6px 10px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);width:150px">
+        <input type="text" id="fm-filter" class="fm-search-input" oninput="fmFilterItems(this.value)" placeholder="Filter di folder ini...">
         <button type="button" class="btn btn-sm" onclick="fmOpenNewFolder()" style="display:flex;align-items:center;gap:4px">
           + Folder
         </button>
@@ -526,33 +554,35 @@
           + Berkas
         </button>
         <button type="button" class="btn btn-sm btn-primary" onclick="fmOpenUpload()" style="display:flex;align-items:center;gap:4px">
-          ↑ Unggah
+          &uarr; Unggah
         </button>
       </div>
     </div>
 
-    <!-- Disk & Status Info Bar -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0 12px;font-size:12px;color:var(--dim);border-bottom:1px solid var(--border);padding-bottom:8px">
-      <div id="fm-stats-info">Memuat berkas…</div>
-      <div id="fm-disk-info" style="display:none">
-        Kapasitas: <span id="fm-disk-free" style="color:var(--green);font-weight:600"></span> bebas dari <span id="fm-disk-total" style="color:var(--text)"></span>
+    <!-- Sub-Bar: Item Count & Visual Disk Storage Meter -->
+    <div class="fm-status-bar">
+      <div id="fm-stats-info" style="display:flex;align-items:center;gap:6px">Memuat berkas…</div>
+      <div id="fm-disk-info" class="fm-disk-meter" style="display:none">
+        <span>Penyimpanan:</span>
+        <div class="fm-disk-bar"><div class="fm-disk-fill" id="fm-disk-fill" style="width:0%"></div></div>
+        <span id="fm-disk-text" style="color:var(--text);font-family:monospace"></span>
       </div>
     </div>
 
     <!-- Error message banner -->
-    <div id="fm-error-banner" style="display:none;background:var(--red-bg);color:var(--red);padding:10px 14px;border-radius:6px;margin-bottom:12px;font-size:13px;border:1px solid rgba(239,68,68,0.2)"></div>
+    <div id="fm-error-banner" style="display:none;background:var(--red-bg);color:var(--red);padding:10px 14px;border-radius:6px;font-size:13px;border:1px solid rgba(239,68,68,0.2)"></div>
 
-    <!-- Table of files -->
-    <div style="overflow-x:auto">
-      <table class="fm-table" id="fm-table" style="width:100%;font-size:13px;border-collapse:collapse">
+    <!-- File List Table -->
+    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px">
+      <table class="fm-table" id="fm-table">
         <thead>
           <tr>
-            <th style="width:42%">Nama</th>
+            <th style="width:40%">Nama</th>
             <th style="width:12%">Ukuran</th>
             <th style="width:14%">Izin</th>
-            <th style="width:14%">Pemilik:Grup</th>
-            <th style="width:12%">Diubah</th>
-            <th style="width:6%;text-align:right">Aksi</th>
+            <th style="width:14%">Pemilik : Grup</th>
+            <th style="width:12%">Waktu Diubah</th>
+            <th style="width:8%;text-align:right">Aksi</th>
           </tr>
         </thead>
         <tbody id="fm-tbody">
@@ -564,21 +594,24 @@
 
   <!-- MODAL: Editor Berkas -->
   <div id="fm-editor-modal" class="fm-modal-backdrop" style="display:none">
-    <div class="fm-modal-card" style="max-width:1050px;height:85vh">
+    <div class="fm-modal-card" id="fm-editor-card" style="max-width:1100px;height:88vh">
       <div class="fm-modal-header">
         <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
           <span>📝 Editor Berkas:</span>
-          <code id="fm-editor-path" style="background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--blue);word-break:break-all"></code>
-          <span id="fm-editor-perms" class="badge badge-muted" style="margin-left:4px"></span>
+          <code id="fm-editor-path" style="background:var(--card);padding:2px 6px;border-radius:4px;color:var(--blue);word-break:break-all"></code>
+          <span id="fm-editor-perms" class="badge badge-muted"></span>
           <span class="badge badge-info" title="Salinan cadangan otomatis dibuat sebelum file ditimpa">auto .bak</span>
           <span id="fm-editor-status" style="font-size:12px;margin-left:8px"></span>
         </div>
-        <button type="button" class="btn btn-ghost" onclick="fmCloseEditor()" style="padding:4px 8px;font-size:16px">&times;</button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="fmToggleEditorFullscreen()" title="Layar Penuh (Toggle Fullscreen)">⛶</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="fmCloseEditor()" title="Tutup">&times;</button>
+        </div>
       </div>
       <div class="fm-modal-body" style="padding:12px;display:flex;flex-direction:column;gap:8px;flex:1">
-        <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
           <div style="font-size:12px;color:var(--dim)">
-            Ukuran: <span id="fm-editor-size">-</span> &bull; Tekan <kbd style="background:var(--bg);border:1px solid var(--border);padding:1px 4px;border-radius:3px">Tab</kbd> untuk indentasi 2 spasi.
+            Ukuran: <span id="fm-editor-size">-</span> &bull; Pintasan: <kbd style="background:var(--bg);border:1px solid var(--border);padding:1px 5px;border-radius:3px">Ctrl+S</kbd> untuk menyimpan &bull; <kbd style="background:var(--bg);border:1px solid var(--border);padding:1px 5px;border-radius:3px">Tab</kbd> indentasi.
           </div>
           <div style="display:flex;gap:6px">
             <button type="button" id="fm-editor-restore-btn" class="btn btn-sm btn-warn" onclick="fmRestoreBak()" style="display:none">
@@ -593,8 +626,32 @@
       </div>
       <div class="fm-modal-footer">
         <button type="button" class="btn btn-ghost" onclick="fmCloseEditor()">Batal / Tutup</button>
-        <button type="button" id="fm-editor-save-btn" class="btn btn-primary" onclick="fmSaveFile()">💾 Simpan Perubahan</button>
+        <button type="button" id="fm-editor-save-btn" class="btn btn-primary" onclick="fmSaveFile()">💾 Simpan Perubahan (Ctrl+S)</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Ganti Nama (Rename) -->
+  <div id="fm-rename-modal" class="fm-modal-backdrop" style="display:none">
+    <div class="fm-modal-card">
+      <div class="fm-modal-header">
+        <span>🏷️ Ganti Nama</span>
+        <button type="button" class="btn btn-ghost" onclick="fmCloseRename()">&times;</button>
+      </div>
+      <form id="fm-rename-form" onsubmit="fmSubmitRename(event)">
+        <div class="fm-modal-body">
+          <div style="margin-bottom:10px;font-size:13px;color:var(--dim)">
+            Path Asal: <code id="fm-rename-source" style="color:var(--blue);word-break:break-all"></code>
+          </div>
+          <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Baru:</label>
+          <input type="text" id="fm-rename-input" style="width:100%;font-size:13px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)" required autofocus>
+          <div id="fm-rename-error" style="display:none;color:var(--red);font-size:12px;margin-top:8px"></div>
+        </div>
+        <div class="fm-modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="fmCloseRename()">Batal</button>
+          <button type="submit" id="fm-rename-submit-btn" class="btn btn-primary">Simpan Nama</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -612,7 +669,7 @@
           </div>
           <div style="border:2px dashed var(--border);padding:24px;border-radius:8px;text-align:center;background:var(--bg)">
             <input type="file" id="fm-upload-input" style="font-size:13px;width:100%" required>
-            <div style="font-size:12px;color:var(--dim);margin-top:8px">Maksimal ukuran berkas 50 MB.</div>
+            <div style="font-size:12px;color:var(--dim);margin-top:8px">Maksimal ukuran berkas 100 MB.</div>
           </div>
           <div id="fm-upload-progress" style="display:none;margin-top:12px">
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
@@ -641,12 +698,12 @@
       <form id="fm-chmod-form" onsubmit="fmSubmitChmod(event)">
         <div class="fm-modal-body">
           <div style="margin-bottom:14px;font-size:13px">
-            Target: <code id="fm-chmod-target" style="color:var(--blue)"></code>
+            Target: <code id="fm-chmod-target" style="color:var(--blue);word-break:break-all"></code>
           </div>
 
           <div style="margin-bottom:12px">
             <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Mode Izin (Oktal):</label>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <input type="text" id="fm-chmod-mode" maxlength="4" style="width:90px;font-family:monospace;font-size:14px;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)" required>
               <div style="display:flex;gap:4px;flex-wrap:wrap">
                 <button type="button" class="btn btn-sm" onclick="document.getElementById('fm-chmod-mode').value='0644'">0644 (File)</button>
@@ -1145,8 +1202,8 @@ class NativeTerminal {
   }
 
   // ---------------- siklus hidup sesi ----------------
-  async connect() {
-    if (this.state === 'connecting' || this.state === 'live') return;
+  async connect(force = false) {
+    if (!force && (this.state === 'connecting' || (this.state === 'live' && this.rid))) return;
     this.state = 'connecting';
     this.closing = false;
     this.lastRawText = '';
@@ -1160,7 +1217,7 @@ class NativeTerminal {
       const r = await fetch('/api/logs/request', {
         method: 'POST', credentials: 'same-origin',
         headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
-        body: JSON.stringify({server_id: SID, unit: 'SHELL', lines: 200}),
+        body: JSON.stringify({server_id: SID, unit: 'SHELL', lines: 200, force: true}),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status));
@@ -1240,6 +1297,16 @@ class NativeTerminal {
 
         if (j.status === 'executing' || j.status === 'pending') {
           if (!this.aptActive && !this.showingApt) this.setRawBuffer(j.result || '');
+          if ((j.result || '').includes('Session terminated, killing shell') || (j.result || '').includes('[sesi shell terputus]')) {
+            this.rid = null;
+            this.state = 'closed';
+            this.shellReady = false;
+            this.status('shell terhenti &middot; klik Sambung Ulang', 'var(--yellow)', 'closed');
+            if (this.reconnectBtn) this.reconnectBtn.style.display = 'inline-flex';
+            this.setTitle();
+            this.renderLines();
+            break;
+          }
           if (j.status === 'executing' && !this.shellReady) {
             this.shellReady = true;
             this.status(this.showingApt ? 'shell root siap' : 'shell root aktif',
@@ -1278,6 +1345,7 @@ class NativeTerminal {
     this.renderLines();
     this.setTitle();
     this.status('shell root aktif', 'var(--green)', 'active');
+    this.poll(rid);
   }
 
   suspendForApt() {
@@ -2385,13 +2453,26 @@ setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
 // ===========================================================================
 // BERKAS / FILE MANAGER
 // ===========================================================================
-let fmCurrentPath = sessionStorage.getItem('fm_path_' + SID) || '/var/www';
+let fmCurrentPath = '/';
+const _savedFmPath = sessionStorage.getItem('fm_path_' + SID);
+if (_savedFmPath && _savedFmPath.startsWith('/') && !_savedFmPath.startsWith('/var/www')) {
+  fmCurrentPath = _savedFmPath;
+}
+let fmHistory = [fmCurrentPath];
+let fmHistoryIdx = 0;
 let fmItems = [];
 let fmEditingPath = null;
 let fmPromptCallback = null;
 let fmChmodTarget = null;
 let fmDeleteTarget = null;
+let fmRenameTarget = null;
 let fmInitialized = false;
+
+function openFileManager() {
+  showTab('berkas');
+  const el = document.getElementById('tab-berkas');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 function formatBytes(bytes) {
   if (bytes === 0) return '0 B';
@@ -2414,8 +2495,8 @@ function getFileIcon(item) {
   const ext = (item.ext || '').toLowerCase();
   if (['.conf', '.ini', '.env', '.json', '.yaml', '.yml', '.xml', '.toml'].includes(ext)) return '⚙️';
   if (['.py', '.js', '.ts', '.html', '.css', '.php', '.sh', '.bash', '.sql', '.c', '.cpp', '.go', '.rs'].includes(ext)) return '💻';
-  if (['.log', '.txt', '.md', '.rst'].includes(ext)) return '📄';
-  if (['.tar', '.gz', '.zip', '.bz2', '.xz', '.7z', '.rar'].includes(ext)) return '📦';
+  if (['.log', '.txt', '.md', '.rst', '.service', '.socket', '.timer'].includes(ext)) return '📄';
+  if (['.tar', '.gz', '.zip', '.bz2', '.xz', '.7z', '.rar', '.deb', '.rpm'].includes(ext)) return '📦';
   if (['.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp'].includes(ext)) return '🖼️';
   if (['.mp3', '.wav', '.ogg', '.mp4', '.mkv', '.avi', '.mov'].includes(ext)) return '🎬';
   return '📄';
@@ -2425,7 +2506,7 @@ function initFileManager() {
   if (fmInitialized) return;
   fmInitialized = true;
 
-  // Setup tab indent in textarea
+  // Setup tab indent & shortcuts in editor textarea
   const ta = document.getElementById('fm-editor-text');
   if (ta) {
     ta.addEventListener('keydown', function(e) {
@@ -2436,33 +2517,106 @@ function initFileManager() {
         this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
         this.selectionStart = this.selectionEnd = start + 2;
       }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        fmSaveFile();
+      }
     });
   }
 
+  // Global Ctrl+S listener when editor modal is visible
+  window.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('fm-editor-modal');
+    if (modal && modal.style.display !== 'none' && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      fmSaveFile();
+    }
+  });
+
   fmLoadDir(fmCurrentPath);
 }
 
-function fmJump(path) {
-  if (path) {
-    fmLoadDir(path);
-    document.getElementById('fm-quick-jump').value = '';
+function fmUpdateNavButtons() {
+  const btnBack = document.getElementById('fm-btn-back');
+  const btnFwd = document.getElementById('fm-btn-forward');
+  const btnUp = document.getElementById('fm-btn-up');
+
+  if (btnBack) btnBack.disabled = fmHistoryIdx <= 0;
+  if (btnFwd) btnFwd.disabled = fmHistoryIdx >= fmHistory.length - 1;
+  if (btnUp) btnUp.disabled = fmCurrentPath === '/';
+}
+
+function fmGoBack() {
+  if (fmHistoryIdx > 0) {
+    fmHistoryIdx--;
+    fmLoadDir(fmHistory[fmHistoryIdx], false);
   }
 }
 
-function fmRefresh() {
-  fmLoadDir(fmCurrentPath);
+function fmGoForward() {
+  if (fmHistoryIdx < fmHistory.length - 1) {
+    fmHistoryIdx++;
+    fmLoadDir(fmHistory[fmHistoryIdx], false);
+  }
 }
 
-async function fmLoadDir(path) {
+function fmGoUp() {
+  if (fmCurrentPath === '/') return;
+  const parent = fmCurrentPath.substring(0, fmCurrentPath.lastIndexOf('/')) || '/';
+  fmLoadDir(parent);
+}
+
+function fmGoHome() {
+  fmLoadDir('/');
+}
+
+function fmRefresh() {
+  fmLoadDir(fmCurrentPath, false);
+}
+
+function fmTogglePathInput(showInput) {
+  const breadcrumbs = document.getElementById('fm-breadcrumbs');
+  const pathForm = document.getElementById('fm-path-form');
+  const pencil = document.getElementById('fm-address-pencil');
+  const input = document.getElementById('fm-path-input');
+
+  if (showInput) {
+    if (breadcrumbs) breadcrumbs.style.display = 'none';
+    if (pencil) pencil.style.display = 'none';
+    if (pathForm) pathForm.style.display = 'flex';
+    if (input) {
+      input.value = fmCurrentPath;
+      input.focus();
+      input.select();
+    }
+  } else {
+    if (breadcrumbs) breadcrumbs.style.display = 'flex';
+    if (pencil) pencil.style.display = 'inline-flex';
+    if (pathForm) pathForm.style.display = 'none';
+  }
+}
+
+function fmSubmitPathInput(e) {
+  e.preventDefault();
+  const input = document.getElementById('fm-path-input');
+  if (!input) return;
+  let target = input.value.trim();
+  if (!target) target = '/';
+  if (!target.startsWith('/')) target = '/' + target;
+  fmTogglePathInput(false);
+  fmLoadDir(target);
+}
+
+async function fmLoadDir(path, pushHistory = true) {
   const tbody = document.getElementById('fm-tbody');
   const errBanner = document.getElementById('fm-error-banner');
   const statsInfo = document.getElementById('fm-stats-info');
   const diskBox = document.getElementById('fm-disk-info');
 
   if (errBanner) errBanner.style.display = 'none';
-  if (statsInfo) statsInfo.innerHTML = '<span class="status-dot busy"></span> Mengambil data direktori dari server klien…';
+  if (statsInfo) statsInfo.innerHTML = '<span class="status-dot busy"></span> Mengambil data direktori…';
   if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--dim)">Memuat direktori: <code>' + escapeHtml(path) + '</code>…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--dim)">Memuat direktori: <code>' + escapeHtml(path) + '</code>…</td></tr>';
   }
 
   try {
@@ -2474,10 +2628,21 @@ async function fmLoadDir(path) {
       throw new Error(data.detail || ('HTTP ' + res.status));
     }
 
-    fmCurrentPath = data.current_path;
+    fmCurrentPath = data.current_path || '/';
     sessionStorage.setItem('fm_path_' + SID, fmCurrentPath);
-    fmItems = data.items || [];
 
+    if (pushHistory) {
+      if (fmHistoryIdx < fmHistory.length - 1) {
+        fmHistory = fmHistory.slice(0, fmHistoryIdx + 1);
+      }
+      if (fmHistory[fmHistory.length - 1] !== fmCurrentPath) {
+        fmHistory.push(fmCurrentPath);
+        fmHistoryIdx = fmHistory.length - 1;
+      }
+    }
+    fmUpdateNavButtons();
+
+    fmItems = data.items || [];
     fmRenderBreadcrumbs(fmCurrentPath);
 
     // Stats & disk
@@ -2488,20 +2653,37 @@ async function fmLoadDir(path) {
     }
 
     if (data.disk && diskBox) {
-      diskBox.style.display = 'block';
-      document.getElementById('fm-disk-free').textContent = formatBytes(data.disk.free);
-      document.getElementById('fm-disk-total').textContent = formatBytes(data.disk.total);
+      diskBox.style.display = 'flex';
+      const freeStr = formatBytes(data.disk.free);
+      const totalStr = formatBytes(data.disk.total);
+      const usedPct = data.disk.total ? Math.round((data.disk.used / data.disk.total) * 100) : 0;
+      const fillEl = document.getElementById('fm-disk-fill');
+      if (fillEl) {
+        fillEl.style.width = usedPct + '%';
+        fillEl.style.background = usedPct > 90 ? 'var(--red)' : (usedPct > 75 ? 'var(--yellow)' : 'var(--blue)');
+      }
+      const textEl = document.getElementById('fm-disk-text');
+      if (textEl) textEl.textContent = freeStr + ' bebas / ' + totalStr + ' (' + usedPct + '%)';
     }
 
-    fmRenderItems(fmItems);
+    // Filter items
+    const filterInput = document.getElementById('fm-filter');
+    if (filterInput && filterInput.value) {
+      fmFilterItems(filterInput.value);
+    } else {
+      fmRenderItems(fmItems);
+    }
   } catch (err) {
     if (statsInfo) statsInfo.innerHTML = '<b style="color:var(--red)">Gagal membaca direktori</b>';
     if (errBanner) {
       errBanner.style.display = 'block';
-      errBanner.innerHTML = '<b>Gagal:</b> ' + escapeHtml(err.message);
+      errBanner.innerHTML = '<b>Akses Gagal:</b> ' + escapeHtml(err.message) + ' (Path: <code>' + escapeHtml(path) + '</code>)';
     }
     if (tbody) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--red)">Gagal memuat direktori: ' + escapeHtml(err.message) + '<br><button class="btn btn-sm" onclick="fmRefresh()" style="margin-top:8px">Coba Lagi</button></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--red)">Gagal memuat direktori <code>' + escapeHtml(path) + '</code>: ' + escapeHtml(err.message) + '<br><div style="margin-top:10px;display:flex;gap:6px;justify-content:center"><button class="btn btn-sm" onclick="fmGoHome()">Ke Root ( / )</button><button class="btn btn-sm btn-ghost" onclick="fmRefresh()">Coba Lagi</button></div></td></tr>';
+    }
+    if (path !== '/') {
+      sessionStorage.setItem('fm_path_' + SID, '/');
     }
   }
 }
@@ -2511,7 +2693,7 @@ function fmRenderBreadcrumbs(path) {
   if (!container) return;
 
   const parts = path.split('/').filter(p => p.length > 0);
-  let html = '<span class="fm-crumb' + (parts.length === 0 ? ' active' : '') + '" onclick="fmLoadDir(\'/\')">/</span>';
+  let html = '<span class="fm-crumb' + (parts.length === 0 ? ' active' : '') + '" onclick="fmLoadDir(\'/\')" title="Ke Root (/)">/</span>';
 
   let currentAcc = '';
   parts.forEach((p, idx) => {
@@ -2534,7 +2716,7 @@ function fmRenderItems(items) {
   if (!tbody) return;
 
   if (!items || items.length === 0 && fmCurrentPath === '/') {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--dim)">Direktori ini kosong</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--dim)">Direktori ini kosong</td></tr>';
     return;
   }
 
@@ -2545,7 +2727,7 @@ function fmRenderItems(items) {
     const parent = fmCurrentPath.substring(0, fmCurrentPath.lastIndexOf('/')) || '/';
     html += `
       <tr class="fm-row" onclick="fmLoadDir('${escapeHtml(parent)}')">
-        <td colspan="6">
+        <td colspan="6" style="cursor:pointer">
           <div class="fm-item-name" style="color:var(--blue)">
             <span class="fm-icon">📁</span>
             <span>.. (Ke Folder Induk)</span>
@@ -2580,16 +2762,17 @@ function fmRenderItems(items) {
             ${linkNote}
           </div>
         </td>
-        <td style="color:var(--dim);font-size:12px">${sizeStr}</td>
+        <td style="color:var(--dim);font-size:12px;font-family:monospace">${sizeStr}</td>
         <td><span class="badge badge-muted" style="font-family:monospace;font-size:11px">${item.octal_mode} ${item.mode}</span></td>
         <td style="color:var(--dim);font-size:12px">${escapeHtml(item.owner)}:${escapeHtml(item.group)}</td>
         <td style="color:var(--dim);font-size:12px">${mtimeStr}</td>
-        <td style="text-align:right;white-space:nowrap">
-          <div style="display:inline-flex;gap:4px">
-            ${!item.is_dir ? `<button type="button" class="btn btn-sm btn-ghost" title="Lihat / Edit" onclick="fmOpenFile('${safePath}')" style="padding:2px 6px">✏️</button>` : ''}
-            ${!item.is_dir ? `<button type="button" class="btn btn-sm btn-ghost" title="Unduh Berkas" onclick="fmDownloadFile('${safePath}')" style="padding:2px 6px">⬇️</button>` : ''}
-            <button type="button" class="btn btn-sm btn-ghost" title="Ubah Hak Akses / Pemilik" onclick="fmOpenChmod('${safePath}', '${item.octal_mode}', '${escapeHtml(item.owner)}', '${escapeHtml(item.group)}')" style="padding:2px 6px">⚙️</button>
-            <button type="button" class="btn btn-sm btn-ghost" title="Hapus" onclick="fmOpenDelete('${safePath}', ${item.is_dir})" style="padding:2px 6px;color:var(--red)">🗑</button>
+        <td class="fm-actions-cell">
+          <div style="display:inline-flex;gap:3px">
+            ${!item.is_dir ? `<button type="button" class="fm-act-btn" title="Lihat & Edit Berkas" onclick="fmOpenFile('${safePath}')">✏️</button>` : ''}
+            ${!item.is_dir ? `<button type="button" class="fm-act-btn" title="Unduh Berkas" onclick="fmDownloadFile('${safePath}')">⬇️</button>` : ''}
+            <button type="button" class="fm-act-btn" title="Ganti Nama" onclick="fmOpenRename('${safePath}', '${safeName}')">🏷️</button>
+            <button type="button" class="fm-act-btn" title="Ubah Hak Akses & Pemilik" onclick="fmOpenChmod('${safePath}', '${item.octal_mode}', '${escapeHtml(item.owner)}', '${escapeHtml(item.group)}')">⚙️</button>
+            <button type="button" class="fm-act-btn" title="Hapus" onclick="fmOpenDelete('${safePath}', ${item.is_dir})" style="color:var(--red)">🗑</button>
           </div>
         </td>
       </tr>
@@ -2615,6 +2798,11 @@ function fmDownloadFile(path) {
 }
 
 // Editor
+function fmToggleEditorFullscreen() {
+  const card = document.getElementById('fm-editor-card');
+  if (card) card.classList.toggle('is-fullscreen');
+}
+
 async function fmOpenFile(path) {
   fmEditingPath = path;
   document.getElementById('fm-editor-path').textContent = path;
@@ -2639,7 +2827,7 @@ async function fmOpenFile(path) {
     if (!res.ok) {
       if (res.status === 400 && res.headers.get('X-Is-Binary') === '1') {
         fmCloseEditor();
-        if (confirm('File ini terdeteksi sebagai berkas biner (bukan teks) sehingga tidak dapat diedit.\n\nApakah Anda ingin mengunduhnya sekarang?')) {
+        if (confirm('File ini terdeteksi sebagai berkas biner (bukan teks UTF-8).\n\nApakah Anda ingin mengunduhnya sekarang?')) {
           fmDownloadFile(path);
         }
         return;
@@ -2658,6 +2846,7 @@ async function fmOpenFile(path) {
     if (data.has_backup) {
       document.getElementById('fm-editor-restore-btn').style.display = 'inline-block';
     }
+    ta.focus();
   } catch (err) {
     ta.value = '[Gagal membaca berkas: ' + err.message + ']';
     ta.disabled = true;
@@ -2668,6 +2857,8 @@ async function fmOpenFile(path) {
 
 function fmCloseEditor() {
   document.getElementById('fm-editor-modal').style.display = 'none';
+  const card = document.getElementById('fm-editor-card');
+  if (card) card.classList.remove('is-fullscreen');
   fmEditingPath = null;
 }
 
@@ -2712,7 +2903,7 @@ async function fmSaveFile() {
     btn.disabled = false;
 
     // Refresh current dir in background
-    fmLoadDir(fmCurrentPath);
+    fmLoadDir(fmCurrentPath, false);
   } catch (err) {
     statusEl.textContent = 'Gagal menyimpan: ' + err.message;
     statusEl.style.color = 'var(--red)';
@@ -2727,11 +2918,66 @@ async function fmRestoreBak() {
     return;
   }
   await fmOpenFile(bakPath);
-  // Redirect target back to original file
   fmEditingPath = bakPath.replace(/\.bak$/, '');
   document.getElementById('fm-editor-path').textContent = fmEditingPath;
   document.getElementById('fm-editor-status').textContent = 'Konten diambil dari .bak (Klik Simpan untuk menerapkan)';
   document.getElementById('fm-editor-status').style.color = 'var(--yellow)';
+}
+
+// Rename modal
+function fmOpenRename(path, currentName) {
+  fmRenameTarget = path;
+  document.getElementById('fm-rename-source').textContent = path;
+  const input = document.getElementById('fm-rename-input');
+  input.value = currentName || path.split('/').pop();
+  document.getElementById('fm-rename-error').style.display = 'none';
+  document.getElementById('fm-rename-submit-btn').disabled = false;
+  document.getElementById('fm-rename-modal').style.display = 'flex';
+  setTimeout(() => { input.focus(); input.select(); }, 50);
+}
+
+function fmCloseRename() {
+  document.getElementById('fm-rename-modal').style.display = 'none';
+  fmRenameTarget = null;
+}
+
+async function fmSubmitRename(e) {
+  e.preventDefault();
+  if (!fmRenameTarget) return;
+
+  const newName = document.getElementById('fm-rename-input').value.trim();
+  if (!newName) return;
+
+  const parentDir = fmRenameTarget.substring(0, fmRenameTarget.lastIndexOf('/')) || '/';
+  const newPath = parentDir.replace(/\/+$/, '') + '/' + newName;
+
+  if (newPath === fmRenameTarget) {
+    fmCloseRename();
+    return;
+  }
+
+  const btn = document.getElementById('fm-rename-submit-btn');
+  const errBox = document.getElementById('fm-rename-error');
+  btn.disabled = true;
+  errBox.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/servers/' + SID + '/files/rename', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
+      body: JSON.stringify({old_path: fmRenameTarget, new_path: newPath}),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
+
+    fmCloseRename();
+    fmLoadDir(fmCurrentPath, false);
+  } catch (err) {
+    btn.disabled = false;
+    errBox.textContent = 'Gagal mengganti nama: ' + err.message;
+    errBox.style.display = 'block';
+  }
 }
 
 // Upload modal
@@ -2784,7 +3030,7 @@ function fmSubmitUpload(e) {
     btn.disabled = false;
     if (xhr.status === 200) {
       fmCloseUpload();
-      fmLoadDir(fmCurrentPath);
+      fmLoadDir(fmCurrentPath, false);
     } else {
       let msg = 'HTTP ' + xhr.status;
       try {
@@ -2836,7 +3082,6 @@ async function fmSubmitChmod(e) {
   errBox.style.display = 'none';
 
   try {
-    // 1. Chmod
     if (mode) {
       const r1 = await fetch('/api/servers/' + SID + '/files/chmod', {
         method: 'POST',
@@ -2848,7 +3093,6 @@ async function fmSubmitChmod(e) {
       if (!r1.ok) throw new Error(d1.detail || ('HTTP ' + r1.status));
     }
 
-    // 2. Chown jika diisi
     if (owner) {
       const r2 = await fetch('/api/servers/' + SID + '/files/chown', {
         method: 'POST',
@@ -2861,7 +3105,7 @@ async function fmSubmitChmod(e) {
     }
 
     fmCloseChmod();
-    fmLoadDir(fmCurrentPath);
+    fmLoadDir(fmCurrentPath, false);
   } catch (err) {
     btn.disabled = false;
     errBox.textContent = 'Gagal mengubah izin: ' + err.message;
@@ -2903,7 +3147,7 @@ async function fmSubmitDelete() {
     if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
 
     fmCloseDelete();
-    fmLoadDir(fmCurrentPath);
+    fmLoadDir(fmCurrentPath, false);
   } catch (err) {
     btn.disabled = false;
     errBox.textContent = 'Gagal menghapus: ' + err.message;
@@ -2933,7 +3177,7 @@ function fmOpenNewFolder() {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
     fmClosePrompt();
-    fmLoadDir(fmCurrentPath);
+    fmLoadDir(fmCurrentPath, false);
   };
 
   document.getElementById('fm-prompt-modal').style.display = 'flex';
@@ -2961,7 +3205,7 @@ function fmOpenNewFile() {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
     fmClosePrompt();
-    await fmLoadDir(fmCurrentPath);
+    await fmLoadDir(fmCurrentPath, false);
     fmOpenFile(fullPath);
   };
 
