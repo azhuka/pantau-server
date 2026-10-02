@@ -190,6 +190,7 @@ Badge versi agen ada di bagian atas halaman Rincian tiap server.
 | Proteksi sanitasi ketat, mitigasi loop retry, & aktivasi instan upgrade | v3.10 |
 | Konsol Terminal Bawaan (shell root lewat pty, riwayat perintah, reparasi mandiri `dpkg --configure -a`) | v3.11 |
 | **Terminal Bawaan = shell Linux sungguhan** (pty di server klien, tanpa whitelist, `Ctrl+C` asli, Tab completion, pipeline, program interaktif; input diantrikan atomik) | v3.12 |
+| **Terminal Bawaan Realtime (xterm.js + WebSocket Streaming)** (pseudo-terminal PTY asli, zero-latency keystrokes, job control penuh, nano/vim/htop, window resize, pembersihan proses otomatis) | v3.14 |
 
 Agen lebih lama dari requirements **tetap jalan untuk fitur lain** — hanya
 fitur terkait yang menolak dengan pesan jelas, bukan gagal diam-diam. Contoh:
@@ -210,26 +211,29 @@ ORDER BY x.agent_version, s.hostname;
 ## Terminal Bawaan & Update OS dari Dashboard
 
 Halaman Rincian Server punya **Terminal Bawaan**: shell Linux sungguhan yang
-berjalan di server tujuan, bukan emulator. Terminal tertanam di halaman (bukan
-jendela browser terpisah) dan dibuka lewat tombol **`>_ Terminal`** di baris
-hero.
+berjalan di server tujuan, ditenagai oleh **xterm.js** dan streaming **WebSocket**
+ke agen server klien. Terminal tertanam di halaman (bukan jendela browser terpisah)
+dan dibuka lewat tombol **`>_ Terminal`** di baris hero.
 
 ### Yang sebenarnya terjadi
 
 Tidak ada daftar perintah yang diizinkan di sisi Dashboard. Semua yang diketik
 dikirim ke `bash` milik server klien lewat **pty**, dan semua yang dicetak bash
-dikembalikan apa adanya:
+dikembalikan secara realtime (full duplex):
 
 ```
 Browser (halaman Rincian)
-   │  POST /api/logs/request  {"unit":"SHELL"}        → membuka sesi
-   │  POST /api/logs/{id}/input {"data":"..."}        → byte mentah ke stdin pty
-   │  GET  /api/logs/request/{id}                     ← output + status shell
+   │  WebSocket: ws[s]://<host>/ws/servers/{id}/terminal  (Cookie Admin Session)
+   │  Rendered via xterm.js + xterm-addon-fit (offline vendor)
+   ▼
+Dashboard FastAPI (TerminalBridgeDispatcher)
+   │  Long-poll stream bridge (memory queue, decoupled from DB)
    ▼
 Agen pantau (server klien)
+   │  pty.openpty() + TIOCSCTTY (controlling terminal asli)
    │  sudo -n /usr/local/sbin/pantau-shell
    ▼
-script -qefc "bash --rcfile <rc sementara> -i"  →  root@<hostname>:~#
+/bin/bash --noprofile --rcfile <rc sementara> -i  →  root@<hostname>:~#
 ```
 
 Jadi yang Andacketik benar-benar dieksekusi shell:

@@ -58,10 +58,10 @@ log() {
 # Shell dibuka: catat supaya selalu ada jejak kapan dan oleh siapa.
 log "shell dibuka oleh uid=$(id -u) host=$HOSTN"
 
-# Dijalankan lewat pty (script -qefc) supaya bash berperilaku sama seperti di
-# SSH: echo karakter, warna, program interaktif (vim/less/htop), dan Ctrl+C
-# yang benar-benar mengirim SIGINT ke proses di depan pty.
-/usr/bin/script -qefc "/bin/bash --noprofile --rcfile $RCFILE -i" /dev/null
+# Dijalankan langsung di pty agen supaya bash berperilaku sama persis seperti
+# di SSH: echo karakter, warna, program interaktif (vim/less/htop), dan Ctrl+C
+# serta penyesuaian ukuran layar (SIGWINCH) langsung sampai ke proses shell.
+/bin/bash --noprofile --rcfile "$RCFILE" -i
 _rc=$?
 
 # Shell ditutup: catat kode keluar supaya jejak auditnya lengkap.

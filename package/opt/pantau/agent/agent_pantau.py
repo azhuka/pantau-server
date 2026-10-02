@@ -26,19 +26,23 @@ Environment variable (override config):
     MONITOR_INTERVAL    - Interval laporan (detik)
 """
 
+import fcntl
 import http.client
 import ipaddress
 import json
 import os
-import pwd
 import platform
+import pty
+import pwd
 import random
 import re
 import select
 import signal
 import socket
+import struct
 import subprocess
 import sys
+import termios
 import threading
 import time
 import traceback
@@ -2140,6 +2144,192 @@ def _file_worker_loop(cfg: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Realtime Terminal (PTY + WebSocket Stream Bridge)
+# ---------------------------------------------------------------------------
+def _set_terminal_winsize(fd: int, rows: int, cols: int) -> None:
+    try:
+        winsize = struct.pack("HHHH", int(rows), int(cols), 0, 0)
+        fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
+    except Exception:
+        pass
+
+
+def _run_terminal_session(cfg: dict, session_id: str) -> None:
+    """Jalankan proses shell interaktif di pseudo-terminal (PTY) realtime.
+
+    Terkoneksi langsung ke sesi WebSocket browser via bridge dashboard Pantau.
+    """
+    master_fd, slave_fd = pty.openpty()
+    _set_terminal_winsize(master_fd, 24, 80)
+
+    if os.path.exists(PANTUAN_SHELL_CMD):
+        cmd = ["/usr/bin/sudo", "-n", PANTUAN_SHELL_CMD]
+    else:
+        cmd = ["/bin/bash", "-i"]
+
+    def _preexec():
+        os.setsid()
+        try:
+            fcntl.ioctl(slave_fd, termios.TIOCSCTTY, 0)
+        except Exception:
+            pass
+
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            preexec_fn=_preexec,
+            close_fds=True,
+        )
+    except Exception as e:
+        try:
+            os.close(slave_fd)
+            os.close(master_fd)
+        except Exception:
+            pass
+        http_json_request(
+            cfg,
+            f"/api/agent/terminal/{session_id}/stdout",
+            method="POST",
+            data={"chunk": f"\r\n[Gagal membuka terminal: {e}]\r\n"},
+            timeout=5,
+        )
+        http_json_request(cfg, f"/api/agent/terminal/{session_id}/close", method="POST", timeout=5)
+        return
+
+    # Tutup slave_fd di proses induk agar master_fd menerima EOF saat anak selesai
+    try:
+        os.close(slave_fd)
+    except Exception:
+        pass
+
+    stop_event = threading.Event()
+
+    def pty_reader():
+        try:
+            while not stop_event.is_set():
+                r, _, _ = select.select([master_fd], [], [], 0.05)
+                if not r:
+                    if proc.poll() is not None:
+                        break
+                    continue
+                try:
+                    data = os.read(master_fd, 4096)
+                except OSError:
+                    break
+                if not data:
+                    break
+
+                chunks = [data]
+                while True:
+                    r, _, _ = select.select([master_fd], [], [], 0.005)
+                    if not r:
+                        break
+                    try:
+                        more = os.read(master_fd, 4096)
+                        if not more:
+                            break
+                        chunks.append(more)
+                    except OSError:
+                        break
+
+                chunk = b"".join(chunks).decode("utf-8", errors="replace")
+                code, _ = http_json_request(
+                    cfg,
+                    f"/api/agent/terminal/{session_id}/stdout",
+                    method="POST",
+                    data={"chunk": chunk},
+                    timeout=10,
+                )
+                if code == 410:
+                    break
+        except Exception:
+            pass
+        finally:
+            stop_event.set()
+
+    def stdin_poller():
+        try:
+            while not stop_event.is_set():
+                code, data = http_json_request(
+                    cfg,
+                    f"/api/agent/terminal/{session_id}/stdin",
+                    method="GET",
+                    timeout=20,
+                )
+                if code in (404, 410):
+                    break
+                if code != 200 or not data:
+                    time.sleep(0.5)
+                    continue
+
+                mtype = data.get("type")
+                if mtype == "input":
+                    text = data.get("data", "")
+                    if text:
+                        os.write(master_fd, text.encode("utf-8", errors="replace"))
+                elif mtype == "resize":
+                    cols = data.get("cols", 80)
+                    rows = data.get("rows", 24)
+                    _set_terminal_winsize(master_fd, rows, cols)
+        except Exception:
+            pass
+        finally:
+            stop_event.set()
+
+    t_reader = threading.Thread(target=pty_reader, daemon=True)
+    t_poller = threading.Thread(target=stdin_poller, daemon=True)
+    t_reader.start()
+    t_poller.start()
+
+    stop_event.wait()
+
+    # Bersihkan proses shell dan proses group (misal htop/vim)
+    try:
+        if proc.poll() is None:
+            pgid = os.getpgid(proc.pid)
+            os.killpg(pgid, signal.SIGTERM)
+            time.sleep(0.2)
+            if proc.poll() is None:
+                os.killpg(pgid, signal.SIGKILL)
+    except Exception:
+        pass
+
+    try:
+        os.close(master_fd)
+    except Exception:
+        pass
+
+    # Beri tahu server bahwa sesi terminal selesai
+    try:
+        http_json_request(cfg, f"/api/agent/terminal/{session_id}/close", method="POST", timeout=5)
+    except Exception:
+        pass
+
+
+def _terminal_worker_loop(cfg: dict) -> None:
+    """Worker background untuk mem-poll permintaan pembukaan sesi terminal realtime."""
+    while True:
+        try:
+            code, data = http_json_request(cfg, "/api/agent/terminal-requests", method="GET", timeout=25)
+            if code == 200 and data and data.get("session_id"):
+                sess_id = data["session_id"]
+                threading.Thread(
+                    target=_run_terminal_session,
+                    args=(cfg, sess_id),
+                    daemon=True,
+                ).start()
+            elif code in (401, 403):
+                time.sleep(10.0)
+            elif code == 0:
+                time.sleep(2.0)
+        except Exception:
+            time.sleep(2.0)
+
+
+# ---------------------------------------------------------------------------
 # Main loop
 # ---------------------------------------------------------------------------
 prev_services: dict[int, str] = {}
@@ -2180,8 +2370,9 @@ def main():
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
 
-    # Jalankan worker file manager di background thread
+    # Jalankan worker file manager & terminal di background thread
     threading.Thread(target=_file_worker_loop, args=(cfg,), daemon=True).start()
+    threading.Thread(target=_terminal_worker_loop, args=(cfg,), daemon=True).start()
 
     run_once(cfg)
 

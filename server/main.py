@@ -22,13 +22,15 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import (
     Body, Depends, FastAPI, File, Form, Header, HTTPException, Request, Response,
-    UploadFile,
+    UploadFile, WebSocket, WebSocketDisconnect,
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
 from sqlalchemy import create_engine, desc, func, text
@@ -412,6 +414,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Pantau Server", docs_url=None, redoc_url=None, lifespan=lifespan)
 templates = Jinja2Templates(directory=settings.templates_dir)
 
+static_dir = Path(__file__).resolve().parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
 _SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
@@ -421,7 +427,7 @@ _SECURITY_HEADERS = {
     "Content-Security-Policy": (
         "default-src 'self'; script-src 'self' 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
-        "font-src 'self'; connect-src 'self'; form-action 'self'; "
+        "font-src 'self'; connect-src 'self' ws: wss:; form-action 'self'; "
         "base-uri 'self'; frame-ancestors 'none'; object-src 'none'"
     ),
 }
@@ -3622,6 +3628,240 @@ async def api_agent_file_result(
 
     ok = file_dispatcher.resolve(req_id, body)
     return {"ok": ok}
+
+
+# ---------------------------------------------------------------------------
+# Terminal Realtime WebSocket Bridge (Memory-only, Zero DB Polling)
+# ---------------------------------------------------------------------------
+class TerminalSessionBridge:
+    def __init__(self, session_id: str, server_id: int):
+        self.session_id = session_id
+        self.server_id = server_id
+        self.browser_ws: WebSocket | None = None
+        self.stdin_queue: asyncio.Queue = asyncio.Queue()
+        self.created_at = time.time()
+        self.last_active = time.time()
+        self.closed = False
+
+
+class TerminalBridgeDispatcher:
+    def __init__(self):
+        self._sessions: dict[str, TerminalSessionBridge] = {}
+        self._server_to_session: dict[int, str] = {}
+        self._events: dict[int, asyncio.Event] = {}
+        self._pending_opens: dict[int, str] = {}
+        self._lock = None
+
+    def _get_lock(self):
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
+
+    async def get_or_create_event(self, server_id: int) -> asyncio.Event:
+        if server_id not in self._events:
+            self._events[server_id] = asyncio.Event()
+        return self._events[server_id]
+
+    async def open_session(self, server_id: int, ws: WebSocket) -> TerminalSessionBridge:
+        lock = self._get_lock()
+        async with lock:
+            old_sid = self._server_to_session.get(server_id)
+            if old_sid and old_sid in self._sessions:
+                old_session = self._sessions.pop(old_sid, None)
+                if old_session:
+                    old_session.closed = True
+
+            sess_id = secrets.token_hex(16)
+            bridge = TerminalSessionBridge(sess_id, server_id)
+            bridge.browser_ws = ws
+            self._sessions[sess_id] = bridge
+            self._server_to_session[server_id] = sess_id
+            self._pending_opens[server_id] = sess_id
+
+            if server_id not in self._events:
+                self._events[server_id] = asyncio.Event()
+            self._events[server_id].set()
+            return bridge
+
+    async def pop_pending_open(self, server_id: int) -> str | None:
+        lock = self._get_lock()
+        async with lock:
+            sess_id = self._pending_opens.pop(server_id, None)
+            if server_id in self._events:
+                self._events[server_id].clear()
+            return sess_id
+
+    def get_session(self, sess_id: str) -> TerminalSessionBridge | None:
+        return self._sessions.get(sess_id)
+
+    async def close_session(self, sess_id: str):
+        lock = self._get_lock()
+        async with lock:
+            bridge = self._sessions.pop(sess_id, None)
+            if bridge:
+                bridge.closed = True
+                if self._server_to_session.get(bridge.server_id) == sess_id:
+                    self._server_to_session.pop(bridge.server_id, None)
+
+term_dispatcher = TerminalBridgeDispatcher()
+
+
+@app.websocket("/ws/servers/{sid}/terminal")
+async def ws_server_terminal(websocket: WebSocket, sid: int):
+    """Koneksi terminal realtime browser WebSocket (xterm.js)."""
+    cookie_sid = websocket.cookies.get(SESSION_COOKIE)
+    if not cookie_sid:
+        await websocket.close(code=4401)
+        return
+
+    db = SessionLocal()
+    try:
+        row = db.query(AppSession).filter(AppSession.sid == cookie_sid).first()
+        if not row or (row.expires_at and row.expires_at < datetime.utcnow()):
+            await websocket.close(code=4401)
+            return
+        user = db.query(User).filter(User.id == row.user_id).first()
+        if not user or user.role != "admin":
+            await websocket.close(code=4403)
+            return
+        server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+        if not server:
+            await websocket.close(code=4404)
+            return
+        hostname = server.hostname
+        username = user.username
+    finally:
+        db.close()
+
+    await websocket.accept()
+
+    bridge = await term_dispatcher.open_session(sid, websocket)
+
+    db = SessionLocal()
+    try:
+        _audit(db, username, "terminal_open", f"{hostname}:{bridge.session_id}", "berhasil")
+        db.commit()
+    finally:
+        db.close()
+
+    try:
+        while not bridge.closed:
+            raw = await websocket.receive_text()
+            bridge.last_active = time.time()
+            try:
+                msg = json.loads(raw)
+            except Exception:
+                msg = {"type": "input", "data": raw}
+
+            await bridge.stdin_queue.put(msg)
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.warning(f"[WS TERM] Sesi {bridge.session_id} error: {e}")
+    finally:
+        await term_dispatcher.close_session(bridge.session_id)
+        db = SessionLocal()
+        try:
+            _audit(db, username, "terminal_close", f"{hostname}:{bridge.session_id}", "selesai")
+            db.commit()
+        finally:
+            db.close()
+
+
+@app.get("/api/agent/terminal-requests")
+async def api_agent_terminal_requests(
+    x_api_key: str = Header(alias="X-Api-Key"),
+    db: Session = Depends(get_db),
+):
+    """Agen mem-poll permintaan pembukaan terminal session realtime (long-poll 15 dtk)."""
+    server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
+    if not server:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    sess_id = await term_dispatcher.pop_pending_open(server.id)
+    if sess_id:
+        return {"session_id": sess_id}
+
+    event = await term_dispatcher.get_or_create_event(server.id)
+    try:
+        await asyncio.wait_for(event.wait(), timeout=15.0)
+    except asyncio.TimeoutError:
+        pass
+
+    sess_id = await term_dispatcher.pop_pending_open(server.id)
+    return {"session_id": sess_id}
+
+
+@app.get("/api/agent/terminal/{session_id}/stdin")
+async def api_agent_terminal_stdin(
+    session_id: str,
+    x_api_key: str = Header(alias="X-Api-Key"),
+    db: Session = Depends(get_db),
+):
+    """Agen mengambil ketikan admin (stdin) atau sinyal resize dari dashboard."""
+    server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
+    if not server:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    bridge = term_dispatcher.get_session(session_id)
+    if not bridge or bridge.closed:
+        raise HTTPException(status_code=410, detail="Sesi terminal sudah ditutup")
+
+    try:
+        msg = await asyncio.wait_for(bridge.stdin_queue.get(), timeout=15.0)
+        return msg
+    except asyncio.TimeoutError:
+        return {"type": "ping"}
+
+
+@app.post("/api/agent/terminal/{session_id}/stdout")
+async def api_agent_terminal_stdout(
+    session_id: str,
+    body: dict = Body(...),
+    x_api_key: str = Header(alias="X-Api-Key"),
+    db: Session = Depends(get_db),
+):
+    """Agen mengirimkan potongan teks output terminal ke browser WebSocket."""
+    server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
+    if not server:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    bridge = term_dispatcher.get_session(session_id)
+    if not bridge or bridge.closed:
+        raise HTTPException(status_code=410, detail="Sesi terminal sudah ditutup")
+
+    chunk = body.get("chunk", "")
+    if chunk and bridge.browser_ws:
+        try:
+            await bridge.browser_ws.send_text(json.dumps({"type": "stdout", "data": chunk}))
+        except Exception:
+            bridge.closed = True
+            await term_dispatcher.close_session(session_id)
+            return {"ok": False}
+
+    return {"ok": True}
+
+
+@app.post("/api/agent/terminal/{session_id}/close")
+async def api_agent_terminal_close(
+    session_id: str,
+    x_api_key: str = Header(alias="X-Api-Key"),
+    db: Session = Depends(get_db),
+):
+    """Agen melaporkan bahwa proses shell lokal telah selesai/ditutup."""
+    server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
+    if not server:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    bridge = term_dispatcher.get_session(session_id)
+    if bridge:
+        if bridge.browser_ws:
+            try:
+                await bridge.browser_ws.close()
+            except Exception:
+                pass
+        await term_dispatcher.close_session(session_id)
+    return {"ok": True}
 
 
 @app.get("/api/servers/{sid}/files/ls")
