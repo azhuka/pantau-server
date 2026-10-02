@@ -33,3 +33,4 @@ pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-apt
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-firewall
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-host
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-shell
+pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-file

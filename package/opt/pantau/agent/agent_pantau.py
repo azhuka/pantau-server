@@ -55,6 +55,7 @@ VALID_PROCESS_NAME_RE = re.compile(r'^[a-zA-Z0-9@._:\-]{1,64}$')
 
 PANTUAN_RESTART = "/usr/local/sbin/pantau-restart"
 PANTUAN_FIREWALL = "/usr/local/sbin/pantau-firewall"
+PANTAU_FILE_CMD = "/usr/local/sbin/pantau-file"
 PANTUAN_UNAME = "agent_pantau"
 SS_BIN = "/usr/bin/ss"
 SYSLOG_FILE = "/var/log/syslog"
@@ -432,7 +433,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.12.0"
+AGENT_VERSION = "3.13.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -505,7 +506,7 @@ def detect_all_services() -> list[dict]:
 def http_json_request(cfg: dict, path: str, method: str = "GET", data: dict | None = None, timeout: int = 10):
     """HTTP JSON request dengan API key. Return (status_code, response_dict)."""
     url = cfg["server_url"].rstrip("/") + path
-    body = json.dumps(data).encode("utf-8") if data else None
+    body = json.dumps(data).encode("utf-8") if data is not None else None
 
     req = urllib.request.Request(url, data=body, method=method)
     req.add_header("Content-Type", "application/json")
@@ -516,13 +517,16 @@ def http_json_request(cfg: dict, path: str, method: str = "GET", data: dict | No
             code = resp.status
             try:
                 resp_data = json.loads(resp.read().decode() or "{}")
-            except json.JSONDecodeError:
+            except Exception:
                 resp_data = {}
             return code, resp_data
     except urllib.error.HTTPError as e:
-        return e.code, {}
+        try:
+            resp_data = json.loads(e.read().decode() or "{}")
+        except Exception:
+            resp_data = {}
+        return e.code, resp_data
     except (urllib.error.URLError, OSError) as e:
-        print(f"[WARN] HTTP {path} gagal: {e}")
         return 0, {}
 
 
@@ -2063,6 +2067,77 @@ def poll_log_requests(cfg: dict):
 
 
 # ---------------------------------------------------------------------------
+# File Manager operations (Berkas)
+# ---------------------------------------------------------------------------
+def run_file_op(action: str, params: dict) -> dict:
+    """Jalankan operasi file melalui wrapper /usr/local/sbin/pantau-file (sudo root)."""
+    payload = json.dumps({"action": action, "params": params}).encode("utf-8")
+    if os.path.exists(PANTAU_FILE_CMD):
+        try:
+            proc = subprocess.run(
+                ["/usr/bin/sudo", "-n", PANTAU_FILE_CMD],
+                input=payload,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=45,
+            )
+            if proc.stdout:
+                try:
+                    return json.loads(proc.stdout.decode("utf-8", errors="replace"))
+                except json.JSONDecodeError:
+                    pass
+            err = proc.stderr.decode("utf-8", errors="replace").strip()
+            if err:
+                return {"ok": False, "error": f"[pantau-file error] {err}"}
+        except Exception as e:
+            return {"ok": False, "error": f"Eksekusi pantau-file gagal: {e}"}
+
+    # Fallback jika wrapper sudo belum terpasang atau jalan native
+    try:
+        proc = subprocess.run(
+            [sys.executable, PANTAU_FILE_CMD],
+            input=payload,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=45,
+        )
+        if proc.stdout:
+            return json.loads(proc.stdout.decode("utf-8", errors="replace"))
+    except Exception as e:
+        return {"ok": False, "error": f"Fallback pantau-file gagal: {e}"}
+    return {"ok": False, "error": "pantau-file tidak dapat dieksekusi"}
+
+
+def _file_worker_loop(cfg: dict) -> None:
+    """Worker background untuk merespons permintaan file manager secara instan (long-poll)."""
+    while True:
+        try:
+            code, data = http_json_request(cfg, "/api/agent/file-requests", method="GET", timeout=25)
+            if code == 200 and data and isinstance(data.get("requests"), list):
+                for req in data["requests"]:
+                    req_id = req.get("id")
+                    action = req.get("action")
+                    params = req.get("params", {})
+                    if not req_id or not action:
+                        continue
+                    res = run_file_op(action, params)
+                    http_json_request(
+                        cfg,
+                        f"/api/agent/file-requests/{req_id}/result",
+                        method="POST",
+                        data=res,
+                        timeout=20,
+                    )
+            elif code in (401, 403):
+                # API key salah / server belum siap
+                time.sleep(10.0)
+            elif code == 0:
+                time.sleep(2.0)
+        except Exception:
+            time.sleep(2.0)
+
+
+# ---------------------------------------------------------------------------
 # Main loop
 # ---------------------------------------------------------------------------
 prev_services: dict[int, str] = {}
@@ -2102,6 +2177,9 @@ def main():
 
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
+
+    # Jalankan worker file manager di background thread
+    threading.Thread(target=_file_worker_loop, args=(cfg,), daemon=True).start()
 
     run_once(cfg)
 

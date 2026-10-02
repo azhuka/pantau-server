@@ -4,6 +4,8 @@ Server Monitoring Central - FastAPI Backend
 Full-featured web app for server monitoring.
 """
 
+import asyncio
+import base64
 import hashlib
 import hmac as _hmac
 import ipaddress
@@ -23,7 +25,8 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 from fastapi import (
-    Body, Depends, FastAPI, Form, Header, HTTPException, Request, Response,
+    Body, Depends, FastAPI, File, Form, Header, HTTPException, Request, Response,
+    UploadFile,
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -142,12 +145,6 @@ def _audit(db, username: str, action: str, target=None, result=None, meta=None):
     ))
 
 
-def require_admin(request: Request, db: Session = Depends(get_db)) -> User | None:
-    """Restrict ke role admin; None bila belum login / bukan admin."""
-    user = get_current_user(request, db)
-    if not user or user.role != "admin":
-        return None
-    return user
 
 
 # ---------------------------------------------------------------------------
@@ -3481,6 +3478,379 @@ def api_logs_request_status(
         "status": logreq.status,
         "result": logreq.result,
     }
+
+
+# ---------------------------------------------------------------------------
+# FILE MANAGER (Berkas) - Live RPC ke Agen via HTTP Long-Poll
+# ---------------------------------------------------------------------------
+class FileManagerDispatcher:
+    def __init__(self):
+        self._pending: dict[int, list[dict]] = {}
+        self._events: dict[int, asyncio.Event] = {}
+        self._waiters: dict[str, asyncio.Future] = {}
+        self._lock: asyncio.Lock | None = None
+
+    def _get_lock(self) -> asyncio.Lock:
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
+
+    async def get_or_create_event(self, server_id: int) -> asyncio.Event:
+        lock = self._get_lock()
+        async with lock:
+            if server_id not in self._events:
+                self._events[server_id] = asyncio.Event()
+            return self._events[server_id]
+
+    async def dispatch(self, server_id: int, action: str, params: dict, timeout: float = 25.0) -> dict:
+        req_id = secrets.token_hex(16)
+        loop = asyncio.get_running_loop()
+        fut = loop.create_future()
+        self._waiters[req_id] = fut
+
+        req_item = {
+            "id": req_id,
+            "action": action,
+            "params": params,
+            "created_at": time.time(),
+        }
+
+        lock = self._get_lock()
+        async with lock:
+            if server_id not in self._pending:
+                self._pending[server_id] = []
+            self._pending[server_id].append(req_item)
+            if server_id not in self._events:
+                self._events[server_id] = asyncio.Event()
+            self._events[server_id].set()
+
+        try:
+            result = await asyncio.wait_for(fut, timeout=timeout)
+            return result
+        except asyncio.TimeoutError:
+            raise HTTPException(
+                status_code=504,
+                detail="Agen server tidak merespons permintaan berkas (timeout). Pastikan service agent_pantau aktif."
+            )
+        finally:
+            self._waiters.pop(req_id, None)
+
+    async def pop_pending(self, server_id: int) -> list[dict]:
+        lock = self._get_lock()
+        async with lock:
+            reqs = self._pending.pop(server_id, [])
+            if server_id in self._events:
+                self._events[server_id].clear()
+            return reqs
+
+    def resolve(self, req_id: str, result: dict) -> bool:
+        fut = self._waiters.get(req_id)
+        if fut and not fut.done():
+            fut.set_result(result)
+            return True
+        return False
+
+file_dispatcher = FileManagerDispatcher()
+
+
+@app.get("/api/agent/file-requests")
+async def api_agent_file_requests(
+    x_api_key: str = Header(alias="X-Api-Key"),
+    db: Session = Depends(get_db),
+):
+    """Agen mem-poll permintaan berkas secara cepat/long-poll (tahan hingga 15 dtk)."""
+    server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
+    if not server:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    reqs = await file_dispatcher.pop_pending(server.id)
+    if reqs:
+        return {"requests": reqs}
+
+    event = await file_dispatcher.get_or_create_event(server.id)
+    try:
+        await asyncio.wait_for(event.wait(), timeout=15.0)
+    except asyncio.TimeoutError:
+        pass
+
+    reqs = await file_dispatcher.pop_pending(server.id)
+    return {"requests": reqs}
+
+
+@app.post("/api/agent/file-requests/{req_id}/result")
+async def api_agent_file_result(
+    req_id: str,
+    body: dict = Body(...),
+    x_api_key: str = Header(alias="X-Api-Key"),
+    db: Session = Depends(get_db),
+):
+    """Agen melaporkan hasil eksekusi operasi berkas."""
+    server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
+    if not server:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    ok = file_dispatcher.resolve(req_id, body)
+    return {"ok": ok}
+
+
+@app.get("/api/servers/{sid}/files/ls")
+async def api_server_files_ls(
+    sid: int,
+    path: str = "/",
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    res = await file_dispatcher.dispatch(sid, "ls", {"path": path})
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal membaca direktori"))
+    return res
+
+
+@app.get("/api/servers/{sid}/files/cat")
+async def api_server_files_cat(
+    sid: int,
+    path: str,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    res = await file_dispatcher.dispatch(sid, "cat", {"path": path})
+    if not res.get("ok"):
+        raise HTTPException(
+            status_code=400,
+            detail=res.get("error", "Gagal membaca file"),
+            headers={"X-Is-Binary": "1" if res.get("is_binary") else "0"}
+        )
+    return res
+
+
+@app.post("/api/servers/{sid}/files/write")
+async def api_server_files_write(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    path = str(body.get("path", "")).strip()
+    content = str(body.get("content", ""))
+    make_backup = bool(body.get("make_backup", True))
+
+    if not path:
+        raise HTTPException(status_code=400, detail="Path file tidak boleh kosong")
+
+    res = await file_dispatcher.dispatch(sid, "write", {"path": path, "content": content, "make_backup": make_backup})
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal menyimpan file"))
+
+    _audit(db, user.username, "file_save", f"{server.hostname}:{path}", "berhasil",
+           {"size": len(content), "backup": res.get("backup_created")})
+    db.commit()
+    return res
+
+
+@app.post("/api/servers/{sid}/files/mkdir")
+async def api_server_files_mkdir(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    path = str(body.get("path", "")).strip()
+    mode = str(body.get("mode", "0755")).strip()
+    if not path:
+        raise HTTPException(status_code=400, detail="Path tidak boleh kosong")
+
+    res = await file_dispatcher.dispatch(sid, "mkdir", {"path": path, "mode": mode})
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal membuat direktori"))
+
+    _audit(db, user.username, "file_mkdir", f"{server.hostname}:{path}", "berhasil")
+    db.commit()
+    return res
+
+
+@app.post("/api/servers/{sid}/files/touch")
+async def api_server_files_touch(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    path = str(body.get("path", "")).strip()
+    if not path:
+        raise HTTPException(status_code=400, detail="Path tidak boleh kosong")
+
+    res = await file_dispatcher.dispatch(sid, "touch", {"path": path})
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal membuat file"))
+
+    _audit(db, user.username, "file_touch", f"{server.hostname}:{path}", "berhasil")
+    db.commit()
+    return res
+
+
+@app.post("/api/servers/{sid}/files/rm")
+async def api_server_files_rm(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    path = str(body.get("path", "")).strip()
+    if not path:
+        raise HTTPException(status_code=400, detail="Path tidak boleh kosong")
+
+    res = await file_dispatcher.dispatch(sid, "rm", {"path": path})
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal menghapus"))
+
+    _audit(db, user.username, "file_rm", f"{server.hostname}:{path}", "berhasil")
+    db.commit()
+    return res
+
+
+@app.post("/api/servers/{sid}/files/chmod")
+async def api_server_files_chmod(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    path = str(body.get("path", "")).strip()
+    mode = str(body.get("mode", "")).strip()
+    res = await file_dispatcher.dispatch(sid, "chmod", {"path": path, "mode": mode})
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal mengubah izin"))
+
+    _audit(db, user.username, "file_chmod", f"{server.hostname}:{path}", f"mode={mode}")
+    db.commit()
+    return res
+
+
+@app.post("/api/servers/{sid}/files/chown")
+async def api_server_files_chown(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    path = str(body.get("path", "")).strip()
+    owner = str(body.get("owner", "")).strip()
+    group = str(body.get("group", "")).strip() or None
+    res = await file_dispatcher.dispatch(sid, "chown", {"path": path, "owner": owner, "group": group})
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal mengubah kepemilikan"))
+
+    _audit(db, user.username, "file_chown", f"{server.hostname}:{path}", f"owner={owner}:{group}")
+    db.commit()
+    return res
+
+
+@app.post("/api/servers/{sid}/files/upload")
+async def api_server_files_upload(
+    sid: int,
+    request: Request,
+    destination: str = Form(...),
+    file: UploadFile = File(...),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    raw = await file.read()
+    if len(raw) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Ukuran file terlalu besar (maksimal 50 MB)")
+
+    filename = os.path.basename(file.filename or "uploaded_file")
+    target_path = os.path.join(destination.rstrip("/"), filename)
+    b64_data = base64.b64encode(raw).decode("ascii")
+
+    res = await file_dispatcher.dispatch(sid, "write_binary", {"path": target_path, "data_b64": b64_data}, timeout=35.0)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal mengunggah file"))
+
+    _audit(db, user.username, "file_upload", f"{server.hostname}:{target_path}", f"{len(raw)} bytes")
+    db.commit()
+    return {"ok": True, "path": target_path, "size": len(raw)}
+
+
+@app.get("/api/servers/{sid}/files/download")
+async def api_server_files_download(
+    sid: int,
+    path: str,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    res = await file_dispatcher.dispatch(sid, "read_binary", {"path": path}, timeout=35.0)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal membaca file"))
+
+    b64_data = res.get("data_b64", "")
+    try:
+        raw_bytes = base64.b64decode(b64_data)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Gagal membaca data file dari agen")
+
+    filename = os.path.basename(path)
+    safe_name = quote(filename)
+    return Response(
+        content=raw_bytes,
+        media_type="application/octet-stream",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_name}"; filename*=UTF-8\'\'{safe_name}',
+            "Content-Length": str(len(raw_bytes)),
+        }
+    )
 
 
 # ---------------------------------------------------------------------------

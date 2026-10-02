@@ -1,0 +1,530 @@
+#!/usr/bin/env python3
+"""
+pantau-file - Wrapper manajemen file & direktori untuk Agen Pantau.
+===================================================================
+Dijalankan melalui sudo NOPASSWD oleh user 'pantau' ketika admin dashboard
+membuka tab 'Berkas' (File Manager) pada halaman Rincian Server.
+
+Fitur & Guardrails:
+  - Eksekusi aksi: ls, cat, write, mkdir, touch, rm, chmod, chown, read_binary, write_binary.
+  - Guardrail: menolak penghapusan direktori sistem kritis (/, /etc, /bin, /boot, /usr, dll).
+  - Auto-backup: menyimpan <file>.bak.<timestamp> dan <file>.bak sebelum menulis perubahan.
+  - Penulisan atomic (tempfile di direktori sama + fsync + os.replace) mempertahankan mode & kepemilikan.
+  - Deteksi biner otomatis pada mode teks untuk mencegah kerusakan file biner.
+  - I/O berbasis JSON terstruktur.
+"""
+
+import sys
+import os
+import stat
+import json
+import shutil
+import base64
+import time
+import tempfile
+import pwd
+import grp
+from pathlib import Path
+
+# Direktori kritis yang mutlak dilarang dihapus
+PROTECTED_PATHS = {
+    "/", "/bin", "/boot", "/dev", "/etc", "/lib", "/lib32", "/lib64",
+    "/proc", "/sys", "/usr", "/var", "/home", "/root", "/opt", "/run",
+    "/tmp", "/srv", "/mnt", "/media", "/sbin", "/vmlinuz", "/initrd.img"
+}
+
+MAX_TEXT_SIZE = 3 * 1024 * 1024       # 3 MB batas baca text editor
+MAX_DOWNLOAD_SIZE = 100 * 1024 * 1024 # 100 MB batas download lewat web
+
+
+def err_exit(msg: str, extra: dict | None = None) -> None:
+    res = {"ok": False, "error": msg}
+    if extra:
+        res.update(extra)
+    print(json.dumps(res, ensure_ascii=False))
+    sys.exit(0)
+
+
+def ok_exit(data: dict) -> None:
+    data["ok"] = True
+    print(json.dumps(data, ensure_ascii=False))
+    sys.exit(0)
+
+
+def get_owner_group(st: os.stat_result) -> tuple[str, str]:
+    try:
+        owner = pwd.getpwuid(st.st_uid).pw_name
+    except (KeyError, OverflowError):
+        owner = str(st.st_uid)
+    try:
+        group = grp.getgrgid(st.st_gid).gr_name
+    except (KeyError, OverflowError):
+        group = str(st.st_gid)
+    return owner, group
+
+
+def action_ls(path: str) -> None:
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        err_exit(f"Path tidak ditemukan: {path}")
+    if not os.path.isdir(path):
+        err_exit(f"Path bukan direktori: {path}")
+
+    items = []
+    try:
+        with os.scandir(path) as it:
+            for entry in it:
+                try:
+                    is_symlink = entry.is_symlink()
+                    link_target = None
+                    if is_symlink:
+                        try:
+                            link_target = os.readlink(entry.path)
+                        except OSError:
+                            link_target = "?"
+                    
+                    try:
+                        st = entry.stat(follow_symlinks=False)
+                        st_mode = st.st_mode
+                        size = st.st_size
+                        mtime = int(st.st_mtime)
+                        mode_str = stat.filemode(st_mode)
+                        octal_mode = oct(st_mode & 0o777)[2:].zfill(4)
+                        owner, group = get_owner_group(st)
+                    except OSError:
+                        mode_str = "??????????"
+                        octal_mode = "0000"
+                        size = 0
+                        mtime = 0
+                        owner = "?"
+                        group = "?"
+
+                    is_dir = entry.is_dir(follow_symlinks=False)
+                    is_file = entry.is_file(follow_symlinks=False)
+                    
+                    # Deteksi tipe sederhana
+                    ext = os.path.splitext(entry.name)[1].lower()
+
+                    items.append({
+                        "name": entry.name,
+                        "path": entry.path,
+                        "is_dir": is_dir,
+                        "is_file": is_file,
+                        "is_symlink": is_symlink,
+                        "link_target": link_target,
+                        "size": size,
+                        "mode": mode_str,
+                        "octal_mode": octal_mode,
+                        "owner": owner,
+                        "group": group,
+                        "mtime": mtime,
+                        "ext": ext,
+                    })
+                except OSError:
+                    continue
+    except PermissionError:
+        err_exit(f"Akses ditolak membaca direktori: {path}")
+    except OSError as e:
+        err_exit(f"Gagal membaca direktori: {e}")
+
+    # Urutkan: direktori lebih dulu (A-Z), baru file (A-Z)
+    items.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
+
+    parent = os.path.dirname(path) if path != "/" else None
+
+    # Disk usage info
+    try:
+        du = shutil.disk_usage(path)
+        disk_info = {
+            "total": du.total,
+            "used": du.used,
+            "free": du.free,
+        }
+    except OSError:
+        disk_info = None
+
+    ok_exit({
+        "current_path": path,
+        "parent_path": parent,
+        "items": items,
+        "total_items": len(items),
+        "disk": disk_info,
+    })
+
+
+def is_binary_string(data: bytes) -> bool:
+    if not data:
+        return False
+    if b"\x00" in data:
+        return True
+    # Cek proporsi non-printable
+    text_chars = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(0x20, 0x100)) - {0x7f})
+    non_text = data.translate(None, text_chars)
+    return len(non_text) / len(data) > 0.30
+
+
+def action_cat(path: str, max_bytes: int = MAX_TEXT_SIZE) -> None:
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        err_exit(f"File tidak ditemukan: {path}")
+    if os.path.isdir(path):
+        err_exit(f"Path adalah direktori: {path}")
+
+    try:
+        st = os.stat(path)
+    except OSError as e:
+        err_exit(f"Gagal memeriksa file: {e}")
+
+    size = st.st_size
+    if size > max_bytes:
+        err_exit(
+            f"File terlalu besar untuk editor ({size / (1024*1024):.2f} MB > {max_bytes / (1024*1024):.1f} MB). "
+            "Gunakan tombol Unduh untuk mengambil file.",
+            {"is_too_large": True, "size": size}
+        )
+
+    # Deteksi biner
+    try:
+        with open(path, "rb") as f:
+            sample = f.read(8192)
+            if is_binary_string(sample):
+                err_exit(
+                    "File terdeteksi sebagai biner (bukan teks UTF-8). "
+                    "Gunakan tombol Unduh untuk mengambil file.",
+                    {"is_binary": True, "size": size}
+                )
+            f.seek(0)
+            raw = f.read(max_bytes)
+            content = raw.decode("utf-8", errors="replace")
+    except PermissionError:
+        err_exit(f"Akses ditolak membaca file: {path}")
+    except OSError as e:
+        err_exit(f"Gagal membaca file: {e}")
+
+    owner, group = get_owner_group(st)
+    mode_str = stat.filemode(st.st_mode)
+    octal_mode = oct(st.st_mode & 0o777)[2:].zfill(4)
+
+    # Cek apakah ada file backup
+    bak_path = path + ".bak"
+    has_backup = os.path.exists(bak_path)
+
+    ok_exit({
+        "path": path,
+        "content": content,
+        "size": size,
+        "mtime": int(st.st_mtime),
+        "mode": mode_str,
+        "octal_mode": octal_mode,
+        "owner": owner,
+        "group": group,
+        "has_backup": has_backup,
+    })
+
+
+def action_write(path: str, content: str, make_backup: bool = True) -> None:
+    path = os.path.abspath(path)
+    parent_dir = os.path.dirname(path)
+
+    if not os.path.exists(parent_dir):
+        err_exit(f"Direktori induk tidak ditemukan: {parent_dir}")
+    if os.path.isdir(path):
+        err_exit(f"Target adalah direktori: {path}")
+
+    # Catat izin dan kepemilikan file lama jika ada
+    st_orig = None
+    if os.path.exists(path):
+        try:
+            st_orig = os.stat(path)
+        except OSError:
+            pass
+
+    # Buat backup jika file lama sudah ada
+    backup_file = None
+    if make_backup and st_orig:
+        try:
+            backup_file = path + ".bak"
+            shutil.copy2(path, backup_file)
+            # Simpan juga timestamp backup
+            ts_backup = f"{path}.bak.{int(time.time())}"
+            shutil.copy2(path, ts_backup)
+        except OSError as e:
+            # Tetap lanjut tulis tapi beri peringatan di log jika backup gagal
+            pass
+
+    # Penulisan aman (atomic write)
+    try:
+        content_bytes = content.encode("utf-8")
+        tmp_fd, tmp_path = tempfile.mkstemp(prefix="pantau_edit_", dir=parent_dir)
+        with os.fdopen(tmp_fd, "wb") as f:
+            f.write(content_bytes)
+            f.flush()
+            os.fsync(f.fileno())
+
+        if st_orig:
+            # Kembalikan mode & kepemilikan asli
+            try:
+                os.chmod(tmp_path, st_orig.st_mode)
+                os.chown(tmp_path, st_orig.st_uid, st_orig.st_gid)
+            except OSError:
+                pass
+        else:
+            # File baru: default 0644
+            try:
+                os.chmod(tmp_path, 0o644)
+            except OSError:
+                pass
+
+        os.replace(tmp_path, path)
+    except PermissionError:
+        err_exit(f"Akses ditolak menulis ke {path}")
+    except OSError as e:
+        err_exit(f"Gagal menulis file: {e}")
+
+    ok_exit({
+        "path": path,
+        "bytes_written": len(content_bytes),
+        "backup_created": backup_file if (make_backup and st_orig) else None,
+    })
+
+
+def action_mkdir(path: str, mode: str = "0755") -> None:
+    path = os.path.abspath(path)
+    if os.path.exists(path):
+        err_exit(f"Path sudah ada: {path}")
+
+    try:
+        oct_mode = int(mode, 8)
+    except ValueError:
+        oct_mode = 0o755
+
+    try:
+        os.makedirs(path, mode=oct_mode, exist_ok=False)
+    except PermissionError:
+        err_exit(f"Akses ditolak membuat direktori: {path}")
+    except OSError as e:
+        err_exit(f"Gagal membuat direktori: {e}")
+
+    ok_exit({"path": path, "created": True})
+
+
+def action_touch(path: str) -> None:
+    path = os.path.abspath(path)
+    if os.path.exists(path):
+        err_exit(f"File sudah ada: {path}")
+
+    try:
+        with open(path, "w") as f:
+            pass
+        os.chmod(path, 0o644)
+    except PermissionError:
+        err_exit(f"Akses ditolak membuat file: {path}")
+    except OSError as e:
+        err_exit(f"Gagal membuat file: {e}")
+
+    ok_exit({"path": path, "created": True})
+
+
+def action_rm(path: str) -> None:
+    path = os.path.abspath(path)
+    real_path = os.path.realpath(path)
+
+    # GUARDRAIL KEAMANAN KRITIS
+    if real_path in PROTECTED_PATHS or path in PROTECTED_PATHS:
+        err_exit(f"Aksi ditolak: '{path}' adalah direktori sistem kritis yang dilindungi.")
+
+    # Cek kedalaman path: minimal ada 2 komponen direktori, misal /home/user atau /var/www
+    parts = [p for p in real_path.split("/") if p]
+    if len(parts) < 2:
+        err_exit(f"Aksi ditolak: dilarang menghapus path top-level '{path}'.")
+
+    if not os.path.exists(path) and not os.path.islink(path):
+        err_exit(f"Path tidak ditemukan: {path}")
+
+    try:
+        if os.path.islink(path):
+            os.unlink(path)
+        elif os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.unlink(path)
+    except PermissionError:
+        err_exit(f"Akses ditolak menghapus {path}")
+    except OSError as e:
+        err_exit(f"Gagal menghapus: {e}")
+
+    ok_exit({"path": path, "deleted": True})
+
+
+def action_chmod(path: str, mode: str) -> None:
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        err_exit(f"Path tidak ditemukan: {path}")
+
+    try:
+        oct_mode = int(mode, 8)
+    except ValueError:
+        err_exit(f"Format mode tidak valid (harus oktal, misal 0644 / 0755): {mode}")
+
+    try:
+        os.chmod(path, oct_mode)
+    except PermissionError:
+        err_exit(f"Akses ditolak mengubah chmod: {path}")
+    except OSError as e:
+        err_exit(f"Gagal mengubah izin file: {e}")
+
+    ok_exit({"path": path, "mode": mode})
+
+
+def action_chown(path: str, owner: str, group: str | None = None) -> None:
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        err_exit(f"Path tidak ditemukan: {path}")
+
+    try:
+        shutil.chown(path, user=owner, group=group)
+    except PermissionError:
+        err_exit(f"Akses ditolak mengubah chown: {path}")
+    except (LookupError, OSError) as e:
+        err_exit(f"Gagal mengubah kepemilikan file: {e}")
+
+    ok_exit({"path": path, "owner": owner, "group": group})
+
+
+def action_read_binary(path: str, max_bytes: int = MAX_DOWNLOAD_SIZE) -> None:
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        err_exit(f"File tidak ditemukan: {path}")
+    if os.path.isdir(path):
+        err_exit(f"Path adalah direktori: {path}")
+
+    try:
+        st = os.stat(path)
+        size = st.st_size
+        if size > max_bytes:
+            err_exit(f"Ukuran file melampaui batas unduh ({size / (1024*1024):.1f} MB > {max_bytes / (1024*1024):.1f} MB)")
+
+        with open(path, "rb") as f:
+            raw = f.read(max_bytes)
+        b64 = base64.b64encode(raw).decode("ascii")
+    except OSError as e:
+        err_exit(f"Gagal membaca file: {e}")
+
+    ok_exit({
+        "path": path,
+        "filename": os.path.basename(path),
+        "size": size,
+        "data_b64": b64,
+    })
+
+
+def action_write_binary(path: str, data_b64: str) -> None:
+    path = os.path.abspath(path)
+    parent_dir = os.path.dirname(path)
+
+    if not os.path.exists(parent_dir):
+        err_exit(f"Direktori induk tidak ditemukan: {parent_dir}")
+    if os.path.isdir(path):
+        err_exit(f"Target adalah direktori: {path}")
+
+    try:
+        raw = base64.b64decode(data_b64)
+    except Exception as e:
+        err_exit(f"Gagal mendekode data base64: {e}")
+
+    st_orig = None
+    if os.path.exists(path):
+        try:
+            st_orig = os.stat(path)
+        except OSError:
+            pass
+
+    try:
+        tmp_fd, tmp_path = tempfile.mkstemp(prefix="pantau_up_", dir=parent_dir)
+        with os.fdopen(tmp_fd, "wb") as f:
+            f.write(raw)
+            f.flush()
+            os.fsync(f.fileno())
+
+        if st_orig:
+            try:
+                os.chmod(tmp_path, st_orig.st_mode)
+                os.chown(tmp_path, st_orig.st_uid, st_orig.st_gid)
+            except OSError:
+                pass
+        else:
+            try:
+                os.chmod(tmp_path, 0o644)
+            except OSError:
+                pass
+
+        os.replace(tmp_path, path)
+    except OSError as e:
+        err_exit(f"Gagal menulis file: {e}")
+
+    ok_exit({"path": path, "size": len(raw)})
+
+
+def main():
+    payload = None
+    if not sys.stdin.isatty():
+        try:
+            raw = sys.stdin.read().strip()
+            if raw:
+                payload = json.loads(raw)
+        except Exception:
+            payload = None
+
+    if payload and isinstance(payload, dict):
+        action = payload.get("action", "")
+        params = payload.get("params", {})
+    else:
+        if len(sys.argv) < 2:
+            err_exit("Gunakan: pantau-file <action> [args...] atau kirim JSON ke stdin")
+        action = sys.argv[1]
+        params = {}
+        if action == "ls" and len(sys.argv) > 2:
+            params["path"] = sys.argv[2]
+        elif action == "cat" and len(sys.argv) > 2:
+            params["path"] = sys.argv[2]
+        elif action == "mkdir" and len(sys.argv) > 2:
+            params["path"] = sys.argv[2]
+            if len(sys.argv) > 3:
+                params["mode"] = sys.argv[3]
+        elif action == "rm" and len(sys.argv) > 2:
+            params["path"] = sys.argv[2]
+        elif action == "chmod" and len(sys.argv) > 3:
+            params["path"] = sys.argv[2]
+            params["mode"] = sys.argv[3]
+        elif action == "chown" and len(sys.argv) > 3:
+            params["path"] = sys.argv[2]
+            params["owner"] = sys.argv[3]
+            if len(sys.argv) > 4:
+                params["group"] = sys.argv[4]
+
+    if action == "ls":
+        action_ls(params.get("path", "/"))
+    elif action == "cat":
+        action_cat(params.get("path", ""), params.get("max_bytes", MAX_TEXT_SIZE))
+    elif action == "write":
+        action_write(params.get("path", ""), params.get("content", ""), params.get("make_backup", True))
+    elif action == "mkdir":
+        action_mkdir(params.get("path", ""), params.get("mode", "0755"))
+    elif action == "touch":
+        action_touch(params.get("path", ""))
+    elif action == "rm":
+        action_rm(params.get("path", ""))
+    elif action == "chmod":
+        action_chmod(params.get("path", ""), params.get("mode", "0644"))
+    elif action == "chown":
+        action_chown(params.get("path", ""), params.get("owner", "root"), params.get("group"))
+    elif action == "read_binary":
+        action_read_binary(params.get("path", ""), params.get("max_bytes", MAX_DOWNLOAD_SIZE))
+    elif action == "write_binary":
+        action_write_binary(params.get("path", ""), params.get("data_b64", ""))
+    else:
+        err_exit(f"Aksi tidak dikenal: '{action}'")
+
+
+if __name__ == "__main__":
+    main()

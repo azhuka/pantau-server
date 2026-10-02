@@ -88,7 +88,7 @@ Kalau belum ada, installer memintanya (dan bisa dilewati dengan
 |---|---|
 | **Dashboard** | Ringkasan semua server: jumlah online/offline, layanan down, laporan terakhir. Kotak pencarian instan (*real-time* server/IP/OS) dan shortcut satu-klik salin IP ke clipboard. |
 | **Servers** | Kelola server: tambah, edit, hapus, lihat kunci API, kotak pencarian instan, dan shortcut salin IP. |
-| **Rincian server** | Halaman utama tiap server. Tab **Riwayat**, **Layanan** (restart dan hapus service instan via AJAX tanpa reload halaman), **Masalah**, **Jaringan**, **Akun**, **Log**. **Terminal Bawaan = shell Linux sungguhan** di server klien (bukan emulator/whitelist), tertanam di halaman lewat tombol `>_ Terminal`, dan juga menampilkan proses Update/Upgrade OS secara live. |
+| **Rincian server** | Halaman utama tiap server. Tab **Riwayat**, **Layanan** (restart dan hapus service instan via AJAX tanpa reload halaman), **Masalah**, **Jaringan**, **Akun**, **Log**, dan **Berkas (File Manager)**. **Terminal Bawaan = shell Linux sungguhan** di server klien (bukan emulator/whitelist), tertanam di halaman lewat tombol `>_ Terminal`, dan juga menampilkan proses Update/Upgrade OS secara live. Fitur **Berkas** memungkinkan eksplorasi direktori, edit file dengan auto-backup `.bak`, buat folder/file, upload/download, dan ubah izin (chmod/chown) dengan proteksi guardrail terhadap direktori sistem kritis. |
 | **Masalah** | Semua masalah terbuka lintas server dengan level (Danger / Warning / Info), durasi, dan tips penanganan. |
 | **Log** | Log server pusat: CPU/memori/beban/swap, proses teratas, disk, log service (pilih unit), dan log aplikasi. |
 | **Audit** | Jejak aksi admin: login, kelola server/service/user, perintah remote (restart, blokir IP, update paket, restart agen). |
@@ -153,12 +153,16 @@ sudo install -m 755 -o root -g root package/opt/pantau/agent/agent_pantau.py \
   /opt/pantau/agent/agent_pantau.py
 sudo install -m 750 -o root -g root package/usr/local/sbin/pantau-apt \
   /usr/local/sbin/pantau-apt
+sudo install -m 750 -o root -g root package/usr/local/sbin/pantau-file \
+  /usr/local/sbin/pantau-file
+sudo cp package/etc/sudoers.d/pantau-agent /etc/sudoers.d/pantau-agent
+sudo chmod 440 /etc/sudoers.d/pantau-agent
 sudo python3 -m py_compile /opt/pantau/agent/agent_pantau.py
 sudo systemctl restart agent_pantau.service
 ```
 
 Verifikasi: badge di Rincian host tersebut harus berubah ke versi baru
-(`agen v3.12.0`), dan `server_extras.agent_version` ikut terisi.
+(`agen v3.13.0`), dan `server_extras.agent_version` ikut terisi.
 
 > **Installer menarik dari branch `master`, bukan tag.** Isinya bisa berubah
 > setiap kali ada commit baru, termasuk commit Anda sendiri. Kalau butuh versi
