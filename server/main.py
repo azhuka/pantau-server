@@ -183,7 +183,7 @@ def _parse_iso_dt(value, default=None):
 _CLEAN_CTRL_RE = re.compile(r"[\x00-\x08\x0b-\x1f]")
 # Kode warna SGR (ESC[...m) & sekuens clear screen — dipertahankan untuk render terminal
 _TERM_SGR_RE = re.compile(r"\x1b\[[0-9;]*m")
-_TERM_KEEP_RE = re.compile(r"\x1b\[(?:[0-9;]*m|2J|3J|H|1;1H)")
+_TERM_KEEP_RE = re.compile(r"\x1b\[(?:[0-9;]*m|2J|3J|H|1;1H|[0-2]?K|[0-9]*P|[0-9]*[A-D])")
 _ANSI_ANY_RE = re.compile(r"\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|.)")
 
 

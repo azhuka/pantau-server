@@ -820,7 +820,6 @@ class NativeTerminal {
     this.showingApt = false;  // layar masih menampilkan output apt terakhir
     this.shellReady = false;  // shell sudah status "executing" (bukan pending)
     this.aptReady = false;    // proses apt berjalan sudah "executing"
-    this.clearMark = 0;       // offset buffer teks mentah untuk pembersihan layar
     this.lastRawText = '';    // buffer mentah terakhir yang diterima
     this.isFocused = false;   // apakah terminal sedang memiliki fokus
 
@@ -876,7 +875,6 @@ class NativeTerminal {
     if (this.state === 'connecting' || this.state === 'live') return;
     this.state = 'connecting';
     this.closing = false;
-    this.clearMark = 0;
     this.lastRawText = '';
     this.show();
     this.lines = [];
@@ -1000,7 +998,6 @@ class NativeTerminal {
     if (this.rid === rid || this.aptActive || this.closing) return;
     this.showingApt = false;
     this.shellReady = false;
-    this.clearMark = 0;
     this.rid = rid;
     this.state = 'live';
     this.lines = [];
@@ -1282,16 +1279,8 @@ class NativeTerminal {
 
   setRawBuffer(fullText) {
     this.lastRawText = fullText || '';
-    let display = this.lastRawText;
-    if (this.clearMark > 0) {
-      if (display.length >= this.clearMark) {
-        display = display.slice(this.clearMark);
-      } else {
-        this.clearMark = 0;
-      }
-    }
     const isNearBottom = !this.screenEl || (this.screenEl.scrollHeight - this.screenEl.scrollTop - this.screenEl.clientHeight < 60);
-    this.lines = display ? this.outputLinesToHtml(display) : [];
+    this.lines = this.lastRawText ? this.outputLinesToHtml(this.lastRawText) : [];
     this.trimLines();
     this.renderLines();
     if (isNearBottom) this.scrollToBottom();
@@ -1303,12 +1292,12 @@ class NativeTerminal {
 
   clearScreen() {
     this.showingApt = false;
-    this.clearMark = (this.lastRawText || '').length;
     if (this.state === 'live') {
       this.sendRaw('\x0c', true);
+    } else {
+      this.lines = [];
+      this.renderLines();
     }
-    this.lines = [];
-    this.renderLines();
     this.focus();
   }
 

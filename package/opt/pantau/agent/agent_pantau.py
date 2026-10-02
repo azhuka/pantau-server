@@ -1142,7 +1142,7 @@ def _apt_sudo_denied_hint(err: str) -> str:
 
 _ANSI_RE = re.compile(r"\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|.)")
 _SGR_RE = re.compile(r"\x1b\[([0-9;]*)m")
-_TERM_KEEP_RE = re.compile(r"\x1b\[(?:[0-9;]*m|2J|3J|H|1;1H)")
+_TERM_KEEP_RE = re.compile(r"\x1b\[(?:[0-9;]*m|2J|3J|H|1;1H|[0-2]?K|[0-9]*P|[0-9]*[A-D])")
 
 
 def _keep_sgr(text: str) -> str:
@@ -1254,7 +1254,7 @@ def _sgr_on(prev: str, params: str) -> str:
     return "" if params in ("", "0") else params
 
 
-def _render_cells(cells: list[tuple[str, str]], upto: int) -> str:
+def _render_cells(cells: list[tuple[str, str]], upto: int, strip_trailing: bool = True) -> str:
     """Rakit baris dari sel (gaya, karakter) sambil menyisipkan kode SGR.
 
     SGR diteruskan ke dashboard agar kotak terminal di browser bisa mewarnai
@@ -1273,21 +1273,17 @@ def _render_cells(cells: list[tuple[str, str]], upto: int) -> str:
         parts.append(ch)
     if run:
         parts.append("\x1b[0m")
-    return "".join(parts).rstrip("\t ")
+    res = "".join(parts)
+    return res.rstrip("\t ") if strip_trailing else res
 
 
 def termify(raw: str) -> str:
-    """Emulasi layar terminal utk output yang memakai \\r (frame progress).
+    """Emulasi layar terminal utk output yang memakai \\r, \\b, erase line, dan clear screen.
 
-    Di terminal SSH, `\\r` hanya memindahkan kursor ke awal baris; isi yang lama
-    TETAP terlihat kecuali ditimpa huruf baru. `\\n` menutup baris. Fungsi ini
-    meniru persis itu (buffer sel + posisi kursor), sehingga hasilnya sama
-    dengan yang tampil di layar saat menjalankan apt update/upgrade via SSH:
-    frame `Reading package lists... 81%` → `82%` … → `Done` hanya jadi satu
-    baris, dan baris "Reading package lists... Done" tidak hilang.
-
-    Warna (SGR) ikut dipertahankan: tiap sel menyimpan gaya aktifnya, lalu
-    `_render_cells` menyisipkan ulang kode SGR per rentang warna.
+    Di terminal SSH, `\\r` memindahkan kursor ke awal baris, `\\b` memundurkan
+    kursor, `\\x1b[K` menghapus ke kanan, dan `\\x1b[2J` membersihkan layar.
+    Fungsi ini mereplikasi sel kursor dan buffer layar sehingga hasil yang
+    tampil di dashboard persis sama dengan layar SSH yang sesungguhnya.
     """
     out: list[str] = []
     cells: list[tuple[str, str]] = []
@@ -1297,19 +1293,56 @@ def termify(raw: str) -> str:
     while i < n:
         c = raw[i]
         if c == "\x1b":
+            # 1. Warna / SGR
             m = _SGR_RE.match(raw, i)
             if m:
                 style = _sgr_on(style, m.group(1))
                 i = m.end()
                 continue
-            # Deteksi clear screen ANSI: \x1b[2J, \x1b[3J, \x1b[H
-            m_clear = re.match(r"\x1b\[(?:2J|3J|H(?:\[2J)?)", raw[i:])
+            # 2. Clear Screen: \x1b[2J, \x1b[3J, \x1b[H\x1b[2J
+            m_clear = re.match(r"\x1b\[(?:2J|3J|H\x1b\[2J)", raw[i:])
             if m_clear:
-                if "2J" in m_clear.group(0) or "3J" in m_clear.group(0):
-                    out = []
+                out = []
+                cells = []
+                p = 0
+                i += m_clear.end()
+                continue
+            # 3. Cursor Home: \x1b[H, \x1b[1;1H
+            m_h = re.match(r"\x1b\[(?:H|1;1H)", raw[i:])
+            if m_h:
+                p = 0
+                i += m_h.end()
+                continue
+            # 4. Erase in Line: \x1b[K, \x1b[0K, \x1b[1K, \x1b[2K
+            m_k = re.match(r"\x1b\[([0-2]?)K", raw[i:])
+            if m_k:
+                k_mode = m_k.group(1) or "0"
+                if k_mode in ("0", ""):
+                    cells = cells[:p]
+                elif k_mode == "2":
                     cells = []
                     p = 0
-                i += m_clear.end()
+                elif k_mode == "1":
+                    for idx in range(min(p, len(cells))):
+                        cells[idx] = (style, " ")
+                i += m_k.end()
+                continue
+            # 5. Delete Character: \x1b[P, \x1b[1P, dll
+            m_p = re.match(r"\x1b\[(\d*)P", raw[i:])
+            if m_p:
+                cnt = int(m_p.group(1)) if m_p.group(1) else 1
+                del cells[p:p+cnt]
+                i += m_p.end()
+                continue
+            # 6. Cursor Movement: \x1b[C (forward), \x1b[D (backward)
+            m_cd = re.match(r"\x1b\[(\d*)([CD])", raw[i:])
+            if m_cd:
+                cnt = int(m_cd.group(1)) if m_cd.group(1) else 1
+                if m_cd.group(2) == "C":
+                    p = min(p + cnt, len(cells))
+                else:
+                    p = max(p - cnt, 0)
+                i += m_cd.end()
                 continue
             i += 1  # escape lain: abaikan
             continue
@@ -1324,7 +1357,7 @@ def termify(raw: str) -> str:
             i += 1
             continue
         if c == "\n":
-            out.append(_render_cells(cells, len(cells)) + "\n")
+            out.append(_render_cells(cells, len(cells), strip_trailing=True) + "\n")
             cells = []
             p = 0
             i += 1
@@ -1355,7 +1388,7 @@ def termify(raw: str) -> str:
             cells[p] = (style, c)
         p += 1
         i += 1
-    return "".join(out) + _render_cells(cells, len(cells))
+    return "".join(out) + _render_cells(cells, len(cells), strip_trailing=False)
 
 
 def _tail_parts(parts: list[str], budget: int) -> str:
