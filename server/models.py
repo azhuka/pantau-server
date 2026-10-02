@@ -226,6 +226,11 @@ class LogRequest(Base):
     # konfigurasi) disimpan di sini lalu diambil agent lewat /api/logs/{id}/input.
     input_data = Column(String(500), nullable=True)
     input_at = Column(DateTime, nullable=True)
+    # Antrean mentah ketikan untuk sesi Terminal Bawaan (shell pty). Berbeda
+    # dengan input_data yang "satu-slot cukup" untuk jawaban dpkg, shell
+    # mengirim banyak byte kecil berurutan (tiap tombol) sehingga harus
+    # ditumpuk, kalau tidak ada ketikan yang saling menimpa.
+    input_queue = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
 

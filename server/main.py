@@ -28,7 +28,7 @@ from fastapi import (
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
-from sqlalchemy import create_engine, desc, func
+from sqlalchemy import create_engine, desc, func, text
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -369,6 +369,7 @@ def migrate_log_request_input():
     wanted = {
         "input_data": "VARCHAR(500) NULL",
         "input_at": "DATETIME NULL",
+        "input_queue": "TEXT NULL",
     }
     missing = {k: v for k, v in wanted.items() if k not in existing}
     if not missing:
@@ -917,6 +918,18 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         .order_by(LogRequest.created_at)
         .first()
     )
+    # Sesi Terminal Bawaan yang masih hidup, supaya halaman yang di-reload
+    # menyambung lagi ke shell yang sama (tidak membuka shell kedua).
+    shell_run = (
+        db.query(LogRequest)
+        .filter(
+            LogRequest.server_id == sid,
+            LogRequest.unit == SHELL_UNIT,
+            LogRequest.status.in_(["pending", "executing"]),
+        )
+        .order_by(LogRequest.created_at)
+        .first()
+    )
     return {
         "services": svc_list, "commands": cmd_list,
         "online": not _server_stale(server),
@@ -941,6 +954,12 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             "started_ms": int(apt_run.created_at.replace(tzinfo=timezone.utc).timestamp() * 1000)
             if apt_run.created_at else None,
         } if apt_run else None,
+        # Sesi Terminal Bawaan yang masih hidup (resume setelah reload).
+        "shell_exec": {
+            "id": shell_run.id,
+            "started_ms": int(shell_run.created_at.replace(tzinfo=timezone.utc).timestamp() * 1000)
+            if shell_run.created_at else None,
+        } if shell_run else None,
     }
 
 
@@ -2020,6 +2039,21 @@ VALID_UNIT_RE = re.compile(r"^[A-Za-z0-9@_.:+-]{1,100}$")
 # Unit log khusus OS: bisa butuh jawaban admin saat berjalan (mode interaktif),
 # jadi tidak boleh dianggap "stale" seperti permintaan log biasa.
 APT_UNITS = ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX")
+# Terminal Bawaan: shell root interaktif di pty. Bukan "unit log" - lives
+# sampai admin menutupnya, dan input dialirkan terus-menerus.
+SHELL_UNIT = "SHELL"
+# Semua unit yang butuh admin + boleh menerima input stdin sambil berjalan.
+INTERACTIVE_UNITS = APT_UNITS + (SHELL_UNIT,)
+# Batas antrean ketikan shell yang ditahan sebelum byte terlama dibuang.
+SHELL_INPUT_MAX = 64 * 1024
+
+
+def _req_is_shell(db: Session, rid: int, server_id: int) -> bool:
+    """True bila rid adalah sesi shell milik server ini dan masih hidup."""
+    row = db.query(LogRequest.unit, LogRequest.status).filter(
+        LogRequest.id == rid, LogRequest.server_id == server_id
+    ).first()
+    return bool(row) and row[0] == SHELL_UNIT and row[1] == "executing"
 SYSLOG_FILE = "/var/log/syslog"
 AUTH_FILE = "/var/log/auth.log"
 STALE_LOG_SECONDS = 600
@@ -2852,7 +2886,7 @@ def _expire_stale_logs(db: Session, server_id: int):
         .filter(
             LogRequest.server_id == server_id,
             LogRequest.status.in_(["pending", "executing"]),
-            LogRequest.unit.notin_(APT_UNITS),
+            LogRequest.unit.notin_(INTERACTIVE_UNITS),
             LogRequest.created_at < cutoff,
         )
         .all()
@@ -2948,18 +2982,49 @@ def api_logs_input(
         raise HTTPException(status_code=404, detail="Permintaan tidak ditemukan")
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Hanya admin")
-    if req.status != "executing" or req.unit not in APT_UNITS:
+    if req.status != "executing" or req.unit not in INTERACTIVE_UNITS:
         raise HTTPException(status_code=409, detail="Proses tidak sedang berjalan")
 
-    text = body.get("data")
-    if not isinstance(text, str):
+    raw = body.get("data")
+    if not isinstance(raw, str):
         raise HTTPException(status_code=400, detail="data harus string")
-    # Buang karakter kontrol (kecuali baris baru/tab) agar admin tidak bisa
-    # menyuntik perintah lain ke terminal yang sedang berjalan.
-    text = _CLEAN_CTRL_RE.sub("", text.replace("\r", ""))
-    text = text.replace("\n", "").replace("\t", " ")[:200].strip()
-    # Jawaban kosong = tekan Enter saja → pakai pilihan bawaan dpkg.
-    req.input_data = (text + "\n") if text else "\n"
+
+    if req.unit == SHELL_UNIT:
+        # Sesi shell: ini byte mentah untuk pty, bukan "jawaban". Jadi apa
+        # adanya diteruskan - Enter, Tab, panah (ESC [ A), Ctrl+C (0x03),
+        # Ctrl+D (0x04) semuanya berarti. Tidak ada baris baru yang disisipkan
+        # (Ctrl+C tidak boleh mengirim perintah) dan tidak ada karakter yang
+        # "dibersihkan", karena cleaning justru merusak terminal sungguhan.
+        # Yang dibuang hanya NUL dan byte C1 yang bisa merusak kolom TEXT.
+        # (Nama variabel 'raw', bukan 'text': text = sqlalchemy.text.)
+        raw = "".join(ch for ch in raw if ch != "\x00" and not "\x80" <= ch <= "\x9f")
+        if len(raw) > SHELL_INPUT_MAX:
+            raw = raw[-SHELL_INPUT_MAX:]
+        if not raw:
+            return {"ok": True}
+        # Ditumpuk, bukan ditimpa: admin mengetik cepat, agent mengambil
+        # setiap ~350ms, jadi dua POST bisa jatuh di sela yang sama.
+        # Penumpukan dilakukan dalam SATU pernyataan SQL (CONCAT) supaya dua
+        # POST yang benar-benar bersamaan tidak saling menimpa - kalau
+        # read-modify-write di sisi Python, ketikan bisa hilang.
+        # Syarat panjang menjaga antrean tidak tumbuh tanpa batas saat shell
+        # macet (paste raksasa saat shell tidak lagi membaca).
+        db.execute(
+            text(
+                "UPDATE log_requests SET input_queue = CONCAT("
+                "COALESCE(input_queue, ''), :chunk) "
+                "WHERE id = :rid AND CHAR_LENGTH(COALESCE(input_queue, '')) "
+                "+ CHAR_LENGTH(:chunk) <= :cap"
+            ),
+            {"chunk": raw, "rid": rid, "cap": SHELL_INPUT_MAX},
+        )
+    else:
+        # Buang karakter kontrol (kecuali baris baru/tab) agar admin tidak
+        # bisa menyuntik perintah lain ke terminal yang sedang berjalan.
+        cleaned = _CLEAN_CTRL_RE.sub("", raw.replace("\r", ""))
+        cleaned = cleaned.replace("\n", "").replace("\t", " ")[:200].strip()
+        # Jawaban kosong = tekan Enter saja -> pakai pilihan bawaan dpkg.
+        req.input_data = (cleaned + "\n") if cleaned else "\n"
     req.input_at = datetime.utcnow()
     req.updated_at = req.input_at
     db.commit()
@@ -2972,10 +3037,26 @@ def api_logs_input_take(
     x_api_key: str = Header(alias="X-Api-Key"),
     db: Session = Depends(get_db),
 ):
-    """Ambil jawaban admin (sekali ambil lalu dikosongkan). Dipanggil agent."""
+    """Ambil input admin (sekali ambil lalu dikosongkan). Dipanggil agent."""
     server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
     if not server:
         raise HTTPException(status_code=401, detail="Invalid API key")
+
+    if _req_is_shell(db, rid, server.id):
+        # Ambil seluruh antrean raw sekaligus. SELECT ... FOR UPDATE mengunci
+        # baris supaya ketikan yang masuk bersamaan tidak hilang di antara
+        # "baca" dan "kosongkan".
+        row = db.execute(
+            text("SELECT input_queue FROM log_requests WHERE id=:rid FOR UPDATE"),
+            {"rid": rid},
+        ).first()
+        data = row[0] if row and row[0] else None
+        if data:
+            db.execute(text("UPDATE log_requests SET input_queue=NULL, input_at=NULL WHERE id=:rid"),
+                      {"rid": rid})
+            db.commit()
+        return {"data": data}
+
     req = db.query(LogRequest).filter(
         LogRequest.id == rid, LogRequest.server_id == server.id
     ).first()
@@ -3011,9 +3092,15 @@ def api_logs_result(
         raise HTTPException(status_code=404, detail="Log request not found")
 
     req.status = status
-    clean = _clean_terminal if req.unit in APT_UNITS else _clean_result
+    clean = _clean_terminal if req.unit in INTERACTIVE_UNITS else _clean_result
     req.result = clean(body.get("result"), APT_STREAM_MAXCHARS, APT_STREAM_MAXLINES)
     req.updated_at = datetime.utcnow()
+
+    # Sesi shell ditutup: jangan simpan sisa input tak terpakai.
+    if req.unit == SHELL_UNIT and (req.input_data or req.input_queue):
+        req.input_data = None
+        req.input_queue = None
+        req.input_at = None
 
     # Segera sinkronkan status apt ke ServerExtras agar dashboard & tombol upgrade langsung aktif tanpa jeda
     if req.unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX") and status == "success":
@@ -3314,8 +3401,12 @@ def api_logs_request(
         raise HTTPException(status_code=400, detail="Invalid unit name")
 
     is_apt = unit in APT_UNITS
-    if is_apt and user.role != "admin":
-        raise HTTPException(status_code=403, detail="Update/Upgrade hanya untuk admin")
+    is_shell = unit == SHELL_UNIT
+    if (is_apt or is_shell) and user.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Terminal Bawaan & Update/Upgrade hanya untuk admin",
+        )
     if is_apt:
         busy = (
             db.query(LogRequest)
@@ -3328,6 +3419,20 @@ def api_logs_request(
         )
         if busy:
             raise HTTPException(status_code=409, detail="Proses apt lain masih berjalan")
+    if is_shell:
+        # Satu sesi shell per server: output dialirkan lewat kanal yang sama,
+        # jadi dua sesi akan saling menimpa tampilan.
+        busy = (
+            db.query(LogRequest)
+            .filter(
+                LogRequest.server_id == sid,
+                LogRequest.unit == SHELL_UNIT,
+                LogRequest.status.in_(["pending", "executing"]),
+            )
+            .first()
+        )
+        if busy:
+            raise HTTPException(status_code=409, detail="Sesi shell sudah terbuka di server ini")
 
     _expire_stale_logs(db, sid)
 
@@ -3336,6 +3441,10 @@ def api_logs_request(
     if is_apt:
         _audit(db, user.username, f"apt_{unit.removeprefix('APT_').lower()}",
                server.hostname, "dikirim ke agen")
+    elif is_shell:
+        # Terminal Bawaan = root shell. Catat SIAPA membuka sesi di server mana.
+        _audit(db, user.username, "terminal_shell_open", server.hostname,
+               "membuka Terminal Bawaan (shell root)")
     db.commit()
     db.refresh(logreq)
 

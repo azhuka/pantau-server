@@ -17,6 +17,12 @@
 # 6. pantau-host — jalur sempit reboot/poweroff dari Dashboard (admin).
 #    Argumen divalidasi wrapper (reboot|poweroff); bukan shell passthrough.
 #    Perintah ini dipicu TERTUNDA oleh agen dan hanya dari dashboard admin.
+# 7. pantau-shell — TERMINAL BAWAAN: shell root interaktif di pty.
+#    PENTING: ini memberi root penuh atas mesin. Hanya dipicu unit "SHELL"
+#    yang hanya bisa dibuat oleh admin dashboard, dan setiap sesi dicatat ke
+#    syslog dengan tag "pantau-shell" (nilai /etc/sudoers.d/pantau-agent).
+#    Kalau kebijakan Anda tidak mengizinkan shell via web, hapus BARIS INI:
+#    Terminal Bawaan akan menolak dibuka, sedangkan Update/Upgrade tetap jalan.
 #
 # Perintah lain TIDAK diizinkan (sudo biasa tetap butuh password root).
 Defaults:pantau !requiretty
@@ -26,3 +32,4 @@ pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-history
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-apt
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-firewall
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-host
+pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-shell

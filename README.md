@@ -13,7 +13,7 @@ Pantau** (Python) yang jalan di tiap server klien.
 - [Update Dashboard](#update-dashboard)
 - [Update Agen](#update-agen)
 - [Kebutuhan Versi Agen](#kebutuhan-versi-agen)
-- [Konsol Terminal & Update OS](#konsol-terminal--update-os-dari-dashboard)
+- [Terminal Bawaan & Update OS](#terminal-bawaan--update-os-dari-dashboard)
 - [Kalau Update OS Menggantung / Terputus](#kalau-update-os-menggantung--terputus)
 - [HTTPS untuk Produksi](#https-untuk-produksi)
 - [Backup & Restore](#backup--restore)
@@ -88,7 +88,7 @@ Kalau belum ada, installer memintanya (dan bisa dilewati dengan
 |---|---|
 | **Dashboard** | Ringkasan semua server: jumlah online/offline, layanan down, laporan terakhir. Kotak pencarian instan (*real-time* server/IP/OS) dan shortcut satu-klik salin IP ke clipboard. |
 | **Servers** | Kelola server: tambah, edit, hapus, lihat kunci API, kotak pencarian instan, dan shortcut salin IP. |
-| **Rincian server** | Halaman utama tiap server. Tab **Riwayat**, **Layanan** (restart dan hapus service instan via AJAX tanpa reload halaman), **Masalah**, **Jaringan**, **Akun**, **Log**. Terminal bawaan Linux tertanam di halaman (tombol `>_ Terminal`) yang juga menampilkan proses Update/Upgrade OS secara live. |
+| **Rincian server** | Halaman utama tiap server. Tab **Riwayat**, **Layanan** (restart dan hapus service instan via AJAX tanpa reload halaman), **Masalah**, **Jaringan**, **Akun**, **Log**. **Terminal Bawaan = shell Linux sungguhan** di server klien (bukan emulator/whitelist), tertanam di halaman lewat tombol `>_ Terminal`, dan juga menampilkan proses Update/Upgrade OS secara live. |
 | **Masalah** | Semua masalah terbuka lintas server dengan level (Danger / Warning / Info), durasi, dan tips penanganan. |
 | **Log** | Log server pusat: CPU/memori/beban/swap, proses teratas, disk, log service (pilih unit), dan log aplikasi. |
 | **Audit** | Jejak aksi admin: login, kelola server/service/user, perintah remote (restart, blokir IP, update paket, restart agen). |
@@ -158,7 +158,7 @@ sudo systemctl restart agent_pantau.service
 ```
 
 Verifikasi: badge di Rincian host tersebut harus berubah ke versi baru
-(`agen v3.11.0`), dan `server_extras.agent_version` ikut terisi.
+(`agen v3.12.0`), dan `server_extras.agent_version` ikut terisi.
 
 > **Installer menarik dari branch `master`, bukan tag.** Isinya bisa berubah
 > setiap kali ada commit baru, termasuk commit Anda sendiri. Kalau butuh versi
@@ -168,7 +168,7 @@ Verifikasi: badge di Rincian host tersebut harus berubah ke versi baru
 
 Restart agen **tidak menghapus data**. Yang perlu dicek:
 
-1. Badge versi di Rincian sudah versi baru (`v3.11.0`).
+1. Badge versi di Rincian sudah versi baru (`v3.12.0`).
 2. Server kembali online dalam ±10 detik.
 3. Kalau agen upgrade OS, tekan **Update OS** sekali — jawabannya langsung
    tampil tanpa perlu polling ulang dan tombol Upgrade seketika aktif jika ada paket.
@@ -184,7 +184,8 @@ Badge versi agen ada di bagian atas halaman Rincian tiap server.
 | Terminal Update/Upgrade OS (warna + `\r` seperti SSH) | v3.7 |
 | Terminal Upgrade **interaktif** (jawab prompt dpkg) | v3.9 |
 | Proteksi sanitasi ketat, mitigasi loop retry, & aktivasi instan upgrade | v3.10 |
-| Konsol Terminal Bawaan (shell prompt `root@host:~#`, riwayat perintah, reparasi mandiri `dpkg --configure -a`) | v3.11 |
+| Konsol Terminal Bawaan (shell root lewat pty, riwayat perintah, reparasi mandiri `dpkg --configure -a`) | v3.11 |
+| **Terminal Bawaan = shell Linux sungguhan** (pty di server klien, tanpa whitelist, `Ctrl+C` asli, Tab completion, pipeline, program interaktif; input diantrikan atomik) | v3.12 |
 
 Agen lebih lama dari requirements **tetap jalan untuk fitur lain** — hanya
 fitur terkait yang menolak dengan pesan jelas, bukan gagal diam-diam. Contoh:
@@ -202,55 +203,111 @@ ORDER BY x.agent_version, s.hostname;
 
 `NULL` atau versi kosong artinya agen belum pernah mengirim laporan extras.
 
-## Konsol Terminal & Update OS dari Dashboard
+## Terminal Bawaan & Update OS dari Dashboard
 
-Jendela terminal di halaman Rincian dirancang layaknya **konsol terminal Linux/SSH sungguhan** yang bersih dan bebas distraksi. Terminal tertanam langsung di halaman (bukan jendela browser terpisah) dan bisa dibuka kapan saja lewat tombol **`>_ Terminal`** di baris hero.
-- **Tampilan Konsol Autentik**: Titlebar lengkap dengan tombol window, label `root@<hostname>:~ (Terminal Bawaan)`, tombol Clear/Tutup, status proses berjalan, dan kursor blok berkedip (`█`) yang berganti warna saat shell menganggur.
-- **Emulasi Output**: Kode warna ANSI, efek tebal, serta carriage-return (`\r`) progress bar digambar seperti terminal asli. Baris kosong ekor tidak menumpuk, layar dibatasi 4000 baris agar tetap ringan.
-- **Input Universal**: Menerima **semua** jenis input interaktif saat proses berjalan (angka pilihan konfigurasi seperti `1`, `2`, `35`, huruf `Y`/`n`/`I`/`O`, maupun `Enter`).
-- **Riwayat Perintah**: `↑` / `↓` menelusuri perintah yang pernah diketik di konsol.
-- **Pintasan Keyboard**: `Enter` kirim, `Backspace` hapus, `Tab` spasi (fokus tidak berpindah), `Ctrl+C` batal, `Ctrl+L` bersihkan layar, `Esc` kosongkan baris input.
-- **Mode Shell Langsung**: Saat idle, prompt `root@<hostname>:~#` siap menerima perintah langsung:
-  - `update` atau `apt update`: Sinkronisasi daftar paket.
-  - `upgrade` atau `apt upgrade`: Upgrade paket OS tertunda (interaktif).
-  - `dist-upgrade` atau `full-upgrade`: Upgrade penuh termasuk dependensi dan kernel baru.
-  - `dpkg --configure -a` atau `fix`: Reparasi mandiri paket terhenti & dependensi rusak.
-  - `clear`: Bersihkan isi layar terminal.
-  - `help`: Panduan ringkas perintah di konsol.
-  - Awalan `sudo` dan flag umum (`-y`, `--assume-yes`) otomatis diabaikan karena unit yang dijalankan sudah dikunci server.
-- **Perilaku seperti SSH**: Saat proses non-interaktif berjalan (mis. `apt update`), baris input disembunyikan — persis seperti shell foreground yang tidak menampilkan prompt. Baris input baru muncul lagi setelah proses selesai atau saat proses interaktif menunggu jawaban.
+Halaman Rincian Server punya **Terminal Bawaan**: shell Linux sungguhan yang
+berjalan di server tujuan, bukan emulator. Terminal tertanam di halaman (bukan
+jendela browser terpisah) dan dibuka lewat tombol **`>_ Terminal`** di baris
+hero.
 
-### Tombol **Update OS**
+### Yang sebenarnya terjadi
 
-- Menyegarkan daftar paket (`apt update`) — aman dan non-interaktif.
-- Baris status tepat di bawah tombol langsung menampilkan jumlah dan nama paket yang siap di-upgrade.
+Tidak ada daftar perintah yang diizinkan di sisi Dashboard. Semua yang diketik
+dikirim ke `bash` milik server klien lewat **pty**, dan semua yang dicetak bash
+dikembalikan apa adanya:
 
-### Tombol **Upgrade** — interaktif
+```
+Browser (halaman Rincian)
+   │  POST /api/logs/request  {"unit":"SHELL"}        → membuka sesi
+   │  POST /api/logs/{id}/input {"data":"..."}        → byte mentah ke stdin pty
+   │  GET  /api/logs/request/{id}                     ← output + status shell
+   ▼
+Agen pantau (server klien)
+   │  sudo -n /usr/local/sbin/pantau-shell
+   ▼
+script -qefc "bash --rcfile <rc sementara> -i"  →  root@<hostname>:~#
+```
 
-- Aktif otomatis seketika setelah Update OS menemukan paket tertunda.
-- Berjalan di pty: dpkg dapat berinteraksi penuh dengan admin melalui konsol terminal. Jawaban (angka/huruf/Enter) dikirim langsung ke proses di server klien.
-- Proses bisa dijemput kembali: kalau halaman sempat di-reload atau ditutup, Dashboard otomatis menyambung lagi ke proses yang masih berjalan di server klien dan menampilkan sisa output-nya.
+Jadi yang Andacketik benar-benar dieksekusi shell:
+- **Pipeline, redirect, dan utilitas apa pun** — `seq 1 20 | awk '{s+=$1} END{print s}'`,
+  `grep`, `systemctl`, `docker`, `vim`, `htop`, dan sebagainya.
+- **Gunting baris oleh bash** — `Ctrl+A`/`Ctrl+E`, `Ctrl+U`, `Ctrl+W`, panah
+  kiri/kanan, `Backspace`.
+- **`Ctrl+C` = SIGINT asli** ke proses yang sedang berjalan, bukan teks dicetak.
+- **`Tab` = completion bash** (bukan spasi).
+- **Warna ANSI, progress bar `
+`, program layar penuh** ditampilkan apa adanya.
+- **Riwayat** memakai panah `↑` / `↓` (riwayat dalam sesi; tidak pernah ditulis ke disk).
+
+Prompt `root@<hostname>:~#` bukan gambar CSS — itu prompt yang dicetak bash
+melalui wrapper `pantau-shell`.
+
+### Batas &amp; keamanan
+
+Terminal Bawaan **memberi hak root penuh** atas server klien, setara `ssh root@server`.
+Batasnya ada di sisi Dashboard, bukan di dalam shell:
+
+| Batas | Nilai |
+|---|---|
+| Peran | Hanya **admin**. Viewer/operator mendapat `403`. |
+| Jumlah sesi | **Satu** shell per server. Sesi kedua ditolak `409`. |
+| Wrapper | `sudo NOPASSWD /usr/local/sbin/pantau-shell` saja (lihat `/etc/sudoers.d/pantau-agent`). |
+| Riwayat | `HISTFILE=/dev/null`, tidak ada `.bash_history` di server klien. |
+| Jejak audit | Tiap sesi dicatat di **audit Dashboard** (`terminal_shell_open`) dan **syslog server klien** (tag `pantau-shell`, dibuka & ditutup). |
+| Batas waktu | Sesi ditutup otomatis setelah 8 jam. |
+
+Kalau kebijakan Anda tidak mengizinkan shell lewat web, hapus satu baris
+`pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-shell` dari
+`/etc/sudoers.d/pantau-agent` lalu `visudo -c` + restart agen. Tombol
+Update/Upgrade tetap berfungsi.
+
+> Peringatan: shell root via browser berarti siapa pun yang berhasil login
+> sebagai admin Dashboard memegang root semua server. Minimalkan jumlah akun
+> admin dan pastikan Dashboard berada di balik HTTPS.
+
+### Sesi
+
+- Menutup jendela terminal mengirim `exit` ke shell, lalu sesi ditutup di server.
+- Me-reload halaman **menyambung lagi ke shell yang sama** (tidak membuka shell
+  kedua) dan tidak memaksa jendela terbuka — Anda yang memilih mau melihat atau tidak.
+- Membuka terminal di halaman yang sama setelah sesi lama ditutup memulai shell baru.
+
+### Tombol **Update OS** dan **Upgrade**
+
+Tombol tetap ada dan tetap memakai unit APT terisolasi (`apt update`,
+`apt upgrade`, `apt dist-upgrade`, `dpkg --configure -a`) dengan batas-batasnya
+sendiri yang sudah terbukti dari versi sebelumnya. bedanya sekarang hanya di
+tampilan:
+
+- Prosesnya dialirkan ke **jendela Terminal Bawaan yang sama**, lengkap dengan
+  pemisah sebelum/sesudah agar jelas output mana yang milik proses mana.
+- Selama proses apt berjalan, keyboard diarahkan ke proses tersebut — jadi
+  pertanyaan `Y/n` atau pilihan file konfigurasi dijawab **di terminal itu juga**.
+- Selesai? Layar menampilkan ringkasan, lalu ketikan berikutnya kembali ke shell.
 
 ### Kalau Update OS Menggantung / Terputus
 
 | Gejala | Penanganan |
 |---|---|
-| Status macet di `berjalan` lalu menjadi `Gagal — batas waktu habis` | Tunggu 2 menit (jeda anti-resume), lalu buka lagi halaman Rincian. Dashboard akan menyambung otomatis ke proses yang masih ada di server klien. |
+| Status macet di `berjalan` lalu menjadi `Gagal — batas waktu habis` | Tunggu 2 menit (jeda anti-resume), lalu buka lagi halaman Rincian. Dashboard menyambung otomatis ke proses yang masih ada. |
 | `apt update` tidak selesai dalam ±5 menit (wajar) | Periksa konektivitas server klien ke repositori paket, lalu ulangi. |
-| `upgrade` tidak selesai dalam ±15 menit | Upgrade besar (kernel/dependensi) memang bisa lama. Biarkan, atau periksa status dari Tab **Log**. |
-| Proses interaktif (`upgrade`, `dist-upgrade`, `fix`) tidak selesai dalam ±60 menit | Kemungkinan menunggu jawaban yang belum dikirim. Buka terminal, ketik jawaban atau `Enter` pada baris `›`. |
-| `dpkg` terkunci / paket terhenti setelah proses mati mendadak | Jalankan `fix` (atau `dpkg --configure -a`) di terminal konsol, atau gunakan tombol **Restart Agen** di tab **Masalah**. |
+| `upgrade` tidak selesai dalam ±15 menit | Upgrade besar (kernel/dependensi) memang bisa lama. Buka Terminal Bawaan untuk melihat langsung. |
+| Proses interaktif (`upgrade`, `dist-upgrade`, `fix`) macet | Terminal Bawaan aktif — ketik jawaban atau `Enter` di sana. |
+| `dpkg` terkunci / paket terhenti | Jalankan `dpkg --configure -a` (atau `fix`) di Terminal Bawaan. |
+| Terminal Bawaan menolak dibuka | `403` = bukan admin; `409` = sudah ada sesi shell di server itu; `/usr/local/sbin/pantau-shell` hilang = versi agen masih lama. |
 
-Batas waktu di atas hanya batas tunggu *tampilan di Dashboard* — proses di server klien tidak dibunuh. Kill proses yang benar-benar macet harus dilakukan lewat SSH atau tombol **Reboot OS**.
+Batas waktu di atas hanya batas tunggu *tampilan di Dashboard* — proses di
+server klien tidak dibunuh. Kill proses yang benar-benar macet harus dilakukan
+lewat SSH atau tombol **Reboot OS**.
 
 ## Kapan Memerlukan Remote Langsung (SSH)?
 
-Dengan konsol terminal interaktif dan fitur reparasi `dpkg --configure -a` di Dashboard:
+Dengan Terminal Bawaan (shell Linux sungguhan) dan fitur reparasi `dpkg --configure -a` di Dashboard:
 1. **90% pemeliharaan rutin** (update patch keamanan, upgrade paket, konfirmasi Y/n, penanganan paket terhenti) **cukup dan efisien diselesaikan langsung dari web Dashboard** tanpa perlu membuka terminal SSH satu per satu.
 2. **Kondisi darurat yang tetap mewajibkan remote langsung (SSH)**:
    - **Upgrade Versi Distro Mayor** (misal Debian 11 ke 12, atau Ubuntu 22.04 ke 24.04) yang berpotensi memutus network stack/service di tengah instalasi kernel baru.
-   - **Dialog Konfigurasi Layar Penuh (TUI/ncurses)**: Prompt debconf layar biru yang membutuhkan tombol navigasi Panah/Tab/Spasi.
-   - **Gangguan Jaringan / Mesin Crash**: Kondisi saat Agen Pantau tidak dapat terhubung ke Dashboard.
+   - **Dialog Konfigurasi Layar Penuh (TUI/ncurses)**: Prompt debconf layar biru yang butuh tombol navigasi panah/Tab/spasi. *Sebagian besar sudah bisa*, karena Terminal Bawaan mengirim byte kontrol apa adanya; yang tersisa adalah yang butuh menebas layar atau mode mouse.
+   - **Gangguan Jaringan / Mesin Crash**: Kondisi saat Agen Pantau tidak dapat terhubung ke Dashboard. Terminal Bawaan butuh koneksi Dashboard hidup karena stdout shell dialirkan lewat polling HTTP.
 
 ## HTTPS untuk Produksi
 

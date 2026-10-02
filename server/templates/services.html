@@ -100,22 +100,21 @@
     <div class="terminal-titlebar">
       <div class="terminal-dots">
         <span class="t-dot t-dot-red" title="Sembunyikan Terminal" onclick="toggleTerminalView()"></span>
-        <span class="t-dot t-dot-yellow" title="Bersihkan Layar (Clear)" onclick="getTerm().clear()"></span>
+        <span class="t-dot t-dot-yellow" title="Bersihkan Layar (Clear)" onclick="getTerm().clearScreen()"></span>
         <span class="t-dot t-dot-green" title="Scroll ke Paling Bawah" onclick="getTerm().scrollToBottom()"></span>
       </div>
       <div class="terminal-title">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-        <span>root@{{ server.hostname }}:~ (Terminal Bawaan)</span>
+        <span id="term-title">Terminal Bawaan &middot; shell root</span>
       </div>
       <div class="terminal-actions">
         <span id="apt-status" class="terminal-status-badge"></span>
-        <button type="button" class="terminal-btn-icon" onclick="getTerm().clear()" title="Bersihkan Layar Konsol">&#10005;&nbsp;Clear</button>
+        <button type="button" class="terminal-btn-icon" onclick="getTerm().clearScreen()" title="Bersihkan Layar Konsol">&#10005;&nbsp;Clear</button>
         <button type="button" class="terminal-btn-icon" onclick="toggleTerminalView()" title="Sembunyikan Terminal">&#x2715;&nbsp;Tutup</button>
       </div>
     </div>
     <div class="real-terminal-screen" id="real-term" tabindex="0" aria-label="Terminal Bawaan Linux">
       <div id="term-lines" class="term-lines"></div>
-      <div id="term-current-row" class="term-current-row"></div>
       <textarea id="term-hidden-input" class="term-hidden-input" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
     </div>
   </div>
@@ -612,7 +611,6 @@ let aptRunning = false; // sedang ada proses Update/Upgrade berjalan
 let aptFollowActive = false;  // satu loop live pada satu waktu (manual vs resume)
 let aptFollowCooldown = 0;    // jeda pasca "batas waktu habis" agar tidak loop-resume
 let aptRid = null;            // id request apt yang sedang dilacak (untuk kirim jawaban)
-let aptInteractive = false;   // proses mode interaktif → baris input aktif di terminal
 
 function aptLabel(kind) {
   if (kind === 'APT_DIST_UPGRADE') return 'apt dist-upgrade';
@@ -700,9 +698,13 @@ function aptMsg(html, color) {
   m.style.color = color || 'var(--text)';
 }
 
-// ---------- output live apt DI DALAM KARTU (Update / Upgrade) ----------
-// ---------- Terminal Bawaan Asli (Native Integrated Terminal) ----------
+// ---------- output proses apt DI DALAM Terminal Bawaan ----------
+// Shell root dan proses apt berbagi SATU jendela. Ketika apt berjalan, shell
+// dijemput (tidak diketik ke sana); begitu selesai, tampilan kembali ke shell.
 let aptLiveBuf = '';
+// Header/pemisah disimpan terpisah dari aptLiveBuf karena setiap pembaruan apt
+// datang dengan replace=true dan akan menimpa seluruh buffer.
+let aptHeader = '';
 
 // Buffer output mentah dari agen. replace=true berarti agen mengirim ulang
 // seluruh buffer (bukan potongan), sehingga isi layar disetel ulang penuh.
@@ -711,31 +713,26 @@ function aptLiveAppend(text, replace) {
   if (replace) aptLiveBuf = String(text);
   else aptLiveBuf += String(text);
   if (aptLiveBuf.length > 2000000) aptLiveBuf = aptLiveBuf.slice(-2000000);
-  getTerm().setRawBuffer(aptLiveBuf);
+  getTerm().setRawBuffer(aptHeader + aptLiveBuf);
 }
 
-// Buka jendela terminal bawaan saat proses apt dijalankan dari tombol atau dari
-// perintah yang diketik di dalam terminal itu sendiri.
+// Ambil alih tampilan Terminal Bawaan untuk proses apt, lalu tulis pemisah
+// supaya admin tahu output ini milik proses mana.
 function aptLiveShow(kind) {
   const term = getTerm();
-  if (kind) {
-    term.appendRawText('\x1b[32m\x1b[1mroot@' + (typeof SERVER_NAME !== 'undefined' ? escapeHtml(SERVER_NAME) : 'server')
-      + ':~#\x1b[0m ' + escapeHtml(aptLabel(kind)) + '\n');
-  }
+  term.suspendForApt();
+  aptHeader = '\r\n\x1b[33m──── ' + aptLabel(kind)
+    + ' · dipicu dari tombol Dashboard ────\x1b[0m\n';
+  aptLiveBuf = '';
+  term.setRawBuffer(aptHeader);
   term.show();
-  aptInputShow(true);
   aptLiveStatus('mengirim perintah ke server…', 'var(--dim)');
 }
 
-// Sinkronkan baris input dengan state proses: disembunyikan saat proses
-// non-interaktif berjalan (meniru foreground shell), '>' saat interaktif,
-// dan prompt root@host:~# saat shell menganggur.
-function aptInputShow(on) {
-  if (!on) {
-    getTerm().setRunning(true, false);
-    return;
-  }
-  getTerm().setRunning(!!aptRunning, !!aptInteractive);
+// Setelah proses apt selesai, Terminal Bawaan kembali ke shell.
+function aptLiveDone() {
+  getTerm().resumeAfterApt();
+  aptLiveAppend('\r\n\x1b[33m──── selesai; kembali ke shell ────\x1b[0m\n', false);
 }
 
 function parseAnsiToHtml(str) {
@@ -784,27 +781,255 @@ function parseAnsiToHtml(str) {
   return res;
 }
 
+// Berapa lama ketikan dikumpulkan sebelum dikirim ke server. Cukup pendek
+// supaya terasa langsung, cukup panjang supaya satu baris = satu permintaan.
+const INPUT_FLUSH_MS = 90;
+
+// ===================================================================
+// TERMINAL BAWAAN - klien shell root sungguhan.
+//
+// Tidak ada daftar perintah whitelist di sini. Semua yang diketik dikirim
+// apa adanya ke shell bash di server klien lewat pty, dan semua yang
+// dicetak shell dikembalikan apa adanya - persis seperti SSH:
+//   - echo karakter, suntingan baris, Ctrl+C, Ctrl+L, Ctrl+D, Ctrl+U
+//     ditangani oleh bash itu sendiri (bukan oleh JavaScript).
+//   - Tab digs entrusted ke bash untuk completion.
+//   - Tidak ada prompt buatan: prompt root@host:~# datang dari shell.
+// ===================================================================
 class NativeTerminal {
   constructor() {
     this.screenEl = document.getElementById('real-term');
     this.inputEl = document.getElementById('term-hidden-input');
     this.linesEl = document.getElementById('term-lines');
-    this.curRowEl = document.getElementById('term-current-row');
     this.windowEl = document.getElementById('apt-live');
     this.statusEl = document.getElementById('apt-status');
 
     this.lines = [];
-    this.inputBuffer = '';
-    this.history = [];
+    this.history = [];        // riwayat lokal (bash HISTFILE dinonaktifkan)
     this.histIdx = -1;
-    this.isRunning = false;
-    this.isInteractive = false;
-    this.serverName = typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : 'server';
+    this.histDraft = '';
+
+    this.rid = null;          // id request shell di server
+    this.state = 'idle';      // idle | connecting | live | closed
+    this.queue = [];          // ketikan yang menunggu sesi siap
+    this.pendingInput = '';   // ketikan yang belum dikirim (dikumpulkan sebentar)
+    this.inputTarget = null;  // rid tujuan ketikan berjalan
+    this.flushTimer = null;
+    this.retries = 0;        // percobaan ulang saat 409
+    this.polling = false;
+    this.aptActive = false;   // proses apt sedang ditampilkan, shell dijemput
+    this.closing = false;     // admin sengaja menutup: jangan disambung lagi
+    this.showingApt = false;  // layar masih menampilkan output apt terakhir
+    this.shellReady = false;  // shell sudah status "executing" (bukan pending)
+    this.aptReady = false;    // proses apt berjalan sudah "executing"
 
     this.initEvents();
-    this.renderCurrentRow();
+    this.setTitle();
   }
 
+  // ---------------- jendela & status ----------------
+  show() {
+    if (!this.windowEl) return;
+    this.windowEl.style.display = '';
+    this.scrollToBottom();
+    setTimeout(() => this.focus(), 40);
+  }
+
+  hide() {
+    if (!this.windowEl) return;
+    this.windowEl.style.display = 'none';
+    // Menutup jendela = menutup sesi shell di server (kirim "exit").
+    if (this.state === 'live' || this.state === 'connecting') this.closeSession();
+  }
+
+  toggle() {
+    if (!this.windowEl) return;
+    if (this.windowEl.style.display === 'none') {
+      this.show();
+      if (this.state === 'idle' || this.state === 'closed') this.connect();
+      else if (this.state === 'live' && this.rid && !this.polling) this.poll(this.rid);
+    } else {
+      this.hide();
+    }
+  }
+
+  focus() {
+    if (this.inputEl) this.inputEl.focus({ preventScroll: true });
+  }
+
+  status(html, color) {
+    if (!this.statusEl) return;
+    this.statusEl.style.color = color || 'var(--blue)';
+    this.statusEl.innerHTML = html;
+  }
+
+  // ---------------- siklus hidup sesi ----------------
+  async connect() {
+    if (this.state === 'connecting' || this.state === 'live') return;
+    this.state = 'connecting';
+    this.closing = false;
+    this.show();
+    this.lines = [];
+    this.renderLines();
+    this.status('menyambung ke shell...', 'var(--dim)');
+    this.setConnecting(true);
+
+    try {
+      const r = await fetch('/api/logs/request', {
+        method: 'POST', credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
+        body: JSON.stringify({server_id: SID, unit: 'SHELL', lines: 200}),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status));
+      this.rid = j.id;
+    } catch (e) {
+      this.state = 'closed';
+      this.rid = null;
+      this.setConnecting(false);
+      this.status('<b style="color:var(--red)">Gagal:</b> ' + escapeHtml(e.message), 'var(--red)');
+      this.appendRawText('\x1b[31m[terminal] tidak dapat dibuka: ' + escapeHtml(e.message)
+        + '\nKlik tombol Terminal untuk mencoba lagi.\x1b[0m\n');
+      return;
+    }
+
+    this.state = 'live';
+    this.shellReady = false;
+    this.setConnecting(false);
+    this.status('menyambung ke shell…', 'var(--dim)');
+    this.focus();
+    this.poll(this.rid);
+  }
+
+  async closeSession() {
+    const rid = this.rid;
+    this.state = 'closed';
+    this.shellReady = false;
+    this.closing = true;      // sampai agen melepas sesi, jangan di-attach lagi
+    this.rid = null;
+    this.queue = [];
+    this.pendingInput = '';
+    this.inputTarget = null;
+    if (this.flushTimer) { clearTimeout(this.flushTimer); this.flushTimer = null; }
+    this.setConnecting(false);
+    if (!rid) return;
+    // `exit` membuat bash menutup diri dengan rapi.
+    try {
+      await fetch('/api/logs/' + rid + '/input', {
+        method: 'POST', credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
+        body: JSON.stringify({data: 'exit\n'}),
+      });
+    } catch (e) { /* sesi akan menutup sendiri */ }
+  }
+
+  setConnecting(on) {
+    if (this.screenEl) this.screenEl.style.opacity = on ? '.55' : '1';
+    if (on) {
+      this.appendRawText('\x1b[90mmenyambung ke shell di '
+        + (typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : 'server') + ' ...\x1b[0m\n');
+    }
+    this.setTitle();
+  }
+
+  // Judul jendela mencerminkan state shell yang sebenarnya.
+  setTitle() {
+    const el = document.getElementById('term-title');
+    if (!el) return;
+    const host = typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : 'server';
+    el.textContent = this.state === 'live'
+      ? 'root@' + host + ' — shell root'
+      : 'Terminal Bawaan · shell root';
+  }
+
+  // Ikuti output shell. Menempel ke request yang SUDAH ADA supaya reload
+  // halaman tidak membuka shell kedua.
+  async poll(rid) {
+    if (this.polling || this.rid !== rid) return;
+    this.polling = true;
+    const deadline = Date.now() + 9 * 3600 * 1000;
+    try {
+      while (this.rid === rid && Date.now() < deadline) {
+        await sleepMs(250);
+        let j = null;
+        try {
+          const r = await fetch('/api/logs/request/' + rid, {credentials: 'same-origin'});
+          j = await r.json();
+        } catch (e) { continue; }
+        if (this.rid !== rid) return;      // sesi ditutup/diganti di tengah jalan
+        if (!j) continue;
+
+        if (j.status === 'executing' || j.status === 'pending') {
+          // Saat output apt masih di layar, shell tidak menimpanya: hasil
+          // Update/Upgrade harus tetap terbaca sampai admin mengetik.
+          if (!this.aptActive && !this.showingApt) this.setRawBuffer(j.result || '');
+          // Ketikan yang diketik sebelum shell benar-benar hidup baru
+          // dikirim sekarang. Kalau dikirim lebih awal, endpoint input membalas
+          // 409 (proses belum "executing") dan ketikan itu hilang.
+          if (j.status === 'executing' && !this.shellReady) {
+            this.shellReady = true;
+            this.status(this.showingApt ? 'shell root siap' : 'shell root aktif',
+              'var(--green)');
+          }
+          if (this.shellReady && this.queue.length) {
+            this.queue.splice(0).forEach(chunk => this.sendRaw(chunk));
+            this.flushInput();
+          }
+          continue;
+        }
+        // Selesai / gagal: tampilkan hasil final lalu lepas.
+        if (!this.aptActive && !this.showingApt) this.setRawBuffer(j.result || '');
+        this.rid = null;
+        this.state = 'closed';
+        this.shellReady = false;
+        this.status(j.status === 'success'
+          ? 'shell ditutup'
+          : '<b style="color:var(--red)">shell berhenti</b>', 'var(--dim)');
+        this.setTitle();
+        break;
+      }
+    } finally {
+      this.polling = false;
+    }
+  }
+
+  // Dipanggil saat halaman dimuat ulang tapi shell di server masih hidup:
+  // TEMBAL kan sesi yang ada, jangan buka shell kedua dan jangan paksa
+  // jendela terbuka. Admin yang memutuskan mau melihat atau tidak.
+  attach(rid) {
+    if (this.rid === rid || this.aptActive || this.closing) return;
+    this.showingApt = false;   // reload: tampilkan shell, bukan sisa output apt
+    this.shellReady = false;
+    this.rid = rid;
+    this.state = 'live';
+    this.lines = [];
+    this.renderLines();
+    this.setTitle();
+    this.status('shell root aktif (menyambung ke sesi yang ada)', 'var(--green)');
+  }
+
+  // Dipanggil TerminalBawaan saat proses apt mengambil alih tampilan.
+  suspendForApt() {
+    this.showingApt = false;
+    this.aptReady = false;
+    if (this.state === 'live' || this.state === 'connecting') this.aptActive = true;
+    this.status('proses apt berjalan &mdash; ketikan menjawab pertanyaan di sini',
+      'var(--amber, #fbbf24)');
+  }
+
+  // Dipanggil TerminalBawaan setelah proses apt selesai.
+  resumeAfterApt() {
+    if (!this.aptActive) return;
+    this.aptActive = false;
+    this.aptReady = false;
+    this.showingApt = true;      // hasil Update/Upgrade tetap tampil di layar
+    this.status(this.rid ? 'shell root siap &mdash; ketik untuk lanjut'
+      : 'terminal siap', 'var(--green)');
+    this.setTitle();
+    if (this.rid && !this.polling) this.poll(this.rid);
+  }
+
+  // ---------------- input ----------------
   initEvents() {
     if (!this.screenEl || !this.inputEl) return;
 
@@ -813,227 +1038,166 @@ class NativeTerminal {
       this.focus();
     });
 
-    this.inputEl.addEventListener('keydown', (ev) => {
-      this.handleKeyDown(ev);
-    });
+    this.inputEl.addEventListener('keydown', (ev) => this.handleKeyDown(ev));
 
+    // Fallback untuk IME & keyboard virtual (Android): karakter yang tidak
+    // datang sebagai keydown (mis. IME atau keyboard virtual) tetap ikut dikirim.
     this.inputEl.addEventListener('input', () => {
       const val = this.inputEl.value;
       if (val) {
-        this.inputBuffer += val;
         this.inputEl.value = '';
-        this.renderCurrentRow();
-        this.scrollToBottom();
+        this.sendRaw(val);
       }
     });
 
     this.inputEl.addEventListener('paste', (ev) => {
       ev.preventDefault();
-      const pasteData = (ev.clipboardData || window.clipboardData).getData('text');
-      if (pasteData) {
-        this.inputBuffer += pasteData.replace(/[\r\n]+/g, ' ');
-        this.renderCurrentRow();
-        this.scrollToBottom();
-      }
+      const text = (ev.clipboardData || window.clipboardData).getData('text');
+      if (text) this.sendRaw(text.replace(/\r\n/g, '\n').replace(/\r/g, '\n'));
     });
   }
 
-  focus() {
-    if (this.inputEl) {
-      this.inputEl.focus({ preventScroll: true });
-    }
-  }
-
-  show() {
-    if (this.windowEl) {
-      this.windowEl.style.display = '';
-      this.scrollToBottom();
-      setTimeout(() => this.focus(), 40);
-    }
-  }
-
-  hide() {
-    if (this.windowEl) {
-      this.windowEl.style.display = 'none';
-    }
-  }
-
-  toggle() {
-    if (!this.windowEl) return;
-    const isHidden = (this.windowEl.style.display === 'none');
-    if (isHidden) {
-      this.show();
-    } else {
-      this.hide();
-    }
-  }
-
-  setRunning(running, interactive = false) {
-    this.isRunning = running;
-    this.isInteractive = interactive;
-    this.inputBuffer = '';
-    if (this.inputEl) this.inputEl.value = '';
-    this.renderCurrentRow();
-    this.scrollToBottom();
-    if (interactive) {
-      setTimeout(() => this.focus(), 30);
-    }
-  }
-
   handleKeyDown(ev) {
-    if (ev.key === 'Enter') {
+    ///history adalah navigasi BARIS yang belum dikirim; selain itu setiap
+    // tombol dikirim mentah ke shell agar bash yang menanganinya.
+    if (ev.key === 'ArrowUp' && this.canHistory()) {
       ev.preventDefault();
-      this.submit();
+      this.histPrev();
       return;
     }
-    if (ev.key === 'Backspace') {
+    if (ev.key === 'ArrowDown' && this.canHistory()) {
       ev.preventDefault();
-      if (this.inputBuffer.length > 0) {
-        this.inputBuffer = this.inputBuffer.slice(0, -1);
-        this.renderCurrentRow();
-        this.scrollToBottom();
-      }
-      return;
-    }
-    if (ev.key === 'ArrowUp') {
-      ev.preventDefault();
-      if (this.history.length && !this.isRunning) {
-        this.histIdx = Math.max(0, this.histIdx - 1);
-        this.inputBuffer = this.history[this.histIdx] || '';
-        this.renderCurrentRow();
-        this.scrollToBottom();
-      }
-      return;
-    }
-    if (ev.key === 'ArrowDown') {
-      ev.preventDefault();
-      if (this.history.length && !this.isRunning) {
-        this.histIdx = Math.min(this.history.length, this.histIdx + 1);
-        this.inputBuffer = this.history[this.histIdx] || '';
-        this.renderCurrentRow();
-        this.scrollToBottom();
-      }
-      return;
-    }
-    if (ev.ctrlKey && ev.key === 'c') {
-      ev.preventDefault();
-      this.appendRawText('^C\n');
-      this.inputBuffer = '';
-      this.renderCurrentRow();
-      this.scrollToBottom();
-      return;
-    }
-    if (ev.ctrlKey && ev.key === 'l') {
-      ev.preventDefault();
-      this.clear();
-      return;
-    }
-    if (ev.key === 'Tab') {
-      // Jangan biarkan Tab memindahkan fokus keluar dari terminal.
-      ev.preventDefault();
-      this.inputBuffer += '    ';
-      this.renderCurrentRow();
-      this.scrollToBottom();
-      return;
-    }
-    if (ev.key === 'Escape') {
-      ev.preventDefault();
-      this.inputBuffer = '';
-      this.renderCurrentRow();
-      this.scrollToBottom();
+      this.histNext();
       return;
     }
 
-    if (!ev.ctrlKey && !ev.metaKey && ev.key.length === 1) {
+    const ctrl = ev.ctrlKey && !ev.altKey && !ev.metaKey;
+    if (ctrl) {
+      const c = ev.key.toLowerCase();
+      // Pintasan yang benar-benar bermakna di terminal: kirim sebagai byte kontrol asli.
+      const CTRL = {c: '\x03', l: '\x0c', d: '\x04', u: '\x15', a: '\x01', e: '\x05',
+                    k: '\x0b', w: '\x17', r: '\x12', p: '\x10', n: '\x0e'};
+      if (c in CTRL) {
+        ev.preventDefault();
+        // Ctrl+D menutup jendela shell; kalau apt yang jalan, artinya
+        // "selesai / pakai bawaan" - biarkan proses yang menanganinya.
+        if (c === 'd' && !this.aptRid && this.state === 'live') this.hide();
+        this.sendRaw(CTRL[c]);
+        return;
+      }
+    }
+
+    if (ev.key === 'Enter') { ev.preventDefault(); this.sendCommand(); return; }
+    if (ev.key === 'Tab') { ev.preventDefault(); this.sendRaw('\t'); return; }
+    if (ev.key === 'Escape') { ev.preventDefault(); this.sendRaw('\x1b'); return; }
+    if (ev.key.length === 1 && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
       ev.preventDefault();
-      this.inputBuffer += ev.key;
-      this.renderCurrentRow();
-      this.scrollToBottom();
+      this.sendRaw(ev.key);
+    }
+    // Panah kiri/kanan & Delete sengaja diteruskan apa adanya supaya suntingan
+    // baris (Ctrl+A/E, panah, Backspace) tetap milik bash.
+  }
+
+  canHistory() {
+    return this.state === 'live' && !this.aptActive && this.inputEl.value === '';
+  }
+
+  histPrev() {
+    if (!this.history.length) return;
+    if (this.histIdx === -1) { this.histIdx = this.history.length - 1; this.histDraft = this.inputEl.value; }
+    else this.histIdx = Math.max(0, this.histIdx - 1);
+    this.inputEl.value = this.history[this.histIdx] || '';
+  }
+
+  histNext() {
+    if (this.histIdx === -1) return;
+    this.histIdx++;
+    if (this.histIdx >= this.history.length) {
+      this.histIdx = -1;
+      this.inputEl.value = this.histDraft || '';
+    } else {
+      this.inputEl.value = this.history[this.histIdx];
     }
   }
 
-  submit() {
-    const text = this.inputBuffer;
-    this.inputBuffer = '';
-    if (this.inputEl) this.inputEl.value = '';
+  sendCommand() {
+    const text = this.inputEl.value;
+    this.inputEl.value = '';
+    if (text.trim()) {
+      this.history.push(text);
+      if (this.history.length > 300) this.history.shift();
+    }
+    this.histIdx = -1;
+    this.histDraft = '';
+    // Perintah yang diketik di shell ikut masuk riwayat lokal, DAN dikirim ke
+    // bash lewat pty yang akan menulsikannya sendiri ( History di sisi server
+    // sengaja dimatikan file-nya).
+    if (text.trim()) this.appendRawText(text + '\n');
+    this.sendRaw(text + '\n');
+  }
 
-    if (this.isRunning) {
-      if (this.isInteractive && aptRid) {
-        this.appendRawText(text + '\n');
-        sendProcessStdin(text);
+  // Keyboard selalu punya SATU tujuan: proses yang sedang foreground. Kalau
+  // ada Update/Upgrade yang jalan, ketikan (& tombol Y/Enter) menjawab
+  // pertanyaan dpkg/apt - persis seperti mengetik di shell biasa. Kalau tidak,
+  // ketikan masuk ke shell root.
+  //
+  // Ketikan dikumpulkan dulu (INPUT_FLUSH_MS) lalu dikirim sebagai satu
+  // permintaan: mengetik cepat tidak berarti puluhan request per detik, dan
+  // urutan byte tetap terjaga karena agent menulisnya utuh ke pty.
+  sendRaw(chunk) {
+    if (!chunk) return;
+    // Proses foreground = Update/Upgrade kalau sedang jalan, selain itu shell.
+    // Tapi HANYA kalau proses itu sudah benar-benar hidup (status
+    // "executing"): kalau belum, endpoint input membalas 409 dan mengetik
+    // admin hilang. Yang belum hidup ditahan di antrean lokal.
+    let rid = null;
+    if (this.aptRid && this.aptActive) rid = this.aptReady ? this.aptRid : null;
+    else if (this.state === 'live') rid = this.shellReady ? this.rid : null;
+    // Admin mengetik = selesai membaca output apt; layar kembali ke shell.
+    if (rid && rid === this.rid) this.showingApt = false;
+    if (!rid) {
+      this.queue.push(chunk);
+      return;
+    }
+    if (this.inputTarget && rid !== this.inputTarget) this.flushInput();
+    this.pendingInput += chunk;
+    this.inputTarget = rid;
+    if (!this.flushTimer) {
+      this.flushTimer = setTimeout(() => this.flushInput(), INPUT_FLUSH_MS);
+    }
+  }
+
+  flushInput() {
+    this.flushTimer = null;
+    if (!this.pendingInput) { this.retries = 0; return; }
+    if (!this.inputTarget) {            // belum ada proses hidup: tahan di antrean
+      this.queue.push(this.pendingInput);
+      this.pendingInput = '';
+      return;
+    }
+    const chunk = this.pendingInput;
+    this.pendingInput = '';
+    const rid = this.inputTarget;
+    if (!chunk || !rid) return;
+    fetch('/api/logs/' + rid + '/input', {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
+      body: JSON.stringify({data: chunk}),
+    }).then(r => {
+      // 409 = shell belum executing / sesi sudah tutup. Coba lagi sebentar,
+      // jangan sampai ketikan admin hilang begitu saja.
+      if (r.status === 409 && this.retries < 6) {
+        this.retries++;
+        this.pendingInput = chunk + this.pendingInput;
+        this.flushTimer = setTimeout(() => this.flushInput(), 400);
       }
-      return;
-    }
-
-    const trimmed = text.trim();
-    this.appendPromptLine(trimmed);
-    if (!trimmed) {
-      this.renderCurrentRow();
-      this.scrollToBottom();
-      return;
-    }
-
-    this.history.push(trimmed);
-    this.histIdx = this.history.length;
-    this.executeCommand(trimmed);
+    }).catch(() => {
+      // Gagal kirim: kembalikan ke antrean supaya tidak hilang diam-diam.
+      this.pendingInput = chunk + this.pendingInput;
+    });
   }
 
-  executeCommand(cmd) {
-    const norm = cmd.toLowerCase().replace(/\s+/g, ' ').trim();
-    const bare = norm.replace(/^sudo\s+/, '').replace(/\s+-{1,2}[a-z-]+/g, ' ').replace(/\s+/g, ' ').trim();
-    // Setiap perintah dicoba tanpa flag (mis. "-y", "--assume-yes") juga,
-    // karena flag diabaikan oleh unit yang dijalankan.
-    const forms = bare === norm.replace(/^sudo\s+/, '') ? [bare] : [bare, norm.replace(/^sudo\s+/, '')];
-    const hit = re => forms.some(f => re.test(f));
-
-    if (hit(/^clear$/)) {
-      this.clear();
-      return;
-    }
-    if (hit(/^help$/)) {
-      this.appendRawText(
-        'Perintah yang didukung:\n' +
-        '  update / apt update           - Sinkronkan repositori paket OS\n' +
-        '  upgrade / apt upgrade         - Upgrade paket tertunda (interaktif)\n' +
-        '  dist-upgrade / full-upgrade   - Upgrade penuh & paket baru/kernel\n' +
-        '  fix / dpkg --configure -a     - Perbaiki dependensi & paket terhenti\n' +
-        '  clear                         - Bersihkan layar konsol\n' +
-        '  help                          - Tampilkan panduan ini\n\n'
-      );
-      this.renderCurrentRow();
-      this.scrollToBottom();
-      return;
-    }
-    if (hit(/^(update|apt update|apt-get update)$/)) {
-      aptAction('APT_UPDATE');
-      return;
-    }
-    if (hit(/^(upgrade|apt upgrade|apt-get upgrade)$/)) {
-      aptAction('APT_UPGRADE_INTERACT');
-      return;
-    }
-    if (hit(/^(dist-upgrade|full-upgrade|apt (-get )?(dist-upgrade|full-upgrade))$/)) {
-      aptAction('APT_DIST_UPGRADE');
-      return;
-    }
-    if (hit(/^(fix)$/) || /^dpkg\b.*configure/.test(norm) || norm.includes('fix-broken')) {
-      aptAction('APT_FIX');
-      return;
-    }
-
-    this.appendRawText('bash: ' + escapeHtml(cmd) + ': perintah tidak ditemukan (ketik "help" untuk daftar perintah)\n');
-    this.renderCurrentRow();
-    this.scrollToBottom();
-  }
-
-  appendPromptLine(cmd) {
-    const promptHtml = '<span class="t-g t-b">root@' + escapeHtml(this.serverName) + ':~#</span> ' + escapeHtml(cmd);
-    this.lines.push(promptHtml);
-    this.renderLines();
-  }
-
-  // Ubah teks mentah Output (ANSI + carriage-return) menjadi baris HTML.
-  // Baris kosong di ekor dibuang karena baris input sudah ditangani renderCurrentRow.
+  // ---------------- render ----------------
   outputLinesToHtml(text) {
     const parts = String(text).split('\n');
     if (parts.length > 1 && parts[parts.length - 1] === '') parts.pop();
@@ -1047,14 +1211,13 @@ class NativeTerminal {
     if (this.lines.length > 5000) this.lines = this.lines.slice(-4000);
   }
 
+  // Dipakai TerminalBawaan untuk stream proses apt ke jendela yang sama.
   appendRawText(text) {
     if (!text) return;
-    // Teks yang diawali \r = kursor kembali ke kolom 0: timpa baris yang sedang berjalan.
     if (text.charAt(0) === '\r' && this.lines.length) this.lines.pop();
     for (const line of this.outputLinesToHtml(text)) this.lines.push(line);
     this.trimLines();
     this.renderLines();
-    this.renderCurrentRow();
     this.scrollToBottom();
   }
 
@@ -1062,48 +1225,33 @@ class NativeTerminal {
     this.lines = fullText ? this.outputLinesToHtml(fullText) : [];
     this.trimLines();
     this.renderLines();
-    this.renderCurrentRow();
     this.scrollToBottom();
   }
 
   clear() {
     this.lines = [];
-    this.inputBuffer = '';
     this.renderLines();
-    this.renderCurrentRow();
+    this.focus();
+  }
+
+  // Tombol Clear: kodok Ctrl+L ke bash supaya layar di sisi server ikut bersih
+  // dan history shell tidak kacau; buffer browser dibersihkan sekalian.
+  clearScreen() {
+    this.showingApt = false;
+    if (this.state === 'live') this.sendRaw('\x0c');
+    this.lines = [];
+    this.renderLines();
     this.focus();
   }
 
   renderLines() {
     if (!this.linesEl) return;
-    this.linesEl.innerHTML = this.lines.map(l => '<div class="term-line">' + (l || '&nbsp;') + '</div>').join('');
-  }
-
-  renderCurrentRow() {
-    if (!this.curRowEl) return;
-
-    if (this.isRunning) {
-      if (this.isInteractive) {
-        this.curRowEl.style.display = 'block';
-        this.curRowEl.innerHTML = '<span style="color:#38bdf8;font-weight:700">›</span> ' +
-          escapeHtml(this.inputBuffer) +
-          '<span class="term-cursor">&#9608;</span>';
-      } else {
-        this.curRowEl.style.display = 'none';
-        this.curRowEl.innerHTML = '';
-      }
-    } else {
-      this.curRowEl.style.display = 'block';
-      this.curRowEl.innerHTML = '<span class="t-g t-b">root@' + escapeHtml(this.serverName) + ':~#</span> ' +
-        escapeHtml(this.inputBuffer) +
-        '<span class="term-cursor idle-cursor">&#9608;</span>';
-    }
+    this.linesEl.innerHTML = this.lines
+      .map(l => '<div class="term-line">' + (l || '&nbsp;') + '</div>').join('');
   }
 
   scrollToBottom() {
-    if (this.screenEl) {
-      this.screenEl.scrollTop = this.screenEl.scrollHeight;
-    }
+    if (this.screenEl) this.screenEl.scrollTop = this.screenEl.scrollHeight;
   }
 }
 
@@ -1116,7 +1264,6 @@ function getTerm() {
   }
   return termInstance;
 }
-
 function toggleTerminalView() {
   getTerm().toggle();
 }
@@ -1128,23 +1275,6 @@ function aptLiveStatus(html, color) {
   st.innerHTML = html;
 }
 
-async function sendProcessStdin(cleanLine) {
-  if (!aptRid) return;
-  try {
-    const r = await fetch('/api/logs/' + aptRid + '/input', {
-      method: 'POST', credentials: 'same-origin',
-      headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
-      body: JSON.stringify({data: cleanLine}),
-    });
-    if (!r.ok) {
-      const j = await r.json().catch(() => ({}));
-      aptLiveStatus('<b style="color:var(--red)">Gagal terkirim:</b> ' + escapeHtml(j.detail || ('HTTP ' + r.status)), 'var(--red)');
-    }
-  } catch (e) {
-    aptLiveStatus('<b style="color:var(--red)">Gagal terkirim:</b> ' + escapeHtml(e.message), 'var(--red)');
-  }
-}
-
 async function aptAction(kind) {
   const upD = document.getElementById('apt-update-btn');
   if (kind === 'APT_DIST_UPGRADE'
@@ -1154,14 +1284,11 @@ async function aptAction(kind) {
   if (kind === 'APT_FIX'
       && !confirm('Jalankan reparasi paket (dpkg --configure -a & apt -f install) di server ini?')) return;
   aptRunning = true;
-  aptInteractive = (kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_DIST_UPGRADE' || kind === 'APT_FIX');
   if (upD) upD.disabled = true;
   aptSetUpgradeEnabled(false);
   aptSetState('busy', 'Memproses <span class="dim">' + aptLabel(kind) + '</span>…');
   aptRid = null;
   aptLiveShow(kind);
-  aptInputShow(true);
-  aptLiveStatus('mengirim perintah ke server…', 'var(--dim)');
 
   let rid;
   try {
@@ -1175,11 +1302,10 @@ async function aptAction(kind) {
     rid = j.id;
   } catch (e) {
     aptRunning = false;
-    aptInteractive = false;
     if (upD) upD.disabled = false;
     aptSetUpgradeEnabled(aptArmed && aptLastCount > 0);
     aptLiveStatus('<b style="color:var(--red)">Gagal mengirim perintah:</b> ' + escapeHtml(e.message), 'var(--red)');
-    aptInputShow(true);
+    aptLiveDone();
     return;
   }
   aptRid = rid;
@@ -1192,12 +1318,10 @@ async function aptFollow(rid, kind, startedMs) {
   if (aptFollowActive) return;
   aptFollowActive = true;
   aptRunning = true;
-  aptInteractive = (kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_DIST_UPGRADE' || kind === 'APT_FIX');
   const upD = document.getElementById('apt-update-btn');
   const label = aptLabel(kind);
   aptRid = rid;
   aptLiveShow(kind);
-  aptInputShow(true);
   aptLiveStatus('menyambung proses ' + label + ' yang masih berjalan…', 'var(--dim)');
   if (upD) upD.disabled = true;
   aptSetUpgradeEnabled(false);
@@ -1215,6 +1339,12 @@ async function aptFollow(rid, kind, startedMs) {
       continue;
     }
     if (j && j.status === 'executing') {
+      if (!getTerm().aptReady) {
+        getTerm().aptReady = true;                 // stdin proses sudah boleh ditulis
+        getTerm().flushInput();
+        getTerm().queue.splice(0).forEach(chunk => getTerm().sendRaw(chunk));
+        getTerm().flushInput();
+      }
       const secs = Math.round((Date.now() - start) / 1000);
       const live = j.result || '';
       if (live !== aptLiveBuf) aptLiveAppend(live, true);
@@ -1229,10 +1359,8 @@ async function aptFollow(rid, kind, startedMs) {
   }
 
   aptRunning = false;
-  aptInteractive = false;
   aptFollowActive = false;
   aptRid = null;
-  aptInputShow(true);
   if (upD) upD.disabled = false;
 
   if (!j || j.status !== 'success') {
@@ -1315,6 +1443,10 @@ async function aptFollow(rid, kind, startedMs) {
       }
     } catch (e) { /* polling berkala tetap berjalan */ }
   }
+
+  // Dipanggil paling akhir: penanda "kembali ke shell" harus jadi baris
+  // terakhir yang terlihat, tidak ditimpa oleh output/aptLiveAppend di atas.
+  aptLiveDone();
 }
 
 // ---------- service patch (existing) ----------
@@ -1325,6 +1457,9 @@ function patch(data) {
   if (aptrun && !aptFollowActive && !aptRunning && Date.now() > aptFollowCooldown) {
     aptFollow(aptrun.id, aptrun.kind, aptrun.started_ms);
   }
+  // Terminal Bawaan: kalau shell masih hidup di server ini, sambungkan ke
+  // sesi yang sama (bukan membuka shell baru).
+  if (data.shell_exec) getTerm().attach(data.shell_exec.id);
   const aver = document.getElementById('agent-ver');
   if (aver) {
     if (data.agent_version) {

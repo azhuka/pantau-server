@@ -1,0 +1,70 @@
+#!/bin/sh
+# pantau-shell - Root shell interaktif untuk Terminal Bawaan di Dashboard.
+#
+# Dipanggil agen 'pantau' via sudo NOPASSWD (lihat /etc/sudoers.d/pantau-agent)
+# HANYA ketika admin dashboard membuka Terminal Bawaan pada halaman Rincian
+# Server. Ini EKIVALEN shell root SSH: siapa pun yang bisa memicu wrapper ini
+# sudah memegang hak root penuh atas mesin tersebut. Batasnya ada di sisi
+# Dashboard (peran admin + audit), bukan di sini.
+#
+# Berbeda dari wrapper lain (pantau-apt/pantau-restart) yang sempit per-opsi,
+# wrapper ini memang tujuannya memberi shell. Yang dijaga di sini:
+#   - Dijalankan lewat pty (script -qefc) supaya bash berperilaku sama seperti
+#     di SSH: echo karakter, warna, program interaktif (vim/less/htop), dan
+#     Ctrl+C yang benar-benar mengirim SIGINT ke proses di depan pty.
+#   - Setiap sesi dicatat ke syslog (tag pantau-shell) sehingga selalu ada
+#     jejak kapan shell dibuka, dibuka oleh siapa, dan berapa lama.
+#   - bash dijalankan tanpa .bashrc/.profile supaya perilaku shell di Dashboard
+#     selalu sama dan bisa diprediksi, apa pun isi file DOTFILES root.
+#
+# Menutup sesi: ketik "exit" atau Ctrl+D.
+#
+# Batas keamanan TIDAK ada di file ini. Kalau nama file ini muncul di
+# /etc/sudoers.d/pantau-agent tanpa "Defaults!pantau-shell !requiretty" dan
+# tanpa batas waktu,anyone yang bisa login sebagai 'pantau' bisa langsung
+# `sudo pantau-shell` dan menjadi root tanpa lewat dashboard sama sekali.
+
+set -e
+
+HOSTN=$(hostname -s 2>/dev/null || cat /etc/hostname 2>/dev/null || echo server)
+
+export TERM=xterm-256color
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export LANG=${LANG:-C.UTF-8}
+
+# bash --norc MENGABAIKAN PS1 yang diwarisi dari environment (promptnya jadi
+# 'bash-5.2#'). Karena itu setelan shell ditulis di file rc sementara dan bash
+# dipanggil dengan --rcfile. File ini juga satu-satunya tempat perilaku shell
+# Dashboard ditentukan: apa pun isi .bashrc root, hasilnya sama.
+RCFILE=$(mktemp /tmp/pantau-shellrc.XXXXXX)
+trap 'rm -f "$RCFILE"' EXIT INT TERM
+cat >"$RCFILE" <<EOF
+PS1='root@${HOSTN}:~# '
+PS2='> '
+# Riwayat ditangani Dashboard (panah atas/bawah tetap jalan dalam sesi),
+# tidak pernah menyentuh disk.
+HISTFILE=/dev/null
+HISTSIZE=2000
+EOF
+
+LOG_TAG=pantau-shell
+
+log() {
+    if command -v logger >/dev/null 2>&1; then
+        logger -t "$LOG_TAG" -p authpriv.notice -- "$*" 2>/dev/null || true
+    fi
+}
+
+# Shell dibuka: catat supaya selalu ada jejak kapan dan oleh siapa.
+log "shell dibuka oleh uid=$(id -u) host=$HOSTN"
+
+# Dijalankan lewat pty (script -qefc) supaya bash berperilaku sama seperti di
+# SSH: echo karakter, warna, program interaktif (vim/less/htop), dan Ctrl+C
+# yang benar-benar mengirim SIGINT ke proses di depan pty.
+/usr/bin/script -qefc "/bin/bash --noprofile --rcfile $RCFILE -i" /dev/null
+_rc=$?
+
+# Shell ditutup: catat kode keluar supaya jejak auditnya lengkap.
+log "shell ditutup dengan kode=$_rc"
+
+exit $_rc

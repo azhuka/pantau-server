@@ -411,6 +411,7 @@ _svc_fail_streak: dict[int, int] = {}
 PANTUAN_APT_CMD = "/usr/local/sbin/pantau-apt"
 PANTUAN_HISTORY_CMD = "/usr/local/sbin/pantau-history"
 PANTUAN_HOST_CMD = "/usr/local/sbin/pantau-host"
+PANTUAN_SHELL_CMD = "/usr/local/sbin/pantau-shell"
 
 # Kuota output apt update/upgrade (praktis penuh; MEDIUMTEXT baseline 16MB,
 # streaming server punya kuota sama).
@@ -419,8 +420,19 @@ APT_AGENT_OUTPUT_MAX = 4_000_000
 # Tampilan LIVE hanya ekor output (seperti `tail -f`); hasil final tetap penuh.
 APT_PROGRESS_TAIL_CHARS = 200_000
 
+# Terminal Bawaan: shell root interaktif milik admin dashboard. Berjalan di pty
+# sehingga echo/warna/SIGINT berperilaku seperti SSH.
+SHELL_TIMEOUT_SECS = 8 * 3600          # 8 jam; admin boleh stepping away
+SHELL_OUTPUT_MAX = 8_000_000           # kuota output satu sesi shell
+SHELL_PROGRESS_TAIL_CHARS = 250_000
+SHELL_IDLE_POLL_SECS = 0.35            # jeda antar-pendelikan stdin dari dashboard
+# Shell harus terasa "langsung": kirim output tiap ada perubahan (tahanminimal
+# 120ms supaya satu ketikan tidak jadi 10 request), bukan dikelompokkan 1,2 dtk
+# seperti apt. Didukung polling 250ms di sisi dashboard.
+SHELL_POST_MIN_SECS = 0.12
+
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.11.0"
+AGENT_VERSION = "3.12.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1538,6 +1550,184 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
     http_json_request(cfg, f"/api/logs/{rid}/result", "POST", result)
 
 
+# ---------------------------------------------------------------------------
+# Terminal Bawaan: shell root interaktif (unit "SHELL")
+# ---------------------------------------------------------------------------
+_SHELL_LOCK = threading.Lock()
+_SHELL_RIDS: set[int] = set()
+
+
+def _shell_sudo_denied_hint(err: str) -> str:
+    """Petunjuk bila wrapper pantau-shell belum terpasang/berhak di host klien."""
+    return (
+        "[terminal tidak dapat dibuka] hak sudo agen 'pantau' untuk wrapper "
+        "pantau-shell belum tersedia di host ini.\n"
+        "Perbaiki (sebagai root di host ini):\n"
+        "  cd <folder-paket-pantau>/package && sudo bash install.sh\n"
+        "(memasang ulang sudoers + wrapper pantau-shell; aman/idempotent.)\n"
+        "Rincian teknis:\n" + (err or "")
+    )
+
+
+def _stdin_writer_thread_polled(cfg: dict, rid: int, proc, poll_secs: float) -> None:
+    """Terus ambil ketikan admin dari dashboard lalu tulis ke stdin proses.
+
+    Berhenti saat proses selesai. Semua error ditelan supaya tidak mematikan
+    shell; admin cukup mengetik ulang bila gagal terkirim.
+    """
+    while True:
+        time.sleep(poll_secs)
+        if proc.poll() is not None:
+            return
+        try:
+            code, data = http_json_request(cfg, f"/api/logs/{rid}/input", "GET", timeout=10)
+        except Exception:  # noqa: BLE001 - loop diagnostik, jangan matikan apa pun
+            continue
+        if code != 200 or not data.get("data"):
+            continue
+        text = data["data"]
+        try:
+            #bash di pty sudah menggema karakter yang diketik, jadi kita TIDAK
+            # menulis baris tambahan ke output - persis seperti terminal SSH.
+            proc.stdin.write(text.encode("utf-8", errors="replace"))
+            proc.stdin.flush()
+        except (OSError, ValueError):
+            return
+
+
+def _run_shell_inner(cfg: dict, rid: int) -> None:
+    """Jalankan shell root interaktif dengan streaming live ke Dashboard.
+
+    Berbeda dari alur apt, ini bukan proses sekali jalan: shell hidup sampai
+    admin mengetik "exit", dashboard menutup jendelanya, atau timeout 8 jam.
+    Semua ketikan admin diteruskan apa adanya ke stdin shell lewat pty.
+    """
+    cmd = ["/usr/bin/sudo", "-n", PANTUAN_SHELL_CMD]
+    output_parts: list[str] = []
+    raw_len = 0
+    truncated = False
+    last_post = 0.0
+    started = time.monotonic()
+    last_activity = started
+    closed = False
+
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                stdin=subprocess.PIPE, start_new_session=True)
+    except OSError as e:
+        http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
+                          {"status": "failed",
+                           "result": f"[gagal membuka shell: {e}]"})
+        return
+
+    # Admin yang mengetik; agen tidak pernah menyuntik perintah ke shell.
+    threading.Thread(target=_stdin_writer_thread_polled,
+                     args=(cfg, rid, proc, SHELL_IDLE_POLL_SECS),
+                     name=f"shell-input-{rid}", daemon=True).start()
+
+    try:
+        while True:
+            now = time.monotonic()
+            if now - started > SHELL_TIMEOUT_SECS:
+                closed = True
+                try:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                except (OSError, ProcessLookupError, PermissionError):
+                    pass
+                try:
+                    proc.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    try:
+                        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                    except (OSError, ProcessLookupError, PermissionError):
+                        pass
+                break
+            try:
+                rdy = select.select([proc.stdout], [], [], 1.0)[0]
+            except (OSError, ValueError):
+                break
+            if rdy:
+                raw = proc.stdout.read1(8192)
+                if raw:
+                    # KEEP \r + warna SGR: pty shell menghasilkan keduanya, dan
+                    # dashboard harus bisa merender terminal sungguhan.
+                    text = _keep_sgr(raw.decode("utf-8", errors="replace"))
+                    if text:
+                        output_parts.append(text)
+                        raw_len += len(text)
+                        last_activity = time.monotonic()
+                elif proc.poll() is not None:
+                    break
+            # Kirim output segera setelah berubah supaya ketikan admin terasa
+            # responsif (shell interaktif, bukan laporan berkala).
+            if raw_len and (now - last_post) >= SHELL_POST_MIN_SECS:
+                live = termify(_tail_parts(output_parts, SHELL_PROGRESS_TAIL_CHARS))
+                if live:
+                    http_json_request(cfg, f"/api/logs/{rid}/progress", "POST",
+                                      {"chunk": live, "replace": True})
+                    last_post = now
+            if raw_len > SHELL_OUTPUT_MAX:
+                excess = raw_len - SHELL_OUTPUT_MAX
+                while excess > 0 and output_parts:
+                    part = output_parts[0]
+                    if len(part) <= excess:
+                        excess -= len(part)
+                        output_parts.pop(0)
+                    else:
+                        output_parts[0] = part[excess:]
+                        excess = 0
+                raw_len = SHELL_OUTPUT_MAX
+                truncated = True
+        if proc.returncode is None:
+            try:
+                proc.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                pass
+    finally:
+        with _SHELL_LOCK:
+            _SHELL_RIDS.discard(rid)
+
+    full = termify("".join(output_parts))
+    if truncated and full:
+        full = ("[catatan: output awal dibuang agen karena melebihi kuota]\n\n"
+                + full.strip("\n") + "\n")
+    elif full:
+        full = full.strip("\n")
+
+    live = termify(_tail_parts(output_parts, SHELL_PROGRESS_TAIL_CHARS))
+    if live:
+        http_json_request(cfg, f"/api/logs/{rid}/progress", "POST",
+                          {"chunk": live, "replace": True})
+
+    if closed:
+        msg = (full + "\n\n[catatan: sesi shell ditutup otomatis karena "
+                      "melewati batas waktu 8 jam]").strip("\n")
+    elif proc.returncode not in (0, None):
+        msg = _shell_sudo_denied_hint(full or f"shell berhenti rc={proc.returncode}")
+    else:
+        msg = full or "[shell ditutup tanpa output]"
+
+    print(f"[SHELL] rid={rid} selesai rc={proc.returncode} ({len(msg)} byte)")
+    http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
+                      {"status": "success", "result": msg})
+
+
+def _run_shell_in_thread(cfg: dict, rid: int) -> None:
+    """Pemicu thread shell; menolak dua sesi shell pada satu server."""
+    with _SHELL_LOCK:
+        if _SHELL_RIDS:
+            http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
+                              {"status": "failed",
+                               "result": "Sesi shell lain masih terbuka di server ini."})
+            return
+        _SHELL_RIDS.add(rid)
+    try:
+        _run_shell_inner(cfg, rid)
+    finally:
+        with _SHELL_LOCK:
+            _SHELL_RIDS.discard(rid)
+
+
 def fetch_log_lines(unit: str, lines: int) -> str:
     """Ambil log layanan: unit journal, atau file SYSLOG/AUTH."""
     if unit == "SYSLOG":
@@ -1790,6 +1980,12 @@ def poll_log_requests(cfg: dict):
         elif unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX"):
             threading.Thread(
                 target=_run_apt_in_thread, args=(cfg, rid, unit), daemon=True
+            ).start()
+            continue
+        elif unit == "SHELL":
+            # Terminal Bawaan: shell root interaktif milik admin dashboard.
+            threading.Thread(
+                target=_run_shell_in_thread, args=(cfg, rid), daemon=True
             ).start()
             continue
         elif unit == "USER_ACTIVITY":

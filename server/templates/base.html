@@ -219,7 +219,6 @@ body.show-alert-banner .main{padding-top:68px}
 .real-terminal-screen::-webkit-scrollbar-thumb{background:#21262d;border-radius:4px}
 .term-lines{min-height:20px}
 .term-line{white-space:pre-wrap;word-break:break-all;min-height:1.5em}
-.term-current-row{min-height:1.5em;white-space:pre-wrap;word-break:break-all;margin-top:2px}
 .term-cursor{display:inline-block;width:8px;height:14px;background-color:#38bdf8;vertical-align:text-bottom;animation:termblink 1s step-end infinite;box-shadow:0 0 4px #38bdf8;margin-left:1px}
 .term-cursor.idle-cursor{background-color:#4ade80;box-shadow:0 0 4px #4ade80}
 @keyframes termblink{0%,100%{opacity:1}50%{opacity:0}}
@@ -282,7 +281,7 @@ body.show-alert-banner .main{padding-top:68px}
     <a href="/logout" class="nav-link mob-logout"><span class="nav-icon">&#9099;</span> <span class="nav-label">Logout</span></a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:4px">v{{ app_version or '3.11.0' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:4px">v{{ app_version or '3.12.0' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     {{ user.username }} ({{ user.role }})<br>
     <a href="/logout">Logout</a>
