@@ -201,7 +201,8 @@ body.show-alert-banner .main{padding-top:68px}
 .alert-item{border:1px solid var(--border);border-left:4px solid var(--red);border-radius:8px;padding:12px 14px;margin:12px 0;background:rgba(239,68,68,.05)}
 
 /* Terminal live Update/Upgrade — Gaya Konsol Terminal Linux Modern */
-.terminal-window{background:#0b0e14;border:1px solid #282f3e;border-radius:10px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.5);margin:0;width:100%}
+.terminal-window{background:#0b0e14;border:1px solid #282f3e;border-radius:10px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.5);margin:0;width:100%;transition:border-color .2s,box-shadow .2s}
+.terminal-window:focus-within{border-color:#38bdf8;box-shadow:0 8px 30px rgba(0,0,0,.6),0 0 0 1px rgba(56,189,248,.35)}
 .terminal-titlebar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#131822;border-bottom:1px solid #232a38;user-select:none}
 .terminal-dots{display:flex;gap:7px;align-items:center}
 .t-dot{width:11px;height:11px;border-radius:50%;display:inline-block;cursor:pointer;transition:opacity .15s}
@@ -211,18 +212,25 @@ body.show-alert-banner .main{padding-top:68px}
 .t-dot-green{background:#27c93f;box-shadow:0 0 6px rgba(39,201,63,.4)}
 .terminal-title{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#94a3b8;display:flex;align-items:center;gap:6px;font-weight:600}
 .terminal-actions{display:flex;align-items:center;gap:10px}
-.terminal-status-badge{font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--blue)}
+.terminal-status-badge{font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--blue);display:inline-flex;align-items:center;gap:6px}
+.t-status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
+.t-status-dot.active{background:#4ade80;box-shadow:0 0 6px rgba(74,222,128,.6)}
+.t-status-dot.busy{background:#fbbf24;box-shadow:0 0 6px rgba(251,191,36,.6)}
+.t-status-dot.closed{background:#94a3b8}
+.t-status-dot.error{background:#f87171;box-shadow:0 0 6px rgba(248,113,113,.6)}
 .terminal-btn-icon{background:#1e2533;border:1px solid #333d52;color:#94a3b8;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:ui-monospace,Menlo,Consolas,monospace;display:inline-flex;align-items:center;gap:4px;transition:all .15s}
 .terminal-btn-icon:hover{color:#fff;border-color:#60a5fa;background:#283245}
+.terminal-btn-reconnect{border-color:#38bdf8;color:#38bdf8}
+.terminal-btn-reconnect:hover{border-color:#7dd3fc;color:#fff;background:rgba(56,189,248,.15)}
 .real-terminal-screen{background:#090c10;color:#c9d1d9;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px;line-height:1.5;padding:12px 14px;min-height:220px;max-height:56vh;overflow-y:auto;position:relative;outline:none;cursor:text;border-radius:0 0 10px 10px;scrollbar-width:thin}
 .real-terminal-screen::-webkit-scrollbar{width:8px;height:8px}
 .real-terminal-screen::-webkit-scrollbar-thumb{background:#21262d;border-radius:4px}
 .term-lines{min-height:20px}
 .term-line{white-space:pre-wrap;word-break:break-all;min-height:1.5em}
-.term-cursor{display:inline-block;width:8px;height:14px;background-color:#38bdf8;vertical-align:text-bottom;animation:termblink 1s step-end infinite;box-shadow:0 0 4px #38bdf8;margin-left:1px}
-.term-cursor.idle-cursor{background-color:#4ade80;box-shadow:0 0 4px #4ade80}
+.term-cursor{display:inline-block;width:7px;height:1.25em;background-color:#38bdf8;vertical-align:text-bottom;animation:termblink 1s step-end infinite;box-shadow:0 0 4px #38bdf8;margin-left:1px}
+.term-cursor.idle-cursor{background-color:transparent;border:1px solid #94a3b8;box-shadow:none;animation:none}
 @keyframes termblink{0%,100%{opacity:1}50%{opacity:0}}
-.term-hidden-input{position:absolute;top:0;left:-9999px;opacity:0;width:1px;height:1px;padding:0;margin:0;border:none;outline:none;resize:none;pointer-events:none}
+.term-hidden-input{position:absolute;top:0;left:0;opacity:0;width:1px;height:1px;padding:0;margin:0;border:none;outline:none;resize:none;pointer-events:none}
 /* Status Update/Upgrade: satu baris jelas tepat di bawah tombol */
 .apt-state{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--text)}
 .apt-state::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--dim);flex:none}

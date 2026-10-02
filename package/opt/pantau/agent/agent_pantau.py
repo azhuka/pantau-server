@@ -425,7 +425,7 @@ APT_PROGRESS_TAIL_CHARS = 200_000
 SHELL_TIMEOUT_SECS = 8 * 3600          # 8 jam; admin boleh stepping away
 SHELL_OUTPUT_MAX = 8_000_000           # kuota output satu sesi shell
 SHELL_PROGRESS_TAIL_CHARS = 250_000
-SHELL_IDLE_POLL_SECS = 0.35            # jeda antar-pendelikan stdin dari dashboard
+SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashboard (responsif)
 # Shell harus terasa "langsung": kirim output tiap ada perubahan (tahanminimal
 # 120ms supaya satu ketikan tidak jadi 10 request), bukan dikelompokkan 1,2 dtk
 # seperti apt. Didukung polling 250ms di sisi dashboard.
@@ -1142,34 +1142,31 @@ def _apt_sudo_denied_hint(err: str) -> str:
 
 _ANSI_RE = re.compile(r"\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|.)")
 _SGR_RE = re.compile(r"\x1b\[([0-9;]*)m")
+_TERM_KEEP_RE = re.compile(r"\x1b\[(?:[0-9;]*m|2J|3J|H|1;1H)")
 
 
 def _keep_sgr(text: str) -> str:
-    """Buang semua escape sequence KECUALI SGR (warna), sisakan \\r \\b \\t \\n.
+    """Buang semua escape sequence KECUALI SGR & clear screen, sisakan \\r \\b \\t \\n \\x0c.
 
-    Untuk stream apt: dashboard merender ulang kodenya sendiri supaya output
-    di kotak terminal terlihat sama seperti di SSH (warna + gerak kursor),
-    bukan teks polos. Escape lain (kursor, layar, OSC) dibuang karena tidak
-    berarti apa-apa di luar terminal sungguhan.
+    Untuk stream apt & shell: dashboard merender ulang kodenya sendiri supaya output
+    di kotak terminal terlihat sama seperti di SSH (warna + gerak kursor + clear screen).
     """
     if not text:
         return ""
 
     def _repl(m: re.Match) -> str:
-        return m.group(0) if _SGR_RE.fullmatch(m.group(0)) else ""
+        return m.group(0) if _TERM_KEEP_RE.fullmatch(m.group(0)) else ""
 
     cleaned = _ANSI_RE.sub(_repl, text).replace("\x00", "")
-    # SGR disisihkan dulu pakai placeholder, baru karakter kontrol (termasuk
-    # ESC) dibuang, lalu placeholder dikembalikan menjadi escape sungguhan.
     kept: list[str] = []
 
     def _stash(m: re.Match) -> str:
         kept.append(m.group(0))
         return f"\ue000{len(kept) - 1}\ue001"
 
-    cleaned = _SGR_RE.sub(_stash, cleaned)
+    cleaned = _TERM_KEEP_RE.sub(_stash, cleaned)
     cleaned = "".join(c for c in cleaned
-                      if c >= " " or c in "\n\r\b\t\ue000\ue001")
+                      if c >= " " or c in "\n\r\b\t\x0c\ue000\ue001")
     for idx, code in enumerate(kept):
         cleaned = cleaned.replace(f"\ue000{idx}\ue001", code)
     return cleaned
@@ -1305,7 +1302,22 @@ def termify(raw: str) -> str:
                 style = _sgr_on(style, m.group(1))
                 i = m.end()
                 continue
+            # Deteksi clear screen ANSI: \x1b[2J, \x1b[3J, \x1b[H
+            m_clear = re.match(r"\x1b\[(?:2J|3J|H(?:\[2J)?)", raw[i:])
+            if m_clear:
+                if "2J" in m_clear.group(0) or "3J" in m_clear.group(0):
+                    out = []
+                    cells = []
+                    p = 0
+                i += m_clear.end()
+                continue
             i += 1  # escape lain: abaikan
+            continue
+        if c == "\x0c":  # Form Feed / Ctrl+L
+            out = []
+            cells = []
+            p = 0
+            i += 1
             continue
         if c == "\r":
             p = 0
@@ -1653,8 +1665,12 @@ def _run_shell_inner(cfg: dict, rid: int) -> None:
                     # dashboard harus bisa merender terminal sungguhan.
                     text = _keep_sgr(raw.decode("utf-8", errors="replace"))
                     if text:
-                        output_parts.append(text)
-                        raw_len += len(text)
+                        if "\x0c" in text or "\x1b[2J" in text or "\x1b[3J" in text:
+                            output_parts = [text]
+                            raw_len = len(text)
+                        else:
+                            output_parts.append(text)
+                            raw_len += len(text)
                         last_activity = time.monotonic()
                 elif proc.poll() is not None:
                     break

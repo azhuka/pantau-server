@@ -231,13 +231,16 @@ script -qefc "bash --rcfile <rc sementara> -i"  →  root@<hostname>:~#
 Jadi yang Andacketik benar-benar dieksekusi shell:
 - **Pipeline, redirect, dan utilitas apa pun** — `seq 1 20 | awk '{s+=$1} END{print s}'`,
   `grep`, `systemctl`, `docker`, `vim`, `htop`, dan sebagainya.
-- **Gunting baris oleh bash** — `Ctrl+A`/`Ctrl+E`, `Ctrl+U`, `Ctrl+W`, panah
-  kiri/kanan, `Backspace`.
+- **Suntingan & manipulasi baris bash** — `Backspace` (`\x7f`), `Delete` (`\x1b[3~`),
+  panah kiri/kanan (`←`/`→`), `Home`/`End`, `Ctrl+A`/`Ctrl+E`, `Ctrl+U`, `Ctrl+W`.
 - **`Ctrl+C` = SIGINT asli** ke proses yang sedang berjalan, bukan teks dicetak.
 - **`Tab` = completion bash** (bukan spasi).
-- **Warna ANSI, progress bar `
-`, program layar penuh** ditampilkan apa adanya.
-- **Riwayat** memakai panah `↑` / `↓` (riwayat dalam sesi; tidak pernah ditulis ke disk).
+- **Pembersihan Layar** — Tombol **Clear**, perintah `clear`, dan `Ctrl+L` membersihkan
+  layar tanpa tertimpa riwayat lama saat polling berjalan.
+- **Kursor Aktif & Visual Focus** — Kursor blok berkedip (*blinking cursor*) dan highlight
+  border saat terminal aktif.
+- **Warna ANSI, progress bar `\r`, program layar penuh** ditampilkan apa adanya.
+- **Riwayat perintah** memakai panah `↑` / `↓` (riwayat dalam sesi; tidak pernah ditulis ke disk).
 
 Prompt `root@<hostname>:~#` bukan gambar CSS — itu prompt yang dicetak bash
 melalui wrapper `pantau-shell`.

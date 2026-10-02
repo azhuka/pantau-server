@@ -181,8 +181,9 @@ def _parse_iso_dt(value, default=None):
 
 
 _CLEAN_CTRL_RE = re.compile(r"[\x00-\x08\x0b-\x1f]")
-# Kode warna SGR (ESC[...m) — dipertahankan untuk render terminal
+# Kode warna SGR (ESC[...m) & sekuens clear screen — dipertahankan untuk render terminal
 _TERM_SGR_RE = re.compile(r"\x1b\[[0-9;]*m")
+_TERM_KEEP_RE = re.compile(r"\x1b\[(?:[0-9;]*m|2J|3J|H|1;1H)")
 _ANSI_ANY_RE = re.compile(r"\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|.)")
 
 
@@ -206,33 +207,30 @@ def _clean_result(value, maxchars: int = 40000, maxlines: int = 2000) -> str:
 
 
 def _clean_terminal(value, maxchars: int = 200000, maxlines: int = 4000) -> str:
-    """Sanitasi stream terminal (apt) TANPA merusak tampilan.
+    """Sanitasi stream terminal (apt & shell) TANPA merusak tampilan.
 
-    Berbeda dengan `_clean_result`, carriage return, backspace, dan kode warna
-    SGR HARUS dipertahankan: kotak terminal di dashboard merender ulang
-    kodenya supaya hasilnya sama seperti menjalankan apt lewat SSH (progress
-    `\r` menimpa baris yang sama, warna tetap tampil). Escape sequence lain
-    dan karakter kontrol lain dibuang.
+    Berbeda dengan `_clean_result`, carriage return, backspace, form feed (\x0c),
+    sekuens clear screen (\x1b[2J dll), dan kode warna SGR HARUS dipertahankan:
+    kotak terminal di dashboard merender ulang kodenya supaya hasilnya sama
+    seperti menjalankan shell/apt lewat SSH.
     """
     if value is None:
         return ""
     if not isinstance(value, str):
         value = str(value)
 
-    def _sgr_only(m: re.Match) -> str:
-        return m.group(0) if _TERM_SGR_RE.fullmatch(m.group(0)) else ""
+    def _keep_only(m: re.Match) -> str:
+        return m.group(0) if _TERM_KEEP_RE.fullmatch(m.group(0)) else ""
 
-    value = _ANSI_ANY_RE.sub(_sgr_only, value)
-    # SGR disisihkan dulu dengan placeholder, baru karakter kontrol dibuang
-    # (ESC pun ikut terbuang), lalu placeholder dikembalikan sebagai escape.
+    value = _ANSI_ANY_RE.sub(_keep_only, value)
     kept: list[str] = []
 
     def _stash(m: re.Match) -> str:
         kept.append(m.group(0))
         return f"\ue000{len(kept) - 1}\ue001"
 
-    value = _TERM_SGR_RE.sub(_stash, value)
-    value = "".join(c for c in value if c >= " " or c in "\n\r\b\t\ue000\ue001")
+    value = _TERM_KEEP_RE.sub(_stash, value)
+    value = "".join(c for c in value if c >= " " or c in "\n\r\b\t\x0c\ue000\ue001")
     for idx, code in enumerate(kept):
         value = value.replace(f"\ue000{idx}\ue001", code)
     lines = value.split("\n")

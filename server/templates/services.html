@@ -109,6 +109,7 @@
       </div>
       <div class="terminal-actions">
         <span id="apt-status" class="terminal-status-badge"></span>
+        <button type="button" class="terminal-btn-icon terminal-btn-reconnect" id="term-reconnect-btn" onclick="getTerm().connect()" style="display:none" title="Buka Sesi Shell Baru">&#8635;&nbsp;Sambung Ulang</button>
         <button type="button" class="terminal-btn-icon" onclick="getTerm().clearScreen()" title="Bersihkan Layar Konsol">&#10005;&nbsp;Clear</button>
         <button type="button" class="terminal-btn-icon" onclick="toggleTerminalView()" title="Sembunyikan Terminal">&#x2715;&nbsp;Tutup</button>
       </div>
@@ -803,25 +804,25 @@ class NativeTerminal {
     this.linesEl = document.getElementById('term-lines');
     this.windowEl = document.getElementById('apt-live');
     this.statusEl = document.getElementById('apt-status');
+    this.reconnectBtn = document.getElementById('term-reconnect-btn');
 
     this.lines = [];
-    this.history = [];        // riwayat lokal (bash HISTFILE dinonaktifkan)
-    this.histIdx = -1;
-    this.histDraft = '';
-
     this.rid = null;          // id request shell di server
     this.state = 'idle';      // idle | connecting | live | closed
     this.queue = [];          // ketikan yang menunggu sesi siap
     this.pendingInput = '';   // ketikan yang belum dikirim (dikumpulkan sebentar)
     this.inputTarget = null;  // rid tujuan ketikan berjalan
     this.flushTimer = null;
-    this.retries = 0;        // percobaan ulang saat 409
+    this.retries = 0;         // percobaan ulang saat 409
     this.polling = false;
     this.aptActive = false;   // proses apt sedang ditampilkan, shell dijemput
     this.closing = false;     // admin sengaja menutup: jangan disambung lagi
     this.showingApt = false;  // layar masih menampilkan output apt terakhir
     this.shellReady = false;  // shell sudah status "executing" (bukan pending)
     this.aptReady = false;    // proses apt berjalan sudah "executing"
+    this.clearMark = 0;       // offset buffer teks mentah untuk pembersihan layar
+    this.lastRawText = '';    // buffer mentah terakhir yang diterima
+    this.isFocused = false;   // apakah terminal sedang memiliki fokus
 
     this.initEvents();
     this.setTitle();
@@ -838,7 +839,6 @@ class NativeTerminal {
   hide() {
     if (!this.windowEl) return;
     this.windowEl.style.display = 'none';
-    // Menutup jendela = menutup sesi shell di server (kirim "exit").
     if (this.state === 'live' || this.state === 'connecting') this.closeSession();
   }
 
@@ -854,13 +854,21 @@ class NativeTerminal {
   }
 
   focus() {
-    if (this.inputEl) this.inputEl.focus({ preventScroll: true });
+    if (this.inputEl) {
+      this.inputEl.focus({ preventScroll: true });
+      this.isFocused = true;
+      this.renderLines();
+    }
   }
 
-  status(html, color) {
+  status(html, color, dotType) {
+    if (this.reconnectBtn) {
+      this.reconnectBtn.style.display = (this.state === 'closed' && !this.aptActive) ? 'inline-flex' : 'none';
+    }
     if (!this.statusEl) return;
+    const dotCls = dotType || (this.state === 'live' ? 'active' : (this.state === 'connecting' ? 'busy' : 'closed'));
     this.statusEl.style.color = color || 'var(--blue)';
-    this.statusEl.innerHTML = html;
+    this.statusEl.innerHTML = '<span class="t-status-dot ' + dotCls + '"></span><span>' + html + '</span>';
   }
 
   // ---------------- siklus hidup sesi ----------------
@@ -868,10 +876,12 @@ class NativeTerminal {
     if (this.state === 'connecting' || this.state === 'live') return;
     this.state = 'connecting';
     this.closing = false;
+    this.clearMark = 0;
+    this.lastRawText = '';
     this.show();
     this.lines = [];
     this.renderLines();
-    this.status('menyambung ke shell...', 'var(--dim)');
+    this.status('menyambung ke shell…', 'var(--dim)', 'busy');
     this.setConnecting(true);
 
     try {
@@ -887,16 +897,16 @@ class NativeTerminal {
       this.state = 'closed';
       this.rid = null;
       this.setConnecting(false);
-      this.status('<b style="color:var(--red)">Gagal:</b> ' + escapeHtml(e.message), 'var(--red)');
+      this.status('<b style="color:var(--red)">Gagal:</b> ' + escapeHtml(e.message), 'var(--red)', 'error');
       this.appendRawText('\x1b[31m[terminal] tidak dapat dibuka: ' + escapeHtml(e.message)
-        + '\nKlik tombol Terminal untuk mencoba lagi.\x1b[0m\n');
+        + '\nKlik tombol Terminal atau Sambung Ulang untuk mencoba lagi.\x1b[0m\n');
       return;
     }
 
     this.state = 'live';
     this.shellReady = false;
     this.setConnecting(false);
-    this.status('menyambung ke shell…', 'var(--dim)');
+    this.status('menyambung ke shell…', 'var(--dim)', 'busy');
     this.focus();
     this.poll(this.rid);
   }
@@ -912,8 +922,8 @@ class NativeTerminal {
     this.inputTarget = null;
     if (this.flushTimer) { clearTimeout(this.flushTimer); this.flushTimer = null; }
     this.setConnecting(false);
+    this.status('shell ditutup', 'var(--dim)', 'closed');
     if (!rid) return;
-    // `exit` membuat bash menutup diri dengan rapi.
     try {
       await fetch('/api/logs/' + rid + '/input', {
         method: 'POST', credentials: 'same-origin',
@@ -924,7 +934,7 @@ class NativeTerminal {
   }
 
   setConnecting(on) {
-    if (this.screenEl) this.screenEl.style.opacity = on ? '.55' : '1';
+    if (this.screenEl) this.screenEl.style.opacity = on ? '.65' : '1';
     if (on) {
       this.appendRawText('\x1b[90mmenyambung ke shell di '
         + (typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : 'server') + ' ...\x1b[0m\n');
@@ -932,7 +942,6 @@ class NativeTerminal {
     this.setTitle();
   }
 
-  // Judul jendela mencerminkan state shell yang sebenarnya.
   setTitle() {
     const el = document.getElementById('term-title');
     if (!el) return;
@@ -942,34 +951,27 @@ class NativeTerminal {
       : 'Terminal Bawaan · shell root';
   }
 
-  // Ikuti output shell. Menempel ke request yang SUDAH ADA supaya reload
-  // halaman tidak membuka shell kedua.
   async poll(rid) {
     if (this.polling || this.rid !== rid) return;
     this.polling = true;
     const deadline = Date.now() + 9 * 3600 * 1000;
     try {
       while (this.rid === rid && Date.now() < deadline) {
-        await sleepMs(250);
+        await sleepMs(200);
         let j = null;
         try {
           const r = await fetch('/api/logs/request/' + rid, {credentials: 'same-origin'});
           j = await r.json();
         } catch (e) { continue; }
-        if (this.rid !== rid) return;      // sesi ditutup/diganti di tengah jalan
+        if (this.rid !== rid) return;
         if (!j) continue;
 
         if (j.status === 'executing' || j.status === 'pending') {
-          // Saat output apt masih di layar, shell tidak menimpanya: hasil
-          // Update/Upgrade harus tetap terbaca sampai admin mengetik.
           if (!this.aptActive && !this.showingApt) this.setRawBuffer(j.result || '');
-          // Ketikan yang diketik sebelum shell benar-benar hidup baru
-          // dikirim sekarang. Kalau dikirim lebih awal, endpoint input membalas
-          // 409 (proses belum "executing") dan ketikan itu hilang.
           if (j.status === 'executing' && !this.shellReady) {
             this.shellReady = true;
             this.status(this.showingApt ? 'shell root siap' : 'shell root aktif',
-              'var(--green)');
+              'var(--green)', 'active');
           }
           if (this.shellReady && this.queue.length) {
             this.queue.splice(0).forEach(chunk => this.sendRaw(chunk));
@@ -977,15 +979,16 @@ class NativeTerminal {
           }
           continue;
         }
-        // Selesai / gagal: tampilkan hasil final lalu lepas.
         if (!this.aptActive && !this.showingApt) this.setRawBuffer(j.result || '');
         this.rid = null;
         this.state = 'closed';
         this.shellReady = false;
         this.status(j.status === 'success'
           ? 'shell ditutup'
-          : '<b style="color:var(--red)">shell berhenti</b>', 'var(--dim)');
+          : '<b style="color:var(--red)">shell berhenti</b>', 'var(--dim)',
+          j.status === 'success' ? 'closed' : 'error');
         this.setTitle();
+        this.renderLines();
         break;
       }
     } finally {
@@ -993,38 +996,34 @@ class NativeTerminal {
     }
   }
 
-  // Dipanggil saat halaman dimuat ulang tapi shell di server masih hidup:
-  // TEMBAL kan sesi yang ada, jangan buka shell kedua dan jangan paksa
-  // jendela terbuka. Admin yang memutuskan mau melihat atau tidak.
   attach(rid) {
     if (this.rid === rid || this.aptActive || this.closing) return;
-    this.showingApt = false;   // reload: tampilkan shell, bukan sisa output apt
+    this.showingApt = false;
     this.shellReady = false;
+    this.clearMark = 0;
     this.rid = rid;
     this.state = 'live';
     this.lines = [];
     this.renderLines();
     this.setTitle();
-    this.status('shell root aktif (menyambung ke sesi yang ada)', 'var(--green)');
+    this.status('shell root aktif', 'var(--green)', 'active');
   }
 
-  // Dipanggil TerminalBawaan saat proses apt mengambil alih tampilan.
   suspendForApt() {
     this.showingApt = false;
     this.aptReady = false;
     if (this.state === 'live' || this.state === 'connecting') this.aptActive = true;
     this.status('proses apt berjalan &mdash; ketikan menjawab pertanyaan di sini',
-      'var(--amber, #fbbf24)');
+      'var(--amber, #fbbf24)', 'busy');
   }
 
-  // Dipanggil TerminalBawaan setelah proses apt selesai.
   resumeAfterApt() {
     if (!this.aptActive) return;
     this.aptActive = false;
     this.aptReady = false;
-    this.showingApt = true;      // hasil Update/Upgrade tetap tampil di layar
+    this.showingApt = true;
     this.status(this.rid ? 'shell root siap &mdash; ketik untuk lanjut'
-      : 'terminal siap', 'var(--green)');
+      : 'terminal siap', 'var(--green)', 'active');
     this.setTitle();
     if (this.rid && !this.polling) this.poll(this.rid);
   }
@@ -1038,10 +1037,23 @@ class NativeTerminal {
       this.focus();
     });
 
+    this.screenEl.addEventListener('focus', () => {
+      this.focus();
+    });
+
+    this.inputEl.addEventListener('focus', () => {
+      this.isFocused = true;
+      this.renderLines();
+    });
+
+    this.inputEl.addEventListener('blur', () => {
+      this.isFocused = false;
+      this.renderLines();
+    });
+
     this.inputEl.addEventListener('keydown', (ev) => this.handleKeyDown(ev));
 
-    // Fallback untuk IME & keyboard virtual (Android): karakter yang tidak
-    // datang sebagai keydown (mis. IME atau keyboard virtual) tetap ikut dikirim.
+    // Fallback untuk IME & keyboard virtual
     this.inputEl.addEventListener('input', () => {
       const val = this.inputEl.value;
       if (val) {
@@ -1050,110 +1062,134 @@ class NativeTerminal {
       }
     });
 
-    this.inputEl.addEventListener('paste', (ev) => {
+    // Deteksi backspace pada keyboard virtual ponsel
+    this.inputEl.addEventListener('beforeinput', (ev) => {
+      if (ev.inputType === 'deleteContentBackward') {
+        ev.preventDefault();
+        this.sendRaw('\x7f', true);
+      }
+    });
+
+    const handlePaste = (ev) => {
       ev.preventDefault();
       const text = (ev.clipboardData || window.clipboardData).getData('text');
-      if (text) this.sendRaw(text.replace(/\r\n/g, '\n').replace(/\r/g, '\n'));
-    });
+      if (text) this.sendRaw(text.replace(/\r\n/g, '\n').replace(/\r/g, '\n'), true);
+    };
+
+    this.inputEl.addEventListener('paste', handlePaste);
+    this.screenEl.addEventListener('paste', handlePaste);
   }
 
   handleKeyDown(ev) {
-    ///history adalah navigasi BARIS yang belum dikirim; selain itu setiap
-    // tombol dikirim mentah ke shell agar bash yang menanganinya.
-    if (ev.key === 'ArrowUp' && this.canHistory()) {
+    // 1. Backspace: hapus karakter sebelumnya di readline/pty
+    if (ev.key === 'Backspace') {
       ev.preventDefault();
-      this.histPrev();
-      return;
-    }
-    if (ev.key === 'ArrowDown' && this.canHistory()) {
-      ev.preventDefault();
-      this.histNext();
+      this.sendRaw('\x7f', true);
       return;
     }
 
-    const ctrl = ev.ctrlKey && !ev.altKey && !ev.metaKey;
-    if (ctrl) {
+    // 2. Delete: hapus karakter di posisi kursor
+    if (ev.key === 'Delete') {
+      ev.preventDefault();
+      this.sendRaw('\x1b[3~', true);
+      return;
+    }
+
+    // 3. Tombol Panah (Navigasi Kursor & Riwayat Bash)
+    if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      this.sendRaw('\x1b[A', true);
+      return;
+    }
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      this.sendRaw('\x1b[B', true);
+      return;
+    }
+    if (ev.key === 'ArrowRight') {
+      ev.preventDefault();
+      this.sendRaw('\x1b[C', true);
+      return;
+    }
+    if (ev.key === 'ArrowLeft') {
+      ev.preventDefault();
+      this.sendRaw('\x1b[D', true);
+      return;
+    }
+
+    // 4. Home & End
+    if (ev.key === 'Home') {
+      ev.preventDefault();
+      this.sendRaw('\x1b[H', true);
+      return;
+    }
+    if (ev.key === 'End') {
+      ev.preventDefault();
+      this.sendRaw('\x1b[F', true);
+      return;
+    }
+
+    // 5. PageUp & PageDown
+    if (ev.key === 'PageUp') {
+      ev.preventDefault();
+      this.sendRaw('\x1b[5~', true);
+      return;
+    }
+    if (ev.key === 'PageDown') {
+      ev.preventDefault();
+      this.sendRaw('\x1b[6~', true);
+      return;
+    }
+
+    // 6. Enter & Tab
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      this.sendRaw('\r', true);
+      return;
+    }
+    if (ev.key === 'Tab') {
+      ev.preventDefault();
+      this.sendRaw('\t', true);
+      return;
+    }
+    if (ev.key === 'Escape') {
+      ev.preventDefault();
+      this.sendRaw('\x1b', true);
+      return;
+    }
+
+    // 7. Kombinasi Tombol Ctrl
+    if (ev.ctrlKey && !ev.altKey && !ev.metaKey) {
       const c = ev.key.toLowerCase();
-      // Pintasan yang benar-benar bermakna di terminal: kirim sebagai byte kontrol asli.
-      const CTRL = {c: '\x03', l: '\x0c', d: '\x04', u: '\x15', a: '\x01', e: '\x05',
-                    k: '\x0b', w: '\x17', r: '\x12', p: '\x10', n: '\x0e'};
-      if (c in CTRL) {
+      if (c === 'l') {
         ev.preventDefault();
-        // Ctrl+D menutup jendela shell; kalau apt yang jalan, artinya
-        // "selesai / pakai bawaan" - biarkan proses yang menanganinya.
-        if (c === 'd' && !this.aptRid && this.state === 'live') this.hide();
-        this.sendRaw(CTRL[c]);
+        this.clearScreen();
+        return;
+      }
+      if (c.length === 1 && c >= 'a' && c <= 'z') {
+        ev.preventDefault();
+        const code = String.fromCharCode(c.charCodeAt(0) - 96);
+        if (c === 'd' && !this.aptActive && this.state === 'live') {
+          // Ctrl+D sinyal EOF/keluar shell
+        }
+        this.sendRaw(code, true);
         return;
       }
     }
 
-    if (ev.key === 'Enter') { ev.preventDefault(); this.sendCommand(); return; }
-    if (ev.key === 'Tab') { ev.preventDefault(); this.sendRaw('\t'); return; }
-    if (ev.key === 'Escape') { ev.preventDefault(); this.sendRaw('\x1b'); return; }
+    // 8. Karakter cetak biasa
     if (ev.key.length === 1 && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
       ev.preventDefault();
       this.sendRaw(ev.key);
     }
-    // Panah kiri/kanan & Delete sengaja diteruskan apa adanya supaya suntingan
-    // baris (Ctrl+A/E, panah, Backspace) tetap milik bash.
   }
 
-  canHistory() {
-    return this.state === 'live' && !this.aptActive && this.inputEl.value === '';
-  }
-
-  histPrev() {
-    if (!this.history.length) return;
-    if (this.histIdx === -1) { this.histIdx = this.history.length - 1; this.histDraft = this.inputEl.value; }
-    else this.histIdx = Math.max(0, this.histIdx - 1);
-    this.inputEl.value = this.history[this.histIdx] || '';
-  }
-
-  histNext() {
-    if (this.histIdx === -1) return;
-    this.histIdx++;
-    if (this.histIdx >= this.history.length) {
-      this.histIdx = -1;
-      this.inputEl.value = this.histDraft || '';
-    } else {
-      this.inputEl.value = this.history[this.histIdx];
-    }
-  }
-
-  sendCommand() {
-    const text = this.inputEl.value;
-    this.inputEl.value = '';
-    if (text.trim()) {
-      this.history.push(text);
-      if (this.history.length > 300) this.history.shift();
-    }
-    this.histIdx = -1;
-    this.histDraft = '';
-    // Perintah yang diketik di shell ikut masuk riwayat lokal, DAN dikirim ke
-    // bash lewat pty yang akan menulsikannya sendiri ( History di sisi server
-    // sengaja dimatikan file-nya).
-    if (text.trim()) this.appendRawText(text + '\n');
-    this.sendRaw(text + '\n');
-  }
-
-  // Keyboard selalu punya SATU tujuan: proses yang sedang foreground. Kalau
-  // ada Update/Upgrade yang jalan, ketikan (& tombol Y/Enter) menjawab
-  // pertanyaan dpkg/apt - persis seperti mengetik di shell biasa. Kalau tidak,
-  // ketikan masuk ke shell root.
-  //
-  // Ketikan dikumpulkan dulu (INPUT_FLUSH_MS) lalu dikirim sebagai satu
-  // permintaan: mengetik cepat tidak berarti puluhan request per detik, dan
-  // urutan byte tetap terjaga karena agent menulisnya utuh ke pty.
-  sendRaw(chunk) {
+  sendRaw(chunk, immediate = false) {
     if (!chunk) return;
-    // Proses foreground = Update/Upgrade kalau sedang jalan, selain itu shell.
-    // Tapi HANYA kalau proses itu sudah benar-benar hidup (status
-    // "executing"): kalau belum, endpoint input membalas 409 dan mengetik
-    // admin hilang. Yang belum hidup ditahan di antrean lokal.
     let rid = null;
     if (this.aptRid && this.aptActive) rid = this.aptReady ? this.aptRid : null;
     else if (this.state === 'live') rid = this.shellReady ? this.rid : null;
-    // Admin mengetik = selesai membaca output apt; layar kembali ke shell.
+
     if (rid && rid === this.rid) this.showingApt = false;
     if (!rid) {
       this.queue.push(chunk);
@@ -1162,7 +1198,11 @@ class NativeTerminal {
     if (this.inputTarget && rid !== this.inputTarget) this.flushInput();
     this.pendingInput += chunk;
     this.inputTarget = rid;
-    if (!this.flushTimer) {
+
+    if (immediate) {
+      if (this.flushTimer) { clearTimeout(this.flushTimer); this.flushTimer = null; }
+      this.flushInput();
+    } else if (!this.flushTimer) {
       this.flushTimer = setTimeout(() => this.flushInput(), INPUT_FLUSH_MS);
     }
   }
@@ -1170,7 +1210,7 @@ class NativeTerminal {
   flushInput() {
     this.flushTimer = null;
     if (!this.pendingInput) { this.retries = 0; return; }
-    if (!this.inputTarget) {            // belum ada proses hidup: tahan di antrean
+    if (!this.inputTarget) {
       this.queue.push(this.pendingInput);
       this.pendingInput = '';
       return;
@@ -1179,31 +1219,51 @@ class NativeTerminal {
     this.pendingInput = '';
     const rid = this.inputTarget;
     if (!chunk || !rid) return;
+
     fetch('/api/logs/' + rid + '/input', {
       method: 'POST', credentials: 'same-origin',
       headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
       body: JSON.stringify({data: chunk}),
     }).then(r => {
-      // 409 = shell belum executing / sesi sudah tutup. Coba lagi sebentar,
-      // jangan sampai ketikan admin hilang begitu saja.
       if (r.status === 409 && this.retries < 6) {
         this.retries++;
         this.pendingInput = chunk + this.pendingInput;
-        this.flushTimer = setTimeout(() => this.flushInput(), 400);
+        this.flushTimer = setTimeout(() => this.flushInput(), 300);
       }
     }).catch(() => {
-      // Gagal kirim: kembalikan ke antrean supaya tidak hilang diam-diam.
       this.pendingInput = chunk + this.pendingInput;
     });
   }
 
   // ---------------- render ----------------
   outputLinesToHtml(text) {
-    const parts = String(text).split('\n');
+    let cleanText = String(text);
+    // Jika ada sinyal clear screen (\x1b[2J, \x1b[3J, atau \x0c), ambil teks setelah clear terakhir
+    const clearRegex = /(?:\x1b\[(?:2J|3J|H\x1b\[2J)|\x0c)/g;
+    let lastClearIdx = -1;
+    let m;
+    while ((m = clearRegex.exec(cleanText)) !== null) {
+      lastClearIdx = m.index + m[0].length;
+    }
+    if (lastClearIdx >= 0) {
+      cleanText = cleanText.slice(lastClearIdx);
+    }
+
+    const parts = cleanText.split('\n');
     if (parts.length > 1 && parts[parts.length - 1] === '') parts.pop();
     return parts.map(raw => {
-      const segs = raw.split('\r');       // carriage-return = tulis ulang baris berjalan
-      return parseAnsiToHtml(segs[segs.length - 1]);
+      const segs = raw.split('\r');
+      let line = segs[segs.length - 1];
+      // Tangani karakter backspace \b bila masih ada di stream
+      if (line.includes('\b')) {
+        const chars = [];
+        for (let i = 0; i < line.length; i++) {
+          if (line[i] === '\b') chars.pop();
+          else chars.push(line[i]);
+        }
+        line = chars.join('');
+      }
+      return parseAnsiToHtml(line);
     });
   }
 
@@ -1211,7 +1271,6 @@ class NativeTerminal {
     if (this.lines.length > 5000) this.lines = this.lines.slice(-4000);
   }
 
-  // Dipakai TerminalBawaan untuk stream proses apt ke jendela yang sama.
   appendRawText(text) {
     if (!text) return;
     if (text.charAt(0) === '\r' && this.lines.length) this.lines.pop();
@@ -1222,23 +1281,32 @@ class NativeTerminal {
   }
 
   setRawBuffer(fullText) {
-    this.lines = fullText ? this.outputLinesToHtml(fullText) : [];
+    this.lastRawText = fullText || '';
+    let display = this.lastRawText;
+    if (this.clearMark > 0) {
+      if (display.length >= this.clearMark) {
+        display = display.slice(this.clearMark);
+      } else {
+        this.clearMark = 0;
+      }
+    }
+    const isNearBottom = !this.screenEl || (this.screenEl.scrollHeight - this.screenEl.scrollTop - this.screenEl.clientHeight < 60);
+    this.lines = display ? this.outputLinesToHtml(display) : [];
     this.trimLines();
     this.renderLines();
-    this.scrollToBottom();
+    if (isNearBottom) this.scrollToBottom();
   }
 
   clear() {
-    this.lines = [];
-    this.renderLines();
-    this.focus();
+    this.clearScreen();
   }
 
-  // Tombol Clear: kodok Ctrl+L ke bash supaya layar di sisi server ikut bersih
-  // dan history shell tidak kacau; buffer browser dibersihkan sekalian.
   clearScreen() {
     this.showingApt = false;
-    if (this.state === 'live') this.sendRaw('\x0c');
+    this.clearMark = (this.lastRawText || '').length;
+    if (this.state === 'live') {
+      this.sendRaw('\x0c', true);
+    }
     this.lines = [];
     this.renderLines();
     this.focus();
@@ -1246,8 +1314,22 @@ class NativeTerminal {
 
   renderLines() {
     if (!this.linesEl) return;
-    this.linesEl.innerHTML = this.lines
-      .map(l => '<div class="term-line">' + (l || '&nbsp;') + '</div>').join('');
+    const showCursor = (this.state === 'live' && !this.aptActive && !this.showingApt);
+    const cursorHtml = showCursor
+      ? '<span class="term-cursor' + (this.isFocused ? '' : ' idle-cursor') + '"></span>'
+      : '';
+
+    if (this.lines.length === 0) {
+      this.linesEl.innerHTML = '<div class="term-line">&nbsp;' + cursorHtml + '</div>';
+      return;
+    }
+
+    const lastIdx = this.lines.length - 1;
+    this.linesEl.innerHTML = this.lines.map((l, idx) => {
+      const isLast = (idx === lastIdx);
+      const content = l || '&nbsp;';
+      return '<div class="term-line">' + content + (isLast ? cursorHtml : '') + '</div>';
+    }).join('');
   }
 
   scrollToBottom() {
