@@ -71,7 +71,7 @@
       {% if user.role == 'admin' %}
       <button class="btn btn-success" id="apt-update-btn" onclick="aptAction('APT_UPDATE')">&#8635;&nbsp;Update OS</button>
       <button class="btn btn-danger" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled>Upgrade&nbsp;&#9650;</button>
-      <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" title="Buka / sembunyikan konsol terminal">&#62;_&nbsp;Terminal</button>
+      <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" title="Buka / sembunyikan terminal bawaan" style="border:1px solid #334155;color:#38bdf8">&#62;_&nbsp;Terminal</button>
       <span class="hero-sep"></span>
       <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -95,34 +95,28 @@
   <div class="apt-state" id="apt-state">
     <span id="apt-state-text">Memeriksa pembaruan…</span>
   </div>
-  <!-- Jendela Konsol Terminal Linux Bersih & Otentik -->
+  <!-- Jendela Terminal Bawaan Linux (Terintegrasi, Bukan Jendela Baru) -->
   <div class="terminal-window" id="apt-live" style="display:none;margin-top:14px">
     <div class="terminal-titlebar">
       <div class="terminal-dots">
         <span class="t-dot t-dot-red" title="Sembunyikan Terminal" onclick="toggleTerminalView()"></span>
-        <span class="t-dot t-dot-yellow" title="Bersihkan Layar (Clear)" onclick="clearAptTerminal()"></span>
-        <span class="t-dot t-dot-green" title="Scroll ke Paling Bawah" onclick="aptTermScroll()"></span>
+        <span class="t-dot t-dot-yellow" title="Bersihkan Layar (Clear)" onclick="getTerm().clear()"></span>
+        <span class="t-dot t-dot-green" title="Scroll ke Paling Bawah" onclick="getTerm().scrollToBottom()"></span>
       </div>
       <div class="terminal-title">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-        <span>root@{{ server.hostname }}: apt/dpkg console</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+        <span>root@{{ server.hostname }}:~ (Terminal Bawaan)</span>
       </div>
       <div class="terminal-actions">
         <span id="apt-status" class="terminal-status-badge"></span>
-        <button type="button" class="terminal-btn-icon" onclick="clearAptTerminal()" title="Bersihkan Layar Konsol">&#10005;&nbsp;Clear</button>
+        <button type="button" class="terminal-btn-icon" onclick="getTerm().clear()" title="Bersihkan Layar Konsol">&#10005;&nbsp;Clear</button>
+        <button type="button" class="terminal-btn-icon" onclick="toggleTerminalView()" title="Sembunyikan Terminal">&#x2715;&nbsp;Tutup</button>
       </div>
     </div>
-    <div class="apt-term" id="apt-term" tabindex="0" aria-label="Terminal Update/Upgrade OS" onclick="focusAptInput()">
-      <div id="apt-out"></div>
-      <!-- Baris Prompt Terminal Interaktif (Ketik perintah / input angka / huruf / Enter) -->
-      <div id="apt-prompt" class="apt-prompt">
-        <span class="apt-prompt-sign" id="apt-prompt-sign" aria-hidden="true">root@{{ server.hostname }}:~#</span>
-        <input id="apt-answer" type="text" maxlength="200" autocomplete="off" autocapitalize="off"
-               autocorrect="off" spellcheck="false" class="apt-term-in"
-               placeholder="Ketik input atau perintah lalu tekan Enter..."
-               aria-label="Ketik perintah atau input lalu tekan Enter" onkeydown="aptLineKey(event)">
-        <span class="terminal-cursor" aria-hidden="true">&#9608;</span>
-      </div>
+    <div class="real-terminal-screen" id="real-term" tabindex="0" aria-label="Terminal Bawaan Linux">
+      <div id="term-lines" class="term-lines"></div>
+      <div id="term-current-row" class="term-current-row"></div>
+      <textarea id="term-hidden-input" class="term-hidden-input" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
     </div>
   </div>
   <div id="apt-msg" style="display:none;font-size:12px;line-height:1.5;margin-top:10px"></div>
@@ -707,92 +701,424 @@ function aptMsg(html, color) {
 }
 
 // ---------- output live apt DI DALAM KARTU (Update / Upgrade) ----------
+// ---------- Terminal Bawaan Asli (Native Integrated Terminal) ----------
 let aptLiveBuf = '';
 
-// Peta SGR -> kelas CSS (palette ala terminal). 38;5/38;2 diabaikan supaya
-// tetap ringan: cukup 16 warna + bold/dim/italic/underline.
-const TERM_SGR = {
-  '1': 't-b', '2': 't-d', '3': 't-i', '4': 't-u', '7': 't-bl',
-  '30': 't-bl', '31': 't-r', '32': 't-g', '33': 't-y', '34': 't-b2',
-  '35': 't-m', '36': 't-c', '37': 't-w',
-  '90': 't-br', '91': 't-bg', '92': 't-by', '93': 't-bb', '94': 't-bm', '95': 't-bc',
-};
-
-// Render teks mentah (dengan kode SGR) jadi HTML aman: escape DULU, lalu sisipkan
-// span kelas warna. Selalu didahului escapeHtml, jadi tidak ada HTML dari server.
-//
-// Hormati \r persis seperti terminal sungguhan: kursor balik ke awal baris,
-// lalu karakter baru menimpa yang lama. Stream dari agen sudah diemulasikan,
-// tapi ini menjaga tampilan tetap benar untuk stream mentah (mis. potongan
-// output saat proses gagal).
-function termRows(text) {
-  if (!text.includes('\r')) return text;
-  return text.split('\n').map(row => {
-    if (!row.includes('\r')) return row;
-    if (row.includes('\x1b')) return row.replace(/\r/g, '');
-    const cells = [];
-    let col = 0;
-    for (const ch of row) {
-      if (ch === '\r') { col = 0; continue; }
-      if (ch === '\b') { col = Math.max(0, col - 1); continue; }
-      cells[col] = ch;
-      col++;
-    }
-    return cells.join('').replace(/[ \t]+$/, '');
-  }).join('\n');
+// Buffer output mentah dari agen. replace=true berarti agen mengirim ulang
+// seluruh buffer (bukan potongan), sehingga isi layar disetel ulang penuh.
+function aptLiveAppend(text, replace) {
+  if (!text) return;
+  if (replace) aptLiveBuf = String(text);
+  else aptLiveBuf += String(text);
+  if (aptLiveBuf.length > 2000000) aptLiveBuf = aptLiveBuf.slice(-2000000);
+  getTerm().setRawBuffer(aptLiveBuf);
 }
 
-function renderTermText(raw) {
-  const text = termRows(String(raw == null ? '' : raw));
-  if (!text) return '';
-  let html = '', cls = [], open = false;
-  const openSpan = () => {
-    if (open) { html += '</span>'; open = false; }
-    if (cls.length) { html += '<span class="' + cls.join(' ') + '">'; open = true; }
-  };
-  const re = /\x1b\[([0-9;]*)m/g;
-  let last = 0, m;
-  while ((m = re.exec(text)) !== null) {
-    if (m.index > last) { openSpan(); html += escapeHtml(text.slice(last, m.index)); }
-    for (const codeRaw of (m[1] || '0').split(';')) {
-      const code = codeRaw === '' ? '0' : codeRaw;
-      if (code === '0') cls = [];
-      else if (TERM_SGR[code]) cls.push(TERM_SGR[code]);
-    }
-    last = re.lastIndex;
+// Buka jendela terminal bawaan saat proses apt dijalankan dari tombol atau dari
+// perintah yang diketik di dalam terminal itu sendiri.
+function aptLiveShow(kind) {
+  const term = getTerm();
+  if (kind) {
+    term.appendRawText('\x1b[32m\x1b[1mroot@' + (typeof SERVER_NAME !== 'undefined' ? escapeHtml(SERVER_NAME) : 'server')
+      + ':~#\x1b[0m ' + escapeHtml(aptLabel(kind)) + '\n');
   }
-  if (last < text.length) { openSpan(); html += escapeHtml(text.slice(last)); }
-  if (open) html += '</span>';
-  return html;
+  term.show();
+  aptInputShow(true);
+  aptLiveStatus('mengirim perintah ke server…', 'var(--dim)');
 }
 
-function aptTermScroll() {
-  const t = document.getElementById('apt-term');
-  if (t) t.scrollTop = t.scrollHeight;
+// Sinkronkan baris input dengan state proses: disembunyikan saat proses
+// non-interaktif berjalan (meniru foreground shell), '>' saat interaktif,
+// dan prompt root@host:~# saat shell menganggur.
+function aptInputShow(on) {
+  if (!on) {
+    getTerm().setRunning(true, false);
+    return;
+  }
+  getTerm().setRunning(!!aptRunning, !!aptInteractive);
 }
 
-function focusAptInput() {
-  const inp = document.getElementById('apt-answer');
-  if (inp && !inp.disabled) inp.focus();
+function parseAnsiToHtml(str) {
+  if (!str) return '';
+  let res = '';
+  let openTags = 0;
+  const activeStyles = [];   // gaya yang masih terbuka (sarang, seperti terminal asli)
+
+  const sgrMap = {
+    '1': 't-b', '2': 't-d', '3': 't-i', '4': 't-u',
+    '30': 't-bl', '31': 't-r', '32': 't-g', '33': 't-y',
+    '34': 't-b2', '35': 't-m', '36': 't-c', '37': 't-w',
+    '90': 't-br', '91': 't-bg', '92': 't-by', '93': 't-bb',
+    '94': 't-bm', '95': 't-bc', '97': 't-w'
+  };
+
+  // Buang sekuens lain (kursor, hapus baris, scroll) yang tidak kita emulasikan.
+  const strip = s => s.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '').replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '');
+
+  const regex = /\x1b\[([0-9;]*)m/g;
+  let lastIdx = 0;
+  let match;
+
+  while ((match = regex.exec(str)) !== null) {
+    if (match.index > lastIdx) {
+      res += escapeHtml(strip(str.slice(lastIdx, match.index)));
+    }
+    for (const code of (match[1] || '0').split(';')) {
+      const c = code.trim() || '0';
+      if (c === '0') {
+        while (openTags > 0) { res += '</span>'; openTags--; activeStyles.pop(); }
+      } else if (sgrMap[c] && !activeStyles.includes(sgrMap[c])) {
+        // Sarang span, bukan tutup-buka ulang -> tidak pernah menghasilkan span kosong.
+        activeStyles.push(sgrMap[c]);
+        res += '<span class="' + sgrMap[c] + '">';
+        openTags++;
+      }
+    }
+    lastIdx = regex.lastIndex;
+  }
+
+  if (lastIdx < str.length) {
+    res += escapeHtml(strip(str.slice(lastIdx)));
+  }
+  while (openTags > 0) { res += '</span>'; openTags--; }
+  return res;
 }
 
-function clearAptTerminal() {
-  aptLiveBuf = '';
-  const out = document.getElementById('apt-out');
-  if (out) out.innerHTML = '';
-  aptTermScroll();
-  focusAptInput();
+class NativeTerminal {
+  constructor() {
+    this.screenEl = document.getElementById('real-term');
+    this.inputEl = document.getElementById('term-hidden-input');
+    this.linesEl = document.getElementById('term-lines');
+    this.curRowEl = document.getElementById('term-current-row');
+    this.windowEl = document.getElementById('apt-live');
+    this.statusEl = document.getElementById('apt-status');
+
+    this.lines = [];
+    this.inputBuffer = '';
+    this.history = [];
+    this.histIdx = -1;
+    this.isRunning = false;
+    this.isInteractive = false;
+    this.serverName = typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : 'server';
+
+    this.initEvents();
+    this.renderCurrentRow();
+  }
+
+  initEvents() {
+    if (!this.screenEl || !this.inputEl) return;
+
+    this.screenEl.addEventListener('click', (ev) => {
+      if (window.getSelection && String(window.getSelection())) return;
+      this.focus();
+    });
+
+    this.inputEl.addEventListener('keydown', (ev) => {
+      this.handleKeyDown(ev);
+    });
+
+    this.inputEl.addEventListener('input', () => {
+      const val = this.inputEl.value;
+      if (val) {
+        this.inputBuffer += val;
+        this.inputEl.value = '';
+        this.renderCurrentRow();
+        this.scrollToBottom();
+      }
+    });
+
+    this.inputEl.addEventListener('paste', (ev) => {
+      ev.preventDefault();
+      const pasteData = (ev.clipboardData || window.clipboardData).getData('text');
+      if (pasteData) {
+        this.inputBuffer += pasteData.replace(/[\r\n]+/g, ' ');
+        this.renderCurrentRow();
+        this.scrollToBottom();
+      }
+    });
+  }
+
+  focus() {
+    if (this.inputEl) {
+      this.inputEl.focus({ preventScroll: true });
+    }
+  }
+
+  show() {
+    if (this.windowEl) {
+      this.windowEl.style.display = '';
+      this.scrollToBottom();
+      setTimeout(() => this.focus(), 40);
+    }
+  }
+
+  hide() {
+    if (this.windowEl) {
+      this.windowEl.style.display = 'none';
+    }
+  }
+
+  toggle() {
+    if (!this.windowEl) return;
+    const isHidden = (this.windowEl.style.display === 'none');
+    if (isHidden) {
+      this.show();
+    } else {
+      this.hide();
+    }
+  }
+
+  setRunning(running, interactive = false) {
+    this.isRunning = running;
+    this.isInteractive = interactive;
+    this.inputBuffer = '';
+    if (this.inputEl) this.inputEl.value = '';
+    this.renderCurrentRow();
+    this.scrollToBottom();
+    if (interactive) {
+      setTimeout(() => this.focus(), 30);
+    }
+  }
+
+  handleKeyDown(ev) {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      this.submit();
+      return;
+    }
+    if (ev.key === 'Backspace') {
+      ev.preventDefault();
+      if (this.inputBuffer.length > 0) {
+        this.inputBuffer = this.inputBuffer.slice(0, -1);
+        this.renderCurrentRow();
+        this.scrollToBottom();
+      }
+      return;
+    }
+    if (ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      if (this.history.length && !this.isRunning) {
+        this.histIdx = Math.max(0, this.histIdx - 1);
+        this.inputBuffer = this.history[this.histIdx] || '';
+        this.renderCurrentRow();
+        this.scrollToBottom();
+      }
+      return;
+    }
+    if (ev.key === 'ArrowDown') {
+      ev.preventDefault();
+      if (this.history.length && !this.isRunning) {
+        this.histIdx = Math.min(this.history.length, this.histIdx + 1);
+        this.inputBuffer = this.history[this.histIdx] || '';
+        this.renderCurrentRow();
+        this.scrollToBottom();
+      }
+      return;
+    }
+    if (ev.ctrlKey && ev.key === 'c') {
+      ev.preventDefault();
+      this.appendRawText('^C\n');
+      this.inputBuffer = '';
+      this.renderCurrentRow();
+      this.scrollToBottom();
+      return;
+    }
+    if (ev.ctrlKey && ev.key === 'l') {
+      ev.preventDefault();
+      this.clear();
+      return;
+    }
+    if (ev.key === 'Tab') {
+      // Jangan biarkan Tab memindahkan fokus keluar dari terminal.
+      ev.preventDefault();
+      this.inputBuffer += '    ';
+      this.renderCurrentRow();
+      this.scrollToBottom();
+      return;
+    }
+    if (ev.key === 'Escape') {
+      ev.preventDefault();
+      this.inputBuffer = '';
+      this.renderCurrentRow();
+      this.scrollToBottom();
+      return;
+    }
+
+    if (!ev.ctrlKey && !ev.metaKey && ev.key.length === 1) {
+      ev.preventDefault();
+      this.inputBuffer += ev.key;
+      this.renderCurrentRow();
+      this.scrollToBottom();
+    }
+  }
+
+  submit() {
+    const text = this.inputBuffer;
+    this.inputBuffer = '';
+    if (this.inputEl) this.inputEl.value = '';
+
+    if (this.isRunning) {
+      if (this.isInteractive && aptRid) {
+        this.appendRawText(text + '\n');
+        sendProcessStdin(text);
+      }
+      return;
+    }
+
+    const trimmed = text.trim();
+    this.appendPromptLine(trimmed);
+    if (!trimmed) {
+      this.renderCurrentRow();
+      this.scrollToBottom();
+      return;
+    }
+
+    this.history.push(trimmed);
+    this.histIdx = this.history.length;
+    this.executeCommand(trimmed);
+  }
+
+  executeCommand(cmd) {
+    const norm = cmd.toLowerCase().replace(/\s+/g, ' ').trim();
+    const bare = norm.replace(/^sudo\s+/, '').replace(/\s+-{1,2}[a-z-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    // Setiap perintah dicoba tanpa flag (mis. "-y", "--assume-yes") juga,
+    // karena flag diabaikan oleh unit yang dijalankan.
+    const forms = bare === norm.replace(/^sudo\s+/, '') ? [bare] : [bare, norm.replace(/^sudo\s+/, '')];
+    const hit = re => forms.some(f => re.test(f));
+
+    if (hit(/^clear$/)) {
+      this.clear();
+      return;
+    }
+    if (hit(/^help$/)) {
+      this.appendRawText(
+        'Perintah yang didukung:\n' +
+        '  update / apt update           - Sinkronkan repositori paket OS\n' +
+        '  upgrade / apt upgrade         - Upgrade paket tertunda (interaktif)\n' +
+        '  dist-upgrade / full-upgrade   - Upgrade penuh & paket baru/kernel\n' +
+        '  fix / dpkg --configure -a     - Perbaiki dependensi & paket terhenti\n' +
+        '  clear                         - Bersihkan layar konsol\n' +
+        '  help                          - Tampilkan panduan ini\n\n'
+      );
+      this.renderCurrentRow();
+      this.scrollToBottom();
+      return;
+    }
+    if (hit(/^(update|apt update|apt-get update)$/)) {
+      aptAction('APT_UPDATE');
+      return;
+    }
+    if (hit(/^(upgrade|apt upgrade|apt-get upgrade)$/)) {
+      aptAction('APT_UPGRADE_INTERACT');
+      return;
+    }
+    if (hit(/^(dist-upgrade|full-upgrade|apt (-get )?(dist-upgrade|full-upgrade))$/)) {
+      aptAction('APT_DIST_UPGRADE');
+      return;
+    }
+    if (hit(/^(fix)$/) || /^dpkg\b.*configure/.test(norm) || norm.includes('fix-broken')) {
+      aptAction('APT_FIX');
+      return;
+    }
+
+    this.appendRawText('bash: ' + escapeHtml(cmd) + ': perintah tidak ditemukan (ketik "help" untuk daftar perintah)\n');
+    this.renderCurrentRow();
+    this.scrollToBottom();
+  }
+
+  appendPromptLine(cmd) {
+    const promptHtml = '<span class="t-g t-b">root@' + escapeHtml(this.serverName) + ':~#</span> ' + escapeHtml(cmd);
+    this.lines.push(promptHtml);
+    this.renderLines();
+  }
+
+  // Ubah teks mentah Output (ANSI + carriage-return) menjadi baris HTML.
+  // Baris kosong di ekor dibuang karena baris input sudah ditangani renderCurrentRow.
+  outputLinesToHtml(text) {
+    const parts = String(text).split('\n');
+    if (parts.length > 1 && parts[parts.length - 1] === '') parts.pop();
+    return parts.map(raw => {
+      const segs = raw.split('\r');       // carriage-return = tulis ulang baris berjalan
+      return parseAnsiToHtml(segs[segs.length - 1]);
+    });
+  }
+
+  trimLines() {
+    if (this.lines.length > 5000) this.lines = this.lines.slice(-4000);
+  }
+
+  appendRawText(text) {
+    if (!text) return;
+    // Teks yang diawali \r = kursor kembali ke kolom 0: timpa baris yang sedang berjalan.
+    if (text.charAt(0) === '\r' && this.lines.length) this.lines.pop();
+    for (const line of this.outputLinesToHtml(text)) this.lines.push(line);
+    this.trimLines();
+    this.renderLines();
+    this.renderCurrentRow();
+    this.scrollToBottom();
+  }
+
+  setRawBuffer(fullText) {
+    this.lines = fullText ? this.outputLinesToHtml(fullText) : [];
+    this.trimLines();
+    this.renderLines();
+    this.renderCurrentRow();
+    this.scrollToBottom();
+  }
+
+  clear() {
+    this.lines = [];
+    this.inputBuffer = '';
+    this.renderLines();
+    this.renderCurrentRow();
+    this.focus();
+  }
+
+  renderLines() {
+    if (!this.linesEl) return;
+    this.linesEl.innerHTML = this.lines.map(l => '<div class="term-line">' + (l || '&nbsp;') + '</div>').join('');
+  }
+
+  renderCurrentRow() {
+    if (!this.curRowEl) return;
+
+    if (this.isRunning) {
+      if (this.isInteractive) {
+        this.curRowEl.style.display = 'block';
+        this.curRowEl.innerHTML = '<span style="color:#38bdf8;font-weight:700">›</span> ' +
+          escapeHtml(this.inputBuffer) +
+          '<span class="term-cursor">&#9608;</span>';
+      } else {
+        this.curRowEl.style.display = 'none';
+        this.curRowEl.innerHTML = '';
+      }
+    } else {
+      this.curRowEl.style.display = 'block';
+      this.curRowEl.innerHTML = '<span class="t-g t-b">root@' + escapeHtml(this.serverName) + ':~#</span> ' +
+        escapeHtml(this.inputBuffer) +
+        '<span class="term-cursor idle-cursor">&#9608;</span>';
+    }
+  }
+
+  scrollToBottom() {
+    if (this.screenEl) {
+      this.screenEl.scrollTop = this.screenEl.scrollHeight;
+    }
+  }
+}
+
+// Inisialisasi terminal bawaan global
+let termInstance = null;
+function getTerm() {
+  if (!termInstance) {
+    termInstance = new NativeTerminal();
+    window.termInstance = termInstance;
+  }
+  return termInstance;
 }
 
 function toggleTerminalView() {
-  const box = document.getElementById('apt-live');
-  if (!box) return;
-  const isHidden = (box.style.display === 'none');
-  box.style.display = isHidden ? '' : 'none';
-  if (isHidden) {
-    aptInputShow(true);
-    setTimeout(focusAptInput, 40);
-  }
+  getTerm().toggle();
 }
 
 function aptLiveStatus(html, color) {
@@ -802,172 +1128,20 @@ function aptLiveStatus(html, color) {
   st.innerHTML = html;
 }
 
-function aptLiveAppend(text, replace) {
-  if (!text) return;
-  if (replace) aptLiveBuf = String(text);
-  else aptLiveBuf += String(text);
-  if (aptLiveBuf.length > 2000000) aptLiveBuf = aptLiveBuf.slice(-2000000);
-  const out = document.getElementById('apt-out');
-  if (out) {
-    out.innerHTML = renderTermText(aptLiveBuf);
-    aptTermScroll();
-  }
-}
-
-function aptLiveShow(kind) {
-  const box = document.getElementById('apt-live');
-  if (box) box.style.display = '';
-  aptInputShow(true);
-  aptLiveStatus('mengirim perintah ke server…', 'var(--dim)');
-}
-
-// ---------- baris input: ketik langsung di terminal, seperti di SSH ----------
-let aptHistory = [], aptHistIdx = -1;
-
-function aptInputShow(on) {
-  const row = document.getElementById('apt-prompt');
-  const sign = document.getElementById('apt-prompt-sign');
-  const inp = document.getElementById('apt-answer');
-  if (!row || !inp) return;
-
-  if (!on) {
-    row.style.display = 'none';
-    inp.disabled = true;
-    return;
-  }
-
-  if (aptRunning) {
-    if (!aptInteractive) {
-      // Proses non-interaktif sedang berjalan (mis. apt update):
-      // Di SSH asli, shell prompt tidak ada saat proses berjalan di foreground.
-      row.style.display = 'none';
-      inp.disabled = true;
-      return;
+async function sendProcessStdin(cleanLine) {
+  if (!aptRid) return;
+  try {
+    const r = await fetch('/api/logs/' + aptRid + '/input', {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
+      body: JSON.stringify({data: cleanLine}),
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      aptLiveStatus('<b style="color:var(--red)">Gagal terkirim:</b> ' + escapeHtml(j.detail || ('HTTP ' + r.status)), 'var(--red)');
     }
-    // Proses interaktif (apt upgrade, dist-upgrade, fix):
-    // Tampilkan baris input bersih tanpa shell prompt palsu
-    row.style.display = 'flex';
-    if (sign) {
-      sign.textContent = '›';
-      sign.style.color = '#38bdf8';
-    }
-    inp.placeholder = 'Ketik jawaban / pilihan (angka, Y/N, atau Enter)...';
-    inp.disabled = false;
-  } else {
-    // Shell idle: tampilkan prompt standar root@hostname:~#
-    row.style.display = 'flex';
-    if (sign) {
-      sign.textContent = 'root@' + SERVER_NAME + ':~#';
-      sign.style.color = '#4ade80';
-    }
-    inp.placeholder = 'Ketik perintah (update, upgrade, dist-upgrade, fix, clear)...';
-    inp.disabled = false;
-  }
-
-  if (row.style.display !== 'none' && !document.hidden && !inp.disabled) {
-    setTimeout(() => inp.focus(), 30);
-  }
-  aptHistIdx = -1;
-}
-
-async function aptSendLine() {
-  const inp = document.getElementById('apt-answer');
-  if (!inp) return;
-  const line = inp.value;
-  inp.value = '';
-
-  if (aptRunning) {
-    if (!aptRid) return;
-    const cleanLine = line.trim();
-    if (cleanLine) {
-      aptHistory.push(cleanLine);
-      aptHistIdx = aptHistory.length;
-      aptLiveAppend(cleanLine + '\n', false);
-    } else {
-      aptLiveAppend('\n', false);
-    }
-    try {
-      const r = await fetch('/api/logs/' + aptRid + '/input', {
-        method: 'POST', credentials: 'same-origin',
-        headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
-        body: JSON.stringify({data: cleanLine}),
-      });
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        aptLiveStatus('<b style="color:var(--red)">Gagal terkirim:</b> ' + escapeHtml(j.detail || ('HTTP ' + r.status)), 'var(--red)');
-      }
-    } catch (e) {
-      aptLiveStatus('<b style="color:var(--red)">Gagal terkirim:</b> ' + escapeHtml(e.message), 'var(--red)');
-    }
-    inp.focus();
-    aptTermScroll();
-    return;
-  }
-
-  // Konsol Terminal Mode Idle: Jalankan perintah langsung layaknya shell Linux
-  const trimmed = line.trim();
-  if (!trimmed) return;
-  aptHistory.push(trimmed);
-  aptHistIdx = aptHistory.length;
-  aptLiveAppend('\nroot@' + SERVER_NAME + ':~# ' + trimmed + '\n', false);
-
-  const rawCmd = trimmed.toLowerCase();
-  const c = rawCmd.replace(/^sudo\s+/, '').trim();
-
-  if (c === 'clear') {
-    clearAptTerminal();
-    return;
-  }
-  if (c === 'help') {
-    aptLiveAppend(
-      'Perintah yang didukung:\n' +
-      '  update / apt update           : Sinkronkan daftar paket OS\n' +
-      '  upgrade / apt upgrade         : Upgrade paket tertunda (interaktif)\n' +
-      '  dist-upgrade                  : Upgrade penuh & paket baru/kernel\n' +
-      '  dpkg --configure -a / fix     : Perbaiki paket terhenti & dependensi rusak\n' +
-      '  clear                         : Bersihkan layar konsol\n' +
-      '  help                          : Bantuan\n\n'
-    );
-    aptTermScroll();
-    return;
-  }
-  if (c === 'fix' || c.startsWith('dpkg --configure') || c.includes('fix-broken')) {
-    aptAction('APT_FIX');
-    return;
-  }
-  if (c === 'update' || c === 'apt update' || c === 'apt-get update') {
-    aptAction('APT_UPDATE');
-    return;
-  }
-  if (c === 'dist-upgrade' || c === 'apt dist-upgrade' || c === 'apt-get dist-upgrade') {
-    aptAction('APT_DIST_UPGRADE');
-    return;
-  }
-  if (c === 'upgrade' || c === 'apt upgrade' || c === 'apt-get upgrade') {
-    aptAction('APT_UPGRADE_INTERACT');
-    return;
-  }
-
-  aptLiveAppend('bash: ' + escapeHtml(trimmed) + ': perintah tidak ditemukan (ketik "help" untuk daftar perintah)\n\n');
-  aptTermScroll();
-}
-
-function aptLineKey(ev) {
-  const inp = document.getElementById('apt-answer');
-  if (!inp) return;
-  if (ev.key === 'Enter') { ev.preventDefault(); aptSendLine(); return; }
-  if (ev.key === 'ArrowUp' && aptHistory.length) {
-    ev.preventDefault();
-    aptHistIdx = Math.max(0, aptHistIdx - 1);
-    inp.value = aptHistory[aptHistIdx] || '';
-    aptTermScroll();
-    return;
-  }
-  if (ev.key === 'ArrowDown' && aptHistory.length) {
-    ev.preventDefault();
-    aptHistIdx = Math.min(aptHistory.length, aptHistIdx + 1);
-    inp.value = aptHistory[aptHistIdx] || '';
-    aptTermScroll();
+  } catch (e) {
+    aptLiveStatus('<b style="color:var(--red)">Gagal terkirim:</b> ' + escapeHtml(e.message), 'var(--red)');
   }
 }
 
@@ -1727,23 +1901,5 @@ if (svcSel) svcSel.addEventListener('change', loadSvcHistory);
 document.querySelectorAll('#svc-ranges .btn').forEach(b =>
   b.addEventListener('click', () => { svcRange = b.dataset.range; loadSvcHistory(); }));
 setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
-
-// Enter di baris terminal = kirim ke proses; klik terminal = fokus kursor
-const aptAnswerEl = document.getElementById('apt-answer');
-if (aptAnswerEl) {
-  aptAnswerEl.addEventListener('keydown', aptLineKey);
-  aptAnswerEl.addEventListener('input', aptTermScroll);
-}
-const aptTermEl = document.getElementById('apt-term');
-if (aptTermEl) {
-  aptTermEl.addEventListener('mousedown', ev => {
-    // biarkan seleksi teks tetap normal; fokus kursor hanya saat klik area kosong
-    if (window.getSelection && String(window.getSelection())) return;
-    if (!aptRunning || aptInteractive) {
-      const inp = document.getElementById('apt-answer');
-      if (inp && !inp.disabled && ev.target !== inp) { ev.preventDefault(); inp.focus(); }
-    }
-  });
-}
 </script>
 {% endblock %}
