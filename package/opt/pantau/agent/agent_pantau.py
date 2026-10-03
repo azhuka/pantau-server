@@ -728,22 +728,31 @@ def _exec_service_action(action: str, command: dict) -> dict:
     if action not in ALLOWED_SYSTEMCTL_ACTIONS:
         return {"ok": False, "output": f"Aksi tidak diizinkan: {action}"}
 
-    if not process_name:
-        return {"ok": False, "output": "process_name kosong dari dashboard"}
+    candidates = []
+    for name in (process_name, service_name):
+        if name and VALID_PROCESS_NAME_RE.match(name) and name not in candidates:
+            candidates.append(name)
+        if name and "_" in name:
+            hyphen_name = name.replace("_", "-")
+            if VALID_PROCESS_NAME_RE.match(hyphen_name) and hyphen_name not in candidates:
+                candidates.append(hyphen_name)
 
-    if not VALID_PROCESS_NAME_RE.match(process_name):
-        return {"ok": False, "output": f"Nama proses tidak valid: {process_name}"}
+    if not candidates:
+        return {"ok": False, "output": "Nama proses/service kosong atau tidak valid"}
 
-    # SELALU lewat wrapper pantau-restart (deny-list + sanitasi unit), termasuk
-    # saat berjalan sebagai root — deny-list tidak boleh terlewati.
-    cmd = [PANTUAN_RESTART, action, process_name]
-    label = f"{PANTUAN_RESTART} {action} {process_name}"
-    if not IS_ROOT:
-        cmd = ["/usr/bin/sudo", "-n", *cmd]
-        label = f"sudo -n {label}"
-    result = _run_native(cmd, label)
-    del service_name
-    return result
+    last_res = None
+    for cand in candidates:
+        cmd = [PANTUAN_RESTART, action, cand]
+        label = f"{PANTUAN_RESTART} {action} {cand}"
+        if not IS_ROOT:
+            cmd = ["/usr/bin/sudo", "-n", *cmd]
+            label = f"sudo -n {label}"
+        last_res = _run_native(cmd, label)
+        if last_res.get("ok"):
+            return last_res
+
+    return last_res or {"ok": False, "output": f"Gagal mengeksekusi {action} pada {candidates}"}
+
 
 
 def _run_native(cmd: list[str], label: str) -> dict:

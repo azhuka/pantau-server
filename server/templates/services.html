@@ -319,14 +319,26 @@
       </td>
       <td style="white-space:nowrap">
         <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}">
-          {% if svc._pending_cmd %}
-          <span class="badge badge-muted">Menunggu Agent</span>
-          {% elif user.role == 'admin' %}
-          <button type="button" class="btn btn-primary btn-sm" onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Restart</button>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)" title="Mulai layanan">▶</button>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)" title="Hentikan layanan">■</button>
+          {% if user.role == 'admin' %}
+            {% set is_up = (svc._status == 'up') %}
+            {% set is_pending = (svc._pending_cmd is not none and svc._pending_cmd) %}
+            <button type="button" class="btn btn-primary btn-sm btn-svc-restart"
+                    {% if is_pending %}disabled{% endif %}
+                    onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Restart</button>
+            <button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px"
+                    {% if is_pending or is_up %}disabled{% endif %}
+                    onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
+                    title="{{ 'Layanan sudah aktif' if is_up else 'Mulai layanan' }}">▶</button>
+            <button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px"
+                    {% if is_pending or not is_up %}disabled{% endif %}
+                    onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
+                    title="{{ 'Layanan sudah nonaktif / down' if not is_up else 'Hentikan layanan' }}">■</button>
+            {% if is_pending %}
+              <span class="badge badge-muted" style="margin-left:4px;font-size:10px">menunggu…</span>
+            {% endif %}
           {% endif %}
         </span>
+
         {% if user.role == 'admin' %}
         <button type="button" class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Hapus</button>
         {% endif %}
@@ -599,15 +611,39 @@ function badgeHtml(status) {
        + (badgeText[status] || status) + '</span>';
 }
 
-function restartFormHtml(sid, svcId, name) {
-  return '<button type="button" class="btn btn-primary btn-sm" onclick="restartService(' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)">Restart</button>';
+function renderServiceActions(sid, svcId, name, status, isPending) {
+  const isUp = status === 'up';
+  const startDis = isPending || isUp;
+  const stopDis = isPending || !isUp;
+  const rstDis = isPending;
+
+  return '<button type="button" class="btn btn-primary btn-sm btn-svc-restart" '
+    + (rstDis ? 'disabled ' : '')
+    + 'onclick="restartService(' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)">Restart</button>'
+    + '<button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px" '
+    + (startDis ? 'disabled ' : '')
+    + 'onclick="svcAction(\'start\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
+    + 'title="' + (isUp ? 'Layanan sudah aktif' : 'Mulai layanan') + '">▶</button>'
+    + '<button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px" '
+    + (stopDis ? 'disabled ' : '')
+    + 'onclick="svcAction(\'stop\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
+    + 'title="' + (!isUp ? 'Layanan sudah nonaktif / down' : 'Hentikan layanan') + '">■</button>'
+    + (isPending ? ' <span class="badge badge-muted" style="margin-left:4px;font-size:10px">menunggu…</span>' : '');
 }
 
 async function restartService(sid, svcId, svcName, btn) {
   if (!confirm('Restart service ' + svcName + ' di server ' + SERVER_NAME + '?')) return;
-  const originalHtml = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite">&#8635;</span> Memproses…';
+  const act = document.getElementById('act-' + svcId);
+  if (act) {
+    act.querySelectorAll('button').forEach(b => b.disabled = true);
+    if (!act.querySelector('.badge-muted')) {
+      const sp = document.createElement('span');
+      sp.className = 'badge badge-muted';
+      sp.style.cssText = 'margin-left:4px;font-size:10px';
+      sp.textContent = 'menunggu…';
+      act.appendChild(sp);
+    }
+  }
   try {
     const r = await fetch('/servers/' + sid + '/services/' + svcId + '/restart', {
       method: 'POST',
@@ -620,18 +656,14 @@ async function restartService(sid, svcId, svcName, btn) {
     const j = await r.json().catch(() => ({}));
     if (r.ok) {
       showToast(j.detail || ('Perintah restart service ' + svcName + ' telah dikirim ke Agen Pantau.'), true);
-      const act = document.getElementById('act-' + svcId);
-      if (act) act.innerHTML = '<span class="badge badge-muted">Menunggu Agent</span>';
       setTimeout(poll, 700);
     } else {
       showToast(j.detail || 'Gagal mengirim perintah restart.', false);
-      btn.disabled = false;
-      btn.innerHTML = originalHtml;
+      setTimeout(poll, 700);
     }
   } catch (e) {
     showToast('Kendala jaringan: ' + e.message, false);
-    btn.disabled = false;
-    btn.innerHTML = originalHtml;
+    setTimeout(poll, 700);
   }
 }
 
@@ -639,8 +671,17 @@ async function svcAction(action, sid, svcId, svcName, btn) {
   const labels = {start: 'mulai', stop: 'hentikan'};
   const label = labels[action] || action;
   if (!confirm((action === 'stop' ? 'HENTIKAN' : 'Mulai') + ' service ' + svcName + ' di ' + SERVER_NAME + '?')) return;
-  const orig = btn.innerHTML;
-  btn.disabled = true; btn.innerHTML = '…';
+  const act = document.getElementById('act-' + svcId);
+  if (act) {
+    act.querySelectorAll('button').forEach(b => b.disabled = true);
+    if (!act.querySelector('.badge-muted')) {
+      const sp = document.createElement('span');
+      sp.className = 'badge badge-muted';
+      sp.style.cssText = 'margin-left:4px;font-size:10px';
+      sp.textContent = 'menunggu…';
+      act.appendChild(sp);
+    }
+  }
   try {
     const r = await fetch('/servers/' + sid + '/services/' + svcId + '/' + action, {
       method: 'POST',
@@ -653,12 +694,14 @@ async function svcAction(action, sid, svcId, svcName, btn) {
       setTimeout(poll, 700);
     } else {
       showToast(j.detail || 'Gagal mengirim perintah.', false);
+      setTimeout(poll, 700);
     }
   } catch (e) {
     showToast('Kendala jaringan: ' + e.message, false);
+    setTimeout(poll, 700);
   }
-  btn.disabled = false; btn.innerHTML = orig;
 }
+
 
 function openAddSvcModal() {
   const m = document.getElementById('add-svc-modal');
@@ -1442,17 +1485,12 @@ function patch(data) {
       health.style.color = s.health_message ? '' : 'var(--dim)';
     }
     const act = document.getElementById('act-' + s.id);
-    if (act) {
-      const hasPending = s.pending;
-      const isPending = !!act.querySelector('.badge-muted');
-      if (hasPending && !isPending) {
-        act.innerHTML = '<span class="badge badge-muted">Menunggu Agent</span>';
-      } else if (!hasPending && isPending) {
-        act.innerHTML = IS_ADMIN
-          ? restartFormHtml(act.dataset.sid, act.dataset.svc, act.dataset.name)
-          : '&nbsp;';
-      }
+    if (act && IS_ADMIN) {
+      act.innerHTML = renderServiceActions(
+        act.dataset.sid, act.dataset.svc, act.dataset.name, s.status, s.pending
+      );
     }
+
   }
 
   for (const c of data.commands) {

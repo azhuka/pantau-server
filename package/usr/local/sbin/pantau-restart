@@ -25,7 +25,11 @@ alias_unit() {
     case "$name" in
         mysql|mysqld|mariadbd|mariadb) printf 'mariadb' ;;
         ssh|sshd)                      printf 'ssh' ;;
-        *)                             printf '%s' "$name" ;;
+        zabbix_agent2|zabbix-agent2)   printf 'zabbix-agent2' ;;
+        zabbix_agent|zabbix-agent)     printf 'zabbix-agent' ;;
+        smtpd|master|postfix)          printf 'postfix' ;;
+        cron|crond)                    printf 'cron' ;;
+        *)                             printf '%s' "${name//_/-}" ;;
     esac
 }
 
@@ -59,10 +63,11 @@ while IFS= read -r pat; do
     esac
 done < "$DENY_FILE"
 
-# --- Eksekusi: coba unit asli, lalu alias ---
+# --- Eksekusi: coba unit asli, lalu alias, lalu nama dengan hyphen ---
 ERR=""
 run_unit() {
     local unit="$1" out rc
+    [ -z "$unit" ] && return 1
     out="$(/usr/bin/systemctl "$ACTION" "$unit" 2>&1)"
     rc=$?
     # Jangan tampilkan error percobaan gagal bila nanti ada yang berhasil
@@ -84,6 +89,15 @@ if [ "$ALIAS" != "$UNIT" ]; then
         exit 0
     fi
 fi
+
+HYPHEN_UNIT="${UNIT//_/-}"
+if [ "$HYPHEN_UNIT" != "$UNIT" ] && [ "$HYPHEN_UNIT" != "$ALIAS" ]; then
+    if run_unit "$HYPHEN_UNIT"; then
+        echo "OK: systemctl $ACTION $UNIT (resolved -> $HYPHEN_UNIT)"
+        exit 0
+    fi
+fi
+
 
 printf '%s' "$ERR" >&2
 fail "systemctl $ACTION $UNIT gagal"
