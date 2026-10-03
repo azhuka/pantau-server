@@ -147,12 +147,20 @@ async function ackProblem(id, btn, sev) {
       headers: {'X-CSRF-Token': getCsrf()},
       credentials: 'same-origin'
     });
-    if (r.ok) { location.reload(); return; }
+    if (r.ok) {
+      showToast('Masalah ditandai sebagai ditangani.', true);
+      const span = document.createElement('span');
+      span.className = 'badge badge-up';
+      span.title = 'Diakui';
+      span.textContent = '✓ diakui';
+      btn.replaceWith(span);
+      return;
+    }
     btn.disabled = false; btn.textContent = orig;
-    alert('Gagal menyimpan (HTTP ' + r.status + '). Coba lagi.');
+    showToast('Gagal menyimpan (HTTP ' + r.status + '). Coba lagi.', false);
   } catch (e) {
     btn.disabled = false; btn.textContent = orig;
-    alert('Kendala jaringan: ' + e.message);
+    showToast('Kendala jaringan: ' + e.message, false);
   }
 }
 
@@ -166,12 +174,29 @@ async function resolveProblem(id, btn) {
       headers: {'X-CSRF-Token': getCsrf()},
       credentials: 'same-origin'
     });
-    if (r.ok) { location.reload(); return; }
+    if (r.ok) {
+      showToast('Masalah diselesaikan.', true);
+      const tr = btn.closest('tr');
+      if (tr) {
+        tr.style.transition = 'opacity .4s ease, transform .4s ease';
+        tr.style.opacity = '0';
+        tr.style.transform = 'translateX(20px)';
+        setTimeout(() => {
+          tr.remove();
+          probFilter();
+          const remRows = document.querySelectorAll('#probtable tbody tr');
+          if (remRows.length === 0) {
+            location.reload();
+          }
+        }, 400);
+      }
+      return;
+    }
     btn.disabled = false; btn.textContent = orig;
-    alert('Gagal menyimpan (HTTP ' + r.status + '). Coba lagi.');
+    showToast('Gagal menyimpan (HTTP ' + r.status + '). Coba lagi.', false);
   } catch (e) {
     btn.disabled = false; btn.textContent = orig;
-    alert('Kendala jaringan: ' + e.message);
+    showToast('Kendala jaringan: ' + e.message, false);
   }
 }
 

@@ -991,6 +991,14 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             shell_run.result = (shell_run.result or "").strip() + "\n[sesi shell kedaluwarsa]"
             db.commit()
             shell_run = None
+    svc_data = [{"name": s.service_name, "status": latest_map.get(s.id).status if latest_map.get(s.id) else "unknown"}
+                for s in services]
+    problem_level, open_problems, problem_history = sync_server_problems(
+        db, server, _problem_instances(server, extras, svc_data, db))
+    _enrich_problems_for_ui(open_problems, services, extras, user.role)
+    open_prob_serialized = _serialize_problem_list(open_problems)
+    hist_prob_serialized = _serialize_problem_list(problem_history)
+
     return {
         "services": svc_list, "commands": cmd_list,
         "online": not _server_stale(server),
@@ -1024,6 +1032,9 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             "started_ms": int(shell_run.created_at.replace(tzinfo=timezone.utc).timestamp() * 1000)
             if shell_run.created_at else None,
         } if shell_run else None,
+        "problem_level": problem_level,
+        "open_problems": open_prob_serialized,
+        "problem_history": hist_prob_serialized,
     }
 
 
@@ -1671,32 +1682,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
                 for s in services]
     problem_level, open_problems, problem_history = sync_server_problems(
         db, server, _problem_instances(server, extra, svc_data, db))
-    svc_map = {s.service_name: s for s in services}
-    log_units = {"SYSLOG", "AUTH", "SYSTEM"}
-    try:
-        log_units |= set(json.loads(extra.units) or []) if extra and extra.units else set()
-    except (TypeError, ValueError):
-        pass
-    sec = _parse_extras_security(extra)
-    for r in open_problems:
-        if r["key"].startswith("service_down:"):
-            svc = svc_map.get(r["key"].split(":", 1)[1])
-            r["action"] = "restart" if svc else None
-            r["svc_id"] = svc.id if svc else None
-            r["log_unit"] = r["key"].split(":", 1)[1] if r["key"].split(":", 1)[1] in log_units else None
-        elif r["key"].startswith("svc_no_data:"):
-            r["action"] = "log"
-            r["log_unit"] = r["key"].split(":", 1)[1] if r["key"].split(":", 1)[1] in log_units else None
-        elif r["key"] in ("security_danger", "failed_logins"):
-            r["action"] = "mitigate"
-            r["log_unit"] = "AUTH"
-            r["ip_count"] = len(sec.get("source_ips") or {})
-        elif r["key"] == "agent_stale":
-            r["action"] = "agent_restart"
-        elif r["key"] == "apt_updates":
-            r["action"] = "apt_update" if user.role == "admin" else None
-        else:
-            r["action"] = None
+    _enrich_problems_for_ui(open_problems, services, extra, user.role)
     top_p = {"cpu": [], "mem": []}
     if extra and extra.top_procs:
         try:
@@ -2663,6 +2649,49 @@ def _problem_row2dict(row) -> dict:
     }
 
 
+def _enrich_problems_for_ui(open_problems, services, extra, user_role="viewer"):
+    """Enrich masalah terbuka dengan aksi tombol (restart, log, mitigate, apt_update) untuk UI."""
+    svc_map = {s.service_name: s for s in services}
+    log_units = {"SYSLOG", "AUTH", "SYSTEM"}
+    try:
+        log_units |= set(json.loads(extra.units) or []) if extra and extra.units else set()
+    except (TypeError, ValueError):
+        pass
+    sec = _parse_extras_security(extra)
+    for r in open_problems:
+        if r["key"].startswith("service_down:"):
+            svc = svc_map.get(r["key"].split(":", 1)[1])
+            r["action"] = "restart" if svc else None
+            r["svc_id"] = svc.id if svc else None
+            r["log_unit"] = r["key"].split(":", 1)[1] if r["key"].split(":", 1)[1] in log_units else None
+        elif r["key"].startswith("svc_no_data:"):
+            r["action"] = "log"
+            r["log_unit"] = r["key"].split(":", 1)[1] if r["key"].split(":", 1)[1] in log_units else None
+        elif r["key"] in ("security_danger", "failed_logins"):
+            r["action"] = "mitigate"
+            r["log_unit"] = "AUTH"
+            r["ip_count"] = len(sec.get("source_ips") or {})
+        elif r["key"] == "agent_stale":
+            r["action"] = "agent_restart"
+        elif r["key"] == "apt_updates":
+            r["action"] = "apt_update" if user_role == "admin" else None
+        else:
+            r["action"] = None
+
+
+def _serialize_problem_list(prob_list):
+    """Konversi field datetime ke ISO string agar aman diserialisasikan ke JSON."""
+    res = []
+    for p in prob_list:
+        d = dict(p)
+        for k in ("started_at", "resolved_at", "acknowledged_at", "last_active_at"):
+            v = d.get(k)
+            if isinstance(v, datetime):
+                d[k] = v.isoformat()
+        res.append(d)
+    return res
+
+
 def sync_server_problems(db, srv, instances, keep_history=40, now=None):
     """Rekonsiliasi masalah dengan tabel server_problems (mirip evaluasi Zabbix).
 
@@ -3396,19 +3425,40 @@ def api_logs_result(
     if req.unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX") and status == "success":
         try:
             raw_res = body.get("result", "")
-            parsed = json.loads(raw_res) if isinstance(raw_res, str) else raw_res
+            parsed = None
+            try:
+                parsed = json.loads(raw_res) if isinstance(raw_res, str) else raw_res
+            except Exception:
+                parsed = None
+
+            extras = db.query(ServerExtras).filter(ServerExtras.server_id == server.id).first()
+            if not extras:
+                extras = ServerExtras(server_id=server.id)
+                db.add(extras)
+
             if isinstance(parsed, dict) and "apt" in parsed:
                 apt_info = parsed.get("apt")
                 if isinstance(apt_info, dict):
-                    extras = db.query(ServerExtras).filter(ServerExtras.server_id == server.id).first()
-                    if not extras:
-                        extras = ServerExtras(server_id=server.id)
-                        db.add(extras)
                     if "upgradable" in apt_info:
                         extras.apt_upgradable = _clamp_int(apt_info.get("upgradable"), 0)
                     if "packages" in apt_info and isinstance(apt_info["packages"], list):
                         extras.apt_packages_json = json.dumps(apt_info["packages"][:200])
                     extras.apt_last_update = datetime.utcnow()
+            elif req.unit in ("APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE"):
+                extras.apt_upgradable = 0
+                extras.apt_packages_json = "[]"
+                extras.apt_last_update = datetime.utcnow()
+
+            # Sinkronkan masalah apt_updates bila upgradable 0
+            if (extras.apt_upgradable or 0) == 0:
+                prob = db.query(ServerProblem).filter(
+                    ServerProblem.server_id == server.id,
+                    ServerProblem.key == "apt_updates",
+                    ServerProblem.resolved_at.is_(None)
+                ).first()
+                if prob:
+                    prob.resolved_at = datetime.utcnow()
+                    prob.resolved_note = "auto (upgrade selesai)"
         except Exception as exc:
             logger.warning("[apt_result_sync] Gagal sinkronkan ServerExtras: %s", exc)
 

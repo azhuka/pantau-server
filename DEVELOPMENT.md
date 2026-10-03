@@ -205,6 +205,14 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
   - Penambahan mekanisme fallback cerdas di backend FastAPI (`api_server_system`) agar server klien yang belum sempat memperbarui agen tetap menampilkan IP address utama secara otomatis.
 - **Perbaikan Validasi CSRF Aktivitas Pengguna:**
   - Memperbaiki kegagalan permintaan `POST /api/logs/request` pada `user_activity.html` dengan menyertakan header `X-CSRF-Token: getCsrf()`.
+- **Reaktivitas UI Live Tanpa Reload (Live Problem Reactivity & Auto-Resolution):**
+  - Payload polling berkala `/api/servers/{id}/overview` kini menyertakan `problem_level`, `open_problems`, dan `problem_history` yang tersinkronisasi.
+  - Fungsi `renderProblemsTab()` pada `services.html` memperbarui tab Status Masalah, badge counter pada tombol tab, serta baris-baris masalah secara instan di sisi klien.
+  - Saat operasi upgrade paket OS (`pantau-apt`) selesai dieksekusi, backend otomatis menandai masalah `apt_updates` sebagai selesai (*resolved*) dan mengenolkan `apt_upgradable`. Frontend segera memicu `poll()` instan agar notifikasi pembaruan langsung hilang tanpa reload peramban.
+  - Aksi "Ditangani" (*acknowledge*) dan "Selesaikan" (*resolve*) tiket masalah di `services.html` dan `problems.html` diperbarui menjadi aksi in-place dengan toast notifikasi tanpa me-reload peramban (`location.reload()`).
+- **Peningkatan Penanganan Penghentian Layanan (Stop Standalone Processes & Scopes):**
+  - Skrip wrapper [package/usr/local/sbin/pantau-restart](file:///home/bos/rj45/package/usr/local/sbin/pantau-restart) ditingkatkan dengan fallback cerdas saat menghentikan layanan non-systemd service (misalnya proses mandiri / user scope seperti browser headless `chrome` atau worker kustom).
+  - Jika `systemctl stop <unit>` gagal karena unit bukan `.service` standar, skrip secara otomatis mendeteksi scope systemd (`systemctl list-units --type=scope`) serta PID proses via `pgrep`/`pidof`, lalu mengirimkan sinyal `SIGTERM` dan `SIGKILL` secara aman dengan tetap mengunci proteksi deny-list (SSH, firewall, agent).
 
 ---
 

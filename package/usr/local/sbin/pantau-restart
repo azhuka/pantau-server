@@ -99,5 +99,34 @@ if [ "$HYPHEN_UNIT" != "$UNIT" ] && [ "$HYPHEN_UNIT" != "$ALIAS" ]; then
 fi
 
 
+# --- Jika aksi adalah 'stop' dan systemctl service gagal, coba hentikan scope atau proses mandiri ---
+if [ "$ACTION" = "stop" ]; then
+    # 1. Coba cari systemd scope (mis. app-com.google.Chrome-*.scope)
+    SCOPES="$(/usr/bin/systemctl list-units --type=scope --state=running --no-legend "*${UNIT}*" 2>/dev/null | awk '{print $1}' || true)"
+    if [ -n "$SCOPES" ]; then
+        for sc in $SCOPES; do
+            /usr/bin/systemctl stop "$sc" 2>/dev/null || true
+        done
+        echo "OK: systemctl stop scope $SCOPES"
+        exit 0
+    fi
+
+    # 2. Coba cari PID proses langsung yang cocok dengan nama unit
+    PIDS="$(pgrep -x "$UNIT" 2>/dev/null || true)"
+    if [ -z "$PIDS" ]; then
+        PIDS="$(pidof "$UNIT" 2>/dev/null || true)"
+    fi
+    if [ -n "$PIDS" ]; then
+        kill -TERM $PIDS 2>/dev/null || true
+        sleep 1
+        REMAINING="$(pgrep -x "$UNIT" 2>/dev/null || true)"
+        if [ -n "$REMAINING" ]; then
+            kill -KILL $REMAINING 2>/dev/null || true
+        fi
+        echo "OK: proses $UNIT berhasil dihentikan (PIDs: $PIDS)"
+        exit 0
+    fi
+fi
+
 printf '%s' "$ERR" >&2
 fail "systemctl $ACTION $UNIT gagal"

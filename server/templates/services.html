@@ -358,7 +358,7 @@
 <div class="tabbar" id="detail-tabs" role="tablist">
   <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true">Riwayat</button>
   <button class="tab" data-tab="layanan" role="tab">Layanan</button>
-  <button class="tab" data-tab="masalah" role="tab">Masalah</button>
+  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn">Masalah <span class="badge badge-{{ pmeta[problem_level][1] if problem_level in pmeta else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{{ open_problems|length }}</span></button>
   <button class="tab" data-tab="proses" role="tab">⚡ Proses Teratas</button>
   <button class="tab" data-tab="jaringan" role="tab">Jaringan</button>
   <button class="tab" data-tab="akun" role="tab">Akun</button>
@@ -584,14 +584,17 @@
 
 <div class="tab-body" id="tab-masalah" hidden>
 <div class="card">
-  <div class="card-header"><h3>Status Masalah</h3>
+  <div class="card-header" id="prob-card-header"><h3>Status Masalah</h3>
+    <div id="prob-header-status" style="display:flex;align-items:center;gap:8px">
     {% if problem_level is none %}
       <span class="badge badge-muted">belum ada data</span>
     {% else %}
       <span class="badge badge-{{ pmeta[problem_level][1] }}">{{ pmeta[problem_level][0] }}</span>
       <span style="font-size:12px;color:var(--dim)">{{ open_problems|length }} masalah terbuka</span>
     {% endif %}
+    </div>
   </div>
+  <div id="prob-wrapper">
   {% set rows = open_problems + problem_history %}
   {% if rows %}
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
@@ -671,11 +674,13 @@
     </tbody>
   </table>
   {% else %}
-  <div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px">
+  <div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;padding:12px 0">
     <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
     Tidak ada masalah terdeteksi saat ini.
   </div>
   {% endif %}
+  </div>
+</div>
 </div>
 </div>
 
@@ -1165,7 +1170,11 @@ async function ackProblemInDetail(id, btn) {
       headers: {'X-CSRF-Token': getCsrf()},
       credentials: 'same-origin'
     });
-    if (r.ok) { location.reload(); return; }
+    if (r.ok) {
+      showToast('Masalah ditandai sebagai ditangani.', true);
+      poll();
+      return;
+    }
     showToast('Gagal menyimpan (HTTP ' + r.status + ').', false);
   } catch (e) {
     showToast('Kendala jaringan: ' + e.message, false);
@@ -1183,7 +1192,11 @@ async function resolveProblemInDetail(id, btn) {
       headers: {'X-CSRF-Token': getCsrf()},
       credentials: 'same-origin'
     });
-    if (r.ok) { location.reload(); return; }
+    if (r.ok) {
+      showToast('Masalah berhasil diselesaikan.', true);
+      poll();
+      return;
+    }
     showToast('Gagal menyimpan (HTTP ' + r.status + ').', false);
   } catch (e) {
     showToast('Kendala jaringan: ' + e.message, false);
@@ -1878,11 +1891,154 @@ async function aptFollow(rid, kind, startedMs) {
         renderApt(d);
       }
     } catch (e) { /* polling berkala tetap berjalan */ }
+    poll();
   }
 
   // Dipanggil paling akhir: penanda "kembali ke shell" harus jadi baris
   // terakhir yang terlihat, tidak ditimpa oleh output/aptLiveAppend di atas.
   aptLiveDone();
+}
+
+function fmtProbDate(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return isoStr;
+  const day = String(d.getDate()).padStart(2, '0');
+  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const mon = months[d.getMonth()] || '';
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${day} ${mon} ${h}:${m}`;
+}
+
+function renderProblemsTab(level, openList, histList) {
+  const pmeta = {
+    ok: ['OK', 'up'],
+    info: ['Info', 'info'],
+    warning: ['Warning', 'warn'],
+    danger: ['Danger', 'danger']
+  };
+  const meta = pmeta[level] || ['OK', 'up'];
+  const openCount = openList ? openList.length : 0;
+
+  const tabBadge = document.getElementById('tab-masalah-badge');
+  if (tabBadge) {
+    if (openCount > 0) {
+      tabBadge.textContent = openCount;
+      tabBadge.className = 'badge badge-' + meta[1];
+      tabBadge.style.display = 'inline-block';
+    } else {
+      tabBadge.style.display = 'none';
+    }
+  }
+
+  const headEl = document.getElementById('prob-header-status');
+  if (headEl) {
+    if (level === null || level === undefined) {
+      headEl.innerHTML = '<span class="badge badge-muted">belum ada data</span>';
+    } else {
+      headEl.innerHTML = `<span class="badge badge-${meta[1]}">${meta[0]}</span> <span style="font-size:12px;color:var(--dim)">${openCount} masalah terbuka</span>`;
+    }
+  }
+
+  const wrap = document.getElementById('prob-wrapper');
+  if (!wrap) return;
+
+  const rows = (openList || []).concat(histList || []);
+  if (rows.length === 0) {
+    wrap.innerHTML = `<div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;padding:12px 0">
+      <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
+      Tidak ada masalah terdeteksi saat ini.
+    </div>`;
+    return;
+  }
+
+  const oldFilter = document.getElementById('prob-filter')?.value || '';
+  const oldSearch = document.getElementById('prob-search')?.value || '';
+
+  let html = `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <select id="prob-filter" onchange="probFilter()"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
+      <option value=""${oldFilter === '' ? ' selected' : ''}>Semua level</option>
+      <option value="danger"${oldFilter === 'danger' ? ' selected' : ''}>Danger</option>
+      <option value="warning"${oldFilter === 'warning' ? ' selected' : ''}>Warning</option>
+      <option value="info"${oldFilter === 'info' ? ' selected' : ''}>Info</option>
+    </select>
+    <input type="search" id="prob-search" oninput="probFilter()" value="${escapeHtml(oldSearch)}" placeholder="Cari kejadian…"
+           style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:220px">
+    <span style="font-size:11px;color:var(--dim);align-self:center" id="prob-count"></span>
+  </div>
+  <table id="probtable">
+    <thead><tr><th>Waktu</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Aksi</th><th>Tips</th></tr></thead>
+    <tbody>`;
+
+  for (const p of rows) {
+    const isOpen = !!p.is_open;
+    const sev = p.severity || 'info';
+    const sevBadge = {danger: 'danger', warning: 'warn', info: 'info'}[sev] || 'muted';
+    const searchTxt = ((p.message || '') + ' ' + (p.key || '')).toLowerCase();
+    const rowStyle = isOpen ? '' : ' style="opacity:.65"';
+    const startStr = fmtProbDate(p.started_at);
+    const resStr = p.resolved_at ? `<span style="color:var(--dim)"> → ${fmtProbDate(p.resolved_at)}</span>` : '';
+    const checkMark = isOpen ? '' : '<span style="color:var(--green)">✓</span> ';
+    const msgStyle = isOpen ? '' : ' style="text-decoration:line-through"';
+    const ackBadge = p.acknowledged_by ? `<span class="badge badge-up" title="Diakui ${escapeHtml(p.acknowledged_by)}">✓ diakui</span>` : '';
+    const kambuhBadge = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh ${p.count_24h}×</span>` : '';
+    const isoStart = isOpen && p.started_at ? (p.started_at.endsWith('Z') ? p.started_at : p.started_at + 'Z') : '';
+    const dataStart = isoStart ? ` data-start="${isoStart}"` : '';
+
+    let actHtml = '';
+    if (isOpen) {
+      if (p.action === 'restart' && p.svc_id) {
+        actHtml += `<form method="post" action="/servers/${SID}/services/${p.svc_id}/restart" style="display:inline" data-confirm data-msg="Restart service ini di ${escapeHtml(SERVER_NAME)}?">
+          <input type="hidden" name="csrf_token" value="${getCsrf()}">
+          <button class="btn btn-primary btn-sm">Restart</button>
+        </form>`;
+        if (p.log_unit) {
+          actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" style="margin-left:4px">Log</button>`;
+        }
+      } else if (p.action === 'log' && p.log_unit) {
+        actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')">Log</button>`;
+      } else if (p.action === 'mitigate') {
+        if (IS_ADMIN && p.ip_count && p.ip_count > 0) {
+          actHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline" data-confirm data-msg="Blokir ${p.ip_count} IP sumber (iptables) di ${escapeHtml(SERVER_NAME)}?">
+            <input type="hidden" name="csrf_token" value="${getCsrf()}">
+            <button class="btn btn-danger btn-sm">Blokir IP (${p.ip_count})</button>
+          </form>`;
+        }
+        actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>`;
+      } else if (p.action === 'agent_restart' && IS_ADMIN) {
+        actHtml += `<form method="post" action="/servers/${SID}/problems/restart-agent" style="display:inline" data-confirm data-msg="Restart agen (agent_pantau) di ${escapeHtml(SERVER_NAME)}?">
+          <input type="hidden" name="csrf_token" value="${getCsrf()}">
+          <button class="btn btn-ghost btn-sm">Restart agen</button>
+        </form>`;
+      } else if (p.action === 'apt_update') {
+        actHtml += `<button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">Update OS</button>`;
+      }
+
+      if (p.acknowledged_by) {
+        actHtml += `<span class="badge badge-up" style="margin-left:4px" title="Ditangani ${escapeHtml(p.acknowledged_by)}">✓ Ditangani</span>`;
+      } else {
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail(${p.id}, this)" title="Tandai masalah ini sudah ditangani">Ditangani</button>`;
+      }
+      actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="resolveProblemInDetail(${p.id}, this)" title="Tandai masalah ini selesai dan pindahkan ke riwayat teratasi">Selesaikan</button>`;
+    } else if (!p.action) {
+      actHtml = '<span style="color:var(--dim)">—</span>';
+    }
+
+    html += `<tr${rowStyle} data-sev="${escapeHtml(sev)}" data-text="${escapeHtml(searchTxt)}">
+      <td style="white-space:nowrap" class="mono">${startStr}${resStr}</td>
+      <td><span class="badge badge-${sevBadge}">${escapeHtml(sev)}</span></td>
+      <td>${checkMark}<span${msgStyle}>${escapeHtml(p.message || '')}</span> ${ackBadge} ${kambuhBadge}</td>
+      <td class="mono"${dataStart}>${escapeHtml(p.durasi || '')}</td>
+      <td style="white-space:nowrap">${actHtml}</td>
+      <td style="font-size:12px;line-height:1.55;max-width:360px">${escapeHtml(p.tip || '—')}</td>
+    </tr>`;
+  }
+
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+  probFilter();
 }
 
 // ---------- service patch (existing) ----------
@@ -1892,6 +2048,10 @@ function patch(data) {
   const aptrun = data.apt_exec;
   if (aptrun && !aptFollowActive && !aptRunning && Date.now() > aptFollowCooldown) {
     aptFollow(aptrun.id, aptrun.kind, aptrun.started_ms);
+  }
+  // Masalah terbuka & riwayat masalah: perbarui live tanpa reload
+  if (data.open_problems !== undefined) {
+    renderProblemsTab(data.problem_level, data.open_problems, data.problem_history);
   }
   // Terminal Bawaan: kalau shell masih hidup di server ini, sambungkan ke
   // sesi yang sama (bukan membuka shell baru).
