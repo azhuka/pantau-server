@@ -98,21 +98,19 @@
         <span class="mono copyable-ip" style="font-size:12px" onclick="copyIp('{{ server.ip_address }}', event)" title="Klik untuk salin IP">{{ server.ip_address }}</span>
         <span id="hero-online" class="hero-online {{ 'on' if is_online else 'off' }}">{{ 'online' if is_online else 'offline' }}</span>
         {% if server.is_maintenance %}
-        <span id="hero-maint-badge" class="badge badge-warn" title="Alasan: {{ server.maintenance_reason or 'Pemeliharaan' }}{% if server.maintenance_until %} sampai {{ server.maintenance_until.strftime('%H:%M %d/%m') }}{% endif %}">🔧 Pemeliharaan</span>
+        <span id="hero-maint-badge" class="badge badge-warn" style="cursor:pointer;font-size:11px" onclick="openMaintenanceModal()" title="Mode Pemeliharaan Aktif — Klik untuk ubah / matikan">🔧 Pemeliharaan Aktif</span>
         {% endif %}
       </div>
       <div class="hero-meta" id="hero-meta">{% if os_label %}{{ os_label }}{% endif %}{% if kernel %} · kernel {{ kernel }}{% endif %}{% if not os_label and not kernel %}memuat data sistem…{% endif %}</div>
     </div>
     <div class="hero-actions">
       {% if user.role == 'admin' %}
-      <button class="btn btn-ghost btn-sm" id="btn-maint" onclick="openMaintenanceModal()" style="border:1px solid #eab308;color:#facc15" title="Atur Mode Pemeliharaan">
-        🔧 <span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span>
-      </button>
       <button class="btn btn-success" id="apt-update-btn" onclick="aptAction('APT_UPDATE')">&#8635;&nbsp;Update OS</button>
       <button class="btn btn-danger" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled>Upgrade&nbsp;&#9650;</button>
       <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" title="Buka / sembunyikan terminal bawaan" style="border:1px solid #334155;color:#38bdf8">&#62;_&nbsp;Terminal</button>
       <a href="/servers/{{ server.id }}/files" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="border:1px solid #334155;color:#a78bfa" title="Buka File Manager di tab / halaman baru">&#128193;&nbsp;File Manager&nbsp;&nearr;</a>
       <span class="hero-sep"></span>
+      <button class="btn btn-ghost btn-sm" id="btn-maint" onclick="openMaintenanceModal()" title="Atur Mode Pemeliharaan" style="border:1px solid #334155">&#128295;&nbsp;<span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span></button>
       <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="btn btn-ghost btn-sm" type="submit" title="Restart sistem operasi">&#8634;&nbsp;Reboot OS</button>
@@ -127,9 +125,12 @@
     </div>
   </div>
   {% if is_agent_outdated and user.role == 'admin' %}
-  <div style="background:var(--yellow-bg);border:1px solid rgba(234,179,8,.3);border-radius:6px;padding:8px 12px;margin-top:12px;font-size:12px;color:var(--yellow);display:flex;align-items:center;gap:8px">
-    <span>⚠️</span>
-    <span>Versi Agen Pantau di server ini (<b>v{{ agent_version }}</b>) lebih lama dari dashboard (<b>v{{ app_version }}</b>). Jalankan pembaruan agen di server klien untuk fitur dan keandalan optimal.</span>
+  <div style="background:var(--yellow-bg);border:1px solid rgba(234,179,8,.3);border-radius:6px;padding:8px 14px;margin-top:12px;font-size:12px;color:var(--yellow);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:14px">⚠️</span>
+      <span>Versi Agen Pantau di server ini (<b>v{{ agent_version }}</b>) lebih lama dari dashboard (<b>v{{ app_version }}</b>). Perbarui agen untuk mengaktifkan fitur snapshot proses dan kestabilan sistem.</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" style="border:1px solid rgba(234,179,8,.4);color:var(--yellow);padding:4px 10px;font-size:11px;white-space:nowrap" title="Salin perintah update agen ke clipboard">📋 Salin Perintah Update</button>
   </div>
   {% endif %}
   <div class="apt-state" id="apt-state">
@@ -803,6 +804,24 @@ function toggleMaintenanceAction(action) {
   .catch(err => {
     alert('Terjadi kesalahan jaringan: ' + err);
   });
+}
+
+function copyAgentUpdateCmd(ev) {
+  const cmd = "sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service";
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(cmd).then(() => {
+      const btn = ev && ev.target;
+      if (btn) {
+        const orig = btn.textContent;
+        btn.textContent = "✓ Tersalin!";
+        setTimeout(() => { btn.textContent = orig; }, 2000);
+      }
+    }).catch(() => {
+      prompt("Salin perintah update berikut dan jalankan di terminal server klien:", cmd);
+    });
+  } else {
+    prompt("Salin perintah update berikut dan jalankan di terminal server klien:", cmd);
+  }
 }
 
 // Deep-link tab via ?tab=layanan (dipakai tautan Metrik lama & menu lain)
