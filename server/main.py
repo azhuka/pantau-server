@@ -2490,36 +2490,10 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                              "message": f"{failed} login SSH gagal (ringan)"
                                         + (f" · terakhir {_rel_dt(event_at)}" if event_at else ""),
                              "tip": SECURITY_TIPS["info"], "event_at": event_at})
-    stopped_services = set()
-    if db is not None:
-        try:
-            # Layanan yang sengaja dihentikan admin (perintah terakhir = 'stop') tidak dianggap insiden
-            latest_cmds = (
-                db.query(Command.service_id, Command.action)
-                .filter(
-                    Command.server_id == srv.id,
-                    Command.service_id.isnot(None),
-                )
-                .order_by(desc(Command.id))
-                .all()
-            )
-            seen_svc = set()
-            for svc_id, act in latest_cmds:
-                if svc_id not in seen_svc:
-                    seen_svc.add(svc_id)
-                    if act == "stop":
-                        svc_obj = db.query(Service).filter(Service.id == svc_id).first()
-                        if svc_obj:
-                            stopped_services.add(svc_obj.service_name)
-        except Exception:
-            pass
-
     for d in svc_data or []:
         name = d.get("name", "?")
         st = d.get("status")
         if st == "down":
-            if name in stopped_services:
-                continue  # Sengaja dihentikan oleh admin lewat dashboard
             inst.append({"key": f"service_down:{name}", "severity": "warning",
                          "message": f"Layanan {name} down",
                          "tip": SVC_DOWN_TIP.format(name=name)})
@@ -2528,6 +2502,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                          "message": f"Layanan {name} belum ada data",
                          "tip": SVC_NODATA_TIP})
     return inst
+
 
 
 
