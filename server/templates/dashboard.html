@@ -12,15 +12,15 @@
   </div>
   <div class="stat-card">
     <div class="label">Online</div>
-    <div class="value" style="color:var(--green)">{{ up_count }}</div>
+    <div class="value" style="color:var(--green)" id="dash-up-count">{{ up_count }}</div>
   </div>
   <div class="stat-card">
     <div class="label">Offline</div>
-    <div class="value" style="color:var(--red)">{{ down_count }}</div>
+    <div class="value" style="color:var(--red)" id="dash-down-count">{{ down_count }}</div>
   </div>
   <div class="stat-card">
     <div class="label">Layanan Down</div>
-    <div class="value" style="color:var(--red)">{{ down_services }}</div>
+    <div class="value" style="color:var(--red)" id="dash-svc-down">{{ down_services }}</div>
   </div>
   <div class="stat-card">
     <div class="label">Laporan Terakhir</div>
@@ -36,15 +36,29 @@
       <input type="search" id="dash-search" placeholder="Cari server atau IP…" oninput="dashFilter(this.value)"
              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 12px;font-size:12px;width:220px;outline:none">
       {% endif %}
+      <span id="dash-live" class="badge badge-up" style="opacity:.3;transition:opacity .3s;font-size:10px" title="Diperbarui otomatis setiap 10 detik">live</span>
       <a href="/servers" class="btn btn-ghost btn-sm">Kelola Server</a>
     </div>
   </div>
   {% if servers %}
   <table id="dash-table">
-    <thead><tr><th>Server</th><th>IP</th><th>Status</th><th>Masalah</th><th>Update OS</th><th>Terakhir Dilihat</th><th>Aksi</th></tr></thead>
+    <thead><tr>
+      <th class="sortable" data-col="0">Server</th>
+      <th class="sortable" data-col="1">IP</th>
+      <th class="sortable" data-col="2">Status</th>
+      <th class="sortable" data-col="3">CPU</th>
+      <th class="sortable" data-col="4">RAM</th>
+      <th>Layanan</th>
+      <th>Masalah</th>
+      <th>Update OS</th>
+      <th class="sortable" data-col="8">Terakhir Lapor</th>
+      <th>Aksi</th>
+    </tr></thead>
     <tbody>
     {% for srv in servers %}
-    <tr data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv._os_label or '') ~ ' agen v' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '')) | lower }}">
+    <tr data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv._os_label or '') ~ ' agen v' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '')) | lower }}"
+        data-id="{{ srv.id }}"
+        data-last-seen="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
       <td>
         <strong>{{ srv.hostname }}</strong>
         <div style="font-size:11px;color:var(--dim);line-height:1.4">
@@ -66,7 +80,18 @@
       <td class="mono">
         <span class="copyable-ip" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
       </td>
-      <td><span class="badge {{ srv._status_cls }}">{{ srv._status_label }}</span></td>
+      <td><span class="badge {{ srv._status_cls }}" id="dash-sts-{{ srv.id }}">{{ srv._status_label }}</span></td>
+      <td id="dash-cpu-{{ srv.id }}" class="mono" style="font-size:12px">—</td>
+      <td id="dash-ram-{{ srv.id }}" class="mono" style="font-size:12px">—</td>
+      <td id="dash-svc-{{ srv.id }}">
+        {% if srv._problem_level is none %}
+          <span style="color:var(--dim)">—</span>
+        {% else %}
+          {% set plabel = {'ok':'OK','info':'Info','warning':'Warning','danger':'Danger'}[srv._problem_level] %}
+          {% set pcls = {'ok':'up','info':'info','warning':'warn','danger':'danger'}[srv._problem_level] %}
+          <span class="badge badge-{{ pcls }}">{{ plabel }}</span>
+        {% endif %}
+      </td>
       <td>
         {% if srv._problem_level is none %}
           <span style="color:var(--dim)">—</span>
@@ -79,7 +104,7 @@
       <td>
         {% if srv._apt_upgradable is not none %}
           {% if srv._apt_upgradable > 0 %}
-            <span class="badge badge-warn" title="{{ srv._apt_upgradable }} paket tersedia{% if srv._apt_last_update %} &#10;Terakhir diperiksa {{ srv._apt_last_update.strftime('%d %b %Y %H:%M') }}{% endif %}&#10;Buka Rincian untuk menjalankan Update/Upgrade">{{ srv._apt_upgradable }} paket</span>
+            <span class="badge badge-warn" title="{{ srv._apt_upgradable }} paket tersedia">{{ srv._apt_upgradable }} paket</span>
           {% else %}
             <span class="badge badge-up">mutakhir</span>
           {% endif %}
@@ -87,14 +112,16 @@
           <span style="color:var(--dim)">—</span>
         {% endif %}
       </td>
-      <td class="mono">{{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}</td>
+      <td class="mono" style="font-size:12px;white-space:nowrap" id="dash-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
+        {{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}
+      </td>
       <td>
         <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
       </td>
     </tr>
     {% endfor %}
     <tr id="dash-no-match" style="display:none">
-      <td colspan="7" class="empty-msg" style="padding:24px">Tidak ada server yang sesuai dengan kata kunci.</td>
+      <td colspan="10" class="empty-msg" style="padding:24px">Tidak ada server yang sesuai dengan kata kunci.</td>
     </tr>
     </tbody>
   </table>
@@ -108,6 +135,7 @@
 
 {% block scripts %}
 <script>
+// ---------- filter ----------
 function dashFilter(query){
   const q = (query || '').toLowerCase().trim();
   const rows = document.querySelectorAll('#dash-table tbody tr[data-srv-filter]');
@@ -121,5 +149,104 @@ function dashFilter(query){
   const noMatch = document.getElementById('dash-no-match');
   if (noMatch) noMatch.style.display = (visible === 0 && rows.length > 0) ? '' : 'none';
 }
+
+// ---------- waktu relatif ----------
+function relTime(isoStr) {
+  if (!isoStr) return 'belum pernah';
+  const diff = Math.floor((Date.now() - new Date(isoStr + (isoStr.endsWith('Z') ? '' : 'Z')).getTime()) / 1000);
+  if (diff < 0) return 'baru saja';
+  if (diff < 60) return diff + ' dtk lalu';
+  if (diff < 3600) return Math.floor(diff / 60) + ' mnt lalu';
+  if (diff < 86400) return Math.floor(diff / 3600) + ' jam lalu';
+  return Math.floor(diff / 86400) + ' hari lalu';
+}
+
+function updateRelTimes() {
+  document.querySelectorAll('[id^="dash-seen-"]').forEach(td => {
+    const ts = td.dataset.ts;
+    if (ts) td.textContent = relTime(ts);
+  });
+}
+updateRelTimes();
+setInterval(updateRelTimes, 10000);
+
+// ---------- live polling CPU/RAM/status ----------
+async function dashPoll() {
+  if (document.hidden) return;
+  try {
+    const r = await fetch('/api/servers', {credentials: 'same-origin'});
+    if (!r.ok) return;
+    const list = await r.json();
+    let up = 0, dn = 0, svcDn = 0;
+    list.forEach(srv => {
+      const sts = document.getElementById('dash-sts-' + srv.id);
+      if (sts) {
+        if (srv.overall_status === 'offline') { sts.textContent = 'Offline'; sts.className = 'badge badge-down'; }
+        else if (srv.overall_status === 'up') { sts.textContent = 'Online'; sts.className = 'badge badge-up'; }
+        else { sts.textContent = 'Masalah'; sts.className = 'badge badge-warn'; }
+      }
+      const cpu = document.getElementById('dash-cpu-' + srv.id);
+      if (cpu) cpu.textContent = srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '—';
+
+      const ram = document.getElementById('dash-ram-' + srv.id);
+      if (ram) ram.textContent = srv.mem_pct != null ? srv.mem_pct.toFixed(1) + '%' : '—';
+
+      const svcEl = document.getElementById('dash-svc-' + srv.id);
+      if (svcEl && srv.down_svc_count != null) {
+        if (srv.down_svc_count > 0) {
+          svcEl.innerHTML = '<span class="badge badge-down">' + srv.down_svc_count + ' down</span>';
+        } else if (srv.overall_status !== 'offline') {
+          svcEl.innerHTML = '<span class="badge badge-up">OK</span>';
+        } else {
+          svcEl.innerHTML = '<span style="color:var(--dim)">—</span>';
+        }
+      }
+
+      const seen = document.getElementById('dash-seen-' + srv.id);
+      if (seen && srv.last_seen) {
+        seen.dataset.ts = srv.last_seen;
+        seen.textContent = relTime(srv.last_seen);
+      }
+      if (srv.overall_status !== 'offline') up++; else dn++;
+      svcDn += (srv.down_svc_count || 0);
+    });
+    const upEl = document.getElementById('dash-up-count');
+    const dnEl = document.getElementById('dash-down-count');
+    const svcEl2 = document.getElementById('dash-svc-down');
+    if (upEl) upEl.textContent = up;
+    if (dnEl) dnEl.textContent = dn;
+    if (svcEl2) svcEl2.textContent = svcDn;
+
+    const badge = document.getElementById('dash-live');
+    if (badge) {
+      badge.style.opacity = 1;
+      badge.textContent = 'live · ' + new Date().toLocaleTimeString('id-ID', {hour12:false});
+      setTimeout(() => { badge.style.opacity = .3; }, 1400);
+    }
+  } catch (e) { /* abaikan */ }
+}
+
+setInterval(dashPoll, 10000);
+setTimeout(dashPoll, 800);
+
+// ---------- sort kolom ----------
+let sortCol = -1, sortAsc = true;
+document.querySelectorAll('#dash-table th.sortable').forEach(th => {
+  th.style.cursor = 'pointer';
+  th.addEventListener('click', () => {
+    const col = parseInt(th.dataset.col, 10);
+    if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = true; }
+    document.querySelectorAll('#dash-table th.sortable').forEach(h => h.style.color = '');
+    th.style.color = 'var(--blue)';
+    const tbody = document.querySelector('#dash-table tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr[data-srv-filter]'));
+    rows.sort((a, b) => {
+      const av = (a.cells[col]?.textContent || '').trim().toLowerCase();
+      const bv = (b.cells[col]?.textContent || '').trim().toLowerCase();
+      return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    rows.forEach(r => tbody.appendChild(r));
+  });
+});
 </script>
 {% endblock %}

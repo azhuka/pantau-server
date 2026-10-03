@@ -256,6 +256,7 @@
       <div id="chart-load"></div>
     </div>
   </div>
+  <div id="disk-charts-wrap" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:14px"></div>
 </div>
 </div>
 
@@ -288,7 +289,11 @@
 </div>
 
 <div class="card">
-  <div class="card-header"><h3>Daftar Layanan</h3></div>
+  <div class="card-header"><h3>Daftar Layanan</h3>
+    {% if user.role == 'admin' %}
+    <button type="button" class="btn btn-primary btn-sm" onclick="openAddSvcModal()">+ Tambah Layanan</button>
+    {% endif %}
+  </div>
   {% if services %}
   <table>
     <thead><tr><th>Layanan</th><th>Port</th><th>Proses</th><th>Status</th><th>Koneksi</th><th>Respons (ms)</th><th>Kesehatan</th><th>Uptime 24j</th><th>Aksi</th></tr></thead>
@@ -318,6 +323,8 @@
           <span class="badge badge-muted">Menunggu Agent</span>
           {% elif user.role == 'admin' %}
           <button type="button" class="btn btn-primary btn-sm" onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Restart</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)" title="Mulai layanan">▶</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)" title="Hentikan layanan">■</button>
           {% endif %}
         </span>
         {% if user.role == 'admin' %}
@@ -346,7 +353,7 @@
         {% set svc = services|selectattr('id','equalto',c.service_id)|first %}
         {{ svc.service_name if svc else '?' }}
       </td>
-      <td><span class="badge badge-muted">{{ {'restart':'Restart','start':'Start','stop':'Stop','delete':'Hapus'}.get(c.action, c.action) }}</span></td>
+      <td><span class="badge badge-muted">{{ {'restart':'Restart','start':'Mulai','stop':'Hentikan','delete':'Hapus'}.get(c.action, c.action) }}</span></td>
       <td id="cmd-st-{{ c.id }}">
         {% if c.status == 'success' %}<span class="badge badge-up">berhasil</span>
         {% elif c.status == 'failed' %}<span class="badge badge-down">gagal</span>
@@ -359,8 +366,40 @@
     </tbody>
   </table>
 </div>
+{% else %}
+<div style="font-size:12px;color:var(--dim);padding:10px 0">Belum ada riwayat perintah di server ini.</div>
 {% endif %}
+
+<!-- Modal Tambah Layanan -->
+<div id="add-svc-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
+    <h3 style="margin:0 0 16px">Tambah Layanan</h3>
+    <form method="post" action="/servers/{{ server.id }}/services/add" id="add-svc-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Layanan *</label>
+        <input type="text" name="service_name" required placeholder="nginx, mariadb, sshd…"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Port *</label>
+        <input type="number" name="port" required min="1" max="65535" placeholder="80, 3306, 22…"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+      </div>
+      <div style="margin-bottom:18px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Proses *</label>
+        <input type="text" name="process_name" required placeholder="nginx, mysqld, sshd…"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeAddSvcModal()">Batal</button>
+        <button type="submit" class="btn btn-primary">Tambah</button>
+      </div>
+    </form>
+  </div>
 </div>
+</div>
+
 
 <div class="tab-body" id="tab-masalah" hidden>
 <div class="card">
@@ -454,7 +493,7 @@
   <div class="card-header"><h3>Jaringan</h3></div>
   <div id="net-empty" class="empty-msg" style="display:none">Belum ada data jaringan.</div>
   <table id="net-table" style="display:none">
-    <thead><tr><th>Antarmuka</th><th>Status</th><th>RX Total</th><th>TX Total</th><th>RX Laju</th><th>TX Laju</th></tr></thead>
+    <thead><tr><th>Antarmuka</th><th>IP Address</th><th>Status</th><th>RX Total</th><th>TX Total</th><th>RX Laju</th><th>TX Laju</th></tr></thead>
     <tbody></tbody>
   </table>
 </div>
@@ -474,18 +513,26 @@
 <div class="tab-body" id="tab-log" hidden>
 <div class="card" id="log-card">
   <div class="card-header"><h3>Log Layanan</h3>
-    <span id="log-state" style="font-size:12px;color:var(--dim)"></span>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span id="log-state" style="font-size:12px;color:var(--dim)"></span>
+      <button type="button" class="btn btn-ghost btn-sm" id="log-dl-btn" onclick="downloadLog()" title="Unduh log sebagai file .txt" style="display:none">⬇ Unduh</button>
+    </div>
   </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
     <label style="font-size:12px;color:var(--dim);align-self:center">Unit:</label>
     <select id="log-unit" onchange="changeUnit()" style="min-width:220px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px">
       <option value="">— memuat —</option>
     </select>
     <label style="font-size:12px;color:var(--dim);align-self:center">Baris:</label>
-    <input type="number" id="log-lines" value="200" min="10" max="2000" style="width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px">
+    <input type="number" id="log-lines" value="200" min="10" max="2000" onchange="changeUnit()"
+           style="width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px">
+  </div>
+  <div style="margin-bottom:8px">
+    <input type="search" id="log-filter" placeholder="Cari di log… (filter baris)" oninput="filterLog(this.value)"
+           style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
   </div>
   <div id="log-empty" class="empty-msg" style="display:none">Menunggu data log dari Agen Pantau…</div>
-  <pre id="log-pre" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;height:55vh;overflow:auto;white-space:pre;color:var(--text);display:none"></pre>
+  <pre id="log-pre" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;height:55vh;overflow:auto;white-space:pre-wrap;word-break:break-all;color:var(--text);display:none"></pre>
 </div>
 </div>
 
@@ -577,6 +624,45 @@ async function restartService(sid, svcId, svcName, btn) {
     btn.innerHTML = originalHtml;
   }
 }
+
+async function svcAction(action, sid, svcId, svcName, btn) {
+  const labels = {start: 'mulai', stop: 'hentikan'};
+  const label = labels[action] || action;
+  if (!confirm((action === 'stop' ? 'HENTIKAN' : 'Mulai') + ' service ' + svcName + ' di ' + SERVER_NAME + '?')) return;
+  const orig = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '…';
+  try {
+    const r = await fetch('/servers/' + sid + '/services/' + svcId + '/' + action, {
+      method: 'POST',
+      headers: {'Accept': 'application/json', 'X-CSRF-Token': getCsrf()},
+      credentials: 'same-origin',
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) {
+      showToast(j.detail || 'Perintah ' + label + ' ' + svcName + ' telah dikirim.', true);
+      setTimeout(poll, 700);
+    } else {
+      showToast(j.detail || 'Gagal mengirim perintah.', false);
+    }
+  } catch (e) {
+    showToast('Kendala jaringan: ' + e.message, false);
+  }
+  btn.disabled = false; btn.innerHTML = orig;
+}
+
+function openAddSvcModal() {
+  const m = document.getElementById('add-svc-modal');
+  if (m) { m.style.display = 'flex'; setTimeout(() => m.querySelector('input[name=service_name]')?.focus(), 60); }
+}
+function closeAddSvcModal() {
+  const m = document.getElementById('add-svc-modal');
+  if (m) m.style.display = 'none';
+}
+// Tutup modal saat klik di luar
+document.addEventListener('click', e => {
+  const m = document.getElementById('add-svc-modal');
+  if (m && e.target === m) m.style.display = 'none';
+});
 
 async function deleteService(sid, svcId, svcName, btn) {
   if (!confirm('Hapus service ' + svcName + '?')) return;
@@ -1515,14 +1601,16 @@ function renderSys(data) {
   const ne = document.getElementById('net-empty');
   nt.style.display = net.length ? 'table' : 'none';
   ne.style.display = net.length ? 'none' : 'block';
-  nt.querySelector('tbody').innerHTML = net.map(n =>
-    '<tr><td class="mono"><strong>' + escHtml(n.iface) + '</strong></td>'
-    + '<td><span class="dot ' + (n.is_up ? 'up' : 'down') + '"></span> ' + (n.is_up ? 'up' : 'down') + '</td>'
-    + '<td class="mono">' + fmtBytes(n.rx) + '</td>'
-    + '<td class="mono">' + fmtBytes(n.tx) + '</td>'
-    + '<td class="mono">' + fmtBytes(n.rx_rate) + '/s</td>'
-    + '<td class="mono">' + fmtBytes(n.tx_rate) + '/s</td></tr>'
-  ).join('');
+  nt.querySelector('tbody').innerHTML = net.map(n => {
+    const ips = (n.ip_addrs && n.ip_addrs.length) ? n.ip_addrs.join('<br>') : '<span style="color:var(--dim)">—</span>';
+    return '<tr><td class="mono"><strong>' + escHtml(n.iface) + '</strong></td>'
+      + '<td class="mono" style="font-size:12px">' + ips + '</td>'
+      + '<td><span class="dot ' + (n.is_up ? 'up' : 'down') + '"></span> ' + (n.is_up ? 'up' : 'down') + '</td>'
+      + '<td class="mono">' + fmtBytes(n.rx) + '</td>'
+      + '<td class="mono">' + fmtBytes(n.tx) + '</td>'
+      + '<td class="mono">' + fmtBytes(n.rx_rate) + '/s</td>'
+      + '<td class="mono">' + fmtBytes(n.tx_rate) + '/s</td></tr>';
+  }).join('');
 
   // akun
   const acc = data.accounts || [];
@@ -1774,8 +1862,11 @@ async function chainNext(version) {
       const pre = document.getElementById('log-pre');
       pre.style.display = 'block';
       document.getElementById('log-empty').style.display = 'none';
-      pre.textContent = j.result || '[log kosong]';
-      if (logPinned) pre.scrollTop = pre.scrollHeight;   // kunci ke bagian terbaru
+      _rawLogBuf = j.result || '[log kosong]';
+      renderLog(_rawLogBuf, document.getElementById('log-filter')?.value || '');
+      if (logPinned) pre.scrollTop = pre.scrollHeight;
+      const dlBtn = document.getElementById('log-dl-btn');
+      if (dlBtn) dlBtn.style.display = 'inline-flex';
       setLogState('');
       scheduleNext(version);
       return;
@@ -1784,7 +1875,8 @@ async function chainNext(version) {
       const pre = document.getElementById('log-pre');
       pre.style.display = 'block';
       document.getElementById('log-empty').style.display = 'none';
-      pre.textContent = j.result || '[gagal membaca log]';
+      _rawLogBuf = j.result || '[gagal membaca log]';
+      renderLog(_rawLogBuf, '');
       setLogState('gagal');
       scheduleNext(version);
       return;
@@ -1810,6 +1902,102 @@ function startAutoLog(units, extras) {
   chainNext(logVersion);
 }
 
+// ---------- log filter + highlight ----------
+let _rawLogBuf = '';
+
+const LOG_HL = [
+  { re: /\b(error|err|crit|critical|emerg|alert|fatal)\b/gi, cls: 'log-err' },
+  { re: /\b(warn|warning)\b/gi, cls: 'log-warn' },
+  { re: /\b(info|notice)\b/gi, cls: 'log-info' },
+];
+
+(function injectLogStyles() {
+  const s = document.createElement('style');
+  s.textContent = '.log-err{color:var(--red);font-weight:600}.log-warn{color:var(--yellow);font-weight:600}.log-info{color:var(--blue)}';
+  document.head.appendChild(s);
+})();
+
+function escHtmlLog(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function highlightLine(line) {
+  let escaped = escHtmlLog(line);
+  LOG_HL.forEach(({re, cls}) => {
+    escaped = escaped.replace(re, m => `<span class="${cls}">${m}</span>`);
+  });
+  return escaped;
+}
+
+function renderLog(raw, query) {
+  const pre = document.getElementById('log-pre');
+  if (!pre) return;
+  const q = (query || '').toLowerCase().trim();
+  const lines = raw.split('\n');
+  const filtered = q ? lines.filter(l => l.toLowerCase().includes(q)) : lines;
+  if (filtered.length === 0) {
+    pre.innerHTML = '<span style="color:var(--dim)">[tidak ada baris yang sesuai]</span>';
+    return;
+  }
+  pre.innerHTML = filtered.map(highlightLine).join('\n');
+}
+
+function filterLog(q) {
+  if (_rawLogBuf) renderLog(_rawLogBuf, q);
+}
+
+function downloadLog() {
+  const unit = document.getElementById('log-unit')?.value || 'log';
+  const date = new Date().toISOString().slice(0, 10);
+  const fname = SERVER_NAME + '-' + unit + '-' + date + '.log';
+  const blob = new Blob([_rawLogBuf], {type: 'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+// ---------- grafik disk historis ----------
+let _lastDiskPoints = [];
+
+function renderDiskCharts(pts) {
+  _lastDiskPoints = pts;
+  const wrap = document.getElementById('disk-charts-wrap');
+  if (!wrap) return;
+  // Kumpulkan semua mount point unik dari semua titik
+  const mounts = [];
+  pts.forEach(p => {
+    (p.disks || []).forEach(d => {
+      if (d.mount && !mounts.includes(d.mount)) mounts.push(d.mount);
+    });
+  });
+  if (!mounts.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  wrap.innerHTML = '<div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Penggunaan Disk (%)</div>'
+    + mounts.map(mount => {
+        const diskPts = pts.map(p => {
+          const d = (p.disks || []).find(x => x.mount === mount);
+          return {t: p.t, v: d ? d.pct : null};
+        }).filter(x => x.v !== null);
+        const elId = 'disk-chart-' + mount.replace(/[^a-zA-Z0-9]/g, '_');
+        return '<div style="margin-bottom:14px">'
+          + '<div style="font-size:11px;color:var(--dim);margin-bottom:3px">' + escHtml(mount) + '</div>'
+          + '<div id="' + elId + '"></div></div>';
+    }).join('');
+  // Render setelah DOM tersedia
+  setTimeout(() => {
+    mounts.forEach(mount => {
+      const elId = 'disk-chart-' + mount.replace(/[^a-zA-Z0-9]/g, '_');
+      const diskPts = pts.map(p => {
+        const d = (p.disks || []).find(x => x.mount === mount);
+        return {t: p.t, v: d ? d.pct : null};
+      }).filter(x => x.v !== null).map(x => ({t: x.t, disk_pct: x.v}));
+      if (diskPts.length < 2) return;
+      renderLineChart(elId, diskPts, p => p.disk_pct, v => v.toFixed(0) + '%', 'var(--yellow)', 100);
+    });
+  }, 0);
+}
+
 async function poll() {
   if (document.hidden) return;
   try {
@@ -1822,6 +2010,29 @@ setInterval(poll, POLL_MS);
 setTimeout(poll, 500);
 setInterval(pollSystem, 5000);
 setTimeout(pollSystem, 700);
+
+// Patch loadPerf untuk juga render disk charts
+const _origLoadPerf = loadPerf;
+async function loadPerf(range) {
+  perfRange = range || perfRange;
+  document.querySelectorAll('#perf-ranges .btn').forEach(b => {
+    const on = b.dataset.range === perfRange;
+    b.classList.toggle('is-on', on);
+  });
+  let data;
+  try {
+    const r = await fetch('/api/servers/' + SID + '/perf?range=' + perfRange, {credentials: 'same-origin'});
+    if (!r.ok) return;
+    data = await r.json();
+  } catch (e) { return; }
+  const pts = data.points || [];
+  document.getElementById('perf-empty').style.display = pts.length ? 'none' : 'block';
+  renderLineChart('chart-cpu', pts, p => p.cpu, v => v.toFixed(0) + '%', PERF_COLORS.cpu, 100);
+  renderLineChart('chart-mem', pts, pctOf, v => v.toFixed(0) + '%', PERF_COLORS.mem, 100);
+  renderLineChart('chart-swap', pts, swapPct, v => v.toFixed(0) + '%', PERF_COLORS.swap, 100);
+  renderLineChart('chart-load', pts, p => p.load, v => v.toFixed(2), PERF_COLORS.load, 0);
+  renderDiskCharts(pts);
+}
 
 document.querySelectorAll('#perf-ranges .btn').forEach(b =>
   b.addEventListener('click', () => loadPerf(b.dataset.range)));

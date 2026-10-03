@@ -916,6 +916,35 @@ def collect_net() -> list[dict]:
     except OSError:
         return ifaces
 
+    # Kumpulkan IP per interface dari /proc/net/fib_trie (IPv4)
+    _ip_map: dict[str, list[str]] = {}
+    try:
+        import socket
+        import struct
+        import fcntl
+        SIOCGIFCONF = 0x8912
+        SIOCGIFADDR = 0x8915
+        with open("/proc/net/fib_trie") as ft:
+            cur_iface = None
+            for ln in ft:
+                ln = ln.strip()
+                if ln.startswith("Ifa:"):
+                    # Format: Ifa: <iface>
+                    cur_iface = ln.split()[-1] if len(ln.split()) > 1 else None
+                elif cur_iface and ln.startswith("LOCAL"):
+                    ip = ln.split()[-1]
+                    try:
+                        import ipaddress as _ia
+                        a = _ia.ip_address(ip)
+                        if not (a.is_loopback or a.is_link_local or a.is_multicast or a.is_unspecified):
+                            _ip_map.setdefault(cur_iface, [])
+                            if ip not in _ip_map[cur_iface]:
+                                _ip_map[cur_iface].append(ip)
+                    except ValueError:
+                        pass
+    except Exception:
+        pass
+
     now = time.monotonic()
     dt = (now - _net_prev_t) if _net_prev_t else 0.0
     for line in lines:
@@ -938,10 +967,12 @@ def collect_net() -> list[dict]:
         ifaces.append({
             "iface": name, "rx": rx, "tx": tx,
             "rx_rate": int(rx_rate), "tx_rate": int(tx_rate), "is_up": is_up,
+            "ip_addrs": _ip_map.get(name, [])[:4],
         })
         _net_prev[name] = (rx, tx)
     _net_prev_t = now
     return [i for i in ifaces if not i["iface"].startswith("lo")][:16]
+
 
 
 def collect_system() -> dict:

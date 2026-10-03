@@ -17,8 +17,17 @@
   <div class="card-header"><h3>Masalah Terbuka</h3>
     <span style="font-size:12px;color:var(--dim)">{{ open_problems|length }} masalah</span>
   </div>
-  {% if open_problems %}
+  {% if open_problems or all_servers %}
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <form method="get" action="/problems" style="display:contents">
+      <select name="server" onchange="this.form.submit()"
+              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
+        <option value="">Semua server</option>
+        {% for srv in all_servers %}
+        <option value="{{ srv.id }}" {% if filter_sid == srv.id %}selected{% endif %}>{{ srv.hostname }}</option>
+        {% endfor %}
+      </select>
+    </form>
     <select id="prob-filter" onchange="probFilter()"
             style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
       <option value="">Semua level</option>
@@ -29,7 +38,10 @@
     <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari server / kejadian…"
            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:220px">
     <span style="font-size:11px;color:var(--dim);align-self:center" id="prob-count"></span>
+    {% if filter_sid %}<a href="/problems" class="btn btn-ghost btn-sm">Reset filter</a>{% endif %}
   </div>
+  {% endif %}
+  {% if open_problems %}
   <table id="probtable">
     <thead><tr><th>Waktu</th><th>Server</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Aksi</th><th>Tips</th></tr></thead>
     <tbody>
@@ -47,8 +59,9 @@
         <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
         {% if p.acknowledged_by %}
           <span class="badge badge-up" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">Ditangani</span>
-        {% elif p.severity == 'danger' and p.is_open %}
-          <button type="button" class="btn btn-danger btn-sm" onclick="ackProblem({{ p.server_id }}, {{ p.id }}, this)">Tandai ditangani</button>
+        {% elif p.is_open %}
+          <button type="button" class="btn btn-{{ 'danger' if p.severity == 'danger' else 'ghost' }} btn-sm"
+                  onclick="ackProblem({{ p.server_id }}, {{ p.id }}, this)">Tandai ditangani</button>
         {% endif %}
       </td>
       <td style="font-size:12px;color:var(--dim);max-width:360px">
@@ -64,7 +77,7 @@
   {% else %}
   <div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px">
     <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
-    Tidak ada masalah terbuka saat ini.
+    Tidak ada masalah terbuka{% if filter_sid %} untuk server ini{% endif %} saat ini.
   </div>
   {% endif %}
 </div>
@@ -102,9 +115,25 @@
 
 {% block scripts %}
 <script>
-async function ackProblem(sid, id, btn){
-  if (!confirm('Tandai masalah DANGER ini sudah ditangani?')) return;
-  const label = btn.textContent;
+function probFilter() {
+  const sev = document.getElementById('prob-filter').value;
+  const q = (document.getElementById('prob-search').value || '').toLowerCase().trim();
+  const rows = document.querySelectorAll('#probtable tbody tr');
+  let vis = 0;
+  rows.forEach(tr => {
+    const matchSev = !sev || tr.dataset.sev === sev;
+    const matchQ = !q || (tr.dataset.text || '').includes(q);
+    tr.style.display = matchSev && matchQ ? '' : 'none';
+    if (matchSev && matchQ) vis++;
+  });
+  const el = document.getElementById('prob-count');
+  if (el) el.textContent = rows.length ? vis + ' dari ' + rows.length + ' masalah' : '';
+}
+
+async function ackProblem(sid, id, btn) {
+  const label = btn.severity === 'danger' ? 'masalah DANGER' : 'masalah ini';
+  if (!confirm('Tandai ' + label + ' sudah ditangani?')) return;
+  const orig = btn.textContent;
   btn.disabled = true; btn.textContent = 'Menyimpan…';
   try {
     const r = await fetch('/api/alerts/' + id + '/ack', {
@@ -113,12 +142,22 @@ async function ackProblem(sid, id, btn){
       credentials: 'same-origin'
     });
     if (r.ok) { location.reload(); return; }
-    btn.disabled = false; btn.textContent = label;
+    btn.disabled = false; btn.textContent = orig;
     alert('Gagal menyimpan. Coba lagi.');
   } catch (e) {
-    btn.disabled = false; btn.textContent = label;
+    btn.disabled = false; btn.textContent = orig;
     alert('Gagal menyimpan. Coba lagi.');
   }
 }
+
+// Live durasi
+setInterval(() => {
+  document.querySelectorAll('#probtable [data-start]').forEach(td => {
+    const d = Math.floor((Date.now() - new Date(td.dataset.start).getTime()) / 1000);
+    if (d < 60) td.textContent = d + ' dtk';
+    else if (d < 3600) td.textContent = Math.floor(d/60) + ' mnt';
+    else td.textContent = Math.floor(d/3600) + ' j ' + Math.floor((d%3600)/60) + ' m';
+  });
+}, 5000);
 </script>
 {% endblock %}

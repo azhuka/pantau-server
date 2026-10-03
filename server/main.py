@@ -614,6 +614,8 @@ def _sanitize_net_list(raw) -> str | None:
     for n in raw[:50]:
         if not isinstance(n, dict):
             continue
+        raw_ips = n.get("ip_addrs") or []
+        ip_addrs = [str(ip)[:50] for ip in raw_ips[:8] if isinstance(ip, str)]
         cleaned.append({
             "iface": _clean_str(n.get("iface"), "", 32),
             "rx": _clamp_int(n.get("rx"), 0, 0, 2 ** 63 - 1),
@@ -621,8 +623,10 @@ def _sanitize_net_list(raw) -> str | None:
             "rx_rate": _clamp_float(n.get("rx_rate"), 0.0, 0.0, 1e12),
             "tx_rate": _clamp_float(n.get("tx_rate"), 0.0, 0.0, 1e12),
             "is_up": bool(n.get("is_up")),
+            "ip_addrs": ip_addrs,
         })
     return json.dumps(cleaned) if cleaned else None
+
 
 
 @app.post("/api/report")
@@ -853,6 +857,20 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             for s in svc_list:
                 s["status"] = "offline"
         ex = extras_map.get(srv.id)
+        # Snapshot HW terbaru untuk CPU/RAM/uptime di dashboard
+        latest_sys = (
+            db.query(SystemSnapshot)
+            .filter(SystemSnapshot.server_id == srv.id)
+            .order_by(desc(SystemSnapshot.timestamp))
+            .first()
+        )
+        cpu_pct = round(latest_sys.cpu, 1) if latest_sys else None
+        mem_pct = (
+            round(latest_sys.mem_used / latest_sys.mem_total * 100, 1)
+            if latest_sys and latest_sys.mem_total else None
+        )
+        uptime_secs = latest_sys.uptime_secs if latest_sys else None
+        down_svc_count = sum(1 for s in svc_list if s["status"] in ("down", "offline"))
         result.append({
             "id": srv.id, "hostname": srv.hostname, "ip_address": srv.ip_address,
             "is_active": srv.is_active,
@@ -864,8 +882,13 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             "kernel": ex.kernel if ex else None,
             "os_label": ex.os_label if ex else None,
             "arch": ex.arch if ex else None,
+            "cpu": cpu_pct,
+            "mem_pct": mem_pct,
+            "uptime_secs": uptime_secs,
+            "down_svc_count": down_svc_count,
         })
     return result
+
 
 
 @app.get("/api/servers/{sid}/overview")
@@ -1654,6 +1677,60 @@ def service_restart(
     return RedirectResponse(f"/servers/{sid}/services?restarted=1", status_code=303)
 
 
+def _service_action(request: Request, sid: int, svc_id: int, action: str, db, csrf_token: str = ""):
+    """Helper bersama untuk start/stop layanan."""
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or user.role != "admin":
+        if is_json:
+            return Response(json.dumps({"ok": False, "detail": "Akses ditolak (hanya admin)"}), status_code=403, media_type="application/json")
+        return RedirectResponse("/", status_code=303)
+    token = csrf_token or request.headers.get("X-CSRF-Token", "")
+    _verify_csrf_form(request, token)
+    svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
+    if not svc:
+        if is_json:
+            return Response(json.dumps({"ok": False, "detail": "Service tidak ditemukan"}), status_code=404, media_type="application/json")
+        return RedirectResponse(f"/servers/{sid}/services", status_code=303)
+    existing = (
+        db.query(Command)
+        .filter(Command.server_id == sid, Command.service_id == svc_id, Command.status == "pending")
+        .first()
+    )
+    if not existing:
+        db.add(Command(
+            server_id=sid, service_id=svc_id, action=action, status="pending",
+            issued_by=user.username,
+        ))
+        server = db.query(Server).filter(Server.id == sid).first()
+        _audit(db, user.username, f"service_{action}",
+               f"{server.hostname if server else sid}:{svc.service_name}", "dikirim ke agen")
+        db.commit()
+    label_id = {"start": "mulai", "stop": "hentikan"}.get(action, action)
+    if is_json:
+        return Response(json.dumps({"ok": True, "detail": f"Perintah {label_id} {svc.service_name} telah dikirim ke Agen Pantau."}), media_type="application/json")
+    return RedirectResponse(f"/servers/{sid}/services?restarted=1", status_code=303)
+
+
+@app.post("/servers/{sid}/services/{svc_id}/start")
+def service_start(
+    request: Request, sid: int, svc_id: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    """Mulai layanan yang sedang stop (admin)."""
+    return _service_action(request, sid, svc_id, "start", db, csrf_token)
+
+
+@app.post("/servers/{sid}/services/{svc_id}/stop")
+def service_stop(
+    request: Request, sid: int, svc_id: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    """Hentikan layanan yang sedang berjalan (admin)."""
+    return _service_action(request, sid, svc_id, "stop", db, csrf_token)
+
 def _enqueue_mitigation(db, sid: int, action: str, params: dict | None = None, issued_by=None) -> None:
     """Antrekan command mitigasi (block_ip/restart_agent) tanpa service terkait."""
     existing = (
@@ -1800,9 +1877,15 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse("/login", status_code=303)
+    filter_sid_str = request.query_params.get("server", "")
+    filter_sid = int(filter_sid_str) if filter_sid_str.isdigit() else None
     open_problems, recent_resolved = problems_aggregate(db)
+    if filter_sid:
+        open_problems = [p for p in open_problems if p["server_id"] == filter_sid]
+        recent_resolved = [p for p in recent_resolved if p["server_id"] == filter_sid]
     servers_total = db.query(Server).count()
     open_servers = {p["server_id"] for p in open_problems}
+    all_servers = db.query(Server).order_by(Server.hostname).all()
     return tpl(request, "problems.html", {
         "user": user,
         "open_problems": open_problems,
@@ -1811,7 +1894,10 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
         "warning_open": sum(1 for p in open_problems if p["severity"] == "warning"),
         "info_open": sum(1 for p in open_problems if p["severity"] == "info"),
         "ok_count": servers_total - len(open_servers),
+        "all_servers": all_servers,
+        "filter_sid": filter_sid,
     })
+
 
 
 # ---------------------------------------------------------------------------
@@ -2774,11 +2860,10 @@ def api_alert_ack(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Acknowledge peringatan danger agar popup tidak menghalangi terus-menerus."""
+    """Acknowledge peringatan (semua level) agar tidak mengganggu terus-menerus."""
     _verify_csrf_header(request)
     row = db.query(ServerProblem).filter(
         ServerProblem.id == pid,
-        ServerProblem.severity == "danger",
         ServerProblem.resolved_at.is_(None),
     ).first()
     if not row:
@@ -2791,6 +2876,7 @@ def api_alert_ack(
     ))
     db.commit()
     return {"ok": True, "id": pid, "acknowledged_by": user.username}
+
 
 
 def _journal_tail(unit: str, lines: int) -> list:
@@ -3227,6 +3313,7 @@ def api_server_perf(
             func.avg(SystemSnapshot.mem_used),
             func.max(SystemSnapshot.swap_total),
             func.avg(SystemSnapshot.swap_used),
+            func.max(SystemSnapshot.disks),
         )
         .filter(
             SystemSnapshot.server_id == sid,
@@ -3237,6 +3324,16 @@ def api_server_perf(
         .order_by("tb")
         .all()
     )
+
+    def _parse_disks(raw_json):
+        if not raw_json:
+            return []
+        try:
+            val = json.loads(raw_json)
+            return val if isinstance(val, list) else []
+        except Exception:
+            return []
+
     points.extend([
         {
             "t": int(tb_stamp),
@@ -3246,8 +3343,9 @@ def api_server_perf(
             "mem_total": mem_total,
             "swap_used": swap_used,
             "swap_total": swap_total,
+            "disks": _parse_disks(disks_raw),
         }
-        for tb_stamp, cpu_avg, load_avg, mem_total, mem_used, swap_total, swap_used in raw
+        for tb_stamp, cpu_avg, load_avg, mem_total, mem_used, swap_total, swap_used, disks_raw in raw
     ])
 
     return {

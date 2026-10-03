@@ -86,13 +86,13 @@ Kalau belum ada, installer memintanya (dan bisa dilewati dengan
 
 | Halaman | Isi |
 |---|---|
-| **Dashboard** | Ringkasan semua server: jumlah online/offline, layanan down, laporan terakhir. Kotak pencarian instan (*real-time* server/IP/OS) dan shortcut satu-klik salin IP ke clipboard. |
-| **Servers** | Kelola server: tambah, edit, hapus, lihat kunci API, kotak pencarian instan, dan shortcut salin IP. |
-| **Rincian server** | Halaman utama tiap server. Tab **Riwayat**, **Layanan** (restart dan hapus service instan via AJAX tanpa reload halaman), **Masalah**, **Jaringan**, **Akun**, **Log**. **Terminal Bawaan** (xterm.js + WebSocket realtime) = shell Linux sungguhan di server klien, tertanam di halaman lewat tombol `>_ Terminal`. Tombol **📁 File Manager ↗** membuka File Manager di tab baru (`/servers/{id}/files`). |
+| **Dashboard** | Ringkasan semua server: jumlah online/offline, layanan down, laporan terakhir. Kolom CPU%, RAM%, layanan down, dan waktu relatif ("X mnt lalu") per server dengan polling live otomatis, kolom sortable, pencarian instan, dan shortcut satu-klik salin IP. |
+| **Servers** | Kelola server: status dot (online/offline), tambah, edit, hapus, lihat kunci API, tabel dengan kolom sortable, kotak pencarian instan, dan shortcut salin IP. |
+| **Rincian server** | Halaman utama tiap server. Tab **Riwayat** (grafik CPU, Memori, Swap, Load, dan Disk historis per mount point), Tab **Layanan** (modal Tambah Layanan, tombol Start ▶, Stop ■, Restart, dan Hapus instan via AJAX), Tab **Masalah**, Tab **Jaringan** (daftar interface dengan IP address per interface, status, throughput & laju data), Tab **Akun**, Tab **Log** (filter/search baris log, pewarnaan error/warning/critical, tombol ⬇ Unduh log, dan auto-apply baris). **Terminal Bawaan** (xterm.js + WebSocket realtime) = shell Linux sungguhan di server klien, tertanam di halaman lewat tombol `>_ Terminal`. Tombol **📁 File Manager ↗** membuka File Manager di tab baru (`/servers/{id}/files`). |
 | **File Manager** | *(Admin)* Halaman dedicated (`/servers/{id}/files`) untuk eksplorasi direktori, edit file (auto-backup `.bak`), buat folder/file baru, upload/download, chmod/chown — dengan proteksi guardrail terhadap direktori sistem kritis. |
-| **Masalah** | Semua masalah terbuka lintas server dengan level (Danger / Warning / Info), durasi, dan tips penanganan. |
+| **Masalah** | Semua masalah terbuka lintas server dengan filter per-server, filter level (Danger / Warning / Info), penanganan (ack) untuk semua level peringatan, durasi berjalan live, dan tips penanganan. |
 | **Log** | Log server pusat: CPU/memori/beban/swap, proses teratas, disk, log service (pilih unit), dan log aplikasi. |
-| **Audit** | Jejak aksi admin: login, kelola server/service/user, perintah remote (restart, blokir IP, update paket, restart agen). |
+| **Audit** | Jejak aksi admin: login, buka/tutup sesi terminal, kelola server/service/user, perintah remote (restart/start/stop, blokir IP, update paket, restart agen). |
 | **Users** | *(Admin)* Kelola user dashboard: tambah, ubah peran, reset password, cabut sesi. |
 
 Semua angka pada Dashboard, Rincian, dan Masalah berasal dari satu sumber

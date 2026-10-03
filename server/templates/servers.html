@@ -15,11 +15,32 @@
 <div class="card">
   {% if servers %}
   <table id="servers-table">
-    <thead><tr><th>Hostname</th><th>IP</th><th>Status</th><th>Layanan</th><th>Versi Agen</th><th>Kunci API</th><th>Terakhir Dilihat</th><th>Aksi</th></tr></thead>
+    <thead>
+      <tr>
+        <th class="sortable" data-col="0" style="cursor:pointer" title="Klik untuk urutkan">Hostname ↕</th>
+        <th class="sortable" data-col="1" style="cursor:pointer" title="Klik untuk urutkan">IP ↕</th>
+        <th>Status</th>
+        <th>Layanan</th>
+        <th>Versi Agen</th>
+        <th>Kunci API</th>
+        <th class="sortable" data-col="6" style="cursor:pointer" title="Klik untuk urutkan">Terakhir Dilihat ↕</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
     <tbody>
     {% for srv in servers %}
-    <tr data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '')) | lower }}">
-      <td><strong>{{ srv.hostname }}</strong></td>
+    <tr data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '')) | lower }}"
+        data-status="{{ srv._status_cls }}"
+        data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="dot {{ 'up' if srv._status_cls == 'badge-up' else 'down' }}" style="flex-shrink:0"></span>
+          <strong>{{ srv.hostname }}</strong>
+        </div>
+        <div style="font-size:10px;color:var(--dim);margin-top:2px;margin-left:18px">
+          {% if srv._os_label %}{{ srv._os_label }}{% if srv._arch %} · {{ srv._arch }}{% endif %}{% endif %}
+        </div>
+      </td>
       <td class="mono">
         <span class="copyable-ip" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
       </td>
@@ -44,7 +65,7 @@
         <span class="mono" style="font-size:10px;color:var(--dim)"
               title="Sidik jari kunci API — bukan kunci penuh. Kunci hanya ditampilkan sekali, saat dibuat.">{{ srv._key_fp }}</span>
       </td>
-      <td class="mono">{{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}</td>
+      <td class="mono" style="font-size:12px;white-space:nowrap">{{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}</td>
       <td style="white-space:nowrap">
         <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
         {% if user.role == 'admin' %}
@@ -85,5 +106,34 @@ function serversFilter(query){
   const noMatch = document.getElementById('servers-no-match');
   if (noMatch) noMatch.style.display = (visible === 0 && rows.length > 0) ? '' : 'none';
 }
+
+// Sortable columns
+let sortCol = -1, sortAsc = true;
+document.querySelectorAll('#servers-table th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = parseInt(th.dataset.col, 10);
+    if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = true; }
+    document.querySelectorAll('#servers-table th.sortable').forEach(h => {
+      h.style.color = '';
+      const base = h.textContent.replace(/ [↑↓]$/, '').trim();
+      h.textContent = base + ' ↕';
+    });
+    th.style.color = 'var(--blue)';
+    th.textContent = th.textContent.replace('↕', sortAsc ? '↑' : '↓');
+    const tbody = document.querySelector('#servers-table tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr[data-srv-filter]'));
+    rows.sort((a, b) => {
+      let av = (a.cells[col]?.textContent || '').trim().toLowerCase();
+      let bv = (b.cells[col]?.textContent || '').trim().toLowerCase();
+      // Sort by timestamp numerically for the last-seen column
+      if (col === 6) {
+        av = a.dataset.ts || '';
+        bv = b.dataset.ts || '';
+      }
+      return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    rows.forEach(r => tbody.appendChild(r));
+  });
+});
 </script>
 {% endblock %}
