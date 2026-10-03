@@ -384,6 +384,36 @@ def migrate_log_request_input():
         db.close()
 
 
+def migrate_server_problem_ignored():
+    """Migrasi penambahan kolom pembungkaman/abaikan masalah pada tabel server_problems."""
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    if "server_problems" not in inspector.get_table_names():
+        return
+    existing = {c["name"] for c in inspector.get_columns("server_problems")}
+    wanted = {
+        "is_ignored": "TINYINT(1) DEFAULT 0",
+        "ignored_until": "DATETIME NULL",
+        "ignored_by": "VARCHAR(100) NULL",
+        "ignored_reason": "VARCHAR(255) NULL",
+    }
+    missing = {k: v for k, v in wanted.items() if k not in existing}
+    if not missing:
+        return
+    db = SessionLocal()
+    try:
+        for col, ddl in missing.items():
+            db.execute(text(f"ALTER TABLE server_problems ADD COLUMN {col} {ddl}"))
+        db.commit()
+        logger.info("[startup] Kolom baru server_problems (abaikan masalah): %s", ", ".join(missing))
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        logger.warning("[startup] Migrasi kolom ignored gagal: %s", exc)
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _SECRET_KEY
@@ -391,6 +421,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     migrate_api_keys()
     migrate_log_request_input()
+    migrate_server_problem_ignored()
     try:
         with SessionLocal() as sess:
             _prune_expired_sessions(sess)
@@ -2646,6 +2677,10 @@ def _problem_row2dict(row) -> dict:
         "acknowledged_at": row.acknowledged_at,
         "resolved_note": row.resolved_note,
         "durasi": _fmt_duration(row.started_at, end if end else datetime.utcnow()),
+        "is_ignored": bool(getattr(row, "is_ignored", 0)),
+        "ignored_until": getattr(row, "ignored_until", None),
+        "ignored_by": getattr(row, "ignored_by", None),
+        "ignored_reason": getattr(row, "ignored_reason", None),
     }
 
 
@@ -2684,7 +2719,7 @@ def _serialize_problem_list(prob_list):
     res = []
     for p in prob_list:
         d = dict(p)
-        for k in ("started_at", "resolved_at", "acknowledged_at", "last_active_at"):
+        for k in ("started_at", "resolved_at", "acknowledged_at", "last_active_at", "ignored_until"):
             v = d.get(k)
             if isinstance(v, datetime):
                 d[k] = v.isoformat()
@@ -2740,6 +2775,10 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 last_active_at=active,
             ))
         else:
+            if getattr(row, "is_ignored", 0) and row.ignored_until and row.ignored_until <= now:
+                row.is_ignored = 0
+                row.ignored_until = None
+                row.ignored_reason = None
             if active > (row.last_active_at or row.started_at):
                 row.last_active_at = active
             if (row.severity != p["severity"] or row.message != p["message"]
@@ -2782,9 +2821,10 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             ServerProblem.resolved_at.isnot(None),
         ).order_by(desc(ServerProblem.resolved_at)).limit(keep_history).all()
     )
+    active_unignored = [r for r in open_rows if not getattr(r, "is_ignored", 0)]
     level = "ok"
-    if open_rows:
-        level = max((r.severity for r in open_rows),
+    if active_unignored:
+        level = max((r.severity for r in active_unignored),
                     key=lambda x: PROBLEM_RANK.get(x, 0))
     cutoff_24 = now - timedelta(hours=24)
     counts: dict = {}
@@ -3018,6 +3058,7 @@ def api_alerts(
         .filter(
             ServerProblem.severity == "danger",
             ServerProblem.resolved_at.is_(None),
+            (ServerProblem.is_ignored == 0) | (ServerProblem.is_ignored.is_(None)),
         )
         .order_by(desc(ServerProblem.started_at)).all()
     )
@@ -3082,6 +3123,96 @@ def api_alert_resolve(
     ))
     db.commit()
     return {"ok": True, "id": pid, "resolved_by": user.username}
+
+
+@app.post("/api/alerts/{pid}/ignore")
+def api_alert_ignore(
+    pid: int,
+    request: Request,
+    body: dict = Body(default={}),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Abaikan / bungkam peringatan atau masalah."""
+    _verify_csrf_header(request)
+    row = db.query(ServerProblem).filter(
+        ServerProblem.id == pid,
+        ServerProblem.resolved_at.is_(None),
+    ).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Masalah tidak ditemukan")
+
+    duration = str(body.get("duration", "24h")).lower().strip()
+    reason = str(body.get("reason", "")).strip()[:255] or None
+
+    now = datetime.utcnow()
+    until = None
+    if duration == "2h":
+        until = now + timedelta(hours=2)
+    elif duration == "24h":
+        until = now + timedelta(hours=24)
+    elif duration == "7d":
+        until = now + timedelta(days=7)
+    elif duration == "30d":
+        until = now + timedelta(days=30)
+    elif duration in ("0", "perm", "permanent", "forever"):
+        until = None
+    else:
+        until = now + timedelta(hours=24)
+
+    row.is_ignored = 1
+    row.ignored_until = until
+    row.ignored_by = user.username
+    row.ignored_reason = reason
+    row.updated_at = now
+    if not row.acknowledged_at:
+        row.acknowledged_at = now
+        row.acknowledged_by = user.username
+
+    db.add(AuditLog(
+        username=user.username, action="problem_ignore",
+        target=f"{row.key} ({row.message[:60]}) until={until.isoformat() if until else 'permanent'}",
+        result=f"diabaikan: {reason or 'tanpa alasan'}",
+    ))
+    db.commit()
+    return {
+        "ok": True,
+        "id": pid,
+        "is_ignored": True,
+        "ignored_until": until.isoformat() if until else None,
+        "ignored_by": user.username,
+        "ignored_reason": reason,
+    }
+
+
+@app.post("/api/alerts/{pid}/unignore")
+def api_alert_unignore(
+    pid: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Batalkan pengabaian / aktifkan kembali pemantauan masalah."""
+    _verify_csrf_header(request)
+    row = db.query(ServerProblem).filter(
+        ServerProblem.id == pid,
+        ServerProblem.resolved_at.is_(None),
+    ).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Masalah tidak ditemukan")
+
+    row.is_ignored = 0
+    row.ignored_until = None
+    row.ignored_reason = None
+    row.updated_at = datetime.utcnow()
+
+    db.add(AuditLog(
+        username=user.username, action="problem_unignore",
+        target=f"{row.key} ({row.message[:60]})",
+        result="pemantauan diaktifkan kembali",
+    ))
+    db.commit()
+    return {"ok": True, "id": pid, "is_ignored": False}
 
 
 

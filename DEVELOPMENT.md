@@ -213,6 +213,12 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
 - **Peningkatan Penanganan Penghentian Layanan (Stop Standalone Processes & Scopes):**
   - Skrip wrapper [package/usr/local/sbin/pantau-restart](file:///home/bos/rj45/package/usr/local/sbin/pantau-restart) ditingkatkan dengan fallback cerdas saat menghentikan layanan non-systemd service (misalnya proses mandiri / user scope seperti browser headless `chrome` atau worker kustom).
   - Jika `systemctl stop <unit>` gagal karena unit bukan `.service` standar, skrip secara otomatis mendeteksi scope systemd (`systemctl list-units --type=scope`) serta PID proses via `pgrep`/`pidof`, lalu mengirimkan sinyal `SIGTERM` dan `SIGKILL` secara aman dengan tetap mengunci proteksi deny-list (SSH, firewall, agent).
+- **Fitur Abaikan Masalah (Problem Silence / Mute):**
+  - Mengatasi kendala *Alert Fatigue* di mana masalah tertentu sengaja dibiarkan (misalnya proses non-aktif yang memang tidak dipakai atau kapasitas disk backup khusus) tanpa membuat dashboard terus-menerus berwarna merah/kuning (*Warning/Danger*).
+  - Penambahan kolom `is_ignored`, `ignored_until`, `ignored_by`, dan `ignored_reason` pada tabel `server_problems` dengan skrip migrasi otomatis saat startup aplikasi (`migrate_server_problem_ignored`).
+  - Endpoint backend `POST /api/alerts/{id}/ignore` (pilihan durasi 2 jam, 24 jam, 7 hari, 30 hari, atau permanen, disertai alasan opsional) dan `POST /api/alerts/{id}/unignore`.
+  - Masalah yang diabaikan secara otomatis dieksklusikan dari kalkulasi keparahan server (`problem_level`), tidak memicu modal peringatan DANGER, dan baris masalah diberi penanda badge `🔕 diabaikan` dengan opsi filter tersendiri `Diabaikan (🔕)`.
+  - Dilengkapi tombol `🔔 Pantau Kembali` (*Unmute*) yang sewaktu-waktu dapat digunakan untuk mengembalikan alarm ke pemantauan aktif.
 
 ---
 

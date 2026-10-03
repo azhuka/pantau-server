@@ -449,7 +449,14 @@ function probFilter(){
   const q = (document.getElementById('prob-search')?.value || '').toLowerCase();
   let shown = 0;
   t.querySelectorAll('tbody tr[data-sev]').forEach(tr => {
-    const okSev = !sev || tr.dataset.sev === sev;
+    let okSev = false;
+    if (!sev) {
+      okSev = true;
+    } else if (sev === 'ignored') {
+      okSev = tr.dataset.ignored === '1';
+    } else {
+      okSev = (tr.dataset.sev === sev) && (tr.dataset.ignored !== '1');
+    }
     const okQ = !q || (tr.dataset.text || '').indexOf(q) !== -1;
     const vis = okSev && okQ;
     tr.style.display = vis ? '' : 'none';
@@ -587,9 +594,132 @@ async function alertAckAll(){
   for (const b of btns) await alertAck(b, b.dataset.id);
   return false;
 }
+// ---------- modal abaikan masalah (silence / mute) ----------
+let _ignoreTargetId = null;
+let _ignoreCallback = null;
+
+function openIgnoreModal(id, msg, onDone) {
+  _ignoreTargetId = id;
+  _ignoreCallback = onDone || null;
+  const m = document.getElementById('ignore-problem-modal');
+  const txt = document.getElementById('ignore-modal-msg');
+  if (txt) txt.textContent = msg || ('Masalah #' + id);
+  const rInput = document.getElementById('ignore-reason');
+  if (rInput) rInput.value = '';
+  const dSel = document.getElementById('ignore-duration');
+  if (dSel) dSel.value = '24h';
+  if (m) m.style.display = 'flex';
+}
+
+function closeIgnoreModal() {
+  const m = document.getElementById('ignore-problem-modal');
+  if (m) m.style.display = 'none';
+  _ignoreTargetId = null;
+  _ignoreCallback = null;
+}
+
+async function submitIgnoreProblem() {
+  if (!_ignoreTargetId) return;
+  const btn = document.getElementById('ignore-modal-submit-btn');
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Menyimpan…'; }
+  const duration = document.getElementById('ignore-duration')?.value || '24h';
+  const reason = document.getElementById('ignore-reason')?.value || '';
+
+  try {
+    const r = await fetch('/api/alerts/' + _ignoreTargetId + '/ignore', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf()
+      },
+      body: JSON.stringify({duration, reason}),
+      credentials: 'same-origin'
+    });
+    if (r.ok) {
+      showToast('Masalah berhasil dibungkam / diabaikan.', true);
+      const cb = _ignoreCallback;
+      closeIgnoreModal();
+      if (typeof cb === 'function') cb();
+      return;
+    }
+    const err = await r.json().catch(() => ({}));
+    showToast(err.detail || ('Gagal mengabaikan masalah (HTTP ' + r.status + ')'), false);
+  } catch (e) {
+    showToast('Kendala jaringan: ' + e.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = orig; }
+  }
+}
+
+async function unignoreProblem(id, btn, onDone) {
+  if (!confirm('Aktifkan kembali pemantauan untuk masalah ini?')) return;
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const r = await fetch('/api/alerts/' + id + '/unignore', {
+      method: 'POST',
+      headers: {'X-CSRF-Token': getCsrf()},
+      credentials: 'same-origin'
+    });
+    if (r.ok) {
+      showToast('Pemantauan masalah diaktifkan kembali.', true);
+      if (typeof onDone === 'function') onDone();
+      else if (btn) {
+        const tr = btn.closest('tr');
+        if (tr) tr.dataset.ignored = '0';
+        btn.remove();
+      }
+      return;
+    }
+    showToast('Gagal mengaktifkan kembali (HTTP ' + r.status + ')', false);
+  } catch (e) {
+    showToast('Kendala jaringan: ' + e.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = orig; }
+  }
+}
+
+document.addEventListener('click', e => {
+  const m = document.getElementById('ignore-problem-modal');
+  if (m && e.target === m) closeIgnoreModal();
+});
+
 setTimeout(alertFetch, 1500);
 setInterval(alertFetch, 10000);
 </script>
+
+<!-- Modal Abaikan Masalah -->
+<div id="ignore-problem-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
+  <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;box-shadow:0 16px 40px rgba(0,0,0,0.7);color:var(--text)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:15px;display:flex;align-items:center;gap:8px">
+        <span>🔕</span> Abaikan Masalah (Mute)
+      </h3>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeIgnoreModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+    </div>
+    <div id="ignore-modal-msg" style="font-size:13px;color:var(--text);margin:0 0 14px 0;padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;word-break:break-word"></div>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Bungkam Selama:</label>
+      <select id="ignore-duration" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+        <option value="2h">2 Jam (sementara)</option>
+        <option value="24h" selected>24 Jam (1 hari)</option>
+        <option value="7d">7 Hari (1 minggu)</option>
+        <option value="30d">30 Hari (1 bulan)</option>
+        <option value="permanent">Permanen (hingga diaktifkan kembali)</option>
+      </select>
+    </div>
+    <div style="margin-bottom:18px">
+      <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Alasan (Opsional):</label>
+      <input type="text" id="ignore-reason" placeholder="Contoh: Service sengaja dinonaktifkan" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeIgnoreModal()">Batal</button>
+      <button type="button" class="btn btn-primary btn-sm" id="ignore-modal-submit-btn" onclick="submitIgnoreProblem()">Simpan &amp; Abaikan</button>
+    </div>
+  </div>
+</div>
+
 {% block scripts %}{% endblock %}
 </body>
 </html>
