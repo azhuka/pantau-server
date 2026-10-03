@@ -522,11 +522,8 @@
 <div class="card">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
     <h3 style="margin:0">Snapshot Proses Teratas (CPU &amp; Memori)</h3>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <div style="display:flex;gap:10px;align-items:center">
       <span id="top-procs-time" style="font-size:12px;color:var(--dim)">Diperbarui tiap siklus agen</span>
-      <button type="button" class="btn btn-ghost btn-sm" id="btn-expand-procs" onclick="toggleExpandProcs()" style="font-size:12px;border:1px solid #334155;color:var(--text)" title="Tampilkan lebih banyak proses (hingga 15 proses)">
-        <span>Tampilkan 15 Proses</span> ▾
-      </button>
       <button type="button" class="btn btn-ghost btn-sm" onclick="fetchTopProcs()" title="Segarkan data proses teratas">&#8635;&nbsp;Segarkan</button>
     </div>
   </div>
@@ -577,6 +574,12 @@
         </table>
       </div>
     </div>
+  </div>
+
+  <div style="text-align:center;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06)">
+    <a href="javascript:void(0)" id="link-expand-procs" onclick="toggleExpandProcs()" style="font-size:13px;color:var(--blue);text-decoration:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:4px 12px;border-radius:6px;transition:background .2s" onmouseover="this.style.background='rgba(56,189,248,0.08)'" onmouseout="this.style.background='transparent'">
+      <span id="link-expand-text">Tampilkan 20 proses</span> <span id="link-expand-icon">▾</span>
+    </a>
   </div>
 </div>
 </div>
@@ -719,16 +722,24 @@ let currentTopProcsData = null;
 
 function toggleExpandProcs() {
   procsExpanded = !procsExpanded;
-  const btn = document.getElementById('btn-expand-procs');
-  if (btn) {
-    btn.innerHTML = procsExpanded ? '<span>Tampilkan 5 Proses</span> ▴' : '<span>Tampilkan 15 Proses</span> ▾';
+  const linkText = document.getElementById('link-expand-text');
+  const linkIcon = document.getElementById('link-expand-icon');
+  if (linkText) {
+    linkText.textContent = procsExpanded ? 'Tampilkan lebih sedikit (5 proses)' : 'Tampilkan 20 proses';
+  }
+  if (linkIcon) {
+    linkIcon.textContent = procsExpanded ? '▴' : '▾';
   }
   const hCpu = document.getElementById('top-cpu-title');
   const hMem = document.getElementById('top-mem-title');
-  if (hCpu) hCpu.innerHTML = `<span style="color:#ef4444">🔥</span> ${procsExpanded ? '15' : '5'} Penggunaan CPU Tertinggi`;
-  if (hMem) hMem.innerHTML = `<span style="color:#3b82f6">💾</span> ${procsExpanded ? '15' : '5'} Penggunaan Memori Tertinggi`;
+  if (hCpu) hCpu.innerHTML = `<span style="color:#ef4444">🔥</span> ${procsExpanded ? '20' : '5'} Penggunaan CPU Tertinggi`;
+  if (hMem) hMem.innerHTML = `<span style="color:#3b82f6">💾</span> ${procsExpanded ? '20' : '5'} Penggunaan Memori Tertinggi`;
 
-  if (currentTopProcsData) {
+  const availableCpu = (currentTopProcsData && currentTopProcsData.top_procs && currentTopProcsData.top_procs.cpu)
+    ? currentTopProcsData.top_procs.cpu.length : 0;
+  if (procsExpanded && availableCpu <= 5) {
+    fetchTopProcs();
+  } else if (currentTopProcsData) {
     renderTopProcs(currentTopProcsData);
   }
 }
@@ -736,7 +747,7 @@ function toggleExpandProcs() {
 function renderTopProcs(data) {
   currentTopProcsData = data;
   const top = (data && data.top_procs) || {cpu: [], mem: []};
-  const limit = procsExpanded ? 15 : 5;
+  const limit = procsExpanded ? 20 : 5;
   const cpuList = (top.cpu || []).slice(0, limit);
   const memList = (top.mem || []).slice(0, limit);
   const cpuTbody = document.getElementById('top-cpu-tbody');
@@ -746,6 +757,12 @@ function renderTopProcs(data) {
   if (timeSpan && data.updated_at) {
     const d = new Date(data.updated_at + 'Z');
     timeSpan.textContent = 'Diperbarui: ' + d.toLocaleTimeString();
+  }
+
+  const expandLink = document.getElementById('link-expand-procs');
+  if (expandLink) {
+    const totalAvail = Math.max((top.cpu || []).length, (top.mem || []).length);
+    expandLink.style.display = totalAvail > 5 || procsExpanded ? 'inline-flex' : 'none';
   }
 
   if (cpuTbody) {
