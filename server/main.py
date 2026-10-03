@@ -672,6 +672,13 @@ def agent_report(
             .filter(Service.server_id == server.id, Service.service_name == service_name)
             .first()
         )
+        if not service and port > 0:
+            # Bila port sudah ada di server ini (mis. smtpd vs master), pakai service yang ada agar tidak duplikat
+            service = (
+                db.query(Service)
+                .filter(Service.server_id == server.id, Service.port == port)
+                .first()
+            )
         if not service:
             service = Service(
                 server_id=server.id, service_name=service_name,

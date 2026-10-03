@@ -189,6 +189,7 @@ def normalize_process_name(name: str) -> str:
         "gunicorn": "gunicorn", "cron": "cron", "crond": "cron",
         "rsyslogd": "rsyslog", "chronyd": "ntp", "ntpd": "ntp",
         "mariadb-server": "mariadb",
+        "master": "smtpd", "postfix": "smtpd",
     }
     lower = name.lower()
     for key, val in mapping.items():

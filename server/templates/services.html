@@ -470,14 +470,19 @@
           </form>
         {% elif p.is_open and p.action == 'apt_update' %}
           <button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">Update OS</button>
-        {% elif p.is_open %}
-          {% if not p.acknowledged_by %}
-            <button type="button" class="btn btn-ghost btn-sm" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai masalah ini sudah ditangani">Ditangani</button>
+        {% endif %}
+
+        {% if p.is_open %}
+          {% if p.acknowledged_by %}
+            <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }}">✓ Ditangani</span>
+          {% else %}
+            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai masalah ini sudah ditangani">Ditangani</button>
           {% endif %}
-          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="resolveProblemInDetail({{ p.id }}, this)" title="Tandai masalah ini selesai">Selesaikan</button>
-        {% else %}
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="resolveProblemInDetail({{ p.id }}, this)" title="Tandai masalah ini selesai dan pindahkan ke riwayat teratasi">Selesaikan</button>
+        {% elif not p.action %}
           <span style="color:var(--dim)">—</span>
         {% endif %}
+
       </td>
       <td style="font-size:12px;line-height:1.55;max-width:360px">{{ p.tip or '—' }}</td>
     </tr>
