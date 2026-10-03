@@ -911,13 +911,27 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
                 "health_message": latest.health_message if latest else None,
                 "last_check": latest.timestamp.isoformat() if latest else None,
             })
+        ex = extras_map.get(srv.id)
+        # Evaluasi masalah server & deteksi layanan/masalah yang diabaikan
+        prob_level, open_prob, _ = sync_server_problems(
+            db, srv, _problem_instances(srv, ex, [{"name": s["name"], "status": s["status"]} for s in svc_list], db)
+        )
+        ignored_keys = {p.get("key") for p in open_prob if p.get("is_ignored")}
+        for s in svc_list:
+            if f"service_down:{s['name']}" in ignored_keys:
+                s["ignored"] = True
+
         stale = _server_stale(srv)
-        overall = "down" if not any(s["status"] == "up" for s in svc_list) else "up"
+        active_svcs = [s for s in svc_list if not s.get("ignored")]
+        if not active_svcs:
+            overall = "offline" if stale else "up"
+        else:
+            overall = "down" if not any(s["status"] == "up" for s in active_svcs) else "up"
         if stale:
             overall = "offline"
             for s in svc_list:
                 s["status"] = "offline"
-        ex = extras_map.get(srv.id)
+
         # Snapshot HW terbaru untuk CPU/RAM/uptime di dashboard
         latest_sys = (
             db.query(SystemSnapshot)
@@ -931,7 +945,11 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             if latest_sys and latest_sys.mem_total else None
         )
         uptime_secs = latest_sys.uptime_secs if latest_sys else None
-        down_svc_count = sum(1 for s in svc_list if s["status"] in ("down", "offline"))
+        down_svc_count = sum(1 for s in svc_list if s["status"] in ("down", "offline") and not s.get("ignored"))
+        ignored_svc_count = sum(1 for s in svc_list if s["status"] in ("down", "offline") and s.get("ignored"))
+        active_prob_count = sum(1 for p in open_prob if not p.get("is_ignored"))
+        ignored_prob_count = sum(1 for p in open_prob if p.get("is_ignored"))
+
         result.append({
             "id": srv.id, "hostname": srv.hostname, "ip_address": srv.ip_address,
             "is_active": srv.is_active,
@@ -947,6 +965,10 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             "mem_pct": mem_pct,
             "uptime_secs": uptime_secs,
             "down_svc_count": down_svc_count,
+            "ignored_svc_count": ignored_svc_count,
+            "problem_level": prob_level,
+            "active_problem_count": active_prob_count,
+            "ignored_problem_count": ignored_prob_count,
         })
     return result
 
@@ -967,12 +989,22 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         ).all()
     }
     latest_map = _latest_metrics(db, (s.id for s in services))
+    ignored_svc_keys = {
+        p.key for p in db.query(ServerProblem).filter(
+            ServerProblem.server_id == sid,
+            ServerProblem.resolved_at.is_(None),
+            ServerProblem.is_ignored == 1,
+        ).all()
+    }
     svc_list = []
     for svc in services:
         latest = latest_map.get(svc.id)
+        st = latest.status if latest else "unknown"
+        is_ign = f"service_down:{svc.service_name}" in ignored_svc_keys
         svc_list.append({
             "id": svc.id, "name": svc.service_name, "port": svc.port,
-            "status": latest.status if latest else "unknown",
+            "status": st,
+            "ignored": is_ign,
             "connections": latest.active_connections if latest else 0,
             "response_time_ms": latest.response_time_ms if latest else None,
             "health_message": latest.health_message if latest else None,
@@ -1465,8 +1497,19 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 "last_check": latest.timestamp.isoformat() if latest else None,
             }
             srv._svc_data.append(d)
-            if latest and latest.status != "up":
-                down_services += 1
+        # Sync problems terlebih dahulu agar status ignored diketahui
+        srv._problem_level, srv._problems, _ph = sync_server_problems(
+            db, srv, _problem_instances(srv, ex, srv._svc_data, db))
+        ignored_keys = {p.get("key") for p in srv._problems if p.get("is_ignored")}
+        unignored_down = 0
+        for d in srv._svc_data:
+            if d.get("status") in ("down", "offline"):
+                if f"service_down:{d['name']}" not in ignored_keys:
+                    unignored_down += 1
+                    down_services += 1
+                else:
+                    d["ignored"] = True
+
         stale = _server_stale(srv)
         if stale:
             for d in srv._svc_data:
@@ -1475,11 +1518,10 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             srv._status_label, srv._status_cls = "Pemeliharaan", "badge-warn"
         else:
             srv._status_label, srv._status_cls = _server_status(
-                srv, stale, bool(srv._svc_data), any(d["status"] == "up" for d in srv._svc_data))
+                srv, stale, bool(srv._svc_data), any(d["status"] == "up" for d in srv._svc_data),
+                has_unignored_down=(unignored_down > 0))
         if srv._status_cls == "badge-up":
             up_count += 1
-        srv._problem_level, srv._problems, _ph = sync_server_problems(
-            db, srv, _problem_instances(srv, ex, srv._svc_data, db))
 
     last_metric = db.query(Metric.timestamp).order_by(desc(Metric.timestamp)).first()
     if last_metric:
@@ -1535,13 +1577,16 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
                 "name": svc.service_name,
                 "status": latest.status if latest else "unknown",
             })
+        srv._problem_level, srv._problems, _ph = sync_server_problems(
+            db, srv, _problem_instances(srv, ex, svc_data, db))
+        ignored_keys = {p.get("key") for p in srv._problems if p.get("is_ignored")}
+        unignored_down = [d for d in svc_data if d.get("status") in ("down", "offline") and f"service_down:{d['name']}" not in ignored_keys]
         if srv.is_maintenance:
             srv._status_label, srv._status_cls = "Pemeliharaan", "badge-warn"
         else:
             srv._status_label, srv._status_cls = _server_status(
-                srv, not srv._online, bool(svc_data), any(d["status"] == "up" for d in svc_data))
-        srv._problem_level, srv._problems, _ph = sync_server_problems(
-            db, srv, _problem_instances(srv, ex, svc_data, db))
+                srv, not srv._online, bool(svc_data), any(d["status"] == "up" for d in svc_data),
+                has_unignored_down=bool(unignored_down))
     return tpl(request, "servers.html", {"user": user, "servers": servers})
 
 
@@ -2038,16 +2083,17 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
         open_problems = [p for p in open_problems if p["server_id"] == filter_sid]
         recent_resolved = [p for p in recent_resolved if p["server_id"] == filter_sid]
     servers_total = db.query(Server).count()
-    open_servers = {p["server_id"] for p in open_problems}
+    active_open_servers = {p["server_id"] for p in open_problems if not p.get("is_ignored")}
     all_servers = db.query(Server).order_by(Server.hostname).all()
     return tpl(request, "problems.html", {
         "user": user,
         "open_problems": open_problems,
         "recent_resolved": recent_resolved,
-        "danger_open": sum(1 for p in open_problems if p["severity"] == "danger"),
-        "warning_open": sum(1 for p in open_problems if p["severity"] == "warning"),
-        "info_open": sum(1 for p in open_problems if p["severity"] == "info"),
-        "ok_count": servers_total - len(open_servers),
+        "danger_open": sum(1 for p in open_problems if p["severity"] == "danger" and not p.get("is_ignored")),
+        "warning_open": sum(1 for p in open_problems if p["severity"] == "warning" and not p.get("is_ignored")),
+        "info_open": sum(1 for p in open_problems if p["severity"] == "info" and not p.get("is_ignored")),
+        "ignored_open": sum(1 for p in open_problems if p.get("is_ignored")),
+        "ok_count": servers_total - len(active_open_servers),
         "all_servers": all_servers,
         "filter_sid": filter_sid,
     })
@@ -2905,7 +2951,7 @@ def _server_stale(srv) -> bool:
     return (datetime.now(timezone.utc) - ls).total_seconds() > OFFLINE_AFTER_SECONDS
 
 
-def _server_status(srv, stale: bool, has_services: bool, any_up: bool):
+def _server_status(srv, stale: bool, has_services: bool, any_up: bool, has_unignored_down: bool = True):
     """Status server dalam satu kosakata untuk semua halaman.
 
     Kembalikan (label, kelas_badge) supaya Dashboard, Servers, dan Rincian
@@ -2918,7 +2964,9 @@ def _server_status(srv, stale: bool, has_services: bool, any_up: bool):
     if not has_services:
         # agen melapor normal, hanya belum ada service yang terdeteksi
         return "online", "badge-up"
-    return ("online", "badge-up") if any_up else ("service down", "badge-down")
+    if any_up or not has_unignored_down:
+        return "online", "badge-up"
+    return "service down", "badge-down"
 
 
 # ---------------------------------------------------------------------------

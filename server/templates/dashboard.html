@@ -84,21 +84,39 @@
       <td id="dash-cpu-{{ srv.id }}" class="mono" style="font-size:12px">—</td>
       <td id="dash-ram-{{ srv.id }}" class="mono" style="font-size:12px">—</td>
       <td id="dash-svc-{{ srv.id }}">
-        {% if srv._problem_level is none %}
-          <span style="color:var(--dim)">—</span>
+        {% set ign_keys = srv._problems | selectattr('is_ignored') | map(attribute='key') | list if srv._problems else [] %}
+        {% set unign_down = [] %}
+        {% set ign_down = [] %}
+        {% for d in (srv._svc_data or []) %}
+          {% if d.status in ['down', 'offline'] %}
+            {% if ('service_down:' ~ d.name) in ign_keys %}
+              {% set _ = ign_down.append(d) %}
+            {% else %}
+              {% set _ = unign_down.append(d) %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {% if unign_down|length > 0 %}
+          <span class="badge badge-down">{{ unign_down|length }} down</span>
+        {% elif ign_down|length > 0 %}
+          <span class="badge badge-up" title="{{ ign_down|length }} layanan down diabaikan">OK <span style="font-size:10px;opacity:.8">🔕</span></span>
+        {% elif srv._online %}
+          <span class="badge badge-up">OK</span>
         {% else %}
-          {% set plabel = {'ok':'OK','info':'Info','warning':'Warning','danger':'Danger'}[srv._problem_level] %}
-          {% set pcls = {'ok':'up','info':'info','warning':'warn','danger':'danger'}[srv._problem_level] %}
-          <span class="badge badge-{{ pcls }}">{{ plabel }}</span>
+          <span style="color:var(--dim)">—</span>
         {% endif %}
       </td>
-      <td>
+      <td id="dash-prob-{{ srv.id }}">
         {% if srv._problem_level is none %}
           <span style="color:var(--dim)">—</span>
         {% else %}
           {% set plabel = {'ok':'OK','info':'Info','warning':'Warning','danger':'Danger'}[srv._problem_level] %}
           {% set pcls = {'ok':'up','info':'info','warning':'warn','danger':'danger'}[srv._problem_level] %}
-          <span class="badge badge-{{ pcls }}" title="{{ srv._problems | map(attribute='message') | join(' • ') }}">{{ plabel }}</span>
+          {% set ign_count = srv._problems | selectattr('is_ignored') | list | length if srv._problems else 0 %}
+          {% set active_msgs = srv._problems | rejectattr('is_ignored') | map(attribute='message') | join(' • ') if srv._problems else '' %}
+          <span class="badge badge-{{ pcls }}" title="{{ active_msgs if active_msgs else ('Semua masalah diabaikan' if ign_count else 'Kondisi normal') }}">
+            {{ plabel }}{% if ign_count > 0 and srv._problem_level == 'ok' %} <span style="font-size:10px;opacity:.8" title="{{ ign_count }} masalah diabaikan">🔕</span>{% endif %}
+          </span>
         {% endif %}
       </td>
       <td>
@@ -192,14 +210,27 @@ async function dashPoll() {
       if (ram) ram.textContent = srv.mem_pct != null ? srv.mem_pct.toFixed(1) + '%' : '—';
 
       const svcEl = document.getElementById('dash-svc-' + srv.id);
-      if (svcEl && srv.down_svc_count != null) {
-        if (srv.down_svc_count > 0) {
+      if (svcEl) {
+        if (srv.down_svc_count != null && srv.down_svc_count > 0) {
           svcEl.innerHTML = '<span class="badge badge-down">' + srv.down_svc_count + ' down</span>';
+        } else if (srv.ignored_svc_count != null && srv.ignored_svc_count > 0) {
+          svcEl.innerHTML = '<span class="badge badge-up" title="' + srv.ignored_svc_count + ' layanan down diabaikan">OK <span style="font-size:10px;opacity:.8">🔕</span></span>';
         } else if (srv.overall_status !== 'offline') {
           svcEl.innerHTML = '<span class="badge badge-up">OK</span>';
         } else {
           svcEl.innerHTML = '<span style="color:var(--dim)">—</span>';
         }
+      }
+
+      const probEl = document.getElementById('dash-prob-' + srv.id);
+      if (probEl && srv.problem_level != null) {
+        const plabel = {'ok':'OK','info':'Info','warning':'Warning','danger':'Danger'}[srv.problem_level] || srv.problem_level;
+        const pcls = {'ok':'up','info':'info','warning':'warn','danger':'danger'}[srv.problem_level] || 'muted';
+        let extra = '';
+        if (srv.ignored_problem_count && srv.ignored_problem_count > 0 && srv.problem_level === 'ok') {
+          extra = ' <span style="font-size:10px;opacity:.8" title="' + srv.ignored_problem_count + ' masalah diabaikan">🔕</span>';
+        }
+        probEl.innerHTML = '<span class="badge badge-' + pcls + '">' + plabel + extra + '</span>';
       }
 
       const seen = document.getElementById('dash-seen-' + srv.id);

@@ -8,6 +8,7 @@
       {% if danger_open %}<span class="badge badge-danger">Danger {{ danger_open }}</span>{% endif %}
       {% if warning_open %}<span class="badge badge-warn">Warning {{ warning_open }}</span>{% endif %}
       {% if info_open %}<span class="badge badge-info">Info {{ info_open }}</span>{% endif %}
+      {% if ignored_open %}<span class="badge badge-muted" title="{{ ignored_open }} masalah dibungkam / diabaikan">🔕 {{ ignored_open }} diabaikan</span>{% endif %}
       <span class="badge badge-up">{{ ok_count }} server tanpa masalah</span>
     </span>
   </div>
@@ -15,7 +16,8 @@
 
 <div class="card">
   <div class="card-header"><h3>Masalah Terbuka</h3>
-    <span style="font-size:12px;color:var(--dim)">{{ open_problems|length }} masalah</span>
+    {% set active_open = open_problems | rejectattr('is_ignored') | list %}
+    <span style="font-size:12px;color:var(--dim)">{{ active_open|length }} aktif{% if ignored_open %} · {{ ignored_open }} diabaikan{% endif %}</span>
   </div>
   {% if open_problems or all_servers %}
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
@@ -53,7 +55,7 @@
         data-text="{{ (p.hostname ~ ' ' ~ p.message ~ ' ' ~ p.key) | lower }}">
       <td style="white-space:nowrap" class="mono">{{ p.started_at.strftime('%d %b %H:%M') }}</td>
       <td><strong>{{ p.hostname }}</strong></td>
-      <td><span class="badge badge-{{ {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}">{{ p.severity }}</span></td>
+      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan dibungkam / diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
       <td>
         <span>{{ p.message }}</span>
         {% if p.is_ignored %}
@@ -66,7 +68,7 @@
         <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
         {% if p.is_ignored %}
           <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                  data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan">🔔 Batal Abaikan</button>
+                  data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan untuk masalah ini">🔔 Pantau Kembali</button>
         {% else %}
           <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
                   data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Bungkam alarm masalah ini">🔕 Abaikan</button>

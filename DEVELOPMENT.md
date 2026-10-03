@@ -218,11 +218,13 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
   - Penambahan kolom `is_ignored`, `ignored_until`, `ignored_by`, dan `ignored_reason` pada tabel `server_problems` dengan skrip migrasi otomatis saat startup aplikasi (`migrate_server_problem_ignored`).
   - Endpoint backend `POST /api/alerts/{id}/ignore` (pilihan durasi 2 jam, 24 jam, 7 hari, 30 hari, atau permanen, disertai alasan opsional) dan `POST /api/alerts/{id}/unignore`.
   - Masalah yang diabaikan secara otomatis dieksklusikan dari kalkulasi keparahan server (`problem_level`), tidak memicu modal peringatan DANGER, dan baris masalah diberi penanda badge `🔕 diabaikan` dengan opsi filter tersendiri `Diabaikan (🔕)`.
-  - Dilengkapi tombol `🔔 Batal Abaikan` (*Unmute*) yang sewaktu-waktu dapat digunakan untuk mengembalikan alarm ke pemantauan aktif.
-- **Standarisasi Kolom Tabel & Ringkas Tombol Aksi:**
-  - Menstandarisasi seluruh penamaan kolom tabel tindakan di semua template UI (`dashboard.html`, `servers.html`, `services.html`, `problems.html`, `audit.html`, dan `file_manager.html`) dari "Aksi" menjadi **"Tindakan"**.
-  - Merapikan label tombol tindakan pada tabel masalah agar ringkas dan bersih (`Ditangani`, `Selesai`, `🔕 Abaikan`, `🔔 Batal Abaikan`), menghindari kekacauan visual antarmuka.
-  - Memperbaiki parsing atribut tombol abaikan dengan arsitektur `data-id` & `data-msg` pada elemen HTML untuk mencegah konflik karakter kutip (*quote collision*) saat memicu modal konfirmasi.
+  - Dilengkapi tombol `🔔 Pantau Kembali` (*Unmute*) yang sewaktu-waktu dapat digunakan untuk mengembalikan alarm ke pemantauan aktif.
+- **Isolasi Masalah Diabaikan & Sinkronisasi Status Server (Dashboard & Rincian):**
+  - Mengisolasi layanan yang mengalami down tetapi masalahnya telah diabaikan (`is_ignored = 1`) agar tidak lagi menaikkan `down_svc_count`, tidak memicu status server menjadi "service down" / "Masalah" pada menu Dashboard maupun halaman Daftar Server.
+  - Memperbaiki kolom Masalah dan Layanan pada `dashboard.html` serta polling `/api/servers` agar memperbarui `problem_level` dan status layanan secara live dengan penanda hening `OK 🔕`.
+  - Memisahkan penghitungan badge masalah aktif dan masalah diabaikan pada tombol Tab Masalah dan header kartu Status Masalah di `services.html` (`${activeCount} masalah aktif · ${ignoredCount} diabaikan (🔕)`), sehingga saat seluruh masalah diabaikan statusnya tetap bersih `OK` dan tidak memicu badge merah/kuning.
+  - Memperbaiki topbar statistik di `/problems` agar hanya menghitung masalah aktif tanpa menyertakan masalah yang dibungkam dalam counter Warning/Danger.
+  - Menetapkan label tombol unmute secara baku menjadi **`🔔 Pantau Kembali`** pada semua templat UI dan skrip frontend.
 
 ---
 

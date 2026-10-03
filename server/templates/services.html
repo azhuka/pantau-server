@@ -358,7 +358,9 @@
 <div class="tabbar" id="detail-tabs" role="tablist">
   <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true">Riwayat</button>
   <button class="tab" data-tab="layanan" role="tab">Layanan</button>
-  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn">Masalah <span class="badge badge-{{ pmeta[problem_level][1] if problem_level in pmeta else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{{ open_problems|length }}</span></button>
+  {% set active_open = open_problems | rejectattr('is_ignored') | list %}
+  {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
+  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn">Masalah <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
   <button class="tab" data-tab="proses" role="tab">⚡ Proses Teratas</button>
   <button class="tab" data-tab="jaringan" role="tab">Jaringan</button>
   <button class="tab" data-tab="akun" role="tab">Akun</button>
@@ -472,7 +474,13 @@
       <td><strong>{{ svc.service_name }}</strong></td>
       <td class="mono">{{ svc.port }}</td>
       <td class="mono">{{ svc.process_name }}</td>
-      <td id="sts-{{ svc.id }}"><span class="badge badge-{{ svc._status }}">{{ svc._status }}</span></td>
+      <td id="sts-{{ svc.id }}">
+        {% if svc._status == 'down' and ('service_down:' ~ svc.service_name) in (open_problems | selectattr('is_ignored') | map(attribute='key') | list) %}
+          <span class="badge badge-muted" title="Layanan down tetapi alarm sedang diabaikan">down 🔕</span>
+        {% else %}
+          <span class="badge badge-{{ svc._status }}">{{ svc._status }}</span>
+        {% endif %}
+      </td>
       <td id="conns-{{ svc.id }}">{{ svc._conns }}</td>
       <td id="resp-{{ svc.id }}" class="mono">{{ svc._response_time if svc._response_time is not none else '-' }}</td>
       <td id="health-{{ svc.id }}" style="font-size:12px;color:var(--dim)">{{ svc._health_msg or 'no data' }}</td>
@@ -589,8 +597,10 @@
     {% if problem_level is none %}
       <span class="badge badge-muted">belum ada data</span>
     {% else %}
+      {% set active_open = open_problems | rejectattr('is_ignored') | list %}
+      {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
       <span class="badge badge-{{ pmeta[problem_level][1] }}">{{ pmeta[problem_level][0] }}</span>
-      <span style="font-size:12px;color:var(--dim)">{{ open_problems|length }} masalah terbuka</span>
+      <span style="font-size:12px;color:var(--dim)">{{ active_open|length }} masalah aktif{% if ignored_open %} · {{ ignored_open|length }} diabaikan (🔕){% endif %}</span>
     {% endif %}
     </div>
   </div>
@@ -622,7 +632,7 @@
         {{ p.started_at.strftime('%d %b %H:%M') }}
         {% if p.resolved_at %}<span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>{% endif %}
       </td>
-      <td><span class="badge badge-{{ {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}">{{ p.severity }}</span></td>
+      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan dibungkam / diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
       <td>
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
@@ -663,7 +673,7 @@
 
         {% if p.is_open %}
           {% if p.is_ignored %}
-            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan">🔔 Batal Abaikan</button>
+            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan untuk masalah ini">🔔 Pantau Kembali</button>
           {% else %}
             <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Bungkam alarm masalah ini">🔕 Abaikan</button>
           {% endif %}
@@ -1929,13 +1939,21 @@ function renderProblemsTab(level, openList, histList) {
     danger: ['Danger', 'danger']
   };
   const meta = pmeta[level] || ['OK', 'up'];
-  const openCount = openList ? openList.length : 0;
+  const openArr = openList || [];
+  const activeProblems = openArr.filter(p => !p.is_ignored);
+  const ignoredProblems = openArr.filter(p => !!p.is_ignored);
+  const activeCount = activeProblems.length;
+  const ignoredCount = ignoredProblems.length;
 
   const tabBadge = document.getElementById('tab-masalah-badge');
   if (tabBadge) {
-    if (openCount > 0) {
-      tabBadge.textContent = openCount;
+    if (activeCount > 0) {
+      tabBadge.textContent = activeCount;
       tabBadge.className = 'badge badge-' + meta[1];
+      tabBadge.style.display = 'inline-block';
+    } else if (ignoredCount > 0) {
+      tabBadge.textContent = '🔕 ' + ignoredCount;
+      tabBadge.className = 'badge badge-muted';
       tabBadge.style.display = 'inline-block';
     } else {
       tabBadge.style.display = 'none';
@@ -1947,7 +1965,11 @@ function renderProblemsTab(level, openList, histList) {
     if (level === null || level === undefined) {
       headEl.innerHTML = '<span class="badge badge-muted">belum ada data</span>';
     } else {
-      headEl.innerHTML = `<span class="badge badge-${meta[1]}">${meta[0]}</span> <span style="font-size:12px;color:var(--dim)">${openCount} masalah terbuka</span>`;
+      let sub = `${activeCount} masalah aktif`;
+      if (ignoredCount > 0) {
+        sub += ` · ${ignoredCount} diabaikan (🔕)`;
+      }
+      headEl.innerHTML = `<span class="badge badge-${meta[1]}">${meta[0]}</span> <span style="font-size:12px;color:var(--dim)">${sub}</span>`;
     }
   }
 
@@ -1987,7 +2009,8 @@ function renderProblemsTab(level, openList, histList) {
     const isOpen = !!p.is_open;
     const isIgnored = !!p.is_ignored;
     const sev = p.severity || 'info';
-    const sevBadge = {danger: 'danger', warning: 'warn', info: 'info'}[sev] || 'muted';
+    const sevBadge = isIgnored ? 'muted' : ({danger: 'danger', warning: 'warn', info: 'info'}[sev] || 'muted');
+    const sevLabel = escapeHtml(sev) + (isIgnored ? ' 🔕' : '');
     const searchTxt = ((p.message || '') + ' ' + (p.key || '')).toLowerCase();
     const rowStyle = !isOpen ? ' style="opacity:.65"' : (isIgnored ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '');
     const startStr = fmtProbDate(p.started_at);
@@ -2032,7 +2055,7 @@ function renderProblemsTab(level, openList, histList) {
       }
 
       if (isIgnored) {
-        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan untuk masalah ini">🔔 Batal Abaikan</button>`;
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan untuk masalah ini">🔔 Pantau Kembali</button>`;
       } else {
         actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini agar tidak memicu alarm">🔕 Abaikan</button>`;
       }
@@ -2049,7 +2072,7 @@ function renderProblemsTab(level, openList, histList) {
 
     html += `<tr${rowStyle} data-sev="${escapeHtml(sev)}" data-ignored="${isIgnored ? '1' : '0'}" data-text="${escapeHtml(searchTxt)}">
       <td style="white-space:nowrap" class="mono">${startStr}${resStr}</td>
-      <td><span class="badge badge-${sevBadge}">${escapeHtml(sev)}</span></td>
+      <td><span class="badge badge-${sevBadge}">${sevLabel}</span></td>
       <td>${checkMark}<span${msgStyle}>${escapeHtml(p.message || '')}</span> ${ignoredBadge} ${ackBadge} ${kambuhBadge}</td>
       <td class="mono"${dataStart}>${escapeHtml(p.durasi || '')}</td>
       <td style="white-space:nowrap">${actHtml}</td>
@@ -2117,8 +2140,12 @@ function patch(data) {
   for (const s of data.services) {
     const sts = document.getElementById('sts-' + s.id);
     if (sts) {
-      const st = s.status === 'unknown' ? 'inactive' : s.status;
-      sts.innerHTML = '<span class="badge badge-' + st + '">' + escHtml(s.status) + '</span>';
+      if (s.status === 'down' && s.ignored) {
+        sts.innerHTML = '<span class="badge badge-muted" title="Layanan down tetapi alarm sedang diabaikan">down 🔕</span>';
+      } else {
+        const st = s.status === 'unknown' ? 'inactive' : s.status;
+        sts.innerHTML = '<span class="badge badge-' + st + '">' + escHtml(s.status) + '</span>';
+      }
     }
     const conns = document.getElementById('conns-' + s.id);
     if (conns) conns.textContent = s.connections;
