@@ -759,6 +759,29 @@ def agent_report(
     extras.arch = _clean_str(body.get("arch"), None, 24) or None
     extras.agent_version = _clean_str(body.get("agent_version"), None, 16) or None
 
+    if isinstance(sysd, dict) and isinstance(sysd.get("top_procs"), dict):
+        top_p = sysd["top_procs"]
+        clean_top = {"cpu": [], "mem": []}
+        for item in (top_p.get("cpu") or [])[:5]:
+            if isinstance(item, dict):
+                clean_top["cpu"].append({
+                    "pid": _clamp_int(item.get("pid"), 0, 0, 2 ** 31 - 1),
+                    "user": _clean_str(item.get("user"), "", 32),
+                    "comm": _clean_str(item.get("comm"), "", 64),
+                    "cpu": _clamp_float(item.get("cpu"), 0.0, 0.0, 1000.0),
+                    "mem": _clamp_float(item.get("mem"), 0.0, 0.0, 100.0),
+                })
+        for item in (top_p.get("mem") or [])[:5]:
+            if isinstance(item, dict):
+                clean_top["mem"].append({
+                    "pid": _clamp_int(item.get("pid"), 0, 0, 2 ** 31 - 1),
+                    "user": _clean_str(item.get("user"), "", 32),
+                    "comm": _clean_str(item.get("comm"), "", 64),
+                    "cpu": _clamp_float(item.get("cpu"), 0.0, 0.0, 1000.0),
+                    "mem": _clamp_float(item.get("mem"), 0.0, 0.0, 100.0),
+                })
+        extras.top_procs = json.dumps(clean_top)
+
     _VALID_UNIT_RE = re.compile(r'^[A-Za-z0-9@_.\-:]{1,100}$')
     if isinstance(body.get("units"), list):
         clean_units = [
@@ -992,12 +1015,92 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             "started_ms": int(apt_run.created_at.replace(tzinfo=timezone.utc).timestamp() * 1000)
             if apt_run.created_at else None,
         } if apt_run else None,
+        "is_maintenance": bool(server.is_maintenance),
+        "maintenance_until": server.maintenance_until.isoformat() if server.maintenance_until else None,
+        "maintenance_reason": server.maintenance_reason,
         # Sesi Terminal Bawaan yang masih hidup (resume setelah reload).
         "shell_exec": {
             "id": shell_run.id,
             "started_ms": int(shell_run.created_at.replace(tzinfo=timezone.utc).timestamp() * 1000)
             if shell_run.created_at else None,
         } if shell_run else None,
+    }
+
+
+@app.get("/api/servers/{sid}/top-procs")
+def api_server_top_procs(sid: int, request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+    extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    procs = {"cpu": [], "mem": []}
+    if extra and extra.top_procs:
+        try:
+            procs = json.loads(extra.top_procs)
+        except Exception:
+            pass
+    return {
+        "ok": True,
+        "updated_at": extra.updated_at.isoformat() if extra and extra.updated_at else None,
+        "top_procs": procs,
+    }
+
+
+@app.post("/api/servers/{sid}/maintenance")
+async def api_server_maintenance(
+    sid: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    if not user or user.role != "admin":
+        raise HTTPException(status_code=403, detail="Hanya admin yang dapat mengatur mode pemeliharaan")
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    action = body.get("action", "enable")
+    try:
+        duration = int(body.get("duration_minutes", 60) or 0)
+    except (ValueError, TypeError):
+        duration = 60
+    reason = str(body.get("reason", "") or "").strip()[:255]
+
+    if action == "enable":
+        server.is_maintenance = 1
+        server.maintenance_reason = reason or "Pemeliharaan terencana"
+        if duration > 0:
+            server.maintenance_until = datetime.utcnow() + timedelta(minutes=duration)
+        else:
+            server.maintenance_until = None
+        detail_msg = f"Mode pemeliharaan diaktifkan ({duration}m, alasan: {server.maintenance_reason})"
+    else:
+        server.is_maintenance = 0
+        server.maintenance_until = None
+        server.maintenance_reason = None
+        detail_msg = "Mode pemeliharaan dinonaktifkan"
+
+    db.add(AuditLog(
+        username=user.username,
+        action="maintenance_mode",
+        target=f"Server {server.hostname} (ID {server.id})",
+        result=detail_msg,
+    ))
+    db.commit()
+    return {
+        "ok": True,
+        "is_maintenance": bool(server.is_maintenance),
+        "maintenance_until": server.maintenance_until.isoformat() if server.maintenance_until else None,
+        "maintenance_reason": server.maintenance_reason,
+        "message": detail_msg,
     }
 
 
@@ -1326,8 +1429,11 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         if stale:
             for d in srv._svc_data:
                 d["status"] = "offline"
-        srv._status_label, srv._status_cls = _server_status(
-            srv, stale, bool(srv._svc_data), any(d["status"] == "up" for d in srv._svc_data))
+        if srv.is_maintenance:
+            srv._status_label, srv._status_cls = "Pemeliharaan", "badge-warn"
+        else:
+            srv._status_label, srv._status_cls = _server_status(
+                srv, stale, bool(srv._svc_data), any(d["status"] == "up" for d in srv._svc_data))
         if srv._status_cls == "badge-up":
             up_count += 1
         srv._problem_level, srv._problems, _ph = sync_server_problems(
@@ -1387,8 +1493,11 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
                 "name": svc.service_name,
                 "status": latest.status if latest else "unknown",
             })
-        srv._status_label, srv._status_cls = _server_status(
-            srv, not srv._online, bool(svc_data), any(d["status"] == "up" for d in svc_data))
+        if srv.is_maintenance:
+            srv._status_label, srv._status_cls = "Pemeliharaan", "badge-warn"
+        else:
+            srv._status_label, srv._status_cls = _server_status(
+                srv, not srv._online, bool(svc_data), any(d["status"] == "up" for d in svc_data))
         srv._problem_level, srv._problems, _ph = sync_server_problems(
             db, srv, _problem_instances(srv, ex, svc_data, db))
     return tpl(request, "servers.html", {"user": user, "servers": servers})
@@ -1588,6 +1697,12 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
             r["action"] = "apt_update" if user.role == "admin" else None
         else:
             r["action"] = None
+    top_p = {"cpu": [], "mem": []}
+    if extra and extra.top_procs:
+        try:
+            top_p = json.loads(extra.top_procs)
+        except Exception:
+            pass
     return tpl(request, "services.html", {
         "user": user, "server": server, "services": services, "commands": commands,
         "agent_version": extra.agent_version if extra else None,
@@ -1597,6 +1712,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         "is_online": not _server_stale(server),
         "problem_level": problem_level, "open_problems": open_problems,
         "problem_history": problem_history,
+        "top_procs": top_p,
     })
 
 
@@ -2559,6 +2675,15 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
     Arsip teratasi > 30 hari dihapus. Kembalikan (level, open, history).
     """
     now = now or datetime.utcnow()
+    if getattr(srv, "is_maintenance", 0):
+        m_until = getattr(srv, "maintenance_until", None)
+        if m_until and m_until < now:
+            srv.is_maintenance = 0
+            srv.maintenance_until = None
+            srv.maintenance_reason = None
+            db.commit()
+        else:
+            instances = []
     current_keys = {p["key"] for p in instances}
 
     for p in instances:
@@ -4402,6 +4527,7 @@ _RETENTION_LIMITS = {
     "audit_logs_days": 365,
     "commands_days": 180,      # hanya status sukses/gagal (bukan yang berjalan)
     "log_requests_days": 30,   # hanya yang sudah selesai
+    "resolved_problems_days": 90, # masalah yang sudah terselesaikan lampau
 }
 
 
@@ -4421,6 +4547,10 @@ def _retention_prune(db: Session) -> None:
     db.query(LogRequest).filter(
         LogRequest.status.in_(["success", "failed"]),
         LogRequest.updated_at < now - timedelta(days=_RETENTION_LIMITS["log_requests_days"]),
+    ).delete(synchronize_session=False)
+    db.query(Problem).filter(
+        Problem.status == "resolved",
+        Problem.resolved_at < now - timedelta(days=_RETENTION_LIMITS["resolved_problems_days"]),
     ).delete(synchronize_session=False)
     db.commit()
 

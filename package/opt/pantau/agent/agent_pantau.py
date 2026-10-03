@@ -1010,6 +1010,47 @@ def collect_net() -> list[dict]:
 
 
 
+def collect_top_processes(limit: int = 5) -> dict:
+    """Kumpulkan snapshot proses teratas berdasarkan %CPU dan %MEM."""
+    top_cpu = []
+    top_mem = []
+    res_cpu = _run_cmd(["ps", "-eo", "pid,user,comm,%cpu,%mem", "--sort=-%cpu"], timeout=5)
+    if res_cpu and res_cpu.returncode == 0:
+        lines = res_cpu.stdout.strip().splitlines()
+        for line in lines[1:limit + 1]:
+            parts = line.split(None, 4)
+            if len(parts) >= 5:
+                try:
+                    top_cpu.append({
+                        "pid": int(parts[0]),
+                        "user": parts[1],
+                        "comm": parts[2],
+                        "cpu": float(parts[3]),
+                        "mem": float(parts[4]),
+                    })
+                except (ValueError, IndexError):
+                    pass
+
+    res_mem = _run_cmd(["ps", "-eo", "pid,user,comm,%cpu,%mem", "--sort=-%mem"], timeout=5)
+    if res_mem and res_mem.returncode == 0:
+        lines = res_mem.stdout.strip().splitlines()
+        for line in lines[1:limit + 1]:
+            parts = line.split(None, 4)
+            if len(parts) >= 5:
+                try:
+                    top_mem.append({
+                        "pid": int(parts[0]),
+                        "user": parts[1],
+                        "comm": parts[2],
+                        "cpu": float(parts[3]),
+                        "mem": float(parts[4]),
+                    })
+                except (ValueError, IndexError):
+                    pass
+
+    return {"cpu": top_cpu, "mem": top_mem}
+
+
 def collect_system() -> dict:
     mem = _read_meminfo()
     mem_total = mem.get("MemTotal", 0)
@@ -1050,6 +1091,7 @@ def collect_system() -> dict:
         "procs": procs, "uptime": uptime,
         "disks": collect_disks(),
         "net": collect_net(),
+        "top_procs": collect_top_processes(5),
     }
 
 

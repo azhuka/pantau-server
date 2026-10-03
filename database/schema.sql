@@ -117,6 +117,7 @@ CREATE TABLE `server_extras` (
   `apt_last_update` datetime DEFAULT NULL,
   `apt_packages` text DEFAULT NULL,
   `security` text DEFAULT NULL,
+  `top_procs` text DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`server_id`),
   CONSTRAINT `server_extras_ibfk_1` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
@@ -154,6 +155,9 @@ CREATE TABLE `servers` (
   `ip_address` varchar(45) NOT NULL,
   `api_key` varchar(80) NOT NULL,
   `is_active` smallint(6) NOT NULL,
+  `is_maintenance` tinyint(1) NOT NULL DEFAULT 0,
+  `maintenance_until` datetime DEFAULT NULL,
+  `maintenance_reason` varchar(255) DEFAULT NULL,
   `last_seen` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),

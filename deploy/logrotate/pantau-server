@@ -1,0 +1,13 @@
+# Logrotate configuration untuk Pantau Server Daemon
+# Simpan di: /etc/logrotate.d/pantau-server
+
+/tmp/uvicorn-pantau.log /var/log/pantau/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+    create 0640 bos bos
+}

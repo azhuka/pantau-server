@@ -44,7 +44,12 @@
       <td class="mono">
         <span class="copyable-ip" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
       </td>
-      <td><span class="badge {{ srv._status_cls }}">{{ srv._status_label }}</span></td>
+      <td>
+        <span class="badge {{ srv._status_cls }}">{{ srv._status_label }}</span>
+        {% if srv.is_maintenance and srv.maintenance_reason %}
+        <div style="font-size:10px;color:var(--yellow);margin-top:2px">{{ srv.maintenance_reason }}</div>
+        {% endif %}
+      </td>
       <td>{{ srv._service_count }}</td>
       <td>
         {% if srv._agent_version %}

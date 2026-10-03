@@ -34,6 +34,9 @@ class Server(Base):
     # Menyimpan sha256(key) berprefix "sha256:" agar raw key tidak bocor bila DB diretas
     api_key = Column(String(80), nullable=False, unique=True)
     is_active = Column(SmallInteger, nullable=False, default=1)
+    is_maintenance = Column(SmallInteger, nullable=False, default=0)
+    maintenance_until = Column(DateTime, nullable=True)
+    maintenance_reason = Column(String(255), nullable=True)
     last_seen = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -176,6 +179,7 @@ class ServerExtras(Base):
     apt_last_update = Column(DateTime, nullable=True)    # kapan apt-get update terakhir di jalankan (per mtime list)
     apt_packages = Column(Text, nullable=True)           # JSON: daftar nama paket yang bisa di-upgrade
     security = Column(Text, nullable=True)               # JSON: ringkasan keamanan auth.log (brute force dll.)
+    top_procs = Column(Text, nullable=True)              # JSON: {"cpu": [...], "mem": [...]} proses teratas
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 
