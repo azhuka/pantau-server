@@ -238,7 +238,18 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
   - Data referensi masalah layanan (`problem_id`, `problem_msg`, `ignored`) disertakan dalam payload overview dan dirender secara dinamis baik pada saat inisialisasi templat maupun saat live polling JavaScript (`renderServiceActions()`).
 - **Mekanisme Siklus Hidup Restart Layanan yang Diabaikan**:
   - Jika layanan yang sedang diabaikan direstart dan sukses hidup kembali (`status == 'up'`), sistem deteksi otomatis (`sync_server_problems`) akan menutup dan menandai tiket masalah tersebut sebagai *resolved* (teratasi).
-  - Jika layanan direstart namun prosesnya gagal berjalan (misalnya proses mandiri non-systemd seperti `chrome` yang tidak memiliki unit `.service`), status layanan tetap `down`, namun status abaikan (`is_ignored = 1`) tetap dipertahankan agar tidak menimbulkan lonjakan alarm mendadak, hingga operator memutuskan untuk menekan `🔔 Pantau Kembali`.
+- **Penyederhanaan Kosakata (Kata "Diabaikan" Menggantikan "Dibisukan")**:
+  - Mengubah seluruh penyebutan istilah dari "dibisukan" / "bisukan" menjadi **"diabaikan"** / **"abaikan"** pada semua tooltip, teks penjelas, badge, dan modal di Dashboard, Halaman Masalah, dan Halaman Rincian Server.
+- **Standarisasi Kolom Masalah Dashboard ("Nihil" Menggantikan "OK")**:
+  - Mengubah nilai status pada kolom Masalah di menu Dashboard dari `OK` menjadi **`Nihil`** (baik pada rendering awal Jinja2 maupun saat live polling JavaScript `dashPoll()`), memberikan informasi yang jauh lebih jernih dan tegas bahwa server bersih dari kendala/masalah.
+- **Arsitektur Kartu Riwayat Tindakan Terpadu (Unified Action History Card)**:
+  - Menggantikan kartu lama "Riwayat Perintah" yang sempit (sebelumnya hanya menampilkan perintah restart/stop layanan) dengan kartu **"Riwayat Tindakan"** terpadu di Tab Layanan.
+  - Penambahan kolom `server_id` pada tabel `audit_logs` (beserta indeks `idx_audit_server`) di basis data MariaDB serta sinkronisasi skema `database/schema.sql` dan `server/models.py`.
+  - Fungsi backend `_get_server_actions(db, sid, limit=15)` menggabungkan seluruh jejak audit dari `audit_logs` dan eksekusi remote `commands`: mencakup aksi kontrol layanan (restart, stop, start, tambah, hapus), aksi tiket masalah (abaikan masalah, pantau kembali, akui/ditangani, selesaikan manual), aksi sistem/host (mode pemeliharaan, update OS, upgrade OS, reboot, power off), aksi terminal bawaan (shell root), serta aksi file manager.
+  - Payload polling live `/api/servers/{sid}/overview` kini menyertakan array data `actions` yang dirender secara instan di peramban via `renderActionHistory(actions)` setiap kali tindakan dilakukan pada tab mana pun tanpa perlu reload peramban.
+- **Penyempurnaan UX Mode Pemeliharaan (Tombol "Lihat" & Indikator Kuning)**:
+  - Di samping keterangan status `pemeliharaan` pada header server, tombol badge sebelumnya diganti menjadi tombol **`Lihat`** yang ringkas untuk membuka modal pengaturan pemeliharaan.
+  - Tombol aksi utama **`Pemeliharaan (Aktif)`** secara otomatis berubah warna menjadi kuning tegas (`color: #facc15; border-color: #eab308; background: rgba(234, 179, 8, 0.12)`) saat mode pemeliharaan aktif, dan kembali ke gaya netral saat nonaktif.
 
 ---
 

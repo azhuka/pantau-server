@@ -227,9 +227,7 @@
         <strong>{{ server.hostname }}</strong>
         <span class="mono copyable-ip" style="font-size:12px" onclick="copyIp('{{ server.ip_address }}', event)" title="Klik untuk salin IP">{{ server.ip_address }}</span>
         <span id="hero-online" class="hero-online {{ 'warn' if server.is_maintenance else ('on' if is_online else 'off') }}">{{ 'pemeliharaan' if server.is_maintenance else ('online' if is_online else 'offline') }}</span>
-        {% if server.is_maintenance %}
-        <span id="hero-maint-badge" class="badge badge-warn" style="cursor:pointer;font-size:11px" onclick="openMaintenanceModal()" title="Mode Pemeliharaan Aktif — Klik untuk ubah / matikan">🔧 Pemeliharaan Aktif</span>
-        {% endif %}
+        <button type="button" id="hero-maint-badge" class="btn btn-ghost btn-sm" style="font-size:11px;padding:1px 8px;border:1px solid var(--border);margin-left:4px;{{ '' if server.is_maintenance else 'display:none;' }}" onclick="openMaintenanceModal()" title="Lihat detail mode pemeliharaan">Lihat</button>
       </div>
       <div class="hero-meta" id="hero-meta">{% if os_label %}{{ os_label }}{% endif %}{% if kernel %} · kernel {{ kernel }}{% endif %}{% if not os_label and not kernel %}memuat data sistem…{% endif %}</div>
     </div>
@@ -240,7 +238,7 @@
       <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" title="Buka / sembunyikan terminal bawaan" style="border:1px solid #334155;color:#38bdf8">&#62;_&nbsp;Terminal</button>
       <a href="/servers/{{ server.id }}/files" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="border:1px solid #334155;color:#a78bfa" title="Buka File Manager di tab / halaman baru">&#128193;&nbsp;File Manager&nbsp;&nearr;</a>
       <span class="hero-sep"></span>
-      <button class="btn btn-ghost btn-sm" id="btn-maint" onclick="openMaintenanceModal()" title="Atur Mode Pemeliharaan" style="border:1px solid #334155">&#128295;&nbsp;<span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span></button>
+      <button class="btn btn-ghost btn-sm" id="btn-maint" onclick="openMaintenanceModal()" title="Atur Mode Pemeliharaan" style="{% if server.is_maintenance %}border:1px solid #eab308;color:#facc15;background:rgba(234,179,8,0.12);font-weight:600{% else %}border:1px solid #334155{% endif %}">&#128295;&nbsp;<span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span></button>
       <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="btn btn-ghost btn-sm" type="submit" title="Restart sistem operasi">&#8634;&nbsp;Reboot OS</button>
@@ -476,7 +474,7 @@
       <td class="mono">{{ svc.process_name }}</td>
       <td id="sts-{{ svc.id }}">
         {% if svc._status == 'down' and ('service_down:' ~ svc.service_name) in (open_problems | selectattr('is_ignored') | map(attribute='key') | list) %}
-          <span class="badge badge-muted" title="Layanan berhenti, peringatan dibisukan">down 🔕</span>
+          <span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down 🔕</span>
         {% else %}
           <span class="badge badge-{{ svc._status }}">{{ svc._status }}</span>
         {% endif %}
@@ -514,7 +512,7 @@
               {% if svc._problem.is_ignored %}
                 <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id }}" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>
               {% else %}
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id }}" data-msg="{{ svc._problem.message }}" onclick="openIgnoreModal(this)" title="Bisukan peringatan untuk layanan ini">🔕 Abaikan</button>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id }}" data-msg="{{ svc._problem.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah layanan ini">🔕 Abaikan</button>
               {% endif %}
             {% endif %}
             {% if is_pending %}
@@ -536,35 +534,49 @@
   {% endif %}
 </div>
 
-{% if commands %}
-<div class="card">
-  <div class="card-header"><h3>Riwayat Perintah</h3></div>
-  <table>
-    <thead><tr><th>Waktu</th><th>Layanan</th><th>Tindakan</th><th>Status</th><th>Hasil</th></tr></thead>
-    <tbody>
-    {% for c in commands %}
-    <tr id="cmd-{{ c.id }}">
-      <td class="mono">{{ c.created_at.strftime('%d %b %H:%M:%S') }}</td>
-      <td>
-        {% set svc = services|selectattr('id','equalto',c.service_id)|first %}
-        {{ svc.service_name if svc else '?' }}
-      </td>
-      <td><span class="badge badge-muted">{{ {'restart':'Restart','start':'Mulai','stop':'Hentikan','delete':'Hapus'}.get(c.action, c.action) }}</span></td>
-      <td id="cmd-st-{{ c.id }}">
-        {% if c.status == 'success' %}<span class="badge badge-up">berhasil</span>
-        {% elif c.status == 'failed' %}<span class="badge badge-down">gagal</span>
-        {% elif c.status == 'executing' %}<span class="badge badge-muted">dijalankan</span>
-        {% else %}<span class="badge badge-muted">menunggu</span>{% endif %}
-      </td>
-      <td id="cmd-rs-{{ c.id }}" data-status="{{ c.status }}" style="font-size:12px;color:var(--dim);max-width:300px">{{ c.result or c.status }}</td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+<div class="card" id="card-action-history">
+  <div class="card-header" style="align-items:center">
+    <div>
+      <h3 style="margin:0">Riwayat Tindakan</h3>
+      <span style="font-size:12px;color:var(--dim)">Rekam jejak seluruh tindakan dan perintah pada server ini</span>
+    </div>
+    <span style="font-size:12px;color:var(--dim)" id="action-history-count">{{ actions|length if actions else 0 }} tindakan terakhir</span>
+  </div>
+  <div style="overflow-x:auto">
+    <table id="tbl-action-history">
+      <thead>
+        <tr>
+          <th style="white-space:nowrap;width:130px">Waktu</th>
+          <th style="width:100px">User</th>
+          <th style="width:160px">Tindakan</th>
+          <th>Sasaran</th>
+          <th style="width:110px">Status</th>
+          <th>Keterangan / Hasil</th>
+        </tr>
+      </thead>
+      <tbody id="action-history-tbody">
+      {% if actions %}
+        {% for a in actions %}
+        <tr id="act-row-{{ a.id }}">
+          <td class="mono" style="white-space:nowrap">{{ a.time.strftime('%d %b %H:%M:%S') if a.time else '—' }}</td>
+          <td><span class="mono">{{ a.user }}</span></td>
+          <td><span class="badge badge-muted">{{ a.action_label }}</span></td>
+          <td style="font-size:13px"><strong>{{ a.target }}</strong></td>
+          <td>
+            <span class="badge badge-{{ a.status_cls }}">{{ a.status_label }}</span>
+          </td>
+          <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">{{ a.result }}</td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr id="act-row-empty">
+          <td colspan="6" style="text-align:center;color:var(--dim);padding:20px">Belum ada riwayat tindakan di server ini.</td>
+        </tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
 </div>
-{% else %}
-<div style="font-size:12px;color:var(--dim);padding:10px 0">Belum ada riwayat perintah di server ini.</div>
-{% endif %}
 
 <!-- Modal Tambah Layanan -->
 <div id="add-svc-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
@@ -639,7 +651,7 @@
         {{ p.started_at.strftime('%d %b %H:%M') }}
         {% if p.resolved_at %}<span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>{% endif %}
       </td>
-      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan dibisukan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
       <td>
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
@@ -682,7 +694,7 @@
           {% if p.is_ignored %}
             <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>
           {% else %}
-            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Bisukan peringatan masalah ini">🔕 Abaikan</button>
+            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>
           {% endif %}
           {% if p.acknowledged_by %}
             <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }}">✓ Ditangani</span>
@@ -1092,7 +1104,7 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem) {
     if (problem.is_ignored) {
       ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + problem.id + '" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>';
     } else {
-      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + problem.id + '" data-msg="' + escHtml(problem.message || '') + '" onclick="openIgnoreModal(this)" title="Bisukan peringatan untuk layanan ini">🔕 Abaikan</button>';
+      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + problem.id + '" data-msg="' + escHtml(problem.message || '') + '" onclick="openIgnoreModal(this)" title="Abaikan masalah layanan ini">🔕 Abaikan</button>';
     }
   }
 
@@ -2074,7 +2086,7 @@ function renderProblemsTab(level, openList, histList) {
       if (isIgnored) {
         actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>`;
       } else {
-        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="Bisukan peringatan masalah ini">🔕 Abaikan</button>`;
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>`;
       }
 
       if (p.acknowledged_by) {
@@ -2100,6 +2112,29 @@ function renderProblemsTab(level, openList, histList) {
   html += '</tbody></table>';
   wrap.innerHTML = html;
   probFilter();
+}
+
+function renderActionHistory(actions) {
+  const tbody = document.getElementById('action-history-tbody');
+  const countEl = document.getElementById('action-history-count');
+  if (!tbody) return;
+  if (countEl) countEl.textContent = actions.length + ' tindakan terakhir';
+
+  if (!actions.length) {
+    tbody.innerHTML = '<tr id="act-row-empty"><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">Belum ada riwayat tindakan di server ini.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = actions.map(a => {
+    return `<tr id="act-row-${escHtml(a.id || '')}">
+      <td class="mono" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
+      <td><span class="mono">${escHtml(a.user || '-')}</span></td>
+      <td><span class="badge badge-muted">${escHtml(a.action_label || a.action || '—')}</span></td>
+      <td style="font-size:13px"><strong>${escHtml(a.target || '—')}</strong></td>
+      <td><span class="badge badge-${escHtml(a.status_cls || 'muted')}">${escHtml(a.status_label || a.status || '—')}</span></td>
+      <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">${escHtml(a.result || '—')}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ---------- service patch (existing) ----------
@@ -2135,6 +2170,7 @@ function patch(data) {
       aver.title = 'Agen belum melaporkan versi';
     }
   }
+
   const hd = document.getElementById('hero-dot');
   const ho = document.getElementById('hero-online');
   if (hd && ho) {
@@ -2150,6 +2186,31 @@ function patch(data) {
       ho.textContent = online ? 'online' : 'offline';
       ho.className = 'hero-online ' + (online ? 'on' : 'off');
     }
+    const hm = document.getElementById('hero-maint-badge');
+    const bm = document.getElementById('btn-maint');
+    const ml = document.getElementById('maint-btn-label');
+    if (data.is_maintenance) {
+      if (hm) {
+        hm.style.display = 'inline-block';
+        hm.textContent = 'Lihat';
+      }
+      if (bm) {
+        bm.style.borderColor = '#eab308';
+        bm.style.color = '#facc15';
+        bm.style.background = 'rgba(234,179,8,0.12)';
+        bm.style.fontWeight = '600';
+      }
+      if (ml) ml.textContent = 'Pemeliharaan (Aktif)';
+    } else {
+      if (hm) hm.style.display = 'none';
+      if (bm) {
+        bm.style.borderColor = '#334155';
+        bm.style.color = '';
+        bm.style.background = 'transparent';
+        bm.style.fontWeight = 'normal';
+      }
+      if (ml) ml.textContent = 'Pemeliharaan';
+    }
   }
   const ackx = document.getElementById('host-ack');
   if (ackx && typeof ackLive === 'function') {
@@ -2163,7 +2224,7 @@ function patch(data) {
     const sts = document.getElementById('sts-' + s.id);
     if (sts) {
       if (s.status === 'down' && s.ignored) {
-        sts.innerHTML = '<span class="badge badge-muted" title="Layanan berhenti, peringatan dibisukan">down 🔕</span>';
+        sts.innerHTML = '<span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down 🔕</span>';
       } else {
         const st = s.status === 'unknown' ? 'inactive' : s.status;
         sts.innerHTML = '<span class="badge badge-' + st + '">' + escHtml(s.status) + '</span>';
@@ -2191,18 +2252,8 @@ function patch(data) {
 
   }
 
-  for (const c of data.commands) {
-    const row = document.getElementById('cmd-' + c.id);
-    if (!row) continue;
-    const st = document.getElementById('cmd-st-' + c.id);
-    if (st) st.innerHTML = badgeHtml(c.status);
-    const rs = document.getElementById('cmd-rs-' + c.id);
-    if (rs) {
-      rs.dataset.status = c.status;
-      rs.textContent = c.status === 'success' || c.status === 'failed'
-        ? (c.result || c.status)
-        : (resultLabel[c.status] || c.status);
-    }
+  if (data.actions && Array.isArray(data.actions)) {
+    renderActionHistory(data.actions);
   }
 }
 

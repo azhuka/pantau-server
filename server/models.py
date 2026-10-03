@@ -254,6 +254,7 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    server_id = Column(INTEGER_UNSIGNED, ForeignKey("servers.id", ondelete="SET NULL"), nullable=True, index=True)
     username = Column(String(100), nullable=False)
     action = Column(String(50), nullable=False)
     target = Column(String(255), nullable=True)
@@ -264,6 +265,7 @@ class AuditLog(Base):
     __table_args__ = (
         Index("idx_audit_created", "created_at"),
         Index("idx_audit_username", "username"),
+        Index("idx_audit_server", "server_id"),
     )
 
 

@@ -22,6 +22,7 @@ DROP TABLE IF EXISTS `audit_logs`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `audit_logs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `server_id` int(10) unsigned DEFAULT NULL,
   `username` varchar(100) NOT NULL,
   `action` varchar(50) NOT NULL,
   `target` varchar(255) DEFAULT NULL,
@@ -30,7 +31,8 @@ CREATE TABLE `audit_logs` (
   `created_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_audit_username` (`username`),
-  KEY `idx_audit_created` (`created_at`)
+  KEY `idx_audit_created` (`created_at`),
+  KEY `idx_audit_server` (`server_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `commands`;

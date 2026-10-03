@@ -136,9 +136,10 @@ def require_admin(request: Request, db: Session = Depends(get_db)) -> User:
     return user
 
 
-def _audit(db, username: str, action: str, target=None, result=None, meta=None):
+def _audit(db, username: str, action: str, target=None, result=None, meta=None, server_id=None):
     """Catat jejak aksi admin pada tabel audit_logs (dicommit oleh pemanggil)."""
     db.add(AuditLog(
+        server_id=server_id,
         username=_clean_str(username, "-", 100),
         action=_clean_str(action, "", 50),
         target=_clean_str(target, None, 255),
@@ -978,6 +979,145 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
 
 
 
+def _get_server_actions(db, sid: int, limit: int = 15) -> list[dict]:
+    """Mengambil riwayat tindakan terpadu (commands + audit_logs) untuk server tertentu."""
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        return []
+
+    services = db.query(Service).filter(Service.server_id == sid).all()
+    svc_map = {s.id: s.service_name for s in services}
+
+    rows = []
+
+    # 1. Commands dari tabel commands
+    cmds = (
+        db.query(Command)
+        .filter(Command.server_id == sid)
+        .order_by(desc(Command.created_at))
+        .limit(limit)
+        .all()
+    )
+    for c in cmds:
+        svc_name = svc_map.get(c.service_id) or "—"
+        act_label = {
+            "restart": "Restart Layanan",
+            "stop": "Hentikan Layanan",
+            "start": "Jalankan Layanan",
+            "block_ip": "Blokir IP",
+            "restart_agent": "Restart Agen",
+            "reboot_host": "Reboot Host",
+            "poweroff_host": "Power Off Host",
+        }.get(c.action, c.action.replace("_", " ").capitalize())
+
+        status_cls = {
+            "pending": "muted",
+            "executing": "warn",
+            "success": "up",
+            "failed": "danger",
+        }.get(c.status, "muted")
+
+        status_label = {
+            "pending": "menunggu…",
+            "executing": "dieksekusi…",
+            "success": "sukses",
+            "failed": "gagal",
+        }.get(c.status, c.status)
+
+        rows.append({
+            "id": f"cmd-{c.id}",
+            "time": c.created_at,
+            "user": c.issued_by or "admin",
+            "action": c.action,
+            "action_label": act_label,
+            "target": svc_name,
+            "status": c.status,
+            "status_cls": status_cls,
+            "status_label": status_label,
+            "result": c.result or "—",
+        })
+
+    # 2. Audit logs dari tabel audit_logs
+    audit_q = (
+        db.query(AuditLog)
+        .filter(
+            (AuditLog.server_id == sid) |
+            (AuditLog.target.like(f"%{server.hostname}%")) |
+            (AuditLog.target.like(f"%ID {sid}%"))
+        )
+        .order_by(desc(AuditLog.created_at))
+        .limit(limit)
+        .all()
+    )
+    for a in audit_q:
+        if a.action in ("service_restart", "service_stop", "service_start", "login", "server_add", "server_delete", "user_add", "user_delete"):
+            continue
+
+        act_label = {
+            "problem_ignore": "Abaikan Masalah",
+            "problem_unignore": "Pantau Kembali",
+            "alert_ack": "Tandai Ditangani",
+            "problem_resolve": "Selesaikan Masalah",
+            "maintenance_mode": "Mode Pemeliharaan",
+            "service_add": "Tambah Layanan",
+            "service_delete": "Hapus Layanan",
+            "host_reboot": "Reboot OS",
+            "host_poweroff": "Power Off",
+            "apt_update": "Update OS (apt)",
+            "apt_upgrade": "Upgrade OS (apt)",
+            "apt_upgrade_interact": "Upgrade OS (interaktif)",
+            "terminal_shell_open": "Buka Terminal Root",
+            "file_save": "Simpan Berkas",
+            "file_upload": "Unggah Berkas",
+            "file_rm": "Hapus Berkas",
+            "file_mkdir": "Buat Folder",
+            "file_rename": "Ubah Nama Berkas",
+            "file_chmod": "Ubah Izin Berkas",
+            "file_chown": "Ubah Pemilik Berkas",
+        }.get(a.action, a.action.replace("_", " ").capitalize())
+
+        status_cls = "up"
+        status_label = "berhasil"
+        if a.action == "problem_ignore":
+            status_cls = "muted"
+            status_label = "diabaikan 🔕"
+        elif a.action == "problem_unignore":
+            status_cls = "up"
+            status_label = "dipantau 🔔"
+        elif a.action == "alert_ack":
+            status_cls = "up"
+            status_label = "ditangani ✓"
+        elif a.action == "problem_resolve":
+            status_cls = "up"
+            status_label = "selesai ✓"
+        elif a.action == "maintenance_mode":
+            status_cls = "warn"
+            status_label = "pemeliharaan 🔧"
+        elif a.action in ("host_reboot", "host_poweroff"):
+            status_cls = "warn"
+            status_label = "dieksekusi"
+
+        target_str = a.target or "—"
+        if ":" in target_str:
+            target_str = target_str.split(":", 1)[1]
+
+        rows.append({
+            "id": f"audit-{a.id}",
+            "time": a.created_at,
+            "user": a.username,
+            "action": a.action,
+            "action_label": act_label,
+            "target": target_str,
+            "status": "success",
+            "status_cls": status_cls,
+            "status_label": status_label,
+            "result": a.result or "—",
+        })
+
+    rows.sort(key=lambda r: r["time"], reverse=True)
+    return rows[:limit]
+
+
 @app.get("/api/servers/{sid}/overview")
 def api_server_overview(sid: int, user: User = Depends(require_user), db: Session = Depends(get_db)):
     """Ringkasan live (services + perintah terbaru) untuk polling UI halaman Services."""
@@ -1032,6 +1172,20 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "status": c.status, "result": c.result,
         "created_at": c.created_at.isoformat() if c.created_at else None,
     } for c in commands]
+
+    actions_raw = _get_server_actions(db, sid, limit=15)
+    actions_list = [{
+        "id": a["id"],
+        "time": a["time"].strftime("%H:%M:%S") if a["time"] else "",
+        "user": a["user"],
+        "action": a["action"],
+        "action_label": a["action_label"],
+        "target": a["target"],
+        "status": a["status"],
+        "status_cls": a["status_cls"],
+        "status_label": a["status_label"],
+        "result": a["result"],
+    } for a in actions_raw]
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     apt_run = (
         db.query(LogRequest)
@@ -1071,7 +1225,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
     hist_prob_serialized = _serialize_problem_list(problem_history)
 
     return {
-        "services": svc_list, "commands": cmd_list,
+        "services": svc_list, "commands": cmd_list, "actions": actions_list,
         "online": not _server_stale(server),
         "last_seen": server.last_seen.isoformat() if server.last_seen else None,
         # Kesegaran akurat (ms sejak laporan terakhir) — dipakai banner konfirmasi
@@ -1170,12 +1324,10 @@ async def api_server_maintenance(
         server.maintenance_reason = None
         detail_msg = "Mode pemeliharaan dinonaktifkan"
 
-    db.add(AuditLog(
-        username=user.username,
-        action="maintenance_mode",
-        target=f"Server {server.hostname} (ID {server.id})",
-        result=detail_msg,
-    ))
+    _audit(
+        db, user.username, "maintenance_mode",
+        target=f"Server {server.hostname}", result=detail_msg, server_id=server.id
+    )
     db.commit()
     return {
         "ok": True,
@@ -1761,6 +1913,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         .limit(10)
         .all()
     )
+    actions = _get_server_actions(db, sid, limit=15)
     extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     svc_data = [{"name": s.service_name, "status": getattr(s, "_status", "unknown")}
                 for s in services]
@@ -1777,7 +1930,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         except Exception:
             pass
     return tpl(request, "services.html", {
-        "user": user, "server": server, "services": services, "commands": commands,
+        "user": user, "server": server, "services": services, "commands": commands, "actions": actions,
         "agent_version": extra.agent_version if extra else None,
         "is_agent_outdated": _is_agent_outdated(extra.agent_version if extra else None, settings.APP_VERSION),
         "os_label": extra.os_label if extra else None,
@@ -1843,6 +1996,8 @@ def service_add_submit(
     if existing:
         return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(False, "Nama service sudah ada"), status_code=303)
     db.add(svc)
+    server = db.query(Server).filter(Server.id == sid).first()
+    _audit(db, user.username, "service_add", f"{server.hostname if server else sid}:{svc.service_name}", f"port {svc.port}", server_id=sid)
     db.commit()
     return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(True, "Service ditambahkan"), status_code=303)
 
@@ -1914,7 +2069,7 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
         ))
         server = db.query(Server).filter(Server.id == sid).first()
         _audit(db, user.username, f"service_{action}",
-               f"{server.hostname if server else sid}:{svc.service_name}", "dikirim ke agen")
+               f"{server.hostname if server else sid}:{svc.service_name}", "dikirim ke agen", server_id=sid)
         db.commit()
     label_id = {"start": "mulai", "stop": "hentikan"}.get(action, action)
     if is_json:
@@ -2024,7 +2179,7 @@ def _host_control(request: Request, sid: int, db: Session, action: str, csrf_tok
         return RedirectResponse("/servers", status_code=303)
     _enqueue_mitigation(db, sid, action, issued_by=user.username)
     _audit(db, user.username, action,
-           f"{server.hostname} ({server.ip_address})", "dikirim ke agen")
+           f"{server.hostname} ({server.ip_address})", "dikirim ke agen", server_id=sid)
     db.commit()
     flag = "reboot" if action == "reboot_host" else "poweroff"
     at_epoch = int(datetime.now(timezone.utc).timestamp())
@@ -2069,7 +2224,7 @@ def service_delete(
     if svc:
         server = db.query(Server).filter(Server.id == sid).first()
         _audit(db, user.username, "service_delete",
-               f"{server.hostname if server else sid}:{svc.service_name}", "berhasil")
+               f"{server.hostname if server else sid}:{svc.service_name}", "berhasil", server_id=sid)
         db.delete(svc)
         db.commit()
         if is_json:
@@ -3004,6 +3159,18 @@ AUDIT_ACTION_LABELS = {
     "cmd:poweroff_host": "Power off server",
     "cmd:start": "Start service",
     "cmd:stop": "Stop service",
+    "problem_ignore": "Abaikan masalah",
+    "problem_unignore": "Pantau kembali",
+    "problem_resolve": "Selesaikan masalah",
+    "maintenance_mode": "Mode pemeliharaan",
+    "terminal_shell_open": "Buka terminal root",
+    "file_save": "Simpan berkas",
+    "file_upload": "Unggah berkas",
+    "file_rm": "Hapus berkas",
+    "file_mkdir": "Buat folder",
+    "file_rename": "Ubah nama berkas",
+    "file_chmod": "Ubah izin berkas",
+    "file_chown": "Ubah pemilik berkas",
 }
 AUDIT_ACTION_SET = dict(AUDIT_ACTION_LABELS)
 
@@ -3148,10 +3315,10 @@ def api_alert_ack(
         raise HTTPException(status_code=404, detail="Peringatan tidak ditemukan")
     row.acknowledged_at = datetime.utcnow()
     row.acknowledged_by = user.username
-    db.add(AuditLog(
-        username=user.username, action="alert_ack",
-        target=f"{row.key} ({row.message[:60]})", result="diakui",
-    ))
+    _audit(
+        db, user.username, "alert_ack",
+        target=row.message[:100], result="diakui", server_id=row.server_id
+    )
     db.commit()
     return {"ok": True, "id": pid, "acknowledged_by": user.username}
 
@@ -3176,10 +3343,10 @@ def api_alert_resolve(
     row.resolved_note = f"manual ({user.username})"
     row.acknowledged_at = row.acknowledged_at or now
     row.acknowledged_by = row.acknowledged_by or user.username
-    db.add(AuditLog(
-        username=user.username, action="problem_resolve",
-        target=f"{row.key} ({row.message[:60]})", result="diselesaikan manual",
-    ))
+    _audit(
+        db, user.username, "problem_resolve",
+        target=row.message[:100], result="diselesaikan manual", server_id=row.server_id
+    )
     db.commit()
     return {"ok": True, "id": pid, "resolved_by": user.username}
 
@@ -3228,11 +3395,12 @@ def api_alert_ignore(
         row.acknowledged_at = now
         row.acknowledged_by = user.username
 
-    db.add(AuditLog(
-        username=user.username, action="problem_ignore",
-        target=f"{row.key} ({row.message[:60]}) until={until.isoformat() if until else 'permanent'}",
-        result=f"diabaikan: {reason or 'tanpa alasan'}",
-    ))
+    dur_label = f" ({duration})" if duration not in ("forever", "permanent", "0") else " (permanen)"
+    res_str = f"diabaikan{dur_label}" + (f": {reason}" if reason else "")
+    _audit(
+        db, user.username, "problem_ignore",
+        target=row.message[:100], result=res_str, server_id=row.server_id
+    )
     db.commit()
     return {
         "ok": True,
@@ -3265,11 +3433,10 @@ def api_alert_unignore(
     row.ignored_reason = None
     row.updated_at = datetime.utcnow()
 
-    db.add(AuditLog(
-        username=user.username, action="problem_unignore",
-        target=f"{row.key} ({row.message[:60]})",
-        result="pemantauan diaktifkan kembali",
-    ))
+    _audit(
+        db, user.username, "problem_unignore",
+        target=row.message[:100], result="pemantauan diaktifkan kembali", server_id=row.server_id
+    )
     db.commit()
     return {"ok": True, "id": pid, "is_ignored": False}
 
@@ -3998,11 +4165,11 @@ def api_logs_request(
     db.add(logreq)
     if is_apt:
         _audit(db, user.username, f"apt_{unit.removeprefix('APT_').lower()}",
-               server.hostname, "dikirim ke agen")
+               server.hostname, "dikirim ke agen", server_id=sid)
     elif is_shell:
         # Terminal Bawaan = root shell. Catat SIAPA membuka sesi di server mana.
         _audit(db, user.username, "terminal_shell_open", server.hostname,
-               "membuka Terminal Bawaan (shell root)")
+               "membuka Terminal Bawaan (shell root)", server_id=sid)
     db.commit()
     db.refresh(logreq)
 
@@ -4470,7 +4637,7 @@ async def api_server_files_write(
         raise HTTPException(status_code=400, detail=res.get("error", "Gagal menyimpan file"))
 
     _audit(db, user.username, "file_save", f"{server.hostname}:{path}", "berhasil",
-           {"size": len(content), "backup": res.get("backup_created")})
+           {"size": len(content), "backup": res.get("backup_created")}, server_id=sid)
     db.commit()
     return res
 
@@ -4497,7 +4664,7 @@ async def api_server_files_mkdir(
     if not res.get("ok"):
         raise HTTPException(status_code=400, detail=res.get("error", "Gagal membuat direktori"))
 
-    _audit(db, user.username, "file_mkdir", f"{server.hostname}:{path}", "berhasil")
+    _audit(db, user.username, "file_mkdir", f"{server.hostname}:{path}", "berhasil", server_id=sid)
     db.commit()
     return res
 
@@ -4523,7 +4690,7 @@ async def api_server_files_touch(
     if not res.get("ok"):
         raise HTTPException(status_code=400, detail=res.get("error", "Gagal membuat file"))
 
-    _audit(db, user.username, "file_touch", f"{server.hostname}:{path}", "berhasil")
+    _audit(db, user.username, "file_touch", f"{server.hostname}:{path}", "berhasil", server_id=sid)
     db.commit()
     return res
 
@@ -4549,7 +4716,7 @@ async def api_server_files_rm(
     if not res.get("ok"):
         raise HTTPException(status_code=400, detail=res.get("error", "Gagal menghapus"))
 
-    _audit(db, user.username, "file_rm", f"{server.hostname}:{path}", "berhasil")
+    _audit(db, user.username, "file_rm", f"{server.hostname}:{path}", "berhasil", server_id=sid)
     db.commit()
     return res
 
@@ -4576,7 +4743,7 @@ async def api_server_files_rename(
     if not res.get("ok"):
         raise HTTPException(status_code=400, detail=res.get("error", "Gagal mengganti nama file/folder"))
 
-    _audit(db, user.username, "file_rename", f"{server.hostname}:{old_path} -> {new_path}", "berhasil")
+    _audit(db, user.username, "file_rename", f"{server.hostname}:{old_path} -> {new_path}", "berhasil", server_id=sid)
     db.commit()
     return res
 
@@ -4600,7 +4767,7 @@ async def api_server_files_chmod(
     if not res.get("ok"):
         raise HTTPException(status_code=400, detail=res.get("error", "Gagal mengubah izin"))
 
-    _audit(db, user.username, "file_chmod", f"{server.hostname}:{path}", f"mode={mode}")
+    _audit(db, user.username, "file_chmod", f"{server.hostname}:{path}", f"mode={mode}", server_id=sid)
     db.commit()
     return res
 
@@ -4625,7 +4792,7 @@ async def api_server_files_chown(
     if not res.get("ok"):
         raise HTTPException(status_code=400, detail=res.get("error", "Gagal mengubah kepemilikan"))
 
-    _audit(db, user.username, "file_chown", f"{server.hostname}:{path}", f"owner={owner}:{group}")
+    _audit(db, user.username, "file_chown", f"{server.hostname}:{path}", f"owner={owner}:{group}", server_id=sid)
     db.commit()
     return res
 
@@ -4656,7 +4823,7 @@ async def api_server_files_upload(
     if not res.get("ok"):
         raise HTTPException(status_code=400, detail=res.get("error", "Gagal mengunggah file"))
 
-    _audit(db, user.username, "file_upload", f"{server.hostname}:{target_path}", f"{len(raw)} bytes")
+    _audit(db, user.username, "file_upload", f"{server.hostname}:{target_path}", f"{len(raw)} bytes", server_id=sid)
     db.commit()
     return {"ok": True, "path": target_path, "size": len(raw)}
 
