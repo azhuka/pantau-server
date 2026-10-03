@@ -218,7 +218,11 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
   - Penambahan kolom `is_ignored`, `ignored_until`, `ignored_by`, dan `ignored_reason` pada tabel `server_problems` dengan skrip migrasi otomatis saat startup aplikasi (`migrate_server_problem_ignored`).
   - Endpoint backend `POST /api/alerts/{id}/ignore` (pilihan durasi 2 jam, 24 jam, 7 hari, 30 hari, atau permanen, disertai alasan opsional) dan `POST /api/alerts/{id}/unignore`.
   - Masalah yang diabaikan secara otomatis dieksklusikan dari kalkulasi keparahan server (`problem_level`), tidak memicu modal peringatan DANGER, dan baris masalah diberi penanda badge `🔕 diabaikan` dengan opsi filter tersendiri `Diabaikan (🔕)`.
-  - Dilengkapi tombol `🔔 Pantau Kembali` (*Unmute*) yang sewaktu-waktu dapat digunakan untuk mengembalikan alarm ke pemantauan aktif.
+  - Dilengkapi tombol `🔔 Batal Abaikan` (*Unmute*) yang sewaktu-waktu dapat digunakan untuk mengembalikan alarm ke pemantauan aktif.
+- **Standarisasi Kolom Tabel & Ringkas Tombol Aksi:**
+  - Menstandarisasi seluruh penamaan kolom tabel tindakan di semua template UI (`dashboard.html`, `servers.html`, `services.html`, `problems.html`, `audit.html`, dan `file_manager.html`) dari "Aksi" menjadi **"Tindakan"**.
+  - Merapikan label tombol tindakan pada tabel masalah agar ringkas dan bersih (`Ditangani`, `Selesai`, `🔕 Abaikan`, `🔔 Batal Abaikan`), menghindari kekacauan visual antarmuka.
+  - Memperbaiki parsing atribut tombol abaikan dengan arsitektur `data-id` & `data-msg` pada elemen HTML untuk mencegah konflik karakter kutip (*quote collision*) saat memicu modal konfirmasi.
 
 ---
 

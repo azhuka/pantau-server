@@ -44,7 +44,7 @@
   {% endif %}
   {% if open_problems %}
   <table id="probtable">
-    <thead><tr><th>Waktu</th><th>Server</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Aksi</th><th>Tips</th></tr></thead>
+    <thead><tr><th>Waktu</th><th>Server</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Tindakan</th><th>Tips</th></tr></thead>
     <tbody>
     {% for p in open_problems %}
     <tr{% if p.is_ignored %} style="opacity:.75;background:rgba(255,255,255,0.02)"{% endif %}
@@ -66,20 +66,20 @@
         <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
         {% if p.is_ignored %}
           <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                  onclick="unignoreProblem({{ p.id }}, this, () => location.reload())" title="Aktifkan kembali pemantauan">🔔 Pantau Kembali</button>
+                  data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan">🔔 Batal Abaikan</button>
         {% else %}
           <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                  onclick="openIgnoreModal({{ p.id }}, {{ p.message|tojson }}, () => location.reload())" title="Abaikan masalah ini agar tidak memicu alarm">🔕 Abaikan</button>
+                  data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Bungkam alarm masalah ini">🔕 Abaikan</button>
         {% endif %}
         {% if p.acknowledged_by %}
           <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">✓ Ditangani</span>
           <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                  onclick="resolveProblem({{ p.id }}, this)" title="Pindahkan masalah ini ke daftar teratasi">Selesaikan</button>
+                  onclick="resolveProblem({{ p.id }}, this)" title="Pindahkan masalah ini ke daftar teratasi">Selesai</button>
         {% elif p.is_open %}
           <button type="button" class="btn btn-{{ 'danger' if p.severity == 'danger' else 'ghost' }} btn-sm" style="margin-left:4px"
-                  onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')">Tandai ditangani</button>
+                  onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')">Ditangani</button>
           <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                  onclick="resolveProblem({{ p.id }}, this)" title="Pindahkan masalah ini ke daftar teratasi">Selesaikan</button>
+                  onclick="resolveProblem({{ p.id }}, this)" title="Pindahkan masalah ini ke daftar teratasi">Selesai</button>
         {% endif %}
       </td>
       <td style="font-size:12px;color:var(--dim);max-width:360px">
@@ -106,7 +106,7 @@
     <span style="font-size:12px;color:var(--dim)">{{ recent_resolved|length }} masalah</span>
   </div>
   <table>
-    <thead><tr><th>Waktu</th><th>Server</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Aksi</th></tr></thead>
+    <thead><tr><th>Waktu</th><th>Server</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Tindakan</th></tr></thead>
     <tbody>
     {% for p in recent_resolved %}
     <tr style="opacity:.65">
