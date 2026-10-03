@@ -470,6 +470,11 @@
           </form>
         {% elif p.is_open and p.action == 'apt_update' %}
           <button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">Update OS</button>
+        {% elif p.is_open %}
+          {% if not p.acknowledged_by %}
+            <button type="button" class="btn btn-ghost btn-sm" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai masalah ini sudah ditangani">Ditangani</button>
+          {% endif %}
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="resolveProblemInDetail({{ p.id }}, this)" title="Tandai masalah ini selesai">Selesaikan</button>
         {% else %}
           <span style="color:var(--dim)">—</span>
         {% endif %}
@@ -663,6 +668,42 @@ document.addEventListener('click', e => {
   const m = document.getElementById('add-svc-modal');
   if (m && e.target === m) m.style.display = 'none';
 });
+
+async function ackProblemInDetail(id, btn) {
+  if (!confirm('Tandai masalah ini sudah ditangani?')) return;
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const r = await fetch('/api/alerts/' + id + '/ack', {
+      method: 'POST',
+      headers: {'X-CSRF-Token': getCsrf()},
+      credentials: 'same-origin'
+    });
+    if (r.ok) { location.reload(); return; }
+    showToast('Gagal menyimpan (HTTP ' + r.status + ').', false);
+  } catch (e) {
+    showToast('Kendala jaringan: ' + e.message, false);
+  }
+  btn.disabled = false; btn.textContent = orig;
+}
+
+async function resolveProblemInDetail(id, btn) {
+  if (!confirm('Tandai masalah ini telah selesai/teratasi?')) return;
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const r = await fetch('/api/alerts/' + id + '/resolve', {
+      method: 'POST',
+      headers: {'X-CSRF-Token': getCsrf()},
+      credentials: 'same-origin'
+    });
+    if (r.ok) { location.reload(); return; }
+    showToast('Gagal menyimpan (HTTP ' + r.status + ').', false);
+  } catch (e) {
+    showToast('Kendala jaringan: ' + e.message, false);
+  }
+  btn.disabled = false; btn.textContent = orig;
+}
 
 async function deleteService(sid, svcId, svcName, btn) {
   if (!confirm('Hapus service ' + svcName + '?')) return;

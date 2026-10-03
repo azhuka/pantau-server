@@ -2513,6 +2513,7 @@ def _rel_dt(dt: datetime, now: datetime | None = None) -> str:
 def _problem_row2dict(row) -> dict:
     end = row.resolved_at
     return {
+        "id": row.id,
         "key": row.key, "severity": row.severity, "message": row.message,
         "tip": row.tip, "started_at": row.started_at, "resolved_at": end,
         "is_open": end is None,
@@ -2876,6 +2877,35 @@ def api_alert_ack(
     ))
     db.commit()
     return {"ok": True, "id": pid, "acknowledged_by": user.username}
+
+
+@app.post("/api/alerts/{pid}/resolve")
+def api_alert_resolve(
+    pid: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Tandai masalah selesai/teratasi secara manual oleh admin/user."""
+    _verify_csrf_header(request)
+    row = db.query(ServerProblem).filter(
+        ServerProblem.id == pid,
+        ServerProblem.resolved_at.is_(None),
+    ).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Masalah tidak ditemukan")
+    now = datetime.utcnow()
+    row.resolved_at = now
+    row.resolved_note = f"manual ({user.username})"
+    row.acknowledged_at = row.acknowledged_at or now
+    row.acknowledged_by = row.acknowledged_by or user.username
+    db.add(AuditLog(
+        username=user.username, action="problem_resolve",
+        target=f"{row.key} ({row.message[:60]})", result="diselesaikan manual",
+    ))
+    db.commit()
+    return {"ok": True, "id": pid, "resolved_by": user.username}
+
 
 
 
