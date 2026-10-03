@@ -1,25 +1,29 @@
 # Pantau Server
 
 Dashboard monitoring terpusat (FastAPI + MariaDB) untuk memantau kondisi,
-kinerja, log, dan keamanan banyak server dari satu halaman, ditambah **agen
-Pantau** (Python) yang jalan di tiap server klien.
+kinerja, log, dan keamanan banyak server dari satu antarmuka web, serta dilengkapi
+dengan **agen Pantau** (Python) ringan yang berjalan di setiap server klien.
 
-## Daftar isi
+## Daftar Isi
 
 - [1. Install Dashboard](#1-install-dashboard-server-web-app-pantau-server)
 - [2. Install Agen di Server Klien](#2-install-agen-di-server-klien)
 - [Halaman & Fitur](#halaman--fitur)
-- [Peran Admin vs Viewer](#peran-admin-vs-viewer)
+- [Peran Pengguna (Admin vs Viewer)](#peran-pengguna-admin-vs-viewer)
 - [Update Dashboard](#update-dashboard)
 - [Update Agen](#update-agen)
-- [Kebutuhan Versi Agen](#kebutuhan-versi-agen)
+- [Kompatibilitas Versi Agen](#kompatibilitas-versi-agen)
 - [Terminal Bawaan & Update OS](#terminal-bawaan--update-os-dari-dashboard)
-- [Kalau Update OS Menggantung / Terputus](#kalau-update-os-menggantung--terputus)
-- [HTTPS untuk Produksi](#https-untuk-produksi)
-- [Backup & Restore](#backup--restore)
+- [Troubleshooting & Batasan Terminal](#troubleshooting--batasan-terminal)
+- [HTTPS & Lingkungan Produksi](#https--lingkungan-produksi)
+- [Backup, Restore & Retensi Data](#backup-restore--retensi-data)
 - [Catatan Keamanan & Praktik Terbaik](#catatan-keamanan--praktik-terbaik)
 
+---
+
 ## 1. Install Dashboard (Server Web App "Pantau Server")
+
+Jalankan perintah berikut pada server yang akan dijadikan pusat pemantauan:
 
 ```bash
 sudo apt update && sudo apt install -y git python3 python3-venv python3-pip mariadb-server rsync
@@ -30,28 +34,31 @@ cd pantau-server
 sudo bash install-server.sh
 ```
 
-Installer membuat user, database (password acak), unit systemd, lalu meminta
-password untuk user admin. Selesai instalasi, buka `http://<ip-dashboard>:8400`
-dan login:
+Skrip instalasi akan membuat pengguna sistem, basis data MariaDB (dengan kredensial aman), berkas layanan systemd, serta meminta kata sandi untuk akun administrator awal.
+
+Setelah instalasi selesai, buka peramban web pada alamat `http://<ip-dashboard>:8400` dan masuk menggunakan:
 
 - **Username:** `admin`
-- **Password:** password yang Anda masukkan saat installer bertanya
-  "Password untuk user 'admin':"
+- **Password:** kata sandi yang Anda tentukan saat proses instalasi
 
-Lupa password? Atur ulang dari mesin dashboard:
+Jika lupa kata sandi, Anda dapat meresetnya langsung dari server dashboard:
 
 ```bash
 sudo /opt/pantau/server/env/bin/python /opt/pantau/server/seed_admin.py \
   --username admin --role admin --password '<password-baru>'
 ```
 
-Cek: `systemctl status pantau-server.service`
+Pemeriksaan status layanan dashboard:
+```bash
+systemctl status pantau-server.service
+```
+
+---
 
 ## 2. Install Agen di Server Klien
 
-1. Di dashboard: menu **Servers → Tambah Server** → salin **Kunci API**
-   (disimpan di tempat sementara).
-2. Di server klien, unduh lalu jalankan installer:
+1. Masuk ke dashboard: buka menu **Servers → Tambah Server**, lalu salin **Kunci API** yang dihasilkan.
+2. Di server klien (target pemantauan), jalankan skrip penginstal:
 
 ```bash
 sudo curl -fsSL -o /tmp/pantau-install.sh \
@@ -59,151 +66,133 @@ sudo curl -fsSL -o /tmp/pantau-install.sh \
 sudo bash /tmp/pantau-install.sh
 ```
 
-Installer bertanya interaktif: URL dashboard lalu Kunci API (64 hex), menguji
-key-nya dulu ke dashboard, lalu memasang agen dan menghidupkan layanannya.
-Verifikasi di dashboard — daftar server berubah dari "belum ada data" jadi
-online dalam ±10 detik.
+Penginstal akan meminta URL dashboard dan Kunci API (64 karakter heksadesimal), memverifikasi validitas kunci ke dashboard, memasang layanan agen, dan mengaktifkannya secara otomatis. Dalam ±10 detik, server klien akan muncul dan berstatus online di dashboard.
 
-Kalau ada masalah:
+Instalasi non-interaktif juga dapat dijalankan dengan parameter:
+```bash
+sudo bash /tmp/pantau-install.sh "http://<ip-dashboard>:8400" "<KUNCI_API>"
+# atau menggunakan environment variables:
+sudo SETUP_SERVER_URL="http://<ip-dashboard>:8400" SETUP_API_KEY="<KUNCI_API>" bash /tmp/pantau-install.sh
+```
 
+Pemeriksaan status dan log agen jika terjadi kendala:
 ```bash
 systemctl status agent_pantau.service
 journalctl -u agent_pantau -f
 ```
 
-Installer aman dijalankan ulang: kalau `/etc/pantau/config.json` sudah ada dan
-isinya valid, URL + Kunci API diambil dari sana sehingga **tidak ditanya lagi**.
-Kalau belum ada, installer memintanya (dan bisa dilewati dengan
-`sudo bash install.sh <URL> <KUNCI_API>`, atau non-interaktif lewat
-`SETUP_SERVER_URL=... SETUP_API_KEY=...`).
+> **Catatan:** Apabila menjalankan instalasi via `curl | bash`, hanya berkas agen dan skrip pendukung yang diunduh langsung dari GitHub tanpa mengkloning seluruh repositori ke server klien. Jika menghendaki instalasi dari salinan lokal, jalankan installer dari dalam folder repositori hasil klon git.
 
-> Kalau Anda menjalankan `curl | bash`, ONLY THE AGENT FILE yang diunduh per-file
-> dari GitHub, bukan satu repo penuh. Kalau Anda menjalankan installer dari dalam
-> clone lokal, semua file diambil dari folder lokal — pakai mode ini kalau
-> butuh versi yang pasti.
+---
 
 ## Halaman & Fitur
 
-| Halaman | Isi |
+| Halaman | Deskripsi & Fungsi |
 |---|---|
-| **Dashboard** | Ringkasan semua server: jumlah online/offline, layanan down, laporan terakhir. Kolom CPU%, RAM%, layanan down, dan waktu relatif ("X mnt lalu") per server dengan polling live otomatis, kolom sortable, pencarian instan, dan shortcut satu-klik salin IP. |
-| **Servers** | Kelola server: status dot (online/offline), tambah, edit, hapus, lihat kunci API, tabel dengan kolom sortable, kotak pencarian instan, dan shortcut salin IP. |
-| **Rincian server** | Halaman utama tiap server. Tab **Riwayat** (grafik CPU, Memori, Swap, Load, dan Disk historis per mount point), Tab **Layanan** (modal Tambah Layanan, tombol Start ▶, Stop ■, Restart, dan Hapus instan via AJAX), Tab **Masalah**, Tab **⚡ Proses Teratas** (snapshot 20 proses pemakan CPU & Memori secara live, tampilan awal 5 proses dengan tautan ekspansi ke 20 proses), Tab **Jaringan** (daftar interface dengan IP address per interface, status, throughput & laju data), Tab **Akun**, Tab **Log** (filter/search baris log, pewarnaan error/warning/critical, tombol ⬇ Unduh log, dan auto-apply baris). **Mode Pemeliharaan (Maintenance Mode)** lewat tombol `🔧 Pemeliharaan` untuk meredam alarm/masalah baru saat server diservis/reboot dengan durasi waktu terjadwal. **Terminal Bawaan** (xterm.js + WebSocket realtime) = shell Linux sungguhan di server klien, tertanam di halaman lewat tombol `>_ Terminal`. Tombol **📁 File Manager ↗** membuka File Manager di tab baru (`/servers/{id}/files`). |
-| **File Manager** | *(Admin)* Halaman dedicated (`/servers/{id}/files`) untuk eksplorasi direktori, edit file (auto-backup `.bak`), buat folder/file baru, upload/download, chmod/chown — dengan proteksi guardrail terhadap direktori sistem kritis. |
-| **Masalah** | Semua masalah terbuka lintas server dengan filter per-server, filter level (Danger / Warning / Info), penanganan (ack) untuk semua level peringatan, durasi berjalan live, dan tips penanganan. |
-| **Log** | Log server pusat: CPU/memori/beban/swap, proses teratas, disk, log service (pilih unit), dan log aplikasi. |
-| **Audit** | Jejak aksi admin: login, buka/tutup sesi terminal, kelola server/service/user, perintah remote (restart/start/stop, blokir IP, update paket, restart agen). |
-| **Users** | *(Admin)* Kelola user dashboard: tambah, ubah peran, reset password, cabut sesi. |
+| **Dashboard** | Ringkasan kondisi seluruh server secara terpusat: jumlah server online/offline, layanan terganggu (*down*), utilisasi CPU & RAM, serta waktu laporan terakhir. Dilengkapi pembaruan data langsung (*live polling*), pengurutan kolom, pencarian instan, dan tombol salin alamat IP. |
+| **Servers** | Manajemen server klien: indikator status (online/offline), pendaftaran server baru, penyuntingan data, penghapusan, pengelolaan kunci API, tabel dinamis, serta pencarian instan. |
+| **Rincian Server** | Pusat kendali dan inspeksi per server: <br>• **Tab Riwayat:** Grafik historis penggunaan CPU, Memori, Swap, System Load, dan Disk per *mount point*.<br>• **Tab Layanan:** Manajemen unit systemd (Start, Stop, Restart, dan Tambah Layanan baru).<br>• **Tab Masalah:** Daftar alarm dan kendala aktif yang terdeteksi.<br>• **Tab ⚡ Proses Teratas:** Snapshot langsung proses pemakan CPU & Memori (tampilan default 5 proses teratas dengan opsi ekspansi ke 20 proses).<br>• **Tab Jaringan:** Daftar antarmuka jaringan, alamat IP, status *link*, dan laju data (*throughput*).<br>• **Tab Akun:** Daftar pengguna lokal yang terdaftar pada sistem.<br>• **Tab Log:** Penelusuran log sistem, filter teks, penandaan warna tingkat keparahan (*error*, *warning*, *critical*), serta tombol unduh berkas log.<br>• **Mode Pemeliharaan (Maintenance Mode):** Tombol `🔧 Pemeliharaan` untuk menjadwalkan henti pantau sementara agar tidak memicu alarm ketika server sedang diservis atau di-reboot.<br>• **Terminal Bawaan:** Akses shell remote interaktif langsung dari peramban via tombol `>_ Terminal`.<br>• **File Manager:** Pintasan ke manajer berkas server klien melalui tombol `📁 File Manager ↗`. |
+| **File Manager** | *(Khusus Admin)* Halaman terdedikasi (`/servers/{id}/files`) untuk menjelajahi direktori, menyunting berkas teks (dengan pencadangan otomatis `.bak`), membuat berkas/folder baru, mengunggah/mengunduh berkas, serta mengatur hak akses berkas (`chmod`/`chown`) yang dibentengi dengan proteksi direktori sistem penting. |
+| **Masalah** | Rekapitulasi seluruh peringatan dan insiden aktif lintas server, dilengkapi filter server, filter tingkat keparahan (*Danger*, *Warning*, *Info*), tombol konfirmasi penanganan (*ack*), durasi aktif kejadian, serta petunjuk mitigasi. |
+| **Log** | Penelusuran log terpusat: log penggunaan sumber daya sistem, riwayat proses, log unit layanan tertentu, dan log aktivitas aplikasi dashboard. |
+| **Audit** | Catatan jejak audit (*audit trail*) atas setiap tindakan administratif: autentikasi masuk/keluar, pembukaan sesi terminal, modifikasi konfigurasi server/layanan/pengguna, eksekusi perintah remote, dan restart agen. |
+| **Users** | *(Khusus Admin)* Pengelolaan pengguna dashboard: penambahan akun, penetapan peran (*Role*), reset kata sandi, dan pencabutan sesi aktif. |
 
-Semua angka pada Dashboard, Rincian, dan Masalah berasal dari satu sumber
-status yang sama, jadi satu server tidak pernah tampil berbeda di dua halaman.
+Seluruh angka dan metrik status bersumber dari data tunggal yang sinkron, memastikan konsistensi visual di seluruh halaman.
 
-Warna badge punya arti yang konsisten: **hijau** sehat/berhasil, **merah**
-bermasalah, **kuning** perlu perhatian, **biru** informasi, **abu-abu** netral
-(menunggu / belum ada data / tidak berlaku).
+Indikator warna badge status:
+- **Hijau:** Kondisi normal / sehat / operasi berhasil.
+- **Merah:** Terdapat gangguan kritis / *service down* / kegagalan.
+- **Kuning:** Memerlukan perhatian / peringatan tingkat sedang.
+- **Biru:** Status informatif.
+- **Abu-abu:** Netral / belum ada laporan data / tidak berlaku.
 
-> Halaman Metrik tidak lagi ada. Semua metrik per-service (status, connection,
-> response time) kini berada di tab **Layanan** pada halaman Rincian. Tautan lama
-> `/servers/<id>/metrics` otomatis dialihkan ke sana.
+---
 
-## Peran Admin vs Viewer
+## Peran Pengguna (Admin vs Viewer)
 
-| | Admin | Viewer |
-|---|---|---|
-| Lihat Dashboard, Servers, Rincian, Masalah, Log | Ya | Ya |
-| Tambah / edit / hapus server & service | Ya | Tidak |
-| Update OS, Upgrade, Reboot OS, Power Off | Ya | Tidak |
-| Restart / hapus service | Ya | Tidak |
-| Blokir IP (& mitigasi lain) / restart agen | Ya | Tidak |
-| Halaman Audit & Users | Ya | Tidak |
+| Hak Akses / Tindakan | Admin | Viewer |
+|---|:---:|:---:|
+| Meninjau Dashboard, Servers, Rincian, Masalah, dan Log | Ya | Ya |
+| Menambah, menyunting, dan menghapus server & layanan | Ya | Tidak |
+| Update OS, Upgrade Paket, Reboot OS, dan Power Off | Ya | Tidak |
+| Membuka dan menggunakan Terminal Bawaan | Ya | Tidak |
+| Mengakses File Manager (baca, sunting, unduh, unggah) | Ya | Tidak |
+| Memulai, menghentikan, atau me-restart layanan remote | Ya | Tidak |
+| Memblokir IP penyerang / melakukan mitigasi masalah | Ya | Tidak |
+| Mengakses halaman Audit dan manajemen Users | Ya | Tidak |
 
-Viewer yang membuka Rincian akan melihat badge "Update OS aktif untuk Admin"
-di tempat tombol, bukan tombol mati yang tidak melakukan apa pun.
+Pengguna dengan peran **Viewer** yang membuka halaman Rincian Server hanya dapat melihat informasi dan metrik tanpa tombol kendali administratif.
+
+---
 
 ## Update Dashboard
 
+Untuk memperbarui dashboard ke versi terbaru:
+
 ```bash
+cd /path/ke/pantau-server
 git pull
 sudo bash install-server.sh
 ```
 
-Aman dijalankan ulang: `.env` (termasuk password database) dipertahankan,
-dependensi di-*pip install* ulang, tabel baru dibuat otomatis.
+Skrip pembaruan aman dijalankan ulang: konfigurasi pada berkas `.env` (termasuk kredensial basis data) akan dipertahankan, dependensi Python diperbarui, dan skema migrasi basis data diterapkan secara otomatis.
+
+---
 
 ## Update Agen
 
-**Dashboard tidak punya akses ke server klien** — tidak ada SSH, tidak ada
-mekanisme push. Dashboard hanya mengirim perintah lewat agen yang sudah
-melapor. Jadi **upgrade agen selalu manual, di shell server tersebut**.
+Pusat Dashboard tidak menggunakan koneksi SSH inbound ke server klien. Komunikasi dilakukan melalui agen yang melapor secara periodik ke dashboard. Pembaruan agen dilakukan langsung pada server klien.
 
-### Server klien
+### Memperbarui Server Klien
 
-Cara termudah dan tercepat — jalankan satu baris ini di terminal server klien (atau salin lewat tombol **📋 Salin Perintah Update** di banner peringatan dasbor):
+Jalankan perintah berikut pada terminal server klien (perintah ini juga dapat disalin langsung dari tombol **📋 Salin Perintah Update** pada banner dasbor jika versi agen usang terdeteksi):
 
 ```bash
 sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/v3.15.0/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service
 ```
 
-Atau jalankan ulang installer yang sama (lihat
-[Install Agen](#2-install-agen-di-server-klien)). Konfigurasi tidak ditimpa.
-Untuk banyak server, jalankan dari Ansible, parallel SSH, atau tools konfigurasi
-yang Anda pakai.
+Atau jalankan ulang skrip installer agen. Konfigurasi yang sudah ada di `/etc/pantau/config.json` tidak akan ditimpa.
 
-### Host dashboard sendiri
+### Memperbarui Agen pada Host Dashboard Sendiri
 
-Kalau dashboard juga dipantau oleh agennya sendiri, update agen di sana
-dengan cara yang sama persis — salin file dari repo:
+Jika server tempat dashboard berjalan juga dipantau oleh agen lokal:
 
 ```bash
 cd pantau-server
-sudo install -m 755 -o root -g root package/opt/pantau/agent/agent_pantau.py \
-  /opt/pantau/agent/agent_pantau.py
-sudo install -m 750 -o root -g root package/usr/local/sbin/pantau-apt \
-  /usr/local/sbin/pantau-apt
-sudo install -m 750 -o root -g root package/usr/local/sbin/pantau-file \
-  /usr/local/sbin/pantau-file
+sudo install -m 755 -o root -g root package/opt/pantau/agent/agent_pantau.py /opt/pantau/agent/agent_pantau.py
+sudo install -m 750 -o root -g root package/usr/local/sbin/pantau-apt /usr/local/sbin/pantau-apt
+sudo install -m 750 -o root -g root package/usr/local/sbin/pantau-file /usr/local/sbin/pantau-file
 sudo cp package/etc/sudoers.d/pantau-agent /etc/sudoers.d/pantau-agent
 sudo chmod 440 /etc/sudoers.d/pantau-agent
 sudo python3 -m py_compile /opt/pantau/agent/agent_pantau.py
 sudo systemctl restart agent_pantau.service
 ```
 
-Verifikasi: badge di Rincian host tersebut harus berubah ke versi baru
-(`agen v3.15.0`), dan `server_extras.agent_version` ikut terisi.
+### Verifikasi Setelah Pembaruan
 
-> **Installer menarik dari rilis `v3.15.0` atau branch `master`.** Kalau butuh versi
-> yang pasti, jalankan installer dari clone lokal repo Anda (mode `local`) atau tentukan tag.
+Setelah me-restart agen (proses restart tidak menghapus riwayat metrik):
+1. Label versi agen di halaman Rincian Server akan terbarui menjadi `agen v3.15.0`.
+2. Server kembali terhubung dalam ±10 detik.
+3. Tab **⚡ Proses Teratas** menampilkan snapshot proses sistem secara aktif.
 
-### Setelah update apa pun
+---
 
-Restart agen **tidak menghapus data**. Yang perlu dicek:
+## Kompatibilitas Versi Agen
 
-1. Badge versi di Rincian sudah versi baru (`v3.15.0`).
-2. Server kembali online dalam ±10 detik.
-3. Tab **⚡ Proses Teratas** terisi dengan snapshot proses live dan dapat diekspansi hingga 20 proses.
+Sangat dianjurkan untuk selalu menggunakan versi agen yang selaras dengan versi dashboard (**v3.15.0**) agar seluruh kapabilitas dapat beroperasi optimal.
 
-## Kebutuhan Versi Agen
+| Kelompok Fitur | Versi Agen Minimum |
+|---|:---:|
+| Pemantauan metrik dasar, grafik riwayat, log, dan manajemen layanan | v3.6+ |
+| Reboot OS dan Power Off remote | v3.6+ |
+| Operasi Update OS & Upgrade paket (APT) | v3.7+ |
+| Terminal Bawaan Realtime (xterm.js + WebSocket Streaming) | v3.14+ |
+| Snapshot 20 Proses Teratas & Mode Pemeliharaan (*Maintenance Mode*) | v3.15.0+ |
 
-Badge versi agen ada di bagian atas halaman Rincian tiap server.
+Agen dengan versi sebelum persyaratan di atas tetap dapat menjalankan fungsi monitoring dasar, namun fitur baru yang tidak didukung akan menampilkan pemberitahuan yang jelas pada dashboard.
 
-| Fitur | Agen minimum |
-|---|---|
-| Monitoring, log, service, restart service | v3.6 |
-| Reboot OS / Power Off dari dashboard | v3.6 |
-| Terminal Update/Upgrade OS (warna + `\r` seperti SSH) | v3.7 |
-| Terminal Upgrade **interaktif** (jawab prompt dpkg) | v3.9 |
-| Proteksi sanitasi ketat, mitigasi loop retry, & aktivasi instan upgrade | v3.10 |
-| Konsol Terminal Bawaan (shell root lewat pty, riwayat perintah, reparasi mandiri `dpkg --configure -a`) | v3.11 |
-| **Terminal Bawaan = shell Linux sungguhan** (pty di server klien, tanpa whitelist, `Ctrl+C` asli, Tab completion, pipeline, program interaktif; input diantrikan atomik) | v3.12 |
-| **Terminal Bawaan Realtime (xterm.js + WebSocket Streaming)** (pseudo-terminal PTY asli, zero-latency keystrokes, job control penuh, nano/vim/htop, window resize, pembersihan proses otomatis) | v3.14 |
-| **Snapshot 20 Proses Teratas (CPU & Memori)**, pembacaan cgroup systemd akurat, dan dukungan Mode Pemeliharaan (*Maintenance Mode*) | v3.15 |
-
-Agen lebih lama dari requirements **tetap jalan untuk fitur lain** — hanya
-fitur terkait yang menolak dengan pesan jelas, bukan gagal diam-diam. Contoh:
-agen v3.7 yang menerima perintah Upgrade interaktif akan menampilkan "Aksi tidak
-dikenal".
-
-Untuk mengecek versi semua server sekaligus:
+Untuk memeriksa sebaran versi agen pada seluruh server klien yang terdaftar, jalankan query berikut pada database:
 
 ```sql
 SELECT s.hostname, x.agent_version
@@ -212,185 +201,163 @@ LEFT JOIN server_extras x ON x.server_id = s.id
 ORDER BY x.agent_version, s.hostname;
 ```
 
-`NULL` atau versi kosong artinya agen belum pernah mengirim laporan extras.
+---
 
 ## Terminal Bawaan & Update OS dari Dashboard
 
-Halaman Rincian Server punya **Terminal Bawaan**: shell Linux sungguhan yang
-berjalan di server tujuan, ditenagai oleh **xterm.js** dan streaming **WebSocket**
-ke agen server klien. Terminal tertanam di halaman (bukan jendela browser terpisah)
-dan dibuka lewat tombol **`>_ Terminal`** di baris hero.
+Halaman Rincian Server menyediakan fasilitas **Terminal Bawaan**: terminal shell Linux interaktif di server klien, ditenagai oleh emulator terminal **xterm.js** pada sisi peramban dan komunikasi streaming dua arah (**WebSocket**) ke agen server klien. Terminal ini tertanam langsung di antarmuka web dan dapat diakses melalui tombol **`>_ Terminal`**.
 
-### Yang sebenarnya terjadi
-
-Tidak ada daftar perintah yang diizinkan di sisi Dashboard. Semua yang diketik
-dikirim ke `bash` milik server klien lewat **pty**, dan semua yang dicetak bash
-dikembalikan secara realtime (full duplex):
+### Mekanisme Kerja
 
 ```
-Browser (halaman Rincian)
-   │  WebSocket: ws[s]://<host>/ws/servers/{id}/terminal  (Cookie Admin Session)
-   │  Rendered via xterm.js + xterm-addon-fit (offline vendor)
+Browser (Halaman Rincian)
+   │  WebSocket: ws[s]://<host>/ws/servers/{id}/terminal (Autentikasi Sesi Admin)
+   │  Render via xterm.js + FitAddon
    ▼
 Dashboard FastAPI (TerminalBridgeDispatcher)
-   │  Long-poll stream bridge (memory queue, decoupled from DB)
+   │  Long-poll stream bridge (antrean memori)
    ▼
-Agen pantau (server klien)
-   │  pty.openpty() + TIOCSCTTY (controlling terminal asli)
+Agen Pantau (Server Klien)
+   │  pty.openpty() + alokasi kontrol PTY asli
    │  sudo -n /usr/local/sbin/pantau-shell
    ▼
-/bin/bash --noprofile --rcfile <rc sementara> -i  →  root@<hostname>:~#
+/bin/bash --noprofile --rcfile <rc_khusus> -i  →  root@<hostname>:~#
 ```
 
-Jadi yang Andacketik benar-benar dieksekusi shell:
-- **Pipeline, redirect, dan utilitas apa pun** — `seq 1 20 | awk '{s+=$1} END{print s}'`,
-  `grep`, `systemctl`, `docker`, `vim`, `htop`, dan sebagainya.
-- **Suntingan & manipulasi baris bash** — `Backspace` (`\x7f`), `Delete` (`\x1b[3~`),
-  panah kiri/kanan (`←`/`→`), `Home`/`End`, `Ctrl+A`/`Ctrl+E`, `Ctrl+U`, `Ctrl+W`.
-- **`Ctrl+C` = SIGINT asli** ke proses yang sedang berjalan, bukan teks dicetak.
-- **`Tab` = completion bash** (bukan spasi).
-- **Pembersihan Layar** — Tombol **Clear**, perintah `clear`, dan `Ctrl+L` membersihkan
-  layar tanpa tertimpa riwayat lama saat polling berjalan.
-- **Kursor Aktif & Visual Focus** — Kursor blok berkedip (*blinking cursor*) dan highlight
-  border saat terminal aktif.
-- **Warna ANSI, progress bar `\r`, program layar penuh** ditampilkan apa adanya.
-- **Riwayat perintah** memakai panah `↑` / `↓` (riwayat dalam sesi; tidak pernah ditulis ke disk).
+Karakteristik Terminal Bawaan:
+- **Dukungan Perintah Penuh:** Mendukung *pipeline*, pengalihan (*redirection*), dan perintah interaktif apa pun (`htop`, `vim`, `nano`, `docker`, `systemctl`, `journalctl`, dll.).
+- **Penyuntingan Baris Bash:** Tombol navigasi kursor, `Backspace`, `Delete`, `Home`, `End`, serta kombinasi shortcut bash (`Ctrl+A`, `Ctrl+E`, `Ctrl+U`, `Ctrl+W`).
+- **Sinyal Sistem Asli:** Kombinasi `Ctrl+C` mengirimkan sinyal `SIGINT` nyata ke proses yang berjalan.
+- **Penyelesaian Otomatis:** Tombol `Tab` melakukan *bash autocompletion* secara native.
+- **Pembersihan Layar:** Tombol **Clear** atau perintah `clear` (`Ctrl+L`) membersihkan tampilan tanpa kehilangan konteks sesi.
+- **Tampilan Interaktif:** Mendukung rendering warna ANSI, bilah kemajuan (*progress bar*), dan kursor aktif berkedip (*blinking cursor*).
+- **Riwayat Perintah:** Menggunakan panah atas/bawah `↑` / `↓` dalam sesi aktif (riwayat sesi tidak disimpan ke berkas disk demi privasi).
 
-Prompt `root@<hostname>:~#` bukan gambar CSS — itu prompt yang dicetak bash
-melalui wrapper `pantau-shell`.
+### Batasan Akses & Keamanan
 
-### Batas &amp; keamanan
+Terminal Bawaan menjalankan sesi dengan hak akses administratif (`root`) melalui wrapper khusus:
 
-Terminal Bawaan **memberi hak root penuh** atas server klien, setara `ssh root@server`.
-Batasnya ada di sisi Dashboard, bukan di dalam shell:
-
-| Batas | Nilai |
+| Parameter | Ketentuan |
 |---|---|
-| Peran | Hanya **admin**. Viewer/operator mendapat `403`. |
-| Jumlah sesi | **Satu** shell per server. Sesi kedua ditolak `409`. |
-| Wrapper | `sudo NOPASSWD /usr/local/sbin/pantau-shell` saja (lihat `/etc/sudoers.d/pantau-agent`). |
-| Riwayat | `HISTFILE=/dev/null`, tidak ada `.bash_history` di server klien. |
-| Jejak audit | Tiap sesi dicatat di **audit Dashboard** (`terminal_shell_open`) dan **syslog server klien** (tag `pantau-shell`, dibuka & ditutup). |
-| Batas waktu | Sesi ditutup otomatis setelah 8 jam. |
+| Otorisasi | Khusus peran **Admin**. Akses peran Viewer akan ditolak (`403 Forbidden`). |
+| Jumlah Sesi Aktif | Maksimal **satu** sesi aktif per server. Permintaan pembukaan sesi kedua secara paralel akan ditolak (`409 Conflict`). |
+| Wrapper Shell | Dijalankan ketat melalui `sudo /usr/local/sbin/pantau-shell` via konfigurasi `/etc/sudoers.d/pantau-agent`. |
+| Berkas Riwayat | Dinonaktifkan (`HISTFILE=/dev/null`) sehingga tidak meninggalkan jejak `.bash_history` lokal. |
+| Jejak Audit | Seluruh pembukaan dan penutupan sesi dicatat pada menu **Audit** Dashboard (`terminal_shell_open`) serta syslog server klien (`pantau-shell`). |
+| Batas Waktu (*Timeout*) | Sesi idle ditutup otomatis setelah 8 jam demi keamanan. |
 
-Kalau kebijakan Anda tidak mengizinkan shell lewat web, hapus satu baris
-`pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-shell` dari
-`/etc/sudoers.d/pantau-agent` lalu `visudo -c` + restart agen. Tombol
-Update/Upgrade tetap berfungsi.
+> **Peringatan Keamanan:** Akses shell root via web browser mensyaratkan pengelolaan kredensial admin yang sangat ketat. Pastikan dashboard diakses melalui koneksi aman HTTPS dan batasi jumlah pengguna dengan hak admin.
 
-> Peringatan: shell root via browser berarti siapa pun yang berhasil login
-> sebagai admin Dashboard memegang root semua server. Minimalkan jumlah akun
-> admin dan pastikan Dashboard berada di balik HTTPS.
+### Tombol Update OS dan Upgrade
 
-### Sesi
+Operasi pemeliharaan paket pada dashboard mengeksekusi operasi APT terisolasi (`apt update`, `apt upgrade`, `apt dist-upgrade`, `dpkg --configure -a`):
+1. Keluaran proses dialirkan langsung ke jendela Terminal Bawaan dengan garis pemisah yang jelas.
+2. Pertanyaan interaktif (seperti konfirmasi `Y/n` atau pemilihan berkas konfigurasi bawaan) dapat dijawab langsung melalui terminal.
+3. Setelah proses pembaruan selesai, ringkasan hasil ditampilkan dan kontrol dikembalikan ke shell.
 
-- Menutup jendela terminal mengirim `exit` ke shell, lalu sesi ditutup di server.
-- Me-reload halaman **menyambung lagi ke shell yang sama** (tidak membuka shell
-  kedua) dan tidak memaksa jendela terbuka — Anda yang memilih mau melihat atau tidak.
-- Membuka terminal di halaman yang sama setelah sesi lama ditutup memulai shell baru.
+---
 
-### Tombol **Update OS** dan **Upgrade**
+## Troubleshooting & Batasan Terminal
 
-Tombol tetap ada dan tetap memakai unit APT terisolasi (`apt update`,
-`apt upgrade`, `apt dist-upgrade`, `dpkg --configure -a`) dengan batas-batasnya
-sendiri yang sudah terbukti dari versi sebelumnya. bedanya sekarang hanya di
-tampilan:
+### Panduan Penanganan Kendala Operasi APT & Terminal
 
-- Prosesnya dialirkan ke **jendela Terminal Bawaan yang sama**, lengkap dengan
-  pemisah sebelum/sesudah agar jelas output mana yang milik proses mana.
-- Selama proses apt berjalan, keyboard diarahkan ke proses tersebut — jadi
-  pertanyaan `Y/n` atau pilihan file konfigurasi dijawab **di terminal itu juga**.
-- Selesai? Layar menampilkan ringkasan, lalu ketikan berikutnya kembali ke shell.
-
-### Kalau Update OS Menggantung / Terputus
-
-| Gejala | Penanganan |
+| Gejala Kendala | Langkah Penanganan |
 |---|---|
-| Status macet di `berjalan` lalu menjadi `Gagal — batas waktu habis` | Tunggu 2 menit (jeda anti-resume), lalu buka lagi halaman Rincian. Dashboard menyambung otomatis ke proses yang masih ada. |
-| `apt update` tidak selesai dalam ±5 menit (wajar) | Periksa konektivitas server klien ke repositori paket, lalu ulangi. |
-| `upgrade` tidak selesai dalam ±15 menit | Upgrade besar (kernel/dependensi) memang bisa lama. Buka Terminal Bawaan untuk melihat langsung. |
-| Proses interaktif (`upgrade`, `dist-upgrade`, `fix`) macet | Terminal Bawaan aktif — ketik jawaban atau `Enter` di sana. |
-| `dpkg` terkunci / paket terhenti | Jalankan `dpkg --configure -a` (atau `fix`) di Terminal Bawaan. |
-| Terminal Bawaan menolak dibuka | `403` = bukan admin; `409` = sudah ada sesi shell di server itu; `/usr/local/sbin/pantau-shell` hilang = versi agen masih lama. |
+| Status pembaruan menampilkan `Gagal — batas waktu habis` | Tunggu jeda proteksi 2 menit, lalu muat ulang halaman. Dashboard akan otomatis memeriksa proses yang masih berjalan di latar belakang. |
+| Operasi `apt update` memakan waktu lebih dari 5 menit | Periksa stabilitas konektivitas internet atau mirror repositori paket pada server klien. |
+| Operasi `upgrade` berjalan sangat lama | Pembaruan paket besar (seperti kernel Linux) membutuhkan waktu proses lebih lama. Buka Terminal Bawaan untuk mengamati proses kompilasi atau pemasangan secara langsung. |
+| Proses interaktif berhenti menunggu respon | Masuk ke Terminal Bawaan, lalu berikan masukan teks atau tekan `Enter`. |
+| Galat `dpkg` terkunci (*lock*) atau proses terhenti | Jalankan perintah perbaikan `dpkg --configure -a` atau gunakan tombol reparasi di dashboard. |
+| Pembukaan terminal menampilkan galat `403` atau `409` | Kode `403`: akun Anda tidak memiliki hak Admin. Kode `409`: terdapat sesi terminal lain yang sedang aktif pada server tersebut. |
 
-Batas waktu di atas hanya batas tunggu *tampilan di Dashboard* — proses di
-server klien tidak dibunuh. Kill proses yang benar-benar macet harus dilakukan
-lewat SSH atau tombol **Reboot OS**.
+### Kondisi yang Memerlukan Akses SSH Langsung
 
-## Kapan Memerlukan Remote Langsung (SSH)?
+Sebagian besar tugas pemeliharaan rutin, perbaikan dependensi, dan pemeriksaan server dapat diselesaikan secara efisien melalui dashboard. Namun, akses remote langsung melalui protokol SSH tetap diwajibkan pada kondisi khusus berikut:
+1. **Upgrade Versi Distribusi Mayor:** Misalnya migrasi dari Debian 11 ke Debian 12, atau Ubuntu 22.04 ke 24.04, yang dapat merestart antarmuka jaringan atau komponen dasar sistem di tengah jalan.
+2. **Antarmuka Konfigurasi Berbasis Dialog Penuh (ncurses TUI):** Menu layar biru debconf kompleks yang memerlukan manipulasi kursor grafis khusus atau dukungan mouse.
+3. **Kegagalan Total Jaringan Server Klien:** Kondisi ketika sistem operasi klien hang total atau konektivitas jaringan terputus, sehingga agen tidak dapat menjangkau server dashboard.
 
-Dengan Terminal Bawaan (shell Linux sungguhan) dan fitur reparasi `dpkg --configure -a` di Dashboard:
-1. **90% pemeliharaan rutin** (update patch keamanan, upgrade paket, konfirmasi Y/n, penanganan paket terhenti) **cukup dan efisien diselesaikan langsung dari web Dashboard** tanpa perlu membuka terminal SSH satu per satu.
-2. **Kondisi darurat yang tetap mewajibkan remote langsung (SSH)**:
-   - **Upgrade Versi Distro Mayor** (misal Debian 11 ke 12, atau Ubuntu 22.04 ke 24.04) yang berpotensi memutus network stack/service di tengah instalasi kernel baru.
-   - **Dialog Konfigurasi Layar Penuh (TUI/ncurses)**: Prompt debconf layar biru yang butuh tombol navigasi panah/Tab/spasi. *Sebagian besar sudah bisa*, karena Terminal Bawaan mengirim byte kontrol apa adanya; yang tersisa adalah yang butuh menebas layar atau mode mouse.
-   - **Gangguan Jaringan / Mesin Crash**: Kondisi saat Agen Pantau tidak dapat terhubung ke Dashboard. Terminal Bawaan butuh koneksi Dashboard hidup karena stdout shell dialirkan lewat polling HTTP.
+---
 
-## HTTPS untuk Produksi
+## HTTPS & Lingkungan Produksi
 
-## HTTPS untuk Produksi
+Secara bawaan, Pantau Server berjalan menggunakan protokol HTTP pada port 8400. Untuk penggunaan pada lingkungan produksi atau akses melalui jaringan publik, wajib mengonfigurasi reverse proxy Nginx dengan sertifikat SSL (HTTPS).
 
-Dashboard memakai HTTP biasa secara bawaan. Untuk akses aman lewat internet, gunakan template reverse-proxy Nginx siap pakai yang sudah disediakan di repositori:
+Repositori ini telah menyediakan templat konfigurasi siap pakai:
+- **Konfigurasi Nginx:** `deploy/nginx/pantau-server.conf` (mendukung TLS 1.3, Let's Encrypt, buffer unggah 50M untuk File Manager, dan **WebSocket Upgrade** untuk terminal realtime).
+- **Konfigurasi Logrotate:** `deploy/logrotate/pantau-server` (rotasi log harian Uvicorn).
 
-- File konfigurasi Nginx: `deploy/nginx/pantau-server.conf` (mendukung SSL TLSv1.3, Let's Encrypt, buffer 50M untuk File Manager, dan **WebSocket Upgrade** untuk terminal).
-- File konfigurasi Logrotate: `deploy/logrotate/pantau-server` (rotasi log Uvicorn harian).
+### Langkah Penerapan:
 
-Langkah aktivasi cepat:
-
-1. Pasang file konfigurasi Nginx:
+1. Pasang konfigurasi Nginx:
    ```bash
    sudo cp deploy/nginx/pantau-server.conf /etc/nginx/sites-available/pantau-server
-   # Sesuaikan server_name dengan domain Anda, lalu aktifkan:
+   # Buka berkas dan sesuaikan server_name dengan domain Anda:
+   sudo nano /etc/nginx/sites-available/pantau-server
+
+   # Aktifkan situs:
    sudo ln -s /etc/nginx/sites-available/pantau-server /etc/nginx/sites-enabled/
    sudo nginx -t && sudo systemctl reload nginx
    ```
+
 2. Pasang sertifikat SSL gratis via Certbot:
    ```bash
    sudo certbot --nginx -d pantau.example.com
    ```
-3. Setel `SESSION_COOKIE_SECURE=True` di `/opt/pantau/server/.env` agar cookie sesi hanya dikirim melalui koneksi HTTPS terenkripsi:
+
+3. Aktifkan proteksi cookie aman pada `/opt/pantau/server/.env`:
+   ```env
+   SESSION_COOKIE_SECURE=True
+   ```
+   Lalu restart layanan dashboard:
    ```bash
    sudo systemctl restart pantau-server
    ```
-4. Pasang aturan rotasi log:
+
+4. Pasang konfigurasi rotasi berkas log:
    ```bash
    sudo cp deploy/logrotate/pantau-server /etc/logrotate.d/pantau-server
    ```
 
-## Backup & Restore
+---
 
-Semua data ada di database MariaDB (`pantau_db`) dan konfigurasi `/opt/pantau/server/.env`. Keduanya perlu di-backup berkala:
+## Backup, Restore & Retensi Data
+
+Seluruh data pemantauan tersimpan di basis data MariaDB (`pantau_db`) dan berkas konfigurasi `/opt/pantau/server/.env`.
+
+### Prosedur Pencadangan & Pemulihan:
 
 ```bash
-# Backup
+# Membuat Cadangan (Backup)
 sudo mysqldump -u root pantau_db | gzip > pantau_db-$(date +%F).sql.gz
 sudo cp /opt/pantau/server/.env ".env-$(date +%F)"
 
-# Restore
-gunzip -c pantau_db-2026-01-01.sql.gz | sudo mysql -u root pantau_db
+# Memulihkan Cadangan (Restore)
+gunzip -c pantau_db-YYYY-MM-DD.sql.gz | sudo mysql -u root pantau_db
 sudo systemctl restart pantau-server
 ```
 
-Untuk instalasi dari nol tanpa `install-server.sh`, gunakan `database/schema.sql` (sudah sinkron dengan skema `server/models.py` v3.15.0).
+Skema struktur basis data bersih tersedia pada berkas `database/schema.sql` (sinkron dengan `server/models.py` v3.15.0).
 
-**Kebijakan Retensi Data Otomatis**:  
-Sistem menjalankan pembersihan otomatis setiap jam agar ukuran disk basis data tetap hemat:
-- **Percobaan login**: 1 hari.
-- **Snapshot mentah kinerja**: 2 hari (dirangkum otomatis ke tabel per jam dengan retensi 90 hari).
-- **Log request selesai**: 30 hari.
-- **Tiket masalah terselesaikan (*resolved problems*)**: 90 hari.
-- **Riwayat perintah selesai**: 180 hari.
-- **Jejak audit admin**: 1 tahun.
+### Kebijakan Retensi Data Otomatis:
+
+Dashboard secara otomatis melakukan pembersihan berkala setiap jam pada data historis untuk menghemat penggunaan media penyimpanan:
+- **Percobaan login:** 1 hari.
+- **Snapshot mentah kinerja sistem:** 2 hari (agregasi otomatis per jam disimpan dengan retensi 90 hari).
+- **Log permintaan selesai:** 30 hari.
+- **Tiket masalah terselesaikan (*resolved problems*):** 90 hari.
+- **Riwayat eksekusi perintah:** 180 hari.
+- **Jejak audit administratif:** 1 tahun (365 hari).
+
+---
 
 ## Catatan Keamanan & Praktik Terbaik
 
-- **Proteksi CSRF**: Seluruh form POST dan request AJAX dilindungi token CSRF berbasis HMAC-SHA256 yang divalidasi ketat pada backend.
-- **Penanganan Error Terpadu**: Halaman kendala kustom (`error.html`) untuk status HTTP 404, 500, dan 403 dengan pesan berbahasa Indonesia yang jelas serta tombol navigasi mandiri.
-- **Sanitasi Data Ketat**: Seluruh laporan agen (disk, net, proses, log stream) disanitasi dari karakter berbahaya sebelum disimpan ke database atau dirender ke DOM (pencegahan injeksi XSS).
-- API key disimpan hash sha256; password bcrypt; akses sudo agen dibatasi hanya ke wrapper tertentu (`/etc/sudoers.d/pantau-agent`).
-- Semua aksi service dari dashboard **selalu** lewat wrapper `pantau-restart` yang menerapkan deny-list unit kritis — termasuk saat agen berjalan sebagai root. Aksi reboot/poweroff lewat wrapper `pantau-host`, dengan preflight yang menolak perintah bila wrapper/sudoers belum terpasang.
-- Aksi berisiko (hapus server, reboot, poweroff, blokir IP, tandai semua ditangani) selalu meminta konfirmasi pengguna.
-- Sesi login disimpan di database (bertahan restart server) dan bisa dicabut; rate-limit login juga persisten.
-- Header keamanan aktif (CSP, X-Frame-Options, nosniff, Referrer-Policy, IP proxy filtering).
-- Waktu ditampilkan dalam **UTC** (terlihat di sidebar) supaya tidak ambigu di semua server.
-- Jangan ekspos port 8400 ke internet terbuka tanpa reverse-proxy + HTTPS.
+- **Proteksi CSRF:** Seluruh formulir HTTP POST dan permintaan AJAX dilindungi token CSRF berbasis HMAC-SHA256 yang divalidasi ketat pada backend.
+- **Sanitasi Data Ketat:** Seluruh payload dari agen (disk, jaringan, daftar proses, keluaran terminal, dan log) disanitasi sebelum disimpan ke basis data atau dirender ke peramban guna mencegah serangan XSS (*Cross-Site Scripting*).
+- **Penyimpanan Kredensial Aman:** Kunci API disimpan dalam bentuk hash SHA-256; kata sandi pengguna dienkripsi menggunakan algoritma bcrypt.
+- **Prinsip Hak Akses Terkecil (*Least Privilege*):** Izin `sudo` agen dibatasi secara presisi hanya pada skrip wrapper tertentu di `/etc/sudoers.d/pantau-agent`. Operasi service dilindungi daftar terlarang (*deny-list*) untuk mencegah restart layanan kritis secara tidak sengaja.
+- **Konfirmasi Tindakan Berisiko:** Operasi destruktif (penghapusan server, pematian sistem, reboot, pemblokiran IP) selalu meminta dialog konfirmasi eksplisit dari pengguna.
+- **Header Keamanan HTTP:** Sistem secara bawaan mengaktifkan header Content Security Policy (CSP), X-Frame-Options (DENY), X-Content-Type-Options (nosniff), Referrer-Policy, dan penanganan IP proxy terpercaya.
+- **Standar Waktu UTC:** Seluruh pencatatan waktu ditampilkan dalam format UTC agar konsisten lintas zona waktu server yang dipantau.
+- **Isolasi Jaringan:** Jangan mengekspos port internal aplikasi (port 8400) langsung ke internet publik tanpa perlindungan reverse proxy dan sertifikat SSL.
