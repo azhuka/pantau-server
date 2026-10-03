@@ -88,7 +88,7 @@ Kalau belum ada, installer memintanya (dan bisa dilewati dengan
 |---|---|
 | **Dashboard** | Ringkasan semua server: jumlah online/offline, layanan down, laporan terakhir. Kolom CPU%, RAM%, layanan down, dan waktu relatif ("X mnt lalu") per server dengan polling live otomatis, kolom sortable, pencarian instan, dan shortcut satu-klik salin IP. |
 | **Servers** | Kelola server: status dot (online/offline), tambah, edit, hapus, lihat kunci API, tabel dengan kolom sortable, kotak pencarian instan, dan shortcut salin IP. |
-| **Rincian server** | Halaman utama tiap server. Tab **Riwayat** (grafik CPU, Memori, Swap, Load, dan Disk historis per mount point), Tab **Layanan** (modal Tambah Layanan, tombol Start ▶, Stop ■, Restart, dan Hapus instan via AJAX), Tab **Masalah**, Tab **Jaringan** (daftar interface dengan IP address per interface, status, throughput & laju data), Tab **Akun**, Tab **Log** (filter/search baris log, pewarnaan error/warning/critical, tombol ⬇ Unduh log, dan auto-apply baris). **Terminal Bawaan** (xterm.js + WebSocket realtime) = shell Linux sungguhan di server klien, tertanam di halaman lewat tombol `>_ Terminal`. Tombol **📁 File Manager ↗** membuka File Manager di tab baru (`/servers/{id}/files`). |
+| **Rincian server** | Halaman utama tiap server. Tab **Riwayat** (grafik CPU, Memori, Swap, Load, dan Disk historis per mount point), Tab **Layanan** (modal Tambah Layanan, tombol Start ▶, Stop ■, Restart, dan Hapus instan via AJAX), Tab **Masalah**, Tab **⚡ Proses Teratas** (snapshot 20 proses pemakan CPU & Memori secara live, tampilan awal 5 proses dengan tautan ekspansi ke 20 proses), Tab **Jaringan** (daftar interface dengan IP address per interface, status, throughput & laju data), Tab **Akun**, Tab **Log** (filter/search baris log, pewarnaan error/warning/critical, tombol ⬇ Unduh log, dan auto-apply baris). **Mode Pemeliharaan (Maintenance Mode)** lewat tombol `🔧 Pemeliharaan` untuk meredam alarm/masalah baru saat server diservis/reboot dengan durasi waktu terjadwal. **Terminal Bawaan** (xterm.js + WebSocket realtime) = shell Linux sungguhan di server klien, tertanam di halaman lewat tombol `>_ Terminal`. Tombol **📁 File Manager ↗** membuka File Manager di tab baru (`/servers/{id}/files`). |
 | **File Manager** | *(Admin)* Halaman dedicated (`/servers/{id}/files`) untuk eksplorasi direktori, edit file (auto-backup `.bak`), buat folder/file baru, upload/download, chmod/chown — dengan proteksi guardrail terhadap direktori sistem kritis. |
 | **Masalah** | Semua masalah terbuka lintas server dengan filter per-server, filter level (Danger / Warning / Info), penanganan (ack) untuk semua level peringatan, durasi berjalan live, dan tips penanganan. |
 | **Log** | Log server pusat: CPU/memori/beban/swap, proses teratas, disk, log service (pilih unit), dan log aplikasi. |
@@ -138,7 +138,13 @@ melapor. Jadi **upgrade agen selalu manual, di shell server tersebut**.
 
 ### Server klien
 
-Jalankan ulang installer yang sama (lihat
+Cara termudah dan tercepat — jalankan satu baris ini di terminal server klien (atau salin lewat tombol **📋 Salin Perintah Update** di banner peringatan dasbor):
+
+```bash
+sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/v3.15.0/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service
+```
+
+Atau jalankan ulang installer yang sama (lihat
 [Install Agen](#2-install-agen-di-server-klien)). Konfigurasi tidak ditimpa.
 Untuk banyak server, jalankan dari Ansible, parallel SSH, atau tools konfigurasi
 yang Anda pakai.
@@ -163,20 +169,18 @@ sudo systemctl restart agent_pantau.service
 ```
 
 Verifikasi: badge di Rincian host tersebut harus berubah ke versi baru
-(`agen v3.13.0`), dan `server_extras.agent_version` ikut terisi.
+(`agen v3.15.0`), dan `server_extras.agent_version` ikut terisi.
 
-> **Installer menarik dari branch `master`, bukan tag.** Isinya bisa berubah
-> setiap kali ada commit baru, termasuk commit Anda sendiri. Kalau butuh versi
-> yang pasti, jalankan installer dari clone lokal repo Anda (mode `local`).
+> **Installer menarik dari rilis `v3.15.0` atau branch `master`.** Kalau butuh versi
+> yang pasti, jalankan installer dari clone lokal repo Anda (mode `local`) atau tentukan tag.
 
 ### Setelah update apa pun
 
 Restart agen **tidak menghapus data**. Yang perlu dicek:
 
-1. Badge versi di Rincian sudah versi baru (`v3.12.0`).
+1. Badge versi di Rincian sudah versi baru (`v3.15.0`).
 2. Server kembali online dalam ±10 detik.
-3. Kalau agen upgrade OS, tekan **Update OS** sekali — jawabannya langsung
-   tampil tanpa perlu polling ulang dan tombol Upgrade seketika aktif jika ada paket.
+3. Tab **⚡ Proses Teratas** terisi dengan snapshot proses live dan dapat diekspansi hingga 20 proses.
 
 ## Kebutuhan Versi Agen
 
@@ -192,6 +196,7 @@ Badge versi agen ada di bagian atas halaman Rincian tiap server.
 | Konsol Terminal Bawaan (shell root lewat pty, riwayat perintah, reparasi mandiri `dpkg --configure -a`) | v3.11 |
 | **Terminal Bawaan = shell Linux sungguhan** (pty di server klien, tanpa whitelist, `Ctrl+C` asli, Tab completion, pipeline, program interaktif; input diantrikan atomik) | v3.12 |
 | **Terminal Bawaan Realtime (xterm.js + WebSocket Streaming)** (pseudo-terminal PTY asli, zero-latency keystrokes, job control penuh, nano/vim/htop, window resize, pembersihan proses otomatis) | v3.14 |
+| **Snapshot 20 Proses Teratas (CPU & Memori)**, pembacaan cgroup systemd akurat, dan dukungan Mode Pemeliharaan (*Maintenance Mode*) | v3.15 |
 
 Agen lebih lama dari requirements **tetap jalan untuk fitur lain** — hanya
 fitur terkait yang menolak dengan pesan jelas, bukan gagal diam-diam. Contoh:
@@ -323,37 +328,38 @@ Dengan Terminal Bawaan (shell Linux sungguhan) dan fitur reparasi `dpkg --config
 
 ## HTTPS untuk Produksi
 
-Dashboard memakai HTTP biasa secara bawaan. Untuk akses lewat internet, pasang
-reverse-proxy TLS (contoh Nginx + Let's Encrypt) di depan port 8400, lalu:
+## HTTPS untuk Produksi
 
-1. Set `SESSION_COOKIE_SECURE=True` di `/opt/pantau/server/.env` (agar cookie
-   sesi hanya dikirim lewat koneksi terenkripsi), lalu
-   `sudo systemctl restart pantau-server`.
-2. Blokir akses langsung ke port 8400 dari luar (listen hanya di `127.0.0.1`
-   pada sisi proxy).
+Dashboard memakai HTTP biasa secara bawaan. Untuk akses aman lewat internet, gunakan template reverse-proxy Nginx siap pakai yang sudah disediakan di repositori:
 
-Contoh petak Nginx:
+- File konfigurasi Nginx: `deploy/nginx/pantau-server.conf` (mendukung SSL TLSv1.3, Let's Encrypt, buffer 50M untuk File Manager, dan **WebSocket Upgrade** untuk terminal).
+- File konfigurasi Logrotate: `deploy/logrotate/pantau-server` (rotasi log Uvicorn harian).
 
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name pantau.example.com;
-    ssl_certificate     /etc/letsencrypt/live/pantau.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/pantau.example.com/privkey.pem;
+Langkah aktivasi cepat:
 
-    location / {
-        proxy_pass http://127.0.0.1:8400;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
+1. Pasang file konfigurasi Nginx:
+   ```bash
+   sudo cp deploy/nginx/pantau-server.conf /etc/nginx/sites-available/pantau-server
+   # Sesuaikan server_name dengan domain Anda, lalu aktifkan:
+   sudo ln -s /etc/nginx/sites-available/pantau-server /etc/nginx/sites-enabled/
+   sudo nginx -t && sudo systemctl reload nginx
+   ```
+2. Pasang sertifikat SSL gratis via Certbot:
+   ```bash
+   sudo certbot --nginx -d pantau.example.com
+   ```
+3. Setel `SESSION_COOKIE_SECURE=True` di `/opt/pantau/server/.env` agar cookie sesi hanya dikirim melalui koneksi HTTPS terenkripsi:
+   ```bash
+   sudo systemctl restart pantau-server
+   ```
+4. Pasang aturan rotasi log:
+   ```bash
+   sudo cp deploy/logrotate/pantau-server /etc/logrotate.d/pantau-server
+   ```
 
 ## Backup & Restore
 
-Semua data ada di database MariaDB (`pantau_db`) dan konfigurasi
-`/opt/pantau/server/.env`. Keduanya perlu di-backup.
+Semua data ada di database MariaDB (`pantau_db`) dan konfigurasi `/opt/pantau/server/.env`. Keduanya perlu di-backup berkala:
 
 ```bash
 # Backup
@@ -365,11 +371,16 @@ gunzip -c pantau_db-2026-01-01.sql.gz | sudo mysql -u root pantau_db
 sudo systemctl restart pantau-server
 ```
 
-Untuk instalasi dari nol tanpa `install-server.sh`, gunakan
-`database/schema.sql` (13 tabel, sudah sinkron dengan `server/models.py`).
+Untuk instalasi dari nol tanpa `install-server.sh`, gunakan `database/schema.sql` (sudah sinkron dengan skema `server/models.py` v3.15.0).
 
-Data historis dibersihkan otomatis agar tabel tidak tumbuh tanpa batas:
-percobaan login 1 hari, log request 30 hari, perintah 180 hari, audit 1 tahun.
+**Kebijakan Retensi Data Otomatis**:  
+Sistem menjalankan pembersihan otomatis setiap jam agar ukuran disk basis data tetap hemat:
+- **Percobaan login**: 1 hari.
+- **Snapshot mentah kinerja**: 2 hari (dirangkum otomatis ke tabel per jam dengan retensi 90 hari).
+- **Log request selesai**: 30 hari.
+- **Tiket masalah terselesaikan (*resolved problems*)**: 90 hari.
+- **Riwayat perintah selesai**: 180 hari.
+- **Jejak audit admin**: 1 tahun.
 
 ## Catatan Keamanan & Praktik Terbaik
 
