@@ -1004,6 +1004,19 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
 # ---------------------------------------------------------------------------
 # Command queue (agent polling + result)
 # ---------------------------------------------------------------------------
+def _normalize_unit_for_systemctl(name: str | None) -> str | None:
+    if not name:
+        return name
+    mapping = {
+        "zabbix_agent2": "zabbix-agent2",
+        "zabbix_agent": "zabbix-agent",
+        "sshd": "ssh",
+        "mysqld": "mariadb",
+        "mariadbd": "mariadb",
+    }
+    return mapping.get(name, name.replace("_", "-") if name.startswith("zabbix_") else name)
+
+
 @app.get("/api/commands")
 def api_commands_pending(
     x_api_key: str = Header(alias="X-Api-Key"),
@@ -1026,13 +1039,14 @@ def api_commands_pending(
                 "id": c.id,
                 "action": c.action,
                 "service_name": c.service.service_name if c.service else None,
-                "process_name": c.service.process_name if c.service else None,
+                "process_name": _normalize_unit_for_systemctl(c.service.process_name if c.service else (c.service.service_name if c.service else None)),
                 "port": c.service.port if c.service else None,
                 "params": json.loads(c.params) if c.params else None,
             }
             for c in pending
         ]
     }
+
 
 
 @app.post("/api/commands/{cid}/status")

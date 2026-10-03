@@ -190,12 +190,31 @@ def normalize_process_name(name: str) -> str:
         "rsyslogd": "rsyslog", "chronyd": "ntp", "ntpd": "ntp",
         "mariadb-server": "mariadb",
         "master": "smtpd", "postfix": "smtpd",
+        "zabbix_agent2": "zabbix-agent2", "zabbix_agent": "zabbix-agent",
+        "zabbix-agent2": "zabbix-agent2", "zabbix-agent": "zabbix-agent",
     }
     lower = name.lower()
     for key, val in mapping.items():
         if key in lower:
             return val
     return name
+
+
+def get_systemd_unit_from_pid(pid: int | None) -> str | None:
+    """Ekstrak nama unit systemd dari /proc/<pid>/cgroup secara akurat."""
+    if not pid:
+        return None
+    try:
+        with open(f"/proc/{pid}/cgroup", "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                m = re.search(r'/([^/]+)\.service', line)
+                if m:
+                    unit = m.group(1)
+                    if not unit.startswith("session-") and not unit.startswith("user@"):
+                        return unit
+    except Exception:
+        pass
+    return None
 
 
 def parse_ss_listening() -> list[dict]:
@@ -230,7 +249,13 @@ def parse_ss_listening() -> list[dict]:
         if port >= EPHEMERAL_START and not proc_match:
             continue
 
-        proc_name = normalize_process_name(proc_name)
+        # Cek unit systemd nyata dari PID cgroup untuk akurasi maksimal
+        unit_name = get_systemd_unit_from_pid(pid)
+        if unit_name:
+            proc_name = normalize_process_name(unit_name)
+        else:
+            proc_name = normalize_process_name(proc_name)
+
         bind_match = re.search(r'(\S+):' + str(port) + r'\s', line)
         bind_addr = bind_match.group(1) if bind_match else "0.0.0.0"
 
