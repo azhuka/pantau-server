@@ -192,6 +192,20 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
   - Templat reverse proxy Nginx (`deploy/nginx/pantau-server.conf`) dan Logrotate (`deploy/logrotate/pantau-server`).
   - Git tag resmi `v3.15.0` dan rilis GitHub.
 
+### Peningkatan Estetika & Stabilitas (Post-v3.15.0)
+- **Mode Full Screen Terminal Bawaan:**
+  - Penambahan tombol Full Screen pada bar aksi terminal (`#term-fullscreen-btn`) dan dukungan shortcut `Esc`.
+  - Menggunakan overlay CSS fixed viewport (`.terminal-window.is-fullscreen`) yang terhubung langsung ke `fitAddon.fit()`, memastikan emulasi PTY xterm.js menyesuaikan resolusi monitor secara presisi dan zero-latency.
+- **Redesain Total Riwayat Kinerja (Tab Riwayat):**
+  - Transformasi SVG polyline sederhana menjadi **modern area-gradient glow chart** (menggunakan `<defs><linearGradient>` dan polygon fill bercahaya).
+  - Pembungkus sub-kartu metrik `.perf-metric-card` dengan header indikator statistik instan: nilai terkini (*latest*), rata-rata rentang (*avg*), dan nilai puncak (*max*).
+  - Pemilih rentang waktu dirombak menjadi segmented control modern.
+- **Resolusi Deteksi IP Jaringan Klien:**
+  - Mengganti parser usang `/proc/net/fib_trie` pada agen klien dengan modul `collect_net()` modern berbasis `ip -j addr show` / `ip -br addr show` / socket `ioctl(SIOCGIFADDR)`.
+  - Penambahan mekanisme fallback cerdas di backend FastAPI (`api_server_system`) agar server klien yang belum sempat memperbarui agen tetap menampilkan IP address utama secara otomatis.
+- **Perbaikan Validasi CSRF Aktivitas Pengguna:**
+  - Memperbaiki kegagalan permintaan `POST /api/logs/request` pada `user_activity.html` dengan menyertakan header `X-CSRF-Token: getCsrf()`.
+
 ---
 
 ## 5. Bedah Teknis Komponen Kritis

@@ -951,34 +951,78 @@ def collect_net() -> list[dict]:
     except OSError:
         return ifaces
 
-    # Kumpulkan IP per interface dari /proc/net/fib_trie (IPv4)
+    # Kumpulkan IP per interface (IPv4 & IPv6 non-link-local)
     _ip_map: dict[str, list[str]] = {}
     try:
-        import socket
-        import struct
-        import fcntl
-        SIOCGIFCONF = 0x8912
-        SIOCGIFADDR = 0x8915
-        with open("/proc/net/fib_trie") as ft:
-            cur_iface = None
-            for ln in ft:
-                ln = ln.strip()
-                if ln.startswith("Ifa:"):
-                    # Format: Ifa: <iface>
-                    cur_iface = ln.split()[-1] if len(ln.split()) > 1 else None
-                elif cur_iface and ln.startswith("LOCAL"):
-                    ip = ln.split()[-1]
-                    try:
-                        import ipaddress as _ia
-                        a = _ia.ip_address(ip)
-                        if not (a.is_loopback or a.is_link_local or a.is_multicast or a.is_unspecified):
-                            _ip_map.setdefault(cur_iface, [])
-                            if ip not in _ip_map[cur_iface]:
-                                _ip_map[cur_iface].append(ip)
-                    except ValueError:
-                        pass
+        # Cara 1: ip -j addr show (modern Linux)
+        res = _run_cmd(["ip", "-j", "addr", "show"], timeout=2)
+        if res and res.returncode == 0 and res.stdout.strip():
+            try:
+                import json as _json
+                data = _json.loads(res.stdout)
+                for item in data:
+                    iface = item.get("ifname")
+                    if not iface:
+                        continue
+                    addrs = []
+                    for a in item.get("addr_info", []):
+                        local = a.get("local")
+                        family = a.get("family")
+                        if not local or local.startswith("127.") or local == "::1":
+                            continue
+                        if family == "inet":
+                            addrs.insert(0, local)
+                        elif not local.startswith("fe80:"):
+                            addrs.append(local)
+                    if addrs:
+                        _ip_map[iface] = addrs
+            except Exception:
+                pass
     except Exception:
         pass
+
+    # Cara 2: fallback ke ip -br addr show jika _ip_map masih kosong
+    if not _ip_map:
+        try:
+            res_br = _run_cmd(["ip", "-br", "addr", "show"], timeout=2)
+            if res_br and res_br.returncode == 0:
+                for line in res_br.stdout.splitlines():
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        iface = parts[0]
+                        addrs = []
+                        for token in parts[2:]:
+                            ip = token.split("/")[0]
+                            if ip and not ip.startswith("127.") and ip != "::1" and not ip.startswith("fe80:"):
+                                addrs.append(ip)
+                        if addrs:
+                            _ip_map[iface] = addrs
+        except Exception:
+            pass
+
+    # Cara 3: fallback socket ioctl SIOCGIFADDR untuk tiap interface
+    if not _ip_map:
+        try:
+            import socket as _sock
+            import fcntl as _fcntl
+            import struct as _struct
+            s = _sock.socket(_sock.AF_INET, _sock.SOCK_DGRAM)
+            for line in lines:
+                parts = line.replace(":", " ", 1).split()
+                if not parts:
+                    continue
+                name = parts[0]
+                try:
+                    ifreq = _struct.pack('256s', name[:15].encode('utf-8'))
+                    res = _fcntl.ioctl(s.fileno(), 0x8915, ifreq)
+                    ip = _sock.inet_ntoa(res[20:24])
+                    if ip and not ip.startswith("127."):
+                        _ip_map[name] = [ip]
+                except Exception:
+                    pass
+            s.close()
+        except Exception:
+            pass
 
     now = time.monotonic()
     dt = (now - _net_prev_t) if _net_prev_t else 0.0

@@ -137,7 +137,10 @@ async function loadActivity() {
   try {
     const r = await fetch('/api/logs/request', {
       method: 'POST', credentials: 'same-origin',
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf()
+      },
       body: JSON.stringify({server_id: SID, unit: 'USER_ACTIVITY', detail: USERNAME, lines: historyLines}),
     });
     const j = await r.json();

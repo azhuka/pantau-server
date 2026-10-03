@@ -3639,6 +3639,16 @@ def api_server_system(
         except (TypeError, ValueError):
             obj = None
         return obj if isinstance(obj, list) else []
+    net_list = parse_list(latest.net) if latest else []
+    if net_list and server.ip_address:
+        has_any_ip = any(n.get("ip_addrs") for n in net_list)
+        if not has_any_ip:
+            # Utamakan interface fisik yang aktif (bukan docker/veth/bridge)
+            target_n = next((n for n in net_list if n.get("is_up") and not any(n.get("iface", "").startswith(p) for p in ("docker", "br-", "veth", "virbr", "lo"))), None)
+            if not target_n:
+                target_n = next((n for n in net_list if n.get("is_up")), None)
+            if target_n:
+                target_n["ip_addrs"] = [server.ip_address]
 
     return {
         "server_id": sid,
@@ -3656,7 +3666,7 @@ def api_server_system(
             "procs": latest.procs if latest else None,
             "uptime": latest.uptime_secs if latest else None,
             "disks": parse_list(latest.disks) if latest else [],
-            "net": parse_list(latest.net) if latest else [],
+            "net": net_list,
         },
         "series": [
             {
