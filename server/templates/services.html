@@ -522,8 +522,11 @@
 <div class="card">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
     <h3 style="margin:0">Snapshot Proses Teratas (CPU &amp; Memori)</h3>
-    <div style="display:flex;gap:10px;align-items:center">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <span id="top-procs-time" style="font-size:12px;color:var(--dim)">Diperbarui tiap siklus agen</span>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-expand-procs" onclick="toggleExpandProcs()" style="font-size:12px;border:1px solid #334155;color:var(--text)" title="Tampilkan lebih banyak proses (hingga 15 proses)">
+        <span>Tampilkan 15 Proses</span> ▾
+      </button>
       <button type="button" class="btn btn-ghost btn-sm" onclick="fetchTopProcs()" title="Segarkan data proses teratas">&#8635;&nbsp;Segarkan</button>
     </div>
   </div>
@@ -531,7 +534,7 @@
   <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(340px, 1fr));gap:20px;margin-top:14px">
     <!-- Kolom CPU -->
     <div>
-      <h4 style="margin:0 0 10px 0;color:var(--text);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
+      <h4 id="top-cpu-title" style="margin:0 0 10px 0;color:var(--text);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
         <span style="color:#ef4444">🔥</span> 5 Penggunaan CPU Tertinggi
       </h4>
       <div style="overflow-x:auto">
@@ -554,7 +557,7 @@
 
     <!-- Kolom RAM -->
     <div>
-      <h4 style="margin:0 0 10px 0;color:var(--text);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
+      <h4 id="top-mem-title" style="margin:0 0 10px 0;color:var(--text);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
         <span style="color:#3b82f6">💾</span> 5 Penggunaan Memori Tertinggi
       </h4>
       <div style="overflow-x:auto">
@@ -711,8 +714,31 @@ document.querySelectorAll('#detail-tabs .tab').forEach(b =>
 
 // ---------- Snapshot Proses Teratas ----------
 const INITIAL_TOP_PROCS = {{ top_procs | tojson }};
+let procsExpanded = false;
+let currentTopProcsData = null;
+
+function toggleExpandProcs() {
+  procsExpanded = !procsExpanded;
+  const btn = document.getElementById('btn-expand-procs');
+  if (btn) {
+    btn.innerHTML = procsExpanded ? '<span>Tampilkan 5 Proses</span> ▴' : '<span>Tampilkan 15 Proses</span> ▾';
+  }
+  const hCpu = document.getElementById('top-cpu-title');
+  const hMem = document.getElementById('top-mem-title');
+  if (hCpu) hCpu.innerHTML = `<span style="color:#ef4444">🔥</span> ${procsExpanded ? '15' : '5'} Penggunaan CPU Tertinggi`;
+  if (hMem) hMem.innerHTML = `<span style="color:#3b82f6">💾</span> ${procsExpanded ? '15' : '5'} Penggunaan Memori Tertinggi`;
+
+  if (currentTopProcsData) {
+    renderTopProcs(currentTopProcsData);
+  }
+}
+
 function renderTopProcs(data) {
+  currentTopProcsData = data;
   const top = (data && data.top_procs) || {cpu: [], mem: []};
+  const limit = procsExpanded ? 15 : 5;
+  const cpuList = (top.cpu || []).slice(0, limit);
+  const memList = (top.mem || []).slice(0, limit);
   const cpuTbody = document.getElementById('top-cpu-tbody');
   const memTbody = document.getElementById('top-mem-tbody');
   const timeSpan = document.getElementById('top-procs-time');
@@ -723,10 +749,10 @@ function renderTopProcs(data) {
   }
 
   if (cpuTbody) {
-    if (!top.cpu || top.cpu.length === 0) {
+    if (!cpuList || cpuList.length === 0) {
       cpuTbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Tidak ada data proses CPU</td></tr>';
     } else {
-      cpuTbody.innerHTML = top.cpu.map(p => `
+      cpuTbody.innerHTML = cpuList.map(p => `
         <tr>
           <td class="mono" style="color:var(--dim)">${p.pid}</td>
           <td><span class="badge badge-info" style="font-size:11px">${escapeHtml(p.user)}</span></td>
@@ -739,10 +765,10 @@ function renderTopProcs(data) {
   }
 
   if (memTbody) {
-    if (!top.mem || top.mem.length === 0) {
+    if (!memList || memList.length === 0) {
       memTbody.innerHTML = '<tr><td colspan="5" class="empty-msg">Tidak ada data proses Memori</td></tr>';
     } else {
-      memTbody.innerHTML = top.mem.map(p => `
+      memTbody.innerHTML = memList.map(p => `
         <tr>
           <td class="mono" style="color:var(--dim)">${p.pid}</td>
           <td><span class="badge badge-info" style="font-size:11px">${escapeHtml(p.user)}</span></td>

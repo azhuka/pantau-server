@@ -762,7 +762,7 @@ def agent_report(
     if isinstance(sysd, dict) and isinstance(sysd.get("top_procs"), dict):
         top_p = sysd["top_procs"]
         clean_top = {"cpu": [], "mem": []}
-        for item in (top_p.get("cpu") or [])[:5]:
+        for item in (top_p.get("cpu") or [])[:15]:
             if isinstance(item, dict):
                 clean_top["cpu"].append({
                     "pid": _clamp_int(item.get("pid"), 0, 0, 2 ** 31 - 1),
@@ -771,7 +771,7 @@ def agent_report(
                     "cpu": _clamp_float(item.get("cpu"), 0.0, 0.0, 1000.0),
                     "mem": _clamp_float(item.get("mem"), 0.0, 0.0, 100.0),
                 })
-        for item in (top_p.get("mem") or [])[:5]:
+        for item in (top_p.get("mem") or [])[:15]:
             if isinstance(item, dict):
                 clean_top["mem"].append({
                     "pid": _clamp_int(item.get("pid"), 0, 0, 2 ** 31 - 1),

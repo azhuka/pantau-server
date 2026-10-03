@@ -1091,7 +1091,7 @@ def collect_system() -> dict:
         "procs": procs, "uptime": uptime,
         "disks": collect_disks(),
         "net": collect_net(),
-        "top_procs": collect_top_processes(5),
+        "top_procs": collect_top_processes(15),
     }
 
 
