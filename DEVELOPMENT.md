@@ -225,6 +225,20 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
   - Memisahkan penghitungan badge masalah aktif dan masalah diabaikan pada tombol Tab Masalah dan header kartu Status Masalah di `services.html` (`${activeCount} masalah aktif · ${ignoredCount} diabaikan (🔕)`), sehingga saat seluruh masalah diabaikan statusnya tetap bersih `OK` dan tidak memicu badge merah/kuning.
   - Memperbaiki topbar statistik di `/problems` agar hanya menghitung masalah aktif tanpa menyertakan masalah yang dibungkam dalam counter Warning/Danger.
   - Menetapkan label tombol unmute secara baku menjadi **`🔔 Pantau Kembali`** pada semua templat UI dan skrip frontend.
+- **Standarisasi Bahasa & UX Konsisten (Bahasa Indonesia Jernih & Kolom Tindakan)**:
+  - Mengeliminasi pencampuran bahasa (Indo-Inggris) pada tooltip dan teks keterangan antarmuka (misalnya `"1 Layanan down diabaikan"` dan `"Layanan down tetapi alarm sedang diabaikan"` distandarisasi menjadi `"layanan berhenti (peringatan dibisukan)"` dan `"Layanan berhenti, peringatan dibisukan"`).
+  - Standarisasi penamaan header kolom aksi pada seluruh tabel antarmuka sistem secara konsisten menjadi **"Tindakan"**.
+- **Koreksi Status Mode Pemeliharaan (Maintenance State Isolation)**:
+  - Menyelaraskan status server yang berada dalam mode pemeliharaan (`is_maintenance = True`) di semua halaman (Dashboard, Daftar Server, dan Rincian Server).
+  - Backend FastAPI (`/api/servers`) memastikan `overall_status = "maintenance"` dan tidak ter-overwrite menjadi `"offline"` saat heartbeat server stale.
+  - Antarmuka menampilkan indikator warna kuning berlabel tegas **"Pemeliharaan"** / **"pemeliharaan"** alih-alih berstatus online hijau yang menyesatkan.
+- **Integrasi Tombol Tindakan Abaikan / Pantau Kembali di Tab Layanan (Cross-Tab Quick Actions)**:
+  - Tombol tindakan `🔕 Abaikan` dan `🔔 Pantau Kembali` kini terintegrasi langsung pada kolom Tindakan di **Tab Layanan** (`services.html`), berdampingan dengan tombol kontrol Restart/Stop.
+  - Operator tidak perlu lagi berpindah ke Tab Masalah hanya untuk membisukan peringatan layanan yang sedang down atau mengaktifkannya kembali.
+  - Data referensi masalah layanan (`problem_id`, `problem_msg`, `ignored`) disertakan dalam payload overview dan dirender secara dinamis baik pada saat inisialisasi templat maupun saat live polling JavaScript (`renderServiceActions()`).
+- **Mekanisme Siklus Hidup Restart Layanan yang Diabaikan**:
+  - Jika layanan yang sedang diabaikan direstart dan sukses hidup kembali (`status == 'up'`), sistem deteksi otomatis (`sync_server_problems`) akan menutup dan menandai tiket masalah tersebut sebagai *resolved* (teratasi).
+  - Jika layanan direstart namun prosesnya gagal berjalan (misalnya proses mandiri non-systemd seperti `chrome` yang tidak memiliki unit `.service`), status layanan tetap `down`, namun status abaikan (`is_ignored = 1`) tetap dipertahankan agar tidak menimbulkan lonjakan alarm mendadak, hingga operator memutuskan untuk menekan `🔔 Pantau Kembali`.
 
 ---
 

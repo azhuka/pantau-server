@@ -34,7 +34,7 @@
         data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
       <td>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="dot {{ 'up' if srv._status_cls == 'badge-up' else 'down' }}" style="flex-shrink:0"></span>
+          <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0"></span>
           <strong>{{ srv.hostname }}</strong>
         </div>
         <div style="font-size:10px;color:var(--dim);margin-top:2px;margin-left:18px">

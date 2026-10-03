@@ -923,14 +923,17 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
 
         stale = _server_stale(srv)
         active_svcs = [s for s in svc_list if not s.get("ignored")]
-        if not active_svcs:
+        if srv.is_maintenance:
+            overall = "maintenance"
+        elif not active_svcs:
             overall = "offline" if stale else "up"
         else:
             overall = "down" if not any(s["status"] == "up" for s in active_svcs) else "up"
         if stale:
-            overall = "offline"
             for s in svc_list:
                 s["status"] = "offline"
+            if not srv.is_maintenance:
+                overall = "offline"
 
         # Snapshot HW terbaru untuk CPU/RAM/uptime di dashboard
         latest_sys = (
@@ -953,6 +956,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
         result.append({
             "id": srv.id, "hostname": srv.hostname, "ip_address": srv.ip_address,
             "is_active": srv.is_active,
+            "is_maintenance": bool(srv.is_maintenance),
             "online": overall != "offline",
             "last_seen": srv.last_seen.isoformat() if srv.last_seen else None,
             "overall_status": overall, "services": svc_list,
@@ -989,22 +993,26 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         ).all()
     }
     latest_map = _latest_metrics(db, (s.id for s in services))
-    ignored_svc_keys = {
-        p.key for p in db.query(ServerProblem).filter(
+    open_prob_map = {
+        p.key: p for p in db.query(ServerProblem).filter(
             ServerProblem.server_id == sid,
             ServerProblem.resolved_at.is_(None),
-            ServerProblem.is_ignored == 1,
         ).all()
     }
     svc_list = []
     for svc in services:
         latest = latest_map.get(svc.id)
         st = latest.status if latest else "unknown"
-        is_ign = f"service_down:{svc.service_name}" in ignored_svc_keys
+        p_row = open_prob_map.get(f"service_down:{svc.service_name}")
+        is_ign = bool(getattr(p_row, "is_ignored", 0)) if p_row else False
+        p_id = p_row.id if p_row else None
+        p_msg = p_row.message if p_row else None
         svc_list.append({
             "id": svc.id, "name": svc.service_name, "port": svc.port,
             "status": st,
             "ignored": is_ign,
+            "problem_id": p_id,
+            "problem_msg": p_msg,
             "connections": latest.active_connections if latest else 0,
             "response_time_ms": latest.response_time_ms if latest else None,
             "health_message": latest.health_message if latest else None,
@@ -1759,6 +1767,9 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     problem_level, open_problems, problem_history = sync_server_problems(
         db, server, _problem_instances(server, extra, svc_data, db))
     _enrich_problems_for_ui(open_problems, services, extra, user.role)
+    prob_by_key = {p["key"]: p for p in open_problems}
+    for svc in services:
+        svc._problem = prob_by_key.get(f"service_down:{svc.service_name}")
     top_p = {"cpu": [], "mem": []}
     if extra and extra.top_procs:
         try:

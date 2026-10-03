@@ -223,10 +223,10 @@
   <div class="hero-row">
     <div class="hero-ident">
       <div class="hero-host">
-        <span class="dot {{ 'up' if is_online else 'down' }}" id="hero-dot"></span>
+        <span class="dot {{ 'warn' if server.is_maintenance else ('up' if is_online else 'down') }}" id="hero-dot"></span>
         <strong>{{ server.hostname }}</strong>
         <span class="mono copyable-ip" style="font-size:12px" onclick="copyIp('{{ server.ip_address }}', event)" title="Klik untuk salin IP">{{ server.ip_address }}</span>
-        <span id="hero-online" class="hero-online {{ 'on' if is_online else 'off' }}">{{ 'online' if is_online else 'offline' }}</span>
+        <span id="hero-online" class="hero-online {{ 'warn' if server.is_maintenance else ('on' if is_online else 'off') }}">{{ 'pemeliharaan' if server.is_maintenance else ('online' if is_online else 'offline') }}</span>
         {% if server.is_maintenance %}
         <span id="hero-maint-badge" class="badge badge-warn" style="cursor:pointer;font-size:11px" onclick="openMaintenanceModal()" title="Mode Pemeliharaan Aktif — Klik untuk ubah / matikan">🔧 Pemeliharaan Aktif</span>
         {% endif %}
@@ -476,7 +476,7 @@
       <td class="mono">{{ svc.process_name }}</td>
       <td id="sts-{{ svc.id }}">
         {% if svc._status == 'down' and ('service_down:' ~ svc.service_name) in (open_problems | selectattr('is_ignored') | map(attribute='key') | list) %}
-          <span class="badge badge-muted" title="Layanan down tetapi alarm sedang diabaikan">down 🔕</span>
+          <span class="badge badge-muted" title="Layanan berhenti, peringatan dibisukan">down 🔕</span>
         {% else %}
           <span class="badge badge-{{ svc._status }}">{{ svc._status }}</span>
         {% endif %}
@@ -509,7 +509,14 @@
             <button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px"
                     {% if is_pending or not is_up %}disabled{% endif %}
                     onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                    title="{{ 'Layanan sudah nonaktif / down' if not is_up else 'Hentikan layanan' }}">■</button>
+                    title="{{ 'Layanan sudah nonaktif / berhenti' if not is_up else 'Hentikan layanan' }}">■</button>
+            {% if svc._problem %}
+              {% if svc._problem.is_ignored %}
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id }}" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>
+              {% else %}
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id }}" data-msg="{{ svc._problem.message }}" onclick="openIgnoreModal(this)" title="Bisukan peringatan untuk layanan ini">🔕 Abaikan</button>
+              {% endif %}
+            {% endif %}
             {% if is_pending %}
               <span class="badge badge-muted" style="margin-left:4px;font-size:10px">menunggu…</span>
             {% endif %}
@@ -632,7 +639,7 @@
         {{ p.started_at.strftime('%d %b %H:%M') }}
         {% if p.resolved_at %}<span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>{% endif %}
       </td>
-      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan dibungkam / diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan dibisukan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
       <td>
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
@@ -673,9 +680,9 @@
 
         {% if p.is_open %}
           {% if p.is_ignored %}
-            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan untuk masalah ini">🔔 Pantau Kembali</button>
+            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>
           {% else %}
-            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Bungkam alarm masalah ini">🔕 Abaikan</button>
+            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Bisukan peringatan masalah ini">🔕 Abaikan</button>
           {% endif %}
           {% if p.acknowledged_by %}
             <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }}">✓ Ditangani</span>
@@ -1074,11 +1081,20 @@ function badgeHtml(status) {
        + (badgeText[status] || status) + '</span>';
 }
 
-function renderServiceActions(sid, svcId, name, status, isPending) {
+function renderServiceActions(sid, svcId, name, status, isPending, problem) {
   const isUp = status === 'up';
   const startDis = isPending || isUp;
   const stopDis = isPending || !isUp;
   const rstDis = isPending;
+
+  let ignoreBtn = '';
+  if (problem && problem.id) {
+    if (problem.is_ignored) {
+      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + problem.id + '" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>';
+    } else {
+      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + problem.id + '" data-msg="' + escHtml(problem.message || '') + '" onclick="openIgnoreModal(this)" title="Bisukan peringatan untuk layanan ini">🔕 Abaikan</button>';
+    }
+  }
 
   return '<button type="button" class="btn btn-primary btn-sm btn-svc-restart" '
     + (rstDis ? 'disabled ' : '')
@@ -1090,7 +1106,8 @@ function renderServiceActions(sid, svcId, name, status, isPending) {
     + '<button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px" '
     + (stopDis ? 'disabled ' : '')
     + 'onclick="svcAction(\'stop\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
-    + 'title="' + (!isUp ? 'Layanan sudah nonaktif / down' : 'Hentikan layanan') + '">■</button>'
+    + 'title="' + (!isUp ? 'Layanan sudah nonaktif / berhenti' : 'Hentikan layanan') + '">■</button>'
+    + ignoreBtn
     + (isPending ? ' <span class="badge badge-muted" style="margin-left:4px;font-size:10px">menunggu…</span>' : '');
 }
 
@@ -2055,9 +2072,9 @@ function renderProblemsTab(level, openList, histList) {
       }
 
       if (isIgnored) {
-        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan untuk masalah ini">🔔 Pantau Kembali</button>`;
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>`;
       } else {
-        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini agar tidak memicu alarm">🔕 Abaikan</button>`;
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="Bisukan peringatan masalah ini">🔕 Abaikan</button>`;
       }
 
       if (p.acknowledged_by) {
@@ -2121,13 +2138,18 @@ function patch(data) {
   const hd = document.getElementById('hero-dot');
   const ho = document.getElementById('hero-online');
   if (hd && ho) {
-    // Jendela kesegaran 30 dtk (agen lapor tiap 10 dtk); jangan tunggu ambang offline 60 dtk
     const online = typeof data.last_seen_ago_ms === 'number'
       ? data.last_seen_ago_ms < 30000
       : data.online === true;
-    hd.className = 'dot ' + (online ? 'up' : 'down');
-    ho.textContent = online ? 'online' : 'offline';
-    ho.className = 'hero-online ' + (online ? 'on' : 'off');
+    if (data.is_maintenance) {
+      hd.className = 'dot warn';
+      ho.textContent = 'pemeliharaan';
+      ho.className = 'hero-online warn';
+    } else {
+      hd.className = 'dot ' + (online ? 'up' : 'down');
+      ho.textContent = online ? 'online' : 'offline';
+      ho.className = 'hero-online ' + (online ? 'on' : 'off');
+    }
   }
   const ackx = document.getElementById('host-ack');
   if (ackx && typeof ackLive === 'function') {
@@ -2141,7 +2163,7 @@ function patch(data) {
     const sts = document.getElementById('sts-' + s.id);
     if (sts) {
       if (s.status === 'down' && s.ignored) {
-        sts.innerHTML = '<span class="badge badge-muted" title="Layanan down tetapi alarm sedang diabaikan">down 🔕</span>';
+        sts.innerHTML = '<span class="badge badge-muted" title="Layanan berhenti, peringatan dibisukan">down 🔕</span>';
       } else {
         const st = s.status === 'unknown' ? 'inactive' : s.status;
         sts.innerHTML = '<span class="badge badge-' + st + '">' + escHtml(s.status) + '</span>';
@@ -2158,8 +2180,12 @@ function patch(data) {
     }
     const act = document.getElementById('act-' + s.id);
     if (act && IS_ADMIN) {
+      let prob = null;
+      if (s.problem_id) {
+        prob = { id: s.problem_id, is_ignored: s.ignored, message: s.problem_msg };
+      }
       act.innerHTML = renderServiceActions(
-        act.dataset.sid, act.dataset.svc, act.dataset.name, s.status, s.pending
+        act.dataset.sid, act.dataset.svc, act.dataset.name, s.status, s.pending, prob
       );
     }
 

@@ -99,7 +99,7 @@
         {% if unign_down|length > 0 %}
           <span class="badge badge-down">{{ unign_down|length }} down</span>
         {% elif ign_down|length > 0 %}
-          <span class="badge badge-up" title="{{ ign_down|length }} layanan down diabaikan">OK <span style="font-size:10px;opacity:.8">🔕</span></span>
+          <span class="badge badge-up" title="{{ ign_down|length }} layanan berhenti (peringatan dibisukan)">OK <span style="font-size:10px;opacity:.8">🔕</span></span>
         {% elif srv._online %}
           <span class="badge badge-up">OK</span>
         {% else %}
@@ -114,8 +114,8 @@
           {% set pcls = {'ok':'up','info':'info','warning':'warn','danger':'danger'}[srv._problem_level] %}
           {% set ign_count = srv._problems | selectattr('is_ignored') | list | length if srv._problems else 0 %}
           {% set active_msgs = srv._problems | rejectattr('is_ignored') | map(attribute='message') | join(' • ') if srv._problems else '' %}
-          <span class="badge badge-{{ pcls }}" title="{{ active_msgs if active_msgs else ('Semua masalah diabaikan' if ign_count else 'Kondisi normal') }}">
-            {{ plabel }}{% if ign_count > 0 and srv._problem_level == 'ok' %} <span style="font-size:10px;opacity:.8" title="{{ ign_count }} masalah diabaikan">🔕</span>{% endif %}
+          <span class="badge badge-{{ pcls }}" title="{{ active_msgs if active_msgs else ('Semua peringatan dibisukan' if ign_count else 'Kondisi normal') }}">
+            {{ plabel }}{% if ign_count > 0 and srv._problem_level == 'ok' %} <span style="font-size:10px;opacity:.8" title="{{ ign_count }} masalah dibisukan">🔕</span>{% endif %}
           </span>
         {% endif %}
       </td>
@@ -199,7 +199,8 @@ async function dashPoll() {
     list.forEach(srv => {
       const sts = document.getElementById('dash-sts-' + srv.id);
       if (sts) {
-        if (srv.overall_status === 'offline') { sts.textContent = 'Offline'; sts.className = 'badge badge-down'; }
+        if (srv.is_maintenance) { sts.textContent = 'Pemeliharaan'; sts.className = 'badge badge-warn'; }
+        else if (srv.overall_status === 'offline') { sts.textContent = 'Offline'; sts.className = 'badge badge-down'; }
         else if (srv.overall_status === 'up') { sts.textContent = 'Online'; sts.className = 'badge badge-up'; }
         else { sts.textContent = 'Masalah'; sts.className = 'badge badge-warn'; }
       }
@@ -214,7 +215,7 @@ async function dashPoll() {
         if (srv.down_svc_count != null && srv.down_svc_count > 0) {
           svcEl.innerHTML = '<span class="badge badge-down">' + srv.down_svc_count + ' down</span>';
         } else if (srv.ignored_svc_count != null && srv.ignored_svc_count > 0) {
-          svcEl.innerHTML = '<span class="badge badge-up" title="' + srv.ignored_svc_count + ' layanan down diabaikan">OK <span style="font-size:10px;opacity:.8">🔕</span></span>';
+          svcEl.innerHTML = '<span class="badge badge-up" title="' + srv.ignored_svc_count + ' layanan berhenti (peringatan dibisukan)">OK <span style="font-size:10px;opacity:.8">🔕</span></span>';
         } else if (srv.overall_status !== 'offline') {
           svcEl.innerHTML = '<span class="badge badge-up">OK</span>';
         } else {
@@ -228,7 +229,7 @@ async function dashPoll() {
         const pcls = {'ok':'up','info':'info','warning':'warn','danger':'danger'}[srv.problem_level] || 'muted';
         let extra = '';
         if (srv.ignored_problem_count && srv.ignored_problem_count > 0 && srv.problem_level === 'ok') {
-          extra = ' <span style="font-size:10px;opacity:.8" title="' + srv.ignored_problem_count + ' masalah diabaikan">🔕</span>';
+          extra = ' <span style="font-size:10px;opacity:.8" title="' + srv.ignored_problem_count + ' masalah dibisukan">🔕</span>';
         }
         probEl.innerHTML = '<span class="badge badge-' + pcls + '">' + plabel + extra + '</span>';
       }
