@@ -1080,19 +1080,19 @@ def _get_server_actions(db, sid: int, limit: int = 15) -> list[dict]:
         status_label = "berhasil"
         if a.action == "problem_ignore":
             status_cls = "muted"
-            status_label = "diabaikan 🔕"
+            status_label = "diabaikan"
         elif a.action == "problem_unignore":
             status_cls = "up"
-            status_label = "dipantau 🔔"
+            status_label = "dipantau"
         elif a.action == "alert_ack":
             status_cls = "up"
-            status_label = "ditangani ✓"
+            status_label = "ditangani"
         elif a.action == "problem_resolve":
             status_cls = "up"
-            status_label = "selesai ✓"
+            status_label = "selesai"
         elif a.action == "maintenance_mode":
             status_cls = "warn"
-            status_label = "pemeliharaan 🔧"
+            status_label = "pemeliharaan"
         elif a.action in ("host_reboot", "host_poweroff"):
             status_cls = "warn"
             status_label = "dieksekusi"
