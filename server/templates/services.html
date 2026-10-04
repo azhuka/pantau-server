@@ -393,19 +393,19 @@
     </div>
     <div class="hero-actions">
       {% if user.role == 'admin' %}
-      <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="aptAction('APT_UPDATE')">&#8635;&nbsp;Update OS</button>
-      <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled>Upgrade&nbsp;&#9650;</button>
-      <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" title="Buka / sembunyikan terminal bawaan" style="border:1px solid #334155;color:#38bdf8">&#62;_&nbsp;Terminal</button>
-      <a href="/servers/{{ server.id }}/files" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="border:1px solid #334155;color:#a78bfa" title="Buka File Manager di tab / halaman baru">&#128193;&nbsp;File Manager&nbsp;&nearr;</a>
+      <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="aptAction('APT_UPDATE')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>&nbsp;Update OS</button>
+      <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg>&nbsp;Upgrade</button>
+      <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" title="Buka / sembunyikan terminal bawaan" style="border:1px solid #334155;color:#38bdf8"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>&nbsp;Terminal</button>
+      <a href="/servers/{{ server.id }}/files" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="border:1px solid #334155;color:#a78bfa" title="Buka File Manager di tab / halaman baru"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>&nbsp;File Manager</a>
       <span class="hero-sep"></span>
-      <button class="btn btn-ghost btn-sm {{ 'btn-maint-active' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Atur Mode Pemeliharaan">&#128295;&nbsp;<span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span></button>
+      <button class="btn btn-ghost btn-sm {{ 'btn-maint-active' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Atur Mode Pemeliharaan"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>&nbsp;<span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span></button>
       <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="btn btn-ghost btn-sm" type="submit" title="Restart sistem operasi">&#8634;&nbsp;Reboot OS</button>
+        <button class="btn btn-ghost btn-sm" type="submit" title="Restart sistem operasi"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M2.5 2v6h6M2.66 15.57a10 10 0 1 0 .57-8.38L2.5 8"/></svg>&nbsp;Reboot OS</button>
       </form>
       <form method="post" action="/servers/{{ server.id }}/host/poweroff" style="display:inline" data-confirm data-msg="MATIKAN server {{ server.hostname }} SEKARANG? Mesin akan poweroff — TIDAK menyala sendiri — sampai dinyalakan manual (fisik/IPMI).">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="btn btn-danger btn-sm" type="submit" title="Matikan sistem operasi">&#9211;&nbsp;Power Off</button>
+        <button class="btn btn-danger btn-sm" type="submit" title="Matikan sistem operasi"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>&nbsp;Power Off</button>
       </form>
       {% else %}
       <span class="badge badge-muted">Update OS aktif untuk Admin</span>
@@ -415,10 +415,10 @@
   {% if is_agent_outdated and user.role == 'admin' %}
   <div style="background:var(--yellow-bg);border:1px solid rgba(234,179,8,.3);border-radius:6px;padding:8px 14px;margin-top:12px;font-size:12px;color:var(--yellow);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:14px">⚠️</span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
       <span>Versi Agen Pantau di server ini (<b>v{{ agent_version }}</b>) lebih lama dari dashboard (<b>v{{ app_version }}</b>). Perbarui agen untuk mengaktifkan fitur snapshot proses dan kestabilan sistem.</span>
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" style="border:1px solid rgba(234,179,8,.4);color:var(--yellow);padding:4px 10px;font-size:11px;white-space:nowrap" title="Salin perintah update agen ke clipboard">📋 Salin Perintah Update</button>
+    <button class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" style="border:1px solid rgba(234,179,8,.4);color:var(--yellow);padding:4px 10px;font-size:11px;white-space:nowrap" title="Salin perintah update agen ke clipboard">Salin Perintah Update</button>
   </div>
   {% endif %}
   <div class="apt-state" id="apt-state">
@@ -438,12 +438,18 @@
       </div>
       <div class="terminal-actions">
         <span id="apt-status" class="terminal-status-badge"></span>
-        <button type="button" class="terminal-btn-icon terminal-btn-reconnect" id="term-reconnect-btn" onclick="getTerm().connect(true)" style="display:none" title="Buka Sesi Shell Baru">&#8635;&nbsp;Sambung Ulang</button>
-        <button type="button" class="terminal-btn-icon" onclick="getTerm().clearScreen()" title="Bersihkan Layar Konsol">&#10005;&nbsp;Clear</button>
+        <button type="button" class="terminal-btn-icon terminal-btn-reconnect" id="term-reconnect-btn" onclick="getTerm().connect(true)" style="display:none" title="Buka Sesi Shell Baru">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>&nbsp;Sambung Ulang
+        </button>
+        <button type="button" class="terminal-btn-icon" onclick="getTerm().clearScreen()" title="Bersihkan Layar Konsol">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>&nbsp;Clear
+        </button>
         <button type="button" class="terminal-btn-icon" id="term-fullscreen-btn" onclick="getTerm().toggleFullscreen()" title="Layar Penuh (Full Screen)">
           <svg id="term-fullscreen-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>&nbsp;<span id="term-fullscreen-text">Full Screen</span>
         </button>
-        <button type="button" class="terminal-btn-icon" onclick="toggleTerminalView()" title="Sembunyikan Terminal">&#x2715;&nbsp;Tutup</button>
+        <button type="button" class="terminal-btn-icon" onclick="toggleTerminalView()" title="Sembunyikan Terminal">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>&nbsp;Tutup
+        </button>
       </div>
     </div>
     <div class="real-terminal-screen" id="real-term" tabindex="0" aria-label="Terminal Bawaan Linux">
@@ -518,8 +524,8 @@
   <button class="tab" data-tab="layanan" role="tab">Layanan</button>
   {% set active_open = open_problems | rejectattr('is_ignored') | list %}
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
-  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn">Masalah <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
-  <button class="tab" data-tab="proses" role="tab">⚡ Proses Teratas</button>
+  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn">Masalah <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}{{ ignored_open|length }}{% else %}0{% endif %}</span></button>
+  <button class="tab" data-tab="proses" role="tab">Proses Teratas</button>
   <button class="tab" data-tab="jaringan" role="tab">Jaringan</button>
   <button class="tab" data-tab="akun" role="tab">Akun</button>
   <button class="tab" data-tab="log" role="tab">Log</button>
@@ -634,7 +640,7 @@
       <td class="mono">{{ svc.process_name }}</td>
       <td id="sts-{{ svc.id }}">
         {% if svc._status == 'down' and ('service_down:' ~ svc.service_name) in (open_problems | selectattr('is_ignored') | map(attribute='key') | list) %}
-          <span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down 🔕</span>
+          <span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down (diabaikan)</span>
         {% else %}
           <span class="badge badge-{{ svc._status }}">{{ svc._status }}</span>
         {% endif %}
@@ -663,16 +669,16 @@
             <button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px"
                     {% if is_pending or is_up %}disabled{% endif %}
                     onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                    title="{{ 'Layanan sudah aktif' if is_up else 'Mulai layanan' }}">▶</button>
+                    title="{{ 'Layanan sudah aktif' if is_up else 'Mulai layanan' }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>
             <button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px"
                     {% if is_pending or not is_up %}disabled{% endif %}
                     onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                    title="{{ 'Layanan sudah nonaktif / berhenti' if not is_up else 'Hentikan layanan' }}">■</button>
+                    title="{{ 'Layanan sudah nonaktif / berhenti' if not is_up else 'Hentikan layanan' }}"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg></button>
             {% if svc._problem %}
               {% if svc._problem.is_ignored %}
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id }}" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id }}" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">Pantau Kembali</button>
               {% else %}
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id }}" data-msg="{{ svc._problem.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah layanan ini">🔕 Abaikan</button>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id }}" data-msg="{{ svc._problem.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah layanan ini">Abaikan</button>
               {% endif %}
             {% endif %}
             {% if is_pending %}
@@ -779,7 +785,7 @@
       {% set active_open = open_problems | rejectattr('is_ignored') | list %}
       {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
       <span class="badge badge-{{ pmeta[problem_level][1] }}">{{ pmeta[problem_level][0] }}</span>
-      <span style="font-size:12px;color:var(--dim)">{{ active_open|length }} masalah aktif{% if ignored_open %} · {{ ignored_open|length }} diabaikan (🔕){% endif %}</span>
+      <span style="font-size:12px;color:var(--dim)">{{ active_open|length }} masalah aktif{% if ignored_open %} · {{ ignored_open|length }} diabaikan{% endif %}</span>
     {% endif %}
     </div>
   </div>
@@ -793,7 +799,7 @@
       <option value="danger">Danger</option>
       <option value="warning">Warning</option>
       <option value="info">Info</option>
-      <option value="ignored">Diabaikan (🔕)</option>
+      <option value="ignored">Diabaikan</option>
     </select>
     <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari kejadian…"
            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:220px">
@@ -811,14 +817,13 @@
         {{ p.started_at.strftime('%d %b %H:%M') }}
         {% if p.resolved_at %}<span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>{% endif %}
       </td>
-      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}</span></td>
       <td>
-        {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
-        <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
+        <span{% if not p.is_open %} style="text-decoration:line-through;color:var(--dim)"{% endif %}>{{ p.message }}</span>
         {% if p.is_ignored %}
-          <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ p.ignored_by if p.ignored_by else '') }}">🔕 diabaikan{{ (' s/d ' ~ p.ignored_until.strftime('%d %b %H:%M')) if p.ignored_until else ' permanen' }}</span>
+          <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ p.ignored_by if p.ignored_by else '') }}">diabaikan{{ (' s/d ' ~ p.ignored_until.strftime('%d %b %H:%M')) if p.ignored_until else ' permanen' }}</span>
         {% endif %}
-        {% if p.acknowledged_by %}<span class="badge badge-up" title="Diakui {{ p.acknowledged_by }}">✓ diakui</span>{% endif %}
+        {% if p.acknowledged_by %}<span class="badge badge-up" title="Ditangani {{ p.acknowledged_by }}">Ditangani</span>{% endif %}
         {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
       <td class="mono"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
@@ -852,17 +857,17 @@
 
         {% if p.is_open %}
           {% if p.is_ignored %}
-            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>
+            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">Pantau Kembali</button>
           {% else %}
-            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>
+            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">Abaikan</button>
           {% endif %}
           {% if p.acknowledged_by %}
-            <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }}">✓ Ditangani</span>
+            <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }}">Ditangani</span>
           {% else %}
             <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai sudah ditangani">Ditangani</button>
           {% endif %}
-        {% elif not p.action %}
-          <span style="color:var(--dim)">—</span>
+        {% else %}
+          <span class="badge badge-up">Teratasi</span>
         {% endif %}
 
       </td>
@@ -888,7 +893,10 @@
     <h3 style="margin:0">Snapshot Proses Teratas (CPU &amp; Memori)</h3>
     <div style="display:flex;gap:10px;align-items:center">
       <span id="top-procs-time" style="font-size:12px;color:var(--dim)">Diperbarui tiap siklus agen</span>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="fetchTopProcs()" title="Segarkan data proses teratas">&#8635;&nbsp;Segarkan</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="fetchTopProcs()" title="Segarkan data proses teratas" style="display:inline-flex;align-items:center;gap:4px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        Segarkan
+      </button>
     </div>
   </div>
   
@@ -896,7 +904,8 @@
     <!-- Kolom CPU -->
     <div>
       <h4 id="top-cpu-title" style="margin:0 0 10px 0;color:var(--text);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
-        <span style="color:#ef4444">🔥</span> 5 Penggunaan CPU Tertinggi
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red)"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+        <span>5 Penggunaan CPU Tertinggi</span>
       </h4>
       <div style="overflow-x:auto">
         <table id="top-cpu-table" style="width:100%;font-size:12px">
@@ -919,7 +928,8 @@
     <!-- Kolom RAM -->
     <div>
       <h4 id="top-mem-title" style="margin:0 0 10px 0;color:var(--text);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
-        <span style="color:#3b82f6">💾</span> 5 Penggunaan Memori Tertinggi
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><path d="M6 19v-3"></path><path d="M10 19v-3"></path><path d="M14 19v-3"></path><path d="M18 19v-3"></path><rect x="2" y="6" width="20" height="10" rx="2"></rect></svg>
+        <span>5 Penggunaan Memori Tertinggi</span>
       </h4>
       <div style="overflow-x:auto">
         <table id="top-mem-table" style="width:100%;font-size:12px">
@@ -1096,8 +1106,8 @@ function toggleExpandProcs() {
   }
   const hCpu = document.getElementById('top-cpu-title');
   const hMem = document.getElementById('top-mem-title');
-  if (hCpu) hCpu.innerHTML = `<span style="color:#ef4444">🔥</span> ${procsExpanded ? '20' : '5'} Penggunaan CPU Tertinggi`;
-  if (hMem) hMem.innerHTML = `<span style="color:#3b82f6">💾</span> ${procsExpanded ? '20' : '5'} Penggunaan Memori Tertinggi`;
+  if (hCpu) hCpu.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red)"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg> <span>${procsExpanded ? '20' : '5'} Penggunaan CPU Tertinggi</span>`;
+  if (hMem) hMem.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><path d="M6 19v-3"></path><path d="M10 19v-3"></path><path d="M14 19v-3"></path><path d="M18 19v-3"></path><rect x="2" y="6" width="20" height="10" rx="2"></rect></svg> <span>${procsExpanded ? '20' : '5'} Penggunaan Memori Tertinggi</span>`;
 
   const availableCpu = (currentTopProcsData && currentTopProcsData.top_procs && currentTopProcsData.top_procs.cpu)
     ? currentTopProcsData.top_procs.cpu.length : 0;
@@ -1220,7 +1230,7 @@ function copyAgentUpdateCmd(ev) {
       const btn = ev && ev.target;
       if (btn) {
         const orig = btn.textContent;
-        btn.textContent = "✓ Tersalin!";
+        btn.textContent = "Tersalin!";
         setTimeout(() => { btn.textContent = orig; }, 2000);
       }
     }).catch(() => {
@@ -1261,9 +1271,9 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem) {
   let ignoreBtn = '';
   if (problem && problem.id) {
     if (problem.is_ignored) {
-      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + problem.id + '" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>';
+      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + problem.id + '" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">Pantau Kembali</button>';
     } else {
-      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + problem.id + '" data-msg="' + escHtml(problem.message || '') + '" onclick="openIgnoreModal(this)" title="Abaikan masalah layanan ini">🔕 Abaikan</button>';
+      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + problem.id + '" data-msg="' + escHtml(problem.message || '') + '" onclick="openIgnoreModal(this)" title="Abaikan masalah layanan ini">Abaikan</button>';
     }
   }
 
@@ -1273,11 +1283,11 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem) {
     + '<button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px" '
     + (startDis ? 'disabled ' : '')
     + 'onclick="svcAction(\'start\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
-    + 'title="' + (isUp ? 'Layanan sudah aktif' : 'Mulai layanan') + '">▶</button>'
+    + 'title="' + (isUp ? 'Layanan sudah aktif' : 'Mulai layanan') + '"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>'
     + '<button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px" '
     + (stopDis ? 'disabled ' : '')
     + 'onclick="svcAction(\'stop\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
-    + 'title="' + (!isUp ? 'Layanan sudah nonaktif / berhenti' : 'Hentikan layanan') + '">■</button>'
+    + 'title="' + (!isUp ? 'Layanan sudah nonaktif / berhenti' : 'Hentikan layanan') + '"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg></button>'
     + ignoreBtn
     + (isPending ? ' <span class="badge badge-muted" style="margin-left:4px;font-size:10px">menunggu…</span>' : '');
 }
@@ -2174,7 +2184,7 @@ function renderProblemsTab(level, openList, histList) {
       tabBadge.className = 'badge badge-' + meta[1];
       tabBadge.style.display = 'inline-block';
     } else if (ignoredCount > 0) {
-      tabBadge.textContent = '🔕 ' + ignoredCount;
+      tabBadge.textContent = ignoredCount;
       tabBadge.className = 'badge badge-muted';
       tabBadge.style.display = 'inline-block';
     } else {
@@ -2189,7 +2199,7 @@ function renderProblemsTab(level, openList, histList) {
     } else {
       let sub = `${activeCount} masalah aktif`;
       if (ignoredCount > 0) {
-        sub += ` · ${ignoredCount} diabaikan (🔕)`;
+        sub += ` · ${ignoredCount} diabaikan`;
       }
       headEl.innerHTML = `<span class="badge badge-${meta[1]}">${meta[0]}</span> <span style="font-size:12px;color:var(--dim)">${sub}</span>`;
     }
@@ -2217,7 +2227,7 @@ function renderProblemsTab(level, openList, histList) {
       <option value="danger"${oldFilter === 'danger' ? ' selected' : ''}>Danger</option>
       <option value="warning"${oldFilter === 'warning' ? ' selected' : ''}>Warning</option>
       <option value="info"${oldFilter === 'info' ? ' selected' : ''}>Info</option>
-      <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>Diabaikan (🔕)</option>
+      <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>Diabaikan</option>
     </select>
     <input type="search" id="prob-search" oninput="probFilter()" value="${escapeHtml(oldSearch)}" placeholder="Cari kejadian…"
            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:220px">
@@ -2232,17 +2242,17 @@ function renderProblemsTab(level, openList, histList) {
     const isIgnored = !!p.is_ignored;
     const sev = p.severity || 'info';
     const sevBadge = isIgnored ? 'muted' : ({danger: 'danger', warning: 'warn', info: 'info'}[sev] || 'muted');
-    const sevLabel = escapeHtml(sev) + (isIgnored ? ' 🔕' : '');
+    const sevLabel = escapeHtml(sev);
     const searchTxt = ((p.message || '') + ' ' + (p.key || '')).toLowerCase();
     const rowStyle = !isOpen ? ' style="opacity:.65"' : (isIgnored ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '');
     const startStr = fmtProbDate(p.started_at);
     const resStr = p.resolved_at ? `<span style="color:var(--dim)"> → ${fmtProbDate(p.resolved_at)}</span>` : '';
-    const checkMark = isOpen ? '' : '<span style="color:var(--green)">✓</span> ';
-    const msgStyle = isOpen ? '' : ' style="text-decoration:line-through"';
+    const checkMark = '';
+    const msgStyle = isOpen ? '' : ' style="text-decoration:line-through;color:var(--dim)"';
     const ignoredBadge = isIgnored
-      ? `<span class="badge badge-muted" title="${p.ignored_reason ? 'Alasan: ' + escapeHtml(p.ignored_reason) : (p.ignored_by ? 'Diabaikan oleh ' + escapeHtml(p.ignored_by) : '')}">🔕 diabaikan${p.ignored_until ? ' s/d ' + fmtProbDate(p.ignored_until) : ' permanen'}</span> `
+      ? `<span class="badge badge-muted" title="${p.ignored_reason ? 'Alasan: ' + escapeHtml(p.ignored_reason) : (p.ignored_by ? 'Diabaikan oleh ' + escapeHtml(p.ignored_by) : '')}">diabaikan${p.ignored_until ? ' s/d ' + fmtProbDate(p.ignored_until) : ' permanen'}</span> `
       : '';
-    const ackBadge = p.acknowledged_by ? `<span class="badge badge-up" title="Diakui ${escapeHtml(p.acknowledged_by)}">✓ diakui</span>` : '';
+    const ackBadge = p.acknowledged_by ? `<span class="badge badge-up" title="Diakui ${escapeHtml(p.acknowledged_by)}">diakui</span> ` : '';
     const kambuhBadge = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh ${p.count_24h}×</span>` : '';
     const isoStart = isOpen && p.started_at ? (p.started_at.endsWith('Z') ? p.started_at : p.started_at + 'Z') : '';
     const dataStart = isoStart ? ` data-start="${isoStart}"` : '';
@@ -2277,18 +2287,18 @@ function renderProblemsTab(level, openList, histList) {
       }
 
       if (isIgnored) {
-        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>`;
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">Pantau Kembali</button>`;
       } else {
-        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>`;
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">Abaikan</button>`;
       }
 
       if (p.acknowledged_by) {
-        actHtml += `<span class="badge badge-up" style="margin-left:4px" title="Ditangani ${escapeHtml(p.acknowledged_by)}">✓ Ditangani</span>`;
+        actHtml += `<span class="badge badge-up" style="margin-left:4px" title="Ditangani ${escapeHtml(p.acknowledged_by)}">Ditangani</span>`;
       } else {
         actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail(${p.id}, this)" title="Tandai masalah ini sudah ditangani">Ditangani</button>`;
       }
-    } else if (!p.action) {
-      actHtml = '<span style="color:var(--dim)">—</span>';
+    } else {
+      actHtml = '<span class="badge badge-up">Teratasi</span>';
     }
 
     html += `<tr${rowStyle} data-sev="${escapeHtml(sev)}" data-ignored="${isIgnored ? '1' : '0'}" data-text="${escapeHtml(searchTxt)}">
@@ -2406,7 +2416,7 @@ function patch(data) {
     const sts = document.getElementById('sts-' + s.id);
     if (sts) {
       if (s.status === 'down' && s.ignored) {
-        sts.innerHTML = '<span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down 🔕</span>';
+        sts.innerHTML = '<span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down (diabaikan)</span>';
       } else {
         const st = s.status === 'unknown' ? 'inactive' : s.status;
         sts.innerHTML = '<span class="badge badge-' + st + '">' + escHtml(s.status) + '</span>';

@@ -8,7 +8,7 @@
       {% if danger_open %}<span class="badge badge-danger">Danger {{ danger_open }}</span>{% endif %}
       {% if warning_open %}<span class="badge badge-warn">Warning {{ warning_open }}</span>{% endif %}
       {% if info_open %}<span class="badge badge-info">Info {{ info_open }}</span>{% endif %}
-      {% if ignored_open %}<span class="badge badge-muted" title="{{ ignored_open }} masalah diabaikan">🔕 {{ ignored_open }} diabaikan</span>{% endif %}
+      {% if ignored_open %}<span class="badge badge-muted" title="{{ ignored_open }} masalah diabaikan">{{ ignored_open }} diabaikan</span>{% endif %}
       <span class="badge badge-up">{{ ok_count }} server tanpa masalah</span>
     </span>
   </div>
@@ -36,7 +36,7 @@
       <option value="danger">Danger</option>
       <option value="warning">Warning</option>
       <option value="info">Info</option>
-      <option value="ignored">Diabaikan (🔕)</option>
+      <option value="ignored">Diabaikan</option>
     </select>
     <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari server / kejadian…"
            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:220px">
@@ -55,11 +55,11 @@
         data-text="{{ (p.hostname ~ ' ' ~ p.message ~ ' ' ~ p.key) | lower }}">
       <td style="white-space:nowrap" class="mono">{{ p.started_at.strftime('%d %b %H:%M') }}</td>
       <td><strong>{{ p.hostname }}</strong></td>
-      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}</span></td>
       <td>
         <span>{{ p.message }}</span>
         {% if p.is_ignored %}
-          <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ p.ignored_by if p.ignored_by else '') }}">🔕 diabaikan{{ (' s/d ' ~ p.ignored_until.strftime('%d %b %H:%M')) if p.ignored_until else ' permanen' }}</span>
+          <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ p.ignored_by if p.ignored_by else '') }}">diabaikan{{ (' s/d ' ~ p.ignored_until.strftime('%d %b %H:%M')) if p.ignored_until else ' permanen' }}</span>
         {% endif %}
         {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
@@ -68,13 +68,13 @@
         <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
         {% if p.is_ignored %}
           <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                  data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>
+                  data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">Pantau Kembali</button>
         {% else %}
           <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                  data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>
+                  data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">Abaikan</button>
         {% endif %}
         {% if p.acknowledged_by %}
-          <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">✓ Ditangani</span>
+          <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">Ditangani</span>
         {% elif p.is_open %}
           <button type="button" class="btn btn-{{ 'danger' if p.severity == 'danger' else 'ghost' }} btn-sm" style="margin-left:4px"
                   onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')">Ditangani</button>
@@ -114,7 +114,7 @@
       </td>
       <td><strong>{{ p.hostname }}</strong></td>
       <td><span class="badge badge-{{ {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}">{{ p.severity }}</span></td>
-      <td><span style="color:var(--green)">✓</span> <span style="text-decoration:line-through">{{ p.message }}</span>
+      <td><span style="text-decoration:line-through;color:var(--dim)">{{ p.message }}</span>
         {% if p.resolved_note == 'auto' %}
           <span class="badge badge-muted" title="Tidak ada deteksi baru selama jendela tenang">otomatis berakhir</span>
         {% elif p.resolved_note %}
@@ -170,8 +170,8 @@ async function ackProblem(id, btn, sev) {
       showToast('Masalah ditandai sebagai ditangani.', true);
       const span = document.createElement('span');
       span.className = 'badge badge-up';
-      span.title = 'Diakui';
-      span.textContent = '✓ diakui';
+      span.title = 'Ditangani';
+      span.textContent = 'Ditangani';
       btn.replaceWith(span);
       return;
     }
