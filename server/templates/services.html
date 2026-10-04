@@ -9,12 +9,99 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0,0,0,0.45);
-  border: 1px solid var(--border);
+  border: 1px solid #30363d;
   background: #0d1117;
   transition: all .2s ease;
 }
+.terminal-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  user-select: none;
+}
+.terminal-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.t-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity .15s, transform .1s;
+}
+.t-dot:hover { opacity: 1; transform: scale(1.15); }
+.t-dot-red { background: #ff5f56; }
+.t-dot-yellow { background: #ffbd2e; }
+.t-dot-green { background: #27c93f; }
+.terminal-title {
+  font-size: 12px;
+  font-family: monospace;
+  color: #c9d1d9;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.terminal-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.terminal-btn-icon {
+  background: #21262d;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all .15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.terminal-btn-icon:hover {
+  background: #30363d;
+  color: #fff;
+  border-color: #484f58;
+}
+.terminal-btn-icon.is-active {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #38bdf8;
+}
+.terminal-status-badge {
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: monospace;
+  margin-right: 4px;
+}
+.t-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.t-status-dot.active { background: #27c93f; box-shadow: 0 0 6px rgba(39,201,63,0.6); }
+.t-status-dot.busy { background: #ffbd2e; animation: pulseBusy 1s infinite alternate; }
+.t-status-dot.closed { background: #ff5f56; }
+@keyframes pulseBusy {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
 .real-terminal-screen {
-  padding: 8px 10px !important;
+  padding: 10px 14px !important;
   background: #0d1117 !important;
   height: 480px;
   max-height: 65vh;
@@ -32,6 +119,19 @@
 #xterm-container .xterm-viewport {
   overflow-y: auto !important;
 }
+#xterm-container .xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+#xterm-container .xterm-viewport::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+#xterm-container .xterm-viewport::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+}
+#xterm-container .xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
 
 /* Fullscreen Terminal Window */
 .terminal-window.is-fullscreen {
@@ -40,6 +140,7 @@
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
+  inset: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
   max-width: 100vw !important;
@@ -47,22 +148,81 @@
   margin: 0 !important;
   border-radius: 0 !important;
   border: none !important;
-  z-index: 99999 !important;
+  z-index: 999999 !important;
   display: flex !important;
   flex-direction: column !important;
   box-shadow: none !important;
+  background: #0d1117 !important;
 }
 .terminal-window.is-fullscreen .terminal-titlebar {
-  border-radius: 0 !important;
-  padding: 10px 16px !important;
+  flex: 0 0 44px !important;
+  height: 44px !important;
+  padding: 0 16px !important;
   background: #161b22 !important;
   border-bottom: 1px solid #30363d !important;
+  border-radius: 0 !important;
+  box-sizing: border-box !important;
+}
+.terminal-window.is-fullscreen .terminal-btn-icon {
+  font-size: 12px !important;
+  padding: 5px 11px !important;
+  border-radius: 6px !important;
 }
 .terminal-window.is-fullscreen .real-terminal-screen {
-  flex: 1 1 0 !important;
-  height: calc(100vh - 46px) !important;
-  max-height: calc(100vh - 46px) !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  height: calc(100vh - 44px) !important;
+  max-height: calc(100vh - 44px) !important;
   border-radius: 0 !important;
+  padding: 12px 16px !important;
+  box-sizing: border-box !important;
+  background: #0d1117 !important;
+  overflow: hidden !important;
+}
+
+/* Badge Mode Pemeliharaan di Hero */
+.hero-maint-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: rgba(234, 179, 8, 0.16);
+  border: 1px solid rgba(234, 179, 8, 0.5);
+  color: #facc15;
+  cursor: pointer;
+  margin-left: 6px;
+  vertical-align: middle;
+  transition: all .15s ease;
+  line-height: 1.5;
+}
+.hero-maint-badge:hover {
+  background: rgba(234, 179, 8, 0.3);
+  border-color: #facc15;
+  color: #fff;
+  transform: translateY(-1px);
+}
+.btn-maint-active {
+  border-color: #eab308 !important;
+  color: #facc15 !important;
+  background: rgba(234, 179, 8, 0.16) !important;
+  font-weight: 600 !important;
+}
+.btn-maint-active:hover {
+  background: rgba(234, 179, 8, 0.28) !important;
+  color: #fff !important;
+}
+
+/* Tombol Aksi Layanan Kotak Rapi */
+.btn-svc-start, .btn-svc-stop {
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  justify-content: center !important;
+  text-align: center !important;
+  font-size: 11px !important;
 }
 
 /* Estetika Riwayat Kinerja */
@@ -227,18 +387,18 @@
         <strong>{{ server.hostname }}</strong>
         <span class="mono copyable-ip" style="font-size:12px" onclick="copyIp('{{ server.ip_address }}', event)" title="Klik untuk salin IP">{{ server.ip_address }}</span>
         <span id="hero-online" class="hero-online {{ 'warn' if server.is_maintenance else ('on' if is_online else 'off') }}">{{ 'pemeliharaan' if server.is_maintenance else ('online' if is_online else 'offline') }}</span>
-        <button type="button" id="hero-maint-badge" class="btn btn-ghost btn-sm" style="font-size:11px;padding:1px 8px;border:1px solid var(--border);margin-left:4px;{{ '' if server.is_maintenance else 'display:none;' }}" onclick="openMaintenanceModal()" title="Lihat detail mode pemeliharaan">Lihat</button>
+        <button type="button" id="hero-maint-badge" class="hero-maint-badge" style="{{ '' if server.is_maintenance else 'display:none;' }}" onclick="openMaintenanceModal()" title="Lihat detail mode pemeliharaan">Lihat</button>
       </div>
       <div class="hero-meta" id="hero-meta">{% if os_label %}{{ os_label }}{% endif %}{% if kernel %} · kernel {{ kernel }}{% endif %}{% if not os_label and not kernel %}memuat data sistem…{% endif %}</div>
     </div>
     <div class="hero-actions">
       {% if user.role == 'admin' %}
-      <button class="btn btn-success" id="apt-update-btn" onclick="aptAction('APT_UPDATE')">&#8635;&nbsp;Update OS</button>
-      <button class="btn btn-danger" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled>Upgrade&nbsp;&#9650;</button>
+      <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="aptAction('APT_UPDATE')">&#8635;&nbsp;Update OS</button>
+      <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled>Upgrade&nbsp;&#9650;</button>
       <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" title="Buka / sembunyikan terminal bawaan" style="border:1px solid #334155;color:#38bdf8">&#62;_&nbsp;Terminal</button>
       <a href="/servers/{{ server.id }}/files" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="border:1px solid #334155;color:#a78bfa" title="Buka File Manager di tab / halaman baru">&#128193;&nbsp;File Manager&nbsp;&nearr;</a>
       <span class="hero-sep"></span>
-      <button class="btn btn-ghost btn-sm" id="btn-maint" onclick="openMaintenanceModal()" title="Atur Mode Pemeliharaan" style="{% if server.is_maintenance %}border:1px solid #eab308;color:#facc15;background:rgba(234,179,8,0.12);font-weight:600{% else %}border:1px solid #334155{% endif %}">&#128295;&nbsp;<span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span></button>
+      <button class="btn btn-ghost btn-sm {{ 'btn-maint-active' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Atur Mode Pemeliharaan">&#128295;&nbsp;<span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span></button>
       <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="btn btn-ghost btn-sm" type="submit" title="Restart sistem operasi">&#8634;&nbsp;Reboot OS</button>
@@ -1532,6 +1692,17 @@ class WebTerminal {
       }
     });
 
+    // Menangani Escape key di dalam terminal untuk keluar dari fullscreen
+    this.term.attachCustomKeyEventHandler(e => {
+      if (e.key === 'Escape' && this.windowEl && this.windowEl.classList.contains('is-fullscreen')) {
+        if (e.type === 'keydown') {
+          this.toggleFullscreen();
+          return false;
+        }
+      }
+      return true;
+    });
+
     // Fit otomatis saat jendela di-resize
     if (window.ResizeObserver && this.screenEl) {
       this.resizeObserver = new ResizeObserver(() => {
@@ -1562,25 +1733,60 @@ class WebTerminal {
 
   toggleFullscreen() {
     if (!this.windowEl) return;
-    const isFull = this.windowEl.classList.toggle('is-fullscreen');
+    const isEntering = !this.windowEl.classList.contains('is-fullscreen');
     const fsText = document.getElementById('term-fullscreen-text');
     const fsIcon = document.getElementById('term-fullscreen-icon');
     const fsBtn = document.getElementById('term-fullscreen-btn');
-    if (isFull) {
+
+    if (isEntering) {
+      // Pindahkan windowEl ke document.body agar tidak terkurung oleh containing-block parent card
+      if (!this._placeholder) {
+        this._placeholder = document.createElement('div');
+        this._placeholder.id = 'term-fullscreen-placeholder';
+        this._placeholder.style.display = 'none';
+      }
+      this.windowEl.parentNode.insertBefore(this._placeholder, this.windowEl);
+      document.body.appendChild(this.windowEl);
+
+      this.windowEl.classList.add('is-fullscreen');
       document.body.style.overflow = 'hidden';
+
       if (fsText) fsText.textContent = 'Kecilkan';
       if (fsIcon) fsIcon.innerHTML = '<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>';
-      if (fsBtn) fsBtn.title = 'Keluar dari Layar Penuh (Esc)';
+      if (fsBtn) {
+        fsBtn.title = 'Keluar dari Layar Penuh (Esc)';
+        fsBtn.classList.add('is-active');
+      }
     } else {
+      this.windowEl.classList.remove('is-fullscreen');
+      // Kembalikan ke posisi semula di dalam card
+      if (this._placeholder && this._placeholder.parentNode) {
+        this._placeholder.parentNode.insertBefore(this.windowEl, this._placeholder);
+        this._placeholder.remove();
+        this._placeholder = null;
+      }
       document.body.style.overflow = '';
+
       if (fsText) fsText.textContent = 'Full Screen';
       if (fsIcon) fsIcon.innerHTML = '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>';
-      if (fsBtn) fsBtn.title = 'Layar Penuh (Full Screen)';
+      if (fsBtn) {
+        fsBtn.title = 'Layar Penuh (Full Screen)';
+        fsBtn.classList.remove('is-active');
+      }
     }
-    setTimeout(() => {
+
+    // Reflow & recalculate ukuran grid terminal
+    requestAnimationFrame(() => {
       this.fit();
       this.focus();
-    }, 50);
+      setTimeout(() => {
+        this.fit();
+        this.focus();
+      }, 50);
+      setTimeout(() => {
+        this.fit();
+      }, 150);
+    });
   }
 
   hide() {
@@ -1765,6 +1971,16 @@ function getTerm() {
 function toggleTerminalView() {
   getTerm().toggle();
 }
+
+// Listener Escape untuk keluar dari Full Screen Terminal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const term = getTerm();
+    if (term && term.windowEl && term.windowEl.classList.contains('is-fullscreen')) {
+      term.toggleFullscreen();
+    }
+  }
+});
 
 function aptLiveStatus(html, color) {
   const st = document.getElementById('apt-status');
@@ -2191,24 +2407,14 @@ function patch(data) {
     const ml = document.getElementById('maint-btn-label');
     if (data.is_maintenance) {
       if (hm) {
-        hm.style.display = 'inline-block';
+        hm.style.display = 'inline-flex';
         hm.textContent = 'Lihat';
       }
-      if (bm) {
-        bm.style.borderColor = '#eab308';
-        bm.style.color = '#facc15';
-        bm.style.background = 'rgba(234,179,8,0.12)';
-        bm.style.fontWeight = '600';
-      }
+      if (bm) bm.classList.add('btn-maint-active');
       if (ml) ml.textContent = 'Pemeliharaan (Aktif)';
     } else {
       if (hm) hm.style.display = 'none';
-      if (bm) {
-        bm.style.borderColor = '#334155';
-        bm.style.color = '';
-        bm.style.background = 'transparent';
-        bm.style.fontWeight = 'normal';
-      }
+      if (bm) bm.classList.remove('btn-maint-active');
       if (ml) ml.textContent = 'Pemeliharaan';
     }
   }
