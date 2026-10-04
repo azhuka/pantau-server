@@ -3,16 +3,12 @@
 {% block content %}
 <div class="topbar">
   <h2>{{ 'Edit' if server else 'Tambah' }} Server</h2>
-  <a href="/servers" class="btn btn-ghost" style="display:inline-flex;align-items:center;gap:6px">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-    Kembali
-  </a>
+  <a href="/servers" class="btn btn-ghost">&larr; Kembali</a>
 </div>
 
 {% if error %}
-<div style="background:var(--red-bg);border:1px solid var(--red);color:var(--red);padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;display:flex;align-items:center;gap:8px">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-  <span>{{ error }}</span>
+<div style="background:var(--red-bg);border:1px solid var(--red);color:var(--red);padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px">
+  ⚠️ {{ error }}
 </div>
 {% endif %}
 

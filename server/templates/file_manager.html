@@ -73,21 +73,11 @@
     <div style="display:flex;gap:8px;align-items:center;flex:1;min-width:320px;flex-wrap:wrap">
       <!-- Navigation buttons: Back, Forward, Up, Home, Refresh -->
       <div class="fm-nav-group">
-        <button type="button" class="fm-nav-btn" id="fm-btn-back" onclick="fmGoBack()" title="Kembali" disabled>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        </button>
-        <button type="button" class="fm-nav-btn" id="fm-btn-forward" onclick="fmGoForward()" title="Maju" disabled>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </button>
-        <button type="button" class="fm-nav-btn" id="fm-btn-up" onclick="fmGoUp()" title="Ke Folder Induk">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-        </button>
-        <button type="button" class="fm-nav-btn" id="fm-btn-home" onclick="fmGoHome()" title="Ke Direktori Root (/)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        </button>
-        <button type="button" class="fm-nav-btn" onclick="fmRefresh()" title="Muat Ulang Direktori">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-        </button>
+        <button type="button" class="fm-nav-btn" id="fm-btn-back" onclick="fmGoBack()" title="Kembali" disabled>&larr;</button>
+        <button type="button" class="fm-nav-btn" id="fm-btn-forward" onclick="fmGoForward()" title="Maju" disabled>&rarr;</button>
+        <button type="button" class="fm-nav-btn" id="fm-btn-up" onclick="fmGoUp()" title="Ke Folder Induk">&uarr;</button>
+        <button type="button" class="fm-nav-btn" id="fm-btn-home" onclick="fmGoHome()" title="Ke Direktori Root (/)">&#8962;</button>
+        <button type="button" class="fm-nav-btn" onclick="fmRefresh()" title="Muat Ulang Direktori">&#8635;</button>
       </div>
 
       <!-- Address Bar (Dual mode: Breadcrumbs + Text input) -->
@@ -98,9 +88,7 @@
           <input type="text" id="fm-path-input" class="fm-path-input" placeholder="/path/ke/direktori" autocomplete="off" spellcheck="false">
           <button type="button" class="fm-address-toggle" onclick="fmTogglePathInput(false)" title="Batal">&times;</button>
         </form>
-        <button type="button" class="fm-address-toggle" id="fm-address-pencil" onclick="fmTogglePathInput(true)" title="Ketik / Tempel Path Manual">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-        </button>
+        <button type="button" class="fm-address-toggle" id="fm-address-pencil" onclick="fmTogglePathInput(true)" title="Ketik / Tempel Path Manual">&#9998;</button>
       </div>
     </div>
 
@@ -186,10 +174,7 @@
     </div>
     <div class="fm-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="fmCloseEditor()">Batal / Tutup</button>
-      <button type="button" id="fm-editor-save-btn" class="btn btn-primary" onclick="fmSaveFile()" style="display:inline-flex;align-items:center;gap:6px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Simpan Perubahan (Ctrl+S)
-      </button>
+      <button type="button" id="fm-editor-save-btn" class="btn btn-primary" onclick="fmSaveFile()">💾 Simpan Perubahan (Ctrl+S)</button>
     </div>
   </div>
 </div>
@@ -198,7 +183,7 @@
 <div id="fm-rename-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card">
     <div class="fm-modal-header">
-      <span>Ganti Nama</span>
+      <span>🏷️ Ganti Nama</span>
       <button type="button" class="btn btn-ghost" onclick="fmCloseRename()">&times;</button>
     </div>
     <form id="fm-rename-form" onsubmit="fmSubmitRename(event)">
@@ -222,7 +207,7 @@
 <div id="fm-upload-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card">
     <div class="fm-modal-header">
-      <span>Unggah Berkas ke Server</span>
+      <span>↑ Unggah Berkas ke Server</span>
       <button type="button" class="btn btn-ghost" onclick="fmCloseUpload()">&times;</button>
     </div>
     <form id="fm-upload-form" onsubmit="fmSubmitUpload(event)">
@@ -255,7 +240,7 @@
 <div id="fm-chmod-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card">
     <div class="fm-modal-header">
-      <span>Ubah Hak Akses &amp; Pemilik</span>
+      <span>⚙ Ubah Hak Akses (Permissions) & Pemilik</span>
       <button type="button" class="btn btn-ghost" onclick="fmCloseChmod()">&times;</button>
     </div>
     <form id="fm-chmod-form" onsubmit="fmSubmitChmod(event)">
@@ -301,7 +286,7 @@
 <div id="fm-delete-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card" style="border-color:rgba(239,68,68,0.4)">
     <div class="fm-modal-header" style="color:var(--red)">
-      <span>Konfirmasi Hapus</span>
+      <span>🗑 Konfirmasi Hapus</span>
       <button type="button" class="btn btn-ghost" onclick="fmCloseDelete()">&times;</button>
     </div>
     <div class="fm-modal-body">
@@ -309,9 +294,8 @@
       <div style="background:var(--bg);padding:10px 14px;border-radius:6px;border:1px solid var(--border);margin-bottom:14px">
         <code id="fm-delete-path" style="color:var(--red);word-break:break-all;font-size:13px"></code>
       </div>
-      <div style="font-size:12px;color:var(--dim);display:flex;align-items:center;gap:6px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--yellow);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span>Tindakan ini tidak dapat dibatalkan. Berkas atau seluruh sub-folder di dalamnya akan dihapus dari server klien.</span>
+      <div style="font-size:12px;color:var(--dim)">
+        ⚠️ Tindakan ini tidak dapat dibatalkan. Berkas atau seluruh sub-folder di dalamnya akan dihapus dari server klien.
       </div>
       <div id="fm-delete-error" style="display:none;color:var(--red);font-size:12px;margin-top:10px"></div>
     </div>
@@ -540,10 +524,7 @@ async function fmLoadDir(path, pushHistory = true) {
     errBanner.textContent = 'Gagal membuka direktori: ' + err.message;
     errBanner.style.display = 'block';
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--red)">
-      <div style="display:inline-flex;align-items:center;gap:6px">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span>${escapeHtml(err.message)}</span>
-      </div>
+      ⚠️ ${escapeHtml(err.message)}
     </td></tr>`;
     fmUpdateNavButtons();
   }
@@ -558,7 +539,7 @@ function fmRenderBreadcrumbs(currentPath) {
 
   const rootCrumb = document.createElement('span');
   rootCrumb.className = 'fm-crumb' + (currentPath === '/' ? ' active' : '');
-  rootCrumb.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><code>/</code>';
+  rootCrumb.innerHTML = '&#8962; <code>/</code>';
   rootCrumb.onclick = () => fmLoadDir('/');
   container.appendChild(rootCrumb);
 
@@ -793,7 +774,7 @@ async function fmSaveFile() {
       throw new Error(data.detail || data.error || 'Gagal menyimpan berkas');
     }
 
-    statusEl.innerHTML = '<span style="color:var(--green)">Tersimpan</span>';
+    statusEl.innerHTML = '<span style="color:var(--green)">✓ Tersimpan</span>';
     restoreBtn.style.display = 'inline-block';
     setTimeout(() => { statusEl.textContent = ''; }, 3000);
     fmLoadDir(fmCurrentPath, false);
