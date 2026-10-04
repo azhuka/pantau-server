@@ -861,7 +861,6 @@
           {% else %}
             <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai sudah ditangani">Ditangani</button>
           {% endif %}
-          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="resolveProblemInDetail({{ p.id }}, this)" title="Tandai selesai">Selesai</button>
         {% elif not p.action %}
           <span style="color:var(--dim)">—</span>
         {% endif %}
@@ -1381,28 +1380,6 @@ async function ackProblemInDetail(id, btn) {
     });
     if (r.ok) {
       showToast('Masalah ditandai sebagai ditangani.', true);
-      poll();
-      return;
-    }
-    showToast('Gagal menyimpan (HTTP ' + r.status + ').', false);
-  } catch (e) {
-    showToast('Kendala jaringan: ' + e.message, false);
-  }
-  btn.disabled = false; btn.textContent = orig;
-}
-
-async function resolveProblemInDetail(id, btn) {
-  if (!confirm('Tandai masalah ini telah selesai/teratasi?')) return;
-  const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = '…';
-  try {
-    const r = await fetch('/api/alerts/' + id + '/resolve', {
-      method: 'POST',
-      headers: {'X-CSRF-Token': getCsrf()},
-      credentials: 'same-origin'
-    });
-    if (r.ok) {
-      showToast('Masalah berhasil diselesaikan.', true);
       poll();
       return;
     }
@@ -2310,7 +2287,6 @@ function renderProblemsTab(level, openList, histList) {
       } else {
         actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail(${p.id}, this)" title="Tandai masalah ini sudah ditangani">Ditangani</button>`;
       }
-      actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="resolveProblemInDetail(${p.id}, this)" title="Tandai masalah ini selesai dan pindahkan ke riwayat teratasi">Selesai</button>`;
     } else if (!p.action) {
       actHtml = '<span style="color:var(--dim)">—</span>';
     }

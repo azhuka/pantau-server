@@ -75,13 +75,9 @@
         {% endif %}
         {% if p.acknowledged_by %}
           <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">✓ Ditangani</span>
-          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                  onclick="resolveProblem({{ p.id }}, this)" title="Pindahkan masalah ini ke daftar teratasi">Selesai</button>
         {% elif p.is_open %}
           <button type="button" class="btn btn-{{ 'danger' if p.severity == 'danger' else 'ghost' }} btn-sm" style="margin-left:4px"
                   onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')">Ditangani</button>
-          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                  onclick="resolveProblem({{ p.id }}, this)" title="Pindahkan masalah ini ke daftar teratasi">Selesai</button>
         {% endif %}
       </td>
       <td style="font-size:12px;color:var(--dim);max-width:360px">
@@ -177,42 +173,6 @@ async function ackProblem(id, btn, sev) {
       span.title = 'Diakui';
       span.textContent = '✓ diakui';
       btn.replaceWith(span);
-      return;
-    }
-    btn.disabled = false; btn.textContent = orig;
-    showToast('Gagal menyimpan (HTTP ' + r.status + '). Coba lagi.', false);
-  } catch (e) {
-    btn.disabled = false; btn.textContent = orig;
-    showToast('Kendala jaringan: ' + e.message, false);
-  }
-}
-
-async function resolveProblem(id, btn) {
-  if (!confirm('Tandai masalah ini selesai? Masalah akan dipindahkan ke daftar teratasi.')) return;
-  const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Menyimpan…';
-  try {
-    const r = await fetch('/api/alerts/' + id + '/resolve', {
-      method: 'POST',
-      headers: {'X-CSRF-Token': getCsrf()},
-      credentials: 'same-origin'
-    });
-    if (r.ok) {
-      showToast('Masalah diselesaikan.', true);
-      const tr = btn.closest('tr');
-      if (tr) {
-        tr.style.transition = 'opacity .4s ease, transform .4s ease';
-        tr.style.opacity = '0';
-        tr.style.transform = 'translateX(20px)';
-        setTimeout(() => {
-          tr.remove();
-          probFilter();
-          const remRows = document.querySelectorAll('#probtable tbody tr');
-          if (remRows.length === 0) {
-            location.reload();
-          }
-        }, 400);
-      }
       return;
     }
     btn.disabled = false; btn.textContent = orig;
