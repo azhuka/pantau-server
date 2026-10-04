@@ -781,7 +781,7 @@
       {% set active_open = open_problems | rejectattr('is_ignored') | list %}
       {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
       <span class="badge badge-{{ pmeta[problem_level][1] }}">{{ pmeta[problem_level][0] }}</span>
-      <span style="font-size:12px;color:var(--dim)">{{ active_open|length }} masalah aktif{% if ignored_open %} · {{ ignored_open|length }} diabaikan{% endif %}</span>
+      <span style="font-size:12px;color:var(--dim)">{{ active_open|length }} masalah aktif{% if ignored_open %} · {{ ignored_open|length }} diabaikan (🔕){% endif %}</span>
     {% endif %}
     </div>
   </div>
@@ -795,7 +795,7 @@
       <option value="danger">Danger</option>
       <option value="warning">Warning</option>
       <option value="info">Info</option>
-      <option value="ignored">Diabaikan</option>
+      <option value="ignored">Diabaikan (🔕)</option>
     </select>
     <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari kejadian…"
            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:220px">
@@ -813,11 +813,11 @@
         {{ p.started_at.strftime('%d %b %H:%M') }}
         {% if p.resolved_at %}<span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>{% endif %}
       </td>
-      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}</span></td>
+      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
       <td>
         <span{% if not p.is_open %} style="text-decoration:line-through;color:var(--dim)"{% endif %}>{{ p.message }}</span>
         {% if p.is_ignored %}
-          <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ p.ignored_by if p.ignored_by else '') }}">diabaikan{{ (' s/d ' ~ p.ignored_until.strftime('%d %b %H:%M')) if p.ignored_until else ' permanen' }}</span>
+          <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ p.ignored_by if p.ignored_by else '') }}">🔕 diabaikan{{ (' s/d ' ~ p.ignored_until.strftime('%d %b %H:%M')) if p.ignored_until else ' permanen' }}</span>
         {% endif %}
         {% if p.acknowledged_by %}<span class="badge badge-up" title="Ditangani {{ p.acknowledged_by }}">Ditangani</span>{% endif %}
         {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
@@ -2236,7 +2236,7 @@ function renderProblemsTab(level, openList, histList) {
       <option value="danger"${oldFilter === 'danger' ? ' selected' : ''}>Danger</option>
       <option value="warning"${oldFilter === 'warning' ? ' selected' : ''}>Warning</option>
       <option value="info"${oldFilter === 'info' ? ' selected' : ''}>Info</option>
-      <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>Diabaikan</option>
+      <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>Diabaikan (🔕)</option>
     </select>
     <input type="search" id="prob-search" oninput="probFilter()" value="${escapeHtml(oldSearch)}" placeholder="Cari kejadian…"
            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:220px">
@@ -2251,7 +2251,7 @@ function renderProblemsTab(level, openList, histList) {
     const isIgnored = !!p.is_ignored;
     const sev = p.severity || 'info';
     const sevBadge = isIgnored ? 'muted' : ({danger: 'danger', warning: 'warn', info: 'info'}[sev] || 'muted');
-    const sevLabel = escapeHtml(sev);
+    const sevLabel = escapeHtml(sev) + (isIgnored ? ' 🔕' : '');
     const searchTxt = ((p.message || '') + ' ' + (p.key || '')).toLowerCase();
     const rowStyle = !isOpen ? ' style="opacity:.65"' : (isIgnored ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '');
     const startStr = fmtProbDate(p.started_at);
@@ -2259,7 +2259,7 @@ function renderProblemsTab(level, openList, histList) {
     const checkMark = '';
     const msgStyle = isOpen ? '' : ' style="text-decoration:line-through;color:var(--dim)"';
     const ignoredBadge = isIgnored
-      ? `<span class="badge badge-muted" title="${p.ignored_reason ? 'Alasan: ' + escapeHtml(p.ignored_reason) : (p.ignored_by ? 'Diabaikan oleh ' + escapeHtml(p.ignored_by) : '')}">diabaikan${p.ignored_until ? ' s/d ' + fmtProbDate(p.ignored_until) : ' permanen'}</span> `
+      ? `<span class="badge badge-muted" title="${p.ignored_reason ? 'Alasan: ' + escapeHtml(p.ignored_reason) : (p.ignored_by ? 'Diabaikan oleh ' + escapeHtml(p.ignored_by) : '')}">🔕 diabaikan${p.ignored_until ? ' s/d ' + fmtProbDate(p.ignored_until) : ' permanen'}</span> `
       : '';
     const ackBadge = p.acknowledged_by ? `<span class="badge badge-up" title="Diakui ${escapeHtml(p.acknowledged_by)}">diakui</span> ` : '';
     const kambuhBadge = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh ${p.count_24h}×</span>` : '';

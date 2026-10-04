@@ -8,7 +8,7 @@
       {% if danger_open %}<span class="badge badge-danger">Danger {{ danger_open }}</span>{% endif %}
       {% if warning_open %}<span class="badge badge-warn">Warning {{ warning_open }}</span>{% endif %}
       {% if info_open %}<span class="badge badge-info">Info {{ info_open }}</span>{% endif %}
-      {% if ignored_open %}<span class="badge badge-muted" title="{{ ignored_open }} masalah diabaikan">{{ ignored_open }} diabaikan</span>{% endif %}
+      {% if ignored_open %}<span class="badge badge-muted" title="{{ ignored_open }} masalah diabaikan">🔕 {{ ignored_open }} diabaikan</span>{% endif %}
       <span class="badge badge-up">{{ ok_count }} server tanpa masalah</span>
     </span>
   </div>
@@ -36,7 +36,7 @@
       <option value="danger">Danger</option>
       <option value="warning">Warning</option>
       <option value="info">Info</option>
-      <option value="ignored">Diabaikan</option>
+      <option value="ignored">Diabaikan (🔕)</option>
     </select>
     <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari server / kejadian…"
            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:220px">
@@ -55,11 +55,11 @@
         data-text="{{ (p.hostname ~ ' ' ~ p.message ~ ' ' ~ p.key) | lower }}">
       <td style="white-space:nowrap" class="mono">{{ p.started_at.strftime('%d %b %H:%M') }}</td>
       <td><strong>{{ p.hostname }}</strong></td>
-      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}</span></td>
+      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
       <td>
         <span>{{ p.message }}</span>
         {% if p.is_ignored %}
-          <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ p.ignored_by if p.ignored_by else '') }}">diabaikan{{ (' s/d ' ~ p.ignored_until.strftime('%d %b %H:%M')) if p.ignored_until else ' permanen' }}</span>
+          <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ p.ignored_by if p.ignored_by else '') }}">🔕 diabaikan{{ (' s/d ' ~ p.ignored_until.strftime('%d %b %H:%M')) if p.ignored_until else ' permanen' }}</span>
         {% endif %}
         {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
@@ -67,29 +67,17 @@
       <td style="white-space:nowrap">
         <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
         {% if p.is_ignored %}
-          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px;display:inline-flex;align-items:center;gap:4px"
-                  data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            Pantau Kembali
-          </button>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
+                  data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>
         {% else %}
-          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px;display:inline-flex;align-items:center;gap:4px"
-                  data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            Abaikan
-          </button>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
+                  data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>
         {% endif %}
         {% if p.acknowledged_by %}
-          <span class="badge badge-up" style="margin-left:4px;display:inline-flex;align-items:center;gap:4px" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Ditangani
-          </span>
+          <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">✓ Ditangani</span>
         {% elif p.is_open %}
-          <button type="button" class="btn btn-{{ 'danger' if p.severity == 'danger' else 'ghost' }} btn-sm" style="margin-left:4px;display:inline-flex;align-items:center;gap:4px"
-                  onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Ditangani
-          </button>
+          <button type="button" class="btn btn-{{ 'danger' if p.severity == 'danger' else 'ghost' }} btn-sm" style="margin-left:4px"
+                  onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')">Ditangani</button>
         {% endif %}
       </td>
       <td style="font-size:12px;color:var(--dim);max-width:360px">
@@ -126,7 +114,7 @@
       </td>
       <td><strong>{{ p.hostname }}</strong></td>
       <td><span class="badge badge-{{ {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}">{{ p.severity }}</span></td>
-      <td><span style="text-decoration:line-through;color:var(--dim)">{{ p.message }}</span>
+      <td><span style="color:var(--green)">✓</span> <span style="text-decoration:line-through">{{ p.message }}</span>
         {% if p.resolved_note == 'auto' %}
           <span class="badge badge-muted" title="Tidak ada deteksi baru selama jendela tenang">otomatis berakhir</span>
         {% elif p.resolved_note %}
@@ -182,8 +170,8 @@ async function ackProblem(id, btn, sev) {
       showToast('Masalah ditandai sebagai ditangani.', true);
       const span = document.createElement('span');
       span.className = 'badge badge-up';
-      span.title = 'Ditangani';
-      span.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px"><polyline points="20 6 9 17 4 12"/></svg>Ditangani';
+      span.title = 'Diakui';
+      span.textContent = '✓ diakui';
       btn.replaceWith(span);
       return;
     }
