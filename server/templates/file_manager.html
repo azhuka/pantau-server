@@ -47,9 +47,14 @@
   .fm-disk-fill { height: 100%; background: var(--blue); border-radius: 4px; transition: width 0.3s ease; }
 
   .fm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .fm-table th { padding: 10px 12px; text-align: left; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; }
+  .fm-table th { padding: 10px 12px; text-align: left; color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; user-select: none; }
+  .fm-table th.sortable { cursor: pointer; }
+  .fm-table th.sortable:hover { color: var(--blue); }
   .fm-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   .fm-row:hover td { background: var(--hover); }
+  .fm-row.is-selected td { background: rgba(59, 130, 246, 0.12) !important; }
+  .fm-row.is-cut td { opacity: 0.45; }
+  .fm-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: var(--blue); }
   .fm-item-name { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; color: var(--text); text-decoration: none; word-break: break-all; }
   .fm-item-name:hover { color: var(--blue); }
   .fm-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; user-select: none; }
@@ -57,14 +62,19 @@
   .fm-act-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: 4px; background: transparent; cursor: pointer; font-size: 13px; transition: all 0.15s; }
   .fm-act-btn:hover { background: var(--hover); border-color: var(--border); }
 
-  .fm-modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(3px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .fm-modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(3px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; transition: padding 0.2s ease; }
+  .fm-modal-backdrop.has-fullscreen { padding: 0 !important; }
   .fm-modal-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 16px 40px rgba(0,0,0,0.6); overflow: hidden; transition: all 0.2s ease; }
-  .fm-modal-card.is-fullscreen { max-width: 98vw; width: 98vw; height: 96vh; max-height: 96vh; border-radius: 8px; }
+  .fm-modal-card-editor { max-width: 1100px; height: 88vh; }
+  .fm-modal-card.is-fullscreen { max-width: 100vw !important; width: 100vw !important; height: 100vh !important; max-height: 100vh !important; border-radius: 0 !important; border: none !important; }
+  .fm-modal-card.is-fullscreen .fm-editor-textarea { height: auto !important; flex: 1 !important; }
   .fm-modal-header { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 14px; background: var(--bg); }
   .fm-modal-body { padding: 16px 18px; overflow-y: auto; flex: 1; }
   .fm-modal-footer { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; background: var(--bg); }
   .fm-editor-textarea { width: 100%; height: 60vh; background: #0f172a; color: #f8fafc; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; line-height: 1.55; border: 1px solid var(--border); border-radius: 6px; padding: 12px; resize: none; tab-size: 2; outline: none; flex: 1; box-sizing: border-box; }
   .fm-editor-textarea:focus { border-color: var(--blue); }
+
+  .fm-bar-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 14px; border-radius: 6px; font-size: 13px; flex-wrap: wrap; }
 </style>
 
 <div class="card fm-wrapper" id="fm-container" style="padding:16px">
@@ -95,6 +105,9 @@
     <!-- Action & Search Toolbar -->
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <input type="text" id="fm-filter" class="fm-search-input" oninput="fmFilterItems(this.value)" placeholder="Filter berkas di folder ini...">
+      <button type="button" class="btn btn-sm" id="fm-btn-paste" onclick="fmPasteClipboard()" style="display:none;align-items:center;gap:4px;border-color:var(--blue);color:var(--blue)">
+        📋 Tempel
+      </button>
       <button type="button" class="btn btn-sm" onclick="fmOpenNewFolder()" style="display:flex;align-items:center;gap:4px">
         + Folder Baru
       </button>
@@ -117,6 +130,31 @@
     </div>
   </div>
 
+  <!-- Floating / Inline Bulk Action Bar -->
+  <div id="fm-bulk-bar" class="fm-bar-banner" style="display:none;background:var(--hover);border:1px solid var(--blue)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span id="fm-bulk-count" style="font-weight:600;font-size:13px;color:var(--blue)">0 item terpilih</span>
+      <button type="button" class="btn btn-sm btn-ghost" onclick="fmClearSelection()">Batal Pilih (Esc)</button>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <button type="button" class="btn btn-sm" onclick="fmCopySelected()" title="Ctrl+C">📋 Salin</button>
+      <button type="button" class="btn btn-sm" onclick="fmCutSelected()" title="Ctrl+X">✂️ Potong</button>
+      <button type="button" class="btn btn-sm" onclick="fmOpenBulkChmod()">⚙ Ubah Izin</button>
+      <button type="button" class="btn btn-sm btn-danger" onclick="fmOpenBulkDelete()">🗑 Hapus Terpilih</button>
+    </div>
+  </div>
+
+  <!-- Clipboard Indicator Bar -->
+  <div id="fm-clipboard-bar" class="fm-bar-banner" style="display:none;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3)">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="fm-clipboard-desc">📋 0 item siap ditempel</span>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button type="button" class="btn btn-sm btn-primary" onclick="fmPasteClipboard()">📋 Tempel di Sini (Ctrl+V)</button>
+      <button type="button" class="btn btn-sm btn-ghost" onclick="fmClearClipboard()">Batal</button>
+    </div>
+  </div>
+
   <!-- Error message banner -->
   <div id="fm-error-banner" style="display:none;background:var(--red-bg);color:var(--red);padding:10px 14px;border-radius:6px;font-size:13px;border:1px solid rgba(239,68,68,0.2)"></div>
 
@@ -125,12 +163,15 @@
     <table class="fm-table" id="fm-table">
       <thead>
         <tr>
-          <th style="width:38%">Nama</th>
-          <th style="width:12%">Ukuran</th>
-          <th style="width:14%">Izin</th>
-          <th style="width:14%">Pemilik : Grup</th>
-          <th style="width:14%">Waktu Diubah</th>
-          <th style="width:8%;text-align:right">Tindakan</th>
+          <th style="width:36px;text-align:center">
+            <input type="checkbox" id="fm-select-all" class="fm-checkbox" onclick="fmToggleSelectAll(this.checked)" title="Pilih Semua (Ctrl+A)">
+          </th>
+          <th class="sortable" style="width:36%" onclick="fmSortBy('name')">Nama <span id="fm-sort-name">↕</span></th>
+          <th class="sortable" style="width:12%" onclick="fmSortBy('size')">Ukuran <span id="fm-sort-size"></span></th>
+          <th class="sortable" style="width:12%" onclick="fmSortBy('mode')">Izin <span id="fm-sort-mode"></span></th>
+          <th class="sortable" style="width:14%" onclick="fmSortBy('owner')">Pemilik : Grup <span id="fm-sort-owner"></span></th>
+          <th class="sortable" style="width:14%" onclick="fmSortBy('mtime')">Waktu Diubah <span id="fm-sort-mtime"></span></th>
+          <th style="width:12%;text-align:right">Tindakan</th>
         </tr>
       </thead>
       <tbody id="fm-tbody">
@@ -142,7 +183,7 @@
 
 <!-- MODAL: Editor Berkas -->
 <div id="fm-editor-modal" class="fm-modal-backdrop" style="display:none">
-  <div class="fm-modal-card" id="fm-editor-card" style="max-width:1100px;height:88vh">
+  <div class="fm-modal-card fm-modal-card-editor" id="fm-editor-card">
     <div class="fm-modal-header">
       <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
         <span>📝 Editor Berkas:</span>
@@ -152,7 +193,7 @@
         <span id="fm-editor-status" style="font-size:12px;margin-left:8px"></span>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="fmToggleEditorFullscreen()" title="Layar Penuh (Toggle Fullscreen)">⛶</button>
+        <button type="button" id="fm-editor-fs-btn" class="btn btn-ghost btn-sm" onclick="fmToggleEditorFullscreen()" title="Layar Penuh (Toggle Fullscreen)">⛶</button>
         <button type="button" class="btn btn-ghost btn-sm" onclick="fmCloseEditor()" title="Tutup">&times;</button>
       </div>
     </div>
@@ -329,6 +370,65 @@
     </form>
   </div>
 </div>
+
+<!-- MODAL: Hapus Massal (Bulk Delete) -->
+<div id="fm-bulk-delete-modal" class="fm-modal-backdrop" style="display:none">
+  <div class="fm-modal-card" style="border-color:rgba(239,68,68,0.4)">
+    <div class="fm-modal-header" style="color:var(--red)">
+      <span>🗑 Konfirmasi Hapus Massal</span>
+      <button type="button" class="btn btn-ghost" onclick="fmCloseBulkDelete()">&times;</button>
+    </div>
+    <div class="fm-modal-body">
+      <p style="font-size:14px;margin-bottom:10px">
+        Apakah Anda yakin ingin menghapus <strong id="fm-bulk-delete-count" style="color:var(--red)">0</strong> item terpilih berikut secara permanen?
+      </p>
+      <div id="fm-bulk-delete-list" style="background:var(--bg);padding:10px 14px;border-radius:6px;border:1px solid var(--border);margin-bottom:14px;max-height:160px;overflow-y:auto;font-family:monospace;font-size:12px;display:flex;flex-direction:column;gap:4px">
+      </div>
+      <div style="font-size:12px;color:var(--dim)">
+        ⚠️ Tindakan ini tidak dapat dibatalkan. Berkas atau seluruh sub-folder di dalamnya akan dihapus dari server klien.
+      </div>
+      <div id="fm-bulk-delete-error" style="display:none;color:var(--red);font-size:12px;margin-top:10px"></div>
+    </div>
+    <div class="fm-modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="fmCloseBulkDelete()">Batal</button>
+      <button type="button" id="fm-bulk-delete-btn" class="btn btn-danger" onclick="fmSubmitBulkDelete()">Hapus Semua Terpilih</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Ubah Izin Massal (Bulk Chmod) -->
+<div id="fm-bulk-chmod-modal" class="fm-modal-backdrop" style="display:none">
+  <div class="fm-modal-card">
+    <div class="fm-modal-header">
+      <span>⚙ Ubah Hak Akses Massal</span>
+      <button type="button" class="btn btn-ghost" onclick="fmCloseBulkChmod()">&times;</button>
+    </div>
+    <form id="fm-bulk-chmod-form" onsubmit="fmSubmitBulkChmod(event)">
+      <div class="fm-modal-body">
+        <p style="font-size:13px;margin-bottom:12px">
+          Ubah izin untuk <strong id="fm-bulk-chmod-count" style="color:var(--blue)">0</strong> item terpilih.
+        </p>
+        <div style="margin-bottom:12px">
+          <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Mode Izin Baru (Oktal):</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="fm-bulk-chmod-mode" maxlength="4" style="width:90px;font-family:monospace;font-size:14px;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)" required value="0644">
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <button type="button" class="btn btn-sm" onclick="document.getElementById('fm-bulk-chmod-mode').value='0644'">0644 (File)</button>
+              <button type="button" class="btn btn-sm" onclick="document.getElementById('fm-bulk-chmod-mode').value='0755'">0755 (Folder/Exec)</button>
+              <button type="button" class="btn btn-sm" onclick="document.getElementById('fm-bulk-chmod-mode').value='0600'">0600 (Ketat)</button>
+              <button type="button" class="btn btn-sm" onclick="document.getElementById('fm-bulk-chmod-mode').value='0777'">0777 (Penuh)</button>
+            </div>
+          </div>
+        </div>
+        <div id="fm-bulk-chmod-error" style="display:none;color:var(--red);font-size:12px;margin-top:8px"></div>
+      </div>
+      <div class="fm-modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="fmCloseBulkChmod()">Batal</button>
+        <button type="submit" id="fm-bulk-chmod-submit-btn" class="btn btn-primary">Terapkan Perubahan</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -378,6 +478,11 @@ if (_savedFmPath && _savedFmPath.startsWith('/') && !_savedFmPath.startsWith('/v
 let fmHistory = [fmCurrentPath];
 let fmHistoryIdx = 0;
 let fmItems = [];
+let fmVisibleItems = [];
+let fmSelected = new Set();
+let fmClipboard = null; // { mode: 'copy'|'cut', items: string[], sourceDir: string }
+let fmSortColumn = 'name';
+let fmSortAsc = true;
 let fmEditingPath = null;
 let fmPromptCallback = null;
 let fmChmodTarget = null;
@@ -455,13 +560,234 @@ function fmSubmitPathInput(e) {
   fmLoadDir(target);
 }
 
+// ===========================================================================
+// PENGURUTAN (SORTING)
+// ===========================================================================
+function fmSortItems(items) {
+  const sorted = [...items];
+  sorted.sort((a, b) => {
+    // Direktori selalu di atas
+    if (a.is_dir && !b.is_dir) return -1;
+    if (!a.is_dir && b.is_dir) return 1;
+
+    let res = 0;
+    if (fmSortColumn === 'name') {
+      res = a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+    } else if (fmSortColumn === 'size') {
+      res = (a.size || 0) - (b.size || 0);
+    } else if (fmSortColumn === 'mode') {
+      res = (a.mode_str || '').localeCompare(b.mode_str || '');
+    } else if (fmSortColumn === 'owner') {
+      const oA = `${a.owner || ''}:${a.group || ''}`;
+      const oB = `${b.owner || ''}:${b.group || ''}`;
+      res = oA.localeCompare(oB);
+    } else if (fmSortColumn === 'mtime') {
+      const tA = a.mtime ? new Date(a.mtime).getTime() : 0;
+      const tB = b.mtime ? new Date(b.mtime).getTime() : 0;
+      res = tA - tB;
+    }
+    return fmSortAsc ? res : -res;
+  });
+  return sorted;
+}
+
+function fmSortBy(column) {
+  if (fmSortColumn === column) {
+    fmSortAsc = !fmSortAsc;
+  } else {
+    fmSortColumn = column;
+    fmSortAsc = true;
+  }
+  ['name', 'size', 'mode', 'owner', 'mtime'].forEach(col => {
+    const el = document.getElementById('fm-sort-' + col);
+    if (!el) return;
+    if (col === fmSortColumn) {
+      el.textContent = fmSortAsc ? '↑' : '↓';
+    } else {
+      el.textContent = '';
+    }
+  });
+  const filterVal = document.getElementById('fm-filter').value;
+  fmFilterItems(filterVal);
+}
+
+// ===========================================================================
+// MULTI-SELECT & BULK ACTIONS
+// ===========================================================================
+function fmToggleSelect(path, checked) {
+  if (checked) {
+    fmSelected.add(path);
+  } else {
+    fmSelected.delete(path);
+  }
+  fmUpdateSelectionUI();
+}
+
+function fmToggleSelectAll(checked) {
+  if (checked) {
+    fmVisibleItems.forEach(item => fmSelected.add(item.path));
+  } else {
+    fmVisibleItems.forEach(item => fmSelected.delete(item.path));
+  }
+  fmUpdateSelectionUI();
+}
+
+function fmClearSelection() {
+  fmSelected.clear();
+  fmUpdateSelectionUI();
+}
+
+function fmUpdateSelectionUI() {
+  const bulkBar = document.getElementById('fm-bulk-bar');
+  const countEl = document.getElementById('fm-bulk-count');
+  const selectAll = document.getElementById('fm-select-all');
+
+  const count = fmSelected.size;
+  if (countEl) countEl.textContent = `${count} item terpilih`;
+  if (bulkBar) bulkBar.style.display = count > 0 ? 'flex' : 'none';
+
+  if (selectAll) {
+    const totalVisible = fmVisibleItems.length;
+    const selectedVisible = fmVisibleItems.filter(i => fmSelected.has(i.path)).length;
+    if (totalVisible > 0 && selectedVisible === totalVisible) {
+      selectAll.checked = true;
+      selectAll.indeterminate = false;
+    } else if (selectedVisible > 0) {
+      selectAll.checked = false;
+      selectAll.indeterminate = true;
+    } else {
+      selectAll.checked = false;
+      selectAll.indeterminate = false;
+    }
+  }
+
+  document.querySelectorAll('#fm-tbody tr[data-path]').forEach(tr => {
+    const p = tr.getAttribute('data-path');
+    const cb = tr.querySelector('.fm-row-checkbox');
+    const isSel = fmSelected.has(p);
+    if (cb) cb.checked = isSel;
+    tr.classList.toggle('is-selected', isSel);
+  });
+}
+
+// ===========================================================================
+// CLIPBOARD (COPY / CUT / PASTE)
+// ===========================================================================
+function fmCopySelected() {
+  if (fmSelected.size === 0) return;
+  fmClipboard = {
+    mode: 'copy',
+    items: Array.from(fmSelected),
+    sourceDir: fmCurrentPath
+  };
+  fmClearSelection();
+  fmUpdateClipboardUI();
+}
+
+function fmCutSelected() {
+  if (fmSelected.size === 0) return;
+  fmClipboard = {
+    mode: 'cut',
+    items: Array.from(fmSelected),
+    sourceDir: fmCurrentPath
+  };
+  fmClearSelection();
+  fmUpdateClipboardUI();
+}
+
+function fmCopySingle(path) {
+  fmClipboard = {
+    mode: 'copy',
+    items: [path],
+    sourceDir: fmCurrentPath
+  };
+  fmUpdateClipboardUI();
+}
+
+function fmCutSingle(path) {
+  fmClipboard = {
+    mode: 'cut',
+    items: [path],
+    sourceDir: fmCurrentPath
+  };
+  fmUpdateClipboardUI();
+}
+
+function fmClearClipboard() {
+  fmClipboard = null;
+  fmUpdateClipboardUI();
+}
+
+function fmUpdateClipboardUI() {
+  const clipBar = document.getElementById('fm-clipboard-bar');
+  const clipDesc = document.getElementById('fm-clipboard-desc');
+  const btnPaste = document.getElementById('fm-btn-paste');
+
+  if (fmClipboard && fmClipboard.items && fmClipboard.items.length > 0) {
+    const actText = fmClipboard.mode === 'cut' ? 'dipotong (pindah)' : 'disalin';
+    const count = fmClipboard.items.length;
+    const names = fmClipboard.items.slice(0, 3).map(p => p.split('/').pop()).join(', ');
+    const more = count > 3 ? ` dan ${count - 3} lainnya` : '';
+    if (clipDesc) {
+      clipDesc.innerHTML = `<span>📋 <strong>${count} item ${actText}</strong>: <code style="color:var(--blue)">${escapeHtml(names + more)}</code></span>`;
+    }
+    if (clipBar) clipBar.style.display = 'flex';
+    if (btnPaste) {
+      btnPaste.style.display = 'inline-flex';
+      btnPaste.textContent = `📋 Tempel (${count})`;
+    }
+  } else {
+    if (clipBar) clipBar.style.display = 'none';
+    if (btnPaste) btnPaste.style.display = 'none';
+  }
+
+  document.querySelectorAll('#fm-tbody tr[data-path]').forEach(tr => {
+    const p = tr.getAttribute('data-path');
+    const isCut = fmClipboard && fmClipboard.mode === 'cut' && fmClipboard.items.includes(p);
+    tr.classList.toggle('is-cut', !!isCut);
+  });
+}
+
+async function fmPasteClipboard() {
+  if (!fmClipboard || !fmClipboard.items || fmClipboard.items.length === 0) return;
+  const isCut = fmClipboard.mode === 'cut';
+  const endpoint = isCut ? `/api/servers/${SID}/files/move` : `/api/servers/${SID}/files/copy`;
+  const items = fmClipboard.items;
+
+  const btnPaste = document.getElementById('fm-btn-paste');
+  if (btnPaste) btnPaste.disabled = true;
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
+      body: JSON.stringify({ sources: items, destination: fmCurrentPath })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      throw new Error(data.detail || data.error || 'Gagal menempelkan item');
+    }
+
+    if (isCut) {
+      fmClipboard = null;
+    }
+    fmUpdateClipboardUI();
+    fmLoadDir(fmCurrentPath, false);
+  } catch (err) {
+    alert('Gagal menempel berkas/folder: ' + err.message);
+  } finally {
+    if (btnPaste) btnPaste.disabled = false;
+  }
+}
+
 async function fmLoadDir(path, pushHistory = true) {
   const errBanner = document.getElementById('fm-error-banner');
   const tbody = document.getElementById('fm-tbody');
   const statsInfo = document.getElementById('fm-stats-info');
 
   errBanner.style.display = 'none';
-  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--dim)">
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--dim)">
     <span class="spinner" style="display:inline-block;margin-right:8px"></span> Memuat direktori <code>${escapeHtml(path)}</code>...
   </td></tr>`;
 
@@ -492,7 +818,14 @@ async function fmLoadDir(path, pushHistory = true) {
     fmRenderBreadcrumbs(fmCurrentPath);
 
     fmItems = data.items || [];
-    fmRenderItems(fmItems);
+    fmClearSelection();
+
+    const filterVal = (document.getElementById('fm-filter') ? document.getElementById('fm-filter').value : '') || '';
+    if (filterVal.trim()) {
+      fmFilterItems(filterVal);
+    } else {
+      fmRenderItems(fmSortItems(fmItems));
+    }
 
     let totalSize = 0;
     let dirCount = 0;
@@ -523,7 +856,7 @@ async function fmLoadDir(path, pushHistory = true) {
   } catch (err) {
     errBanner.textContent = 'Gagal membuka direktori: ' + err.message;
     errBanner.style.display = 'block';
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--red)">
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--red)">
       ⚠️ ${escapeHtml(err.message)}
     </td></tr>`;
     fmUpdateNavButtons();
@@ -590,20 +923,23 @@ function getFileIcon(item) {
 
 function fmFilterItems(keyword) {
   if (!keyword || !keyword.trim()) {
-    fmRenderItems(fmItems);
+    fmRenderItems(fmSortItems(fmItems));
     return;
   }
   const q = keyword.trim().toLowerCase();
   const filtered = fmItems.filter(i => i.name.toLowerCase().includes(q));
-  fmRenderItems(filtered);
+  fmRenderItems(fmSortItems(filtered));
 }
 
 function fmRenderItems(items) {
+  fmVisibleItems = items || [];
   const tbody = document.getElementById('fm-tbody');
   tbody.innerHTML = '';
 
   if (!items || items.length === 0 && fmCurrentPath === '/') {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--dim)">Direktori ini kosong.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--dim)">Direktori ini kosong.</td></tr>`;
+    fmUpdateSelectionUI();
+    fmUpdateClipboardUI();
     return;
   }
 
@@ -612,6 +948,7 @@ function fmRenderItems(items) {
     const trUp = document.createElement('tr');
     trUp.className = 'fm-row';
     trUp.innerHTML = `
+      <td style="text-align:center;color:var(--dim)">-</td>
       <td colspan="6">
         <a class="fm-item-name" style="color:var(--dim)" onclick="fmLoadDir('${escapeHtml(parent)}')">
           <span class="fm-icon">📂</span>
@@ -624,17 +961,23 @@ function fmRenderItems(items) {
 
   if (items.length === 0 && fmCurrentPath !== '/') {
     const trEmpty = document.createElement('tr');
-    trEmpty.innerHTML = `<td colspan="6" style="text-align:center;padding:20px;color:var(--dim)">Tidak ada berkas lain di direktori ini.</td>`;
+    trEmpty.innerHTML = `<td colspan="7" style="text-align:center;padding:20px;color:var(--dim)">Tidak ada berkas lain di direktori ini.</td>`;
     tbody.appendChild(trEmpty);
+    fmUpdateSelectionUI();
+    fmUpdateClipboardUI();
     return;
   }
 
   items.forEach(item => {
     const tr = document.createElement('tr');
-    tr.className = 'fm-row';
-
     const safePath = escapeHtml(item.path);
     const safeName = escapeHtml(item.name);
+    const isCut = fmClipboard && fmClipboard.mode === 'cut' && fmClipboard.items.includes(item.path);
+    const isSel = fmSelected.has(item.path);
+
+    tr.className = 'fm-row' + (isSel ? ' is-selected' : '') + (isCut ? ' is-cut' : '');
+    tr.setAttribute('data-path', item.path);
+
     const icon = getFileIcon(item);
     const sizeStr = item.is_dir ? '<span class="dim">&mdash;</span>' : formatBytes(item.size);
     const modeStr = `<code style="font-size:12px">${escapeHtml(item.mode_str || '-')}</code>`;
@@ -649,6 +992,9 @@ function fmRenderItems(items) {
     }
 
     tr.innerHTML = `
+      <td style="text-align:center" onclick="event.stopPropagation()">
+        <input type="checkbox" class="fm-checkbox fm-row-checkbox" ${isSel ? 'checked' : ''} onchange="fmToggleSelect('${safePath}', this.checked)">
+      </td>
       <td>
         <a class="fm-item-name" ${clickHandler}>
           <span class="fm-icon">${icon}</span>
@@ -663,6 +1009,8 @@ function fmRenderItems(items) {
       <td class="fm-actions-cell">
         ${!item.is_dir ? `<button type="button" class="fm-act-btn" title="Lihat & Edit Berkas" onclick="fmOpenFile('${safePath}')">✏️</button>` : ''}
         ${!item.is_dir ? `<button type="button" class="fm-act-btn" title="Unduh Berkas" onclick="fmDownloadFile('${safePath}')">⬇️</button>` : ''}
+        <button type="button" class="fm-act-btn" title="Salin (Copy)" onclick="fmCopySingle('${safePath}')">📋</button>
+        <button type="button" class="fm-act-btn" title="Potong (Cut)" onclick="fmCutSingle('${safePath}')">✂️</button>
         <button type="button" class="fm-act-btn" title="Ubah Hak Akses & Pemilik (chmod/chown)" onclick="fmOpenChmod('${safePath}', '${item.mode_octal || '0644'}', '${escapeHtml(item.owner || '')}', '${escapeHtml(item.group || '')}')">⚙️</button>
         <button type="button" class="fm-act-btn" title="Ganti Nama" onclick="fmOpenRename('${safePath}', '${safeName}')">🏷️</button>
         <button type="button" class="fm-act-btn" style="color:var(--red)" title="Hapus" onclick="fmOpenDelete('${safePath}', ${item.is_dir})">🗑️</button>
@@ -670,6 +1018,9 @@ function fmRenderItems(items) {
     `;
     tbody.appendChild(tr);
   });
+
+  fmUpdateSelectionUI();
+  fmUpdateClipboardUI();
 }
 
 // ===========================================================================
@@ -732,13 +1083,29 @@ async function fmOpenFile(filePath) {
 }
 
 function fmCloseEditor() {
-  document.getElementById('fm-editor-modal').style.display = 'none';
+  const modal = document.getElementById('fm-editor-modal');
+  const card = document.getElementById('fm-editor-card');
+  const btn = document.getElementById('fm-editor-fs-btn');
+  modal.style.display = 'none';
+  modal.classList.remove('has-fullscreen');
+  card.classList.remove('is-fullscreen');
+  if (btn) {
+    btn.textContent = '⛶';
+    btn.title = 'Layar Penuh';
+  }
   fmEditingPath = null;
 }
 
 function fmToggleEditorFullscreen() {
+  const modal = document.getElementById('fm-editor-modal');
   const card = document.getElementById('fm-editor-card');
-  card.classList.toggle('is-fullscreen');
+  const btn = document.getElementById('fm-editor-fs-btn');
+  const isFs = card.classList.toggle('is-fullscreen');
+  modal.classList.toggle('has-fullscreen', isFs);
+  if (btn) {
+    btn.textContent = isFs ? '🗗' : '⛶';
+    btn.title = isFs ? 'Keluar Layar Penuh' : 'Layar Penuh';
+  }
 }
 
 function fmReloadEditor() {
@@ -1001,7 +1368,7 @@ async function fmSubmitRename(e) {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
-      body: JSON.stringify({ src: fmRenameTarget, dst: newPath })
+      body: JSON.stringify({ old_path: fmRenameTarget, new_path: newPath, src: fmRenameTarget, dst: newPath })
     });
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.detail || data.error || 'Gagal mengganti nama');
@@ -1142,6 +1509,173 @@ async function fmSubmitPrompt(e) {
     errBox.style.display = 'block';
   }
 }
+
+// ===========================================================================
+// HAPUS MASSAL (BULK DELETE)
+// ===========================================================================
+function fmOpenBulkDelete() {
+  if (fmSelected.size === 0) return;
+  const listEl = document.getElementById('fm-bulk-delete-list');
+  const countEl = document.getElementById('fm-bulk-delete-count');
+  const errBox = document.getElementById('fm-bulk-delete-error');
+  const btn = document.getElementById('fm-bulk-delete-btn');
+
+  countEl.textContent = fmSelected.size;
+  listEl.innerHTML = '';
+  fmSelected.forEach(p => {
+    const div = document.createElement('div');
+    div.textContent = p;
+    listEl.appendChild(div);
+  });
+  errBox.style.display = 'none';
+  btn.disabled = false;
+  document.getElementById('fm-bulk-delete-modal').style.display = 'flex';
+}
+
+function fmCloseBulkDelete() {
+  document.getElementById('fm-bulk-delete-modal').style.display = 'none';
+}
+
+async function fmSubmitBulkDelete() {
+  if (fmSelected.size === 0) return;
+  const btn = document.getElementById('fm-bulk-delete-btn');
+  const errBox = document.getElementById('fm-bulk-delete-error');
+  btn.disabled = true;
+  errBox.style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/servers/${SID}/files/batch-rm`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
+      body: JSON.stringify({ paths: Array.from(fmSelected) })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || 'Gagal menghapus beberapa item');
+
+    fmClearSelection();
+    fmCloseBulkDelete();
+    fmLoadDir(fmCurrentPath, false);
+  } catch (err) {
+    btn.disabled = false;
+    errBox.textContent = 'Gagal: ' + err.message;
+    errBox.style.display = 'block';
+  }
+}
+
+// ===========================================================================
+// UBAH IZIN MASSAL (BULK CHMOD)
+// ===========================================================================
+function fmOpenBulkChmod() {
+  if (fmSelected.size === 0) return;
+  document.getElementById('fm-bulk-chmod-count').textContent = fmSelected.size;
+  document.getElementById('fm-bulk-chmod-error').style.display = 'none';
+  document.getElementById('fm-bulk-chmod-submit-btn').disabled = false;
+  document.getElementById('fm-bulk-chmod-modal').style.display = 'flex';
+}
+
+function fmCloseBulkChmod() {
+  document.getElementById('fm-bulk-chmod-modal').style.display = 'none';
+}
+
+async function fmSubmitBulkChmod(e) {
+  e.preventDefault();
+  if (fmSelected.size === 0) return;
+  const mode = document.getElementById('fm-bulk-chmod-mode').value.trim();
+  const btn = document.getElementById('fm-bulk-chmod-submit-btn');
+  const errBox = document.getElementById('fm-bulk-chmod-error');
+  btn.disabled = true;
+  errBox.style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/servers/${SID}/files/batch-chmod`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
+      body: JSON.stringify({ paths: Array.from(fmSelected), mode: mode })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || 'Gagal mengubah izin');
+
+    fmClearSelection();
+    fmCloseBulkChmod();
+    fmLoadDir(fmCurrentPath, false);
+  } catch (err) {
+    btn.disabled = false;
+    errBox.textContent = 'Gagal: ' + err.message;
+    errBox.style.display = 'block';
+  }
+}
+
+// ===========================================================================
+// PINTASAN KEYBOARD GLOBAL FILE MANAGER
+// ===========================================================================
+document.addEventListener('keydown', (e) => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  const isInput = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;
+
+  // Escape key: tutup modal atau batalkan seleksi / clipboard
+  if (e.key === 'Escape') {
+    const openModals = document.querySelectorAll('.fm-modal-backdrop');
+    let anyOpen = false;
+    openModals.forEach(m => {
+      if (m.style.display === 'flex') {
+        m.style.display = 'none';
+        anyOpen = true;
+      }
+    });
+    if (anyOpen) {
+      if (fmEditingPath) fmCloseEditor();
+      return;
+    }
+    if (fmSelected.size > 0) {
+      fmClearSelection();
+      return;
+    }
+    if (fmClipboard) {
+      fmClearClipboard();
+      return;
+    }
+  }
+
+  if (isInput) return;
+
+  const isCtrl = e.ctrlKey || e.metaKey;
+
+  // Ctrl+A: Pilih semua berkas & folder dalam direktori saat ini
+  if (isCtrl && e.key.toLowerCase() === 'a') {
+    e.preventDefault();
+    fmToggleSelectAll(true);
+  }
+  // Ctrl+C: Salin item terpilih
+  else if (isCtrl && e.key.toLowerCase() === 'c') {
+    if (fmSelected.size > 0) {
+      e.preventDefault();
+      fmCopySelected();
+    }
+  }
+  // Ctrl+X: Potong (Pindah) item terpilih
+  else if (isCtrl && e.key.toLowerCase() === 'x') {
+    if (fmSelected.size > 0) {
+      e.preventDefault();
+      fmCutSelected();
+    }
+  }
+  // Ctrl+V: Tempel item dari clipboard ke direktori saat ini
+  else if (isCtrl && e.key.toLowerCase() === 'v') {
+    if (fmClipboard && fmClipboard.items && fmClipboard.items.length > 0) {
+      e.preventDefault();
+      fmPasteClipboard();
+    }
+  }
+  // Delete: Hapus item terpilih
+  else if (e.key === 'Delete') {
+    if (fmSelected.size > 0) {
+      e.preventDefault();
+      fmOpenBulkDelete();
+    }
+  }
+});
 
 // Inisialisasi awal saat halaman dibuka
 document.addEventListener('DOMContentLoaded', () => {

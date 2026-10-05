@@ -490,6 +490,157 @@ def action_write_binary(path: str, data_b64: str) -> None:
     ok_exit({"path": path, "size": len(raw)})
 
 
+def action_copy(sources: list[str], destination: str) -> None:
+    dest_dir = os.path.abspath(destination)
+    if not os.path.exists(dest_dir):
+        err_exit(f"Direktori tujuan tidak ditemukan: {dest_dir}")
+    if not os.path.isdir(dest_dir):
+        err_exit(f"Target tujuan bukan direktori: {dest_dir}")
+
+    if not isinstance(sources, list) or not sources:
+        err_exit("Daftar file/folder yang disalin tidak boleh kosong")
+
+    copied = []
+    for src in sources:
+        src_path = os.path.abspath(src)
+        if not os.path.exists(src_path) and not os.path.islink(src_path):
+            err_exit(f"File atau folder asal tidak ditemukan: {src_path}")
+
+        src_name = os.path.basename(src_path.rstrip("/"))
+        target_path = os.path.join(dest_dir, src_name)
+
+        if os.path.dirname(src_path) == dest_dir:
+            base, ext = os.path.splitext(src_name)
+            counter = 1
+            while os.path.exists(target_path) or os.path.islink(target_path):
+                if os.path.isdir(src_path) and not os.path.islink(src_path):
+                    target_path = os.path.join(dest_dir, f"{src_name}_copy{counter}")
+                else:
+                    target_path = os.path.join(dest_dir, f"{base}_copy{counter}{ext}")
+                counter += 1
+
+        if os.path.isdir(src_path):
+            real_src = os.path.realpath(src_path)
+            real_dest = os.path.realpath(target_path)
+            if real_dest == real_src or real_dest.startswith(real_src + os.sep):
+                err_exit(f"Tidak dapat menyalin direktori ke dalam dirinya sendiri: {src_name}")
+
+        try:
+            if os.path.islink(src_path):
+                link_to = os.readlink(src_path)
+                if os.path.exists(target_path) or os.path.islink(target_path):
+                    os.unlink(target_path)
+                os.symlink(link_to, target_path)
+            elif os.path.isdir(src_path):
+                if os.path.exists(target_path):
+                    shutil.copytree(src_path, target_path, symlinks=True, dirs_exist_ok=True)
+                else:
+                    shutil.copytree(src_path, target_path, symlinks=True)
+            else:
+                shutil.copy2(src_path, target_path)
+            copied.append(target_path)
+        except PermissionError:
+            err_exit(f"Akses ditolak menyalin: {src_name}")
+        except OSError as e:
+            err_exit(f"Gagal menyalin {src_name}: {e}")
+
+    ok_exit({"copied": copied, "count": len(copied)})
+
+
+def action_move(sources: list[str], destination: str) -> None:
+    dest_dir = os.path.abspath(destination)
+    if not os.path.exists(dest_dir):
+        err_exit(f"Direktori tujuan tidak ditemukan: {dest_dir}")
+    if not os.path.isdir(dest_dir):
+        err_exit(f"Target tujuan bukan direktori: {dest_dir}")
+
+    if not isinstance(sources, list) or not sources:
+        err_exit("Daftar file/folder yang dipindahkan tidak boleh kosong")
+
+    moved = []
+    for src in sources:
+        src_path = os.path.abspath(src)
+        real_src = os.path.realpath(src_path)
+        if real_src in PROTECTED_PATHS or src_path in PROTECTED_PATHS:
+            err_exit(f"Aksi ditolak: '{src_path}' adalah direktori sistem kritis.")
+
+        if not os.path.exists(src_path) and not os.path.islink(src_path):
+            err_exit(f"File atau folder asal tidak ditemukan: {src_path}")
+
+        src_name = os.path.basename(src_path.rstrip("/"))
+        target_path = os.path.join(dest_dir, src_name)
+
+        if src_path == target_path:
+            continue
+
+        if os.path.isdir(src_path):
+            real_dest = os.path.realpath(target_path)
+            if real_dest == real_src or real_dest.startswith(real_src + os.sep):
+                err_exit(f"Tidak dapat memindahkan direktori ke dalam dirinya sendiri: {src_name}")
+
+        try:
+            shutil.move(src_path, target_path)
+            moved.append(target_path)
+        except PermissionError:
+            err_exit(f"Akses ditolak memindahkan: {src_name}")
+        except OSError as e:
+            err_exit(f"Gagal memindahkan {src_name}: {e}")
+
+    ok_exit({"moved": moved, "count": len(moved)})
+
+
+def action_batch_rm(paths: list[str]) -> None:
+    if not isinstance(paths, list) or not paths:
+        err_exit("Daftar path tidak boleh kosong")
+
+    deleted = []
+    for path in paths:
+        p = os.path.abspath(path)
+        real_p = os.path.realpath(p)
+        if real_p in PROTECTED_PATHS or p in PROTECTED_PATHS:
+            err_exit(f"Aksi ditolak: '{p}' adalah direktori sistem kritis yang dilindungi.")
+        parts = [x for x in real_p.split("/") if x]
+        if len(parts) < 2:
+            err_exit(f"Aksi ditolak: dilarang menghapus path top-level '{p}'.")
+        if not os.path.exists(p) and not os.path.islink(p):
+            continue
+        try:
+            if os.path.islink(p) or not os.path.isdir(p):
+                os.unlink(p)
+            else:
+                shutil.rmtree(p)
+            deleted.append(p)
+        except PermissionError:
+            err_exit(f"Akses ditolak menghapus: {p}")
+        except OSError as e:
+            err_exit(f"Gagal menghapus {p}: {e}")
+
+    ok_exit({"deleted": deleted, "count": len(deleted)})
+
+
+def action_batch_chmod(paths: list[str], mode: str) -> None:
+    try:
+        oct_mode = int(mode, 8)
+    except ValueError:
+        err_exit(f"Format mode tidak valid (harus oktal, misal 0644 / 0755): {mode}")
+
+    if not isinstance(paths, list) or not paths:
+        err_exit("Daftar path tidak boleh kosong")
+
+    updated = []
+    for path in paths:
+        p = os.path.abspath(path)
+        if not os.path.exists(p):
+            continue
+        try:
+            os.chmod(p, oct_mode)
+            updated.append(p)
+        except Exception as e:
+            err_exit(f"Gagal mengubah izin {p}: {e}")
+
+    ok_exit({"updated": updated, "mode": mode, "count": len(updated)})
+
+
 def main():
     payload = None
     if not sys.stdin.isatty():
@@ -552,6 +703,14 @@ def main():
         action_read_binary(params.get("path", ""), params.get("max_bytes", MAX_DOWNLOAD_SIZE))
     elif action == "write_binary":
         action_write_binary(params.get("path", ""), params.get("data_b64", ""))
+    elif action == "copy":
+        action_copy(params.get("sources", []), params.get("destination", ""))
+    elif action == "move":
+        action_move(params.get("sources", []), params.get("destination", ""))
+    elif action == "batch_rm":
+        action_batch_rm(params.get("paths", []))
+    elif action == "batch_chmod":
+        action_batch_chmod(params.get("paths", []), params.get("mode", "0644"))
     else:
         err_exit(f"Aksi tidak dikenal: '{action}'")
 

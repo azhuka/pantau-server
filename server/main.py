@@ -4734,8 +4734,8 @@ async def api_server_files_rename(
     if not server:
         raise HTTPException(status_code=404, detail="Server tidak ditemukan")
 
-    old_path = str(body.get("old_path", "")).strip()
-    new_path = str(body.get("new_path", "")).strip()
+    old_path = str(body.get("old_path", "") or body.get("src", "")).strip()
+    new_path = str(body.get("new_path", "") or body.get("dst", "")).strip()
     if not old_path or not new_path:
         raise HTTPException(status_code=400, detail="Path asal dan tujuan tidak boleh kosong")
 
@@ -4859,6 +4859,114 @@ async def api_server_files_download(
             "Content-Length": str(len(raw_bytes)),
         }
     )
+
+
+@app.post("/api/servers/{sid}/files/copy")
+async def api_server_files_copy(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    sources = body.get("sources", [])
+    destination = str(body.get("destination", "")).strip()
+    if not sources or not isinstance(sources, list) or not destination:
+        raise HTTPException(status_code=400, detail="Sumber dan tujuan harus ditentukan")
+
+    res = await file_dispatcher.dispatch(sid, "copy", {"sources": sources, "destination": destination}, timeout=60.0)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal menyalin file/folder"))
+
+    _audit(db, user.username, "file_copy", f"{server.hostname}: {len(sources)} items -> {destination}", "berhasil", server_id=sid)
+    db.commit()
+    return res
+
+
+@app.post("/api/servers/{sid}/files/move")
+async def api_server_files_move(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    sources = body.get("sources", [])
+    destination = str(body.get("destination", "")).strip()
+    if not sources or not isinstance(sources, list) or not destination:
+        raise HTTPException(status_code=400, detail="Sumber dan tujuan harus ditentukan")
+
+    res = await file_dispatcher.dispatch(sid, "move", {"sources": sources, "destination": destination}, timeout=60.0)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal memindahkan file/folder"))
+
+    _audit(db, user.username, "file_move", f"{server.hostname}: {len(sources)} items -> {destination}", "berhasil", server_id=sid)
+    db.commit()
+    return res
+
+
+@app.post("/api/servers/{sid}/files/batch-rm")
+async def api_server_files_batch_rm(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    paths = body.get("paths", [])
+    if not paths or not isinstance(paths, list):
+        raise HTTPException(status_code=400, detail="Daftar file/folder yang akan dihapus tidak boleh kosong")
+
+    res = await file_dispatcher.dispatch(sid, "batch_rm", {"paths": paths}, timeout=60.0)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal menghapus beberapa item"))
+
+    _audit(db, user.username, "file_batch_rm", f"{server.hostname}: {len(paths)} items", "berhasil", server_id=sid)
+    db.commit()
+    return res
+
+
+@app.post("/api/servers/{sid}/files/batch-chmod")
+async def api_server_files_batch_chmod(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    paths = body.get("paths", [])
+    mode = str(body.get("mode", "")).strip()
+    if not paths or not isinstance(paths, list) or not mode:
+        raise HTTPException(status_code=400, detail="Daftar file/folder dan mode izin harus ditentukan")
+
+    res = await file_dispatcher.dispatch(sid, "batch_chmod", {"paths": paths, "mode": mode}, timeout=60.0)
+    if not res.get("ok"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal mengubah izin beberapa item"))
+
+    _audit(db, user.username, "file_batch_chmod", f"{server.hostname}: {len(paths)} items, mode={mode}", "berhasil", server_id=sid)
+    db.commit()
+    return res
+
 
 
 # ---------------------------------------------------------------------------
