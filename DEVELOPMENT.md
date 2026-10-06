@@ -238,18 +238,22 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
   - Data referensi masalah layanan (`problem_id`, `problem_msg`, `ignored`) disertakan dalam payload overview dan dirender secara dinamis baik pada saat inisialisasi templat maupun saat live polling JavaScript (`renderServiceActions()`).
 - **Mekanisme Siklus Hidup Restart Layanan yang Diabaikan**:
   - Jika layanan yang sedang diabaikan direstart dan sukses hidup kembali (`status == 'up'`), sistem deteksi otomatis (`sync_server_problems`) akan menutup dan menandai tiket masalah tersebut sebagai *resolved* (teratasi).
-- **Penyederhanaan Kosakata (Kata "Diabaikan" Menggantikan "Dibisukan")**:
-  - Mengubah seluruh penyebutan istilah dari "dibisukan" / "bisukan" menjadi **"diabaikan"** / **"abaikan"** pada semua tooltip, teks penjelas, badge, dan modal di Dashboard, Halaman Masalah, dan Halaman Rincian Server.
-- **Standarisasi Kolom Masalah Dashboard ("Nihil" Menggantikan "OK")**:
-  - Mengubah nilai status pada kolom Masalah di menu Dashboard dari `OK` menjadi **`Nihil`** (baik pada rendering awal Jinja2 maupun saat live polling JavaScript `dashPoll()`), memberikan informasi yang jauh lebih jernih dan tegas bahwa server bersih dari kendala/masalah.
-- **Arsitektur Kartu Riwayat Tindakan Terpadu (Unified Action History Card)**:
-  - Menggantikan kartu lama "Riwayat Perintah" yang sempit (sebelumnya hanya menampilkan perintah restart/stop layanan) dengan kartu **"Riwayat Tindakan"** terpadu di Tab Layanan.
-  - Penambahan kolom `server_id` pada tabel `audit_logs` (beserta indeks `idx_audit_server`) di basis data MariaDB serta sinkronisasi skema `database/schema.sql` dan `server/models.py`.
-  - Fungsi backend `_get_server_actions(db, sid, limit=15)` menggabungkan seluruh jejak audit dari `audit_logs` dan eksekusi remote `commands`: mencakup aksi kontrol layanan (restart, stop, start, tambah, hapus), aksi tiket masalah (abaikan masalah, pantau kembali, akui/ditangani, selesaikan manual), aksi sistem/host (mode pemeliharaan, update OS, upgrade OS, reboot, power off), aksi terminal bawaan (shell root), serta aksi file manager.
-  - Payload polling live `/api/servers/{sid}/overview` kini menyertakan array data `actions` yang dirender secara instan di peramban via `renderActionHistory(actions)` setiap kali tindakan dilakukan pada tab mana pun tanpa perlu reload peramban.
-- **Penyempurnaan UX Mode Pemeliharaan (Tombol "Lihat" & Indikator Kuning)**:
-  - Di samping keterangan status `pemeliharaan` pada header server, tombol badge sebelumnya diganti menjadi tombol **`Lihat`** yang ringkas untuk membuka modal pengaturan pemeliharaan.
-  - Tombol aksi utama **`Pemeliharaan (Aktif)`** secara otomatis berubah warna menjadi kuning tegas (`color: #facc15; border-color: #eab308; background: rgba(234, 179, 8, 0.12)`) saat mode pemeliharaan aktif, dan kembali ke gaya netral saat nonaktif.
+### Fase v3.16.0: Dukungan Socket Activation, Kontrol Abaikan Layanan Fleksibel & Transparansi Dashboard
+- **Dukungan Socket Activation untuk Layanan (SSH Shutdown Aman):**
+  - Perbaikan pada skrip pembantu agen `package/usr/local/sbin/pantau-restart` via fungsi `run_unit_with_socket()`.
+  - Menghentikan dan menyalakan unit socket pendamping (seperti `ssh.socket` pada Ubuntu 22.04/24.04) saat perintah `stop`/`start`/`restart` dieksekusi, memastikan port (seperti port 22) benar-benar tertutup saat dihentikan.
+- **Fitur Abaikan Layanan Fleksibel (Permanen / Berdasarkan Rentang Waktu):**
+  - Penambahan kolom `is_ignored`, `ignored_until`, `ignored_by`, `ignored_reason`, dan `ignore_mode` pada tabel `services` serta migrasi otomatis via `migrate_service_ignored()`.
+  - Dukungan mode abaikan permanen (hingga diaktifkan manual kembali), 2 jam, 24 jam, 7 hari, 30 hari, dan sekali saja (insiden).
+  - Layanan on-demand yang berulang kali mati-hidup tidak lagi memunculkan false alarm baru ketika berstatus diabaikan.
+  - Tombol aksi `🔕 Abaikan` dan `🔔 Pantau Kembali` dapat digunakan langsung dari Tab Layanan bahkan saat layanan sedang UP.
+- **Transparansi Status Layanan di Dashboard:**
+  - Kolom **Layanan** di Dashboard kini menampilkan pil rincian lengkap dalam satu tampilan:
+    `[ X total ]` `[ Y up ]` `[ Z down ]` `[ W diabaikan 🔕 ]`.
+  - Kolom **Masalah** menampilkan badge level keparahan berdampingan dengan pil status masalah yang diabaikan.
+  - Kartu statistik atas kini menyertakan metrik **Layanan Diabaikan (🔕)** secara real-time.
+- **Sinkronisasi Versi:**
+  - Peningkatan versi Pantau Server dan Agen Pantau menjadi **v3.16.0**.
 
 ---
 
