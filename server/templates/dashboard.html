@@ -107,19 +107,25 @@
         {% if not srv._online and not srv._svc_data %}
           <span style="color:var(--dim)">—</span>
         {% else %}
-          <div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap">
-            <span class="svc-pill total" title="Total layanan dipantau: {{ total_svc_count }}">{{ total_svc_count }} total</span>
-            {% if up_svcs|length > 0 %}
-              <span class="svc-pill up" title="Layanan aktif ({{ up_svcs|length }}): {{ up_svcs | join(', ') }}">{{ up_svcs|length }} up</span>
-            {% endif %}
-            {% if unign_down|length > 0 %}
-              <span class="svc-pill down" title="Layanan down ({{ unign_down|length }}): {{ unign_down | join(', ') }}">{{ unign_down|length }} down</span>
-            {% endif %}
-            {% if ign_down|length > 0 %}
-              <span class="svc-pill ignored" title="Layanan berhenti & diabaikan ({{ ign_down|length }}): {{ ign_down | join(', ') }}">{{ ign_down|length }} diabaikan 🔕</span>
-            {% endif %}
-            {% if total_svc_count == 0 %}
-              <span style="color:var(--dim);font-size:12px">0 layanan</span>
+          <div class="cell-stack">
+            <div class="cell-row">
+              <span class="svc-pill total" title="Total layanan dipantau: {{ total_svc_count }}">{{ total_svc_count }} total</span>
+              {% if up_svcs|length > 0 %}
+                <span class="svc-pill up" title="Layanan aktif ({{ up_svcs|length }}): {{ up_svcs | join(', ') }}">{{ up_svcs|length }} up</span>
+              {% endif %}
+              {% if total_svc_count == 0 %}
+                <span style="color:var(--dim);font-size:12px">0 layanan</span>
+              {% endif %}
+            </div>
+            {% if unign_down|length > 0 or ign_down|length > 0 %}
+            <div class="cell-row">
+              {% if unign_down|length > 0 %}
+                <span class="svc-pill down" title="Layanan down ({{ unign_down|length }}): {{ unign_down | join(', ') }}">{{ unign_down|length }} down</span>
+              {% endif %}
+              {% if ign_down|length > 0 %}
+                <span class="svc-pill ignored" title="Layanan berhenti & diabaikan ({{ ign_down|length }}): {{ ign_down | join(', ') }}">{{ ign_down|length }} diabaikan 🔕</span>
+              {% endif %}
+            </div>
             {% endif %}
           </div>
         {% endif %}
@@ -133,12 +139,16 @@
           {% set ign_count = srv._problems | selectattr('is_ignored') | list | length if srv._problems else 0 %}
           {% set active_msgs = srv._problems | rejectattr('is_ignored') | map(attribute='message') | join(' • ') if srv._problems else '' %}
           {% set ign_msgs = srv._problems | selectattr('is_ignored') | map(attribute='message') | join(' • ') if srv._problems else '' %}
-          <div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap">
-            <span class="badge badge-{{ pcls }}" title="{{ active_msgs if active_msgs else ('Semua masalah diabaikan' if ign_count else 'Kondisi normal') }}">
-              {{ plabel }}
-            </span>
+          <div class="cell-stack">
+            <div class="cell-row">
+              <span class="badge badge-{{ pcls }}" title="{{ active_msgs if active_msgs else ('Semua masalah diabaikan' if ign_count else 'Kondisi normal') }}">
+                {{ plabel }}
+              </span>
+            </div>
             {% if ign_count > 0 %}
+            <div class="cell-row">
               <span class="svc-pill ignored" title="Masalah diabaikan ({{ ign_count }}): {{ ign_msgs }}">{{ ign_count }} diabaikan 🔕</span>
+            </div>
             {% endif %}
           </div>
         {% endif %}
@@ -243,19 +253,25 @@ async function dashPoll() {
           const dnList = (srv.services || []).filter(s => (s.status === 'down' || s.status === 'offline') && !s.ignored).map(s => s.name);
           const ignList = (srv.services || []).filter(s => (s.status === 'down' || s.status === 'offline') && s.ignored).map(s => s.name);
           const totCount = (srv.services || []).length;
-          let html = '<div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap">';
+          let html = '<div class="cell-stack">';
+          html += '<div class="cell-row">';
           html += '<span class="svc-pill total" title="Total layanan dipantau: ' + totCount + '">' + totCount + ' total</span>';
           if (upList.length > 0) {
             html += '<span class="svc-pill up" title="Layanan aktif (' + upList.length + '): ' + upList.join(', ') + '">' + upList.length + ' up</span>';
           }
-          if (dnList.length > 0) {
-            html += '<span class="svc-pill down" title="Layanan down (' + dnList.length + '): ' + dnList.join(', ') + '">' + dnList.length + ' down</span>';
-          }
-          if (ignList.length > 0) {
-            html += '<span class="svc-pill ignored" title="Layanan berhenti & diabaikan (' + ignList.length + '): ' + ignList.join(', ') + '">' + ignList.length + ' diabaikan 🔕</span>';
-          }
           if (totCount === 0) {
             html += '<span style="color:var(--dim);font-size:12px">0 layanan</span>';
+          }
+          html += '</div>';
+          if (dnList.length > 0 || ignList.length > 0) {
+            html += '<div class="cell-row">';
+            if (dnList.length > 0) {
+              html += '<span class="svc-pill down" title="Layanan down (' + dnList.length + '): ' + dnList.join(', ') + '">' + dnList.length + ' down</span>';
+            }
+            if (ignList.length > 0) {
+              html += '<span class="svc-pill ignored" title="Layanan berhenti & diabaikan (' + ignList.length + '): ' + ignList.join(', ') + '">' + ignList.length + ' diabaikan 🔕</span>';
+            }
+            html += '</div>';
           }
           html += '</div>';
           svcEl.innerHTML = html;
@@ -266,10 +282,14 @@ async function dashPoll() {
       if (probEl && srv.problem_level != null) {
         const plabel = {'ok':'Nihil','info':'Info','warning':'Warning','danger':'Danger'}[srv.problem_level] || srv.problem_level;
         const pcls = {'ok':'up','info':'info','warning':'warn','danger':'danger'}[srv.problem_level] || 'muted';
-        let html = '<div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap">';
+        let html = '<div class="cell-stack">';
+        html += '<div class="cell-row">';
         html += '<span class="badge badge-' + pcls + '">' + plabel + '</span>';
+        html += '</div>';
         if (srv.ignored_problem_count && srv.ignored_problem_count > 0) {
+          html += '<div class="cell-row">';
           html += '<span class="svc-pill ignored" title="' + srv.ignored_problem_count + ' masalah diabaikan">' + srv.ignored_problem_count + ' diabaikan 🔕</span>';
+          html += '</div>';
         }
         html += '</div>';
         probEl.innerHTML = html;
