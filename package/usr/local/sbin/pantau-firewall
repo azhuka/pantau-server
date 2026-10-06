@@ -26,11 +26,14 @@ case "$ACTION" in
     block|unblock) ;;
     enable)
         if command -v ufw >/dev/null 2>&1; then
-            # Selalu pastikan port SSH diizinkan terlebih dahulu sebelum mengaktifkan UFW agar tidak terkunci
+            # Selalu pastikan port SSH (22), Dashboard Pantau (8400), dan Web (80, 443) diizinkan terlebih dahulu
             ufw allow 22/tcp >/dev/null 2>&1 || true
             ufw allow ssh >/dev/null 2>&1 || true
+            ufw allow 8400/tcp >/dev/null 2>&1 || true
+            ufw allow 80/tcp >/dev/null 2>&1 || true
+            ufw allow 443/tcp >/dev/null 2>&1 || true
             out="$(ufw --force enable 2>&1)" || fail "UFW enable gagal: $out"
-            echo "OK: Firewall UFW berhasil diaktifkan (port SSH telah dilindungi/diizinkan)"
+            echo "OK: Firewall UFW berhasil diaktifkan (port SSH, Dashboard 8400, dan Web diizinkan)"
             exit 0
         fi
         fail "ufw tidak terpasang di sistem ini"
