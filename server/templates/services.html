@@ -635,17 +635,16 @@
 </div>
 
 <div class="tabbar" id="detail-tabs" role="tablist">
-  <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true">Riwayat</button>
+  <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true">Kinerja</button>
   <button class="tab" data-tab="layanan" role="tab">Layanan</button>
   {% set active_open = open_problems | rejectattr('is_ignored') | list %}
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
   <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn">Masalah <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
+  <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn">Firewall</button>
   <button class="tab" data-tab="proses" role="tab">Proses Teratas</button>
   <button class="tab" data-tab="syslog" role="tab" id="tab-syslog-btn">Log Sistem</button>
   <button class="tab" data-tab="log" role="tab">Log Layanan</button>
   <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn">Port Listening</button>
-  <button class="tab" data-tab="jaringan" role="tab">Jaringan</button>
-  <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn">Firewall</button>
   <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn">Sertifikat SSL</button>
   <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn">Tugas Terjadwal</button>
   <button class="tab" data-tab="akun" role="tab">Akun</button>
@@ -712,6 +711,32 @@
     </div>
   </div>
   <div id="disk-charts-wrap" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:16px"></div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-header" style="align-items:center">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <h3 style="margin:0">Statistik Antarmuka Jaringan</h3>
+      <span style="font-size:12px;color:var(--dim)">Pemantauan lalu lintas data antarmuka, laju transfer, dan alamat IP</span>
+    </div>
+  </div>
+  <div id="net-empty" class="empty-msg" style="display:none">Belum ada data jaringan dari server ini.</div>
+  <div style="overflow-x:auto">
+    <table id="net-table" style="display:none;width:100%">
+      <thead>
+        <tr>
+          <th>Antarmuka</th>
+          <th>IP Address</th>
+          <th>Status</th>
+          <th title="Total akumulasi byte diterima sejak boot">RX Total</th>
+          <th title="Total akumulasi byte dikirim sejak boot">TX Total</th>
+          <th title="Kecepatan unduh / lalu lintas masuk saat ini">Laju Masuk (RX)</th>
+          <th title="Kecepatan unggah / lalu lintas keluar saat ini">Laju Keluar (TX)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </div>
 </div>
 
@@ -1436,17 +1461,6 @@
     </div>
     {% endif %}
   </div>
-</div>
-
-<div class="tab-body" id="tab-jaringan" hidden>
-<div class="card">
-  <div class="card-header"><h3>Jaringan</h3></div>
-  <div id="net-empty" class="empty-msg" style="display:none">Belum ada data jaringan.</div>
-  <table id="net-table" style="display:none">
-    <thead><tr><th>Antarmuka</th><th>IP Address</th><th>Status</th><th>RX Total</th><th>TX Total</th><th>RX Laju</th><th>TX Laju</th></tr></thead>
-    <tbody></tbody>
-  </table>
-</div>
 </div>
 
 <div class="tab-body" id="tab-akun" hidden>
@@ -3123,14 +3137,25 @@ function renderSys(data) {
   nt.style.display = net.length ? 'table' : 'none';
   ne.style.display = net.length ? 'none' : 'block';
   nt.querySelector('tbody').innerHTML = net.map(n => {
-    const ips = (n.ip_addrs && n.ip_addrs.length) ? n.ip_addrs.join('<br>') : '<span style="color:var(--dim)">—</span>';
+    const ips = (n.ip_addrs && n.ip_addrs.length)
+      ? n.ip_addrs.map(ip => '<span class="mono copyable-ip" style="font-size:12px;cursor:pointer" onclick="copyIp(\'' + escHtml(ip) + '\', event)" title="Klik untuk salin">' + escHtml(ip) + '</span>').join('<br>')
+      : '<span style="color:var(--dim)">—</span>';
+    const rxRateStr = (n.rx_rate > 0)
+      ? '<span style="color:#38bdf8;font-weight:600">↓ ' + fmtBytes(n.rx_rate) + '/s</span>'
+      : '<span style="color:var(--dim)">0 B/s</span>';
+    const txRateStr = (n.tx_rate > 0)
+      ? '<span style="color:#34d399;font-weight:600">↑ ' + fmtBytes(n.tx_rate) + '/s</span>'
+      : '<span style="color:var(--dim)">0 B/s</span>';
+    const stateBadge = n.is_up
+      ? '<span class="badge badge-up" style="font-size:10.5px;padding:2px 7px"><span class="dot up" style="margin-right:3px"></span>UP</span>'
+      : '<span class="badge badge-down" style="font-size:10.5px;padding:2px 7px"><span class="dot down" style="margin-right:3px"></span>DOWN</span>';
     return '<tr><td class="mono"><strong>' + escHtml(n.iface) + '</strong></td>'
-      + '<td class="mono" style="font-size:12px">' + ips + '</td>'
-      + '<td><span class="dot ' + (n.is_up ? 'up' : 'down') + '"></span> ' + (n.is_up ? 'up' : 'down') + '</td>'
+      + '<td>' + ips + '</td>'
+      + '<td>' + stateBadge + '</td>'
       + '<td class="mono">' + fmtBytes(n.rx) + '</td>'
       + '<td class="mono">' + fmtBytes(n.tx) + '</td>'
-      + '<td class="mono">' + fmtBytes(n.rx_rate) + '/s</td>'
-      + '<td class="mono">' + fmtBytes(n.tx_rate) + '/s</td></tr>';
+      + '<td class="mono" style="font-size:12px">' + rxRateStr + '</td>'
+      + '<td class="mono" style="font-size:12px">' + txRateStr + '</td></tr>';
   }).join('');
 
   // akun
