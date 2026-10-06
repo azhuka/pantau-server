@@ -1673,6 +1673,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     total = len(servers)
     up_count = 0
     down_services = 0
+    ignored_services = 0
     extras_map = {ex.server_id: ex for ex in db.query(ServerExtras).all()}
 
     for srv in servers:
@@ -1711,6 +1712,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                     down_services += 1
                 else:
                     d["ignored"] = True
+                    ignored_services += 1
             elif d.get("name") in svc_ignored_db:
                 d["ignored"] = True
 
@@ -1739,7 +1741,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     return tpl(request, "dashboard.html", {
         "user": user, "servers": servers, "total": total,
         "up_count": up_count, "down_count": total - up_count,
-        "down_services": down_services, "last_update_secs": last_update_secs,
+        "down_services": down_services, "ignored_services": ignored_services,
+        "last_update_secs": last_update_secs,
     })
 
 

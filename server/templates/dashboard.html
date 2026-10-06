@@ -23,6 +23,10 @@
     <div class="value" style="color:var(--red)" id="dash-svc-down">{{ down_services }}</div>
   </div>
   <div class="stat-card">
+    <div class="label">Layanan Diabaikan</div>
+    <div class="value" style="color:#a5a9c9" id="dash-svc-ignored" title="Layanan berhenti yang dibisukan/diabaikan">{{ ignored_services }} <span style="font-size:14px;opacity:.7">🔕</span></div>
+  </div>
+  <div class="stat-card">
     <div class="label">Laporan Terakhir</div>
     <div class="value" style="font-size:18px">{% if last_update_secs < 0 %}—{% elif last_update_secs < 60 %}{{ last_update_secs }}<span style="font-size:11px;color:var(--dim)"> dtk</span>{% elif last_update_secs < 3600 %}{{ last_update_secs // 60 }}<span style="font-size:11px;color:var(--dim)"> mnt</span>{% else %}{{ last_update_secs // 3600 }}<span style="font-size:11px;color:var(--dim)"> jam</span>{% endif %}</div>
   </div>
@@ -85,25 +89,37 @@
       <td id="dash-ram-{{ srv.id }}" class="mono" style="font-size:12px">—</td>
       <td id="dash-svc-{{ srv.id }}">
         {% set ign_keys = srv._problems | selectattr('is_ignored') | map(attribute='key') | list if srv._problems else [] %}
+        {% set up_svcs = [] %}
         {% set unign_down = [] %}
         {% set ign_down = [] %}
         {% for d in (srv._svc_data or []) %}
-          {% if d.status in ['down', 'offline'] %}
+          {% if d.status == 'up' %}
+            {% set _ = up_svcs.append(d.name) %}
+          {% elif d.status in ['down', 'offline'] %}
             {% if ('service_down:' ~ d.name) in ign_keys or d.ignored %}
-              {% set _ = ign_down.append(d) %}
+              {% set _ = ign_down.append(d.name) %}
             {% else %}
-              {% set _ = unign_down.append(d) %}
+              {% set _ = unign_down.append(d.name) %}
             {% endif %}
           {% endif %}
         {% endfor %}
-        {% if unign_down|length > 0 %}
-          <span class="badge badge-down">{{ unign_down|length }} down</span>
-        {% elif ign_down|length > 0 %}
-          <span class="badge badge-up" title="{{ ign_down|length }} layanan berhenti (diabaikan)">OK <span style="font-size:10px;opacity:.8">🔕</span></span>
-        {% elif srv._online %}
-          <span class="badge badge-up">OK</span>
-        {% else %}
+        {% if not srv._online and not srv._svc_data %}
           <span style="color:var(--dim)">—</span>
+        {% else %}
+          <div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap">
+            {% if up_svcs|length > 0 %}
+              <span class="svc-pill up" title="Layanan aktif ({{ up_svcs|length }}): {{ up_svcs | join(', ') }}">{{ up_svcs|length }} up</span>
+            {% endif %}
+            {% if unign_down|length > 0 %}
+              <span class="svc-pill down" title="Layanan down ({{ unign_down|length }}): {{ unign_down | join(', ') }}">{{ unign_down|length }} down</span>
+            {% endif %}
+            {% if ign_down|length > 0 %}
+              <span class="svc-pill ignored" title="Layanan berhenti & diabaikan ({{ ign_down|length }}): {{ ign_down | join(', ') }}">{{ ign_down|length }} diabaikan 🔕</span>
+            {% endif %}
+            {% if up_svcs|length == 0 and unign_down|length == 0 and ign_down|length == 0 %}
+              <span style="color:var(--dim);font-size:12px">0 layanan</span>
+            {% endif %}
+          </div>
         {% endif %}
       </td>
       <td id="dash-prob-{{ srv.id }}">
@@ -114,9 +130,15 @@
           {% set pcls = {'ok':'up','info':'info','warning':'warn','danger':'danger'}[srv._problem_level] %}
           {% set ign_count = srv._problems | selectattr('is_ignored') | list | length if srv._problems else 0 %}
           {% set active_msgs = srv._problems | rejectattr('is_ignored') | map(attribute='message') | join(' • ') if srv._problems else '' %}
-          <span class="badge badge-{{ pcls }}" title="{{ active_msgs if active_msgs else ('Semua masalah diabaikan' if ign_count else 'Kondisi normal') }}">
-            {{ plabel }}{% if ign_count > 0 and srv._problem_level == 'ok' %} <span style="font-size:10px;opacity:.8" title="{{ ign_count }} masalah diabaikan">🔕</span>{% endif %}
-          </span>
+          {% set ign_msgs = srv._problems | selectattr('is_ignored') | map(attribute='message') | join(' • ') if srv._problems else '' %}
+          <div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap">
+            <span class="badge badge-{{ pcls }}" title="{{ active_msgs if active_msgs else ('Semua masalah diabaikan' if ign_count else 'Kondisi normal') }}">
+              {{ plabel }}
+            </span>
+            {% if ign_count > 0 %}
+              <span class="svc-pill ignored" title="Masalah diabaikan ({{ ign_count }}): {{ ign_msgs }}">{{ ign_count }} diabaikan 🔕</span>
+            {% endif %}
+          </div>
         {% endif %}
       </td>
       <td>
@@ -195,7 +217,7 @@ async function dashPoll() {
     const r = await fetch('/api/servers', {credentials: 'same-origin'});
     if (!r.ok) return;
     const list = await r.json();
-    let up = 0, dn = 0, svcDn = 0;
+    let up = 0, dn = 0, svcDn = 0, svcIgn = 0;
     list.forEach(srv => {
       const sts = document.getElementById('dash-sts-' + srv.id);
       if (sts) {
@@ -212,14 +234,27 @@ async function dashPoll() {
 
       const svcEl = document.getElementById('dash-svc-' + srv.id);
       if (svcEl) {
-        if (srv.down_svc_count != null && srv.down_svc_count > 0) {
-          svcEl.innerHTML = '<span class="badge badge-down">' + srv.down_svc_count + ' down</span>';
-        } else if (srv.ignored_svc_count != null && srv.ignored_svc_count > 0) {
-          svcEl.innerHTML = '<span class="badge badge-up" title="' + srv.ignored_svc_count + ' layanan berhenti (diabaikan)">OK <span style="font-size:10px;opacity:.8">🔕</span></span>';
-        } else if (srv.overall_status !== 'offline') {
-          svcEl.innerHTML = '<span class="badge badge-up">OK</span>';
-        } else {
+        if (!srv.online && (!srv.services || srv.services.length === 0)) {
           svcEl.innerHTML = '<span style="color:var(--dim)">—</span>';
+        } else {
+          const upList = (srv.services || []).filter(s => s.status === 'up').map(s => s.name);
+          const dnList = (srv.services || []).filter(s => (s.status === 'down' || s.status === 'offline') && !s.ignored).map(s => s.name);
+          const ignList = (srv.services || []).filter(s => (s.status === 'down' || s.status === 'offline') && s.ignored).map(s => s.name);
+          let html = '<div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap">';
+          if (upList.length > 0) {
+            html += '<span class="svc-pill up" title="Layanan aktif (' + upList.length + '): ' + upList.join(', ') + '">' + upList.length + ' up</span>';
+          }
+          if (dnList.length > 0) {
+            html += '<span class="svc-pill down" title="Layanan down (' + dnList.length + '): ' + dnList.join(', ') + '">' + dnList.length + ' down</span>';
+          }
+          if (ignList.length > 0) {
+            html += '<span class="svc-pill ignored" title="Layanan berhenti & diabaikan (' + ignList.length + '): ' + ignList.join(', ') + '">' + ignList.length + ' diabaikan 🔕</span>';
+          }
+          if (upList.length === 0 && dnList.length === 0 && ignList.length === 0) {
+            html += '<span style="color:var(--dim);font-size:12px">0 layanan</span>';
+          }
+          html += '</div>';
+          svcEl.innerHTML = html;
         }
       }
 
@@ -227,11 +262,13 @@ async function dashPoll() {
       if (probEl && srv.problem_level != null) {
         const plabel = {'ok':'Nihil','info':'Info','warning':'Warning','danger':'Danger'}[srv.problem_level] || srv.problem_level;
         const pcls = {'ok':'up','info':'info','warning':'warn','danger':'danger'}[srv.problem_level] || 'muted';
-        let extra = '';
-        if (srv.ignored_problem_count && srv.ignored_problem_count > 0 && srv.problem_level === 'ok') {
-          extra = ' <span style="font-size:10px;opacity:.8" title="' + srv.ignored_problem_count + ' masalah diabaikan">🔕</span>';
+        let html = '<div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap">';
+        html += '<span class="badge badge-' + pcls + '">' + plabel + '</span>';
+        if (srv.ignored_problem_count && srv.ignored_problem_count > 0) {
+          html += '<span class="svc-pill ignored" title="' + srv.ignored_problem_count + ' masalah diabaikan">' + srv.ignored_problem_count + ' diabaikan 🔕</span>';
         }
-        probEl.innerHTML = '<span class="badge badge-' + pcls + '">' + plabel + extra + '</span>';
+        html += '</div>';
+        probEl.innerHTML = html;
       }
 
       const seen = document.getElementById('dash-seen-' + srv.id);
@@ -241,13 +278,16 @@ async function dashPoll() {
       }
       if (srv.overall_status !== 'offline') up++; else dn++;
       svcDn += (srv.down_svc_count || 0);
+      svcIgn += (srv.ignored_svc_count || 0);
     });
     const upEl = document.getElementById('dash-up-count');
     const dnEl = document.getElementById('dash-down-count');
     const svcEl2 = document.getElementById('dash-svc-down');
+    const svcIgnEl = document.getElementById('dash-svc-ignored');
     if (upEl) upEl.textContent = up;
     if (dnEl) dnEl.textContent = dn;
     if (svcEl2) svcEl2.textContent = svcDn;
+    if (svcIgnEl) svcIgnEl.innerHTML = svcIgn + ' <span style="font-size:14px;opacity:.7">🔕</span>';
 
     const badge = document.getElementById('dash-live');
     if (badge) {
