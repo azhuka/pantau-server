@@ -7,7 +7,7 @@
   <h2>Audit</h2>
   <div style="display:flex;gap:8px;align-items:center">
     <span id="audit-live" class="badge badge-up" style="opacity:.35;transition:opacity .3s" title="Diperbarui otomatis setiap 5 detik">live</span>
-    <button type="button" class="btn btn-ghost btn-sm" id="audit-refresh">Perbarui</button>
+    <button type="button" class="btn btn-ghost btn-sm" id="audit-refresh" title="Muat ulang data riwayat audit seketika">Perbarui</button>
   </div>
 </div>
 
@@ -17,12 +17,11 @@
     <span style="font-size:12px;color:var(--dim)">{{ rows|length }} terbaru</span>
   </div>
   <p style="font-size:12px;color:var(--dim);margin:0 0 14px">
-    Login, kelola server/service/user, dan perintah remote (restart, blokir IP, update paket,
-    restart agen) — beserta siapa yang mengeluarkannya dan hasilnya.
+    Catatan aktivitas login, manajemen server, layanan, pengguna, serta riwayat eksekusi perintah remote (restart, blokir IP, pembaruan paket) beserta pelaksana dan hasilnya.
   </p>
 
   <form method="get" action="/audit" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
-    <select name="action" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
+    <select name="action" title="Saring berdasarkan jenis aktivitas" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
       <option value="">Semua aksi</option>
       {% for key, label in actions %}
       <option value="{{ key }}" {% if action == key %}selected{% endif %}>{{ label }}</option>
@@ -33,13 +32,20 @@
       <input type="search" name="q" value="{{ q }}" placeholder="Cari user / target / hasil…"
              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px 8px 30px;font-size:12px;width:100%;outline:none;transition:border-color .15s">
     </div>
-    <button class="btn btn-primary btn-sm" type="submit">Terapkan</button>
-    <a href="/audit" class="btn btn-ghost btn-sm" style="margin-left:auto{% if not q and not action %};display:none{% endif %}">Reset</a>
+    <button class="btn btn-primary btn-sm" type="submit" title="Terapkan filter pencarian audit">Terapkan</button>
+    <a href="/audit" class="btn btn-ghost btn-sm" title="Hapus filter dan tampilkan semua catatan" style="margin-left:auto{% if not q and not action %};display:none{% endif %}">Reset</a>
   </form>
 
   <table>
     <thead>
-      <tr><th style="width:150px">Waktu</th><th>User</th><th>Tindakan</th><th>Target</th><th style="width:90px">Status</th><th>Hasil</th></tr>
+      <tr>
+        <th style="width:150px" title="Waktu eksekusi atau pencatatan tindakan">Waktu</th>
+        <th title="Nama akun administrator yang menjalankan aksi">Pengguna</th>
+        <th title="Jenis operasi atau perintah yang dijalankan">Tindakan</th>
+        <th title="Entitas sasaran (nama server, host, atau id layanan)">Target</th>
+        <th style="width:90px" title="Status hasil eksekusi perintah">Status</th>
+        <th title="Pesan respons atau keluaran perintah">Hasil / Respons</th>
+      </tr>
     </thead>
     <tbody id="audit-tbody">
       {% for r in rows %}

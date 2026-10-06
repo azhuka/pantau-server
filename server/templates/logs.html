@@ -7,38 +7,56 @@
 </div>
 
 <div class="stats-grid">
-  <div class="stat-card">
+  <div class="stat-card" title="Persentase pemakaian CPU di server pusat">
     <div class="label">CPU</div>
     <div class="value" id="sys-cpu">-</div>
     <div style="margin-top:8px" class="meter"><div class="meter-bar" id="sys-cpu-bar" style="width:0%"></div></div>
   </div>
-  <div class="stat-card">
+  <div class="stat-card" title="Penggunaan memori RAM di server pusat">
     <div class="label">Memori</div>
     <div class="value" id="sys-mem">-</div>
     <div style="margin-top:8px" class="meter"><div class="meter-bar" id="sys-mem-bar" style="width:0%"></div></div>
   </div>
-  <div class="stat-card">
+  <div class="stat-card" title="Rata-rata beban sistem prosesor dalam 1, 5, dan 15 menit">
     <div class="label">Beban (1/5/15 menit)</div>
     <div class="value" id="sys-load" style="font-size:16px">-</div>
   </div>
-  <div class="stat-card">
+  <div class="stat-card" title="Penggunaan memori virtual / swap pada disk">
     <div class="label">Swap</div>
     <div class="value" id="sys-swap" style="font-size:16px">-</div>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-header"><h3>Top Proses (CPU)</h3></div>
+  <div class="card-header">
+    <h3 style="margin:0">Proses Tertinggi (CPU)</h3>
+    <span style="font-size:12px;color:var(--dim)">Proses yang memakan sumber daya terbesar</span>
+  </div>
   <table>
-    <thead><tr><th>PID</th><th>Proses</th><th>Status</th><th>CPU %</th><th>Memori</th></tr></thead>
+    <thead><tr>
+      <th title="Process ID">PID</th>
+      <th title="Nama proses yang sedang berjalan">Proses</th>
+      <th title="Status proses sistem">Status</th>
+      <th title="Persentase pemakaian CPU">CPU %</th>
+      <th title="Jumlah memori RAM yang digunakan">Memori</th>
+    </tr></thead>
     <tbody id="sys-procs"><tr><td colspan="5" class="mono">memuat…</td></tr></tbody>
   </table>
 </div>
 
 <div class="card">
-  <div class="card-header"><h3>Disk</h3></div>
+  <div class="card-header">
+    <h3 style="margin:0">Penyimpanan (Disk)</h3>
+    <span style="font-size:12px;color:var(--dim)">Kapasitas partisi penyimpanan sistem</span>
+  </div>
   <table>
-    <thead><tr><th>Lokasi</th><th>Tipe</th><th>Total</th><th>Terpakai</th><th>Terpakai %</th></tr></thead>
+    <thead><tr>
+      <th title="Titik kait partisi direktori (mount point)">Lokasi Mount</th>
+      <th title="Tipe berkas sistem (misal ext4, xfs)">Tipe FS</th>
+      <th title="Total ruang penyimpanan pada partisi">Total</th>
+      <th title="Kapasitas ruang yang telah terpakai">Terpakai</th>
+      <th title="Persentase pemakaian penyimpanan">Pemakaian</th>
+    </tr></thead>
     <tbody id="sys-disks"><tr><td colspan="5" class="mono">memuat…</td></tr></tbody>
   </table>
 </div>

@@ -4243,7 +4243,7 @@ def api_service_history(
             (func.floor(func.unix_timestamp(Metric.timestamp) / step_secs)
              * step_secs).label("tb"),
             func.count(Metric.id),
-            getattr(func, "if")(Metric.status == "up", 1, 0),
+            func.sum(getattr(func, "if")(Metric.status == "up", 1, 0)),
             func.avg(Metric.active_connections),
             func.avg(Metric.response_time_ms),
         )
@@ -4258,7 +4258,8 @@ def api_service_history(
     )
     points = []
     for tb, n, ups, conns, rt in rows:
-        up_ratio = (ups / n) if n else None
+        ups_count = int(ups or 0)
+        up_ratio = (ups_count / n) if n else None
         points.append({
             "t": int(tb),
             "up_ratio": round(up_ratio, 3) if up_ratio is not None else None,

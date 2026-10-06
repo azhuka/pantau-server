@@ -711,9 +711,27 @@
       <button class="btn btn-sm" data-range="7d">7 Hari</button>
     </div>
   </div>
-  <div id="svc-current" style="font-size:12px;color:var(--dim);margin-bottom:10px"></div>
-  <div id="svc-status-strip" title="Ketersediaan per titik" style="margin-bottom:14px"></div>
-  <div id="svc-empty" class="empty-msg" style="display:none">Belum ada data riwayat service.</div>
+  <div id="svc-current" style="font-size:12px;color:var(--dim);margin-bottom:12px"></div>
+  <div style="background:rgba(0,0,0,0.18);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text)">Garis Waktu Ketersediaan Layanan (Uptime Timeline)</span>
+        <span id="svc-uptime-pill" class="badge badge-up" style="font-size:11px">100% normal</span>
+      </div>
+      <div style="display:flex;gap:12px;font-size:11px;color:var(--dim)">
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--green)"></span> Normal (Up)</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--red)"></span> Terhenti (Down)</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--dim)"></span> Tanpa Data</span>
+      </div>
+    </div>
+    <div id="svc-status-strip"></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px;font-family:monospace" id="svc-strip-labels">
+      <span id="svc-strip-from">—</span>
+      <span style="color:var(--dim-subtle)">Setiap blok menunjukkan status pada interval waktu tersebut</span>
+      <span id="svc-strip-to">Sekarang</span>
+    </div>
+  </div>
+  <div id="svc-empty" class="empty-msg" style="display:none">Belum ada data riwayat layanan.</div>
   <div class="grid-2">
     <div>
       <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Waktu Respon (ms)</div>
@@ -2902,24 +2920,76 @@ async function loadPerf(range) {
 // ---------- grafik layanan (riwayat per-service) ----------
 let svcRange = '24h';
 
+function fmtTime(d) {
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+function fmtDateTime(d) {
+  return d.toLocaleDateString([], { day: '2-digit', month: 'short' }) + ' ' + fmtTime(d);
+}
+
 function renderSvcStrip(elId, points) {
   const el = document.getElementById(elId);
   if (!el) return;
-  if (!points || points.length < 2) { el.innerHTML = ''; return; }
-  const W = 600, H = 18, PL = 46, PR = 12;
-  const t0 = points[0].t, t1 = points[points.length - 1].t;
-  const iw = W - PL - PR;
-  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:18px;display:block">';
-  const seg = t1 - t0;
-  const eachW = iw / (points.length - 1 || 1) * 0.9;
-  for (const p of points) {
-    const x0 = PL + ((p.t - t0) / (seg || 1)) * iw;
-    const ratio = p.up_ratio === null || p.up_ratio === undefined ? null : p.up_ratio;
-    const col = ratio === null ? 'var(--dim)'
-      : ratio >= 0.5 ? 'var(--green)' : 'var(--red)';
-    s += '<rect x="' + x0.toFixed(1) + '" y="0" width="' + Math.max(1, eachW).toFixed(1) + '" height="' + H + '" fill="' + col + '" opacity="0.6" rx="1"/>';
+  if (!points || points.length === 0) { el.innerHTML = ''; return; }
+  
+  // Hitung persentase ketersediaan total
+  let totalSamples = 0;
+  let upSamples = 0;
+  points.forEach(p => {
+    if (p.samples && p.up_ratio !== null && p.up_ratio !== undefined) {
+      totalSamples += p.samples;
+      upSamples += p.samples * p.up_ratio;
+    }
+  });
+  const overallPct = totalSamples > 0 ? (upSamples / totalSamples * 100) : null;
+  const pill = document.getElementById('svc-uptime-pill');
+  if (pill) {
+    if (overallPct === null) {
+      pill.textContent = 'tidak ada data';
+      pill.className = 'badge badge-muted';
+    } else {
+      pill.textContent = overallPct.toFixed(1) + '% ketersediaan';
+      pill.className = 'badge ' + (overallPct >= 99 ? 'badge-up' : (overallPct >= 90 ? 'badge-warn' : 'badge-danger'));
+    }
   }
-  s += '<text x="' + (PL - 6) + '" y="' + (H - 4) + '" text-anchor="end" fill="var(--dim)" font-size="9" font-family="monospace">status</text>';
+
+  // Update label waktu dari - hingga
+  const fromEl = document.getElementById('svc-strip-from');
+  const toEl = document.getElementById('svc-strip-to');
+  if (points.length > 0) {
+    const tFirst = new Date(points[0].t * 1000);
+    const tLast = new Date(points[points.length - 1].t * 1000);
+    if (fromEl) fromEl.textContent = fmtDateTime(tFirst);
+    if (toEl) toEl.textContent = fmtDateTime(tLast);
+  }
+
+  const W = 600, H = 24;
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:24px;display:block;border-radius:4px;overflow:hidden;background:rgba(0,0,0,0.25)">';
+  const n = points.length;
+  const barW = Math.max(1, W / n);
+
+  for (let i = 0; i < n; i++) {
+    const p = points[i];
+    const x = i * (W / n);
+    const ratio = (p.up_ratio === null || p.up_ratio === undefined) ? null : p.up_ratio;
+    const col = ratio === null ? 'var(--dim)'
+      : ratio >= 0.99 ? 'var(--green)'
+      : ratio >= 0.5 ? 'var(--yellow)'
+      : 'var(--red)';
+    
+    const timeStr = fmtDateTime(new Date(p.t * 1000));
+    let tipText = timeStr;
+    if (ratio === null) {
+      tipText += ' — Tidak ada sampel laporan';
+    } else {
+      const pct = Math.round(ratio * 100);
+      tipText += ' — Status: ' + (pct === 100 ? 'Normal (Up)' : (pct === 0 ? 'Terhenti (Down)' : pct + '% Up'));
+      if (p.rt !== null && p.rt !== undefined) tipText += ' · Respons: ' + p.rt + ' ms';
+      if (p.conns !== null && p.conns !== undefined) tipText += ' · Koneksi: ' + p.conns;
+    }
+
+    s += '<rect x="' + x.toFixed(2) + '" y="0" width="' + Math.max(1.5, barW - 0.5).toFixed(2) + '" height="' + H + '" fill="' + col + '" opacity="0.88" rx="1.5" data-tooltip="' + escapeHtml(tipText) + '" style="cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.88"/>';
+  }
   s += '</svg>';
   el.innerHTML = s;
 }

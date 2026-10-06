@@ -7,23 +7,31 @@
 
 <div class="grid-2">
   <div class="card">
-    <div class="card-header"><h3>Daftar Users</h3></div>
+    <div class="card-header">
+      <h3 style="margin:0">Daftar Pengguna</h3>
+      <span style="font-size:12px;color:var(--dim)">{{ users|length }} akun terdaftar</span>
+    </div>
     <table>
-      <thead><tr><th>Username</th><th>Role</th><th>Created</th><th></th></tr></thead>
+      <thead><tr>
+        <th title="Nama akun untuk masuk ke dashboard">Username</th>
+        <th title="Tingkat izin hak akses: Administrator (penuh) atau Viewer (hanya lihat)">Peran</th>
+        <th title="Tanggal akun pertama kali dibuat">Dibuat Pada</th>
+        <th title="Tindakan penghapusan akun">Aksi</th>
+      </tr></thead>
       <tbody>
       {% for u in users %}
       <tr>
         <td><strong>{{ u.username }}</strong></td>
-        <td><span class="badge {% if u.role=='admin' %}badge-up{% else %}badge-muted{% endif %}">{{ u.role }}</span></td>
+        <td><span class="badge {% if u.role=='admin' %}badge-up{% else %}badge-muted{% endif %}" title="{{ 'Akses penuh administrasi server' if u.role=='admin' else 'Akses pantau hanya-baca' }}">{{ 'Administrator' if u.role=='admin' else 'Viewer' }}</span></td>
         <td class="mono">{{ u.created_at.strftime('%d %b %Y') }}</td>
         <td>
           {% if u.id != user.id %}
-          <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline" data-confirm data-msg="Hapus user {{ u.username }}?">
+          <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline" data-confirm data-msg="Hapus akun pengguna {{ u.username }}?">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button class="btn btn-danger btn-sm">Hapus</button>
+            <button class="btn btn-danger btn-sm" title="Hapus pengguna ini">Hapus</button>
           </form>
           {% else %}
-          <span class="mono">(you)</span>
+          <span class="mono" style="font-size:11px;color:var(--blue)">(Akun Anda)</span>
           {% endif %}
         </td>
       </tr>
@@ -33,26 +41,29 @@
   </div>
 
   <div class="card">
-    <div class="card-header"><h3>Tambah User</h3></div>
+    <div class="card-header">
+      <h3 style="margin:0">Tambah Pengguna Baru</h3>
+      <span style="font-size:12px;color:var(--dim)">Buat akun operator baru</span>
+    </div>
     <form method="POST" action="/users/add">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div class="form-group">
         <label for="u-username">Username</label>
-        <input type="text" id="u-username" name="username" required minlength="3" maxlength="100" autocomplete="off">
+        <input type="text" id="u-username" name="username" required minlength="3" maxlength="100" autocomplete="off" placeholder="Contoh: operator1">
       </div>
       <div class="form-group">
         <label for="u-password">Password</label>
-        <input type="password" id="u-password" name="password" required minlength="8" autocomplete="new-password">
-        <div style="font-size:11px;color:var(--dim);margin-top:4px">Minimal 8 karakter.</div>
+        <input type="password" id="u-password" name="password" required minlength="8" autocomplete="new-password" placeholder="Minimal 8 karakter">
+        <div style="font-size:11px;color:var(--dim);margin-top:4px">Gunakan kombinasi yang kuat dan aman.</div>
       </div>
       <div class="form-group">
-        <label for="u-role">Role</label>
-        <select id="u-role" name="role">
-          <option value="viewer">Viewer (read only)</option>
-          <option value="admin">Admin (full access)</option>
+        <label for="u-role">Peran / Hak Akses</label>
+        <select id="u-role" name="role" title="Pilih tingkat hak akses akun">
+          <option value="viewer">Viewer (Hanya pantau &amp; baca data)</option>
+          <option value="admin">Administrator (Akses penuh &amp; eksekusi remote)</option>
         </select>
       </div>
-      <button type="submit" class="btn btn-primary">Tambah User</button>
+      <button type="submit" class="btn btn-primary" title="Simpan dan daftarkan akun baru">Tambah Pengguna</button>
     </form>
   </div>
 </div>
