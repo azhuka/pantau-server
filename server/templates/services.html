@@ -613,9 +613,18 @@
     </div>
 
     <div id="disks-wrap" style="display:none">
-      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Penyimpanan (Disk)</div>
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Penyimpanan (Disk &amp; I/O Throughput)</div>
       <table id="disks-table">
-        <thead><tr><th>Mount</th><th>Tipe</th><th>Terpakai</th><th style="width:40%">Pemakaian</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Mount</th>
+            <th>Tipe</th>
+            <th>Terpakai</th>
+            <th style="width:25%">Pemakaian</th>
+            <th title="Kecepatan baca dan tulis disk saat ini">Laju I/O (R / W)</th>
+            <th title="Persentase utilisasi waktu aktif disk (I/O util)">Util I/O</th>
+          </tr>
+        </thead>
         <tbody></tbody>
       </table>
     </div>
@@ -633,9 +642,10 @@
   <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn">🛡️ Firewall</button>
   <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn">🔌 Port Listening</button>
   <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn">🔒 Sertifikat SSL</button>
+  <button class="tab" data-tab="syslog" role="tab" id="tab-syslog-btn">📋 Log Sistem (Journal)</button>
   <button class="tab" data-tab="jaringan" role="tab">Jaringan</button>
   <button class="tab" data-tab="akun" role="tab">Akun</button>
-  <button class="tab" data-tab="log" role="tab">Log</button>
+  <button class="tab" data-tab="log" role="tab">Log Layanan</button>
 </div>
 
 <div class="tab-body" id="tab-perf">
@@ -1370,6 +1380,56 @@
     {% else %}
     <div class="empty-msg">
       Tidak ada berkas sertifikat SSL lokal ditemukan pada direktori standar (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="tab-body" id="tab-syslog" hidden>
+  <div class="card">
+    <div class="card-header" style="align-items:center">
+      <div>
+        <h3 style="margin:0">📋 Log Galat Sistem (Systemd Journal)</h3>
+        <span style="font-size:12px;color:var(--dim)">Daftar kejadian kegagalan dan peringatan kritis sistem terbaru (priority err, crit, alert, emerg)</span>
+      </div>
+      <div style="font-size:12px;color:var(--dim)">
+        Otomatis disinkronkan oleh Agen Pantau
+      </div>
+    </div>
+    {% if system_logs %}
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:170px" title="Waktu kejadian tercatat di sistem">Waktu (UTC)</th>
+            <th style="width:110px" title="Tingkat keparahan event journald">Prioritas</th>
+            <th style="width:200px" title="Unit layanan atau proses penghasil log">Unit / Identitas</th>
+            <th title="Pesan rincian galat">Pesan Galat</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in system_logs %}
+          <tr>
+            <td class="mono" style="font-size:12px;color:var(--dim)">{{ log.time }}</td>
+            <td>
+              {% if log.priority <= 2 %}
+                <span class="badge badge-danger">CRIT / EMERG</span>
+              {% elif log.priority == 3 %}
+                <span class="badge badge-warn">ERROR</span>
+              {% else %}
+                <span class="badge badge-muted">PRIO {{ log.priority }}</span>
+              {% endif %}
+            </td>
+            <td class="mono" style="font-size:12px"><strong>{{ log.unit }}</strong></td>
+            <td class="mono" style="font-size:12px;white-space:pre-wrap;word-break:break-all;color:var(--text)">{{ log.message }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-msg">
+      Tidak ada rekaman log galat sistem kritis (journalctl) yang terdeteksi. Sistem berjalan normal!
     </div>
     {% endif %}
   </div>
@@ -3033,13 +3093,25 @@ function renderSys(data) {
   const dw = document.getElementById('disks-wrap');
   const dt = document.getElementById('disks-table').querySelector('tbody');
   dw.style.display = disks.length ? 'block' : 'none';
-  dt.innerHTML = disks.map(d =>
-    '<tr><td class="mono">' + escHtml(d.mount) + '</td><td class="mono">' + escHtml(d.type) + '</td>'
-    + '<td>' + fmtBytes(d.used) + ' / ' + fmtBytes(d.total) + '</td>'
-    + '<td><div class="meter"><div class="meter-bar" style="width:' + Math.min(100, d.pct) + '%;'
-    + (d.pct >= 90 ? 'background:var(--red)' : '') + '"></div></div>'
-    + '<span style="font-size:11px;color:var(--dim)">' + d.pct + '%</span></td></tr>'
-  ).join('');
+  dt.innerHTML = disks.map(d => {
+    let ioText = '<span style="color:var(--dim)">—</span>';
+    let utilText = '<span style="color:var(--dim)">—</span>';
+    if (d.read_kb_s !== undefined || d.write_kb_s !== undefined) {
+      const rStr = fmtBytes((d.read_kb_s || 0) * 1024) + '/s';
+      const wStr = fmtBytes((d.write_kb_s || 0) * 1024) + '/s';
+      ioText = '<span style="color:var(--blue)">R: ' + rStr + '</span> &nbsp;|&nbsp; <span style="color:var(--green)">W: ' + wStr + '</span>';
+      const uVal = d.io_util || 0;
+      const uColor = uVal >= 80 ? 'var(--red)' : (uVal >= 50 ? 'var(--yellow)' : 'var(--text)');
+      utilText = '<span style="font-weight:600;color:' + uColor + '">' + uVal + '%</span>';
+    }
+    return '<tr><td class="mono"><strong>' + escHtml(d.mount) + '</strong></td><td class="mono">' + escHtml(d.type) + '</td>'
+      + '<td>' + fmtBytes(d.used) + ' / ' + fmtBytes(d.total) + '</td>'
+      + '<td><div class="meter"><div class="meter-bar" style="width:' + Math.min(100, d.pct) + '%;'
+      + (d.pct >= 90 ? 'background:var(--red)' : '') + '"></div></div>'
+      + '<span style="font-size:11px;color:var(--dim)">' + d.pct + '%</span></td>'
+      + '<td class="mono" style="font-size:12px">' + ioText + '</td>'
+      + '<td class="mono" style="font-size:12px">' + utilText + '</td></tr>';
+  }).join('');
 
   // jaringan
   const net = sys.net || [];

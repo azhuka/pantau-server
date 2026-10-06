@@ -666,6 +666,11 @@ def _sanitize_disk_list(raw) -> str | None:
             "total": _clamp_int(d.get("total"), 0, 0, 2 ** 63 - 1),
             "used": _clamp_int(d.get("used"), 0, 0, 2 ** 63 - 1),
             "pct": _clamp_float(d.get("pct"), 0.0, 0.0, 100.0),
+            "read_kb_s": _clamp_float(d.get("read_kb_s"), 0.0, 0.0, 1e9),
+            "write_kb_s": _clamp_float(d.get("write_kb_s"), 0.0, 0.0, 1e9),
+            "read_iops": _clamp_float(d.get("read_iops"), 0.0, 0.0, 1e7),
+            "write_iops": _clamp_float(d.get("write_iops"), 0.0, 0.0, 1e7),
+            "io_util": _clamp_float(d.get("io_util"), 0.0, 0.0, 100.0),
         })
     return json.dumps(cleaned) if cleaned else None
 
@@ -1001,7 +1006,19 @@ def agent_report(
             for c in body["ssl_certs"][:50]
             if isinstance(c, dict)
         ]
-        extras.ssl_certs = json.dumps(clean_certs)
+    # Validasi & Simpan System Logs (kegagalan sistem journalctl)
+    if isinstance(body.get("system_logs"), list):
+        clean_logs = [
+            {
+                "time": _clean_str(l.get("time"), "", 30),
+                "unit": _clean_str(l.get("unit"), "-", 80),
+                "message": _clean_str(l.get("message"), "", 400),
+                "priority": _clamp_int(l.get("priority"), 3, 0, 7),
+            }
+            for l in body["system_logs"][:60]
+            if isinstance(l, dict)
+        ]
+        extras.system_logs = json.dumps(clean_logs)
 
     extras.updated_at = datetime.utcnow()
 
@@ -2094,6 +2111,13 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         except Exception:
             pass
 
+    sys_logs_data = []
+    if extra and extra.system_logs:
+        try:
+            sys_logs_data = json.loads(extra.system_logs)
+        except Exception:
+            pass
+
     return tpl(request, "services.html", {
         "user": user, "server": server, "services": services, "commands": commands, "actions": actions,
         "agent_version": extra.agent_version if extra else None,
@@ -2108,6 +2132,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         "firewall": fw_data,
         "listening_ports": ports_data,
         "ssl_certs": ssl_data,
+        "system_logs": sys_logs_data,
     })
 
 

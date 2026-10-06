@@ -587,6 +587,7 @@ def send_report(cfg: dict, services: list, system: dict,
     payload["firewall"] = collect_firewall()
     payload["listening_ports"] = collect_listening_ports()
     payload["ssl_certs"] = collect_ssl_certs()
+    payload["system_logs"] = collect_system_logs()
 
     for attempt in range(1, 4):
         code, _ = http_json_request(cfg, "/api/report", "POST", payload)
@@ -869,6 +870,8 @@ def _os_pretty() -> str:
 _prev_cpu: tuple[float, float] | None = None
 _net_prev: dict[str, tuple[int, int]] = {}
 _net_prev_t: float = 0.0
+_disk_prev: dict[str, dict] = {}
+_disk_prev_t: float = 0.0
 DISK_TYPES = ("ext4", "ext3", "ext2", "xfs", "btrfs", "zfs", "vfat", "ntfs", "f2fs", "overlay")
 
 
@@ -920,12 +923,78 @@ def _read_meminfo() -> dict:
 
 
 def collect_disks() -> list[dict]:
+    global _disk_prev, _disk_prev_t
     out = []
+    now = time.monotonic()
+    dt = (now - _disk_prev_t) if _disk_prev_t else 0.0
+
+    # 1. Baca disk I/O delta dari /proc/diskstats
+    io_rates: dict[str, dict] = {}
+    curr_io: dict[str, dict] = {}
+    try:
+        with open("/proc/diskstats") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 14:
+                    dev = parts[2]
+                    if dev.startswith(("loop", "ram", "sr")):
+                        continue
+                    reads = int(parts[3])
+                    sec_read = int(parts[5])
+                    writes = int(parts[7])
+                    sec_write = int(parts[9])
+                    io_active = int(parts[11])
+                    io_ms = int(parts[12])
+
+                    curr_io[dev] = {
+                        "reads": reads, "sec_read": sec_read,
+                        "writes": writes, "sec_write": sec_write,
+                        "io_ms": io_ms,
+                    }
+                    r_kb_s = 0.0
+                    w_kb_s = 0.0
+                    r_iops = 0.0
+                    w_iops = 0.0
+                    util_pct = 0.0
+                    if dev in _disk_prev and dt > 0:
+                        prev = _disk_prev[dev]
+                        r_kb_s = max(0.0, ((sec_read - prev["sec_read"]) * 512 / 1024.0) / dt)
+                        w_kb_s = max(0.0, ((sec_write - prev["sec_write"]) * 512 / 1024.0) / dt)
+                        r_iops = max(0.0, (reads - prev["reads"]) / dt)
+                        w_iops = max(0.0, (writes - prev["writes"]) / dt)
+                        util_pct = min(100.0, max(0.0, ((io_ms - prev["io_ms"]) / (dt * 1000.0)) * 100.0))
+
+                    io_rates[dev] = {
+                        "read_kb_s": round(r_kb_s, 1),
+                        "write_kb_s": round(w_kb_s, 1),
+                        "read_iops": round(r_iops, 1),
+                        "write_iops": round(w_iops, 1),
+                        "util_pct": round(util_pct, 1),
+                    }
+    except OSError:
+        pass
+    _disk_prev = curr_io
+    _disk_prev_t = now
+
+    # 2. Peta mount point ke device block
+    mount_dev_map = {}
     try:
         with open("/proc/mounts") as f:
             lines = f.read().splitlines()
     except OSError:
         return out
+
+    for line in lines:
+        parts = line.split()
+        if len(parts) >= 3:
+            dev_path, mount_pt, fstype = parts[0], parts[1], parts[2]
+            if fstype in DISK_TYPES and dev_path.startswith("/dev/"):
+                try:
+                    dev_name = os.path.basename(os.path.realpath(dev_path))
+                    mount_dev_map[mount_pt] = dev_name
+                except Exception:
+                    pass
+
     for line in lines:
         parts = line.split()
         if len(parts) < 3:
@@ -940,10 +1009,29 @@ def collect_disks() -> list[dict]:
         total = st.f_frsize * st.f_blocks
         used = total - st.f_frsize * st.f_bavail
         pct = round(used * 100.0 / total, 1) if total else 0.0
-        out.append({
+
+        # Cari device matching untuk I/O
+        dev_name = mount_dev_map.get(mount)
+        rates = io_rates.get(dev_name) if dev_name else None
+        if not rates and dev_name:
+            # Cek jika ada induk partisi (misal sda3 -> sda)
+            for k, v in io_rates.items():
+                if dev_name.startswith(k) or k.startswith(dev_name):
+                    rates = v
+                    break
+
+        item = {
             "mount": mount, "type": fstype,
             "total": total, "used": used, "pct": pct,
-        })
+        }
+        if rates:
+            item["read_kb_s"] = rates["read_kb_s"]
+            item["write_kb_s"] = rates["write_kb_s"]
+            item["read_iops"] = rates["read_iops"]
+            item["write_iops"] = rates["write_iops"]
+            item["io_util"] = rates["util_pct"]
+
+        out.append(item)
     return out
 
 
@@ -2330,6 +2418,55 @@ def collect_ssl_certs() -> list[dict]:
     _ssl_cache["data"] = certs
     _ssl_cache["at"] = now
     return certs
+
+
+_syslog_cache: dict = {"at": 0.0, "data": []}
+
+
+def collect_system_logs(lines: int = 25) -> list[dict]:
+    """Kumpulkan log galat sistem kritis (journalctl priority err, crit, alert, emerg)."""
+    now = time.monotonic()
+    if _syslog_cache["data"] and now - _syslog_cache["at"] < 30:
+        return _syslog_cache["data"]
+
+    events: list[dict] = []
+    # Jalankan journalctl -p 3 (0=emerg, 1=alert, 2=crit, 3=err)
+    res = _run_cmd(
+        ["journalctl", "-p", "3", "-n", str(lines), "--no-pager", "-o", "json"],
+        timeout=5,
+    )
+    if res and res.returncode == 0:
+        for ln in res.stdout.splitlines():
+            if not ln.strip():
+                continue
+            try:
+                d = json.loads(ln)
+                ts = d.get("__REALTIME_TIMESTAMP")
+                time_str = ""
+                if ts:
+                    try:
+                        dt = datetime.fromtimestamp(int(ts) / 1000000.0, timezone.utc)
+                        time_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        time_str = str(ts)
+                unit = d.get("_SYSTEMD_UNIT") or d.get("SYSLOG_IDENTIFIER") or "-"
+                msg = (d.get("MESSAGE") or "").strip()[:400]
+                try:
+                    prio = int(d.get("PRIORITY", 3))
+                except Exception:
+                    prio = 3
+                events.append({
+                    "time": time_str,
+                    "unit": unit,
+                    "message": msg,
+                    "priority": prio,
+                })
+            except Exception:
+                continue
+
+    _syslog_cache["data"] = events
+    _syslog_cache["at"] = now
+    return events
 
 
 _HIST_EPOCH = re.compile(r"^#(\d{9,11})$")                      # bash: baris before command (#epoch)

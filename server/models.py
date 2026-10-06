@@ -189,6 +189,7 @@ class ServerExtras(Base):
     firewall = Column(Text, nullable=True)               # JSON: status firewall (ufw/iptables) & rules
     listening_ports = Column(Text, nullable=True)        # JSON: daftar port listening & proses (ss -tulpn)
     ssl_certs = Column(Text, nullable=True)              # JSON: sertifikat SSL/TLS & masa kedaluwarsa
+    system_logs = Column(Text, nullable=True)            # JSON: log kegagalan sistem penting (journalctl err/crit)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 
