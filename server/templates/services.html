@@ -633,8 +633,10 @@
       <td class="mono">{{ svc.port }}</td>
       <td class="mono">{{ svc.process_name }}</td>
       <td id="sts-{{ svc.id }}">
-        {% if svc._status == 'down' and ('service_down:' ~ svc.service_name) in (open_problems | selectattr('is_ignored') | map(attribute='key') | list) %}
+        {% if svc._status == 'down' and svc._is_ignored %}
           <span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down 🔕</span>
+        {% elif svc._status == 'up' and svc._is_ignored %}
+          <span class="badge badge-up" title="Layanan aktif (pengawasan down diabaikan)">up 🔕</span>
         {% else %}
           <span class="badge badge-{{ svc._status }}">{{ svc._status }}</span>
         {% endif %}
@@ -668,12 +670,10 @@
                     {% if is_pending or not is_up %}disabled{% endif %}
                     onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
                     title="{{ 'Layanan sudah nonaktif / berhenti' if not is_up else 'Hentikan layanan' }}">■</button>
-            {% if svc._problem %}
-              {% if svc._problem.is_ignored %}
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id }}" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>
-              {% else %}
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id }}" data-msg="{{ svc._problem.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah layanan ini">🔕 Abaikan</button>
-              {% endif %}
+            {% if svc._is_ignored %}
+              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>
+            {% else %}
+              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)" title="Abaikan pemantauan layanan ini">🔕 Abaikan</button>
             {% endif %}
             {% if is_pending %}
               <span class="badge badge-muted" style="margin-left:4px;font-size:10px">menunggu…</span>
@@ -1252,19 +1252,21 @@ function badgeHtml(status) {
        + (badgeText[status] || status) + '</span>';
 }
 
-function renderServiceActions(sid, svcId, name, status, isPending, problem) {
+function renderServiceActions(sid, svcId, name, status, isPending, problem, isServiceIgnored) {
   const isUp = status === 'up';
   const startDis = isPending || isUp;
   const stopDis = isPending || !isUp;
   const rstDis = isPending;
 
   let ignoreBtn = '';
-  if (problem && problem.id) {
-    if (problem.is_ignored) {
-      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + problem.id + '" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>';
-    } else {
-      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + problem.id + '" data-msg="' + escHtml(problem.message || '') + '" onclick="openIgnoreModal(this)" title="Abaikan masalah layanan ini">🔕 Abaikan</button>';
-    }
+  const isIgnored = Boolean(isServiceIgnored || (problem && problem.is_ignored));
+  const probId = (problem && problem.id) ? problem.id : '';
+  const probMsg = (problem && problem.message) ? problem.message : ('Abaikan pemantauan layanan ' + name);
+
+  if (isIgnored) {
+    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>';
+  } else {
+    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="Abaikan pemantauan layanan ini">🔕 Abaikan</button>';
   }
 
   return '<button type="button" class="btn btn-primary btn-sm btn-svc-restart" '
@@ -2407,6 +2409,8 @@ function patch(data) {
     if (sts) {
       if (s.status === 'down' && s.ignored) {
         sts.innerHTML = '<span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down 🔕</span>';
+      } else if (s.status === 'up' && s.ignored) {
+        sts.innerHTML = '<span class="badge badge-up" title="Layanan aktif (pengawasan down diabaikan)">up 🔕</span>';
       } else {
         const st = s.status === 'unknown' ? 'inactive' : s.status;
         sts.innerHTML = '<span class="badge badge-' + st + '">' + escHtml(s.status) + '</span>';
@@ -2428,7 +2432,7 @@ function patch(data) {
         prob = { id: s.problem_id, is_ignored: s.ignored, message: s.problem_msg };
       }
       act.innerHTML = renderServiceActions(
-        act.dataset.sid, act.dataset.svc, act.dataset.name, s.status, s.pending, prob
+        act.dataset.sid, act.dataset.svc, act.dataset.name, s.status, s.pending, prob, s.ignored
       );
     }
 

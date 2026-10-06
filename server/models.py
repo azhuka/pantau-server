@@ -52,6 +52,11 @@ class Service(Base):
     service_name = Column(String(100), nullable=False)
     port = Column(Integer, nullable=False)
     process_name = Column(String(100), nullable=False)
+    is_ignored = Column(SmallInteger, nullable=False, default=0)
+    ignored_until = Column(DateTime, nullable=True)
+    ignored_by = Column(String(100), nullable=True)
+    ignored_reason = Column(String(255), nullable=True)
+    ignore_mode = Column(String(20), nullable=True, default="permanent")
 
     server = relationship("Server", back_populates="services")
     metrics = relationship("Metric", back_populates="service", cascade="all, delete-orphan")

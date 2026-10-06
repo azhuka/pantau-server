@@ -89,7 +89,7 @@
         {% set ign_down = [] %}
         {% for d in (srv._svc_data or []) %}
           {% if d.status in ['down', 'offline'] %}
-            {% if ('service_down:' ~ d.name) in ign_keys %}
+            {% if ('service_down:' ~ d.name) in ign_keys or d.ignored %}
               {% set _ = ign_down.append(d) %}
             {% else %}
               {% set _ = unign_down.append(d) %}

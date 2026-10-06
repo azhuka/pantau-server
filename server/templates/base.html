@@ -602,16 +602,24 @@ async function alertAckAll(){
 }
 // ---------- modal abaikan masalah (silence / mute) ----------
 let _ignoreTargetId = null;
+let _ignoreTargetSvcId = null;
+let _ignoreTargetSid = null;
 let _ignoreCallback = null;
 
 function openIgnoreModal(target, msg, onDone) {
   let id = target;
   let text = msg;
+  let svcid = null;
+  let sid = typeof SID !== 'undefined' ? SID : null;
   if (target instanceof HTMLElement) {
-    id = target.dataset.id;
+    id = target.dataset.id || null;
     text = target.dataset.msg;
+    svcid = target.dataset.svcid || null;
+    sid = target.dataset.sid || sid;
   }
   _ignoreTargetId = id;
+  _ignoreTargetSvcId = svcid;
+  _ignoreTargetSid = sid;
   _ignoreCallback = (typeof onDone === 'function') ? onDone : null;
   const m = document.getElementById('ignore-problem-modal');
   const txt = document.getElementById('ignore-modal-msg');
@@ -619,7 +627,7 @@ function openIgnoreModal(target, msg, onDone) {
   const rInput = document.getElementById('ignore-reason');
   if (rInput) rInput.value = '';
   const dSel = document.getElementById('ignore-duration');
-  if (dSel) dSel.value = '24h';
+  if (dSel) dSel.value = 'permanent';
   if (m) m.style.display = 'flex';
 }
 
@@ -627,19 +635,27 @@ function closeIgnoreModal() {
   const m = document.getElementById('ignore-problem-modal');
   if (m) m.style.display = 'none';
   _ignoreTargetId = null;
+  _ignoreTargetSvcId = null;
+  _ignoreTargetSid = null;
   _ignoreCallback = null;
 }
 
 async function submitIgnoreProblem() {
-  if (!_ignoreTargetId) return;
+  if (!_ignoreTargetId && !_ignoreTargetSvcId) return;
   const btn = document.getElementById('ignore-modal-submit-btn');
   const orig = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Menyimpan…'; }
-  const duration = document.getElementById('ignore-duration')?.value || '24h';
+  const duration = document.getElementById('ignore-duration')?.value || 'permanent';
   const reason = document.getElementById('ignore-reason')?.value || '';
 
   try {
-    const r = await fetch('/api/alerts/' + _ignoreTargetId + '/ignore', {
+    let url = '';
+    if (_ignoreTargetId) {
+      url = '/api/alerts/' + _ignoreTargetId + '/ignore';
+    } else if (_ignoreTargetSid && _ignoreTargetSvcId) {
+      url = '/api/servers/' + _ignoreTargetSid + '/services/' + _ignoreTargetSvcId + '/ignore';
+    }
+    const r = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -649,7 +665,7 @@ async function submitIgnoreProblem() {
       credentials: 'same-origin'
     });
     if (r.ok) {
-      showToast('Masalah berhasil diabaikan.', true);
+      showToast('Pengabaian pemantauan berhasil disimpan.', true);
       const cb = _ignoreCallback;
       closeIgnoreModal();
       if (typeof cb === 'function') {
@@ -662,7 +678,7 @@ async function submitIgnoreProblem() {
       return;
     }
     const err = await r.json().catch(() => ({}));
-    showToast(err.detail || ('Gagal mengabaikan masalah (HTTP ' + r.status + ')'), false);
+    showToast(err.detail || ('Gagal mengabaikan (HTTP ' + r.status + ')'), false);
   } catch (e) {
     showToast('Kendala jaringan: ' + e.message, false);
   } finally {
@@ -671,26 +687,33 @@ async function submitIgnoreProblem() {
 }
 
 async function unignoreProblem(target, onDone) {
-  let id = target;
-  let btn = null;
-  if (target instanceof HTMLElement) {
-    btn = target;
-    id = btn.dataset.id;
-  } else if (arguments[1] instanceof HTMLElement) {
+  let btn = target instanceof HTMLElement ? target : null;
+  let id = btn ? btn.dataset.id : target;
+  let svcid = btn ? btn.dataset.svcid : null;
+  let sid = btn ? (btn.dataset.sid || (typeof SID !== 'undefined' ? SID : null)) : (typeof SID !== 'undefined' ? SID : null);
+  if (arguments[1] instanceof HTMLElement) {
     btn = arguments[1];
     onDone = arguments[2];
   }
-  if (!confirm('Aktifkan kembali pemantauan untuk masalah ini?')) return;
+  if (!confirm('Aktifkan kembali pemantauan untuk layanan/masalah ini?')) return;
   const orig = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
-    const r = await fetch('/api/alerts/' + id + '/unignore', {
+    let url = '';
+    if (id) {
+      url = '/api/alerts/' + id + '/unignore';
+    } else if (sid && svcid) {
+      url = '/api/servers/' + sid + '/services/' + svcid + '/unignore';
+    } else {
+      url = '/api/alerts/' + id + '/unignore';
+    }
+    const r = await fetch(url, {
       method: 'POST',
       headers: {'X-CSRF-Token': getCsrf()},
       credentials: 'same-origin'
     });
     if (r.ok) {
-      showToast('Pemantauan masalah diaktifkan kembali.', true);
+      showToast('Pemantauan diaktifkan kembali.', true);
       if (typeof onDone === 'function') {
         onDone();
       } else if (typeof window.poll === 'function') {
@@ -723,7 +746,7 @@ setInterval(alertFetch, 10000);
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h3 style="margin:0;font-size:15px;display:flex;align-items:center;gap:8px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-        Abaikan Masalah
+        Abaikan Pemantauan
       </h3>
       <button type="button" class="btn btn-ghost btn-sm" onclick="closeIgnoreModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
     </div>
@@ -731,16 +754,17 @@ setInterval(alertFetch, 10000);
     <div style="margin-bottom:14px">
       <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Abaikan Selama:</label>
       <select id="ignore-duration" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+        <option value="permanent" selected>Permanen (hingga diaktifkan manual kembali)</option>
         <option value="2h">2 Jam (sementara)</option>
-        <option value="24h" selected>24 Jam (1 hari)</option>
+        <option value="24h">24 Jam (1 hari)</option>
         <option value="7d">7 Hari (1 minggu)</option>
         <option value="30d">30 Hari (1 bulan)</option>
-        <option value="permanent">Permanen (hingga diaktifkan kembali)</option>
+        <option value="incident">Sekali ini saja (kembali dipantau saat aktif)</option>
       </select>
     </div>
     <div style="margin-bottom:18px">
       <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Alasan (Opsional):</label>
-      <input type="text" id="ignore-reason" placeholder="Contoh: Service sengaja dinonaktifkan" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+      <input type="text" id="ignore-reason" placeholder="Contoh: Service on-demand / sengaja dihentikan" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
     </div>
     <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center">
       <button type="button" class="btn btn-ghost btn-sm" onclick="closeIgnoreModal()">Batal</button>

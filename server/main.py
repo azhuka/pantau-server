@@ -415,6 +415,37 @@ def migrate_server_problem_ignored():
         db.close()
 
 
+def migrate_service_ignored():
+    """Migrasi penambahan kolom pembungkaman/abaikan layanan pada tabel services."""
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    if "services" not in inspector.get_table_names():
+        return
+    existing = {c["name"] for c in inspector.get_columns("services")}
+    wanted = {
+        "is_ignored": "TINYINT(1) DEFAULT 0",
+        "ignored_until": "DATETIME NULL",
+        "ignored_by": "VARCHAR(100) NULL",
+        "ignored_reason": "VARCHAR(255) NULL",
+        "ignore_mode": "VARCHAR(20) DEFAULT 'permanent'",
+    }
+    missing = {k: v for k, v in wanted.items() if k not in existing}
+    if not missing:
+        return
+    db = SessionLocal()
+    try:
+        for col, ddl in missing.items():
+            db.execute(text(f"ALTER TABLE services ADD COLUMN {col} {ddl}"))
+        db.commit()
+        logger.info("[startup] Kolom baru services (abaikan layanan): %s", ", ".join(missing))
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        logger.warning("[startup] Migrasi kolom service ignored gagal: %s", exc)
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _SECRET_KEY
@@ -423,6 +454,7 @@ async def lifespan(app: FastAPI):
     migrate_api_keys()
     migrate_log_request_input()
     migrate_server_problem_ignored()
+    migrate_service_ignored()
     try:
         with SessionLocal() as sess:
             _prune_expired_sessions(sess)
@@ -918,8 +950,9 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             db, srv, _problem_instances(srv, ex, [{"name": s["name"], "status": s["status"]} for s in svc_list], db)
         )
         ignored_keys = {p.get("key") for p in open_prob if p.get("is_ignored")}
+        svc_ignored_db = {s.service_name for s in services if getattr(s, "is_ignored", 0)}
         for s in svc_list:
-            if f"service_down:{s['name']}" in ignored_keys:
+            if f"service_down:{s['name']}" in ignored_keys or s["name"] in svc_ignored_db:
                 s["ignored"] = True
 
         stale = _server_stale(srv)
@@ -1144,13 +1177,21 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         latest = latest_map.get(svc.id)
         st = latest.status if latest else "unknown"
         p_row = open_prob_map.get(f"service_down:{svc.service_name}")
-        is_ign = bool(getattr(p_row, "is_ignored", 0)) if p_row else False
+        is_ign = bool(getattr(p_row, "is_ignored", 0)) if p_row else bool(getattr(svc, "is_ignored", 0))
         p_id = p_row.id if p_row else None
         p_msg = p_row.message if p_row else None
+        ign_until = None
+        if getattr(svc, "ignored_until", None):
+            ign_until = svc.ignored_until.isoformat()
+        elif p_row and getattr(p_row, "ignored_until", None):
+            ign_until = p_row.ignored_until.isoformat()
+
         svc_list.append({
             "id": svc.id, "name": svc.service_name, "port": svc.port,
             "status": st,
             "ignored": is_ign,
+            "ignored_until": ign_until,
+            "ignore_mode": getattr(svc, "ignore_mode", None),
             "problem_id": p_id,
             "problem_msg": p_msg,
             "connections": latest.active_connections if latest else 0,
@@ -1661,14 +1702,17 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         srv._problem_level, srv._problems, _ph = sync_server_problems(
             db, srv, _problem_instances(srv, ex, srv._svc_data, db))
         ignored_keys = {p.get("key") for p in srv._problems if p.get("is_ignored")}
+        svc_ignored_db = {s.service_name for s in services if getattr(s, "is_ignored", 0)}
         unignored_down = 0
         for d in srv._svc_data:
             if d.get("status") in ("down", "offline"):
-                if f"service_down:{d['name']}" not in ignored_keys:
+                if f"service_down:{d['name']}" not in ignored_keys and d['name'] not in svc_ignored_db:
                     unignored_down += 1
                     down_services += 1
                 else:
                     d["ignored"] = True
+            elif d.get("name") in svc_ignored_db:
+                d["ignored"] = True
 
         stale = _server_stale(srv)
         if stale:
@@ -1923,6 +1967,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     prob_by_key = {p["key"]: p for p in open_problems}
     for svc in services:
         svc._problem = prob_by_key.get(f"service_down:{svc.service_name}")
+        svc._is_ignored = bool(getattr(svc, "is_ignored", 0)) or (bool(svc._problem and svc._problem.get("is_ignored")))
     top_p = {"cpu": [], "mem": []}
     if extra and extra.top_procs:
         try:
@@ -2962,6 +3007,18 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             instances = []
     current_keys = {p["key"] for p in instances}
 
+    svc_map = {}
+    try:
+        for s in db.query(Service).filter(Service.server_id == srv.id).all():
+            if getattr(s, "is_ignored", 0) and s.ignored_until and s.ignored_until <= now:
+                s.is_ignored = 0
+                s.ignored_until = None
+                s.ignored_reason = None
+                s.ignore_mode = None
+            svc_map[s.service_name] = s
+    except Exception:
+        pass
+
     for p in instances:
         quiet = _quiet_secs_for(p["key"])
         ev = p.get("event_at")
@@ -2980,17 +3037,36 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 row.resolved_note = "auto"
             continue
         active = max(ev, now) if ev else now
+
+        svc_obj = None
+        if p["key"].startswith("service_down:"):
+            svc_name = p["key"].split(":", 1)[1]
+            svc_obj = svc_map.get(svc_name)
+        is_svc_ignored = bool(svc_obj and getattr(svc_obj, "is_ignored", 0))
+
         if row is None:
-            db.add(ServerProblem(
+            new_row = ServerProblem(
                 server_id=srv.id, key=p["key"], severity=p["severity"],
                 message=p["message"], tip=p["tip"], started_at=now,
                 last_active_at=active,
-            ))
+            )
+            if is_svc_ignored:
+                new_row.is_ignored = 1
+                new_row.ignored_until = svc_obj.ignored_until
+                new_row.ignored_by = svc_obj.ignored_by
+                new_row.ignored_reason = svc_obj.ignored_reason
+            db.add(new_row)
         else:
             if getattr(row, "is_ignored", 0) and row.ignored_until and row.ignored_until <= now:
                 row.is_ignored = 0
                 row.ignored_until = None
                 row.ignored_reason = None
+            elif is_svc_ignored:
+                row.is_ignored = 1
+                row.ignored_until = svc_obj.ignored_until
+                row.ignored_by = svc_obj.ignored_by
+                row.ignored_reason = svc_obj.ignored_reason
+
             if active > (row.last_active_at or row.started_at):
                 row.last_active_at = active
             if (row.severity != p["severity"] or row.message != p["message"]
@@ -3012,6 +3088,15 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             row.resolved_at = now
             row.updated_at = now
             row.resolved_note = "auto" if quiet > 0 else None
+
+            if row.key.startswith("service_down:"):
+                svc_name = row.key.split(":", 1)[1]
+                svc_obj = svc_map.get(svc_name)
+                if svc_obj and getattr(svc_obj, "ignore_mode", None) == "incident":
+                    svc_obj.is_ignored = 0
+                    svc_obj.ignored_until = None
+                    svc_obj.ignored_reason = None
+                    svc_obj.ignore_mode = None
 
     stale = now - timedelta(days=30)
     db.query(ServerProblem).filter(
@@ -3373,6 +3458,7 @@ def api_alert_ignore(
 
     now = datetime.utcnow()
     until = None
+    ignore_mode = "duration"
     if duration == "2h":
         until = now + timedelta(hours=2)
     elif duration == "24h":
@@ -3383,6 +3469,10 @@ def api_alert_ignore(
         until = now + timedelta(days=30)
     elif duration in ("0", "perm", "permanent", "forever"):
         until = None
+        ignore_mode = "permanent"
+    elif duration == "incident":
+        until = None
+        ignore_mode = "incident"
     else:
         until = now + timedelta(hours=24)
 
@@ -3395,7 +3485,23 @@ def api_alert_ignore(
         row.acknowledged_at = now
         row.acknowledged_by = user.username
 
-    dur_label = f" ({duration})" if duration not in ("forever", "permanent", "0") else " (permanen)"
+    # Jika masalah ini adalah service_down, sinkronkan ke tabel Service
+    if row.key.startswith("service_down:"):
+        svc_name = row.key.split(":", 1)[1]
+        svc = db.query(Service).filter(
+            Service.server_id == row.server_id,
+            Service.service_name == svc_name,
+        ).first()
+        if svc:
+            svc.is_ignored = 1
+            svc.ignored_until = until
+            svc.ignored_by = user.username
+            svc.ignored_reason = reason
+            svc.ignore_mode = ignore_mode
+
+    dur_label = f" ({duration})" if ignore_mode != "permanent" else " (permanen)"
+    if ignore_mode == "incident":
+        dur_label = " (hanya insiden saat ini)"
     res_str = f"diabaikan{dur_label}" + (f": {reason}" if reason else "")
     _audit(
         db, user.username, "problem_ignore",
@@ -3407,6 +3513,7 @@ def api_alert_ignore(
         "id": pid,
         "is_ignored": True,
         "ignored_until": until.isoformat() if until else None,
+        "ignore_mode": ignore_mode,
         "ignored_by": user.username,
         "ignored_reason": reason,
     }
@@ -3433,12 +3540,140 @@ def api_alert_unignore(
     row.ignored_reason = None
     row.updated_at = datetime.utcnow()
 
+    # Jika masalah ini adalah service_down, batalkan juga abaikan pada tabel Service
+    if row.key.startswith("service_down:"):
+        svc_name = row.key.split(":", 1)[1]
+        svc = db.query(Service).filter(
+            Service.server_id == row.server_id,
+            Service.service_name == svc_name,
+        ).first()
+        if svc:
+            svc.is_ignored = 0
+            svc.ignored_until = None
+            svc.ignored_reason = None
+            svc.ignore_mode = None
+
     _audit(
         db, user.username, "problem_unignore",
         target=row.message[:100], result="pemantauan diaktifkan kembali", server_id=row.server_id
     )
     db.commit()
     return {"ok": True, "id": pid, "is_ignored": False}
+
+
+@app.post("/api/servers/{sid}/services/{svc_id}/ignore")
+def api_service_ignore(
+    sid: int,
+    svc_id: int,
+    request: Request,
+    body: dict = Body(default={}),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Abaikan pemantauan suatu layanan secara langsung (bisa permanen atau durasi)."""
+    _verify_csrf_header(request)
+    svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
+    if not svc:
+        raise HTTPException(status_code=404, detail="Layanan tidak ditemukan")
+
+    duration = str(body.get("duration", "permanent")).lower().strip()
+    reason = str(body.get("reason", "")).strip()[:255] or None
+
+    now = datetime.utcnow()
+    until = None
+    ignore_mode = "duration"
+    if duration == "2h":
+        until = now + timedelta(hours=2)
+    elif duration == "24h":
+        until = now + timedelta(hours=24)
+    elif duration == "7d":
+        until = now + timedelta(days=7)
+    elif duration == "30d":
+        until = now + timedelta(days=30)
+    elif duration in ("0", "perm", "permanent", "forever"):
+        until = None
+        ignore_mode = "permanent"
+    elif duration == "incident":
+        until = None
+        ignore_mode = "incident"
+    else:
+        until = None
+        ignore_mode = "permanent"
+
+    svc.is_ignored = 1
+    svc.ignored_until = until
+    svc.ignored_by = user.username
+    svc.ignored_reason = reason
+    svc.ignore_mode = ignore_mode
+
+    prob = db.query(ServerProblem).filter(
+        ServerProblem.server_id == sid,
+        ServerProblem.key == f"service_down:{svc.service_name}",
+        ServerProblem.resolved_at.is_(None),
+    ).first()
+    if prob:
+        prob.is_ignored = 1
+        prob.ignored_until = until
+        prob.ignored_by = user.username
+        prob.ignored_reason = reason
+        prob.updated_at = now
+
+    dur_label = f" ({duration})" if ignore_mode != "permanent" else " (permanen)"
+    if ignore_mode == "incident":
+        dur_label = " (hanya insiden saat ini)"
+    res_str = f"diabaikan{dur_label}" + (f": {reason}" if reason else "")
+    _audit(
+        db, user.username, "problem_ignore",
+        target=f"Layanan {svc.service_name}", result=res_str, server_id=sid
+    )
+    db.commit()
+    return {
+        "ok": True,
+        "service_id": svc_id,
+        "is_ignored": True,
+        "ignored_until": until.isoformat() if until else None,
+        "ignore_mode": ignore_mode,
+        "ignored_by": user.username,
+        "ignored_reason": reason,
+    }
+
+
+@app.post("/api/servers/{sid}/services/{svc_id}/unignore")
+def api_service_unignore(
+    sid: int,
+    svc_id: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Aktifkan kembali pemantauan suatu layanan."""
+    _verify_csrf_header(request)
+    svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
+    if not svc:
+        raise HTTPException(status_code=404, detail="Layanan tidak ditemukan")
+
+    svc.is_ignored = 0
+    svc.ignored_until = None
+    svc.ignored_reason = None
+    svc.ignore_mode = None
+
+    prob = db.query(ServerProblem).filter(
+        ServerProblem.server_id == sid,
+        ServerProblem.key == f"service_down:{svc.service_name}",
+        ServerProblem.resolved_at.is_(None),
+    ).first()
+    if prob:
+        prob.is_ignored = 0
+        prob.ignored_until = None
+        prob.ignored_reason = None
+        prob.updated_at = datetime.utcnow()
+
+    _audit(
+        db, user.username, "problem_unignore",
+        target=f"Layanan {svc.service_name}", result="pemantauan diaktifkan kembali", server_id=sid
+    )
+    db.commit()
+    return {"ok": True, "service_id": svc_id, "is_ignored": False}
 
 
 
