@@ -23,7 +23,8 @@ Dokumentasi ini ditujukan khusus bagi pengembang (*developer*) untuk melacak, me
    - [Normalisasi Service Systemd & Cgroup](#normalisasi-service-systemd--cgroup)
    - [Sistem Retensi Basis Data Otomatis](#sistem-retensi-basis-data-otomatis)
 6. [Skema Basis Data & Konfigurasi](#6-skema-basis-data--konfigurasi)
-7. [Panduan Rilis & Workflow Pengembangan](#7-panduan-rilis--workflow-pengembangan)
+7. [Standar Semantic Versioning (SemVer) Proyek](#7-standar-semantic-versioning-semver-proyek)
+8. [Panduan Rilis & Workflow Pengembangan](#8-panduan-rilis--workflow-pengembangan)
 
 ---
 
@@ -324,24 +325,63 @@ Basis data menggunakan MariaDB (`pantau_db`) dengan tabel-tabel utama:
 
 ---
 
-## 7. Panduan Rilis & Workflow Pengembangan
+---
+
+## 7. Standar Semantic Versioning (SemVer) Proyek
+
+Proyek **Pantau Server** dan **Agen Pantau** mengadopsi standar **Semantic Versioning (SemVer)** dengan format:
+
+$$\textbf{vMAJOR . MINOR . PATCH}$$
+
+Setiap perubahan kode yang dirilis **wajib dievaluasi tingkat dampaknya** oleh developer/AI assistant untuk menentukan kenaikan versi:
+
+### 1. MAJOR (Angka Pertama, contoh: `v3.0.0` $\rightarrow$ `v4.0.0`)
+- **Kapan dinaikkan:**
+  - Terjadi perubahan arsitektur besar-besaran (*major architectural overhaul*).
+  - Terjadi perubahan protokol komunikasi atau skema data yang **tidak kompatibel mundur (*breaking change*)** (misal agen lama tidak dapat berkomunikasi tanpa migrasi).
+  - Transformasi paradigma produk (misalnya: evolusi penuh dari sekadar sistem *monitoring* baca-saja menjadi pusat kendali operasional visual penuh *management & control center*).
+- **Aturan:** Reset `MINOR` dan `PATCH` menjadi 0.
+
+### 2. MINOR (Angka Kedua, contoh: `v3.17.0` $\rightarrow$ `v3.18.0`)
+- **Kapan dinaikkan:**
+  - Penambahan **fitur baru atau kapabilitas operasional baru (*new feature*)** yang tetap kompatibel mundur (*backward-compatible*).
+  - Contoh: Penambahan modul aksi tab Firewall (Block manual, Unblock, Enable/Disable UFW, Reload), penambahan handler kill process, manajemen sertifikat SSL baru, dll.
+  - Perubahan atau pengayaan fungsionalitas yang substansial pada modul yang ada.
+- **Aturan:** Reset `PATCH` menjadi 0.
+
+### 3. PATCH (Angka Ketiga, contoh: `v3.18.0` $\rightarrow$ `v3.18.1`)
+- **Kapan dinaikkan:**
+  - **Perbaikan kesalahan (*bugfix*)**, penambalan celah keamanan minor, koreksi logika yang salah tanpa menambah konsep fitur baru.
+  - Perbaikan styling/CSS, tooltip, perbaikan salah ketik (*typo*), atau penyesuaian aturan firewall bawaan (misal memastikan port 8400 otomatis terbuka saat UFW aktif).
+- **Aturan:** Angka `MAJOR` dan `MINOR` tetap, angka `PATCH` ditambah 1.
+
+---
+
+## 8. Panduan Rilis & Workflow Pengembangan
 
 Ketika melakukan perubahan kode atau menambahkan fitur baru, ikuti checklist berikut:
 
-1. **Sinkronisasi Versi:**
+1. **Evaluasi & Sinkronisasi Versi:**
+   - Evaluasi apakah perubahan termasuk `PATCH`, `MINOR`, atau `MAJOR`.
    - Ubah `APP_VERSION` pada [server/config.py](file:///home/bos/rj45/server/config.py).
-   - Jika ada perubahan pada agen klien, ubah `AGENT_VERSION` pada [package/opt/pantau/agent/agent_pantau.py](file:///home/bos/rj45/package/opt/pantau/agent/agent_pantau.py).
+   - Jika ada perubahan pada agen klien atau protokol perintah, ubah `AGENT_VERSION` pada [package/opt/pantau/agent/agent_pantau.py](file:///home/bos/rj45/package/opt/pantau/agent/agent_pantau.py).
+   - **PENTING**: Jika server lokal (`rj45`) menjalankan agen produksi lokal, salin file agen ke `/opt/pantau/agent/agent_pantau.py` dan restart servicenya:
+     ```bash
+     sudo cp package/opt/pantau/agent/agent_pantau.py /opt/pantau/agent/agent_pantau.py
+     sudo systemctl restart agent_pantau.service
+     sudo systemctl restart pantau-server.service
+     ```
 2. **Sinkronisasi Skema Basis Data:**
    - Jika ada penambahan kolom/tabel pada `server/models.py`, perbarui juga berkas DDL [database/schema.sql](file:///home/bos/rj45/database/schema.sql).
 3. **Pembaruan Dokumentasi Pengguna:**
    - Pastikan [README.md](file:///home/bos/rj45/README.md) diperbarui jika terdapat instruksi pengguna atau penambahan fitur baru yang berdampak ke operator/sysadmin.
 4. **Pencatatan di DEVELOPMENT.md:**
-   - Catat keputusan arsitektur baru, perbaikan bug kritis, atau perubahan protokol data pada berkas [DEVELOPMENT.md](file:///home/bos/rj45/DEVELOPMENT.md) ini.
+   - Catat rincian fitur atau bugfix pada riwayat perubahan [DEVELOPMENT.md](file:///home/bos/rj45/DEVELOPMENT.md).
 5. **Git Commit, Tag & Push:**
+   - **Wajib sertakan git tag resmi** untuk setiap rilis versi:
    ```bash
    git add .
    git commit -m "feat/fix: <deskripsi perubahan>"
-   # Jika rilis versi baru:
    git tag -a vX.Y.Z -m "Release vX.Y.Z"
    git push origin master --tags
    ```
