@@ -308,12 +308,12 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
   opacity:0;
   transform:scaleX(0.5);
 }
-/* Efek Tab Aktif Modern */
+/* Efek Tab Aktif Modern dengan Aksen Kategori */
 .tab.is-on{
-  background:linear-gradient(180deg, rgba(56, 189, 248, 0.16) 0%, rgba(56, 189, 248, 0.05) 100%);
+  background:linear-gradient(180deg, rgba(56, 189, 248, 0.22) 0%, rgba(56, 189, 248, 0.06) 100%);
   color:#38bdf8;
-  border-color:rgba(56, 189, 248, 0.35);
-  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 2px 10px rgba(56, 189, 248, 0.2);
+  border-color:rgba(56, 189, 248, 0.45);
+  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(56, 189, 248, 0.25);
   text-shadow:0 0 10px rgba(56, 189, 248, 0.4);
 }
 .tab.is-on::after{
@@ -325,19 +325,92 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
 /* Indikator titik status mikro saat tab aktif */
 .tab.is-on::before{
   content:'';
-  width:5px;
-  height:5px;
+  width:6px;
+  height:6px;
   border-radius:50%;
   background:#38bdf8;
   box-shadow:0 0 8px #38bdf8;
   display:inline-block;
-  margin-right:-2px;
+  margin-right:-1px;
   animation:tabPulse 2s infinite ease-in-out;
 }
 @keyframes tabPulse{
   0%, 100%{ opacity: 1; transform: scale(1); }
   50%{ opacity: 0.55; transform: scale(0.85); }
 }
+
+/* Sentuhan Warna Kategori Halus (Harmonis & Kaya Warna) */
+/* Hijau Zamrud - Layanan & Kesehatan */
+.tab[data-tab="layanan"].is-on{
+  background:linear-gradient(180deg, rgba(52, 211, 153, 0.22) 0%, rgba(52, 211, 153, 0.06) 100%);
+  color:#34d399;
+  border-color:rgba(52, 211, 153, 0.45);
+  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(52, 211, 153, 0.25);
+  text-shadow:0 0 10px rgba(52, 211, 153, 0.4);
+}
+.tab[data-tab="layanan"].is-on::after,
+.tab[data-tab="layanan"].is-on::before{ background:#34d399; box-shadow:0 0 10px #34d399; }
+
+/* Oranye/Merah - Masalah & Alarm */
+.tab[data-tab="masalah"].is-on{
+  background:linear-gradient(180deg, rgba(248, 113, 113, 0.22) 0%, rgba(248, 113, 113, 0.06) 100%);
+  color:#f87171;
+  border-color:rgba(248, 113, 113, 0.45);
+  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(248, 113, 113, 0.25);
+  text-shadow:0 0 10px rgba(248, 113, 113, 0.4);
+}
+.tab[data-tab="masalah"].is-on::after,
+.tab[data-tab="masalah"].is-on::before{ background:#f87171; box-shadow:0 0 10px #f87171; }
+
+/* Kuning Amber - Proses & Cron Jobs */
+.tab[data-tab="proses"].is-on,
+.tab[data-tab="cron"].is-on{
+  background:linear-gradient(180deg, rgba(251, 191, 36, 0.22) 0%, rgba(251, 191, 36, 0.06) 100%);
+  color:#fbbf24;
+  border-color:rgba(251, 191, 36, 0.45);
+  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(251, 191, 36, 0.25);
+  text-shadow:0 0 10px rgba(251, 191, 36, 0.4);
+}
+.tab[data-tab="proses"].is-on::after, .tab[data-tab="cron"].is-on::after,
+.tab[data-tab="proses"].is-on::before, .tab[data-tab="cron"].is-on::before{ background:#fbbf24; box-shadow:0 0 10px #fbbf24; }
+
+/* Ungu Violet - Keamanan (Firewall, SSL, Port) */
+.tab[data-tab="firewall"].is-on,
+.tab[data-tab="ports"].is-on,
+.tab[data-tab="ssl"].is-on{
+  background:linear-gradient(180deg, rgba(192, 132, 252, 0.22) 0%, rgba(192, 132, 252, 0.06) 100%);
+  color:#c084fc;
+  border-color:rgba(192, 132, 252, 0.45);
+  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(192, 132, 252, 0.25);
+  text-shadow:0 0 10px rgba(192, 132, 252, 0.4);
+}
+.tab[data-tab="firewall"].is-on::after, .tab[data-tab="ports"].is-on::after, .tab[data-tab="ssl"].is-on::after,
+.tab[data-tab="firewall"].is-on::before, .tab[data-tab="ports"].is-on::before, .tab[data-tab="ssl"].is-on::before{ background:#c084fc; box-shadow:0 0 10px #c084fc; }
+
+/* Cyan / Biru Pirus - Jaringan & Log Sistem */
+.tab[data-tab="jaringan"].is-on,
+.tab[data-tab="syslog"].is-on{
+  background:linear-gradient(180deg, rgba(45, 212, 191, 0.22) 0%, rgba(45, 212, 191, 0.06) 100%);
+  color:#2dd4bf;
+  border-color:rgba(45, 212, 191, 0.45);
+  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(45, 212, 191, 0.25);
+  text-shadow:0 0 10px rgba(45, 212, 191, 0.4);
+}
+.tab[data-tab="jaringan"].is-on::after, .tab[data-tab="syslog"].is-on::after,
+.tab[data-tab="jaringan"].is-on::before, .tab[data-tab="syslog"].is-on::before{ background:#2dd4bf; box-shadow:0 0 10px #2dd4bf; }
+
+/* Indigo / Merah Muda - Akun & Log Layanan */
+.tab[data-tab="akun"].is-on,
+.tab[data-tab="log"].is-on{
+  background:linear-gradient(180deg, rgba(244, 114, 182, 0.22) 0%, rgba(244, 114, 182, 0.06) 100%);
+  color:#f472b6;
+  border-color:rgba(244, 114, 182, 0.45);
+  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(244, 114, 182, 0.25);
+  text-shadow:0 0 10px rgba(244, 114, 182, 0.4);
+}
+.tab[data-tab="akun"].is-on::after, .tab[data-tab="log"].is-on::after,
+.tab[data-tab="akun"].is-on::before, .tab[data-tab="log"].is-on::before{ background:#f472b6; box-shadow:0 0 10px #f472b6; }
+
 .tab:active{
   transform:scale(0.96);
 }
