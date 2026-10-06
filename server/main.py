@@ -2115,6 +2115,9 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     if extra and extra.system_logs:
         try:
             sys_logs_data = json.loads(extra.system_logs)
+            if isinstance(sys_logs_data, list):
+                # Urutkan selalu dari waktu terbaru ke terlama (descending)
+                sys_logs_data.sort(key=lambda x: str(x.get("time") or ""), reverse=True)
         except Exception:
             pass
 
