@@ -24,6 +24,33 @@ IPT="/usr/sbin/iptables"
 
 case "$ACTION" in
     block|unblock) ;;
+    enable)
+        if command -v ufw >/dev/null 2>&1; then
+            # Selalu pastikan port SSH diizinkan terlebih dahulu sebelum mengaktifkan UFW agar tidak terkunci
+            ufw allow 22/tcp >/dev/null 2>&1 || true
+            ufw allow ssh >/dev/null 2>&1 || true
+            out="$(ufw --force enable 2>&1)" || fail "UFW enable gagal: $out"
+            echo "OK: Firewall UFW berhasil diaktifkan (port SSH telah dilindungi/diizinkan)"
+            exit 0
+        fi
+        fail "ufw tidak terpasang di sistem ini"
+        ;;
+    disable)
+        if command -v ufw >/dev/null 2>&1; then
+            out="$(ufw disable 2>&1)" || fail "UFW disable gagal: $out"
+            echo "OK: Firewall UFW berhasil dinonaktifkan"
+            exit 0
+        fi
+        fail "ufw tidak terpasang di sistem ini"
+        ;;
+    reload)
+        if command -v ufw >/dev/null 2>&1; then
+            out="$(ufw reload 2>&1)" || fail "UFW reload gagal: $out"
+            echo "OK: Firewall UFW berhasil dimuat ulang (reloaded)"
+            exit 0
+        fi
+        fail "ufw tidak terpasang di sistem ini"
+        ;;
     status)
         if command -v ufw >/dev/null 2>&1; then
             echo "--- UFW STATUS ---"
@@ -35,7 +62,7 @@ case "$ACTION" in
         fi
         exit 0
         ;;
-    *) fail "Aksi tidak dikenal: '${ACTION:-}' (harus 'block' atau 'status')" ;;
+    *) fail "Aksi tidak dikenal: '${ACTION:-}' (harus 'block', 'unblock', 'enable', 'disable', 'reload', atau 'status')" ;;
 esac
 
 [ -x "$IPT" ] || fail "iptables tidak terpasang (install iptables)"

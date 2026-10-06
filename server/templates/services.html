@@ -425,7 +425,7 @@
                 'warning': ('Warning', 'warn', 'var(--yellow)'),
                 'danger': ('Danger', 'danger', 'var(--red)')} %}
 {% set act = request.query_params.get('action') %}
-{% set acted = act in ('block', 'unblock', 'invalid_ip', 'agent', 'noips', 'reboot', 'poweroff') or request.query_params.get('restarted') %}
+{% set acted = act in ('block', 'unblock', 'invalid_ip', 'fw_enabled', 'fw_disabled', 'fw_reloaded', 'agent', 'noips', 'reboot', 'poweroff') or request.query_params.get('restarted') %}
 {% if acted %}
 <div class="card" id="flash-act" style="border-color:var(--blue);padding:12px 16px">
   {% if act == 'block' %}
@@ -434,6 +434,15 @@
   {% elif act == 'unblock' %}
     <span style="color:var(--green);font-weight:600">Perintah Buka Blokir IP telah dikirim ke Agen Pantau.</span>
     <span style="font-size:13px;color:var(--dim)"> Aturan DROP pada iptables akan segera dihapus oleh agen.</span>
+  {% elif act == 'fw_enabled' %}
+    <span style="color:var(--green);font-weight:600">Perintah Aktifkan Firewall (UFW) telah dikirim ke Agen Pantau.</span>
+    <span style="font-size:13px;color:var(--dim)"> Agen otomatis mengizinkan port SSH terlebih dahulu sebelum menyalakan firewall UFW.</span>
+  {% elif act == 'fw_disabled' %}
+    <span style="color:var(--yellow);font-weight:600">Perintah Nonaktifkan Firewall (UFW) telah dikirim ke Agen Pantau.</span>
+    <span style="font-size:13px;color:var(--dim)"> Perlindungan UFW dinonaktifkan sementara.</span>
+  {% elif act == 'fw_reloaded' %}
+    <span style="color:var(--blue);font-weight:600">Perintah Reload Aturan Firewall telah dikirim ke Agen Pantau.</span>
+    <span style="font-size:13px;color:var(--dim)"> Agen akan memuat ulang konfigurasi UFW tanpa memutus koneksi aktif.</span>
   {% elif act == 'invalid_ip' %}
     <span style="color:var(--red);font-weight:600">Alamat IP tidak valid / dilarang diblokir!</span>
     <span style="font-size:13px;color:var(--dim)"> Masukkan IPv4 publik yang valid. IP privat, loopback, multicast, atau IP server sendiri tidak dapat diblokir.</span>
@@ -1210,16 +1219,43 @@
 <!-- Tab: Firewall (UFW & iptables) -->
 <div class="tab-body" id="tab-firewall" hidden>
   <div class="card">
-    <div class="card-header" style="align-items:center">
+    <div class="card-header" style="align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
         <h3 style="margin:0">Status &amp; Kebijakan Firewall</h3>
         <span style="font-size:12px;color:var(--dim)">Pengawasan perlindungan jaringan dan port masuk/keluar</span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="badge {{ 'badge-up' if firewall.status == 'active' else 'badge-warn' }}">
           {{ 'Aktif (Melindungi)' if firewall.status == 'active' else 'Nonaktif (Terbuka)' }}
         </span>
         <span class="badge badge-info">{{ firewall.backend | upper }}</span>
+
+        {% if user.role == 'admin' %}
+          {% if firewall.status == 'active' %}
+            <form method="post" action="/servers/{{ server.id }}/firewall/reload" style="display:inline"
+                  data-msg="Muat ulang (reload) konfigurasi firewall?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="btn btn-ghost btn-sm" title="Muat ulang aturan UFW tanpa memutus koneksi">
+                &#8635;&nbsp;Reload Aturan
+              </button>
+            </form>
+            <form method="post" action="/servers/{{ server.id }}/firewall/disable" style="display:inline"
+                  data-msg="PERINGATAN: Nonaktifkan firewall (UFW)? Seluruh port server akan terbuka tanpa filter penyaringan.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="Nonaktifkan UFW">
+                Nonaktifkan Firewall
+              </button>
+            </form>
+          {% else %}
+            <form method="post" action="/servers/{{ server.id }}/firewall/enable" style="display:inline"
+                  data-msg="Aktifkan firewall (UFW) sekarang? Agen akan otomatis memastikan port SSH dilindungi/diizinkan terlebih dahulu.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="btn btn-primary btn-sm" style="background:#16a34a;border-color:#22c55e" title="Aktifkan UFW (otomatis allow SSH)">
+                &#9654;&nbsp;Aktifkan Firewall
+              </button>
+            </form>
+          {% endif %}
+        {% endif %}
       </div>
     </div>
     

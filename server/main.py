@@ -2430,6 +2430,66 @@ def firewall_unblock_ip(
     return RedirectResponse(f"/servers/{sid}/services?action=unblock", status_code=303)
 
 
+@app.post("/servers/{sid}/firewall/enable")
+def firewall_enable(
+    request: Request, sid: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    """Aktifkan firewall (UFW) via agen."""
+    user = get_current_user(request, db)
+    if not user or user.role != "admin":
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        return RedirectResponse("/servers", status_code=303)
+    _enqueue_mitigation(db, sid, "firewall_enable", issued_by=user.username)
+    _audit(db, user.username, "firewall_enable", f"{server.hostname}: aktifkan firewall (UFW)", "dikirim ke agen", server_id=sid)
+    db.commit()
+    return RedirectResponse(f"/servers/{sid}/services?action=fw_enabled", status_code=303)
+
+
+@app.post("/servers/{sid}/firewall/disable")
+def firewall_disable(
+    request: Request, sid: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    """Nonaktifkan firewall (UFW) via agen."""
+    user = get_current_user(request, db)
+    if not user or user.role != "admin":
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        return RedirectResponse("/servers", status_code=303)
+    _enqueue_mitigation(db, sid, "firewall_disable", issued_by=user.username)
+    _audit(db, user.username, "firewall_disable", f"{server.hostname}: nonaktifkan firewall (UFW)", "dikirim ke agen", server_id=sid)
+    db.commit()
+    return RedirectResponse(f"/servers/{sid}/services?action=fw_disabled", status_code=303)
+
+
+@app.post("/servers/{sid}/firewall/reload")
+def firewall_reload(
+    request: Request, sid: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    """Muat ulang (reload) aturan firewall via agen."""
+    user = get_current_user(request, db)
+    if not user or user.role != "admin":
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        return RedirectResponse("/servers", status_code=303)
+    _enqueue_mitigation(db, sid, "firewall_reload", issued_by=user.username)
+    _audit(db, user.username, "firewall_reload", f"{server.hostname}: reload firewall", "dikirim ke agen", server_id=sid)
+    db.commit()
+    return RedirectResponse(f"/servers/{sid}/services?action=fw_reloaded", status_code=303)
+
+
 @app.post("/servers/{sid}/problems/restart-agent")
 def problem_restart_agent(
     request: Request, sid: int,
@@ -3480,6 +3540,12 @@ AUDIT_ACTION_LABELS = {
     "cmd:unblock_ip": "Buka blokir IP",
     "firewall_block": "Blokir IP firewall",
     "firewall_unblock": "Buka blokir IP firewall",
+    "firewall_enable": "Aktifkan firewall",
+    "firewall_disable": "Nonaktifkan firewall",
+    "firewall_reload": "Reload firewall",
+    "cmd:firewall_enable": "Aktifkan firewall",
+    "cmd:firewall_disable": "Nonaktifkan firewall",
+    "cmd:firewall_reload": "Reload firewall",
     "cmd:restart_agent": "Restart agen",
     "cmd:reboot_host": "Reboot server",
     "cmd:poweroff_host": "Power off server",

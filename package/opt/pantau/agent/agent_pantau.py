@@ -631,6 +631,8 @@ def execute_command(cfg: dict, command: dict) -> dict:
         result = _exec_block_ip(command)
     elif action == "unblock_ip":
         result = _exec_unblock_ip(command)
+    elif action in ("firewall_enable", "firewall_disable", "firewall_reload"):
+        result = _exec_firewall_toggle(action)
     elif action == "restart_agent":
         result = _exec_restart_agent()
     elif action in ("reboot_host", "poweroff_host"):
@@ -707,6 +709,26 @@ def _exec_unblock_ip(command: dict) -> dict:
             ok_all = False
         outs.append(f"{ip}: {res['output']}")
     return {"ok": ok_all, "output": ("; ".join(outs))[:2000]}
+
+
+def _exec_firewall_toggle(action: str) -> dict:
+    """Aktifkan, nonaktifkan, atau reload firewall UFW via wrapper pantau-firewall."""
+    sub_map = {
+        "firewall_enable": "enable",
+        "firewall_disable": "disable",
+        "firewall_reload": "reload",
+    }
+    sub = sub_map.get(action)
+    if not sub:
+        return {"ok": False, "output": f"Aksi firewall tidak valid: {action}"}
+    if IS_ROOT:
+        res = _run_native([PANTUAN_FIREWALL, sub], f"{PANTUAN_FIREWALL} {sub}")
+    else:
+        res = _run_native(["/usr/bin/sudo", "-n", PANTUAN_FIREWALL, sub],
+                          f"sudo -n {PANTUAN_FIREWALL} {sub}")
+    # Bersihkan cache firewall agar deteksi status langsung diperbarui pada siklus berikutnya
+    _fw_cache["at"] = 0.0
+    return {"ok": res["ok"], "output": res["output"][:2000]}
 
 
 def _exec_host_control(action: str) -> dict:
