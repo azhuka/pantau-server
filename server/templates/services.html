@@ -672,7 +672,7 @@
                     title="{{ 'Layanan sudah nonaktif / berhenti' if not is_up else 'Hentikan layanan' }}">■</button>
             {% if svc._is_ignored %}
               <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>
-            {% else %}
+            {% elif not is_up %}
               <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)" title="Abaikan pemantauan layanan ini">🔕 Abaikan</button>
             {% endif %}
             {% if is_pending %}
@@ -1265,7 +1265,7 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
 
   if (isIgnored) {
     ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>';
-  } else {
+  } else if (!isUp) {
     ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="Abaikan pemantauan layanan ini">🔕 Abaikan</button>';
   }
 
