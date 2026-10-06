@@ -255,6 +255,27 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
 - **Sinkronisasi Versi:**
   - Peningkatan versi Pantau Server dan Agen Pantau menjadi **v3.16.0**.
 
+### Fase v3.17.0: Pemantauan Infrastruktur Mendalam & Modernisasi UI/UX 2026
+- **Pengawasan Throughput & Utilisasi Disk I/O Real-Time (`/proc/diskstats`):**
+  - Agen menghitung delta laju baca/tulis (`Read / Write KB/s`), frekuensi operasi (`IOPS`), serta persentase keaktifan disk (`% I/O util`) tanpa modul eksternal.
+  - Tabel Penyimpanan menyajikan metrik I/O real-time dengan kode warna ambang batas untuk mendeteksi *iowait* atau *disk bottleneck*.
+- **Audit Log Galat Sistem Kritis (Systemd Journal Error Tracking):**
+  - Tab baru **`📋 Log Sistem (Journal)`** menyajikan kejadian galat kritis sistem (`emerg`, `alert`, `crit`, `err`) via `journalctl -p 3 -o json`.
+  - Berjalan aman dengan hak unprivileged di bawah grup `adm`.
+- **Audit Port Listening & Proses Pengikat (`ss -tulpn`):**
+  - Tab **`🔌 Port Listening`** mengaudit socket TCP/UDP aktif, proses pemilik, PID, dan klasifikasi keterbukaan akses (Publik vs Lokal/Loopback).
+- **Pelacakan Masa Berlaku & Kedaluwarsa Sertifikat SSL/TLS:**
+  - Tab **`🔒 Sertifikat SSL`** mendeteksi berkas sertifikat lokal, domain SAN, penerbit (CA), dan peringatan dini sebelum kedaluwarsa.
+- **Pengelola Tugas Terjadwal (Cron & Systemd Timers) serta Firewall:**
+  - Tab **`⏰ Tugas Terjadwal (Cron)`** memonitor jadwal cron crontab dan timer systemd.
+  - Tab **`🛡️ Firewall`** menginspeksi status UFW/iptables dan daftar IP terblokir.
+- **Modernisasi UI/UX Menyeluruh (Standar Enterprise Modern 2026):**
+  - Palette tema dark yang lebih cerah, bersih, dan kontras dengan aksen neon lembut.
+  - Floating glassmorphic tooltip engine responsif berkecepatan tinggi.
+  - Hero toolbar dengan pengelompokan tombol terpadu (kontrol OS dan utilitas server).
+- **Sinkronisasi Versi:**
+  - Peningkatan versi Pantau Server dan Agen Pantau menjadi **v3.17.0**.
+
 ---
 
 ## 5. Bedah Teknis Komponen Kritis

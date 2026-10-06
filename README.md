@@ -149,7 +149,7 @@ Pusat Dashboard tidak menggunakan koneksi SSH inbound ke server klien. Komunikas
 Jalankan perintah berikut pada terminal server klien (perintah ini juga dapat disalin langsung dari tombol **📋 Salin Perintah Update** pada banner dasbor jika versi agen usang terdeteksi):
 
 ```bash
-sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/v3.16.0/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service
+sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/v3.17.0/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service
 ```
 
 Atau jalankan ulang skrip installer agen. Konfigurasi yang sudah ada di `/etc/pantau/config.json` tidak akan ditimpa.
@@ -172,7 +172,7 @@ sudo systemctl restart agent_pantau.service
 ### Verifikasi Setelah Pembaruan
 
 Setelah me-restart agen (proses restart tidak menghapus riwayat metrik):
-1. Label versi agen di halaman Rincian Server akan terbarui menjadi `agen v3.16.0`.
+1. Label versi agen di halaman Rincian Server akan terbarui menjadi `agen v3.17.0`.
 2. Server kembali terhubung dalam ±10 detik.
 3. Tab **⚡ Proses Teratas** menampilkan snapshot proses sistem secara aktif.
 
@@ -180,7 +180,7 @@ Setelah me-restart agen (proses restart tidak menghapus riwayat metrik):
 
 ## Kompatibilitas Versi Agen
 
-Sangat dianjurkan untuk selalu menggunakan versi agen yang selaras dengan versi dashboard (**v3.16.0**) agar seluruh kapabilitas dapat beroperasi optimal.
+Sangat dianjurkan untuk selalu menggunakan versi agen yang selaras dengan versi dashboard (**v3.17.0**) agar seluruh kapabilitas dapat beroperasi optimal.
 
 | Kelompok Fitur | Versi Agen Minimum |
 |---|:---:|
@@ -190,6 +190,7 @@ Sangat dianjurkan untuk selalu menggunakan versi agen yang selaras dengan versi 
 | Terminal Bawaan Realtime (xterm.js + WebSocket Streaming) | v3.14+ |
 | Snapshot 20 Proses Teratas & Mode Pemeliharaan (*Maintenance Mode*) | v3.15.0+ |
 | Dukungan Socket Activation (SSH shutdown aman) & Mute Layanan Fleksibel | v3.16.0+ |
+| Throughput Disk I/O, Journal Error Tracking, Cron Jobs, Port Audit & SSL Expiry | v3.17.0+ |
 
 Agen dengan versi sebelum persyaratan di atas tetap dapat menjalankan fungsi monitoring dasar, namun fitur baru yang tidak didukung akan menampilkan pemberitahuan yang jelas pada dashboard.
 
