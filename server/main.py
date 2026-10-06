@@ -968,6 +968,41 @@ def agent_report(
         }
         extras.firewall = json.dumps(clean_fw)
 
+    # Validasi & Simpan Listening Ports (ss -tulpn)
+    if isinstance(body.get("listening_ports"), list):
+        clean_ports = [
+            {
+                "proto": _clean_str(p.get("proto"), "tcp", 10),
+                "ip": _clean_str(p.get("ip"), "", 64),
+                "port": _clamp_int(p.get("port"), 0, 1, 65535),
+                "proc": _clean_str(p.get("proc"), "", 100),
+                "is_loopback": bool(p.get("is_loopback")),
+                "is_public": bool(p.get("is_public")),
+            }
+            for p in body["listening_ports"][:100]
+            if isinstance(p, dict)
+        ]
+        extras.listening_ports = json.dumps(clean_ports)
+
+    # Validasi & Simpan Sertifikat SSL/TLS
+    if isinstance(body.get("ssl_certs"), list):
+        clean_certs = [
+            {
+                "path": _clean_str(c.get("path"), "", 200),
+                "subject": _clean_str(c.get("subject"), "", 200),
+                "domains": [_clean_str(d, "", 100) for d in (c.get("domains") or [])[:20] if isinstance(d, str)],
+                "issuer": _clean_str(c.get("issuer"), "", 200),
+                "not_after": _clean_str(c.get("not_after"), "", 40),
+                "days_left": _clamp_int(c.get("days_left"), 0, -10000, 10000),
+                "is_expired": bool(c.get("is_expired")),
+                "is_critical": bool(c.get("is_critical")),
+                "is_warning": bool(c.get("is_warning")),
+            }
+            for c in body["ssl_certs"][:50]
+            if isinstance(c, dict)
+        ]
+        extras.ssl_certs = json.dumps(clean_certs)
+
     extras.updated_at = datetime.utcnow()
 
     db.commit()
@@ -2045,6 +2080,20 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         except Exception:
             pass
 
+    ports_data = []
+    if extra and extra.listening_ports:
+        try:
+            ports_data = json.loads(extra.listening_ports)
+        except Exception:
+            pass
+
+    ssl_data = []
+    if extra and extra.ssl_certs:
+        try:
+            ssl_data = json.loads(extra.ssl_certs)
+        except Exception:
+            pass
+
     return tpl(request, "services.html", {
         "user": user, "server": server, "services": services, "commands": commands, "actions": actions,
         "agent_version": extra.agent_version if extra else None,
@@ -2057,6 +2106,8 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         "top_procs": top_p,
         "cron_jobs": cron_data,
         "firewall": fw_data,
+        "listening_ports": ports_data,
+        "ssl_certs": ssl_data,
     })
 
 

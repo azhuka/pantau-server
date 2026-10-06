@@ -187,6 +187,8 @@ class ServerExtras(Base):
     top_procs = Column(Text, nullable=True)              # JSON: {"cpu": [...], "mem": [...]} proses teratas
     cron_jobs = Column(Text, nullable=True)              # JSON: daftar tugas terjadwal (crontab & systemd timers)
     firewall = Column(Text, nullable=True)               # JSON: status firewall (ufw/iptables) & rules
+    listening_ports = Column(Text, nullable=True)        # JSON: daftar port listening & proses (ss -tulpn)
+    ssl_certs = Column(Text, nullable=True)              # JSON: sertifikat SSL/TLS & masa kedaluwarsa
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 

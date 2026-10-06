@@ -631,6 +631,8 @@
   <button class="tab" data-tab="proses" role="tab">⚡ Proses Teratas</button>
   <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn">⏰ Tugas Terjadwal (Cron)</button>
   <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn">🛡️ Firewall</button>
+  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn">🔌 Port Listening</button>
+  <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn">🔒 Sertifikat SSL</button>
   <button class="tab" data-tab="jaringan" role="tab">Jaringan</button>
   <button class="tab" data-tab="akun" role="tab">Akun</button>
   <button class="tab" data-tab="log" role="tab">Log</button>
@@ -1259,6 +1261,116 @@
     </div>
     {% else %}
     <div class="empty-msg" style="padding:16px">Belum ada IP yang diblokir pada rantai iptables INPUT.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Tab: Port Listening & Socket (ss -tulpn) -->
+<div class="tab-body" id="tab-ports" hidden>
+  <div class="card">
+    <div class="card-header" style="align-items:center">
+      <div>
+        <h3 style="margin:0">Audit Port Terbuka (Listening Sockets)</h3>
+        <span style="font-size:12px;color:var(--dim)">Daftar seluruh port TCP/UDP yang sedang dibuka oleh proses sistem (ss -tulpn)</span>
+      </div>
+      <span class="badge badge-info">{{ (listening_ports|length) if listening_ports else 0 }} socket aktif</span>
+    </div>
+    {% if listening_ports %}
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:70px" title="Protokol jaringan (TCP atau UDP)">Protokol</th>
+            <th title="Nomor port jaringan yang terbuka">Port</th>
+            <th title="Alamat IP yang di-bind oleh socket">Bind IP</th>
+            <th title="Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)">Akses</th>
+            <th title="Nama proses sistem dan PID yang membuka port ini">Proses &amp; PID</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in listening_ports %}
+          <tr>
+            <td><span class="badge {{ 'badge-info' if p.proto == 'tcp' else 'badge-warn' }}">{{ p.proto | upper }}</span></td>
+            <td class="mono" style="font-weight:700;font-size:13px;color:var(--text)">{{ p.port }}</td>
+            <td class="mono" style="color:var(--dim)">{{ p.ip }}</td>
+            <td>
+              {% if p.is_public %}
+                <span class="badge badge-danger" title="Port terbuka untuk koneksi publik/luar">Publik (0.0.0.0 / ::)</span>
+              {% else %}
+                <span class="badge badge-up" title="Hanya dapat diakses secara lokal dari dalam server">Lokal (Loopback)</span>
+              {% endif %}
+            </td>
+            <td class="mono" style="font-size:12px;color:var(--text)">{{ p.proc or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-msg">Belum ada data port listening dari server ini.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Tab: Sertifikat SSL / TLS -->
+<div class="tab-body" id="tab-ssl" hidden>
+  <div class="card">
+    <div class="card-header" style="align-items:center">
+      <div>
+        <h3 style="margin:0">Status Sertifikat SSL / TLS</h3>
+        <span style="font-size:12px;color:var(--dim)">Pengawasan masa berlaku sertifikat HTTPS web server (Let's Encrypt / Custom)</span>
+      </div>
+      <span class="badge badge-info">{{ (ssl_certs|length) if ssl_certs else 0 }} sertifikat terdeteksi</span>
+    </div>
+    {% if ssl_certs %}
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th title="Domain atau Subdomain yang dilindungi oleh sertifikat">Domain / Subjek</th>
+            <th title="Otoritas penerbit sertifikat (Certificate Authority)">Penerbit (CA)</th>
+            <th title="Batas waktu akhir masa berlaku sertifikat">Kedaluwarsa Pada</th>
+            <th title="Sisa hari sebelum sertifikat habis masa berlakunya">Sisa Hari</th>
+            <th title="Status kesehatan sertifikat">Status</th>
+            <th title="Lokasi berkas sertifikat di filesystem server">Lokasi Berkas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in ssl_certs %}
+          <tr>
+            <td>
+              <strong>{{ c.domains | join(', ') if c.domains else c.subject }}</strong>
+            </td>
+            <td style="font-size:12px;color:var(--dim)">{{ c.issuer }}</td>
+            <td class="mono" style="font-size:12px">{{ c.not_after }}</td>
+            <td class="mono" style="font-weight:700;color:{{ 'var(--red)' if c.is_expired or c.is_critical else ('var(--yellow)' if c.is_warning else 'var(--green)') }}">
+              {% if c.is_expired %}
+                Kedaluwarsa
+              {% else %}
+                {{ c.days_left }} hari lagi
+              {% endif %}
+            </td>
+            <td>
+              {% if c.is_expired %}
+                <span class="badge badge-danger">Expired</span>
+              {% elif c.is_critical %}
+                <span class="badge badge-danger">Segera Expired (&lt;14 hr)</span>
+              {% elif c.is_warning %}
+                <span class="badge badge-warn">Perlu Diperbarui (&lt;30 hr)</span>
+              {% else %}
+                <span class="badge badge-up">Aktif Normal</span>
+              {% endif %}
+            </td>
+            <td class="mono" style="font-size:11px;color:var(--dim)">{{ c.path }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-msg">
+      Tidak ada berkas sertifikat SSL lokal ditemukan pada direktori standar (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).
+    </div>
     {% endif %}
   </div>
 </div>

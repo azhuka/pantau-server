@@ -27,6 +27,7 @@ Environment variable (override config):
 """
 
 import fcntl
+import glob
 import http.client
 import ipaddress
 import json
@@ -582,6 +583,10 @@ def send_report(cfg: dict, services: list, system: dict,
     if apt is not None:
         payload["apt"] = apt
     payload["security"] = collect_security()
+    payload["cron_jobs"] = collect_cron_jobs()
+    payload["firewall"] = collect_firewall()
+    payload["listening_ports"] = collect_listening_ports()
+    payload["ssl_certs"] = collect_ssl_certs()
 
     for attempt in range(1, 4):
         code, _ = http_json_request(cfg, "/api/report", "POST", payload)
@@ -951,78 +956,34 @@ def collect_net() -> list[dict]:
     except OSError:
         return ifaces
 
-    # Kumpulkan IP per interface (IPv4 & IPv6 non-link-local)
+    # Kumpulkan IP per interface dari /proc/net/fib_trie (IPv4)
     _ip_map: dict[str, list[str]] = {}
     try:
-        # Cara 1: ip -j addr show (modern Linux)
-        res = _run_cmd(["ip", "-j", "addr", "show"], timeout=2)
-        if res and res.returncode == 0 and res.stdout.strip():
-            try:
-                import json as _json
-                data = _json.loads(res.stdout)
-                for item in data:
-                    iface = item.get("ifname")
-                    if not iface:
-                        continue
-                    addrs = []
-                    for a in item.get("addr_info", []):
-                        local = a.get("local")
-                        family = a.get("family")
-                        if not local or local.startswith("127.") or local == "::1":
-                            continue
-                        if family == "inet":
-                            addrs.insert(0, local)
-                        elif not local.startswith("fe80:"):
-                            addrs.append(local)
-                    if addrs:
-                        _ip_map[iface] = addrs
-            except Exception:
-                pass
+        import socket
+        import struct
+        import fcntl
+        SIOCGIFCONF = 0x8912
+        SIOCGIFADDR = 0x8915
+        with open("/proc/net/fib_trie") as ft:
+            cur_iface = None
+            for ln in ft:
+                ln = ln.strip()
+                if ln.startswith("Ifa:"):
+                    # Format: Ifa: <iface>
+                    cur_iface = ln.split()[-1] if len(ln.split()) > 1 else None
+                elif cur_iface and ln.startswith("LOCAL"):
+                    ip = ln.split()[-1]
+                    try:
+                        import ipaddress as _ia
+                        a = _ia.ip_address(ip)
+                        if not (a.is_loopback or a.is_link_local or a.is_multicast or a.is_unspecified):
+                            _ip_map.setdefault(cur_iface, [])
+                            if ip not in _ip_map[cur_iface]:
+                                _ip_map[cur_iface].append(ip)
+                    except ValueError:
+                        pass
     except Exception:
         pass
-
-    # Cara 2: fallback ke ip -br addr show jika _ip_map masih kosong
-    if not _ip_map:
-        try:
-            res_br = _run_cmd(["ip", "-br", "addr", "show"], timeout=2)
-            if res_br and res_br.returncode == 0:
-                for line in res_br.stdout.splitlines():
-                    parts = line.split()
-                    if len(parts) >= 3:
-                        iface = parts[0]
-                        addrs = []
-                        for token in parts[2:]:
-                            ip = token.split("/")[0]
-                            if ip and not ip.startswith("127.") and ip != "::1" and not ip.startswith("fe80:"):
-                                addrs.append(ip)
-                        if addrs:
-                            _ip_map[iface] = addrs
-        except Exception:
-            pass
-
-    # Cara 3: fallback socket ioctl SIOCGIFADDR untuk tiap interface
-    if not _ip_map:
-        try:
-            import socket as _sock
-            import fcntl as _fcntl
-            import struct as _struct
-            s = _sock.socket(_sock.AF_INET, _sock.SOCK_DGRAM)
-            for line in lines:
-                parts = line.replace(":", " ", 1).split()
-                if not parts:
-                    continue
-                name = parts[0]
-                try:
-                    ifreq = _struct.pack('256s', name[:15].encode('utf-8'))
-                    res = _fcntl.ioctl(s.fileno(), 0x8915, ifreq)
-                    ip = _sock.inet_ntoa(res[20:24])
-                    if ip and not ip.startswith("127."):
-                        _ip_map[name] = [ip]
-                except Exception:
-                    pass
-            s.close()
-        except Exception:
-            pass
 
     now = time.monotonic()
     dt = (now - _net_prev_t) if _net_prev_t else 0.0
@@ -2085,6 +2046,290 @@ def collect_security() -> dict:
     _security_cache["data"] = out
     _security_cache["at"] = now
     return out
+
+
+_cron_cache: dict = {"at": 0.0, "data": None}
+
+
+def collect_cron_jobs() -> dict:
+    """Kumpulkan daftar tugas terjadwal dari crontab sistem, user, dan systemd timers."""
+    now = time.monotonic()
+    if _cron_cache["data"] is not None and now - _cron_cache["at"] < 30:
+        return _cron_cache["data"]
+
+    items: list[dict] = []
+    
+    # 1. Parse /etc/crontab (system-wide)
+    if os.path.isfile("/etc/crontab"):
+        try:
+            with open("/etc/crontab", "r", encoding="utf-8", errors="replace") as f:
+                for idx, line in enumerate(f, 1):
+                    raw = line.strip()
+                    if not raw or raw.startswith("#"):
+                        continue
+                    if re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s*=", raw):
+                        continue
+                    parts = re.split(r"\s+", raw)
+                    if len(parts) >= 7:
+                        sched = " ".join(parts[0:5])
+                        user = parts[5]
+                        cmd = " ".join(parts[6:])
+                        items.append({
+                            "type": "cron",
+                            "source": "/etc/crontab",
+                            "line": idx,
+                            "schedule": sched,
+                            "user": user,
+                            "command": cmd,
+                        })
+        except OSError:
+            pass
+
+    # 2. Parse /etc/cron.d/*
+    for path in sorted(glob.glob("/etc/cron.d/*")):
+        if os.path.basename(path).startswith("."):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                for idx, line in enumerate(f, 1):
+                    raw = line.strip()
+                    if not raw or raw.startswith("#"):
+                        continue
+                    if re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s*=", raw):
+                        continue
+                    parts = re.split(r"\s+", raw)
+                    if len(parts) >= 7:
+                        sched = " ".join(parts[0:5])
+                        user = parts[5]
+                        cmd = " ".join(parts[6:])
+                        items.append({
+                            "type": "cron",
+                            "source": path,
+                            "line": idx,
+                            "schedule": sched,
+                            "user": user,
+                            "command": cmd,
+                        })
+        except OSError:
+            pass
+
+    # 3. Systemd Timers (Modern Linux schedulers)
+    timers: list[dict] = []
+    try:
+        res = _run_cmd(["systemctl", "list-timers", "--all", "--no-pager"], timeout=5)
+        if res and res.returncode == 0:
+            lines = [l.strip() for l in res.stdout.splitlines() if l.strip()]
+            for l in lines[1:]:
+                if "ACTIVATES" in l or "timers listed" in l:
+                    continue
+                parts = l.split()
+                timer_unit = [p for p in parts if p.endswith(".timer")]
+                svc_unit = [p for p in parts if p.endswith(".service") or p.endswith(".target")]
+                if timer_unit and svc_unit:
+                    timers.append({
+                        "timer": timer_unit[0],
+                        "activates": svc_unit[0],
+                        "raw": l,
+                    })
+    except Exception:
+        pass
+
+    out = {"jobs": items[:100], "timers": timers[:50]}
+    _cron_cache["data"] = out
+    _cron_cache["at"] = now
+    return out
+
+
+_fw_cache: dict = {"at": 0.0, "data": None}
+
+
+def collect_firewall() -> dict:
+    """Inspeksi status firewall (UFW dan/atau iptables) dan daftar IP terblokir."""
+    now = time.monotonic()
+    if _fw_cache["data"] is not None and now - _fw_cache["at"] < 20:
+        return _fw_cache["data"]
+
+    fw: dict = {
+        "backend": "unknown",
+        "status": "inactive",
+        "rules": [],
+        "blocked_ips": [],
+    }
+
+    # 1. Panggil pantau-firewall status jika non-root
+    raw_output = ""
+    if not IS_ROOT:
+        res = _run_cmd(["/usr/bin/sudo", "-n", PANTUAN_FIREWALL, "status"], timeout=6)
+        if res and res.returncode == 0:
+            raw_output = res.stdout
+    else:
+        # Root langsung
+        try:
+            r_ufw = _run_cmd(["ufw", "status", "verbose"], timeout=5)
+            r_ipt = _run_cmd(["iptables", "-L", "INPUT", "-n", "-v", "--line-numbers"], timeout=5)
+            raw_output = (r_ufw.stdout if r_ufw else "") + "\n" + (r_ipt.stdout if r_ipt else "")
+        except Exception:
+            pass
+
+    if raw_output:
+        lines = [l.strip() for l in raw_output.splitlines() if l.strip()]
+        has_ufw = any("ufw status" in l.lower() or "status: " in l.lower() for l in lines)
+        if has_ufw:
+            fw["backend"] = "ufw"
+            for l in lines:
+                if l.lower().startswith("status:"):
+                    fw["status"] = "active" if "active" in l.lower() and "inactive" not in l.lower() else "inactive"
+                    break
+        else:
+            fw["backend"] = "iptables"
+            fw["status"] = "active"
+
+        in_rules = False
+        in_iptables = False
+        for l in lines:
+            if l.startswith("--- IPTABLES"):
+                in_iptables = True
+                in_rules = False
+                continue
+            if not in_iptables:
+                if l.startswith("--"):
+                    in_rules = True
+                    continue
+                if in_rules:
+                    fw["rules"].append(l[:120])
+            else:
+                parts = l.split()
+                if len(parts) >= 9 and parts[3] == "DROP":
+                    fw["blocked_ips"].append({
+                        "num": parts[0],
+                        "pkts": parts[1],
+                        "bytes": parts[2],
+                        "source": parts[8],
+                    })
+
+    fw["rules"] = fw["rules"][:100]
+    fw["blocked_ips"] = fw["blocked_ips"][:100]
+    _fw_cache["data"] = fw
+    _fw_cache["at"] = now
+    return fw
+
+
+_ports_cache: dict = {"at": 0.0, "data": None}
+
+
+def collect_listening_ports() -> list[dict]:
+    """Audit listening ports & socket via ss -tulpn (dengan hak sudo ss agar nama proses terbaca)."""
+    now = time.monotonic()
+    if _ports_cache["data"] is not None and now - _ports_cache["at"] < 15:
+        return _ports_cache["data"]
+
+    ports: list[dict] = []
+    cmd = [SS_BIN, "-tulpn"] if IS_ROOT else ["/usr/bin/sudo", "-n", SS_BIN, "-tulpn"]
+    res = _run_cmd(cmd, timeout=5)
+
+    if res and res.returncode == 0:
+        for line in res.stdout.splitlines()[1:]:
+            parts = line.split()
+            if len(parts) >= 5:
+                proto = parts[0].lower()
+                local = parts[4]
+                if ":" in local:
+                    ip, port_str = local.rsplit(":", 1)
+                else:
+                    continue
+                try:
+                    port = int(port_str)
+                except ValueError:
+                    continue
+                proc = ""
+                tail = " ".join(parts[5:])
+                m = re.search(r'"([^"]+)",pid=(\d+)', tail)
+                if m:
+                    proc = f"{m.group(1)} (PID {m.group(2)})"
+                elif len(parts) >= 7:
+                    proc = parts[6]
+                is_loopback = ip in ("127.0.0.1", "::1", "127.0.0.53", "127.0.0.54") or ip.startswith("127.0.0.") or ip.endswith("%lo")
+                ports.append({
+                    "proto": proto,
+                    "ip": ip,
+                    "port": port,
+                    "proc": proc,
+                    "is_loopback": is_loopback,
+                    "is_public": not is_loopback,
+                })
+
+    ports = ports[:60]
+    _ports_cache["data"] = ports
+    _ports_cache["at"] = now
+    return ports
+
+
+_ssl_cache: dict = {"at": 0.0, "data": None}
+
+
+def collect_ssl_certs() -> list[dict]:
+    """Inspeksi berkas sertifikat SSL/TLS untuk mendeteksi masa kedaluwarsa."""
+    now = time.monotonic()
+    if _ssl_cache["data"] is not None and now - _ssl_cache["at"] < 300:
+        return _ssl_cache["data"]
+
+    certs: list[dict] = []
+    patterns = [
+        "/etc/letsencrypt/live/*/cert.pem",
+        "/etc/letsencrypt/live/*/fullchain.pem",
+        "/etc/ssl/certs/*.crt",
+        "/etc/nginx/ssl/*.crt",
+        "/etc/apache2/ssl/*.crt",
+    ]
+    seen_files = set()
+    found_paths = []
+    for pat in patterns:
+        for p in sorted(glob.glob(pat)):
+            try:
+                real = os.path.realpath(p)
+                if real not in seen_files:
+                    seen_files.add(real)
+                    found_paths.append(p)
+            except OSError:
+                continue
+
+    utc_now = datetime.now(timezone.utc)
+    for p in found_paths[:30]:
+        try:
+            # Gunakan cryptography jika tersedia
+            from cryptography import x509
+            from cryptography.hazmat.backends import default_backend
+            with open(p, "rb") as f:
+                data = f.read()
+            cert = x509.load_pem_x509_certificate(data, default_backend())
+            subject = cert.subject.rfc4514_string()
+            issuer = cert.issuer.rfc4514_string()
+            not_after = cert.not_valid_after_utc
+            days_left = (not_after - utc_now).days
+            sans = []
+            try:
+                san_ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+                sans = san_ext.value.get_values_for_type(x509.DNSName)
+            except Exception:
+                pass
+
+            certs.append({
+                "path": p,
+                "subject": subject,
+                "domains": sans if sans else [subject],
+                "issuer": issuer,
+                "not_after": not_after.isoformat(),
+                "days_left": days_left,
+                "is_expired": days_left < 0,
+                "is_critical": 0 <= days_left <= 14,
+                "is_warning": 14 < days_left <= 30,
+            })
+        except Exception:
+            continue
+
+    _ssl_cache["data"] = certs
+    _ssl_cache["at"] = now
+    return certs
 
 
 _HIST_EPOCH = re.compile(r"^#(\d{9,11})$")                      # bash: baris before command (#epoch)
