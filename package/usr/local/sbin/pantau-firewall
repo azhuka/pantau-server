@@ -23,7 +23,7 @@ MAX_IP="${MAX_IP:-10}"
 IPT="/usr/sbin/iptables"
 
 case "$ACTION" in
-    block) ;;
+    block|unblock) ;;
     status)
         if command -v ufw >/dev/null 2>&1; then
             echo "--- UFW STATUS ---"
@@ -68,12 +68,20 @@ EOF
     fi
     [ "$o1" -eq 127 ] && fail "IP loopback tidak boleh diblokir: '$ip'"
     [ "$o1" -eq 169 ] && [ "$o2" -eq 254 ] && fail "IP link-local tidak boleh diblokir: '$ip'"
-    [ "$o1" -ge 224 ] && fail "IP multicast/reserved tidak boleh diblokir: '$ip'"
-
-    out="$("$IPT" -I INPUT 1 -s "$ip" -j DROP 2>&1)" || fail "iptables gagal utk $ip: $out"
-    echo "OK: INPUT DROP utk $ip"
+    if [ "$ACTION" = "block" ]; then
+        out="$("$IPT" -I INPUT 1 -s "$ip" -j DROP 2>&1)" || fail "iptables gagal utk $ip: $out"
+        echo "OK: INPUT DROP utk $ip"
+    else
+        # unblock: hapus aturan jika ada
+        out="$("$IPT" -D INPUT -s "$ip" -j DROP 2>&1)" || fail "iptables hapus gagal utk $ip (mungkin aturan tidak ada): $out"
+        echo "OK: Hapus blokir INPUT DROP utk $ip"
+    fi
     IPC=$((IPC + 1))
 done
 
-echo "Total $IPC IP diblokir. CATATAN: aturan volatile (hilang saat reboot); untuk permanen gunakan iptables-persistent."
+if [ "$ACTION" = "block" ]; then
+    echo "Total $IPC IP diblokir. CATATAN: aturan volatile (hilang saat reboot); untuk permanen gunakan iptables-persistent."
+else
+    echo "Total $IPC IP dibuka blokirnya."
+fi
 exit 0

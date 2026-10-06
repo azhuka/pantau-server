@@ -629,6 +629,8 @@ def execute_command(cfg: dict, command: dict) -> dict:
 
     if action == "block_ip":
         result = _exec_block_ip(command)
+    elif action == "unblock_ip":
+        result = _exec_unblock_ip(command)
     elif action == "restart_agent":
         result = _exec_restart_agent()
     elif action in ("reboot_host", "poweroff_host"):
@@ -680,6 +682,31 @@ def _exec_block_ip(command: dict) -> dict:
         outs.append(f"{ip}: {res['output']}")
     note = " | aturan iptables volatile (hilang saat reboot): utk permanen gunakan iptables-persistent"
     return {"ok": ok_all, "output": ("; ".join(outs) + note)[:2000]}
+
+
+def _exec_unblock_ip(command: dict) -> dict:
+    """Buka blokir IP: iptables -D INPUT -s <ip> -j DROP."""
+    params = command.get("params") or {}
+    ips = [str(i) for i in (params.get("ips") or [])][:10]
+    if not ips:
+        return {"ok": False, "output": "Tidak ada IP untuk dibuka blokirnya."}
+    outs: list = []
+    ok_all = True
+    for ip in ips:
+        if not _validate_ipv4(ip):
+            outs.append(f"{ip}: IP tidak valid / diblokir")
+            ok_all = False
+            continue
+        if IS_ROOT:
+            res = _run_native(["iptables", "-D", "INPUT", "-s", ip, "-j", "DROP"],
+                              f"iptables -D INPUT -s {ip} -j DROP")
+        else:
+            res = _run_native(["/usr/bin/sudo", "-n", PANTUAN_FIREWALL, "unblock", ip],
+                              f"sudo -n {PANTUAN_FIREWALL} unblock {ip}")
+        if not res["ok"]:
+            ok_all = False
+        outs.append(f"{ip}: {res['output']}")
+    return {"ok": ok_all, "output": ("; ".join(outs))[:2000]}
 
 
 def _exec_host_control(action: str) -> dict:

@@ -2379,6 +2379,57 @@ def problem_block_ip(
     return RedirectResponse(f"/servers/{sid}/services?action=block", status_code=303)
 
 
+@app.post("/servers/{sid}/firewall/block")
+def firewall_block_ip(
+    request: Request, sid: int,
+    ip: str = Form(...),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    """Blokir manual sebuah IP dari tab Firewall."""
+    user = get_current_user(request, db)
+    if not user or user.role != "admin":
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        return RedirectResponse("/servers", status_code=303)
+    ip_clean = ip.strip()
+    try:
+        a = ipaddress.ip_address(ip_clean)
+        if a.is_loopback or a.is_link_local or a.is_multicast or a.is_unspecified or a.is_reserved or ip_clean == server.ip_address:
+            return RedirectResponse(f"/servers/{sid}/services?action=invalid_ip", status_code=303)
+    except ValueError:
+        return RedirectResponse(f"/servers/{sid}/services?action=invalid_ip", status_code=303)
+
+    _enqueue_mitigation(db, sid, "block_ip", {"ips": [ip_clean]}, issued_by=user.username)
+    _audit(db, user.username, "firewall_block", f"{server.hostname}: blokir {ip_clean}", "dikirim ke agen", server_id=sid)
+    db.commit()
+    return RedirectResponse(f"/servers/{sid}/services?action=block", status_code=303)
+
+
+@app.post("/servers/{sid}/firewall/unblock")
+def firewall_unblock_ip(
+    request: Request, sid: int,
+    ip: str = Form(...),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    """Buka blokir sebuah IP dari tab Firewall."""
+    user = get_current_user(request, db)
+    if not user or user.role != "admin":
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        return RedirectResponse("/servers", status_code=303)
+    ip_clean = ip.strip()
+    _enqueue_mitigation(db, sid, "unblock_ip", {"ips": [ip_clean]}, issued_by=user.username)
+    _audit(db, user.username, "firewall_unblock", f"{server.hostname}: buka blokir {ip_clean}", "dikirim ke agen", server_id=sid)
+    db.commit()
+    return RedirectResponse(f"/servers/{sid}/services?action=unblock", status_code=303)
+
+
 @app.post("/servers/{sid}/problems/restart-agent")
 def problem_restart_agent(
     request: Request, sid: int,
@@ -3426,6 +3477,9 @@ AUDIT_ACTION_LABELS = {
     "alert_ack": "Akui peringatan (alert)",
     "cmd:restart": "Restart service",
     "cmd:block_ip": "Blokir IP",
+    "cmd:unblock_ip": "Buka blokir IP",
+    "firewall_block": "Blokir IP firewall",
+    "firewall_unblock": "Buka blokir IP firewall",
     "cmd:restart_agent": "Restart agen",
     "cmd:reboot_host": "Reboot server",
     "cmd:poweroff_host": "Power off server",
