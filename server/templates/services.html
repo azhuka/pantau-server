@@ -204,15 +204,40 @@
   color: #fff;
   transform: translateY(-1px);
 }
+/* Tombol Mode Pemeliharaan di Hero Toolbar */
+.btn-maint {
+  border-color: #334155 !important;
+  color: var(--dim) !important;
+  gap: 6px !important;
+}
+.btn-maint:hover {
+  border-color: #475569 !important;
+  color: var(--text) !important;
+  background: #233350 !important;
+}
+.btn-maint .maint-icon {
+  opacity: .75;
+  transition: opacity .15s ease;
+}
+.btn-maint:hover .maint-icon {
+  opacity: 1;
+}
+
+/* Saat Pemeliharaan Sedang Aktif: tetap elegan & harmonis dengan tema gelap */
 .btn-maint-active {
-  border-color: #eab308 !important;
+  border-color: rgba(234, 179, 8, 0.45) !important;
   color: #facc15 !important;
-  background: rgba(234, 179, 8, 0.16) !important;
+  background: rgba(234, 179, 8, 0.12) !important;
   font-weight: 600 !important;
 }
 .btn-maint-active:hover {
-  background: rgba(234, 179, 8, 0.28) !important;
-  color: #fff !important;
+  background: rgba(234, 179, 8, 0.2) !important;
+  border-color: rgba(234, 179, 8, 0.7) !important;
+  color: #fef08a !important;
+}
+.btn-maint-active .maint-icon {
+  opacity: 1;
+  stroke: #facc15;
 }
 
 /* Tombol Aksi Layanan Kotak Rapi */
@@ -398,7 +423,10 @@
       <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" title="Buka / sembunyikan terminal bawaan" style="border:1px solid #334155;color:#38bdf8">&#62;_&nbsp;Terminal</button>
       <a href="/servers/{{ server.id }}/files" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="border:1px solid #334155;color:#a78bfa" title="Buka File Manager di tab / halaman baru">&#128193;&nbsp;File Manager&nbsp;&nearr;</a>
       <span class="hero-sep"></span>
-      <button class="btn btn-ghost btn-sm {{ 'btn-maint-active' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Atur Mode Pemeliharaan">&#128295;&nbsp;<span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span></button>
+      <button class="btn btn-ghost btn-sm btn-maint {{ 'btn-maint-active' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Atur Mode Pemeliharaan">
+        <svg class="maint-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        <span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span>
+      </button>
       <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="btn btn-ghost btn-sm" type="submit" title="Restart sistem operasi">&#8634;&nbsp;Reboot OS</button>
