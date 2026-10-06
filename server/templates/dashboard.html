@@ -6,45 +6,45 @@
 </div>
 
 <div class="stats-grid">
-  <div class="stat-card" style="border-left:3px solid var(--blue)">
+  <div class="stat-card" style="border-left:3px solid var(--blue)" title="Total seluruh mesin server yang terdaftar di sistem pemantauan">
     <div class="label" style="display:flex;align-items:center;justify-content:space-between">
       <span>Total Server</span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue);opacity:.75"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue);opacity:.85"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
     </div>
     <div class="value">{{ total }}</div>
   </div>
-  <div class="stat-card" style="border-left:3px solid var(--green)">
+  <div class="stat-card" style="border-left:3px solid var(--green)" title="Server yang aktif terhubung dan mengirimkan metrik secara berkala">
     <div class="label" style="display:flex;align-items:center;justify-content:space-between">
       <span>Online</span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green);opacity:.75"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green);opacity:.85"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
     </div>
     <div class="value" style="color:var(--green)" id="dash-up-count">{{ up_count }}</div>
   </div>
-  <div class="stat-card" style="border-left:3px solid var(--red)">
+  <div class="stat-card" style="border-left:3px solid var(--red)" title="Server yang tidak mengirimkan laporan melebihi batas waktu toleransi (terputus atau mati)">
     <div class="label" style="display:flex;align-items:center;justify-content:space-between">
       <span>Offline</span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red);opacity:.75"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red);opacity:.85"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
     </div>
     <div class="value" style="color:var(--red)" id="dash-down-count">{{ down_count }}</div>
   </div>
-  <div class="stat-card" style="border-left:3px solid {% if down_services > 0 %}var(--red){% else %}var(--border){% endif %}">
+  <div class="stat-card" style="border-left:3px solid {% if down_services > 0 %}var(--red){% else %}var(--border){% endif %}" title="Jumlah layanan aplikasi atau port yang terdeteksi terhenti dan memerlukan perhatian">
     <div class="label" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Layanan Down</span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red);opacity:.75"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <span>Layanan Terhenti</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red);opacity:.85"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
     </div>
     <div class="value" style="color:{% if down_services > 0 %}var(--red){% else %}var(--dim){% endif %}" id="dash-svc-down">{{ down_services }}</div>
   </div>
-  <div class="stat-card" style="border-left:3px solid var(--dim-subtle)">
+  <div class="stat-card" style="border-left:3px solid var(--dim-subtle)" title="Layanan yang sengaja dinonaktifkan atau dibisukan dari notifikasi gangguan">
     <div class="label" style="display:flex;align-items:center;justify-content:space-between">
       <span>Layanan Diabaikan</span>
-      <span style="font-size:12px;opacity:.7">🔕</span>
+      <span style="font-size:12px;opacity:.85">🔕</span>
     </div>
-    <div class="value" style="color:#94a3b8" id="dash-svc-ignored" title="Layanan berhenti yang dibisukan/diabaikan">{{ ignored_services }}</div>
+    <div class="value" style="color:#94a3b8" id="dash-svc-ignored">{{ ignored_services }}</div>
   </div>
-  <div class="stat-card" style="border-left:3px solid var(--border)">
+  <div class="stat-card" style="border-left:3px solid var(--border)" title="Selang waktu sejak data metrik terakhir kali diterima dari server mana pun">
     <div class="label" style="display:flex;align-items:center;justify-content:space-between">
       <span>Laporan Terakhir</span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--dim);opacity:.75"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--dim);opacity:.85"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
     </div>
     <div class="value" style="font-size:20px">{% if last_update_secs < 0 %}—{% elif last_update_secs < 60 %}{{ last_update_secs }}<span style="font-size:12px;color:var(--dim)"> dtk</span>{% elif last_update_secs < 3600 %}{{ last_update_secs // 60 }}<span style="font-size:12px;color:var(--dim)"> mnt</span>{% else %}{{ last_update_secs // 3600 }}<span style="font-size:12px;color:var(--dim)"> jam</span>{% endif %}</div>
   </div>
@@ -68,16 +68,16 @@
   {% if servers %}
   <table id="dash-table">
     <thead><tr>
-      <th class="sortable" data-col="0">Server</th>
-      <th class="sortable" data-col="1">IP</th>
-      <th class="sortable" data-col="2">Status</th>
-      <th class="sortable" data-col="3">CPU</th>
-      <th class="sortable" data-col="4">RAM</th>
-      <th>Layanan</th>
-      <th>Masalah</th>
-      <th>Update OS</th>
-      <th class="sortable" data-col="8">Terakhir Lapor</th>
-      <th>Tindakan</th>
+      <th class="sortable" data-col="0" title="Nama host mesin server dan detail sistem operasi">Server</th>
+      <th class="sortable" data-col="1" title="Alamat IP server — klik alamat IP untuk menyalin langsung">Alamat IP</th>
+      <th class="sortable" data-col="2" title="Kondisi ketersediaan server saat ini (Online/Offline)">Status</th>
+      <th class="sortable" data-col="3" title="Persentase pemakaian prosesor (CPU) saat ini">CPU</th>
+      <th class="sortable" data-col="4" title="Persentase pemakaian memori RAM saat ini">RAM</th>
+      <th title="Ringkasan jumlah layanan: total, aktif, berhenti, atau diabaikan">Layanan</th>
+      <th title="Tingkat keparahan anomali atau masalah yang terdeteksi">Masalah</th>
+      <th title="Jumlah pembaruan paket sistem operasi (APT) yang tersedia">Pembaruan OS</th>
+      <th class="sortable" data-col="8" title="Waktu terakhir kali agen berhasil mengirimkan metrik ke dashboard">Terakhir Lapor</th>
+      <th title="Tautan navigasi ke rincian lengkap server">Aksi</th>
     </tr></thead>
     <tbody>
     {% for srv in servers %}

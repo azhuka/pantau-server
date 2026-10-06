@@ -8,35 +8,35 @@
 {% block extra_head %}{% endblock %}
 <style>
 :root{
-  --bg:#090d16;
-  --bg-gradient:radial-gradient(ellipse at 50% 0%, rgba(30, 41, 59, 0.35) 0%, rgba(9, 13, 22, 1) 75%);
-  --sidebar:#0f1523;
-  --sidebar-hover:rgba(255,255,255,0.04);
-  --card:#131a29;
-  --card-hover:#172033;
-  --border:rgba(255,255,255,0.08);
-  --border-subtle:rgba(255,255,255,0.04);
-  --border-focus:rgba(56,189,248,0.5);
-  --text:#f1f5f9;
-  --dim:#8492a6;
-  --dim-subtle:#505c6e;
+  --bg:#0f172a;
+  --bg-gradient:radial-gradient(ellipse at 50% 0%, rgba(30, 58, 110, 0.28) 0%, rgba(15, 23, 42, 1) 75%);
+  --sidebar:#141e33;
+  --sidebar-hover:rgba(255,255,255,0.06);
+  --card:#1a2438;
+  --card-hover:#202d46;
+  --border:rgba(255,255,255,0.11);
+  --border-subtle:rgba(255,255,255,0.06);
+  --border-focus:rgba(56,189,248,0.6);
+  --text:#f8fafc;
+  --dim:#94a3b8;
+  --dim-subtle:#64748b;
   --blue:#38bdf8;
   --blue-hover:#0ea5e9;
-  --blue-bg:rgba(56,189,248,0.12);
+  --blue-bg:rgba(56,189,248,0.14);
   --green:#34d399;
   --green-hover:#10b981;
-  --green-bg:rgba(52,211,153,0.12);
+  --green-bg:rgba(52,211,153,0.14);
   --red:#f87171;
   --red-hover:#ef4444;
-  --red-bg:rgba(248,113,113,0.12);
+  --red-bg:rgba(248,113,113,0.14);
   --yellow:#fbbf24;
   --yellow-hover:#f59e0b;
-  --yellow-bg:rgba(251,191,36,0.12);
+  --yellow-bg:rgba(251,191,36,0.14);
   --purple:#c084fc;
-  --hover:rgba(255,255,255,0.035);
-  --shadow-sm:0 1px 2px 0 rgba(0,0,0,0.25);
-  --shadow-md:0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -2px rgba(0,0,0,0.25);
-  --shadow-lg:0 10px 15px -3px rgba(0,0,0,0.35), 0 4px 6px -4px rgba(0,0,0,0.3);
+  --hover:rgba(255,255,255,0.05);
+  --shadow-sm:0 1px 3px 0 rgba(0,0,0,0.3), 0 1px 2px -1px rgba(0,0,0,0.25);
+  --shadow-md:0 4px 8px -1px rgba(0,0,0,0.35), 0 2px 5px -2px rgba(0,0,0,0.3);
+  --shadow-lg:0 12px 20px -3px rgba(0,0,0,0.4), 0 4px 8px -4px rgba(0,0,0,0.35);
   --radius-sm:6px;
   --radius-md:10px;
   --radius-lg:14px;
@@ -76,14 +76,14 @@ body{
 .topbar .user-info{font-size:13px;color:var(--dim)}
 
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:22px;margin-bottom:20px;box-shadow:var(--shadow-sm);transition:border-color .15s,box-shadow .15s}
-.card:hover{border-color:rgba(255,255,255,0.11)}
+.card:hover{border-color:rgba(255,255,255,0.18);box-shadow:var(--shadow-md)}
 .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px}
 .card-header h3{font-size:15px;font-weight:700;letter-spacing:-0.01em;color:#f8fafc}
 pre{white-space:pre;overflow-x:auto;max-width:100%}
 
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px 22px;box-shadow:var(--shadow-sm);transition:all .15s ease}
-.stat-card:hover{transform:translateY(-1px);border-color:rgba(255,255,255,0.14);box-shadow:var(--shadow-md)}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px 22px;box-shadow:var(--shadow-sm);transition:all .15s ease;position:relative}
+.stat-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.22);box-shadow:var(--shadow-md)}
 .stat-card .label{font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .stat-card .value{font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff}
 
@@ -188,23 +188,23 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
   position: fixed;
   z-index: 100000;
   pointer-events: none;
-  background: rgba(15, 23, 42, 0.94);
+  background: rgba(15, 23, 42, 0.96);
   color: #f8fafc;
   font-size: 11.5px;
   font-weight: 500;
-  line-height: 1.4;
-  padding: 6px 11px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  max-width: 320px;
+  line-height: 1.45;
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 2px 8px rgba(56, 189, 248, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  max-width: 340px;
   word-wrap: break-word;
   white-space: normal;
   opacity: 0;
   transform: translateY(4px) scale(0.98);
-  transition: opacity 0.12s cubic-bezier(0, 0, 0.2, 1), transform 0.12s cubic-bezier(0, 0, 0.2, 1);
+  transition: opacity 0.1s cubic-bezier(0, 0, 0.2, 1), transform 0.1s cubic-bezier(0, 0, 0.2, 1);
   will-change: transform, opacity;
 }
 #app-tooltip.show {

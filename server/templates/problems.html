@@ -50,7 +50,15 @@
   {% endif %}
   {% if open_problems %}
   <table id="probtable">
-    <thead><tr><th>Waktu</th><th>Server</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Tindakan</th><th>Tips</th></tr></thead>
+    <thead><tr>
+      <th title="Waktu saat insiden atau masalah mulai terdeteksi">Waktu Mulai</th>
+      <th title="Mesin server tempat anomali atau gangguan terjadi">Server</th>
+      <th title="Tingkat urgensi: Danger (kritis), Warning (waspada), atau Info (informasi)">Tingkat</th>
+      <th title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
+      <th title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
+      <th title="Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan">Aksi</th>
+      <th title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Panduan Solusi</th>
+    </tr></thead>
     <tbody>
     {% for p in open_problems %}
     <tr{% if p.is_ignored %} style="opacity:.75;background:rgba(255,255,255,0.02)"{% endif %}

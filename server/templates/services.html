@@ -214,12 +214,14 @@
 .toolbar-group {
   display: inline-flex;
   align-items: center;
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(51, 65, 85, 0.7);
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.22);
   border-radius: 8px;
   padding: 3px;
   gap: 2px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .toolbar-group .btn {
   border: none !important;
@@ -227,14 +229,14 @@
   color: var(--dim) !important;
   font-size: 12px !important;
   font-weight: 500 !important;
-  padding: 5px 11px !important;
+  padding: 6px 12px !important;
   border-radius: 6px !important;
   line-height: 1.4 !important;
   box-shadow: none !important;
   transition: all .15s ease !important;
 }
 .toolbar-group .btn:hover:not(:disabled) {
-  background: rgba(51, 65, 85, 0.6) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
   color: #fff !important;
 }
 .toolbar-group .btn svg {
@@ -242,51 +244,52 @@
   flex-shrink: 0;
 }
 .toolbar-group .btn-success:not(:disabled) {
-  color: #4ade80 !important;
+  color: #34d399 !important;
 }
 .toolbar-group .btn-success:not(:disabled):hover {
-  background: rgba(34, 197, 94, 0.18) !important;
-  color: #86efac !important;
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #a7f3d0 !important;
 }
 .toolbar-group .btn-danger:not(:disabled) {
   color: #f87171 !important;
 }
 .toolbar-group .btn-danger:not(:disabled):hover {
-  background: rgba(239, 68, 68, 0.18) !important;
+  background: rgba(239, 68, 68, 0.2) !important;
   color: #fca5a5 !important;
 }
 .toolbar-group #apt-term-toggle-btn {
   color: #38bdf8 !important;
 }
 .toolbar-group #apt-term-toggle-btn:hover {
-  background: rgba(56, 189, 248, 0.16) !important;
-  color: #7dd3fc !important;
+  background: rgba(56, 189, 248, 0.18) !important;
+  color: #bae6fd !important;
 }
 .toolbar-group .btn-fm {
   color: #c084fc !important;
 }
 .toolbar-group .btn-fm:hover {
-  background: rgba(192, 132, 252, 0.16) !important;
-  color: #e9d5ff !important;
+  background: rgba(192, 132, 252, 0.18) !important;
+  color: #f3e8ff !important;
 }
 .toolbar-group .btn-maint-active-state {
   color: #facc15 !important;
-  background: rgba(234, 179, 8, 0.16) !important;
+  background: rgba(234, 179, 8, 0.2) !important;
   font-weight: 600 !important;
+  border: 1px solid rgba(234, 179, 8, 0.4) !important;
 }
 .toolbar-group .btn-maint-active-state:hover {
-  background: rgba(234, 179, 8, 0.28) !important;
+  background: rgba(234, 179, 8, 0.32) !important;
   color: #fef08a !important;
 }
 .toolbar-group .btn:disabled {
-  opacity: .38 !important;
+  opacity: .35 !important;
   cursor: not-allowed !important;
   background: transparent !important;
 }
 .toolbar-divider {
   width: 1px;
   height: 18px;
-  background: rgba(51, 65, 85, 0.8);
+  background: rgba(148, 163, 184, 0.22);
   margin: 0 1px;
   align-self: center;
 }
@@ -468,38 +471,38 @@
     <div class="hero-actions hero-toolbar">
       {% if user.role == 'admin' %}
       <!-- Grup 1: Akses & Pemeliharaan Server -->
-      <div class="toolbar-group" title="Akses & Pemeliharaan Server">
-        <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" title="Buka / sembunyikan terminal bawaan">
+      <div class="toolbar-group" title="Akses &amp; Utilitas Server">
+        <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" title="Buka terminal shell interaktif langsung ke server klien">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
           Terminal
         </button>
         <span class="toolbar-divider"></span>
-        <a href="/servers/{{ server.id }}/files" target="_blank" rel="noopener" class="btn btn-ghost btn-sm btn-fm" title="Buka File Manager di tab / jendela baru">
+        <a href="/servers/{{ server.id }}/files" target="_blank" rel="noopener" class="btn btn-ghost btn-sm btn-fm" title="Jelajahi dan kelola berkas server lewat antarmuka File Manager di tab baru">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
           File Manager
         </a>
         <span class="toolbar-divider"></span>
-        <button class="btn btn-ghost btn-sm {{ 'btn-maint-active-state' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Atur Mode Pemeliharaan">
+        <button class="btn btn-ghost btn-sm {{ 'btn-maint-active-state' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi down dibisukan sementara">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
           <span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span>
         </button>
       </div>
 
       <!-- Grup 2: Pembaruan & Kontrol Daya Sistem -->
-      <div class="toolbar-group" title="Pembaruan & Kontrol Daya Sistem">
-        <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="aptAction('APT_UPDATE')" title="Periksa daftar pembaruan paket OS">
+      <div class="toolbar-group" title="Pembaruan &amp; Daya Mesin">
+        <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="aptAction('APT_UPDATE')" title="Sinkronkan repositori paket OS (apt update) untuk mengecek ketersediaan pembaruan baru">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
           Update OS
         </button>
         <span class="toolbar-divider"></span>
-        <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled title="Tingkatkan paket OS yang tertunda">
+        <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled title="Pasang seluruh pembaruan paket sistem operasi yang tertunda">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
           Upgrade
         </button>
         <span class="toolbar-divider"></span>
         <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline;margin:0" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button class="btn btn-ghost btn-sm" type="submit" title="Restart sistem operasi">
+          <button class="btn btn-ghost btn-sm" type="submit" title="Mulai ulang (reboot) sistem operasi server klien">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
             Reboot OS
           </button>
@@ -507,7 +510,7 @@
         <span class="toolbar-divider"></span>
         <form method="post" action="/servers/{{ server.id }}/host/poweroff" style="display:inline;margin:0" data-confirm data-msg="MATIKAN server {{ server.hostname }} SEKARANG? Mesin akan poweroff — TIDAK menyala sendiri — sampai dinyalakan manual (fisik/IPMI).">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button class="btn btn-danger btn-sm" type="submit" title="Matikan sistem operasi">
+          <button class="btn btn-danger btn-sm" type="submit" title="Matikan daya mesin server klien secara penuh (shutdown/power off)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
             Power Off
           </button>
@@ -731,7 +734,17 @@
   </div>
   {% if services %}
   <table>
-    <thead><tr><th>Layanan</th><th>Port</th><th>Proses</th><th>Status</th><th>Koneksi</th><th>Respons (ms)</th><th>Kesehatan</th><th>Uptime 24j</th><th>Tindakan</th></tr></thead>
+    <thead><tr>
+      <th title="Nama layanan atau daemon yang dipantau">Layanan</th>
+      <th title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
+      <th title="Nama proses sistem operasi yang dieksekusi">Proses</th>
+      <th title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
+      <th title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
+      <th title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
+      <th title="Hasil pemeriksaan kesehatan (health check) layanan">Kesehatan</th>
+      <th title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
+      <th title="Kontrol layanan: Restart, Mulai (▶), Berhenti (■), Abaikan (🔕), atau Hapus">Aksi</th>
+    </tr></thead>
     <tbody>
     {% for svc in services %}
     <tr>
@@ -767,28 +780,29 @@
             {% set is_pending = (svc._pending_cmd is not none and svc._pending_cmd) %}
             <button type="button" class="btn btn-primary btn-sm btn-svc-restart"
                     {% if is_pending %}disabled{% endif %}
+                    title="Mulai ulang (restart) layanan {{ svc.service_name }}"
                     onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Restart</button>
             <button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px"
                     {% if is_pending or is_up %}disabled{% endif %}
                     onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                    title="{{ 'Layanan sudah aktif' if is_up else 'Mulai layanan' }}">▶</button>
+                    title="{{ 'Layanan sudah dalam kondisi aktif' if is_up else 'Nyalakan / jalankan layanan ' ~ svc.service_name }}">▶</button>
             <button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px"
                     {% if is_pending or not is_up %}disabled{% endif %}
                     onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                    title="{{ 'Layanan sudah nonaktif / berhenti' if not is_up else 'Hentikan layanan' }}">■</button>
+                    title="{{ 'Layanan sudah dalam kondisi berhenti' if not is_up else 'Hentikan layanan ' ~ svc.service_name }}">■</button>
             {% if svc._is_ignored %}
-              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>
+              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}">🔔 Pantau Kembali</button>
             {% elif not is_up %}
-              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)" title="Abaikan pemantauan layanan ini">🔕 Abaikan</button>
+              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)" title="Bisukan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan">🔕 Abaikan</button>
             {% endif %}
             {% if is_pending %}
-              <span class="badge badge-muted" style="margin-left:4px;font-size:10px">menunggu…</span>
+              <span class="badge badge-muted" style="margin-left:4px;font-size:10px" title="Perintah sedang dikirim dan diproses oleh agen">menunggu…</span>
             {% endif %}
           {% endif %}
         </span>
 
         {% if user.role == 'admin' %}
-        <button type="button" class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Hapus</button>
+        <button type="button" class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)" title="Hapus konfigurasi pemantauan layanan {{ svc.service_name }}">Hapus</button>
         {% endif %}
       </td>
     </tr>
