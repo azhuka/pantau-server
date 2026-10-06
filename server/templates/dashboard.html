@@ -103,10 +103,12 @@
             {% endif %}
           {% endif %}
         {% endfor %}
+        {% set total_svc_count = (srv._svc_data or [])|length %}
         {% if not srv._online and not srv._svc_data %}
           <span style="color:var(--dim)">—</span>
         {% else %}
           <div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap">
+            <span class="svc-pill total" title="Total layanan dipantau: {{ total_svc_count }}">{{ total_svc_count }} total</span>
             {% if up_svcs|length > 0 %}
               <span class="svc-pill up" title="Layanan aktif ({{ up_svcs|length }}): {{ up_svcs | join(', ') }}">{{ up_svcs|length }} up</span>
             {% endif %}
@@ -116,7 +118,7 @@
             {% if ign_down|length > 0 %}
               <span class="svc-pill ignored" title="Layanan berhenti & diabaikan ({{ ign_down|length }}): {{ ign_down | join(', ') }}">{{ ign_down|length }} diabaikan 🔕</span>
             {% endif %}
-            {% if up_svcs|length == 0 and unign_down|length == 0 and ign_down|length == 0 %}
+            {% if total_svc_count == 0 %}
               <span style="color:var(--dim);font-size:12px">0 layanan</span>
             {% endif %}
           </div>
@@ -240,7 +242,9 @@ async function dashPoll() {
           const upList = (srv.services || []).filter(s => s.status === 'up').map(s => s.name);
           const dnList = (srv.services || []).filter(s => (s.status === 'down' || s.status === 'offline') && !s.ignored).map(s => s.name);
           const ignList = (srv.services || []).filter(s => (s.status === 'down' || s.status === 'offline') && s.ignored).map(s => s.name);
+          const totCount = (srv.services || []).length;
           let html = '<div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap">';
+          html += '<span class="svc-pill total" title="Total layanan dipantau: ' + totCount + '">' + totCount + ' total</span>';
           if (upList.length > 0) {
             html += '<span class="svc-pill up" title="Layanan aktif (' + upList.length + '): ' + upList.join(', ') + '">' + upList.length + ' up</span>';
           }
@@ -250,7 +254,7 @@ async function dashPoll() {
           if (ignList.length > 0) {
             html += '<span class="svc-pill ignored" title="Layanan berhenti & diabaikan (' + ignList.length + '): ' + ignList.join(', ') + '">' + ignList.length + ' diabaikan 🔕</span>';
           }
-          if (upList.length === 0 && dnList.length === 0 && ignList.length === 0) {
+          if (totCount === 0) {
             html += '<span style="color:var(--dim);font-size:12px">0 layanan</span>';
           }
           html += '</div>';
