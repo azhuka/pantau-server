@@ -637,7 +637,7 @@ function openIgnoreModal(target, msg, onDone) {
   const rInput = document.getElementById('ignore-reason');
   if (rInput) rInput.value = '';
   const dSel = document.getElementById('ignore-duration');
-  if (dSel) dSel.value = 'permanent';
+  if (dSel) dSel.value = 'incident';
   if (m) m.style.display = 'flex';
 }
 
@@ -764,12 +764,12 @@ setInterval(alertFetch, 10000);
     <div style="margin-bottom:14px">
       <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Abaikan Selama:</label>
       <select id="ignore-duration" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
-        <option value="permanent" selected>Permanen (hingga diaktifkan manual kembali)</option>
+        <option value="incident" selected>Sekali ini saja (kembali dipantau saat aktif)</option>
         <option value="2h">2 Jam (sementara)</option>
         <option value="24h">24 Jam (1 hari)</option>
         <option value="7d">7 Hari (1 minggu)</option>
         <option value="30d">30 Hari (1 bulan)</option>
-        <option value="incident">Sekali ini saja (kembali dipantau saat aktif)</option>
+        <option value="permanent">Permanen (hingga diaktifkan manual kembali)</option>
       </select>
     </div>
     <div style="margin-bottom:18px">

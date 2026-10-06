@@ -2084,6 +2084,21 @@ def service_restart(
             server_id=sid, service_id=svc_id, action="restart", status="pending",
             issued_by=user.username,
         ))
+        # Otomatis aktifkan kembali pemantauan saat admin merestart layanan
+        svc.is_ignored = 0
+        svc.ignored_until = None
+        svc.ignored_reason = None
+        svc.ignore_mode = None
+        prob = db.query(ServerProblem).filter(
+            ServerProblem.server_id == sid,
+            ServerProblem.key == f"service_down:{svc.service_name}",
+            ServerProblem.resolved_at.is_(None),
+        ).first()
+        if prob:
+            prob.is_ignored = 0
+            prob.ignored_until = None
+            prob.ignored_reason = None
+            prob.updated_at = datetime.utcnow()
         db.commit()
     if is_json:
         return Response(json.dumps({"ok": True, "detail": f"Perintah restart {svc.service_name} telah dikirim ke Agen Pantau."}), media_type="application/json")
@@ -2118,6 +2133,22 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
         server = db.query(Server).filter(Server.id == sid).first()
         _audit(db, user.username, f"service_{action}",
                f"{server.hostname if server else sid}:{svc.service_name}", "dikirim ke agen", server_id=sid)
+        if action == "start":
+            # Otomatis aktifkan kembali pemantauan saat admin memulai/menyalakan layanan
+            svc.is_ignored = 0
+            svc.ignored_until = None
+            svc.ignored_reason = None
+            svc.ignore_mode = None
+            prob = db.query(ServerProblem).filter(
+                ServerProblem.server_id == sid,
+                ServerProblem.key == f"service_down:{svc.service_name}",
+                ServerProblem.resolved_at.is_(None),
+            ).first()
+            if prob:
+                prob.is_ignored = 0
+                prob.ignored_until = None
+                prob.ignored_reason = None
+                prob.updated_at = datetime.utcnow()
         db.commit()
     label_id = {"start": "mulai", "stop": "hentikan"}.get(action, action)
     if is_json:
@@ -3095,11 +3126,15 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             if row.key.startswith("service_down:"):
                 svc_name = row.key.split(":", 1)[1]
                 svc_obj = svc_map.get(svc_name)
-                if svc_obj and getattr(svc_obj, "ignore_mode", None) == "incident":
-                    svc_obj.is_ignored = 0
-                    svc_obj.ignored_until = None
-                    svc_obj.ignored_reason = None
-                    svc_obj.ignore_mode = None
+                if svc_obj:
+                    # Bila layanan sudah kembali UP / pulih, reset pengabaian agar layanan kembali dipantau normal
+                    # (kecuali jika ada batas waktu khusus yang belum kedaluwarsa)
+                    has_future_timer = svc_obj.ignored_until and svc_obj.ignored_until > now
+                    if not has_future_timer or getattr(svc_obj, "ignore_mode", None) == "incident":
+                        svc_obj.is_ignored = 0
+                        svc_obj.ignored_until = None
+                        svc_obj.ignored_reason = None
+                        svc_obj.ignore_mode = None
 
     stale = now - timedelta(days=30)
     db.query(ServerProblem).filter(
