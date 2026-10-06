@@ -3,12 +3,20 @@
 {% block content %}
 <div class="topbar">
   <h2>Servers</h2>
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
     {% if servers %}
-    <input type="search" id="servers-search" placeholder="Cari server, IP, atau versi agen…" oninput="serversFilter(this.value)"
-           style="background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 14px;font-size:13px;width:260px;outline:none">
+    <div style="position:relative;display:flex;align-items:center">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:12px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="search" id="servers-search" placeholder="Cari server, IP, atau versi agen…" oninput="serversFilter(this.value)"
+             style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 14px 8px 34px;font-size:13px;width:280px;outline:none;transition:border-color .15s">
+    </div>
     {% endif %}
-    {% if user.role == 'admin' %}<a href="/servers/add" class="btn btn-primary">+ Tambah Server</a>{% endif %}
+    {% if user.role == 'admin' %}
+    <a href="/servers/add" class="btn btn-primary" style="gap:6px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      Tambah Server
+    </a>
+    {% endif %}
   </div>
 </div>
 
@@ -33,11 +41,11 @@
         data-status="{{ srv._status_cls }}"
         data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
       <td>
-        <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;gap:9px">
           <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0"></span>
           <strong>{{ srv.hostname }}</strong>
         </div>
-        <div style="font-size:10px;color:var(--dim);margin-top:2px;margin-left:18px">
+        <div style="font-size:11px;color:var(--dim);margin-top:2px;margin-left:18px">
           {% if srv._os_label %}{{ srv._os_label }}{% if srv._arch %} · {{ srv._arch }}{% endif %}{% endif %}
         </div>
       </td>
@@ -47,10 +55,10 @@
       <td>
         <span class="badge {{ srv._status_cls }}">{{ srv._status_label }}</span>
         {% if srv.is_maintenance and srv.maintenance_reason %}
-        <div style="font-size:10px;color:var(--yellow);margin-top:2px">{{ srv.maintenance_reason }}</div>
+        <div style="font-size:11px;color:var(--yellow);margin-top:3px">{{ srv.maintenance_reason }}</div>
         {% endif %}
       </td>
-      <td>{{ srv._service_count }}</td>
+      <td><span class="svc-pill total">{{ srv._service_count }} layanan</span></td>
       <td>
         {% if srv._agent_version %}
           {% if srv._agent_outdated %}
@@ -67,19 +75,21 @@
         {% endif %}
       </td>
       <td>
-        <span class="mono" style="font-size:10px;color:var(--dim)"
+        <span class="mono" style="font-size:11px;color:var(--dim)"
               title="Sidik jari kunci API — bukan kunci penuh. Kunci hanya ditampilkan sekali, saat dibuat.">{{ srv._key_fp }}</span>
       </td>
       <td class="mono" style="font-size:12px;white-space:nowrap">{{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}</td>
       <td style="white-space:nowrap">
-        <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
-        {% if user.role == 'admin' %}
-        <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm">Edit</a>
-        <form method="POST" action="/servers/{{ srv.id }}/delete" style="display:inline" data-confirm data-msg="Hapus server {{ srv.hostname }}? Semua data miliknya ikut terhapus.">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button class="btn btn-danger btn-sm">Hapus</button>
-        </form>
-        {% endif %}
+        <div style="display:inline-flex;gap:4px;align-items:center">
+          <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
+          {% if user.role == 'admin' %}
+          <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm">Edit</a>
+          <form method="POST" action="/servers/{{ srv.id }}/delete" style="display:inline;margin:0" data-confirm data-msg="Hapus server {{ srv.hostname }}? Semua data miliknya ikut terhapus.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn btn-danger btn-sm" type="submit">Hapus</button>
+          </form>
+          {% endif %}
+        </div>
       </td>
     </tr>
     {% endfor %}

@@ -21,16 +21,19 @@
     restart agen) — beserta siapa yang mengeluarkannya dan hasilnya.
   </p>
 
-  <form method="get" action="/audit" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-    <select name="action" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
+  <form method="get" action="/audit" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+    <select name="action" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
       <option value="">Semua aksi</option>
       {% for key, label in actions %}
       <option value="{{ key }}" {% if action == key %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
-    <input type="search" name="q" value="{{ q }}" placeholder="Cari user / target / hasil…"
-           style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:240px;flex:1">
-    <button class="btn btn-ghost btn-sm" type="submit">Terapkan</button>
+    <div style="position:relative;display:flex;align-items:center;flex:1;min-width:240px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="search" name="q" value="{{ q }}" placeholder="Cari user / target / hasil…"
+             style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px 8px 30px;font-size:12px;width:100%;outline:none;transition:border-color .15s">
+    </div>
+    <button class="btn btn-primary btn-sm" type="submit">Terapkan</button>
     <a href="/audit" class="btn btn-ghost btn-sm" style="margin-left:auto{% if not q and not action %};display:none{% endif %}">Reset</a>
   </form>
 
