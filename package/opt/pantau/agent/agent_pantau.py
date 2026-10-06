@@ -2430,9 +2430,9 @@ def collect_system_logs(lines: int = 25) -> list[dict]:
         return _syslog_cache["data"]
 
     events: list[dict] = []
-    # Jalankan journalctl -p 3 (0=emerg, 1=alert, 2=crit, 3=err)
+    # Jalankan journalctl -p 3 -r (0=emerg, 1=alert, 2=crit, 3=err, -r = terbaru di atas)
     res = _run_cmd(
-        ["journalctl", "-p", "3", "-n", str(lines), "--no-pager", "-o", "json"],
+        ["journalctl", "-p", "3", "-n", str(lines), "-r", "--no-pager", "-o", "json"],
         timeout=5,
     )
     if res and res.returncode == 0:
