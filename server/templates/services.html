@@ -641,14 +641,14 @@
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
   <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn">Masalah <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
   <button class="tab" data-tab="proses" role="tab">Proses Teratas</button>
-  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn">Tugas Terjadwal</button>
-  <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn">Firewall</button>
-  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn">Port Listening</button>
-  <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn">Sertifikat SSL</button>
   <button class="tab" data-tab="syslog" role="tab" id="tab-syslog-btn">Log Sistem</button>
-  <button class="tab" data-tab="jaringan" role="tab">Jaringan</button>
-  <button class="tab" data-tab="akun" role="tab">Akun</button>
   <button class="tab" data-tab="log" role="tab">Log Layanan</button>
+  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn">Port Listening</button>
+  <button class="tab" data-tab="jaringan" role="tab">Jaringan</button>
+  <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn">Firewall</button>
+  <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn">Sertifikat SSL</button>
+  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn">Tugas Terjadwal</button>
+  <button class="tab" data-tab="akun" role="tab">Akun</button>
 </div>
 
 <div class="tab-body" id="tab-perf">
