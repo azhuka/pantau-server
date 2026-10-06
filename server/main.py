@@ -915,6 +915,59 @@ def agent_report(
             "last_seen": last_seen,
         }
         extras.security = json.dumps(clean)
+
+    # Validasi & Simpan Tugas Terjadwal (Cron Jobs & Timers)
+    if isinstance(body.get("cron_jobs"), dict):
+        cj = body["cron_jobs"]
+        clean_cron = {
+            "jobs": [
+                {
+                    "type": _clean_str(item.get("type"), "cron", 20),
+                    "source": _clean_str(item.get("source"), "", 120),
+                    "line": _clamp_int(item.get("line"), 0, 0, 100000),
+                    "schedule": _clean_str(item.get("schedule"), "", 60),
+                    "user": _clean_str(item.get("user"), "root", 64),
+                    "command": _clean_str(item.get("command"), "", 500),
+                }
+                for item in (cj.get("jobs") or [])[:100]
+                if isinstance(item, dict)
+            ],
+            "timers": [
+                {
+                    "timer": _clean_str(t.get("timer"), "", 100),
+                    "activates": _clean_str(t.get("activates"), "", 100),
+                    "raw": _clean_str(t.get("raw"), "", 200),
+                }
+                for t in (cj.get("timers") or [])[:50]
+                if isinstance(t, dict)
+            ]
+        }
+        extras.cron_jobs = json.dumps(clean_cron)
+
+    # Validasi & Simpan Konfigurasi Firewall
+    if isinstance(body.get("firewall"), dict):
+        fw = body["firewall"]
+        clean_fw = {
+            "backend": _clean_str(fw.get("backend"), "unknown", 20),
+            "status": _clean_str(fw.get("status"), "inactive", 20),
+            "rules": [
+                _clean_str(r, "", 150)
+                for r in (fw.get("rules") or [])[:100]
+                if isinstance(r, str)
+            ],
+            "blocked_ips": [
+                {
+                    "num": _clean_str(b.get("num"), "", 10),
+                    "pkts": _clean_str(b.get("pkts"), "", 20),
+                    "bytes": _clean_str(b.get("bytes"), "", 20),
+                    "source": _clean_str(b.get("source"), "", 50),
+                }
+                for b in (fw.get("blocked_ips") or [])[:100]
+                if isinstance(b, dict)
+            ]
+        }
+        extras.firewall = json.dumps(clean_fw)
+
     extras.updated_at = datetime.utcnow()
 
     db.commit()
@@ -1977,6 +2030,21 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
             top_p = json.loads(extra.top_procs)
         except Exception:
             pass
+
+    cron_data = {"jobs": [], "timers": []}
+    if extra and extra.cron_jobs:
+        try:
+            cron_data = json.loads(extra.cron_jobs)
+        except Exception:
+            pass
+
+    fw_data = {"backend": "unknown", "status": "inactive", "rules": [], "blocked_ips": []}
+    if extra and extra.firewall:
+        try:
+            fw_data = json.loads(extra.firewall)
+        except Exception:
+            pass
+
     return tpl(request, "services.html", {
         "user": user, "server": server, "services": services, "commands": commands, "actions": actions,
         "agent_version": extra.agent_version if extra else None,
@@ -1987,6 +2055,8 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         "problem_level": problem_level, "open_problems": open_problems,
         "problem_history": problem_history,
         "top_procs": top_p,
+        "cron_jobs": cron_data,
+        "firewall": fw_data,
     })
 
 

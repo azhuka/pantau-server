@@ -629,6 +629,8 @@
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
   <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn">Masalah <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
   <button class="tab" data-tab="proses" role="tab">⚡ Proses Teratas</button>
+  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn">⏰ Tugas Terjadwal (Cron)</button>
+  <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn">🛡️ Firewall</button>
   <button class="tab" data-tab="jaringan" role="tab">Jaringan</button>
   <button class="tab" data-tab="akun" role="tab">Akun</button>
   <button class="tab" data-tab="log" role="tab">Log</button>
@@ -1084,6 +1086,181 @@
     </a>
   </div>
 </div>
+</div>
+
+<!-- Tab: Tugas Terjadwal (Cron Jobs & Timers) -->
+<div class="tab-body" id="tab-cron" hidden>
+  <div class="card">
+    <div class="card-header" style="align-items:center">
+      <div>
+        <h3 style="margin:0">Tugas Terjadwal (Cron Jobs)</h3>
+        <span style="font-size:12px;color:var(--dim)">Daftar eksekusi tugas periodik sistem (/etc/crontab &amp; /etc/cron.d/*)</span>
+      </div>
+      <span class="badge badge-info" id="cron-jobs-count">{{ (cron_jobs.jobs|length) if cron_jobs and cron_jobs.jobs else 0 }} tugas aktif</span>
+    </div>
+    {% if cron_jobs and cron_jobs.jobs %}
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th title="Jadwal waktu eksekusi dalam format cron (menit jam tgl bln hari)">Jadwal (Cron Expression)</th>
+            <th title="Pengguna Linux yang menjalankan perintah">Pengguna</th>
+            <th title="Perintah atau skrip yang dieksekusi">Perintah (Command)</th>
+            <th title="Lokasi berkas konfigurasi cron pada server">Sumber Berkas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in cron_jobs.jobs %}
+          <tr>
+            <td class="mono" style="font-weight:700;color:var(--blue);white-space:nowrap">{{ c.schedule }}</td>
+            <td><span class="mono">{{ c.user }}</span></td>
+            <td class="mono" style="font-size:12px;color:var(--text);word-break:break-all">{{ c.command }}</td>
+            <td class="mono" style="font-size:11px;color:var(--dim)">{{ c.source }}{% if c.line %}:{{ c.line }}{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-msg">Belum ada tugas cron sistem terdeteksi pada server ini.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="align-items:center">
+      <div>
+        <h3 style="margin:0">Systemd Timers</h3>
+        <span style="font-size:12px;color:var(--dim)">Pengatur waktu modern berbasis unit systemd</span>
+      </div>
+      <span class="badge badge-muted">{{ (cron_jobs.timers|length) if cron_jobs and cron_jobs.timers else 0 }} timer aktif</span>
+    </div>
+    {% if cron_jobs and cron_jobs.timers %}
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th title="Nama unit timer systemd">Nama Timer</th>
+            <th title="Unit service yang dipicu saat timer berjalan">Layanan Yang Diaktifkan</th>
+            <th title="Rincian jadwal jadwal terakhir dan selanjutnya">Jadwal &amp; Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in cron_jobs.timers %}
+          <tr>
+            <td class="mono" style="font-weight:600;color:var(--text);white-space:nowrap">{{ t.timer }}</td>
+            <td class="mono" style="color:var(--green)">{{ t.activates }}</td>
+            <td class="mono" style="font-size:11px;color:var(--dim)">{{ t.raw }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-msg">Tidak ada systemd timer aktif.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Tab: Firewall (UFW & iptables) -->
+<div class="tab-body" id="tab-firewall" hidden>
+  <div class="card">
+    <div class="card-header" style="align-items:center">
+      <div>
+        <h3 style="margin:0">Status &amp; Kebijakan Firewall</h3>
+        <span style="font-size:12px;color:var(--dim)">Pengawasan perlindungan jaringan dan port masuk/keluar</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="badge {{ 'badge-up' if firewall.status == 'active' else 'badge-warn' }}">
+          {{ 'Aktif (Melindungi)' if firewall.status == 'active' else 'Nonaktif (Terbuka)' }}
+        </span>
+        <span class="badge badge-info">{{ firewall.backend | upper }}</span>
+      </div>
+    </div>
+    
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px">
+      <div class="stat-card" style="border-left:3px solid {{ 'var(--green)' if firewall.status == 'active' else 'var(--yellow)' }}">
+        <div class="label">Status Firewall</div>
+        <div class="value" style="font-size:20px;color:{{ 'var(--green)' if firewall.status == 'active' else 'var(--yellow)' }}">
+          {{ firewall.status | upper }}
+        </div>
+      </div>
+      <div class="stat-card" style="border-left:3px solid var(--blue)">
+        <div class="label">Backend Firewall</div>
+        <div class="value" style="font-size:20px">{{ firewall.backend | upper }}</div>
+      </div>
+      <div class="stat-card" style="border-left:3px solid var(--red)">
+        <div class="label">IP Diblokir (DROP)</div>
+        <div class="value" style="font-size:20px;color:var(--red)">
+          {{ (firewall.blocked_ips|length) if firewall and firewall.blocked_ips else 0 }} IP
+        </div>
+      </div>
+    </div>
+
+    <h4 style="margin:16px 0 10px;font-size:13px;color:var(--text);letter-spacing:.3px">Aturan Port &amp; Kebijakan Akses (Rules)</h4>
+    {% if firewall and firewall.rules %}
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px">#</th>
+            <th>Aturan / Deskripsi Akses Port</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in firewall.rules %}
+          <tr>
+            <td class="mono" style="color:var(--dim)">{{ loop.index }}</td>
+            <td class="mono" style="font-size:12px;color:var(--text)">{{ r }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-msg" style="padding:16px">
+      {% if firewall.status == 'active' %}
+        Tidak ada aturan khusus (menggunakan kebijakan default backend).
+      {% else %}
+        Firewall saat ini nonaktif. Port terbuka sepenuhnya tanpa penyaringan UFW.
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-header" style="align-items:center">
+      <div>
+        <h3 style="margin:0">Daftar Hitam IP Terblokir (iptables DROP)</h3>
+        <span style="font-size:12px;color:var(--dim)">Alamat IP sumber penyerang yang di-drop seketika pada level kernel</span>
+      </div>
+    </div>
+    {% if firewall and firewall.blocked_ips %}
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Baris</th>
+            <th>IP Penyerang (Sumber)</th>
+            <th>Paket Terblokir</th>
+            <th>Total Byte</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in firewall.blocked_ips %}
+          <tr>
+            <td class="mono">{{ b.num }}</td>
+            <td class="mono" style="color:var(--red);font-weight:700">{{ b.source }}</td>
+            <td class="mono">{{ b.pkts }}</td>
+            <td class="mono">{{ b.bytes }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-msg" style="padding:16px">Belum ada IP yang diblokir pada rantai iptables INPUT.</div>
+    {% endif %}
+  </div>
 </div>
 
 <div class="tab-body" id="tab-jaringan" hidden>

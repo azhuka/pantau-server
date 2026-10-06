@@ -185,6 +185,8 @@ class ServerExtras(Base):
     apt_packages = Column(Text, nullable=True)           # JSON: daftar nama paket yang bisa di-upgrade
     security = Column(Text, nullable=True)               # JSON: ringkasan keamanan auth.log (brute force dll.)
     top_procs = Column(Text, nullable=True)              # JSON: {"cpu": [...], "mem": [...]} proses teratas
+    cron_jobs = Column(Text, nullable=True)              # JSON: daftar tugas terjadwal (crontab & systemd timers)
+    firewall = Column(Text, nullable=True)               # JSON: status firewall (ufw/iptables) & rules
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 

@@ -24,7 +24,18 @@ IPT="/usr/sbin/iptables"
 
 case "$ACTION" in
     block) ;;
-    *) fail "Aksi tidak dikenal: '${ACTION:-}' (harus 'block')" ;;
+    status)
+        if command -v ufw >/dev/null 2>&1; then
+            echo "--- UFW STATUS ---"
+            ufw status verbose 2>&1
+        fi
+        if [ -x "$IPT" ]; then
+            echo "--- IPTABLES INPUT DROP ---"
+            "$IPT" -L INPUT -n -v --line-numbers 2>&1
+        fi
+        exit 0
+        ;;
+    *) fail "Aksi tidak dikenal: '${ACTION:-}' (harus 'block' atau 'status')" ;;
 esac
 
 [ -x "$IPT" ] || fail "iptables tidak terpasang (install iptables)"
