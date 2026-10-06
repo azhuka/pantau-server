@@ -183,6 +183,35 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
 .toast.err{background:#3a1515;border:1px solid #c0392b;color:#ffd7d2}
 .toast.show{opacity:1}
 
+/* ---------- Tooltip Modern 2026/2027 (Cepat, Estetik, Glassmorphic) ---------- */
+#app-tooltip {
+  position: fixed;
+  z-index: 100000;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.94);
+  color: #f8fafc;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 6px 11px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  max-width: 320px;
+  word-wrap: break-word;
+  white-space: normal;
+  opacity: 0;
+  transform: translateY(4px) scale(0.98);
+  transition: opacity 0.12s cubic-bezier(0, 0, 0.2, 1), transform 0.12s cubic-bezier(0, 0, 0.2, 1);
+  will-change: transform, opacity;
+}
+#app-tooltip.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
 /* ---------- Halaman Rincian: hero ringkasan + tab ---------- */
 .hero-card{padding:18px 20px}
 .hero-row{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap}
@@ -829,5 +858,116 @@ setInterval(alertFetch, 10000);
 </div>
 
 {% block scripts %}{% endblock %}
+
+<!-- Tooltip Engine Modern Cepat & Estetik -->
+<div id="app-tooltip" role="tooltip" aria-hidden="true"></div>
+<script>
+(function() {
+  const tipEl = document.getElementById('app-tooltip');
+  if (!tipEl) return;
+
+  let currentTarget = null;
+  let showTimer = null;
+  let hideTimer = null;
+
+  function getTooltipText(el) {
+    if (!el || el === document.body || el === document.documentElement) return null;
+    if (el.hasAttribute('data-tooltip')) return el.getAttribute('data-tooltip');
+    if (el.hasAttribute('title') && el.getAttribute('title').trim()) {
+      const text = el.getAttribute('title').trim();
+      el.setAttribute('data-tooltip', text);
+      el.removeAttribute('title'); // Hapus title agar tooltip browser bawaan yang lambat & jelek tidak muncul
+      return text;
+    }
+    return getTooltipText(el.parentElement);
+  }
+
+  function positionTooltip(target) {
+    const rect = target.getBoundingClientRect();
+    const tipRect = tipEl.getBoundingClientRect();
+    const margin = 8;
+    
+    // Default: di atas elemen secara horizontal terpusat
+    let top = rect.top - tipRect.height - margin;
+    let left = rect.left + (rect.width / 2) - (tipRect.width / 2);
+
+    // Jika mepet ke atas layar, posisikan di bawah elemen
+    if (top < margin) {
+      top = rect.bottom + margin;
+    }
+
+    // Hindari keluar dari sisi kiri atau kanan layar
+    const maxLeft = window.innerWidth - tipRect.width - margin;
+    if (left < margin) left = margin;
+    if (left > maxLeft) left = maxLeft;
+
+    tipEl.style.top = Math.round(top) + 'px';
+    tipEl.style.left = Math.round(left) + 'px';
+  }
+
+  function show(el) {
+    clearTimeout(hideTimer);
+    clearTimeout(showTimer);
+    
+    // Tampil super cepat dalam 80ms (jauh lebih instan dibanding browser default 700-1000ms)
+    showTimer = setTimeout(() => {
+      const text = el.getAttribute('data-tooltip');
+      if (!text) return;
+
+      tipEl.textContent = text;
+      tipEl.style.display = 'block';
+      positionTooltip(el);
+      
+      requestAnimationFrame(() => {
+        tipEl.classList.add('show');
+        tipEl.setAttribute('aria-hidden', 'false');
+      });
+    }, 80);
+  }
+
+  function hide() {
+    clearTimeout(showTimer);
+    clearTimeout(hideTimer);
+    
+    tipEl.classList.remove('show');
+    tipEl.setAttribute('aria-hidden', 'true');
+    hideTimer = setTimeout(() => {
+      if (!tipEl.classList.contains('show')) {
+        tipEl.style.display = 'none';
+      }
+    }, 120);
+    currentTarget = null;
+  }
+
+  // Delegated event listener untuk efisiensi maksimal pada DOM dinamis
+  document.addEventListener('mouseover', (e) => {
+    const text = getTooltipText(e.target);
+    if (!text) return;
+    
+    // Cari elemen pembawa data-tooltip
+    const target = e.target.closest('[data-tooltip]');
+    if (!target) return;
+
+    if (currentTarget !== target) {
+      currentTarget = target;
+      show(target);
+    }
+  }, { passive: true });
+
+  document.addEventListener('mouseout', (e) => {
+    if (!currentTarget) return;
+    const related = e.relatedTarget;
+    if (related && currentTarget.contains(related)) return;
+    hide();
+  }, { passive: true });
+
+  // Sembunyikan seketika bila ada klik, scroll, atau tombol ESC
+  window.addEventListener('scroll', hide, { passive: true });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hide();
+  });
+  document.addEventListener('click', hide, { passive: true });
+})();
+</script>
 </body>
 </html>
