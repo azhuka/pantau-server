@@ -2513,8 +2513,20 @@ def process_kill(
         return RedirectResponse("/servers", status_code=303)
 
     sig_clean = sig.strip().upper()
-    if sig_clean not in ("TERM", "KILL", "15", "9"):
+    if sig_clean not in ("TERM", "KILL", "15", "9", "STOP", "19", "CONT", "18"):
         sig_clean = "TERM"
+
+    sig_labels = {
+        "TERM": "penghentian normal (SIGTERM)",
+        "15": "penghentian normal (SIGTERM)",
+        "KILL": "paksa henti (SIGKILL)",
+        "9": "paksa henti (SIGKILL)",
+        "STOP": "tangguhkan/pause (SIGSTOP)",
+        "19": "tangguhkan/pause (SIGSTOP)",
+        "CONT": "lanjutkan/resume (SIGCONT)",
+        "18": "lanjutkan/resume (SIGCONT)",
+    }
+    sig_desc = sig_labels.get(sig_clean, f"sinyal SIG{sig_clean}")
 
     if pid <= 1:
         if request.headers.get("accept") == "application/json":

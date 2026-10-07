@@ -464,7 +464,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.19.0"
+AGENT_VERSION = "3.20.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -738,7 +738,7 @@ def _exec_kill_process(command: dict) -> dict:
     params = command.get("params") or {}
     pid = str(params.get("pid", "")).strip()
     signal_name = str(params.get("signal", "TERM")).strip().upper()
-    if signal_name not in ("TERM", "15", "KILL", "9"):
+    if signal_name not in ("TERM", "15", "KILL", "9", "STOP", "19", "CONT", "18"):
         signal_name = "TERM"
 
     if not pid.isdigit() or int(pid) <= 1:
@@ -1181,40 +1181,42 @@ def collect_net() -> list[dict]:
 
 
 
-def collect_top_processes(limit: int = 5) -> dict:
-    """Kumpulkan snapshot proses teratas berdasarkan %CPU dan %MEM."""
+def collect_top_processes(limit: int = 100) -> dict:
+    """Kumpulkan snapshot proses teratas berdasarkan %CPU dan %MEM beserta status (state)."""
     top_cpu = []
     top_mem = []
-    res_cpu = _run_cmd(["ps", "-eo", "pid,user,comm,%cpu,%mem", "--sort=-%cpu"], timeout=5)
+    res_cpu = _run_cmd(["ps", "-eo", "pid,user,comm,state,%cpu,%mem", "--sort=-%cpu"], timeout=5)
     if res_cpu and res_cpu.returncode == 0:
         lines = res_cpu.stdout.strip().splitlines()
         for line in lines[1:limit + 1]:
-            parts = line.split(None, 4)
-            if len(parts) >= 5:
+            parts = line.split(None, 5)
+            if len(parts) >= 6:
                 try:
                     top_cpu.append({
                         "pid": int(parts[0]),
                         "user": parts[1],
                         "comm": parts[2],
-                        "cpu": float(parts[3]),
-                        "mem": float(parts[4]),
+                        "state": parts[3],
+                        "cpu": float(parts[4]),
+                        "mem": float(parts[5]),
                     })
                 except (ValueError, IndexError):
                     pass
 
-    res_mem = _run_cmd(["ps", "-eo", "pid,user,comm,%cpu,%mem", "--sort=-%mem"], timeout=5)
+    res_mem = _run_cmd(["ps", "-eo", "pid,user,comm,state,%cpu,%mem", "--sort=-%mem"], timeout=5)
     if res_mem and res_mem.returncode == 0:
         lines = res_mem.stdout.strip().splitlines()
         for line in lines[1:limit + 1]:
-            parts = line.split(None, 4)
-            if len(parts) >= 5:
+            parts = line.split(None, 5)
+            if len(parts) >= 6:
                 try:
                     top_mem.append({
                         "pid": int(parts[0]),
                         "user": parts[1],
                         "comm": parts[2],
-                        "cpu": float(parts[3]),
-                        "mem": float(parts[4]),
+                        "state": parts[3],
+                        "cpu": float(parts[4]),
+                        "mem": float(parts[5]),
                     })
                 except (ValueError, IndexError):
                     pass
@@ -1262,7 +1264,7 @@ def collect_system() -> dict:
         "procs": procs, "uptime": uptime,
         "disks": collect_disks(),
         "net": collect_net(),
-        "top_procs": collect_top_processes(20),
+        "top_procs": collect_top_processes(100),
     }
 
 

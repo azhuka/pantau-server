@@ -295,6 +295,29 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
 - **Peningkatan Versi:**
   - Sinkronisasi versi server dan agen ke **v3.19.0**.
 
+### Fase v3.20.0: Manajer Tugas Interaktif (Task Manager btop-style) & Penyatuan Masalah & Tindakan
+- **Penyatuan Tab Riwayat Tindakan & Masalah (Masalah & Tindakan):**
+  - Kartu Riwayat Tindakan dipindahkan dari tab Layanan ke dalam tab **Masalah & Tindakan**, menciptakan tab aktivitas terpadu yang memisahkan audit log eksekusi dari tabel konfigurasi layanan.
+  - Tampilan tab Layanan menjadi lebih fokus, bersih, dan ringkas.
+- **Redesain Tab Manajer Tugas (Task Manager ala btop):**
+  - Perubahan nama tab: `Proses Teratas` $\rightarrow$ **`Manajer Tugas`**.
+  - Tampilan awal default: **10 proses** teratas yang berjalan di server.
+  - **Pilihan Limit / Pagination Modern:** tombol segmen cepat untuk menampilkan **10, 25, 50, 100, atau Semua** proses secara instan.
+  - **Pengurutan Fleksibel:** dapat diurutkan berdasarkan konsumsi CPU tertinggi (`🔥 CPU`) atau konsumsi Memori tertinggi (`💾 Memori`).
+  - **Pencarian Real-Time:** kotak pencarian instan berdasarkan nama proses (`comm`), nomor PID, atau user pemilik proses.
+  - **Status Siklus Hidup Proses Linux (State Indicator):**
+    - `R` (Running / Berjalan - badge hijau)
+    - `S` (Sleeping / Menunggu - badge abu-abu)
+    - `T` (Stopped / Ditangguhkan - badge kuning)
+    - `Z` (Zombie - badge merah)
+  - **Kontrol Sinyal Lengkap (Start / Pause / Kill):**
+    - Tombol **Pause (`SIGSTOP` / 19)** untuk menangguhkan alokasi CPU proses sementara tanpa mematikannya.
+    - Tombol **Lanjut / Resume (`SIGCONT` / 18)** untuk melanjutkan kembali proses yang sedang ditangguhkan.
+    - Tombol **Kill (`SIGTERM` / `SIGKILL`)** dengan modal dialog interaktif.
+    - Perlindungan deny-list tetap aktif untuk PID 1, `sshd`, dan `agent_pantau`.
+- **Peningkatan Versi:**
+  - Sinkronisasi versi server dan agen ke **v3.20.0**.
+
 ---
 
 ## 5. Bedah Teknis Komponen Kritis

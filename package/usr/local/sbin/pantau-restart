@@ -55,10 +55,10 @@ if [ "$ACTION" = "kill" ]; then
     esac
     [ "$PID" -gt 1 ] 2>/dev/null || fail "PID dilarang atau tidak valid (PID 1 dilindungi)"
 
-    # Validasi signal: hanya TERM atau KILL atau 15 atau 9
+    # Validasi signal: TERM/15 (kill bersih), KILL/9 (paksa), STOP/19 (pause), CONT/18 (resume)
     case "$SIG" in
-        TERM|15|KILL|9) ;;
-        *) fail "Sinyal tidak diizinkan: '$SIG' (hanya TERM/15 atau KILL/9)" ;;
+        TERM|15|KILL|9|STOP|19|CONT|18) ;;
+        *) fail "Sinyal tidak diizinkan: '$SIG' (hanya TERM/15, KILL/9, STOP/19, CONT/18)" ;;
     esac
 
     # Cek apakah proses ada

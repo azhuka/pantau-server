@@ -659,9 +659,9 @@
   <button class="tab" data-tab="layanan" role="tab">Layanan</button>
   {% set active_open = open_problems | rejectattr('is_ignored') | list %}
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
-  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn">Masalah <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
+  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn">Masalah &amp; Tindakan <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
   <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn">Firewall</button>
-  <button class="tab" data-tab="proses" role="tab">Proses Teratas</button>
+  <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn">Manajer Tugas</button>
   <button class="tab" data-tab="syslog" role="tab" id="tab-syslog-btn">Log Sistem</button>
   <button class="tab" data-tab="log" role="tab">Log Layanan</button>
   <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn">Port Listening</button>
@@ -891,51 +891,6 @@
   </table>
   {% else %}
   <div class="empty-msg">Belum ada service terdeteksi. Jalankan Agen Pantau di server ini.</div>
-  {% endif %}
-</div>
-
-<div class="card" id="card-action-history">
-  <div class="card-header" style="align-items:center">
-    <div>
-      <h3 style="margin:0">Riwayat Tindakan</h3>
-      <span style="font-size:12px;color:var(--dim)">Rekam jejak seluruh tindakan dan perintah pada server ini</span>
-    </div>
-    <span style="font-size:12px;color:var(--dim)" id="action-history-count">{{ actions|length if actions else 0 }} tindakan terakhir</span>
-  </div>
-  <div style="overflow-x:auto">
-    <table id="tbl-action-history">
-      <thead>
-        <tr>
-          <th style="white-space:nowrap;width:130px">Waktu</th>
-          <th style="width:100px">User</th>
-          <th style="width:160px">Tindakan</th>
-          <th>Sasaran</th>
-          <th style="width:110px">Status</th>
-          <th>Keterangan / Hasil</th>
-        </tr>
-      </thead>
-      <tbody id="action-history-tbody">
-      {% if actions %}
-        {% for a in actions %}
-        <tr id="act-row-{{ a.id }}">
-          <td class="mono" style="white-space:nowrap">{{ a.time.strftime('%d %b %H:%M:%S') if a.time else '—' }}</td>
-          <td><span class="mono">{{ a.user }}</span></td>
-          <td><span class="badge badge-muted">{{ a.action_label }}</span></td>
-          <td style="font-size:13px"><strong>{{ a.target }}</strong></td>
-          <td>
-            <span class="badge badge-{{ a.status_cls }}">{{ a.status_label }}</span>
-          </td>
-          <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">{{ a.result }}</td>
-        </tr>
-        {% endfor %}
-      {% else %}
-        <tr id="act-row-empty">
-          <td colspan="6" style="text-align:center;color:var(--dim);padding:20px">Belum ada riwayat tindakan di server ini.</td>
-        </tr>
-      {% endif %}
-      </tbody>
-    </table>
-  </div>
 </div>
 
 <!-- Modal Tambah Layanan -->
@@ -1076,90 +1031,137 @@
     <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
     Tidak ada masalah terdeteksi saat ini.
   </div>
-  {% endif %}
   </div>
 </div>
+
+<div class="card" id="card-action-history" style="margin-top:20px">
+  <div class="card-header" style="align-items:center">
+    <div>
+      <h3 style="margin:0">Riwayat Tindakan</h3>
+      <span style="font-size:12px;color:var(--dim)">Rekam jejak seluruh tindakan dan perintah pada server ini</span>
+    </div>
+    <span style="font-size:12px;color:var(--dim)" id="action-history-count">{{ actions|length if actions else 0 }} tindakan terakhir</span>
+  </div>
+  <div style="overflow-x:auto">
+    <table id="tbl-action-history">
+      <thead>
+        <tr>
+          <th style="white-space:nowrap;width:130px">Waktu</th>
+          <th style="width:100px">User</th>
+          <th style="width:160px">Tindakan</th>
+          <th>Sasaran</th>
+          <th style="width:110px">Status</th>
+          <th>Keterangan / Hasil</th>
+        </tr>
+      </thead>
+      <tbody id="action-history-tbody">
+      {% if actions %}
+        {% for a in actions %}
+        <tr id="act-row-{{ a.id }}">
+          <td class="mono" style="white-space:nowrap">{{ a.time.strftime('%d %b %H:%M:%S') if a.time else '—' }}</td>
+          <td><span class="mono">{{ a.user }}</span></td>
+          <td><span class="badge badge-muted">{{ a.action_label }}</span></td>
+          <td style="font-size:13px"><strong>{{ a.target }}</strong></td>
+          <td>
+            <span class="badge badge-{{ a.status_cls }}">{{ a.status_label }}</span>
+          </td>
+          <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">{{ a.result }}</td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr id="act-row-empty">
+          <td colspan="6" style="text-align:center;color:var(--dim);padding:20px">Belum ada riwayat tindakan di server ini.</td>
+        </tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
 </div>
 </div>
 
 <div class="tab-body" id="tab-proses" hidden>
 <div class="card">
-  <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-    <h3 style="margin:0">Snapshot Proses Teratas (CPU &amp; Memori)</h3>
-    <div style="display:flex;gap:10px;align-items:center">
+  <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <h3 style="margin:0;display:flex;align-items:center;gap:8px">
+        <span>⚡ Manajer Tugas</span>
+        <span class="badge badge-info" id="proc-total-badge" style="font-size:11px">10 proses</span>
+      </h3>
+      <span style="font-size:12px;color:var(--dim)">Pantau dan kelola proses server secara interaktif (CPU, Memori, Status, Pause, Lanjut, Kill)</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <span id="top-procs-time" style="font-size:12px;color:var(--dim)">Diperbarui tiap siklus agen</span>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="fetchTopProcs()" title="Segarkan data proses teratas">&#8635;&nbsp;Segarkan</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="fetchTopProcs()" title="Segarkan data proses terkini">&#8635;&nbsp;Segarkan</button>
     </div>
   </div>
-  
-  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(340px, 1fr));gap:20px;margin-top:14px">
-    <!-- Kolom CPU -->
-    <div>
-      <h4 id="top-cpu-title" style="margin:0 0 10px 0;color:var(--text);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
-        <span style="color:#ef4444">🔥</span> 5 Penggunaan CPU Tertinggi
-      </h4>
-      <div style="overflow-x:auto">
-        <table id="top-cpu-table" style="width:100%;font-size:12px">
-          <thead>
-            <tr>
-              <th style="width:65px">PID</th>
-              <th>User</th>
-              <th>Command</th>
-              <th style="text-align:right">%CPU</th>
-              <th style="text-align:right">%MEM</th>
-              {% if user.role == 'admin' %}
-              <th style="width:60px;text-align:center">Aksi</th>
-              {% endif %}
-            </tr>
-          </thead>
-          <tbody id="top-cpu-tbody">
-            <tr><td colspan="{{ 6 if user.role == 'admin' else 5 }}" class="empty-msg">Memuat data proses…</td></tr>
-          </tbody>
-        </table>
+
+  <!-- Toolbar Task Manager: Search, Sort, Limit selector -->
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin:16px 0 12px;padding:10px 14px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex:1;min-width:240px">
+      <div style="position:relative;width:100%;max-width:320px">
+        <input type="search" id="proc-search-input" oninput="onProcFilterChange()" placeholder="Cari nama proses / PID / user…"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 12px 7px 30px;font-size:12px">
+        <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:12px">🔍</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span style="font-size:11.5px;color:var(--dim)">Urutkan:</span>
+        <div class="segmented-control" id="proc-sort-ctrl" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px">
+          <button type="button" class="btn-seg is-active" data-sort="cpu" onclick="setProcSort('cpu')" style="border:none;background:transparent;color:var(--text);padding:3px 10px;font-size:11.5px;border-radius:4px;cursor:pointer">🔥 CPU</button>
+          <button type="button" class="btn-seg" data-sort="mem" onclick="setProcSort('mem')" style="border:none;background:transparent;color:var(--dim);padding:3px 10px;font-size:11.5px;border-radius:4px;cursor:pointer">💾 Memori</button>
+        </div>
       </div>
     </div>
 
-    <!-- Kolom RAM -->
-    <div>
-      <h4 id="top-mem-title" style="margin:0 0 10px 0;color:var(--text);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px">
-        <span style="color:#3b82f6">💾</span> 5 Penggunaan Memori Tertinggi
-      </h4>
-      <div style="overflow-x:auto">
-        <table id="top-mem-table" style="width:100%;font-size:12px">
-          <thead>
-            <tr>
-              <th style="width:65px">PID</th>
-              <th>User</th>
-              <th>Command</th>
-              <th style="text-align:right">%CPU</th>
-              <th style="text-align:right">%MEM</th>
-              {% if user.role == 'admin' %}
-              <th style="width:60px;text-align:center">Aksi</th>
-              {% endif %}
-            </tr>
-          </thead>
-          <tbody id="top-mem-tbody">
-            <tr><td colspan="{{ 6 if user.role == 'admin' else 5 }}" class="empty-msg">Memuat data proses…</td></tr>
-          </tbody>
-        </table>
+    <!-- Pilihan Limit / Pagination Modern: 10, 25, 50, 100, Semua -->
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:11.5px;color:var(--dim)">Tampilkan:</span>
+      <div class="segmented-control" id="proc-limit-ctrl" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px">
+        <button type="button" class="btn-limit is-active" data-limit="10" onclick="setProcLimit(10)">10</button>
+        <button type="button" class="btn-limit" data-limit="25" onclick="setProcLimit(25)">25</button>
+        <button type="button" class="btn-limit" data-limit="50" onclick="setProcLimit(50)">50</button>
+        <button type="button" class="btn-limit" data-limit="100" onclick="setProcLimit(100)">100</button>
+        <button type="button" class="btn-limit" data-limit="all" onclick="setProcLimit('all')">Semua</button>
       </div>
     </div>
   </div>
 
-  <div style="text-align:center;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06)">
-    <a href="javascript:void(0)" id="link-expand-procs" onclick="toggleExpandProcs()" style="font-size:13px;color:var(--blue);text-decoration:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:4px 12px;border-radius:6px;transition:background .2s" onmouseover="this.style.background='rgba(56,189,248,0.08)'" onmouseout="this.style.background='transparent'">
-      <span id="link-expand-text">Tampilkan 20 proses</span> <span id="link-expand-icon">▾</span>
-    </a>
+  <!-- Tabel Utama Manajer Tugas -->
+  <div style="overflow-x:auto">
+    <table id="tbl-task-manager" style="width:100%;font-size:12.5px">
+      <thead>
+        <tr>
+          <th style="width:75px">PID</th>
+          <th style="width:110px">User</th>
+          <th>Nama Perintah / Proses</th>
+          <th style="width:100px;text-align:center">Status</th>
+          <th style="width:140px;text-align:right">%CPU</th>
+          <th style="width:140px;text-align:right">%Memori</th>
+          {% if user.role == 'admin' %}
+          <th style="width:170px;text-align:center">Aksi (Kontrol)</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody id="tbl-task-manager-tbody">
+        <tr><td colspan="{{ 7 if user.role == 'admin' else 6 }}" class="empty-msg">Memuat data proses…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:11.5px;color:var(--dim)">
+    <span id="proc-showing-summary">Menampilkan 0 proses</span>
+    <span style="font-size:11px">Tip: Status <strong style="color:var(--green)">R</strong>: Berjalan · <strong style="color:var(--blue)">S</strong>: Menunggu/Tidur · <strong style="color:var(--yellow)">T</strong>: Ditangguhkan (Paused) · <strong style="color:var(--red)">Z</strong>: Zombie</span>
   </div>
 </div>
 </div>
 
-<!-- Modal Hentikan Proses (Kill Process) -->
+<!-- Modal Hentikan / Kelola Sinyal Proses -->
 <div id="kill-proc-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(440px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
-    <h3 style="margin:0 0 8px;color:var(--red)">Hentikan Proses (Kill)</h3>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(470px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
+    <h3 style="margin:0 0 8px;color:var(--red);display:flex;align-items:center;gap:6px">
+      <span>⚙️ Kelola Sinyal Proses</span>
+    </h3>
     <p style="font-size:12px;color:var(--dim);margin:0 0 16px;line-height:1.5">
-      Kirimkan sinyal penghentian ke proses <strong id="kill-proc-name" style="color:var(--text)"></strong> (PID: <span id="kill-proc-pid-label" class="mono" style="color:var(--blue)"></span>).
+      Kirimkan sinyal kendali ke proses <strong id="kill-proc-name" style="color:var(--text)"></strong> (PID: <span id="kill-proc-pid-label" class="mono" style="color:var(--blue);font-weight:700"></span>).
     </p>
     <form method="post" action="/servers/{{ server.id }}/processes/kill" id="kill-proc-form" onsubmit="submitKillProc(event)">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -1167,20 +1169,34 @@
       <input type="hidden" name="pname" id="kill-proc-pname">
       
       <div style="margin-bottom:16px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Pilih Jenis Sinyal Penghentian *</label>
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:8px">Pilih Jenis Sinyal / Aksi *</label>
         <div style="display:flex;flex-direction:column;gap:8px">
           <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
-            <input type="radio" name="sig" value="TERM" checked style="margin-top:2px">
+            <input type="radio" name="sig" value="TERM" id="sig-radio-term" checked style="margin-top:2px">
             <div>
               <strong style="color:var(--yellow)">SIGTERM (15) — Hentikan Secara Normal</strong>
-              <div style="font-size:11px;color:var(--dim)">Direkomendasikan. Meminta proses menutup koneksi &amp; menyimpan data dengan bersih.</div>
+              <div style="font-size:11px;color:var(--dim)">Direkomendasikan. Meminta proses menutup koneksi &amp; simpan data dengan bersih.</div>
             </div>
           </label>
           <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
-            <input type="radio" name="sig" value="KILL" style="margin-top:2px">
+            <input type="radio" name="sig" value="KILL" id="sig-radio-kill" style="margin-top:2px">
             <div>
               <strong style="color:var(--red)">SIGKILL (9) — Paksa Hentikan Seketika</strong>
-              <div style="font-size:11px;color:var(--dim)">Gunakan hanya bila proses hang / tidak merespons SIGTERM. Kernel mematikan proses paksa.</div>
+              <div style="font-size:11px;color:var(--dim)">Gunakan bila proses membeku/hang. Kernel mematikan proses tanpa konfirmasi.</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
+            <input type="radio" name="sig" value="STOP" id="sig-radio-stop" style="margin-top:2px">
+            <div>
+              <strong style="color:var(--blue)">SIGSTOP (19) — Tangguhkan / Pause Proses</strong>
+              <div style="font-size:11px;color:var(--dim)">Menghentikan sementara alokasi CPU proses hingga dilanjutkan kembali (SIGCONT).</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
+            <input type="radio" name="sig" value="CONT" id="sig-radio-cont" style="margin-top:2px">
+            <div>
+              <strong style="color:var(--green)">SIGCONT (18) — Lanjutkan / Resume Proses</strong>
+              <div style="font-size:11px;color:var(--dim)">Melanjutkan kembali eksekusi proses yang sebelumnya ditangguhkan (paused).</div>
             </div>
           </label>
         </div>
@@ -1726,105 +1742,169 @@ function showTab(name) {
 document.querySelectorAll('#detail-tabs .tab').forEach(b =>
   b.addEventListener('click', () => showTab(b.dataset.tab)));
 
-// ---------- Snapshot Proses Teratas ----------
+// ---------- Manajer Tugas (Task Manager) ----------
 const INITIAL_TOP_PROCS = {{ top_procs | tojson }};
-let procsExpanded = false;
 let currentTopProcsData = null;
+let procSortMode = 'cpu';      // 'cpu' | 'mem'
+let procLimit = 10;            // 10 | 25 | 50 | 100 | 'all'
+let procSearchQuery = '';
 
-function toggleExpandProcs() {
-  procsExpanded = !procsExpanded;
-  const linkText = document.getElementById('link-expand-text');
-  const linkIcon = document.getElementById('link-expand-icon');
-  if (linkText) {
-    linkText.textContent = procsExpanded ? 'Tampilkan lebih sedikit (5 proses)' : 'Tampilkan 20 proses';
-  }
-  if (linkIcon) {
-    linkIcon.textContent = procsExpanded ? '▴' : '▾';
-  }
-  const hCpu = document.getElementById('top-cpu-title');
-  const hMem = document.getElementById('top-mem-title');
-  if (hCpu) hCpu.innerHTML = `<span style="color:#ef4444">🔥</span> ${procsExpanded ? '20' : '5'} Penggunaan CPU Tertinggi`;
-  if (hMem) hMem.innerHTML = `<span style="color:#3b82f6">💾</span> ${procsExpanded ? '20' : '5'} Penggunaan Memori Tertinggi`;
+function setProcSort(mode) {
+  procSortMode = mode;
+  document.querySelectorAll('#proc-sort-ctrl .btn-seg').forEach(b => {
+    b.classList.toggle('is-active', b.dataset.sort === mode);
+    b.style.color = (b.dataset.sort === mode) ? 'var(--text)' : 'var(--dim)';
+    b.style.fontWeight = (b.dataset.sort === mode) ? '600' : 'normal';
+    b.style.background = (b.dataset.sort === mode) ? 'var(--card)' : 'transparent';
+  });
+  if (currentTopProcsData) renderTopProcs(currentTopProcsData);
+}
 
-  const availableCpu = (currentTopProcsData && currentTopProcsData.top_procs && currentTopProcsData.top_procs.cpu)
-    ? currentTopProcsData.top_procs.cpu.length : 0;
-  if (procsExpanded && availableCpu <= 5) {
-    fetchTopProcs();
-  } else if (currentTopProcsData) {
-    renderTopProcs(currentTopProcsData);
-  }
+function setProcLimit(lim) {
+  procLimit = lim;
+  document.querySelectorAll('#proc-limit-ctrl .btn-limit').forEach(b => {
+    const isActive = (String(lim) === b.dataset.limit);
+    b.classList.toggle('is-active', isActive);
+    b.style.background = isActive ? 'var(--blue)' : 'transparent';
+    b.style.color = isActive ? '#fff' : 'var(--text)';
+    b.style.fontWeight = isActive ? '700' : 'normal';
+  });
+  if (currentTopProcsData) renderTopProcs(currentTopProcsData);
+}
+
+function onProcFilterChange() {
+  const inp = document.getElementById('proc-search-input');
+  procSearchQuery = inp ? inp.value.trim().toLowerCase() : '';
+  if (currentTopProcsData) renderTopProcs(currentTopProcsData);
 }
 
 function renderTopProcs(data) {
   currentTopProcsData = data;
   const top = (data && data.top_procs) || {cpu: [], mem: []};
-  const limit = procsExpanded ? 20 : 5;
-  const cpuList = (top.cpu || []).slice(0, limit);
-  const memList = (top.mem || []).slice(0, limit);
-  const cpuTbody = document.getElementById('top-cpu-tbody');
-  const memTbody = document.getElementById('top-mem-tbody');
+  const listRaw = (procSortMode === 'mem') ? (top.mem || top.cpu || []) : (top.cpu || top.mem || []);
+  const tbody = document.getElementById('tbl-task-manager-tbody');
   const timeSpan = document.getElementById('top-procs-time');
+  const totalBadge = document.getElementById('proc-total-badge');
+  const summaryEl = document.getElementById('proc-showing-summary');
 
   if (timeSpan && data.updated_at) {
     const d = new Date(data.updated_at + 'Z');
     timeSpan.textContent = 'Diperbarui: ' + d.toLocaleTimeString();
   }
 
-  const expandLink = document.getElementById('link-expand-procs');
-  if (expandLink) {
-    const totalAvail = Math.max((top.cpu || []).length, (top.mem || []).length);
-    expandLink.style.display = totalAvail > 5 || procsExpanded ? 'inline-flex' : 'none';
+  // Gabungkan dan deduplikasi proses berdasarkan PID
+  const procMap = new Map();
+  (top.cpu || []).forEach(p => { if (p && p.pid) procMap.set(p.pid, {...p}); });
+  (top.mem || []).forEach(p => {
+    if (p && p.pid) {
+      if (procMap.has(p.pid)) {
+        const exist = procMap.get(p.pid);
+        exist.mem = p.mem !== undefined ? p.mem : exist.mem;
+        if (p.state) exist.state = p.state;
+      } else {
+        procMap.set(p.pid, {...p});
+      }
+    }
+  });
+
+  let allList = Array.from(procMap.values());
+  if (procSortMode === 'mem') {
+    allList.sort((a, b) => (b.mem || 0) - (a.mem || 0));
+  } else {
+    allList.sort((a, b) => (b.cpu || 0) - (a.cpu || 0));
   }
 
-  if (cpuTbody) {
-    if (!cpuList || cpuList.length === 0) {
-      cpuTbody.innerHTML = `<tr><td colspan="${IS_ADMIN ? 6 : 5}" class="empty-msg">Tidak ada data proses CPU</td></tr>`;
-    } else {
-      cpuTbody.innerHTML = cpuList.map(p => {
-        const killBtn = IS_ADMIN ? `
-          <td style="text-align:center">
-            <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.25);padding:2px 7px;font-size:11px"
-                    onclick="openKillProcModal(${p.pid}, '${escapeHtml(p.comm)}')" title="Hentikan proses ini">
-              Kill
-            </button>
-          </td>` : '';
-        return `
-        <tr>
-          <td class="mono" style="color:var(--dim)">${p.pid}</td>
-          <td><span class="badge badge-info" style="font-size:11px">${escapeHtml(p.user)}</span></td>
-          <td><strong class="mono" style="color:var(--text)">${escapeHtml(p.comm)}</strong></td>
-          <td style="text-align:right" class="mono"><span style="color:${p.cpu > 50 ? '#ef4444' : (p.cpu > 20 ? '#eab308' : 'var(--text)')};font-weight:600">${p.cpu.toFixed(1)}%</span></td>
-          <td style="text-align:right;color:var(--dim)" class="mono">${p.mem.toFixed(1)}%</td>
-          ${killBtn}
-        </tr>`;
-      }).join('');
-    }
+  // Filter pencarian
+  let filtered = allList;
+  if (procSearchQuery) {
+    filtered = allList.filter(p => {
+      const pidStr = String(p.pid || '');
+      const userStr = String(p.user || '').toLowerCase();
+      const commStr = String(p.comm || '').toLowerCase();
+      return pidStr.includes(procSearchQuery) || userStr.includes(procSearchQuery) || commStr.includes(procSearchQuery);
+    });
   }
 
-  if (memTbody) {
-    if (!memList || memList.length === 0) {
-      memTbody.innerHTML = `<tr><td colspan="${IS_ADMIN ? 6 : 5}" class="empty-msg">Tidak ada data proses Memori</td></tr>`;
-    } else {
-      memTbody.innerHTML = memList.map(p => {
-        const killBtn = IS_ADMIN ? `
-          <td style="text-align:center">
-            <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.25);padding:2px 7px;font-size:11px"
-                    onclick="openKillProcModal(${p.pid}, '${escapeHtml(p.comm)}')" title="Hentikan proses ini">
-              Kill
-            </button>
-          </td>` : '';
-        return `
-        <tr>
-          <td class="mono" style="color:var(--dim)">${p.pid}</td>
-          <td><span class="badge badge-info" style="font-size:11px">${escapeHtml(p.user)}</span></td>
-          <td><strong class="mono" style="color:var(--text)">${escapeHtml(p.comm)}</strong></td>
-          <td style="text-align:right;color:var(--dim)" class="mono">${p.cpu.toFixed(1)}%</td>
-          <td style="text-align:right" class="mono"><span style="color:${p.mem > 50 ? '#3b82f6' : (p.mem > 20 ? '#06b6d4' : 'var(--text)')};font-weight:600">${p.mem.toFixed(1)}%</span></td>
-          ${killBtn}
-        </tr>`;
-      }).join('');
-    }
+  // Terapkan Limit (10, 25, 50, 100, all)
+  const totalCount = filtered.length;
+  let displayList = filtered;
+  if (procLimit !== 'all') {
+    const maxN = parseInt(procLimit, 10) || 10;
+    displayList = filtered.slice(0, maxN);
   }
+
+  if (totalBadge) totalBadge.textContent = `${displayList.length} proses`;
+  if (summaryEl) summaryEl.textContent = `Menampilkan ${displayList.length} dari total ${allList.length} proses sistem (Limit: ${procLimit === 'all' ? 'Semua' : procLimit})`;
+
+  if (!tbody) return;
+
+  if (displayList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="${IS_ADMIN ? 7 : 6}" class="empty-msg" style="text-align:center;padding:24px;color:var(--dim)">Tidak ada proses yang cocok dengan filter.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = displayList.map(p => {
+    const isProtected = (p.pid <= 1 || p.comm === 'sshd' || p.comm === 'agent_pantau');
+    const stateChar = (p.state || 'S').toUpperCase().charAt(0);
+    let stateBadge = `<span class="badge badge-muted" title="Sleeping / Menunggu">S</span>`;
+    let isPaused = false;
+
+    if (stateChar === 'R') {
+      stateBadge = `<span class="badge badge-up" style="font-weight:700" title="Running / Sedang Berjalan">R</span>`;
+    } else if (stateChar === 'T') {
+      isPaused = true;
+      stateBadge = `<span class="badge badge-warn" style="font-weight:700;background:rgba(234,179,8,0.2);color:#eab308" title="Stopped / Ditangguhkan (Paused)">T (Pause)</span>`;
+    } else if (stateChar === 'Z') {
+      stateBadge = `<span class="badge badge-danger" title="Zombie Process">Z (Zombie)</span>`;
+    }
+
+    const cpuVal = (p.cpu !== undefined ? p.cpu : 0);
+    const memVal = (p.mem !== undefined ? p.mem : 0);
+    const cpuColor = cpuVal > 50 ? '#ef4444' : (cpuVal > 20 ? '#eab308' : 'var(--text)');
+    const memColor = memVal > 50 ? '#3b82f6' : (memVal > 20 ? '#06b6d4' : 'var(--text)');
+
+    let actionBtns = '';
+    if (IS_ADMIN) {
+      if (isProtected) {
+        actionBtns = `<span style="font-size:11px;color:var(--dim)" title="Proses sistem terlindungi">🛡️ Sistem</span>`;
+      } else {
+        const pauseBtn = isPaused ? `
+          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3);padding:2px 6px;font-size:11px"
+                  onclick="sendProcDirectSignal(${p.pid}, '${escapeHtml(p.comm)}', 'CONT', this)" title="Lanjutkan kembali proses ini (SIGCONT)">
+            ▶ Lanjut
+          </button>` : `
+          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3);padding:2px 6px;font-size:11px"
+                  onclick="sendProcDirectSignal(${p.pid}, '${escapeHtml(p.comm)}', 'STOP', this)" title="Tangguhkan/Pause proses ini sementara (SIGSTOP)">
+            ⏸ Pause
+          </button>`;
+
+        const killBtn = `
+          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.25);padding:2px 6px;font-size:11px"
+                  onclick="openKillProcModal(${p.pid}, '${escapeHtml(p.comm)}', '${isPaused ? 'CONT' : 'TERM'}')" title="Opsi Hentikan atau Pilih Sinyal">
+            ✕ Kill
+          </button>`;
+
+        actionBtns = `<div style="display:inline-flex;gap:4px;align-items:center">${pauseBtn}${killBtn}</div>`;
+      }
+    }
+
+    return `
+    <tr style="${isPaused ? 'background:rgba(234,179,8,0.04);' : ''}">
+      <td class="mono" style="color:var(--blue);font-weight:600">${p.pid}</td>
+      <td><span class="badge badge-info" style="font-size:11px">${escapeHtml(p.user || '-')}</span></td>
+      <td>
+        <strong class="mono" style="color:var(--text);font-size:12.5px">${escapeHtml(p.comm || '-')}</strong>
+      </td>
+      <td style="text-align:center">${stateBadge}</td>
+      <td style="text-align:right" class="mono">
+        <span style="color:${cpuColor};font-weight:600">${cpuVal.toFixed(1)}%</span>
+      </td>
+      <td style="text-align:right" class="mono">
+        <span style="color:${memColor};font-weight:600">${memVal.toFixed(1)}%</span>
+      </td>
+      ${IS_ADMIN ? `<td style="text-align:center">${actionBtns}</td>` : ''}
+    </tr>`;
+  }).join('');
 }
 
 function fetchTopProcs() {
@@ -2037,18 +2117,60 @@ function closeBlockIpModal() {
   const m = document.getElementById('block-ip-modal');
   if (m) m.style.display = 'none';
 }
-function openKillProcModal(pid, pname) {
+function openKillProcModal(pid, pname, defaultSig) {
   const m = document.getElementById('kill-proc-modal');
   if (!m) return;
   document.getElementById('kill-proc-pid').value = pid;
   document.getElementById('kill-proc-pname').value = pname;
   document.getElementById('kill-proc-pid-label').textContent = pid;
   document.getElementById('kill-proc-name').textContent = pname || 'proses';
+  const targetSig = defaultSig || 'TERM';
+  const radio = m.querySelector(`input[name="sig"][value="${targetSig}"]`);
+  if (radio) radio.checked = true;
   m.style.display = 'flex';
 }
 function closeKillProcModal() {
   const m = document.getElementById('kill-proc-modal');
   if (m) m.style.display = 'none';
+}
+async function sendProcDirectSignal(pid, pname, sig, btn) {
+  const sigName = (sig === 'STOP') ? 'Tangguhkan/Pause' : (sig === 'CONT' ? 'Lanjutkan/Resume' : sig);
+  if (!confirm(`Kirim sinyal ${sigName} ke PID ${pid} (${pname})?`)) return;
+
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '…';
+  }
+
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+    fd.append('pid', pid);
+    fd.append('pname', pname);
+    fd.append('sig', sig);
+
+    const r = await fetch('/servers/' + SID + '/processes/kill', {
+      method: 'POST',
+      headers: {'Accept': 'application/json', 'X-CSRF-Token': getCsrf()},
+      body: fd,
+      credentials: 'same-origin',
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) {
+      showToast(j.detail || `Sinyal ${sig} berhasil dikirim ke PID ${pid}.`, true);
+      setTimeout(fetchTopProcs, 1200);
+    } else {
+      showToast(j.detail || 'Gagal mengirim sinyal ke proses.', false);
+    }
+  } catch (err) {
+    showToast('Kendala jaringan: ' + err.message, false);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
+  }
 }
 async function submitKillProc(e) {
   e.preventDefault();
@@ -2077,11 +2199,11 @@ async function submitKillProc(e) {
     });
     const j = await r.json().catch(() => ({}));
     if (r.ok) {
-      showToast(j.detail || `Perintah penghentian PID ${pid} (${pname}) telah dikirim.`, true);
+      showToast(j.detail || `Perintah sinyal SIG${sig} ke PID ${pid} (${pname}) telah dikirim.`, true);
       closeKillProcModal();
       setTimeout(fetchTopProcs, 1200);
     } else {
-      showToast(j.detail || 'Gagal mengirim perintah kill.', false);
+      showToast(j.detail || 'Gagal mengirim perintah sinyal.', false);
     }
   } catch (err) {
     showToast('Kendala jaringan: ' + err.message, false);
