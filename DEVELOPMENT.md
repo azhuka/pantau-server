@@ -277,6 +277,24 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
 - **Sinkronisasi Versi:**
   - Peningkatan versi Pantau Server dan Agen Pantau menjadi **v3.17.0**.
 
+### Fase v3.18.0: Pengelolaan Visual Firewall & Mitigasi Cepat
+- **Kontrol Penuh Firewall UFW:**
+  - Penambahan tombol visual Aktifkan Firewall (`enable`), Nonaktifkan (`disable`), dan Muat Ulang Aturan (`reload`) pada Tab Firewall.
+  - Fail-safe proteksi otomatis: membukakan akses port SSH (`22`), Dashboard Pantau (`8400`), HTTP (`80`), dan HTTPS (`443`) sebelum UFW diaktifkan.
+- **Blokir & Buka Blokir IP Manual:**
+  - Tombol modal "+ Blokir IP Baru" dengan validasi input IPv4 aman (mencegah blokir localhost/RFC1918/IP server).
+  - Tombol aksi "Buka Blokir" (*unblock*) langsung per baris tabel IP yang ter-drop pada kernel iptables.
+
+### Fase v3.19.0: Hentikan Proses Teratas (Process Termination / Kill Manager)
+- **Tombol Aksi Kill per Baris Proses:**
+  - Menambahkan kolom **Aksi (Kill)** pada tabel 5 & 20 proses penggunaan CPU dan Memori tertinggi.
+- **Modal Dialog & Pemilihan Sinyal Aman:**
+  - Pilihan sinyal **SIGTERM (15 - Hentikan Normal)** untuk penutupan proses bersih atau **SIGKILL (9 - Paksa Hentikan)** untuk proses yang hang/macet.
+- **Proteksi Pengaman Sistem (*Kernel & Infra Guard*):**
+  - Deny-list ketat di wrapper `pantau-restart kill`: memblokir pembunuhan PID 1 (`systemd`/`init`), proses SSH (`sshd`), dan proses agen monitor itu sendiri (`agent_pantau`).
+- **Peningkatan Versi:**
+  - Sinkronisasi versi server dan agen ke **v3.19.0**.
+
 ---
 
 ## 5. Bedah Teknis Komponen Kritis

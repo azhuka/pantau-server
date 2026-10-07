@@ -40,9 +40,47 @@ fail() {
 
 # --- Validasi aksi ---
 case "$ACTION" in
-    restart|start|stop) ;;
-    *) fail "Aksi tidak dikenal: '${ACTION}' (harus restart/start/stop)" ;;
+    restart|start|stop|kill) ;;
+    *) fail "Aksi tidak dikenal: '${ACTION}' (harus restart/start/stop/kill)" ;;
 esac
+
+# --- Jika aksi adalah 'kill', argumen kedua adalah PID dan ketiga adalah SIGNAL ---
+if [ "$ACTION" = "kill" ]; then
+    PID="$UNIT"
+    SIG="${3:-TERM}"
+
+    # Validasi PID murni angka
+    case "$PID" in
+        *[!0-9]*) fail "PID tidak valid: '$PID'" ;;
+    esac
+    [ "$PID" -gt 1 ] 2>/dev/null || fail "PID dilarang atau tidak valid (PID 1 dilindungi)"
+
+    # Validasi signal: hanya TERM atau KILL atau 15 atau 9
+    case "$SIG" in
+        TERM|15|KILL|9) ;;
+        *) fail "Sinyal tidak diizinkan: '$SIG' (hanya TERM/15 atau KILL/9)" ;;
+    esac
+
+    # Cek apakah proses ada
+    if ! kill -0 "$PID" 2>/dev/null; then
+        fail "Proses dengan PID $PID tidak ditemukan (mungkin sudah berhenti)"
+    fi
+
+    # Cek nama proses / komando untuk perlindungan deny-list proses kritis
+    PNAME="$(ps -p "$PID" -o comm= 2>/dev/null || true)"
+    case "$PNAME" in
+        systemd*|init*|sshd|agent_pantau*|python3|bash|sh|login|udevd|journald)
+            # Jika proses adalah agent pantau atau init/sshd, tolak mutlak
+            if [ "$PNAME" = "systemd" ] || [ "$PNAME" = "sshd" ] || [[ "$PNAME" == *"agent_pantau"* ]]; then
+                fail "Proses kritis '$PNAME' (PID $PID) dilindungi oleh sistem keamanan!"
+            fi
+            ;;
+    esac
+
+    out="$(kill -s "$SIG" "$PID" 2>&1)" || fail "Gagal mengirim sinyal $SIG ke PID $PID: $out"
+    echo "OK: Sinyal SIG$SIG berhasil dikirim ke proses $PNAME (PID: $PID)"
+    exit 0
+fi
 
 # --- Sanitasi nama unit: hanya karakter aman, panjang wajar ---
 [ -n "$UNIT" ] || fail "Nama unit kosong"

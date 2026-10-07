@@ -2490,6 +2490,58 @@ def firewall_reload(
     return RedirectResponse(f"/servers/{sid}/services?action=fw_reloaded", status_code=303)
 
 
+@app.post("/servers/{sid}/processes/kill")
+def process_kill(
+    request: Request, sid: int,
+    pid: int = Form(...),
+    pname: str = Form(default=""),
+    sig: str = Form(default="TERM"),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    """Kirim sinyal hentikan proses (kill process) ke agen."""
+    user = get_current_user(request, db)
+    if not user or user.role != "admin":
+        if request.headers.get("accept") == "application/json":
+            return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if request.headers.get("accept") == "application/json":
+            return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+
+    sig_clean = sig.strip().upper()
+    if sig_clean not in ("TERM", "KILL", "15", "9"):
+        sig_clean = "TERM"
+
+    if pid <= 1:
+        if request.headers.get("accept") == "application/json":
+            return JSONResponse({"ok": False, "detail": "PID dilindungi atau tidak valid!"}, status_code=400)
+        return RedirectResponse(f"/servers/{sid}/services?action=invalid_pid", status_code=303)
+
+    pname_clean = (pname or "").strip()[:50]
+    _enqueue_mitigation(
+        db, sid, "kill_process",
+        {"pid": str(pid), "signal": sig_clean, "pname": pname_clean},
+        issued_by=user.username
+    )
+    _audit(
+        db, user.username, "kill_process",
+        f"{server.hostname}: sinyal SIG{sig_clean} ke PID {pid} ({pname_clean or 'proses'})",
+        "dikirim ke agen", server_id=sid
+    )
+    db.commit()
+
+    if request.headers.get("accept") == "application/json":
+        return JSONResponse({
+            "ok": True,
+            "detail": f"Perintah penghentian PID {pid} ({pname_clean}) dengan sinyal SIG{sig_clean} dikirim ke agen."
+        })
+    return RedirectResponse(f"/servers/{sid}/services?action=process_killed&pid={pid}", status_code=303)
+
+
 @app.post("/servers/{sid}/problems/restart-agent")
 def problem_restart_agent(
     request: Request, sid: int,
@@ -3546,6 +3598,8 @@ AUDIT_ACTION_LABELS = {
     "cmd:firewall_enable": "Aktifkan firewall",
     "cmd:firewall_disable": "Nonaktifkan firewall",
     "cmd:firewall_reload": "Reload firewall",
+    "kill_process": "Hentikan proses (kill)",
+    "cmd:kill_process": "Hentikan proses (kill)",
     "cmd:restart_agent": "Restart agen",
     "cmd:reboot_host": "Reboot server",
     "cmd:poweroff_host": "Power off server",

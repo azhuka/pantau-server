@@ -464,7 +464,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.18.0"
+AGENT_VERSION = "3.19.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -633,6 +633,8 @@ def execute_command(cfg: dict, command: dict) -> dict:
         result = _exec_unblock_ip(command)
     elif action in ("firewall_enable", "firewall_disable", "firewall_reload"):
         result = _exec_firewall_toggle(action)
+    elif action == "kill_process":
+        result = _exec_kill_process(command)
     elif action == "restart_agent":
         result = _exec_restart_agent()
     elif action in ("reboot_host", "poweroff_host"):
@@ -729,6 +731,33 @@ def _exec_firewall_toggle(action: str) -> dict:
     # Bersihkan cache firewall agar deteksi status langsung diperbarui pada siklus berikutnya
     _fw_cache["at"] = 0.0
     return {"ok": res["ok"], "output": res["output"][:2000]}
+
+
+def _exec_kill_process(command: dict) -> dict:
+    """Hentikan proses tertentu via wrapper pantau-restart kill <pid> <signal>."""
+    params = command.get("params") or {}
+    pid = str(params.get("pid", "")).strip()
+    signal_name = str(params.get("signal", "TERM")).strip().upper()
+    if signal_name not in ("TERM", "15", "KILL", "9"):
+        signal_name = "TERM"
+
+    if not pid.isdigit() or int(pid) <= 1:
+        return {"ok": False, "output": f"PID tidak valid atau dilindungi: {pid}"}
+
+    # Proteksi tambahan sisi Python: jangan izinkan bunuh PID agen sendiri
+    if int(pid) == os.getpid():
+        return {"ok": False, "output": "Tidak dapat menghentikan proses agen monitor itu sendiri!"}
+
+    cmd = [PANTUAN_RESTART, "kill", pid, signal_name]
+    label = f"{PANTUAN_RESTART} kill {pid} {signal_name}"
+    if not IS_ROOT:
+        cmd = ["/usr/bin/sudo", "-n", *cmd]
+        label = f"sudo -n {label}"
+
+    res = _run_native(cmd, label)
+    # Bersihkan cache proses agar pemindaian berikutnya langsung memuat daftar segar
+    _top_procs_cache["at"] = 0.0
+    return {"ok": res.get("ok", False), "output": res.get("output", "Gagal mengirim sinyal ke proses")[:2000]}
 
 
 def _exec_host_control(action: str) -> dict:
