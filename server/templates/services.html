@@ -957,7 +957,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
-      <select id="prob-limit" onchange="setProbLimit(this.value)"
+      <select id="prob-limit-top" onchange="setProbLimit(this.value)"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
         <option value="5" selected>5 masalah</option>
         <option value="10">10 masalah</option>
@@ -1039,6 +1039,27 @@
     {% endfor %}
     </tbody>
   </table>
+  <div id="prob-pagination-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:12px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="prob-showing-summary">Menampilkan 0 masalah</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button type="button" id="prob-prev-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(-1)" style="padding:4px 10px;font-size:11px" disabled>« Sebelumnya</button>
+      <span id="prob-page-info" style="font-weight:600;font-size:11.5px">Halaman 1 dari 1</span>
+      <button type="button" id="prob-next-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(1)" style="padding:4px 10px;font-size:11px" disabled>Berikutnya »</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
+      <select id="prob-limit-bottom" onchange="setProbLimit(this.value)"
+              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+        <option value="5" selected>5 masalah</option>
+        <option value="10">10 masalah</option>
+        <option value="25">25 masalah</option>
+        <option value="50">50 masalah</option>
+        <option value="all">Semua masalah</option>
+      </select>
+    </div>
+  </div>
   {% else %}
   <div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;padding:12px 0">
     <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
@@ -1058,7 +1079,7 @@
       <span style="font-size:12px;color:var(--dim)" id="action-history-count">{{ actions|length if actions else 0 }} tindakan terakhir</span>
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
-        <select id="action-limit" onchange="setActionLimit(this.value)"
+        <select id="action-limit-top" onchange="setActionLimit(this.value)"
                 style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
           <option value="10" selected>10 tindakan</option>
           <option value="25">25 tindakan</option>
@@ -1102,6 +1123,27 @@
       {% endif %}
       </tbody>
     </table>
+  </div>
+  <div id="action-pagination-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:12px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="action-showing-summary">Menampilkan 0 tindakan</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button type="button" id="action-prev-btn" class="btn btn-ghost btn-sm" onclick="actionChangePage(-1)" style="padding:4px 10px;font-size:11px" disabled>« Sebelumnya</button>
+      <span id="action-page-info" style="font-weight:600;font-size:11.5px">Halaman 1 dari 1</span>
+      <button type="button" id="action-next-btn" class="btn btn-ghost btn-sm" onclick="actionChangePage(1)" style="padding:4px 10px;font-size:11px" disabled>Berikutnya »</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
+      <select id="action-limit-bottom" onchange="setActionLimit(this.value)"
+              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+        <option value="10" selected>10 tindakan</option>
+        <option value="25">25 tindakan</option>
+        <option value="50">50 tindakan</option>
+        <option value="100">100 tindakan</option>
+        <option value="all">Semua tindakan</option>
+      </select>
+    </div>
   </div>
 </div>
 </div>
@@ -2145,6 +2187,9 @@ function renderTopProcs(data) {
       ${IS_ADMIN ? `<td style="text-align:center">${actionBtns}</td>` : ''}
     </tr>`;
   }).join('');
+  if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
+    applyAppLang();
+  }
 }
 
 function fetchTopProcs() {
@@ -3304,18 +3349,31 @@ function renderProblemsTab(level, openList, histList) {
   const oldFilter = document.getElementById('prob-filter')?.value || '';
   const oldSearch = document.getElementById('prob-search')?.value || '';
 
-  let html = `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-    <select id="prob-filter" onchange="probFilter()"
-            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
-      <option value=""${oldFilter === '' ? ' selected' : ''}>Semua level</option>
-      <option value="danger"${oldFilter === 'danger' ? ' selected' : ''}>Danger</option>
-      <option value="warning"${oldFilter === 'warning' ? ' selected' : ''}>Warning</option>
-      <option value="info"${oldFilter === 'info' ? ' selected' : ''}>Info</option>
-      <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>Diabaikan (🔕)</option>
-    </select>
-    <input type="search" id="prob-search" oninput="probFilter()" value="${escapeHtml(oldSearch)}" placeholder="Cari kejadian…"
-           style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:220px">
-    <span style="font-size:11px;color:var(--dim);align-self:center" id="prob-count"></span>
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <select id="prob-filter" onchange="probFilter()"
+              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
+        <option value=""${oldFilter === '' ? ' selected' : ''}>Semua level</option>
+        <option value="danger"${oldFilter === 'danger' ? ' selected' : ''}>Danger</option>
+        <option value="warning"${oldFilter === 'warning' ? ' selected' : ''}>Warning</option>
+        <option value="info"${oldFilter === 'info' ? ' selected' : ''}>Info</option>
+        <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>Diabaikan (🔕)</option>
+      </select>
+      <input type="search" id="prob-search" oninput="probFilter()" value="${escapeHtml(oldSearch)}" placeholder="Cari kejadian…"
+             style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;min-width:200px">
+      <span style="font-size:11px;color:var(--dim)" id="prob-count"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
+      <select id="prob-limit" onchange="setProbLimit(this.value)"
+              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+        <option value="5"${String(probLimit) === '5' ? ' selected' : ''}>5 masalah</option>
+        <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>10 masalah</option>
+        <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>25 masalah</option>
+        <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>50 masalah</option>
+        <option value="all"${String(probLimit) === 'all' ? ' selected' : ''}>Semua masalah</option>
+      </select>
+    </div>
   </div>
   <table id="probtable">
     <thead><tr><th>Waktu</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Tindakan</th><th>Tips</th></tr></thead>
@@ -3395,16 +3453,51 @@ function renderProblemsTab(level, openList, histList) {
     </tr>`;
   }
 
-  html += '</tbody></table>';
+  html += `</tbody></table>
+  <div id="prob-pagination-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:12px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="prob-showing-summary">Menampilkan 0 masalah</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button type="button" id="prob-prev-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(-1)" style="padding:4px 10px;font-size:11px" disabled>« Sebelumnya</button>
+      <span id="prob-page-info" style="font-weight:600;font-size:11.5px">Halaman 1 dari 1</span>
+      <button type="button" id="prob-next-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(1)" style="padding:4px 10px;font-size:11px" disabled>Berikutnya »</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
+      <select id="prob-limit-bottom" onchange="setProbLimit(this.value)"
+              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+        <option value="5"${String(probLimit) === '5' ? ' selected' : ''}>5 masalah</option>
+        <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>10 masalah</option>
+        <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>25 masalah</option>
+        <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>50 masalah</option>
+        <option value="all"${String(probLimit) === 'all' ? ' selected' : ''}>Semua masalah</option>
+      </select>
+    </div>
+  </div>`;
   wrap.innerHTML = html;
-  const limSel = document.getElementById('prob-limit');
-  if (limSel && limSel.value !== String(probLimit)) limSel.value = String(probLimit);
+  const limSelTop = document.getElementById('prob-limit-top');
+  const limSelBtm = document.getElementById('prob-limit-bottom');
+  if (limSelTop && limSelTop.value !== String(probLimit)) limSelTop.value = String(probLimit);
+  if (limSelBtm && limSelBtm.value !== String(probLimit)) limSelBtm.value = String(probLimit);
   probFilter();
 }
 
 let probLimit = 5; // default 5 masalah
+let probCurrentPage = 1;
+
 function setProbLimit(lim) {
   probLimit = (lim === 'all') ? 'all' : (parseInt(lim, 10) || 5);
+  probCurrentPage = 1;
+  const selTop = document.getElementById('prob-limit-top');
+  const selBottom = document.getElementById('prob-limit-bottom');
+  if (selTop && selTop.value !== String(lim)) selTop.value = String(lim);
+  if (selBottom && selBottom.value !== String(lim)) selBottom.value = String(lim);
+  probFilter();
+}
+
+function probChangePage(delta) {
+  probCurrentPage += delta;
   probFilter();
 }
 
@@ -3429,15 +3522,37 @@ function probFilter() {
     }
   });
 
-  const maxN = (probLimit === 'all') ? matchedRows.length : (parseInt(probLimit, 10) || 5);
+  const totalMatched = matchedRows.length;
+  let pageSize = (probLimit === 'all') ? totalMatched : (parseInt(probLimit, 10) || 5);
+  if (pageSize <= 0) pageSize = 5;
+  const totalPages = Math.max(1, Math.ceil(totalMatched / pageSize));
+  if (probCurrentPage > totalPages) probCurrentPage = totalPages;
+  if (probCurrentPage < 1) probCurrentPage = 1;
+
+  const startIdx = (probLimit === 'all') ? 0 : (probCurrentPage - 1) * pageSize;
+  const endIdx = (probLimit === 'all') ? totalMatched : Math.min(startIdx + pageSize, totalMatched);
+
   matchedRows.forEach((tr, idx) => {
-    tr.style.display = (idx < maxN) ? '' : 'none';
+    tr.style.display = (idx >= startIdx && idx < endIdx) ? '' : 'none';
   });
 
-  const countEl = document.getElementById('prob-count');
-  if (countEl) {
-    const shown = Math.min(matchedRows.length, maxN);
-    countEl.textContent = `Menampilkan ${shown} dari ${matchedRows.length} kejadian${rows.length !== matchedRows.length ? ` (total ${rows.length})` : ''}`;
+  const countElTop = document.getElementById('prob-count');
+  const countElBottom = document.getElementById('prob-showing-summary');
+  const pageInfoEl = document.getElementById('prob-page-info');
+  const prevBtn = document.getElementById('prob-prev-btn');
+  const nextBtn = document.getElementById('prob-next-btn');
+
+  const startShow = totalMatched === 0 ? 0 : startIdx + 1;
+  const endShow = endIdx;
+  const txtSummary = totalMatched === 0 ? '0 masalah' : `Menampilkan ${startShow}-${endShow} dari ${totalMatched} masalah`;
+  if (countElTop) countElTop.textContent = txtSummary;
+  if (countElBottom) countElBottom.textContent = txtSummary;
+  if (pageInfoEl) pageInfoEl.textContent = `Halaman ${probCurrentPage} dari ${totalPages}`;
+  if (prevBtn) prevBtn.disabled = (probCurrentPage <= 1);
+  if (nextBtn) nextBtn.disabled = (probCurrentPage >= totalPages);
+
+  if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
+    applyAppLang();
   }
 }
 
@@ -3445,43 +3560,107 @@ function probFilter() {
 setTimeout(probFilter, 100);
 
 let actionLimit = 10; // default 10 riwayat tindakan
+let actionCurrentPage = 1;
 let _cachedActions = [];
+
 function setActionLimit(lim) {
   actionLimit = (lim === 'all') ? 'all' : (parseInt(lim, 10) || 10);
-  const sel = document.getElementById('action-limit');
-  if (sel && sel.value !== String(lim)) sel.value = String(lim);
+  actionCurrentPage = 1;
+  const selTop = document.getElementById('action-limit-top');
+  const selBottom = document.getElementById('action-limit-bottom');
+  if (selTop && selTop.value !== String(lim)) selTop.value = String(lim);
+  if (selBottom && selBottom.value !== String(lim)) selBottom.value = String(lim);
   if (_cachedActions && _cachedActions.length) {
     renderActionHistory(_cachedActions);
   } else {
-    // Filter tr yang sudah dirender server-side
-    const rows = Array.from(document.querySelectorAll('#tbl-action-history tbody tr'));
-    const maxN = (actionLimit === 'all') ? rows.length : (parseInt(actionLimit, 10) || 10);
-    rows.forEach((tr, idx) => {
-      tr.style.display = (idx < maxN) ? '' : 'none';
-    });
-    const countEl = document.getElementById('action-history-count');
-    if (countEl) countEl.textContent = `Menampilkan ${Math.min(rows.length, maxN)} dari ${rows.length} tindakan`;
+    filterServerActionHistory();
+  }
+}
+
+function actionChangePage(delta) {
+  actionCurrentPage += delta;
+  if (_cachedActions && _cachedActions.length) {
+    renderActionHistory(_cachedActions);
+  } else {
+    filterServerActionHistory();
+  }
+}
+
+function filterServerActionHistory() {
+  const rows = Array.from(document.querySelectorAll('#tbl-action-history tbody tr:not(#act-row-empty)'));
+  const total = rows.length;
+  let pageSize = (actionLimit === 'all') ? total : (parseInt(actionLimit, 10) || 10);
+  if (pageSize <= 0) pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (actionCurrentPage > totalPages) actionCurrentPage = totalPages;
+  if (actionCurrentPage < 1) actionCurrentPage = 1;
+
+  const startIdx = (actionLimit === 'all') ? 0 : (actionCurrentPage - 1) * pageSize;
+  const endIdx = (actionLimit === 'all') ? total : Math.min(startIdx + pageSize, total);
+
+  rows.forEach((tr, idx) => {
+    tr.style.display = (idx >= startIdx && idx < endIdx) ? '' : 'none';
+  });
+
+  const countTop = document.getElementById('action-history-count');
+  const countBottom = document.getElementById('action-showing-summary');
+  const pageInfo = document.getElementById('action-page-info');
+  const prevBtn = document.getElementById('action-prev-btn');
+  const nextBtn = document.getElementById('action-next-btn');
+
+  const startShow = total === 0 ? 0 : startIdx + 1;
+  const endShow = endIdx;
+  const txtSummary = total === 0 ? '0 tindakan' : `Menampilkan ${startShow}-${endShow} dari ${total} tindakan`;
+  if (countTop) countTop.textContent = txtSummary;
+  if (countBottom) countBottom.textContent = txtSummary;
+  if (pageInfo) pageInfo.textContent = `Halaman ${actionCurrentPage} dari ${totalPages}`;
+  if (prevBtn) prevBtn.disabled = (actionCurrentPage <= 1);
+  if (nextBtn) nextBtn.disabled = (actionCurrentPage >= totalPages);
+
+  if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
+    applyAppLang();
   }
 }
 
 function renderActionHistory(actions) {
   _cachedActions = actions || [];
   const tbody = document.getElementById('action-history-tbody');
-  const countEl = document.getElementById('action-history-count');
+  const countTop = document.getElementById('action-history-count');
+  const countBottom = document.getElementById('action-showing-summary');
+  const pageInfo = document.getElementById('action-page-info');
+  const prevBtn = document.getElementById('action-prev-btn');
+  const nextBtn = document.getElementById('action-next-btn');
   if (!tbody) return;
 
   if (!actions.length) {
-    if (countEl) countEl.textContent = '0 tindakan';
+    if (countTop) countTop.textContent = '0 tindakan';
+    if (countBottom) countBottom.textContent = '0 tindakan';
+    if (pageInfo) pageInfo.textContent = 'Halaman 1 dari 1';
+    if (prevBtn) prevBtn.disabled = true;
+    if (nextBtn) nextBtn.disabled = true;
     tbody.innerHTML = '<tr id="act-row-empty"><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">Belum ada riwayat tindakan di server ini.</td></tr>';
     return;
   }
 
-  const maxN = (actionLimit === 'all') ? actions.length : (parseInt(actionLimit, 10) || 10);
-  const displayList = actions.slice(0, maxN);
+  const total = actions.length;
+  let pageSize = (actionLimit === 'all') ? total : (parseInt(actionLimit, 10) || 10);
+  if (pageSize <= 0) pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (actionCurrentPage > totalPages) actionCurrentPage = totalPages;
+  if (actionCurrentPage < 1) actionCurrentPage = 1;
 
-  if (countEl) {
-    countEl.textContent = `Menampilkan ${displayList.length} dari ${actions.length} tindakan`;
-  }
+  const startIdx = (actionLimit === 'all') ? 0 : (actionCurrentPage - 1) * pageSize;
+  const endIdx = (actionLimit === 'all') ? total : Math.min(startIdx + pageSize, total);
+  const displayList = actions.slice(startIdx, endIdx);
+
+  const startShow = total === 0 ? 0 : startIdx + 1;
+  const endShow = endIdx;
+  const txtSummary = total === 0 ? '0 tindakan' : `Menampilkan ${startShow}-${endShow} dari ${total} tindakan`;
+  if (countTop) countTop.textContent = txtSummary;
+  if (countBottom) countBottom.textContent = txtSummary;
+  if (pageInfo) pageInfo.textContent = `Halaman ${actionCurrentPage} dari ${totalPages}`;
+  if (prevBtn) prevBtn.disabled = (actionCurrentPage <= 1);
+  if (nextBtn) nextBtn.disabled = (actionCurrentPage >= totalPages);
 
   tbody.innerHTML = displayList.map(a => {
     return `<tr id="act-row-${escHtml(a.id || '')}">
@@ -3493,6 +3672,10 @@ function renderActionHistory(actions) {
       <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">${escHtml(a.result || '—')}</td>
     </tr>`;
   }).join('');
+
+  if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
+    applyAppLang();
+  }
 }
 
 // Inisialisasi limit riwayat tindakan server-side render

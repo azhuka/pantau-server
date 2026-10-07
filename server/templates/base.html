@@ -663,6 +663,7 @@ function setAppLang(lang) {
 
 function applyAppLang() {
   const dict = APP_TRANSLATIONS[currentLang] || APP_TRANSLATIONS.id;
+  // Penerapan kamus data-i18n
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const k = el.dataset.i18n;
     if (dict[k]) {
@@ -702,6 +703,9 @@ function applyAppLang() {
     if (dict[k]) el.title = dict[k];
   });
 
+  // Terjemahan Menyeluruh untuk Seluruh Teks Antarmuka (Universal UI Text Translation)
+  translateAllUiText(currentLang);
+
   const btnId = document.getElementById('btn-lang-id');
   const btnEn = document.getElementById('btn-lang-en');
   if (btnId && btnEn) {
@@ -731,6 +735,390 @@ function applyAppLang() {
     window.onAppLangChanged(currentLang);
   }
 }
+
+// Glosarium Pasangan Frasa Bahasa Indonesia <-> Inggris untuk Seluruh UI
+// Glosarium Pasangan Frasa Bahasa Indonesia <-> Inggris untuk Seluruh UI
+const UI_TEXT_PAIRS = [
+  // Navigasi & Judul Utama
+  ["Daftar Server", "Servers"],
+  ["Insiden & Masalah", "Incidents"],
+  ["Log Aktivitas", "Activity Logs"],
+  ["Audit Trail", "Audit Trail"],
+  ["Pengguna", "Users"],
+  ["Administrasi", "Administration"],
+  ["Pengaturan", "Settings"],
+  ["Keluar", "Logout"],
+  ["Masuk", "Login"],
+  ["Pantau Server", "Server Monitor"],
+
+  // Dasbor & Metrik Kesehatan
+  ["Total Server", "Total Servers"],
+  ["Server Online", "Online Servers"],
+  ["Server Offline", "Offline Servers"],
+  ["Layanan Terhenti", "Stopped Services"],
+  ["Layanan Diabaikan", "Ignored Services"],
+  ["Semua Server Normal", "All Servers Normal"],
+  ["Ringkasan Kesehatan Server", "Server Health Summary"],
+  ["Beban CPU Rata-rata", "Average CPU Load"],
+  ["Penggunaan RAM Rata-rata", "Average RAM Usage"],
+  ["Laporan Terakhir", "Last Report"],
+  ["Status Server", "Server Status"],
+  ["Kelola Server →", "Manage Servers →"],
+  ["Kelola Server", "Manage Servers"],
+  ["Tambah Server Baru", "Add New Server"],
+  ["Tambah Server", "Add Server"],
+  ["Cari server…", "Search servers…"],
+  ["Cari hostname, IP, atau OS…", "Search hostname, IP, or OS…"],
+
+  // Tab Utama Halaman Rincian Server
+  ["Riwayat & Masalah", "History & Incidents"],
+  ["Manajer Tugas", "Task Manager"],
+  ["Akun Pengguna", "User Accounts"],
+  ["Port Listening", "Listening Ports"],
+  ["Sertifikat SSL", "SSL Certificates"],
+  ["Tugas Terjadwal", "Cron Jobs"],
+  ["Logging", "Logging"],
+  ["Kinerja", "Performance"],
+  ["Layanan", "Services"],
+
+  // Tombol & Aksi Toolbar
+  ["Update OS", "Update OS"],
+  ["Upgrade Paket", "Upgrade Packages"],
+  ["Upgrade", "Upgrade"],
+  ["Reboot OS", "Reboot OS"],
+  ["Power Off", "Power Off"],
+  ["Terminal", "Terminal"],
+  ["File Manager", "File Manager"],
+  ["Pemeliharaan (Aktif)", "Maintenance (Active)"],
+  ["Mode Pemeliharaan", "Maintenance Mode"],
+  ["Pemeliharaan", "Maintenance"],
+  ["Tambah Layanan", "Add Service"],
+  ["Segarkan", "Refresh"],
+  ["Rincian", "Details"],
+  ["Tindakan", "Actions"],
+  ["Aksi", "Actions"],
+  ["Tutup", "Close"],
+  ["Batal", "Cancel"],
+  ["Simpan", "Save"],
+  ["Unduh", "Download"],
+  ["Lanjut", "Resume"],
+  ["Tersalin!", "Copied!"],
+  ["Salin", "Copy"],
+  ["Hapus", "Delete"],
+  ["Salin IP", "Copy IP"],
+  ["Diperbarui tiap siklus agen", "Updated each agent cycle"],
+
+  // Tab Kinerja & Metrik
+  ["Performa Sekarang — Perangkat Keras", "Current Performance — Hardware"],
+  ["Riwayat Kinerja", "Performance History"],
+  ["Statistik Antarmuka Jaringan", "Network Interface Statistics"],
+  ["Penyimpanan (Disk & I/O Throughput)", "Storage (Disk & I/O Throughput)"],
+  ["Penggunaan CPU", "CPU Usage"],
+  ["Penggunaan Memori", "Memory Usage"],
+  ["Memori Terpakai", "Memory Used"],
+  ["Swap Terpakai", "Swap Used"],
+  ["Beban Sistem", "System Load"],
+  ["Laju Baca", "Read Rate"],
+  ["Laju Tulis", "Write Rate"],
+  ["Antrean I/O", "I/O Queue"],
+  ["Persentase Utilisasi", "% I/O Util"],
+  ["Tersedia", "Available"],
+  ["Terpakai", "Used"],
+  ["Kapasitas", "Capacity"],
+  ["Titik Kait", "Mount Point"],
+  ["Sistem Berkas", "File System"],
+  ["Perangkat", "Device"],
+  ["Antarmuka", "Interface"],
+  ["Kirim", "Tx"],
+  ["Terima", "Rx"],
+
+  // Tab Riwayat & Masalah
+  ["Masalah Terbuka & Riwayat Masalah", "Open Incidents & Incident History"],
+  ["Riwayat Tindakan", "Action History"],
+  ["Rekam jejak seluruh tindakan dan perintah pada server ini", "Audit trail of all actions and commands on this server"],
+  ["Semua level", "All levels"],
+  ["Semua masalah", "All incidents"],
+  ["Semua tindakan", "All actions"],
+  ["masalah aktif", "active incidents"],
+  ["tindakan terakhir", "recent actions"],
+  ["tindakan", "actions"],
+  ["masalah", "incidents"],
+  ["kejadian", "events"],
+  ["Menampilkan", "Showing"],
+  ["dari total", "of total"],
+  ["dari", "of"],
+  ["Halaman", "Page"],
+  ["« Sebelumnya", "« Previous"],
+  ["Berikutnya »", "Next »"],
+  ["Sebelumnya", "Previous"],
+  ["Berikutnya", "Next"],
+  ["Cari kejadian…", "Search incidents…"],
+  ["5 masalah", "5 incidents"],
+  ["10 masalah", "10 incidents"],
+  ["25 masalah", "25 incidents"],
+  ["50 masalah", "50 incidents"],
+  ["10 tindakan", "10 actions"],
+  ["25 tindakan", "25 actions"],
+  ["50 tindakan", "50 actions"],
+  ["100 tindakan", "100 actions"],
+  ["Tampilkan:", "Show:"],
+  ["Durasi", "Duration"],
+  ["Waktu", "Time"],
+  ["Level", "Level"],
+  ["Kejadian", "Event"],
+  ["Tips", "Advice"],
+  ["User", "User"],
+  ["Sasaran", "Target"],
+  ["Status", "Status"],
+  ["Keterangan / Hasil", "Details / Result"],
+  ["Tidak ada masalah terdeteksi saat ini.", "No incidents detected at this time."],
+  ["Belum ada riwayat tindakan di server ini.", "No action history on this server yet."],
+  ["🔔 Pantau Kembali", "🔔 Unmute"],
+  ["🔕 Abaikan", "🔕 Mute"],
+  ["✓ Ditangani", "✓ Acknowledged"],
+  ["Ditangani", "Acknowledge"],
+  ["✓ diakui", "✓ acknowledged"],
+  ["kambuh", "relapsed"],
+  ["permanen", "permanent"],
+  ["diabaikan", "muted"],
+
+  // Tab Layanan
+  ["Daftar Layanan", "Service List"],
+  ["Nama Layanan / Unit", "Service / Unit Name"],
+  ["Port / Endpoint", "Port / Endpoint"],
+  ["Status Layanan", "Service Status"],
+  ["Restart service ini di", "Restart this service on"],
+  ["Hentikan service ini di", "Stop this service on"],
+  ["Hentikan", "Stop"],
+  ["Restart", "Restart"],
+  ["Mulai", "Start"],
+
+  // Tab Manajer Tugas
+  ["⚡ Manajer Tugas", "⚡ Task Manager"],
+  ["Pantau dan kelola proses server secara interaktif (CPU, Memori, Status, Pause, Lanjut, Kill)", "Monitor and manage server processes interactively (CPU, Memory, State, Pause, Resume, Kill)"],
+  ["Pantau dan kelola proses server secara interaktif", "Monitor and interactively manage server processes"],
+  ["Cari nama proses / PID / user…", "Search process name / PID / user…"],
+  ["Semua proses", "All processes"],
+  ["20 proses", "20 processes"],
+  ["50 proses", "50 processes"],
+  ["100 proses", "100 processes"],
+  ["proses", "processes"],
+  ["Nama Perintah / Proses", "Command / Process Name"],
+  ["Nama Perintah", "Command Name"],
+  ["Aksi (Kontrol)", "Actions (Control)"],
+  ["Tip: Klik nama kolom header untuk membalikkan urutan (▲ Ringan/A-Z, ▼ Berat/Z-A)", "Tip: Click column headers to toggle sort order (▲ Low/A-Z, ▼ High/Z-A)"],
+  ["Tip: Klik nama kolom header untuk membalikkan urutan", "Tip: Click column headers to toggle sort order"],
+  ["Memuat data proses…", "Loading process data…"],
+  ["Tidak ada proses yang cocok dengan filter.", "No processes match the filter."],
+  ["Kelola Sinyal Proses", "Process Signal Control"],
+  ["Kirimkan sinyal kendali ke proses", "Send control signal to process"],
+  ["Pilih Jenis Sinyal / Aksi *", "Select Signal Type / Action *"],
+  ["SIGTERM (15) — Hentikan Secara Normal", "SIGTERM (15) — Graceful Termination"],
+  ["SIGKILL (9) — Paksa Hentikan Seketika", "SIGKILL (9) — Force Kill Immediately"],
+  ["SIGSTOP (19) — Tangguhkan / Pause Proses", "SIGSTOP (19) — Suspend / Pause Process"],
+  ["SIGCONT (18) — Lanjutkan / Resume Proses", "SIGCONT (18) — Resume Process"],
+  ["Kirim Sinyal", "Send Signal"],
+  ["Pause", "Pause"],
+  ["Lanjut", "Resume"],
+  ["Kill", "Kill"],
+
+  // Tab Akun Pengguna
+  ["Akun Pengguna Sistem", "System User Accounts"],
+  ["Daftar akun lokal di server klien", "List of local accounts on client server"],
+  ["Pengguna Sistem", "System Users"],
+  ["Nama Pengguna", "Username"],
+  ["Direktori Beranda", "Home Directory"],
+  ["Shell Login", "Login Shell"],
+  ["Grup Utama", "Primary Group"],
+  ["Grup Lainnya", "Supplementary Groups"],
+  ["Akses Sudo", "Sudo Access"],
+  ["Status Login", "Login Status"],
+  ["Dapat Login", "Can Login"],
+  ["Terkunci", "Locked"],
+  ["Tanpa Shell", "No Shell"],
+
+  // Tab Port Listening
+  ["Daftar port dan socket aktif di server klien", "List of listening ports and active sockets on client server"],
+  ["Protokol", "Protocol"],
+  ["Port", "Port"],
+  ["Alamat Bind", "Bind Address"],
+  ["Proses Pemilik", "Owner Process"],
+  ["Keterbukaan", "Accessibility"],
+  ["Publik (0.0.0.0 / ::)", "Public (0.0.0.0 / ::)"],
+  ["Lokal / Loopback", "Local / Loopback"],
+  ["Semua Protokol", "All Protocols"],
+
+  // Tab Firewall
+  ["Kontrol Firewall", "Firewall Control"],
+  ["Status Firewall", "Firewall Status"],
+  ["Aktifkan Firewall", "Enable Firewall"],
+  ["Nonaktifkan Firewall", "Disable Firewall"],
+  ["Muat Ulang Aturan", "Reload Rules"],
+  ["Daftar IP Terblokir", "Blocked IP List"],
+  ["+ Blokir IP Baru", "+ Block New IP"],
+  ["Buka Blokir", "Unblock"],
+  ["Alasan / Catatan", "Reason / Note"],
+  ["Waktu Diblokir", "Blocked At"],
+  ["Tidak ada IP yang terblokir saat ini.", "No IPs currently blocked."],
+
+  // Tab Sertifikat SSL
+  ["Sertifikat SSL / TLS", "SSL / TLS Certificates"],
+  ["Pelacakan masa berlaku sertifikat di server klien", "Certificate expiration tracking on client server"],
+  ["Domain / SAN", "Domain / SAN"],
+  ["Penerbit (CA)", "Issuer (CA)"],
+  ["Masa Berlaku", "Validity"],
+  ["Tanggal Kedaluwarsa", "Expiration Date"],
+  ["Sisa Hari", "Days Left"],
+  ["Status Sertifikat", "Certificate Status"],
+  ["Valid", "Valid"],
+  ["Mendekati Kedaluwarsa", "Expiring Soon"],
+  ["Kedaluwarsa", "Expired"],
+  ["Tidak ditemukan sertifikat SSL di lokasi standar.", "No SSL certificates found in standard paths."],
+
+  // Tab Tugas Terjadwal
+  ["Tugas Terjadwal (Cron & Systemd Timers)", "Scheduled Tasks (Cron & Systemd Timers)"],
+  ["Daftar jadwal tugas otomatis pada sistem klien", "List of automated tasks on client system"],
+  ["Tipe", "Type"],
+  ["Jadwal / Interval", "Schedule / Interval"],
+  ["Perintah yang Dijalankan", "Executed Command"],
+  ["Pengguna Pemilik", "Owner User"],
+  ["Eksekusi Terakhir", "Last Run"],
+  ["Eksekusi Berikutnya", "Next Run"],
+  ["Tidak ada tugas terjadwal yang ditemukan.", "No scheduled tasks found."],
+
+  // Tab Logging
+  ["⚙️ Log Layanan", "⚙️ Service Logs"],
+  ["📋 Log Sistem (Journal)", "📋 System Logs (Journal)"],
+  ["Log Layanan", "Service Logs"],
+  ["Log Sistem (Journal)", "System Logs (Journal)"],
+  ["Log Sistem", "System Logs"],
+  ["Pilih Unit Layanan", "Select Service Unit"],
+  ["Tingkat Keparahan", "Severity Level"],
+  ["Semua Prioritas", "All Priorities"],
+  ["Kritis (Crit / Alert / Emerg)", "Critical (Crit / Alert / Emerg)"],
+  ["Galat (Err)", "Error (Err)"],
+  ["Peringatan (Warn)", "Warning (Warn)"],
+  ["Informasi (Info)", "Information (Info)"],
+  ["Muat Ulang Log", "Reload Logs"],
+  ["Cari dalam log…", "Search in logs…"],
+  ["Waktu (Terbaru di Atas)", "Time (Latest First)"],
+  ["Prioritas", "Priority"],
+  ["Unit / Identitas", "Unit / Identifier"],
+  ["Pesan Galat", "Error Message"],
+
+  // Keadaan / Status Umum
+  ["online", "online"],
+  ["offline", "offline"],
+  ["pemeliharaan", "maintenance"],
+  ["kritis", "critical"],
+  ["perhatian", "warning"],
+  ["normal", "normal"],
+  ["berhasil", "success"],
+  ["gagal", "failed"],
+  ["menunggu", "pending"],
+  ["dijalankan", "executing"],
+  ["Tidak ada data", "No data"],
+  ["Memuat…", "Loading…"],
+  ["Alamat IP", "IP Address"],
+  ["Nama Host", "Hostname"],
+  ["Versi Agen", "Agent Version"],
+  ["Kunci API", "API Key"],
+  ["Terakhir Lapor", "Last Seen"]
+];
+
+function translateAllUiText(targetLang) {
+  const isEn = (targetLang === 'en');
+  // Urutkan frasa dari yang terpanjang ke terpendek untuk mencegah substring collision
+  const sortedPairs = [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length);
+
+  // Telusuri text node di dalam body
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: function(node) {
+        if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        const p = node.parentElement;
+        if (!p) return NodeFilter.FILTER_REJECT;
+        const tag = p.tagName.toUpperCase();
+        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'PRE' || tag === 'CODE') return NodeFilter.FILTER_REJECT;
+        if (p.closest('pre') || p.closest('code') || p.closest('.mono') || p.closest('.log-content') || p.closest('.xterm')) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    }
+  );
+
+  const nodes = [];
+  while (walker.nextNode()) {
+    nodes.push(walker.currentNode);
+  }
+
+  nodes.forEach(node => {
+    let txt = node.nodeValue;
+    sortedPairs.forEach(([idText, enText]) => {
+      if (isEn) {
+        if (txt.includes(idText)) {
+          txt = txt.split(idText).join(enText);
+        }
+      } else {
+        if (txt.includes(enText)) {
+          txt = txt.split(enText).join(idText);
+        }
+      }
+    });
+    if (txt !== node.nodeValue) {
+      node.nodeValue = txt;
+    }
+  });
+
+  // Terjemahkan placeholder dan title
+  document.querySelectorAll('input, button, select, a, span').forEach(el => {
+    if (el.placeholder) {
+      sortedPairs.forEach(([idText, enText]) => {
+        if (isEn && el.placeholder.includes(idText)) el.placeholder = el.placeholder.split(idText).join(enText);
+        else if (!isEn && el.placeholder.includes(enText)) el.placeholder = el.placeholder.split(enText).join(idText);
+      });
+    }
+    if (el.title) {
+      sortedPairs.forEach(([idText, enText]) => {
+        if (isEn && el.title.includes(idText)) el.title = el.title.split(idText).join(enText);
+        else if (!isEn && el.title.includes(enText)) el.title = el.title.split(enText).join(idText);
+      });
+    }
+  });
+}
+
+// Observer reaktif untuk menerjemahkan elemen yang disuntikkan secara dinamis (AJAX / polling)
+let _uiObserverDebounce = null;
+const _uiObserver = new MutationObserver((mutations) => {
+  if (currentLang !== 'en') return;
+  let hasRelevantChange = false;
+  for (const m of mutations) {
+    if (m.addedNodes && m.addedNodes.length > 0) {
+      for (const n of m.addedNodes) {
+        if (n.nodeType === Node.ELEMENT_NODE) {
+          const tag = n.tagName.toUpperCase();
+          if (tag !== 'SCRIPT' && tag !== 'STYLE') {
+            hasRelevantChange = true;
+            break;
+          }
+        }
+      }
+    }
+    if (hasRelevantChange) break;
+  }
+  if (hasRelevantChange) {
+    if (_uiObserverDebounce) clearTimeout(_uiObserverDebounce);
+    _uiObserverDebounce = setTimeout(() => {
+      translateAllUiText('en');
+    }, 40);
+  }
+});
+try {
+  _uiObserver.observe(document.body, { childList: true, subtree: true });
+} catch(e) {}
 
 (function(){
   try{
