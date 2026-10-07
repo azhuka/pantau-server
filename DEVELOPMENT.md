@@ -325,6 +325,29 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
 - **Peningkatan Versi:**
   - Sinkronisasi patch versi server dan agen ke **v3.20.1**.
 
+### Minor Release v3.22.0: Best-Practice UI/UX Sysadmin, Pengurutan Interaktif Manajer Tugas & Dual Pagination
+- **Penyempurnaan Penempatan & Glosarium Multi-Bahasa:**
+  - Memindahkan tombol peralihan bahasa (`ID` / `EN`) ke header *sidebar brand* (sejajar dengan logo/toggle sidebar) sesuai best-practice antarmuka dashboard modern.
+  - Menyesuaikan peristilahan kontekstual dunia sysadmin:
+    - `Port Listening` (ID) / `Listening Ports` (EN) alih-alih port terbuka secara harfiah.
+    - `Riwayat & Masalah` (ID) / `History & Incidents` (EN).
+    - `Audit Trail`, `Log Aktivitas`, dan `Akun Pengguna`.
+- **Restrukturisasi Urutan Tab Standar Sysadmin:**
+  - Menempatkan tab `Riwayat & Masalah` tepat setelah tab `Kinerja` agar insiden dan kejadian penting dapat dipantau langsung setelah metrik performa utama.
+  - Urutan tab terpadu: `Kinerja` | `Riwayat & Masalah` | `Layanan` | `Manajer Tugas` | `Akun Pengguna` | `Port Listening` | `Firewall` | `Sertifikat SSL` | `Tugas Terjadwal` | `Logging`.
+- **Pengurutan Kolom Interaktif Manajer Tugas (Task Manager):**
+  - Menghilangkan tombol terpisah "Urutkan: CPU / Memori".
+  - Mengimplementasikan pengurutan langsung dengan mengklik header tabel kolom (`PID`, `User`, `Nama Perintah / Proses`, `Status`, `%CPU`, `%Memori`).
+  - Indikator visual panah urutan interaktif (`▲` Ringan / A-Z, `▼` Berat / Z-A, `↕` Netral).
+  - Urutan default saat load: `%CPU` terbesar ke terkecil (`▼`).
+- **Dual Dropdown Pagination Modern:**
+  - Menyediakan dropdown pemilihan limit proses (`20 proses`, `50 proses`, `100 proses`, `Semua proses`) di *toolbar* atas maupun *footer* bawah tabel.
+  - Sinkronisasi instan dua arah antara dropdown atas dan bawah. Nilai bawaan default diatur ke 20 proses.
+- **Perbaikan Akurasi Titik Indikator Tab Logging:**
+  - Memperbaiki perhitungan titik merah berkedip pada tab `Logging`. Indikator kini hanya aktif jika terdapat galat kritis baru (`priority <= 3`) yang terjadi dalam rentang **2 jam terakhir** (mencegah false-positive akibat log lama berminggu-minggu lalu).
+- **Peningkatan Versi:**
+  - Peningkatan versi aplikasi dashboard dan agen pantau ke **v3.22.0**.
+
 ### Minor Release v3.21.0: Multibahasa (ID/EN), Logging Terpadu, Tab Neon Blue & Indikator Titik Peringatan
 - **Fitur Dwi-Bahasa (Bilingual ID & EN):**
   - Switcher bahasa interaktif di sidebar bawah (`ID` / `EN`) dengan persistensi `localStorage`.

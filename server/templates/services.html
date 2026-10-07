@@ -656,17 +656,17 @@
 
 <div class="tabbar" id="detail-tabs" role="tablist">
   <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true" id="tab-perf-btn" data-i18n="tab_perf"><span class="tab-text">Kinerja</span><span id="tab-dot-perf" class="tab-warn-dot" style="display:none"></span></button>
+  {% set active_open = open_problems | rejectattr('is_ignored') | list %}
+  {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
+  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Riwayat &amp; Masalah</span><span id="tab-dot-masalah" class="tab-warn-dot" style="display:none"></span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
   <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Layanan</span><span id="tab-dot-layanan" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Manajer Tugas</span><span id="tab-dot-proses" class="tab-warn-dot" style="display:none"></span></button>
-  <button class="tab" data-tab="akun" role="tab" id="tab-akun-btn" data-i18n="tab_akun"><span class="tab-text">Akun</span><span id="tab-dot-akun" class="tab-warn-dot" style="display:none"></span></button>
-  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn" data-i18n="tab_ports"><span class="tab-text">Port Terbuka</span><span id="tab-dot-ports" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="akun" role="tab" id="tab-akun-btn" data-i18n="tab_akun"><span class="tab-text">Akun Pengguna</span><span id="tab-dot-akun" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn" data-i18n="tab_ports"><span class="tab-text">Port Listening</span><span id="tab-dot-ports" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn" data-i18n="tab_firewall"><span class="tab-text">Firewall</span><span id="tab-dot-firewall" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn" data-i18n="tab_ssl"><span class="tab-text">Sertifikat SSL</span><span id="tab-dot-ssl" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn" data-i18n="tab_cron"><span class="tab-text">Tugas Terjadwal</span><span id="tab-dot-cron" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="log" role="tab" id="tab-log-btn" data-i18n="tab_logging"><span class="tab-text">Logging</span><span id="tab-dot-log" class="tab-warn-dot" style="display:none"></span></button>
-  {% set active_open = open_problems | rejectattr('is_ignored') | list %}
-  {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
-  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Aktivitas &amp; Masalah</span><span id="tab-dot-masalah" class="tab-warn-dot" style="display:none"></span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
 </div>
 
 <div class="tab-body" id="tab-perf">
@@ -1096,47 +1096,49 @@
     </div>
   </div>
 
-  <!-- Toolbar Task Manager: Search, Sort, Limit selector -->
+  <!-- Toolbar Task Manager: Search & Top Pagination Controls -->
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin:16px 0 12px;padding:10px 14px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px">
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex:1;min-width:240px">
-      <div style="position:relative;width:100%;max-width:320px">
-        <input type="search" id="proc-search-input" oninput="onProcFilterChange()" placeholder="Cari nama proses / PID / user…"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 12px 7px 30px;font-size:12px">
-        <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:12px">🔍</span>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <span style="font-size:11.5px;color:var(--dim)">Urutkan:</span>
-        <div class="segmented-control" id="proc-sort-ctrl" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px">
-          <button type="button" class="btn-seg is-active" data-sort="cpu" onclick="setProcSort('cpu')" style="border:none;background:transparent;color:var(--text);padding:3px 10px;font-size:11.5px;border-radius:4px;cursor:pointer">🔥 CPU</button>
-          <button type="button" class="btn-seg" data-sort="mem" onclick="setProcSort('mem')" style="border:none;background:transparent;color:var(--dim);padding:3px 10px;font-size:11.5px;border-radius:4px;cursor:pointer">💾 Memori</button>
-        </div>
-      </div>
+    <div style="position:relative;width:100%;max-width:320px">
+      <input type="search" id="proc-search-input" oninput="onProcFilterChange()" placeholder="Cari nama proses / PID / user…"
+             style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 12px 7px 30px;font-size:12px">
+      <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:12px">🔍</span>
     </div>
 
-    <!-- Pilihan Limit / Pagination Modern: 10, 25, 50, 100, Semua -->
-    <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:11.5px;color:var(--dim)">Tampilkan:</span>
-      <div class="segmented-control" id="proc-limit-ctrl" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px">
-        <button type="button" class="btn-limit is-active" data-limit="10" onclick="setProcLimit(10)">10</button>
-        <button type="button" class="btn-limit" data-limit="25" onclick="setProcLimit(25)">25</button>
-        <button type="button" class="btn-limit" data-limit="50" onclick="setProcLimit(50)">50</button>
-        <button type="button" class="btn-limit" data-limit="100" onclick="setProcLimit(100)">100</button>
-        <button type="button" class="btn-limit" data-limit="all" onclick="setProcLimit('all')">Semua</button>
-      </div>
+    <!-- Dropdown Limit / Pagination Bagian Atas -->
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
+      <select id="proc-limit-top" onchange="setProcLimit(this.value)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+        <option value="20" selected>20 proses</option>
+        <option value="50">50 proses</option>
+        <option value="100">100 proses</option>
+        <option value="all">Semua proses</option>
+      </select>
     </div>
   </div>
 
-  <!-- Tabel Utama Manajer Tugas -->
+  <!-- Tabel Utama Manajer Tugas dengan Kolom Urut Interaktif -->
   <div style="overflow-x:auto">
     <table id="tbl-task-manager" style="width:100%;font-size:12.5px">
       <thead>
         <tr>
-          <th style="width:75px">PID</th>
-          <th style="width:110px">User</th>
-          <th>Nama Perintah / Proses</th>
-          <th style="width:100px;text-align:center">Status</th>
-          <th style="width:140px;text-align:right">%CPU</th>
-          <th style="width:140px;text-align:right">%Memori</th>
+          <th style="width:80px;cursor:pointer;user-select:none" onclick="toggleProcSort('pid')" title="Klik untuk mengurutkan PID">
+            PID <span id="sort-icon-pid" style="font-size:11px;opacity:0.6">↕</span>
+          </th>
+          <th style="width:110px;cursor:pointer;user-select:none" onclick="toggleProcSort('user')" title="Klik untuk mengurutkan User">
+            User <span id="sort-icon-user" style="font-size:11px;opacity:0.6">↕</span>
+          </th>
+          <th style="cursor:pointer;user-select:none" onclick="toggleProcSort('comm')" title="Klik untuk mengurutkan Nama Perintah">
+            Nama Perintah / Proses <span id="sort-icon-comm" style="font-size:11px;opacity:0.6">↕</span>
+          </th>
+          <th style="width:100px;text-align:center;cursor:pointer;user-select:none" onclick="toggleProcSort('state')" title="Klik untuk mengurutkan Status">
+            Status <span id="sort-icon-state" style="font-size:11px;opacity:0.6">↕</span>
+          </th>
+          <th style="width:140px;text-align:right;cursor:pointer;user-select:none" onclick="toggleProcSort('cpu')" title="Klik untuk mengurutkan penggunaan CPU">
+            %CPU <span id="sort-icon-cpu" style="font-size:11px;color:var(--blue)">▼</span>
+          </th>
+          <th style="width:140px;text-align:right;cursor:pointer;user-select:none" onclick="toggleProcSort('mem')" title="Klik untuk mengurutkan penggunaan Memori">
+            %Memori <span id="sort-icon-mem" style="font-size:11px;opacity:0.6">↕</span>
+          </th>
           {% if user.role == 'admin' %}
           <th style="width:170px;text-align:center">Aksi (Kontrol)</th>
           {% endif %}
@@ -1148,9 +1150,21 @@
     </table>
   </div>
 
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:11.5px;color:var(--dim)">
-    <span id="proc-showing-summary">Menampilkan 0 proses</span>
-    <span style="font-size:11px">Tip: Status <strong style="color:var(--green)">R</strong>: Berjalan · <strong style="color:var(--blue)">S</strong>: Menunggu/Tidur · <strong style="color:var(--yellow)">T</strong>: Ditangguhkan (Paused) · <strong style="color:var(--red)">Z</strong>: Zombie</span>
+  <!-- Footer Task Manager: Summary Info & Dropdown Pagination Bagian Bawah -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:11.5px;color:var(--dim);flex-wrap:wrap;gap:12px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <span id="proc-showing-summary">Menampilkan 0 proses</span>
+      <span style="font-size:11px">Tip: Klik nama kolom header untuk membalikkan urutan (▲ Ringan/A-Z, ▼ Berat/Z-A)</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
+      <select id="proc-limit-bottom" onchange="setProcLimit(this.value)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+        <option value="20" selected>20 proses</option>
+        <option value="50">50 proses</option>
+        <option value="100">100 proses</option>
+        <option value="all">Semua proses</option>
+      </select>
+    </div>
   </div>
 </div>
 </div>
@@ -1795,7 +1809,23 @@ function switchLoggingView(view) {
 // ---------- Indikator Masalah / Beban Tinggi pada Tab (Alert Dots) ----------
 const INITIAL_SSL_HAS_WARN = {{ 'true' if (ssl_certs and (ssl_certs|selectattr('is_expired')|list or ssl_certs|selectattr('is_critical')|list or ssl_certs|selectattr('is_warning')|list)) else 'false' }};
 const INITIAL_CRON_HAS_FAIL = {{ 'true' if (cron_jobs and cron_jobs.jobs and (cron_jobs.jobs|selectattr('status','equalto','failed')|list)) else 'false' }};
-const INITIAL_LOG_HAS_ERR = {{ 'true' if (system_logs and (system_logs|selectattr('priority','le',3)|list)) else 'false' }};
+// Logging tab alert dot: hanya berkedip jika ada error kritis dalam 2 jam terakhir (bukan log masa lalu)
+const INITIAL_LOG_HAS_ERR = (function() {
+  try {
+    const rawLogs = {{ (system_logs or []) | tojson }};
+    if (!rawLogs || !rawLogs.length) return false;
+    const now = Date.now();
+    const TWO_HOURS_MS = 2 * 3600 * 1000;
+    return rawLogs.some(l => {
+      if (!l || l.priority > 3) return false;
+      if (!l.time) return false;
+      const t = new Date(l.time.replace(' ', 'T') + 'Z').getTime();
+      return !isNaN(t) && (now - t) < TWO_HOURS_MS;
+    });
+  } catch(e) {
+    return false;
+  }
+})();
 
 function updateTabAlertDots(options) {
   options = options || {};
@@ -1821,7 +1851,7 @@ function updateTabAlertDots(options) {
     }
   }
 
-  // 3. Aktivitas & Masalah (Ada tiket masalah terbuka & aktif)
+  // 3. Riwayat & Masalah (Ada tiket masalah terbuka & aktif)
   if (options.problems !== undefined) {
     const d = document.getElementById('tab-dot-masalah');
     if (d) {
@@ -1841,7 +1871,7 @@ function updateTabAlertDots(options) {
     }
   }
 
-  // 5. Firewall (Firewall tidak aktif atau terblokir)
+  // 5. Firewall (Firewall sedang tidak aktif)
   if (options.firewall !== undefined) {
     const d = document.getElementById('tab-dot-firewall');
     if (d) {
@@ -1869,7 +1899,7 @@ function updateTabAlertDots(options) {
     }
   }
 
-  // 8. Logging (Ada galat kritis di systemd journal)
+  // 8. Logging (Ada galat kritis baru di systemd journal dalam 2 jam terakhir)
   if (options.logging !== undefined) {
     const d = document.getElementById('tab-dot-log');
     if (d) {
@@ -1892,30 +1922,47 @@ setTimeout(() => {
 // ---------- Manajer Tugas (Task Manager) ----------
 const INITIAL_TOP_PROCS = {{ top_procs | tojson }};
 let currentTopProcsData = null;
-let procSortMode = 'cpu';      // 'cpu' | 'mem'
-let procLimit = 10;            // 10 | 25 | 50 | 100 | 'all'
+let procSortCol = 'cpu';      // 'pid' | 'user' | 'comm' | 'state' | 'cpu' | 'mem'
+let procSortDir = 'desc';     // 'asc' | 'desc'
+let procLimit = 20;           // 20 | 50 | 100 | 'all'
 let procSearchQuery = '';
 
-function setProcSort(mode) {
-  procSortMode = mode;
-  document.querySelectorAll('#proc-sort-ctrl .btn-seg').forEach(b => {
-    b.classList.toggle('is-active', b.dataset.sort === mode);
-    b.style.color = (b.dataset.sort === mode) ? 'var(--text)' : 'var(--dim)';
-    b.style.fontWeight = (b.dataset.sort === mode) ? '600' : 'normal';
-    b.style.background = (b.dataset.sort === mode) ? 'var(--card)' : 'transparent';
-  });
+function toggleProcSort(col) {
+  if (procSortCol === col) {
+    // Balikkan arah
+    procSortDir = (procSortDir === 'desc') ? 'asc' : 'desc';
+  } else {
+    procSortCol = col;
+    // Default arah: CPU, Memori, PID descending (terberat/terbaru duluan), lainnya ascending
+    procSortDir = (col === 'cpu' || col === 'mem' || col === 'pid') ? 'desc' : 'asc';
+  }
+  updateProcSortIcons();
   if (currentTopProcsData) renderTopProcs(currentTopProcsData);
 }
 
-function setProcLimit(lim) {
-  procLimit = lim;
-  document.querySelectorAll('#proc-limit-ctrl .btn-limit').forEach(b => {
-    const isActive = (String(lim) === b.dataset.limit);
-    b.classList.toggle('is-active', isActive);
-    b.style.background = isActive ? 'var(--blue)' : 'transparent';
-    b.style.color = isActive ? '#fff' : 'var(--text)';
-    b.style.fontWeight = isActive ? '700' : 'normal';
+function updateProcSortIcons() {
+  const cols = ['pid', 'user', 'comm', 'state', 'cpu', 'mem'];
+  cols.forEach(c => {
+    const iconEl = document.getElementById('sort-icon-' + c);
+    if (!iconEl) return;
+    if (c === procSortCol) {
+      iconEl.textContent = (procSortDir === 'desc') ? '▼' : '▲';
+      iconEl.style.color = 'var(--blue)';
+      iconEl.style.opacity = '1';
+    } else {
+      iconEl.textContent = '↕';
+      iconEl.style.color = 'inherit';
+      iconEl.style.opacity = '0.5';
+    }
   });
+}
+
+function setProcLimit(lim) {
+  procLimit = (lim === 'all') ? 'all' : (parseInt(lim, 10) || 20);
+  const selTop = document.getElementById('proc-limit-top');
+  const selBottom = document.getElementById('proc-limit-bottom');
+  if (selTop && selTop.value !== String(lim)) selTop.value = String(lim);
+  if (selBottom && selBottom.value !== String(lim)) selBottom.value = String(lim);
   if (currentTopProcsData) renderTopProcs(currentTopProcsData);
 }
 
@@ -1928,7 +1975,6 @@ function onProcFilterChange() {
 function renderTopProcs(data) {
   currentTopProcsData = data;
   const top = (data && data.top_procs) || {cpu: [], mem: []};
-  const listRaw = (procSortMode === 'mem') ? (top.mem || top.cpu || []) : (top.cpu || top.mem || []);
   const tbody = document.getElementById('tbl-task-manager-tbody');
   const timeSpan = document.getElementById('top-procs-time');
   const totalBadge = document.getElementById('proc-total-badge');
@@ -1955,11 +2001,24 @@ function renderTopProcs(data) {
   });
 
   let allList = Array.from(procMap.values());
-  if (procSortMode === 'mem') {
-    allList.sort((a, b) => (b.mem || 0) - (a.mem || 0));
-  } else {
-    allList.sort((a, b) => (b.cpu || 0) - (a.cpu || 0));
-  }
+
+  // Urutkan berdasarkan kolom dan arah yang aktif (Interactive Sorting)
+  allList.sort((a, b) => {
+    let valA = a[procSortCol];
+    let valB = b[procSortCol];
+
+    if (procSortCol === 'cpu' || procSortCol === 'mem' || procSortCol === 'pid') {
+      valA = Number(valA || 0);
+      valB = Number(valB || 0);
+      return (procSortDir === 'desc') ? (valB - valA) : (valA - valB);
+    } else {
+      valA = String(valA || '').toLowerCase();
+      valB = String(valB || '').toLowerCase();
+      if (valA < valB) return (procSortDir === 'desc') ? 1 : -1;
+      if (valA > valB) return (procSortDir === 'desc') ? -1 : 1;
+      return 0;
+    }
+  });
 
   // Filter pencarian
   let filtered = allList;
@@ -1972,11 +2031,11 @@ function renderTopProcs(data) {
     });
   }
 
-  // Terapkan Limit (10, 25, 50, 100, all)
+  // Terapkan Limit (20, 50, 100, all)
   const totalCount = filtered.length;
   let displayList = filtered;
   if (procLimit !== 'all') {
-    const maxN = parseInt(procLimit, 10) || 10;
+    const maxN = parseInt(procLimit, 10) || 20;
     displayList = filtered.slice(0, maxN);
   }
 

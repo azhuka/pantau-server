@@ -481,6 +481,11 @@ body.show-alert-banner .main{padding-top:68px}
     <button class="sb-toggle" id="sbToggle" onclick="toggleSb()" title="Minimalkan / perluas sidebar" aria-label="Minimalkan / perluas sidebar" type="button">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
     </button>
+    <!-- Switcher Bahasa Standar UI/UX Header -->
+    <div class="lang-switch-head" style="display:inline-flex;gap:2px;margin-left:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:2px">
+      <button type="button" class="btn-lang" id="btn-lang-id" onclick="setAppLang('id')" style="padding:2px 7px;font-size:10px;border-radius:4px;border:1px solid rgba(56,189,248,0.4);background:rgba(56,189,248,0.2);color:#38bdf8;cursor:pointer;font-weight:700">ID</button>
+      <button type="button" class="btn-lang" id="btn-lang-en" onclick="setAppLang('en')" style="padding:2px 7px;font-size:10px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--dim);cursor:pointer;font-weight:500">EN</button>
+    </div>
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section" data-i18n="menu_section_menu">Menu</div>
@@ -510,13 +515,6 @@ body.show-alert-banner .main{padding-top:68px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:3px 6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px">
-      <span style="font-size:11px;color:var(--dim)" data-i18n="lang_label">Bahasa:</span>
-      <div style="display:inline-flex;gap:3px">
-        <button type="button" class="btn-lang" id="btn-lang-id" onclick="setAppLang('id')" style="padding:2px 7px;font-size:10.5px;border-radius:4px;border:1px solid rgba(56,189,248,0.4);background:rgba(56,189,248,0.2);color:#38bdf8;cursor:pointer;font-weight:700">ID</button>
-        <button type="button" class="btn-lang" id="btn-lang-en" onclick="setAppLang('en')" style="padding:2px 7px;font-size:10.5px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--dim);cursor:pointer;font-weight:500">EN</button>
-      </div>
-    </div>
     <div style="font-size:11px;color:var(--dim);margin-bottom:4px">v{{ app_version or '3.12.0' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     {{ user.username }} ({{ user.role }})<br>
@@ -553,30 +551,30 @@ body.show-alert-banner .main{padding-top:68px}
 </div>
 
 <script>
-// ---------- Sistem Multi-Bahasa (i18n: ID & EN) ----------
+// ---------- Sistem Multi-Bahasa Kontekstual Sysadmin (i18n: ID & EN) ----------
 const APP_TRANSLATIONS = {
   id: {
     lang_label: "Bahasa:",
     menu_section_menu: "Menu",
     menu_dashboard: "Dashboard",
-    menu_servers: "Servers",
-    menu_problems: "Masalah",
-    menu_logs: "Log",
-    menu_section_admin: "Admin",
-    menu_audit: "Audit",
-    menu_users: "Users",
-    menu_logout: "Logout",
-    menu_login: "Login",
+    menu_servers: "Daftar Server",
+    menu_problems: "Insiden & Masalah",
+    menu_logs: "Log Aktivitas",
+    menu_section_admin: "Administrasi",
+    menu_audit: "Audit Trail",
+    menu_users: "Pengguna",
+    menu_logout: "Keluar",
+    menu_login: "Masuk",
     tab_perf: "Kinerja",
+    tab_masalah: "Riwayat & Masalah",
     tab_layanan: "Layanan",
     tab_proses: "Manajer Tugas",
-    tab_akun: "Akun",
-    tab_ports: "Port Terbuka",
+    tab_akun: "Akun Pengguna",
+    tab_ports: "Port Listening",
     tab_firewall: "Firewall",
     tab_ssl: "Sertifikat SSL",
     tab_cron: "Tugas Terjadwal",
     tab_logging: "Logging",
-    tab_masalah: "Aktivitas & Masalah",
     sys_health_normal: "Normal",
     sys_health_warning: "Perhatian",
     sys_health_danger: "Kritis",
@@ -588,21 +586,21 @@ const APP_TRANSLATIONS = {
     menu_servers: "Servers",
     menu_problems: "Incidents",
     menu_logs: "Logs",
-    menu_section_admin: "Admin",
-    menu_audit: "Audit Logs",
+    menu_section_admin: "Administration",
+    menu_audit: "Audit Trail",
     menu_users: "Users",
     menu_logout: "Logout",
     menu_login: "Login",
     tab_perf: "Performance",
+    tab_masalah: "History & Incidents",
     tab_layanan: "Services",
     tab_proses: "Task Manager",
-    tab_akun: "Accounts",
-    tab_ports: "Open Ports",
+    tab_akun: "User Accounts",
+    tab_ports: "Listening Ports",
     tab_firewall: "Firewall",
     tab_ssl: "SSL Certificates",
-    tab_cron: "Scheduled Tasks",
+    tab_cron: "Cron Jobs",
     tab_logging: "Logging",
-    tab_masalah: "Activity & Incidents",
     sys_health_normal: "Normal",
     sys_health_warning: "Warning",
     sys_health_danger: "Critical",
