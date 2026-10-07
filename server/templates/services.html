@@ -941,18 +941,31 @@
   <div id="prob-wrapper">
   {% set rows = open_problems + problem_history %}
   {% if rows %}
-  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-    <select id="prob-filter" onchange="probFilter()"
-            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
-      <option value="">Semua level</option>
-      <option value="danger">Danger</option>
-      <option value="warning">Warning</option>
-      <option value="info">Info</option>
-      <option value="ignored">Diabaikan (🔕)</option>
-    </select>
-    <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari kejadian…"
-           style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px;min-width:220px">
-    <span style="font-size:11px;color:var(--dim);align-self:center" id="prob-count"></span>
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <select id="prob-filter" onchange="probFilter()"
+              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
+        <option value="">Semua level</option>
+        <option value="danger">Danger</option>
+        <option value="warning">Warning</option>
+        <option value="info">Info</option>
+        <option value="ignored">Diabaikan (🔕)</option>
+      </select>
+      <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari kejadian…"
+             style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;min-width:200px">
+      <span style="font-size:11px;color:var(--dim)" id="prob-count"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
+      <select id="prob-limit" onchange="setProbLimit(this.value)"
+              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+        <option value="5" selected>5 masalah</option>
+        <option value="10">10 masalah</option>
+        <option value="25">25 masalah</option>
+        <option value="50">50 masalah</option>
+        <option value="all">Semua masalah</option>
+      </select>
+    </div>
   </div>
   <table id="probtable">
     <thead><tr><th>Waktu</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Tindakan</th><th>Tips</th></tr></thead>
@@ -1036,12 +1049,25 @@
 </div>
 
 <div class="card" id="card-action-history" style="margin-top:20px">
-  <div class="card-header" style="align-items:center">
+  <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <div>
       <h3 style="margin:0">Riwayat Tindakan</h3>
       <span style="font-size:12px;color:var(--dim)">Rekam jejak seluruh tindakan dan perintah pada server ini</span>
     </div>
-    <span style="font-size:12px;color:var(--dim)" id="action-history-count">{{ actions|length if actions else 0 }} tindakan terakhir</span>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--dim)" id="action-history-count">{{ actions|length if actions else 0 }} tindakan terakhir</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
+        <select id="action-limit" onchange="setActionLimit(this.value)"
+                style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+          <option value="10" selected>10 tindakan</option>
+          <option value="25">25 tindakan</option>
+          <option value="50">50 tindakan</option>
+          <option value="100">100 tindakan</option>
+          <option value="all">Semua tindakan</option>
+        </select>
+      </div>
+    </div>
   </div>
   <div style="overflow-x:auto">
     <table id="tbl-action-history">
@@ -1623,10 +1649,16 @@
       <h3 style="margin:0;display:flex;align-items:center;gap:8px">
         <span>📜 Logging</span>
       </h3>
-      <!-- Sub-view switcher: Log Layanan vs Log Sistem -->
-      <div class="segmented-control" id="logging-sub-ctrl" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px">
-        <button type="button" class="btn-seg is-active" id="btn-sublog-svc" onclick="switchLoggingView('svc')" style="border:none;background:var(--card);color:#38bdf8;padding:4px 12px;font-size:12px;border-radius:4px;cursor:pointer;font-weight:700">⚙️ Log Layanan</button>
-        <button type="button" class="btn-seg" id="btn-sublog-sys" onclick="switchLoggingView('sys')" style="border:none;background:transparent;color:var(--dim);padding:4px 12px;font-size:12px;border-radius:4px;cursor:pointer;font-weight:500">📋 Log Sistem (Journal)</button>
+      <!-- Sub-view switcher modern: Log Layanan vs Log Sistem -->
+      <div class="toolbar-group" id="logging-sub-ctrl" style="margin-left:4px">
+        <button type="button" class="btn is-active" id="btn-sublog-svc" onclick="switchLoggingView('svc')" style="background:rgba(56,189,248,0.2) !important;color:#38bdf8 !important;font-weight:700 !important;border:1px solid rgba(56,189,248,0.45) !important">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span>Log Layanan</span>
+        </button>
+        <button type="button" class="btn" id="btn-sublog-sys" onclick="switchLoggingView('sys')" style="background:transparent !important;color:var(--dim) !important;font-weight:500 !important;border:1px solid transparent !important">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>Log Sistem (Journal)</span>
+        </button>
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1794,15 +1826,17 @@ function switchLoggingView(view) {
   if (panelSys) panelSys.style.display = isSvc ? 'none' : 'block';
   if (btnSvc) {
     btnSvc.classList.toggle('is-active', isSvc);
-    btnSvc.style.color = isSvc ? '#38bdf8' : 'var(--dim)';
-    btnSvc.style.background = isSvc ? 'var(--card)' : 'transparent';
-    btnSvc.style.fontWeight = isSvc ? '700' : '500';
+    btnSvc.style.setProperty('color', isSvc ? '#38bdf8' : 'var(--dim)', 'important');
+    btnSvc.style.setProperty('background', isSvc ? 'rgba(56,189,248,0.2)' : 'transparent', 'important');
+    btnSvc.style.setProperty('border-color', isSvc ? 'rgba(56,189,248,0.45)' : 'transparent', 'important');
+    btnSvc.style.setProperty('font-weight', isSvc ? '700' : '500', 'important');
   }
   if (btnSys) {
     btnSys.classList.toggle('is-active', !isSvc);
-    btnSys.style.color = !isSvc ? '#38bdf8' : 'var(--dim)';
-    btnSys.style.background = !isSvc ? 'var(--card)' : 'transparent';
-    btnSys.style.fontWeight = !isSvc ? '700' : '500';
+    btnSys.style.setProperty('color', !isSvc ? '#38bdf8' : 'var(--dim)', 'important');
+    btnSys.style.setProperty('background', !isSvc ? 'rgba(56,189,248,0.2)' : 'transparent', 'important');
+    btnSys.style.setProperty('border-color', !isSvc ? 'rgba(56,189,248,0.45)' : 'transparent', 'important');
+    btnSys.style.setProperty('font-weight', !isSvc ? '700' : '500', 'important');
   }
 }
 
@@ -3363,21 +3397,93 @@ function renderProblemsTab(level, openList, histList) {
 
   html += '</tbody></table>';
   wrap.innerHTML = html;
+  const limSel = document.getElementById('prob-limit');
+  if (limSel && limSel.value !== String(probLimit)) limSel.value = String(probLimit);
   probFilter();
 }
 
+let probLimit = 5; // default 5 masalah
+function setProbLimit(lim) {
+  probLimit = (lim === 'all') ? 'all' : (parseInt(lim, 10) || 5);
+  probFilter();
+}
+
+function probFilter() {
+  const sel = document.getElementById('prob-filter');
+  const sev = sel ? sel.value : '';
+  const q = (document.getElementById('prob-search')?.value || '').toLowerCase().trim();
+  const rows = Array.from(document.querySelectorAll('#probtable tbody tr'));
+  let matchedRows = [];
+
+  rows.forEach(tr => {
+    let matchSev = false;
+    if (!sev) matchSev = true;
+    else if (sev === 'ignored') matchSev = (tr.dataset.ignored === '1');
+    else matchSev = (tr.dataset.sev === sev) && (tr.dataset.ignored !== '1');
+
+    const matchQ = !q || (tr.dataset.text || '').includes(q);
+    if (matchSev && matchQ) {
+      matchedRows.push(tr);
+    } else {
+      tr.style.display = 'none';
+    }
+  });
+
+  const maxN = (probLimit === 'all') ? matchedRows.length : (parseInt(probLimit, 10) || 5);
+  matchedRows.forEach((tr, idx) => {
+    tr.style.display = (idx < maxN) ? '' : 'none';
+  });
+
+  const countEl = document.getElementById('prob-count');
+  if (countEl) {
+    const shown = Math.min(matchedRows.length, maxN);
+    countEl.textContent = `Menampilkan ${shown} dari ${matchedRows.length} kejadian${rows.length !== matchedRows.length ? ` (total ${rows.length})` : ''}`;
+  }
+}
+
+// Inisialisasi probFilter saat pertama kali load
+setTimeout(probFilter, 100);
+
+let actionLimit = 10; // default 10 riwayat tindakan
+let _cachedActions = [];
+function setActionLimit(lim) {
+  actionLimit = (lim === 'all') ? 'all' : (parseInt(lim, 10) || 10);
+  const sel = document.getElementById('action-limit');
+  if (sel && sel.value !== String(lim)) sel.value = String(lim);
+  if (_cachedActions && _cachedActions.length) {
+    renderActionHistory(_cachedActions);
+  } else {
+    // Filter tr yang sudah dirender server-side
+    const rows = Array.from(document.querySelectorAll('#tbl-action-history tbody tr'));
+    const maxN = (actionLimit === 'all') ? rows.length : (parseInt(actionLimit, 10) || 10);
+    rows.forEach((tr, idx) => {
+      tr.style.display = (idx < maxN) ? '' : 'none';
+    });
+    const countEl = document.getElementById('action-history-count');
+    if (countEl) countEl.textContent = `Menampilkan ${Math.min(rows.length, maxN)} dari ${rows.length} tindakan`;
+  }
+}
+
 function renderActionHistory(actions) {
+  _cachedActions = actions || [];
   const tbody = document.getElementById('action-history-tbody');
   const countEl = document.getElementById('action-history-count');
   if (!tbody) return;
-  if (countEl) countEl.textContent = actions.length + ' tindakan terakhir';
 
   if (!actions.length) {
+    if (countEl) countEl.textContent = '0 tindakan';
     tbody.innerHTML = '<tr id="act-row-empty"><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">Belum ada riwayat tindakan di server ini.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = actions.map(a => {
+  const maxN = (actionLimit === 'all') ? actions.length : (parseInt(actionLimit, 10) || 10);
+  const displayList = actions.slice(0, maxN);
+
+  if (countEl) {
+    countEl.textContent = `Menampilkan ${displayList.length} dari ${actions.length} tindakan`;
+  }
+
+  tbody.innerHTML = displayList.map(a => {
     return `<tr id="act-row-${escHtml(a.id || '')}">
       <td class="mono" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
       <td><span class="mono">${escHtml(a.user || '-')}</span></td>
@@ -3388,6 +3494,9 @@ function renderActionHistory(actions) {
     </tr>`;
   }).join('');
 }
+
+// Inisialisasi limit riwayat tindakan server-side render
+setTimeout(() => setActionLimit(10), 100);
 
 // ---------- service patch (existing) ----------
 function patch(data) {

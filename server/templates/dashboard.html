@@ -8,42 +8,42 @@
 <div class="stats-grid">
   <div class="stat-card" style="border-left:3px solid var(--blue)" title="Total seluruh mesin server yang terdaftar di sistem pemantauan">
     <div class="label" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Total Server</span>
+      <span data-i18n="total_servers">Total Server</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue);opacity:.85"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
     </div>
     <div class="value">{{ total }}</div>
   </div>
   <div class="stat-card" style="border-left:3px solid var(--green)" title="Server yang aktif terhubung dan mengirimkan metrik secara berkala">
     <div class="label" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Online</span>
+      <span data-i18n="online">Online</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green);opacity:.85"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
     </div>
     <div class="value" style="color:var(--green)" id="dash-up-count">{{ up_count }}</div>
   </div>
   <div class="stat-card" style="border-left:3px solid var(--red)" title="Server yang tidak mengirimkan laporan melebihi batas waktu toleransi (terputus atau mati)">
     <div class="label" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Offline</span>
+      <span data-i18n="offline">Offline</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red);opacity:.85"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
     </div>
     <div class="value" style="color:var(--red)" id="dash-down-count">{{ down_count }}</div>
   </div>
   <div class="stat-card" style="border-left:3px solid {% if down_services > 0 %}var(--red){% else %}var(--border){% endif %}" title="Jumlah layanan aplikasi atau port yang terdeteksi terhenti dan memerlukan perhatian">
     <div class="label" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Layanan Terhenti</span>
+      <span data-i18n="services_stopped">Layanan Terhenti</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red);opacity:.85"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
     </div>
     <div class="value" style="color:{% if down_services > 0 %}var(--red){% else %}var(--dim){% endif %}" id="dash-svc-down">{{ down_services }}</div>
   </div>
   <div class="stat-card" style="border-left:3px solid var(--dim-subtle)" title="Layanan yang sengaja dinonaktifkan atau dibisukan dari notifikasi gangguan">
     <div class="label" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Layanan Diabaikan</span>
+      <span data-i18n="services_ignored">Layanan Diabaikan</span>
       <span style="font-size:12px;opacity:.85">🔕</span>
     </div>
     <div class="value" style="color:#94a3b8" id="dash-svc-ignored">{{ ignored_services }}</div>
   </div>
   <div class="stat-card" style="border-left:3px solid var(--border)" title="Selang waktu sejak data metrik terakhir kali diterima dari server mana pun">
     <div class="label" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Laporan Terakhir</span>
+      <span data-i18n="last_report">Laporan Terakhir</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--dim);opacity:.85"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
     </div>
     <div class="value" style="font-size:20px">{% if last_update_secs < 0 %}—{% elif last_update_secs < 60 %}{{ last_update_secs }}<span style="font-size:12px;color:var(--dim)"> dtk</span>{% elif last_update_secs < 3600 %}{{ last_update_secs // 60 }}<span style="font-size:12px;color:var(--dim)"> mnt</span>{% else %}{{ last_update_secs // 3600 }}<span style="font-size:12px;color:var(--dim)"> jam</span>{% endif %}</div>
@@ -52,17 +52,17 @@
 
 <div class="card">
   <div class="card-header">
-    <h3>Server Status</h3>
+    <h3 data-i18n="server_status">Server Status</h3>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       {% if servers %}
       <div style="position:relative;display:flex;align-items:center">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="search" id="dash-search" placeholder="Cari server atau IP…" oninput="dashFilter(this.value)"
+        <input type="search" id="dash-search" placeholder="Cari server atau IP…" data-i18n-placeholder="search_server_ip" oninput="dashFilter(this.value)"
                style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 12px 7px 30px;font-size:12px;width:230px;outline:none;transition:border-color .15s">
       </div>
       {% endif %}
       <span id="dash-live" class="badge badge-up" style="opacity:.6;transition:opacity .3s;font-size:10px" title="Diperbarui otomatis setiap 10 detik">● live</span>
-      <a href="/servers" class="btn btn-ghost btn-sm">Kelola Server &rarr;</a>
+      <a href="/servers" class="btn btn-ghost btn-sm" data-i18n="manage_servers">Kelola Server &rarr;</a>
     </div>
   </div>
   {% if servers %}

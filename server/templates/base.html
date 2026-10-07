@@ -322,22 +322,6 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
   opacity:1;
   transform:scaleX(1);
 }
-/* Indikator titik status mikro saat tab aktif */
-.tab.is-on::before{
-  content:'';
-  width:6px;
-  height:6px;
-  border-radius:50%;
-  background:#38bdf8 !important;
-  box-shadow:0 0 10px #38bdf8, 0 0 14px rgba(56, 189, 248, 0.9) !important;
-  display:inline-block;
-  margin-right:-1px;
-  animation:tabPulse 2s infinite ease-in-out;
-}
-@keyframes tabPulse{
-  0%, 100%{ opacity: 1; transform: scale(1); }
-  50%{ opacity: 0.5; transform: scale(0.8); }
-}
 
 /* Penanda Masalah Berkedip Merah pada Tab (Blink Badge / Warning Dot) */
 .tab .tab-warn-dot{
@@ -578,6 +562,36 @@ const APP_TRANSLATIONS = {
     sys_health_normal: "Normal",
     sys_health_warning: "Perhatian",
     sys_health_danger: "Kritis",
+    // Dashboard & Metrik
+    total_servers: "Total Server",
+    online: "Online",
+    offline: "Offline",
+    services_stopped: "Layanan Terhenti",
+    services_ignored: "Layanan Diabaikan",
+    last_report: "Laporan Terakhir",
+    server_status: "Status Server",
+    manage_servers: "Kelola Server →",
+    search_server_ip: "Cari server atau IP…",
+    search_server_agent: "Cari server, IP, atau versi agen…",
+    add_server: "Tambah Server",
+    refresh: "Segarkan",
+    show: "Tampilkan:",
+    details: "Rincian",
+    actions: "Aksi",
+    close: "Tutup",
+    save: "Simpan",
+    cancel: "Batal",
+    update_os: "Update OS",
+    upgrade_os: "Upgrade",
+    reboot_os: "Reboot OS",
+    power_off: "Power Off",
+    terminal: "Terminal",
+    file_manager: "File Manager",
+    maintenance: "Pemeliharaan",
+    log_service: "Log Layanan",
+    log_system: "Log Sistem (Journal)",
+    audit_trail: "Audit Trail",
+    activity_log: "Log Aktivitas",
   },
   en: {
     lang_label: "Language:",
@@ -604,6 +618,36 @@ const APP_TRANSLATIONS = {
     sys_health_normal: "Normal",
     sys_health_warning: "Warning",
     sys_health_danger: "Critical",
+    // Dashboard & Metrik
+    total_servers: "Total Servers",
+    online: "Online",
+    offline: "Offline",
+    services_stopped: "Stopped Services",
+    services_ignored: "Ignored Services",
+    last_report: "Last Report",
+    server_status: "Server Status",
+    manage_servers: "Manage Servers →",
+    search_server_ip: "Search server or IP…",
+    search_server_agent: "Search server, IP, or agent version…",
+    add_server: "Add Server",
+    refresh: "Refresh",
+    show: "Show:",
+    details: "Details",
+    actions: "Actions",
+    close: "Close",
+    save: "Save",
+    cancel: "Cancel",
+    update_os: "Update OS",
+    upgrade_os: "Upgrade",
+    reboot_os: "Reboot OS",
+    power_off: "Power Off",
+    terminal: "Terminal",
+    file_manager: "File Manager",
+    maintenance: "Maintenance",
+    log_service: "Service Logs",
+    log_system: "System Logs (Journal)",
+    audit_trail: "Audit Trail",
+    activity_log: "Activity Logs",
   }
 };
 
@@ -644,6 +688,18 @@ function applyAppLang() {
         }
       }
     }
+  });
+
+  // Dukungan data-i18n-placeholder
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const k = el.dataset.i18nPlaceholder;
+    if (dict[k]) el.placeholder = dict[k];
+  });
+
+  // Dukungan data-i18n-title
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const k = el.dataset.i18nTitle;
+    if (dict[k]) el.title = dict[k];
   });
 
   const btnId = document.getElementById('btn-lang-id');

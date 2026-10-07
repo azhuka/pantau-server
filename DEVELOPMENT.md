@@ -325,6 +325,23 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
 - **Peningkatan Versi:**
   - Sinkronisasi patch versi server dan agen ke **v3.20.1**.
 
+### Rilis Minor v3.23.0: Ekspansi Dwi-Bahasa Menyeluruh, Paginasi Riwayat & Masalah, dan Penyelarasan Estetika Logging
+- **Penerapan Sistem Dwi-Bahasa (i18n) Menyeluruh pada Seluruh Antarmuka:**
+  - Memperluas kamus terjemahan kontekstual sysadmin (`APP_TRANSLATIONS`) mencakup seluruh kartu statistik dasbor (*Total Server, Online, Offline, Layanan Terhenti, Layanan Diabaikan, Laporan Terakhir, Status Server*), bilah pencarian server, tombol tambah server, dan utilitas navigasi.
+  - Menambahkan dukungan otomatis pergantian atribut `placeholder` (`data-i18n-placeholder`) dan `title` (`data-i18n-title`) di samping teks konten utama (`data-i18n`).
+- **Fitur Paginasi pada Tab Riwayat & Masalah:**
+  - Menambahkan kontrol pemilihan batas baris (*pagination select dropdown*) pada tabel **Masalah Terbuka & Riwayat Masalah** dengan opsi: `5 masalah` (bawaan/default), `10 masalah`, `25 masalah`, `50 masalah`, dan `Semua masalah`.
+  - Menambahkan kontrol pemilihan batas baris pada tabel **Riwayat Tindakan** dengan opsi: `10 tindakan` (bawaan/default), `25 tindakan`, `50 tindakan`, `100 tindakan`, dan `Semua tindakan`.
+  - Sinkronisasi instan jumlah baris yang ditampilkan dan pembaruan label rangkuman data secara dinamis baik saat inisialisasi awal maupun saat pembaruan berkala (*live polling*).
+- **Pembersihan Efek Visual Tab Aktif:**
+  - Menghilangkan titik biru berkedip mikro (`tab.is-on::before` / `@keyframes tabPulse`) pada tombol tab yang sedang aktif agar antarmuka lebih bersih, elegan, dan fokus pada konten tanpa animasi yang mengganggu pandangan mata.
+- **Penyelarasan Desain Sub-Tombol Tab Logging:**
+  - Memperbarui gaya tombol sub-panel **Log Layanan** dan **Log Sistem (Journal)** pada tab *Logging* agar selaras dengan desain *toolbar modern* (pemanfaatan wadah *glassmorphic toolbar-group*, ikon SVG vektor yang seragam, serta aksen warna biru neon `#38bdf8` saat aktif).
+- **Standardisasi Bahasa Dokumentasi Proyek:**
+  - Menyelaraskan seluruh dokumen teknis pengembang (`DEVELOPMENT.md`), panduan pengguna (`README.md`), dan catatan rilis GitHub menggunakan kaidah Bahasa Indonesia yang baku, lugas, formal, dan mudah dipahami.
+- **Peningkatan Versi:**
+  - Peningkatan versi aplikasi dasbor dan agen pemantau ke **v3.23.0**.
+
 ### Minor Release v3.22.0: Best-Practice UI/UX Sysadmin, Pengurutan Interaktif Manajer Tugas & Dual Pagination
 - **Penyempurnaan Penempatan & Glosarium Multi-Bahasa:**
   - Memindahkan tombol peralihan bahasa (`ID` / `EN`) ke header *sidebar brand* (sejajar dengan logo/toggle sidebar) sesuai best-practice antarmuka dashboard modern.
