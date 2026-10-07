@@ -318,6 +318,13 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
 - **Peningkatan Versi:**
   - Sinkronisasi versi server dan agen ke **v3.20.0**.
 
+### Patch v3.20.1: Perbaikan Sintaks Templat services.html (Fix HTTP 500)
+- **Perbaikan Bug TemplateSyntaxError:**
+  - Menutup blok kondisional `{% if services %}` dan `{% if rows %}` dengan `{% endif %}` yang sebelumnya terpotong saat reorganisasi tab.
+  - Mengatasi galat *Internal Server Error 500* ("Terjadi Kendala Sesaat (500)") saat mengakses halaman rincian server (`/servers/{id}/services`).
+- **Peningkatan Versi:**
+  - Sinkronisasi patch versi server dan agen ke **v3.20.1**.
+
 ---
 
 ## 5. Bedah Teknis Komponen Kritis
