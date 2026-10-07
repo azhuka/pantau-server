@@ -325,6 +325,33 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
 - **Peningkatan Versi:**
   - Sinkronisasi patch versi server dan agen ke **v3.20.1**.
 
+### Minor Release v3.21.0: Multibahasa (ID/EN), Logging Terpadu, Tab Neon Blue & Indikator Titik Peringatan
+- **Fitur Dwi-Bahasa (Bilingual ID & EN):**
+  - Switcher bahasa interaktif di sidebar bawah (`ID` / `EN`) dengan persistensi `localStorage`.
+  - Dukungan kamus translasi dinamis (`APP_TRANSLATIONS`) untuk navigasi sidebar, judul tab, status kesehatan sistem, dan label komponen.
+- **Restrukturisasi & Penamaan Tab Baku:**
+  - Susunan tab terstandardisasi: `Kinerja` | `Layanan` | `Manajer Tugas` | `Akun` | `Port Terbuka` | `Firewall` | `Sertifikat SSL` | `Tugas Terjadwal` | `Logging` | `Aktivitas & Masalah`.
+  - Penamaan tab diperbarui: `Masalah & Tindakan` $\rightarrow$ **`Aktivitas & Masalah`**, `Port Listening` $\rightarrow$ **`Port Terbuka`**.
+- **Penyatuan Logging Sistem & Layanan (Unified Logging Tab):**
+  - Menggabungkan log unit layanan dan log galat sistem (journald) ke dalam 1 tab **Logging** yang bersih dengan *segmented control* switch cepat (⚙️ Log Layanan | 📋 Log Sistem Journal).
+  - Integrasi pintasan `jumpToLog(unit)` yang otomatis beralih ke sub-tampilan Log Layanan dan fokus ke kartu log.
+- **Konsistensi Tampilan Tab (Tema Biru Neon Terpadu):**
+  - Menghapus pewarnaan tab lama yang acak/berbeda-beda. Seluruh tab yang aktif kini menggunakan palet modern **Biru Neon** (`#38bdf8`) dengan efek glow halus, bottom highlight bar, dan glassmorphism.
+- **Indikator Titik Peringatan Berkedip pada Tab (Blinking Alert Dots):**
+  - Penambahan animasi titik indikator berkedip (`.tab-warn-dot`) pada setiap tab:
+    - `Kinerja`: menyala jika CPU > 85%, Memori > 90%, atau Load tinggi.
+    - `Layanan`: menyala jika ada layanan penting yang down (tidak dibisukan).
+    - `Aktivitas & Masalah`: menyala jika terdapat tiket masalah aktif yang belum selesai.
+    - `Manajer Tugas`: menyala jika terdapat proses zombie atau beban ekstrem.
+    - `Firewall`: menyala jika firewall terdeteksi tidak aktif.
+    - `Sertifikat SSL`: menyala jika sertifikat mendekati kedaluwarsa atau telah kedaluwarsa.
+    - `Tugas Terjadwal`: menyala jika terdapat cron job yang gagal.
+    - `Logging`: menyala jika sistem mencatat galat kritis/error (journalctl priority $\le$ 3).
+- **Kejelasan Riwayat Tindakan di Tab Aktivitas & Masalah:**
+  - Penataan tabel Riwayat Tindakan yang berdampingan dan jelas di dalam tab **Aktivitas & Masalah**, lengkap dengan counter total tindakan dan pembaruan real-time saat polling.
+- **Peningkatan Versi:**
+  - Peningkatan versi aplikasi dashboard dan agen pantau ke **v3.21.0**.
+
 ---
 
 ## 5. Bedah Teknis Komponen Kritis

@@ -655,19 +655,18 @@
 </div>
 
 <div class="tabbar" id="detail-tabs" role="tablist">
-  <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true">Kinerja</button>
-  <button class="tab" data-tab="layanan" role="tab">Layanan</button>
+  <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true" id="tab-perf-btn" data-i18n="tab_perf"><span class="tab-text">Kinerja</span><span id="tab-dot-perf" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Layanan</span><span id="tab-dot-layanan" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Manajer Tugas</span><span id="tab-dot-proses" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="akun" role="tab" id="tab-akun-btn" data-i18n="tab_akun"><span class="tab-text">Akun</span><span id="tab-dot-akun" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn" data-i18n="tab_ports"><span class="tab-text">Port Terbuka</span><span id="tab-dot-ports" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn" data-i18n="tab_firewall"><span class="tab-text">Firewall</span><span id="tab-dot-firewall" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn" data-i18n="tab_ssl"><span class="tab-text">Sertifikat SSL</span><span id="tab-dot-ssl" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn" data-i18n="tab_cron"><span class="tab-text">Tugas Terjadwal</span><span id="tab-dot-cron" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="log" role="tab" id="tab-log-btn" data-i18n="tab_logging"><span class="tab-text">Logging</span><span id="tab-dot-log" class="tab-warn-dot" style="display:none"></span></button>
   {% set active_open = open_problems | rejectattr('is_ignored') | list %}
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
-  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn">Masalah &amp; Tindakan <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
-  <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn">Firewall</button>
-  <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn">Manajer Tugas</button>
-  <button class="tab" data-tab="syslog" role="tab" id="tab-syslog-btn">Log Sistem</button>
-  <button class="tab" data-tab="log" role="tab">Log Layanan</button>
-  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn">Port Listening</button>
-  <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn">Sertifikat SSL</button>
-  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn">Tugas Terjadwal</button>
-  <button class="tab" data-tab="akun" role="tab">Akun</button>
+  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Aktivitas &amp; Masalah</span><span id="tab-dot-masalah" class="tab-warn-dot" style="display:none"></span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
 </div>
 
 <div class="tab-body" id="tab-perf">
@@ -1464,7 +1463,36 @@
   </div>
 </div>
 
-<!-- Tab: Port Listening & Socket (ss -tulpn) -->
+<!-- Tab: Akun Pengguna Sistem -->
+<div class="tab-body" id="tab-akun" hidden>
+  <div class="card">
+    <div class="card-header" style="align-items:center;justify-content:space-between">
+      <div>
+        <h3 style="margin:0">Akun Pengguna Sistem</h3>
+        <span style="font-size:12px;color:var(--dim)">Daftar akun login, UID, Shell, riwayat login terakhir, dan sesi aktif (/etc/passwd, lastlog, who)</span>
+      </div>
+      <span class="badge badge-info" id="acc-count-badge">Akun Sistem</span>
+    </div>
+    <div id="acc-empty" class="empty-msg" style="display:none">Belum ada data akun dari server ini.</div>
+    <div style="overflow-x:auto">
+      <table id="acc-table" style="display:none;width:100%">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>UID</th>
+            <th>Shell</th>
+            <th>Login Terakhir</th>
+            <th>Sesi Aktif</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Port Terbuka & Socket (ss -tulpn) -->
 <div class="tab-body" id="tab-ports" hidden>
   <div class="card">
     <div class="card-header" style="align-items:center">
@@ -1574,23 +1602,56 @@
   </div>
 </div>
 
-<div class="tab-body" id="tab-syslog" hidden>
-  <div class="card">
-    <div class="card-header" style="align-items:center">
-      <div>
-        <h3 style="margin:0">📋 Log Galat Sistem (Systemd Journal)</h3>
-        <span style="font-size:12px;color:var(--dim)">Daftar kejadian kegagalan dan peringatan kritis sistem terbaru (priority err, crit, alert, emerg)</span>
+<div class="tab-body" id="tab-log" hidden>
+<div class="card" id="log-card">
+  <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <h3 style="margin:0;display:flex;align-items:center;gap:8px">
+        <span>📜 Logging</span>
+      </h3>
+      <!-- Sub-view switcher: Log Layanan vs Log Sistem -->
+      <div class="segmented-control" id="logging-sub-ctrl" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px">
+        <button type="button" class="btn-seg is-active" id="btn-sublog-svc" onclick="switchLoggingView('svc')" style="border:none;background:var(--card);color:#38bdf8;padding:4px 12px;font-size:12px;border-radius:4px;cursor:pointer;font-weight:700">⚙️ Log Layanan</button>
+        <button type="button" class="btn-seg" id="btn-sublog-sys" onclick="switchLoggingView('sys')" style="border:none;background:transparent;color:var(--dim);padding:4px 12px;font-size:12px;border-radius:4px;cursor:pointer;font-weight:500">📋 Log Sistem (Journal)</button>
       </div>
-      <div style="font-size:12px;color:var(--dim)">
-        Otomatis disinkronkan oleh Agen Pantau
-      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span id="log-state" style="font-size:12px;color:var(--dim)"></span>
+      <button type="button" class="btn btn-ghost btn-sm" id="log-dl-btn" onclick="downloadLog()" title="Unduh log sebagai file .txt" style="display:none">⬇ Unduh</button>
+    </div>
+  </div>
+
+  <!-- Sub-Panel 1: Log Layanan (Unit/Service) -->
+  <div id="sublog-panel-svc">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 8px">
+      <label style="font-size:12px;color:var(--dim);align-self:center">Unit:</label>
+      <select id="log-unit" onchange="changeUnit()" style="min-width:220px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px">
+        <option value="">— memuat —</option>
+      </select>
+      <label style="font-size:12px;color:var(--dim);align-self:center">Baris:</label>
+      <input type="number" id="log-lines" value="200" min="10" max="2000" onchange="changeUnit()"
+             style="width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px">
+    </div>
+    <div style="margin-bottom:8px">
+      <input type="search" id="log-filter" placeholder="Cari di log… (filter baris)" oninput="filterLog(this.value)"
+             style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
+    </div>
+    <div id="log-empty" class="empty-msg" style="display:none">Menunggu data log dari Agen Pantau…</div>
+    <pre id="log-pre" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;height:55vh;overflow:auto;white-space:pre-wrap;word-break:break-all;color:var(--text);display:none"></pre>
+  </div>
+
+  <!-- Sub-Panel 2: Log Galat Sistem (Systemd Journal) -->
+  <div id="sublog-panel-sys" style="display:none;margin-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:6px 10px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:6px">
+      <span style="font-size:12px;color:var(--dim)">Kejadian kegagalan dan peringatan kritis sistem terbaru (journalctl err, crit, alert, emerg)</span>
+      <span style="font-size:11.5px;color:var(--dim)">Otomatis disinkronkan oleh Agen Pantau</span>
     </div>
     {% if system_logs %}
     <div style="overflow-x:auto">
       <table>
         <thead>
           <tr>
-            <th style="width:190px" title="Waktu kejadian tercatat di sistem (diurutkan dari kejadian paling baru)">Waktu (Terbaru di Atas)</th>
+            <th style="width:190px" title="Waktu kejadian tercatat di sistem">Waktu (Terbaru di Atas)</th>
             <th style="width:110px" title="Tingkat keparahan event journald">Prioritas</th>
             <th style="width:200px" title="Unit layanan atau proses penghasil log">Unit / Identitas</th>
             <th title="Pesan rincian galat">Pesan Galat</th>
@@ -1622,42 +1683,6 @@
     </div>
     {% endif %}
   </div>
-</div>
-
-<div class="tab-body" id="tab-akun" hidden>
-<div class="card">
-  <div class="card-header"><h3>Akun / User</h3></div>
-  <div id="acc-empty" class="empty-msg" style="display:none">Belum ada data akun.</div>
-  <table id="acc-table" style="display:none">
-    <thead><tr><th>User</th><th>UID</th><th>Shell</th><th>Login Terakhir</th><th>Sesi Aktif</th><th>Tindakan</th></tr></thead>
-    <tbody></tbody>
-  </table>
-</div>
-</div>
-
-<div class="tab-body" id="tab-log" hidden>
-<div class="card" id="log-card">
-  <div class="card-header"><h3>Log Layanan</h3>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <span id="log-state" style="font-size:12px;color:var(--dim)"></span>
-      <button type="button" class="btn btn-ghost btn-sm" id="log-dl-btn" onclick="downloadLog()" title="Unduh log sebagai file .txt" style="display:none">⬇ Unduh</button>
-    </div>
-  </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-    <label style="font-size:12px;color:var(--dim);align-self:center">Unit:</label>
-    <select id="log-unit" onchange="changeUnit()" style="min-width:220px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px">
-      <option value="">— memuat —</option>
-    </select>
-    <label style="font-size:12px;color:var(--dim);align-self:center">Baris:</label>
-    <input type="number" id="log-lines" value="200" min="10" max="2000" onchange="changeUnit()"
-           style="width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px">
-  </div>
-  <div style="margin-bottom:8px">
-    <input type="search" id="log-filter" placeholder="Cari di log… (filter baris)" oninput="filterLog(this.value)"
-           style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:12px">
-  </div>
-  <div id="log-empty" class="empty-msg" style="display:none">Menunggu data log dari Agen Pantau…</div>
-  <pre id="log-pre" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;height:55vh;overflow:auto;white-space:pre-wrap;word-break:break-all;color:var(--text);display:none"></pre>
 </div>
 </div>
 
@@ -1743,6 +1768,126 @@ function showTab(name) {
 }
 document.querySelectorAll('#detail-tabs .tab').forEach(b =>
   b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+// Switcher sub-panel Logging (Log Layanan vs Log Sistem Journal)
+function switchLoggingView(view) {
+  const isSvc = (view === 'svc');
+  const panelSvc = document.getElementById('sublog-panel-svc');
+  const panelSys = document.getElementById('sublog-panel-sys');
+  const btnSvc = document.getElementById('btn-sublog-svc');
+  const btnSys = document.getElementById('btn-sublog-sys');
+  if (panelSvc) panelSvc.style.display = isSvc ? 'block' : 'none';
+  if (panelSys) panelSys.style.display = isSvc ? 'none' : 'block';
+  if (btnSvc) {
+    btnSvc.classList.toggle('is-active', isSvc);
+    btnSvc.style.color = isSvc ? '#38bdf8' : 'var(--dim)';
+    btnSvc.style.background = isSvc ? 'var(--card)' : 'transparent';
+    btnSvc.style.fontWeight = isSvc ? '700' : '500';
+  }
+  if (btnSys) {
+    btnSys.classList.toggle('is-active', !isSvc);
+    btnSys.style.color = !isSvc ? '#38bdf8' : 'var(--dim)';
+    btnSys.style.background = !isSvc ? 'var(--card)' : 'transparent';
+    btnSys.style.fontWeight = !isSvc ? '700' : '500';
+  }
+}
+
+// ---------- Indikator Masalah / Beban Tinggi pada Tab (Alert Dots) ----------
+const INITIAL_SSL_HAS_WARN = {{ 'true' if (ssl_certs and (ssl_certs|selectattr('is_expired')|list or ssl_certs|selectattr('is_critical')|list or ssl_certs|selectattr('is_warning')|list)) else 'false' }};
+const INITIAL_CRON_HAS_FAIL = {{ 'true' if (cron_jobs and cron_jobs.jobs and (cron_jobs.jobs|selectattr('status','equalto','failed')|list)) else 'false' }};
+const INITIAL_LOG_HAS_ERR = {{ 'true' if (system_logs and (system_logs|selectattr('priority','le',3)|list)) else 'false' }};
+
+function updateTabAlertDots(options) {
+  options = options || {};
+  // 1. Kinerja (CPU > 85% atau Memori > 88% atau Swap > 80% atau Load tinggi)
+  if (options.perf !== undefined) {
+    const d = document.getElementById('tab-dot-perf');
+    if (d) {
+      const isWarn = !!options.perf;
+      d.style.display = isWarn ? 'inline-block' : 'none';
+      if (options.perf_yellow) d.classList.add('warn-yellow');
+      else d.classList.remove('warn-yellow');
+      d.title = isWarn ? 'Beban resource tinggi (CPU / Memori / Swap)' : '';
+    }
+  }
+
+  // 2. Layanan (Ada service down & tidak diabaikan)
+  if (options.services !== undefined) {
+    const d = document.getElementById('tab-dot-layanan');
+    if (d) {
+      const hasDown = options.services.some(s => s.status === 'down' && !s.ignored);
+      d.style.display = hasDown ? 'inline-block' : 'none';
+      d.title = hasDown ? 'Ada layanan penting yang berhenti (down)' : '';
+    }
+  }
+
+  // 3. Aktivitas & Masalah (Ada tiket masalah terbuka & aktif)
+  if (options.problems !== undefined) {
+    const d = document.getElementById('tab-dot-masalah');
+    if (d) {
+      const hasOpen = options.problems > 0;
+      d.style.display = hasOpen ? 'inline-block' : 'none';
+      d.title = hasOpen ? options.problems + ' masalah aktif memerlukan perhatian' : '';
+    }
+  }
+
+  // 4. Manajer Tugas (Ada proses zombie atau membebani CPU/RAM ekstrem)
+  if (options.procs !== undefined) {
+    const d = document.getElementById('tab-dot-proses');
+    if (d) {
+      const hasExtreme = options.procs.some(p => (p.cpu_percent > 85 || p.memory_percent > 80 || p.status === 'zombie'));
+      d.style.display = hasExtreme ? 'inline-block' : 'none';
+      d.title = hasExtreme ? 'Ada proses yang memakan CPU/Memori tinggi' : '';
+    }
+  }
+
+  // 5. Firewall (Firewall tidak aktif atau terblokir)
+  if (options.firewall !== undefined) {
+    const d = document.getElementById('tab-dot-firewall');
+    if (d) {
+      d.style.display = options.firewall ? 'inline-block' : 'none';
+      d.classList.add('warn-yellow');
+      d.title = 'Firewall sedang tidak aktif';
+    }
+  }
+
+  // 6. Sertifikat SSL
+  if (options.ssl !== undefined) {
+    const d = document.getElementById('tab-dot-ssl');
+    if (d) {
+      d.style.display = options.ssl ? 'inline-block' : 'none';
+      d.title = 'Ada sertifikat SSL yang segera kedaluwarsa atau bermasalah';
+    }
+  }
+
+  // 7. Tugas Terjadwal (Cron)
+  if (options.cron !== undefined) {
+    const d = document.getElementById('tab-dot-cron');
+    if (d) {
+      d.style.display = options.cron ? 'inline-block' : 'none';
+      d.title = 'Ada cron job yang gagal';
+    }
+  }
+
+  // 8. Logging (Ada galat kritis di systemd journal)
+  if (options.logging !== undefined) {
+    const d = document.getElementById('tab-dot-log');
+    if (d) {
+      d.style.display = options.logging ? 'inline-block' : 'none';
+      d.title = 'Log sistem mencatat error atau status kritis baru';
+    }
+  }
+}
+
+// Inisialisasi awal indikator
+setTimeout(() => {
+  updateTabAlertDots({
+    ssl: INITIAL_SSL_HAS_WARN,
+    cron: INITIAL_CRON_HAS_FAIL,
+    logging: INITIAL_LOG_HAS_ERR,
+    problems: {{ active_open|length }},
+  });
+}, 200);
 
 // ---------- Manajer Tugas (Task Manager) ----------
 const INITIAL_TOP_PROCS = {{ top_procs | tojson }};
@@ -3295,6 +3440,15 @@ function patch(data) {
   if (data.actions && Array.isArray(data.actions)) {
     renderActionHistory(data.actions);
   }
+
+  // Perbarui indikator tab alert dots live
+  const activeProblemsCount = data.open_problems
+    ? data.open_problems.filter(p => !p.is_ignored).length
+    : undefined;
+  updateTabAlertDots({
+    services: data.services,
+    problems: activeProblemsCount,
+  });
 }
 
 let _sysFetching = false;
@@ -3525,6 +3679,19 @@ function renderSys(data) {
     + '</td>'
     + '<td><a href="/servers/' + SID + '/user/' + encodeURIComponent(a.user) + '" class="btn btn-ghost btn-sm">Rincian</a></td></tr>'
   ).join('');
+
+  const accBadge = document.getElementById('acc-count-badge');
+  if (accBadge) accBadge.textContent = acc.length + ' Akun';
+
+  // Periksa apakah performa server overload untuk tab-dot-perf
+  const isHighCpu = (cpu > 85);
+  const isHighMem = (memPct > 90);
+  const isHighSwap = (swapPct > 80);
+  const isHighLoad = (load1 > 10);
+  updateTabAlertDots({
+    perf: (isHighCpu || isHighMem || isHighSwap || isHighLoad),
+    perf_yellow: (!isHighCpu && (memPct > 80 || load1 > 5)),
+  });
 
   syncUnits(data.units, data.extras);
 }

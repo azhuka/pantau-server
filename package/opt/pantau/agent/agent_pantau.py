@@ -464,7 +464,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.20.1"
+AGENT_VERSION = "3.21.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:

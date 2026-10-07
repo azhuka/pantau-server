@@ -308,17 +308,17 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
   opacity:0;
   transform:scaleX(0.5);
 }
-/* Efek Tab Aktif Modern dengan Aksen Kategori */
+/* Efek Tab Aktif Biru Neon Terpadu (Unified Modern Neon Blue) */
 .tab.is-on{
-  background:linear-gradient(180deg, rgba(56, 189, 248, 0.22) 0%, rgba(56, 189, 248, 0.06) 100%);
-  color:#38bdf8;
-  border-color:rgba(56, 189, 248, 0.45);
-  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(56, 189, 248, 0.25);
-  text-shadow:0 0 10px rgba(56, 189, 248, 0.4);
+  background:linear-gradient(180deg, rgba(56, 189, 248, 0.24) 0%, rgba(56, 189, 248, 0.08) 100%) !important;
+  color:#38bdf8 !important;
+  border-color:rgba(56, 189, 248, 0.55) !important;
+  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 4px 18px rgba(56, 189, 248, 0.32), 0 0 12px rgba(56, 189, 248, 0.2) !important;
+  text-shadow:0 0 12px rgba(56, 189, 248, 0.65) !important;
 }
 .tab.is-on::after{
-  background:#38bdf8;
-  box-shadow:0 -1px 8px #38bdf8, 0 0 12px rgba(56, 189, 248, 0.8);
+  background:#38bdf8 !important;
+  box-shadow:0 -1px 8px #38bdf8, 0 0 14px rgba(56, 189, 248, 0.95) !important;
   opacity:1;
   transform:scaleX(1);
 }
@@ -328,88 +328,37 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
   width:6px;
   height:6px;
   border-radius:50%;
-  background:#38bdf8;
-  box-shadow:0 0 8px #38bdf8;
+  background:#38bdf8 !important;
+  box-shadow:0 0 10px #38bdf8, 0 0 14px rgba(56, 189, 248, 0.9) !important;
   display:inline-block;
   margin-right:-1px;
   animation:tabPulse 2s infinite ease-in-out;
 }
 @keyframes tabPulse{
   0%, 100%{ opacity: 1; transform: scale(1); }
-  50%{ opacity: 0.55; transform: scale(0.85); }
+  50%{ opacity: 0.5; transform: scale(0.8); }
 }
 
-/* Sentuhan Warna Kategori Halus (Harmonis & Kaya Warna) */
-/* Hijau Zamrud - Layanan & Kesehatan */
-.tab[data-tab="layanan"].is-on{
-  background:linear-gradient(180deg, rgba(52, 211, 153, 0.22) 0%, rgba(52, 211, 153, 0.06) 100%);
-  color:#34d399;
-  border-color:rgba(52, 211, 153, 0.45);
-  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(52, 211, 153, 0.25);
-  text-shadow:0 0 10px rgba(52, 211, 153, 0.4);
+/* Penanda Masalah Berkedip Merah pada Tab (Blink Badge / Warning Dot) */
+.tab .tab-warn-dot{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#ef4444;
+  box-shadow:0 0 8px #ef4444, 0 0 14px rgba(239, 68, 68, 0.8);
+  margin-left:4px;
+  vertical-align:middle;
+  animation:tabWarnBlink 1.2s infinite ease-in-out;
 }
-.tab[data-tab="layanan"].is-on::after,
-.tab[data-tab="layanan"].is-on::before{ background:#34d399; box-shadow:0 0 10px #34d399; }
-
-/* Oranye/Merah - Masalah & Alarm */
-.tab[data-tab="masalah"].is-on{
-  background:linear-gradient(180deg, rgba(248, 113, 113, 0.22) 0%, rgba(248, 113, 113, 0.06) 100%);
-  color:#f87171;
-  border-color:rgba(248, 113, 113, 0.45);
-  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(248, 113, 113, 0.25);
-  text-shadow:0 0 10px rgba(248, 113, 113, 0.4);
+.tab .tab-warn-dot.warn-yellow{
+  background:#eab308;
+  box-shadow:0 0 8px #eab308, 0 0 14px rgba(234, 179, 8, 0.8);
 }
-.tab[data-tab="masalah"].is-on::after,
-.tab[data-tab="masalah"].is-on::before{ background:#f87171; box-shadow:0 0 10px #f87171; }
-
-/* Kuning Amber - Proses & Cron Jobs */
-.tab[data-tab="proses"].is-on,
-.tab[data-tab="cron"].is-on{
-  background:linear-gradient(180deg, rgba(251, 191, 36, 0.22) 0%, rgba(251, 191, 36, 0.06) 100%);
-  color:#fbbf24;
-  border-color:rgba(251, 191, 36, 0.45);
-  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(251, 191, 36, 0.25);
-  text-shadow:0 0 10px rgba(251, 191, 36, 0.4);
+@keyframes tabWarnBlink{
+  0%, 100%{ opacity: 1; transform: scale(1); }
+  50%{ opacity: 0.25; transform: scale(0.7); }
 }
-.tab[data-tab="proses"].is-on::after, .tab[data-tab="cron"].is-on::after,
-.tab[data-tab="proses"].is-on::before, .tab[data-tab="cron"].is-on::before{ background:#fbbf24; box-shadow:0 0 10px #fbbf24; }
-
-/* Ungu Violet - Keamanan (Firewall, SSL, Port) */
-.tab[data-tab="firewall"].is-on,
-.tab[data-tab="ports"].is-on,
-.tab[data-tab="ssl"].is-on{
-  background:linear-gradient(180deg, rgba(192, 132, 252, 0.22) 0%, rgba(192, 132, 252, 0.06) 100%);
-  color:#c084fc;
-  border-color:rgba(192, 132, 252, 0.45);
-  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(192, 132, 252, 0.25);
-  text-shadow:0 0 10px rgba(192, 132, 252, 0.4);
-}
-.tab[data-tab="firewall"].is-on::after, .tab[data-tab="ports"].is-on::after, .tab[data-tab="ssl"].is-on::after,
-.tab[data-tab="firewall"].is-on::before, .tab[data-tab="ports"].is-on::before, .tab[data-tab="ssl"].is-on::before{ background:#c084fc; box-shadow:0 0 10px #c084fc; }
-
-/* Cyan / Biru Pirus - Jaringan & Log Sistem */
-.tab[data-tab="jaringan"].is-on,
-.tab[data-tab="syslog"].is-on{
-  background:linear-gradient(180deg, rgba(45, 212, 191, 0.22) 0%, rgba(45, 212, 191, 0.06) 100%);
-  color:#2dd4bf;
-  border-color:rgba(45, 212, 191, 0.45);
-  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(45, 212, 191, 0.25);
-  text-shadow:0 0 10px rgba(45, 212, 191, 0.4);
-}
-.tab[data-tab="jaringan"].is-on::after, .tab[data-tab="syslog"].is-on::after,
-.tab[data-tab="jaringan"].is-on::before, .tab[data-tab="syslog"].is-on::before{ background:#2dd4bf; box-shadow:0 0 10px #2dd4bf; }
-
-/* Indigo / Merah Muda - Akun & Log Layanan */
-.tab[data-tab="akun"].is-on,
-.tab[data-tab="log"].is-on{
-  background:linear-gradient(180deg, rgba(244, 114, 182, 0.22) 0%, rgba(244, 114, 182, 0.06) 100%);
-  color:#f472b6;
-  border-color:rgba(244, 114, 182, 0.45);
-  box-shadow:inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(244, 114, 182, 0.25);
-  text-shadow:0 0 10px rgba(244, 114, 182, 0.4);
-}
-.tab[data-tab="akun"].is-on::after, .tab[data-tab="log"].is-on::after,
-.tab[data-tab="akun"].is-on::before, .tab[data-tab="log"].is-on::before{ background:#f472b6; box-shadow:0 0 10px #f472b6; }
 
 .tab:active{
   transform:scale(0.96);
@@ -534,39 +483,46 @@ body.show-alert-banner .main{padding-top:68px}
     </button>
   </div>
   <nav class="sidebar-nav">
-    <div class="nav-section">Menu</div>
+    <div class="nav-section" data-i18n="menu_section_menu">Menu</div>
     <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></span> <span class="nav-label">Dashboard</span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></span> <span class="nav-label" data-i18n="menu_dashboard">Dashboard</span>
     </a>
     <a href="/servers" class="nav-link {% if '/servers' in request.url.path %}active{% endif %}">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span> <span class="nav-label">Servers</span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span> <span class="nav-label" data-i18n="menu_servers">Servers</span>
     </a>
     <a href="/problems" class="nav-link {% if '/problems' in request.url.path %}active{% endif %}">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span> <span class="nav-label">Masalah</span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span> <span class="nav-label" data-i18n="menu_problems">Masalah</span>
     </a>
     <a href="/logs" class="nav-link {% if '/logs' in request.url.path %}active{% endif %}">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></span> <span class="nav-label">Log</span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></span> <span class="nav-label" data-i18n="menu_logs">Log</span>
     </a>
     {% if user and user.role == 'admin' %}
-    <div class="nav-section">Admin</div>
+    <div class="nav-section" data-i18n="menu_section_admin">Admin</div>
     <a href="/audit" class="nav-link {% if '/audit' in request.url.path %}active{% endif %}">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span> <span class="nav-label">Audit</span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span> <span class="nav-label" data-i18n="menu_audit">Audit</span>
     </a>
     <a href="/users" class="nav-link {% if '/users' in request.url.path %}active{% endif %}">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> <span class="nav-label">Users</span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> <span class="nav-label" data-i18n="menu_users">Users</span>
     </a>
     {% endif %}
     <a href="/logout" class="nav-link mob-logout">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span> <span class="nav-label">Logout</span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span> <span class="nav-label" data-i18n="menu_logout">Logout</span>
     </a>
   </nav>
   <div class="sidebar-footer">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:3px 6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:6px">
+      <span style="font-size:11px;color:var(--dim)" data-i18n="lang_label">Bahasa:</span>
+      <div style="display:inline-flex;gap:3px">
+        <button type="button" class="btn-lang" id="btn-lang-id" onclick="setAppLang('id')" style="padding:2px 7px;font-size:10.5px;border-radius:4px;border:1px solid rgba(56,189,248,0.4);background:rgba(56,189,248,0.2);color:#38bdf8;cursor:pointer;font-weight:700">ID</button>
+        <button type="button" class="btn-lang" id="btn-lang-en" onclick="setAppLang('en')" style="padding:2px 7px;font-size:10.5px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--dim);cursor:pointer;font-weight:500">EN</button>
+      </div>
+    </div>
     <div style="font-size:11px;color:var(--dim);margin-bottom:4px">v{{ app_version or '3.12.0' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     {{ user.username }} ({{ user.role }})<br>
-    <a href="/logout">Logout</a>
+    <a href="/logout" data-i18n="menu_logout">Logout</a>
     {% else %}
-    <a href="/login">Login</a>
+    <a href="/login" data-i18n="menu_login">Login</a>
     {% endif %}
   </div>
 </aside>
@@ -597,12 +553,139 @@ body.show-alert-banner .main{padding-top:68px}
 </div>
 
 <script>
+// ---------- Sistem Multi-Bahasa (i18n: ID & EN) ----------
+const APP_TRANSLATIONS = {
+  id: {
+    lang_label: "Bahasa:",
+    menu_section_menu: "Menu",
+    menu_dashboard: "Dashboard",
+    menu_servers: "Servers",
+    menu_problems: "Masalah",
+    menu_logs: "Log",
+    menu_section_admin: "Admin",
+    menu_audit: "Audit",
+    menu_users: "Users",
+    menu_logout: "Logout",
+    menu_login: "Login",
+    tab_perf: "Kinerja",
+    tab_layanan: "Layanan",
+    tab_proses: "Manajer Tugas",
+    tab_akun: "Akun",
+    tab_ports: "Port Terbuka",
+    tab_firewall: "Firewall",
+    tab_ssl: "Sertifikat SSL",
+    tab_cron: "Tugas Terjadwal",
+    tab_logging: "Logging",
+    tab_masalah: "Aktivitas & Masalah",
+    sys_health_normal: "Normal",
+    sys_health_warning: "Perhatian",
+    sys_health_danger: "Kritis",
+  },
+  en: {
+    lang_label: "Language:",
+    menu_section_menu: "Menu",
+    menu_dashboard: "Dashboard",
+    menu_servers: "Servers",
+    menu_problems: "Incidents",
+    menu_logs: "Logs",
+    menu_section_admin: "Admin",
+    menu_audit: "Audit Logs",
+    menu_users: "Users",
+    menu_logout: "Logout",
+    menu_login: "Login",
+    tab_perf: "Performance",
+    tab_layanan: "Services",
+    tab_proses: "Task Manager",
+    tab_akun: "Accounts",
+    tab_ports: "Open Ports",
+    tab_firewall: "Firewall",
+    tab_ssl: "SSL Certificates",
+    tab_cron: "Scheduled Tasks",
+    tab_logging: "Logging",
+    tab_masalah: "Activity & Incidents",
+    sys_health_normal: "Normal",
+    sys_health_warning: "Warning",
+    sys_health_danger: "Critical",
+  }
+};
+
+let currentLang = (function(){
+  try { return localStorage.getItem('pantau_lang') || 'id'; } catch(e){ return 'id'; }
+})();
+
+function setAppLang(lang) {
+  currentLang = (lang === 'en') ? 'en' : 'id';
+  try { localStorage.setItem('pantau_lang', currentLang); } catch(e){}
+  applyAppLang();
+}
+
+function applyAppLang() {
+  const dict = APP_TRANSLATIONS[currentLang] || APP_TRANSLATIONS.id;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if (dict[k]) {
+      const textSpan = el.querySelector('.tab-text');
+      if (textSpan) {
+        textSpan.textContent = dict[k];
+      } else {
+        const badge = el.querySelector('.badge') || el.querySelector('.tab-warn-dot');
+        if (badge) {
+          // Ambil text node awal saja
+          let replaced = false;
+          for (let i = 0; i < el.childNodes.length; i++) {
+            const cn = el.childNodes[i];
+            if (cn.nodeType === Node.TEXT_NODE && cn.nodeValue.trim().length > 0) {
+              cn.nodeValue = dict[k] + ' ';
+              replaced = true;
+              break;
+            }
+          }
+          if (!replaced) el.insertBefore(document.createTextNode(dict[k] + ' '), el.firstChild);
+        } else {
+          el.textContent = dict[k];
+        }
+      }
+    }
+  });
+
+  const btnId = document.getElementById('btn-lang-id');
+  const btnEn = document.getElementById('btn-lang-en');
+  if (btnId && btnEn) {
+    if (currentLang === 'id') {
+      btnId.style.background = 'rgba(56,189,248,0.2)';
+      btnId.style.borderColor = 'rgba(56,189,248,0.4)';
+      btnId.style.color = '#38bdf8';
+      btnId.style.fontWeight = '700';
+      btnEn.style.background = 'transparent';
+      btnEn.style.borderColor = 'rgba(255,255,255,0.1)';
+      btnEn.style.color = 'var(--dim)';
+      btnEn.style.fontWeight = '500';
+    } else {
+      btnEn.style.background = 'rgba(56,189,248,0.2)';
+      btnEn.style.borderColor = 'rgba(56,189,248,0.4)';
+      btnEn.style.color = '#38bdf8';
+      btnEn.style.fontWeight = '700';
+      btnId.style.background = 'transparent';
+      btnId.style.borderColor = 'rgba(255,255,255,0.1)';
+      btnId.style.color = 'var(--dim)';
+      btnId.style.fontWeight = '500';
+    }
+  }
+
+  // Panggil callback spesifik per halaman jika ada
+  if (typeof window.onAppLangChanged === 'function') {
+    window.onAppLangChanged(currentLang);
+  }
+}
+
 (function(){
   try{
     if(window.innerWidth>820 && localStorage.getItem('sb')==='1') document.body.classList.add('sb-collapsed');
     const t=document.getElementById('sbToggle');
     if(t && document.body.classList.contains('sb-collapsed')) t.textContent='\u00bb';
   }catch(e){}
+  // Terapkan bahasa saat load
+  setTimeout(applyAppLang, 10);
 })();
 function toggleSb(){
   const b=document.body;
@@ -767,6 +850,7 @@ function jumpToLog(unit){
   if (!sel) return;
   const ok = !!unit && Array.from(sel.options).some(o => o.value === unit);
   if (!ok){ alert('Unit ' + (unit || '') + ' tidak tersedia di Agen Pantau.'); return; }
+  if (typeof switchLoggingView === 'function') switchLoggingView('svc');
   if (window.showTab) showTab('log');
   sel.value = unit;
   if (typeof changeUnit === 'function') changeUnit();
