@@ -350,7 +350,7 @@ Pantau Server dirancang dengan prinsip-prinsip operasional berikut:
 
 ### Minor Release v3.21.0: Multibahasa (ID/EN), Logging Terpadu, Tab Neon Blue & Indikator Titik Peringatan
 - **Fitur Dwi-Bahasa (Bilingual ID & EN):**
-  - Switcher bahasa interaktif di sidebar bawah (`ID` / `EN`) dengan persistensi `localStorage`.
+  - Switcher bahasa interaktif di sidebar (`ID` / `EN`) dengan persistensi `localStorage`.
   - Dukungan kamus translasi dinamis (`APP_TRANSLATIONS`) untuk navigasi sidebar, judul tab, status kesehatan sistem, dan label komponen.
 - **Restrukturisasi & Penamaan Tab Baku:**
   - Susunan tab terstandardisasi: `Kinerja` | `Layanan` | `Manajer Tugas` | `Akun` | `Port Terbuka` | `Firewall` | `Sertifikat SSL` | `Tugas Terjadwal` | `Logging` | `Aktivitas & Masalah`.
