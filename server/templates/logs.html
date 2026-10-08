@@ -163,7 +163,8 @@ async function pollLog() {
     if (!r.ok) return;
     const d = await r.json();
     if (!d.exists) {
-      el.textContent = '(belum ada log)';
+      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+      el.textContent = isEn ? '(no logs yet)' : '(belum ada log)';
       return;
     }
     renderLog(d.lines);

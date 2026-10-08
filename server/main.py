@@ -3297,8 +3297,8 @@ CPU_WARNING_PCT = 85.0
 DISK_DANGER_PCT = 95.0       # persentase disk terpakai -> danger
 DISK_WARNING_PCT = 90.0
 
-RAM_TIP = ("Cek proses pemakan memori: sudo ps aux --sort=-%mem | head | Hentikan/mulai ulang ambisius: "
-           "sudo systemctl restart <unit> | Beri sumber daya RVMM. Server bisa crash/OOM bila dibiarkan.")
+RAM_TIP = ("Cek proses pemakan memori: sudo ps aux --sort=-%mem | head | Hentikan/mulai ulang proses: "
+           "sudo systemctl restart <unit> | Tambah alokasi RAM. Server bisa crash/OOM bila dibiarkan.")
 CPU_TIP = ("Cek proses pemakan CPU: sudo ps aux --sort=-%cpu | head -20 | restart unit bermasalah; "
            "pertimbangkan menaikkan kuota CPU bila rutin melonjak.")
 DISK_TIP = ("Bersihkan: sudo du -xh --max-depth=2 / | sort -rh | head -20 | hapus log lama: "
@@ -3422,7 +3422,7 @@ SECURITY_TIPS = {
 }
 APT_TIP = ("Buka Rincian server lalu pilih Update OS atau Upgrade. "
            "Di server bisa juga manual: sudo apt update && sudo apt upgrade")
-SVC_DOWN_TIP = ("Cek status: sudo systemctl status {name} | Balik hidupkan: "
+SVC_DOWN_TIP = ("Cek status: sudo systemctl status {name} | Mulai ulang: "
                 "sudo systemctl restart {name} | Log: journalctl -u {name} -n 50")
 SVC_NODATA_TIP = "Pastikan service benar-benar ada & port terbuka (ss -tlnp); agen memindai ulang tiap siklus."
 AGENT_STALE_TIP = ("Agen tidak melapor — mulai ulang: sudo systemctl restart agent_pantau | "

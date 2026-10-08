@@ -880,7 +880,6 @@ const UI_TEXT_PAIRS = [
   ['masalah diabaikan', 'muted incidents'],
   ['tindakan terakhir', 'recent actions'],
   ['tindakan', 'actions'],
-  ['masalah', 'incidents'],
   ['kejadian', 'events'],
   ['Menampilkan', 'Showing'],
   ['dari total', 'of total'],
@@ -966,7 +965,6 @@ const UI_TEXT_PAIRS = [
   ['20 proses', '20 processes'],
   ['50 proses', '50 processes'],
   ['100 proses', '100 processes'],
-  ['proses', 'processes'],
   ['Nama Perintah / Proses', 'Command / Process Name'],
   ['Nama Perintah', 'Command Name'],
   ['Tip: Klik nama kolom header untuk membalikkan urutan (▲ Ringan/A-Z, ▼ Berat/Z-A)', 'Tip: Click column headers to toggle sort order (▲ Low/A-Z, ▼ High/Z-A)'],
@@ -1145,7 +1143,6 @@ const UI_TEXT_PAIRS = [
   ['Terakhir Lapor', 'Last Seen'],
   ['dtk', 's'],
   ['mnt', 'm'],
-  ['jam', 'h'],
   ['hari', 'd'],
   ['Buat Pengguna Sistem Baru', 'Create New System User'],
   ['Buat Pengguna Sistem', 'Create System User'],
@@ -1301,7 +1298,6 @@ const UI_TEXT_PAIRS = [
   ['Terapkan filter pencarian audit', 'Apply audit search filter'],
   ['Terapkan', 'Apply'],
   ['Jejak Aksi Admin', 'Admin Action Trail'],
-  ['terbaru', 'latest'],
   ['Menampilkan maks 250 baris terbaru. Status perintah remote berubah otomatis setelah agen mengeksekusinya.', 'Showing max 250 latest records. Remote command status updates automatically once agent executes it.'],
   ['0 layanan', '0 services'],
   ['Jumlah pembaruan paket sistem operasi (APT) yang tersedia', 'Available OS package updates (APT) count'],
@@ -1359,7 +1355,6 @@ const UI_TEXT_PAIRS = [
   ['mnt lalu', 'm ago'],
   ['jam lalu', 'h ago'],
   ['hari lalu', 'd ago'],
-  ['lalu', 'ago'],
   ['User Management', 'User Management'],
   ['akun terdaftar', 'registered accounts'],
   ['Nama akun untuk masuk ke dashboard', 'Account name to sign in to dashboard'],
@@ -1456,6 +1451,124 @@ const UI_TEXT_PAIRS = [
   ['Terminal Bawaan &middot; shell root', 'Embedded Terminal · root shell'],
   ['● live', '● live'],
   ['live', 'live'],
+  ['% ketersediaan', '% uptime'],
+  ['ketersediaan', 'uptime'],
+  ['— sekarang:', '— now:'],
+  ['1 koneksi', '1 connection'],
+  ['koneksi', 'connections'],
+  ["Pengawasan masa berlaku sertifikat HTTPS (Let's Encrypt / Custom)", "HTTPS certificate expiration monitoring (Let's Encrypt / Custom)"],
+  ["Pengawasan masa berlaku sertifikat HTTPS (Let's Encrypt / Kustom)", "HTTPS certificate expiration monitoring (Let's Encrypt / Custom)"],
+  ['Riwayat Penggunaan Disk (%)', 'Disk Usage History (%)'],
+  ['Riwayat Penggunaan Disk', 'Disk Usage History'],
+  ['Penggunaan Disk', 'Disk Usage'],
+  ['Pemantauan lalu lintas data antarmuka, laju transfer, dan alamat IP', 'Interface network traffic monitoring, transfer rates, and IP addresses'],
+  ['Pemantauan lalu lintas data antarmuka', 'Interface network traffic monitoring'],
+  ['laju transfer', 'transfer rates'],
+  ['alamat IP', 'IP address'],
+  ['Laju Masuk (RX)', 'Inbound Rate (RX)'],
+  ['Laju Keluar (TX)', 'Outbound Rate (TX)'],
+  ['Laju Masuk', 'Inbound Rate'],
+  ['Laju Keluar', 'Outbound Rate'],
+  ['24 jam, 7 hari, 30 hari', '24 hours, 7 days, 30 days'],
+  ['24 jam', '24 hours'],
+  ['7 hari', '7 days'],
+  ['30 hari', '30 days'],
+  ['Memory Used (riwayat ±10 m)', 'Memory Used (history ±10m)'],
+  ['Memori Terpakai (riwayat ±10 mnt)', 'Memory Used (history ±10 min)'],
+  ['CPU (riwayat ±10 mnt)', 'CPU (history ±10 min)'],
+  ['RAM (riwayat ±10 mnt)', 'RAM (history ±10 min)'],
+  ['(riwayat ±10 mnt)', '(history ±10 min)'],
+  ['(riwayat ±10 m)', '(history ±10m)'],
+  ['Semua paket OS sudah mutakhir. Terakhir diperiksa', 'All OS packages are up to date. Last checked'],
+  ['Semua paket OS sudah mutakhir.', 'All OS packages are up to date.'],
+  ['Semua paket OS sudah mutakhir', 'All OS packages are up to date'],
+  ['Terakhir diperiksa', 'Last checked'],
+  ['paket dapat di-upgrade', 'packages can be upgraded'],
+  ['(belum ada log)', '(no logs yet)'],
+  ['Riwayat Layanan', 'Service History'],
+  ['Nonaktif (Terbuka)', 'Disabled (Open)'],
+  ['Aktif (Melindungi)', 'Active (Protected)'],
+  ['Firewall saat ini nonaktif. Port terbuka sepenuhnya tanpa penyaringan UFW.', 'Firewall is currently inactive. Ports are fully open without UFW filtering.'],
+  ['Tidak ada berkas sertifikat SSL lokal ditemukan pada direktori standar (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).', 'No local SSL certificate files found in standard directories (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).'],
+  ['Gunakan tombol <strong>＋ Tambah Lokasi Sertifikat</strong> untuk mendaftarkan path sertifikat kustom.', 'Use the <strong>＋ Add Certificate Location</strong> button to register a custom certificate path.'],
+  ['Gunakan tombol <strong>Tambah Lokasi Sertifikat</strong> untuk mendaftarkan path sertifikat kustom.', 'Use the <strong>Add Certificate Location</strong> button to register a custom certificate path.'],
+  ['Gunakan tombol Tambah Lokasi Sertifikat untuk mendaftarkan path sertifikat kustom.', 'Use the Add Certificate Location button to register a custom certificate path.'],
+  ['Pengawasan masa berlaku sertifikat HTTPS (Let\'s Encrypt / Custom)', 'HTTPS certificate expiration monitoring (Let\'s Encrypt / Custom)'],
+  ['Pengawasan masa berlaku sertifikat HTTPS (Let\'s Encrypt / Kustom)', 'HTTPS certificate expiration monitoring (Let\'s Encrypt / Custom)'],
+  ['＋ Tambah Lokasi Sertifikat', '＋ Add Certificate Location'],
+  ['+ Tambah Lokasi Sertifikat', '+ Add Certificate Location'],
+  ['Tambah Lokasi Sertifikat', 'Add Certificate Location'],
+  ['[Menghubungkan ke agen server...]', '[Connecting to server agent...]'],
+  ['──── apt update · dipicu dari tombol Dashboard ────', '──── apt update · triggered from Dashboard button ────'],
+  ['apt update berjalan, terhubung . shell siap', 'apt update running, connected . shell ready'],
+  ['terhubung · shell siap', 'connected · shell ready'],
+  ['terhubung &middot; shell siap', 'connected &middot; shell ready'],
+  ['──── selesai; kembali ke shell ────', '──── completed; returned to shell ────'],
+  ['Saat mode maintenance aktif, server ini tidak akan memicu alarm atau tiket incidents baru ketika layanan dimatikan atau saat mesin di-reboot.', 'When maintenance mode is active, this server will not trigger alarms or new incident tickets when services are stopped or the machine is rebooted.'],
+  ['Saat mode pemeliharaan aktif, server ini tidak akan memicu alarm atau tiket masalah baru ketika layanan dimatikan atau saat mesin di-reboot.', 'When maintenance mode is active, this server will not trigger alarms or new incident tickets when services are stopped or the machine is rebooted.'],
+  ['Status saat ini: Inactive (Normal)', 'Current status: Inactive (Normal)'],
+  ['Status saat ini: Tidak Aktif (Normal)', 'Current status: Inactive (Normal)'],
+  ['Status saat ini: Aktif (Dalam Pemeliharaan)', 'Current status: Active (Under Maintenance)'],
+  ['Status saat ini: Aktif (Maintenance)', 'Current status: Active (Maintenance)'],
+  ['Aktif (Dalam Pemeliharaan)', 'Active (Under Maintenance)'],
+  ['Tidak Aktif (Normal)', 'Inactive (Normal)'],
+  ['Pemeliharaan terencana', 'Planned Maintenance'],
+  ['Aktifkan Maintenance', 'Enable Maintenance'],
+  ['Aktifkan Pemeliharaan', 'Enable Maintenance'],
+  ['Akhiri Pemeliharaan', 'End Maintenance'],
+  ['Perbarui Durasi', 'Update Duration'],
+  ['Durasi Pemeliharaan:', 'Maintenance Duration:'],
+  ['Durasi Pemeliharaan', 'Maintenance Duration'],
+  ['Alasan (Opsional):', 'Reason (Optional):'],
+  ['30 Menit', '30 Minutes'],
+  ['1 Jam', '1 Hour'],
+  ['4 Jam', '4 Hours'],
+  ['24 Jam', '24 Hours'],
+  ['Manual (Hingga dinonaktifkan)', 'Manual (Until disabled)'],
+  ['──── apt upgrade · dipicu dari tombol Dashboard ────', '──── apt upgrade · triggered from Dashboard button ────'],
+  ['Memproses apt upgrade…', 'Processing apt upgrade…'],
+  ['Memproses…', 'Processing…'],
+  ['Memproses', 'Processing'],
+  ['Pembaruan paket', 'Package updates'],
+  ['Cek status: sudo systemctl status opencode | Balik hidupkan: sudo systemctl restart opencode | Log: journalctl -u opencode -n 50', 'Check status: sudo systemctl status opencode | Restart: sudo systemctl restart opencode | Log: journalctl -u opencode -n 50'],
+  ['Cek status: sudo systemctl status opencode | Mulai ulang: sudo systemctl restart opencode | Log: journalctl -u opencode -n 50', 'Check status: sudo systemctl status opencode | Restart: sudo systemctl restart opencode | Log: journalctl -u opencode -n 50'],
+  ['Cek proses pemakan memori: sudo ps aux --sort=-%mem | head | Hentikan/mulai ulang proses:', 'Check high memory processes: sudo ps aux --sort=-%mem | head | Stop/restart units:'],
+  ['Tambah alokasi RAM. Server bisa crash/OOM bila dibiarkan.', 'Allocate more RAM. Server may crash/OOM if ignored.'],
+  ['Beri sumber daya RVMM. Server bisa crash/OOM bila dibiarkan.', 'Allocate more RAM. Server may crash/OOM if ignored.'],
+  ['Cek proses pemakan CPU: sudo ps aux --sort=-%cpu | head -20 | restart unit bermasalah; pertimbangkan menaikkan kuota CPU bila rutin melonjak.', 'Check high CPU processes: sudo ps aux --sort=-%cpu | head -20 | restart troubled units; consider increasing CPU quota if frequently spiking.'],
+  ['Bersihkan: sudo du -xh --max-depth=2 / | sort -rh | head -20 | hapus log lama: sudo journalctl --vacuum-size=200M. Disk penuh bisa mematikan database & aplikasi.', 'Clean up: sudo du -xh --max-depth=2 / | sort -rh | head -20 | delete old logs: sudo journalctl --vacuum-size=200M. Full disk can crash databases & applications.'],
+  ['RAM menipis sedang dibuang ke swap — dampak kinerja besar. Cek RAM & proses (lihat tips RAM).', 'Low RAM is swapping to disk — major performance impact. Check RAM & processes (see RAM advice).'],
+  ['Kemungkinan serangan SSH — blokir IP sumber (sudo iptables -A INPUT -s <ip> -j DROP), pasang fail2ban (sudo apt install fail2ban), ganti password akun, perketat sshd (PasswordAuthentication no + PubkeyAuthentication yes).', 'Potential SSH attack — block source IP (sudo iptables -A INPUT -s <ip> -j DROP), install fail2ban (sudo apt install fail2ban), change passwords, tighten sshd (PasswordAuthentication no + PubkeyAuthentication yes).'],
+  ['Login SSH gagal dalam jumlah mencurigakan — cek IP sumber & akun; blokir bila repetitif; pasang fail2ban.', 'Suspicious number of failed SSH logins — check source IP & accounts; block if repetitive; install fail2ban.'],
+  ['Ada login SSH gagal — bisa typo password; tetap pantau aktivitas di halaman Aktivitas User.', 'Failed SSH login detected — possibly typo; continue monitoring on User Activity page.'],
+  ['Buka Rincian server lalu pilih Update OS atau Upgrade. Di server bisa juga manual: sudo apt update && sudo apt upgrade', 'Open server Details then select Update OS or Upgrade. On server you can also run manually: sudo apt update && sudo apt upgrade'],
+  ['Pastikan service benar-benar ada & port terbuka (ss -tlnp); agen memindai ulang tiap siklus.', 'Ensure service exists & port is open (ss -tlnp); agent rescans every cycle.'],
+  ['Agen tidak melapor — mulai ulang: sudo systemctl restart agent_pantau | Log: journalctl -u agent_pantau -n 30', 'Agent not reporting — restart: sudo systemctl restart agent_pantau | Log: journalctl -u agent_pantau -n 30'],
+  ['Riwayat perintah shell user', 'Shell command history for user'],
+  ['di server ini, terbaru di atas. Waktu hanya tampil untuk perintah yang shellnya mencatat jam; selebihnya hanya urutannya.', 'on this server, newest on top. Time is only displayed for commands recorded with timestamps; otherwise order only.'],
+  ['di server ini, terbaru di atas. Waktu hanya tampil untuk perintah yang shellnya mencatat timestamp; selebihnya hanya urutan eksekusi.', 'on this server, newest on top. Time is only displayed for commands recorded with timestamps; otherwise execution order only.'],
+  ['berhasil', 'success'],
+  ['sukses', 'success'],
+  ['gagal', 'failed'],
+  ['menunggu…', 'pending…'],
+  ['dieksekusi…', 'executing…'],
+  ['dikirim ke agen', 'sent to agent'],
+  ['diabaikan', 'ignored'],
+  ['dipantau', 'monitored'],
+  ['ditangani', 'acknowledged'],
+  ['selesai', 'resolved'],
+  ['pemeliharaan', 'maintenance'],
+  ['dieksekusi', 'executed'],
+  ['aktif', 'active'],
+  ['aktifkan', 'enable'],
+  ['nonaktifkan', 'disable'],
+  ['berkas', 'files'],
+  ['aktivitas', 'activity'],
+  ['perintah', 'command'],
+  ['memuat...', 'loading...'],
+  ['memuat…', 'loading…'],
+  ['Koneksi', 'Connections'],
+  ['Diperbarui:', 'Updated:'],
   ['Akses & Utilitas Server', 'Server Utilities & Access'],
   ['Akses &amp; Utilitas Server', 'Server Utilities & Access'],
   ['Pembaruan & Daya Mesin', 'Updates & Power'],
@@ -1628,6 +1741,39 @@ const UI_TEXT_PAIRS = [
   ['Semua peran', 'All roles'],
 ];
 
+function escapeRegExpStr(str) {
+  return str.replace(/[.*+?^${}()|[\]\]/g, '\$&');
+}
+
+function replaceWithSmartBoundary(text, sortedPairs) {
+  let out = text;
+  for (let i = 0; i < sortedPairs.length; i++) {
+    const idText = sortedPairs[i][0];
+    const enText = sortedPairs[i][1];
+    if (!idText || !out.includes(idText)) continue;
+    
+    // 1. Jika seluruh teks node sama persis (setelah trim)
+    if (out.trim() === idText) {
+      out = out.replace(idText, enText);
+      continue;
+    }
+    // 2. Jika terdiri dari 2 kata atau lebih, atau mengandung karakter non-huruf
+    if (idText.includes(' ') || !/^[a-zA-Z0-9]+$/.test(idText)) {
+      out = out.split(idText).join(enText);
+    } else {
+      // 3. Kata tunggal (misal Pengguna, Masuk, Keluar, berkas): wajib word boundary
+      // agar tidak merusak kata majemuk seperti Penggunaan, Laju Masuk, dll.
+      try {
+        const re = new RegExp('(?<![a-zA-Z0-9_])' + escapeRegExpStr(idText) + '(?![a-zA-Z0-9_])', 'g');
+        out = out.replace(re, enText);
+      } catch(e) {
+        out = out.split(idText).join(enText);
+      }
+    }
+  }
+  return out;
+}
+
 function translateAllUiText(targetLang) {
   if (typeof _uiObserver !== 'undefined' && _uiObserver) {
     try { _uiObserver.disconnect(); } catch(e){}
@@ -1663,12 +1809,7 @@ function translateAllUiText(targetLang) {
       node._origText = node.nodeValue;
     }
     if (isEn) {
-      let txt = node._origText;
-      sortedPairs.forEach(([idText, enText]) => {
-        if (txt.includes(idText)) {
-          txt = txt.split(idText).join(enText);
-        }
-      });
+      const txt = replaceWithSmartBoundary(node._origText, sortedPairs);
       if (node.nodeValue !== txt) {
         node.nodeValue = txt;
       }
@@ -1684,10 +1825,7 @@ function translateAllUiText(targetLang) {
       el._origTitle = el.getAttribute('title') || '';
     }
     if (isEn) {
-      let t = el._origTitle;
-      sortedPairs.forEach(([idText, enText]) => {
-        if (t.includes(idText)) t = t.split(idText).join(enText);
-      });
+      const t = replaceWithSmartBoundary(el._origTitle, sortedPairs);
       if (el.getAttribute('title') !== t) el.setAttribute('title', t);
     } else {
       if (el.getAttribute('title') !== el._origTitle) el.setAttribute('title', el._origTitle);
@@ -1699,10 +1837,7 @@ function translateAllUiText(targetLang) {
       el._origPlaceholder = el.getAttribute('placeholder') || '';
     }
     if (isEn) {
-      let p = el._origPlaceholder;
-      sortedPairs.forEach(([idText, enText]) => {
-        if (p.includes(idText)) p = p.split(idText).join(enText);
-      });
+      const p = replaceWithSmartBoundary(el._origPlaceholder, sortedPairs);
       if (el.getAttribute('placeholder') !== p) el.setAttribute('placeholder', p);
     } else {
       if (el.getAttribute('placeholder') !== el._origPlaceholder) el.setAttribute('placeholder', el._origPlaceholder);
@@ -1714,10 +1849,7 @@ function translateAllUiText(targetLang) {
       el._origDataMsg = el.getAttribute('data-msg') || '';
     }
     if (isEn) {
-      let m = el._origDataMsg;
-      sortedPairs.forEach(([idText, enText]) => {
-        if (m.includes(idText)) m = m.split(idText).join(enText);
-      });
+      const m = replaceWithSmartBoundary(el._origDataMsg, sortedPairs);
       if (el.getAttribute('data-msg') !== m) el.setAttribute('data-msg', m);
     } else {
       if (el.getAttribute('data-msg') !== el._origDataMsg) el.setAttribute('data-msg', el._origDataMsg);
@@ -1729,15 +1861,13 @@ function translateAllUiText(targetLang) {
       el._origAriaLabel = el.getAttribute('aria-label') || '';
     }
     if (isEn) {
-      let a = el._origAriaLabel;
-      sortedPairs.forEach(([idText, enText]) => {
-        if (a.includes(idText)) a = a.split(idText).join(enText);
-      });
+      const a = replaceWithSmartBoundary(el._origAriaLabel, sortedPairs);
       if (el.getAttribute('aria-label') !== a) el.setAttribute('aria-label', a);
     } else {
       if (el.getAttribute('aria-label') !== el._origAriaLabel) el.setAttribute('aria-label', el._origAriaLabel);
     }
   });
+
   if (typeof _uiObserver !== 'undefined' && _uiObserver && targetLang === 'en' && document.body) {
     try {
       _uiObserver.observe(document.body, { childList: true, subtree: true, characterData: true });

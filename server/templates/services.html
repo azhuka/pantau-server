@@ -2350,7 +2350,8 @@ function renderTopProcs(data) {
 
   if (timeSpan && data.updated_at) {
     const d = new Date(data.updated_at + 'Z');
-    timeSpan.textContent = 'Diperbarui: ' + d.toLocaleTimeString();
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    timeSpan.textContent = (isEn ? 'Updated: ' : 'Diperbarui: ') + d.toLocaleTimeString();
   }
 
   // Gabungkan dan deduplikasi proses berdasarkan PID
@@ -2958,16 +2959,17 @@ function renderApt(data) {
   const pkgs = (data.apt_packages && data.apt_packages.length) ? data.apt_packages : (lastAptPkgs || []);
   lastAptPkgs = pkgs;
   const upBtn = document.getElementById('apt-upgrade-btn');
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
   if (aptRunning) {
     // jangan timpa status proses yang sedang berjalan
   } else if (aptN == null) {
-    aptSetState('', 'Belum ada info paket — klik <b>Update OS</b> untuk menyegarkan.');
+    aptSetState('', isEn ? 'No package info yet — click <b>Update OS</b> to refresh.' : 'Belum ada info paket — klik <b>Update OS</b> untuk menyegarkan.');
   } else if (aptN === 0) {
-    aptSetState('ok', 'Semua paket OS sudah mutakhir.'
-      + (data.apt_last_update ? ' <span class="dim">Terakhir diperiksa ' + fmtAptLast(data.apt_last_update) + '.</span>' : ''));
+    aptSetState('ok', (isEn ? 'All OS packages are up to date.' : 'Semua paket OS sudah mutakhir.')
+      + (data.apt_last_update ? ' <span class="dim">' + (isEn ? 'Last checked ' : 'Terakhir diperiksa ') + fmtAptLast(data.apt_last_update) + '.</span>' : ''));
   } else {
     const names = pkgs.slice(0, 8).map(pkgName).filter(Boolean).join(', ');
-    aptSetState('pending', '<b>' + aptN + ' paket</b> dapat di-upgrade'
+    aptSetState('pending', '<b>' + aptN + (isEn ? ' packages</b> can be upgraded' : ' paket</b> dapat di-upgrade')
       + (names ? ': <span class="mono dim">' + escapeHtml(names) + (pkgs.length > 8 ? '…' : '') + '</span>' : '.'));
   }
   const canUpgrade = !aptRunning && (aptArmed || aptUpdated) && aptN > 0;
@@ -3033,18 +3035,20 @@ function aptLiveAppend(text, replace) {
 function aptLiveShow(kind) {
   const term = getTerm();
   term.suspendForApt();
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
   aptHeader = '\r\n\x1b[33m──── ' + aptLabel(kind)
-    + ' · dipicu dari tombol Dashboard ────\x1b[0m\r\n';
+    + (isEn ? ' · triggered from Dashboard button ────' : ' · dipicu dari tombol Dashboard ────') + '\x1b[0m\r\n';
   aptLiveBuf = '';
   term.setRawBuffer(aptHeader);
   term.show();
-  aptLiveStatus('mengirim perintah ke server…', 'var(--dim)');
+  aptLiveStatus(isEn ? 'sending command to server…' : 'mengirim perintah ke server…', 'var(--dim)');
 }
 
 // Setelah proses apt selesai, Terminal kembali ke shell
 function aptLiveDone() {
   const term = getTerm();
-  aptLiveAppend('\r\n\x1b[33m──── selesai; kembali ke shell ────\x1b[0m\r\n', false);
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  aptLiveAppend('\r\n\x1b[33m──── ' + (isEn ? 'completed; returned to shell' : 'selesai; kembali ke shell') + ' ────\x1b[0m\r\n', false);
   term.resumeAfterApt();
 }
 
@@ -3299,15 +3303,17 @@ class WebTerminal {
 
   suspendForApt() {
     this.aptActive = true;
-    if (this.titleEl) this.titleEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg><span>Terminal &middot; pembaruan paket</span>';
-    this.status('menjalankan proses apt…', 'var(--yellow)', 'busy');
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    if (this.titleEl) this.titleEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg><span>' + (isEn ? 'Terminal &middot; package updates' : 'Terminal &middot; pembaruan paket') + '</span>';
+    this.status(isEn ? 'running apt process…' : 'menjalankan proses apt…', 'var(--yellow)', 'busy');
   }
 
   resumeAfterApt() {
     this.aptActive = false;
-    if (this.titleEl) this.titleEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg><span>Terminal Bawaan &middot; shell root</span>';
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    if (this.titleEl) this.titleEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg><span>' + (isEn ? 'Embedded Terminal &middot; root shell' : 'Terminal Bawaan &middot; shell root') + '</span>';
     if (this.state === 'live') {
-      this.status('terhubung &middot; shell siap', 'var(--green)', 'active');
+      this.status(isEn ? 'connected &middot; shell ready' : 'terhubung &middot; shell siap', 'var(--green)', 'active');
       this.focus();
     } else {
       this.connect();
@@ -3320,14 +3326,15 @@ class WebTerminal {
       this.close();
     }
 
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
     this.initXterm();
     this.state = 'connecting';
-    this.status('menyambung ke shell…', 'var(--dim)', 'busy');
+    this.status(isEn ? 'connecting to shell…' : 'menyambung ke shell…', 'var(--dim)', 'busy');
     this.show();
 
     if (this.term) {
       this.term.reset();
-      this.term.write('\x1b[90m[Menghubungkan ke agen server...]\x1b[0m\r\n');
+      this.term.write('\x1b[90m' + (isEn ? '[Connecting to server agent...]' : '[Menghubungkan ke agen server...]') + '\x1b[0m\r\n');
     }
 
     const proto = (location.protocol === 'https:') ? 'wss:' : 'ws:';
@@ -3437,7 +3444,8 @@ async function aptAction(kind) {
   aptRunning = true;
   if (upD) upD.disabled = true;
   aptSetUpgradeEnabled(false);
-  aptSetState('busy', 'Memproses <span class="dim">' + aptLabel(kind) + '</span>…');
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  aptSetState('busy', (isEn ? 'Processing <span class="dim">' : 'Memproses <span class="dim">') + aptLabel(kind) + '</span>…');
   aptRid = null;
   aptLiveShow(kind);
 
@@ -3566,10 +3574,11 @@ async function aptFollow(rid, kind, startedMs) {
         aptMsg('<b>Reparasi paket selesai — dpkg & dependensi telah dipulihkan.</b>', 'var(--green)');
         aptLiveStatus('<b style="color:var(--green)">Selesai — reparasi paket berhasil.</b>', 'var(--green)');
       } else {
-        aptSetState('ok', 'Semua paket OS sudah mutakhir.'
-          + (apt.last_update ? ' <span class="dim">Terakhir diperiksa ' + fmtAptLast(apt.last_update) + '.</span>' : ''));
-        aptMsg('<b>Semua paket OS sudah mutakhir.</b>', 'var(--green)');
-        aptLiveStatus('<b style="color:var(--green)">Selesai — semua paket OS sudah mutakhir.</b>', 'var(--green)');
+        const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+        aptSetState('ok', (isEn ? 'All OS packages are up to date.' : 'Semua paket OS sudah mutakhir.')
+          + (apt.last_update ? ' <span class="dim">' + (isEn ? 'Last checked ' : 'Terakhir diperiksa ') + fmtAptLast(apt.last_update) + '.</span>' : ''));
+        aptMsg(isEn ? '<b>All OS packages are up to date.</b>' : '<b>Semua paket OS sudah mutakhir.</b>', 'var(--green)');
+        aptLiveStatus(isEn ? '<b style="color:var(--green)">Done — all OS packages are up to date.</b>' : '<b style="color:var(--green)">Selesai — semua paket OS sudah mutakhir.</b>', 'var(--green)');
       }
       aptUpdated = true; // Update (atau Upgrade) sudah dijalankan & tuntas di sesi ini
       aptLastCount = apt.upgradable;
@@ -4561,11 +4570,12 @@ function renderSvcStrip(elId, points) {
   const overallPct = totalSamples > 0 ? (upSamples / totalSamples * 100) : null;
   const pill = document.getElementById('svc-uptime-pill');
   if (pill) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
     if (overallPct === null) {
-      pill.textContent = 'tidak ada data';
+      pill.textContent = isEn ? 'no data' : 'tidak ada data';
       pill.className = 'badge badge-muted';
     } else {
-      pill.textContent = overallPct.toFixed(1) + '% ketersediaan';
+      pill.textContent = overallPct.toFixed(1) + (isEn ? '% uptime' : '% ketersediaan');
       pill.className = 'badge ' + (overallPct >= 99 ? 'badge-up' : (overallPct >= 90 ? 'badge-warn' : 'badge-danger'));
     }
   }
@@ -4626,9 +4636,10 @@ async function loadSvcHistory() {
   const now = data.now || {};
   const pts = data.points || [];
   document.getElementById('svc-empty').style.display = pts.length ? 'none' : 'block';
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
   document.getElementById('svc-current').textContent =
-    (svc.name || '') + ' — sekarang: ' + (now.status || '-')
-    + (now.connections ? ' · ' + now.connections + ' koneksi' : '')
+    (svc.name || '') + ' — ' + (isEn ? 'now: ' : 'sekarang: ') + (now.status || '-')
+    + (now.connections ? ' · ' + now.connections + (isEn ? ' connections' : ' koneksi') : '')
     + (now.response_time_ms !== null && now.response_time_ms !== undefined ? ' · ' + now.response_time_ms + ' ms' : '');
   renderLineChart('chart-svc-rt', pts, p => p.rt, v => v.toFixed(0) + ' ms', 'var(--blue)', 0);
   renderLineChart('chart-svc-conn', pts, p => p.conns, v => Math.round(v) + '', 'var(--green)', 0);
