@@ -1739,10 +1739,160 @@ const UI_TEXT_PAIRS = [
   ['Semua jenis', 'All types'],
   ['Semua aksi', 'All actions'],
   ['Semua peran', 'All roles'],
+
+  // Perbaikan redaksi & multibahasa terlengkap
+  ['(perlu update)', '(update required)'],
+  ['perlu update', 'update required'],
+  ['agen perlu update', 'agent update required'],
+  ['agent perlu update', 'agent update required'],
+  ['Versi Agen Pantau di server ini', 'Pantau Agent version on this server'],
+  ['lebih lama dari dashboard', 'is older than dashboard'],
+  ['lebih lama of dashboard', 'is older than dashboard'],
+  ['Perbarui agen untuk mengaktifkan fitur snapshot proses dan kestabilan sistem.', 'Update agent to enable process snapshot features and system stability.'],
+  ['Perbarui agen untuk mengaktifkan fitur snapshot proses dan kestabilan sistem', 'Update agent to enable process snapshot features and system stability'],
+  ['Salin Perintah Update', 'Copy Update Command'],
+  ['📋 Salin Perintah Update', '📋 Copy Update Command'],
+  ['Salin perintah update agen ke clipboard', 'Copy agent update command to clipboard'],
+  ['perintah (dari', 'commands (of'],
+  ['perintah', 'commands'],
+  ['Perintah', 'Commands'],
+  ['Status: Normal', 'Status: Normal'],
+  ['Status: Terhenti', 'Status: Stopped'],
+  ['Status:Normal', 'Status: Normal'],
+  ['Status:', 'Status:'],
+  ['Respons:', 'Response:'],
+  ['Koneksi:', 'Connections:'],
+  ['Koneksi', 'Connections'],
+  ['koneksi', 'connections'],
+  ['Tambah SSL Kustom', 'Add Custom SSL'],
+  ['Tambah SSK Kustom', 'Add Custom SSL'],
+  ['+ Tambah SSL Kustom', '+ Add Custom SSL'],
+  ['Akui Peringatan', 'Acknowledge Alert'],
+  ['Akui', 'Acknowledge'],
+  ['diakui', 'acknowledged'],
+  ['Diakui', 'Acknowledged'],
+  ['Kunci Akun pengguna', 'Lock user account'],
+  ['Buka Kunci pengguna', 'Unlock user account'],
+  ['Kunci Akun', 'Lock Account'],
+  ['Buka Kunci Akun', 'Unlock Account'],
+  ['Buka kunci akun (aktifkan login)', 'Unlock account (enable login)'],
+  ['Kunci akun (disable login)', 'Lock account (disable login)'],
+  ['Buka kunci akun', 'Unlock account'],
+  ['Kunci akun', 'Lock account'],
+  ['Aturan Port & Kebijakan Akses (Rules)', 'Port Rules & Access Policy'],
+  ['Aturan Port & Kebijakan Akses', 'Port Rules & Access Policy'],
+  ['Aturan / Deskripsi Akses Port', 'Rule / Port Access Description'],
+  ['Aturan', 'Rules'],
+  ['aturan', 'rules'],
+  ['Interaktif', 'Interactive'],
+  ['interaktif', 'interactive'],
+  ['Nonaktifkan', 'Disable'],
+  ['Aktifkan', 'Enable'],
+  ['Nonaktif (Terbuka)', 'Disabled (Open)'],
+  ['Aktif (Melindungi)', 'Active (Protecting)'],
+  ['Status saat ini:', 'Current status:'],
+  ['Status saat ini', 'Current status'],
+  ['mutakhir', 'up to date'],
+  ['Mutakhir', 'Up to date'],
+  ['paket dapat di-upgrade', 'packages can be upgraded'],
+  ['paket siap di-upgrade', 'packages ready to upgrade'],
+  ['paket siap untuk di-upgrade', 'packages ready to upgrade'],
+  ['pending upgrade', 'pending upgrade'],
+  ['paket tersedia', 'packages available'],
+  ['paket', 'packages'],
+  ['Paket', 'Packages'],
+  ['masalah', 'issues'],
+  ['Masalah', 'Issues'],
+  ['terbaru di atas', 'newest on top'],
+  ['terbaru', 'latest'],
+  ['Terbaru', 'Latest'],
+  ['Dibuat via Pantau Server', 'Created via Pantau Server'],
+  ['berkas', 'files'],
+  ['Berkas', 'Files'],
+  ['aktivitas', 'activity'],
+  ['Aktivitas', 'Activity'],
+  ['memuat…', 'loading…'],
+  ['memuat...', 'loading...'],
+  ['memuat', 'loading'],
+  ['Memuat…', 'Loading…'],
+  ['Memuat...', 'Loading...'],
+  ['laju transfer', 'transfer rate'],
+  ['Laju transfer', 'Transfer rate'],
+  ['alamat IP', 'IP address'],
+  ['Alamat IP', 'IP Address'],
+  ['Laju Masuk (RX)', 'Inbound Rate (RX)'],
+  ['Laju Keluar (TX)', 'Outbound Rate (TX)'],
+  ['Riwayat Penggunaan Disk (%)', 'Disk Usage History (%)'],
+  ['Pemantauan lalu lintas data antarmuka', 'Interface data traffic monitoring'],
+  ['(riwayat ±10 mnt)', '(history ±10m)'],
+  ['(riwayat ±10 m)', '(history ±10m)'],
+  ['Semua paket OS sudah mutakhir.', 'All OS packages are up to date.'],
+  ['Terakhir diperiksa', 'Last checked'],
+  ['24 jam', '24 hours'],
+  ['7 hari', '7 days'],
+  ['30 hari', '30 days'],
+  ['7 Hari', '7 Days'],
+  ['30 Hari', '30 Days'],
+  ['ketersediaan', 'uptime'],
+  ['% ketersediaan', '% uptime'],
+  ['Diperbarui:', 'Updated:'],
+  ['Diperbarui', 'Updated'],
+  ['Riwayat Layanan', 'Service History'],
+  ['sekarang:', 'now:'],
+  ['[Menghubungkan ke agen server...]', '[Connecting to server agent...]'],
+  ['──── apt update · dipicu dari tombol Dashboard ────', '──── apt update · triggered from Dashboard button ────'],
+  ['──── apt upgrade · dipicu dari tombol Dashboard ────', '──── apt upgrade · triggered from Dashboard button ────'],
+  ['apt update berjalan, terhubung . shell siap', 'apt update running, connected . shell ready'],
+  ['──── selesai; kembali ke shell ────', '──── completed; returned to shell ────'],
+  ['Memproses apt upgrade…', 'Processing apt upgrade…'],
+  ['Pembaruan paket', 'Package updates'],
+  ['(belum ada log)', '(no logs yet)'],
+  ['Pemeliharaan terencana', 'Planned maintenance'],
+  ['Aktifkan Maintenance', 'Enable Maintenance'],
+  ['Saat mode maintenance aktif, server ini tidak akan memicu alarm atau tiket incidents baru ketika layanan dimatikan atau saat mesin di-reboot.', 'When maintenance mode is active, this server will not trigger alarms or new incident tickets when services are stopped or the machine is rebooted.'],
+  ['Firewall saat ini nonaktif. Port terbuka sepenuhnya tanpa penyaringan UFW.', 'Firewall is currently inactive. Ports are fully open without UFW filtering.'],
+  ['Tidak ada berkas sertifikat SSL lokal ditemukan pada direktori standar (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).', 'No local SSL certificate files found in standard directories (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).'],
+  ['Gunakan tombol <strong>Tambah Lokasi Sertifikat</strong> untuk mendaftarkan path sertifikat kustom.', 'Use the <strong>Add Certificate Location</strong> button to register a custom certificate path.'],
+  ['Gunakan tombol Tambah Lokasi Sertifikat untuk mendaftarkan path sertifikat kustom.', 'Use the Add Certificate Location button to register a custom certificate path.'],
+  ['Pengawasan masa berlaku sertifikat HTTPS (Let\'s Encrypt / Custom)', 'HTTPS certificate validity monitoring (Let\'s Encrypt / Custom)'],
+  ['+ Tambah Lokasi Sertifikat', '+ Add Certificate Location'],
+  ['＋ Tambah Lokasi Sertifikat', '＋ Add Certificate Location'],
+  ['Tambah Lokasi Sertifikat', 'Add Certificate Location'],
+  ['Cek status:', 'Check status:'],
+  ['Mulai ulang:', 'Restart:'],
+  ['Log:', 'Logs:'],
+  ['kambuh', 'recurred'],
+  ['diabaikan permanen', 'permanently ignored'],
+  ['diabaikan (permanen)', 'ignored (permanent)'],
+  ['diabaikan (hanya insiden saat ini)', 'ignored (current incident only)'],
+  ['diselesaikan manual', 'manually resolved'],
+  ['pemantauan diaktifkan kembali', 'monitoring resumed'],
+  ['Menampilkan 0 masalah', 'Showing 0 issues'],
+  ['0 masalah', '0 issues'],
+  ['Semua masalah', 'All issues'],
+  ['Menampilkan 0 tindakan', 'Showing 0 actions'],
+  ['0 tindakan', '0 actions'],
+  ['Belum ada riwayat tindakan di server ini.', 'No action history on this server yet.'],
+  ['Belum ada data riwayat layanan.', 'No service history data yet.'],
+  ['Tidak ada sampel laporan', 'No report samples'],
+  ['Nama layanan atau daemon yang dipantau', 'Monitored service or daemon name'],
+  ['Nomor port jaringan yang digunakan oleh layanan', 'Network port number used by service'],
+  ['Nama proses sistem operasi yang dieksekusi', 'Operating system process name executed'],
+  ['Kondisi terkini layanan (up = aktif normal, down = terhenti)', 'Current service condition (up = active normal, down = stopped)'],
+  ['Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan', 'Active network connections currently connected to service'],
+  ['Waktu respons layanan dalam satuan milidetik (ms)', 'Service response time in milliseconds (ms)'],
+  ['Hasil pemeriksaan kesehatan (health check) layanan', 'Service health check results'],
+  ['Persentase ketersediaan layanan dalam 24 jam terakhir', 'Service availability percentage in the last 24 hours'],
+  ['Kontrol layanan: Restart, Mulai (▶), Berhenti (■), Abaikan (🔕), atau Hapus', 'Service control: Restart, Start (▶), Stop (■), Ignore (🔕), or Delete'],
+  ['Waktu Respon (ms)', 'Response Time (ms)'],
+  ['Garis Waktu Ketersediaan Layanan (Uptime Timeline)', 'Service Uptime Timeline'],
+  ['Setiap blok menunjukkan status pada interval waktu tersebut', 'Each block indicates status at that time interval'],
+  ['Tanpa Data', 'No Data'],
+  ['Sekarang', 'Now'],
 ];
 
 function escapeRegExpStr(str) {
-  return str.replace(/[.*+?^${}()|[\]\]/g, '\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function replaceWithSmartBoundary(text, sortedPairs) {
@@ -1829,6 +1979,28 @@ function translateAllUiText(targetLang) {
       if (el.getAttribute('title') !== t) el.setAttribute('title', t);
     } else {
       if (el.getAttribute('title') !== el._origTitle) el.setAttribute('title', el._origTitle);
+    }
+  });
+
+  document.querySelectorAll('[data-tooltip]').forEach(el => {
+    if (el._origDataTooltip === undefined) {
+      el._origDataTooltip = el.getAttribute('data-tooltip') || '';
+    }
+    if (isEn) {
+      const t = replaceWithSmartBoundary(el._origDataTooltip, sortedPairs);
+      if (el.getAttribute('data-tooltip') !== t) el.setAttribute('data-tooltip', t);
+    } else {
+      if (el.getAttribute('data-tooltip') !== el._origDataTooltip) el.setAttribute('data-tooltip', el._origDataTooltip);
+    }
+  });
+
+  document.querySelectorAll('input[type="text"]').forEach(el => {
+    if (el._origVal === undefined) el._origVal = el.value;
+    if (isEn) {
+      const v = replaceWithSmartBoundary(el._origVal, sortedPairs);
+      if (el.value === el._origVal && v !== el._origVal) el.value = v;
+    } else {
+      if (el._origVal && el.value !== el._origVal) el.value = el._origVal;
     }
   });
 
@@ -2411,8 +2583,14 @@ setInterval(alertFetch, 10000);
     
     // Tampil super cepat dalam 80ms (jauh lebih instan dibanding browser default 700-1000ms)
     showTimer = setTimeout(() => {
-      const text = el.getAttribute('data-tooltip');
+      let text = el.getAttribute('data-tooltip');
       if (!text) return;
+
+      const isEn = (localStorage.getItem('app_lang') || 'id') === 'en';
+      if (isEn && typeof replaceWithSmartBoundary === 'function' && typeof UI_TEXT_PAIRS !== 'undefined') {
+        const sortedPairs = [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length);
+        text = replaceWithSmartBoundary(text, sortedPairs);
+      }
 
       tipEl.textContent = text;
       tipEl.style.display = 'block';

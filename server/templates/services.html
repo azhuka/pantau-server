@@ -2907,10 +2907,11 @@ function fmtUptime(sec) {
   const d = Math.floor(sec / 86400);
   const h = Math.floor((sec % 86400) / 3600);
   const m = Math.floor((sec % 3600) / 60);
+  const isEn = (localStorage.getItem('app_lang') || 'id') === 'en';
   let s = '';
-  if (d) s += d + 'h ';
-  if (d || h) s += h + 'j ';
-  return s + m + 'm';
+  if (d) s += d + (isEn ? 'd ' : ' hari ');
+  if (d || h) s += h + (isEn ? 'h ' : ' jam ');
+  return s + m + (isEn ? 'm' : ' mnt');
 }
 
 // ---------- paket OS update (tombol Update / Upgrade) ----------
@@ -2959,7 +2960,7 @@ function renderApt(data) {
   const pkgs = (data.apt_packages && data.apt_packages.length) ? data.apt_packages : (lastAptPkgs || []);
   lastAptPkgs = pkgs;
   const upBtn = document.getElementById('apt-upgrade-btn');
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   if (aptRunning) {
     // jangan timpa status proses yang sedang berjalan
   } else if (aptN == null) {
@@ -2975,10 +2976,10 @@ function renderApt(data) {
   const canUpgrade = !aptRunning && (aptArmed || aptUpdated) && aptN > 0;
   if (upBtn) {
     upBtn.disabled = !canUpgrade;
-    upBtn.title = aptRunning ? 'Proses Update/Upgrade sedang berjalan…'
-      : canUpgrade ? 'Tingkatkan semua paket tertunda'
-      : !aptUpdated ? 'Klik Update OS terlebih dahulu'
-      : 'Tidak ada paket yang perlu di-upgrade';
+    upBtn.title = aptRunning ? (isEn ? 'Update/Upgrade process is running…' : 'Proses Update/Upgrade sedang berjalan…')
+      : canUpgrade ? (isEn ? 'Upgrade all pending packages' : 'Tingkatkan semua paket tertunda')
+      : !aptUpdated ? (isEn ? 'Click Update OS first' : 'Klik Update OS terlebih dahulu')
+      : (isEn ? 'No packages need upgrade' : 'Tidak ada paket yang perlu di-upgrade');
   }
   aptSetUpgradeEnabled(canUpgrade);
 }
@@ -3444,7 +3445,7 @@ async function aptAction(kind) {
   aptRunning = true;
   if (upD) upD.disabled = true;
   aptSetUpgradeEnabled(false);
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   aptSetState('busy', (isEn ? 'Processing <span class="dim">' : 'Memproses <span class="dim">') + aptLabel(kind) + '</span>…');
   aptRid = null;
   aptLiveShow(kind);
@@ -3548,8 +3549,9 @@ async function aptFollow(rid, kind, startedMs) {
       const apt = info.apt;
       const final = info.output || '';
       aptLiveAppend(final, true);
+      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
       if (apt.upgradable > 0) {
-        aptSetState('pending', '<b>' + apt.upgradable + ' paket</b> siap di-upgrade. <span class="dim">Lihat daftar di bawah.</span>');
+        aptSetState('pending', '<b>' + apt.upgradable + (isEn ? ' packages</b> ready to upgrade. <span class="dim">See list below.</span>' : ' paket</b> siap di-upgrade. <span class="dim">Lihat daftar di bawah.</span>'));
         const pkgs = apt.packages || [];
         const enriched = pkgs.map(p => {
           const matched = matchAptByName(pkgName(p));
@@ -3563,18 +3565,17 @@ async function aptFollow(rid, kind, startedMs) {
           ? '<div style="margin-top:6px;max-height:160px;overflow:auto;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:monospace;font-size:11px">'
             + enriched.slice(0, 60).map(pkgItemHtml).join('<br>') + '</div>'
           : '';
-        aptMsg('<b>' + apt.upgradable + ' paket siap untuk di-upgrade.</b>' + listHtml, 'var(--yellow)');
-        aptLiveStatus('<b style="color:var(--yellow)">Selesai — ' + apt.upgradable + ' paket siap di-upgrade.</b> Klik tombol Upgrade untuk mengeksekusi.', 'var(--yellow)');
+        aptMsg('<b>' + apt.upgradable + (isEn ? ' packages ready for upgrade.</b>' : ' paket siap untuk di-upgrade.</b>') + listHtml, 'var(--yellow)');
+        aptLiveStatus('<b style="color:var(--yellow)">' + (isEn ? 'Completed — ' + apt.upgradable + ' packages ready for upgrade.</b> Click Upgrade button to execute.' : 'Selesai — ' + apt.upgradable + ' paket siap di-upgrade.</b> Klik tombol Upgrade untuk mengeksekusi.'), 'var(--yellow)');
       } else if (kind === 'APT_UPGRADE' || kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_DIST_UPGRADE') {
-        aptSetState('ok', 'Proses upgrade selesai — semua paket sudah ditingkatkan.');
-        aptMsg('<b>Proses upgrade selesai — semua paket sudah ditingkatkan.</b>', 'var(--green)');
-        aptLiveStatus('<b style="color:var(--green)">Selesai — upgrade berhasil.</b>', 'var(--green)');
+        aptSetState('ok', isEn ? 'Upgrade completed — all packages are up to date.' : 'Proses upgrade selesai — semua paket sudah ditingkatkan.');
+        aptMsg('<b>' + (isEn ? 'Upgrade completed — all packages are up to date.' : 'Proses upgrade selesai — semua paket sudah ditingkatkan.') + '</b>', 'var(--green)');
+        aptLiveStatus('<b style="color:var(--green)">' + (isEn ? 'Completed — upgrade successful.' : 'Selesai — upgrade berhasil.') + '</b>', 'var(--green)');
       } else if (kind === 'APT_FIX') {
-        aptSetState('ok', 'Reparasi paket selesai — dpkg & dependensi telah dipulihkan.');
-        aptMsg('<b>Reparasi paket selesai — dpkg & dependensi telah dipulihkan.</b>', 'var(--green)');
-        aptLiveStatus('<b style="color:var(--green)">Selesai — reparasi paket berhasil.</b>', 'var(--green)');
+        aptSetState('ok', isEn ? 'Package repair completed — dpkg & dependencies resolved.' : 'Reparasi paket selesai — dpkg & dependensi telah dipulihkan.');
+        aptMsg('<b>' + (isEn ? 'Package repair completed — dpkg & dependencies resolved.' : 'Reparasi paket selesai — dpkg & dependensi telah dipulihkan.') + '</b>', 'var(--green)');
+        aptLiveStatus('<b style="color:var(--green)">' + (isEn ? 'Completed — package repair successful.' : 'Selesai — reparasi paket berhasil.') + '</b>', 'var(--green)');
       } else {
-        const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
         aptSetState('ok', (isEn ? 'All OS packages are up to date.' : 'Semua paket OS sudah mutakhir.')
           + (apt.last_update ? ' <span class="dim">' + (isEn ? 'Last checked ' : 'Terakhir diperiksa ') + fmtAptLast(apt.last_update) + '.</span>' : ''));
         aptMsg(isEn ? '<b>All OS packages are up to date.</b>' : '<b>Semua paket OS sudah mutakhir.</b>', 'var(--green)');
@@ -3871,10 +3872,11 @@ function probFilter() {
 
   const startShow = totalMatched === 0 ? 0 : startIdx + 1;
   const endShow = endIdx;
-  const txtSummary = totalMatched === 0 ? '0 masalah' : `Menampilkan ${startShow}-${endShow} dari ${totalMatched} masalah`;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const txtSummary = totalMatched === 0 ? (isEn ? '0 issues' : '0 masalah') : (isEn ? `Showing ${startShow}-${endShow} of ${totalMatched} issues` : `Menampilkan ${startShow}-${endShow} dari ${totalMatched} masalah`);
   if (countElTop) countElTop.textContent = txtSummary;
   if (countElBottom) countElBottom.textContent = txtSummary;
-  if (pageInfoEl) pageInfoEl.textContent = `Halaman ${probCurrentPage} dari ${totalPages}`;
+  if (pageInfoEl) pageInfoEl.textContent = isEn ? `Page ${probCurrentPage} of ${totalPages}` : `Halaman ${probCurrentPage} dari ${totalPages}`;
   if (prevBtn) prevBtn.disabled = (probCurrentPage <= 1);
   if (nextBtn) nextBtn.disabled = (probCurrentPage >= totalPages);
 
@@ -3947,10 +3949,11 @@ function filterServerActionHistory() {
 
   const startShow = total === 0 ? 0 : startIdx + 1;
   const endShow = endIdx;
-  const txtSummary = total === 0 ? '0 tindakan' : `Menampilkan ${startShow}-${endShow} dari ${total} tindakan`;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const txtSummary = total === 0 ? (isEn ? '0 actions' : '0 tindakan') : (isEn ? `Showing ${startShow}-${endShow} of ${total} actions` : `Menampilkan ${startShow}-${endShow} dari ${total} tindakan`);
   if (countTop) countTop.textContent = txtSummary;
   if (countBottom) countBottom.textContent = txtSummary;
-  if (pageInfo) pageInfo.textContent = `Halaman ${actionCurrentPage} dari ${totalPages}`;
+  if (pageInfo) pageInfo.textContent = isEn ? `Page ${actionCurrentPage} of ${totalPages}` : `Halaman ${actionCurrentPage} dari ${totalPages}`;
   if (prevBtn) prevBtn.disabled = (actionCurrentPage <= 1);
   if (nextBtn) nextBtn.disabled = (actionCurrentPage >= totalPages);
 
@@ -3969,13 +3972,14 @@ function renderActionHistory(actions) {
   const nextBtn = document.getElementById('action-next-btn');
   if (!tbody) return;
 
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   if (!actions.length) {
-    if (countTop) countTop.textContent = '0 tindakan';
-    if (countBottom) countBottom.textContent = '0 tindakan';
-    if (pageInfo) pageInfo.textContent = 'Halaman 1 dari 1';
+    if (countTop) countTop.textContent = isEn ? '0 actions' : '0 tindakan';
+    if (countBottom) countBottom.textContent = isEn ? '0 actions' : '0 tindakan';
+    if (pageInfo) pageInfo.textContent = isEn ? 'Page 1 of 1' : 'Halaman 1 dari 1';
     if (prevBtn) prevBtn.disabled = true;
     if (nextBtn) nextBtn.disabled = true;
-    tbody.innerHTML = '<tr id="act-row-empty"><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">Belum ada riwayat tindakan di server ini.</td></tr>';
+    tbody.innerHTML = '<tr id="act-row-empty"><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">' + (isEn ? 'No action history on this server yet.' : 'Belum ada riwayat tindakan di server ini.') + '</td></tr>';
     return;
   }
 
@@ -4035,20 +4039,21 @@ function patch(data) {
   if (data.shell_exec) getTerm().attach(data.shell_exec.id);
   const aver = document.getElementById('agent-ver');
   if (aver) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     if (data.agent_version) {
       if (data.agent_outdated) {
-        aver.textContent = 'agen v' + data.agent_version + ' (perlu update)';
+        aver.textContent = (isEn ? 'agent v' : 'agen v') + data.agent_version + (isEn ? ' (update required)' : ' (perlu update)');
         aver.className = 'badge badge-warn';
-        aver.title = 'Versi agen di server klien lebih lama dari versi dashboard. Disarankan untuk memperbarui agen.';
+        aver.title = isEn ? 'Agent version on client server is older than dashboard version. Updating the agent is recommended.' : 'Versi agen di server klien lebih lama dari versi dashboard. Disarankan untuk memperbarui agen.';
       } else {
-        aver.textContent = 'agen v' + data.agent_version;
+        aver.textContent = (isEn ? 'agent v' : 'agen v') + data.agent_version;
         aver.className = 'badge badge-info';
-        aver.title = 'Versi agen mutakhir';
+        aver.title = isEn ? 'Agent version is up to date' : 'Versi agen mutakhir';
       }
     } else {
-      aver.textContent = 'agen tidak dikenal';
+      aver.textContent = isEn ? 'unknown agent' : 'agen tidak dikenal';
       aver.className = 'badge badge-muted';
-      aver.title = 'Agen belum melaporkan versi';
+      aver.title = isEn ? 'Agent has not reported its version yet' : 'Agen belum melaporkan versi';
     }
   }
 
@@ -4282,12 +4287,13 @@ function renderSys(data) {
 
   const heroMeta = document.getElementById('hero-meta');
   if (heroMeta) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const parts = [];
     if (data.os_label) parts.push(String(data.os_label));
     if (data.kernel) parts.push('kernel ' + data.kernel);
     if (sys.uptime != null) parts.push('uptime ' + fmtUptime(sys.uptime));
-    if (sys.load1 != null) parts.push('beban ' + sys.load1.toFixed(2));
-    heroMeta.textContent = parts.length ? parts.join(' · ') : 'memuat data sistem…';
+    if (sys.load1 != null) parts.push((isEn ? 'load ' : 'beban ') + sys.load1.toFixed(2));
+    heroMeta.textContent = parts.length ? parts.join(' · ') : (isEn ? 'loading system data…' : 'memuat data sistem…');
   }
 
   renderApt(data);
@@ -4604,15 +4610,16 @@ function renderSvcStrip(elId, points) {
       : ratio >= 0.5 ? 'var(--yellow)'
       : 'var(--red)';
     
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const timeStr = fmtDateTime(new Date(p.t * 1000));
     let tipText = timeStr;
     if (ratio === null) {
-      tipText += ' — Tidak ada sampel laporan';
+      tipText += isEn ? ' — No report samples' : ' — Tidak ada sampel laporan';
     } else {
       const pct = Math.round(ratio * 100);
-      tipText += ' — Status: ' + (pct === 100 ? 'Normal (Up)' : (pct === 0 ? 'Terhenti (Down)' : pct + '% Up'));
-      if (p.rt !== null && p.rt !== undefined) tipText += ' · Respons: ' + p.rt + ' ms';
-      if (p.conns !== null && p.conns !== undefined) tipText += ' · Koneksi: ' + p.conns;
+      tipText += ' — Status: ' + (pct === 100 ? 'Normal (Up)' : (pct === 0 ? (isEn ? 'Stopped (Down)' : 'Terhenti (Down)') : pct + '% Up'));
+      if (p.rt !== null && p.rt !== undefined) tipText += (isEn ? ' · Response: ' : ' · Respons: ') + p.rt + ' ms';
+      if (p.conns !== null && p.conns !== undefined) tipText += (isEn ? ' · Connections: ' : ' · Koneksi: ') + p.conns;
     }
 
     s += '<rect x="' + x.toFixed(2) + '" y="0" width="' + Math.max(1.5, barW - 0.5).toFixed(2) + '" height="' + H + '" fill="' + col + '" opacity="0.88" rx="1.5" data-tooltip="' + escapeHtml(tipText) + '" style="cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.88"/>';
