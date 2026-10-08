@@ -1427,9 +1427,21 @@ def _parse_who() -> list[dict]:
     return sessions
 
 
+def _get_locked_users() -> set[str]:
+    try:
+        cmd = ["/usr/local/sbin/pantau-user", "list-locked"] if IS_ROOT else ["/usr/bin/sudo", "-n", "/usr/local/sbin/pantau-user", "list-locked"]
+        res = _run_cmd(cmd, timeout=3)
+        if res and res.returncode == 0:
+            return set(res.stdout.split())
+    except Exception:
+        pass
+    return set()
+
+
 def collect_accounts() -> list[dict]:
     lastlog = _parse_lastlog()
     who = _parse_who()
+    locked_set = _get_locked_users()
     sessions_by_user: dict[str, list[dict]] = {}
     for s in who:
         sessions_by_user.setdefault(s["user"], []).append(s)
@@ -1457,6 +1469,7 @@ def collect_accounts() -> list[dict]:
                 "last_login": lastlog.get(pw.pw_name, ""),
                 "sessions": sessions[:5],
                 "is_protected": is_protected,
+                "is_locked": pw.pw_name in locked_set,
             })
         if len(accounts) >= 60:
             break

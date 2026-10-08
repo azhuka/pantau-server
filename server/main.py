@@ -862,12 +862,23 @@ def agent_report(
         clean_accounts = []
         for acc in body["accounts"][:100]:
             if isinstance(acc, dict):
+                raw_sessions = acc.get("sessions")
+                clean_sessions = []
+                if isinstance(raw_sessions, list):
+                    for s in raw_sessions[:5]:
+                        if isinstance(s, dict):
+                            clean_sessions.append({
+                                "tty": _clean_str(s.get("tty"), "", 32),
+                                "from": _clean_str(s.get("from"), "", 64),
+                            })
                 clean_accounts.append({
                     "user": _clean_str(acc.get("user"), "", 64),
                     "uid": _clamp_int(acc.get("uid"), None, 0, 2 ** 31),
                     "shell": _clean_str(acc.get("shell"), "", 50),
                     "last_login": _clean_str(acc.get("last_login"), None, 32),
-                    "sessions": _clamp_int(acc.get("sessions"), 0, 0, 9999),
+                    "sessions": clean_sessions,
+                    "is_protected": bool(acc.get("is_protected")),
+                    "is_locked": bool(acc.get("is_locked")),
                 })
         extras.accounts = json.dumps(clean_accounts)
     # Info paket OS yang bisa di-upgrade (dari agen)

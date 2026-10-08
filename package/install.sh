@@ -129,7 +129,7 @@ get_file etc/pantau/restart.deny /etc/pantau/restart.deny 640 root:pantau
 echo "[OK]   restart.deny terpasang"
 
 install -d -o root -g root -m 755 /usr/local/sbin
-for wr in pantau-restart pantau-history pantau-firewall pantau-host pantau-apt pantau-shell pantau-file; do
+for wr in pantau-restart pantau-history pantau-firewall pantau-host pantau-apt pantau-shell pantau-file pantau-user pantau-cron pantau-ssl; do
     get_file usr/local/sbin/$wr /usr/local/sbin/$wr 750 root:root || exit 1
     echo "[OK]   Wrapper $wr"
 done

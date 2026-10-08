@@ -115,7 +115,11 @@ case "$ACTION" in
         echo "OK: Pengguna '$USERNAME' berhasil dihapus"
         ;;
 
+    list-locked)
+        passwd -Sa 2>/dev/null | awk '$2=="L" || $2=="LK" {print $1}' || true
+        ;;
+
     *)
-        fail "Aksi tidak dikenal: '$ACTION' (harus create, lock, unlock, delete)"
+        fail "Aksi tidak dikenal: '$ACTION' (harus create, lock, unlock, delete, list-locked)"
         ;;
 esac

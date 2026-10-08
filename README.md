@@ -161,8 +161,9 @@ Jika server tempat dashboard berjalan juga dipantau oleh agen lokal:
 ```bash
 cd pantau-server
 sudo install -m 755 -o root -g root package/opt/pantau/agent/agent_pantau.py /opt/pantau/agent/agent_pantau.py
-sudo install -m 750 -o root -g root package/usr/local/sbin/pantau-apt /usr/local/sbin/pantau-apt
-sudo install -m 750 -o root -g root package/usr/local/sbin/pantau-file /usr/local/sbin/pantau-file
+for wr in pantau-restart pantau-history pantau-firewall pantau-host pantau-apt pantau-shell pantau-file pantau-user pantau-cron pantau-ssl; do
+  sudo install -m 750 -o root -g root package/usr/local/sbin/$wr /usr/local/sbin/$wr
+done
 sudo cp package/etc/sudoers.d/pantau-agent /etc/sudoers.d/pantau-agent
 sudo chmod 440 /etc/sudoers.d/pantau-agent
 sudo python3 -m py_compile /opt/pantau/agent/agent_pantau.py

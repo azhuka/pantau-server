@@ -22,6 +22,10 @@ Dokumen ini memuat catatan riwayat perubahan, penambahan fitur, serta perbaikan 
   - Penghapusan pantauan sertifikat SSL kustom.
 - **Peningkatan Kapabilitas Agen & Keamanan:**
   - Pembaruan *wrapper* sudo (`pantau-user`, `pantau-cron`, `pantau-ssl`, `pantau-firewall`) untuk eksekusi perintah secara aman dengan hak akses minimal yang terukur.
+  - Penambahan pendeteksian status akun terkunci (*locked user*) dan tombol aksi buka kunci (*unlock*) secara interaktif.
+  - Pembaruan skrip penginstal agen klien (`package/install.sh`) agar memasang seluruh biner pendukung secara otomatis.
+- **Penerapan Dwi-Bahasa Penuh untuk Seluruh Komponen v4.0.0:**
+  - Pemutakhiran kamus terjemahan untuk seluruh formulir modal, tombol aksi, dan badge fitur baru (ID/EN).
 - **Pemutakhiran Nama & Konsistensi:**
   - Konsistensi penggunaan Bahasa Indonesia formal di seluruh dokumen rilis, terkecuali nama aplikasi **Pantau Server** yang dipertahankan.
 

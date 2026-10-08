@@ -4292,15 +4292,24 @@ function renderSys(data) {
   const csrf = getCsrf();
   at.querySelector('tbody').innerHTML = acc.map(a => {
     const isProtected = a.is_protected === true;
+    const isLocked = a.is_locked === true;
     const userEnc = encodeURIComponent(a.user);
     const userEsc = escHtml(a.user);
     let actions = '<a href="/servers/' + SID + '/user/' + userEnc + '" class="btn btn-ghost btn-sm">Rincian</a>';
     if (!isProtected) {
-      actions += '<form method="post" action="/servers/' + SID + '/system-users/lock" style="display:inline">'
-        + '<input type="hidden" name="csrf_token" value="' + csrf + '">'
-        + '<input type="hidden" name="username" value="' + userEsc + '">'
-        + '<button type="submit" class="btn btn-sm btn-warn" title="Kunci akun (disable login)" onclick="return confirm(\'Kunci akun ' + userEsc + '?\')">🔒 Kunci</button>'
-        + '</form>';
+      if (isLocked) {
+        actions += '<form method="post" action="/servers/' + SID + '/system-users/unlock" style="display:inline">'
+          + '<input type="hidden" name="csrf_token" value="' + csrf + '">'
+          + '<input type="hidden" name="username" value="' + userEsc + '">'
+          + '<button type="submit" class="btn btn-sm btn-primary" title="Buka kunci akun (aktifkan login)" onclick="return confirm(\'Buka kunci akun ' + userEsc + '?\')">🔓 Buka Kunci</button>'
+          + '</form>';
+      } else {
+        actions += '<form method="post" action="/servers/' + SID + '/system-users/lock" style="display:inline">'
+          + '<input type="hidden" name="csrf_token" value="' + csrf + '">'
+          + '<input type="hidden" name="username" value="' + userEsc + '">'
+          + '<button type="submit" class="btn btn-sm btn-warn" title="Kunci akun (disable login)" onclick="return confirm(\'Kunci akun ' + userEsc + '?\')">🔒 Kunci</button>'
+          + '</form>';
+      }
       actions += '<form method="post" action="/servers/' + SID + '/system-users/delete" style="display:inline">'
         + '<input type="hidden" name="csrf_token" value="' + csrf + '">'
         + '<input type="hidden" name="username" value="' + userEsc + '">'
@@ -4309,7 +4318,8 @@ function renderSys(data) {
     }
     return '<tr>'
       + '<td><strong>' + userEsc + '</strong>'
-      + (isProtected ? ' <span class="badge badge-muted" style="font-size:10px" title="Akun sistem terlindungi">Sistem</span>' : '') + '</td>'
+      + (isProtected ? ' <span class="badge badge-muted" style="font-size:10px" title="Akun sistem terlindungi">Sistem</span>' : '')
+      + (isLocked ? ' <span class="badge badge-warn" style="font-size:10px" title="Akun saat ini terkunci">Terkunci</span>' : '') + '</td>'
       + '<td class="mono">' + escHtml(String(a.uid)) + '</td>'
       + '<td class="mono">' + escHtml(a.shell || '-') + '</td>'
       + '<td style="font-size:12px;color:var(--dim)">' + escHtml(a.last_login || '-') + '</td>'
