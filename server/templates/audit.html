@@ -84,7 +84,12 @@
 function auditPatch(html) {
   const from = new DOMParser().parseFromString(html, 'text/html').getElementById('audit-tbody');
   const to = document.getElementById('audit-tbody');
-  if (from && to && from.innerHTML !== to.innerHTML) to.innerHTML = from.innerHTML;
+  if (from && to && from.innerHTML !== to.innerHTML) {
+    to.innerHTML = from.innerHTML;
+    if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
+      applyAppLang();
+    }
+  }
 }
 
 async function auditRefresh() {

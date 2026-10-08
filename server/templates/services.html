@@ -1985,12 +1985,12 @@
         <span>📜 Logging</span>
       </h3>
       <!-- Sub-view switcher modern: Log Layanan vs Log Sistem -->
-      <div class="toolbar-group" id="logging-sub-ctrl" style="margin-left:4px">
-        <button type="button" class="btn is-active" id="btn-sublog-svc" onclick="switchLoggingView('svc')" style="background:rgba(56,189,248,0.2) !important;color:#38bdf8 !important;font-weight:700 !important;border:1px solid rgba(56,189,248,0.45) !important">
+      <div class="segmented-control" id="logging-sub-ctrl" style="margin-left:4px">
+        <button type="button" class="btn btn-sm is-on" id="btn-sublog-svc" onclick="switchLoggingView('svc')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           <span>Log Layanan</span>
         </button>
-        <button type="button" class="btn" id="btn-sublog-sys" onclick="switchLoggingView('sys')" style="background:transparent !important;color:var(--dim) !important;font-weight:500 !important;border:1px solid transparent !important">
+        <button type="button" class="btn btn-sm" id="btn-sublog-sys" onclick="switchLoggingView('sys')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
           <span>Log Sistem (Journal)</span>
         </button>
@@ -2124,6 +2124,13 @@ const POLL_MS = 3000;
 const IS_ADMIN = {{ 'true' if user.role == 'admin' else 'false' }};
 const SERVER_NAME = {{ server.hostname | tojson }};
 
+// State paginasi untuk tab Riwayat & Masalah (dideklarasikan di awal untuk menghindari TDZ)
+let probLimit = 5; // default 5 masalah
+let probCurrentPage = 1;
+let actionLimit = 10; // default 10 riwayat tindakan
+let actionCurrentPage = 1;
+let _cachedActions = [];
+
 // ---------- tab ringkasan ----------
 function showTab(name) {
   document.querySelectorAll('#detail-tabs .tab').forEach(b =>
@@ -2163,20 +2170,8 @@ function switchLoggingView(view) {
   const btnSys = document.getElementById('btn-sublog-sys');
   if (panelSvc) panelSvc.style.display = isSvc ? 'block' : 'none';
   if (panelSys) panelSys.style.display = isSvc ? 'none' : 'block';
-  if (btnSvc) {
-    btnSvc.classList.toggle('is-active', isSvc);
-    btnSvc.style.setProperty('color', isSvc ? '#38bdf8' : 'var(--dim)', 'important');
-    btnSvc.style.setProperty('background', isSvc ? 'rgba(56,189,248,0.2)' : 'transparent', 'important');
-    btnSvc.style.setProperty('border-color', isSvc ? 'rgba(56,189,248,0.45)' : 'transparent', 'important');
-    btnSvc.style.setProperty('font-weight', isSvc ? '700' : '500', 'important');
-  }
-  if (btnSys) {
-    btnSys.classList.toggle('is-active', !isSvc);
-    btnSys.style.setProperty('color', !isSvc ? '#38bdf8' : 'var(--dim)', 'important');
-    btnSys.style.setProperty('background', !isSvc ? 'rgba(56,189,248,0.2)' : 'transparent', 'important');
-    btnSys.style.setProperty('border-color', !isSvc ? 'rgba(56,189,248,0.45)' : 'transparent', 'important');
-    btnSys.style.setProperty('font-weight', !isSvc ? '700' : '500', 'important');
-  }
+  if (btnSvc) btnSvc.classList.toggle('is-on', isSvc);
+  if (btnSys) btnSys.classList.toggle('is-on', !isSvc);
 }
 
 // ---------- Indikator Masalah / Beban Tinggi pada Tab (Alert Dots) ----------
@@ -2557,14 +2552,6 @@ function copyAgentUpdateCmd(ev) {
     prompt("Salin perintah update berikut dan jalankan di terminal server klien:", cmd);
   }
 }
-
-// Deep-link tab via ?tab=layanan (dipakai tautan Metrik lama & menu lain)
-(function () {
-  const want = new URLSearchParams(location.search).get('tab');
-  if (!want) return;
-  const b = document.querySelector('#detail-tabs .tab[data-tab="' + want + '"]');
-  if (b) showTab(want);
-})();
 
 // ---------- helpers ----------
 const badgeText = {
@@ -3817,9 +3804,6 @@ function renderProblemsTab(level, openList, histList) {
   probFilter();
 }
 
-let probLimit = 5; // default 5 masalah
-let probCurrentPage = 1;
-
 function setProbLimit(lim) {
   probLimit = (lim === 'all') ? 'all' : (parseInt(lim, 10) || 5);
   probCurrentPage = 1;
@@ -3896,9 +3880,16 @@ setTimeout(() => {
   if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
 }, 100);
 
-let actionLimit = 10; // default 10 riwayat tindakan
-let actionCurrentPage = 1;
-let _cachedActions = [];
+// Live durasi insiden di tab Riwayat & Masalah
+setInterval(() => {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  document.querySelectorAll('#probtable [data-start]').forEach(td => {
+    const d = Math.floor((Date.now() - new Date(td.dataset.start).getTime()) / 1000);
+    if (d < 60) td.textContent = d + (isEn ? ' s' : ' dtk');
+    else if (d < 3600) td.textContent = Math.floor(d/60) + (isEn ? ' m' : ' mnt');
+    else td.textContent = Math.floor(d/3600) + (isEn ? ' h ' : ' j ') + Math.floor((d%3600)/60) + ' m';
+  });
+}, 5000);
 
 function setActionLimit(lim) {
   actionLimit = (lim === 'all') ? 'all' : (parseInt(lim, 10) || 10);
@@ -4934,6 +4925,14 @@ if (svcSel) svcSel.addEventListener('change', loadSvcHistory);
 document.querySelectorAll('#svc-ranges .btn').forEach(b =>
   b.addEventListener('click', () => { svcRange = b.dataset.range; loadSvcHistory(); }));
 setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
+
+// Deep-link tab via ?tab= (dijalankan setelah semua fungsi dan state selesai dimuat)
+(function () {
+  const want = new URLSearchParams(location.search).get('tab');
+  if (!want) return;
+  const b = document.querySelector('#detail-tabs .tab[data-tab="' + want + '"]');
+  if (b) showTab(want);
+})();
 
 </script>
 {% endblock %}

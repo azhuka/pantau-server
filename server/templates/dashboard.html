@@ -225,13 +225,14 @@ function dashFilter(query){
 
 // ---------- waktu relatif ----------
 function relTime(isoStr) {
-  if (!isoStr) return 'belum pernah';
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  if (!isoStr) return isEn ? 'never' : 'belum pernah';
   const diff = Math.floor((Date.now() - new Date(isoStr + (isoStr.endsWith('Z') ? '' : 'Z')).getTime()) / 1000);
-  if (diff < 0) return 'baru saja';
-  if (diff < 60) return diff + ' dtk lalu';
-  if (diff < 3600) return Math.floor(diff / 60) + ' mnt lalu';
-  if (diff < 86400) return Math.floor(diff / 3600) + ' jam lalu';
-  return Math.floor(diff / 86400) + ' hari lalu';
+  if (diff < 0) return isEn ? 'just now' : 'baru saja';
+  if (diff < 60) return isEn ? (diff + ' s ago') : (diff + ' dtk lalu');
+  if (diff < 3600) return isEn ? (Math.floor(diff / 60) + ' m ago') : (Math.floor(diff / 60) + ' mnt lalu');
+  if (diff < 86400) return isEn ? (Math.floor(diff / 3600) + ' h ago') : (Math.floor(diff / 3600) + ' jam lalu');
+  return isEn ? (Math.floor(diff / 86400) + ' d ago') : (Math.floor(diff / 86400) + ' hari lalu');
 }
 
 function updateRelTimes() {
@@ -337,8 +338,12 @@ async function dashPoll() {
     const badge = document.getElementById('dash-live');
     if (badge) {
       badge.style.opacity = 1;
-      badge.textContent = 'live · ' + new Date().toLocaleTimeString('id-ID', {hour12:false});
+      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+      badge.textContent = (isEn ? 'live · ' : 'live · ') + new Date().toLocaleTimeString('id-ID', {hour12:false});
       setTimeout(() => { badge.style.opacity = .3; }, 1400);
+    }
+    if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
+      applyAppLang();
     }
   } catch (e) { /* abaikan */ }
 }

@@ -197,11 +197,12 @@ async function ackProblem(id, btn, sev) {
 
 // Live durasi
 setInterval(() => {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
   document.querySelectorAll('#probtable [data-start]').forEach(td => {
     const d = Math.floor((Date.now() - new Date(td.dataset.start).getTime()) / 1000);
-    if (d < 60) td.textContent = d + ' dtk';
-    else if (d < 3600) td.textContent = Math.floor(d/60) + ' mnt';
-    else td.textContent = Math.floor(d/3600) + ' j ' + Math.floor((d%3600)/60) + ' m';
+    if (d < 60) td.textContent = d + (isEn ? ' s' : ' dtk');
+    else if (d < 3600) td.textContent = Math.floor(d/60) + (isEn ? ' m' : ' mnt');
+    else td.textContent = Math.floor(d/3600) + (isEn ? ' h ' : ' j ') + Math.floor((d%3600)/60) + ' m';
   });
 }, 5000);
 </script>
