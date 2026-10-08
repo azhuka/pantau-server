@@ -783,7 +783,8 @@ def _exec_user_action(action: str, command: dict) -> dict:
         shell = str(params.get("shell", "/bin/bash")).strip()
         is_sudo = "1" if params.get("is_sudo") in (1, True, "1", "true") else "0"
         comment = str(params.get("comment", "Dibuat via Pantau Server")).strip()
-        cmd.extend(["create", username, shell, is_sudo, comment])
+        password = str(params.get("password", "")).strip()
+        cmd.extend(["create", username, shell, is_sudo, comment, password])
     elif action == "user_lock":
         cmd.extend(["lock", username])
     elif action == "user_unlock":
@@ -794,7 +795,10 @@ def _exec_user_action(action: str, command: dict) -> dict:
     else:
         return {"ok": False, "output": f"Aksi pengguna tidak valid: {action}"}
 
-    label = " ".join(cmd)
+    display_cmd = list(cmd)
+    if action == "user_create" and len(display_cmd) >= 7 and display_cmd[6]:
+        display_cmd[6] = "******"
+    label = " ".join(display_cmd)
     if not IS_ROOT:
         cmd = ["/usr/bin/sudo", "-n", *cmd]
         label = f"sudo -n {label}"

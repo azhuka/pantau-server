@@ -1155,15 +1155,48 @@ def _get_server_actions(db, sid: int, limit: int = 15) -> list[dict]:
         .all()
     )
     for c in cmds:
-        svc_name = svc_map.get(c.service_id) or "—"
+        tgt_name = svc_map.get(c.service_id)
+        if not tgt_name and c.params:
+            try:
+                p_dict = json.loads(c.params)
+                uname = p_dict.get("username")
+                if uname:
+                    tgt_name = f"Akun {uname}"
+                elif p_dict.get("ips"):
+                    tgt_name = f"IP {', '.join(p_dict['ips'])}"
+                elif p_dict.get("ident"):
+                    tgt_name = f"Cron {p_dict['ident']}"
+                elif p_dict.get("path"):
+                    tgt_name = f"SSL {p_dict['path']}"
+                elif p_dict.get("port"):
+                    tgt_name = f"Port {p_dict['port']}"
+            except Exception:
+                pass
+        if not tgt_name:
+            tgt_name = "—"
+
         act_label = {
             "restart": "Restart Layanan",
             "stop": "Hentikan Layanan",
             "start": "Jalankan Layanan",
             "block_ip": "Blokir IP",
+            "unblock_ip": "Buka Blokir IP",
             "restart_agent": "Restart Agen",
             "reboot_host": "Reboot Host",
             "poweroff_host": "Power Off Host",
+            "user_create": "Buat Pengguna",
+            "user_lock": "Kunci Akun",
+            "user_unlock": "Buka Kunci Akun",
+            "user_delete": "Hapus Pengguna",
+            "cron_add": "Tambah Cron Job",
+            "cron_toggle": "Ubah Status Cron",
+            "cron_delete": "Hapus Cron Job",
+            "firewall_enable": "Aktifkan Firewall",
+            "firewall_disable": "Nonaktifkan Firewall",
+            "firewall_reload": "Muat Ulang Firewall",
+            "firewall_port_rule": "Aturan Port Firewall",
+            "ssl_path_add": "Tambah Path SSL",
+            "ssl_path_remove": "Hapus Path SSL",
         }.get(c.action, c.action.replace("_", " ").capitalize())
 
         status_cls = {
@@ -1186,7 +1219,7 @@ def _get_server_actions(db, sid: int, limit: int = 15) -> list[dict]:
             "user": c.issued_by or "admin",
             "action": c.action,
             "action_label": act_label,
-            "target": svc_name,
+            "target": tgt_name,
             "status": c.status,
             "status_cls": status_cls,
             "status_label": status_label,
@@ -1206,7 +1239,12 @@ def _get_server_actions(db, sid: int, limit: int = 15) -> list[dict]:
         .all()
     )
     for a in audit_q:
-        if a.action in ("service_restart", "service_stop", "service_start", "login", "server_add", "server_delete", "user_add", "user_delete"):
+        if a.action in (
+            "service_restart", "service_stop", "service_start", "login",
+            "server_add", "server_delete", "user_add", "user_delete",
+            "user_create", "user_lock", "user_unlock", "block_ip", "unblock_ip",
+            "reboot_host", "poweroff_host", "restart_agent",
+        ):
             continue
 
         act_label = {
@@ -2644,6 +2682,7 @@ def host_poweroff(
 def server_user_create(
     request: Request, sid: int,
     username: str = Form(...),
+    password: str = Form(default=""),
     shell: str = Form(default="/bin/bash"),
     is_sudo: bool = Form(default=False),
     comment: str = Form(default="Dibuat via Pantau Server"),
@@ -2661,12 +2700,16 @@ def server_user_create(
         if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
         return RedirectResponse("/servers", status_code=303)
     u_clean = username.strip().lower()
-    _enqueue_mitigation(db, sid, "user_create", {
+    params = {
         "username": u_clean,
         "shell": shell.strip() or "/bin/bash",
         "is_sudo": "1" if is_sudo else "0",
         "comment": comment.strip() or "Dibuat via Pantau Server",
-    }, issued_by=user.username)
+    }
+    if password.strip():
+        params["password"] = password.strip()
+
+    _enqueue_mitigation(db, sid, "user_create", params, issued_by=user.username)
     _audit(db, user.username, "user_create", f"{server.hostname}: buat user {u_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": f"Perintah pembuatan pengguna '{u_clean}' dikirim ke agen."})

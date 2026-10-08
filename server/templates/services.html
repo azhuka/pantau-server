@@ -1606,7 +1606,7 @@
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(480px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
     <h3 style="margin:0 0 4px;color:var(--neon)">Buat Pengguna Sistem Baru</h3>
     <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
-      Membuat akun login Linux baru pada server ini. Perintah <code class="mono">useradd</code> akan dikirimkan ke agen.
+      Membuat akun login Linux baru pada server ini. Akun akan dibuat menggunakan perintah standar sistem melalui agen.
     </p>
     <form method="post" action="/servers/{{ server.id }}/system-users/create">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -1616,6 +1616,13 @@
                pattern="^[a-z_][a-z0-9_-]{1,31}$"
                style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
         <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Diawali huruf kecil/underscore, maks 32 karakter</span>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Password Akun (Opsional)</label>
+        <input type="password" name="password" placeholder="Kosongkan jika hanya menggunakan SSH Key"
+               autocomplete="new-password"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Jika diisi, akun langsung aktif dengan autentikasi password. Jika dikosongkan, akun siap untuk login via SSH Key.</span>
       </div>
       <div style="margin-bottom:14px">
         <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Shell Login</label>
