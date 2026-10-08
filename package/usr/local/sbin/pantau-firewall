@@ -54,18 +54,46 @@ case "$ACTION" in
         fi
         fail "ufw tidak terpasang di sistem ini"
         ;;
-    status)
-        if command -v ufw >/dev/null 2>&1; then
-            echo "--- UFW STATUS ---"
-            ufw status verbose 2>&1
+    deny-port)
+        PORT_SPEC="${1:-}"
+        [ -n "$PORT_SPEC" ] || fail "Spesifikasi port wajib diisi (misal: 8080/tcp atau 3000)"
+        PORT_NUM="${PORT_SPEC%%/*}"
+        PROTO="${PORT_SPEC##*/}"
+        [ "$PROTO" = "$PORT_NUM" ] && PROTO="tcp"
+
+        if [ "$PORT_NUM" = "22" ] || [ "$PORT_NUM" = "8400" ]; then
+            fail "Port $PORT_NUM (SSH / Pantau Dashboard) dilindungi dan dilarang diblokir!"
         fi
-        if [ -x "$IPT" ]; then
-            echo "--- IPTABLES INPUT DROP ---"
-            "$IPT" -L INPUT -n -v --line-numbers 2>&1
+        if ! [[ "$PORT_NUM" =~ ^[0-9]+$ ]] || [ "$PORT_NUM" -lt 1 ] || [ "$PORT_NUM" -gt 65535 ]; then
+            fail "Nomor port tidak valid: '$PORT_NUM'"
+        fi
+
+        if command -v ufw >/dev/null 2>&1; then
+            out="$(ufw deny "$PORT_NUM/$PROTO" 2>&1)" || fail "UFW deny gagal: $out"
+            echo "OK: Port $PORT_NUM/$PROTO berhasil ditutup/diblokir pada UFW"
+            exit 0
+        elif [ -x "$IPT" ]; then
+            "$IPT" -I INPUT 1 -p "$PROTO" --dport "$PORT_NUM" -j DROP || fail "iptables drop port gagal"
+            echo "OK: Port $PORT_NUM/$PROTO berhasil ditutup/diblokir pada iptables"
+            exit 0
+        fi
+        fail "Tidak ada firewall aktif (ufw / iptables) di sistem"
+        ;;
+    allow-port)
+        PORT_SPEC="${1:-}"
+        [ -n "$PORT_SPEC" ] || fail "Spesifikasi port wajib diisi (misal: 8080/tcp)"
+        PORT_NUM="${PORT_SPEC%%/*}"
+        PROTO="${PORT_SPEC##*/}"
+        [ "$PROTO" = "$PORT_NUM" ] && PROTO="tcp"
+
+        if command -v ufw >/dev/null 2>&1; then
+            out="$(ufw delete deny "$PORT_NUM/$PROTO" 2>&1)" || ufw allow "$PORT_NUM/$PROTO" 2>&1 || true
+            echo "OK: Aturan blokir untuk port $PORT_NUM/$PROTO berhasil dibuka pada UFW"
+            exit 0
         fi
         exit 0
         ;;
-    *) fail "Aksi tidak dikenal: '${ACTION:-}' (harus 'block', 'unblock', 'enable', 'disable', 'reload', atau 'status')" ;;
+    *) fail "Aksi tidak dikenal: '${ACTION:-}' (harus 'block', 'unblock', 'enable', 'disable', 'reload', 'deny-port', 'allow-port', atau 'status')" ;;
 esac
 
 [ -x "$IPT" ] || fail "iptables tidak terpasang (install iptables)"

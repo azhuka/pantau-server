@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+#
+# pantau-ssl - Wrapper penambahan path sertifikat SSL kustom untuk Agen Pantau.
+#
+set -euo pipefail
+
+fail() { echo "ERROR: $*" >&2; exit 1; }
+
+ACTION="${1:-}"
+shift 2>/dev/null || true
+
+CONF_DIR="/etc/pantau"
+CONF_FILE="$CONF_DIR/custom_ssl.conf"
+
+mkdir -p "$CONF_DIR"
+touch "$CONF_FILE"
+
+case "$ACTION" in
+    add-path)
+        CERT_PATH="${1:-}"
+        [ -n "$CERT_PATH" ] || fail "Path sertifikat wajib diisi"
+        # Normalisasi path
+        CERT_PATH="$(realpath -m "$CERT_PATH" 2>/dev/null || echo "$CERT_PATH")"
+        if [ ! -f "$CERT_PATH" ]; then
+            fail "Berkas sertifikat tidak ditemukan di path: '$CERT_PATH'"
+        fi
+
+        # Cek apakah sudah ada
+        if grep -Fxq "$CERT_PATH" "$CONF_FILE" 2>/dev/null; then
+            echo "OK: Path '$CERT_PATH' sudah terdaftar dalam pengawasan SSL"
+            exit 0
+        fi
+
+        echo "$CERT_PATH" >> "$CONF_FILE"
+        chmod 0644 "$CONF_FILE"
+        echo "OK: Path sertifikat '$CERT_PATH' berhasil ditambahkan ke pengawasan"
+        ;;
+
+    remove-path)
+        CERT_PATH="${1:-}"
+        [ -n "$CERT_PATH" ] || fail "Path sertifikat wajib diisi"
+        if [ -f "$CONF_FILE" ]; then
+            # Hapus baris yang cocok persis
+            sed -i "\|${CERT_PATH}|d" "$CONF_FILE"
+            echo "OK: Path sertifikat '$CERT_PATH' berhasil dihapus dari pengawasan"
+        else
+            echo "OK: Berkas konfigurasi kosong"
+        fi
+        ;;
+
+    list-paths)
+        if [ -f "$CONF_FILE" ]; then
+            cat "$CONF_FILE"
+        fi
+        ;;
+
+    *)
+        fail "Aksi tidak dikenal: '$ACTION' (harus add-path, remove-path, list-paths)"
+        ;;
+esac

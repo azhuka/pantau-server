@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+#
+# pantau-cron - Wrapper terbatas pengelolaan tugas terjadwal (cron)
+# untuk Agen Pantau.
+#
+# Seluruh tugas cron yang dikelola Pantau disimpan di:
+#   /etc/cron.d/pantau-<ident>
+#
+set -euo pipefail
+
+fail() { echo "ERROR: $*" >&2; exit 1; }
+
+ACTION="${1:-}"
+shift 2>/dev/null || true
+
+validate_ident() {
+    local id="$1"
+    if [[ ! "$id" =~ ^[a-zA-Z0-9_-]{2,40}$ ]]; then
+        fail "Nama identifikasi tugas cron tidak valid: '$id' (harus alfanumerik/dash/underscore, 2-40 karakter)"
+    fi
+}
+
+case "$ACTION" in
+    add)
+        IDENT="${1:-}"
+        M="${2:-*}"
+        H="${3:-*}"
+        DOM="${4:-*}"
+        MON="${5:-*}"
+        DOW="${6:-*}"
+        TARGET_USER="${7:-root}"
+        shift 7 2>/dev/null || fail "Argumen perintah tidak lengkap"
+        CMD="$*"
+
+        [ -n "$IDENT" ] || fail "Nama identifikasi tugas wajib diisi"
+        validate_ident "$IDENT"
+        [ -n "$CMD" ] || fail "Perintah cron tidak boleh kosong"
+
+        # Validasi user target ada di sistem
+        id "$TARGET_USER" >/dev/null 2>&1 || fail "User target '$TARGET_USER' tidak ditemukan di sistem"
+
+        FILE="/etc/cron.d/pantau-$IDENT"
+        # Buat entri cron standar format /etc/cron.d (schedule user command)
+        cat << CRON_EOF > "$FILE"
+# Dikelola secara otomatis oleh Pantau Server
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+$M $H $DOM $MON $DOW $TARGET_USER $CMD
+CRON_EOF
+
+        chmod 0644 "$FILE"
+        echo "OK: Tugas cron 'pantau-$IDENT' berhasil dibuat ($M $H $DOM $MON $DOW)"
+        ;;
+
+    delete)
+        IDENT="${1:-}"
+        [ -n "$IDENT" ] || fail "Nama identifikasi tugas wajib diisi"
+        validate_ident "$IDENT"
+        FILE="/etc/cron.d/pantau-$IDENT"
+
+        if [ -f "$FILE" ]; then
+            rm -f "$FILE"
+            echo "OK: Tugas cron 'pantau-$IDENT' berhasil dihapus"
+        else
+            # Jika bukan file pantau-, periksa apakah file berada di /etc/cron.d
+            fail "Berkas tugas cron '$FILE' tidak ditemukan"
+        fi
+        ;;
+
+    toggle)
+        IDENT="${1:-}"
+        MODE="${2:-enable}"  # enable atau disable
+        [ -n "$IDENT" ] || fail "Nama identifikasi tugas wajib diisi"
+        validate_ident "$IDENT"
+        FILE="/etc/cron.d/pantau-$IDENT"
+
+        [ -f "$FILE" ] || fail "Berkas cron '$FILE' tidak ditemukan"
+
+        if [ "$MODE" = "disable" ]; then
+            # Komentari baris yang tidak dimulai dengan # atau variabel
+            sed -i -E 's/^([0-9*\/,-]+[[:space:]]+[0-9*\/,-]+[[:space:]]+[0-9*\/,-]+[[:space:]]+[0-9*\/,-]+[[:space:]]+[0-9*\/,-]+)/# DISABLED_BY_PANTAU \1/' "$FILE"
+            echo "OK: Tugas cron 'pantau-$IDENT' dinonaktifkan"
+        else
+            # Buka komentar
+            sed -i -E 's/^#[[:space:]]*DISABLED_BY_PANTAU[[:space:]]+//' "$FILE"
+            echo "OK: Tugas cron 'pantau-$IDENT' diaktifkan kembali"
+        fi
+        chmod 0644 "$FILE"
+        ;;
+
+    run)
+        TARGET_USER="${1:-root}"
+        shift 1 2>/dev/null || fail "Argumen perintah tidak lengkap"
+        CMD="$*"
+
+        [ -n "$CMD" ] || fail "Perintah tidak boleh kosong"
+        id "$TARGET_USER" >/dev/null 2>&1 || fail "User target '$TARGET_USER' tidak valid"
+
+        echo "Menjalankan perintah sebagai user '$TARGET_USER': $CMD"
+        # Jalankan via su/runuser
+        if command -v runuser >/dev/null 2>&1; then
+            output="$(runuser -u "$TARGET_USER" -- /bin/bash -c "$CMD" 2>&1)" || fail "Eksekusi gagal: $output"
+        else
+            output="$(su -s /bin/bash "$TARGET_USER" -c "$CMD" 2>&1)" || fail "Eksekusi gagal: $output"
+        fi
+        echo "OK: Berhasil dijalankan."
+        echo "$output"
+        ;;
+
+    *)
+        fail "Aksi tidak dikenal: '$ACTION' (harus add, delete, toggle, run)"
+        ;;
+esac

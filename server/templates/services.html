@@ -1296,31 +1296,86 @@
 <!-- Tab: Tugas Terjadwal (Cron Jobs & Timers) -->
 <div class="tab-body" id="tab-cron" hidden>
   <div class="card">
-    <div class="card-header" style="align-items:center">
+    <div class="card-header" style="align-items:center;justify-content:space-between">
       <div>
         <h3 style="margin:0">Tugas Terjadwal (Cron Jobs)</h3>
         <span style="font-size:12px;color:var(--dim)">Daftar eksekusi tugas periodik sistem (/etc/crontab &amp; /etc/cron.d/*)</span>
       </div>
-      <span class="badge badge-info" id="cron-jobs-count">{{ (cron_jobs.jobs|length) if cron_jobs and cron_jobs.jobs else 0 }} tugas aktif</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge badge-info" id="cron-jobs-count">{{ (cron_jobs.jobs|length) if cron_jobs and cron_jobs.jobs else 0 }} tugas aktif</span>
+        <button class="btn btn-primary btn-sm" onclick="openAddCronModal()" style="display:flex;align-items:center;gap:4px">
+          <span>＋</span> Tambah Tugas
+        </button>
+      </div>
     </div>
     {% if cron_jobs and cron_jobs.jobs %}
     <div style="overflow-x:auto">
       <table>
         <thead>
           <tr>
+            <th style="width:32px">Status</th>
             <th title="Jadwal waktu eksekusi dalam format cron (menit jam tgl bln hari)">Jadwal (Cron Expression)</th>
             <th title="Pengguna Linux yang menjalankan perintah">Pengguna</th>
             <th title="Perintah atau skrip yang dieksekusi">Perintah (Command)</th>
             <th title="Lokasi berkas konfigurasi cron pada server">Sumber Berkas</th>
+            <th>Aksi</th>
           </tr>
         </thead>
         <tbody>
           {% for c in cron_jobs.jobs %}
-          <tr>
-            <td class="mono" style="font-weight:700;color:var(--blue);white-space:nowrap">{{ c.schedule }}</td>
+          <tr style="{{ 'opacity:0.5' if not c.get('is_enabled', True) else '' }}">
+            <td>
+              {% if c.get('is_enabled', True) %}
+                <span class="badge badge-up" title="Aktif">●</span>
+              {% else %}
+                <span class="badge badge-muted" title="Dinonaktifkan">○</span>
+              {% endif %}
+            </td>
+            <td class="mono" style="font-weight:700;color:{{ 'var(--blue)' if c.get('is_enabled', True) else 'var(--dim)' }};white-space:nowrap">{{ c.schedule }}</td>
             <td><span class="mono">{{ c.user }}</span></td>
             <td class="mono" style="font-size:12px;color:var(--text);word-break:break-all">{{ c.command }}</td>
-            <td class="mono" style="font-size:11px;color:var(--dim)">{{ c.source }}{% if c.line %}:{{ c.line }}{% endif %}</td>
+            <td class="mono" style="font-size:11px;color:var(--dim)">
+              {{ c.source }}{% if c.line %}:{{ c.line }}{% endif %}
+              {% if c.get('is_managed') %}<span class="badge badge-info" style="font-size:10px;margin-left:4px">Dikelola</span>{% endif %}
+            </td>
+            <td>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                {% if c.get('is_managed') %}
+                  {% set cron_ident = c.get('ident', '') %}
+                  <!-- Toggle aktif/nonaktif -->
+                  <form method="post" action="/servers/{{ server.id }}/cron/toggle" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="ident" value="{{ cron_ident }}">
+                    <input type="hidden" name="mode" value="{{ 'disable' if c.get('is_enabled', True) else 'enable' }}">
+                    <button type="submit" class="btn btn-sm {{ 'btn-warn' if c.get('is_enabled', True) else 'btn-primary' }}"
+                            title="{{ 'Nonaktifkan tugas cron ini' if c.get('is_enabled', True) else 'Aktifkan kembali tugas cron ini' }}">
+                      {{ '⏸ Jeda' if c.get('is_enabled', True) else '▶ Aktifkan' }}
+                    </button>
+                  </form>
+                  <!-- Uji jalankan -->
+                  <form method="post" action="/servers/{{ server.id }}/cron/run" style="display:inline"
+                        onsubmit="return confirm('Uji jalankan perintah cron ini sekarang?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="user_target" value="{{ c.user }}">
+                    <input type="hidden" name="command" value="{{ c.command }}">
+                    <button type="submit" class="btn btn-sm btn-ghost" title="Jalankan sekarang (uji coba)">
+                      ▷ Jalankan
+                    </button>
+                  </form>
+                  <!-- Hapus -->
+                  <form method="post" action="/servers/{{ server.id }}/cron/delete" style="display:inline"
+                        onsubmit="return confirm('Hapus tugas cron \\'{{ cron_ident }}\\' secara permanen?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="ident" value="{{ cron_ident }}">
+                    <button type="submit" class="btn btn-sm btn-danger" title="Hapus tugas cron ini">
+                      🗑 Hapus
+                    </button>
+                  </form>
+                {% else %}
+                  <span style="font-size:11px;color:var(--dim)">Sistem</span>
+                {% endif %}
+              </div>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -1365,6 +1420,7 @@
     {% endif %}
   </div>
 </div>
+
 
 <!-- Tab: Firewall (UFW & iptables) -->
 <div class="tab-body" id="tab-firewall" hidden>
@@ -1545,7 +1601,129 @@
   </div>
 </div>
 
+<!-- Modal: Buat Pengguna Sistem Baru -->
+<div id="create-user-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(480px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
+    <h3 style="margin:0 0 4px;color:var(--neon)">Buat Pengguna Sistem Baru</h3>
+    <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
+      Membuat akun login Linux baru pada server ini. Perintah <code class="mono">useradd</code> akan dikirimkan ke agen.
+    </p>
+    <form method="post" action="/servers/{{ server.id }}/system-users/create">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Pengguna *</label>
+        <input type="text" name="username" required placeholder="Contoh: operator1"
+               pattern="^[a-z_][a-z0-9_-]{1,31}$"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
+        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Diawali huruf kecil/underscore, maks 32 karakter</span>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Shell Login</label>
+        <select name="shell" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+          <option value="/bin/bash">/bin/bash (default)</option>
+          <option value="/bin/sh">/bin/sh</option>
+          <option value="/usr/bin/zsh">/usr/bin/zsh</option>
+          <option value="/usr/sbin/nologin">/usr/sbin/nologin (tanpa shell)</option>
+          <option value="/bin/false">/bin/false (diblokir)</option>
+        </select>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Keterangan (Comment)</label>
+        <input type="text" name="comment" placeholder="Dibuat via Pantau Server" value="Dibuat via Pantau Server"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+      </div>
+      <div style="margin-bottom:18px;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" name="is_sudo" value="1" id="new-user-sudo" style="width:16px;height:16px">
+        <label for="new-user-sudo" style="font-size:13px;cursor:pointer">Tambahkan ke grup <code class="mono">sudo</code> (hak superuser)</label>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeCreateUserModal()">Batal</button>
+        <button type="submit" class="btn btn-primary">Buat Pengguna</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Tambah Tugas Terjadwal (Cron Job) -->
+<div id="add-cron-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(560px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
+    <h3 style="margin:0 0 4px;color:var(--neon)">Tambah Tugas Terjadwal (Cron Job)</h3>
+    <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
+      Tugas cron akan disimpan di <code class="mono">/etc/cron.d/pantau-&lt;nama&gt;</code> dan dikelola sepenuhnya oleh Pantau Server.
+    </p>
+    <form method="post" action="/servers/{{ server.id }}/cron/add">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Identifikasi (Ident) *</label>
+        <input type="text" name="ident" required placeholder="Contoh: backup-db atau kirim-laporan"
+               pattern="^[a-zA-Z0-9_-]{2,40}$"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
+        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Nama unik, alfanumerik, digunakan sebagai sufiks nama berkas cron</span>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Jadwal Eksekusi (Cron Expression)</label>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+          <div><label style="font-size:10px;color:var(--dim)">Menit</label>
+            <input type="text" name="minute" value="0" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
+          </div>
+          <div><label style="font-size:10px;color:var(--dim)">Jam</label>
+            <input type="text" name="hour" value="*" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
+          </div>
+          <div><label style="font-size:10px;color:var(--dim)">Tgl (DOM)</label>
+            <input type="text" name="dom" value="*" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
+          </div>
+          <div><label style="font-size:10px;color:var(--dim)">Bulan</label>
+            <input type="text" name="month" value="*" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
+          </div>
+          <div><label style="font-size:10px;color:var(--dim)">Hari (DOW)</label>
+            <input type="text" name="dow" value="*" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
+          </div>
+        </div>
+        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Format standar cron. Contoh: <code class="mono">0 3 * * *</code> = setiap hari pukul 03:00</span>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Pengguna yang Menjalankan</label>
+        <input type="text" name="user_target" value="root" placeholder="root"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
+      </div>
+      <div style="margin-bottom:18px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Perintah yang Dieksekusi *</label>
+        <input type="text" name="command" required placeholder="Contoh: /opt/backup.sh >> /var/log/backup.log 2>&1"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeAddCronModal()">Batal</button>
+        <button type="submit" class="btn btn-primary">Tambah Tugas Cron</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Tambah Lokasi Sertifikat SSL Kustom -->
+<div id="add-ssl-path-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(500px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
+    <h3 style="margin:0 0 4px;color:var(--neon)">Tambah Lokasi Sertifikat SSL Kustom</h3>
+    <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
+      Path berkas sertifikat akan disimpan di <code class="mono">/etc/pantau/custom_ssl.conf</code> dan dipantau secara berkala oleh agen.
+    </p>
+    <form method="post" action="/servers/{{ server.id }}/ssl/add-path">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div style="margin-bottom:18px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Path Berkas Sertifikat (.pem / .crt) *</label>
+        <input type="text" name="path" required placeholder="Contoh: /etc/nginx/ssl/example.com.crt"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
+        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Gunakan path absolut. Berkas harus sudah ada di filesystem server.</span>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeAddSslPathModal()">Batal</button>
+        <button type="submit" class="btn btn-primary">Tambah ke Pengawasan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Tab: Akun Pengguna Sistem -->
+
 <div class="tab-body" id="tab-akun" hidden>
   <div class="card">
     <div class="card-header" style="align-items:center;justify-content:space-between">
@@ -1553,14 +1731,19 @@
         <h3 style="margin:0">Akun Pengguna Sistem</h3>
         <span style="font-size:12px;color:var(--dim)">Daftar akun login, UID, Shell, riwayat login terakhir, dan sesi aktif (/etc/passwd, lastlog, who)</span>
       </div>
-      <span class="badge badge-info" id="acc-count-badge">Akun Sistem</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge badge-info" id="acc-count-badge">Akun Sistem</span>
+        <button class="btn btn-primary btn-sm" onclick="openCreateUserModal()" style="display:flex;align-items:center;gap:4px">
+          <span>＋</span> Buat Pengguna
+        </button>
+      </div>
     </div>
     <div id="acc-empty" class="empty-msg" style="display:none">Belum ada data akun dari server ini.</div>
     <div style="overflow-x:auto">
       <table id="acc-table" style="display:none;width:100%">
         <thead>
           <tr>
-            <th>User</th>
+            <th>Pengguna</th>
             <th>UID</th>
             <th>Shell</th>
             <th>Login Terakhir</th>
@@ -1594,6 +1777,7 @@
             <th title="Alamat IP yang di-bind oleh socket">Bind IP</th>
             <th title="Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)">Akses</th>
             <th title="Nama proses sistem dan PID yang membuka port ini">Proses &amp; PID</th>
+            <th title="Tindakan yang dapat dilakukan pada port ini">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -1610,6 +1794,31 @@
               {% endif %}
             </td>
             <td class="mono" style="font-size:12px;color:var(--text)">{{ p.proc or '—' }}</td>
+            <td>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                {% if p.pid and p.port not in (22, 8400) %}
+                <button class="btn btn-sm btn-danger"
+                        onclick="openKillProcModal('{{ p.pid }}','{{ p.pname or p.proc or 'proses' }}','TERM')"
+                        title="Kirim sinyal ke proses yang mengelola port ini">
+                  ⚡ Kill PID
+                </button>
+                {% endif %}
+                {% if p.is_public and p.port not in (22, 8400) %}
+                <form method="post" action="/servers/{{ server.id }}/ports/rule" style="display:inline"
+                      onsubmit="return confirm('Blokir port {{ p.port }}/{{ p.proto }} melalui firewall?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <input type="hidden" name="port" value="{{ p.port }}/{{ p.proto }}">
+                  <input type="hidden" name="rule" value="deny">
+                  <button type="submit" class="btn btn-sm btn-warn" title="Blokir port ini via UFW/iptables">
+                    🚫 Blokir Port
+                  </button>
+                </form>
+                {% endif %}
+                {% if p.port in (22, 8400) %}
+                <span style="font-size:11px;color:var(--dim);white-space:nowrap">⛨ Dilindungi</span>
+                {% endif %}
+              </div>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -1621,15 +1830,21 @@
   </div>
 </div>
 
+
 <!-- Tab: Sertifikat SSL / TLS -->
 <div class="tab-body" id="tab-ssl" hidden>
   <div class="card">
-    <div class="card-header" style="align-items:center">
+    <div class="card-header" style="align-items:center;justify-content:space-between">
       <div>
         <h3 style="margin:0">Status Sertifikat SSL / TLS</h3>
-        <span style="font-size:12px;color:var(--dim)">Pengawasan masa berlaku sertifikat HTTPS web server (Let's Encrypt / Custom)</span>
+        <span style="font-size:12px;color:var(--dim)">Pengawasan masa berlaku sertifikat HTTPS (Let's Encrypt / Kustom)</span>
       </div>
-      <span class="badge badge-info">{{ (ssl_certs|length) if ssl_certs else 0 }} sertifikat terdeteksi</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge badge-info">{{ (ssl_certs|length) if ssl_certs else 0 }} sertifikat terdeteksi</span>
+        <button class="btn btn-primary btn-sm" onclick="openAddSslPathModal()" style="display:flex;align-items:center;gap:4px">
+          <span>＋</span> Tambah Lokasi Sertifikat
+        </button>
+      </div>
     </div>
     {% if ssl_certs %}
     <div style="overflow-x:auto">
@@ -1642,6 +1857,7 @@
             <th title="Sisa hari sebelum sertifikat habis masa berlakunya">Sisa Hari</th>
             <th title="Status kesehatan sertifikat">Status</th>
             <th title="Lokasi berkas sertifikat di filesystem server">Lokasi Berkas</th>
+            <th>Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -1649,6 +1865,7 @@
           <tr>
             <td>
               <strong>{{ c.domains | join(', ') if c.domains else c.subject }}</strong>
+              {% if c.is_custom %}<span class="badge badge-muted" title="Ditambahkan secara manual via Pantau" style="font-size:10px;margin-left:4px">Kustom</span>{% endif %}
             </td>
             <td style="font-size:12px;color:var(--dim)">{{ c.issuer }}</td>
             <td class="mono" style="font-size:12px">{{ c.not_after }}</td>
@@ -1671,18 +1888,34 @@
               {% endif %}
             </td>
             <td class="mono" style="font-size:11px;color:var(--dim)">{{ c.path }}</td>
+            <td>
+              {% if c.is_custom %}
+              <form method="post" action="/servers/{{ server.id }}/ssl/remove-path" style="display:inline"
+                    onsubmit="return confirm('Hapus lokasi sertifikat \\'{{ c.path }}\\' dari pengawasan?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="path" value="{{ c.path }}">
+                <button type="submit" class="btn btn-sm btn-danger" title="Hapus dari pengawasan SSL kustom">
+                  🗑 Hapus
+                </button>
+              </form>
+              {% else %}
+              <span style="font-size:11px;color:var(--dim)">—</span>
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     {% else %}
-    <div class="empty-msg">
-      Tidak ada berkas sertifikat SSL lokal ditemukan pada direktori standar (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).
+    <div class="empty-msg" style="padding:24px 0">
+      Tidak ada berkas sertifikat SSL lokal ditemukan pada direktori standar (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).<br>
+      <span style="font-size:12px;color:var(--dim)">Gunakan tombol <strong>Tambah Lokasi Sertifikat</strong> untuk mendaftarkan path sertifikat kustom.</span>
     </div>
     {% endif %}
   </div>
 </div>
+
 
 <div class="tab-body" id="tab-log" hidden>
 <div class="card" id="log-card">
@@ -2505,7 +2738,44 @@ document.addEventListener('click', e => {
   if (m2 && e.target === m2) m2.style.display = 'none';
   const m3 = document.getElementById('kill-proc-modal');
   if (m3 && e.target === m3) m3.style.display = 'none';
+  const m4 = document.getElementById('create-user-modal');
+  if (m4 && e.target === m4) m4.style.display = 'none';
+  const m5 = document.getElementById('add-cron-modal');
+  if (m5 && e.target === m5) m5.style.display = 'none';
+  const m6 = document.getElementById('add-ssl-path-modal');
+  if (m6 && e.target === m6) m6.style.display = 'none';
 });
+
+// === Modal: Buat Pengguna Sistem ===
+function openCreateUserModal() {
+  const m = document.getElementById('create-user-modal');
+  if (m) m.style.display = 'flex';
+}
+function closeCreateUserModal() {
+  const m = document.getElementById('create-user-modal');
+  if (m) m.style.display = 'none';
+}
+
+// === Modal: Tambah Tugas Cron ===
+function openAddCronModal() {
+  const m = document.getElementById('add-cron-modal');
+  if (m) m.style.display = 'flex';
+}
+function closeAddCronModal() {
+  const m = document.getElementById('add-cron-modal');
+  if (m) m.style.display = 'none';
+}
+
+// === Modal: Tambah Path SSL ===
+function openAddSslPathModal() {
+  const m = document.getElementById('add-ssl-path-modal');
+  if (m) m.style.display = 'flex';
+}
+function closeAddSslPathModal() {
+  const m = document.getElementById('add-ssl-path-modal');
+  if (m) m.style.display = 'none';
+}
+
 
 async function ackProblemInDetail(id, btn) {
   if (!confirm('Tandai masalah ini sudah ditangani?')) return;
@@ -4019,17 +4289,36 @@ function renderSys(data) {
   const ae = document.getElementById('acc-empty');
   at.style.display = acc.length ? 'table' : 'none';
   ae.style.display = acc.length ? 'none' : 'block';
-  at.querySelector('tbody').innerHTML = acc.map(a =>
-    '<tr><td><strong>' + escHtml(a.user) + '</strong></td>'
-    + '<td class="mono">' + escHtml(a.uid) + '</td>'
-    + '<td class="mono">' + escHtml(a.shell || '-') + '</td>'
-    + '<td style="font-size:12px;color:var(--dim)">' + escHtml(a.last_login || '-') + '</td>'
-    + '<td style="font-size:12px;color:var(--dim)">'
-    + (a.sessions && a.sessions.length ? a.sessions.map(s =>
-        escHtml((s.tty || '') + (s.from ? ' @ ' + s.from : ''))).join('<br>') : '-')
-    + '</td>'
-    + '<td><a href="/servers/' + SID + '/user/' + encodeURIComponent(a.user) + '" class="btn btn-ghost btn-sm">Rincian</a></td></tr>'
-  ).join('');
+  const csrf = getCsrf();
+  at.querySelector('tbody').innerHTML = acc.map(a => {
+    const isProtected = a.is_protected === true;
+    const userEnc = encodeURIComponent(a.user);
+    const userEsc = escHtml(a.user);
+    let actions = '<a href="/servers/' + SID + '/user/' + userEnc + '" class="btn btn-ghost btn-sm">Rincian</a>';
+    if (!isProtected) {
+      actions += '<form method="post" action="/servers/' + SID + '/system-users/lock" style="display:inline">'
+        + '<input type="hidden" name="csrf_token" value="' + csrf + '">'
+        + '<input type="hidden" name="username" value="' + userEsc + '">'
+        + '<button type="submit" class="btn btn-sm btn-warn" title="Kunci akun (disable login)" onclick="return confirm(\'Kunci akun ' + userEsc + '?\')">🔒 Kunci</button>'
+        + '</form>';
+      actions += '<form method="post" action="/servers/' + SID + '/system-users/delete" style="display:inline">'
+        + '<input type="hidden" name="csrf_token" value="' + csrf + '">'
+        + '<input type="hidden" name="username" value="' + userEsc + '">'
+        + '<button type="submit" class="btn btn-sm btn-danger" title="Hapus akun ini" onclick="return confirm(\'Hapus pengguna ' + userEsc + ' secara permanen?\')">🗑 Hapus</button>'
+        + '</form>';
+    }
+    return '<tr>'
+      + '<td><strong>' + userEsc + '</strong>'
+      + (isProtected ? ' <span class="badge badge-muted" style="font-size:10px" title="Akun sistem terlindungi">Sistem</span>' : '') + '</td>'
+      + '<td class="mono">' + escHtml(String(a.uid)) + '</td>'
+      + '<td class="mono">' + escHtml(a.shell || '-') + '</td>'
+      + '<td style="font-size:12px;color:var(--dim)">' + escHtml(a.last_login || '-') + '</td>'
+      + '<td style="font-size:12px;color:var(--dim)">'
+      + (a.sessions && a.sessions.length ? a.sessions.map(s =>
+          escHtml((s.tty || '') + (s.from ? ' @ ' + s.from : ''))).join('<br>') : '-')
+      + '</td>'
+      + '<td><div style="display:flex;gap:4px;flex-wrap:wrap">' + actions + '</div></td></tr>';
+  }).join('');
 
   const accBadge = document.getElementById('acc-count-badge');
   if (accBadge) accBadge.textContent = acc.length + ' Akun';

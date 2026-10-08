@@ -34,3 +34,6 @@ pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-firewall
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-host
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-shell
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-file
+pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-user
+pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-cron
+pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-ssl

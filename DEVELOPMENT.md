@@ -4,6 +4,29 @@ Dokumen ini memuat catatan riwayat perubahan, penambahan fitur, serta perbaikan 
 
 ---
 
+## Versi 4.0.0
+
+### Rilis Mayor & Penambahan Fitur Manajemen Sistem Interaktif
+- **Manajemen Akun Pengguna (System Users):**
+  - Pembuatan akun pengguna sistem baru.
+  - Penguncian akun (lock), pembukaan kunci akun (unlock), dan penghapusan akun.
+  - Proteksi otomatis terhadap akun sistem dan root.
+- **Manajemen Tugas Terjadwal (Cron Jobs):**
+  - Penambahan jadwal cron baru (mendukung ekspresi standar).
+  - Kemampuan untuk mengaktifkan/menonaktifkan (toggle), menghapus, dan mengeksekusi langsung tugas cron (*Run Now*).
+- **Manajemen Port Terbuka (Listening Ports):**
+  - Aksi interaktif untuk menghentikan proses (*Kill Process*) yang menduduki port.
+  - Aksi interaktif untuk memblokir port secara langsung melalui UFW (*Block Port*).
+- **Manajemen Sertifikat SSL:**
+  - Penambahan pantauan path sertifikat SSL kustom.
+  - Penghapusan pantauan sertifikat SSL kustom.
+- **Peningkatan Kapabilitas Agen & Keamanan:**
+  - Pembaruan *wrapper* sudo (`pantau-user`, `pantau-cron`, `pantau-ssl`, `pantau-firewall`) untuk eksekusi perintah secara aman dengan hak akses minimal yang terukur.
+- **Pemutakhiran Nama & Konsistensi:**
+  - Konsistensi penggunaan Bahasa Indonesia formal di seluruh dokumen rilis, terkecuali nama aplikasi **Pantau Server** yang dipertahankan.
+
+---
+
 ## Versi 3.23.0
 
 ### Fitur Baru & Peningkatan

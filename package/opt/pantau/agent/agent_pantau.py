@@ -61,6 +61,9 @@ VALID_PROCESS_NAME_RE = re.compile(r'^[a-zA-Z0-9@._:\-]{1,64}$')
 PANTUAN_RESTART = "/usr/local/sbin/pantau-restart"
 PANTUAN_FIREWALL = "/usr/local/sbin/pantau-firewall"
 PANTAU_FILE_CMD = "/usr/local/sbin/pantau-file"
+PANTUAN_USER_CMD = "/usr/local/sbin/pantau-user"
+PANTUAN_CRON_CMD = "/usr/local/sbin/pantau-cron"
+PANTUAN_SSL_CMD = "/usr/local/sbin/pantau-ssl"
 PANTUAN_UNAME = "agent_pantau"
 SS_BIN = "/usr/bin/ss"
 SYSLOG_FILE = "/var/log/syslog"
@@ -464,7 +467,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.23.0"
+AGENT_VERSION = "4.0.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -633,8 +636,16 @@ def execute_command(cfg: dict, command: dict) -> dict:
         result = _exec_unblock_ip(command)
     elif action in ("firewall_enable", "firewall_disable", "firewall_reload"):
         result = _exec_firewall_toggle(action)
+    elif action == "firewall_port_rule":
+        result = _exec_firewall_port_rule(command)
     elif action == "kill_process":
         result = _exec_kill_process(command)
+    elif action in ("user_create", "user_lock", "user_unlock", "user_delete"):
+        result = _exec_user_action(action, command)
+    elif action in ("cron_add", "cron_toggle", "cron_delete", "cron_run_now"):
+        result = _exec_cron_action(action, command)
+    elif action in ("ssl_path_add", "ssl_path_remove"):
+        result = _exec_ssl_action(action, command)
     elif action == "restart_agent":
         result = _exec_restart_agent()
     elif action in ("reboot_host", "poweroff_host"):
@@ -758,6 +769,124 @@ def _exec_kill_process(command: dict) -> dict:
     # Bersihkan cache proses agar pemindaian berikutnya langsung memuat daftar segar
     _top_procs_cache["at"] = 0.0
     return {"ok": res.get("ok", False), "output": res.get("output", "Gagal mengirim sinyal ke proses")[:2000]}
+
+
+def _exec_user_action(action: str, command: dict) -> dict:
+    """Kelola akun pengguna sistem via wrapper pantau-user."""
+    params = command.get("params") or {}
+    username = str(params.get("username", "")).strip().lower()
+    if not username:
+        return {"ok": False, "output": "Nama pengguna (username) wajib diisi."}
+
+    cmd = [PANTUAN_USER_CMD]
+    if action == "user_create":
+        shell = str(params.get("shell", "/bin/bash")).strip()
+        is_sudo = "1" if params.get("is_sudo") in (1, True, "1", "true") else "0"
+        comment = str(params.get("comment", "Dibuat via Pantau Server")).strip()
+        cmd.extend(["create", username, shell, is_sudo, comment])
+    elif action == "user_lock":
+        cmd.extend(["lock", username])
+    elif action == "user_unlock":
+        cmd.extend(["unlock", username])
+    elif action == "user_delete":
+        remove_home = "1" if params.get("remove_home") in (1, True, "1", "true") else "0"
+        cmd.extend(["delete", username, remove_home])
+    else:
+        return {"ok": False, "output": f"Aksi pengguna tidak valid: {action}"}
+
+    label = " ".join(cmd)
+    if not IS_ROOT:
+        cmd = ["/usr/bin/sudo", "-n", *cmd]
+        label = f"sudo -n {label}"
+
+    res = _run_native(cmd, label)
+    return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
+
+
+def _exec_cron_action(action: str, command: dict) -> dict:
+    """Kelola tugas terjadwal (cron) via wrapper pantau-cron."""
+    params = command.get("params") or {}
+    cmd = [PANTUAN_CRON_CMD]
+
+    if action == "cron_add":
+        ident = str(params.get("ident", "")).strip()
+        minute = str(params.get("minute", "*")).strip()
+        hour = str(params.get("hour", "*")).strip()
+        dom = str(params.get("dom", "*")).strip()
+        month = str(params.get("month", "*")).strip()
+        dow = str(params.get("dow", "*")).strip()
+        target_user = str(params.get("user", "root")).strip()
+        cron_cmd = str(params.get("command", "")).strip()
+        if not ident or not cron_cmd:
+            return {"ok": False, "output": "Identifikasi tugas dan perintah cron wajib diisi."}
+        cmd.extend(["add", ident, minute, hour, dom, month, dow, target_user, cron_cmd])
+    elif action == "cron_toggle":
+        ident = str(params.get("ident", "")).strip()
+        mode = str(params.get("mode", "enable")).strip().lower()
+        if not ident:
+            return {"ok": False, "output": "Identifikasi tugas cron wajib diisi."}
+        cmd.extend(["toggle", ident, mode])
+    elif action == "cron_delete":
+        ident = str(params.get("ident", "")).strip()
+        if not ident:
+            return {"ok": False, "output": "Identifikasi tugas cron wajib diisi."}
+        cmd.extend(["delete", ident])
+    elif action == "cron_run_now":
+        target_user = str(params.get("user", "root")).strip()
+        cron_cmd = str(params.get("command", "")).strip()
+        if not cron_cmd:
+            return {"ok": False, "output": "Perintah cron wajib diisi."}
+        cmd.extend(["run", target_user, cron_cmd])
+    else:
+        return {"ok": False, "output": f"Aksi cron tidak valid: {action}"}
+
+    label = " ".join(cmd)
+    if not IS_ROOT:
+        cmd = ["/usr/bin/sudo", "-n", *cmd]
+        label = f"sudo -n {label}"
+
+    res = _run_native(cmd, label)
+    _cron_cache["at"] = 0.0
+    return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
+
+
+def _exec_firewall_port_rule(command: dict) -> dict:
+    """Atur aturan buka/tutup port firewall via wrapper pantau-firewall."""
+    params = command.get("params") or {}
+    port_spec = str(params.get("port", "")).strip()
+    rule_type = str(params.get("rule", "deny")).strip().lower()
+    if not port_spec:
+        return {"ok": False, "output": "Spesifikasi port wajib diisi."}
+
+    sub = "deny-port" if rule_type in ("deny", "block", "deny-port") else "allow-port"
+    cmd = [PANTUAN_FIREWALL, sub, port_spec]
+    label = f"{PANTUAN_FIREWALL} {sub} {port_spec}"
+    if not IS_ROOT:
+        cmd = ["/usr/bin/sudo", "-n", *cmd]
+        label = f"sudo -n {label}"
+
+    res = _run_native(cmd, label)
+    _fw_cache["at"] = 0.0
+    return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
+
+
+def _exec_ssl_action(action: str, command: dict) -> dict:
+    """Kelola path berkas sertifikat SSL kustom via wrapper pantau-ssl."""
+    params = command.get("params") or {}
+    cert_path = str(params.get("path", "")).strip()
+    if not cert_path:
+        return {"ok": False, "output": "Path berkas sertifikat SSL wajib diisi."}
+
+    sub = "add-path" if action == "ssl_path_add" else "remove-path"
+    cmd = [PANTUAN_SSL_CMD, sub, cert_path]
+    label = f"{PANTUAN_SSL_CMD} {sub} {cert_path}"
+    if not IS_ROOT:
+        cmd = ["/usr/bin/sudo", "-n", *cmd]
+        label = f"sudo -n {label}"
+
+    res = _run_native(cmd, label)
+    _ssl_cache["at"] = 0.0
+    return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
 
 
 def _exec_host_control(action: str) -> dict:
@@ -1305,6 +1434,12 @@ def collect_accounts() -> list[dict]:
     for s in who:
         sessions_by_user.setdefault(s["user"], []).append(s)
 
+    protected_set = frozenset({
+        "root", "pantau", "daemon", "bin", "sys", "sync", "games", "man", "lp", "mail",
+        "news", "uucp", "proxy", "www-data", "backup", "list", "irc", "gnats", "nobody",
+        "_apt", "messagebus", "sshd"
+    })
+
     accounts = []
     try:
         entries = list(pwd.getpwall())
@@ -1314,12 +1449,14 @@ def collect_accounts() -> list[dict]:
         sessions = sessions_by_user.get(pw.pw_name, [])
         # Fokus akun manusia: uid >= 1000, root, atau yang sedang logged-in
         if (pw.pw_uid >= 1000 or pw.pw_uid == 0 or sessions) and pw.pw_uid != 65534:
+            is_protected = (pw.pw_uid < 1000 and pw.pw_uid != 0) or (pw.pw_name in protected_set)
             accounts.append({
                 "user": pw.pw_name,
                 "uid": pw.pw_uid,
                 "shell": pw.pw_shell or "",
                 "last_login": lastlog.get(pw.pw_name, ""),
                 "sessions": sessions[:5],
+                "is_protected": is_protected,
             })
         if len(accounts) >= 60:
             break
@@ -2249,6 +2386,9 @@ def collect_cron_jobs() -> dict:
                             "schedule": sched,
                             "user": user,
                             "command": cmd,
+                            "is_managed": False,
+                            "ident": "",
+                            "is_enabled": True,
                         })
         except OSError:
             pass
@@ -2261,7 +2401,11 @@ def collect_cron_jobs() -> dict:
             with open(path, "r", encoding="utf-8", errors="replace") as f:
                 for idx, line in enumerate(f, 1):
                     raw = line.strip()
-                    if not raw or raw.startswith("#"):
+                    is_enabled = True
+                    if raw.startswith("# DISABLED_BY_PANTAU"):
+                        is_enabled = False
+                        raw = raw[len("# DISABLED_BY_PANTAU"):].strip()
+                    elif not raw or raw.startswith("#"):
                         continue
                     if re.match(r"^[A-Za-z_][A-Za-z0-9_]*\s*=", raw):
                         continue
@@ -2270,6 +2414,9 @@ def collect_cron_jobs() -> dict:
                         sched = " ".join(parts[0:5])
                         user = parts[5]
                         cmd = " ".join(parts[6:])
+                        bname = os.path.basename(path)
+                        is_managed = bname.startswith("pantau-")
+                        ident = bname[len("pantau-"):] if is_managed else ""
                         items.append({
                             "type": "cron",
                             "source": path,
@@ -2277,6 +2424,9 @@ def collect_cron_jobs() -> dict:
                             "schedule": sched,
                             "user": user,
                             "command": cmd,
+                            "is_managed": is_managed,
+                            "ident": ident,
+                            "is_enabled": is_enabled,
                         })
         except OSError:
             pass
@@ -2410,10 +2560,14 @@ def collect_listening_ports() -> list[dict]:
                 except ValueError:
                     continue
                 proc = ""
+                pid = None
+                pname = ""
                 tail = " ".join(parts[5:])
                 m = re.search(r'"([^"]+)",pid=(\d+)', tail)
                 if m:
-                    proc = f"{m.group(1)} (PID {m.group(2)})"
+                    pname = m.group(1)
+                    pid = int(m.group(2))
+                    proc = f"{pname} (PID {pid})"
                 elif len(parts) >= 7:
                     proc = parts[6]
                 is_loopback = ip in ("127.0.0.1", "::1", "127.0.0.53", "127.0.0.54") or ip.startswith("127.0.0.") or ip.endswith("%lo")
@@ -2422,6 +2576,8 @@ def collect_listening_ports() -> list[dict]:
                     "ip": ip,
                     "port": port,
                     "proc": proc,
+                    "pid": pid,
+                    "pname": pname,
                     "is_loopback": is_loopback,
                     "is_public": not is_loopback,
                 })
@@ -2451,6 +2607,27 @@ def collect_ssl_certs() -> list[dict]:
     ]
     seen_files = set()
     found_paths = []
+    custom_reals = set()
+
+    # Sertifikat kustom yang didaftarkan lewat Pantau
+    custom_conf = "/etc/pantau/custom_ssl.conf"
+    if os.path.isfile(custom_conf):
+        try:
+            with open(custom_conf, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    cpath = line.strip()
+                    if cpath and not cpath.startswith("#") and os.path.isfile(cpath):
+                        try:
+                            r = os.path.realpath(cpath)
+                            custom_reals.add(r)
+                            if r not in seen_files:
+                                seen_files.add(r)
+                                found_paths.append(cpath)
+                        except OSError:
+                            continue
+        except OSError:
+            pass
+
     for pat in patterns:
         for p in sorted(glob.glob(pat)):
             try:
@@ -2462,7 +2639,7 @@ def collect_ssl_certs() -> list[dict]:
                 continue
 
     utc_now = datetime.now(timezone.utc)
-    for p in found_paths[:30]:
+    for p in found_paths[:50]:
         try:
             # Gunakan cryptography jika tersedia
             from cryptography import x509
@@ -2481,6 +2658,12 @@ def collect_ssl_certs() -> list[dict]:
             except Exception:
                 pass
 
+            is_custom = False
+            try:
+                is_custom = os.path.realpath(p) in custom_reals
+            except OSError:
+                pass
+
             certs.append({
                 "path": p,
                 "subject": subject,
@@ -2491,6 +2674,7 @@ def collect_ssl_certs() -> list[dict]:
                 "is_expired": days_left < 0,
                 "is_critical": 0 <= days_left <= 14,
                 "is_warning": 14 < days_left <= 30,
+                "is_custom": is_custom,
             })
         except Exception:
             continue

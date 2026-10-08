@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+#
+# pantau-user - Wrapper terbatas pengelolaan akun pengguna sistem Linux
+# untuk Agen Pantau.
+#
+# Jalur sudo NOPASSWD berguardrail ketat.
+#
+set -euo pipefail
+
+fail() { echo "ERROR: $*" >&2; exit 1; }
+
+ACTION="${1:-}"
+shift 2>/dev/null || true
+
+# Daftar akun terproteksi yang tidak boleh disentuh
+is_protected_user() {
+    local u="$1"
+    case "$u" in
+        root|pantau|daemon|bin|sys|sync|games|man|lp|mail|news|uucp|proxy|www-data|backup|list|irc|gnats|nobody|systemd*|_apt|messagebus|sshd)
+            return 0
+            ;;
+    esac
+    # Cek UID jika user ada
+    if id -u "$u" >/dev/null 2>&1; then
+        local uid
+        uid="$(id -u "$u")"
+        if [ "$uid" -lt 1000 ] && [ "$uid" -ne 0 ]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+validate_username() {
+    local u="$1"
+    if [[ ! "$u" =~ ^[a-z_][a-z0-9_-]{1,31}$ ]]; then
+        fail "Nama pengguna tidak valid: '$u' (harus diawali huruf kecil/underscore, maks 32 karakter)"
+    fi
+}
+
+case "$ACTION" in
+    create)
+        USERNAME="${1:-}"
+        SHELL_PATH="${2:-/bin/bash}"
+        IS_SUDO="${3:-0}"
+        COMMENT="${4:-Dibuat via Pantau Server}"
+
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        validate_username "$USERNAME"
+
+        if id "$USERNAME" >/dev/null 2>&1; then
+            fail "Pengguna '$USERNAME' sudah ada di sistem"
+        fi
+
+        # Validasi shell
+        if [ ! -x "$SHELL_PATH" ] && [ "$SHELL_PATH" != "/usr/sbin/nologin" ] && [ "$SHELL_PATH" != "/bin/false" ]; then
+            SHELL_PATH="/bin/bash"
+        fi
+
+        useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
+
+        if [ "$IS_SUDO" = "1" ] || [ "$IS_SUDO" = "true" ]; then
+            usermod -aG sudo "$USERNAME" 2>/dev/null || usermod -aG wheel "$USERNAME" 2>/dev/null || true
+        fi
+
+        echo "OK: Pengguna '$USERNAME' berhasil dibuat (Shell: $SHELL_PATH, Sudo: $IS_SUDO)"
+        ;;
+
+    lock)
+        USERNAME="${1:-}"
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        validate_username "$USERNAME"
+
+        if is_protected_user "$USERNAME"; then
+            fail "Pengguna '$USERNAME' adalah akun sistem penting dan dilarang dikunci!"
+        fi
+
+        passwd -l "$USERNAME" >/dev/null 2>&1 || fail "Gagal mengunci akun '$USERNAME'"
+        echo "OK: Akun '$USERNAME' berhasil dikunci"
+        ;;
+
+    unlock)
+        USERNAME="${1:-}"
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        validate_username "$USERNAME"
+
+        if is_protected_user "$USERNAME"; then
+            fail "Pengguna '$USERNAME' adalah akun sistem penting!"
+        fi
+
+        passwd -u "$USERNAME" >/dev/null 2>&1 || fail "Gagal membuka kunci akun '$USERNAME'"
+        echo "OK: Akun '$USERNAME' berhasil dibuka kuncinya"
+        ;;
+
+    delete)
+        USERNAME="${1:-}"
+        REMOVE_HOME="${2:-0}"
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        validate_username "$USERNAME"
+
+        if is_protected_user "$USERNAME"; then
+            fail "Pengguna '$USERNAME' adalah akun sistem terlindungi dan dilarang dihapus!"
+        fi
+
+        # Hentikan proses yang masih dijalankan user sebelum dihapus
+        pkill -u "$USERNAME" 2>/dev/null || true
+        sleep 0.5
+
+        if [ "$REMOVE_HOME" = "1" ] || [ "$REMOVE_HOME" = "true" ]; then
+            userdel -r "$USERNAME" 2>/dev/null || userdel "$USERNAME" || fail "Gagal menghapus pengguna '$USERNAME'"
+        else
+            userdel "$USERNAME" || fail "Gagal menghapus pengguna '$USERNAME'"
+        fi
+
+        echo "OK: Pengguna '$USERNAME' berhasil dihapus"
+        ;;
+
+    *)
+        fail "Aksi tidak dikenal: '$ACTION' (harus create, lock, unlock, delete)"
+        ;;
+esac

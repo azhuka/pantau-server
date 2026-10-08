@@ -933,6 +933,9 @@ def agent_report(
                     "schedule": _clean_str(item.get("schedule"), "", 60),
                     "user": _clean_str(item.get("user"), "root", 64),
                     "command": _clean_str(item.get("command"), "", 500),
+                    "is_managed": bool(item.get("is_managed")),
+                    "ident": _clean_str(item.get("ident"), "", 64),
+                    "is_enabled": bool(item.get("is_enabled", True)),
                 }
                 for item in (cj.get("jobs") or [])[:100]
                 if isinstance(item, dict)
@@ -981,6 +984,8 @@ def agent_report(
                 "ip": _clean_str(p.get("ip"), "", 64),
                 "port": _clamp_int(p.get("port"), 0, 1, 65535),
                 "proc": _clean_str(p.get("proc"), "", 100),
+                "pid": _clamp_int(p.get("pid"), None, 1, 4194304) if p.get("pid") else None,
+                "pname": _clean_str(p.get("pname"), "", 50),
                 "is_loopback": bool(p.get("is_loopback")),
                 "is_public": bool(p.get("is_public")),
             }
@@ -1002,10 +1007,12 @@ def agent_report(
                 "is_expired": bool(c.get("is_expired")),
                 "is_critical": bool(c.get("is_critical")),
                 "is_warning": bool(c.get("is_warning")),
+                "is_custom": bool(c.get("is_custom")),
             }
             for c in body["ssl_certs"][:50]
             if isinstance(c, dict)
         ]
+        extras.ssl_certs = json.dumps(clean_certs)
     # Validasi & Simpan System Logs (kegagalan sistem journalctl)
     if isinstance(body.get("system_logs"), list):
         clean_logs = [
@@ -2325,20 +2332,22 @@ def service_stop(
     return _service_action(request, sid, svc_id, "stop", db, csrf_token)
 
 def _enqueue_mitigation(db, sid: int, action: str, params: dict | None = None, issued_by=None) -> None:
-    """Antrekan command mitigasi (block_ip/restart_agent) tanpa service terkait."""
+    """Antrekan command mitigasi atau server action tanpa service terkait."""
+    params_str = json.dumps(params) if params else None
     existing = (
         db.query(Command)
         .filter(
             Command.server_id == sid,
             Command.action == action,
             Command.status == "pending",
+            Command.params == params_str,
         )
         .first()
     )
     if not existing:
         db.add(Command(
             server_id=sid, service_id=None, action=action,
-            params=json.dumps(params) if params else None, status="pending",
+            params=params_str, status="pending",
             issued_by=issued_by,
         ))
         db.commit()
@@ -2607,6 +2616,330 @@ def host_poweroff(
 ):
     """Poweroff OS server klien (admin). Tegas: mesin mati sampai dinyalakan manual."""
     return _host_control(request, sid, db, "poweroff_host", csrf_token)
+
+
+# ---------------------------------------------------------------------------
+# Pengelolaan Pengguna Sistem (Linux Accounts)
+# ---------------------------------------------------------------------------
+@app.post("/servers/{sid}/system-users/create")
+def server_user_create(
+    request: Request, sid: int,
+    username: str = Form(...),
+    shell: str = Form(default="/bin/bash"),
+    is_sudo: bool = Form(default=False),
+    comment: str = Form(default="Dibuat via Pantau Server"),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or user.role != "admin":
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+    u_clean = username.strip().lower()
+    _enqueue_mitigation(db, sid, "user_create", {
+        "username": u_clean,
+        "shell": shell.strip() or "/bin/bash",
+        "is_sudo": "1" if is_sudo else "0",
+        "comment": comment.strip() or "Dibuat via Pantau Server",
+    }, issued_by=user.username)
+    _audit(db, user.username, "user_create", f"{server.hostname}: buat user {u_clean}", "dikirim ke agen", server_id=sid)
+    db.commit()
+    if is_json: return JSONResponse({"ok": True, "detail": f"Perintah pembuatan pengguna '{u_clean}' dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
+
+
+@app.post("/servers/{sid}/system-users/lock")
+def server_user_lock(
+    request: Request, sid: int,
+    username: str = Form(...),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or user.role != "admin":
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+    u_clean = username.strip().lower()
+    _enqueue_mitigation(db, sid, "user_lock", {"username": u_clean}, issued_by=user.username)
+    _audit(db, user.username, "user_lock", f"{server.hostname}: kunci user {u_clean}", "dikirim ke agen", server_id=sid)
+    db.commit()
+    if is_json: return JSONResponse({"ok": True, "detail": f"Perintah kunci akun '{u_clean}' dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
+
+
+@app.post("/servers/{sid}/system-users/unlock")
+def server_user_unlock(
+    request: Request, sid: int,
+    username: str = Form(...),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or user.role != "admin":
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+    u_clean = username.strip().lower()
+    _enqueue_mitigation(db, sid, "user_unlock", {"username": u_clean}, issued_by=user.username)
+    _audit(db, user.username, "user_unlock", f"{server.hostname}: buka kunci user {u_clean}", "dikirim ke agen", server_id=sid)
+    db.commit()
+    if is_json: return JSONResponse({"ok": True, "detail": f"Perintah buka kunci akun '{u_clean}' dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
+
+
+@app.post("/servers/{sid}/system-users/delete")
+def server_user_delete(
+    request: Request, sid: int,
+    username: str = Form(...),
+    remove_home: bool = Form(default=False),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or user.role != "admin":
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+    u_clean = username.strip().lower()
+    _enqueue_mitigation(db, sid, "user_delete", {"username": u_clean, "remove_home": "1" if remove_home else "0"}, issued_by=user.username)
+    _audit(db, user.username, "user_delete", f"{server.hostname}: hapus user {u_clean}", "dikirim ke agen", server_id=sid)
+    db.commit()
+    if is_json: return JSONResponse({"ok": True, "detail": f"Perintah hapus akun '{u_clean}' dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
+
+
+# ---------------------------------------------------------------------------
+# Pengelolaan Tugas Terjadwal (Cron Jobs)
+# ---------------------------------------------------------------------------
+@app.post("/servers/{sid}/cron/add")
+def server_cron_add(
+    request: Request, sid: int,
+    ident: str = Form(...),
+    minute: str = Form(default="*"),
+    hour: str = Form(default="*"),
+    dom: str = Form(default="*"),
+    month: str = Form(default="*"),
+    dow: str = Form(default="*"),
+    user_target: str = Form(default="root"),
+    command: str = Form(...),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or user.role != "admin":
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+    id_clean = ident.strip()
+    cmd_clean = command.strip()
+    _enqueue_mitigation(db, sid, "cron_add", {
+        "ident": id_clean,
+        "minute": minute.strip() or "*",
+        "hour": hour.strip() or "*",
+        "dom": dom.strip() or "*",
+        "month": month.strip() or "*",
+        "dow": dow.strip() or "*",
+        "user": user_target.strip() or "root",
+        "command": cmd_clean,
+    }, issued_by=user.username)
+    _audit(db, user.username, "cron_add", f"{server.hostname}: tambah cron {id_clean}", "dikirim ke agen", server_id=sid)
+    db.commit()
+    if is_json: return JSONResponse({"ok": True, "detail": f"Perintah tambah tugas cron '{id_clean}' dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}/services?tab=cron", status_code=303)
+
+
+@app.post("/servers/{sid}/cron/toggle")
+def server_cron_toggle(
+    request: Request, sid: int,
+    ident: str = Form(...),
+    mode: str = Form(default="enable"),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or user.role != "admin":
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+    id_clean = ident.strip()
+    m_clean = mode.strip().lower()
+    _enqueue_mitigation(db, sid, "cron_toggle", {"ident": id_clean, "mode": m_clean}, issued_by=user.username)
+    _audit(db, user.username, "cron_toggle", f"{server.hostname}: {m_clean} cron {id_clean}", "dikirim ke agen", server_id=sid)
+    db.commit()
+    if is_json: return JSONResponse({"ok": True, "detail": f"Perintah ubah status cron '{id_clean}' dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}/services?tab=cron", status_code=303)
+
+
+@app.post("/servers/{sid}/cron/delete")
+def server_cron_delete(
+    request: Request, sid: int,
+    ident: str = Form(...),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or user.role != "admin":
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+    id_clean = ident.strip()
+    _enqueue_mitigation(db, sid, "cron_delete", {"ident": id_clean}, issued_by=user.username)
+    _audit(db, user.username, "cron_delete", f"{server.hostname}: hapus cron {id_clean}", "dikirim ke agen", server_id=sid)
+    db.commit()
+    if is_json: return JSONResponse({"ok": True, "detail": f"Perintah hapus cron '{id_clean}' dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}/services?tab=cron", status_code=303)
+
+
+@app.post("/servers/{sid}/cron/run")
+def server_cron_run(
+    request: Request, sid: int,
+    user_target: str = Form(default="root"),
+    command: str = Form(...),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or user.role != "admin":
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+    cmd_clean = command.strip()
+    u_clean = user_target.strip() or "root"
+    _enqueue_mitigation(db, sid, "cron_run_now", {"user": u_clean, "command": cmd_clean}, issued_by=user.username)
+    _audit(db, user.username, "cron_run_now", f"{server.hostname}: uji jalankan cron ({u_clean}: {cmd_clean[:50]})", "dikirim ke agen", server_id=sid)
+    db.commit()
+    if is_json: return JSONResponse({"ok": True, "detail": "Perintah uji jalankan tugas cron dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}/services?tab=cron", status_code=303)
+
+
+# ---------------------------------------------------------------------------
+# Pengelolaan Aturan Port Firewall
+# ---------------------------------------------------------------------------
+@app.post("/servers/{sid}/ports/rule")
+def server_port_rule(
+    request: Request, sid: int,
+    port: str = Form(...),
+    rule: str = Form(default="deny"),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or user.role != "admin":
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+    p_clean = port.strip()
+    r_clean = rule.strip().lower()
+    pnum = p_clean.split("/")[0]
+    if pnum in ("22", "8400") and r_clean in ("deny", "block"):
+        if is_json: return JSONResponse({"ok": False, "detail": f"Port {pnum} dilindungi dan dilarang diblokir!"}, status_code=400)
+        return RedirectResponse(f"/servers/{sid}/services?tab=ports&error=protected_port", status_code=303)
+
+    _enqueue_mitigation(db, sid, "firewall_port_rule", {"port": p_clean, "rule": r_clean}, issued_by=user.username)
+    _audit(db, user.username, "firewall_port_rule", f"{server.hostname}: aturan port {p_clean} ({r_clean})", "dikirim ke agen", server_id=sid)
+    db.commit()
+    if is_json: return JSONResponse({"ok": True, "detail": f"Aturan port '{p_clean}' ({r_clean}) dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}/services?tab=ports", status_code=303)
+
+
+# ---------------------------------------------------------------------------
+# Pengelolaan Path Sertifikat SSL Kustom
+# ---------------------------------------------------------------------------
+@app.post("/servers/{sid}/ssl/add-path")
+def server_ssl_add_path(
+    request: Request, sid: int,
+    path: str = Form(...),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or user.role != "admin":
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+    path_clean = path.strip()
+    _enqueue_mitigation(db, sid, "ssl_path_add", {"path": path_clean}, issued_by=user.username)
+    _audit(db, user.username, "ssl_path_add", f"{server.hostname}: tambah path SSL {path_clean}", "dikirim ke agen", server_id=sid)
+    db.commit()
+    if is_json: return JSONResponse({"ok": True, "detail": f"Perintah tambah path sertifikat SSL '{path_clean}' dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}/services?tab=ssl", status_code=303)
+
+
+@app.post("/servers/{sid}/ssl/remove-path")
+def server_ssl_remove_path(
+    request: Request, sid: int,
+    path: str = Form(...),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or user.role != "admin":
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    _verify_csrf_form(request, csrf_token)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
+        return RedirectResponse("/servers", status_code=303)
+    path_clean = path.strip()
+    _enqueue_mitigation(db, sid, "ssl_path_remove", {"path": path_clean}, issued_by=user.username)
+    _audit(db, user.username, "ssl_path_remove", f"{server.hostname}: hapus path SSL {path_clean}", "dikirim ke agen", server_id=sid)
+    db.commit()
+    if is_json: return JSONResponse({"ok": True, "detail": f"Perintah hapus path sertifikat SSL '{path_clean}' dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}/services?tab=ssl", status_code=303)
 
 
 @app.post("/servers/{sid}/services/{svc_id}/delete")
@@ -3629,6 +3962,32 @@ AUDIT_ACTION_LABELS = {
     "file_rename": "Ubah nama berkas",
     "file_chmod": "Ubah izin berkas",
     "file_chown": "Ubah pemilik berkas",
+    # v4.0.0 — Pengelolaan akun pengguna sistem
+    "user_create": "Buat pengguna sistem",
+    "user_lock": "Kunci akun pengguna",
+    "user_unlock": "Buka kunci pengguna",
+    "user_delete": "Hapus pengguna sistem",
+    "cmd:user_create": "Buat pengguna sistem",
+    "cmd:user_lock": "Kunci akun pengguna",
+    "cmd:user_unlock": "Buka kunci pengguna",
+    "cmd:user_delete": "Hapus pengguna sistem",
+    # v4.0.0 — Pengelolaan tugas terjadwal (cron)
+    "cron_add": "Tambah tugas cron",
+    "cron_toggle": "Aktifkan/nonaktifkan cron",
+    "cron_delete": "Hapus tugas cron",
+    "cron_run_now": "Uji jalankan cron",
+    "cmd:cron_add": "Tambah tugas cron",
+    "cmd:cron_toggle": "Aktifkan/nonaktifkan cron",
+    "cmd:cron_delete": "Hapus tugas cron",
+    "cmd:cron_run_now": "Uji jalankan cron",
+    # v4.0.0 — Pengelolaan aturan port firewall
+    "firewall_port_rule": "Aturan port firewall",
+    "cmd:firewall_port_rule": "Aturan port firewall",
+    # v4.0.0 — Pengelolaan path sertifikat SSL kustom
+    "ssl_path_add": "Tambah path SSL kustom",
+    "ssl_path_remove": "Hapus path SSL kustom",
+    "cmd:ssl_path_add": "Tambah path SSL kustom",
+    "cmd:ssl_path_remove": "Hapus path SSL kustom",
 }
 AUDIT_ACTION_SET = dict(AUDIT_ACTION_LABELS)
 
