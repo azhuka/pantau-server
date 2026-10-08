@@ -4,9 +4,9 @@ Dokumen ini memuat catatan riwayat perubahan, penambahan fitur, serta perbaikan 
 
 ---
 
-## Versi 4.0.0
+## Pengembangan Fitur Manajemen Sistem Interaktif (Tahap Menuju Versi 4.0.0)
 
-### Rilis Mayor & Penambahan Fitur Manajemen Sistem Interaktif
+### Penambahan Fitur Manajemen Sistem Interaktif
 - **Manajemen Akun Pengguna (System Users):**
   - Pembuatan akun pengguna sistem baru.
   - Penguncian akun (lock), pembukaan kunci akun (unlock), dan penghapusan akun.

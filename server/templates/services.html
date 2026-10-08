@@ -759,171 +759,6 @@
 </div>
 </div>
 
-<div class="tab-body" id="tab-layanan" hidden>
-<div class="card">
-  <div class="card-header"><h3>Riwayat Layanan</h3>
-    <select id="svc-graph-sel"
-            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;margin-right:8px">
-      <option value="">memuat layanan…</option>
-    </select>
-    <div id="svc-ranges" style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn btn-sm" data-range="1h">1 Jam</button>
-      <button class="btn btn-sm is-on" data-range="24h">24 Jam</button>
-      <button class="btn btn-sm" data-range="7d">7 Hari</button>
-    </div>
-  </div>
-  <div id="svc-current" style="font-size:12px;color:var(--dim);margin-bottom:12px"></div>
-  <div style="background:rgba(0,0,0,0.18);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:18px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text)">Garis Waktu Ketersediaan Layanan (Uptime Timeline)</span>
-        <span id="svc-uptime-pill" class="badge badge-up" style="font-size:11px">100% normal</span>
-      </div>
-      <div style="display:flex;gap:12px;font-size:11px;color:var(--dim)">
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--green)"></span> Normal (Up)</span>
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--red)"></span> Terhenti (Down)</span>
-        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--dim)"></span> Tanpa Data</span>
-      </div>
-    </div>
-    <div id="svc-status-strip"></div>
-    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px;font-family:monospace" id="svc-strip-labels">
-      <span id="svc-strip-from">—</span>
-      <span style="color:var(--dim-subtle)">Setiap blok menunjukkan status pada interval waktu tersebut</span>
-      <span id="svc-strip-to">Sekarang</span>
-    </div>
-  </div>
-  <div id="svc-empty" class="empty-msg" style="display:none">Belum ada data riwayat layanan.</div>
-  <div class="grid-2">
-    <div>
-      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Waktu Respon (ms)</div>
-      <div id="chart-svc-rt"></div>
-    </div>
-    <div>
-      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Koneksi Aktif</div>
-      <div id="chart-svc-conn"></div>
-    </div>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-header"><h3>Daftar Layanan</h3>
-    {% if user.role == 'admin' %}
-    <button type="button" class="btn btn-primary btn-sm" onclick="openAddSvcModal()">+ Tambah Layanan</button>
-    {% endif %}
-  </div>
-  {% if services %}
-  <table>
-    <thead><tr>
-      <th title="Nama layanan atau daemon yang dipantau">Layanan</th>
-      <th title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
-      <th title="Nama proses sistem operasi yang dieksekusi">Proses</th>
-      <th title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
-      <th title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
-      <th title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
-      <th title="Hasil pemeriksaan kesehatan (health check) layanan">Kesehatan</th>
-      <th title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
-      <th title="Kontrol layanan: Restart, Mulai (▶), Berhenti (■), Abaikan (🔕), atau Hapus">Aksi</th>
-    </tr></thead>
-    <tbody>
-    {% for svc in services %}
-    <tr>
-      <td><strong>{{ svc.service_name }}</strong></td>
-      <td class="mono">{{ svc.port }}</td>
-      <td class="mono">{{ svc.process_name }}</td>
-      <td id="sts-{{ svc.id }}">
-        {% if svc._status == 'down' and svc._is_ignored %}
-          <span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down 🔕</span>
-        {% elif svc._status == 'up' and svc._is_ignored %}
-          <span class="badge badge-up" title="Layanan aktif (pengawasan down diabaikan)">up 🔕</span>
-        {% else %}
-          <span class="badge badge-{{ svc._status }}">{{ svc._status }}</span>
-        {% endif %}
-      </td>
-      <td id="conns-{{ svc.id }}">{{ svc._conns }}</td>
-      <td id="resp-{{ svc.id }}" class="mono">{{ svc._response_time if svc._response_time is not none else '-' }}</td>
-      <td id="health-{{ svc.id }}" style="font-size:12px;color:var(--dim)">{{ svc._health_msg or 'no data' }}</td>
-      <td>
-        {% if svc._uptime.uptime_pct is not none %}
-          {{ svc._uptime.uptime_pct }}%
-          {% if svc._uptime.downtime_seconds > 0 %}
-            <span style="font-size:11px;color:var(--red)">(down {{ svc._uptime.downtime_seconds }}s)</span>
-          {% endif %}
-        {% else %}
-          <span style="color:var(--dim)">-</span>
-        {% endif %}
-      </td>
-      <td style="white-space:nowrap">
-        <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}">
-          {% if user.role == 'admin' %}
-            {% set is_up = (svc._status == 'up') %}
-            {% set is_pending = (svc._pending_cmd is not none and svc._pending_cmd) %}
-            <button type="button" class="btn btn-primary btn-sm btn-svc-restart"
-                    {% if is_pending %}disabled{% endif %}
-                    title="Mulai ulang (restart) layanan {{ svc.service_name }}"
-                    onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Restart</button>
-            <button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px"
-                    {% if is_pending or is_up %}disabled{% endif %}
-                    onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                    title="{{ 'Layanan sudah dalam kondisi aktif' if is_up else 'Nyalakan / jalankan layanan ' ~ svc.service_name }}">▶</button>
-            <button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px"
-                    {% if is_pending or not is_up %}disabled{% endif %}
-                    onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                    title="{{ 'Layanan sudah dalam kondisi berhenti' if not is_up else 'Hentikan layanan ' ~ svc.service_name }}">■</button>
-            {% if svc._is_ignored %}
-              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}">🔔 Pantau Kembali</button>
-            {% elif not is_up %}
-              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)" title="Bisukan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan">🔕 Abaikan</button>
-            {% endif %}
-            {% if is_pending %}
-              <span class="badge badge-muted" style="margin-left:4px;font-size:10px" title="Perintah sedang dikirim dan diproses oleh agen">menunggu…</span>
-            {% endif %}
-          {% endif %}
-        </span>
-
-        {% if user.role == 'admin' %}
-        <button type="button" class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)" title="Hapus konfigurasi pemantauan layanan {{ svc.service_name }}">Hapus</button>
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <div class="empty-msg">Belum ada service terdeteksi. Jalankan Agen Pantau di server ini.</div>
-  {% endif %}
-</div>
-
-<!-- Modal Tambah Layanan -->
-<div id="add-svc-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
-    <h3 style="margin:0 0 16px">Tambah Layanan</h3>
-    <form method="post" action="/servers/{{ server.id }}/services/add" id="add-svc-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div style="margin-bottom:12px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Layanan *</label>
-        <input type="text" name="service_name" required placeholder="nginx, mariadb, sshd…"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
-      </div>
-      <div style="margin-bottom:12px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Port *</label>
-        <input type="number" name="port" required min="1" max="65535" placeholder="80, 3306, 22…"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
-      </div>
-      <div style="margin-bottom:18px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Proses *</label>
-        <input type="text" name="process_name" required placeholder="nginx, mysqld, sshd…"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" class="btn btn-ghost" onclick="closeAddSvcModal()">Batal</button>
-        <button type="submit" class="btn btn-primary">Tambah</button>
-      </div>
-    </form>
-  </div>
-</div>
-</div>
-
-
 <div class="tab-body" id="tab-masalah" hidden>
 <div class="card">
   <div class="card-header" id="prob-card-header"><h3>Status Masalah</h3>
@@ -1147,6 +982,171 @@
   </div>
 </div>
 </div>
+
+<div class="tab-body" id="tab-layanan" hidden>
+<div class="card">
+  <div class="card-header"><h3>Riwayat Layanan</h3>
+    <select id="svc-graph-sel"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;margin-right:8px">
+      <option value="">memuat layanan…</option>
+    </select>
+    <div id="svc-ranges" style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-sm" data-range="1h">1 Jam</button>
+      <button class="btn btn-sm is-on" data-range="24h">24 Jam</button>
+      <button class="btn btn-sm" data-range="7d">7 Hari</button>
+    </div>
+  </div>
+  <div id="svc-current" style="font-size:12px;color:var(--dim);margin-bottom:12px"></div>
+  <div style="background:rgba(0,0,0,0.18);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text)">Garis Waktu Ketersediaan Layanan (Uptime Timeline)</span>
+        <span id="svc-uptime-pill" class="badge badge-up" style="font-size:11px">100% normal</span>
+      </div>
+      <div style="display:flex;gap:12px;font-size:11px;color:var(--dim)">
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--green)"></span> Normal (Up)</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--red)"></span> Terhenti (Down)</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--dim)"></span> Tanpa Data</span>
+      </div>
+    </div>
+    <div id="svc-status-strip"></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px;font-family:monospace" id="svc-strip-labels">
+      <span id="svc-strip-from">—</span>
+      <span style="color:var(--dim-subtle)">Setiap blok menunjukkan status pada interval waktu tersebut</span>
+      <span id="svc-strip-to">Sekarang</span>
+    </div>
+  </div>
+  <div id="svc-empty" class="empty-msg" style="display:none">Belum ada data riwayat layanan.</div>
+  <div class="grid-2">
+    <div>
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Waktu Respon (ms)</div>
+      <div id="chart-svc-rt"></div>
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Koneksi Aktif</div>
+      <div id="chart-svc-conn"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Daftar Layanan</h3>
+    {% if user.role == 'admin' %}
+    <button type="button" class="btn btn-primary btn-sm" onclick="openAddSvcModal()">+ Tambah Layanan</button>
+    {% endif %}
+  </div>
+  {% if services %}
+  <table>
+    <thead><tr>
+      <th title="Nama layanan atau daemon yang dipantau">Layanan</th>
+      <th title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
+      <th title="Nama proses sistem operasi yang dieksekusi">Proses</th>
+      <th title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
+      <th title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
+      <th title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
+      <th title="Hasil pemeriksaan kesehatan (health check) layanan">Kesehatan</th>
+      <th title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
+      <th title="Kontrol layanan: Restart, Mulai (▶), Berhenti (■), Abaikan (🔕), atau Hapus">Aksi</th>
+    </tr></thead>
+    <tbody>
+    {% for svc in services %}
+    <tr>
+      <td><strong>{{ svc.service_name }}</strong></td>
+      <td class="mono">{{ svc.port }}</td>
+      <td class="mono">{{ svc.process_name }}</td>
+      <td id="sts-{{ svc.id }}">
+        {% if svc._status == 'down' and svc._is_ignored %}
+          <span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down 🔕</span>
+        {% elif svc._status == 'up' and svc._is_ignored %}
+          <span class="badge badge-up" title="Layanan aktif (pengawasan down diabaikan)">up 🔕</span>
+        {% else %}
+          <span class="badge badge-{{ svc._status }}">{{ svc._status }}</span>
+        {% endif %}
+      </td>
+      <td id="conns-{{ svc.id }}">{{ svc._conns }}</td>
+      <td id="resp-{{ svc.id }}" class="mono">{{ svc._response_time if svc._response_time is not none else '-' }}</td>
+      <td id="health-{{ svc.id }}" style="font-size:12px;color:var(--dim)">{{ svc._health_msg or 'no data' }}</td>
+      <td>
+        {% if svc._uptime.uptime_pct is not none %}
+          {{ svc._uptime.uptime_pct }}%
+          {% if svc._uptime.downtime_seconds > 0 %}
+            <span style="font-size:11px;color:var(--red)">(down {{ svc._uptime.downtime_seconds }}s)</span>
+          {% endif %}
+        {% else %}
+          <span style="color:var(--dim)">-</span>
+        {% endif %}
+      </td>
+      <td style="white-space:nowrap">
+        <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}">
+          {% if user.role == 'admin' %}
+            {% set is_up = (svc._status == 'up') %}
+            {% set is_pending = (svc._pending_cmd is not none and svc._pending_cmd) %}
+            <button type="button" class="btn btn-primary btn-sm btn-svc-restart"
+                    {% if is_pending %}disabled{% endif %}
+                    title="Mulai ulang (restart) layanan {{ svc.service_name }}"
+                    onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Restart</button>
+            <button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px"
+                    {% if is_pending or is_up %}disabled{% endif %}
+                    onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
+                    title="{{ 'Layanan sudah dalam kondisi aktif' if is_up else 'Nyalakan / jalankan layanan ' ~ svc.service_name }}">▶</button>
+            <button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px"
+                    {% if is_pending or not is_up %}disabled{% endif %}
+                    onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
+                    title="{{ 'Layanan sudah dalam kondisi berhenti' if not is_up else 'Hentikan layanan ' ~ svc.service_name }}">■</button>
+            {% if svc._is_ignored %}
+              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}">🔔 Pantau Kembali</button>
+            {% elif not is_up %}
+              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)" title="Bisukan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan">🔕 Abaikan</button>
+            {% endif %}
+            {% if is_pending %}
+              <span class="badge badge-muted" style="margin-left:4px;font-size:10px" title="Perintah sedang dikirim dan diproses oleh agen">menunggu…</span>
+            {% endif %}
+          {% endif %}
+        </span>
+
+        {% if user.role == 'admin' %}
+        <button type="button" class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)" title="Hapus konfigurasi pemantauan layanan {{ svc.service_name }}">Hapus</button>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-msg">Belum ada service terdeteksi. Jalankan Agen Pantau di server ini.</div>
+  {% endif %}
+</div>
+
+<!-- Modal Tambah Layanan -->
+<div id="add-svc-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
+    <h3 style="margin:0 0 16px">Tambah Layanan</h3>
+    <form method="post" action="/servers/{{ server.id }}/services/add" id="add-svc-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Layanan *</label>
+        <input type="text" name="service_name" required placeholder="nginx, mariadb, sshd…"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Port *</label>
+        <input type="number" name="port" required min="1" max="65535" placeholder="80, 3306, 22…"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+      </div>
+      <div style="margin-bottom:18px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Proses *</label>
+        <input type="text" name="process_name" required placeholder="nginx, mysqld, sshd…"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeAddSvcModal()">Batal</button>
+        <button type="submit" class="btn btn-primary">Tambah</button>
+      </div>
+    </form>
+  </div>
+</div>
+</div>
+
 
 <div class="tab-body" id="tab-proses" hidden>
 <div class="card">
@@ -1732,15 +1732,15 @@
         <span style="font-size:12px;color:var(--dim)">Daftar akun login, UID, Shell, riwayat login terakhir, dan sesi aktif (/etc/passwd, lastlog, who)</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <span class="badge badge-info" id="acc-count-badge">Akun Sistem</span>
+        <span class="badge badge-info" id="acc-count-badge">{{ accounts|length if accounts else 0 }} Akun Sistem</span>
         <button class="btn btn-primary btn-sm" onclick="openCreateUserModal()" style="display:flex;align-items:center;gap:4px">
           <span>＋</span> Buat Pengguna
         </button>
       </div>
     </div>
-    <div id="acc-empty" class="empty-msg" style="display:none">Belum ada data akun dari server ini.</div>
+    <div id="acc-empty" class="empty-msg" style="{{ 'display:none' if accounts else 'display:block' }}">Belum ada data akun dari server ini.</div>
     <div style="overflow-x:auto">
-      <table id="acc-table" style="display:none;width:100%">
+      <table id="acc-table" style="{{ 'display:table;width:100%' if accounts else 'display:none;width:100%' }}">
         <thead>
           <tr>
             <th>Pengguna</th>
@@ -1751,7 +1751,57 @@
             <th>Aksi</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody>
+          {% for a in accounts %}
+          <tr>
+            <td>
+              <strong>{{ a.user }}</strong>
+              {% if a.is_protected %}
+                <span class="badge badge-muted" style="font-size:10px" title="Akun sistem terlindungi">Sistem</span>
+              {% elif a.is_locked %}
+                <span class="badge badge-warn" style="font-size:10px" title="Akun saat ini terkunci">Terkunci</span>
+              {% endif %}
+            </td>
+            <td class="mono">{{ a.uid }}</td>
+            <td class="mono">{{ a.shell or '-' }}</td>
+            <td style="font-size:12px;color:var(--dim)">{{ a.last_login or '-' }}</td>
+            <td style="font-size:12px;color:var(--dim)">
+              {% if a.sessions %}
+                {% for s in a.sessions %}
+                  {{ s.tty }}{% if s.from %} @ {{ s.from }}{% endif %}<br>
+                {% endfor %}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                <a href="/servers/{{ server.id }}/user/{{ a.user }}" class="btn btn-ghost btn-sm">Rincian</a>
+                {% if not a.is_protected %}
+                  {% if a.is_locked %}
+                  <form method="post" action="/servers/{{ server.id }}/system-users/unlock" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="username" value="{{ a.user }}">
+                    <button type="submit" class="btn btn-sm btn-primary" title="Buka kunci akun (aktifkan login)" onclick="return confirm('Buka kunci akun {{ a.user }}?')">🔓 Buka Kunci</button>
+                  </form>
+                  {% else %}
+                  <form method="post" action="/servers/{{ server.id }}/system-users/lock" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="username" value="{{ a.user }}">
+                    <button type="submit" class="btn btn-sm btn-warn" title="Kunci akun (disable login)" onclick="return confirm('Kunci akun {{ a.user }}?')">🔒 Kunci</button>
+                  </form>
+                  {% endif %}
+                  <form method="post" action="/servers/{{ server.id }}/system-users/delete" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="username" value="{{ a.user }}">
+                    <button type="submit" class="btn btn-sm btn-danger" title="Hapus akun ini" onclick="return confirm('Hapus pengguna {{ a.user }} secara permanen?')">🗑 Hapus</button>
+                  </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
       </table>
     </div>
   </div>
@@ -1811,6 +1861,16 @@
                   <input type="hidden" name="rule" value="deny">
                   <button type="submit" class="btn btn-sm btn-warn" title="Blokir port ini via UFW/iptables">
                     🚫 Blokir Port
+                  </button>
+                </form>
+                {% elif not p.is_public and p.port not in (22, 8400) %}
+                <form method="post" action="/servers/{{ server.id }}/ports/rule" style="display:inline"
+                      onsubmit="return confirm('Izinkan/buka port {{ p.port }}/{{ p.proto }} melalui firewall?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <input type="hidden" name="port" value="{{ p.port }}/{{ p.proto }}">
+                  <input type="hidden" name="rule" value="allow">
+                  <button type="submit" class="btn btn-sm btn-primary" title="Buka port ini (izinkan koneksi)">
+                    🔓 Buka Port
                   </button>
                 </form>
                 {% endif %}
@@ -2071,6 +2131,10 @@ function showTab(name) {
   document.querySelectorAll('.tab-body').forEach(body => {
     body.hidden = body.id !== 'tab-' + name;
   });
+  if (name === 'masalah') {
+    if (typeof probFilter === 'function') probFilter();
+    if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
+  }
   if (name === 'proses') {
     fetchTopProcs();
   }
@@ -3635,7 +3699,7 @@ function renderProblemsTab(level, openList, histList) {
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
-      <select id="prob-limit" onchange="setProbLimit(this.value)"
+      <select id="prob-limit-top" onchange="setProbLimit(this.value)"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
         <option value="5"${String(probLimit) === '5' ? ' selected' : ''}>5 masalah</option>
         <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>10 masalah</option>
@@ -3826,8 +3890,11 @@ function probFilter() {
   }
 }
 
-// Inisialisasi probFilter saat pertama kali load
-setTimeout(probFilter, 100);
+// Inisialisasi probFilter dan filterServerActionHistory saat pertama kali load
+setTimeout(() => {
+  if (typeof probFilter === 'function') probFilter();
+  if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
+}, 100);
 
 let actionLimit = 10; // default 10 riwayat tindakan
 let actionCurrentPage = 1;
@@ -4344,6 +4411,9 @@ function renderSys(data) {
   });
 
   syncUnits(data.units, data.extras);
+  if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
+    applyAppLang();
+  }
 }
 
 // ---------- grafik kinerja (riwayat) ----------

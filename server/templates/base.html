@@ -323,25 +323,20 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
   transform:scaleX(1);
 }
 
-/* Penanda Masalah Berkedip Merah pada Tab (Blink Badge / Warning Dot) */
+/* Penanda Peringatan / Masalah pada Tab (Solid Clean Dot) */
 .tab .tab-warn-dot{
   display:inline-block;
-  width:8px;
-  height:8px;
+  width:7px;
+  height:7px;
   border-radius:50%;
   background:#ef4444;
-  box-shadow:0 0 8px #ef4444, 0 0 14px rgba(239, 68, 68, 0.8);
+  box-shadow:0 0 6px #ef4444;
   margin-left:4px;
   vertical-align:middle;
-  animation:tabWarnBlink 1.2s infinite ease-in-out;
 }
 .tab .tab-warn-dot.warn-yellow{
   background:#eab308;
-  box-shadow:0 0 8px #eab308, 0 0 14px rgba(234, 179, 8, 0.8);
-}
-@keyframes tabWarnBlink{
-  0%, 100%{ opacity: 1; transform: scale(1); }
-  50%{ opacity: 0.25; transform: scale(0.7); }
+  box-shadow:0 0 6px #eab308;
 }
 
 .tab:active{
@@ -356,6 +351,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
   body.sb-collapsed .sidebar{width:64px}
   body.sb-collapsed .sidebar-brand{padding:16px 0;justify-content:center}
   body.sb-collapsed .sidebar-brand .brand-label{display:none}
+  body.sb-collapsed .sidebar-brand .lang-switch-head{display:none !important}
   body.sb-collapsed .sb-toggle{margin-left:0}
   body.sb-collapsed .nav-link{justify-content:center;padding:10px 0}
   body.sb-collapsed .nav-label{display:none}
@@ -1210,6 +1206,91 @@ const UI_TEXT_PAIRS = [
   ['▶ Aktifkan', '▶ Enable'],
   ['▷ Jalankan', '▷ Run'],
   ['🗑 Hapus', '🗑 Delete'],
+  ['🔓 Buka Port', '🔓 Open Port'],
+  ['Buka Port', 'Open Port'],
+  ['🚫 Blokir Port', '🚫 Block Port'],
+  ['Blokir Port', 'Block Port'],
+  ['⚡ Kill PID', '⚡ Kill PID'],
+  ['⛨ Dilindungi', '⛨ Protected'],
+  ['Dinonaktifkan', 'Disabled'],
+  ['socket aktif', 'active sockets'],
+  ['sertifikat terdeteksi', 'detected certificates'],
+  ['Akun Sistem', 'System Accounts'],
+  ['Akun', 'Accounts'],
+  ['Blokir port ini via UFW/iptables', 'Block this port via UFW/iptables'],
+  ['Buka port ini (izinkan koneksi)', 'Open this port (allow connection)'],
+  ['Domain atau Subdomain yang dilindungi oleh sertifikat', 'Domain or Subdomain protected by certificate'],
+  ['Hanya dapat diakses secara lokal dari dalam server', 'Only accessible locally from within server'],
+  ['Hapus akun ini', 'Delete this account'],
+  ['Hapus aturan DROP untuk IP ini', 'Remove DROP rule for this IP'],
+  ['Hapus dari pengawasan SSL kustom', 'Remove from custom SSL monitoring'],
+  ['Hapus konfigurasi pemantauan layanan', 'Delete service monitoring configuration'],
+  ['Hapus tugas cron ini', 'Delete this cron task'],
+  ['Hasil pemeriksaan kesehatan (health check) layanan', 'Service health check results'],
+  ['Jadwal waktu eksekusi dalam format cron (menit jam tgl bln hari)', 'Execution schedule in cron format (min hour dom month dow)'],
+  ['Jalankan sekarang (uji coba)', 'Run now (test run)'],
+  ['Jelajahi dan kelola berkas server lewat antarmuka File Manager di tab baru', 'Explore and manage server files via File Manager in new tab'],
+  ['Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan', 'Active network connections currently connected to service'],
+  ['Kecepatan baca dan tulis disk saat ini', 'Current disk read and write throughput'],
+  ['Kirim sinyal ke proses yang mengelola port ini', 'Send signal to process managing this port'],
+  ['Kondisi terkini layanan (up = aktif normal, down = terhenti)', 'Current service condition (up = active, down = stopped)'],
+  ['Kontrol layanan: Restart, Mulai (▶), Berhenti (■), Abaikan (🔕), atau Hapus', 'Service controls: Restart, Start (▶), Stop (■), Mute (🔕), or Delete'],
+  ['Lanjutkan kembali proses ini (SIGCONT)', 'Resume this process (SIGCONT)'],
+  ['Layanan aktif (pengawasan down diabaikan)', 'Active service (down alerts muted)'],
+  ['Layanan berhenti (diabaikan)', 'Stopped service (muted)'],
+  ['Layar Penuh (Full Screen)', 'Full Screen'],
+  ['Lihat detail mode pemeliharaan', 'View maintenance mode details'],
+  ['Lokasi berkas konfigurasi cron pada server', 'Cron config file location on server'],
+  ['Lokasi berkas sertifikat di filesystem server', 'Certificate file location on server filesystem'],
+  ['Matikan daya mesin server klien secara penuh (shutdown/power off)', 'Shut down client server machine completely (power off)'],
+  ['Muat ulang aturan UFW tanpa memutus koneksi', 'Reload UFW rules without dropping connections'],
+  ['Mulai ulang (reboot) sistem operasi server klien', 'Reboot client server operating system'],
+  ['Mulai ulang (restart) layanan', 'Restart service'],
+  ['Nama layanan atau daemon yang dipantau', 'Monitored service or daemon name'],
+  ['Nama proses sistem dan PID yang membuka port ini', 'System process name and PID opening this port'],
+  ['Nama proses sistem operasi yang dieksekusi', 'Operating system process name executed'],
+  ['Nama unit timer systemd', 'Systemd timer unit name'],
+  ['Nomor port jaringan yang digunakan oleh layanan', 'Network port number used by service'],
+  ['Nomor port jaringan yang terbuka', 'Network port number open'],
+  ['Nonaktifkan UFW', 'Disable UFW'],
+  ['Opsi Hentikan atau Pilih Sinyal', 'Stop Options or Select Signal'],
+  ['Otoritas penerbit sertifikat (Certificate Authority)', 'Issuing Certificate Authority (CA)'],
+  ['Pantau kembali layanan ini', 'Unmute this service'],
+  ['Pasang seluruh pembaruan paket sistem operasi yang tertunda', 'Install all pending operating system package updates'],
+  ['Pembaruan & Daya Mesin', 'Updates & Power Management'],
+  ['Pengguna Linux yang menjalankan perintah', 'Linux user executing command'],
+  ['Perintah atau skrip yang dieksekusi', 'Command or script executed'],
+  ['Perintah sedang dikirim dan diproses oleh agen', 'Command sent and currently processing by agent'],
+  ['Persentase ketersediaan layanan dalam 24 jam terakhir', 'Service availability percentage in last 24 hours'],
+  ['Persentase utilisasi waktu aktif disk (I/O util)', 'Disk active time utilization percentage (I/O util)'],
+  ['Pesan rincian galat', 'Error detail message'],
+  ['Port terbuka untuk koneksi publik/luar', 'Port listening for public/external connections'],
+  ['Proses sistem terlindungi', 'Protected system process'],
+  ['Protokol jaringan (TCP atau UDP)', 'Network protocol (TCP or UDP)'],
+  ['Rata-rata rentang ini', 'Average in this range'],
+  ['Rincian jadwal jadwal terakhir dan selanjutnya', 'Schedule details of last and next execution'],
+  ['Running / Sedang Berjalan', 'Running / Active'],
+  ['Salin perintah update agen ke clipboard', 'Copy agent update command to clipboard'],
+  ['Sembunyikan Terminal', 'Hide Terminal'],
+  ['Sinkronkan repositori paket OS (apt update) untuk mengecek ketersediaan pembaruan baru', 'Synchronize OS package repository (apt update) to check for updates'],
+  ['Sisa hari sebelum sertifikat habis masa berlakunya', 'Days remaining before certificate expiration'],
+  ['Sleeping / Menunggu', 'Sleeping / Idle'],
+  ['Status kesehatan sertifikat', 'Certificate health status'],
+  ['Stopped / Ditangguhkan (Paused)', 'Stopped / Paused'],
+  ['Tangguhkan/Pause proses ini sementara (SIGSTOP)', 'Suspend/Pause this process temporarily (SIGSTOP)'],
+  ['Tertinggi rentang ini', 'Maximum in this range'],
+  ['Tindakan yang dapat dilakukan pada port ini', 'Actions available for this port'],
+  ['Tingkat keparahan event journald', 'journald event severity level'],
+  ['Tutup banner', 'Close banner'],
+  ['Unduh log sebagai file .txt', 'Download log as .txt file'],
+  ['Unit layanan atau proses penghasil log', 'Service unit or process producing log'],
+  ['Unit service yang dipicu saat timer berjalan', 'Service unit triggered when timer fires'],
+  ['Waktu kejadian tercatat di sistem', 'Recorded timestamp in system'],
+  ['Waktu respons layanan dalam satuan milidetik (ms)', 'Service response latency in milliseconds (ms)'],
+  ['Zombie Process', 'Zombie Process'],
+  ['Nyalakan / jalankan layanan', 'Start / run service'],
+  ['Nonaktifkan tugas cron ini', 'Disable this cron task'],
+  ['Aktifkan kembali tugas cron ini', 'Re-enable this cron task'],
 ];
 
 function translateAllUiText(targetLang) {
@@ -1304,50 +1385,6 @@ function translateAllUiText(targetLang) {
     }
   });
 }
-        return NodeFilter.FILTER_ACCEPT;
-      }
-    }
-  );
-
-  const nodes = [];
-  while (walker.nextNode()) {
-    nodes.push(walker.currentNode);
-  }
-
-  nodes.forEach(node => {
-    let txt = node.nodeValue;
-    sortedPairs.forEach(([idText, enText]) => {
-      if (isEn) {
-        if (txt.includes(idText)) {
-          txt = txt.split(idText).join(enText);
-        }
-      } else {
-        if (txt.includes(enText)) {
-          txt = txt.split(enText).join(idText);
-        }
-      }
-    });
-    if (txt !== node.nodeValue) {
-      node.nodeValue = txt;
-    }
-  });
-
-  // Terjemahkan placeholder dan title
-  document.querySelectorAll('input, button, select, a, span').forEach(el => {
-    if (el.placeholder) {
-      sortedPairs.forEach(([idText, enText]) => {
-        if (isEn && el.placeholder.includes(idText)) el.placeholder = el.placeholder.split(idText).join(enText);
-        else if (!isEn && el.placeholder.includes(enText)) el.placeholder = el.placeholder.split(enText).join(idText);
-      });
-    }
-    if (el.title) {
-      sortedPairs.forEach(([idText, enText]) => {
-        if (isEn && el.title.includes(idText)) el.title = el.title.split(idText).join(enText);
-        else if (!isEn && el.title.includes(enText)) el.title = el.title.split(enText).join(idText);
-      });
-    }
-  });
-}
 
 // Observer reaktif untuk menerjemahkan elemen yang disuntikkan secara dinamis (AJAX / polling)
 let _uiObserverDebounce = null;
@@ -1355,6 +1392,10 @@ const _uiObserver = new MutationObserver((mutations) => {
   if (currentLang !== 'en') return;
   let hasRelevantChange = false;
   for (const m of mutations) {
+    if (m.type === 'characterData') {
+      hasRelevantChange = true;
+      break;
+    }
     if (m.addedNodes && m.addedNodes.length > 0) {
       for (const n of m.addedNodes) {
         if (n.nodeType === Node.ELEMENT_NODE) {
@@ -1376,7 +1417,7 @@ const _uiObserver = new MutationObserver((mutations) => {
   }
 });
 try {
-  _uiObserver.observe(document.body, { childList: true, subtree: true });
+  _uiObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
 } catch(e) {}
 
 (function(){

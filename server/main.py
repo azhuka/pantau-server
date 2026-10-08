@@ -2139,6 +2139,13 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         except Exception:
             pass
 
+    accounts_data = []
+    if extra and extra.accounts:
+        try:
+            accounts_data = json.loads(extra.accounts)
+        except Exception:
+            pass
+
     return tpl(request, "services.html", {
         "user": user, "server": server, "services": services, "commands": commands, "actions": actions,
         "agent_version": extra.agent_version if extra else None,
@@ -2149,6 +2156,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         "problem_level": problem_level, "open_problems": open_problems,
         "problem_history": problem_history,
         "top_procs": top_p,
+        "accounts": accounts_data,
         "cron_jobs": cron_data,
         "firewall": fw_data,
         "listening_ports": ports_data,
