@@ -86,6 +86,10 @@ SESSION_TTL = timedelta(hours=12)
 _last_metrics_prune = datetime.utcnow() - timedelta(days=1)
 _prune_lock = threading.Lock()
 
+# Pelacak IP pelapor untuk mendeteksi konflik API key ganda / kloning VM
+_agent_ip_tracker: dict[int, dict[str, float]] = {}  # server_id -> {ip_str: timestamp_epoch}
+_agent_tracker_lock = threading.Lock()
+
 
 def _prune_expired_sessions(db: Session) -> None:
     """Hapus sesi kedaluwarsa (dipanggil ringan saat login/startup/maintanen)."""
@@ -710,8 +714,32 @@ def agent_report(
         logger.warning("[AUTH] /api/report 401: fp=%s", api_key_fingerprint(x_api_key))
         raise HTTPException(status_code=401, detail="Invalid API key")
 
+    # Pelacakan IP pelapor untuk mendeteksi konflik duplikasi agen / klon VM
+    client_ip = request.client.host if request.client else ""
+    body_ip = _clean_str(body.get("ip_address"), "", 45)
+    reporter_ip = body_ip or client_ip or "unknown"
+    now_epoch = time.time()
+
+    with _agent_tracker_lock:
+        server_ips = _agent_ip_tracker.setdefault(server.id, {})
+        server_ips[reporter_ip] = now_epoch
+        # Bersihkan IP yang tidak melapor lagi > 120 detik
+        stale_ips = [ip for ip, ts in list(server_ips.items()) if (now_epoch - ts) > 120]
+        for ip in stale_ips:
+            del server_ips[ip]
+        has_agent_conflict = len(server_ips) > 1
+        active_conflict_ips = sorted(server_ips.keys()) if has_agent_conflict else []
+
+    if has_agent_conflict:
+        logger.warning(
+            "[AGENT CONFLICT] Server ID %s (%s) menerima laporan simultan dari beberapa IP: %s",
+            server.id, server.hostname, active_conflict_ips
+        )
+
     server.hostname = _clean_str(body.get("hostname", server.hostname), server.hostname, 255)
-    server.ip_address = _clean_str(body.get("ip_address", server.ip_address), server.ip_address, 45)[:45]
+    # Jangan flip-flop ip_address jika sedang konflik multi-IP
+    if not has_agent_conflict or not server.ip_address:
+        server.ip_address = _clean_str(body.get("ip_address", server.ip_address), server.ip_address, 45)[:45]
     server.last_seen = datetime.utcnow()
     db.flush()
 
@@ -768,7 +796,7 @@ def agent_report(
             health_message=health_message or None,
         ))
 
-    # Service yang sudah terdaftar tapi tidak dilaporkan lagi -> tandai down
+    # Service yang sudah terdaftar tapi tidak dilaporkan lagi -> tandai down dengan redam flapping
     existing = (
         db.query(Service).filter(Service.server_id == server.id).all()
     )
@@ -781,8 +809,17 @@ def agent_report(
             .order_by(desc(Metric.timestamp)).first()
         )
         if not last or last.status == "up":
+            # 1. Bila terjadi konflik agen (multi-IP), tahan status DOWN jika host lain baru saja melapor UP
+            if has_agent_conflict and last and last.status == "up":
+                continue
+            # 2. Toleransi jeda 45 detik untuk transisi status agar tidak flapping seketika
+            if last and last.status == "up" and last.timestamp and (datetime.utcnow() - last.timestamp).total_seconds() < 45:
+                continue
             db.add(Metric(
-                service_id=svc.id, status="down", active_connections=0,
+                service_id=svc.id,
+                status="down",
+                active_connections=0,
+                health_message="Layanan tidak terdeteksi listening pada port atau proses tidak berjalan",
             ))
 
     db.commit()
@@ -3360,7 +3397,187 @@ def _quiet_secs_for(key: str) -> int:
         return SECURITY_QUIET_SECS
     if key.startswith(("ram_", "swap_", "cpu_", "disk_")):
         return RESOURCE_QUIET_SECS
+    if key.startswith("service_down:"):
+        return 60   # Redam flapping berulang dalam waktu singkat
+    if key == "agent_conflict":
+        return 120  # Pertahankan peringatan konflik setidaknya 2 menit setelah stabil
     return 0
+
+
+def _build_problem_context(key: str, srv, **kwargs) -> str | None:
+    """Susun payload JSON diagnostik terstruktur untuk ServerProblem.context."""
+    try:
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+        if key == "agent_conflict":
+            ips = kwargs.get("ips") or []
+            return json.dumps({
+                "diagnosa": "Konflik API Key Agen (Split-Brain Telemetri)",
+                "penyebab": f"Server {srv.hostname} menerima telemetri aktif dari {len(ips)} alamat IP berbeda ({', '.join(ips)}) secara bersamaan dalam waktu kurang dari 2 menit. Mesin kemungkinan telah dikloning atau API key dipasang pada lebih dari satu host.",
+                "dampak": "Metrik status layanan dan performa sistem berfluktuasi/flapping tidak menentu karena host melaporkan status yang berbeda.",
+                "data_teknis": {
+                    "conflicting_ips": ips,
+                    "server_id": srv.id,
+                    "server_hostname": srv.hostname,
+                    "waktu_deteksi": now_str,
+                },
+                "rekomendasi": [
+                    f"Periksa host di jaringan dengan alamat IP: {', '.join(ips)}.",
+                    "Jika salah satu host merupakan hasil klon VM / template pengujian, matikan agen: sudo systemctl stop agent_pantau && sudo systemctl disable agent_pantau.",
+                    "Jika kedua host harus dipantau terpisah, daftarkan server baru di Pantau Server untuk memperoleh API Key yang terpisah."
+                ],
+                "perintah_diagnosa": [
+                    f"ssh <user>@{ips[0]} 'sudo systemctl status agent_pantau'" if ips else "",
+                    f"ssh <user>@{ips[-1]} 'sudo systemctl status agent_pantau'" if len(ips) > 1 else "",
+                ]
+            }, ensure_ascii=False)
+
+        if key.startswith("service_down:"):
+            svc_name = kwargs.get("service_name") or key.split(":", 1)[1]
+            port = kwargs.get("port")
+            proc = kwargs.get("proc")
+            health_msg = kwargs.get("health_msg")
+            conflict_ips = kwargs.get("conflict_ips")
+            penyebab = f"Layanan {svc_name} tidak mendengarkan (listening) pada port {port or 'terkait'} atau proses tidak ditemukan."
+            if conflict_ips and len(conflict_ips) > 1:
+                penyebab += f" Terdeteksi juga konflik multi-IP ({', '.join(conflict_ips)}) yang menyebabkan status layanan berfluktuasi."
+            elif health_msg:
+                penyebab += f" Rincian pesan: {health_msg}"
+            return json.dumps({
+                "diagnosa": f"Layanan {svc_name} Tidak Aktif (DOWN)",
+                "penyebab": penyebab,
+                "dampak": f"Aplikasi atau pengguna tidak dapat mengakses layanan {svc_name}" + (f" pada port {port}." if port else "."),
+                "data_teknis": {
+                    "service_name": svc_name,
+                    "port": port,
+                    "process_name": proc,
+                    "server_hostname": srv.hostname,
+                    "server_ip": srv.ip_address,
+                    "health_message": health_msg,
+                    "conflicting_ips": conflict_ips,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    f"Periksa status layanan: sudo systemctl status {svc_name}",
+                    f"Lihat riwayat log galat layanan: sudo journalctl -u {svc_name} -n 50 --no-pager",
+                    f"Pastikan port listening: ss -tulpn | grep :{port}" if port else f"Periksa proses: pgrep -fa {proc or svc_name}",
+                    f"Coba mulai ulang layanan: sudo systemctl restart {svc_name}"
+                ],
+                "perintah_diagnosa": [
+                    f"sudo systemctl status {svc_name}",
+                    f"sudo journalctl -u {svc_name} -n 50 --no-pager",
+                    f"ss -tulpn | grep :{port}" if port else f"pgrep -fa {proc or svc_name}",
+                    f"sudo systemctl restart {svc_name}"
+                ]
+            }, ensure_ascii=False)
+
+        if key in ("ram_critical", "ram_high"):
+            pct = kwargs.get("pct", 0)
+            used = kwargs.get("used", 0)
+            total = kwargs.get("total", 0)
+            return json.dumps({
+                "diagnosa": f"Konsumsi Memori RAM Kritis ({pct:.1f}%)" if "critical" in key else f"Konsumsi Memori RAM Tinggi ({pct:.1f}%)",
+                "penyebab": f"Pemakaian memori RAM mencapai {pct:.1f}% ({_fmt_size(used)} dari {_fmt_size(total)}). Sistem berisiko memicu kernel Out-Of-Memory (OOM Killer).",
+                "dampak": "Sistem melambat drastis, thrashing swap meningkat, dan service penting dapat dimatikan mendadak oleh kernel OOM Killer.",
+                "data_teknis": {
+                    "mem_used": used,
+                    "mem_total": total,
+                    "mem_percent": round(pct, 1),
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    "Buka tab Proses untuk memeriksa proses pemakan memori teratas.",
+                    "Jalankan di server: sudo ps aux --sort=-%mem | head -15",
+                    "Mulai ulang aplikasi atau daemon yang memicu kebocoran memori (memory leak).",
+                    "Pertimbangkan menambah alokasi RAM fisik atau swap bila beban kerja normal."
+                ],
+                "perintah_diagnosa": [
+                    "free -h",
+                    "ps aux --sort=-%mem | head -15",
+                    "sudo journalctl -k -g 'oom' -n 20 --no-pager"
+                ]
+            }, ensure_ascii=False)
+
+        if key in ("cpu_saturated", "cpu_high"):
+            cpu_avg = kwargs.get("cpu_avg", 0)
+            cpu_max = kwargs.get("cpu_max", 0)
+            return json.dumps({
+                "diagnosa": "Saturasi Beban Prosessor (CPU Saturated)" if "saturated" in key else "Beban Prosessor Tinggi (CPU High)",
+                "penyebab": f"Beban CPU rata-rata mencapai {cpu_avg:.1f}% (puncak {cpu_max:.1f}%) dalam rentang observasi terakhir.",
+                "dampak": "Antrean thread sistem melambat, response time layanan meningkat, potensi request timeout.",
+                "data_teknis": {
+                    "cpu_avg": round(cpu_avg, 1),
+                    "cpu_max": round(cpu_max, 1),
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    "Buka tab Proses untuk melihat proses dengan pemakaian CPU tertinggi.",
+                    "Identifikasi proses intensif: top -b -n 1 | head -20",
+                    "Periksa apakah ada loop eksekusi tak berujung (infinite loop) atau thread worker yang menggantung."
+                ],
+                "perintah_diagnosa": [
+                    "top -b -n 1 | head -20",
+                    "ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%cpu | head -15"
+                ]
+            }, ensure_ascii=False)
+
+        if key in ("security_danger", "failed_logins"):
+            failed = kwargs.get("failed", 0)
+            invalid = kwargs.get("invalid", 0)
+            source_ips = kwargs.get("source_ips") or {}
+            top_ips = sorted(source_ips.items(), key=lambda x: x[1] if isinstance(x[1], int) else 0, reverse=True)[:10]
+            ip_list = [f"{ip} ({cnt}x)" for ip, cnt in top_ips]
+            return json.dumps({
+                "diagnosa": "Indikasi Serangan SSH Brute-Force" if key == "security_danger" else "Percobaan Login SSH Gagal",
+                "penyebab": f"Terdeteksi {failed} percobaan login SSH gagal dan {invalid} percobaan user tidak valid dari {len(source_ips)} alamat IP sumber.",
+                "dampak": "Potensi pembobolan kredensial akun server bila password lemah, serta beban koneksi SSH yang tinggi.",
+                "data_teknis": {
+                    "total_failed": failed,
+                    "invalid_users": invalid,
+                    "total_source_ips": len(source_ips),
+                    "top_attacker_ips": ip_list,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    "Gunakan tombol 'Blokir IP' pada kolom tindakan untuk memblokir IP penyerang via iptables.",
+                    "Pasang dan aktifkan fail2ban: sudo apt install fail2ban && sudo systemctl enable --now fail2ban",
+                    "Perketat konfigurasi SSH (/etc/ssh/sshd_config): PasswordAuthentication no, gunakan SSH Key.",
+                    "Ganti port default SSH dari port 22 ke port khusus non-standar."
+                ],
+                "perintah_diagnosa": [
+                    "sudo journalctl -u ssh -n 50 --no-pager",
+                    "sudo iptables -L INPUT -v -n --line-numbers",
+                    "sudo fail2ban-client status sshd"
+                ]
+            }, ensure_ascii=False)
+
+        if key == "agent_stale":
+            return json.dumps({
+                "diagnosa": "Agen Pantau Tidak Melaporkan Status (Offline / Stale)",
+                "penyebab": f"Server {srv.hostname} tidak mengirim telemetri metrik lebih dari batas toleransi. Layanan agent_pantau kemungkinan mati, server reboot, atau koneksi jaringan terputus.",
+                "dampak": "Metrik kinerja dan status layanan tidak terbarui di dashboard Pantau Server.",
+                "data_teknis": {
+                    "server_hostname": srv.hostname,
+                    "server_ip": srv.ip_address,
+                    "terakhir_melapor": srv.last_seen.strftime("%Y-%m-%d %H:%M:%S UTC") if srv.last_seen else "Belum pernah",
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    "Periksa apakah mesin server hidup dan dapat di-ping/SSH.",
+                    "Periksa status daemon agen: sudo systemctl status agent_pantau",
+                    "Lihat log agen: sudo journalctl -u agent_pantau -n 30 --no-pager",
+                    "Mulai ulang agen: sudo systemctl restart agent_pantau"
+                ],
+                "perintah_diagnosa": [
+                    "sudo systemctl status agent_pantau",
+                    "sudo journalctl -u agent_pantau -n 30 --no-pager",
+                    "sudo systemctl restart agent_pantau"
+                ]
+            }, ensure_ascii=False)
+
+    except Exception as e:
+        logger.warning("[CONTEXT] Gagal menyusun konteks masalah %s: %s", key, e)
+    return None
+
 
 
 def _parse_extras_security(extras) -> dict:
@@ -3514,6 +3731,7 @@ def _resource_problem_instances(db, srv) -> list:
                 "message": (f"RAM HAMPIR PENUH: {pct:.0f}% "
                             f"({_fmt_size(mem_used)} / {_fmt_size(mem_total)})"),
                 "tip": RAM_TIP,
+                "context": _build_problem_context("ram_critical", srv, pct=pct, used=mem_used, total=mem_total),
             })
         elif pct >= RAM_WARNING_PCT:
             inst.append({
@@ -3521,6 +3739,7 @@ def _resource_problem_instances(db, srv) -> list:
                 "message": (f"RAM tinggi: {pct:.0f}% "
                             f"({_fmt_size(mem_used)} / {_fmt_size(mem_total)})"),
                 "tip": RAM_TIP,
+                "context": _build_problem_context("ram_high", srv, pct=pct, used=mem_used, total=mem_total),
             })
 
     swap_total, swap_used = latest.swap_total or 0, latest.swap_used or 0
@@ -3531,12 +3750,14 @@ def _resource_problem_instances(db, srv) -> list:
                 "key": "swap_critical", "severity": "danger",
                 "message": f"Swap hampir penuh: {spct:.0f}% — RAM menipis",
                 "tip": SWAP_TIP,
+                "context": _build_problem_context("ram_critical", srv, pct=spct, used=swap_used, total=swap_total),
             })
         elif spct >= SWAP_WARNING_PCT:
             inst.append({
                 "key": "swap_high", "severity": "warning",
                 "message": f"Swap terpakai tinggi: {spct:.0f}%",
                 "tip": SWAP_TIP,
+                "context": _build_problem_context("ram_high", srv, pct=spct, used=swap_used, total=swap_total),
             })
 
     cpu_vals = [s.cpu for s in snaps if s.cpu is not None]
@@ -3549,12 +3770,14 @@ def _resource_problem_instances(db, srv) -> list:
                 "message": (f"CPU jenuh/saturasi: rata-rata {cpu_avg:.0f}% "
                             f"(puncak {cpu_max:.0f}%)"),
                 "tip": CPU_TIP,
+                "context": _build_problem_context("cpu_saturated", srv, cpu_avg=cpu_avg, cpu_max=cpu_max),
             })
         elif cpu_avg >= CPU_WARNING_PCT:
             inst.append({
                 "key": "cpu_high", "severity": "warning",
                 "message": f"CPU tinggi: rata-rata {cpu_avg:.0f}% (puncak {cpu_max:.0f}%)",
                 "tip": CPU_TIP,
+                "context": _build_problem_context("cpu_high", srv, cpu_avg=cpu_avg, cpu_max=cpu_max),
             })
 
     disks = None
@@ -3585,8 +3808,25 @@ def _resource_problem_instances(db, srv) -> list:
 
 
 def _problem_instances(srv, extras, svc_data, db=None) -> list:
-    """Masalah yang sedang terjadi -> [{key,severity,message,tip}] (Zabbix-like)."""
+    """Masalah yang sedang terjadi -> [{key,severity,message,tip,context}] (Zabbix-like)."""
     inst: list = []
+
+    # 1. Deteksi Konflik IP Agen (Multi-Agent / Klon VM Split-Brain)
+    with _agent_tracker_lock:
+        s_ips = dict(_agent_ip_tracker.get(srv.id, {}))
+    now_ep = time.time()
+    active_ips = [ip for ip, ts in s_ips.items() if (now_ep - ts) <= 120]
+    if len(active_ips) > 1:
+        active_ips_sorted = sorted(active_ips)
+        inst.append({
+            "key": "agent_conflict",
+            "severity": "danger",
+            "message": f"Konflik Agen Terdeteksi: API key aktif di beberapa host ({', '.join(active_ips_sorted)})",
+            "tip": "Dua mesin berbeda melapor dengan API key yang sama (kemungkinan VM dikloning atau duplikat instalasi agen). "
+                   "Hentikan agent_pantau di mesin kloningan atau daftarkan sebagai server baru.",
+            "context": _build_problem_context("agent_conflict", srv, ips=active_ips_sorted),
+        })
+
     if db is not None:
         inst += _resource_problem_instances(db, srv)
     if srv.last_seen is None:
@@ -3594,7 +3834,8 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
     if _server_stale(srv):
         inst.append({"key": "agent_stale", "severity": "warning",
                      "message": "Agen tidak melapor (data kedaluwarsa)",
-                     "tip": AGENT_STALE_TIP})
+                     "tip": AGENT_STALE_TIP,
+                     "context": _build_problem_context("agent_stale", srv)})
     if extras is not None:
         if (extras.apt_upgradable or 0) > 0:
             inst.append({"key": "apt_updates", "severity": "info",
@@ -3619,27 +3860,33 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             if invalid >= SECURITY_DANGER_INVALID or failed >= SECURITY_DANGER_FAILED:
                 inst.append({"key": "security_danger", "severity": "danger",
                              "message": f"Kemungkinan serangan SSH: {failed} login gagal, "
-                                        f"{invalid} user invalid, dari {nips} IP"
-                                        + (f" · terakhir {_rel_dt(event_at)}" if event_at else ""),
-                             "tip": SECURITY_TIPS["danger"], "event_at": event_at})
+                                         f"{invalid} user invalid, dari {nips} IP"
+                                         + (f" · terakhir {_rel_dt(event_at)}" if event_at else ""),
+                             "tip": SECURITY_TIPS["danger"], "event_at": event_at,
+                             "context": _build_problem_context("security_danger", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {})})
             elif failed >= SECURITY_WARNING_FAILED:
                 inst.append({"key": "failed_logins", "severity": "warning",
                              "message": f"{failed} login SSH gagal dari {nips} IP"
-                                        + (f" · terakhir {_rel_dt(event_at)}" if event_at else "")
-                                        + " — waspada brute force",
-                             "tip": SECURITY_TIPS["warning"], "event_at": event_at})
+                                         + (f" · terakhir {_rel_dt(event_at)}" if event_at else "")
+                                         + " — waspada brute force",
+                             "tip": SECURITY_TIPS["warning"], "event_at": event_at,
+                             "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {})})
             elif failed >= 1:
                 inst.append({"key": "failed_logins", "severity": "info",
                              "message": f"{failed} login SSH gagal (ringan)"
-                                        + (f" · terakhir {_rel_dt(event_at)}" if event_at else ""),
-                             "tip": SECURITY_TIPS["info"], "event_at": event_at})
+                                         + (f" · terakhir {_rel_dt(event_at)}" if event_at else ""),
+                             "tip": SECURITY_TIPS["info"], "event_at": event_at,
+                             "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {})})
     for d in svc_data or []:
         name = d.get("name", "?")
         st = d.get("status")
         if st == "down":
-            inst.append({"key": f"service_down:{name}", "severity": "warning",
-                         "message": f"Layanan {name} down",
-                         "tip": SVC_DOWN_TIP.format(name=name)})
+            inst.append({
+                "key": f"service_down:{name}", "severity": "warning",
+                "message": f"Layanan {name} down",
+                "tip": SVC_DOWN_TIP.format(name=name),
+                "context": _build_problem_context("service_down:", srv, service_name=name, port=d.get("port"), proc=d.get("proc"), health_msg=d.get("health_msg"), conflict_ips=active_ips if len(active_ips) > 1 else None),
+            })
         elif st == "unknown":
             inst.append({"key": f"svc_no_data:{name}", "severity": "info",
                          "message": f"Layanan {name} belum ada data",
@@ -3691,6 +3938,7 @@ def _problem_row2dict(row) -> dict:
         "ignored_until": getattr(row, "ignored_until", None),
         "ignored_by": getattr(row, "ignored_by", None),
         "ignored_reason": getattr(row, "ignored_reason", None),
+        "context": getattr(row, "context", None),
     }
 
 
@@ -3802,6 +4050,7 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 server_id=srv.id, key=p["key"], severity=p["severity"],
                 message=p["message"], tip=p["tip"], started_at=now,
                 last_active_at=active,
+                context=p.get("context"),
             )
             if is_svc_ignored:
                 new_row.is_ignored = 1
@@ -3825,6 +4074,8 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             if (row.severity != p["severity"] or row.message != p["message"]
                     or row.tip != p["tip"]):
                 row.severity, row.message, row.tip = p["severity"], p["message"], p["tip"]
+            if p.get("context") and (not row.context or p["severity"] == "danger"):
+                row.context = p.get("context")
             row.updated_at = now
 
     for row in (

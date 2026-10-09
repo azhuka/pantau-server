@@ -64,7 +64,19 @@
     <tr{% if p.is_ignored %} style="opacity:.75;background:rgba(255,255,255,0.02)"{% endif %}
         data-sev="{{ p.severity }}"
         data-ignored="{{ '1' if p.is_ignored else '0' }}"
-        data-text="{{ (p.hostname ~ ' ' ~ p.message ~ ' ' ~ p.key) | lower }}">
+        data-text="{{ (p.hostname ~ ' ' ~ p.message ~ ' ' ~ p.key) | lower }}"
+        data-prob-id="{{ p.id }}"
+        data-prob-key="{{ p.key }}"
+        data-prob-sev="{{ p.severity }}"
+        data-prob-msg="{{ p.message }}"
+        data-prob-tip="{{ p.tip or '' }}"
+        data-prob-start="{{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '' }}"
+        data-prob-res="{{ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '' }}"
+        data-prob-durasi="{{ p.durasi or '' }}"
+        data-prob-open="1"
+        data-prob-host="{{ p.hostname }}"
+        data-prob-sid="{{ p.server_id }}"
+        data-prob-context='{{ p.context or "" }}'>
       <td style="white-space:nowrap" class="mono">{{ p.started_at.strftime('%d %b %H:%M') }}</td>
       <td><strong>{{ p.hostname }}</strong></td>
       <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
@@ -77,6 +89,7 @@
       </td>
       <td class="mono" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">{{ p.durasi }}</td>
       <td style="white-space:nowrap">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" style="margin-right:4px">🔍 Diagnosa</button>
         <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
         {% if p.is_ignored %}
           <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
@@ -119,7 +132,19 @@
     <thead><tr><th>Waktu</th><th>Server</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Tindakan</th></tr></thead>
     <tbody>
     {% for p in recent_resolved %}
-    <tr style="opacity:.65">
+    <tr style="opacity:.65"
+        data-prob-id="{{ p.id }}"
+        data-prob-key="{{ p.key }}"
+        data-prob-sev="{{ p.severity }}"
+        data-prob-msg="{{ p.message }}"
+        data-prob-tip="{{ p.tip or '' }}"
+        data-prob-start="{{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '' }}"
+        data-prob-res="{{ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '' }}"
+        data-prob-durasi="{{ p.durasi or '' }}"
+        data-prob-open="0"
+        data-prob-host="{{ p.hostname }}"
+        data-prob-sid="{{ p.server_id }}"
+        data-prob-context='{{ p.context or "" }}'>
       <td style="white-space:nowrap" class="mono">
         {{ p.started_at.strftime('%d %b %H:%M') }}
         <span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>
@@ -134,7 +159,10 @@
         {% endif %}
       </td>
       <td class="mono">{{ p.durasi }}</td>
-      <td><a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a></td>
+      <td style="white-space:nowrap">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" style="margin-right:4px">🔍 Diagnosa</button>
+        <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
+      </td>
     </tr>
     {% endfor %}
     </tbody>

@@ -809,7 +809,19 @@
     <tr{% if not p.is_open %} style="opacity:.65"{% elif p.is_ignored %} style="opacity:.75;background:rgba(255,255,255,0.02)"{% endif %}
         data-sev="{{ p.severity }}"
         data-ignored="{{ '1' if p.is_ignored else '0' }}"
-        data-text="{{ (p.message ~ ' ' ~ p.key) | lower }}">
+        data-text="{{ (p.message ~ ' ' ~ p.key) | lower }}"
+        data-prob-id="{{ p.id }}"
+        data-prob-key="{{ p.key }}"
+        data-prob-sev="{{ p.severity }}"
+        data-prob-msg="{{ p.message }}"
+        data-prob-tip="{{ p.tip or '' }}"
+        data-prob-start="{{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '' }}"
+        data-prob-res="{{ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '' }}"
+        data-prob-durasi="{{ p.durasi or '' }}"
+        data-prob-open="{{ '1' if p.is_open else '0' }}"
+        data-prob-host="{{ server.hostname }}"
+        data-prob-sid="{{ server.id }}"
+        data-prob-context='{{ p.context or "" }}'>
       <td style="white-space:nowrap" class="mono">
         {{ p.started_at.strftime('%d %b %H:%M') }}
         {% if p.resolved_at %}<span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>{% endif %}
@@ -826,6 +838,7 @@
       </td>
       <td class="mono"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
       <td style="white-space:nowrap">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat rincian &amp; diagnosa akar masalah" style="margin-right:4px">🔍 Diagnosa</button>
         {% if p.is_open and p.action == 'restart' %}
           <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline" data-confirm data-msg="Restart service ini di {{ server.hostname }}?">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -864,8 +877,6 @@
           {% else %}
             <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai sudah ditangani">Ditangani</button>
           {% endif %}
-        {% elif not p.action %}
-          <span style="color:var(--dim)">—</span>
         {% endif %}
 
       </td>
@@ -3738,6 +3749,7 @@ function renderProblemsTab(level, openList, histList) {
     const dataStart = isoStart ? ` data-start="${isoStart}"` : '';
 
     let actHtml = '';
+    const diagBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" style="margin-right:4px">🔍 Diagnosa</button>`;
     if (isOpen) {
       if (p.action === 'restart' && p.svc_id) {
         actHtml += `<form method="post" action="/servers/${SID}/services/${p.svc_id}/restart" style="display:inline" data-confirm data-msg="Restart service ini di ${escapeHtml(SERVER_NAME)}?">
@@ -3777,11 +3789,24 @@ function renderProblemsTab(level, openList, histList) {
       } else {
         actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail(${p.id}, this)" title="Tandai masalah ini sudah ditangani">Ditangani</button>`;
       }
-    } else if (!p.action) {
-      actHtml = '<span style="color:var(--dim)">—</span>';
     }
+    actHtml = diagBtn + actHtml;
 
-    html += `<tr${rowStyle} data-sev="${escapeHtml(sev)}" data-ignored="${isIgnored ? '1' : '0'}" data-text="${escapeHtml(searchTxt)}">
+    const ctxAttr = typeof p.context === 'object' && p.context !== null ? JSON.stringify(p.context) : (p.context || '');
+
+    html += `<tr${rowStyle} data-sev="${escapeHtml(sev)}" data-ignored="${isIgnored ? '1' : '0'}" data-text="${escapeHtml(searchTxt)}"
+      data-prob-id="${p.id || ''}"
+      data-prob-key="${escapeHtml(p.key || '')}"
+      data-prob-sev="${escapeHtml(sev)}"
+      data-prob-msg="${escapeHtml(p.message || '')}"
+      data-prob-tip="${escapeHtml(p.tip || '')}"
+      data-prob-start="${escapeHtml(p.started_at ? fmtProbDate(p.started_at) : '')}"
+      data-prob-res="${escapeHtml(p.resolved_at ? fmtProbDate(p.resolved_at) : '')}"
+      data-prob-durasi="${escapeHtml(p.durasi || '')}"
+      data-prob-open="${isOpen ? '1' : '0'}"
+      data-prob-host="${escapeHtml(SERVER_NAME)}"
+      data-prob-sid="${SID}"
+      data-prob-context="${escapeHtml(ctxAttr)}">
       <td style="white-space:nowrap" class="mono">${startStr}${resStr}</td>
       <td><span class="badge badge-${sevBadge}">${sevLabel}</span></td>
       <td>${checkMark}<span${msgStyle}>${escapeHtml(p.message || '')}</span> ${ignoredBadge} ${ackBadge} ${kambuhBadge}</td>
