@@ -2544,13 +2544,21 @@ function toggleMaintenanceAction(action) {
   .then(r => r.json())
   .then(res => {
     if (res.ok) {
-      location.reload();
+      closeMaintenanceModal();
+      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+      const msg = (action === 'disable')
+        ? (isEn ? 'Maintenance mode disabled.' : 'Mode pemeliharaan telah dinonaktifkan.')
+        : (isEn ? 'Maintenance mode activated successfully.' : 'Mode pemeliharaan berhasil diaktifkan.');
+      showToast(msg, true);
+      const mbanner = document.getElementById('maintenance-banner');
+      if (mbanner) mbanner.style.display = (action === 'disable') ? 'none' : 'flex';
+      if (typeof poll === 'function') poll();
     } else {
-      alert('Gagal: ' + (res.detail || 'Terjadi kesalahan'));
+      showToast('Gagal: ' + (res.detail || 'Terjadi kesalahan'), false);
     }
   })
   .catch(err => {
-    alert('Terjadi kesalahan jaringan: ' + err);
+    showToast('Terjadi kesalahan jaringan: ' + err, false);
   });
 }
 
@@ -2859,7 +2867,11 @@ async function ackProblemInDetail(id, btn) {
     });
     if (r.ok) {
       showToast('Masalah ditandai sebagai ditangani.', true);
-      poll();
+      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+      btn.className = 'badge badge-up';
+      btn.textContent = isEn ? '✓ Acknowledged' : '✓ Diakui';
+      btn.onclick = null;
+      if (typeof poll === 'function') poll();
       return;
     }
     showToast('Gagal menyimpan (HTTP ' + r.status + ').', false);

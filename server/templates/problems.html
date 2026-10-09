@@ -4,7 +4,7 @@
 <div class="topbar">
   <h2>Masalah Server</h2>
   <div>
-    <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <span id="prob-summary-badges" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       {% if danger_open %}<span class="badge badge-danger">Danger {{ danger_open }}</span>{% endif %}
       {% if warning_open %}<span class="badge badge-warn">Warning {{ warning_open }}</span>{% endif %}
       {% if info_open %}<span class="badge badge-info">Info {{ info_open }}</span>{% endif %}
@@ -18,7 +18,7 @@
   <div class="card-header">
     <h3>Masalah Terbuka</h3>
     {% set active_open = open_problems | rejectattr('is_ignored') | list %}
-    <span class="badge badge-muted">{{ active_open|length }} aktif{% if ignored_open %} · {{ ignored_open }} diabaikan{% endif %}</span>
+    <span id="prob-active-badge" class="badge badge-muted">{{ active_open|length }} aktif{% if ignored_open %} · {{ ignored_open }} diabaikan{% endif %}</span>
   </div>
   {% if open_problems or all_servers %}
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
@@ -48,83 +48,86 @@
     {% if filter_sid %}<a href="/problems" class="btn btn-ghost btn-sm">Reset filter</a>{% endif %}
   </div>
   {% endif %}
-  {% if open_problems %}
-  <table id="probtable">
-    <thead><tr>
-      <th title="Waktu saat insiden atau masalah mulai terdeteksi">Waktu Mulai</th>
-      <th title="Mesin server tempat anomali atau gangguan terjadi">Server</th>
-      <th title="Tingkat urgensi: Danger (kritis), Warning (waspada), atau Info (informasi)">Tingkat</th>
-      <th title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
-      <th title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
-      <th title="Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan">Aksi</th>
-      <th title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Panduan Solusi</th>
-    </tr></thead>
-    <tbody>
-    {% for p in open_problems %}
-    <tr{% if p.is_ignored %} style="opacity:.75;background:rgba(255,255,255,0.02)"{% endif %}
-        data-sev="{{ p.severity }}"
-        data-ignored="{{ '1' if p.is_ignored else '0' }}"
-        data-text="{{ (p.hostname ~ ' ' ~ p.message ~ ' ' ~ p.key) | lower }}"
-        data-prob-id="{{ p.id }}"
-        data-prob-key="{{ p.key }}"
-        data-prob-sev="{{ p.severity }}"
-        data-prob-msg="{{ p.message }}"
-        data-prob-tip="{{ p.tip or '' }}"
-        data-prob-start="{{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '' }}"
-        data-prob-res="{{ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '' }}"
-        data-prob-durasi="{{ p.durasi or '' }}"
-        data-prob-open="1"
-        data-prob-host="{{ p.hostname }}"
-        data-prob-sid="{{ p.server_id }}"
-        data-prob-context='{{ p.context or "" }}'>
-      <td style="white-space:nowrap" class="mono">{{ p.started_at.strftime('%d %b %H:%M') }}</td>
-      <td><strong>{{ p.hostname }}</strong></td>
-      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
-      <td>
-        <span>{{ p.message }}</span>
-        {% if p.is_ignored %}
-          <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ p.ignored_by if p.ignored_by else '') }}">🔕 diabaikan{{ (' s/d ' ~ p.ignored_until.strftime('%d %b %H:%M')) if p.ignored_until else ' permanen' }}</span>
-        {% endif %}
-        {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
-      </td>
-      <td class="mono" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">{{ p.durasi }}</td>
-      <td style="white-space:nowrap">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" style="margin-right:4px">🔍 Diagnosa</button>
-        <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
-        {% if p.is_ignored %}
-          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                  data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>
-        {% else %}
-          <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                  data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>
-        {% endif %}
-        {% if p.acknowledged_by %}
-          <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">✓ Ditangani</span>
-        {% elif p.is_open %}
-          <button type="button" class="btn btn-{{ 'danger' if p.severity == 'danger' else 'ghost' }} btn-sm" style="margin-left:4px"
-                  onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')">Ditangani</button>
-        {% endif %}
-      </td>
-      <td style="font-size:12px;color:var(--dim);max-width:360px">
-        {% if p.acknowledged_by %}
-          <span style="color:var(--green)">Ditangani oleh {{ p.acknowledged_by }}</span><br>
-        {% endif %}
-        {{ p.tip or '—' }}
-      </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px">
-    <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
-    Tidak ada masalah terbuka{% if filter_sid %} untuk server ini{% endif %} saat ini.
+  
+  <div id="prob-table-wrapper">
+    {% if open_problems %}
+    <table id="probtable">
+      <thead><tr>
+        <th title="Waktu saat insiden atau masalah mulai terdeteksi">Waktu Mulai</th>
+        <th title="Mesin server tempat anomali atau gangguan terjadi">Server</th>
+        <th title="Tingkat urgensi: Danger (kritis), Warning (waspada), atau Info (informasi)">Tingkat</th>
+        <th title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
+        <th title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
+        <th title="Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan">Aksi</th>
+        <th title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Panduan Solusi</th>
+      </tr></thead>
+      <tbody>
+      {% for p in open_problems %}
+      <tr{% if p.is_ignored %} style="opacity:.75;background:rgba(255,255,255,0.02)"{% endif %}
+          data-sev="{{ p.severity }}"
+          data-ignored="{{ '1' if p.is_ignored else '0' }}"
+          data-text="{{ (p.hostname ~ ' ' ~ p.message ~ ' ' ~ p.key) | lower }}"
+          data-prob-id="{{ p.id }}"
+          data-prob-key="{{ p.key }}"
+          data-prob-sev="{{ p.severity }}"
+          data-prob-msg="{{ p.message }}"
+          data-prob-tip="{{ p.tip or '' }}"
+          data-prob-start="{{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '' }}"
+          data-prob-res="{{ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '' }}"
+          data-prob-durasi="{{ p.durasi or '' }}"
+          data-prob-open="1"
+          data-prob-host="{{ p.hostname }}"
+          data-prob-sid="{{ p.server_id }}"
+          data-prob-context='{{ p.context or "" }}'>
+        <td style="white-space:nowrap" class="mono">{{ p.started_at.strftime('%d %b %H:%M') }}</td>
+        <td><strong>{{ p.hostname }}</strong></td>
+        <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+        <td>
+          <span>{{ p.message }}</span>
+          {% if p.is_ignored %}
+            <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ p.ignored_by if p.ignored_by else '') }}">🔕 diabaikan{{ (' s/d ' ~ p.ignored_until.strftime('%d %b %H:%M')) if p.ignored_until else ' permanen' }}</span>
+          {% endif %}
+          {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
+        </td>
+        <td class="mono" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">{{ p.durasi }}</td>
+        <td style="white-space:nowrap">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" style="margin-right:4px">🔍 Diagnosa</button>
+          <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
+          {% if p.is_ignored %}
+            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
+                    data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>
+          {% else %}
+            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
+                    data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>
+          {% endif %}
+          {% if p.acknowledged_by %}
+            <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">✓ Ditangani</span>
+          {% elif p.is_open %}
+            <button type="button" class="btn btn-{{ 'danger' if p.severity == 'danger' else 'ghost' }} btn-sm" style="margin-left:4px"
+                    onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')">Ditangani</button>
+          {% endif %}
+        </td>
+        <td style="font-size:12px;color:var(--dim);max-width:360px">
+          {% if p.acknowledged_by %}
+            <span style="color:var(--green)">Ditangani oleh {{ p.acknowledged_by }}</span><br>
+          {% endif %}
+          {{ p.tip or '—' }}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px">
+      <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
+      Tidak ada masalah terbuka{% if filter_sid %} untuk server ini{% endif %} saat ini.
+    </div>
+    {% endif %}
   </div>
-  {% endif %}
 </div>
 
 {% if recent_resolved %}
-<div class="card">
+<div class="card" id="prob-resolved-card">
   <div class="card-header"><h3>Teratasi (24 jam terakhir)</h3>
     <span style="font-size:12px;color:var(--dim)">{{ recent_resolved|length }} masalah</span>
   </div>
@@ -173,6 +176,8 @@
 
 {% block scripts %}
 <script>
+const FILTER_SID = {{ filter_sid or 'null' }};
+
 function probFilter() {
   const sev = (document.getElementById('prob-filter')?.value || '').toLowerCase();
   const q = (document.getElementById('prob-search')?.value || '').toLowerCase().trim();
@@ -213,6 +218,7 @@ async function ackProblem(id, btn, sev) {
       span.title = 'Diakui';
       span.textContent = '✓ diakui';
       btn.replaceWith(span);
+      if (typeof window.poll === 'function') window.poll();
       return;
     }
     btn.disabled = false; btn.textContent = orig;
@@ -223,15 +229,153 @@ async function ackProblem(id, btn, sev) {
   }
 }
 
-// Live durasi
+// Live Update Tanpa Reload (Seamless Asynchronous Polling)
+let _isPolling = false;
+window.poll = async function() {
+  if (_isPolling) return;
+  _isPolling = true;
+  try {
+    const url = '/api/problems' + (FILTER_SID ? '?server=' + FILTER_SID : '');
+    const r = await fetch(url, { credentials: 'same-origin' });
+    if (!r.ok) return;
+    const data = await r.json();
+
+    // 1. Perbarui Topbar Badges
+    const badgeWrap = document.getElementById('prob-summary-badges');
+    if (badgeWrap && data.summary) {
+      const s = data.summary;
+      let bh = '';
+      if (s.danger_open) bh += `<span class="badge badge-danger">Danger ${s.danger_open}</span> `;
+      if (s.warning_open) bh += `<span class="badge badge-warn">Warning ${s.warning_open}</span> `;
+      if (s.info_open) bh += `<span class="badge badge-info">Info ${s.info_open}</span> `;
+      if (s.ignored_open) bh += `<span class="badge badge-muted" title="${s.ignored_open} masalah diabaikan">🔕 ${s.ignored_open} diabaikan</span> `;
+      bh += `<span class="badge badge-up">✓ ${s.ok_count} server normal</span>`;
+      badgeWrap.innerHTML = bh;
+    }
+
+    // 2. Perbarui Header Badge Aktif
+    const actBadge = document.getElementById('prob-active-badge');
+    if (actBadge && data.summary) {
+      const s = data.summary;
+      const act = s.total_open - s.ignored_open;
+      actBadge.textContent = `${act} aktif${s.ignored_open ? ' · ' + s.ignored_open + ' diabaikan' : ''}`;
+    }
+
+    // 3. Perbarui Daftar Masalah Terbuka
+    const wrapper = document.getElementById('prob-table-wrapper');
+    const openList = data.open_problems || [];
+    if (wrapper) {
+      if (openList.length === 0) {
+        wrapper.innerHTML = `<div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px">
+          <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
+          Tidak ada masalah terbuka${FILTER_SID ? ' untuk server ini' : ''} saat ini.
+        </div>`;
+      } else {
+        let table = document.getElementById('probtable');
+        if (!table) {
+          wrapper.innerHTML = `<table id="probtable">
+            <thead><tr>
+              <th title="Waktu saat insiden atau masalah mulai terdeteksi">Waktu Mulai</th>
+              <th title="Mesin server tempat anomali atau gangguan terjadi">Server</th>
+              <th title="Tingkat urgensi: Danger (kritis), Warning (waspada), atau Info (informasi)">Tingkat</th>
+              <th title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
+              <th title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
+              <th title="Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan">Aksi</th>
+              <th title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Panduan Solusi</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>`;
+          table = document.getElementById('probtable');
+        }
+        const tbody = table.querySelector('tbody');
+        if (tbody) {
+          tbody.innerHTML = openList.map(p => {
+            const isIgn = !!p.is_ignored;
+            const rowStyle = isIgn ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '';
+            const sevBadge = isIgn ? 'badge badge-muted' : ('badge badge-' + ({danger:'danger',warning:'warn',info:'info'}[p.severity] || 'info'));
+            const textSearch = _esc((p.hostname + ' ' + p.message + ' ' + p.key).toLowerCase());
+            const ctxStr = p.context ? _esc(typeof p.context === 'object' ? JSON.stringify(p.context) : p.context) : '';
+            const count24 = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh ${p.count_24h}×</span>` : '';
+            const ignBadge = isIgn ? `<span class="badge badge-muted">🔕 diabaikan${p.ignored_until_str ? ' s/d ' + _esc(p.ignored_until_str) : ' permanen'}</span>` : '';
+
+            let ackBtn = '';
+            if (p.acknowledged_by) {
+              ackBtn = `<span class="badge badge-up" style="margin-left:4px" title="Ditangani ${_esc(p.acknowledged_by)} pada ${_esc(p.acknowledged_at_str || '')}">✓ Ditangani</span>`;
+            } else if (p.is_open) {
+              const bcls = p.severity === 'danger' ? 'danger' : 'ghost';
+              ackBtn = `<button type="button" class="btn btn-${bcls} btn-sm" style="margin-left:4px" onclick="ackProblem(${p.id}, this, '${p.severity}')">Ditangani</button>`;
+            }
+
+            const muteBtn = isIgn
+              ? `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>`
+              : `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>`;
+
+            return `<tr${rowStyle}
+              data-sev="${_esc(p.severity)}"
+              data-ignored="${isIgn ? '1' : '0'}"
+              data-text="${textSearch}"
+              data-prob-id="${p.id}"
+              data-prob-key="${_esc(p.key)}"
+              data-prob-sev="${_esc(p.severity)}"
+              data-prob-msg="${_esc(p.message)}"
+              data-prob-tip="${_esc(p.tip || '')}"
+              data-prob-start="${_esc(p.started_at || '')}"
+              data-prob-res="${_esc(p.resolved_at || '')}"
+              data-prob-durasi="${_esc(p.durasi || '')}"
+              data-prob-open="1"
+              data-prob-host="${_esc(p.hostname)}"
+              data-prob-sid="${p.server_id}"
+              data-prob-context="${ctxStr}">
+              <td style="white-space:nowrap" class="mono">${_esc(p.started_at_str || '')}</td>
+              <td><strong>${_esc(p.hostname)}</strong></td>
+              <td><span class="${sevBadge}">${_esc(p.severity)}${isIgn ? ' 🔕' : ''}</span></td>
+              <td>
+                <span>${_esc(p.message)}</span>
+                ${ignBadge}
+                ${count24}
+              </td>
+              <td class="mono" data-start="${_esc(p.started_at_iso || '')}">${_esc(p.durasi || '')}</td>
+              <td style="white-space:nowrap">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" style="margin-right:4px">🔍 Diagnosa</button>
+                <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm">Rincian</a>
+                ${muteBtn}
+                ${ackBtn}
+              </td>
+              <td style="font-size:12px;color:var(--dim);max-width:360px">
+                ${p.acknowledged_by ? '<span style="color:var(--green)">Ditangani oleh ' + _esc(p.acknowledged_by) + '</span><br>' : ''}
+                ${_esc(p.tip || '—')}
+              </td>
+            </tr>`;
+          }).join('');
+        }
+      }
+    }
+
+    probFilter();
+  } catch(e) {
+  } finally {
+    _isPolling = false;
+  }
+};
+
+window.refreshProblemsTable = window.poll;
+
+// Live durasi timer
 setInterval(() => {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
   document.querySelectorAll('#probtable [data-start]').forEach(td => {
+    if (!td.dataset.start) return;
     const d = Math.floor((Date.now() - new Date(td.dataset.start).getTime()) / 1000);
+    if (isNaN(d) || d < 0) return;
     if (d < 60) td.textContent = d + (isEn ? ' s' : ' dtk');
     else if (d < 3600) td.textContent = Math.floor(d/60) + (isEn ? ' m' : ' mnt');
     else td.textContent = Math.floor(d/3600) + (isEn ? ' h ' : ' j ') + Math.floor((d%3600)/60) + ' m';
   });
+}, 3000);
+
+// Polling otomatis setiap 5 detik di latar belakang
+setInterval(() => {
+  if (typeof window.poll === 'function') window.poll();
 }, 5000);
 </script>
 {% endblock %}

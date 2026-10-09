@@ -726,6 +726,14 @@ function applyAppLang() {
     }
   }
 
+  // Re-render modal diagnosa masalah bila sedang terbuka
+  if (window._currentActiveProblem) {
+    const pdm = document.getElementById('problem-detail-modal');
+    if (pdm && pdm.style.display !== 'none') {
+      try { renderProblemDetailModal(window._currentActiveProblem); } catch(e){}
+    }
+  }
+
   // Panggil callback spesifik per halaman jika ada
   if (typeof window.onAppLangChanged === 'function') {
     window.onAppLangChanged(currentLang);
@@ -2433,8 +2441,10 @@ async function submitIgnoreProblem() {
         cb();
       } else if (typeof window.poll === 'function') {
         window.poll();
+      } else if (typeof window.refreshProblemsTable === 'function') {
+        window.refreshProblemsTable();
       } else {
-        location.reload();
+        if (typeof alertFetch === 'function') alertFetch();
       }
       return;
     }
@@ -2479,8 +2489,10 @@ async function unignoreProblem(target, onDone) {
         onDone();
       } else if (typeof window.poll === 'function') {
         window.poll();
+      } else if (typeof window.refreshProblemsTable === 'function') {
+        window.refreshProblemsTable();
       } else {
-        location.reload();
+        if (typeof alertFetch === 'function') alertFetch();
       }
       return;
     }
@@ -2566,24 +2578,44 @@ function closeProblemDetailModal() {
 }
 
 function renderProblemDetailModal(p) {
+  window._currentActiveProblem = p;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+
   const titleEl = document.getElementById('pdm-title');
   const badgeEl = document.getElementById('pdm-badge');
   const statusEl = document.getElementById('pdm-status-box');
+  const secCauseEl = document.getElementById('pdm-sec-cause');
   const causeEl = document.getElementById('pdm-cause-text');
+  const lblImpactEl = document.getElementById('pdm-lbl-impact');
   const impactEl = document.getElementById('pdm-impact-text');
+  const secTechEl = document.getElementById('pdm-sec-tech');
   const techEl = document.getElementById('pdm-tech-box');
+  const secRecoEl = document.getElementById('pdm-sec-reco');
   const recoEl = document.getElementById('pdm-reco-list');
+  const secCmdsEl = document.getElementById('pdm-sec-cmds');
   const cmdsEl = document.getElementById('pdm-cmds-box');
   const actionFooterEl = document.getElementById('pdm-action-footer');
+
+  // Perbarui Judul Bagian Berdasarkan Bahasa
+  if (secCauseEl) secCauseEl.textContent = isEn ? 'Root Cause Analysis' : 'Analisis Penyebab (Root Cause)';
+  if (lblImpactEl) lblImpactEl.textContent = isEn ? 'Impact:' : 'Dampak:';
+  if (secTechEl) secTechEl.textContent = isEn ? 'Technical Telemetry & Incident Snapshot' : 'Data Teknis & Snapshot Insiden';
+  if (secRecoEl) secRecoEl.textContent = isEn ? 'Recommended Resolution Steps' : 'Langkah Penanganan Terverifikasi';
+  if (secCmdsEl) secCmdsEl.textContent = isEn ? 'Host Diagnostic & Recovery Commands' : 'Perintah Diagnostik & Pemulihan di Server';
 
   const sev = p.severity || 'info';
   const isOpen = !!p.is_open;
   const ctx = (typeof p.context === 'object' && p.context !== null) ? p.context : {};
 
   // 1. Header & Badge
-  if (titleEl) {
-    titleEl.textContent = ctx.diagnosa || p.message || ('Masalah ' + p.key);
+  let titleText = '';
+  if (isEn) {
+    titleText = ctx.diagnosa_en || ctx.diagnosa || p.message || ('Issue: ' + p.key);
+  } else {
+    titleText = ctx.diagnosa || ctx.diagnosa_en || p.message || ('Masalah: ' + p.key);
   }
+  if (titleEl) titleEl.textContent = titleText;
+
   if (badgeEl) {
     badgeEl.className = 'badge badge-' + ({danger: 'danger', warning: 'warn', info: 'info'}[sev] || 'muted');
     badgeEl.textContent = sev.toUpperCase();
@@ -2596,16 +2628,16 @@ function renderProblemDetailModal(p) {
       statHtml = `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;font-size:13px">
         <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;box-shadow:0 0 8px #ef4444;flex-shrink:0"></span>
         <div style="flex:1">
-          <strong>Sedang Berlangsung (Aktif)</strong>
-          <div style="font-size:12px;opacity:0.85;margin-top:2px">Mulai terdeteksi: ${_esc(p.started_at || 'Baru saja')} · Durasi: ${_esc(p.durasi || 'Sedang berjalan')}</div>
+          <strong>${isEn ? 'Active Incident (Ongoing)' : 'Sedang Berlangsung (Aktif)'}</strong>
+          <div style="font-size:12px;opacity:0.85;margin-top:2px">${isEn ? 'Detected at:' : 'Mulai terdeteksi:'} ${_esc(p.started_at || (isEn ? 'Just now' : 'Baru saja'))} · ${isEn ? 'Duration:' : 'Durasi:'} ${_esc(p.durasi || (isEn ? 'Ongoing' : 'Sedang berjalan'))}</div>
         </div>
       </div>`;
     } else {
       statHtml = `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#86efac;font-size:13px">
         <span style="font-size:15px;color:#22c55e;flex-shrink:0">✓</span>
         <div style="flex:1">
-          <strong>Telah Pulih / Terselesaikan</strong>
-          <div style="font-size:12px;opacity:0.85;margin-top:2px">Mulai: ${_esc(p.started_at || '—')} → Selesai: ${_esc(p.resolved_at || '—')} (Durasi: ${_esc(p.durasi || '—')})</div>
+          <strong>${isEn ? 'Resolved / Recovered' : 'Telah Pulih / Terselesaikan'}</strong>
+          <div style="font-size:12px;opacity:0.85;margin-top:2px">${isEn ? 'Started:' : 'Mulai:'} ${_esc(p.started_at || '—')} → ${isEn ? 'Resolved:' : 'Selesai:'} ${_esc(p.resolved_at || '—')} (${isEn ? 'Duration:' : 'Durasi:'} ${_esc(p.durasi || '—')})</div>
         </div>
       </div>`;
     }
@@ -2613,51 +2645,127 @@ function renderProblemDetailModal(p) {
   }
 
   // 3. Analisis Penyebab (Root Cause) & Dampak
-  let causeText = ctx.penyebab || '';
-  let impactText = ctx.dampak || '';
-  let recoList = Array.isArray(ctx.rekomendasi) ? ctx.rekomendasi : [];
+  let causeText = isEn ? (ctx.penyebab_en || ctx.penyebab || '') : (ctx.penyebab || ctx.penyebab_en || '');
+  let impactText = isEn ? (ctx.dampak_en || ctx.dampak || '') : (ctx.dampak || ctx.dampak_en || '');
+  let recoList = isEn ? (ctx.rekomendasi_en || ctx.rekomendasi || []) : (ctx.rekomendasi || ctx.rekomendasi_en || []);
   let cmdList = Array.isArray(ctx.perintah_diagnosa) ? ctx.perintah_diagnosa : [];
 
-  // Fallback pintar bila context belum tersimpan (kejadian lama sebelum update)
+  // Fallback Universal bila context kosong (data rekaman lama sebelum update)
   if (!causeText) {
     if (p.key.startsWith('service_down:')) {
       const sname = p.key.split(':', 2)[1];
-      causeText = `Layanan "${sname}" tidak mendengarkan port atau prosesnya tidak aktif di server.`;
-      impactText = `Klien atau sistem tidak dapat mengakses layanan ${sname}.`;
-      recoList = [`Periksa status layanan: sudo systemctl status ${sname}`, `Lihat log galat: sudo journalctl -u ${sname} -n 50`, `Mulai ulang layanan: sudo systemctl restart ${sname}`];
+      causeText = isEn
+        ? `Service "${sname}" is not listening on its port or its process is not running on the host.`
+        : `Layanan "${sname}" tidak mendengarkan port atau prosesnya tidak aktif di server.`;
+      impactText = isEn
+        ? `Clients or downstream systems cannot access service ${sname}.`
+        : `Klien atau sistem tidak dapat mengakses layanan ${sname}.`;
+      recoList = isEn
+        ? [`Inspect service status: sudo systemctl status ${sname}`, `Check error logs: sudo journalctl -u ${sname} -n 50 --no-pager`, `Restart service: sudo systemctl restart ${sname}`]
+        : [`Periksa status layanan: sudo systemctl status ${sname}`, `Lihat log galat: sudo journalctl -u ${sname} -n 50 --no-pager`, `Mulai ulang layanan: sudo systemctl restart ${sname}`];
       cmdList = [`sudo systemctl status ${sname}`, `sudo journalctl -u ${sname} -n 50 --no-pager`, `sudo systemctl restart ${sname}`];
+    } else if (p.key.startsWith('svc_no_data:')) {
+      const sname = p.key.split(':', 2)[1];
+      causeText = isEn
+        ? `Monitoring agent has not captured metrics or status for service "${sname}".`
+        : `Agen di server belum mendeteksi status atau metrik untuk layanan "${sname}".`;
+      impactText = isEn
+        ? `Availability metrics for ${sname} cannot be accurately computed.`
+        : `Metrik ketersediaan layanan ${sname} belum dapat dihitung secara akurat.`;
+      recoList = isEn
+        ? [`Ensure service daemon is running: sudo systemctl status ${sname}`, `Check if listening port is open: ss -tulpn | grep ${sname}`]
+        : [`Pastikan layanan berjalan: sudo systemctl status ${sname}`, `Pastikan port listening aktif: ss -tulpn | grep ${sname}`];
+      cmdList = [`sudo systemctl status ${sname}`, `pgrep -fa ${sname}`];
     } else if (p.key === 'agent_conflict') {
-      causeText = 'Beberapa host dengan IP berbeda melapor secara bersamaan menggunakan API key yang sama (kemungkinan VM dikloning).';
-      impactText = 'Metrik layanan dan resource berfluktuasi tidak stabil (flapping).';
-      recoList = ['Hentikan agen di host kloningan: sudo systemctl stop agent_pantau', 'Daftarkan server baru di Pantau Server bila merupakan server terpisah.'];
-      cmdList = ['sudo systemctl status agent_pantau'];
-    } else if (p.key.startsWith('ram_')) {
-      causeText = `Pemakaian RAM server melebihi batas toleransi (${_esc(p.message)}).`;
-      impactText = 'Sistem berisiko melambat ekstrem atau mematikan proses via OOM Killer.';
-      recoList = ['Periksa proses pemakan memori teratas', 'Mulai ulang service yang mengalami memory leak'];
-      cmdList = ['free -h', 'ps aux --sort=-%mem | head -15'];
-    } else if (p.key.startsWith('cpu_')) {
-      causeText = `Beban pemakaian prosesor (CPU) sangat tinggi (${_esc(p.message)}).`;
-      impactText = 'Waktu respons layanan melambat drastis.';
-      recoList = ['Cek proses pemakan CPU', 'Periksa loop tak terhingga atau permintaan beban tinggi'];
-      cmdList = ['top -b -n 1 | head -20'];
-    } else if (p.key.startsWith('disk_')) {
-      causeText = `Penyimpanan partisi disk hampir penuh (${_esc(p.message)}).`;
-      impactText = 'Aplikasi tidak dapat menulis berkas log atau database terhenti.';
-      recoList = ['Bersihkan berkas log lama', 'Periksa direktori terbesar'];
-      cmdList = ['df -h', 'sudo du -xh --max-depth=2 / | sort -rh | head -20'];
-    } else if (p.key in ['security_danger', 'failed_logins']) {
-      causeText = `Terdeteksi percobaan login SSH gagal dalam jumlah tidak biasa (${_esc(p.message)}).`;
-      impactText = 'Percobaan pembobolan paksa (brute-force) pada port SSH server.';
-      recoList = ['Blokir alamat IP penyerang', 'Gunakan fail2ban', 'Nonaktifkan otentikasi kata sandi SSH'];
-      cmdList = ['sudo journalctl -u ssh -n 50 --no-pager', 'sudo fail2ban-client status sshd'];
-    } else if (p.key === 'agent_stale') {
-      causeText = 'Agen Pantau di server ini tidak mengirim telemetri metrik dalam batas waktu normal.';
-      impactText = 'Informasi server di dashboard menjadi kedaluwarsa.';
-      recoList = ['Periksa apakah server menyala dan terhubung ke jaringan', 'Mulai ulang agent_pantau'];
+      causeText = isEn
+        ? 'Multiple hosts with distinct IP addresses are reporting simultaneously with the same API key (likely cloned VM).'
+        : 'Beberapa host dengan IP berbeda melapor secara bersamaan menggunakan API key yang sama (kemungkinan VM dikloning).';
+      impactText = isEn
+        ? 'Service telemetry and metrics flap erratically across different instances.'
+        : 'Metrik layanan dan resource berfluktuasi tidak stabil (flapping).';
+      recoList = isEn
+        ? ['Stop agent on cloned host: sudo systemctl stop agent_pantau', 'Register as a distinct server in Pantau Server dashboard.']
+        : ['Hentikan agen di host kloningan: sudo systemctl stop agent_pantau', 'Daftarkan server baru di Pantau Server bila merupakan server terpisah.'];
       cmdList = ['sudo systemctl status agent_pantau', 'sudo journalctl -u agent_pantau -n 30 --no-pager'];
+    } else if (p.key.startsWith('ram_')) {
+      causeText = isEn
+        ? `Host physical RAM utilization exceeded safe thresholds (${_esc(p.message)}).`
+        : `Pemakaian RAM server melebihi batas toleransi (${_esc(p.message)}).`;
+      impactText = isEn
+        ? 'Host risks extreme slowdown, elevated swap thrashing, or daemon termination by kernel OOM Killer.'
+        : 'Sistem berisiko melambat ekstrem atau mematikan proses via OOM Killer.';
+      recoList = isEn
+        ? ['Inspect top memory-consuming processes in Processes tab', 'Restart leaking daemons or applications', 'Consider scaling physical RAM']
+        : ['Periksa proses pemakan memori teratas pada tab Proses', 'Mulai ulang service yang mengalami memory leak', 'Pertimbangkan menambah kapasitas RAM fisik'];
+      cmdList = ['free -h', 'ps aux --sort=-%mem | head -15', 'sudo journalctl -k -g "oom" -n 20 --no-pager'];
+    } else if (p.key.startsWith('swap_')) {
+      causeText = isEn
+        ? `Host swap partition utilization is high (${_esc(p.message)}), indicating physical RAM exhaustion.`
+        : `Pemakaian swap disk tinggi (${_esc(p.message)}), menandakan RAM fisik menipis.`;
+      impactText = isEn
+        ? 'Severe disk I/O bottleneck and heightened request latency.'
+        : 'Kinerja I/O disk melonjak dan latency sistem/aplikasi meningkat tajam.';
+      recoList = isEn
+        ? ['Inspect high memory processes: sudo ps aux --sort=-%mem | head -15', 'Drop safe filesystem caches: sudo sync && sudo sysctl -w vm.drop_caches=3']
+        : ['Periksa proses pemakan memori: sudo ps aux --sort=-%mem | head -15', 'Bebaskan cache aman: sudo sync && sudo sysctl -w vm.drop_caches=3'];
+      cmdList = ['free -h', 'swapon --show', 'vmstat 1 5'];
+    } else if (p.key.startsWith('cpu_')) {
+      causeText = isEn
+        ? `Processor (CPU) load is high (${_esc(p.message)}).`
+        : `Beban pemakaian prosesor (CPU) sangat tinggi (${_esc(p.message)}).`;
+      impactText = isEn
+        ? 'System thread execution queues stall, degrading request response times.'
+        : 'Waktu respons layanan melambat drastis dan potensi timeout koneksi.';
+      recoList = isEn
+        ? ['Identify top CPU consumers in Processes tab', 'Check for infinite execution loops or hung worker threads']
+        : ['Buka tab Proses untuk melihat proses dengan pemakaian CPU tertinggi', 'Periksa loop tak terhingga atau thread pekerja yang menggantung'];
+      cmdList = ['top -b -n 1 | head -20', 'ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%cpu | head -15'];
+    } else if (p.key.startsWith('disk_')) {
+      causeText = isEn
+        ? `Storage partition is nearly full (${_esc(p.message)}).`
+        : `Penyimpanan partisi disk hampir penuh (${_esc(p.message)}).`;
+      impactText = isEn
+        ? 'Applications cannot write new files, databases risk read-only state or crash, logging halts.'
+        : 'Aplikasi tidak dapat menulis berkas baru, database berisiko read-only atau crash.';
+      recoList = isEn
+        ? ['Find largest directories: sudo du -xh --max-depth=2 / | sort -rh | head -15', 'Vacuum journal logs: sudo journalctl --vacuum-size=200M', 'Clean APT package cache: sudo apt clean']
+        : ['Periksa direktori terbesar: sudo du -xh --max-depth=2 / | sort -rh | head -15', 'Bersihkan log systemd lama: sudo journalctl --vacuum-size=200M', 'Bersihkan cache paket: sudo apt clean'];
+      cmdList = ['df -h', 'sudo du -xh --max-depth=2 / | sort -rh | head -15', 'sudo journalctl --disk-usage'];
+    } else if (p.key in ['security_danger', 'failed_logins']) {
+      causeText = isEn
+        ? `Detected unusual volume of failed SSH login attempts (${_esc(p.message)}).`
+        : `Terdeteksi percobaan login SSH gagal dalam jumlah tidak biasa (${_esc(p.message)}).`;
+      impactText = isEn
+        ? 'Security risk of unauthorized account access via SSH brute-force attack.'
+        : 'Potensi pembobolan kredensial akun server via serangan brute-force.';
+      recoList = isEn
+        ? ['Use "Block IP" button to drop attacker IP via iptables', 'Install and enable fail2ban: sudo apt install fail2ban', 'Enforce SSH Key authentication and disable password login']
+        : ['Gunakan tombol "Blokir IP" untuk memblokir IP penyerang', 'Pasang fail2ban: sudo apt install fail2ban', 'Nonaktifkan autentikasi password di /etc/ssh/sshd_config'];
+      cmdList = ['sudo journalctl -u ssh -n 50 --no-pager', 'sudo iptables -L INPUT -v -n --line-numbers', 'sudo fail2ban-client status sshd'];
+    } else if (p.key === 'agent_stale') {
+      causeText = isEn
+        ? 'Pantau Agent on this server stopped sending telemetry beyond tolerance window (offline/stale).'
+        : 'Agen Pantau di server ini tidak mengirim telemetri metrik dalam batas toleransi (offline/stale).';
+      impactText = isEn
+        ? 'Server metrics and service health indicators are no longer live on the dashboard.'
+        : 'Metrik kinerja dan status layanan di dashboard Pantau Server kedaluwarsa.';
+      recoList = isEn
+        ? ['Check if host machine is reachable via ping/SSH', 'Inspect agent daemon: sudo systemctl status agent_pantau', 'Restart agent: sudo systemctl restart agent_pantau']
+        : ['Periksa apakah mesin server hidup dan dapat di-ping/SSH', 'Periksa status daemon agen: sudo systemctl status agent_pantau', 'Mulai ulang agen: sudo systemctl restart agent_pantau'];
+      cmdList = ['sudo systemctl status agent_pantau', 'sudo journalctl -u agent_pantau -n 30 --no-pager', 'sudo systemctl restart agent_pantau'];
+    } else if (p.key === 'apt_updates') {
+      causeText = isEn
+        ? `Operating system package updates are available for installation (${_esc(p.message)}).`
+        : `Terdapat paket pembaruan sistem operasi yang siap di-upgrade (${_esc(p.message)}).`;
+      impactText = isEn
+        ? 'Host remains exposed to known vulnerabilities and unpatched CVEs.'
+        : 'Sistem berisiko terhadap celah keamanan yang telah ditambal pada versi terbaru.';
+      recoList = isEn
+        ? ['Use "Update OS" button in dashboard or run: sudo apt update && sudo apt upgrade -y', 'Inspect upgradable packages list']
+        : ['Gunakan tombol Update OS di dashboard atau jalankan: sudo apt update && sudo apt upgrade -y', 'Periksa daftar paket yang siap diperbarui'];
+      cmdList = ['apt list --upgradable', 'sudo apt update && sudo apt upgrade -s'];
     } else {
-      causeText = p.message || 'Anomali terdeteksi oleh sistem evaluator metrik.';
+      causeText = p.message || (isEn ? 'System anomaly detected by metrics evaluation engine.' : 'Anomali terdeteksi oleh sistem evaluator metrik.');
       if (p.tip) recoList = [p.tip];
     }
   }
@@ -2676,21 +2784,33 @@ function renderProblemDetailModal(p) {
   if (techEl) {
     const tech = ctx.data_teknis || {};
     let techRows = [];
-    if (p.hostname) techRows.push(`<tr><td style="color:var(--dim);width:140px;padding:4px 0">Server</td><td><strong>${_esc(p.hostname)}</strong> ${p.server_id ? '<span style="color:var(--dim);font-size:11px">(ID #' + _esc(p.server_id) + ')</span>' : ''}</td></tr>`);
-    if (tech.service_name) techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">Nama Layanan</td><td><span class="mono">${_esc(tech.service_name)}</span></td></tr>`);
-    if (tech.port) techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">Port / Proses</td><td><span class="mono">:${_esc(tech.port)}</span> ${tech.process_name ? '(' + _esc(tech.process_name) + ')' : ''}</td></tr>`);
+    if (p.hostname) techRows.push(`<tr><td style="color:var(--dim);width:150px;padding:4px 0">${isEn ? 'Server' : 'Server'}</td><td><strong>${_esc(p.hostname)}</strong> ${p.server_id ? '<span style="color:var(--dim);font-size:11px">(ID #' + _esc(p.server_id) + ')</span>' : ''}</td></tr>`);
+    if (tech.service_name) techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Service Name' : 'Nama Layanan'}</td><td><span class="mono">${_esc(tech.service_name)}</span></td></tr>`);
+    if (tech.port) techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Port / Process' : 'Port / Proses'}</td><td><span class="mono">:${_esc(tech.port)}</span> ${tech.process_name ? '(' + _esc(tech.process_name) + ')' : ''}</td></tr>`);
     if (tech.conflicting_ips && tech.conflicting_ips.length) {
-      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">IP Konflik</td><td><span class="badge badge-danger">${_esc(tech.conflicting_ips.join(', '))}</span></td></tr>`);
+      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Conflicting IPs' : 'IP Konflik'}</td><td><span class="badge badge-danger">${_esc(tech.conflicting_ips.join(', '))}</span></td></tr>`);
     }
-    if (tech.health_message) techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">Pesan Diagnosa</td><td style="color:#f87171">${_esc(tech.health_message)}</td></tr>`);
+    if (tech.health_message) techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Diagnostic Message' : 'Pesan Diagnosa'}</td><td style="color:#f87171">${_esc(tech.health_message)}</td></tr>`);
     if (tech.top_attacker_ips && tech.top_attacker_ips.length) {
-      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">IP Penyerang</td><td><span class="mono" style="font-size:12px">${_esc(tech.top_attacker_ips.join(', '))}</span></td></tr>`);
+      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Attacker IPs' : 'IP Penyerang'}</td><td><span class="mono" style="font-size:12px">${_esc(tech.top_attacker_ips.join(', '))}</span></td></tr>`);
     }
     if (tech.mem_percent !== undefined) {
-      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">Konsumsi RAM</td><td><strong>${_esc(tech.mem_percent)}%</strong></td></tr>`);
+      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'RAM Usage' : 'Konsumsi RAM'}</td><td><strong>${_esc(tech.mem_percent)}%</strong></td></tr>`);
+    }
+    if (tech.swap_percent !== undefined) {
+      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Swap Usage' : 'Konsumsi Swap'}</td><td><strong>${_esc(tech.swap_percent)}%</strong></td></tr>`);
     }
     if (tech.cpu_avg !== undefined) {
-      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">Rata-rata CPU</td><td><strong>${_esc(tech.cpu_avg)}%</strong> (Puncak: ${_esc(tech.cpu_max)}%)</td></tr>`);
+      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Average CPU' : 'Rata-rata CPU'}</td><td><strong>${_esc(tech.cpu_avg)}%</strong> (${isEn ? 'Peak:' : 'Puncak:'} ${_esc(tech.cpu_max)}%)</td></tr>`);
+    }
+    if (tech.mount_point) {
+      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Disk Partition' : 'Partisi Disk'}</td><td><span class="mono">${_esc(tech.mount_point)}</span> (${_esc(tech.disk_percent)}%)</td></tr>`);
+    }
+    if (tech.paket_upgradable !== undefined) {
+      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'OS Updates' : 'Paket OS Siap Upgrade'}</td><td><strong>${_esc(tech.paket_upgradable)} ${isEn ? 'packages' : 'paket'}</strong></td></tr>`);
+    }
+    if (tech.waktu_kejadian) {
+      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Event Timestamp' : 'Waktu Kejadian'}</td><td class="mono" style="font-size:11.5px">${_esc(tech.waktu_kejadian)}</td></tr>`);
     }
 
     if (techRows.length > 0) {
@@ -2715,10 +2835,12 @@ function renderProblemDetailModal(p) {
   if (cmdsEl) {
     if (cmdList && cmdList.length > 0) {
       cmdsEl.parentElement.style.display = 'block';
+      const copyBtnText = isEn ? '📋 Copy' : '📋 Salin';
+      const copyBtnTitle = isEn ? 'Copy command' : 'Salin perintah';
       cmdsEl.innerHTML = cmdList.filter(c => !!c).map(cmd => {
         return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 12px;margin-bottom:6px">
           <code class="mono" style="font-size:12.5px;color:#7ee787;word-break:break-all">${_esc(cmd)}</code>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="copyCommandText(this, '${cmd.replace(/'/g, "\\'")}')" style="font-size:11px;padding:3px 8px;flex-shrink:0" title="Salin perintah">📋 Salin</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="copyCommandText(this, '${cmd.replace(/'/g, "\\'")}')" style="font-size:11px;padding:3px 8px;flex-shrink:0" title="${copyBtnTitle}">${copyBtnText}</button>
         </div>`;
       }).join('');
     } else {
@@ -2732,14 +2854,17 @@ function renderProblemDetailModal(p) {
     if (p.key.startsWith('service_down:')) {
       const sname = p.key.split(':', 2)[1];
       if (typeof jumpToLog === 'function') {
-        btns.push(`<button type="button" class="btn btn-ghost btn-sm" onclick="closeProblemDetailModal(); jumpToLog('${_esc(sname)}');">📜 Lihat Log ${ _esc(sname) }</button>`);
+        const logBtnText = isEn ? ('📜 View ' + _esc(sname) + ' Logs') : ('📜 Lihat Log ' + _esc(sname));
+        btns.push(`<button type="button" class="btn btn-ghost btn-sm" onclick="closeProblemDetailModal(); jumpToLog('${_esc(sname)}');">${logBtnText}</button>`);
       }
     } else if (p.key in ['security_danger', 'failed_logins']) {
       if (typeof jumpToLog === 'function') {
-        btns.push(`<button type="button" class="btn btn-ghost btn-sm" onclick="closeProblemDetailModal(); jumpToLog('AUTH');">📜 Lihat Log Auth SSH</button>`);
+        const logBtnText = isEn ? '📜 View SSH Auth Logs' : '📜 Lihat Log Auth SSH';
+        btns.push(`<button type="button" class="btn btn-ghost btn-sm" onclick="closeProblemDetailModal(); jumpToLog('AUTH');">${logBtnText}</button>`);
       }
     }
-    btns.push(`<button type="button" class="btn btn-primary btn-sm" onclick="closeProblemDetailModal()">Tutup</button>`);
+    const closeBtnText = isEn ? 'Close' : 'Tutup';
+    btns.push(`<button type="button" class="btn btn-primary btn-sm" onclick="closeProblemDetailModal()">${closeBtnText}</button>`);
     actionFooterEl.innerHTML = btns.join(' ');
   }
 }
@@ -2804,18 +2929,18 @@ setInterval(alertFetch, 10000);
       <!-- Analisis Akar Masalah -->
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px 16px">
         <div style="font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-          <span>📌</span> Analisis Penyebab (Root Cause)
+          <span>📌</span> <span id="pdm-sec-cause">Analisis Penyebab (Root Cause)</span>
         </div>
         <div id="pdm-cause-text"></div>
         <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #30363d;font-size:12.5px;color:var(--dim)">
-          <strong style="color:var(--text)">Dampak:</strong> <span id="pdm-impact-text"></span>
+          <strong style="color:var(--text)" id="pdm-lbl-impact">Dampak:</strong> <span id="pdm-impact-text"></span>
         </div>
       </div>
 
       <!-- Data Teknis Telemetri -->
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px 16px">
         <div style="font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-          <span>📊</span> Data Teknis &amp; Snapshot Insiden
+          <span>📊</span> <span id="pdm-sec-tech">Data Teknis &amp; Snapshot Insiden</span>
         </div>
         <div id="pdm-tech-box"></div>
       </div>
@@ -2823,7 +2948,7 @@ setInterval(alertFetch, 10000);
       <!-- Rekomendasi Solusi -->
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px 16px">
         <div style="font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-          <span>🛠️</span> Langkah Penanganan Terverifikasi
+          <span>🛠️</span> <span id="pdm-sec-reco">Langkah Penanganan Terverifikasi</span>
         </div>
         <ul id="pdm-reco-list" style="margin:0;padding-left:18px;font-size:13px;color:var(--text)"></ul>
       </div>
@@ -2831,7 +2956,7 @@ setInterval(alertFetch, 10000);
       <!-- Perintah Terminal -->
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px 16px">
         <div style="font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-          <span>💻</span> Perintah Diagnostik &amp; Pemulihan di Server
+          <span>💻</span> <span id="pdm-sec-cmds">Perintah Diagnostik &amp; Pemulihan di Server</span>
         </div>
         <div id="pdm-cmds-box"></div>
       </div>

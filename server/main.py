@@ -3405,15 +3405,20 @@ def _quiet_secs_for(key: str) -> int:
 
 
 def _build_problem_context(key: str, srv, **kwargs) -> str | None:
-    """Susun payload JSON diagnostik terstruktur untuk ServerProblem.context."""
+    """Susun payload JSON diagnostik terstruktur dwibahasa (ID & EN) untuk ServerProblem.context."""
     try:
         now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+
+        # 1. Konflik Agen (Split-Brain Multi-IP)
         if key == "agent_conflict":
             ips = kwargs.get("ips") or []
             return json.dumps({
                 "diagnosa": "Konflik API Key Agen (Split-Brain Telemetri)",
+                "diagnosa_en": "Agent API Key Conflict (Split-Brain Telemetry)",
                 "penyebab": f"Server {srv.hostname} menerima telemetri aktif dari {len(ips)} alamat IP berbeda ({', '.join(ips)}) secara bersamaan dalam waktu kurang dari 2 menit. Mesin kemungkinan telah dikloning atau API key dipasang pada lebih dari satu host.",
+                "penyebab_en": f"Server {srv.hostname} receives active telemetry from {len(ips)} distinct IP addresses ({', '.join(ips)}) simultaneously within 2 minutes. Likely caused by a cloned VM or duplicate agent installation with the same API key.",
                 "dampak": "Metrik status layanan dan performa sistem berfluktuasi/flapping tidak menentu karena host melaporkan status yang berbeda.",
+                "dampak_en": "Service status and system performance metrics flap erratically because different hosts report conflicting states.",
                 "data_teknis": {
                     "conflicting_ips": ips,
                     "server_id": srv.id,
@@ -3425,12 +3430,18 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                     "Jika salah satu host merupakan hasil klon VM / template pengujian, matikan agen: sudo systemctl stop agent_pantau && sudo systemctl disable agent_pantau.",
                     "Jika kedua host harus dipantau terpisah, daftarkan server baru di Pantau Server untuk memperoleh API Key yang terpisah."
                 ],
+                "rekomendasi_en": [
+                    f"Inspect hosts in your network with IP addresses: {', '.join(ips)}.",
+                    "If one host is a cloned VM or staging template, stop the agent: sudo systemctl stop agent_pantau && sudo systemctl disable agent_pantau.",
+                    "If both hosts must be monitored independently, add a new server in Pantau Server to generate a dedicated API Key."
+                ],
                 "perintah_diagnosa": [
                     f"ssh <user>@{ips[0]} 'sudo systemctl status agent_pantau'" if ips else "",
                     f"ssh <user>@{ips[-1]} 'sudo systemctl status agent_pantau'" if len(ips) > 1 else "",
                 ]
             }, ensure_ascii=False)
 
+        # 2. Layanan Mati (Service Down)
         if key.startswith("service_down:"):
             svc_name = kwargs.get("service_name") or key.split(":", 1)[1]
             port = kwargs.get("port")
@@ -3438,14 +3449,20 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
             health_msg = kwargs.get("health_msg")
             conflict_ips = kwargs.get("conflict_ips")
             penyebab = f"Layanan {svc_name} tidak mendengarkan (listening) pada port {port or 'terkait'} atau proses tidak ditemukan."
+            penyebab_en = f"Service {svc_name} is not listening on port {port or 'associated'} or process was not found running."
             if conflict_ips and len(conflict_ips) > 1:
                 penyebab += f" Terdeteksi juga konflik multi-IP ({', '.join(conflict_ips)}) yang menyebabkan status layanan berfluktuasi."
+                penyebab_en += f" Multi-IP agent conflict ({', '.join(conflict_ips)}) detected, causing service status to flap."
             elif health_msg:
                 penyebab += f" Rincian pesan: {health_msg}"
+                penyebab_en += f" Detail: {health_msg}"
             return json.dumps({
                 "diagnosa": f"Layanan {svc_name} Tidak Aktif (DOWN)",
+                "diagnosa_en": f"Service {svc_name} Inactive (DOWN)",
                 "penyebab": penyebab,
+                "penyebab_en": penyebab_en,
                 "dampak": f"Aplikasi atau pengguna tidak dapat mengakses layanan {svc_name}" + (f" pada port {port}." if port else "."),
+                "dampak_en": f"Clients or dependent systems cannot access service {svc_name}" + (f" on port {port}." if port else "."),
                 "data_teknis": {
                     "service_name": svc_name,
                     "port": port,
@@ -3462,6 +3479,12 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                     f"Pastikan port listening: ss -tulpn | grep :{port}" if port else f"Periksa proses: pgrep -fa {proc or svc_name}",
                     f"Coba mulai ulang layanan: sudo systemctl restart {svc_name}"
                 ],
+                "rekomendasi_en": [
+                    f"Check service status: sudo systemctl status {svc_name}",
+                    f"Inspect service error logs: sudo journalctl -u {svc_name} -n 50 --no-pager",
+                    f"Verify listening port: ss -tulpn | grep :{port}" if port else f"Check process: pgrep -fa {proc or svc_name}",
+                    f"Restart service: sudo systemctl restart {svc_name}"
+                ],
                 "perintah_diagnosa": [
                     f"sudo systemctl status {svc_name}",
                     f"sudo journalctl -u {svc_name} -n 50 --no-pager",
@@ -3470,14 +3493,52 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 ]
             }, ensure_ascii=False)
 
+        # 3. Layanan Belum Ada Data (Service Unknown / No Data)
+        if key.startswith("svc_no_data:"):
+            svc_name = kwargs.get("service_name") or key.split(":", 1)[1]
+            port = kwargs.get("port")
+            return json.dumps({
+                "diagnosa": f"Layanan {svc_name} Belum Memiliki Data",
+                "diagnosa_en": f"Service {svc_name} Has No Reported Data",
+                "penyebab": f"Agen di server belum mendeteksi status atau metrik untuk layanan {svc_name}. Port atau proses mungkin belum aktif saat siklus pemindaian.",
+                "penyebab_en": f"Agent on the server has not captured status or metrics for service {svc_name}. The port or process might not have been open during scan.",
+                "dampak": "Metrik ketersediaan layanan belum dapat dihitung secara akurat.",
+                "dampak_en": "Service availability metrics cannot yet be accurately computed.",
+                "data_teknis": {
+                    "service_name": svc_name,
+                    "port": port,
+                    "server_hostname": srv.hostname,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    f"Pastikan layanan berjalan: sudo systemctl status {svc_name}",
+                    f"Pastikan port listening: ss -tlnp | grep :{port}" if port else f"Cek proses: pgrep -fa {svc_name}",
+                    "Tunggu siklus pemindaian agen berikutnya (berjalan tiap beberapa detik)."
+                ],
+                "rekomendasi_en": [
+                    f"Ensure service is running: sudo systemctl status {svc_name}",
+                    f"Ensure port is listening: ss -tlnp | grep :{port}" if port else f"Check process: pgrep -fa {svc_name}",
+                    "Wait for the next agent reporting cycle (runs every few seconds)."
+                ],
+                "perintah_diagnosa": [
+                    f"sudo systemctl status {svc_name}",
+                    f"ss -tulpn | grep :{port}" if port else f"pgrep -fa {svc_name}",
+                ]
+            }, ensure_ascii=False)
+
+        # 4. RAM Kritis / Tinggi
         if key in ("ram_critical", "ram_high"):
             pct = kwargs.get("pct", 0)
             used = kwargs.get("used", 0)
             total = kwargs.get("total", 0)
+            is_crit = "critical" in key
             return json.dumps({
-                "diagnosa": f"Konsumsi Memori RAM Kritis ({pct:.1f}%)" if "critical" in key else f"Konsumsi Memori RAM Tinggi ({pct:.1f}%)",
+                "diagnosa": f"Konsumsi Memori RAM Kritis ({pct:.1f}%)" if is_crit else f"Konsumsi Memori RAM Tinggi ({pct:.1f}%)",
+                "diagnosa_en": f"Critical RAM Memory Consumption ({pct:.1f}%)" if is_crit else f"High RAM Memory Consumption ({pct:.1f}%)",
                 "penyebab": f"Pemakaian memori RAM mencapai {pct:.1f}% ({_fmt_size(used)} dari {_fmt_size(total)}). Sistem berisiko memicu kernel Out-Of-Memory (OOM Killer).",
+                "penyebab_en": f"RAM memory usage reached {pct:.1f}% ({_fmt_size(used)} of {_fmt_size(total)}). The host is at risk of invoking the Linux OOM Killer.",
                 "dampak": "Sistem melambat drastis, thrashing swap meningkat, dan service penting dapat dimatikan mendadak oleh kernel OOM Killer.",
+                "dampak_en": "Extreme system slowdown, severe swap thrashing, and critical services risk being terminated abruptly by the OOM Killer.",
                 "data_teknis": {
                     "mem_used": used,
                     "mem_total": total,
@@ -3490,6 +3551,12 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                     "Mulai ulang aplikasi atau daemon yang memicu kebocoran memori (memory leak).",
                     "Pertimbangkan menambah alokasi RAM fisik atau swap bila beban kerja normal."
                 ],
+                "rekomendasi_en": [
+                    "Open the Processes tab to inspect top memory-consuming processes.",
+                    "Run on host: sudo ps aux --sort=-%mem | head -15",
+                    "Restart daemon or application causing memory leaks.",
+                    "Consider scaling up RAM capacity or swap space if standard workload demands it."
+                ],
                 "perintah_diagnosa": [
                     "free -h",
                     "ps aux --sort=-%mem | head -15",
@@ -3497,13 +3564,56 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 ]
             }, ensure_ascii=False)
 
+        # 5. Swap Kritis / Tinggi
+        if key in ("swap_critical", "swap_high"):
+            pct = kwargs.get("pct", 0)
+            used = kwargs.get("used", 0)
+            total = kwargs.get("total", 0)
+            is_crit = "critical" in key
+            return json.dumps({
+                "diagnosa": f"Kapasitas Swap Hampir Penuh ({pct:.1f}%)" if is_crit else f"Pemakaian Swap Tinggi ({pct:.1f}%)",
+                "diagnosa_en": f"Swap Space Nearly Full ({pct:.1f}%)" if is_crit else f"High Swap Space Usage ({pct:.1f}%)",
+                "penyebab": f"Pemakaian swap mencapai {pct:.1f}% ({_fmt_size(used)} dari {_fmt_size(total)}). Memori RAM fisik menipis sehingga kernel memindahkan halaman memori ke disk.",
+                "penyebab_en": f"Swap usage reached {pct:.1f}% ({_fmt_size(used)} of {_fmt_size(total)}). Physical RAM is exhausted, forcing kernel paging onto disk.",
+                "dampak": "Kinerja I/O disk melonjak, latency sistem dan aplikasi meningkat tajam karena kecepatan swap jauh lebih lambat dari RAM.",
+                "dampak_en": "Severe disk I/O bottleneck; system response latency spikes sharply due to disk-based memory paging.",
+                "data_teknis": {
+                    "swap_used": used,
+                    "swap_total": total,
+                    "swap_percent": round(pct, 1),
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    "Periksa proses yang menggunakan banyak memori: sudo ps aux --sort=-%mem | head -15",
+                    "Bebaskan memori dengan me-restart proses yang boros RAM.",
+                    "Bersihkan cache jika aman: sudo sync && sudo sysctl -w vm.drop_caches=3",
+                    "Tingkatkan alokasi RAM server."
+                ],
+                "rekomendasi_en": [
+                    "Inspect high memory processes: sudo ps aux --sort=-%mem | head -15",
+                    "Release memory by restarting excessive memory consumer services.",
+                    "Drop safe filesystem caches if needed: sudo sync && sudo sysctl -w vm.drop_caches=3",
+                    "Upgrade physical RAM allocation."
+                ],
+                "perintah_diagnosa": [
+                    "free -h",
+                    "swapon --show",
+                    "vmstat 1 5"
+                ]
+            }, ensure_ascii=False)
+
+        # 6. CPU Jenuh / Tinggi
         if key in ("cpu_saturated", "cpu_high"):
             cpu_avg = kwargs.get("cpu_avg", 0)
             cpu_max = kwargs.get("cpu_max", 0)
+            is_crit = "saturated" in key
             return json.dumps({
-                "diagnosa": "Saturasi Beban Prosessor (CPU Saturated)" if "saturated" in key else "Beban Prosessor Tinggi (CPU High)",
+                "diagnosa": "Saturasi Beban Prosesor (CPU Saturated)" if is_crit else "Beban Prosesor Tinggi (CPU High)",
+                "diagnosa_en": "Processor Saturation (CPU Saturated)" if is_crit else "High Processor Load (CPU High)",
                 "penyebab": f"Beban CPU rata-rata mencapai {cpu_avg:.1f}% (puncak {cpu_max:.1f}%) dalam rentang observasi terakhir.",
+                "penyebab_en": f"Average CPU utilization reached {cpu_avg:.1f}% (peak {cpu_max:.1f}%) during recent observation window.",
                 "dampak": "Antrean thread sistem melambat, response time layanan meningkat, potensi request timeout.",
+                "dampak_en": "System thread queues stall, response latency deteriorates, elevated risk of connection timeouts.",
                 "data_teknis": {
                     "cpu_avg": round(cpu_avg, 1),
                     "cpu_max": round(cpu_max, 1),
@@ -3514,22 +3624,72 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                     "Identifikasi proses intensif: top -b -n 1 | head -20",
                     "Periksa apakah ada loop eksekusi tak berujung (infinite loop) atau thread worker yang menggantung."
                 ],
+                "rekomendasi_en": [
+                    "Open Processes tab to identify top CPU consumers.",
+                    "Inspect active processes: top -b -n 1 | head -20",
+                    "Investigate stuck worker threads or infinite execution loops."
+                ],
                 "perintah_diagnosa": [
                     "top -b -n 1 | head -20",
                     "ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%cpu | head -15"
                 ]
             }, ensure_ascii=False)
 
+        # 7. Partisi Disk Kritis / Tinggi
+        if key.startswith("disk_critical:") or key.startswith("disk_high:"):
+            mount = kwargs.get("mount") or key.split(":", 1)[1]
+            used = kwargs.get("used", 0)
+            total = kwargs.get("total", 0)
+            pct = kwargs.get("pct", 0)
+            is_crit = "critical" in key
+            return json.dumps({
+                "diagnosa": f"Penyimpanan Partisi {mount} Hampir Penuh ({pct:.0f}%)" if is_crit else f"Penyimpanan Partisi {mount} Terisi Tinggi ({pct:.0f}%)",
+                "diagnosa_en": f"Disk Partition {mount} Nearly Full ({pct:.0f}%)" if is_crit else f"Disk Partition {mount} High Usage ({pct:.0f}%)",
+                "penyebab": f"Penggunaan partisi {mount} mencapai {pct:.0f}% ({_fmt_size(used)} terpakai dari kapasitas {_fmt_size(total)}).",
+                "penyebab_en": f"Partition {mount} utilization reached {pct:.0f}% ({_fmt_size(used)} used out of {_fmt_size(total)}).",
+                "dampak": "Aplikasi tidak dapat membuat file baru, database dapat read-only atau crash, sistem logging terhenti.",
+                "dampak_en": "Applications cannot write new files, databases risk read-only state or crash, system logging halts.",
+                "data_teknis": {
+                    "mount_point": mount,
+                    "disk_used": used,
+                    "disk_total": total,
+                    "disk_percent": round(pct, 1),
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    f"Periksa penggunaan direktori terbesar: sudo du -xh --max-depth=2 {mount} | sort -rh | head -20",
+                    "Bersihkan berkas log systemd lama: sudo journalctl --vacuum-size=200M",
+                    "Bersihkan cache paket: sudo apt clean",
+                    "Hapus berkas temporary lama di /tmp dan /var/tmp."
+                ],
+                "rekomendasi_en": [
+                    f"Find largest directories: sudo du -xh --max-depth=2 {mount} | sort -rh | head -20",
+                    "Vacuum journal logs: sudo journalctl --vacuum-size=200M",
+                    "Clean APT package cache: sudo apt clean",
+                    "Purge stale temporary files in /tmp and /var/tmp."
+                ],
+                "perintah_diagnosa": [
+                    f"df -h {mount}",
+                    f"sudo du -xh --max-depth=2 {mount} | sort -rh | head -15",
+                    "sudo journalctl --disk-usage"
+                ]
+            }, ensure_ascii=False)
+
+        # 8. Serangan SSH / Login Gagal
         if key in ("security_danger", "failed_logins"):
             failed = kwargs.get("failed", 0)
             invalid = kwargs.get("invalid", 0)
             source_ips = kwargs.get("source_ips") or {}
             top_ips = sorted(source_ips.items(), key=lambda x: x[1] if isinstance(x[1], int) else 0, reverse=True)[:10]
             ip_list = [f"{ip} ({cnt}x)" for ip, cnt in top_ips]
+            is_crit = key == "security_danger"
             return json.dumps({
-                "diagnosa": "Indikasi Serangan SSH Brute-Force" if key == "security_danger" else "Percobaan Login SSH Gagal",
+                "diagnosa": "Indikasi Serangan SSH Brute-Force" if is_crit else "Percobaan Login SSH Gagal Repetitif",
+                "diagnosa_en": "Suspected SSH Brute-Force Attack" if is_crit else "Repetitive Failed SSH Login Attempts",
                 "penyebab": f"Terdeteksi {failed} percobaan login SSH gagal dan {invalid} percobaan user tidak valid dari {len(source_ips)} alamat IP sumber.",
+                "penyebab_en": f"Detected {failed} failed SSH logins and {invalid} invalid username attempts originating from {len(source_ips)} source IPs.",
                 "dampak": "Potensi pembobolan kredensial akun server bila password lemah, serta beban koneksi SSH yang tinggi.",
+                "dampak_en": "Security risk of unauthorized account breach if weak passwords exist, alongside network socket overhead on sshd.",
                 "data_teknis": {
                     "total_failed": failed,
                     "invalid_users": invalid,
@@ -3543,6 +3703,12 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                     "Perketat konfigurasi SSH (/etc/ssh/sshd_config): PasswordAuthentication no, gunakan SSH Key.",
                     "Ganti port default SSH dari port 22 ke port khusus non-standar."
                 ],
+                "rekomendasi_en": [
+                    "Use the 'Block IPs' button in action column to immediately drop attacker IPs via iptables.",
+                    "Install and enable fail2ban: sudo apt install fail2ban && sudo systemctl enable --now fail2ban",
+                    "Harden SSH daemon (/etc/ssh/sshd_config): set PasswordAuthentication no, enforce SSH Keys.",
+                    "Change default SSH listening port from 22 to a custom high port."
+                ],
                 "perintah_diagnosa": [
                     "sudo journalctl -u ssh -n 50 --no-pager",
                     "sudo iptables -L INPUT -v -n --line-numbers",
@@ -3550,11 +3716,15 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 ]
             }, ensure_ascii=False)
 
+        # 9. Agen Stale (Offline)
         if key == "agent_stale":
             return json.dumps({
                 "diagnosa": "Agen Pantau Tidak Melaporkan Status (Offline / Stale)",
+                "diagnosa_en": "Monitoring Agent Not Reporting (Offline / Stale)",
                 "penyebab": f"Server {srv.hostname} tidak mengirim telemetri metrik lebih dari batas toleransi. Layanan agent_pantau kemungkinan mati, server reboot, atau koneksi jaringan terputus.",
+                "penyebab_en": f"Server {srv.hostname} has stopped transmitting telemetry beyond threshold. Service agent_pantau may be stopped, host rebooted, or network offline.",
                 "dampak": "Metrik kinerja dan status layanan tidak terbarui di dashboard Pantau Server.",
+                "dampak_en": "Performance telemetry and service health indicators are no longer live on the dashboard.",
                 "data_teknis": {
                     "server_hostname": srv.hostname,
                     "server_ip": srv.ip_address,
@@ -3567,10 +3737,47 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                     "Lihat log agen: sudo journalctl -u agent_pantau -n 30 --no-pager",
                     "Mulai ulang agen: sudo systemctl restart agent_pantau"
                 ],
+                "rekomendasi_en": [
+                    "Check host reachability via ping or SSH.",
+                    "Inspect agent daemon: sudo systemctl status agent_pantau",
+                    "Check agent logs: sudo journalctl -u agent_pantau -n 30 --no-pager",
+                    "Restart agent daemon: sudo systemctl restart agent_pantau"
+                ],
                 "perintah_diagnosa": [
                     "sudo systemctl status agent_pantau",
                     "sudo journalctl -u agent_pantau -n 30 --no-pager",
                     "sudo systemctl restart agent_pantau"
+                ]
+            }, ensure_ascii=False)
+
+        # 10. Paket OS Butuh Pembaruan (APT Updates)
+        if key == "apt_updates":
+            upg_count = kwargs.get("upgradable", 0)
+            return json.dumps({
+                "diagnosa": f"{upg_count} Paket Pembaruan OS Tersedia",
+                "diagnosa_en": f"{upg_count} OS Package Updates Available",
+                "penyebab": f"Repositori sistem melaporkan terdapat {upg_count} paket software/kernel yang siap di-upgrade, termasuk potensi patch keamanan.",
+                "penyebab_en": f"System package repositories report {upg_count} upgradable software/kernel packages, potentially including critical security patches.",
+                "dampak": "Sistem berisiko terhadap kerentanan keamanan yang telah ditambal pada versi terbaru.",
+                "dampak_en": "Host remains vulnerable to publicly known CVEs and software defects resolved in upstream updates.",
+                "data_teknis": {
+                    "paket_upgradable": upg_count,
+                    "server_hostname": srv.hostname,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    "Gunakan tombol 'Update OS' pada antarmuka Pantau Server untuk menjalankan pembaruan otomatis.",
+                    "Atau jalankan secara manual di server: sudo apt update && sudo apt upgrade -y",
+                    "Periksa apakah diperlukan reboot setelah kernel diperbarui."
+                ],
+                "rekomendasi_en": [
+                    "Use the 'Update OS' button in the dashboard to execute automated package updates.",
+                    "Alternatively run manually on host: sudo apt update && sudo apt upgrade -y",
+                    "Check if host reboot is required after kernel packages update."
+                ],
+                "perintah_diagnosa": [
+                    "apt list --upgradable",
+                    "sudo apt update && sudo apt upgrade -s"
                 ]
             }, ensure_ascii=False)
 
@@ -3750,14 +3957,14 @@ def _resource_problem_instances(db, srv) -> list:
                 "key": "swap_critical", "severity": "danger",
                 "message": f"Swap hampir penuh: {spct:.0f}% — RAM menipis",
                 "tip": SWAP_TIP,
-                "context": _build_problem_context("ram_critical", srv, pct=spct, used=swap_used, total=swap_total),
+                "context": _build_problem_context("swap_critical", srv, pct=spct, used=swap_used, total=swap_total),
             })
         elif spct >= SWAP_WARNING_PCT:
             inst.append({
                 "key": "swap_high", "severity": "warning",
                 "message": f"Swap terpakai tinggi: {spct:.0f}%",
                 "tip": SWAP_TIP,
-                "context": _build_problem_context("ram_high", srv, pct=spct, used=swap_used, total=swap_total),
+                "context": _build_problem_context("swap_high", srv, pct=spct, used=swap_used, total=swap_total),
             })
 
     cpu_vals = [s.cpu for s in snaps if s.cpu is not None]
@@ -3797,12 +4004,14 @@ def _resource_problem_instances(db, srv) -> list:
                 "key": f"disk_critical:{mount}", "severity": "danger",
                 "message": f"Disk {mount} HAMPIR PENUH: {dpct:.0f}% ({_fmt_size(used)} / {_fmt_size(total)})",
                 "tip": DISK_TIP,
+                "context": _build_problem_context(f"disk_critical:{mount}", srv, mount=mount, used=used, total=total, pct=dpct),
             })
         elif dpct >= DISK_WARNING_PCT:
             inst.append({
                 "key": f"disk_high:{mount}", "severity": "warning",
                 "message": f"Disk {mount} terisi tinggi: {dpct:.0f}%",
                 "tip": DISK_TIP,
+                "context": _build_problem_context(f"disk_high:{mount}", srv, mount=mount, used=used, total=total, pct=dpct),
             })
     return inst
 
@@ -3840,7 +4049,8 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
         if (extras.apt_upgradable or 0) > 0:
             inst.append({"key": "apt_updates", "severity": "info",
                          "message": f"{extras.apt_upgradable} paket menunggu upgrade",
-                         "tip": APT_TIP})
+                         "tip": APT_TIP,
+                         "context": _build_problem_context("apt_updates", srv, upgradable=extras.apt_upgradable)})
         sec = _parse_extras_security(extras)
         if sec:
             failed = int(sec.get("failed") or 0)
@@ -3890,7 +4100,8 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
         elif st == "unknown":
             inst.append({"key": f"svc_no_data:{name}", "severity": "info",
                          "message": f"Layanan {name} belum ada data",
-                         "tip": SVC_NODATA_TIP})
+                         "tip": SVC_NODATA_TIP,
+                         "context": _build_problem_context(f"svc_no_data:{name}", srv, service_name=name, port=d.get("port"))})
     return inst
 
 
@@ -4425,6 +4636,57 @@ def api_alerts(
         "unack_count": len(alerts),
         "open_danger_count": len(open_danger),
         "acked_count": len(open_danger) - len(alerts),
+    }
+
+
+@app.get("/api/problems")
+def api_problems(
+    server: int | None = None,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Endpoint realtime JSON untuk halaman /problems dan pemantauan aktif."""
+    open_problems, recent_resolved = problems_aggregate(db)
+    if server:
+        open_problems = [p for p in open_problems if p.get("server_id") == server]
+        recent_resolved = [p for p in recent_resolved if p.get("server_id") == server]
+
+    def _serialize(prob):
+        p = dict(prob)
+        if isinstance(p.get("started_at"), datetime):
+            p["started_at_iso"] = p["started_at"].replace(tzinfo=None).isoformat() + "Z"
+            p["started_at_str"] = p["started_at"].strftime("%d %b %H:%M")
+            p["started_at"] = p["started_at"].strftime("%d %b %Y %H:%M:%S")
+        if isinstance(p.get("resolved_at"), datetime):
+            p["resolved_at_iso"] = p["resolved_at"].replace(tzinfo=None).isoformat() + "Z"
+            p["resolved_at_str"] = p["resolved_at"].strftime("%d %b %H:%M")
+            p["resolved_at"] = p["resolved_at"].strftime("%d %b %Y %H:%M:%S")
+        if isinstance(p.get("acknowledged_at"), datetime):
+            p["acknowledged_at_str"] = p["acknowledged_at"].strftime("%d %b %H:%M")
+            p["acknowledged_at"] = p["acknowledged_at"].strftime("%d %b %Y %H:%M:%S")
+        if isinstance(p.get("ignored_until"), datetime):
+            p["ignored_until_str"] = p["ignored_until"].strftime("%d %b %H:%M")
+            p["ignored_until"] = p["ignored_until"].strftime("%d %b %Y %H:%M:%S")
+        return p
+
+    open_serialized = [_serialize(p) for p in open_problems]
+    resolved_serialized = [_serialize(p) for p in recent_resolved]
+
+    servers_total = db.query(Server).count()
+    active_open_servers = {p["server_id"] for p in open_problems if not p.get("is_ignored")}
+
+    return {
+        "open_problems": open_serialized,
+        "recent_resolved": resolved_serialized,
+        "summary": {
+            "danger_open": sum(1 for p in open_problems if p.get("severity") == "danger" and not p.get("is_ignored")),
+            "warning_open": sum(1 for p in open_problems if p.get("severity") == "warning" and not p.get("is_ignored")),
+            "info_open": sum(1 for p in open_problems if p.get("severity") == "info" and not p.get("is_ignored")),
+            "ignored_open": sum(1 for p in open_problems if p.get("is_ignored")),
+            "ok_count": servers_total - len(active_open_servers),
+            "total_open": len(open_problems),
+            "total_resolved": len(recent_resolved),
+        }
     }
 
 
