@@ -286,8 +286,11 @@ def _is_agent_outdated(agent_ver: str | None, current_ver: str) -> bool:
     if not agent_ver:
         return False
     try:
-        v_agent = tuple(int(x) for x in re.findall(r"\d+", str(agent_ver)))
-        v_curr = tuple(int(x) for x in re.findall(r"\d+", str(current_ver)))
+        a_parts = [int(x) for x in re.findall(r"\d+", str(agent_ver))]
+        c_parts = [int(x) for x in re.findall(r"\d+", str(current_ver))]
+        max_len = max(len(a_parts), len(c_parts), 3)
+        v_agent = tuple(a_parts + [0] * (max_len - len(a_parts)))
+        v_curr = tuple(c_parts + [0] * (max_len - len(c_parts)))
         return v_agent < v_curr
     except Exception:
         return False
@@ -1192,7 +1195,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
 
 
 
-def _get_server_actions(db, sid: int, limit: int = 15) -> list[dict]:
+def _get_server_actions(db, sid: int, limit: int = 50) -> list[dict]:
     """Mengambil riwayat tindakan terpadu (commands + audit_logs) untuk server tertentu."""
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
@@ -1432,7 +1435,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "created_at": c.created_at.isoformat() if c.created_at else None,
     } for c in commands]
 
-    actions_raw = _get_server_actions(db, sid, limit=15)
+    actions_raw = _get_server_actions(db, sid, limit=50)
     actions_list = [{
         "id": a["id"],
         "time": a["time"].strftime("%H:%M:%S") if a["time"] else "",
@@ -2193,7 +2196,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         .limit(10)
         .all()
     )
-    actions = _get_server_actions(db, sid, limit=15)
+    actions = _get_server_actions(db, sid, limit=50)
     extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     svc_data = [{"name": s.service_name, "status": getattr(s, "_status", "unknown")}
                 for s in services]
@@ -2766,7 +2769,8 @@ def server_user_create(
     if not user or user.role != "admin":
         if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
-    _verify_csrf_form(request, csrf_token)
+    token = csrf_token or request.headers.get("X-CSRF-Token", "")
+    _verify_csrf_form(request, token)
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
@@ -2800,7 +2804,8 @@ def server_user_lock(
     if not user or user.role != "admin":
         if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
-    _verify_csrf_form(request, csrf_token)
+    token = csrf_token or request.headers.get("X-CSRF-Token", "")
+    _verify_csrf_form(request, token)
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
@@ -2825,7 +2830,8 @@ def server_user_unlock(
     if not user or user.role != "admin":
         if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
-    _verify_csrf_form(request, csrf_token)
+    token = csrf_token or request.headers.get("X-CSRF-Token", "")
+    _verify_csrf_form(request, token)
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
@@ -2851,7 +2857,8 @@ def server_user_delete(
     if not user or user.role != "admin":
         if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
-    _verify_csrf_form(request, csrf_token)
+    token = csrf_token or request.headers.get("X-CSRF-Token", "")
+    _verify_csrf_form(request, token)
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         if is_json: return JSONResponse({"ok": False, "detail": "Server tidak ditemukan"}, status_code=404)
@@ -4355,6 +4362,10 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 new_row.ignored_by = svc_obj.ignored_by
                 new_row.ignored_reason = svc_obj.ignored_reason
             db.add(new_row)
+            try:
+                _audit(db, "sistem", f"masalah_{p['severity']}", f"{srv.hostname}: terdeteksi [{p['severity'].upper()}] {p['message']}", "aktif", server_id=srv.id)
+            except Exception:
+                pass
         else:
             if getattr(row, "is_ignored", 0) and row.ignored_until and row.ignored_until <= now:
                 row.is_ignored = 0
@@ -4364,7 +4375,8 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 row.is_ignored = 1
                 row.ignored_until = svc_obj.ignored_until
                 row.ignored_by = svc_obj.ignored_by
-                row.ignored_reason = svc_obj.ignored_reason
+                new_row_reason = svc_obj.ignored_reason
+                row.ignored_reason = new_row_reason
 
             if active > (row.last_active_at or row.started_at):
                 row.last_active_at = active
@@ -4389,6 +4401,10 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             row.resolved_at = now
             row.updated_at = now
             row.resolved_note = "auto" if quiet > 0 else None
+            try:
+                _audit(db, "sistem", "masalah_pulih", f"{srv.hostname}: masalah '{row.message}' telah pulih", "selesai", server_id=srv.id)
+            except Exception:
+                pass
 
             if row.key.startswith("service_down:"):
                 svc_name = row.key.split(":", 1)[1]

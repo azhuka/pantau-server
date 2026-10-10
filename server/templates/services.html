@@ -1621,7 +1621,7 @@
     <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
       Membuat akun login Linux baru pada server ini. Akun akan dibuat menggunakan perintah standar sistem melalui agen.
     </p>
-    <form method="post" action="/servers/{{ server.id }}/system-users/create">
+    <form id="create-user-form" onsubmit="submitCreateUser(event)">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div style="margin-bottom:14px">
         <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Pengguna *</label>
@@ -1658,7 +1658,7 @@
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button type="button" class="btn btn-ghost" onclick="closeCreateUserModal()">Batal</button>
-        <button type="submit" class="btn btn-primary">Buat Pengguna</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit-create-user">Buat Pengguna</button>
       </div>
     </form>
   </div>
@@ -1799,28 +1799,67 @@
                 <a href="/servers/{{ server.id }}/user/{{ a.user }}" class="btn btn-ghost btn-sm">Rincian</a>
                 {% if not a.is_protected %}
                   {% if a.is_locked %}
-                  <form method="post" action="/servers/{{ server.id }}/system-users/unlock" style="display:inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="username" value="{{ a.user }}">
-                    <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="Buka kunci akun (aktifkan login)" onclick="return confirm('Buka kunci akun {{ a.user }}?')">Buka Kunci</button>
-                  </form>
+                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="Buka kunci akun (aktifkan login)" onclick="submitUserAction('unlock', '{{ a.user }}', this)">Buka Kunci</button>
                   {% else %}
-                  <form method="post" action="/servers/{{ server.id }}/system-users/lock" style="display:inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="username" value="{{ a.user }}">
-                    <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="Kunci akun (disable login)" onclick="return confirm('Kunci akun {{ a.user }}?')">Kunci</button>
-                  </form>
+                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="Kunci akun (disable login)" onclick="submitUserAction('lock', '{{ a.user }}', this)">Kunci</button>
                   {% endif %}
-                  <form method="post" action="/servers/{{ server.id }}/system-users/delete" style="display:inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="username" value="{{ a.user }}">
-                    <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="Hapus akun ini" onclick="return confirm('Hapus pengguna {{ a.user }} secara permanen?')">Hapus</button>
-                  </form>
+                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="Hapus akun ini" onclick="submitUserAction('delete', '{{ a.user }}', this)">Hapus</button>
                 {% endif %}
               </div>
             </td>
           </tr>
           {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Card Riwayat Tindakan Akun Pengguna -->
+  <div class="card" id="card-acc-action-history" style="margin-top:20px">
+    {% set acc_acts = [] %}
+    {% if actions %}
+      {% for act in actions %}
+        {% if act.action and ('user_' in act.action or 'user' in act.action or 'akun ' in (act.target|lower)) %}
+          {% set _ = acc_acts.append(act) %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    <div class="card-header" style="align-items:center;display:flex;justify-content:space-between">
+      <div>
+        <h3 style="margin:0;font-size:15px;font-weight:600">Riwayat Tindakan Akun Pengguna</h3>
+        <span style="font-size:12px;color:var(--dim)">Catatan riwayat pembuatan, penguncian, pembukaan kunci, dan penghapusan akun di server ini</span>
+      </div>
+      <span class="badge badge-muted" id="acc-action-badge">{{ acc_acts|length }} tindakan</span>
+    </div>
+    <div class="table-wrap" style="overflow-x:auto">
+      <table class="table" style="margin:0;width:100%">
+        <thead>
+          <tr>
+            <th style="width:170px">Waktu</th>
+            <th>Pengguna (Admin)</th>
+            <th>Tindakan</th>
+            <th>Target Akun</th>
+            <th>Status</th>
+            <th>Keterangan / Hasil</th>
+          </tr>
+        </thead>
+        <tbody id="acc-action-tbody">
+          {% if acc_acts %}
+            {% for a in acc_acts[:25] %}
+            <tr>
+              <td class="mono" style="white-space:nowrap">{{ a.time.strftime('%H:%M:%S') if a.time and a.time.strftime is defined else (a.time or '—') }}</td>
+              <td><span class="mono">{{ a.user or '-' }}</span></td>
+              <td><span class="badge badge-muted">{{ a.action_label or a.action or '—' }}</span></td>
+              <td style="font-size:13px"><strong>{{ a.target or '—' }}</strong></td>
+              <td><span class="badge badge-{{ a.status_cls or 'muted' }}">{{ a.status_label or a.status or '—' }}</span></td>
+              <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">{{ a.result or '—' }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+          <tr>
+            <td colspan="6" style="text-align:center;color:var(--dim);padding:20px">Belum ada riwayat tindakan akun pengguna di server ini.</td>
+          </tr>
+          {% endif %}
         </tbody>
       </table>
     </div>
@@ -2834,6 +2873,98 @@ function openCreateUserModal() {
 function closeCreateUserModal() {
   const m = document.getElementById('create-user-modal');
   if (m) m.style.display = 'none';
+}
+
+async function submitCreateUser(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const form = document.getElementById('create-user-form');
+  if (!form) return;
+  const btn = document.getElementById('btn-submit-create-user');
+  const origText = btn ? btn.textContent : 'Buat Pengguna';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Membuat...';
+  }
+
+  const formData = new FormData(form);
+  const csrf = (typeof getCsrf === 'function') ? getCsrf() : '{{ csrf_token }}';
+
+  try {
+    const r = await fetch('/servers/' + SID + '/system-users/create', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrf
+      }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && (res.ok !== false)) {
+      showToast(res.detail || 'Pengguna berhasil dibuat!', true);
+      closeCreateUserModal();
+      form.reset();
+      if (typeof fetchMetrics === 'function') fetchMetrics();
+      if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
+    } else {
+      showToast(res.detail || 'Gagal membuat pengguna.', false);
+    }
+  } catch (err) {
+    showToast('Kendala jaringan: ' + err.message, false);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+  }
+}
+
+async function submitUserAction(action, username, btn) {
+  let confirmMsg = '';
+  if (action === 'lock') {
+    confirmMsg = 'Kunci akun ' + username + ' (disable login)?';
+  } else if (action === 'unlock') {
+    confirmMsg = 'Buka kunci akun ' + username + ' (aktifkan login)?';
+  } else if (action === 'delete') {
+    confirmMsg = 'Hapus akun pengguna ' + username + ' secara permanen?';
+  }
+  if (confirmMsg && !confirm(confirmMsg)) return;
+
+  const origText = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Memproses...';
+  }
+
+  try {
+    const csrf = (typeof getCsrf === 'function') ? getCsrf() : '{{ csrf_token }}';
+    const form = new FormData();
+    form.append('csrf_token', csrf);
+    form.append('username', username);
+
+    const r = await fetch('/servers/' + SID + '/system-users/' + action, {
+      method: 'POST',
+      body: form,
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrf
+      }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && (res.ok !== false)) {
+      showToast(res.detail || ('Perintah ' + action + ' pengguna ' + username + ' berhasil dikirim.'), true);
+      if (typeof fetchMetrics === 'function') fetchMetrics();
+      if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
+    } else {
+      showToast(res.detail || ('Gagal memproses ' + action + ' akun ' + username), false);
+    }
+  } catch (err) {
+    showToast('Kendala jaringan: ' + err.message, false);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+  }
 }
 
 // === Modal: Tambah Tugas Cron ===
@@ -4062,6 +4193,35 @@ function renderActionHistory(actions) {
     </tr>`;
   }).join('');
 
+  // Sinkronkan card Riwayat Tindakan Akun Pengguna (#tab-akun)
+  const accTbody = document.getElementById('acc-action-tbody');
+  const accBadge = document.getElementById('acc-action-badge');
+  if (accTbody) {
+    const accActions = (actions || []).filter(a => {
+      const act = (a.action || '').toLowerCase();
+      const tgt = (a.target || '').toLowerCase();
+      return act.startsWith('user_') || act.includes('user') || act.includes('pengguna') || tgt.includes('akun ');
+    });
+    if (accBadge) {
+      accBadge.textContent = accActions.length + (isEn ? ' actions' : ' tindakan');
+    }
+    if (!accActions.length) {
+      accTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">' +
+        (isEn ? 'No user account action history on this server yet.' : 'Belum ada riwayat tindakan akun pengguna di server ini.') + '</td></tr>';
+    } else {
+      accTbody.innerHTML = accActions.slice(0, 25).map(a => {
+        return `<tr>
+          <td class="mono" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
+          <td><span class="mono">${escHtml(a.user || '-')}</span></td>
+          <td><span class="badge badge-muted">${escHtml(a.action_label || a.action || '—')}</span></td>
+          <td style="font-size:13px"><strong>${escHtml(a.target || '—')}</strong></td>
+          <td><span class="badge badge-${escHtml(a.status_cls || 'muted')}">${escHtml(a.status_label || a.status || '—')}</span></td>
+          <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">${escHtml(a.result || '—')}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
   if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
     applyAppLang();
   }
@@ -4419,23 +4579,11 @@ function renderSys(data) {
     let actions = '<a href="/servers/' + SID + '/user/' + userEnc + '" class="btn btn-ghost btn-sm">Rincian</a>';
     if (!isProtected) {
       if (isLocked) {
-        actions += '<form method="post" action="/servers/' + SID + '/system-users/unlock" style="display:inline">'
-          + '<input type="hidden" name="csrf_token" value="' + csrf + '">'
-          + '<input type="hidden" name="username" value="' + userEsc + '">'
-          + '<button type="submit" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="Buka kunci akun (aktifkan login)" onclick="return confirm(\'Buka kunci akun ' + userEsc + '?\')">Buka Kunci</button>'
-          + '</form>';
+        actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="Buka kunci akun (aktifkan login)" onclick="submitUserAction(\'unlock\', \'' + userEsc + '\', this)">Buka Kunci</button>';
       } else {
-        actions += '<form method="post" action="/servers/' + SID + '/system-users/lock" style="display:inline">'
-          + '<input type="hidden" name="csrf_token" value="' + csrf + '">'
-          + '<input type="hidden" name="username" value="' + userEsc + '">'
-          + '<button type="submit" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="Kunci akun (disable login)" onclick="return confirm(\'Kunci akun ' + userEsc + '?\')">Kunci</button>'
-          + '</form>';
+        actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="Kunci akun (disable login)" onclick="submitUserAction(\'lock\', \'' + userEsc + '\', this)">Kunci</button>';
       }
-      actions += '<form method="post" action="/servers/' + SID + '/system-users/delete" style="display:inline">'
-        + '<input type="hidden" name="csrf_token" value="' + csrf + '">'
-        + '<input type="hidden" name="username" value="' + userEsc + '">'
-        + '<button type="submit" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="Hapus akun ini" onclick="return confirm(\'Hapus pengguna ' + userEsc + ' secara permanen?\')">Hapus</button>'
-        + '</form>';
+      actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="Hapus akun ini" onclick="submitUserAction(\'delete\', \'' + userEsc + '\', this)">Hapus</button>';
     }
     return '<tr>'
       + '<td><strong>' + userEsc + '</strong>'
