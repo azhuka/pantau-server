@@ -4618,10 +4618,123 @@ AUDIT_ACTION_LABELS = {
     "cmd:ssl_path_add": "Tambah path SSL kustom",
     "cmd:ssl_path_remove": "Hapus path SSL kustom",
 }
+
+AUDIT_CATEGORIES = [
+    {
+        "id": "cat:auth",
+        "name": "Autentikasi & Akun",
+        "name_en": "Auth & User Accounts",
+        "keys": ["login", "user_create", "cmd:user_create", "user_lock", "cmd:user_lock", "user_unlock", "cmd:user_unlock", "user_delete", "cmd:user_delete", "user_add"],
+        "actions": [
+            ("login", "Login", "Login"),
+            ("user_create", "Buat Pengguna Sistem", "Create System User"),
+            ("user_lock", "Kunci Akun Pengguna", "Lock User Account"),
+            ("user_unlock", "Buka Kunci Akun", "Unlock User Account"),
+            ("user_delete", "Hapus Pengguna", "Delete User"),
+            ("user_add", "Tambah Akun Web", "Add Web User"),
+        ]
+    },
+    {
+        "id": "cat:service",
+        "name": "Layanan & Proses",
+        "name_en": "Services & Processes",
+        "keys": ["service_add", "service_delete", "restart", "cmd:restart", "start", "cmd:start", "stop", "cmd:stop", "kill_process", "cmd:kill_process"],
+        "actions": [
+            ("restart", "Restart Layanan", "Restart Service"),
+            ("start", "Mulai Layanan", "Start Service"),
+            ("stop", "Hentikan Layanan", "Stop Service"),
+            ("service_add", "Tambah Layanan", "Add Service"),
+            ("service_delete", "Hapus Layanan", "Delete Service"),
+            ("kill_process", "Hentikan Proses (Kill)", "Kill Process"),
+        ]
+    },
+    {
+        "id": "cat:firewall",
+        "name": "Firewall & Keamanan",
+        "name_en": "Firewall & Security",
+        "keys": ["firewall_block", "cmd:block_ip", "firewall_unblock", "cmd:unblock_ip", "firewall_enable", "cmd:firewall_enable", "firewall_disable", "cmd:firewall_disable", "firewall_reload", "cmd:firewall_reload", "firewall_port_rule", "cmd:firewall_port_rule"],
+        "actions": [
+            ("firewall_block", "Blokir IP", "Block IP"),
+            ("firewall_unblock", "Buka Blokir IP", "Unblock IP"),
+            ("firewall_enable", "Aktifkan Firewall", "Enable Firewall"),
+            ("firewall_disable", "Nonaktifkan Firewall", "Disable Firewall"),
+            ("firewall_reload", "Muat Ulang Firewall", "Reload Firewall"),
+            ("firewall_port_rule", "Aturan Port Firewall", "Port Rule"),
+        ]
+    },
+    {
+        "id": "cat:files",
+        "name": "Berkas & File Manager",
+        "name_en": "Files & File Manager",
+        "keys": ["file_save", "file_upload", "file_rm", "file_mkdir", "file_rename", "file_chmod", "file_chown"],
+        "actions": [
+            ("file_save", "Simpan / Edit Berkas", "Save / Edit File"),
+            ("file_upload", "Unggah Berkas", "Upload File"),
+            ("file_rm", "Hapus Berkas / Folder", "Delete File / Folder"),
+            ("file_mkdir", "Buat Folder", "Create Folder"),
+            ("file_rename", "Ubah Nama", "Rename File"),
+            ("file_chmod", "Ubah Izin (chmod)", "Change Permissions"),
+            ("file_chown", "Ubah Pemilik (chown)", "Change Owner"),
+        ]
+    },
+    {
+        "id": "cat:cron",
+        "name": "Tugas Terjadwal (Cron)",
+        "name_en": "Cron Jobs",
+        "keys": ["cron_add", "cmd:cron_add", "cron_toggle", "cmd:cron_toggle", "cron_delete", "cmd:cron_delete", "cron_run_now", "cmd:cron_run_now"],
+        "actions": [
+            ("cron_add", "Tambah Tugas Cron", "Add Cron Job"),
+            ("cron_toggle", "Ubah Status Cron", "Toggle Cron Job"),
+            ("cron_delete", "Hapus Tugas Cron", "Delete Cron Job"),
+            ("cron_run_now", "Uji Jalankan Cron", "Run Cron Now"),
+        ]
+    },
+    {
+        "id": "cat:ssl",
+        "name": "Sertifikat SSL",
+        "name_en": "SSL Certificates",
+        "keys": ["ssl_path_add", "cmd:ssl_path_add", "ssl_path_remove", "cmd:ssl_path_remove"],
+        "actions": [
+            ("ssl_path_add", "Tambah Lokasi SSL", "Add SSL Path"),
+            ("ssl_path_remove", "Hapus Lokasi SSL", "Remove SSL Path"),
+        ]
+    },
+    {
+        "id": "cat:apt",
+        "name": "Pembaruan OS (APT)",
+        "name_en": "OS Updates (APT)",
+        "keys": ["apt_update", "apt_upgrade", "apt_upgrade_interact"],
+        "actions": [
+            ("apt_update", "Update Paket OS (apt)", "Update Packages (apt)"),
+            ("apt_upgrade", "Upgrade Paket OS (apt)", "Upgrade Packages (apt)"),
+        ]
+    },
+    {
+        "id": "cat:server",
+        "name": "Server & Pemeliharaan",
+        "name_en": "Server & Maintenance",
+        "keys": ["server_add", "server_edit", "server_delete", "key_regenerate", "reboot_host", "cmd:reboot_host", "poweroff_host", "cmd:poweroff_host", "restart_agent", "cmd:restart_agent", "terminal_shell_open", "maintenance_mode", "alert_ack", "problem_ignore", "problem_unignore", "problem_resolve"],
+        "actions": [
+            ("server_add", "Tambah Server", "Add Server"),
+            ("server_edit", "Ubah Server", "Edit Server"),
+            ("server_delete", "Hapus Server", "Delete Server"),
+            ("key_regenerate", "Regenerasi Key", "Regenerate Key"),
+            ("reboot_host", "Reboot Server", "Reboot Server"),
+            ("poweroff_host", "Power Off Server", "Power Off Server"),
+            ("restart_agent", "Restart Agen", "Restart Agent"),
+            ("terminal_shell_open", "Buka Terminal Root", "Open Root Terminal"),
+            ("maintenance_mode", "Mode Pemeliharaan", "Maintenance Mode"),
+            ("alert_ack", "Akui Peringatan (Alert)", "Acknowledge Alert"),
+            ("problem_ignore", "Abaikan Masalah", "Mute Problem"),
+            ("problem_unignore", "Pantau Kembali Masalah", "Unmute Problem"),
+        ]
+    }
+]
+
 AUDIT_ACTION_SET = dict(AUDIT_ACTION_LABELS)
 
 
-def _audit_rows(db, limit: int = 250, q: str = "", action: str = ""):
+def _audit_rows(db, limit: int = 500, q: str = "", action: str = ""):
     """Gabungkan jejak audit_logs + tabel commands (aksi remote), urut turun waktu."""
     q = (q or "").strip().lower()
     rows: list[dict] = []
@@ -4674,8 +4787,20 @@ def _audit_rows(db, limit: int = 250, q: str = "", action: str = ""):
     if q:
         rows = [r for r in rows if q in " ".join(
             [r["user"], r["label"], r["target"], r["result"]]).lower()]
-    if action and AUDIT_ACTION_SET.get(action):
-        rows = [r for r in rows if r["key"] == action]
+
+    if action:
+        matched_keys = set()
+        for cat in AUDIT_CATEGORIES:
+            if cat["id"] == action:
+                matched_keys.update(cat["keys"])
+                break
+        if not matched_keys:
+            matched_keys.add(action)
+            matched_keys.add(f"cmd:{action}")
+            if action == "firewall_block": matched_keys.add("cmd:block_ip")
+            elif action == "firewall_unblock": matched_keys.add("cmd:unblock_ip")
+        rows = [r for r in rows if r["key"] in matched_keys or r["key"].replace("cmd:", "") == action]
+
     rows.sort(key=lambda r: r["t"], reverse=True)
     return rows[:limit]
 
@@ -4690,10 +4815,11 @@ def audit_page(
         return RedirectResponse("/login", status_code=303)
     if user.role != "admin":
         return RedirectResponse("/", status_code=303)
-    rows = _audit_rows(db, limit=250, q=q, action=action)
+    rows = _audit_rows(db, limit=500, q=q, action=action)
     return tpl(request, "audit.html", {
         "user": user, "rows": rows,
         "q": q, "action": action,
+        "categories": AUDIT_CATEGORIES,
         "actions": sorted(AUDIT_ACTION_LABELS.items()),
     })
 

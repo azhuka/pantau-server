@@ -452,6 +452,73 @@ body.show-alert-banner .main{padding-top:68px}
 .alert-tip{font-size:12px;color:var(--dim);line-height:1.5;margin-bottom:10px;white-space:pre-line}
 .alert-sub{font-size:11px;color:var(--green);margin-bottom:10px}
 .alert-panel-foot{display:flex;gap:10px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap}
+
+/* ---------- Komponen Paginasi Tabel Terpadu (Universal Table Pagination) ---------- */
+.table-pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--dim);
+}
+.table-pagination-info {
+  font-size: 11.5px;
+  color: var(--dim);
+}
+.table-pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.table-pagination-nav .btn-pg {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.table-pagination-nav .btn-pg:hover:not(:disabled) {
+  background: var(--blue-bg);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: var(--blue);
+}
+.table-pagination-nav .btn-pg:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.table-pagination-nav .page-indicator {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 11.5px;
+  padding: 0 4px;
+}
+.table-pagination-limit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.table-pagination-limit select {
+  background: rgba(9, 13, 22, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 11.5px;
+  cursor: pointer;
+  outline: none;
+}
 </style>
 </head>
 <body>
@@ -1944,6 +2011,140 @@ const UI_TEXT_PAIRS = [
   ['Buka Kunci pengguna', 'Unlock user account'],
   ['200 perintah (dari 200)', '200 commands (of 200)'],
   ['59h 12j 4m', '59d 12h 4m'],
+
+  // Kategori & Aksi Audit Trail
+  ['Autentikasi & Akun', 'Auth & Accounts'],
+  ['Layanan & Proses', 'Services & Processes'],
+  ['Firewall & Keamanan', 'Firewall & Security'],
+  ['Berkas & File Manager', 'Files & File Manager'],
+  ['Tugas Terjadwal (Cron)', 'Scheduled Tasks (Cron)'],
+  ['Sertifikat SSL', 'SSL Certificates'],
+  ['Pembaruan OS (APT)', 'OS Updates (APT)'],
+  ['Server & Pemeliharaan', 'Server & Maintenance'],
+  ['★ Semua Autentikasi & Akun', '★ All Auth & Accounts'],
+  ['★ Semua Layanan & Proses', '★ All Services & Processes'],
+  ['★ Semua Firewall & Keamanan', '★ All Firewall & Security'],
+  ['★ Semua Berkas & File Manager', '★ All Files & File Manager'],
+  ['★ Semua Tugas Terjadwal (Cron)', '★ All Scheduled Tasks (Cron)'],
+  ['★ Semua Sertifikat SSL', '★ All SSL Certificates'],
+  ['★ Semua Pembaruan OS (APT)', '★ All OS Updates (APT)'],
+  ['★ Semua Server & Pemeliharaan', '★ All Server & Maintenance'],
+  ['Buat Pengguna Sistem', 'Create System User'],
+  ['Kunci Akun Pengguna', 'Lock User Account'],
+  ['Buka Kunci Akun', 'Unlock User Account'],
+  ['Hapus Pengguna', 'Delete User'],
+  ['Tambah Akun Web', 'Add Web User'],
+  ['Restart Layanan', 'Restart Service'],
+  ['Mulai Layanan', 'Start Service'],
+  ['Hentikan Layanan', 'Stop Service'],
+  ['Hentikan Proses (Kill)', 'Kill Process'],
+  ['Blokir IP', 'Block IP'],
+  ['Buka Blokir IP', 'Unblock IP'],
+  ['Aktifkan Firewall', 'Enable Firewall'],
+  ['Nonaktifkan Firewall', 'Disable Firewall'],
+  ['Muat Ulang Firewall', 'Reload Firewall'],
+  ['Aturan Port Firewall', 'Firewall Port Rule'],
+  ['Simpan / Edit Berkas', 'Save / Edit File'],
+  ['Unggah Berkas', 'Upload File'],
+  ['Hapus Berkas / Folder', 'Delete File / Folder'],
+  ['Buat Folder', 'Create Folder'],
+  ['Ubah Nama', 'Rename File'],
+  ['Ubah Izin (chmod)', 'Change Permissions (chmod)'],
+  ['Ubah Pemilik (chown)', 'Change Owner (chown)'],
+  ['Tambah Tugas Cron', 'Add Cron Job'],
+  ['Ubah Status Cron', 'Toggle Cron Job'],
+  ['Hapus Tugas Cron', 'Delete Cron Job'],
+  ['Uji Jalankan Cron', 'Run Cron Now'],
+  ['Tambah Lokasi SSL', 'Add SSL Path'],
+  ['Hapus Lokasi SSL', 'Remove SSL Path'],
+  ['Update Paket OS (apt)', 'Update OS Packages (apt)'],
+  ['Upgrade Paket OS (apt)', 'Upgrade OS Packages (apt)'],
+  ['Tambah Server', 'Add Server'],
+  ['Ubah Server', 'Edit Server'],
+  ['Hapus Server', 'Delete Server'],
+  ['Regenerasi Key', 'Regenerate Key'],
+  ['Reboot Server', 'Reboot Server'],
+  ['Power Off Server', 'Power Off Server'],
+  ['Restart Agen', 'Restart Agent'],
+  ['Buka Terminal Root', 'Open Root Terminal'],
+  ['Mode Pemeliharaan', 'Maintenance Mode'],
+  ['Akui Peringatan (Alert)', 'Acknowledge Alert'],
+  ['Abaikan Masalah', 'Mute Problem'],
+  ['Pantau Kembali Masalah', 'Unmute Problem'],
+
+  // Paginasi & Baris Tabel
+  ['Semua baris', 'All rows'],
+  ['10 baris', '10 rows'],
+  ['25 baris', '25 rows'],
+  ['50 baris', '50 rows'],
+  ['100 baris', '100 rows'],
+  ['Semua tindakan', 'All actions'],
+  ['Semua masalah', 'All incidents'],
+  ['Semua pengguna', 'All users'],
+  ['Semua akun', 'All accounts'],
+  ['Semua port', 'All ports'],
+  ['Semua tugas', 'All tasks'],
+  ['Semua sertifikat', 'All certificates'],
+  ['Semua socket', 'All sockets'],
+  ['10 masalah', '10 incidents'],
+  ['25 masalah', '25 incidents'],
+  ['50 masalah', '50 incidents'],
+  ['100 masalah', '100 incidents'],
+  ['10 pengguna', '10 users'],
+  ['25 pengguna', '25 users'],
+  ['50 pengguna', '50 users'],
+  ['10 akun', '10 accounts'],
+  ['25 akun', '25 accounts'],
+  ['50 akun', '50 accounts'],
+  ['10 port', '10 ports'],
+  ['25 port', '25 ports'],
+  ['50 port', '50 ports'],
+  ['10 tugas', '10 tasks'],
+  ['25 tugas', '25 tasks'],
+  ['50 tugas', '50 tasks'],
+  ['10 sertifikat', '10 certificates'],
+  ['25 sertifikat', '25 certificates'],
+  ['50 sertifikat', '50 certificates'],
+  ['Menampilkan 0 dari 0', 'Showing 0 of 0'],
+  ['Halaman 1 dari 1', 'Page 1 of 1'],
+  ['Hal 1 / 1', 'Page 1 / 1'],
+
+  // Nilai Kolom & Badge
+  ['Menunggu', 'Pending'],
+  ['Dinyalakan', 'Executing'],
+  ['Berhasil', 'Success'],
+  ['Gagal', 'Failed'],
+  ['Diabaikan (🔕)', 'Muted (🔕)'],
+  ['kambuh', 'recurred'],
+  ['otomatis berakhir', 'auto-resolved'],
+  ['Ditangani oleh', 'Acknowledged by'],
+  ['ditangani oleh', 'acknowledged by'],
+  ['Aktif Normal', 'Active Normal'],
+  ['Segera Expired (<14 hr)', 'Expiring Soon (<14 d)'],
+  ['Perlu Diperbarui (<30 hr)', 'Needs Renewal (<30 d)'],
+  ['hari lagi', 'days left'],
+  ['diabaikan s/d', 'muted until'],
+  ['diabaikan permanen', 'permanently muted'],
+  ['Publik (0.0.0.0 / ::)', 'Public (0.0.0.0 / ::)'],
+  ['Lokal (Loopback)', 'Local (Loopback)'],
+  ['CRIT / EMERG', 'CRIT / EMERG'],
+  ['ERROR', 'ERROR'],
+  ['PRIO', 'PRIO'],
+  ['Dikelola', 'Managed'],
+  ['Sistem', 'System'],
+  ['Terkunci', 'Locked'],
+  ['Tanpa Shell', 'No Shell'],
+  ['Dapat Login', 'Can Login'],
+  ['🔍 Diagnosa', '🔍 Diagnose'],
+  ['Rincian', 'Details'],
+  ['🔔 Pantau Kembali', '🔔 Unmute'],
+  ['🔕 Abaikan', '🔕 Mute'],
+  ['✓ Ditangani', '✓ Acknowledged'],
+  ['Ditangani', 'Acknowledge'],
+  ['✓ diakui', '✓ acknowledged'],
+  ['Reset filter', 'Reset filter'],
+  ['Perbarui', 'Refresh'],
+  ['live ·', 'live ·'],
 ];
 
 function escapeRegExpStr(str) {
@@ -2145,6 +2346,39 @@ function translateAllUiText(targetLang) {
         a = replaceWithSmartBoundary(el.getAttribute('aria-label') || '', sortedPairs, false);
       }
       if (el.getAttribute('aria-label') !== a) el.setAttribute('aria-label', a);
+    }
+  });
+
+  // Dukungan Komprehensif Opsi Dropdown & Grup Kategori (select option & optgroup)
+  document.querySelectorAll('optgroup[label]').forEach(el => {
+    if (el._origOptLabel === undefined) {
+      el._origOptLabel = el.getAttribute('label') || '';
+    }
+    if (isEn) {
+      const t = replaceWithSmartBoundary(el._origOptLabel, sortedPairs, true);
+      if (el.getAttribute('label') !== t) el.setAttribute('label', t);
+    } else {
+      let t = el._origOptLabel;
+      if (!t || t === el.getAttribute('label')) {
+        t = replaceWithSmartBoundary(el.getAttribute('label') || '', sortedPairs, false);
+      }
+      if (el.getAttribute('label') !== t) el.setAttribute('label', t);
+    }
+  });
+
+  document.querySelectorAll('select option').forEach(el => {
+    if (el._origOptText === undefined) {
+      el._origOptText = el.textContent || '';
+    }
+    if (isEn) {
+      const t = replaceWithSmartBoundary(el._origOptText, sortedPairs, true);
+      if (el.textContent !== t) el.textContent = t;
+    } else {
+      let t = el._origOptText;
+      if (!t || t === el.textContent) {
+        t = replaceWithSmartBoundary(el.textContent || '', sortedPairs, false);
+      }
+      if (el.textContent !== t) el.textContent = t;
     }
   });
 
@@ -3202,6 +3436,161 @@ setInterval(alertFetch, 10000);
   });
   document.addEventListener('click', hide, { passive: true });
 })();
+
+// ---------- Helper Paginasi Tabel Terpadu (Universal Table Pagination Engine) ----------
+function attachTablePagination(target, options = {}) {
+  const table = typeof target === 'string' ? document.querySelector(target) : target;
+  if (!table) return null;
+  const tbody = table.tagName === 'TBODY' ? table : (table.querySelector('tbody') || table);
+  
+  const pageSizeOptions = options.pageSizeOptions || [10, 25, 50, 100, 'all'];
+  let pageSize = options.defaultLimit || 25;
+  let currentPage = 1;
+  const unitLabel = options.unitLabel || 'baris';
+  const filterFn = options.filterFn || null;
+
+  // Temukan atau buat container pagination bar
+  let bar = options.container;
+  if (!bar) {
+    const tableId = table.id || (table.tagName === 'TBODY' && table.parentElement ? table.parentElement.id : 'tbl');
+    const existing = (table.closest('.card') || table.parentElement).querySelector('.table-pagination-bar[data-for-table="' + tableId + '"]');
+    if (existing) {
+      bar = existing;
+    } else {
+      bar = document.createElement('div');
+      bar.className = 'table-pagination-bar';
+      if (tableId) bar.dataset.forTable = tableId;
+      const scrollParent = table.closest('div[style*="overflow"], .table-responsive') || table;
+      if (scrollParent.nextSibling) {
+        scrollParent.parentNode.insertBefore(bar, scrollParent.nextSibling);
+      } else {
+        scrollParent.parentNode.appendChild(bar);
+      }
+    }
+  }
+
+  bar.innerHTML = `
+    <div class="table-pagination-info" data-pg-info></div>
+    <div class="table-pagination-nav">
+      <button type="button" class="btn-pg" data-pg-prev>« Sebelumnya</button>
+      <span class="page-indicator" data-pg-cur>Hal 1 / 1</span>
+      <button type="button" class="btn-pg" data-pg-next>Berikutnya »</button>
+    </div>
+    <div class="table-pagination-limit">
+      <span data-i18n="show">Tampilkan:</span>
+      <select data-pg-select>
+        ${pageSizeOptions.map(opt => `<option value="${opt}" ${opt === pageSize ? 'selected' : ''}>${opt === 'all' ? 'Semua ' + unitLabel : opt + ' ' + unitLabel}</option>`).join('')}
+      </select>
+    </div>
+  `;
+
+  const infoEl = bar.querySelector('[data-pg-info]');
+  const prevBtn = bar.querySelector('[data-pg-prev]');
+  const nextBtn = bar.querySelector('[data-pg-next]');
+  const curEl = bar.querySelector('[data-pg-cur]');
+  const selEl = bar.querySelector('[data-pg-select]');
+
+  function update() {
+    const allRows = Array.from(tbody.querySelectorAll('tr')).filter(tr => {
+      if (tr.classList.contains('empty-msg') || tr.dataset.noPaginate === '1') return false;
+      if (tr.cells.length === 1 && tr.cells[0].colSpan > 1) return false;
+      return true;
+    });
+
+    const visibleRows = allRows.filter(tr => {
+      if (filterFn) return filterFn(tr);
+      if (tr.dataset.filterHidden === '1') return false;
+      return true;
+    });
+
+    const total = visibleRows.length;
+    const limit = (pageSize === 'all') ? total : (parseInt(pageSize, 10) || 25);
+    const totalPages = Math.max(1, Math.ceil(total / (limit || 1)));
+
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIdx = (pageSize === 'all') ? 0 : (currentPage - 1) * limit;
+    const endIdx = (pageSize === 'all') ? total : Math.min(startIdx + limit, total);
+
+    let matchedIndex = 0;
+    allRows.forEach(tr => {
+      const isMatch = visibleRows.includes(tr);
+      if (!isMatch) {
+        tr.style.display = 'none';
+      } else {
+        if (matchedIndex >= startIdx && matchedIndex < endIdx) {
+          tr.style.display = '';
+        } else {
+          tr.style.display = 'none';
+        }
+        matchedIndex++;
+      }
+    });
+
+    const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : false;
+    let displayUnit = unitLabel;
+    if (isEn) {
+      if (unitLabel === 'tindakan') displayUnit = 'actions';
+      else if (unitLabel === 'masalah') displayUnit = 'incidents';
+      else if (unitLabel === 'pengguna') displayUnit = 'users';
+      else if (unitLabel === 'akun') displayUnit = 'accounts';
+      else if (unitLabel === 'socket') displayUnit = 'sockets';
+      else if (unitLabel === 'tugas') displayUnit = 'tasks';
+      else if (unitLabel === 'sertifikat') displayUnit = 'certificates';
+      else if (unitLabel === 'baris') displayUnit = 'rows';
+    }
+
+    if (total === 0) {
+      infoEl.textContent = isEn ? `Showing 0 of 0 ${displayUnit}` : `Menampilkan 0 dari 0 ${displayUnit}`;
+      curEl.textContent = isEn ? `Page 1 of 1` : `Halaman 1 dari 1`;
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+    } else {
+      const shownStart = startIdx + 1;
+      const shownEnd = endIdx;
+      infoEl.textContent = isEn 
+        ? `Showing ${shownStart}–${shownEnd} of ${total} ${displayUnit}` 
+        : `Menampilkan ${shownStart}–${shownEnd} dari ${total} ${displayUnit}`;
+      curEl.textContent = isEn 
+        ? `Page ${currentPage} of ${totalPages}` 
+        : `Halaman ${currentPage} dari ${totalPages}`;
+      prevBtn.disabled = (currentPage <= 1);
+      nextBtn.disabled = (currentPage >= totalPages);
+    }
+
+    if (typeof applyAppLang === 'function') {
+      applyAppLang();
+    }
+  }
+
+  prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; update(); } };
+  nextBtn.onclick = () => { currentPage++; update(); };
+  selEl.onchange = (e) => {
+    pageSize = (e.target.value === 'all') ? 'all' : parseInt(e.target.value, 10);
+    currentPage = 1;
+    update();
+  };
+
+  update();
+
+  return {
+    update,
+    setPage: (p) => { currentPage = p; update(); },
+    setPageSize: (s) => { pageSize = s; selEl.value = s; currentPage = 1; update(); },
+    getPage: () => currentPage,
+    getPageSize: () => pageSize,
+    getTotalVisible: () => {
+      return Array.from(tbody.querySelectorAll('tr')).filter(tr => {
+        if (tr.classList.contains('empty-msg') || tr.dataset.noPaginate === '1') return false;
+        if (tr.cells.length === 1 && tr.cells[0].colSpan > 1) return false;
+        if (filterFn) return filterFn(tr);
+        if (tr.dataset.filterHidden === '1') return false;
+        return true;
+      }).length;
+    }
+  };
+}
 </script>
 </body>
 </html>

@@ -1323,7 +1323,7 @@
     </div>
     {% if cron_jobs and cron_jobs.jobs %}
     <div style="overflow-x:auto">
-      <table>
+      <table id="cron-table">
         <thead>
           <tr>
             <th style="width:32px">Status</th>
@@ -1500,7 +1500,7 @@
     <h4 style="margin:16px 0 10px;font-size:13px;color:var(--text);letter-spacing:.3px">Aturan Port &amp; Kebijakan Akses (Rules)</h4>
     {% if firewall and firewall.rules %}
     <div style="overflow-x:auto">
-      <table>
+      <table id="fw-rules-table">
         <thead>
           <tr>
             <th style="width:40px">#</th>
@@ -1544,7 +1544,7 @@
     </div>
     {% if firewall and firewall.blocked_ips %}
     <div style="overflow-x:auto">
-      <table>
+      <table id="fw-blocked-table">
         <thead>
           <tr>
             <th>Baris</th>
@@ -1878,7 +1878,7 @@
     </div>
     {% if listening_ports %}
     <div style="overflow-x:auto">
-      <table>
+      <table id="ports-table">
         <thead>
           <tr>
             <th style="width:70px" title="Protokol jaringan (TCP atau UDP)">Protokol</th>
@@ -1967,7 +1967,7 @@
     </div>
     {% if ssl_certs %}
     <div style="overflow-x:auto">
-      <table>
+      <table id="ssl-table">
         <thead>
           <tr>
             <th title="Domain atau Subdomain yang dilindungi oleh sertifikat">Domain / Subjek</th>
@@ -2216,9 +2216,32 @@ function showTab(name) {
   if (name === 'berkas' && typeof initFileManager === 'function') {
     initFileManager();
   }
+  if (['akun', 'ports', 'ssl', 'cron', 'firewall'].includes(name)) {
+    initServicesTabPagination();
+  }
 }
 document.querySelectorAll('#detail-tabs .tab').forEach(b =>
   b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+// Inisialisasi Paginasi Terpadu pada Seluruh Tabel Tab Detail Server
+let _servicesTabPagination = {};
+function initServicesTabPagination() {
+  if (document.getElementById('acc-table') && !_servicesTabPagination['acc']) {
+    _servicesTabPagination['acc'] = attachTablePagination('#acc-table', { unitLabel: 'akun', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+  }
+  if (document.getElementById('ports-table') && !_servicesTabPagination['ports']) {
+    _servicesTabPagination['ports'] = attachTablePagination('#ports-table', { unitLabel: 'port', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+  }
+  if (document.getElementById('cron-table') && !_servicesTabPagination['cron']) {
+    _servicesTabPagination['cron'] = attachTablePagination('#cron-table', { unitLabel: 'tugas', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+  }
+  if (document.getElementById('ssl-table') && !_servicesTabPagination['ssl']) {
+    _servicesTabPagination['ssl'] = attachTablePagination('#ssl-table', { unitLabel: 'sertifikat', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+  }
+  if (document.getElementById('fw-blocked-table') && !_servicesTabPagination['fw-blocked']) {
+    _servicesTabPagination['fw-blocked'] = attachTablePagination('#fw-blocked-table', { unitLabel: 'baris', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+  }
+}
 
 // Switcher sub-panel Logging (Log Layanan vs Log Sistem Journal)
 function switchLoggingView(view) {
@@ -5159,9 +5182,11 @@ setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
 // Deep-link tab via ?tab= (dijalankan setelah semua fungsi dan state selesai dimuat)
 (function () {
   const want = new URLSearchParams(location.search).get('tab');
-  if (!want) return;
-  const b = document.querySelector('#detail-tabs .tab[data-tab="' + want + '"]');
-  if (b) showTab(want);
+  if (want) {
+    const b = document.querySelector('#detail-tabs .tab[data-tab="' + want + '"]');
+    if (b) showTab(want);
+  }
+  initServicesTabPagination();
 })();
 
 </script>
