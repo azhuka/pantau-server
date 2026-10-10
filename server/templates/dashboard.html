@@ -235,7 +235,7 @@ function dashFilter(query){
 
 // ---------- waktu relatif ----------
 function relTime(isoStr) {
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   if (!isoStr) return isEn ? 'never' : 'belum pernah';
   const diff = Math.floor((Date.now() - new Date(isoStr + (isoStr.endsWith('Z') ? '' : 'Z')).getTime()) / 1000);
   if (diff < 0) return isEn ? 'just now' : 'baru saja';
@@ -258,6 +258,7 @@ setInterval(updateRelTimes, 10000);
 async function dashPoll() {
   if (document.hidden) return;
   try {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const r = await fetch('/api/servers', {credentials: 'same-origin'});
     if (!r.ok) return;
     const list = await r.json();
@@ -265,10 +266,10 @@ async function dashPoll() {
     list.forEach(srv => {
       const sts = document.getElementById('dash-sts-' + srv.id);
       if (sts) {
-        if (srv.is_maintenance) { sts.textContent = 'Pemeliharaan'; sts.className = 'badge badge-warn'; }
+        if (srv.is_maintenance) { sts.textContent = isEn ? 'Maintenance' : 'Pemeliharaan'; sts.className = 'badge badge-warn'; }
         else if (srv.overall_status === 'offline') { sts.textContent = 'Offline'; sts.className = 'badge badge-down'; }
         else if (srv.overall_status === 'up') { sts.textContent = 'Online'; sts.className = 'badge badge-up'; }
-        else { sts.textContent = 'Masalah'; sts.className = 'badge badge-warn'; }
+        else { sts.textContent = isEn ? 'Issues' : 'Masalah'; sts.className = 'badge badge-warn'; }
       }
       const cpu = document.getElementById('dash-cpu-' + srv.id);
       if (cpu) cpu.textContent = srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '—';
@@ -287,21 +288,21 @@ async function dashPoll() {
           const totCount = (srv.services || []).length;
           let html = '<div class="cell-stack">';
           html += '<div class="cell-row">';
-          html += '<span class="svc-pill total" title="Total layanan dipantau: ' + totCount + '">' + totCount + ' total</span>';
+          html += '<span class="svc-pill total" title="' + (isEn ? 'Total monitored services: ' : 'Total layanan dipantau: ') + totCount + '">' + totCount + ' total</span>';
           if (upList.length > 0) {
-            html += '<span class="svc-pill up" title="Layanan aktif (' + upList.length + '): ' + upList.join(', ') + '">' + upList.length + ' up</span>';
+            html += '<span class="svc-pill up" title="' + (isEn ? 'Running services (' : 'Layanan aktif (') + upList.length + '): ' + upList.join(', ') + '">' + upList.length + ' up</span>';
           }
           if (totCount === 0) {
-            html += '<span style="color:var(--dim);font-size:12px">0 layanan</span>';
+            html += '<span style="color:var(--dim);font-size:12px">' + (isEn ? '0 services' : '0 layanan') + '</span>';
           }
           html += '</div>';
           if (dnList.length > 0 || ignList.length > 0) {
             html += '<div class="cell-row">';
             if (dnList.length > 0) {
-              html += '<span class="svc-pill down" title="Layanan down (' + dnList.length + '): ' + dnList.join(', ') + '">' + dnList.length + ' down</span>';
+              html += '<span class="svc-pill down" title="' + (isEn ? 'Down services (' : 'Layanan down (') + dnList.length + '): ' + dnList.join(', ') + '">' + dnList.length + ' down</span>';
             }
             if (ignList.length > 0) {
-              html += '<span class="svc-pill ignored" title="Layanan berhenti & diabaikan (' + ignList.length + '): ' + ignList.join(', ') + '">' + ignList.length + ' diabaikan 🔕</span>';
+              html += '<span class="svc-pill ignored" title="' + (isEn ? 'Stopped & muted services (' : 'Layanan berhenti & diabaikan (') + ignList.length + '): ' + ignList.join(', ') + '">' + ignList.length + (isEn ? ' muted 🔕' : ' diabaikan 🔕') + '</span>';
             }
             html += '</div>';
           }
@@ -317,7 +318,6 @@ async function dashPoll() {
         const iCnt = srv.info_count || 0;
         const ignCnt = srv.ignored_problem_count || 0;
         const totActive = dCnt + wCnt + iCnt;
-        const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
         const _esc = s => (s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
         let html = '<div class="cell-stack"><div class="cell-row">';
@@ -340,9 +340,9 @@ async function dashPoll() {
         }
         html += '</div>';
         if (ignCnt > 0) {
-          const ignLabel = isEn ? (ignCnt + ' ignored 🔕') : (ignCnt + ' diabaikan 🔕');
+          const ignLabel = isEn ? (ignCnt + ' muted 🔕') : (ignCnt + ' diabaikan 🔕');
           html += '<div class="cell-row">';
-          html += '<span class="svc-pill ignored" title="' + _esc(srv.ignored_msgs || (ignCnt + ' masalah diabaikan')) + '">' + ignLabel + '</span>';
+          html += '<span class="svc-pill ignored" title="' + _esc(srv.ignored_msgs || (ignCnt + (isEn ? ' incidents muted' : ' masalah diabaikan'))) + '">' + ignLabel + '</span>';
           html += '</div>';
         }
         html += '</div>';
@@ -379,6 +379,11 @@ async function dashPoll() {
     }
   } catch (e) { /* abaikan */ }
 }
+
+window.onAppLangChanged = function(lang) {
+  updateRelTimes();
+  dashPoll();
+};
 
 setInterval(dashPoll, 10000);
 setTimeout(dashPoll, 800);

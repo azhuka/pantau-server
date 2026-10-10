@@ -200,6 +200,7 @@ function initProbPagination() {
 }
 
 function probFilter() {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const sev = (document.getElementById('prob-filter')?.value || '').toLowerCase();
   const q = (document.getElementById('prob-search')?.value || '').toLowerCase().trim();
   const rows = document.querySelectorAll('#probtable tbody tr');
@@ -224,14 +225,16 @@ function probFilter() {
     rows.forEach(tr => { tr.style.display = (tr.dataset.filterHidden === '1' ? 'none' : ''); });
   }
   const el = document.getElementById('prob-count');
-  if (el) el.textContent = rows.length ? vis + ' dari ' + rows.length + ' masalah' : '';
+  if (el) el.textContent = rows.length ? (isEn ? `${vis} of ${rows.length} incidents` : `${vis} dari ${rows.length} masalah`) : '';
 }
 
 async function ackProblem(id, btn, sev) {
-  const label = sev === 'danger' ? 'masalah DANGER' : 'masalah ini';
-  if (!confirm('Tandai ' + label + ' sudah ditangani?')) return;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const label = sev === 'danger' ? (isEn ? 'DANGER incident' : 'masalah DANGER') : (isEn ? 'this incident' : 'masalah ini');
+  const confirmMsg = isEn ? `Mark ${label} as acknowledged?` : `Tandai ${label} sudah ditangani?`;
+  if (!confirm(confirmMsg)) return;
   const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Menyimpan…';
+  btn.disabled = true; btn.textContent = isEn ? 'Saving…' : 'Menyimpan…';
   try {
     const r = await fetch('/api/alerts/' + id + '/ack', {
       method: 'POST',
@@ -239,20 +242,20 @@ async function ackProblem(id, btn, sev) {
       credentials: 'same-origin'
     });
     if (r.ok) {
-      showToast('Masalah ditandai sebagai ditangani.', true);
+      showToast(isEn ? 'Incident marked as acknowledged.' : 'Masalah ditandai sebagai ditangani.', true);
       const span = document.createElement('span');
       span.className = 'badge badge-up';
-      span.title = 'Diakui';
-      span.textContent = '✓ diakui';
+      span.title = isEn ? 'Acknowledged' : 'Diakui';
+      span.textContent = isEn ? '✓ acknowledged' : '✓ diakui';
       btn.replaceWith(span);
       if (typeof window.poll === 'function') window.poll();
       return;
     }
     btn.disabled = false; btn.textContent = orig;
-    showToast('Gagal menyimpan (HTTP ' + r.status + '). Coba lagi.', false);
+    showToast(isEn ? `Failed to save (HTTP ${r.status}). Try again.` : `Gagal menyimpan (HTTP ${r.status}). Coba lagi.`, false);
   } catch (e) {
     btn.disabled = false; btn.textContent = orig;
-    showToast('Kendala jaringan: ' + e.message, false);
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + e.message, false);
   }
 }
 
@@ -262,6 +265,7 @@ window.poll = async function() {
   if (_isPolling) return;
   _isPolling = true;
   try {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const url = '/api/problems' + (FILTER_SID ? '?server=' + FILTER_SID : '');
     const r = await fetch(url, { credentials: 'same-origin' });
     if (!r.ok) return;
@@ -275,8 +279,8 @@ window.poll = async function() {
       if (s.danger_open) bh += `<span class="badge badge-danger">Danger ${s.danger_open}</span> `;
       if (s.warning_open) bh += `<span class="badge badge-warn">Warning ${s.warning_open}</span> `;
       if (s.info_open) bh += `<span class="badge badge-info">Info ${s.info_open}</span> `;
-      if (s.ignored_open) bh += `<span class="badge badge-muted" title="${s.ignored_open} masalah diabaikan">🔕 ${s.ignored_open} diabaikan</span> `;
-      bh += `<span class="badge badge-up">✓ ${s.ok_count} server normal</span>`;
+      if (s.ignored_open) bh += `<span class="badge badge-muted" title="${s.ignored_open} ${isEn ? 'incidents muted' : 'masalah diabaikan'}">🔕 ${s.ignored_open} ${isEn ? 'muted' : 'diabaikan'}</span> `;
+      bh += `<span class="badge badge-up">✓ ${s.ok_count} ${isEn ? 'servers normal' : 'server normal'}</span>`;
       badgeWrap.innerHTML = bh;
     }
 
@@ -285,7 +289,7 @@ window.poll = async function() {
     if (actBadge && data.summary) {
       const s = data.summary;
       const act = s.total_open - s.ignored_open;
-      actBadge.textContent = `${act} aktif${s.ignored_open ? ' · ' + s.ignored_open + ' diabaikan' : ''}`;
+      actBadge.textContent = `${act} ${isEn ? 'active' : 'aktif'}${s.ignored_open ? ' · ' + s.ignored_open + (isEn ? ' muted' : ' diabaikan') : ''}`;
     }
 
     // 3. Perbarui Daftar Masalah Terbuka
@@ -295,20 +299,20 @@ window.poll = async function() {
       if (openList.length === 0) {
         wrapper.innerHTML = `<div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px">
           <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
-          Tidak ada masalah terbuka${FILTER_SID ? ' untuk server ini' : ''} saat ini.
+          ${isEn ? 'No open incidents' : 'Tidak ada masalah terbuka'}${FILTER_SID ? (isEn ? ' for this server' : ' untuk server ini') : ''} ${isEn ? 'at this time.' : 'saat ini.'}
         </div>`;
       } else {
         let table = document.getElementById('probtable');
         if (!table) {
           wrapper.innerHTML = `<table id="probtable">
             <thead><tr>
-              <th title="Waktu saat insiden atau masalah mulai terdeteksi">Waktu Mulai</th>
-              <th title="Mesin server tempat anomali atau gangguan terjadi">Server</th>
-              <th title="Tingkat urgensi: Danger (kritis), Warning (waspada), atau Info (informasi)">Tingkat</th>
-              <th title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
-              <th title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
-              <th title="Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan">Aksi</th>
-              <th title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Panduan Solusi</th>
+              <th title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden atau masalah mulai terdeteksi'}">${isEn ? 'Start Time' : 'Waktu Mulai'}</th>
+              <th title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">Server</th>
+              <th title="${isEn ? 'Urgency level: Danger, Warning, or Info' : 'Tingkat urgensi: Danger (kritis), Warning (waspada), atau Info (informasi)'}">${isEn ? 'Level' : 'Tingkat'}</th>
+              <th title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'Event' : 'Kejadian'}</th>
+              <th title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'Duration' : 'Durasi'}</th>
+              <th title="${isEn ? 'Action: Details, Mark Acknowledged, or Mute' : 'Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan'}">${isEn ? 'Actions' : 'Aksi'}</th>
+              <th title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'Solution Guide' : 'Panduan Solusi'}</th>
             </tr></thead>
             <tbody></tbody>
           </table>`;
@@ -320,22 +324,29 @@ window.poll = async function() {
             const isIgn = !!p.is_ignored;
             const rowStyle = isIgn ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '';
             const sevBadge = isIgn ? 'badge badge-muted' : ('badge badge-' + ({danger:'danger',warning:'warn',info:'info'}[p.severity] || 'info'));
-            const textSearch = _esc((p.hostname + ' ' + p.message + ' ' + p.key).toLowerCase());
+            let pMsg = p.message || '';
+            let pTip = p.tip || '—';
+            if (isEn && typeof replaceWithSmartBoundary === 'function' && typeof UI_TEXT_PAIRS !== 'undefined') {
+              const sortedPairs = [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length);
+              pMsg = replaceWithSmartBoundary(pMsg, sortedPairs, true);
+              pTip = replaceWithSmartBoundary(pTip, sortedPairs, true);
+            }
+            const textSearch = _esc((p.hostname + ' ' + pMsg + ' ' + (p.key || '')).toLowerCase());
             const ctxStr = p.context ? _esc(typeof p.context === 'object' ? JSON.stringify(p.context) : p.context) : '';
-            const count24 = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh ${p.count_24h}×</span>` : '';
-            const ignBadge = isIgn ? `<span class="badge badge-muted">🔕 diabaikan${p.ignored_until_str ? ' s/d ' + _esc(p.ignored_until_str) : ' permanen'}</span>` : '';
+            const count24 = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
+            const ignBadge = isIgn ? `<span class="badge badge-muted">${isEn ? '🔕 muted' : '🔕 diabaikan'}${p.ignored_until_str ? (isEn ? ' until ' : ' s/d ') + _esc(p.ignored_until_str) : (isEn ? ' permanent' : ' permanen')}</span>` : '';
 
             let ackBtn = '';
             if (p.acknowledged_by) {
-              ackBtn = `<span class="badge badge-up" style="margin-left:4px" title="Ditangani ${_esc(p.acknowledged_by)} pada ${_esc(p.acknowledged_at_str || '')}">✓ Ditangani</span>`;
+              ackBtn = `<span class="badge badge-up" style="margin-left:4px" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${_esc(p.acknowledged_by)}${p.acknowledged_at_str ? (isEn ? ' on ' : ' pada ') + _esc(p.acknowledged_at_str) : ''}">✓ ${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
             } else if (p.is_open) {
               const bcls = p.severity === 'danger' ? 'danger' : 'ghost';
-              ackBtn = `<button type="button" class="btn btn-${bcls} btn-sm" style="margin-left:4px" onclick="ackProblem(${p.id}, this, '${p.severity}')">Ditangani</button>`;
+              ackBtn = `<button type="button" class="btn btn-${bcls} btn-sm" style="margin-left:4px" onclick="ackProblem(${p.id}, this, '${p.severity}')" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${isEn ? 'Acknowledge' : 'Ditangani'}</button>`;
             }
 
             const muteBtn = isIgn
-              ? `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>`
-              : `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>`;
+              ? `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Unmute this incident' : 'Pantau kembali masalah ini'}">🔔 ${isEn ? 'Unmute' : 'Pantau Kembali'}</button>`
+              : `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)" title="${isEn ? 'Mute this incident' : 'Abaikan masalah ini'}">🔕 ${isEn ? 'Mute' : 'Abaikan'}</button>`;
 
             return `<tr${rowStyle}
               data-sev="${_esc(p.severity)}"
@@ -344,8 +355,8 @@ window.poll = async function() {
               data-prob-id="${p.id}"
               data-prob-key="${_esc(p.key)}"
               data-prob-sev="${_esc(p.severity)}"
-              data-prob-msg="${_esc(p.message)}"
-              data-prob-tip="${_esc(p.tip || '')}"
+              data-prob-msg="${_esc(pMsg)}"
+              data-prob-tip="${_esc(pTip)}"
               data-prob-start="${_esc(p.started_at || '')}"
               data-prob-res="${_esc(p.resolved_at || '')}"
               data-prob-durasi="${_esc(p.durasi || '')}"
@@ -357,20 +368,20 @@ window.poll = async function() {
               <td><strong>${_esc(p.hostname)}</strong></td>
               <td><span class="${sevBadge}">${_esc(p.severity)}${isIgn ? ' 🔕' : ''}</span></td>
               <td>
-                <span>${_esc(p.message)}</span>
+                <span>${_esc(pMsg)}</span>
                 ${ignBadge}
                 ${count24}
               </td>
               <td class="mono" data-start="${_esc(p.started_at_iso || '')}">${_esc(p.durasi || '')}</td>
               <td style="white-space:nowrap">
-                <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" style="margin-right:4px">🔍 Diagnosa</button>
-                <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm">Rincian</a>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}" style="margin-right:4px">🔍 ${isEn ? 'Diagnose' : 'Diagnosa'}</button>
+                <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm">${isEn ? 'Details' : 'Rincian'}</a>
                 ${muteBtn}
                 ${ackBtn}
               </td>
               <td style="font-size:12px;color:var(--dim);max-width:360px">
-                ${p.acknowledged_by ? '<span style="color:var(--green)">Ditangani oleh ' + _esc(p.acknowledged_by) + '</span><br>' : ''}
-                ${_esc(p.tip || '—')}
+                ${p.acknowledged_by ? '<span style="color:var(--green)">' + (isEn ? 'Acknowledged by ' : 'Ditangani oleh ') + _esc(p.acknowledged_by) + '</span><br>' : ''}
+                ${_esc(pTip)}
               </td>
             </tr>`;
           }).join('');
@@ -387,9 +398,14 @@ window.poll = async function() {
 
 window.refreshProblemsTable = window.poll;
 
+window.onAppLangChanged = function(lang) {
+  if (typeof window.poll === 'function') window.poll();
+  if (typeof probFilter === 'function') probFilter();
+};
+
 // Live durasi timer
 setInterval(() => {
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   document.querySelectorAll('#probtable [data-start]').forEach(td => {
     if (!td.dataset.start) return;
     const d = Math.floor((Date.now() - new Date(td.dataset.start).getTime()) / 1000);

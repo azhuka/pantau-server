@@ -638,12 +638,13 @@ function fmClearSelection() {
 }
 
 function fmUpdateSelectionUI() {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const bulkBar = document.getElementById('fm-bulk-bar');
   const countEl = document.getElementById('fm-bulk-count');
   const selectAll = document.getElementById('fm-select-all');
 
   const count = fmSelected.size;
-  if (countEl) countEl.textContent = `${count} item terpilih`;
+  if (countEl) countEl.textContent = isEn ? `${count} ${count === 1 ? 'item' : 'items'} selected` : `${count} item terpilih`;
   if (bulkBar) bulkBar.style.display = count > 0 ? 'flex' : 'none';
 
   if (selectAll) {
@@ -719,22 +720,25 @@ function fmClearClipboard() {
 }
 
 function fmUpdateClipboardUI() {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const clipBar = document.getElementById('fm-clipboard-bar');
   const clipDesc = document.getElementById('fm-clipboard-desc');
   const btnPaste = document.getElementById('fm-btn-paste');
 
   if (fmClipboard && fmClipboard.items && fmClipboard.items.length > 0) {
-    const actText = fmClipboard.mode === 'cut' ? 'dipotong (pindah)' : 'disalin';
+    const actText = isEn ? (fmClipboard.mode === 'cut' ? 'cut (move)' : 'copied') : (fmClipboard.mode === 'cut' ? 'dipotong (pindah)' : 'disalin');
     const count = fmClipboard.items.length;
     const names = fmClipboard.items.slice(0, 3).map(p => p.split('/').pop()).join(', ');
-    const more = count > 3 ? ` dan ${count - 3} lainnya` : '';
+    const more = count > 3 ? (isEn ? ` and ${count - 3} more` : ` dan ${count - 3} lainnya`) : '';
     if (clipDesc) {
-      clipDesc.innerHTML = `<span>📋 <strong>${count} item ${actText}</strong>: <code style="color:var(--blue)">${escapeHtml(names + more)}</code></span>`;
+      clipDesc.innerHTML = isEn
+        ? `<span>📋 <strong>${count} ${count === 1 ? 'item' : 'items'} ${actText}</strong>: <code style="color:var(--blue)">${escapeHtml(names + more)}</code></span>`
+        : `<span>📋 <strong>${count} item ${actText}</strong>: <code style="color:var(--blue)">${escapeHtml(names + more)}</code></span>`;
     }
     if (clipBar) clipBar.style.display = 'flex';
     if (btnPaste) {
       btnPaste.style.display = 'inline-flex';
-      btnPaste.textContent = `📋 Tempel (${count})`;
+      btnPaste.textContent = isEn ? `📋 Paste (${count})` : `📋 Tempel (${count})`;
     }
   } else {
     if (clipBar) clipBar.style.display = 'none';
@@ -783,12 +787,13 @@ async function fmPasteClipboard() {
 
 async function fmLoadDir(path, pushHistory = true) {
   const errBanner = document.getElementById('fm-error-banner');
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const tbody = document.getElementById('fm-tbody');
   const statsInfo = document.getElementById('fm-stats-info');
 
   errBanner.style.display = 'none';
   tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--dim)">
-    <span class="spinner" style="display:inline-block;margin-right:8px"></span> Memuat direktori <code>${escapeHtml(path)}</code>...
+    <span class="spinner" style="display:inline-block;margin-right:8px"></span> ` + (isEn ? `Loading directory <code>${escapeHtml(path)}</code>...` : `Memuat direktori <code>${escapeHtml(path)}</code>...`) + `
   </td></tr>`;
 
   try {
@@ -798,7 +803,7 @@ async function fmLoadDir(path, pushHistory = true) {
     const data = await res.json();
 
     if (!res.ok || !data.ok) {
-      throw new Error(data.detail || data.error || 'Gagal membaca direktori');
+      throw new Error(data.detail || data.error || (isEn ? 'Failed to read directory' : 'Gagal membaca direktori'));
     }
 
     fmCurrentPath = data.current_path || '/';
@@ -838,7 +843,9 @@ async function fmLoadDir(path, pushHistory = true) {
       }
     });
 
-    statsInfo.innerHTML = `<span><strong>${dirCount}</strong> folder</span> &bull; <span><strong>${fileCount}</strong> berkas</span> &bull; <span class="dim">${formatBytes(totalSize)}</span>`;
+    const folderWord = isEn ? (dirCount === 1 ? 'folder' : 'folders') : 'folder';
+    const fileWord = isEn ? (fileCount === 1 ? 'file' : 'files') : 'berkas';
+    statsInfo.innerHTML = `<span><strong>${dirCount}</strong> ${folderWord}</span> &bull; <span><strong>${fileCount}</strong> ${fileWord}</span> &bull; <span class="dim">${formatBytes(totalSize)}</span>`;
 
     const diskInfo = document.getElementById('fm-disk-info');
     const diskFill = document.getElementById('fm-disk-fill');
@@ -854,7 +861,7 @@ async function fmLoadDir(path, pushHistory = true) {
     }
 
   } catch (err) {
-    errBanner.textContent = 'Gagal membuka direktori: ' + err.message;
+    errBanner.textContent = (isEn ? 'Failed to open directory: ' : 'Gagal membuka direktori: ') + err.message;
     errBanner.style.display = 'block';
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--red)">
       ⚠️ ${escapeHtml(err.message)}
@@ -932,12 +939,13 @@ function fmFilterItems(keyword) {
 }
 
 function fmRenderItems(items) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   fmVisibleItems = items || [];
   const tbody = document.getElementById('fm-tbody');
   tbody.innerHTML = '';
 
   if (!items || items.length === 0 && fmCurrentPath === '/') {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--dim)">Direktori ini kosong.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--dim)">` + (isEn ? 'This directory is empty.' : 'Direktori ini kosong.') + `</td></tr>`;
     fmUpdateSelectionUI();
     fmUpdateClipboardUI();
     return;
@@ -952,7 +960,7 @@ function fmRenderItems(items) {
       <td colspan="6">
         <a class="fm-item-name" style="color:var(--dim)" onclick="fmLoadDir('${escapeHtml(parent)}')">
           <span class="fm-icon">📂</span>
-          <span>.. (Folder Induk)</span>
+          <span>.. ` + (isEn ? '(Parent Directory)' : '(Folder Induk)') + `</span>
         </a>
       </td>
     `;
@@ -961,7 +969,7 @@ function fmRenderItems(items) {
 
   if (items.length === 0 && fmCurrentPath !== '/') {
     const trEmpty = document.createElement('tr');
-    trEmpty.innerHTML = `<td colspan="7" style="text-align:center;padding:20px;color:var(--dim)">Tidak ada berkas lain di direktori ini.</td>`;
+    trEmpty.innerHTML = `<td colspan="7" style="text-align:center;padding:20px;color:var(--dim)">` + (isEn ? 'No other files in this directory.' : 'Tidak ada berkas lain di direktori ini.') + `</td>`;
     tbody.appendChild(trEmpty);
     fmUpdateSelectionUI();
     fmUpdateClipboardUI();
@@ -988,7 +996,7 @@ function fmRenderItems(items) {
     if (item.is_dir) {
       clickHandler = `onclick="fmLoadDir('${safePath}')"`;
     } else {
-      clickHandler = `onclick="fmOpenFile('${safePath}')" title="Klik untuk membuka / menyunting berkas"`;
+      clickHandler = `onclick="fmOpenFile('${safePath}')" title="${isEn ? 'Click to open / edit file' : 'Klik untuk membuka / menyunting berkas'}"`;
     }
 
     tr.innerHTML = `
@@ -1007,13 +1015,13 @@ function fmRenderItems(items) {
       <td style="font-size:12px">${ownerStr}</td>
       <td>${dateStr}</td>
       <td class="fm-actions-cell">
-        ${!item.is_dir ? `<button type="button" class="fm-act-btn" title="Lihat & Edit Berkas" onclick="fmOpenFile('${safePath}')">✏️</button>` : ''}
-        ${!item.is_dir ? `<button type="button" class="fm-act-btn" title="Unduh Berkas" onclick="fmDownloadFile('${safePath}')">⬇️</button>` : ''}
-        <button type="button" class="fm-act-btn" title="Salin (Copy)" onclick="fmCopySingle('${safePath}')">📋</button>
-        <button type="button" class="fm-act-btn" title="Potong (Cut)" onclick="fmCutSingle('${safePath}')">✂️</button>
-        <button type="button" class="fm-act-btn" title="Ubah Hak Akses & Pemilik (chmod/chown)" onclick="fmOpenChmod('${safePath}', '${item.mode_octal || '0644'}', '${escapeHtml(item.owner || '')}', '${escapeHtml(item.group || '')}')">⚙️</button>
-        <button type="button" class="fm-act-btn" title="Ganti Nama" onclick="fmOpenRename('${safePath}', '${safeName}')">🏷️</button>
-        <button type="button" class="fm-act-btn" style="color:var(--red)" title="Hapus" onclick="fmOpenDelete('${safePath}', ${item.is_dir})">🗑️</button>
+        ${!item.is_dir ? `<button type="button" class="fm-act-btn" title="${isEn ? 'View & Edit File' : 'Lihat & Edit Berkas'}" onclick="fmOpenFile('${safePath}')">✏️</button>` : ''}
+        ${!item.is_dir ? `<button type="button" class="fm-act-btn" title="${isEn ? 'Download File' : 'Unduh Berkas'}" onclick="fmDownloadFile('${safePath}')">⬇️</button>` : ''}
+        <button type="button" class="fm-act-btn" title="${isEn ? 'Copy' : 'Salin (Copy)'}" onclick="fmCopySingle('${safePath}')">📋</button>
+        <button type="button" class="fm-act-btn" title="${isEn ? 'Cut' : 'Potong (Cut)'}" onclick="fmCutSingle('${safePath}')">✂️</button>
+        <button type="button" class="fm-act-btn" title="${isEn ? 'Change Permissions & Owner (chmod/chown)' : 'Ubah Hak Akses & Pemilik (chmod/chown)'}" onclick="fmOpenChmod('${safePath}', '${item.mode_octal || '0644'}', '${escapeHtml(item.owner || '')}', '${escapeHtml(item.group || '')}')">⚙️</button>
+        <button type="button" class="fm-act-btn" title="${isEn ? 'Rename' : 'Ganti Nama'}" onclick="fmOpenRename('${safePath}', '${safeName}')">🏷️</button>
+        <button type="button" class="fm-act-btn" style="color:var(--red)" title="${isEn ? 'Delete' : 'Hapus'}" onclick="fmOpenDelete('${safePath}', ${item.is_dir})">🗑️</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -1036,8 +1044,9 @@ async function fmOpenFile(filePath) {
   const restoreBtn = document.getElementById('fm-editor-restore-btn');
   const saveBtn = document.getElementById('fm-editor-save-btn');
 
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   pathEl.textContent = filePath;
-  textarea.value = 'Memuat isi berkas...';
+  textarea.value = isEn ? 'Loading file content...' : 'Memuat isi berkas...';
   textarea.disabled = true;
   saveBtn.disabled = true;
   statusEl.textContent = '';
@@ -1052,14 +1061,16 @@ async function fmOpenFile(filePath) {
     const data = await res.json();
 
     if (!res.ok || !data.ok) {
-      throw new Error(data.detail || data.error || 'Gagal membaca isi berkas');
+      throw new Error(data.detail || data.error || (isEn ? 'Failed to read file content' : 'Gagal membaca isi berkas'));
     }
 
     if (data.is_binary) {
-      textarea.value = '[Berkas biner / tidak dapat ditampilkan sebagai teks]\n\nUkuran: ' + formatBytes(data.size || 0);
+      textarea.value = isEn
+        ? ('[Binary file / cannot be displayed as text]\n\nSize: ' + formatBytes(data.size || 0))
+        : ('[Berkas biner / tidak dapat ditampilkan sebagai teks]\n\nUkuran: ' + formatBytes(data.size || 0));
       textarea.disabled = true;
       saveBtn.disabled = true;
-      sizeEl.textContent = formatBytes(data.size || 0) + ' (Biner)';
+      sizeEl.textContent = formatBytes(data.size || 0) + (isEn ? ' (Binary)' : ' (Biner)');
       return;
     }
 
@@ -1075,7 +1086,7 @@ async function fmOpenFile(filePath) {
     setTimeout(() => textarea.focus(), 50);
 
   } catch (err) {
-    textarea.value = '[Gagal membuka berkas: ' + err.message + ']';
+    textarea.value = (isEn ? '[Failed to open file: ' : '[Gagal membuka berkas: ') + err.message + ']';
     textarea.disabled = true;
     saveBtn.disabled = true;
     statusEl.innerHTML = `<span style="color:var(--red)">${escapeHtml(err.message)}</span>`;
@@ -1083,6 +1094,7 @@ async function fmOpenFile(filePath) {
 }
 
 function fmCloseEditor() {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const modal = document.getElementById('fm-editor-modal');
   const card = document.getElementById('fm-editor-card');
   const btn = document.getElementById('fm-editor-fs-btn');
@@ -1091,12 +1103,13 @@ function fmCloseEditor() {
   card.classList.remove('is-fullscreen');
   if (btn) {
     btn.textContent = '⛶';
-    btn.title = 'Layar Penuh';
+    btn.title = isEn ? 'Fullscreen' : 'Layar Penuh';
   }
   fmEditingPath = null;
 }
 
 function fmToggleEditorFullscreen() {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const modal = document.getElementById('fm-editor-modal');
   const card = document.getElementById('fm-editor-card');
   const btn = document.getElementById('fm-editor-fs-btn');
@@ -1104,7 +1117,7 @@ function fmToggleEditorFullscreen() {
   modal.classList.toggle('has-fullscreen', isFs);
   if (btn) {
     btn.textContent = isFs ? '🗗' : '⛶';
-    btn.title = isFs ? 'Keluar Layar Penuh' : 'Layar Penuh';
+    btn.title = isFs ? (isEn ? 'Exit Fullscreen' : 'Keluar Layar Penuh') : (isEn ? 'Fullscreen' : 'Layar Penuh');
   }
 }
 
@@ -1114,13 +1127,14 @@ function fmReloadEditor() {
 
 async function fmSaveFile() {
   if (!fmEditingPath) return;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const textarea = document.getElementById('fm-editor-text');
   const saveBtn = document.getElementById('fm-editor-save-btn');
   const statusEl = document.getElementById('fm-editor-status');
   const restoreBtn = document.getElementById('fm-editor-restore-btn');
 
   saveBtn.disabled = true;
-  statusEl.innerHTML = '<span style="color:var(--blue)">Menyimpan...</span>';
+  statusEl.innerHTML = '<span style="color:var(--blue)">' + (isEn ? 'Saving...' : 'Menyimpan...') + '</span>';
 
   try {
     const res = await fetch(`/api/servers/${SID}/files/write`, {
@@ -1138,16 +1152,16 @@ async function fmSaveFile() {
 
     const data = await res.json();
     if (!res.ok || !data.ok) {
-      throw new Error(data.detail || data.error || 'Gagal menyimpan berkas');
+      throw new Error(data.detail || data.error || (isEn ? 'Failed to save file' : 'Gagal menyimpan berkas'));
     }
 
-    statusEl.innerHTML = '<span style="color:var(--green)">✓ Tersimpan</span>';
+    statusEl.innerHTML = '<span style="color:var(--green)">' + (isEn ? '✓ Saved' : '✓ Tersimpan') + '</span>';
     restoreBtn.style.display = 'inline-block';
     setTimeout(() => { statusEl.textContent = ''; }, 3000);
     fmLoadDir(fmCurrentPath, false);
 
   } catch (err) {
-    statusEl.innerHTML = `<span style="color:var(--red)">Gagal: ${escapeHtml(err.message)}</span>`;
+    statusEl.innerHTML = `<span style="color:var(--red)">` + (isEn ? 'Failed: ' : 'Gagal: ') + `${escapeHtml(err.message)}</span>`;
   } finally {
     saveBtn.disabled = false;
   }
@@ -1155,7 +1169,8 @@ async function fmSaveFile() {
 
 async function fmRestoreBak() {
   if (!fmEditingPath) return;
-  if (!confirm(`Kembalikan berkas ke salinan cadangan (.bak) terakhir?`)) return;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (!confirm(isEn ? 'Restore file to the latest backup (.bak)?' : 'Kembalikan berkas ke salinan cadangan (.bak) terakhir?')) return;
 
   const bakPath = fmEditingPath + '.bak';
   try {
@@ -1163,14 +1178,14 @@ async function fmRestoreBak() {
       credentials: 'same-origin'
     });
     const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error('Salinan .bak tidak ditemukan atau gagal dibaca');
+    if (!res.ok || !data.ok) throw new Error(isEn ? 'Backup file (.bak) not found or could not be read' : 'Salinan .bak tidak ditemukan atau gagal dibaca');
 
     const textarea = document.getElementById('fm-editor-text');
     textarea.value = data.content || '';
     await fmSaveFile();
-    alert('Berkas berhasil dipulihkan dari cadangan .bak!');
+    alert(isEn ? 'File successfully restored from .bak backup!' : 'Berkas berhasil dipulihkan dari cadangan .bak!');
   } catch (err) {
-    alert('Gagal memulihkan: ' + err.message);
+    alert((isEn ? 'Failed to restore: ' : 'Gagal memulihkan: ') + err.message);
   }
 }
 
@@ -1213,6 +1228,7 @@ function fmCloseUpload() {
 
 async function fmSubmitUpload(e) {
   e.preventDefault();
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const fileInput = document.getElementById('fm-upload-input');
   if (!fileInput.files || fileInput.files.length === 0) return;
 
@@ -1227,7 +1243,7 @@ async function fmSubmitUpload(e) {
   errorBox.style.display = 'none';
   progressBox.style.display = 'block';
   progressBar.style.width = '20%';
-  progressPct.textContent = 'Mengirim...';
+  progressPct.textContent = isEn ? 'Uploading...' : 'Mengirim...';
 
   const formData = new FormData();
   formData.append('file', file);
@@ -1245,11 +1261,11 @@ async function fmSubmitUpload(e) {
 
     const data = await res.json();
     if (!res.ok || !data.ok) {
-      throw new Error(data.detail || data.error || 'Gagal mengunggah berkas');
+      throw new Error(data.detail || data.error || (isEn ? 'Failed to upload file' : 'Gagal mengunggah berkas'));
     }
 
     progressBar.style.width = '100%';
-    progressPct.textContent = '100% Selesai';
+    progressPct.textContent = isEn ? '100% Completed' : '100% Selesai';
     setTimeout(() => {
       fmCloseUpload();
       fmLoadDir(fmCurrentPath, false);
@@ -1259,7 +1275,7 @@ async function fmSubmitUpload(e) {
     progressBar.style.width = '0%';
     progressBox.style.display = 'none';
     submitBtn.disabled = false;
-    errorBox.textContent = 'Gagal mengunggah: ' + err.message;
+    errorBox.textContent = (isEn ? 'Upload failed: ' : 'Gagal mengunggah: ') + err.message;
     errorBox.style.display = 'block';
   }
 }
@@ -1387,8 +1403,9 @@ async function fmSubmitRename(e) {
 // HAPUS (DELETE)
 // ===========================================================================
 function fmOpenDelete(path, isDir) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   fmDeleteTarget = path;
-  document.getElementById('fm-delete-type').textContent = isDir ? 'folder' : 'berkas';
+  document.getElementById('fm-delete-type').textContent = isDir ? 'folder' : (isEn ? 'file' : 'berkas');
   document.getElementById('fm-delete-path').textContent = path;
   document.getElementById('fm-delete-error').style.display = 'none';
   document.getElementById('fm-delete-btn').disabled = false;
@@ -1402,6 +1419,7 @@ function fmCloseDelete() {
 
 async function fmSubmitDelete() {
   if (!fmDeleteTarget) return;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const btn = document.getElementById('fm-delete-btn');
   const errorBox = document.getElementById('fm-delete-error');
   btn.disabled = true;
@@ -1415,14 +1433,14 @@ async function fmSubmitDelete() {
       body: JSON.stringify({ path: fmDeleteTarget })
     });
     const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || 'Gagal menghapus');
+    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || (isEn ? 'Failed to delete' : 'Gagal menghapus'));
 
     fmCloseDelete();
     fmLoadDir(fmCurrentPath, false);
 
   } catch (err) {
     btn.disabled = false;
-    errorBox.textContent = 'Gagal: ' + err.message;
+    errorBox.textContent = (isEn ? 'Failed: ' : 'Gagal: ') + err.message;
     errorBox.style.display = 'block';
   }
 }
@@ -1431,8 +1449,9 @@ async function fmSubmitDelete() {
 // PROMPT: BUAT FOLDER & BERKAS BARU
 // ===========================================================================
 function fmOpenNewFolder() {
-  document.getElementById('fm-prompt-title').textContent = '📁 Buat Folder Baru';
-  document.getElementById('fm-prompt-label').textContent = 'Nama Folder:';
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  document.getElementById('fm-prompt-title').textContent = isEn ? '📁 Create New Folder' : '📁 Buat Folder Baru';
+  document.getElementById('fm-prompt-label').textContent = isEn ? 'Folder Name:' : 'Nama Folder:';
   document.getElementById('fm-prompt-dest').textContent = fmCurrentPath;
   const inp = document.getElementById('fm-prompt-input');
   inp.value = '';
@@ -1448,7 +1467,7 @@ function fmOpenNewFolder() {
       body: JSON.stringify({ path: fullPath })
     });
     const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || 'Gagal membuat folder');
+    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || (isEn ? 'Failed to create folder' : 'Gagal membuat folder'));
     fmClosePrompt();
     fmLoadDir(fmCurrentPath, false);
   };
@@ -1458,8 +1477,9 @@ function fmOpenNewFolder() {
 }
 
 function fmOpenNewFile() {
-  document.getElementById('fm-prompt-title').textContent = '📄 Buat Berkas Baru';
-  document.getElementById('fm-prompt-label').textContent = 'Nama Berkas:';
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  document.getElementById('fm-prompt-title').textContent = isEn ? '📄 Create New File' : '📄 Buat Berkas Baru';
+  document.getElementById('fm-prompt-label').textContent = isEn ? 'File Name:' : 'Nama Berkas:';
   document.getElementById('fm-prompt-dest').textContent = fmCurrentPath;
   const inp = document.getElementById('fm-prompt-input');
   inp.value = '';
@@ -1475,7 +1495,7 @@ function fmOpenNewFile() {
       body: JSON.stringify({ path: fullPath })
     });
     const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || 'Gagal membuat berkas');
+    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || (isEn ? 'Failed to create file' : 'Gagal membuat berkas'));
     fmClosePrompt();
     await fmLoadDir(fmCurrentPath, false);
     fmOpenFile(fullPath);
@@ -1676,6 +1696,36 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
+
+// Sinkronisasi alih bahasa seketika
+window.onAppLangChanged = function(lang) {
+  try {
+    if (typeof fmRenderItems === 'function') {
+      const filterVal = (document.getElementById('fm-filter') ? document.getElementById('fm-filter').value : '') || '';
+      if (filterVal.trim()) {
+        fmFilterItems(filterVal);
+      } else {
+        fmRenderItems(fmSortItems(fmItems));
+      }
+    }
+    if (typeof fmUpdateSelectionUI === 'function') fmUpdateSelectionUI();
+    if (typeof fmUpdateClipboardUI === 'function') fmUpdateClipboardUI();
+    if (typeof fmItems !== 'undefined' && fmItems) {
+      let totalSize = 0, dirCount = 0, fileCount = 0;
+      fmItems.forEach(i => {
+        if (i.is_dir) dirCount++;
+        else { fileCount++; totalSize += (i.size || 0); }
+      });
+      const statsInfo = document.getElementById('fm-stats-info');
+      const isEn = (lang === 'en');
+      if (statsInfo) {
+        const folderWord = isEn ? (dirCount === 1 ? 'folder' : 'folders') : 'folder';
+        const fileWord = isEn ? (fileCount === 1 ? 'file' : 'files') : 'berkas';
+        statsInfo.innerHTML = `<span><strong>${dirCount}</strong> ${folderWord}</span> &bull; <span><strong>${fileCount}</strong> ${fileWord}</span> &bull; <span class="dim">${formatBytes(totalSize)}</span>`;
+      }
+    }
+  } catch(e) {}
+};
 
 // Inisialisasi awal saat halaman dibuka
 document.addEventListener('DOMContentLoaded', () => {

@@ -2483,6 +2483,7 @@ function renderTopProcs(data) {
   }
 
   // Terapkan Limit (20, 50, 100, all)
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const totalCount = filtered.length;
   let displayList = filtered;
   if (procLimit !== 'all') {
@@ -2490,29 +2491,31 @@ function renderTopProcs(data) {
     displayList = filtered.slice(0, maxN);
   }
 
-  if (totalBadge) totalBadge.textContent = `${displayList.length} proses`;
-  if (summaryEl) summaryEl.textContent = `Menampilkan ${displayList.length} dari total ${allList.length} proses sistem (Limit: ${procLimit === 'all' ? 'Semua' : procLimit})`;
+  if (totalBadge) totalBadge.textContent = `${displayList.length} ${isEn ? 'processes' : 'proses'}`;
+  if (summaryEl) summaryEl.textContent = isEn
+    ? `Showing ${displayList.length} of total ${allList.length} system processes (Limit: ${procLimit === 'all' ? 'All' : procLimit})`
+    : `Menampilkan ${displayList.length} dari total ${allList.length} proses sistem (Limit: ${procLimit === 'all' ? 'Semua' : procLimit})`;
 
   if (!tbody) return;
 
   if (displayList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="${IS_ADMIN ? 7 : 6}" class="empty-msg" style="text-align:center;padding:24px;color:var(--dim)">Tidak ada proses yang cocok dengan filter.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${IS_ADMIN ? 7 : 6}" class="empty-msg" style="text-align:center;padding:24px;color:var(--dim)">${isEn ? 'No processes match the filter.' : 'Tidak ada proses yang cocok dengan filter.'}</td></tr>`;
     return;
   }
 
   tbody.innerHTML = displayList.map(p => {
     const isProtected = (p.pid <= 1 || p.comm === 'sshd' || p.comm === 'agent_pantau');
     const stateChar = (p.state || 'S').toUpperCase().charAt(0);
-    let stateBadge = `<span class="badge badge-muted" title="Sleeping / Menunggu">S</span>`;
+    let stateBadge = `<span class="badge badge-muted" title="${isEn ? 'Sleeping / Waiting' : 'Sleeping / Menunggu'}">S</span>`;
     let isPaused = false;
 
     if (stateChar === 'R') {
-      stateBadge = `<span class="badge badge-up" style="font-weight:700" title="Running / Sedang Berjalan">R</span>`;
+      stateBadge = `<span class="badge badge-up" style="font-weight:700" title="${isEn ? 'Running / Active' : 'Running / Sedang Berjalan'}">R</span>`;
     } else if (stateChar === 'T') {
       isPaused = true;
-      stateBadge = `<span class="badge badge-warn" style="font-weight:700;background:rgba(234,179,8,0.2);color:#eab308" title="Stopped / Ditangguhkan (Paused)">T (Pause)</span>`;
+      stateBadge = `<span class="badge badge-warn" style="font-weight:700;background:rgba(234,179,8,0.2);color:#eab308" title="${isEn ? 'Stopped / Suspended (Paused)' : 'Stopped / Ditangguhkan (Paused)'}">T (${isEn ? 'Pause' : 'Pause'})</span>`;
     } else if (stateChar === 'Z') {
-      stateBadge = `<span class="badge badge-danger" title="Zombie Process">Z (Zombie)</span>`;
+      stateBadge = `<span class="badge badge-danger" title="${isEn ? 'Zombie Process' : 'Zombie Process'}">Z (Zombie)</span>`;
     }
 
     const cpuVal = (p.cpu !== undefined ? p.cpu : 0);
@@ -2523,21 +2526,21 @@ function renderTopProcs(data) {
     let actionBtns = '';
     if (IS_ADMIN) {
       if (isProtected) {
-        actionBtns = `<span style="font-size:11px;color:var(--dim)" title="Proses sistem terlindungi">🛡️ Sistem</span>`;
+        actionBtns = `<span style="font-size:11px;color:var(--dim)" title="${isEn ? 'Protected system process' : 'Proses sistem terlindungi'}">🛡️ ${isEn ? 'System' : 'Sistem'}</span>`;
       } else {
         const pauseBtn = isPaused ? `
           <button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3);padding:2px 6px;font-size:11px"
-                  onclick="sendProcDirectSignal(${p.pid}, '${escapeHtml(p.comm)}', 'CONT', this)" title="Lanjutkan kembali proses ini (SIGCONT)">
-            ▶ Lanjut
+                  onclick="sendProcDirectSignal(${p.pid}, '${escapeHtml(p.comm)}', 'CONT', this)" title="${isEn ? 'Resume this process (SIGCONT)' : 'Lanjutkan kembali proses ini (SIGCONT)'}">
+            ▶ ${isEn ? 'Resume' : 'Lanjut'}
           </button>` : `
           <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3);padding:2px 6px;font-size:11px"
-                  onclick="sendProcDirectSignal(${p.pid}, '${escapeHtml(p.comm)}', 'STOP', this)" title="Tangguhkan/Pause proses ini sementara (SIGSTOP)">
+                  onclick="sendProcDirectSignal(${p.pid}, '${escapeHtml(p.comm)}', 'STOP', this)" title="${isEn ? 'Suspend/Pause this process temporarily (SIGSTOP)' : 'Tangguhkan/Pause proses ini sementara (SIGSTOP)'}">
             ⏸ Pause
           </button>`;
 
         const killBtn = `
           <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.25);padding:2px 6px;font-size:11px"
-                  onclick="openKillProcModal(${p.pid}, '${escapeHtml(p.comm)}', '${isPaused ? 'CONT' : 'TERM'}')" title="Opsi Hentikan atau Pilih Sinyal">
+                  onclick="openKillProcModal(${p.pid}, '${escapeHtml(p.comm)}', '${isPaused ? 'CONT' : 'TERM'}')" title="${isEn ? 'Stop Options or Select Signal' : 'Opsi Hentikan atau Pilih Sinyal'}">
             ✕ Kill
           </button>`;
 
@@ -2659,6 +2662,7 @@ function badgeHtml(status) {
 }
 
 function renderServiceActions(sid, svcId, name, status, isPending, problem, isServiceIgnored) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const isUp = status === 'up';
   const startDis = isPending || isUp;
   const stopDis = isPending || !isUp;
@@ -2667,13 +2671,17 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
   let ignoreBtn = '';
   const isIgnored = Boolean(isServiceIgnored || (problem && problem.is_ignored));
   const probId = (problem && problem.id) ? problem.id : '';
-  const probMsg = (problem && problem.message) ? problem.message : ('Abaikan pemantauan layanan ' + name);
+  const probMsg = (problem && problem.message) ? problem.message : (isEn ? ('Mute monitoring for service ' + name) : ('Abaikan pemantauan layanan ' + name));
 
   if (isIgnored) {
-    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="Pantau kembali layanan ini">🔔 Pantau Kembali</button>';
+    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + (isEn ? 'Resume monitoring this service' : 'Pantau kembali layanan ini') + '">' + (isEn ? '🔔 Unmute' : '🔔 Pantau Kembali') + '</button>';
   } else if (!isUp) {
-    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="Abaikan pemantauan layanan ini">🔕 Abaikan</button>';
+    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="' + (isEn ? 'Mute monitoring for this service' : 'Abaikan pemantauan layanan ini') + '">' + (isEn ? '🔕 Mute' : '🔕 Abaikan') + '</button>';
   }
+
+  const startTitle = isUp ? (isEn ? 'Service is already running' : 'Layanan sudah aktif') : (isEn ? 'Start service' : 'Mulai layanan');
+  const stopTitle = !isUp ? (isEn ? 'Service is stopped' : 'Layanan sudah nonaktif / berhenti') : (isEn ? 'Stop service' : 'Hentikan layanan');
+  const pendingText = isEn ? 'pending…' : 'menunggu…';
 
   return '<button type="button" class="btn btn-primary btn-sm btn-svc-restart" '
     + (rstDis ? 'disabled ' : '')
@@ -2681,17 +2689,18 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
     + '<button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px" '
     + (startDis ? 'disabled ' : '')
     + 'onclick="svcAction(\'start\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
-    + 'title="' + (isUp ? 'Layanan sudah aktif' : 'Mulai layanan') + '">▶</button>'
+    + 'title="' + startTitle + '">▶</button>'
     + '<button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px" '
     + (stopDis ? 'disabled ' : '')
     + 'onclick="svcAction(\'stop\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
-    + 'title="' + (!isUp ? 'Layanan sudah nonaktif / berhenti' : 'Hentikan layanan') + '">■</button>'
+    + 'title="' + stopTitle + '">■</button>'
     + ignoreBtn
-    + (isPending ? ' <span class="badge badge-muted" style="margin-left:4px;font-size:10px">menunggu…</span>' : '');
+    + (isPending ? ' <span class="badge badge-muted" style="margin-left:4px;font-size:10px">' + pendingText + '</span>' : '');
 }
 
 async function restartService(sid, svcId, svcName, btn) {
-  if (!confirm('Restart service ' + svcName + ' di server ' + SERVER_NAME + '?')) return;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (!confirm(isEn ? ('Restart service ' + svcName + ' on server ' + SERVER_NAME + '?') : ('Restart service ' + svcName + ' di server ' + SERVER_NAME + '?'))) return;
   const act = document.getElementById('act-' + svcId);
   if (act) {
     act.querySelectorAll('button').forEach(b => b.disabled = true);
@@ -2699,7 +2708,7 @@ async function restartService(sid, svcId, svcName, btn) {
       const sp = document.createElement('span');
       sp.className = 'badge badge-muted';
       sp.style.cssText = 'margin-left:4px;font-size:10px';
-      sp.textContent = 'menunggu…';
+      sp.textContent = isEn ? 'pending…' : 'menunggu…';
       act.appendChild(sp);
     }
   }
@@ -2714,22 +2723,26 @@ async function restartService(sid, svcId, svcName, btn) {
     });
     const j = await r.json().catch(() => ({}));
     if (r.ok) {
-      showToast(j.detail || ('Perintah restart service ' + svcName + ' telah dikirim ke Agen Pantau.'), true);
+      showToast(j.detail || (isEn ? ('Restart command for service ' + svcName + ' has been sent to Pantau Agent.') : ('Perintah restart service ' + svcName + ' telah dikirim ke Agen Pantau.')), true);
       setTimeout(poll, 700);
     } else {
-      showToast(j.detail || 'Gagal mengirim perintah restart.', false);
+      showToast(j.detail || (isEn ? 'Failed to send restart command.' : 'Gagal mengirim perintah restart.'), false);
       setTimeout(poll, 700);
     }
   } catch (e) {
-    showToast('Kendala jaringan: ' + e.message, false);
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + e.message, false);
     setTimeout(poll, 700);
   }
 }
 
 async function svcAction(action, sid, svcId, svcName, btn) {
-  const labels = {start: 'mulai', stop: 'hentikan'};
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const labels = isEn ? {start: 'start', stop: 'stop'} : {start: 'mulai', stop: 'hentikan'};
   const label = labels[action] || action;
-  if (!confirm((action === 'stop' ? 'HENTIKAN' : 'Mulai') + ' service ' + svcName + ' di ' + SERVER_NAME + '?')) return;
+  const confirmPrompt = isEn
+    ? ((action === 'stop' ? 'STOP' : 'Start') + ' service ' + svcName + ' on ' + SERVER_NAME + '?')
+    : ((action === 'stop' ? 'HENTIKAN' : 'Mulai') + ' service ' + svcName + ' di ' + SERVER_NAME + '?');
+  if (!confirm(confirmPrompt)) return;
   const act = document.getElementById('act-' + svcId);
   if (act) {
     act.querySelectorAll('button').forEach(b => b.disabled = true);
@@ -2737,7 +2750,7 @@ async function svcAction(action, sid, svcId, svcName, btn) {
       const sp = document.createElement('span');
       sp.className = 'badge badge-muted';
       sp.style.cssText = 'margin-left:4px;font-size:10px';
-      sp.textContent = 'menunggu…';
+      sp.textContent = isEn ? 'pending…' : 'menunggu…';
       act.appendChild(sp);
     }
   }
@@ -2749,10 +2762,10 @@ async function svcAction(action, sid, svcId, svcName, btn) {
     });
     const j = await r.json().catch(() => ({}));
     if (r.ok) {
-      showToast(j.detail || 'Perintah ' + label + ' ' + svcName + ' telah dikirim.', true);
+      showToast(j.detail || (isEn ? ('Command ' + label + ' ' + svcName + ' has been sent.') : ('Perintah ' + label + ' ' + svcName + ' telah dikirim.')), true);
       setTimeout(poll, 700);
     } else {
-      showToast(j.detail || 'Gagal mengirim perintah.', false);
+      showToast(j.detail || (isEn ? 'Failed to send command.' : 'Gagal mengirim perintah.'), false);
       setTimeout(poll, 700);
     }
   } catch (e) {
@@ -2943,20 +2956,21 @@ async function submitCreateUser(e) {
 }
 
 async function submitUserAction(action, username, btn) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   let confirmMsg = '';
   if (action === 'lock') {
-    confirmMsg = 'Kunci akun ' + username + ' (disable login)?';
+    confirmMsg = isEn ? ('Lock account ' + username + ' (disable login)?') : ('Kunci akun ' + username + ' (disable login)?');
   } else if (action === 'unlock') {
-    confirmMsg = 'Buka kunci akun ' + username + ' (aktifkan login)?';
+    confirmMsg = isEn ? ('Unlock account ' + username + ' (enable login)?') : ('Buka kunci akun ' + username + ' (aktifkan login)?');
   } else if (action === 'delete') {
-    confirmMsg = 'Hapus akun pengguna ' + username + ' secara permanen?';
+    confirmMsg = isEn ? ('Permanently delete user account ' + username + '?') : ('Hapus akun pengguna ' + username + ' secara permanen?');
   }
   if (confirmMsg && !confirm(confirmMsg)) return;
 
   const origText = btn ? btn.textContent : '';
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Memproses...';
+    btn.textContent = isEn ? 'Processing...' : 'Memproses...';
   }
 
   try {
@@ -2975,14 +2989,14 @@ async function submitUserAction(action, username, btn) {
     });
     const res = await r.json().catch(() => ({}));
     if (r.ok && (res.ok !== false)) {
-      showToast(res.detail || ('Perintah ' + action + ' pengguna ' + username + ' berhasil dikirim.'), true);
+      showToast(res.detail || (isEn ? ('Action ' + action + ' for user ' + username + ' sent successfully.') : ('Perintah ' + action + ' pengguna ' + username + ' berhasil dikirim.')), true);
       if (typeof fetchMetrics === 'function') fetchMetrics();
       if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
     } else {
-      showToast(res.detail || ('Gagal memproses ' + action + ' akun ' + username), false);
+      showToast(res.detail || (isEn ? ('Failed to ' + action + ' account ' + username) : ('Gagal memproses ' + action + ' akun ' + username)), false);
     }
   } catch (err) {
-    showToast('Kendala jaringan: ' + err.message, false);
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -3013,7 +3027,8 @@ function closeAddSslPathModal() {
 
 
 async function ackProblemInDetail(id, btn) {
-  if (!confirm('Tandai masalah ini sudah ditangani?')) return;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (!confirm(isEn ? 'Mark this problem as resolved?' : 'Tandai masalah ini sudah ditangani?')) return;
   const orig = btn.textContent;
   btn.disabled = true; btn.textContent = '…';
   try {
@@ -3023,27 +3038,27 @@ async function ackProblemInDetail(id, btn) {
       credentials: 'same-origin'
     });
     if (r.ok) {
-      showToast('Masalah ditandai sebagai ditangani.', true);
-      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+      showToast(isEn ? 'Problem marked as resolved.' : 'Masalah ditandai sebagai ditangani.', true);
       btn.className = 'badge badge-up';
       btn.textContent = isEn ? '✓ Acknowledged' : '✓ Diakui';
       btn.onclick = null;
       if (typeof poll === 'function') poll();
       return;
     }
-    showToast('Gagal menyimpan (HTTP ' + r.status + ').', false);
+    showToast((isEn ? 'Failed to save (HTTP ' : 'Gagal menyimpan (HTTP ') + r.status + ').', false);
   } catch (e) {
-    showToast('Kendala jaringan: ' + e.message, false);
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + e.message, false);
   }
   btn.disabled = false; btn.textContent = orig;
 }
 
 async function deleteService(sid, svcId, svcName, btn) {
-  if (!confirm('Hapus service ' + svcName + '?')) return;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (!confirm(isEn ? ('Delete service ' + svcName + '?') : ('Hapus service ' + svcName + '?'))) return;
   const tr = btn.closest('tr');
   const originalHtml = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = 'Menghapus…';
+  btn.innerHTML = isEn ? 'Deleting…' : 'Menghapus…';
   try {
     const r = await fetch('/servers/' + sid + '/services/' + svcId + '/delete', {
       method: 'POST',
@@ -3055,11 +3070,19 @@ async function deleteService(sid, svcId, svcName, btn) {
     });
     const j = await r.json().catch(() => ({}));
     if (r.ok) {
-      showToast('Service ' + svcName + ' telah dihapus.', true);
+      showToast(isEn ? ('Service ' + svcName + ' deleted.') : ('Service ' + svcName + ' telah dihapus.'), true);
       if (tr) tr.remove();
     } else {
-      showToast(j.detail || 'Gagal menghapus service.', false);
+      showToast(j.detail || (isEn ? 'Failed to delete service.' : 'Gagal menghapus service.'), false);
       btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  } catch (e) {
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + e.message, false);
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
       btn.innerHTML = originalHtml;
     }
   } catch (e) {
@@ -4457,7 +4480,8 @@ function patch(data) {
     } else {
       if (hm) hm.style.display = 'none';
       if (bm) bm.classList.remove('btn-maint-active-state');
-      if (ml) ml.textContent = 'Pemeliharaan';
+      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+      if (ml) ml.textContent = isEn ? 'Maintenance' : 'Pemeliharaan';
     }
   }
   const ackx = document.getElementById('host-ack');
@@ -4468,13 +4492,14 @@ function patch(data) {
     ackLive(ackx.dataset.mode, recent);
   }
   if (data.services) primeSvcGraph(data.services);
+  const isEnPatch = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   for (const s of data.services) {
     const sts = document.getElementById('sts-' + s.id);
     if (sts) {
       if (s.status === 'down' && s.ignored) {
-        sts.innerHTML = '<span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down 🔕</span>';
+        sts.innerHTML = '<span class="badge badge-muted" title="' + (isEnPatch ? 'Service stopped (monitoring muted)' : 'Layanan berhenti (diabaikan)') + '">down 🔕</span>';
       } else if (s.status === 'up' && s.ignored) {
-        sts.innerHTML = '<span class="badge badge-up" title="Layanan aktif (pengawasan down diabaikan)">up 🔕</span>';
+        sts.innerHTML = '<span class="badge badge-up" title="' + (isEnPatch ? 'Service running (down monitoring muted)' : 'Layanan aktif (pengawasan down diabaikan)') + '">up 🔕</span>';
       } else {
         const st = s.status === 'unknown' ? 'inactive' : s.status;
         sts.innerHTML = '<span class="badge badge-' + st + '">' + escHtml(s.status) + '</span>';
@@ -4741,19 +4766,19 @@ function renderSys(data) {
     const isLocked = a.is_locked === true;
     const userEnc = encodeURIComponent(a.user);
     const userEsc = escHtml(a.user);
-    let actions = '<a href="/servers/' + SID + '/user/' + userEnc + '" class="btn btn-ghost btn-sm">Rincian</a>';
+    let actions = '<a href="/servers/' + SID + '/user/' + userEnc + '" class="btn btn-ghost btn-sm">' + (isEn ? 'Details' : 'Rincian') + '</a>';
     if (!isProtected) {
       if (isLocked) {
-        actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="Buka kunci akun (aktifkan login)" onclick="submitUserAction(\'unlock\', \'' + userEsc + '\', this)">Buka Kunci</button>';
+        actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="' + (isEn ? 'Unlock account (enable login)' : 'Buka kunci akun (aktifkan login)') + '" onclick="submitUserAction(\'unlock\', \'' + userEsc + '\', this)">' + (isEn ? 'Unlock' : 'Buka Kunci') + '</button>';
       } else {
-        actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="Kunci akun (disable login)" onclick="submitUserAction(\'lock\', \'' + userEsc + '\', this)">Kunci</button>';
+        actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="' + (isEn ? 'Lock account (disable login)' : 'Kunci akun (disable login)') + '" onclick="submitUserAction(\'lock\', \'' + userEsc + '\', this)">' + (isEn ? 'Lock' : 'Kunci') + '</button>';
       }
-      actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="Hapus akun ini" onclick="submitUserAction(\'delete\', \'' + userEsc + '\', this)">Hapus</button>';
+      actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="' + (isEn ? 'Delete this account' : 'Hapus akun ini') + '" onclick="submitUserAction(\'delete\', \'' + userEsc + '\', this)">' + (isEn ? 'Delete' : 'Hapus') + '</button>';
     }
     return '<tr>'
       + '<td><strong>' + userEsc + '</strong>'
-      + (isProtected ? ' <span class="badge badge-muted" style="font-size:10px" title="Akun sistem terlindungi">Sistem</span>' : '')
-      + (isLocked ? ' <span class="badge badge-warn" style="font-size:10px" title="Akun saat ini terkunci">Terkunci</span>' : '') + '</td>'
+      + (isProtected ? ' <span class="badge badge-muted" style="font-size:10px" title="' + (isEn ? 'Protected system account' : 'Akun sistem terlindungi') + '">' + (isEn ? 'System' : 'Sistem') + '</span>' : '')
+      + (isLocked ? ' <span class="badge badge-warn" style="font-size:10px" title="' + (isEn ? 'Account is currently locked' : 'Akun saat ini terkunci') + '">' + (isEn ? 'Locked' : 'Terkunci') + '</span>' : '') + '</td>'
       + '<td class="mono">' + escHtml(String(a.uid)) + '</td>'
       + '<td class="mono">' + escHtml(a.shell || '-') + '</td>'
       + '<td style="font-size:12px;color:var(--dim)">' + escHtml(a.last_login || '-') + '</td>'
@@ -4765,7 +4790,7 @@ function renderSys(data) {
   }).join('');
 
   const accBadge = document.getElementById('acc-count-badge');
-  if (accBadge) accBadge.textContent = acc.length + ' Akun';
+  if (accBadge) accBadge.textContent = acc.length + (isEn ? (acc.length === 1 ? ' Account' : ' Accounts') : ' Akun');
 
   // Periksa apakah performa server overload untuk tab-dot-perf
   const isHighCpu = (cpu > 85);
