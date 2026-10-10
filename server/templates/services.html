@@ -864,6 +864,8 @@
           </form>
         {% elif p.is_open and p.action == 'apt_update' %}
           <button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">Update OS</button>
+        {% elif p.is_open and p.action == 'agent_update_cmd' %}
+          <button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard">📋 Update Agen</button>
         {% endif %}
 
         {% if p.is_open %}
@@ -3788,6 +3790,8 @@ function renderProblemsTab(level, openList, histList) {
         </form>`;
       } else if (p.action === 'apt_update') {
         actHtml += `<button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">Update OS</button>`;
+      } else if (p.action === 'agent_update_cmd') {
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard">📋 Update Agen</button>`;
       }
 
       if (isIgnored) {

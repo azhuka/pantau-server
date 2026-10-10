@@ -1906,6 +1906,9 @@ const UI_TEXT_PAIRS = [
   ['Setiap blok menunjukkan status pada interval waktu tersebut', 'Each block indicates status at that time interval'],
   ['Tanpa Data', 'No Data'],
   ['Sekarang', 'Now'],
+  ['📋 Update Agen', '📋 Update Agent'],
+  ['Update Agen', 'Update Agent'],
+  ['Nihil', 'None'],
 ];
 
 function escapeRegExpStr(str) {
@@ -2763,7 +2766,22 @@ function renderProblemDetailModal(p) {
       recoList = isEn
         ? ['Use "Update OS" button in dashboard or run: sudo apt update && sudo apt upgrade -y', 'Inspect upgradable packages list']
         : ['Gunakan tombol Update OS di dashboard atau jalankan: sudo apt update && sudo apt upgrade -y', 'Periksa daftar paket yang siap diperbarui'];
-      cmdList = ['apt list --upgradable', 'sudo apt update && sudo apt upgrade -s'];
+    } else if (p.key === 'agent_outdated') {
+      const curVer = (ctx.data_teknis && ctx.data_teknis.agent_version) || 'lama';
+      const targetVer = (ctx.data_teknis && ctx.data_teknis.dashboard_version) || 'terbaru';
+      causeText = isEn
+        ? `Pantau Agent version on this host (${curVer}) is older than dashboard (${targetVer}).`
+        : `Versi Agen Pantau di server ini (${curVer}) lebih lama dari dashboard (${targetVer}).`;
+      impactText = isEn
+        ? 'Advanced process snapshot telemetry and monitoring performance may be degraded or limited.'
+        : 'Telemetri snapshot proses tingkat lanjut dan stabilitas pelaporan metrik sistem belum optimal.';
+      recoList = isEn
+        ? ['Run update command on host: sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service', 'Restart agent service: sudo systemctl restart agent_pantau.service']
+        : ['Jalankan perintah update di server: sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service', 'Mulai ulang agen: sudo systemctl restart agent_pantau.service'];
+      cmdList = [
+        'sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service',
+        'sudo systemctl status agent_pantau.service'
+      ];
     } else {
       causeText = p.message || (isEn ? 'System anomaly detected by metrics evaluation engine.' : 'Anomali terdeteksi oleh sistem evaluator metrik.');
       if (p.tip) recoList = [p.tip];
@@ -2805,6 +2823,9 @@ function renderProblemDetailModal(p) {
     }
     if (tech.mount_point) {
       techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Disk Partition' : 'Partisi Disk'}</td><td><span class="mono">${_esc(tech.mount_point)}</span> (${_esc(tech.disk_percent)}%)</td></tr>`);
+    }
+    if (tech.agent_version) {
+      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Agent Version' : 'Versi Agen'}</td><td><span class="mono">${_esc(tech.agent_version)}</span> <span style="color:var(--dim)">(${isEn ? 'Latest: ' : 'Terbaru: '}${_esc(tech.dashboard_version || '')})</span></td></tr>`);
     }
     if (tech.paket_upgradable !== undefined) {
       techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'OS Updates' : 'Paket OS Siap Upgrade'}</td><td><strong>${_esc(tech.paket_upgradable)} ${isEn ? 'packages' : 'paket'}</strong></td></tr>`);
@@ -2862,6 +2883,10 @@ function renderProblemDetailModal(p) {
         const logBtnText = isEn ? '📜 View SSH Auth Logs' : '📜 Lihat Log Auth SSH';
         btns.push(`<button type="button" class="btn btn-ghost btn-sm" onclick="closeProblemDetailModal(); jumpToLog('AUTH');">${logBtnText}</button>`);
       }
+    } else if (p.key === 'agent_outdated') {
+      const updateCmd = "sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service";
+      const copyBtnText = isEn ? '📋 Copy Update Command' : '📋 Salin Perintah Update';
+      btns.push(`<button type="button" class="btn btn-ghost btn-sm" onclick="copyCommandText(this, '${updateCmd}')">${copyBtnText}</button>`);
     }
     const closeBtnText = isEn ? 'Close' : 'Tutup';
     btns.push(`<button type="button" class="btn btn-primary btn-sm" onclick="closeProblemDetailModal()">${closeBtnText}</button>`);

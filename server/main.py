@@ -1144,8 +1144,21 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
         uptime_secs = latest_sys.uptime_secs if latest_sys else None
         down_svc_count = sum(1 for s in svc_list if s["status"] in ("down", "offline") and not s.get("ignored"))
         ignored_svc_count = sum(1 for s in svc_list if s["status"] in ("down", "offline") and s.get("ignored"))
-        active_prob_count = sum(1 for p in open_prob if not p.get("is_ignored"))
-        ignored_prob_count = sum(1 for p in open_prob if p.get("is_ignored"))
+        active_p = [p for p in open_prob if not p.get("is_ignored")]
+        danger_p = [p for p in active_p if p.get("severity") == "danger"]
+        warning_p = [p for p in active_p if p.get("severity") == "warning"]
+        info_p = [p for p in active_p if p.get("severity") == "info"]
+        ignored_p = [p for p in open_prob if p.get("is_ignored")]
+
+        danger_count = len(danger_p)
+        warning_count = len(warning_p)
+        info_count = len(info_p)
+        active_prob_count = len(active_p)
+        ignored_prob_count = len(ignored_p)
+        danger_msgs = " • ".join(p.get("message", "") for p in danger_p)
+        warning_msgs = " • ".join(p.get("message", "") for p in warning_p)
+        info_msgs = " • ".join(p.get("message", "") for p in info_p)
+        ignored_msgs = " • ".join(p.get("message", "") for p in ignored_p)
 
         result.append({
             "id": srv.id, "hostname": srv.hostname, "ip_address": srv.ip_address,
@@ -1167,6 +1180,13 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             "problem_level": prob_level,
             "active_problem_count": active_prob_count,
             "ignored_problem_count": ignored_prob_count,
+            "danger_count": danger_count,
+            "warning_count": warning_count,
+            "info_count": info_count,
+            "danger_msgs": danger_msgs,
+            "warning_msgs": warning_msgs,
+            "info_msgs": info_msgs,
+            "ignored_msgs": ignored_msgs,
         })
     return result
 
@@ -1900,6 +1920,21 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         # Sync problems terlebih dahulu agar status ignored diketahui
         srv._problem_level, srv._problems, _ph = sync_server_problems(
             db, srv, _problem_instances(srv, ex, srv._svc_data, db))
+        active_probs = [p for p in srv._problems if not p.get("is_ignored")]
+        danger_probs = [p for p in active_probs if p.get("severity") == "danger"]
+        warning_probs = [p for p in active_probs if p.get("severity") == "warning"]
+        info_probs = [p for p in active_probs if p.get("severity") == "info"]
+        ignored_probs = [p for p in srv._problems if p.get("is_ignored")]
+
+        srv._danger_count = len(danger_probs)
+        srv._warning_count = len(warning_probs)
+        srv._info_count = len(info_probs)
+        srv._ignored_count = len(ignored_probs)
+        srv._danger_msgs = " • ".join(p.get("message", "") for p in danger_probs)
+        srv._warning_msgs = " • ".join(p.get("message", "") for p in warning_probs)
+        srv._info_msgs = " • ".join(p.get("message", "") for p in info_probs)
+        srv._ignored_msgs = " • ".join(p.get("message", "") for p in ignored_probs)
+
         ignored_keys = {p.get("key") for p in srv._problems if p.get("is_ignored")}
         svc_ignored_db = {s.service_name for s in services if getattr(s, "is_ignored", 0)}
         unignored_down = 0
@@ -3781,6 +3816,41 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 ]
             }, ensure_ascii=False)
 
+        # 11. Agen Perlu Pembaruan (Agent Outdated)
+        if key == "agent_outdated":
+            agent_ver = kwargs.get("agent_version") or getattr(srv, "_agent_version", None) or "lama"
+            app_ver = kwargs.get("app_version") or settings.APP_VERSION
+            return json.dumps({
+                "diagnosa": f"Versi Agen Pantau Usang (v{agent_ver})",
+                "diagnosa_en": f"Outdated Pantau Agent Version (v{agent_ver})",
+                "penyebab": f"Agen pemantau di host {srv.hostname} berjalan pada versi v{agent_ver}, sedangkan dashboard pusat berada pada versi v{app_ver}. Fitur telemetri terbaru, stabilitas proses snapshot, dan perbaikan agen belum aktif pada host ini.",
+                "penyebab_en": f"Monitoring agent on host {srv.hostname} is running version v{agent_ver}, while central dashboard is running v{app_ver}. Latest telemetry capabilities, snapshot stability, and agent patches are not active on this host.",
+                "dampak": "Metrik kinerja snapshot mungkin tidak lengkap dan berisiko mengalami anomali kompatibilitas.",
+                "dampak_en": "System metrics telemetry may be incomplete and risks protocol discrepancies with the central server.",
+                "data_teknis": {
+                    "versi_agen_klien": f"v{agent_ver}",
+                    "versi_dashboard_pusat": f"v{app_ver}",
+                    "server_hostname": srv.hostname,
+                    "server_ip": srv.ip_address,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    "Jalankan perintah pembaruan agen otomatis di terminal server klien.",
+                    "Pastikan daemon agent_pantau kembali aktif setelah pembaruan: sudo systemctl status agent_pantau",
+                    "Muat ulang dashboard setelah agen berhasil mengirimkan telemetri versi baru."
+                ],
+                "rekomendasi_en": [
+                    "Execute the automated agent update command on the client server terminal.",
+                    "Verify agent_pantau service is active following update: sudo systemctl status agent_pantau",
+                    "Reload dashboard once the agent transmits updated telemetry."
+                ],
+                "perintah_diagnosa": [
+                    "sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service",
+                    "sudo systemctl status agent_pantau",
+                    "python3 /opt/pantau/agent/agent_pantau.py --version"
+                ]
+            }, ensure_ascii=False)
+
     except Exception as e:
         logger.warning("[CONTEXT] Gagal menyusun konteks masalah %s: %s", key, e)
     return None
@@ -3894,6 +3964,12 @@ SVC_DOWN_TIP = ("Cek status: sudo systemctl status {name} | Mulai ulang: "
 SVC_NODATA_TIP = "Pastikan service benar-benar ada & port terbuka (ss -tlnp); agen memindai ulang tiap siklus."
 AGENT_STALE_TIP = ("Agen tidak melapor — mulai ulang: sudo systemctl restart agent_pantau | "
                    "Log: journalctl -u agent_pantau -n 30")
+AGENT_OUTDATED_TIP = (
+    "Versi agen di server ini lebih lama dari dashboard. Update via terminal server klien: "
+    "sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py "
+    "https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py "
+    "&& sudo systemctl restart agent_pantau.service"
+)
 
 
 def _fmt_size(n: int | float | None) -> str:
@@ -4046,6 +4122,14 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                      "tip": AGENT_STALE_TIP,
                      "context": _build_problem_context("agent_stale", srv)})
     if extras is not None:
+        if extras.agent_version and _is_agent_outdated(extras.agent_version, settings.APP_VERSION):
+            inst.append({
+                "key": "agent_outdated",
+                "severity": "warning",
+                "message": f"Versi Agen Pantau di server ini (v{extras.agent_version}) lebih lama dari dashboard (v{settings.APP_VERSION}) — perlu update",
+                "tip": AGENT_OUTDATED_TIP,
+                "context": _build_problem_context("agent_outdated", srv, agent_version=extras.agent_version, app_version=settings.APP_VERSION),
+            })
         if (extras.apt_upgradable or 0) > 0:
             inst.append({"key": "apt_updates", "severity": "info",
                          "message": f"{extras.apt_upgradable} paket menunggu upgrade",
@@ -4177,6 +4261,8 @@ def _enrich_problems_for_ui(open_problems, services, extra, user_role="viewer"):
             r["ip_count"] = len(sec.get("source_ips") or {})
         elif r["key"] == "agent_stale":
             r["action"] = "agent_restart"
+        elif r["key"] == "agent_outdated":
+            r["action"] = "agent_update_cmd"
         elif r["key"] == "apt_updates":
             r["action"] = "apt_update" if user_role == "admin" else None
         else:

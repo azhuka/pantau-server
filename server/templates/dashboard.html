@@ -155,20 +155,30 @@
         {% if srv._problem_level is none %}
           <span style="color:var(--dim)">—</span>
         {% else %}
-          {% set plabel = {'ok':'Nihil','info':'Info','warning':'Warning','danger':'Danger'}[srv._problem_level] %}
-          {% set pcls = {'ok':'up','info':'info','warning':'warn','danger':'danger'}[srv._problem_level] %}
-          {% set ign_count = srv._problems | selectattr('is_ignored') | list | length if srv._problems else 0 %}
-          {% set active_msgs = srv._problems | rejectattr('is_ignored') | map(attribute='message') | join(' • ') if srv._problems else '' %}
-          {% set ign_msgs = srv._problems | selectattr('is_ignored') | map(attribute='message') | join(' • ') if srv._problems else '' %}
+          {% set ign_count = srv._ignored_count if srv._ignored_count is defined else (srv._problems | selectattr('is_ignored') | list | length if srv._problems else 0) %}
+          {% set d_cnt = srv._danger_count if srv._danger_count is defined else 0 %}
+          {% set w_cnt = srv._warning_count if srv._warning_count is defined else 0 %}
+          {% set i_cnt = srv._info_count if srv._info_count is defined else 0 %}
+          {% set tot_active = d_cnt + w_cnt + i_cnt %}
           <div class="cell-stack">
             <div class="cell-row">
-              <span class="badge badge-{{ pcls }}" title="{{ active_msgs if active_msgs else ('Semua masalah diabaikan' if ign_count else 'Kondisi normal') }}">
-                {{ plabel }}
-              </span>
+              {% if tot_active == 0 %}
+                <span class="badge badge-up" title="{{ 'Semua masalah diabaikan' if ign_count else 'Kondisi normal' }}">Nihil</span>
+              {% else %}
+                {% if d_cnt > 0 %}
+                  <span class="badge badge-danger" title="{{ srv._danger_msgs }}">{{ 'Danger ' ~ d_cnt if (tot_active > 1 or d_cnt > 1) else 'Danger' }}</span>
+                {% endif %}
+                {% if w_cnt > 0 %}
+                  <span class="badge badge-warn" title="{{ srv._warning_msgs }}">{{ 'Warning ' ~ w_cnt if (tot_active > 1 or w_cnt > 1) else 'Warning' }}</span>
+                {% endif %}
+                {% if i_cnt > 0 %}
+                  <span class="badge badge-info" title="{{ srv._info_msgs }}">{{ 'Info ' ~ i_cnt if (tot_active > 1 or i_cnt > 1) else 'Info' }}</span>
+                {% endif %}
+              {% endif %}
             </div>
             {% if ign_count > 0 %}
             <div class="cell-row">
-              <span class="svc-pill ignored" title="Masalah diabaikan ({{ ign_count }}): {{ ign_msgs }}">{{ ign_count }} diabaikan 🔕</span>
+              <span class="svc-pill ignored" title="Masalah diabaikan ({{ ign_count }}): {{ srv._ignored_msgs if srv._ignored_msgs is defined else '' }}">{{ ign_count }} diabaikan 🔕</span>
             </div>
             {% endif %}
           </div>
@@ -302,15 +312,37 @@ async function dashPoll() {
 
       const probEl = document.getElementById('dash-prob-' + srv.id);
       if (probEl && srv.problem_level != null) {
-        const plabel = {'ok':'Nihil','info':'Info','warning':'Warning','danger':'Danger'}[srv.problem_level] || srv.problem_level;
-        const pcls = {'ok':'up','info':'info','warning':'warn','danger':'danger'}[srv.problem_level] || 'muted';
-        let html = '<div class="cell-stack">';
-        html += '<div class="cell-row">';
-        html += '<span class="badge badge-' + pcls + '">' + plabel + '</span>';
+        const dCnt = srv.danger_count || 0;
+        const wCnt = srv.warning_count || 0;
+        const iCnt = srv.info_count || 0;
+        const ignCnt = srv.ignored_problem_count || 0;
+        const totActive = dCnt + wCnt + iCnt;
+        const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+
+        const _esc = s => (s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
+        let html = '<div class="cell-stack"><div class="cell-row">';
+        if (totActive === 0) {
+          const title = ignCnt > 0 ? (isEn ? 'All issues silenced/ignored' : 'Semua masalah diabaikan') : (isEn ? 'Normal condition' : 'Kondisi normal');
+          html += '<span class="badge badge-up" title="' + _esc(title) + '">' + (isEn ? 'None' : 'Nihil') + '</span>';
+        } else {
+          if (dCnt > 0) {
+            const label = (totActive > 1 || dCnt > 1) ? ('Danger ' + dCnt) : 'Danger';
+            html += '<span class="badge badge-danger" title="' + _esc(srv.danger_msgs || '') + '">' + label + '</span>';
+          }
+          if (wCnt > 0) {
+            const label = (totActive > 1 || wCnt > 1) ? ('Warning ' + wCnt) : 'Warning';
+            html += '<span class="badge badge-warn" title="' + _esc(srv.warning_msgs || '') + '">' + label + '</span>';
+          }
+          if (iCnt > 0) {
+            const label = (totActive > 1 || iCnt > 1) ? ('Info ' + iCnt) : 'Info';
+            html += '<span class="badge badge-info" title="' + _esc(srv.info_msgs || '') + '">' + label + '</span>';
+          }
+        }
         html += '</div>';
-        if (srv.ignored_problem_count && srv.ignored_problem_count > 0) {
+        if (ignCnt > 0) {
+          const ignLabel = isEn ? (ignCnt + ' ignored 🔕') : (ignCnt + ' diabaikan 🔕');
           html += '<div class="cell-row">';
-          html += '<span class="svc-pill ignored" title="' + srv.ignored_problem_count + ' masalah diabaikan">' + srv.ignored_problem_count + ' diabaikan 🔕</span>';
+          html += '<span class="svc-pill ignored" title="' + _esc(srv.ignored_msgs || (ignCnt + ' masalah diabaikan')) + '">' + ignLabel + '</span>';
           html += '</div>';
         }
         html += '</div>';
