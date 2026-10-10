@@ -2605,19 +2605,20 @@ function toggleMaintenanceAction(action) {
 
 function copyAgentUpdateCmd(ev) {
   const cmd = "sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service";
+  const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(cmd).then(() => {
       const btn = ev && ev.target;
       if (btn) {
         const orig = btn.textContent;
-        btn.textContent = "✓ Tersalin!";
+        btn.textContent = isEn ? "✓ Copied!" : "✓ Tersalin!";
         setTimeout(() => { btn.textContent = orig; }, 2000);
       }
     }).catch(() => {
-      prompt("Salin perintah update berikut dan jalankan di terminal server klien:", cmd);
+      prompt(isEn ? "Copy update command below and execute in client terminal:" : "Salin perintah update berikut dan jalankan di terminal server klien:", cmd);
     });
   } else {
-    prompt("Salin perintah update berikut dan jalankan di terminal server klien:", cmd);
+    prompt(isEn ? "Copy update command below and execute in client terminal:" : "Salin perintah update berikut dan jalankan di terminal server klien:", cmd);
   }
 }
 
@@ -3070,11 +3071,11 @@ function fmtUptime(sec) {
   const d = Math.floor(sec / 86400);
   const h = Math.floor((sec % 86400) / 3600);
   const m = Math.floor((sec % 3600) / 60);
-  const isEn = (localStorage.getItem('app_lang') || 'id') === 'en';
+  const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
   let s = '';
-  if (d) s += d + (isEn ? 'd ' : ' hari ');
-  if (d || h) s += h + (isEn ? 'h ' : ' jam ');
-  return s + m + (isEn ? 'm' : ' mnt');
+  if (d) s += d + (isEn ? 'd ' : 'h ');
+  if (d || h) s += h + (isEn ? 'h ' : 'j ');
+  return s + m + (isEn ? 'm' : 'm');
 }
 
 // ---------- paket OS update (tombol Update / Upgrade) ----------
@@ -4227,6 +4228,16 @@ function renderActionHistory(actions) {
   }
 }
 
+let _cachedLastSysData = null;
+window.onAppLangChanged = function(lang) {
+  if (typeof _cachedActions !== 'undefined' && _cachedActions && _cachedActions.length) {
+    try { renderActionHistory(_cachedActions); } catch(e){}
+  }
+  if (_cachedLastSysData) {
+    try { renderSys(_cachedLastSysData); } catch(e){}
+  }
+};
+
 // Inisialisasi limit riwayat tindakan server-side render
 setTimeout(() => setActionLimit(10), 100);
 
@@ -4460,6 +4471,7 @@ function syncUnits(units, extras) {
 }
 
 function renderSys(data) {
+  _cachedLastSysData = data;
   const sys = data.system || {};
   const empty = document.getElementById('sys-empty');
   const body = document.getElementById('sys-body');
@@ -4469,7 +4481,8 @@ function renderSys(data) {
   body.style.display = hasData ? 'block' : 'none';
   if (!hasData) return;
 
-  document.getElementById('sys-ts').textContent = data.ts ? 'update: ' + new Date(data.ts).toLocaleTimeString('id-ID') : '';
+  const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
+  document.getElementById('sys-ts').textContent = data.ts ? (isEn ? 'updated: ' : 'update: ') + new Date(data.ts).toLocaleTimeString(isEn ? 'en-US' : 'id-ID') : '';
 
   const cpu = sys.cpu;
   document.getElementById('sys-cpu').textContent = cpu.toFixed(1) + '%';
@@ -4486,7 +4499,7 @@ function renderSys(data) {
   const swapPct = (sys.swap_total > 0) ? (sys.swap_used / sys.swap_total) * 100 : 0;
   document.getElementById('sys-swap').textContent = (sys.swap_total > 0)
     ? fmtBytes(sys.swap_used) + ' / ' + fmtBytes(sys.swap_total)
-    : 'tidak ada';
+    : (isEn ? 'none' : 'tidak ada');
   pctBar('sys-swap-bar', swapPct);
 
   document.getElementById('sys-procs').textContent = sys.procs ?? '-';
@@ -4495,7 +4508,6 @@ function renderSys(data) {
 
   const heroMeta = document.getElementById('hero-meta');
   if (heroMeta) {
-    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const parts = [];
     if (data.os_label) parts.push(String(data.os_label));
     if (data.kernel) parts.push('kernel ' + data.kernel);

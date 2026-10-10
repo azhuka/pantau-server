@@ -2311,11 +2311,14 @@ def service_add_submit(
     service_name: str = Form(...),
     port: int = Form(...),
     process_name: str = Form(...),
+    csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
     if not user or user.role != "admin":
         return RedirectResponse("/", status_code=303)
+    token = csrf_token or request.headers.get("X-CSRF-Token", "")
+    _verify_csrf_form(request, token)
     svc = Service(
         server_id=sid,
         service_name=_clean_str(service_name, "", 100),

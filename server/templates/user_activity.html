@@ -120,7 +120,7 @@ function renderHistory(history) {
     pre.style.display = 'none';
     em2.style.display = 'block';
   }
-  const isEn = (localStorage.getItem('app_lang') || 'id') === 'en';
+  const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
   document.getElementById('hist-state').textContent =
     shown.length ? shown.length + (isEn ? ' commands (of ' : ' perintah (dari ') + history.length + ')' : '';
   document.getElementById('hist-more').style.display =
@@ -130,7 +130,7 @@ function renderHistory(history) {
 async function loadActivity() {
   if (activityBusy) return;
   activityBusy = true;
-  const isEn = (localStorage.getItem('app_lang') || 'id') === 'en';
+  const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
   const st1 = document.getElementById('ll-state');
   const st2 = document.getElementById('hist-state');
   if (st1) st1.textContent = isEn ? 'loading…' : 'memuat…';

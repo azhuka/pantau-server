@@ -649,13 +649,26 @@ const APP_TRANSLATIONS = {
   }
 };
 
+function isCurrentLangEn() {
+  if (typeof currentLang !== 'undefined') return currentLang === 'en';
+  try {
+    return ((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en');
+  } catch(e) {
+    return false;
+  }
+}
+
 let currentLang = (function(){
-  try { return localStorage.getItem('pantau_lang') || 'id'; } catch(e){ return 'id'; }
+  try { return (localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id'); } catch(e){ return 'id'; }
 })();
 
 function setAppLang(lang) {
   currentLang = (lang === 'en') ? 'en' : 'id';
-  try { localStorage.setItem('pantau_lang', currentLang); } catch(e){}
+  try {
+    localStorage.setItem('pantau_lang', currentLang);
+    localStorage.setItem('app_lang', currentLang);
+    document.cookie = "app_lang=" + currentLang + ";path=/;max-age=31536000;SameSite=Lax";
+  } catch(e){}
   applyAppLang();
 }
 
@@ -1913,14 +1926,53 @@ const UI_TEXT_PAIRS = [
   ['Buka Kunci', 'Unlock'],
   ['Kunci', 'Lock'],
   ['Nihil', 'None'],
+  ['Status:Normal', 'Status: Normal'],
+  ['Status: Normal', 'Status: Normal'],
+  ['Dibuat via Pantau Server', 'Created via Pantau Server'],
+  ['Copy Perintah Update', 'Copy Update Command'],
+  ['Tambah SSK Kustom', 'Add Custom SSL'],
+  ['Tambah SSL Kustom', 'Add Custom SSL'],
+  ['Akui Peringatan', 'Acknowledge Alert'],
+  ['Kunci Akun pengguna', 'Lock user account'],
+  ['Buka Kunci pengguna', 'Unlock user account'],
+  ['200 perintah (dari 200)', '200 commands (of 200)'],
+  ['59h 12j 4m', '59d 12h 4m'],
 ];
 
 function escapeRegExpStr(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function replaceWithSmartBoundary(text, sortedPairs) {
+function replaceWithSmartBoundary(text, sortedPairs, isEnMode) {
   let out = text;
+  if (!out) return out;
+
+  if (isEnMode) {
+    out = out.replace(/\b(\d+)h\s+(\d+)j\s+(\d+)m\b/g, '$1d $2h $3m');
+    out = out.replace(/\b(\d+)h\s+(\d+)j\b/g, '$1d $2h');
+    out = out.replace(/\b(\d+)j\s+(\d+)m\b/g, '$1h $2m');
+    out = out.replace(/\b(\d+)\s+hari\s+lalu\b/g, '$1d ago');
+    out = out.replace(/\b(\d+)\s+jam\s+lalu\b/g, '$1h ago');
+    out = out.replace(/\b(\d+)\s+mnt\s+lalu\b/g, '$1m ago');
+    out = out.replace(/\b(\d+)\s+dtk\s+lalu\b/g, '$1s ago');
+    out = out.replace(/\bbaru saja\b/g, 'just now');
+    out = out.replace(/\bStatus:\s*Normal\b/g, 'Status: Normal');
+    out = out.replace(/\bStatus:Normal\b/g, 'Status: Normal');
+    out = out.replace(/\bKoneksi:\b/g, 'Connections:');
+    out = out.replace(/\b(\d+)\s+perintah\s+\(dari\s+(\d+)\)/g, '$1 commands (of $2)');
+  } else {
+    out = out.replace(/\b(\d+)d\s+(\d+)h\s+(\d+)m\b/g, '$1h $2j $3m');
+    out = out.replace(/\b(\d+)d\s+(\d+)h\b/g, '$1h $2j');
+    out = out.replace(/\b(\d+)h\s+(\d+)m\b/g, '$1j $2m');
+    out = out.replace(/\b(\d+)d ago\b/g, '$1 hari lalu');
+    out = out.replace(/\b(\d+)h ago\b/g, '$1 jam lalu');
+    out = out.replace(/\b(\d+)m ago\b/g, '$1 mnt lalu');
+    out = out.replace(/\b(\d+)s ago\b/g, '$1 dtk lalu');
+    out = out.replace(/\bjust now\b/g, 'baru saja');
+    out = out.replace(/\bConnections:\b/g, 'Koneksi:');
+    out = out.replace(/\b(\d+)\s+commands\s+\(of\s+(\d+)\)/g, '$1 perintah (dari $2)');
+  }
+
   for (let i = 0; i < sortedPairs.length; i++) {
     const idText = sortedPairs[i][0];
     const enText = sortedPairs[i][1];
@@ -1935,8 +1987,7 @@ function replaceWithSmartBoundary(text, sortedPairs) {
     if (idText.includes(' ') || !/^[a-zA-Z0-9]+$/.test(idText)) {
       out = out.split(idText).join(enText);
     } else {
-      // 3. Kata tunggal (misal Pengguna, Masuk, Keluar, berkas): wajib word boundary
-      // agar tidak merusak kata majemuk seperti Penggunaan, Laju Masuk, dll.
+      // 3. Kata tunggal: word boundary
       try {
         const re = new RegExp('(?<![a-zA-Z0-9_])' + escapeRegExpStr(idText) + '(?![a-zA-Z0-9_])', 'g');
         out = out.replace(re, enText);
@@ -1953,7 +2004,9 @@ function translateAllUiText(targetLang) {
     try { _uiObserver.disconnect(); } catch(e){}
   }
   const isEn = (targetLang === 'en');
-  const sortedPairs = [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length);
+  const sortedPairs = isEn
+    ? [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length)
+    : [...UI_TEXT_PAIRS].map(p => [p[1], p[0]]).sort((a, b) => b[0].length - a[0].length);
 
   const walker = document.createTreeWalker(
     document.body,
@@ -1983,13 +2036,17 @@ function translateAllUiText(targetLang) {
       node._origText = node.nodeValue;
     }
     if (isEn) {
-      const txt = replaceWithSmartBoundary(node._origText, sortedPairs);
+      const txt = replaceWithSmartBoundary(node._origText, sortedPairs, true);
       if (node.nodeValue !== txt) {
         node.nodeValue = txt;
       }
     } else {
-      if (node.nodeValue !== node._origText) {
-        node.nodeValue = node._origText;
+      let targetText = node._origText;
+      if (targetText === undefined || targetText === node.nodeValue) {
+        targetText = replaceWithSmartBoundary(node.nodeValue, sortedPairs, false);
+      }
+      if (node.nodeValue !== targetText) {
+        node.nodeValue = targetText;
       }
     }
   });
@@ -1999,10 +2056,14 @@ function translateAllUiText(targetLang) {
       el._origTitle = el.getAttribute('title') || '';
     }
     if (isEn) {
-      const t = replaceWithSmartBoundary(el._origTitle, sortedPairs);
+      const t = replaceWithSmartBoundary(el._origTitle, sortedPairs, true);
       if (el.getAttribute('title') !== t) el.setAttribute('title', t);
     } else {
-      if (el.getAttribute('title') !== el._origTitle) el.setAttribute('title', el._origTitle);
+      let t = el._origTitle;
+      if (!t || t === el.getAttribute('title')) {
+        t = replaceWithSmartBoundary(el.getAttribute('title') || '', sortedPairs, false);
+      }
+      if (el.getAttribute('title') !== t) el.setAttribute('title', t);
     }
   });
 
@@ -2011,17 +2072,21 @@ function translateAllUiText(targetLang) {
       el._origDataTooltip = el.getAttribute('data-tooltip') || '';
     }
     if (isEn) {
-      const t = replaceWithSmartBoundary(el._origDataTooltip, sortedPairs);
+      const t = replaceWithSmartBoundary(el._origDataTooltip, sortedPairs, true);
       if (el.getAttribute('data-tooltip') !== t) el.setAttribute('data-tooltip', t);
     } else {
-      if (el.getAttribute('data-tooltip') !== el._origDataTooltip) el.setAttribute('data-tooltip', el._origDataTooltip);
+      let t = el._origDataTooltip;
+      if (!t || t === el.getAttribute('data-tooltip')) {
+        t = replaceWithSmartBoundary(el.getAttribute('data-tooltip') || '', sortedPairs, false);
+      }
+      if (el.getAttribute('data-tooltip') !== t) el.setAttribute('data-tooltip', t);
     }
   });
 
   document.querySelectorAll('input[type="text"]').forEach(el => {
     if (el._origVal === undefined) el._origVal = el.value;
     if (isEn) {
-      const v = replaceWithSmartBoundary(el._origVal, sortedPairs);
+      const v = replaceWithSmartBoundary(el._origVal, sortedPairs, true);
       if (el.value === el._origVal && v !== el._origVal) el.value = v;
     } else {
       if (el._origVal && el.value !== el._origVal) el.value = el._origVal;
@@ -2033,10 +2098,14 @@ function translateAllUiText(targetLang) {
       el._origPlaceholder = el.getAttribute('placeholder') || '';
     }
     if (isEn) {
-      const p = replaceWithSmartBoundary(el._origPlaceholder, sortedPairs);
+      const p = replaceWithSmartBoundary(el._origPlaceholder, sortedPairs, true);
       if (el.getAttribute('placeholder') !== p) el.setAttribute('placeholder', p);
     } else {
-      if (el.getAttribute('placeholder') !== el._origPlaceholder) el.setAttribute('placeholder', el._origPlaceholder);
+      let p = el._origPlaceholder;
+      if (!p || p === el.getAttribute('placeholder')) {
+        p = replaceWithSmartBoundary(el.getAttribute('placeholder') || '', sortedPairs, false);
+      }
+      if (el.getAttribute('placeholder') !== p) el.setAttribute('placeholder', p);
     }
   });
 
@@ -2045,10 +2114,14 @@ function translateAllUiText(targetLang) {
       el._origDataMsg = el.getAttribute('data-msg') || '';
     }
     if (isEn) {
-      const m = replaceWithSmartBoundary(el._origDataMsg, sortedPairs);
+      const m = replaceWithSmartBoundary(el._origDataMsg, sortedPairs, true);
       if (el.getAttribute('data-msg') !== m) el.setAttribute('data-msg', m);
     } else {
-      if (el.getAttribute('data-msg') !== el._origDataMsg) el.setAttribute('data-msg', el._origDataMsg);
+      let m = el._origDataMsg;
+      if (!m || m === el.getAttribute('data-msg')) {
+        m = replaceWithSmartBoundary(el.getAttribute('data-msg') || '', sortedPairs, false);
+      }
+      if (el.getAttribute('data-msg') !== m) el.setAttribute('data-msg', m);
     }
   });
 
@@ -2057,10 +2130,14 @@ function translateAllUiText(targetLang) {
       el._origAriaLabel = el.getAttribute('aria-label') || '';
     }
     if (isEn) {
-      const a = replaceWithSmartBoundary(el._origAriaLabel, sortedPairs);
+      const a = replaceWithSmartBoundary(el._origAriaLabel, sortedPairs, true);
       if (el.getAttribute('aria-label') !== a) el.setAttribute('aria-label', a);
     } else {
-      if (el.getAttribute('aria-label') !== el._origAriaLabel) el.setAttribute('aria-label', el._origAriaLabel);
+      let a = el._origAriaLabel;
+      if (!a || a === el.getAttribute('aria-label')) {
+        a = replaceWithSmartBoundary(el.getAttribute('aria-label') || '', sortedPairs, false);
+      }
+      if (el.getAttribute('aria-label') !== a) el.setAttribute('aria-label', a);
     }
   });
 
@@ -3013,10 +3090,12 @@ setInterval(alertFetch, 10000);
 
   function getTooltipText(el) {
     if (!el || el === document.body || el === document.documentElement) return null;
-    // Bersihkan title bawaan pada elemen ini & leluhur agar browser default tooltip tidak pernah muncul ganda
     if (el.hasAttribute('title')) {
       const text = el.getAttribute('title').trim();
       if (text) {
+        if (!el.hasAttribute('data-tooltip-orig')) {
+          el.setAttribute('data-tooltip-orig', text);
+        }
         el.setAttribute('data-tooltip', text);
       }
       el.removeAttribute('title');
@@ -3054,15 +3133,16 @@ setInterval(alertFetch, 10000);
     clearTimeout(hideTimer);
     clearTimeout(showTimer);
     
-    // Tampil super cepat dalam 80ms (jauh lebih instan dibanding browser default 700-1000ms)
+    // Tampil super cepat dalam 80ms
     showTimer = setTimeout(() => {
-      let text = el.getAttribute('data-tooltip');
-      if (!text) return;
+      const origText = el.getAttribute('data-tooltip-orig') || el.getAttribute('data-tooltip');
+      if (!origText) return;
 
-      const isEn = (localStorage.getItem('app_lang') || 'id') === 'en';
+      const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
+      let text = origText;
       if (isEn && typeof replaceWithSmartBoundary === 'function' && typeof UI_TEXT_PAIRS !== 'undefined') {
         const sortedPairs = [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length);
-        text = replaceWithSmartBoundary(text, sortedPairs);
+        text = replaceWithSmartBoundary(origText, sortedPairs, true);
       }
 
       tipEl.textContent = text;
