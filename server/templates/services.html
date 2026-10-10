@@ -3083,14 +3083,6 @@ async function deleteService(sid, svcId, svcName, btn) {
     btn.innerHTML = originalHtml;
   }
 }
-      btn.innerHTML = originalHtml;
-    }
-  } catch (e) {
-    showToast('Kendala jaringan: ' + e.message, false);
-    btn.disabled = false;
-    btn.innerHTML = originalHtml;
-  }
-}
 
 const resultLabel = {
   pending: 'menunggu', executing: 'dijalankan…',
