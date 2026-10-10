@@ -4405,7 +4405,7 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             row.updated_at = now
             row.resolved_note = "auto" if quiet > 0 else None
             try:
-                _audit(db, "sistem", "masalah_pulih", f"{srv.hostname}: masalah '{row.message}' telah pulih", "selesai", server_id=srv.id)
+                _audit(db, "sistem", "masalah_selesai", f"{srv.hostname}: masalah '{row.message}' telah selesai", "selesai", server_id=srv.id)
             except Exception:
                 pass
 
@@ -4618,7 +4618,8 @@ AUDIT_ACTION_LABELS = {
     "cmd:ssl_path_add": "Tambah path SSL kustom",
     "cmd:ssl_path_remove": "Hapus path SSL kustom",
     # Kejadian insiden / masalah
-    "masalah_pulih": "Masalah pulih",
+    "masalah_selesai": "Masalah selesai",
+    "masalah_pulih": "Masalah selesai",
     "masalah_warning": "Peringatan masalah",
     "masalah_danger": "Bahaya masalah",
     "masalah_info": "Informasi masalah",

@@ -135,6 +135,7 @@ function patchSys(d) {
   document.getElementById('sys-swap').textContent = sw ? fmtBytes(d.memory.swap_used) + ' / ' + fmtBytes(sw) : 'disabled';
   document.getElementById('sys-load').textContent = d.loadavg.length ? d.loadavg.map(x => x.toFixed(2)).join(' / ') : '-';
 
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const pt = document.getElementById('sys-procs');
   if (d.processes.length) {
     pt.innerHTML = d.processes.map(p =>
@@ -144,7 +145,7 @@ function patchSys(d) {
       + '<td class="mono">' + fmtBytes(p.rss) + '</td></tr>'
     ).join('');
   } else {
-    pt.innerHTML = '<tr><td colspan="5" class="mono">menghitung…</td></tr>';
+    pt.innerHTML = '<tr><td colspan="5" class="mono">' + (isEn ? 'calculating…' : 'menghitung…') + '</td></tr>';
   }
 
   const dt = document.getElementById('sys-disks');
@@ -153,7 +154,7 @@ function patchSys(d) {
     + '<td class="mono">' + fmtBytes(x.total) + '</td>'
     + '<td class="mono">' + fmtBytes(x.used) + '</td>'
     + '<td>' + (typeof x.percent === 'number' ? x.percent.toFixed(1) : escHtml(x.percent)) + '%</td></tr>'
-  ).join('') || '<tr><td colspan="5" class="mono">tidak ada disk terdeteksi</td></tr>';
+  ).join('') || ('<tr><td colspan="5" class="mono">' + (isEn ? 'no disks detected' : 'tidak ada disk terdeteksi') + '</td></tr>');
 }
 
 async function pollLog() {
@@ -215,6 +216,11 @@ async function svcLoad() {
     if (svcPinned) svc.scrollTop = svc.scrollHeight;
   } catch (e) { /* abaikan */ }
 }
+
+window.onAppLangChanged = function(lang) {
+  if (typeof pollSys === 'function') pollSys();
+  if (typeof pollLog === 'function') pollLog();
+};
 
 setInterval(pollLog, POLL_MS);
 setTimeout(pollLog, 300);

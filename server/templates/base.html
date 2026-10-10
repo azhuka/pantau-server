@@ -2093,8 +2093,12 @@ const UI_TEXT_PAIRS = [
   ['Acknowledge peringatan', 'Acknowledge alert'],
   ['Abaikan Masalah', 'Mute Problem'],
   ['Pantau Kembali Masalah', 'Unmute Problem'],
+  ['Masalah selesai', 'Problem resolved'],
+  ['masalah_selesai', 'Problem resolved'],
   ['Masalah pulih', 'Problem resolved'],
   ['masalah_pulih', 'Problem resolved'],
+  ['Buat akun user baru', 'Create new user account'],
+  ['Contoh: user1', 'Example: user1'],
   ['Peringatan masalah', 'Warning alert'],
   ['Bahaya masalah', 'Danger alert'],
   ['Informasi masalah', 'Info notice'],
@@ -2254,9 +2258,9 @@ function replaceWithSmartBoundary(text, sortedPairs, isEnMode) {
 
     // Audit & Event Alert Insiden (Target)
     out = out.replace(/^([\w.-]+):\s*(?:terdeteksi|detected)\s+\[(WARNING|DANGER|INFO)\]\s+(.+)/gi, '$1: detected [$2] $3');
-    out = out.replace(/^([\w.-]+):\s*(?:masalah|issue|issues)\s*['"](.+?)['"]\s*(?:telah pulih|recovered|resolved)/gi, "$1: issue '$2' resolved");
+    out = out.replace(/^([\w.-]+):\s*(?:masalah|issue|issues)\s*['"](.+?)['"]\s*(?:telah pulih|telah selesai|recovered|resolved)/gi, "$1: issue '$2' resolved");
     out = out.replace(/\bterdeteksi\s+\[(WARNING|DANGER|INFO)\]\s+(.+)/gi, 'detected [$1] $2');
-    out = out.replace(/\b(?:masalah|issues?)\s*['"](.+?)['"]\s*(?:telah pulih|recovered|resolved)/gi, "issue '$1' resolved");
+    out = out.replace(/\b(?:masalah|issues?)\s*['"](.+?)['"]\s*(?:telah pulih|telah selesai|recovered|resolved)/gi, "issue '$1' resolved");
     out = out.replace(/\bAkui\s+peringatan\s*\(alert\)/gi, 'Acknowledge alert');
     out = out.replace(/\bAcknowledge\s+peringatan\s*\(alert\)/gi, 'Acknowledge alert');
     out = out.replace(/\bAcknowledge\s+peringatan\b/gi, 'Acknowledge alert');
