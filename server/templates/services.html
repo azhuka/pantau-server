@@ -3855,6 +3855,13 @@ function renderProblemsTab(level, openList, histList) {
   const wrap = document.getElementById('prob-wrapper');
   if (!wrap) return;
 
+  const curLang = (typeof currentLang !== 'undefined') ? currentLang : 'id';
+  const probSig = JSON.stringify({ open: openList, hist: histList, lvl: level, lim: probLimit, lang: curLang });
+  if (window._lastProbSig === probSig) {
+    return; // Data tidak berubah: jangan rewrite DOM agar kartu tidak bergetar / berdetak
+  }
+  window._lastProbSig = probSig;
+
   const rows = (openList || []).concat(histList || []);
   if (rows.length === 0) {
     wrap.innerHTML = `<div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;padding:12px 0">
@@ -4018,6 +4025,7 @@ function renderProblemsTab(level, openList, histList) {
 }
 
 function setProbLimit(lim) {
+  window._lastProbSig = null;
   probLimit = (lim === 'all') ? 'all' : (parseInt(lim, 10) || 5);
   probCurrentPage = 1;
   const selTop = document.getElementById('prob-limit-top');
@@ -4028,6 +4036,7 @@ function setProbLimit(lim) {
 }
 
 function probChangePage(delta) {
+  window._lastProbSig = null;
   probCurrentPage += delta;
   probFilter();
 }
@@ -4106,6 +4115,7 @@ setInterval(() => {
 }, 5000);
 
 function setActionLimit(lim) {
+  window._lastActionSig = null;
   actionLimit = (lim === 'all') ? 'all' : (parseInt(lim, 10) || 10);
   actionCurrentPage = 1;
   const selTop = document.getElementById('action-limit-top');
@@ -4120,6 +4130,7 @@ function setActionLimit(lim) {
 }
 
 function actionChangePage(delta) {
+  window._lastActionSig = null;
   actionCurrentPage += delta;
   if (_cachedActions && _cachedActions.length) {
     renderActionHistory(_cachedActions);
@@ -4174,6 +4185,13 @@ function renderActionHistory(actions) {
   const prevBtn = document.getElementById('action-prev-btn');
   const nextBtn = document.getElementById('action-next-btn');
   if (!tbody) return;
+
+  const curLang = (typeof currentLang !== 'undefined') ? currentLang : 'id';
+  const actionSig = JSON.stringify({ act: actions, lim: actionLimit, page: actionCurrentPage, lang: curLang });
+  if (window._lastActionSig === actionSig) {
+    return; // Data tidak berubah: jangan rewrite DOM agar kartu tidak bergetar / berdetak
+  }
+  window._lastActionSig = actionSig;
 
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   if (!actions.length) {
@@ -4252,6 +4270,8 @@ let _isLangUpdating = false;
 window.onAppLangChanged = function(lang) {
   if (_isLangUpdating) return;
   _isLangUpdating = true;
+  window._lastActionSig = null;
+  window._lastProbSig = null;
   try {
     if (typeof _cachedActions !== 'undefined' && _cachedActions && _cachedActions.length) {
       renderActionHistory(_cachedActions);

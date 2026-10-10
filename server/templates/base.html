@@ -980,7 +980,6 @@ const UI_TEXT_PAIRS = [
   ['kejadian', 'events'],
   ['Menampilkan', 'Showing'],
   ['dari total', 'of total'],
-  ['dari', 'of'],
   ['Halaman', 'Page'],
   ['« Sebelumnya', '« Previous'],
   ['Berikutnya »', 'Next »'],
@@ -2156,6 +2155,79 @@ function replaceWithSmartBoundary(text, sortedPairs, isEnMode) {
   if (!out) return out;
 
   if (isEnMode) {
+    // 1. Pesan Anomali & Insiden Sistem
+    out = out.replace(/Konflik Agen Terdeteksi:\s*API key (?:aktif|active) di beberapa host \(([^)]+)\)/gi, 'Agent Conflict Detected: API key active on multiple hosts ($1)');
+    out = out.replace(/Konflik Agen Terdeteksi/gi, 'Agent Conflict Detected');
+    out = out.replace(/di beberapa host/gi, 'on multiple hosts');
+
+    // 2. Format Respon CLI Agen Pantau (User, Firewall, Cron, SSL, Service)
+    out = out.replace(/OK:\s*(?:Akun|Accounts)\s*'([^']+)'\s*(?:berhasil|success)\s*(?:dibuka kuncinya|unlocked)/gi, "OK: Account '$1' unlocked successfully");
+    out = out.replace(/OK:\s*(?:Akun|Accounts)\s*'([^']+)'\s*(?:berhasil|success)\s*(?:dikunci|locked)/gi, "OK: Account '$1' locked successfully");
+    out = out.replace(/OK:\s*(?:Pengguna|User)\s*'([^']+)'\s*(?:berhasil|success)\s*(?:dihapus|deleted)/gi, "OK: User '$1' deleted successfully");
+    out = out.replace(/OK:\s*(?:Pengguna|User)\s*'([^']+)'\s*(?:berhasil|success)\s*(?:dibuat|created)\s*\(([^)]+)\)/gi, "OK: User '$1' created successfully ($2)");
+
+    out = out.replace(/OK:\s*Firewall UFW (?:berhasil|success) diaktifkan[^(]*\(([^)]+)\)/gi, "OK: UFW Firewall enabled successfully ($1)");
+    out = out.replace(/OK:\s*Firewall UFW (?:berhasil|success) dinonaktifkan/gi, "OK: UFW Firewall disabled successfully");
+    out = out.replace(/OK:\s*Firewall UFW (?:berhasil|success) dimuat ulang[^(]*\(([^)]+)\)/gi, "OK: UFW Firewall reloaded successfully");
+    out = out.replace(/OK:\s*Port\s+([^\s]+)\s*(?:berhasil|success) ditutup\/diblokir pada UFW/gi, "OK: Port $1 blocked successfully on UFW");
+    out = out.replace(/OK:\s*Port\s+([^\s]+)\s*(?:berhasil|success) ditutup\/diblokir pada iptables/gi, "OK: Port $1 blocked successfully on iptables");
+    out = out.replace(/OK:\s*Aturan blokir untuk port\s+([^\s]+)\s*(?:berhasil|success) dibuka pada UFW/gi, "OK: Port $1 unblocked successfully on UFW");
+    out = out.replace(/OK:\s*INPUT DROP utk\s+([^\s]+)/gi, "OK: INPUT DROP for $1");
+    out = out.replace(/OK:\s*Hapus blokir INPUT DROP utk\s+([^\s]+)/gi, "OK: Removed INPUT DROP for $1");
+
+    out = out.replace(/OK:\s*Tugas cron\s*'([^']+)'\s*(?:berhasil|success) dibuat\s*\(([^)]+)\)/gi, "OK: Cron job '$1' created successfully ($2)");
+    out = out.replace(/OK:\s*Tugas cron\s*'([^']+)'\s*(?:berhasil|success) dihapus/gi, "OK: Cron job '$1' deleted successfully");
+    out = out.replace(/OK:\s*Tugas cron\s*'([^']+)'\s*dinonaktifkan/gi, "OK: Cron job '$1' disabled");
+    out = out.replace(/OK:\s*Tugas cron\s*'([^']+)'\s*diaktifkan kembali/gi, "OK: Cron job '$1' re-enabled");
+    out = out.replace(/OK:\s*Berhasil dijalankan\.?/gi, "OK: Executed successfully.");
+
+    out = out.replace(/OK:\s*Sinyal\s+([^\s]+)\s*(?:berhasil|success) dikirim ke proses\s+([^\s]+)\s*\(PID:\s*(\d+)\)/gi, "OK: Signal $1 sent successfully to process $2 (PID: $3)");
+    out = out.replace(/OK:\s*proses\s+([^\s]+)\s*(?:berhasil|success) dihentikan\s*\(PIDs:\s*([^)]+)\)/gi, "OK: process $1 stopped successfully (PIDs: $2)");
+
+    out = out.replace(/OK:\s*Path sertifikat\s*'([^']+)'\s*(?:berhasil|success) ditambahkan ke pengawasan/gi, "OK: Certificate path '$1' added to monitoring successfully");
+    out = out.replace(/OK:\s*Path sertifikat\s*'([^']+)'\s*(?:berhasil|success) dihapus dari pengawasan/gi, "OK: Certificate path '$1' removed from monitoring successfully");
+    out = out.replace(/OK:\s*Path\s*'([^']+)'\s*sudah terdaftar dalam pengawasan SSL/gi, "OK: Path '$1' already registered in SSL monitoring");
+    out = out.replace(/OK:\s*([^\s]+)\s*dieksekusi\.?/gi, "OK: $1 executed.");
+
+    // Respons Galat / Error Agen
+    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:membuka kunci akun|to unlock account)\s*'([^']+)'/gi, "ERROR: Failed to unlock account '$1'");
+    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:mengunci akun|to lock account)\s*'([^']+)'/gi, "ERROR: Failed to lock account '$1'");
+    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:menghapus pengguna|to delete user)\s*'([^']+)'/gi, "ERROR: Failed to delete user '$1'");
+    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:membuat pengguna|to create user)\s*'([^']+)'/gi, "ERROR: Failed to create user '$1'");
+    out = out.replace(/Pengguna\s*'([^']+)'\s*adalah akun sistem (?:penting|terlindungi)[^!.]*!/gi, "User '$1' is a protected system account!");
+
+    // 3. Jejak Aksi Server (Audit Target & Action)
+    out = out.replace(/^([\w.-]+):\s*buka kunci user\s+([\w.-]+)/gi, '$1: unlock user $2');
+    out = out.replace(/^([\w.-]+):\s*kunci user\s+([\w.-]+)/gi, '$1: lock user $2');
+    out = out.replace(/^([\w.-]+):\s*buat user\s+([\w.-]+)/gi, '$1: create user $2');
+    out = out.replace(/^([\w.-]+):\s*hapus user\s+([\w.-]+)/gi, '$1: delete user $2');
+    out = out.replace(/^([\w.-]+):\s*tambah cron\s+([\w.-]+)/gi, '$1: add cron $2');
+    out = out.replace(/^([\w.-]+):\s*hapus cron\s+([\w.-]+)/gi, '$1: delete cron $2');
+    out = out.replace(/^([\w.-]+):\s*tambah path SSL\s+(.+)/gi, '$1: add SSL path $2');
+    out = out.replace(/^([\w.-]+):\s*hapus path SSL\s+(.+)/gi, '$1: remove SSL path $2');
+    out = out.replace(/\bbuka kunci user\s+([\w.-]+)/gi, 'unlock user $1');
+    out = out.replace(/\bkunci user\s+([\w.-]+)/gi, 'lock user $1');
+
+    // 4. Frasa Tombol & Dialog "Abaikan"
+    out = out.replace(/\bAbaikan\s+(?:masalah|issues?)\s+ini\b/gi, 'Mute this incident');
+    out = out.replace(/\bAbaikan\s+(?:masalah|issues?)\b/gi, 'Mute incident');
+    out = out.replace(/\babaikan\s+(?:masalah|issues?)\b/gi, 'mute incident');
+    out = out.replace(/\bAbaikan\s+Pemantauan\b/gi, 'Mute Monitoring');
+    out = out.replace(/\bAbaikan\s+Selama:\b/gi, 'Mute Duration:');
+    out = out.replace(/\bSimpan\s+&\s+Abaikan\b/gi, 'Save & Mute');
+    out = out.replace(/\bSimpan\s+&amp;\s+Abaikan\b/gi, 'Save & Mute');
+
+    // 5. Frasa Akun & Sesi Login
+    out = out.replace(/\b(?:masuk|login)\s+dari\s+([^\s]+)/gi, 'login from $1');
+    out = out.replace(/\bmasuk\s+of\s+([^\s]+)/gi, 'login from $1');
+    out = out.replace(/\bBuka\s+kunci\s+pengguna\b/gi, 'Unlock user');
+    out = out.replace(/\bbuka\s+kunci\s+pengguna\b/gi, 'unlock user');
+    out = out.replace(/\bKunci\s+pengguna\b/gi, 'Lock user');
+    out = out.replace(/\bkunci\s+pengguna\b/gi, 'lock user');
+
+    // 6. Angka & Waktu Relatif
+    out = out.replace(/\b(\d+)\s+dari\s+(\d+)\b/g, '$1 of $2');
+    out = out.replace(/\b(\d+)\s+dari total\s+(\d+)\b/g, '$1 of total $2');
     out = out.replace(/\b(\d+)h\s+(\d+)j\s+(\d+)m\b/g, '$1d $2h $3m');
     out = out.replace(/\b(\d+)h\s+(\d+)j\b/g, '$1d $2h');
     out = out.replace(/\b(\d+)j\s+(\d+)m\b/g, '$1h $2m');
