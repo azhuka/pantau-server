@@ -2087,8 +2087,22 @@ const UI_TEXT_PAIRS = [
   ['Buka Terminal Root', 'Open Root Terminal'],
   ['Mode Pemeliharaan', 'Maintenance Mode'],
   ['Akui Peringatan (Alert)', 'Acknowledge Alert'],
+  ['Akui peringatan (alert)', 'Acknowledge alert'],
+  ['Akui peringatan', 'Acknowledge alert'],
+  ['Acknowledge peringatan (alert)', 'Acknowledge alert'],
+  ['Acknowledge peringatan', 'Acknowledge alert'],
   ['Abaikan Masalah', 'Mute Problem'],
   ['Pantau Kembali Masalah', 'Unmute Problem'],
+  ['Masalah pulih', 'Problem resolved'],
+  ['masalah_pulih', 'Problem resolved'],
+  ['Peringatan masalah', 'Warning alert'],
+  ['Bahaya masalah', 'Danger alert'],
+  ['Informasi masalah', 'Info notice'],
+  ['menghitung…', 'calculating…'],
+  ['menghitung...', 'calculating...'],
+  ['menghitung', 'calculating'],
+  ['Menampilkan maks 500 baris terbaru. Status perintah remote berubah otomatis setelah agen mengeksekusinya.', 'Showing up to 500 latest entries. Remote command status updates automatically once executed by agent.'],
+  ['proses sistem', 'system processes'],
 
   // Paginasi & Baris Tabel
   ['Semua baris', 'All rows'],
@@ -2237,9 +2251,16 @@ function replaceWithSmartBoundary(text, sortedPairs, isEnMode) {
     out = out.replace(/\bbuka kunci pengguna\b/gi, 'unlock user');
     out = out.replace(/\bKunci pengguna\b/gi, 'Lock user');
     out = out.replace(/\bkunci pengguna\b/gi, 'lock user');
-    out = out.replace(/\bAkun\s+([\w.-]+)\b/g, 'Account $1');
-    out = out.replace(/\bakun\s+([\w.-]+)\b/g, 'account $1');
-    out = out.replace(/\bAccounts\s+([\w.-]+)\b/g, 'Account $1');
+
+    // Audit & Event Alert Insiden (Target)
+    out = out.replace(/^([\w.-]+):\s*(?:terdeteksi|detected)\s+\[(WARNING|DANGER|INFO)\]\s+(.+)/gi, '$1: detected [$2] $3');
+    out = out.replace(/^([\w.-]+):\s*(?:masalah|issue|issues)\s*['"](.+?)['"]\s*(?:telah pulih|recovered|resolved)/gi, "$1: issue '$2' resolved");
+    out = out.replace(/\bterdeteksi\s+\[(WARNING|DANGER|INFO)\]\s+(.+)/gi, 'detected [$1] $2');
+    out = out.replace(/\b(?:masalah|issues?)\s*['"](.+?)['"]\s*(?:telah pulih|recovered|resolved)/gi, "issue '$1' resolved");
+    out = out.replace(/\bAkui\s+peringatan\s*\(alert\)/gi, 'Acknowledge alert');
+    out = out.replace(/\bAcknowledge\s+peringatan\s*\(alert\)/gi, 'Acknowledge alert');
+    out = out.replace(/\bAcknowledge\s+peringatan\b/gi, 'Acknowledge alert');
+    out = out.replace(/\bAkui\s+peringatan\b/gi, 'Acknowledge alert');
 
     // 4. Frasa Tombol & Dialog "Abaikan"
     out = out.replace(/\bAbaikan\s+(?:masalah|issues?)\s+ini\b/gi, 'Mute this incident');

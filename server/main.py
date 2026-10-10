@@ -4617,6 +4617,11 @@ AUDIT_ACTION_LABELS = {
     "ssl_path_remove": "Hapus path SSL kustom",
     "cmd:ssl_path_add": "Tambah path SSL kustom",
     "cmd:ssl_path_remove": "Hapus path SSL kustom",
+    # Kejadian insiden / masalah
+    "masalah_pulih": "Masalah pulih",
+    "masalah_warning": "Peringatan masalah",
+    "masalah_danger": "Bahaya masalah",
+    "masalah_info": "Informasi masalah",
 }
 
 AUDIT_CATEGORIES = [
