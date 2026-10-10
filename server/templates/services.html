@@ -4222,19 +4222,23 @@ function renderActionHistory(actions) {
       }).join('');
     }
   }
-
-  if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
-    applyAppLang();
-  }
 }
 
 let _cachedLastSysData = null;
+let _isLangUpdating = false;
 window.onAppLangChanged = function(lang) {
-  if (typeof _cachedActions !== 'undefined' && _cachedActions && _cachedActions.length) {
-    try { renderActionHistory(_cachedActions); } catch(e){}
-  }
-  if (_cachedLastSysData) {
-    try { renderSys(_cachedLastSysData); } catch(e){}
+  if (_isLangUpdating) return;
+  _isLangUpdating = true;
+  try {
+    if (typeof _cachedActions !== 'undefined' && _cachedActions && _cachedActions.length) {
+      renderActionHistory(_cachedActions);
+    }
+    if (_cachedLastSysData) {
+      renderSys(_cachedLastSysData);
+    }
+  } catch(e) {
+  } finally {
+    _isLangUpdating = false;
   }
 };
 

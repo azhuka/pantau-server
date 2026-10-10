@@ -672,8 +672,12 @@ function setAppLang(lang) {
   applyAppLang();
 }
 
+let _isApplyingAppLang = false;
 function applyAppLang() {
-  const dict = APP_TRANSLATIONS[currentLang] || APP_TRANSLATIONS.id;
+  if (_isApplyingAppLang) return;
+  _isApplyingAppLang = true;
+  try {
+    const dict = APP_TRANSLATIONS[currentLang] || APP_TRANSLATIONS.id;
   // Penerapan kamus data-i18n
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const k = el.dataset.i18n;
@@ -751,7 +755,10 @@ function applyAppLang() {
 
   // Panggil callback spesifik per halaman jika ada
   if (typeof window.onAppLangChanged === 'function') {
-    window.onAppLangChanged(currentLang);
+    try { window.onAppLangChanged(currentLang); } catch(e){}
+  }
+  } finally {
+    _isApplyingAppLang = false;
   }
 }
 
@@ -2143,7 +2150,7 @@ function translateAllUiText(targetLang) {
 
   if (typeof _uiObserver !== 'undefined' && _uiObserver && targetLang === 'en' && document.body) {
     try {
-      _uiObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+      _uiObserver.observe(document.body, { childList: true, subtree: true });
     } catch(e){}
   }
 }
@@ -2152,34 +2159,30 @@ function translateAllUiText(targetLang) {
 let _uiObserverDebounce = null;
 const _uiObserver = new MutationObserver((mutations) => {
   if (currentLang !== 'en') return;
-  let hasRelevantChange = false;
+  let hasNewElements = false;
   for (const m of mutations) {
-    if (m.type === 'characterData') {
-      hasRelevantChange = true;
-      break;
-    }
     if (m.addedNodes && m.addedNodes.length > 0) {
       for (const n of m.addedNodes) {
         if (n.nodeType === Node.ELEMENT_NODE) {
           const tag = n.tagName.toUpperCase();
           if (tag !== 'SCRIPT' && tag !== 'STYLE') {
-            hasRelevantChange = true;
+            hasNewElements = true;
             break;
           }
         }
       }
     }
-    if (hasRelevantChange) break;
+    if (hasNewElements) break;
   }
-  if (hasRelevantChange) {
+  if (hasNewElements) {
     if (_uiObserverDebounce) clearTimeout(_uiObserverDebounce);
     _uiObserverDebounce = setTimeout(() => {
       translateAllUiText('en');
-    }, 40);
+    }, 120);
   }
 });
 try {
-  _uiObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+  _uiObserver.observe(document.body, { childList: true, subtree: true });
 } catch(e) {}
 
 (function(){
