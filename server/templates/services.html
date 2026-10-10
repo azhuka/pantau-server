@@ -1802,19 +1802,19 @@
                   <form method="post" action="/servers/{{ server.id }}/system-users/unlock" style="display:inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="username" value="{{ a.user }}">
-                    <button type="submit" class="btn btn-sm btn-primary" title="Buka kunci akun (aktifkan login)" onclick="return confirm('Buka kunci akun {{ a.user }}?')">🔓 Buka Kunci</button>
+                    <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="Buka kunci akun (aktifkan login)" onclick="return confirm('Buka kunci akun {{ a.user }}?')">Buka Kunci</button>
                   </form>
                   {% else %}
                   <form method="post" action="/servers/{{ server.id }}/system-users/lock" style="display:inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="username" value="{{ a.user }}">
-                    <button type="submit" class="btn btn-sm btn-warn" title="Kunci akun (disable login)" onclick="return confirm('Kunci akun {{ a.user }}?')">🔒 Kunci</button>
+                    <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="Kunci akun (disable login)" onclick="return confirm('Kunci akun {{ a.user }}?')">Kunci</button>
                   </form>
                   {% endif %}
                   <form method="post" action="/servers/{{ server.id }}/system-users/delete" style="display:inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="username" value="{{ a.user }}">
-                    <button type="submit" class="btn btn-sm btn-danger" title="Hapus akun ini" onclick="return confirm('Hapus pengguna {{ a.user }} secara permanen?')">🗑 Hapus</button>
+                    <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="Hapus akun ini" onclick="return confirm('Hapus pengguna {{ a.user }} secara permanen?')">Hapus</button>
                   </form>
                 {% endif %}
               </div>
@@ -4422,19 +4422,19 @@ function renderSys(data) {
         actions += '<form method="post" action="/servers/' + SID + '/system-users/unlock" style="display:inline">'
           + '<input type="hidden" name="csrf_token" value="' + csrf + '">'
           + '<input type="hidden" name="username" value="' + userEsc + '">'
-          + '<button type="submit" class="btn btn-sm btn-primary" title="Buka kunci akun (aktifkan login)" onclick="return confirm(\'Buka kunci akun ' + userEsc + '?\')">🔓 Buka Kunci</button>'
+          + '<button type="submit" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="Buka kunci akun (aktifkan login)" onclick="return confirm(\'Buka kunci akun ' + userEsc + '?\')">Buka Kunci</button>'
           + '</form>';
       } else {
         actions += '<form method="post" action="/servers/' + SID + '/system-users/lock" style="display:inline">'
           + '<input type="hidden" name="csrf_token" value="' + csrf + '">'
           + '<input type="hidden" name="username" value="' + userEsc + '">'
-          + '<button type="submit" class="btn btn-sm btn-warn" title="Kunci akun (disable login)" onclick="return confirm(\'Kunci akun ' + userEsc + '?\')">🔒 Kunci</button>'
+          + '<button type="submit" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="Kunci akun (disable login)" onclick="return confirm(\'Kunci akun ' + userEsc + '?\')">Kunci</button>'
           + '</form>';
       }
       actions += '<form method="post" action="/servers/' + SID + '/system-users/delete" style="display:inline">'
         + '<input type="hidden" name="csrf_token" value="' + csrf + '">'
         + '<input type="hidden" name="username" value="' + userEsc + '">'
-        + '<button type="submit" class="btn btn-sm btn-danger" title="Hapus akun ini" onclick="return confirm(\'Hapus pengguna ' + userEsc + ' secara permanen?\')">🗑 Hapus</button>'
+        + '<button type="submit" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="Hapus akun ini" onclick="return confirm(\'Hapus pengguna ' + userEsc + ' secara permanen?\')">Hapus</button>'
         + '</form>';
     }
     return '<tr>'
