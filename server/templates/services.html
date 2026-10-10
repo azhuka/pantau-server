@@ -3804,13 +3804,25 @@ function fmtProbDate(isoStr) {
   if (isNaN(d.getTime())) return isoStr;
   const day = String(d.getDate()).padStart(2, '0');
   const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-  const mon = months[d.getMonth()] || '';
+  const monthsEn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const mon = (isEn ? monthsEn[d.getMonth()] : months[d.getMonth()]) || '';
   const h = String(d.getHours()).padStart(2, '0');
   const m = String(d.getMinutes()).padStart(2, '0');
   return `${day} ${mon} ${h}:${m}`;
 }
 
+function getServicesI18nText(text, isEn) {
+  if (!isEn || !text) return text;
+  if (typeof replaceWithSmartBoundary === 'function' && typeof UI_TEXT_PAIRS !== 'undefined') {
+    const sortedPairs = [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length);
+    return replaceWithSmartBoundary(text, sortedPairs, true);
+  }
+  return text;
+}
+
 function renderProblemsTab(level, openList, histList) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const pmeta = {
     ok: ['OK', 'up'],
     info: ['Info', 'info'],
@@ -3842,11 +3854,11 @@ function renderProblemsTab(level, openList, histList) {
   const headEl = document.getElementById('prob-header-status');
   if (headEl) {
     if (level === null || level === undefined) {
-      headEl.innerHTML = '<span class="badge badge-muted">belum ada data</span>';
+      headEl.innerHTML = '<span class="badge badge-muted">' + (isEn ? 'no data yet' : 'belum ada data') + '</span>';
     } else {
-      let sub = `${activeCount} masalah aktif`;
+      let sub = isEn ? `${activeCount} active issues` : `${activeCount} masalah aktif`;
       if (ignoredCount > 0) {
-        sub += ` · ${ignoredCount} diabaikan (🔕)`;
+        sub += isEn ? ` · ${ignoredCount} muted (🔕)` : ` · ${ignoredCount} diabaikan (🔕)`;
       }
       headEl.innerHTML = `<span class="badge badge-${meta[1]}">${meta[0]}</span> <span style="font-size:12px;color:var(--dim)">${sub}</span>`;
     }
@@ -3866,7 +3878,7 @@ function renderProblemsTab(level, openList, histList) {
   if (rows.length === 0) {
     wrap.innerHTML = `<div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;padding:12px 0">
       <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
-      Tidak ada masalah terdeteksi saat ini.
+      ${isEn ? 'No incidents detected at this time.' : 'Tidak ada masalah terdeteksi saat ini.'}
     </div>`;
     return;
   }
@@ -3878,30 +3890,30 @@ function renderProblemsTab(level, openList, histList) {
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       <select id="prob-filter" onchange="probFilter()"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
-        <option value=""${oldFilter === '' ? ' selected' : ''}>Semua level</option>
+        <option value=""${oldFilter === '' ? ' selected' : ''}>${isEn ? 'All levels' : 'Semua level'}</option>
         <option value="danger"${oldFilter === 'danger' ? ' selected' : ''}>Danger</option>
         <option value="warning"${oldFilter === 'warning' ? ' selected' : ''}>Warning</option>
         <option value="info"${oldFilter === 'info' ? ' selected' : ''}>Info</option>
-        <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>Diabaikan (🔕)</option>
+        <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>${isEn ? 'Muted (🔕)' : 'Diabaikan (🔕)'}</option>
       </select>
-      <input type="search" id="prob-search" oninput="probFilter()" value="${escapeHtml(oldSearch)}" placeholder="Cari kejadian…"
+      <input type="search" id="prob-search" oninput="probFilter()" value="${escapeHtml(oldSearch)}" placeholder="${isEn ? 'Search incident…' : 'Cari kejadian…'}"
              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;min-width:200px">
       <span style="font-size:11px;color:var(--dim)" id="prob-count"></span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
+      <span style="font-size:12px;color:var(--dim)">${isEn ? 'Show:' : 'Tampilkan:'}</span>
       <select id="prob-limit-top" onchange="setProbLimit(this.value)"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
-        <option value="5"${String(probLimit) === '5' ? ' selected' : ''}>5 masalah</option>
-        <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>10 masalah</option>
-        <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>25 masalah</option>
-        <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>50 masalah</option>
-        <option value="all"${String(probLimit) === 'all' ? ' selected' : ''}>Semua masalah</option>
+        <option value="5"${String(probLimit) === '5' ? ' selected' : ''}>${isEn ? '5 incidents' : '5 masalah'}</option>
+        <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>${isEn ? '10 incidents' : '10 masalah'}</option>
+        <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>${isEn ? '25 incidents' : '25 masalah'}</option>
+        <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>${isEn ? '50 incidents' : '50 masalah'}</option>
+        <option value="all"${String(probLimit) === 'all' ? ' selected' : ''}>${isEn ? 'All incidents' : 'Semua masalah'}</option>
       </select>
     </div>
   </div>
   <table id="probtable">
-    <thead><tr><th>Waktu</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Tindakan</th><th>Tips</th></tr></thead>
+    <thead><tr><th>${isEn ? 'Time' : 'Waktu'}</th><th>${isEn ? 'Level' : 'Level'}</th><th>${isEn ? 'Event' : 'Kejadian'}</th><th>${isEn ? 'Duration' : 'Durasi'}</th><th>${isEn ? 'Action' : 'Tindakan'}</th><th>${isEn ? 'Advice' : 'Tips'}</th></tr></thead>
     <tbody>`;
 
   for (const p of rows) {
@@ -3910,25 +3922,27 @@ function renderProblemsTab(level, openList, histList) {
     const sev = p.severity || 'info';
     const sevBadge = isIgnored ? 'muted' : ({danger: 'danger', warning: 'warn', info: 'info'}[sev] || 'muted');
     const sevLabel = escapeHtml(sev) + (isIgnored ? ' 🔕' : '');
-    const searchTxt = ((p.message || '') + ' ' + (p.key || '')).toLowerCase();
+    const pMsg = isEn ? getServicesI18nText(p.message || '', true) : (p.message || '');
+    const pTip = isEn ? getServicesI18nText(p.tip || '—', true) : (p.tip || '—');
+    const searchTxt = ((pMsg || '') + ' ' + (p.key || '')).toLowerCase();
     const rowStyle = !isOpen ? ' style="opacity:.65"' : (isIgnored ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '');
     const startStr = fmtProbDate(p.started_at);
     const resStr = p.resolved_at ? `<span style="color:var(--dim)"> → ${fmtProbDate(p.resolved_at)}</span>` : '';
     const checkMark = isOpen ? '' : '<span style="color:var(--green)">✓</span> ';
     const msgStyle = isOpen ? '' : ' style="text-decoration:line-through"';
     const ignoredBadge = isIgnored
-      ? `<span class="badge badge-muted" title="${p.ignored_reason ? 'Alasan: ' + escapeHtml(p.ignored_reason) : (p.ignored_by ? 'Diabaikan oleh ' + escapeHtml(p.ignored_by) : '')}">🔕 diabaikan${p.ignored_until ? ' s/d ' + fmtProbDate(p.ignored_until) : ' permanen'}</span> `
+      ? `<span class="badge badge-muted" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (p.ignored_by ? (isEn ? 'Muted by ' : 'Diabaikan oleh ') + escapeHtml(p.ignored_by) : '')}">${isEn ? '🔕 muted' : '🔕 diabaikan'}${p.ignored_until ? (isEn ? ' until ' : ' s/d ') + fmtProbDate(p.ignored_until) : (isEn ? ' permanent' : ' permanen')}</span> `
       : '';
-    const ackBadge = p.acknowledged_by ? `<span class="badge badge-up" title="Diakui ${escapeHtml(p.acknowledged_by)}">✓ diakui</span>` : '';
-    const kambuhBadge = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh ${p.count_24h}×</span>` : '';
+    const ackBadge = p.acknowledged_by ? `<span class="badge badge-up" title="${isEn ? 'Acknowledged by ' : 'Diakui '}${escapeHtml(p.acknowledged_by)}">✓ ${isEn ? 'acknowledged' : 'diakui'}</span>` : '';
+    const kambuhBadge = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
     const isoStart = isOpen && p.started_at ? (p.started_at.endsWith('Z') ? p.started_at : p.started_at + 'Z') : '';
     const dataStart = isoStart ? ` data-start="${isoStart}"` : '';
 
     let actHtml = '';
-    const diagBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" style="margin-right:4px">🔍 Diagnosa</button>`;
+    const diagBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}" style="margin-right:4px">🔍 ${isEn ? 'Diagnose' : 'Diagnosa'}</button>`;
     if (isOpen) {
       if (p.action === 'restart' && p.svc_id) {
-        actHtml += `<form method="post" action="/servers/${SID}/services/${p.svc_id}/restart" style="display:inline" data-confirm data-msg="Restart service ini di ${escapeHtml(SERVER_NAME)}?">
+        actHtml += `<form method="post" action="/servers/${SID}/services/${p.svc_id}/restart" style="display:inline" data-confirm data-msg="${isEn ? 'Restart this service on ' : 'Restart service ini di '}${escapeHtml(SERVER_NAME)}?">
           <input type="hidden" name="csrf_token" value="${getCsrf()}">
           <button class="btn btn-primary btn-sm">Restart</button>
         </form>`;
@@ -3939,33 +3953,33 @@ function renderProblemsTab(level, openList, histList) {
         actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')">Log</button>`;
       } else if (p.action === 'mitigate') {
         if (IS_ADMIN && p.ip_count && p.ip_count > 0) {
-          actHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline" data-confirm data-msg="Blokir ${p.ip_count} IP sumber (iptables) di ${escapeHtml(SERVER_NAME)}?">
+          actHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline" data-confirm data-msg="${isEn ? `Block ${p.ip_count} source IPs (iptables) on ` : `Blokir ${p.ip_count} IP sumber (iptables) di `}${escapeHtml(SERVER_NAME)}?">
             <input type="hidden" name="csrf_token" value="${getCsrf()}">
-            <button class="btn btn-danger btn-sm">Blokir IP (${p.ip_count})</button>
+            <button class="btn btn-danger btn-sm">${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</button>
           </form>`;
         }
         actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>`;
       } else if (p.action === 'agent_restart' && IS_ADMIN) {
-        actHtml += `<form method="post" action="/servers/${SID}/problems/restart-agent" style="display:inline" data-confirm data-msg="Restart agen (agent_pantau) di ${escapeHtml(SERVER_NAME)}?">
+        actHtml += `<form method="post" action="/servers/${SID}/problems/restart-agent" style="display:inline" data-confirm data-msg="${isEn ? 'Restart agent (agent_pantau) on ' : 'Restart agen (agent_pantau) di '}${escapeHtml(SERVER_NAME)}?">
           <input type="hidden" name="csrf_token" value="${getCsrf()}">
-          <button class="btn btn-ghost btn-sm">Restart agen</button>
+          <button class="btn btn-ghost btn-sm">${isEn ? 'Restart agent' : 'Restart agen'}</button>
         </form>`;
       } else if (p.action === 'apt_update') {
-        actHtml += `<button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">Update OS</button>`;
+        actHtml += `<button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">${isEn ? 'Update OS' : 'Update OS'}</button>`;
       } else if (p.action === 'agent_update_cmd') {
-        actHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard">📋 Update Agen</button>`;
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}">📋 ${isEn ? 'Update Agent' : 'Update Agen'}</button>`;
       }
 
       if (isIgnored) {
-        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>`;
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Unmute this incident' : 'Pantau kembali masalah ini'}">🔔 ${isEn ? 'Unmute' : 'Pantau Kembali'}</button>`;
       } else {
-        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>`;
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Mute this incident' : 'Abaikan masalah ini'}">🔕 ${isEn ? 'Mute' : 'Abaikan'}</button>`;
       }
 
       if (p.acknowledged_by) {
-        actHtml += `<span class="badge badge-up" style="margin-left:4px" title="Ditangani ${escapeHtml(p.acknowledged_by)}">✓ Ditangani</span>`;
+        actHtml += `<span class="badge badge-up" style="margin-left:4px" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">✓ ${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
       } else {
-        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail(${p.id}, this)" title="Tandai masalah ini sudah ditangani">Ditangani</button>`;
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail(${p.id}, this)" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${isEn ? 'Acknowledge' : 'Ditangani'}</button>`;
       }
     }
     actHtml = diagBtn + actHtml;
@@ -3976,8 +3990,8 @@ function renderProblemsTab(level, openList, histList) {
       data-prob-id="${p.id || ''}"
       data-prob-key="${escapeHtml(p.key || '')}"
       data-prob-sev="${escapeHtml(sev)}"
-      data-prob-msg="${escapeHtml(p.message || '')}"
-      data-prob-tip="${escapeHtml(p.tip || '')}"
+      data-prob-msg="${escapeHtml(pMsg || '')}"
+      data-prob-tip="${escapeHtml(pTip || '')}"
       data-prob-start="${escapeHtml(p.started_at ? fmtProbDate(p.started_at) : '')}"
       data-prob-res="${escapeHtml(p.resolved_at ? fmtProbDate(p.resolved_at) : '')}"
       data-prob-durasi="${escapeHtml(p.durasi || '')}"
@@ -3987,32 +4001,32 @@ function renderProblemsTab(level, openList, histList) {
       data-prob-context="${escapeHtml(ctxAttr)}">
       <td style="white-space:nowrap" class="mono">${startStr}${resStr}</td>
       <td><span class="badge badge-${sevBadge}">${sevLabel}</span></td>
-      <td>${checkMark}<span${msgStyle}>${escapeHtml(p.message || '')}</span> ${ignoredBadge} ${ackBadge} ${kambuhBadge}</td>
+      <td>${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${ackBadge} ${kambuhBadge}</td>
       <td class="mono"${dataStart}>${escapeHtml(p.durasi || '')}</td>
       <td style="white-space:nowrap">${actHtml}</td>
-      <td style="font-size:12px;line-height:1.55;max-width:360px">${escapeHtml(p.tip || '—')}</td>
+      <td style="font-size:12px;line-height:1.55;max-width:360px">${escapeHtml(pTip || '—')}</td>
     </tr>`;
   }
 
   html += `</tbody></table>
   <div id="prob-pagination-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:12px">
     <div style="display:flex;align-items:center;gap:12px">
-      <span id="prob-showing-summary">Menampilkan 0 masalah</span>
+      <span id="prob-showing-summary">${isEn ? 'Showing 0 incidents' : 'Menampilkan 0 masalah'}</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
-      <button type="button" id="prob-prev-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(-1)" style="padding:4px 10px;font-size:11px" disabled>« Sebelumnya</button>
-      <span id="prob-page-info" style="font-weight:600;font-size:11.5px">Halaman 1 dari 1</span>
-      <button type="button" id="prob-next-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(1)" style="padding:4px 10px;font-size:11px" disabled>Berikutnya »</button>
+      <button type="button" id="prob-prev-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(-1)" style="padding:4px 10px;font-size:11px" disabled>« ${isEn ? 'Previous' : 'Sebelumnya'}</button>
+      <span id="prob-page-info" style="font-weight:600;font-size:11.5px">${isEn ? 'Page 1 of 1' : 'Halaman 1 dari 1'}</span>
+      <button type="button" id="prob-next-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(1)" style="padding:4px 10px;font-size:11px" disabled>${isEn ? 'Next' : 'Berikutnya'} »</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
+      <span style="font-size:12px;color:var(--dim)">${isEn ? 'Show:' : 'Tampilkan:'}</span>
       <select id="prob-limit-bottom" onchange="setProbLimit(this.value)"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
-        <option value="5"${String(probLimit) === '5' ? ' selected' : ''}>5 masalah</option>
-        <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>10 masalah</option>
-        <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>25 masalah</option>
-        <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>50 masalah</option>
-        <option value="all"${String(probLimit) === 'all' ? ' selected' : ''}>Semua masalah</option>
+        <option value="5"${String(probLimit) === '5' ? ' selected' : ''}>${isEn ? '5 incidents' : '5 masalah'}</option>
+        <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>${isEn ? '10 incidents' : '10 masalah'}</option>
+        <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>${isEn ? '25 incidents' : '25 masalah'}</option>
+        <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>${isEn ? '50 incidents' : '50 masalah'}</option>
+        <option value="all"${String(probLimit) === 'all' ? ' selected' : ''}>${isEn ? 'All incidents' : 'Semua masalah'}</option>
       </select>
     </div>
   </div>`;
@@ -4176,6 +4190,93 @@ function filterServerActionHistory() {
   }
 }
 
+function formatActionRowI18n(a, isEn) {
+  let act = a.action_label || a.action || '—';
+  let tgt = a.target || '—';
+  let st = a.status_label || a.status || '—';
+  let res = a.result || '—';
+
+  if (isEn) {
+    const actMap = {
+      'Buka Kunci Akun': 'Unlock Account',
+      'buka kunci akun': 'Unlock Account',
+      'buka kunci user': 'Unlock User',
+      'Kunci Akun': 'Lock Account',
+      'kunci akun': 'Lock Account',
+      'kunci user': 'Lock User',
+      'Buat Pengguna': 'Create User',
+      'Hapus Pengguna': 'Delete User',
+      'Restart Layanan': 'Restart Service',
+      'Hentikan Layanan': 'Stop Service',
+      'Jalankan Layanan': 'Start Service',
+      'Abaikan Masalah': 'Mute Incident',
+      'Pantau Kembali': 'Unmute Monitoring',
+      'Tandai Ditangani': 'Mark Acknowledged',
+      'Selesaikan Masalah': 'Resolve Incident',
+      'Mode Pemeliharaan': 'Maintenance Mode',
+      'Tambah Layanan': 'Add Service',
+      'Hapus Layanan': 'Delete Service',
+      'Reboot OS': 'Reboot OS',
+      'Reboot Host': 'Reboot Host',
+      'Power Off': 'Power Off',
+      'Power Off Host': 'Power Off Host',
+      'Update OS (apt)': 'OS Update (apt)',
+      'Upgrade OS (apt)': 'OS Upgrade (apt)',
+      'Upgrade OS (interaktif)': 'OS Upgrade (interactive)',
+      'Buka Terminal Root': 'Open Root Terminal',
+      'Blokir IP': 'Block IP',
+      'Buka Blokir IP': 'Unblock IP',
+      'Restart Agen': 'Restart Agent',
+      'Tambah Cron Job': 'Add Cron Job',
+      'Ubah Status Cron': 'Toggle Cron Status',
+      'Hapus Cron Job': 'Delete Cron Job',
+      'Aktifkan Firewall': 'Enable Firewall',
+      'Nonaktifkan Firewall': 'Disable Firewall',
+      'Muat Ulang Firewall': 'Reload Firewall',
+      'Aturan Port Firewall': 'Firewall Port Rule',
+      'Tambah Path SSL': 'Add SSL Path',
+      'Hapus Path SSL': 'Remove SSL Path',
+      'Simpan Berkas': 'Save File',
+      'Unggah Berkas': 'Upload File',
+      'Hapus Berkas': 'Delete File',
+      'Buat Folder': 'Create Folder',
+      'Ubah Nama Berkas': 'Rename File',
+      'Ubah Izin Berkas': 'Change File Permissions',
+      'Ubah Pemilik Berkas': 'Change File Owner'
+    };
+    if (actMap[act]) act = actMap[act];
+    else act = getServicesI18nText(act, true);
+
+    const stMap = {
+      'berhasil': 'success',
+      'sukses': 'success',
+      'gagal': 'failed',
+      'menunggu…': 'pending…',
+      'dieksekusi…': 'executing…',
+      'dieksekusi': 'executed',
+      'diabaikan': 'muted',
+      'dipantau': 'monitored',
+      'ditangani': 'acknowledged',
+      'selesai': 'resolved',
+      'pemeliharaan': 'maintenance'
+    };
+    if (stMap[st]) st = stMap[st];
+    else st = getServicesI18nText(st, true);
+
+    if (tgt.startsWith('Akun ')) {
+      tgt = 'Account ' + tgt.slice(5);
+    } else if (tgt.startsWith('akun ')) {
+      tgt = 'account ' + tgt.slice(5);
+    } else {
+      tgt = getServicesI18nText(tgt, true);
+    }
+
+    res = getServicesI18nText(res, true);
+  }
+
+  return { act, tgt, st, res };
+}
+
 function renderActionHistory(actions) {
   _cachedActions = actions || [];
   const tbody = document.getElementById('action-history-tbody');
@@ -4217,21 +4318,22 @@ function renderActionHistory(actions) {
 
   const startShow = total === 0 ? 0 : startIdx + 1;
   const endShow = endIdx;
-  const txtSummary = total === 0 ? '0 tindakan' : `Menampilkan ${startShow}-${endShow} dari ${total} tindakan`;
+  const txtSummary = total === 0 ? (isEn ? '0 actions' : '0 tindakan') : (isEn ? `Showing ${startShow}-${endShow} of ${total} actions` : `Menampilkan ${startShow}-${endShow} dari ${total} tindakan`);
   if (countTop) countTop.textContent = txtSummary;
   if (countBottom) countBottom.textContent = txtSummary;
-  if (pageInfo) pageInfo.textContent = `Halaman ${actionCurrentPage} dari ${totalPages}`;
+  if (pageInfo) pageInfo.textContent = isEn ? `Page ${actionCurrentPage} of ${totalPages}` : `Halaman ${actionCurrentPage} dari ${totalPages}`;
   if (prevBtn) prevBtn.disabled = (actionCurrentPage <= 1);
   if (nextBtn) nextBtn.disabled = (actionCurrentPage >= totalPages);
 
   tbody.innerHTML = displayList.map(a => {
+    const f = formatActionRowI18n(a, isEn);
     return `<tr id="act-row-${escHtml(a.id || '')}">
       <td class="mono" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
       <td><span class="mono">${escHtml(a.user || '-')}</span></td>
-      <td><span class="badge badge-muted">${escHtml(a.action_label || a.action || '—')}</span></td>
-      <td style="font-size:13px"><strong>${escHtml(a.target || '—')}</strong></td>
-      <td><span class="badge badge-${escHtml(a.status_cls || 'muted')}">${escHtml(a.status_label || a.status || '—')}</span></td>
-      <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">${escHtml(a.result || '—')}</td>
+      <td><span class="badge badge-muted">${escHtml(f.act)}</span></td>
+      <td style="font-size:13px"><strong>${escHtml(f.tgt)}</strong></td>
+      <td><span class="badge badge-${escHtml(a.status_cls || 'muted')}">${escHtml(f.st)}</span></td>
+      <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">${escHtml(f.res)}</td>
     </tr>`;
   }).join('');
 
@@ -4252,13 +4354,14 @@ function renderActionHistory(actions) {
         (isEn ? 'No user account action history on this server yet.' : 'Belum ada riwayat tindakan akun pengguna di server ini.') + '</td></tr>';
     } else {
       accTbody.innerHTML = accActions.slice(0, 25).map(a => {
+        const f = formatActionRowI18n(a, isEn);
         return `<tr>
           <td class="mono" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
           <td><span class="mono">${escHtml(a.user || '-')}</span></td>
-          <td><span class="badge badge-muted">${escHtml(a.action_label || a.action || '—')}</span></td>
-          <td style="font-size:13px"><strong>${escHtml(a.target || '—')}</strong></td>
-          <td><span class="badge badge-${escHtml(a.status_cls || 'muted')}">${escHtml(a.status_label || a.status || '—')}</span></td>
-          <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">${escHtml(a.result || '—')}</td>
+          <td><span class="badge badge-muted">${escHtml(f.act)}</span></td>
+          <td style="font-size:13px"><strong>${escHtml(f.tgt)}</strong></td>
+          <td><span class="badge badge-${escHtml(a.status_cls || 'muted')}">${escHtml(f.st)}</span></td>
+          <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">${escHtml(f.res)}</td>
         </tr>`;
       }).join('');
     }
@@ -4278,6 +4381,9 @@ window.onAppLangChanged = function(lang) {
     }
     if (_cachedLastSysData) {
       renderSys(_cachedLastSysData);
+    }
+    if (typeof probFilter === 'function') {
+      probFilter();
     }
   } catch(e) {
   } finally {

@@ -1008,16 +1008,35 @@ const UI_TEXT_PAIRS = [
   ['Tidak ada masalah terdeteksi saat ini.', 'No incidents detected at this time.'],
   ['Belum ada riwayat tindakan di server ini.', 'No action history on this server yet.'],
   ['Abaikan masalah ini', 'Mute this incident'],
+  ['Abaikan masalah', 'Mute incident'],
+  ['Abaikan issues', 'Mute incident'],
   ['Abaikan Pemantauan', 'Mute Monitoring'],
   ['Abaikan Selama:', 'Mute Duration:'],
   ['Alasan (Opsional):', 'Reason (Optional):'],
   ['Tuliskan alasan pengabaian…', 'Write mute reason…'],
+  ['Contoh: Service on-demand / sengaja dihentikan', 'Example: Service on-demand / intentionally stopped'],
+  ['Sekali ini saja (kembali dipantau saat aktif)', 'This incident only (unmute when active)'],
+  ['Permanen (hingga diaktifkan manual kembali)', 'Permanent (until unmuted manually)'],
+  ['Simpan & Abaikan', 'Save & Mute'],
+  ['Simpan &amp; Abaikan', 'Save & Mute'],
   ['🔔 Pantau Kembali', '🔔 Unmute'],
   ['🔕 Abaikan', '🔕 Mute'],
+  ['Tandai masalah ini sudah ditangani', 'Mark this incident as acknowledged'],
+  ['Tandai semua ditangani', 'Mark all as acknowledged'],
+  ['Tandai sudah ditangani', 'Mark as acknowledged'],
+  ['Tandai ditangani', 'Mark as acknowledged'],
+  ['Tandai Ditangani', 'Mark as Acknowledged'],
+  ['Tandai Acknowledge', 'Mark as acknowledged'],
   ['✓ Ditangani', '✓ Acknowledged'],
   ['Ditangani', 'Acknowledge'],
-  ['Tandai sudah ditangani', 'Mark as acknowledged'],
-  ['Tandai masalah ini sudah ditangani', 'Mark this incident as acknowledged'],
+  ['Buka kunci pengguna', 'Unlock user'],
+  ['buka kunci pengguna', 'unlock user'],
+  ['Kunci pengguna', 'Lock user'],
+  ['kunci pengguna', 'lock user'],
+  ['Buka Kunci Akun', 'Unlock Account'],
+  ['buka kunci akun', 'unlock account'],
+  ['Kunci Akun', 'Lock Account'],
+  ['kunci akun', 'lock account'],
   ['✓ diakui', '✓ acknowledged'],
   ['kambuh', 'relapsed'],
   ['permanen', 'permanent'],
@@ -2157,14 +2176,17 @@ function replaceWithSmartBoundary(text, sortedPairs, isEnMode) {
   if (isEnMode) {
     // 1. Pesan Anomali & Insiden Sistem
     out = out.replace(/Konflik Agen Terdeteksi:\s*API key (?:aktif|active) di beberapa host \(([^)]+)\)/gi, 'Agent Conflict Detected: API key active on multiple hosts ($1)');
+    out = out.replace(/Konflik Agen Terdeteksi:\s*API key (?:aktif|active) di beberapa host/gi, 'Agent Conflict Detected: API key active on multiple hosts');
     out = out.replace(/Konflik Agen Terdeteksi/gi, 'Agent Conflict Detected');
     out = out.replace(/di beberapa host/gi, 'on multiple hosts');
 
     // 2. Format Respon CLI Agen Pantau (User, Firewall, Cron, SSL, Service)
-    out = out.replace(/OK:\s*(?:Akun|Accounts)\s*'([^']+)'\s*(?:berhasil|success)\s*(?:dibuka kuncinya|unlocked)/gi, "OK: Account '$1' unlocked successfully");
-    out = out.replace(/OK:\s*(?:Akun|Accounts)\s*'([^']+)'\s*(?:berhasil|success)\s*(?:dikunci|locked)/gi, "OK: Account '$1' locked successfully");
-    out = out.replace(/OK:\s*(?:Pengguna|User)\s*'([^']+)'\s*(?:berhasil|success)\s*(?:dihapus|deleted)/gi, "OK: User '$1' deleted successfully");
-    out = out.replace(/OK:\s*(?:Pengguna|User)\s*'([^']+)'\s*(?:berhasil|success)\s*(?:dibuat|created)\s*\(([^)]+)\)/gi, "OK: User '$1' created successfully ($2)");
+    out = out.replace(/OK:\s*(?:Akun|Accounts)\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success)\s*(?:dibuka kuncinya|unlocked)/gi, "OK: Account '$1' unlocked successfully");
+    out = out.replace(/OK:\s*(?:Akun|Accounts)\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success)\s*(?:dikunci|locked)/gi, "OK: Account '$1' locked successfully");
+    out = out.replace(/OK:\s*Accounts\s*['"]?([^'"]+)['"]?\s*success\s*dibuka kuncinya/gi, "OK: Account '$1' unlocked successfully");
+    out = out.replace(/OK:\s*Accounts\s*['"]?([^'"]+)['"]?\s*success\s*dikunci/gi, "OK: Account '$1' locked successfully");
+    out = out.replace(/OK:\s*(?:Pengguna|User)\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success)\s*(?:dihapus|deleted)/gi, "OK: User '$1' deleted successfully");
+    out = out.replace(/OK:\s*(?:Pengguna|User)\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success)\s*(?:dibuat|created)\s*\(([^)]+)\)/gi, "OK: User '$1' created successfully ($2)");
 
     out = out.replace(/OK:\s*Firewall UFW (?:berhasil|success) diaktifkan[^(]*\(([^)]+)\)/gi, "OK: UFW Firewall enabled successfully ($1)");
     out = out.replace(/OK:\s*Firewall UFW (?:berhasil|success) dinonaktifkan/gi, "OK: UFW Firewall disabled successfully");
@@ -2175,38 +2197,49 @@ function replaceWithSmartBoundary(text, sortedPairs, isEnMode) {
     out = out.replace(/OK:\s*INPUT DROP utk\s+([^\s]+)/gi, "OK: INPUT DROP for $1");
     out = out.replace(/OK:\s*Hapus blokir INPUT DROP utk\s+([^\s]+)/gi, "OK: Removed INPUT DROP for $1");
 
-    out = out.replace(/OK:\s*Tugas cron\s*'([^']+)'\s*(?:berhasil|success) dibuat\s*\(([^)]+)\)/gi, "OK: Cron job '$1' created successfully ($2)");
-    out = out.replace(/OK:\s*Tugas cron\s*'([^']+)'\s*(?:berhasil|success) dihapus/gi, "OK: Cron job '$1' deleted successfully");
-    out = out.replace(/OK:\s*Tugas cron\s*'([^']+)'\s*dinonaktifkan/gi, "OK: Cron job '$1' disabled");
-    out = out.replace(/OK:\s*Tugas cron\s*'([^']+)'\s*diaktifkan kembali/gi, "OK: Cron job '$1' re-enabled");
+    out = out.replace(/OK:\s*Tugas cron\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success) dibuat\s*\(([^)]+)\)/gi, "OK: Cron job '$1' created successfully ($2)");
+    out = out.replace(/OK:\s*Tugas cron\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success) dihapus/gi, "OK: Cron job '$1' deleted successfully");
+    out = out.replace(/OK:\s*Tugas cron\s*['"]?([^'"]+)['"]?\s*dinonaktifkan/gi, "OK: Cron job '$1' disabled");
+    out = out.replace(/OK:\s*Tugas cron\s*['"]?([^'"]+)['"]?\s*diaktifkan kembali/gi, "OK: Cron job '$1' re-enabled");
     out = out.replace(/OK:\s*Berhasil dijalankan\.?/gi, "OK: Executed successfully.");
 
     out = out.replace(/OK:\s*Sinyal\s+([^\s]+)\s*(?:berhasil|success) dikirim ke proses\s+([^\s]+)\s*\(PID:\s*(\d+)\)/gi, "OK: Signal $1 sent successfully to process $2 (PID: $3)");
     out = out.replace(/OK:\s*proses\s+([^\s]+)\s*(?:berhasil|success) dihentikan\s*\(PIDs:\s*([^)]+)\)/gi, "OK: process $1 stopped successfully (PIDs: $2)");
 
-    out = out.replace(/OK:\s*Path sertifikat\s*'([^']+)'\s*(?:berhasil|success) ditambahkan ke pengawasan/gi, "OK: Certificate path '$1' added to monitoring successfully");
-    out = out.replace(/OK:\s*Path sertifikat\s*'([^']+)'\s*(?:berhasil|success) dihapus dari pengawasan/gi, "OK: Certificate path '$1' removed from monitoring successfully");
-    out = out.replace(/OK:\s*Path\s*'([^']+)'\s*sudah terdaftar dalam pengawasan SSL/gi, "OK: Path '$1' already registered in SSL monitoring");
+    out = out.replace(/OK:\s*Path sertifikat\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success) ditambahkan ke pengawasan/gi, "OK: Certificate path '$1' added to monitoring successfully");
+    out = out.replace(/OK:\s*Path sertifikat\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success) dihapus dari pengawasan/gi, "OK: Certificate path '$1' removed from monitoring successfully");
+    out = out.replace(/OK:\s*Path\s*['"]?([^'"]+)['"]?\s*sudah terdaftar dalam pengawasan SSL/gi, "OK: Path '$1' already registered in SSL monitoring");
     out = out.replace(/OK:\s*([^\s]+)\s*dieksekusi\.?/gi, "OK: $1 executed.");
 
     // Respons Galat / Error Agen
-    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:membuka kunci akun|to unlock account)\s*'([^']+)'/gi, "ERROR: Failed to unlock account '$1'");
-    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:mengunci akun|to lock account)\s*'([^']+)'/gi, "ERROR: Failed to lock account '$1'");
-    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:menghapus pengguna|to delete user)\s*'([^']+)'/gi, "ERROR: Failed to delete user '$1'");
-    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:membuat pengguna|to create user)\s*'([^']+)'/gi, "ERROR: Failed to create user '$1'");
-    out = out.replace(/Pengguna\s*'([^']+)'\s*adalah akun sistem (?:penting|terlindungi)[^!.]*!/gi, "User '$1' is a protected system account!");
+    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:membuka kunci akun|to unlock account)\s*['"]?([^'"]+)['"]?/gi, "ERROR: Failed to unlock account '$1'");
+    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:mengunci akun|to lock account)\s*['"]?([^'"]+)['"]?/gi, "ERROR: Failed to lock account '$1'");
+    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*membuka kunci akun\s*['"]?([^'"]+)['"]?/gi, "ERROR: Failed to unlock account '$1'");
+    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*mengunci akun\s*['"]?([^'"]+)['"]?/gi, "ERROR: Failed to lock account '$1'");
+    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:menghapus pengguna|to delete user)\s*['"]?([^'"]+)['"]?/gi, "ERROR: Failed to delete user '$1'");
+    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:membuat pengguna|to create user)\s*['"]?([^'"]+)['"]?/gi, "ERROR: Failed to create user '$1'");
+    out = out.replace(/Pengguna\s*['"]?([^'"]+)['"]?\s*adalah akun sistem (?:penting|terlindungi)[^!.]*!/gi, "User '$1' is a protected system account!");
 
     // 3. Jejak Aksi Server (Audit Target & Action)
-    out = out.replace(/^([\w.-]+):\s*buka kunci user\s+([\w.-]+)/gi, '$1: unlock user $2');
-    out = out.replace(/^([\w.-]+):\s*kunci user\s+([\w.-]+)/gi, '$1: lock user $2');
-    out = out.replace(/^([\w.-]+):\s*buat user\s+([\w.-]+)/gi, '$1: create user $2');
-    out = out.replace(/^([\w.-]+):\s*hapus user\s+([\w.-]+)/gi, '$1: delete user $2');
-    out = out.replace(/^([\w.-]+):\s*tambah cron\s+([\w.-]+)/gi, '$1: add cron $2');
-    out = out.replace(/^([\w.-]+):\s*hapus cron\s+([\w.-]+)/gi, '$1: delete cron $2');
-    out = out.replace(/^([\w.-]+):\s*tambah path SSL\s+(.+)/gi, '$1: add SSL path $2');
-    out = out.replace(/^([\w.-]+):\s*hapus path SSL\s+(.+)/gi, '$1: remove SSL path $2');
-    out = out.replace(/\bbuka kunci user\s+([\w.-]+)/gi, 'unlock user $1');
-    out = out.replace(/\bkunci user\s+([\w.-]+)/gi, 'lock user $1');
+    out = out.replace(/^([\w.-]+):\s*(?:buka kunci user|unlock user)\s+([\w.-]+)/gi, '$1: unlock user $2');
+    out = out.replace(/^([\w.-]+):\s*(?:kunci user|lock user)\s+([\w.-]+)/gi, '$1: lock user $2');
+    out = out.replace(/^([\w.-]+):\s*(?:buat user|create user)\s+([\w.-]+)/gi, '$1: create user $2');
+    out = out.replace(/^([\w.-]+):\s*(?:hapus user|delete user)\s+([\w.-]+)/gi, '$1: delete user $2');
+    out = out.replace(/^([\w.-]+):\s*(?:tambah cron|add cron)\s+([\w.-]+)/gi, '$1: add cron $2');
+    out = out.replace(/^([\w.-]+):\s*(?:hapus cron|delete cron)\s+([\w.-]+)/gi, '$1: delete cron $2');
+    out = out.replace(/^([\w.-]+):\s*(?:tambah path SSL|add SSL path)\s+(.+)/gi, '$1: add SSL path $2');
+    out = out.replace(/^([\w.-]+):\s*(?:hapus path SSL|remove SSL path)\s+(.+)/gi, '$1: remove SSL path $2');
+    out = out.replace(/\b(?:buka kunci user|unlock user)\s+([\w.-]+)/gi, 'unlock user $1');
+    out = out.replace(/\b(?:kunci user|lock user)\s+([\w.-]+)/gi, 'lock user $1');
+    out = out.replace(/\bBuka kunci user\s+([\w.-]+)/gi, 'Unlock user $1');
+    out = out.replace(/\bKunci user\s+([\w.-]+)/gi, 'Lock user $1');
+    out = out.replace(/\bBuka kunci pengguna\b/gi, 'Unlock user');
+    out = out.replace(/\bbuka kunci pengguna\b/gi, 'unlock user');
+    out = out.replace(/\bKunci pengguna\b/gi, 'Lock user');
+    out = out.replace(/\bkunci pengguna\b/gi, 'lock user');
+    out = out.replace(/\bAkun\s+([\w.-]+)\b/g, 'Account $1');
+    out = out.replace(/\bakun\s+([\w.-]+)\b/g, 'account $1');
+    out = out.replace(/\bAccounts\s+([\w.-]+)\b/g, 'Account $1');
 
     // 4. Frasa Tombol & Dialog "Abaikan"
     out = out.replace(/\bAbaikan\s+(?:masalah|issues?)\s+ini\b/gi, 'Mute this incident');
@@ -2214,16 +2247,21 @@ function replaceWithSmartBoundary(text, sortedPairs, isEnMode) {
     out = out.replace(/\babaikan\s+(?:masalah|issues?)\b/gi, 'mute incident');
     out = out.replace(/\bAbaikan\s+Pemantauan\b/gi, 'Mute Monitoring');
     out = out.replace(/\bAbaikan\s+Selama:\b/gi, 'Mute Duration:');
+    out = out.replace(/\bAbaikan\s+pemantauan\s+layanan\b/gi, 'Mute monitoring for service');
+    out = out.replace(/\bAbaikan\s+pemantauan\b/gi, 'Mute monitoring');
     out = out.replace(/\bSimpan\s+&\s+Abaikan\b/gi, 'Save & Mute');
     out = out.replace(/\bSimpan\s+&amp;\s+Abaikan\b/gi, 'Save & Mute');
 
     // 5. Frasa Akun & Sesi Login
-    out = out.replace(/\b(?:masuk|login)\s+dari\s+([^\s]+)/gi, 'login from $1');
+    out = out.replace(/\b(?:masuk|login)\s+(?:dari|of)\s+([^\s]+)/gi, 'login from $1');
     out = out.replace(/\bmasuk\s+of\s+([^\s]+)/gi, 'login from $1');
-    out = out.replace(/\bBuka\s+kunci\s+pengguna\b/gi, 'Unlock user');
-    out = out.replace(/\bbuka\s+kunci\s+pengguna\b/gi, 'unlock user');
-    out = out.replace(/\bKunci\s+pengguna\b/gi, 'Lock user');
-    out = out.replace(/\bkunci\s+pengguna\b/gi, 'lock user');
+
+    // 6. Frasa Tindakan Insiden (Ack / Ditangani)
+    out = out.replace(/\bTandai\s+(?:masalah\s+ini\s+)?(?:sudah\s+)?(?:ditangani|Acknowledge|acknowledged)\b/gi, 'Mark as acknowledged');
+    out = out.replace(/\btandai\s+(?:masalah\s+ini\s+)?(?:sudah\s+)?(?:ditangani|Acknowledge|acknowledged)\b/gi, 'mark as acknowledged');
+    out = out.replace(/\bTandai\s+semua\s+(?:ditangani|Acknowledge|acknowledged)\b/gi, 'Mark all as acknowledged');
+    out = out.replace(/\bTandai\s+Acknowledge\b/gi, 'Mark as acknowledged');
+    out = out.replace(/\btandai\s+Acknowledge\b/gi, 'mark as acknowledged');
 
     // 6. Angka & Waktu Relatif
     out = out.replace(/\b(\d+)\s+dari\s+(\d+)\b/g, '$1 of $2');
@@ -2783,14 +2821,27 @@ function openIgnoreModal(target, msg, onDone) {
   _ignoreTargetSvcId = svcid;
   _ignoreTargetSid = sid;
   _ignoreCallback = (typeof onDone === 'function') ? onDone : null;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const m = document.getElementById('ignore-problem-modal');
   const txt = document.getElementById('ignore-modal-msg');
-  if (txt) txt.textContent = text || ('Masalah #' + id);
+  if (txt) {
+    let displayMsg = text || ((isEn ? 'Incident #' : 'Masalah #') + id);
+    if (isEn && typeof replaceWithSmartBoundary === 'function' && typeof UI_TEXT_PAIRS !== 'undefined') {
+      const sortedPairs = [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length);
+      displayMsg = replaceWithSmartBoundary(displayMsg, sortedPairs, true);
+    }
+    txt.textContent = displayMsg;
+  }
   const rInput = document.getElementById('ignore-reason');
   if (rInput) rInput.value = '';
   const dSel = document.getElementById('ignore-duration');
   if (dSel) dSel.value = 'incident';
-  if (m) m.style.display = 'flex';
+  if (m) {
+    m.style.display = 'flex';
+    if (typeof applyAppLang === 'function' && isEn) {
+      applyAppLang();
+    }
+  }
 }
 
 function closeIgnoreModal() {
@@ -2804,9 +2855,10 @@ function closeIgnoreModal() {
 
 async function submitIgnoreProblem() {
   if (!_ignoreTargetId && !_ignoreTargetSvcId) return;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const btn = document.getElementById('ignore-modal-submit-btn');
   const orig = btn ? btn.textContent : '';
-  if (btn) { btn.disabled = true; btn.textContent = 'Menyimpan…'; }
+  if (btn) { btn.disabled = true; btn.textContent = isEn ? 'Saving…' : 'Menyimpan…'; }
   const duration = document.getElementById('ignore-duration')?.value || 'permanent';
   const reason = document.getElementById('ignore-reason')?.value || '';
 
@@ -2827,7 +2879,7 @@ async function submitIgnoreProblem() {
       credentials: 'same-origin'
     });
     if (r.ok) {
-      showToast('Pengabaian pemantauan berhasil disimpan.', true);
+      showToast(isEn ? 'Mute settings saved successfully.' : 'Pengabaian pemantauan berhasil disimpan.', true);
       const cb = _ignoreCallback;
       closeIgnoreModal();
       if (typeof cb === 'function') {
