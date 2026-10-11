@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from sqlalchemy import (
@@ -21,8 +22,73 @@ class User(Base):
     id = Column(INTEGER_UNSIGNED, primary_key=True, autoincrement=True)
     username = Column(String(100), nullable=False, unique=True)
     password_hash = Column(String(255), nullable=False)
-    role = Column(Enum("admin", "viewer", name="user_role"), nullable=False, default="admin")
+    role = Column(String(30), nullable=False, default="viewer")  # master_admin | operator | viewer
+    is_active = Column(SmallInteger, nullable=False, default=1)   # 1=aktif, 0=nonaktif
+    password_changed_at = Column(DateTime, nullable=True)         # waktu terakhir ganti password
+    last_login_at = Column(DateTime, nullable=True)               # waktu login terakhir
+    last_login_ip = Column(String(45), nullable=True)             # IP asal login terakhir
+    totp_secret = Column(String(64), nullable=True)               # Base32 TOTP secret key
+    totp_enabled = Column(SmallInteger, nullable=False, default=0)# 1=aktif, 0=nonaktif
+    recovery_codes = Column(Text, nullable=True)                  # JSON list SHA-256 backup codes
+    permissions = Column(Text, nullable=True)                     # JSON dict granular permissions (operator)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    def is_master_admin(self) -> bool:
+        return self.role in ("master_admin", "admin")
+
+    def is_operator(self) -> bool:
+        return self.role == "operator"
+
+    def is_viewer(self) -> bool:
+        return self.role == "viewer"
+
+    def role_display(self) -> str:
+        if self.is_master_admin():
+            return "Master Admin"
+        if self.is_operator():
+            return "Operator"
+        return "Viewer"
+
+    def get_permissions(self) -> dict:
+        if self.is_master_admin():
+            return {
+                "can_terminal": True,
+                "can_file_manager": True,
+                "can_services": True,
+                "can_processes": True,
+                "can_firewall": True,
+                "can_users_sys": True,
+                "can_cron": True,
+                "can_ssl": True,
+                "can_server_control": True,
+                "can_apt": True,
+                "can_ota": True,
+                "can_manage_servers": True,
+                "can_audit": True,
+                "can_manage_users": True,
+                "can_manage_viewers": True,
+            }
+        if self.is_viewer():
+            return {}
+        if not self.permissions:
+            return {}
+        try:
+            return json.loads(self.permissions)
+        except Exception:
+            return {}
+
+    def has_perm(self, perm: str) -> bool:
+        if not self.is_active:
+            return False
+        if self.is_master_admin():
+            return True
+        if self.is_viewer():
+            return False
+        perms = self.get_permissions()
+        if perm == "can_manage_viewers" and perms.get("can_manage_users"):
+            return True
+        return bool(perms.get(perm, False))
+
 
 
 class Server(Base):

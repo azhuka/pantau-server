@@ -25,3 +25,4 @@ env/
 /server-monitor.service.example
 /templates/
 /uploads/
+scratch/

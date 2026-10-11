@@ -353,7 +353,6 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
   body.sb-collapsed .sidebar{width:64px}
   body.sb-collapsed .sidebar-brand{padding:16px 0;justify-content:center}
   body.sb-collapsed .sidebar-brand .brand-label{display:none}
-  body.sb-collapsed .sidebar-brand .lang-switch-head{display:none !important}
   body.sb-collapsed .sb-toggle{margin-left:0}
   body.sb-collapsed .nav-link{justify-content:center;padding:10px 0}
   body.sb-collapsed .nav-label{display:none}
@@ -530,11 +529,6 @@ body.show-alert-banner .main{padding-top:68px}
     <button class="sb-toggle" id="sbToggle" onclick="toggleSb()" title="Minimalkan / perluas sidebar" aria-label="Minimalkan / perluas sidebar" type="button">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
     </button>
-    <!-- Switcher Bahasa Standar UI/UX Header -->
-    <div class="lang-switch-head" style="display:inline-flex;gap:2px;margin-left:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:2px">
-      <button type="button" class="btn-lang" id="btn-lang-id" onclick="setAppLang('id')" style="padding:2px 7px;font-size:10px;border-radius:4px;border:1px solid rgba(56,189,248,0.4);background:rgba(56,189,248,0.2);color:#38bdf8;cursor:pointer;font-weight:700">ID</button>
-      <button type="button" class="btn-lang" id="btn-lang-en" onclick="setAppLang('en')" style="padding:2px 7px;font-size:10px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--dim);cursor:pointer;font-weight:500">EN</button>
-    </div>
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section" data-i18n="menu_section_menu">Menu</div>
@@ -550,26 +544,44 @@ body.show-alert-banner .main{padding-top:68px}
     <a href="/logs" class="nav-link {% if '/logs' in request.url.path %}active{% endif %}">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></span> <span class="nav-label" data-i18n="menu_logs">Log</span>
     </a>
-    {% if user and user.role == 'admin' %}
-    <div class="nav-section" data-i18n="menu_section_admin">Admin</div>
+    {% if user and (user.is_master_admin() or user.has_perm('can_audit')) %}
+    <div class="nav-section">Kelola</div>
     <a href="/audit" class="nav-link {% if '/audit' in request.url.path %}active{% endif %}">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span> <span class="nav-label" data-i18n="menu_audit">Audit</span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span> <span class="nav-label">Audit Trail</span>
     </a>
-    <a href="/users" class="nav-link {% if '/users' in request.url.path %}active{% endif %}">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> <span class="nav-label" data-i18n="menu_users">Users</span>
+    {% endif %}
+    {% if user and not user.is_viewer() %}
+    <a href="/profile" class="nav-link {% if '/profile' in request.url.path %}active{% endif %}">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span> <span class="nav-label">Profil & Keamanan</span>
     </a>
     {% endif %}
     <a href="/logout" class="nav-link mob-logout">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span> <span class="nav-label" data-i18n="menu_logout">Logout</span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span> <span class="nav-label">Keluar</span>
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:4px">v{{ app_version or '3.12.0' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.0.0' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
-    {{ user.username }} ({{ user.role }})<br>
-    <a href="/logout" data-i18n="menu_logout">Logout</a>
+    <div style="margin-bottom:6px;line-height:1.4">
+      <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
+      {% if not user.is_viewer() %}
+      <div style="margin-top:2px">
+        {% if user.is_master_admin() %}
+        <span class="badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:10px;padding:1px 6px">Master Admin</span>
+        {% elif user.is_operator() %}
+        <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);font-size:10px;padding:1px 6px">Operator</span>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    <div style="display:flex;gap:12px;font-size:11px;margin-top:4px">
+      {% if not user.is_viewer() %}
+      <a href="/profile" style="color:var(--blue)">Keamanan</a>
+      {% endif %}
+      <a href="/logout" style="color:var(--red)">Keluar</a>
+    </div>
     {% else %}
-    <a href="/login" data-i18n="menu_login">Login</a>
+    <a href="/login">Masuk</a>
     {% endif %}
   </div>
 </aside>
@@ -600,1969 +612,39 @@ body.show-alert-banner .main{padding-top:68px}
 </div>
 
 <script>
-// ---------- Sistem Multi-Bahasa Kontekstual Sysadmin (i18n: ID & EN) ----------
-const APP_TRANSLATIONS = {
-  id: {
-    lang_label: "Bahasa:",
-    menu_section_menu: "Menu",
-    menu_dashboard: "Dashboard",
-    menu_servers: "Daftar Server",
-    menu_problems: "Insiden & Masalah",
-    menu_logs: "Log Aktivitas",
-    menu_section_admin: "Administrasi",
-    menu_audit: "Audit Trail",
-    menu_users: "Pengguna",
-    menu_logout: "Keluar",
-    menu_login: "Masuk",
-    tab_perf: "Kinerja",
-    tab_masalah: "Riwayat & Masalah",
-    tab_layanan: "Layanan",
-    tab_proses: "Manajer Tugas",
-    tab_akun: "Akun Pengguna",
-    tab_ports: "Port Listening",
-    tab_firewall: "Firewall",
-    tab_ssl: "Sertifikat SSL",
-    tab_cron: "Tugas Terjadwal",
-    tab_logging: "Logging",
-    sys_health_normal: "Normal",
-    sys_health_warning: "Perhatian",
-    sys_health_danger: "Kritis",
-    // Dashboard & Metrik
-    total_servers: "Total Server",
-    online: "Online",
-    offline: "Offline",
-    services_stopped: "Layanan Terhenti",
-    services_ignored: "Layanan Diabaikan",
-    last_report: "Laporan Terakhir",
-    server_status: "Status Server",
-    manage_servers: "Kelola Server →",
-    search_server_ip: "Cari server atau IP…",
-    search_server_agent: "Cari server, IP, atau versi agen…",
-    add_server: "Tambah Server",
-    refresh: "Segarkan",
-    show: "Tampilkan:",
-    details: "Rincian",
-    actions: "Aksi",
-    close: "Tutup",
-    save: "Simpan",
-    cancel: "Batal",
-    update_os: "Update OS",
-    upgrade_os: "Upgrade",
-    reboot_os: "Reboot OS",
-    power_off: "Power Off",
-    terminal: "Terminal",
-    file_manager: "File Manager",
-    maintenance: "Pemeliharaan",
-    log_service: "Log Layanan",
-    log_system: "Log Sistem (Journal)",
-    audit_trail: "Audit Trail",
-    activity_log: "Log Aktivitas",
-  },
-  en: {
-    lang_label: "Language:",
-    menu_section_menu: "Menu",
-    menu_dashboard: "Dashboard",
-    menu_servers: "Servers",
-    menu_problems: "Incidents",
-    menu_logs: "Logs",
-    menu_section_admin: "Administration",
-    menu_audit: "Audit Trail",
-    menu_users: "Users",
-    menu_logout: "Logout",
-    menu_login: "Login",
-    tab_perf: "Performance",
-    tab_masalah: "History & Incidents",
-    tab_layanan: "Services",
-    tab_proses: "Task Manager",
-    tab_akun: "User Accounts",
-    tab_ports: "Listening Ports",
-    tab_firewall: "Firewall",
-    tab_ssl: "SSL Certificates",
-    tab_cron: "Cron Jobs",
-    tab_logging: "Logging",
-    sys_health_normal: "Normal",
-    sys_health_warning: "Warning",
-    sys_health_danger: "Critical",
-    // Dashboard & Metrik
-    total_servers: "Total Servers",
-    online: "Online",
-    offline: "Offline",
-    services_stopped: "Stopped Services",
-    services_ignored: "Ignored Services",
-    last_report: "Last Report",
-    server_status: "Server Status",
-    manage_servers: "Manage Servers →",
-    search_server_ip: "Search server or IP…",
-    search_server_agent: "Search server, IP, or agent version…",
-    add_server: "Add Server",
-    refresh: "Refresh",
-    show: "Show:",
-    details: "Details",
-    actions: "Actions",
-    close: "Close",
-    save: "Save",
-    cancel: "Cancel",
-    update_os: "Update OS",
-    upgrade_os: "Upgrade",
-    reboot_os: "Reboot OS",
-    power_off: "Power Off",
-    terminal: "Terminal",
-    file_manager: "File Manager",
-    maintenance: "Maintenance",
-    log_service: "Service Logs",
-    log_system: "System Logs (Journal)",
-    audit_trail: "Audit Trail",
-    activity_log: "Activity Logs",
-  }
-};
-
-function isCurrentLangEn() {
-  if (typeof currentLang !== 'undefined') return currentLang === 'en';
-  try {
-    return ((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en');
-  } catch(e) {
-    return false;
-  }
-}
-
-let currentLang = (function(){
-  try { return (localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id'); } catch(e){ return 'id'; }
-})();
-
+// Bahasa Aplikasi: Standar Bahasa Indonesia (Fitur alih bahasa dinonaktifkan)
+const currentLang = 'id';
+function isEnPage() { return false; }
+function isCurrentLangEn() { return false; }
 function setAppLang(lang) {
-  currentLang = (lang === 'en') ? 'en' : 'id';
   try {
-    localStorage.setItem('pantau_lang', currentLang);
-    localStorage.setItem('app_lang', currentLang);
-    document.cookie = "app_lang=" + currentLang + ";path=/;max-age=31536000;SameSite=Lax";
+    localStorage.removeItem('pantau_lang');
+    localStorage.removeItem('app_lang');
+    document.cookie = "app_lang=;path=/;max-age=0;expires=Thu, 01 Jan 1970 00:00:00 GMT";
   } catch(e){}
-  applyAppLang();
 }
+function applyAppLang() {}
+function translateAllUiText() {}
+function translateUiText(s) { return s; }
+function replaceWithSmartBoundary(s) { return s; }
+const UI_TEXT_PAIRS = [];
+const APP_TRANSLATIONS = { id: {}, en: {} };
 
-let _isApplyingAppLang = false;
-function applyAppLang() {
-  if (_isApplyingAppLang) return;
-  _isApplyingAppLang = true;
-  try {
-    const dict = APP_TRANSLATIONS[currentLang] || APP_TRANSLATIONS.id;
-  // Penerapan kamus data-i18n
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const k = el.dataset.i18n;
-    if (dict[k]) {
-      const textSpan = el.querySelector('.tab-text');
-      if (textSpan) {
-        textSpan.textContent = dict[k];
-      } else {
-        const badge = el.querySelector('.badge') || el.querySelector('.tab-warn-dot');
-        if (badge) {
-          // Ambil text node awal saja
-          let replaced = false;
-          for (let i = 0; i < el.childNodes.length; i++) {
-            const cn = el.childNodes[i];
-            if (cn.nodeType === Node.TEXT_NODE && cn.nodeValue.trim().length > 0) {
-              cn.nodeValue = dict[k] + ' ';
-              replaced = true;
-              break;
-            }
-          }
-          if (!replaced) el.insertBefore(document.createTextNode(dict[k] + ' '), el.firstChild);
-        } else {
-          el.textContent = dict[k];
-        }
-      }
-    }
-  });
-
-  // Dukungan data-i18n-placeholder
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const k = el.dataset.i18nPlaceholder;
-    if (dict[k]) el.placeholder = dict[k];
-  });
-
-  // Dukungan data-i18n-title
-  document.querySelectorAll('[data-i18n-title]').forEach(el => {
-    const k = el.dataset.i18nTitle;
-    if (dict[k]) el.title = dict[k];
-  });
-
-  // Terjemahan Menyeluruh untuk Seluruh Teks Antarmuka (Universal UI Text Translation)
-  translateAllUiText(currentLang);
-
-  const btnId = document.getElementById('btn-lang-id');
-  const btnEn = document.getElementById('btn-lang-en');
-  if (btnId && btnEn) {
-    if (currentLang === 'id') {
-      btnId.style.background = 'rgba(56,189,248,0.2)';
-      btnId.style.borderColor = 'rgba(56,189,248,0.4)';
-      btnId.style.color = '#38bdf8';
-      btnId.style.fontWeight = '700';
-      btnEn.style.background = 'transparent';
-      btnEn.style.borderColor = 'rgba(255,255,255,0.1)';
-      btnEn.style.color = 'var(--dim)';
-      btnEn.style.fontWeight = '500';
-    } else {
-      btnEn.style.background = 'rgba(56,189,248,0.2)';
-      btnEn.style.borderColor = 'rgba(56,189,248,0.4)';
-      btnEn.style.color = '#38bdf8';
-      btnEn.style.fontWeight = '700';
-      btnId.style.background = 'transparent';
-      btnId.style.borderColor = 'rgba(255,255,255,0.1)';
-      btnId.style.color = 'var(--dim)';
-      btnId.style.fontWeight = '500';
-    }
-  }
-
-  // Re-render modal diagnosa masalah bila sedang terbuka
-  if (window._currentActiveProblem) {
-    const pdm = document.getElementById('problem-detail-modal');
-    if (pdm && pdm.style.display !== 'none') {
-      try { renderProblemDetailModal(window._currentActiveProblem); } catch(e){}
-    }
-  }
-
-  // Panggil callback spesifik per halaman jika ada
-  if (typeof window.onAppLangChanged === 'function') {
-    try { window.onAppLangChanged(currentLang); } catch(e){}
-  }
-  } finally {
-    _isApplyingAppLang = false;
-  }
-}
-
-// Glosarium Pasangan Frasa Bahasa Indonesia <-> Inggris untuk Seluruh UI
-// Glosarium Pasangan Frasa Bahasa Indonesia <-> Inggris untuk Seluruh UI
-const UI_TEXT_PAIRS = [
-  ['Daftar Server', 'Servers'],
-  ['Insiden & Masalah', 'Incidents'],
-  ['Log Aktivitas', 'Activity Logs'],
-  ['Audit Trail', 'Audit Trail'],
-  ['Pengguna', 'Users'],
-  ['Administrasi', 'Administration'],
-  ['Pengaturan', 'Settings'],
-  ['Keluar', 'Logout'],
-  ['Masuk', 'Login'],
-  ['Buka halaman Masalah', 'Open Incidents page'],
-  ['Aktivitas  - Pantau Server', 'Activity - Pantau Server'],
-  ['Audit - Pantau Server', 'Audit - Pantau Server'],
-  ['Dashboard - Pantau Server', 'Dashboard - Pantau Server'],
-  ['Kelola Server - Pantau Server', 'Manage Servers - Pantau Server'],
-  ['Server - Pantau Server', 'Server - Pantau Server'],
-  ['Total Server', 'Total Servers'],
-  ['Server Online', 'Online Servers'],
-  ['Server Offline', 'Offline Servers'],
-  ['Layanan Terhenti', 'Stopped Services'],
-  ['Layanan Diabaikan', 'Ignored Services'],
-  ['Semua Server Normal', 'All Servers Normal'],
-  ['Ringkasan Kesehatan Server', 'Server Health Summary'],
-  ['Beban CPU Rata-rata', 'Average CPU Load'],
-  ['Penggunaan RAM Rata-rata', 'Average RAM Usage'],
-  ['Laporan Terakhir', 'Last Report'],
-  ['Status Server', 'Server Status'],
-  ['Kelola Server →', 'Manage Servers →'],
-  ['Kelola Server', 'Manage Servers'],
-  ['Tambah Server Baru', 'Add New Server'],
-  ['Tambah Server', 'Add Server'],
-  ['Cari server atau IP…', 'Search server or IP…'],
-  ['Cari server, IP, atau versi agen…', 'Search server, IP, or agent version…'],
-  ['Cari server / kejadian…', 'Search server / incidents…'],
-  ['Cari server…', 'Search servers…'],
-  ['Cari hostname, IP, atau OS…', 'Search hostname, IP, or OS…'],
-  ['Total seluruh mesin server yang terdaftar di sistem pemantauan', 'Total registered servers monitored in the system'],
-  ['Server yang aktif terhubung dan mengirimkan metrik secara berkala', 'Servers actively reporting health metrics periodically'],
-  ['Server yang tidak mengirimkan laporan melebihi batas waktu toleransi (terputus atau mati)', 'Servers not reporting within tolerance threshold (disconnected or down)'],
-  ['Jumlah layanan aplikasi atau port yang terdeteksi terhenti dan memerlukan perhatian', 'Count of stopped application services or ports requiring attention'],
-  ['Layanan yang sengaja dinonaktifkan atau dibisukan dari notifikasi gangguan', 'Services deliberately stopped or muted from alert notifications'],
-  ['Selang waktu sejak data metrik terakhir kali diterima dari server mana pun', 'Time elapsed since latest health metrics received from any server'],
-  ['Riwayat & Masalah', 'History & Incidents'],
-  ['Manajer Tugas', 'Task Manager'],
-  ['Akun Pengguna Sistem', 'System User Accounts'],
-  ['Akun Pengguna', 'User Accounts'],
-  ['Akun Sistem', 'System Accounts'],
-  ['Port Listening', 'Listening Ports'],
-  ['Audit Port Terbuka (Listening Sockets)', 'Audit Listening Sockets (Open Ports)'],
-  ['Sertifikat SSL / TLS', 'SSL / TLS Certificates'],
-  ['Sertifikat SSL', 'SSL Certificates'],
-  ['Tugas Terjadwal (Cron & Systemd Timers)', 'Scheduled Tasks (Cron & Systemd Timers)'],
-  ['Tugas Terjadwal', 'Cron Jobs'],
-  ['Log Layanan & Log Sistem (Journal)', 'Service Logs & System Logs (Journal)'],
-  ['Logging', 'Logging'],
-  ['Kinerja', 'Performance'],
-  ['Layanan', 'Services'],
-  ['Update OS', 'Update OS'],
-  ['Upgrade Paket', 'Upgrade Packages'],
-  ['Upgrade', 'Upgrade'],
-  ['Reboot OS', 'Reboot OS'],
-  ['Power Off', 'Power Off'],
-  ['Terminal', 'Terminal'],
-  ['File Manager', 'File Manager'],
-  ['Pemeliharaan (Aktif)', 'Maintenance (Active)'],
-  ['Mode Pemeliharaan', 'Maintenance Mode'],
-  ['Pemeliharaan', 'Maintenance'],
-  ['Akhiri Pemeliharaan', 'End Maintenance'],
-  ['Aktif (Dalam Pemeliharaan)', 'Active (In Maintenance)'],
-  ['Tidak Aktif (Normal)', 'Inactive (Normal)'],
-  ['Aktif Normal', 'Active Normal'],
-  ['Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi down dibisukan sementara', 'Enable or schedule maintenance mode to temporarily suppress alert notifications'],
-  ['Tambah Layanan', 'Add Service'],
-  ['+ Tambah Layanan', '+ Add Service'],
-  ['Segarkan', 'Refresh'],
-  ['Rincian', 'Details'],
-  ['Tindakan', 'Actions'],
-  ['Aksi (Kontrol)', 'Actions (Control)'],
-  ['Aksi sistem aktif untuk Admin', 'Active system actions for Admin'],
-  ['Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan', 'Handling actions: Details, Mark Acknowledged, or Mute Alert'],
-  ['Aksi', 'Actions'],
-  ['Tutup', 'Close'],
-  ['Batal / Tutup', 'Cancel / Close'],
-  ['Batal', 'Cancel'],
-  ['Simpan', 'Save'],
-  ['Unduh', 'Download'],
-  ['Lanjut', 'Resume'],
-  ['Tersalin!', 'Copied!'],
-  ['Gagal menyalin', 'Failed to copy'],
-  ['Salin', 'Copy'],
-  ['Hapus', 'Delete'],
-  ['Salin IP', 'Copy IP'],
-  ['Alamat IP server — klik alamat IP untuk menyalin langsung', 'Server IP address — click to copy directly'],
-  ['Diperbarui tiap siklus agen', 'Updated each agent cycle'],
-  ['Buka terminal shell interaktif langsung ke server klien', 'Open interactive shell terminal directly to client server'],
-  ['Jelajahi, edit, dan kelola berkas sistem secara visual', 'Browse, edit, and manage system files visually'],
-  ['Buka Sesi Shell Baru', 'Open New Shell Session'],
-  ['Bersihkan Layar Konsol', 'Clear Console Screen'],
-  ['Bersihkan Layar (Clear)', 'Clear Screen'],
-  ['Akses & Utilitas Server', 'Server Access & Utilities'],
-  ['Versi agen mutakhir', 'Agent is up to date'],
-  ['Versi agen di server klien lebih lama dari versi dashboard. Disarankan untuk memperbarui agen.', 'Client agent version is older than dashboard. Update recommended.'],
-  ['Agen belum melaporkan versi', 'Agent has not reported version yet'],
-  ['agen v', 'agent v'],
-  ['agen perlu update', 'agent update required'],
-  ['agen tidak dikenal', 'agent unknown'],
-  ['Performa Sekarang — Perangkat Keras', 'Current Performance — Hardware'],
-  ['Riwayat Kinerja', 'Performance History'],
-  ['Statistik Antarmuka Jaringan', 'Network Interface Statistics'],
-  ['Penyimpanan (Disk & I/O Throughput)', 'Storage (Disk & I/O Throughput)'],
-  ['Penggunaan CPU', 'CPU Usage'],
-  ['Penggunaan Memori', 'Memory Usage'],
-  ['Memori Terpakai', 'Memory Used'],
-  ['Swap Terpakai', 'Swap Used'],
-  ['Beban Sistem (Load 1)', 'System Load (Load 1)'],
-  ['Beban Sistem', 'System Load'],
-  ['CPU (riwayat ±10 mnt)', 'CPU (history ±10 min)'],
-  ['RAM (riwayat ±10 mnt)', 'RAM (history ±10 min)'],
-  ['Laju Baca', 'Read Rate'],
-  ['Laju Tulis', 'Write Rate'],
-  ['Antrean I/O', 'I/O Queue'],
-  ['Persentase Utilisasi', '% I/O Util'],
-  ['Tersedia', 'Available'],
-  ['Terpakai', 'Used'],
-  ['Kapasitas', 'Capacity'],
-  ['Titik Kait', 'Mount Point'],
-  ['Sistem Berkas', 'File System'],
-  ['Perangkat', 'Device'],
-  ['Antarmuka', 'Interface'],
-  ['Kirim', 'Tx'],
-  ['Terima', 'Rx'],
-  ['Belum ada data kinerja dari server ini.', 'No performance data from this server yet.'],
-  ['Belum ada data jaringan dari server ini.', 'No network data from this server yet.'],
-  ['Belum ada data riwayat — grafik terisi setelah agen aktif beberapa menit/jam.', 'No history data yet — chart populates after agent runs for a few minutes/hours.'],
-  ['Belum ada data riwayat layanan.', 'No service history data yet.'],
-  ['Masalah Terbuka & Riwayat Masalah', 'Open Incidents & Incident History'],
-  ['Status Masalah', 'Incident Status'],
-  ['Riwayat Tindakan', 'Action History'],
-  ['Rekam jejak seluruh tindakan dan perintah pada server ini', 'Audit trail of all actions and commands on this server'],
-  ['Semua level', 'All levels'],
-  ['Semua masalah', 'All incidents'],
-  ['Semua tindakan', 'All actions'],
-  ['masalah aktif', 'active incidents'],
-  ['masalah diabaikan', 'muted incidents'],
-  ['tindakan terakhir', 'recent actions'],
-  ['tindakan', 'actions'],
-  ['kejadian', 'events'],
-  ['Menampilkan', 'Showing'],
-  ['dari total', 'of total'],
-  ['Halaman', 'Page'],
-  ['« Sebelumnya', '« Previous'],
-  ['Berikutnya »', 'Next »'],
-  ['Sebelumnya', 'Previous'],
-  ['Berikutnya', 'Next'],
-  ['Cari kejadian…', 'Search incidents…'],
-  ['5 masalah', '5 incidents'],
-  ['10 masalah', '10 incidents'],
-  ['25 masalah', '25 incidents'],
-  ['50 masalah', '50 incidents'],
-  ['10 tindakan', '10 actions'],
-  ['25 tindakan', '25 actions'],
-  ['50 tindakan', '50 actions'],
-  ['100 tindakan', '100 actions'],
-  ['Tampilkan:', 'Show:'],
-  ['Durasi', 'Duration'],
-  ['Waktu', 'Time'],
-  ['Level', 'Level'],
-  ['Kejadian', 'Event'],
-  ['Tips', 'Advice'],
-  ['User', 'User'],
-  ['Sasaran', 'Target'],
-  ['Status', 'Status'],
-  ['Keterangan / Hasil', 'Details / Result'],
-  ['Deskripsi ringkas mengenai anomali yang terjadi', 'Brief description of the anomaly occurred'],
-  ['Tidak ada masalah terdeteksi saat ini.', 'No incidents detected at this time.'],
-  ['Belum ada riwayat tindakan di server ini.', 'No action history on this server yet.'],
-  ['Abaikan masalah ini', 'Mute this incident'],
-  ['Abaikan masalah', 'Mute incident'],
-  ['Abaikan issues', 'Mute incident'],
-  ['Abaikan Pemantauan', 'Mute Monitoring'],
-  ['Abaikan Selama:', 'Mute Duration:'],
-  ['Alasan (Opsional):', 'Reason (Optional):'],
-  ['Tuliskan alasan pengabaian…', 'Write mute reason…'],
-  ['Contoh: Service on-demand / sengaja dihentikan', 'Example: Service on-demand / intentionally stopped'],
-  ['Sekali ini saja (kembali dipantau saat aktif)', 'This incident only (unmute when active)'],
-  ['Permanen (hingga diaktifkan manual kembali)', 'Permanent (until unmuted manually)'],
-  ['Simpan & Abaikan', 'Save & Mute'],
-  ['Simpan &amp; Abaikan', 'Save & Mute'],
-  ['🔔 Pantau Kembali', '🔔 Unmute'],
-  ['🔕 Abaikan', '🔕 Mute'],
-  ['Tandai masalah ini sudah ditangani', 'Mark this incident as acknowledged'],
-  ['Tandai semua ditangani', 'Mark all as acknowledged'],
-  ['Tandai sudah ditangani', 'Mark as acknowledged'],
-  ['Tandai ditangani', 'Mark as acknowledged'],
-  ['Tandai Ditangani', 'Mark as Acknowledged'],
-  ['Tandai Acknowledge', 'Mark as acknowledged'],
-  ['✓ Ditangani', '✓ Acknowledged'],
-  ['Ditangani', 'Acknowledge'],
-  ['Buka kunci pengguna', 'Unlock user'],
-  ['buka kunci pengguna', 'unlock user'],
-  ['Kunci pengguna', 'Lock user'],
-  ['kunci pengguna', 'lock user'],
-  ['Buka Kunci Akun', 'Unlock Account'],
-  ['buka kunci akun', 'unlock account'],
-  ['Kunci Akun', 'Lock Account'],
-  ['kunci akun', 'lock account'],
-  ['✓ diakui', '✓ acknowledged'],
-  ['kambuh', 'relapsed'],
-  ['permanen', 'permanent'],
-  ['diabaikan', 'muted'],
-  ['Peringatan diabaikan', 'Alert muted'],
-  ['Kejadian berulang dalam 24 jam terakhir', 'Recurring event within last 24 hours'],
-  ['Alasan: ', 'Reason: '],
-  ['Diabaikan oleh ', 'Muted by '],
-  ['Diakui ', 'Acknowledged by '],
-  ['2 Jam (sementara)', '2 Hours (temporary)'],
-  ['24 Jam (1 hari)', '24 Hours (1 day)'],
-  ['7 Hari (1 minggu)', '7 Days (1 week)'],
-  ['30 Hari (1 bulan)', '30 Days (1 month)'],
-  ['Permanen (sampai diaktifkan kembali)', 'Permanent (until unmuted)'],
-  ['Daftar Layanan', 'Service List'],
-  ['Nama Layanan / Unit', 'Service / Unit Name'],
-  ['Port / Endpoint', 'Port / Endpoint'],
-  ['Status Layanan', 'Service Status'],
-  ['Restart service ini di', 'Restart this service on'],
-  ['Hentikan service ini di', 'Stop this service on'],
-  ['Mulai layanan ini di', 'Start this service on'],
-  ['Hentikan layanan', 'Stop service'],
-  ['Mulai layanan', 'Start service'],
-  ['Restart layanan', 'Restart service'],
-  ['Log layanan', 'Service logs'],
-  ['Layanan sudah aktif', 'Service is already running'],
-  ['Layanan sudah nonaktif / berhenti', 'Service is already stopped'],
-  ['Hentikan', 'Stop'],
-  ['Restart', 'Restart'],
-  ['Mulai', 'Start'],
-  ['Bisukan peringatan jika layanan', 'Mute alert if service'],
-  ['Abaikan pemantauan layanan', 'Mute monitoring for service'],
-  ['Aktifkan kembali pemantauan dan peringatan untuk layanan', 'Unmute monitoring and alerts for service'],
-  ['Belum ada service terdeteksi. Jalankan Agen Pantau di server ini.', 'No services detected yet. Run Pantau Agent on this server.'],
-  ['⚡ Manajer Tugas', '⚡ Task Manager'],
-  ['Pantau dan kelola proses server secara interaktif (CPU, Memori, Status, Pause, Lanjut, Kill)', 'Monitor and manage server processes interactively (CPU, Memory, State, Pause, Resume, Kill)'],
-  ['Pantau dan kelola proses server secara interaktif', 'Monitor and interactively manage server processes'],
-  ['Cari nama proses / PID / user…', 'Search process name / PID / user…'],
-  ['Semua proses', 'All processes'],
-  ['10 proses', '10 processes'],
-  ['20 proses', '20 processes'],
-  ['50 proses', '50 processes'],
-  ['100 proses', '100 processes'],
-  ['Nama Perintah / Proses', 'Command / Process Name'],
-  ['Nama Perintah', 'Command Name'],
-  ['Tip: Klik nama kolom header untuk membalikkan urutan (▲ Ringan/A-Z, ▼ Berat/Z-A)', 'Tip: Click column headers to toggle sort order (▲ Low/A-Z, ▼ High/Z-A)'],
-  ['Tip: Klik nama kolom header untuk membalikkan urutan', 'Tip: Click column headers to toggle sort order'],
-  ['Klik untuk mengurutkan PID', 'Click to sort by PID'],
-  ['Klik untuk mengurutkan User', 'Click to sort by User'],
-  ['Klik untuk mengurutkan Nama Perintah', 'Click to sort by Command Name'],
-  ['Klik untuk mengurutkan Status', 'Click to sort by State'],
-  ['Klik untuk mengurutkan penggunaan CPU', 'Click to sort by CPU usage'],
-  ['Klik untuk mengurutkan penggunaan Memori', 'Click to sort by Memory usage'],
-  ['Segarkan data proses terkini', 'Refresh current process data'],
-  ['Memuat data proses…', 'Loading process data…'],
-  ['Tidak ada proses yang cocok dengan filter.', 'No processes match the filter.'],
-  ['Kelola Sinyal Proses', 'Process Signal Control'],
-  ['Kirimkan sinyal kendali ke proses', 'Send control signal to process'],
-  ['Pilih Jenis Sinyal / Aksi *', 'Select Signal Type / Action *'],
-  ['SIGTERM (15) — Hentikan Secara Normal', 'SIGTERM (15) — Graceful Termination'],
-  ['SIGKILL (9) — Paksa Hentikan Seketika', 'SIGKILL (9) — Force Kill Immediately'],
-  ['SIGSTOP (19) — Tangguhkan / Pause Proses', 'SIGSTOP (19) — Suspend / Pause Process'],
-  ['SIGCONT (18) — Lanjutkan / Resume Proses', 'SIGCONT (18) — Resume Process'],
-  ['Direkomendasikan. Meminta proses menutup koneksi & simpan data dengan bersih.', 'Recommended. Requests process to close connections & save state cleanly.'],
-  ['Gunakan hanya jika proses macet/hang dan menolak ditutup secara normal.', 'Use only if process is hung/unresponsive and refuses to terminate normally.'],
-  ['Menahan penggunaan CPU proses tanpa mematikannya dari memori RAM.', 'Freezes CPU allocation without removing process from memory.'],
-  ['Mengaktifkan kembali proses yang sebelumnya di-pause/ditangguhkan.', 'Wakes up process previously suspended with SIGSTOP.'],
-  ['Kirim Sinyal', 'Send Signal'],
-  ['Pause', 'Pause'],
-  ['Kill', 'Kill'],
-  ['Daftar akun lokal di server klien', 'List of local accounts on client server'],
-  ['Daftar akun login, UID, Shell, riwayat login terakhir, dan sesi aktif (/etc/passwd, lastlog, who)', 'List of login accounts, UID, Shell, last login history, and active sessions (/etc/passwd, lastlog, who)'],
-  ['Pengguna Sistem', 'System Users'],
-  ['Nama Pengguna', 'Username'],
-  ['Direktori Beranda', 'Home Directory'],
-  ['Shell Login', 'Login Shell'],
-  ['Grup Utama', 'Primary Group'],
-  ['Grup Lainnya', 'Supplementary Groups'],
-  ['Akses Sudo', 'Sudo Access'],
-  ['Status Login', 'Login Status'],
-  ['Dapat Login', 'Can Login'],
-  ['Terkunci', 'Locked'],
-  ['Tanpa Shell', 'No Shell'],
-  ['Aktivitas Login & Sudo', 'Login & Sudo Activity'],
-  ['Belum ada data akun dari server ini.', 'No account data from this server yet.'],
-  ['Belum ada aktivitas login untuk user ini.', 'No login activity for this user yet.'],
-  ['Daftar port dan socket aktif di server klien', 'List of listening ports and active sockets on client server'],
-  ['Daftar seluruh port TCP/UDP yang sedang dibuka oleh proses sistem (ss -tulpn)', 'List of all TCP/UDP ports currently opened by system processes (ss -tulpn)'],
-  ['Protokol', 'Protocol'],
-  ['Port', 'Port'],
-  ['Alamat Bind', 'Bind Address'],
-  ['Alamat IP yang di-bind oleh socket', 'IP address bound by the socket'],
-  ['Proses Pemilik', 'Owner Process'],
-  ['Keterbukaan', 'Accessibility'],
-  ['Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)', 'Access scope: Public (exposed externally) or Local (loopback)'],
-  ['Publik (0.0.0.0 / ::)', 'Public (0.0.0.0 / ::)'],
-  ['Lokal / Loopback', 'Local / Loopback'],
-  ['Semua Protokol', 'All Protocols'],
-  ['Belum ada data port listening dari server ini.', 'No listening ports data from this server yet.'],
-  ['Kontrol Firewall', 'Firewall Control'],
-  ['Status Firewall', 'Firewall Status'],
-  ['Aktifkan Firewall', 'Enable Firewall'],
-  ['Nonaktifkan Firewall', 'Disable Firewall'],
-  ['Muat Ulang Aturan', 'Reload Rules'],
-  ['Daftar IP Terblokir', 'Blocked IP List'],
-  ['Daftar Hitam IP Terblokir (iptables DROP)', 'Blocked IP Blacklist (iptables DROP)'],
-  ['Alamat IP sumber penyerang yang di-drop seketika pada level kernel', 'Attacker source IPs dropped instantly at kernel level'],
-  ['+ Blokir IP Baru', '+ Block New IP'],
-  ['Buka Blokir', 'Unblock'],
-  ['Alasan / Catatan', 'Reason / Note'],
-  ['Waktu Diblokir', 'Blocked At'],
-  ['Backend Firewall', 'Firewall Backend'],
-  ['Aturan Port & Kebijakan Akses (Rules)', 'Port Rules & Access Policies (Rules)'],
-  ['Aturan / Deskripsi Akses Port', 'Port Access Rules / Description'],
-  ['Aktifkan UFW (otomatis allow SSH)', 'Enable UFW (auto-allows SSH)'],
-  ['Agen akan memuat ulang konfigurasi UFW tanpa memutus koneksi aktif.', 'Agent will reload UFW configuration without dropping active connections.'],
-  ['Agen otomatis mengizinkan port SSH terlebih dahulu sebelum menyalakan firewall UFW.', 'Agent automatically allows SSH port first before enabling UFW.'],
-  ['Blokir sebuah alamat IP secara manual', 'Manually block an IP address'],
-  ['Buka blokir IP ini pada iptables', 'Unblock this IP in iptables'],
-  ['Tidak ada IP yang terblokir saat ini.', 'No IPs currently blocked.'],
-  ['Belum ada IP yang diblokir pada rantai iptables INPUT.', 'No blocked IPs on iptables INPUT chain yet.'],
-  ['Alamat IP Target (IPv4) *', 'Target IP Address (IPv4) *'],
-  ['Blokir IP Sekarang', 'Block IP Now'],
-  ['Pelacakan masa berlaku sertifikat di server klien', 'Certificate expiration tracking on client server'],
-  ['Domain / SAN', 'Domain / SAN'],
-  ['Penerbit (CA)', 'Issuer (CA)'],
-  ['Masa Berlaku', 'Validity'],
-  ['Tanggal Kedaluwarsa', 'Expiration Date'],
-  ['Batas waktu akhir masa berlaku sertifikat', 'Final expiration timestamp of certificate'],
-  ['Sisa Hari', 'Days Left'],
-  ['Status Sertifikat', 'Certificate Status'],
-  ['Valid', 'Valid'],
-  ['Mendekati Kedaluwarsa', 'Expiring Soon'],
-  ['Kedaluwarsa', 'Expired'],
-  ['Tidak ditemukan sertifikat SSL di lokasi standar.', 'No SSL certificates found in standard paths.'],
-  ['Daftar jadwal tugas otomatis pada sistem klien', 'List of automated tasks on client system'],
-  ['Daftar eksekusi tugas periodik sistem (/etc/crontab & /etc/cron.d/*)', 'List of periodic scheduled executions (/etc/crontab & /etc/cron.d/*)'],
-  ['Tipe', 'Type'],
-  ['Jadwal / Interval', 'Schedule / Interval'],
-  ['Perintah yang Dijalankan', 'Executed Command'],
-  ['Pengguna Pemilik', 'Owner User'],
-  ['Eksekusi Terakhir', 'Last Run'],
-  ['Eksekusi Berikutnya', 'Next Run'],
-  ['Tidak ada tugas terjadwal yang ditemukan.', 'No scheduled tasks found.'],
-  ['Belum ada tugas cron sistem terdeteksi pada server ini.', 'No system cron jobs detected on this server yet.'],
-  ['⚙️ Log Layanan', '⚙️ Service Logs'],
-  ['📋 Log Sistem (Journal)', '📋 System Logs (Journal)'],
-  ['Log Layanan', 'Service Logs'],
-  ['Log Sistem (Journal)', 'System Logs (Journal)'],
-  ['Log Sistem', 'System Logs'],
-  ['Pilih Unit Layanan', 'Select Service Unit'],
-  ['Tingkat Keparahan', 'Severity Level'],
-  ['Semua Prioritas', 'All Priorities'],
-  ['Kritis (Crit / Alert / Emerg)', 'Critical (Crit / Alert / Emerg)'],
-  ['Galat (Err)', 'Error (Err)'],
-  ['Peringatan (Warn)', 'Warning (Warn)'],
-  ['Informasi (Info)', 'Information (Info)'],
-  ['Muat Ulang Log', 'Reload Logs'],
-  ['Cari dalam log…', 'Search in logs…'],
-  ['Waktu (Terbaru di Atas)', 'Time (Latest First)'],
-  ['Prioritas', 'Priority'],
-  ['Unit / Identitas', 'Unit / Identifier'],
-  ['Pesan Galat', 'Error Message'],
-  ['Baris', 'Lines'],
-  ['Baris:', 'Lines:'],
-  ['50 baris', '50 lines'],
-  ['100 baris', '100 lines'],
-  ['200 baris', '200 lines'],
-  ['500 baris', '500 lines'],
-  ['+ Berkas Baru', '+ New File'],
-  ['+ Folder Baru', '+ New Folder'],
-  ['Unggah Berkas', 'Upload File'],
-  ['Unggah', 'Upload'],
-  ['Nama Berkas / Folder Baru', 'New File / Folder Name'],
-  ['Pilih Berkas', 'Choose File'],
-  ['0 item terpilih', '0 items selected'],
-  ['item terpilih', 'items selected'],
-  ['Batal Pilih (Esc)', 'Deselect (Esc)'],
-  ['Ubah Izin (chmod)', 'Change Permissions (chmod)'],
-  ['Ubah Pemilik (chown)', 'Change Owner (chown)'],
-  ['Mode Izin (Oktal):', 'Permission Mode (Octal):'],
-  ['Pemilik Baru (user:group):', 'New Owner (user:group):'],
-  ['Ganti Nama', 'Rename'],
-  ['Nama Baru:', 'New Name:'],
-  ['Simpan Berkas', 'Save File'],
-  ['Tutup Editor', 'Close Editor'],
-  ['Ukuran', 'Size'],
-  ['Izin', 'Permissions'],
-  ['Pemilik', 'Owner'],
-  ['Diubah', 'Modified'],
-  ['Catatan aktivitas login, manajemen server, layanan, pengguna, serta riwayat eksekusi perintah remote (restart, blokir IP, pembaruan paket) beserta pelaksana dan hasilnya.', 'Record of login events, server management, services, users, and remote command executions (restart, IP blocks, package updates) with performers and outcomes.'],
-  ['Belum ada jejak audit.', 'No audit records yet.'],
-  ['Daftar Pengguna', 'User List'],
-  ['Tambah Pengguna', 'Add User'],
-  ['Peran', 'Role'],
-  ['Aktivitas User:', 'User Activity:'],
-  ['Aktifkan firewall (UFW) sekarang? Agen akan otomatis memastikan port SSH dilindungi/diizinkan terlebih dahulu.', 'Enable firewall (UFW) now? Agent will automatically ensure SSH port is allowed first.'],
-  ['Muat ulang (reload) konfigurasi firewall?', 'Reload firewall configuration?'],
-  ['PERINGATAN: Nonaktifkan firewall (UFW)? Seluruh port server akan terbuka tanpa filter penyaringan.', 'WARNING: Disable firewall (UFW)? All server ports will be exposed without filtering.'],
-  ['Apakah Anda yakin ingin menghapus', 'Are you sure you want to delete'],
-  ['Semua data miliknya ikut terhapus.', 'All associated data will also be deleted.'],
-  ['Generate API Key baru? Agent harus di-update dengan key baru, dan key lama dibatalkan.', 'Generate new API Key? Agent must be updated with the new key, and old key will be revoked.'],
-  ['online', 'online'],
-  ['offline', 'offline'],
-  ['pemeliharaan', 'maintenance'],
-  ['kritis', 'critical'],
-  ['perhatian', 'warning'],
-  ['normal', 'normal'],
-  ['berhasil', 'success'],
-  ['gagal', 'failed'],
-  ['menunggu', 'pending'],
-  ['dijalankan', 'executing'],
-  ['Tidak ada data', 'No data'],
-  ['Memuat…', 'Loading…'],
-  ['Alamat IP', 'IP Address'],
-  ['Nama Host', 'Hostname'],
-  ['Versi Agen', 'Agent Version'],
-  ['Kunci API', 'API Key'],
-  ['Terakhir Lapor', 'Last Seen'],
-  ['dtk', 's'],
-  ['mnt', 'm'],
-  ['hari', 'd'],
-  ['Buat Pengguna Sistem Baru', 'Create New System User'],
-  ['Buat Pengguna Sistem', 'Create System User'],
-  ['Buat Pengguna', 'Create User'],
-  ['Buat Akun Sekarang', 'Create Account Now'],
-  ['Buka Kunci Akun', 'Unlock Account'],
-  ['Buka Kunci', 'Unlock'],
-  ['Kunci Akun', 'Lock Account'],
-  ['Hapus Pengguna', 'Delete User'],
-  ['Nama Pengguna (Username) *', 'Username *'],
-  ['Beri Hak Sudo (Akses Administratif)', 'Grant Sudo Access (Administrative)'],
-  ['Komentar / Nama Lengkap', 'Comment / Full Name'],
-  ['Akun saat ini terkunci', 'Account is currently locked'],
-  ['Akun sistem terlindungi', 'System account is protected'],
-  ['Tambah Tugas Terjadwal (Cron Job)', 'Add Scheduled Task (Cron Job)'],
-  ['Tambah Tugas Terjadwal', 'Add Scheduled Task'],
-  ['Tambah Tugas', 'Add Task'],
-  ['Tambah Cron', 'Add Cron'],
-  ['Ekspresi Cron', 'Cron Expression'],
-  ['Jadwal (Cron Expression)', 'Schedule (Cron Expression)'],
-  ['Perintah (Command)', 'Command'],
-  ['Perintah yang Dijalankan (Command) *', 'Executed Command *'],
-  ['Sumber Berkas', 'File Source'],
-  ['Dikelola', 'Managed'],
-  ['Jalankan Sekarang', 'Run Now'],
-  ['Uji jalankan', 'Test run'],
-  ['Simpan & Pasang Jadwal', 'Save & Install Schedule'],
-  ['Menit (0-59)', 'Minute (0-59)'],
-  ['Jam (0-23)', 'Hour (0-23)'],
-  ['Hari/Tgl (1-31)', 'Day of Month (1-31)'],
-  ['Bulan (1-12)', 'Month (1-12)'],
-  ['Hari Pekan (0-7)', 'Day of Week (0-7)'],
-  ['Pengguna yang Menjalankan', 'Running User'],
-  ['Identifikasi / Label (huruf & angka, tanpa spasi) *', 'Identifier / Label (alphanumeric, no spaces) *'],
-  ['⚡ Kill PID', '⚡ Kill PID'],
-  ['🚫 Blokir Port', '🚫 Block Port'],
-  ['⛨ Dilindungi', '⛨ Protected'],
-  ['Hentikan Proses (Kill)', 'Kill Process'],
-  ['Hentikan Proses', 'Kill Process'],
-  ['Blokir Port', 'Block Port'],
-  ['Tambah Lokasi Sertifikat SSL Kustom', 'Add Custom SSL Certificate Path'],
-  ['Tambah ke Pengawasan', 'Add to Monitoring'],
-  ['Path Berkas Sertifikat (.pem / .crt) *', 'Certificate File Path (.pem / .crt) *'],
-  ['Path Berkas Sertifikat', 'Certificate File Path'],
-  ['Hapus dari Pengawasan', 'Remove from Monitoring'],
-  ['Gunakan path absolut. Berkas harus sudah ada di filesystem server.', 'Use absolute path. File must already exist on server filesystem.'],
-  ['tugas aktif', 'active tasks'],
-  ['Sesi Aktif', 'Active Sessions'],
-  ['Login Terakhir', 'Last Login'],
-  ['Kustom', 'Custom'],
-  ['Sistem', 'System'],
-  ['🔒 Kunci', '🔒 Lock'],
-  ['🔓 Buka Kunci', '🔓 Unlock'],
-  ['⏸ Jeda', '⏸ Pause'],
-  ['▶ Aktifkan', '▶ Enable'],
-  ['▷ Jalankan', '▷ Run'],
-  ['🗑 Hapus', '🗑 Delete'],
-  ['🔓 Buka Port', '🔓 Open Port'],
-  ['Buka Port', 'Open Port'],
-  ['Dinonaktifkan', 'Disabled'],
-  ['socket aktif', 'active sockets'],
-  ['sertifikat terdeteksi', 'detected certificates'],
-  ['Akun', 'Accounts'],
-  ['Blokir port ini via UFW/iptables', 'Block this port via UFW/iptables'],
-  ['Buka port ini (izinkan koneksi)', 'Open this port (allow connection)'],
-  ['Domain atau Subdomain yang dilindungi oleh sertifikat', 'Domain or Subdomain protected by certificate'],
-  ['Hanya dapat diakses secara lokal dari dalam server', 'Only accessible locally from within server'],
-  ['Hapus akun ini', 'Delete this account'],
-  ['Hapus aturan DROP untuk IP ini', 'Remove DROP rule for this IP'],
-  ['Hapus dari pengawasan SSL kustom', 'Remove from custom SSL monitoring'],
-  ['Hapus konfigurasi pemantauan layanan', 'Delete service monitoring configuration'],
-  ['Hapus tugas cron ini', 'Delete this cron task'],
-  ['Hasil pemeriksaan kesehatan (health check) layanan', 'Service health check results'],
-  ['Jadwal waktu eksekusi dalam format cron (menit jam tgl bln hari)', 'Execution schedule in cron format (min hour dom month dow)'],
-  ['Jalankan sekarang (uji coba)', 'Run now (test run)'],
-  ['Jelajahi dan kelola berkas server lewat antarmuka File Manager di tab baru', 'Explore and manage server files via File Manager in new tab'],
-  ['Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan', 'Active network connections currently connected to service'],
-  ['Kecepatan baca dan tulis disk saat ini', 'Current disk read and write throughput'],
-  ['Kirim sinyal ke proses yang mengelola port ini', 'Send signal to process managing this port'],
-  ['Kondisi terkini layanan (up = aktif normal, down = terhenti)', 'Current service condition (up = active, down = stopped)'],
-  ['Kontrol layanan: Restart, Mulai (▶), Berhenti (■), Abaikan (🔕), atau Hapus', 'Service controls: Restart, Start (▶), Stop (■), Mute (🔕), or Delete'],
-  ['Lanjutkan kembali proses ini (SIGCONT)', 'Resume this process (SIGCONT)'],
-  ['Layanan aktif (pengawasan down diabaikan)', 'Active service (down alerts muted)'],
-  ['Layanan berhenti (diabaikan)', 'Stopped service (muted)'],
-  ['Layar Penuh (Full Screen)', 'Full Screen'],
-  ['Lihat detail mode pemeliharaan', 'View maintenance mode details'],
-  ['Lokasi berkas konfigurasi cron pada server', 'Cron config file location on server'],
-  ['Lokasi berkas sertifikat di filesystem server', 'Certificate file location on server filesystem'],
-  ['Matikan daya mesin server klien secara penuh (shutdown/power off)', 'Shut down client server machine completely (power off)'],
-  ['Muat ulang aturan UFW tanpa memutus koneksi', 'Reload UFW rules without dropping connections'],
-  ['Mulai ulang (reboot) sistem operasi server klien', 'Reboot client server operating system'],
-  ['Mulai ulang (restart) layanan', 'Restart service'],
-  ['Nama layanan atau daemon yang dipantau', 'Monitored service or daemon name'],
-  ['Nama proses sistem dan PID yang membuka port ini', 'System process name and PID opening this port'],
-  ['Nama proses sistem operasi yang dieksekusi', 'Operating system process name executed'],
-  ['Nama unit timer systemd', 'Systemd timer unit name'],
-  ['Nomor port jaringan yang digunakan oleh layanan', 'Network port number used by service'],
-  ['Nomor port jaringan yang terbuka', 'Network port number open'],
-  ['Nonaktifkan UFW', 'Disable UFW'],
-  ['Opsi Hentikan atau Pilih Sinyal', 'Stop Options or Select Signal'],
-  ['Otoritas penerbit sertifikat (Certificate Authority)', 'Issuing Certificate Authority (CA)'],
-  ['Pantau kembali layanan ini', 'Unmute this service'],
-  ['Pasang seluruh pembaruan paket sistem operasi yang tertunda', 'Install all pending operating system package updates'],
-  ['Pembaruan & Daya Mesin', 'Updates & Power Management'],
-  ['Pengguna Linux yang menjalankan perintah', 'Linux user executing command'],
-  ['Perintah atau skrip yang dieksekusi', 'Command or script executed'],
-  ['Perintah sedang dikirim dan diproses oleh agen', 'Command sent and currently processing by agent'],
-  ['Persentase ketersediaan layanan dalam 24 jam terakhir', 'Service availability percentage in last 24 hours'],
-  ['Persentase utilisasi waktu aktif disk (I/O util)', 'Disk active time utilization percentage (I/O util)'],
-  ['Pesan rincian galat', 'Error detail message'],
-  ['Port terbuka untuk koneksi publik/luar', 'Port listening for public/external connections'],
-  ['Proses sistem terlindungi', 'Protected system process'],
-  ['Protokol jaringan (TCP atau UDP)', 'Network protocol (TCP or UDP)'],
-  ['Rata-rata rentang ini', 'Average in this range'],
-  ['Rincian jadwal jadwal terakhir dan selanjutnya', 'Schedule details of last and next execution'],
-  ['Running / Sedang Berjalan', 'Running / Active'],
-  ['Salin perintah update agen ke clipboard', 'Copy agent update command to clipboard'],
-  ['Sembunyikan Terminal', 'Hide Terminal'],
-  ['Sinkronkan repositori paket OS (apt update) untuk mengecek ketersediaan pembaruan baru', 'Synchronize OS package repository (apt update) to check for updates'],
-  ['Sisa hari sebelum sertifikat habis masa berlakunya', 'Days remaining before certificate expiration'],
-  ['Sleeping / Menunggu', 'Sleeping / Idle'],
-  ['Status kesehatan sertifikat', 'Certificate health status'],
-  ['Stopped / Ditangguhkan (Paused)', 'Stopped / Paused'],
-  ['Tangguhkan/Pause proses ini sementara (SIGSTOP)', 'Suspend/Pause this process temporarily (SIGSTOP)'],
-  ['Tertinggi rentang ini', 'Maximum in this range'],
-  ['Tindakan yang dapat dilakukan pada port ini', 'Actions available for this port'],
-  ['Tingkat keparahan event journald', 'journald event severity level'],
-  ['Tutup banner', 'Close banner'],
-  ['Unduh log sebagai file .txt', 'Download log as .txt file'],
-  ['Unit layanan atau proses penghasil log', 'Service unit or process producing log'],
-  ['Unit service yang dipicu saat timer berjalan', 'Service unit triggered when timer fires'],
-  ['Waktu kejadian tercatat di sistem', 'Recorded timestamp in system'],
-  ['Waktu respons layanan dalam satuan milidetik (ms)', 'Service response latency in milliseconds (ms)'],
-  ['Zombie Process', 'Zombie Process'],
-  ['Nyalakan / jalankan layanan', 'Start / run service'],
-  ['Nonaktifkan tugas cron ini', 'Disable this cron task'],
-  ['Aktifkan kembali tugas cron ini', 'Re-enable this cron task'],
-  ['Cari user / target / hasil…', 'Search user / target / result…'],
-  ['Diperbarui otomatis setiap 5 detik', 'Updated automatically every 5 seconds'],
-  ['Diperbarui otomatis setiap 10 detik', 'Updated automatically every 10 seconds'],
-  ['Diperbarui otomatis setiap 3 detik', 'Updated automatically every 3 seconds'],
-  ['diperbarui otomatis', 'auto-updated'],
-  ['Entitas sasaran (nama server, host, atau id layanan)', 'Target entity (server name, host, or service ID)'],
-  ['Hasil / Respons', 'Result / Response'],
-  ['Muat ulang data riwayat audit seketika', 'Reload audit history data immediately'],
-  ['Nama akun administrator yang menjalankan aksi', 'Administrator account name executing action'],
-  ['Perbarui', 'Refresh'],
-  ['Pesan respons atau keluaran perintah', 'Response message or command output'],
-  ['Reset filter', 'Reset filter'],
-  ['Reset', 'Reset'],
-  ['Saring berdasarkan jenis aktivitas', 'Filter by activity type'],
-  ['Semua aksi', 'All actions'],
-  ['Terapkan filter pencarian audit', 'Apply audit search filter'],
-  ['Terapkan', 'Apply'],
-  ['Jejak Aksi Admin', 'Admin Action Trail'],
-  ['Menampilkan maks 250 baris terbaru. Status perintah remote berubah otomatis setelah agen mengeksekusinya.', 'Showing max 250 latest records. Remote command status updates automatically once agent executes it.'],
-  ['0 layanan', '0 services'],
-  ['Jumlah pembaruan paket sistem operasi (APT) yang tersedia', 'Available OS package updates (APT) count'],
-  ['Klik untuk salin IP', 'Click to copy IP'],
-  ['Klik untuk salin', 'Click to copy'],
-  ['Kondisi ketersediaan server saat ini (Online/Offline)', 'Current server availability status (Online/Offline)'],
-  ['Nama host mesin server dan detail sistem operasi', 'Server machine hostname and OS details'],
-  ['Pembaruan OS', 'OS Updates'],
-  ['Persentase pemakaian memori RAM saat ini', 'Current RAM memory usage percentage'],
-  ['Tambah server pertama', 'Add first server'],
-  ['Tambah Server Pertama', 'Add First Server'],
-  ['Tautan navigasi ke rincian lengkap server', 'Navigation link to full server details'],
-  ['Tidak ada server yang sesuai dengan kata kunci.', 'No servers match keyword.'],
-  ['Tidak ada server yang sesuai dengan pencarian.', 'No servers match search query.'],
-  ['paket tersedia', 'packages available'],
-  ['Total layanan dipantau:', 'Total monitored services:'],
-  ['Total layanan dipantau', 'Total monitored services'],
-  ['Layanan aktif', 'Active services'],
-  ['Layanan down', 'Down services'],
-  ['Layanan berhenti & diabaikan', 'Stopped & muted services'],
-  ['diabaikan 🔕', 'muted 🔕'],
-  ['Nihil', 'None'],
-  ['Kondisi normal', 'Normal condition'],
-  ['Semua masalah diabaikan', 'All incidents muted'],
-  ['Masalah Server', 'Server Incidents'],
-  ['server normal', 'servers normal'],
-  ['Masalah Terbuka', 'Open Incidents'],
-  ['Semua server', 'All servers'],
-  ['Waktu Mulai', 'Start Time'],
-  ['Waktu saat insiden atau masalah mulai terdeteksi', 'Time when incident was first detected'],
-  ['Mesin server tempat anomali atau gangguan terjadi', 'Server machine where anomaly occurred'],
-  ['Tingkat urgensi: Danger (kritis), Warning (waspada), atau Info (informasi)', 'Urgency level: Danger (critical), Warning (alert), or Info (notice)'],
-  ['Lama waktu insiden berlangsung hingga sekarang', 'Incident elapsed duration until now'],
-  ['Panduan Solusi', 'Solution Guide'],
-  ['Saran langkah penanganan praktis untuk menyelesaikan insiden', 'Practical mitigation advice to resolve incident'],
-  ['Tidak ada masalah terbuka', 'No open incidents'],
-  ['untuk server ini', 'for this server'],
-  ['Teratasi (24 jam terakhir)', 'Resolved (Last 24 Hours)'],
-  ['otomatis berakhir', 'auto-resolved'],
-  ['Tidak ada deteksi baru selama jendela tenang', 'No new detection during quiet window'],
-  ['Ditangani oleh', 'Acknowledged by'],
-  ['Tingkat', 'Severity'],
-  ['Urutkan berdasarkan nama host server', 'Sort by server hostname'],
-  ['Urutkan berdasarkan alamat IP — klik IP pada baris untuk menyalin', 'Sort by IP address — click IP on row to copy'],
-  ['Kondisi koneksi mesin saat ini (Online, Pemeliharaan, atau Offline)', 'Current machine connection state (Online, Maintenance, or Offline)'],
-  ['Jumlah total layanan yang sedang dimonitor pada server ini', 'Total services currently monitored on this server'],
-  ['Versi agen pemantau yang terpasang di server klien', 'Monitoring agent version installed on client server'],
-  ['Sidik jari pengenal kunci API untuk autentikasi agen', 'API key fingerprint for agent authentication'],
-  ['Waktu terakhir kali server mengirimkan data ke panel', 'Last time server sent metrics to panel'],
-  ['Menu aksi cepat: Rincian, Edit, atau Hapus server', 'Quick action menu: Details, Edit, or Delete server'],
-  ['tidak dikenal', 'unknown'],
-  ['belum pernah', 'never'],
-  ['baru saja', 'just now'],
-  ['dtk lalu', 's ago'],
-  ['mnt lalu', 'm ago'],
-  ['jam lalu', 'h ago'],
-  ['hari lalu', 'd ago'],
-  ['User Management', 'User Management'],
-  ['akun terdaftar', 'registered accounts'],
-  ['Nama akun untuk masuk ke dashboard', 'Account name to sign in to dashboard'],
-  ['Tingkat izin hak akses: Administrator (penuh) atau Viewer (hanya lihat)', 'Access privilege level: Administrator (full) or Viewer (read-only)'],
-  ['Dibuat Pada', 'Created At'],
-  ['Tanggal akun pertama kali dibuat', 'Date account was first created'],
-  ['Tindakan penghapusan akun', 'Account deletion action'],
-  ['Akses penuh administrasi server', 'Full server administration access'],
-  ['Akses pantau hanya-baca', 'Read-only monitoring access'],
-  ['(Akun Anda)', '(Your Account)'],
-  ['Hapus pengguna ini', 'Delete this user'],
-  ['Tambah Pengguna Baru', 'Add New User'],
-  ['Buat akun operator baru', 'Create new operator account'],
-  ['Contoh: operator1', 'Example: operator1'],
-  ['Minimal 8 karakter', 'At least 8 characters'],
-  ['Gunakan kombinasi yang kuat dan aman.', 'Use a strong and secure combination.'],
-  ['Peran / Hak Akses', 'Role / Privileges'],
-  ['Pilih tingkat hak akses akun', 'Select account privilege level'],
-  ['Viewer (Hanya pantau & baca data)', 'Viewer (Read-only monitoring)'],
-  ['Viewer (Hanya pantau &amp; baca data)', 'Viewer (Read-only monitoring)'],
-  ['Administrator (Akses penuh & eksekusi remote)', 'Administrator (Full access & remote execution)'],
-  ['Administrator (Akses penuh &amp; eksekusi remote)', 'Administrator (Full access & remote execution)'],
-  ['Simpan dan daftarkan akun baru', 'Save and register new account'],
-  ['Log Server Pusat', 'Central Server Logs'],
-  ['aktif selama', 'uptime'],
-  ['Persentase pemakaian CPU di server pusat', 'CPU usage percentage on central server'],
-  ['Penggunaan memori RAM di server pusat', 'RAM usage on central server'],
-  ['Beban (1/5/15 menit)', 'Load (1/5/15 min)'],
-  ['Rata-rata beban sistem prosesor dalam 1, 5, dan 15 menit', 'Average system processor load in 1, 5, and 15 minutes'],
-  ['Penggunaan memori virtual / swap pada disk', 'Virtual / swap memory usage on disk'],
-  ['Proses Tertinggi (CPU)', 'Top Processes (CPU)'],
-  ['Proses yang memakan sumber daya terbesar', 'Processes consuming the most resources'],
-  ['Kapasitas partisi penyimpanan sistem', 'System storage partitions capacity'],
-  ['Lokasi Mount', 'Mount Point'],
-  ['Total ruang penyimpanan pada partisi', 'Total partition storage space'],
-  ['Kapasitas ruang yang telah terpakai', 'Used partition storage space'],
-  ['Persentase pemakaian penyimpanan', 'Storage utilization percentage'],
-  ['Pemakaian', 'Usage'],
-  ['Log Service Pusat', 'Central Service Logs'],
-  ['Log Aplikasi Pusat', 'Central Application Logs'],
-  ['Pilih service', 'Select service'],
-  ['Memuat daftar service…', 'Loading services list…'],
-  ['Garis Waktu Ketersediaan Layanan (Uptime Timeline)', 'Service Uptime Timeline'],
-  ['IP Penyerang (Sumber)', 'Attacker IP (Source)'],
-  ['Paket Terblokir', 'Blocked Packets'],
-  ['Total Byte', 'Total Bytes'],
-  ['Koneksi Aktif', 'Active Connections'],
-  ['Waktu Respon (ms)', 'Response Time (ms)'],
-  ['Respons (ms)', 'Response (ms)'],
-  ['Kesehatan', 'Health'],
-  ['Uptime 24j', '24h Uptime'],
-  ['Uptime', 'Uptime'],
-  ['Laju I/O (R / W)', 'I/O Rate (R / W)'],
-  ['Util I/O', 'I/O Util'],
-  ['Proses & PID', 'Process & PID'],
-  ['Proses &amp; PID', 'Process & PID'],
-  ['Layanan Yang Diaktifkan', 'Enabled Services'],
-  ['Jadwal & Status', 'Schedule & Status'],
-  ['Jadwal &amp; Status', 'Schedule & Status'],
-  ['Jadwal Eksekusi (Cron Expression)', 'Execution Schedule (Cron Expression)'],
-  ['Status & Kebijakan Firewall', 'Firewall Status & Policy'],
-  ['Status &amp; Kebijakan Firewall', 'Firewall Status & Policy'],
-  ['Tugas Terjadwal (Cron Jobs)', 'Scheduled Tasks (Cron Jobs)'],
-  ['Pengatur waktu modern berbasis unit systemd', 'Modern timers based on systemd units'],
-  ['Pengawasan perlindungan jaringan dan port masuk/keluar', 'Monitoring of network protection and ingress/egress ports'],
-  ['IP Diblokir (DROP)', 'Blocked IPs (DROP)'],
-  ['Perlindungan UFW dinonaktifkan sementara.', 'UFW protection temporarily disabled.'],
-  ['Perlu Diperbarui (<30 hr)', 'Needs Renewal (<30 d)'],
-  ['Segera Expired (<14 hr)', 'Expiring Soon (<14 d)'],
-  ['Kedaluwarsa Pada', 'Expires On'],
-  ['Normal (Up)', 'Normal (Up)'],
-  ['Terhenti (Down)', 'Stopped (Down)'],
-  ['Tanpa Data', 'No Data'],
-  ['Memeriksa pembaruan…', 'Checking for updates…'],
-  ['Menunggu data log dari Agen Pantau…', 'Waiting for log data from Pantau Agent…'],
-  ['Otomatis disinkronkan oleh Agen Pantau', 'Automatically synchronized by Pantau Agent'],
-  ['Kejadian kegagalan dan peringatan kritis sistem terbaru (journalctl err, crit, alert, emerg)', 'Recent failure events and critical system warnings (journalctl err, crit, alert, emerg)'],
-  ['Perintah Aktifkan Firewall (UFW) telah dikirim ke Agen Pantau.', 'Firewall Enable (UFW) command sent to Pantau Agent.'],
-  ['Perintah Blokir IP (iptables) telah dikirim ke Agen Pantau.', 'Block IP (iptables) command sent to Pantau Agent.'],
-  ['Perintah Buka Blokir IP telah dikirim ke Agen Pantau.', 'Unblock IP command sent to Pantau Agent.'],
-  ['Perintah Nonaktifkan Firewall (UFW) telah dikirim ke Agen Pantau.', 'Firewall Disable (UFW) command sent to Pantau Agent.'],
-  ['Perintah Reload Aturan Firewall telah dikirim ke Agen Pantau.', 'Reload Firewall Rules command sent to Pantau Agent.'],
-  ['Perintah Restart Agen telah dikirim ke Agen Pantau.', 'Restart Agent command sent to Pantau Agent.'],
-  ['Perintah Penghentian Proses (Kill) telah dikirim ke Agen Pantau.', 'Process Kill command sent to Pantau Agent.'],
-  ['Perintah Reboot OS dikirim ke server klien.', 'Reboot OS command sent to client server.'],
-  ['Perintah POWER OFF dikirim ke server klien.', 'POWER OFF command sent to client server.'],
-  ['Server akan restart; status di bawah ini diperbarui otomatis.', 'Server is rebooting; status below updates automatically.'],
-  ['Server akan mati; hidupkan kembali manual (fisik/IPMI/host). Status di bawah ini diperbarui otomatis.', 'Server will power off; turn it on manually (hardware/IPMI/host). Status below updates automatically.'],
-  ['Server klien online — reboot selesai.', 'Client server online — reboot complete.'],
-  ['Server klien tidak melapor — sedang proses reboot.', 'Client server not reporting — reboot in progress.'],
-  ['Server klien online — jika tadi mati, sudah dihidupkan kembali.', 'Client server online — if powered off, it has restarted.'],
-  ['Server klien tidak melapor — kemungkinan mati (Power Off berjalan).', 'Client server not reporting — likely powered off (Power Off in effect).'],
-  ['Terminal Bawaan · shell root', 'Embedded Terminal · root shell'],
-  ['Terminal Bawaan &middot; shell root', 'Embedded Terminal · root shell'],
-  ['● live', '● live'],
-  ['live', 'live'],
-  ['% ketersediaan', '% uptime'],
-  ['ketersediaan', 'uptime'],
-  ['— sekarang:', '— now:'],
-  ['1 koneksi', '1 connection'],
-  ['koneksi', 'connections'],
-  ["Pengawasan masa berlaku sertifikat HTTPS (Let's Encrypt / Custom)", "HTTPS certificate expiration monitoring (Let's Encrypt / Custom)"],
-  ["Pengawasan masa berlaku sertifikat HTTPS (Let's Encrypt / Kustom)", "HTTPS certificate expiration monitoring (Let's Encrypt / Custom)"],
-  ['Riwayat Penggunaan Disk (%)', 'Disk Usage History (%)'],
-  ['Riwayat Penggunaan Disk', 'Disk Usage History'],
-  ['Penggunaan Disk', 'Disk Usage'],
-  ['Pemantauan lalu lintas data antarmuka, laju transfer, dan alamat IP', 'Interface network traffic monitoring, transfer rates, and IP addresses'],
-  ['Pemantauan lalu lintas data antarmuka', 'Interface network traffic monitoring'],
-  ['laju transfer', 'transfer rates'],
-  ['alamat IP', 'IP address'],
-  ['Laju Masuk (RX)', 'Inbound Rate (RX)'],
-  ['Laju Keluar (TX)', 'Outbound Rate (TX)'],
-  ['Laju Masuk', 'Inbound Rate'],
-  ['Laju Keluar', 'Outbound Rate'],
-  ['24 jam, 7 hari, 30 hari', '24 hours, 7 days, 30 days'],
-  ['24 jam', '24 hours'],
-  ['7 hari', '7 days'],
-  ['30 hari', '30 days'],
-  ['Memory Used (riwayat ±10 m)', 'Memory Used (history ±10m)'],
-  ['Memori Terpakai (riwayat ±10 mnt)', 'Memory Used (history ±10 min)'],
-  ['CPU (riwayat ±10 mnt)', 'CPU (history ±10 min)'],
-  ['RAM (riwayat ±10 mnt)', 'RAM (history ±10 min)'],
-  ['(riwayat ±10 mnt)', '(history ±10 min)'],
-  ['(riwayat ±10 m)', '(history ±10m)'],
-  ['Semua paket OS sudah mutakhir. Terakhir diperiksa', 'All OS packages are up to date. Last checked'],
-  ['Semua paket OS sudah mutakhir.', 'All OS packages are up to date.'],
-  ['Semua paket OS sudah mutakhir', 'All OS packages are up to date'],
-  ['Terakhir diperiksa', 'Last checked'],
-  ['paket dapat di-upgrade', 'packages can be upgraded'],
-  ['(belum ada log)', '(no logs yet)'],
-  ['Riwayat Layanan', 'Service History'],
-  ['Nonaktif (Terbuka)', 'Disabled (Open)'],
-  ['Aktif (Melindungi)', 'Active (Protected)'],
-  ['Firewall saat ini nonaktif. Port terbuka sepenuhnya tanpa penyaringan UFW.', 'Firewall is currently inactive. Ports are fully open without UFW filtering.'],
-  ['Tidak ada berkas sertifikat SSL lokal ditemukan pada direktori standar (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).', 'No local SSL certificate files found in standard directories (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).'],
-  ['Gunakan tombol <strong>＋ Tambah Lokasi Sertifikat</strong> untuk mendaftarkan path sertifikat kustom.', 'Use the <strong>＋ Add Certificate Location</strong> button to register a custom certificate path.'],
-  ['Gunakan tombol <strong>Tambah Lokasi Sertifikat</strong> untuk mendaftarkan path sertifikat kustom.', 'Use the <strong>Add Certificate Location</strong> button to register a custom certificate path.'],
-  ['Gunakan tombol Tambah Lokasi Sertifikat untuk mendaftarkan path sertifikat kustom.', 'Use the Add Certificate Location button to register a custom certificate path.'],
-  ['Pengawasan masa berlaku sertifikat HTTPS (Let\'s Encrypt / Custom)', 'HTTPS certificate expiration monitoring (Let\'s Encrypt / Custom)'],
-  ['Pengawasan masa berlaku sertifikat HTTPS (Let\'s Encrypt / Kustom)', 'HTTPS certificate expiration monitoring (Let\'s Encrypt / Custom)'],
-  ['＋ Tambah Lokasi Sertifikat', '＋ Add Certificate Location'],
-  ['+ Tambah Lokasi Sertifikat', '+ Add Certificate Location'],
-  ['Tambah Lokasi Sertifikat', 'Add Certificate Location'],
-  ['[Menghubungkan ke agen server...]', '[Connecting to server agent...]'],
-  ['──── apt update · dipicu dari tombol Dashboard ────', '──── apt update · triggered from Dashboard button ────'],
-  ['apt update berjalan, terhubung . shell siap', 'apt update running, connected . shell ready'],
-  ['terhubung · shell siap', 'connected · shell ready'],
-  ['terhubung &middot; shell siap', 'connected &middot; shell ready'],
-  ['──── selesai; kembali ke shell ────', '──── completed; returned to shell ────'],
-  ['Saat mode maintenance aktif, server ini tidak akan memicu alarm atau tiket incidents baru ketika layanan dimatikan atau saat mesin di-reboot.', 'When maintenance mode is active, this server will not trigger alarms or new incident tickets when services are stopped or the machine is rebooted.'],
-  ['Saat mode pemeliharaan aktif, server ini tidak akan memicu alarm atau tiket masalah baru ketika layanan dimatikan atau saat mesin di-reboot.', 'When maintenance mode is active, this server will not trigger alarms or new incident tickets when services are stopped or the machine is rebooted.'],
-  ['Status saat ini: Inactive (Normal)', 'Current status: Inactive (Normal)'],
-  ['Status saat ini: Tidak Aktif (Normal)', 'Current status: Inactive (Normal)'],
-  ['Status saat ini: Aktif (Dalam Pemeliharaan)', 'Current status: Active (Under Maintenance)'],
-  ['Status saat ini: Aktif (Maintenance)', 'Current status: Active (Maintenance)'],
-  ['Aktif (Dalam Pemeliharaan)', 'Active (Under Maintenance)'],
-  ['Tidak Aktif (Normal)', 'Inactive (Normal)'],
-  ['Pemeliharaan terencana', 'Planned Maintenance'],
-  ['Aktifkan Maintenance', 'Enable Maintenance'],
-  ['Aktifkan Pemeliharaan', 'Enable Maintenance'],
-  ['Akhiri Pemeliharaan', 'End Maintenance'],
-  ['Perbarui Durasi', 'Update Duration'],
-  ['Durasi Pemeliharaan:', 'Maintenance Duration:'],
-  ['Durasi Pemeliharaan', 'Maintenance Duration'],
-  ['Alasan (Opsional):', 'Reason (Optional):'],
-  ['30 Menit', '30 Minutes'],
-  ['1 Jam', '1 Hour'],
-  ['4 Jam', '4 Hours'],
-  ['24 Jam', '24 Hours'],
-  ['Manual (Hingga dinonaktifkan)', 'Manual (Until disabled)'],
-  ['──── apt upgrade · dipicu dari tombol Dashboard ────', '──── apt upgrade · triggered from Dashboard button ────'],
-  ['Memproses apt upgrade…', 'Processing apt upgrade…'],
-  ['Memproses…', 'Processing…'],
-  ['Memproses', 'Processing'],
-  ['Pembaruan paket', 'Package updates'],
-  ['Cek status: sudo systemctl status opencode | Balik hidupkan: sudo systemctl restart opencode | Log: journalctl -u opencode -n 50', 'Check status: sudo systemctl status opencode | Restart: sudo systemctl restart opencode | Log: journalctl -u opencode -n 50'],
-  ['Cek status: sudo systemctl status opencode | Mulai ulang: sudo systemctl restart opencode | Log: journalctl -u opencode -n 50', 'Check status: sudo systemctl status opencode | Restart: sudo systemctl restart opencode | Log: journalctl -u opencode -n 50'],
-  ['Cek proses pemakan memori: sudo ps aux --sort=-%mem | head | Hentikan/mulai ulang proses:', 'Check high memory processes: sudo ps aux --sort=-%mem | head | Stop/restart units:'],
-  ['Tambah alokasi RAM. Server bisa crash/OOM bila dibiarkan.', 'Allocate more RAM. Server may crash/OOM if ignored.'],
-  ['Beri sumber daya RVMM. Server bisa crash/OOM bila dibiarkan.', 'Allocate more RAM. Server may crash/OOM if ignored.'],
-  ['Cek proses pemakan CPU: sudo ps aux --sort=-%cpu | head -20 | restart unit bermasalah; pertimbangkan menaikkan kuota CPU bila rutin melonjak.', 'Check high CPU processes: sudo ps aux --sort=-%cpu | head -20 | restart troubled units; consider increasing CPU quota if frequently spiking.'],
-  ['Bersihkan: sudo du -xh --max-depth=2 / | sort -rh | head -20 | hapus log lama: sudo journalctl --vacuum-size=200M. Disk penuh bisa mematikan database & aplikasi.', 'Clean up: sudo du -xh --max-depth=2 / | sort -rh | head -20 | delete old logs: sudo journalctl --vacuum-size=200M. Full disk can crash databases & applications.'],
-  ['RAM menipis sedang dibuang ke swap — dampak kinerja besar. Cek RAM & proses (lihat tips RAM).', 'Low RAM is swapping to disk — major performance impact. Check RAM & processes (see RAM advice).'],
-  ['Kemungkinan serangan SSH — blokir IP sumber (sudo iptables -A INPUT -s <ip> -j DROP), pasang fail2ban (sudo apt install fail2ban), ganti password akun, perketat sshd (PasswordAuthentication no + PubkeyAuthentication yes).', 'Potential SSH attack — block source IP (sudo iptables -A INPUT -s <ip> -j DROP), install fail2ban (sudo apt install fail2ban), change passwords, tighten sshd (PasswordAuthentication no + PubkeyAuthentication yes).'],
-  ['Login SSH gagal dalam jumlah mencurigakan — cek IP sumber & akun; blokir bila repetitif; pasang fail2ban.', 'Suspicious number of failed SSH logins — check source IP & accounts; block if repetitive; install fail2ban.'],
-  ['Ada login SSH gagal — bisa typo password; tetap pantau aktivitas di halaman Aktivitas User.', 'Failed SSH login detected — possibly typo; continue monitoring on User Activity page.'],
-  ['Buka Rincian server lalu pilih Update OS atau Upgrade. Di server bisa juga manual: sudo apt update && sudo apt upgrade', 'Open server Details then select Update OS or Upgrade. On server you can also run manually: sudo apt update && sudo apt upgrade'],
-  ['Pastikan service benar-benar ada & port terbuka (ss -tlnp); agen memindai ulang tiap siklus.', 'Ensure service exists & port is open (ss -tlnp); agent rescans every cycle.'],
-  ['Agen tidak melapor — mulai ulang: sudo systemctl restart agent_pantau | Log: journalctl -u agent_pantau -n 30', 'Agent not reporting — restart: sudo systemctl restart agent_pantau | Log: journalctl -u agent_pantau -n 30'],
-  ['Riwayat perintah shell user', 'Shell command history for user'],
-  ['di server ini, terbaru di atas. Waktu hanya tampil untuk perintah yang shellnya mencatat jam; selebihnya hanya urutannya.', 'on this server, newest on top. Time is only displayed for commands recorded with timestamps; otherwise order only.'],
-  ['di server ini, terbaru di atas. Waktu hanya tampil untuk perintah yang shellnya mencatat timestamp; selebihnya hanya urutan eksekusi.', 'on this server, newest on top. Time is only displayed for commands recorded with timestamps; otherwise execution order only.'],
-  ['berhasil', 'success'],
-  ['sukses', 'success'],
-  ['gagal', 'failed'],
-  ['menunggu…', 'pending…'],
-  ['dieksekusi…', 'executing…'],
-  ['dikirim ke agen', 'sent to agent'],
-  ['diabaikan', 'ignored'],
-  ['dipantau', 'monitored'],
-  ['ditangani', 'acknowledged'],
-  ['selesai', 'resolved'],
-  ['pemeliharaan', 'maintenance'],
-  ['dieksekusi', 'executed'],
-  ['aktif', 'active'],
-  ['aktifkan', 'enable'],
-  ['nonaktifkan', 'disable'],
-  ['berkas', 'files'],
-  ['aktivitas', 'activity'],
-  ['perintah', 'command'],
-  ['memuat...', 'loading...'],
-  ['memuat…', 'loading…'],
-  ['Koneksi', 'Connections'],
-  ['Diperbarui:', 'Updated:'],
-  ['Akses & Utilitas Server', 'Server Utilities & Access'],
-  ['Akses &amp; Utilitas Server', 'Server Utilities & Access'],
-  ['Pembaruan & Daya Mesin', 'Updates & Power'],
-  ['Pembaruan &amp; Daya Mesin', 'Updates & Power'],
-  ['Total akumulasi byte diterima sejak boot', 'Total accumulated bytes received since boot'],
-  ['Total akumulasi byte dikirim sejak boot', 'Total accumulated bytes transmitted since boot'],
-  ['Buka kunci akun (aktifkan login)', 'Unlock account (enable login)'],
-  ['Kunci akun (disable login)', 'Lock account (disable login)'],
-  ['Sidik jari kunci API — bukan kunci penuh. Kunci hanya ditampilkan sekali, saat dibuat.', 'API key fingerprint — not full key. Key is only displayed once upon creation.'],
-  ['Ditambahkan secara manual via Pantau', 'Added manually via Pantau'],
-  ['Dibuat via Pantau Server', 'Created via Pantau Server'],
-  ['Cari di log… (filter baris)', 'Search logs… (line filter)'],
-  ['Koneksi dashboard terputus ±1-2 menit sampai server kembali.', 'Dashboard connection disconnected ±1-2 minutes until server is back.'],
-  ['Mesin akan poweroff — TIDAK menyala sendiri — sampai dinyalakan manual (fisik/IPMI).', 'Machine will power off — will NOT turn on automatically — until powered manually (physical/IPMI).'],
-  ['Aturan DROP pada iptables akan segera dihapus oleh agen.', 'DROP rule in iptables will be removed shortly by agent.'],
-  ['PID tidak valid atau dilindungi oleh sistem keamanan!', 'Invalid PID or protected by system security!'],
-  ['Agen akan restart otomatis ~2 detik setelah menerima.', 'Agent will restart automatically ~2 seconds after receiving.'],
-  ['Tidak ada IP sumber untuk diblokir.', 'No source IP to block.'],
-  ['Tidak terdeteksi IP pelaku pada data keamanan terakhir.', 'No attacker IP detected in recent security logs.'],
-  ['Perintah restart telah dikirim ke Agen Pantau.', 'Restart command has been sent to Pantau Agent.'],
-  ['· kernel memuat data sistem…', '· kernel loading system data…'],
-  ['Sambung Ulang', 'Reconnect'],
-  ['Reload Aturan', 'Reload Rules'],
-  ['Blokir Sekarang', 'Block Now'],
-  ['Nama Timer', 'Timer Name'],
-  ['Bind IP', 'Bind IP'],
-  ['Domain / Subjek', 'Domain / Subject'],
-  ['Lokasi Berkas', 'File Location'],
-  ['Nama Proses *', 'Process Name *'],
-  ['Keterangan (Comment)', 'Comment'],
-  ['Nama Identifikasi (Ident) *', 'Identifier (Ident) *'],
-  ['Tgl (DOM)', 'Date (DOM)'],
-  ['Hari (DOW)', 'Day (DOW)'],
-  ['Perintah yang Dieksekusi *', 'Executed Command *'],
-  ['Filter perintah…', 'Filter commands…'],
-  ['Muat lebih banyak', 'Load more'],
-  ['Ekspor CSV', 'Export CSV'],
-  ['Metode / Perintah', 'Method / Command'],
-  ['Minimalkan / perluas sidebar', 'Minimize / expand sidebar'],
-  ['Contoh: Service on-demand / sengaja dihentikan', 'Example: On-demand service / intentionally stopped'],
-  ['Tandai semua ditangani', 'Mark all resolved'],
-  ['Tandai ditangani', 'Mark resolved'],
-  ['Maju', 'Forward'],
-  ['Ke Folder Induk', 'Up to Parent Folder'],
-  ['Ke Direktori Root (/)', 'To Root Directory (/)'],
-  ['Muat Ulang Direktori', 'Reload Directory'],
-  ['Ketik / Tempel Path Manual', 'Type / Paste Manual Path'],
-  ['Pilih Semua (Ctrl+A)', 'Select All (Ctrl+A)'],
-  ['Layar Penuh (Toggle Fullscreen)', 'Fullscreen (Toggle Fullscreen)'],
-  ['Klik untuk membuka / menyunting berkas', 'Click to open / edit file'],
-  ['Lihat & Edit Berkas', 'View & Edit File'],
-  ['Potong (Cut)', 'Cut'],
-  ['Filter berkas di folder ini...', 'Filter files in this folder...'],
-  ['Tempel di Sini (Ctrl+V)', 'Paste Here (Ctrl+V)'],
-  ['0644 (File)', '0644 (File)'],
-  ['0755 (Folder)', '0755 (Folder)'],
-  ['0600 (Ketat)', '0600 (Strict)'],
-  ['0777 (Penuh)', '0777 (Full)'],
-  ['0755 (Folder/Exec)', '0755 (Folder/Exec)'],
-  ['Grup (Opsional):', 'Group (Optional):'],
-  ['Nama:', 'Name:'],
-  ['Jumlah memori RAM yang digunakan', 'RAM memory used'],
-  ['Titik kait partisi direktori (mount point)', 'Partition mount point'],
-  ['PERINGATAN DANGER — TINDAKAN DIPERLUKAN SEGERA', 'DANGER ALERT — IMMEDIATE ACTION REQUIRED'],
-  ['Sekali ini saja (kembali dipantau saat aktif)', 'Once only (monitored again when active)'],
-  ['Permanen (hingga diaktifkan manual kembali)', 'Permanent (until manually re-enabled)'],
-  ['Belum ada server terdaftar.', 'No servers registered yet.'],
-  ['■ Kembali ke Dashboard', '■ Back to Dashboard'],
-  ['Informasi Tambahan (Khusus Admin):', 'Additional Information (Admin Only):'],
-  ['Eksplorasi, kelola, dan sunting berkas server secara langsung lewat protokol aman.', 'Explore, manage, and edit server files directly via secure protocol.'],
-  ['📋 Tempel', '📋 Paste'],
-  ['Memuat berkas…', 'Loading file…'],
-  ['Penyimpanan:', 'Storage:'],
-  ['✂️ Potong', '✂️ Cut'],
-  ['📋 0 item siap ditempel', '📋 0 items ready to paste'],
-  ['📝 Editor Berkas:', '📝 File Editor:'],
-  ['auto .bak', 'auto .bak'],
-  ['• Pintasan:', '• Shortcuts:'],
-  ['Ctrl+S', 'Ctrl+S'],
-  ['untuk menyimpan •', 'to save •'],
-  ['indentasi.', 'indentation.'],
-  ['↻ Muat Ulang', '↻ Reload'],
-  ['Path Asal:', 'Source Path:'],
-  ['Direktori Tujuan:', 'Target Directory:'],
-  ['Maksimal ukuran berkas 100 MB.', 'Maximum file size 100 MB.'],
-  ['Mengunggah...', 'Uploading...'],
-  ['Target:', 'Target:'],
-  ['Buat Baru', 'Create New'],
-  ['Lokasi:', 'Location:'],
-  ['⚙ Ubah Hak Akses Massal', '⚙ Batch Change Permissions'],
-  ['Ubah izin untuk', 'Change permissions for'],
-  ['API Key Baru', 'New API Key'],
-  ['← Kembali', '← Back'],
-  ['Selesai, ke daftar server', 'Done, to servers list'],
-  ['Edit server ini', 'Edit this server'],
-  ['Penyimpanan (Disk)', 'Storage (Disk)'],
-  ['Diabaikan (🔕)', 'Ignored (🔕)'],
-  ['Key disimpan sebagai hash (tidak bisa ditampilkan lagi). Untuk melihat key baru, gunakan', 'Key is stored as a hash (cannot be displayed again). To view the new key, use'],
-  ['— key akan ditampilkan satu kali.', '— key will be displayed once.'],
-  ['v (perlu update)', 'v (update required)'],
-  ['← Servers', '← Servers'],
-  ['Grafik utilisasi sumber daya mesin', 'Machine resource utilization charts'],
-  ['1 Jam', '1 Hour'],
-  ['6 Jam', '6 Hours'],
-  ['RX Total', 'Total RX'],
-  ['TX Total', 'Total TX'],
-  ['belum ada data', 'no data yet'],
-  ['Blokir IP', 'Block IP'],
-  ['Log auth', 'Auth log'],
-  ['memuat layanan…', 'loading services…'],
-  ['Setiap blok menunjukkan status pada interval waktu tersebut', 'Each block indicates status for that time interval'],
-  ['timer aktif', 'active timer'],
-  ['Tidak ada systemd timer aktif.', 'No active systemd timer.'],
-  ['Membuat akun login Linux baru pada server ini. Perintah', 'Create a new Linux login account on this server. Command'],
-  ['Diawali huruf kecil/underscore, maks 32 karakter', 'Starts with lowercase/underscore, max 32 characters'],
-  ['/usr/sbin/nologin (tanpa shell)', '/usr/sbin/nologin (no shell)'],
-  ['/bin/false (diblokir)', '/bin/false (blocked)'],
-  ['Tambahkan ke grup', 'Add to group'],
-  ['(hak superuser)', '(superuser privileges)'],
-  ['Tugas cron akan disimpan di', 'Cron jobs will be stored in'],
-  ['dan dikelola sepenuhnya oleh Pantau Server.', 'and fully managed by Pantau Server.'],
-  ['Nama unik, alfanumerik, digunakan sebagai sufiks nama berkas cron', 'Unique alphanumeric name, used as cron filename suffix'],
-  ['Format standar cron. Contoh:', 'Standard cron format. Example:'],
-  ['Path berkas sertifikat akan disimpan di', 'Certificate file path will be stored in'],
-  ['dan dipantau secara berkala oleh agen.', 'and monitored periodically by agent.'],
-  ['Lokal (Loopback)', 'Local (Loopback)'],
-  ['Gunakan tombol', 'Use button'],
-  ['untuk mendaftarkan path sertifikat kustom.', 'to register custom certificate path.'],
-  ['— memuat —', '— loading —'],
-  ['30 Menit', '30 Minutes'],
-  ['Manual (Hingga dinonaktifkan)', 'Manual (Until disabled)'],
-  ['Login Sukses:', 'Successful Logins:'],
-  ['Login Gagal:', 'Failed Logins:'],
-  ['Sesi Baru:', 'New Sessions:'],
-  ['Sudo:', 'Sudo:'],
-  ['Perintah:', 'Commands:'],
-  ['Dari', 'From'],
-  ['Riwayat Perintah (history)', 'Command History (history)'],
-  ['Riwayat perintah tidak ditemukan atau belum ada perintah.', 'Command history not found or no commands executed yet.'],
-  ['Buka Port', 'Open Port'],
-  ['Port Listening', 'Listening Ports'],
-  ['Port Terbuka', 'Listening Ports'],
-  ['Beban Sistem & Kinerja', 'System Load & Performance'],
-  ['Semua Server Normal', 'All Servers Normal'],
-  ['Ringkasan Infrastruktur', 'Infrastructure Overview'],
-  ['CPU Rata-rata', 'Average CPU'],
-  ['RAM Terpakai', 'Used RAM'],
-  ['Koneksi Aktif', 'Active Connections'],
-  ['Insiden & Masalah Terbaru', 'Recent Incidents & Issues'],
-  ['Buka blokir IP', 'Unblock IP'],
-  ['Aturan DROP pada iptables akan dihapus.', 'DROP rule in iptables will be removed.'],
-  ['Cari kejadian…', 'Search incidents…'],
-  ['Cari server atau IP…', 'Search server or IP…'],
-  ['Cari server, IP, atau versi agen…', 'Search server, IP, or agent version…'],
-  ['Cari perintah…', 'Search commands…'],
-  ['Cari berkas…', 'Search files…'],
-  ['Cari nama, PID, user, status…', 'Search name, PID, user, state…'],
-  ['Cari service / daemon…', 'Search service / daemon…'],
-  ['Cari nama unit, load, active, sub…', 'Search unit name, load, active, sub…'],
-  ['Cari port, proses, PID, IP…', 'Search port, process, PID, IP…'],
-  ['Cari domain, penerbit, path…', 'Search domain, issuer, path…'],
-  ['Cari aksi, user, target, detail…', 'Search action, user, target, details…'],
-  ['Cari username, role…', 'Search username, role…'],
-  ['Semua level', 'All levels'],
-  ['Semua protokol', 'All protocols'],
-  ['Semua status', 'All statuses'],
-  ['Semua tipe', 'All types'],
-  ['Semua jenis', 'All types'],
-  ['Semua aksi', 'All actions'],
-  ['Semua peran', 'All roles'],
-
-  // Perbaikan redaksi & multibahasa terlengkap
-  ['(perlu update)', '(update required)'],
-  ['perlu update', 'update required'],
-  ['agen perlu update', 'agent update required'],
-  ['agent perlu update', 'agent update required'],
-  ['Versi Agen Pantau di server ini', 'Pantau Agent version on this server'],
-  ['lebih lama dari dashboard', 'is older than dashboard'],
-  ['lebih lama of dashboard', 'is older than dashboard'],
-  ['Perbarui agen untuk mengaktifkan fitur snapshot proses dan kestabilan sistem.', 'Update agent to enable process snapshot features and system stability.'],
-  ['Perbarui agen untuk mengaktifkan fitur snapshot proses dan kestabilan sistem', 'Update agent to enable process snapshot features and system stability'],
-  ['Salin Perintah Update', 'Copy Update Command'],
-  ['📋 Salin Perintah Update', '📋 Copy Update Command'],
-  ['Salin perintah update agen ke clipboard', 'Copy agent update command to clipboard'],
-  ['perintah (dari', 'commands (of'],
-  ['perintah', 'commands'],
-  ['Perintah', 'Commands'],
-  ['Status: Normal', 'Status: Normal'],
-  ['Status: Terhenti', 'Status: Stopped'],
-  ['Status:Normal', 'Status: Normal'],
-  ['Status:', 'Status:'],
-  ['Respons:', 'Response:'],
-  ['Koneksi:', 'Connections:'],
-  ['Koneksi', 'Connections'],
-  ['koneksi', 'connections'],
-  ['Tambah SSL Kustom', 'Add Custom SSL'],
-  ['Tambah SSK Kustom', 'Add Custom SSL'],
-  ['+ Tambah SSL Kustom', '+ Add Custom SSL'],
-  ['Akui Peringatan', 'Acknowledge Alert'],
-  ['Akui', 'Acknowledge'],
-  ['diakui', 'acknowledged'],
-  ['Diakui', 'Acknowledged'],
-  ['Kunci Akun pengguna', 'Lock user account'],
-  ['Buka Kunci pengguna', 'Unlock user account'],
-  ['Kunci Akun', 'Lock Account'],
-  ['Buka Kunci Akun', 'Unlock Account'],
-  ['Buka kunci akun (aktifkan login)', 'Unlock account (enable login)'],
-  ['Kunci akun (disable login)', 'Lock account (disable login)'],
-  ['Buka kunci akun', 'Unlock account'],
-  ['Kunci akun', 'Lock account'],
-  ['Membuat akun login Linux baru pada server ini. Akun akan dibuat menggunakan perintah standar sistem melalui agen.', 'Create a new Linux login account on this server. The account will be created using standard system commands via the agent.'],
-  ['Password Akun (Opsional)', 'Account Password (Optional)'],
-  ['Kosongkan jika hanya menggunakan SSH Key', 'Leave blank if using SSH Key only'],
-  ['Jika diisi, akun langsung aktif dengan autentikasi password. Jika dikosongkan, akun siap untuk login via SSH Key.', 'If filled, account is immediately active with password authentication. If left blank, account is ready for SSH Key login.'],
-  ['Buat Pengguna Sistem Baru', 'Create New System User'],
-  ['Buat Pengguna', 'Create User'],
-  ['Buat pengguna sistem', 'Create system user'],
-  ['Hapus Pengguna', 'Delete User'],
-  ['Hapus pengguna', 'Delete user'],
-  ['Aturan Port & Kebijakan Akses (Rules)', 'Port Rules & Access Policy'],
-  ['Aturan Port & Kebijakan Akses', 'Port Rules & Access Policy'],
-  ['Aturan / Deskripsi Akses Port', 'Rule / Port Access Description'],
-  ['Aturan', 'Rules'],
-  ['aturan', 'rules'],
-  ['Interaktif', 'Interactive'],
-  ['interaktif', 'interactive'],
-  ['Nonaktifkan', 'Disable'],
-  ['Aktifkan', 'Enable'],
-  ['Nonaktif (Terbuka)', 'Disabled (Open)'],
-  ['Aktif (Melindungi)', 'Active (Protecting)'],
-  ['Status saat ini:', 'Current status:'],
-  ['Status saat ini', 'Current status'],
-  ['mutakhir', 'up to date'],
-  ['Mutakhir', 'Up to date'],
-  ['paket dapat di-upgrade', 'packages can be upgraded'],
-  ['paket siap di-upgrade', 'packages ready to upgrade'],
-  ['paket siap untuk di-upgrade', 'packages ready to upgrade'],
-  ['pending upgrade', 'pending upgrade'],
-  ['paket tersedia', 'packages available'],
-  ['paket', 'packages'],
-  ['Paket', 'Packages'],
-  ['masalah', 'issues'],
-  ['Masalah', 'Issues'],
-  ['terbaru di atas', 'newest on top'],
-  ['terbaru', 'latest'],
-  ['Terbaru', 'Latest'],
-  ['Dibuat via Pantau Server', 'Created via Pantau Server'],
-  ['berkas', 'files'],
-  ['Berkas', 'Files'],
-  ['aktivitas', 'activity'],
-  ['Aktivitas', 'Activity'],
-  ['memuat…', 'loading…'],
-  ['memuat...', 'loading...'],
-  ['memuat', 'loading'],
-  ['Memuat…', 'Loading…'],
-  ['Memuat...', 'Loading...'],
-  ['laju transfer', 'transfer rate'],
-  ['Laju transfer', 'Transfer rate'],
-  ['alamat IP', 'IP address'],
-  ['Alamat IP', 'IP Address'],
-  ['Laju Masuk (RX)', 'Inbound Rate (RX)'],
-  ['Laju Keluar (TX)', 'Outbound Rate (TX)'],
-  ['Riwayat Penggunaan Disk (%)', 'Disk Usage History (%)'],
-  ['Pemantauan lalu lintas data antarmuka', 'Interface data traffic monitoring'],
-  ['(riwayat ±10 mnt)', '(history ±10m)'],
-  ['(riwayat ±10 m)', '(history ±10m)'],
-  ['Semua paket OS sudah mutakhir.', 'All OS packages are up to date.'],
-  ['Terakhir diperiksa', 'Last checked'],
-  ['24 jam', '24 hours'],
-  ['7 hari', '7 days'],
-  ['30 hari', '30 days'],
-  ['7 Hari', '7 Days'],
-  ['30 Hari', '30 Days'],
-  ['ketersediaan', 'uptime'],
-  ['% ketersediaan', '% uptime'],
-  ['Diperbarui:', 'Updated:'],
-  ['Diperbarui', 'Updated'],
-  ['Riwayat Layanan', 'Service History'],
-  ['sekarang:', 'now:'],
-  ['[Menghubungkan ke agen server...]', '[Connecting to server agent...]'],
-  ['──── apt update · dipicu dari tombol Dashboard ────', '──── apt update · triggered from Dashboard button ────'],
-  ['──── apt upgrade · dipicu dari tombol Dashboard ────', '──── apt upgrade · triggered from Dashboard button ────'],
-  ['apt update berjalan, terhubung . shell siap', 'apt update running, connected . shell ready'],
-  ['──── selesai; kembali ke shell ────', '──── completed; returned to shell ────'],
-  ['Memproses apt upgrade…', 'Processing apt upgrade…'],
-  ['Pembaruan paket', 'Package updates'],
-  ['(belum ada log)', '(no logs yet)'],
-  ['Pemeliharaan terencana', 'Planned maintenance'],
-  ['Aktifkan Maintenance', 'Enable Maintenance'],
-  ['Saat mode maintenance aktif, server ini tidak akan memicu alarm atau tiket incidents baru ketika layanan dimatikan atau saat mesin di-reboot.', 'When maintenance mode is active, this server will not trigger alarms or new incident tickets when services are stopped or the machine is rebooted.'],
-  ['Firewall saat ini nonaktif. Port terbuka sepenuhnya tanpa penyaringan UFW.', 'Firewall is currently inactive. Ports are fully open without UFW filtering.'],
-  ['Tidak ada berkas sertifikat SSL lokal ditemukan pada direktori standar (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).', 'No local SSL certificate files found in standard directories (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).'],
-  ['Gunakan tombol <strong>Tambah Lokasi Sertifikat</strong> untuk mendaftarkan path sertifikat kustom.', 'Use the <strong>Add Certificate Location</strong> button to register a custom certificate path.'],
-  ['Gunakan tombol Tambah Lokasi Sertifikat untuk mendaftarkan path sertifikat kustom.', 'Use the Add Certificate Location button to register a custom certificate path.'],
-  ['Pengawasan masa berlaku sertifikat HTTPS (Let\'s Encrypt / Custom)', 'HTTPS certificate validity monitoring (Let\'s Encrypt / Custom)'],
-  ['+ Tambah Lokasi Sertifikat', '+ Add Certificate Location'],
-  ['＋ Tambah Lokasi Sertifikat', '＋ Add Certificate Location'],
-  ['Tambah Lokasi Sertifikat', 'Add Certificate Location'],
-  ['Cek status:', 'Check status:'],
-  ['Mulai ulang:', 'Restart:'],
-  ['Log:', 'Logs:'],
-  ['kambuh', 'recurred'],
-  ['diabaikan permanen', 'permanently ignored'],
-  ['diabaikan (permanen)', 'ignored (permanent)'],
-  ['diabaikan (hanya insiden saat ini)', 'ignored (current incident only)'],
-  ['diselesaikan manual', 'manually resolved'],
-  ['pemantauan diaktifkan kembali', 'monitoring resumed'],
-  ['Menampilkan 0 masalah', 'Showing 0 issues'],
-  ['0 masalah', '0 issues'],
-  ['Semua masalah', 'All issues'],
-  ['Menampilkan 0 tindakan', 'Showing 0 actions'],
-  ['0 tindakan', '0 actions'],
-  ['Belum ada riwayat tindakan di server ini.', 'No action history on this server yet.'],
-  ['Belum ada data riwayat layanan.', 'No service history data yet.'],
-  ['Tidak ada sampel laporan', 'No report samples'],
-  ['Nama layanan atau daemon yang dipantau', 'Monitored service or daemon name'],
-  ['Nomor port jaringan yang digunakan oleh layanan', 'Network port number used by service'],
-  ['Nama proses sistem operasi yang dieksekusi', 'Operating system process name executed'],
-  ['Kondisi terkini layanan (up = aktif normal, down = terhenti)', 'Current service condition (up = active normal, down = stopped)'],
-  ['Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan', 'Active network connections currently connected to service'],
-  ['Waktu respons layanan dalam satuan milidetik (ms)', 'Service response time in milliseconds (ms)'],
-  ['Hasil pemeriksaan kesehatan (health check) layanan', 'Service health check results'],
-  ['Persentase ketersediaan layanan dalam 24 jam terakhir', 'Service availability percentage in the last 24 hours'],
-  ['Kontrol layanan: Restart, Mulai (▶), Berhenti (■), Abaikan (🔕), atau Hapus', 'Service control: Restart, Start (▶), Stop (■), Ignore (🔕), or Delete'],
-  ['Waktu Respon (ms)', 'Response Time (ms)'],
-  ['Garis Waktu Ketersediaan Layanan (Uptime Timeline)', 'Service Uptime Timeline'],
-  ['Setiap blok menunjukkan status pada interval waktu tersebut', 'Each block indicates status at that time interval'],
-  ['Tanpa Data', 'No Data'],
-  ['Sekarang', 'Now'],
-  ['📋 Update Agen', '📋 Update Agent'],
-  ['Update Agen', 'Update Agent'],
-  ['Buka Kunci', 'Unlock'],
-  ['Kunci', 'Lock'],
-  ['Nihil', 'None'],
-  ['Status:Normal', 'Status: Normal'],
-  ['Status: Normal', 'Status: Normal'],
-  ['Dibuat via Pantau Server', 'Created via Pantau Server'],
-  ['Copy Perintah Update', 'Copy Update Command'],
-  ['Tambah SSK Kustom', 'Add Custom SSL'],
-  ['Tambah SSL Kustom', 'Add Custom SSL'],
-  ['Akui Peringatan', 'Acknowledge Alert'],
-  ['Kunci Akun pengguna', 'Lock user account'],
-  ['Buka Kunci pengguna', 'Unlock user account'],
-  ['200 perintah (dari 200)', '200 commands (of 200)'],
-  ['59h 12j 4m', '59d 12h 4m'],
-
-  // Kategori & Aksi Audit Trail
-  ['Autentikasi & Akun', 'Auth & Accounts'],
-  ['Layanan & Proses', 'Services & Processes'],
-  ['Firewall & Keamanan', 'Firewall & Security'],
-  ['Berkas & File Manager', 'Files & File Manager'],
-  ['Tugas Terjadwal (Cron)', 'Scheduled Tasks (Cron)'],
-  ['Sertifikat SSL', 'SSL Certificates'],
-  ['Pembaruan OS (APT)', 'OS Updates (APT)'],
-  ['Server & Pemeliharaan', 'Server & Maintenance'],
-  ['★ Semua Autentikasi & Akun', '★ All Auth & Accounts'],
-  ['★ Semua Layanan & Proses', '★ All Services & Processes'],
-  ['★ Semua Firewall & Keamanan', '★ All Firewall & Security'],
-  ['★ Semua Berkas & File Manager', '★ All Files & File Manager'],
-  ['★ Semua Tugas Terjadwal (Cron)', '★ All Scheduled Tasks (Cron)'],
-  ['★ Semua Sertifikat SSL', '★ All SSL Certificates'],
-  ['★ Semua Pembaruan OS (APT)', '★ All OS Updates (APT)'],
-  ['★ Semua Server & Pemeliharaan', '★ All Server & Maintenance'],
-  ['Buat Pengguna Sistem', 'Create System User'],
-  ['Kunci Akun Pengguna', 'Lock User Account'],
-  ['Buka Kunci Akun', 'Unlock User Account'],
-  ['Hapus Pengguna', 'Delete User'],
-  ['Tambah Akun Web', 'Add Web User'],
-  ['Restart Layanan', 'Restart Service'],
-  ['Mulai Layanan', 'Start Service'],
-  ['Hentikan Layanan', 'Stop Service'],
-  ['Hentikan Proses (Kill)', 'Kill Process'],
-  ['Blokir IP', 'Block IP'],
-  ['Buka Blokir IP', 'Unblock IP'],
-  ['Aktifkan Firewall', 'Enable Firewall'],
-  ['Nonaktifkan Firewall', 'Disable Firewall'],
-  ['Muat Ulang Firewall', 'Reload Firewall'],
-  ['Aturan Port Firewall', 'Firewall Port Rule'],
-  ['Simpan / Edit Berkas', 'Save / Edit File'],
-  ['Unggah Berkas', 'Upload File'],
-  ['Hapus Berkas / Folder', 'Delete File / Folder'],
-  ['Buat Folder', 'Create Folder'],
-  ['Ubah Nama', 'Rename File'],
-  ['Ubah Izin (chmod)', 'Change Permissions (chmod)'],
-  ['Ubah Pemilik (chown)', 'Change Owner (chown)'],
-  ['Tambah Tugas Cron', 'Add Cron Job'],
-  ['Ubah Status Cron', 'Toggle Cron Job'],
-  ['Hapus Tugas Cron', 'Delete Cron Job'],
-  ['Uji Jalankan Cron', 'Run Cron Now'],
-  ['Tambah Lokasi SSL', 'Add SSL Path'],
-  ['Hapus Lokasi SSL', 'Remove SSL Path'],
-  ['Update Paket OS (apt)', 'Update OS Packages (apt)'],
-  ['Upgrade Paket OS (apt)', 'Upgrade OS Packages (apt)'],
-  ['Tambah Server', 'Add Server'],
-  ['Ubah Server', 'Edit Server'],
-  ['Hapus Server', 'Delete Server'],
-  ['Regenerasi Key', 'Regenerate Key'],
-  ['Reboot Server', 'Reboot Server'],
-  ['Power Off Server', 'Power Off Server'],
-  ['Restart Agen', 'Restart Agent'],
-  ['Buka Terminal Root', 'Open Root Terminal'],
-  ['Mode Pemeliharaan', 'Maintenance Mode'],
-  ['Akui Peringatan (Alert)', 'Acknowledge Alert'],
-  ['Akui peringatan (alert)', 'Acknowledge alert'],
-  ['Akui peringatan', 'Acknowledge alert'],
-  ['Acknowledge peringatan (alert)', 'Acknowledge alert'],
-  ['Acknowledge peringatan', 'Acknowledge alert'],
-  ['Abaikan Masalah', 'Mute Problem'],
-  ['Pantau Kembali Masalah', 'Unmute Problem'],
-  ['Masalah selesai', 'Problem resolved'],
-  ['masalah_selesai', 'Problem resolved'],
-  ['Masalah pulih', 'Problem resolved'],
-  ['masalah_pulih', 'Problem resolved'],
-  ['Buat akun user baru', 'Create new user account'],
-  ['Contoh: user1', 'Example: user1'],
-  ['Peringatan masalah', 'Warning alert'],
-  ['Bahaya masalah', 'Danger alert'],
-  ['Informasi masalah', 'Info notice'],
-  ['menghitung…', 'calculating…'],
-  ['menghitung...', 'calculating...'],
-  ['menghitung', 'calculating'],
-  ['Menampilkan maks 500 baris terbaru. Status perintah remote berubah otomatis setelah agen mengeksekusinya.', 'Showing up to 500 latest entries. Remote command status updates automatically once executed by agent.'],
-  ['proses sistem', 'system processes'],
-
-  // Paginasi & Baris Tabel
-  ['Semua baris', 'All rows'],
-  ['10 baris', '10 rows'],
-  ['25 baris', '25 rows'],
-  ['50 baris', '50 rows'],
-  ['100 baris', '100 rows'],
-  ['Semua tindakan', 'All actions'],
-  ['Semua masalah', 'All incidents'],
-  ['Semua pengguna', 'All users'],
-  ['Semua akun', 'All accounts'],
-  ['Semua port', 'All ports'],
-  ['Semua tugas', 'All tasks'],
-  ['Semua sertifikat', 'All certificates'],
-  ['Semua socket', 'All sockets'],
-  ['10 masalah', '10 incidents'],
-  ['25 masalah', '25 incidents'],
-  ['50 masalah', '50 incidents'],
-  ['100 masalah', '100 incidents'],
-  ['10 pengguna', '10 users'],
-  ['25 pengguna', '25 users'],
-  ['50 pengguna', '50 users'],
-  ['10 akun', '10 accounts'],
-  ['25 akun', '25 accounts'],
-  ['50 akun', '50 accounts'],
-  ['10 port', '10 ports'],
-  ['25 port', '25 ports'],
-  ['50 port', '50 ports'],
-  ['10 tugas', '10 tasks'],
-  ['25 tugas', '25 tasks'],
-  ['50 tugas', '50 tasks'],
-  ['10 sertifikat', '10 certificates'],
-  ['25 sertifikat', '25 certificates'],
-  ['50 sertifikat', '50 certificates'],
-  ['Menampilkan 0 dari 0', 'Showing 0 of 0'],
-  ['Halaman 1 dari 1', 'Page 1 of 1'],
-  ['Hal 1 / 1', 'Page 1 / 1'],
-
-  // Nilai Kolom & Badge
-  ['Menunggu', 'Pending'],
-  ['Dinyalakan', 'Executing'],
-  ['Berhasil', 'Success'],
-  ['Gagal', 'Failed'],
-  ['Diabaikan (🔕)', 'Muted (🔕)'],
-  ['kambuh', 'recurred'],
-  ['otomatis berakhir', 'auto-resolved'],
-  ['Ditangani oleh', 'Acknowledged by'],
-  ['ditangani oleh', 'acknowledged by'],
-  ['Aktif Normal', 'Active Normal'],
-  ['Segera Expired (<14 hr)', 'Expiring Soon (<14 d)'],
-  ['Perlu Diperbarui (<30 hr)', 'Needs Renewal (<30 d)'],
-  ['hari lagi', 'days left'],
-  ['diabaikan s/d', 'muted until'],
-  ['diabaikan permanen', 'permanently muted'],
-  ['Publik (0.0.0.0 / ::)', 'Public (0.0.0.0 / ::)'],
-  ['Lokal (Loopback)', 'Local (Loopback)'],
-  ['CRIT / EMERG', 'CRIT / EMERG'],
-  ['ERROR', 'ERROR'],
-  ['PRIO', 'PRIO'],
-  ['Dikelola', 'Managed'],
-  ['Sistem', 'System'],
-  ['Terkunci', 'Locked'],
-  ['Tanpa Shell', 'No Shell'],
-  ['Dapat Login', 'Can Login'],
-  ['🔍 Diagnosa', '🔍 Diagnose'],
-  ['Rincian', 'Details'],
-  ['🔔 Pantau Kembali', '🔔 Unmute'],
-  ['🔕 Abaikan', '🔕 Mute'],
-  ['✓ Ditangani', '✓ Acknowledged'],
-  ['Ditangani', 'Acknowledge'],
-  ['✓ diakui', '✓ acknowledged'],
-  ['Reset filter', 'Reset filter'],
-  ['Perbarui', 'Refresh'],
-  ['live ·', 'live ·'],
-];
-
-function escapeRegExpStr(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function replaceWithSmartBoundary(text, sortedPairs, isEnMode) {
-  let out = text;
-  if (!out) return out;
-
-  if (isEnMode) {
-    // 1. Pesan Anomali & Insiden Sistem
-    out = out.replace(/Konflik Agen Terdeteksi:\s*API key (?:aktif|active) di beberapa host \(([^)]+)\)/gi, 'Agent Conflict Detected: API key active on multiple hosts ($1)');
-    out = out.replace(/Konflik Agen Terdeteksi:\s*API key (?:aktif|active) di beberapa host/gi, 'Agent Conflict Detected: API key active on multiple hosts');
-    out = out.replace(/Konflik Agen Terdeteksi/gi, 'Agent Conflict Detected');
-    out = out.replace(/di beberapa host/gi, 'on multiple hosts');
-
-    // 2. Format Respon CLI Agen Pantau (User, Firewall, Cron, SSL, Service)
-    out = out.replace(/OK:\s*(?:Akun|Accounts)\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success)\s*(?:dibuka kuncinya|unlocked)/gi, "OK: Account '$1' unlocked successfully");
-    out = out.replace(/OK:\s*(?:Akun|Accounts)\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success)\s*(?:dikunci|locked)/gi, "OK: Account '$1' locked successfully");
-    out = out.replace(/OK:\s*Accounts\s*['"]?([^'"]+)['"]?\s*success\s*dibuka kuncinya/gi, "OK: Account '$1' unlocked successfully");
-    out = out.replace(/OK:\s*Accounts\s*['"]?([^'"]+)['"]?\s*success\s*dikunci/gi, "OK: Account '$1' locked successfully");
-    out = out.replace(/OK:\s*(?:Pengguna|User)\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success)\s*(?:dihapus|deleted)/gi, "OK: User '$1' deleted successfully");
-    out = out.replace(/OK:\s*(?:Pengguna|User)\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success)\s*(?:dibuat|created)\s*\(([^)]+)\)/gi, "OK: User '$1' created successfully ($2)");
-
-    out = out.replace(/OK:\s*Firewall UFW (?:berhasil|success) diaktifkan[^(]*\(([^)]+)\)/gi, "OK: UFW Firewall enabled successfully ($1)");
-    out = out.replace(/OK:\s*Firewall UFW (?:berhasil|success) dinonaktifkan/gi, "OK: UFW Firewall disabled successfully");
-    out = out.replace(/OK:\s*Firewall UFW (?:berhasil|success) dimuat ulang[^(]*\(([^)]+)\)/gi, "OK: UFW Firewall reloaded successfully");
-    out = out.replace(/OK:\s*Port\s+([^\s]+)\s*(?:berhasil|success) ditutup\/diblokir pada UFW/gi, "OK: Port $1 blocked successfully on UFW");
-    out = out.replace(/OK:\s*Port\s+([^\s]+)\s*(?:berhasil|success) ditutup\/diblokir pada iptables/gi, "OK: Port $1 blocked successfully on iptables");
-    out = out.replace(/OK:\s*Aturan blokir untuk port\s+([^\s]+)\s*(?:berhasil|success) dibuka pada UFW/gi, "OK: Port $1 unblocked successfully on UFW");
-    out = out.replace(/OK:\s*INPUT DROP utk\s+([^\s]+)/gi, "OK: INPUT DROP for $1");
-    out = out.replace(/OK:\s*Hapus blokir INPUT DROP utk\s+([^\s]+)/gi, "OK: Removed INPUT DROP for $1");
-
-    out = out.replace(/OK:\s*Tugas cron\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success) dibuat\s*\(([^)]+)\)/gi, "OK: Cron job '$1' created successfully ($2)");
-    out = out.replace(/OK:\s*Tugas cron\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success) dihapus/gi, "OK: Cron job '$1' deleted successfully");
-    out = out.replace(/OK:\s*Tugas cron\s*['"]?([^'"]+)['"]?\s*dinonaktifkan/gi, "OK: Cron job '$1' disabled");
-    out = out.replace(/OK:\s*Tugas cron\s*['"]?([^'"]+)['"]?\s*diaktifkan kembali/gi, "OK: Cron job '$1' re-enabled");
-    out = out.replace(/OK:\s*Berhasil dijalankan\.?/gi, "OK: Executed successfully.");
-
-    out = out.replace(/OK:\s*Sinyal\s+([^\s]+)\s*(?:berhasil|success) dikirim ke proses\s+([^\s]+)\s*\(PID:\s*(\d+)\)/gi, "OK: Signal $1 sent successfully to process $2 (PID: $3)");
-    out = out.replace(/OK:\s*proses\s+([^\s]+)\s*(?:berhasil|success) dihentikan\s*\(PIDs:\s*([^)]+)\)/gi, "OK: process $1 stopped successfully (PIDs: $2)");
-
-    out = out.replace(/OK:\s*Path sertifikat\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success) ditambahkan ke pengawasan/gi, "OK: Certificate path '$1' added to monitoring successfully");
-    out = out.replace(/OK:\s*Path sertifikat\s*['"]?([^'"]+)['"]?\s*(?:berhasil|success) dihapus dari pengawasan/gi, "OK: Certificate path '$1' removed from monitoring successfully");
-    out = out.replace(/OK:\s*Path\s*['"]?([^'"]+)['"]?\s*sudah terdaftar dalam pengawasan SSL/gi, "OK: Path '$1' already registered in SSL monitoring");
-    out = out.replace(/OK:\s*([^\s]+)\s*dieksekusi\.?/gi, "OK: $1 executed.");
-
-    // Respons Galat / Error Agen
-    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:membuka kunci akun|to unlock account)\s*['"]?([^'"]+)['"]?/gi, "ERROR: Failed to unlock account '$1'");
-    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:mengunci akun|to lock account)\s*['"]?([^'"]+)['"]?/gi, "ERROR: Failed to lock account '$1'");
-    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*membuka kunci akun\s*['"]?([^'"]+)['"]?/gi, "ERROR: Failed to unlock account '$1'");
-    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*mengunci akun\s*['"]?([^'"]+)['"]?/gi, "ERROR: Failed to lock account '$1'");
-    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:menghapus pengguna|to delete user)\s*['"]?([^'"]+)['"]?/gi, "ERROR: Failed to delete user '$1'");
-    out = out.replace(/(?:ERROR|GALAT):\s*(?:Gagal|Failed)\s*(?:membuat pengguna|to create user)\s*['"]?([^'"]+)['"]?/gi, "ERROR: Failed to create user '$1'");
-    out = out.replace(/Pengguna\s*['"]?([^'"]+)['"]?\s*adalah akun sistem (?:penting|terlindungi)[^!.]*!/gi, "User '$1' is a protected system account!");
-
-    // 3. Jejak Aksi Server (Audit Target & Action)
-    out = out.replace(/^([\w.-]+):\s*(?:buka kunci user|unlock user)\s+([\w.-]+)/gi, '$1: unlock user $2');
-    out = out.replace(/^([\w.-]+):\s*(?:kunci user|lock user)\s+([\w.-]+)/gi, '$1: lock user $2');
-    out = out.replace(/^([\w.-]+):\s*(?:buat user|create user)\s+([\w.-]+)/gi, '$1: create user $2');
-    out = out.replace(/^([\w.-]+):\s*(?:hapus user|delete user)\s+([\w.-]+)/gi, '$1: delete user $2');
-    out = out.replace(/^([\w.-]+):\s*(?:tambah cron|add cron)\s+([\w.-]+)/gi, '$1: add cron $2');
-    out = out.replace(/^([\w.-]+):\s*(?:hapus cron|delete cron)\s+([\w.-]+)/gi, '$1: delete cron $2');
-    out = out.replace(/^([\w.-]+):\s*(?:tambah path SSL|add SSL path)\s+(.+)/gi, '$1: add SSL path $2');
-    out = out.replace(/^([\w.-]+):\s*(?:hapus path SSL|remove SSL path)\s+(.+)/gi, '$1: remove SSL path $2');
-    out = out.replace(/\b(?:buka kunci user|unlock user)\s+([\w.-]+)/gi, 'unlock user $1');
-    out = out.replace(/\b(?:kunci user|lock user)\s+([\w.-]+)/gi, 'lock user $1');
-    out = out.replace(/\bBuka kunci user\s+([\w.-]+)/gi, 'Unlock user $1');
-    out = out.replace(/\bKunci user\s+([\w.-]+)/gi, 'Lock user $1');
-    out = out.replace(/\bBuka kunci pengguna\b/gi, 'Unlock user');
-    out = out.replace(/\bbuka kunci pengguna\b/gi, 'unlock user');
-    out = out.replace(/\bKunci pengguna\b/gi, 'Lock user');
-    out = out.replace(/\bkunci pengguna\b/gi, 'lock user');
-
-    // Audit & Event Alert Insiden (Target)
-    out = out.replace(/^([\w.-]+):\s*(?:terdeteksi|detected)\s+\[(WARNING|DANGER|INFO)\]\s+(.+)/gi, '$1: detected [$2] $3');
-    out = out.replace(/^([\w.-]+):\s*(?:masalah|issue|issues)\s*['"](.+?)['"]\s*(?:telah pulih|telah selesai|recovered|resolved)/gi, "$1: issue '$2' resolved");
-    out = out.replace(/\bterdeteksi\s+\[(WARNING|DANGER|INFO)\]\s+(.+)/gi, 'detected [$1] $2');
-    out = out.replace(/\b(?:masalah|issues?)\s*['"](.+?)['"]\s*(?:telah pulih|telah selesai|recovered|resolved)/gi, "issue '$1' resolved");
-    out = out.replace(/\bAkui\s+peringatan\s*\(alert\)/gi, 'Acknowledge alert');
-    out = out.replace(/\bAcknowledge\s+peringatan\s*\(alert\)/gi, 'Acknowledge alert');
-    out = out.replace(/\bAcknowledge\s+peringatan\b/gi, 'Acknowledge alert');
-    out = out.replace(/\bAkui\s+peringatan\b/gi, 'Acknowledge alert');
-
-    // 4. Frasa Tombol & Dialog "Abaikan"
-    out = out.replace(/\bAbaikan\s+(?:masalah|issues?)\s+ini\b/gi, 'Mute this incident');
-    out = out.replace(/\bAbaikan\s+(?:masalah|issues?)\b/gi, 'Mute incident');
-    out = out.replace(/\babaikan\s+(?:masalah|issues?)\b/gi, 'mute incident');
-    out = out.replace(/\bAbaikan\s+Pemantauan\b/gi, 'Mute Monitoring');
-    out = out.replace(/\bAbaikan\s+Selama:\b/gi, 'Mute Duration:');
-    out = out.replace(/\bAbaikan\s+pemantauan\s+layanan\b/gi, 'Mute monitoring for service');
-    out = out.replace(/\bAbaikan\s+pemantauan\b/gi, 'Mute monitoring');
-    out = out.replace(/\bSimpan\s+&\s+Abaikan\b/gi, 'Save & Mute');
-    out = out.replace(/\bSimpan\s+&amp;\s+Abaikan\b/gi, 'Save & Mute');
-
-    // 5. Frasa Akun & Sesi Login
-    out = out.replace(/\b(?:masuk|login)\s+(?:dari|of)\s+([^\s]+)/gi, 'login from $1');
-    out = out.replace(/\bmasuk\s+of\s+([^\s]+)/gi, 'login from $1');
-
-    // 6. Frasa Tindakan Insiden (Ack / Ditangani)
-    out = out.replace(/\bTandai\s+(?:masalah\s+ini\s+)?(?:sudah\s+)?(?:ditangani|Acknowledge|acknowledged)\b/gi, 'Mark as acknowledged');
-    out = out.replace(/\btandai\s+(?:masalah\s+ini\s+)?(?:sudah\s+)?(?:ditangani|Acknowledge|acknowledged)\b/gi, 'mark as acknowledged');
-    out = out.replace(/\bTandai\s+semua\s+(?:ditangani|Acknowledge|acknowledged)\b/gi, 'Mark all as acknowledged');
-    out = out.replace(/\bTandai\s+Acknowledge\b/gi, 'Mark as acknowledged');
-    out = out.replace(/\btandai\s+Acknowledge\b/gi, 'mark as acknowledged');
-
-    // 6. Angka & Waktu Relatif
-    out = out.replace(/\b(\d+)\s+dari\s+(\d+)\b/g, '$1 of $2');
-    out = out.replace(/\b(\d+)\s+dari total\s+(\d+)\b/g, '$1 of total $2');
-    out = out.replace(/\b(\d+)h\s+(\d+)j\s+(\d+)m\b/g, '$1d $2h $3m');
-    out = out.replace(/\b(\d+)h\s+(\d+)j\b/g, '$1d $2h');
-    out = out.replace(/\b(\d+)j\s+(\d+)m\b/g, '$1h $2m');
-    out = out.replace(/\b(\d+)\s+hari\s+lalu\b/g, '$1d ago');
-    out = out.replace(/\b(\d+)\s+jam\s+lalu\b/g, '$1h ago');
-    out = out.replace(/\b(\d+)\s+mnt\s+lalu\b/g, '$1m ago');
-    out = out.replace(/\b(\d+)\s+dtk\s+lalu\b/g, '$1s ago');
-    out = out.replace(/\bbaru saja\b/g, 'just now');
-    out = out.replace(/\bStatus:\s*Normal\b/g, 'Status: Normal');
-    out = out.replace(/\bStatus:Normal\b/g, 'Status: Normal');
-    out = out.replace(/\bKoneksi:\b/g, 'Connections:');
-    out = out.replace(/\b(\d+)\s+perintah\s+\(dari\s+(\d+)\)/g, '$1 commands (of $2)');
-  } else {
-    out = out.replace(/\b(\d+)d\s+(\d+)h\s+(\d+)m\b/g, '$1h $2j $3m');
-    out = out.replace(/\b(\d+)d\s+(\d+)h\b/g, '$1h $2j');
-    out = out.replace(/\b(\d+)h\s+(\d+)m\b/g, '$1j $2m');
-    out = out.replace(/\b(\d+)d ago\b/g, '$1 hari lalu');
-    out = out.replace(/\b(\d+)h ago\b/g, '$1 jam lalu');
-    out = out.replace(/\b(\d+)m ago\b/g, '$1 mnt lalu');
-    out = out.replace(/\b(\d+)s ago\b/g, '$1 dtk lalu');
-    out = out.replace(/\bjust now\b/g, 'baru saja');
-    out = out.replace(/\bConnections:\b/g, 'Koneksi:');
-    out = out.replace(/\b(\d+)\s+commands\s+\(of\s+(\d+)\)/g, '$1 perintah (dari $2)');
-  }
-
-  for (let i = 0; i < sortedPairs.length; i++) {
-    const idText = sortedPairs[i][0];
-    const enText = sortedPairs[i][1];
-    if (!idText || !out.includes(idText)) continue;
-    
-    // 1. Jika seluruh teks node sama persis (setelah trim)
-    if (out.trim() === idText) {
-      out = out.replace(idText, enText);
-      continue;
-    }
-    // 2. Jika terdiri dari 2 kata atau lebih, atau mengandung karakter non-huruf
-    if (idText.includes(' ') || !/^[a-zA-Z0-9]+$/.test(idText)) {
-      out = out.split(idText).join(enText);
-    } else {
-      // 3. Kata tunggal: word boundary
-      try {
-        const re = new RegExp('(?<![a-zA-Z0-9_])' + escapeRegExpStr(idText) + '(?![a-zA-Z0-9_])', 'g');
-        out = out.replace(re, enText);
-      } catch(e) {
-        out = out.split(idText).join(enText);
-      }
-    }
-  }
-  return out;
-}
-
-function translateAllUiText(targetLang) {
-  if (typeof _uiObserver !== 'undefined' && _uiObserver) {
-    try { _uiObserver.disconnect(); } catch(e){}
-  }
-  const isEn = (targetLang === 'en');
-  const sortedPairs = isEn
-    ? [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length)
-    : [...UI_TEXT_PAIRS].map(p => [p[1], p[0]]).sort((a, b) => b[0].length - a[0].length);
-
-  const walker = document.createTreeWalker(
-    document.body,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode: function(node) {
-        if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
-        const p = node.parentElement;
-        if (!p) return NodeFilter.FILTER_REJECT;
-        const tag = p.tagName.toUpperCase();
-        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'PRE' || tag === 'CODE') return NodeFilter.FILTER_REJECT;
-        if (p.closest('pre') || p.closest('code') || p.closest('.log-content') || p.closest('.xterm')) {
-          return NodeFilter.FILTER_REJECT;
-        }
-        return NodeFilter.FILTER_ACCEPT;
-      }
-    }
-  );
-
-  const nodes = [];
-  while (walker.nextNode()) {
-    nodes.push(walker.currentNode);
-  }
-
-  nodes.forEach(node => {
-    if (node._origText === undefined) {
-      node._origText = node.nodeValue;
-    }
-    if (isEn) {
-      const txt = replaceWithSmartBoundary(node._origText, sortedPairs, true);
-      if (node.nodeValue !== txt) {
-        node.nodeValue = txt;
-      }
-    } else {
-      let targetText = node._origText;
-      if (targetText === undefined || targetText === node.nodeValue) {
-        targetText = replaceWithSmartBoundary(node.nodeValue, sortedPairs, false);
-      }
-      if (node.nodeValue !== targetText) {
-        node.nodeValue = targetText;
-      }
-    }
-  });
-
-  document.querySelectorAll('[title]').forEach(el => {
-    if (el._origTitle === undefined) {
-      el._origTitle = el.getAttribute('title') || '';
-    }
-    if (isEn) {
-      const t = replaceWithSmartBoundary(el._origTitle, sortedPairs, true);
-      if (el.getAttribute('title') !== t) el.setAttribute('title', t);
-    } else {
-      let t = el._origTitle;
-      if (!t || t === el.getAttribute('title')) {
-        t = replaceWithSmartBoundary(el.getAttribute('title') || '', sortedPairs, false);
-      }
-      if (el.getAttribute('title') !== t) el.setAttribute('title', t);
-    }
-  });
-
-  document.querySelectorAll('[data-tooltip]').forEach(el => {
-    if (el._origDataTooltip === undefined) {
-      el._origDataTooltip = el.getAttribute('data-tooltip') || '';
-    }
-    if (isEn) {
-      const t = replaceWithSmartBoundary(el._origDataTooltip, sortedPairs, true);
-      if (el.getAttribute('data-tooltip') !== t) el.setAttribute('data-tooltip', t);
-    } else {
-      let t = el._origDataTooltip;
-      if (!t || t === el.getAttribute('data-tooltip')) {
-        t = replaceWithSmartBoundary(el.getAttribute('data-tooltip') || '', sortedPairs, false);
-      }
-      if (el.getAttribute('data-tooltip') !== t) el.setAttribute('data-tooltip', t);
-    }
-  });
-
-  document.querySelectorAll('input[type="text"]').forEach(el => {
-    if (el._origVal === undefined) el._origVal = el.value;
-    if (isEn) {
-      const v = replaceWithSmartBoundary(el._origVal, sortedPairs, true);
-      if (el.value === el._origVal && v !== el._origVal) el.value = v;
-    } else {
-      if (el._origVal && el.value !== el._origVal) el.value = el._origVal;
-    }
-  });
-
-  document.querySelectorAll('[placeholder]').forEach(el => {
-    if (el._origPlaceholder === undefined) {
-      el._origPlaceholder = el.getAttribute('placeholder') || '';
-    }
-    if (isEn) {
-      const p = replaceWithSmartBoundary(el._origPlaceholder, sortedPairs, true);
-      if (el.getAttribute('placeholder') !== p) el.setAttribute('placeholder', p);
-    } else {
-      let p = el._origPlaceholder;
-      if (!p || p === el.getAttribute('placeholder')) {
-        p = replaceWithSmartBoundary(el.getAttribute('placeholder') || '', sortedPairs, false);
-      }
-      if (el.getAttribute('placeholder') !== p) el.setAttribute('placeholder', p);
-    }
-  });
-
-  document.querySelectorAll('[data-msg]').forEach(el => {
-    if (el._origDataMsg === undefined) {
-      el._origDataMsg = el.getAttribute('data-msg') || '';
-    }
-    if (isEn) {
-      const m = replaceWithSmartBoundary(el._origDataMsg, sortedPairs, true);
-      if (el.getAttribute('data-msg') !== m) el.setAttribute('data-msg', m);
-    } else {
-      let m = el._origDataMsg;
-      if (!m || m === el.getAttribute('data-msg')) {
-        m = replaceWithSmartBoundary(el.getAttribute('data-msg') || '', sortedPairs, false);
-      }
-      if (el.getAttribute('data-msg') !== m) el.setAttribute('data-msg', m);
-    }
-  });
-
-  document.querySelectorAll('[aria-label]').forEach(el => {
-    if (el._origAriaLabel === undefined) {
-      el._origAriaLabel = el.getAttribute('aria-label') || '';
-    }
-    if (isEn) {
-      const a = replaceWithSmartBoundary(el._origAriaLabel, sortedPairs, true);
-      if (el.getAttribute('aria-label') !== a) el.setAttribute('aria-label', a);
-    } else {
-      let a = el._origAriaLabel;
-      if (!a || a === el.getAttribute('aria-label')) {
-        a = replaceWithSmartBoundary(el.getAttribute('aria-label') || '', sortedPairs, false);
-      }
-      if (el.getAttribute('aria-label') !== a) el.setAttribute('aria-label', a);
-    }
-  });
-
-  // Dukungan Komprehensif Opsi Dropdown & Grup Kategori (select option & optgroup)
-  document.querySelectorAll('optgroup[label]').forEach(el => {
-    if (el._origOptLabel === undefined) {
-      el._origOptLabel = el.getAttribute('label') || '';
-    }
-    if (isEn) {
-      const t = replaceWithSmartBoundary(el._origOptLabel, sortedPairs, true);
-      if (el.getAttribute('label') !== t) el.setAttribute('label', t);
-    } else {
-      let t = el._origOptLabel;
-      if (!t || t === el.getAttribute('label')) {
-        t = replaceWithSmartBoundary(el.getAttribute('label') || '', sortedPairs, false);
-      }
-      if (el.getAttribute('label') !== t) el.setAttribute('label', t);
-    }
-  });
-
-  document.querySelectorAll('select option').forEach(el => {
-    if (el._origOptText === undefined) {
-      el._origOptText = el.textContent || '';
-    }
-    if (isEn) {
-      const t = replaceWithSmartBoundary(el._origOptText, sortedPairs, true);
-      if (el.textContent !== t) el.textContent = t;
-    } else {
-      let t = el._origOptText;
-      if (!t || t === el.textContent) {
-        t = replaceWithSmartBoundary(el.textContent || '', sortedPairs, false);
-      }
-      if (el.textContent !== t) el.textContent = t;
-    }
-  });
-
-  if (typeof _uiObserver !== 'undefined' && _uiObserver && targetLang === 'en' && document.body) {
-    try {
-      _uiObserver.observe(document.body, { childList: true, subtree: true });
-    } catch(e){}
-  }
-}
-
-// Observer reaktif untuk menerjemahkan elemen yang disuntikkan secara dinamis (AJAX / polling)
-let _uiObserverDebounce = null;
-const _uiObserver = new MutationObserver((mutations) => {
-  if (currentLang !== 'en') return;
-  let hasNewElements = false;
-  for (const m of mutations) {
-    if (m.addedNodes && m.addedNodes.length > 0) {
-      for (const n of m.addedNodes) {
-        if (n.nodeType === Node.ELEMENT_NODE) {
-          const tag = n.tagName.toUpperCase();
-          if (tag !== 'SCRIPT' && tag !== 'STYLE') {
-            hasNewElements = true;
-            break;
-          }
-        }
-      }
-    }
-    if (hasNewElements) break;
-  }
-  if (hasNewElements) {
-    if (_uiObserverDebounce) clearTimeout(_uiObserverDebounce);
-    _uiObserverDebounce = setTimeout(() => {
-      translateAllUiText('en');
-    }, 120);
-  }
-});
+// Bersihkan preferensi bahasa lama di browser agar tampilan kembali bersih ke Bahasa Indonesia
 try {
-  _uiObserver.observe(document.body, { childList: true, subtree: true });
-} catch(e) {}
+  localStorage.removeItem('pantau_lang');
+  localStorage.removeItem('app_lang');
+  document.cookie = "app_lang=;path=/;max-age=0;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+} catch(e){}
 
 (function(){
   try{
     if(window.innerWidth>820 && localStorage.getItem('sb')==='1') document.body.classList.add('sb-collapsed');
     const t=document.getElementById('sbToggle');
-    if(t && document.body.classList.contains('sb-collapsed')) t.textContent='\u00bb';
+    if(t && document.body.classList.contains('sb-collapsed')) t.textContent='»';
   }catch(e){}
-  // Terapkan bahasa saat load
-  setTimeout(applyAppLang, 10);
 })();
+
 function toggleSb(){
   const b=document.body;
   b.classList.toggle('sb-collapsed');
@@ -2904,7 +986,7 @@ async function submitIgnoreProblem() {
       credentials: 'same-origin'
     });
     if (r.ok) {
-      showToast(isEn ? 'Mute settings saved successfully.' : 'Pengabaian pemantauan berhasil disimpan.', true);
+      showToast(isEn ? 'Ignore settings saved successfully.' : 'Pengabaian pemantauan berhasil disimpan.', true);
       const cb = _ignoreCallback;
       closeIgnoreModal();
       if (typeof cb === 'function') {
@@ -3078,16 +1160,22 @@ function renderProblemDetailModal(p) {
   const ctx = (typeof p.context === 'object' && p.context !== null) ? p.context : {};
 
   // 1. Header & Badge
+  let pMsg = p.message || '';
+  if (isEn && typeof replaceWithSmartBoundary === 'function' && typeof UI_TEXT_PAIRS !== 'undefined') {
+    const sortedPairs = [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length);
+    pMsg = replaceWithSmartBoundary(pMsg, sortedPairs, true);
+  }
+
   let titleText = '';
   if (isEn) {
-    titleText = ctx.diagnosa_en || ctx.diagnosa || p.message || ('Issue: ' + p.key);
+    titleText = ctx.diagnosa_en || (ctx.diagnosa && typeof replaceWithSmartBoundary === 'function' ? replaceWithSmartBoundary(ctx.diagnosa, [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length), true) : '') || pMsg || ('Incident: ' + p.key);
   } else {
     titleText = ctx.diagnosa || ctx.diagnosa_en || p.message || ('Masalah: ' + p.key);
   }
   if (titleEl) titleEl.textContent = titleText;
 
   if (badgeEl) {
-    badgeEl.className = 'badge badge-' + ({danger: 'danger', warning: 'warn', info: 'info'}[sev] || 'muted');
+    badgeEl.className = 'badge badge-' + ({danger: 'danger', warning: 'warn', info: 'info'}[sev] || 'ignored');
     badgeEl.textContent = sev.toUpperCase();
   }
 
@@ -3159,7 +1247,7 @@ function renderProblemDetailModal(p) {
       cmdList = ['sudo systemctl status agent_pantau', 'sudo journalctl -u agent_pantau -n 30 --no-pager'];
     } else if (p.key.startsWith('ram_')) {
       causeText = isEn
-        ? `Host physical RAM utilization exceeded safe thresholds (${_esc(p.message)}).`
+        ? `Host physical RAM utilization exceeded safe thresholds (${_esc(pMsg)}).`
         : `Pemakaian RAM server melebihi batas toleransi (${_esc(p.message)}).`;
       impactText = isEn
         ? 'Host risks extreme slowdown, elevated swap thrashing, or daemon termination by kernel OOM Killer.'
@@ -3170,7 +1258,7 @@ function renderProblemDetailModal(p) {
       cmdList = ['free -h', 'ps aux --sort=-%mem | head -15', 'sudo journalctl -k -g "oom" -n 20 --no-pager'];
     } else if (p.key.startsWith('swap_')) {
       causeText = isEn
-        ? `Host swap partition utilization is high (${_esc(p.message)}), indicating physical RAM exhaustion.`
+        ? `Host swap partition utilization is high (${_esc(pMsg)}), indicating physical RAM exhaustion.`
         : `Pemakaian swap disk tinggi (${_esc(p.message)}), menandakan RAM fisik menipis.`;
       impactText = isEn
         ? 'Severe disk I/O bottleneck and heightened request latency.'
@@ -3181,7 +1269,7 @@ function renderProblemDetailModal(p) {
       cmdList = ['free -h', 'swapon --show', 'vmstat 1 5'];
     } else if (p.key.startsWith('cpu_')) {
       causeText = isEn
-        ? `Processor (CPU) load is high (${_esc(p.message)}).`
+        ? `Processor (CPU) load is high (${_esc(pMsg)}).`
         : `Beban pemakaian prosesor (CPU) sangat tinggi (${_esc(p.message)}).`;
       impactText = isEn
         ? 'System thread execution queues stall, degrading request response times.'
@@ -3192,7 +1280,7 @@ function renderProblemDetailModal(p) {
       cmdList = ['top -b -n 1 | head -20', 'ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%cpu | head -15'];
     } else if (p.key.startsWith('disk_')) {
       causeText = isEn
-        ? `Storage partition is nearly full (${_esc(p.message)}).`
+        ? `Storage partition is nearly full (${_esc(pMsg)}).`
         : `Penyimpanan partisi disk hampir penuh (${_esc(p.message)}).`;
       impactText = isEn
         ? 'Applications cannot write new files, databases risk read-only state or crash, logging halts.'
@@ -3201,9 +1289,9 @@ function renderProblemDetailModal(p) {
         ? ['Find largest directories: sudo du -xh --max-depth=2 / | sort -rh | head -15', 'Vacuum journal logs: sudo journalctl --vacuum-size=200M', 'Clean APT package cache: sudo apt clean']
         : ['Periksa direktori terbesar: sudo du -xh --max-depth=2 / | sort -rh | head -15', 'Bersihkan log systemd lama: sudo journalctl --vacuum-size=200M', 'Bersihkan cache paket: sudo apt clean'];
       cmdList = ['df -h', 'sudo du -xh --max-depth=2 / | sort -rh | head -15', 'sudo journalctl --disk-usage'];
-    } else if (p.key in ['security_danger', 'failed_logins']) {
+    } else if (['security_danger', 'failed_logins'].includes(p.key)) {
       causeText = isEn
-        ? `Detected unusual volume of failed SSH login attempts (${_esc(p.message)}).`
+        ? `Detected unusual volume of failed SSH login attempts (${_esc(pMsg)}).`
         : `Terdeteksi percobaan login SSH gagal dalam jumlah tidak biasa (${_esc(p.message)}).`;
       impactText = isEn
         ? 'Security risk of unauthorized account access via SSH brute-force attack.'
@@ -3225,7 +1313,7 @@ function renderProblemDetailModal(p) {
       cmdList = ['sudo systemctl status agent_pantau', 'sudo journalctl -u agent_pantau -n 30 --no-pager', 'sudo systemctl restart agent_pantau'];
     } else if (p.key === 'apt_updates') {
       causeText = isEn
-        ? `Operating system package updates are available for installation (${_esc(p.message)}).`
+        ? `Operating system package updates are available for installation (${_esc(pMsg)}).`
         : `Terdapat paket pembaruan sistem operasi yang siap di-upgrade (${_esc(p.message)}).`;
       impactText = isEn
         ? 'Host remains exposed to known vulnerabilities and unpatched CVEs.'
@@ -3234,11 +1322,13 @@ function renderProblemDetailModal(p) {
         ? ['Use "Update OS" button in dashboard or run: sudo apt update && sudo apt upgrade -y', 'Inspect upgradable packages list']
         : ['Gunakan tombol Update OS di dashboard atau jalankan: sudo apt update && sudo apt upgrade -y', 'Periksa daftar paket yang siap diperbarui'];
     } else if (p.key === 'agent_outdated') {
-      const curVer = (ctx.data_teknis && ctx.data_teknis.agent_version) || 'lama';
-      const targetVer = (ctx.data_teknis && ctx.data_teknis.dashboard_version) || 'terbaru';
+      const curVer = (ctx.data_teknis && (ctx.data_teknis.versi_agen_klien || ctx.data_teknis.agent_version)) || 'lama';
+      const targetVer = (ctx.data_teknis && (ctx.data_teknis.versi_dashboard_pusat || ctx.data_teknis.dashboard_version)) || 'terbaru';
+      const srvName = (ctx.data_teknis && ctx.data_teknis.server_hostname) || p.hostname || '';
+      const onHostStr = srvName ? (isEn ? ` on ${srvName}` : ` di ${srvName}`) : (isEn ? ' on this server' : ' di server ini');
       causeText = isEn
-        ? `Pantau Agent version on this host (${curVer}) is older than dashboard (${targetVer}).`
-        : `Versi Agen Pantau di server ini (${curVer}) lebih lama dari dashboard (${targetVer}).`;
+        ? `Pantau Agent version${onHostStr} (${curVer}) is older than dashboard (${targetVer}).`
+        : `Versi Agen Pantau${onHostStr} (${curVer}) lebih lama dari dashboard (${targetVer}).`;
       impactText = isEn
         ? 'Advanced process snapshot telemetry and monitoring performance may be degraded or limited.'
         : 'Telemetri snapshot proses tingkat lanjut dan stabilitas pelaporan metrik sistem belum optimal.';
@@ -3250,7 +1340,7 @@ function renderProblemDetailModal(p) {
         'sudo systemctl status agent_pantau.service'
       ];
     } else {
-      causeText = p.message || (isEn ? 'System anomaly detected by metrics evaluation engine.' : 'Anomali terdeteksi oleh sistem evaluator metrik.');
+      causeText = (isEn ? pMsg : p.message) || (isEn ? 'System anomaly detected by metrics evaluation engine.' : 'Anomali terdeteksi oleh sistem evaluator metrik.');
       if (p.tip) recoList = [p.tip];
     }
   }
@@ -3345,7 +1435,7 @@ function renderProblemDetailModal(p) {
         const logBtnText = isEn ? ('📜 View ' + _esc(sname) + ' Logs') : ('📜 Lihat Log ' + _esc(sname));
         btns.push(`<button type="button" class="btn btn-ghost btn-sm" onclick="closeProblemDetailModal(); jumpToLog('${_esc(sname)}');">${logBtnText}</button>`);
       }
-    } else if (p.key in ['security_danger', 'failed_logins']) {
+    } else if (['security_danger', 'failed_logins'].includes(p.key)) {
       if (typeof jumpToLog === 'function') {
         const logBtnText = isEn ? '📜 View SSH Auth Logs' : '📜 Lihat Log Auth SSH';
         btns.push(`<button type="button" class="btn btn-ghost btn-sm" onclick="closeProblemDetailModal(); jumpToLog('AUTH');">${logBtnText}</button>`);
@@ -3460,8 +1550,6 @@ setInterval(alertFetch, 10000);
     </div>
   </div>
 </div>
-
-{% block scripts %}{% endblock %}
 
 <!-- Tooltip Engine Modern Cepat & Estetik -->
 <div id="app-tooltip" role="tooltip" aria-hidden="true"></div>
@@ -3690,6 +1778,21 @@ function attachTablePagination(target, options = {}) {
       else if (unitLabel === 'baris') displayUnit = 'rows';
     }
 
+    prevBtn.textContent = isEn ? '« Previous' : '« Sebelumnya';
+    nextBtn.textContent = isEn ? 'Next »' : 'Berikutnya »';
+    const limitLbl = bar.querySelector('.table-pagination-limit span');
+    if (limitLbl) limitLbl.textContent = isEn ? 'Show:' : 'Tampilkan:';
+
+    // Perbarui label opsi select bila bahasa berganti
+    Array.from(selEl.options).forEach(opt => {
+      const val = opt.value;
+      if (val === 'all') {
+        opt.textContent = isEn ? ('All ' + displayUnit) : ('Semua ' + displayUnit);
+      } else {
+        opt.textContent = val + ' ' + displayUnit;
+      }
+    });
+
     if (total === 0) {
       infoEl.textContent = isEn ? `Showing 0 of 0 ${displayUnit}` : `Menampilkan 0 dari 0 ${displayUnit}`;
       curEl.textContent = isEn ? `Page 1 of 1` : `Halaman 1 dari 1`;
@@ -3706,10 +1809,6 @@ function attachTablePagination(target, options = {}) {
         : `Halaman ${currentPage} dari ${totalPages}`;
       prevBtn.disabled = (currentPage <= 1);
       nextBtn.disabled = (currentPage >= totalPages);
-    }
-
-    if (typeof applyAppLang === 'function') {
-      applyAppLang();
     }
   }
 
@@ -3741,5 +1840,6 @@ function attachTablePagination(target, options = {}) {
   };
 }
 </script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

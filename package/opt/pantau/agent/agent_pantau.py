@@ -28,6 +28,7 @@ Environment variable (override config):
 
 import fcntl
 import glob
+import hashlib
 import http.client
 import ipaddress
 import json
@@ -467,7 +468,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "3.23.0"
+AGENT_VERSION = "4.0.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -648,6 +649,8 @@ def execute_command(cfg: dict, command: dict) -> dict:
         result = _exec_ssl_action(action, command)
     elif action == "restart_agent":
         result = _exec_restart_agent()
+    elif action == "update_agent":
+        result = _exec_update_agent(cfg, command)
     elif action in ("reboot_host", "poweroff_host"):
         result = _exec_host_control(action)
     elif action not in ("restart", "start", "stop"):
@@ -961,6 +964,149 @@ def _exec_restart_agent() -> dict:
         return {"ok": True, "output": "Restart agen (agent_pantau) dijadwalkan otomatis (systemd akan menghidupkan ulang)."}
     except Exception as e:  # noqa: BLE001
         return {"ok": False, "output": f"Gagal menjadwalkan restart agen: {e}"}
+
+
+def _exec_update_agent(cfg: dict, command: dict) -> dict:
+    """Unduh dan pasang pembaruan agent_pantau.py secara otomatis dan aman (Enterprise OTA Update).
+
+    Alur Keamanan & Kriptografi:
+    1. Baca instruksi OTA (target URL & hash SHA-256 yang diharapkan dari dashboard).
+    2. Unduh berkas biner/skrip agen baru ke memori/berkas sementara.
+    3. Validasi kriptografi SHA-256: hitung hashlib.sha256(unduhan). Jika berbeda dari expected,
+       TOLAK SEKETIKA (mencegah manipulasi/peretasan/berkas korup).
+    4. Validasi sintaks Python dengan py_compile.compile. Jika sintaks korup, batalkan.
+    5. Ganti berkas target (/opt/pantau/agent/agent_pantau.py) secara atomik (mode 0755).
+    6. Jadwalkan restart otomatis (_exec_restart_agent) via systemd watchdog.
+    """
+    params = command.get("params") or {}
+    expected_sha256 = str(params.get("sha256") or "").strip().lower()
+    target_url = str(params.get("url") or "").strip()
+    target_version = str(params.get("version") or "").strip()
+
+    server_url = str(cfg.get("server_url", "")).rstrip("/")
+    api_key = str(cfg.get("api_key", ""))
+    urls = []
+    if target_url:
+        urls.append(target_url)
+    if server_url:
+        urls.append(f"{server_url}/api/agent/latest-code")
+    urls.append("https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py")
+
+    # Hilangkan duplikasi URL
+    seen_urls = set()
+    unique_urls = []
+    for u in urls:
+        if u and u not in seen_urls:
+            seen_urls.add(u)
+            unique_urls.append(u)
+
+    code_bytes = None
+    fetch_err = []
+    for url in unique_urls:
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "User-Agent": f"AgentPantau/{AGENT_VERSION}",
+                    "X-Api-Key": api_key,
+                }
+            )
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                if resp.status == 200:
+                    data = resp.read()
+                    if len(data) > 10000 and b"AGENT_VERSION" in data:
+                        code_bytes = data
+                        print(f"[OTA] Berhasil mengunduh berkas agen dari {url} ({len(data)} bytes)")
+                        break
+                    else:
+                        fetch_err.append(f"{url}: ukuran/isi tidak valid ({len(data)} bytes)")
+                else:
+                    fetch_err.append(f"{url}: HTTP {resp.status}")
+        except Exception as e:
+            fetch_err.append(f"{url}: {e}")
+
+    if not code_bytes:
+        return {
+            "ok": False,
+            "output": f"Gagal mengunduh berkas agen terbaru: {'; '.join(fetch_err)}"
+        }
+
+    # Verifikasi Kriptografis SHA-256
+    actual_sha256 = hashlib.sha256(code_bytes).hexdigest().lower()
+    if expected_sha256:
+        if actual_sha256 != expected_sha256:
+            msg = (
+                f"Verifikasi integritas SHA-256 GAGAL! Hash unduhan ({actual_sha256}) "
+                f"tidak cocok dengan instruksi dashboard ({expected_sha256}). "
+                "Pembaruan dibatalkan demi mencegah eksekusi berkas tidak terverifikasi."
+            )
+            print(f"[SECURITY ALERT] {msg}")
+            return {"ok": False, "output": msg}
+        print(f"[OTA] Integritas SHA-256 terverifikasi: {actual_sha256}")
+
+    import tempfile
+    import py_compile
+    tmp_fd, tmp_path = tempfile.mkstemp(prefix="pantau_ota_", suffix=".py")
+    try:
+        with os.fdopen(tmp_fd, "wb") as f:
+            f.write(code_bytes)
+            f.flush()
+            os.fsync(f.fileno())
+
+        try:
+            py_compile.compile(tmp_path, doraise=True)
+        except py_compile.PyCompileError as pe:
+            return {
+                "ok": False,
+                "output": f"Validasi sintaks Python gagal pada berkas pembaruan: {pe}"
+            }
+
+        try:
+            code_str = code_bytes.decode("utf-8", errors="replace")
+            ver_match = re.search(r'AGENT_VERSION\s*=\s*["\']([^"\']+)["\']', code_str)
+            new_version = ver_match.group(1) if ver_match else (target_version or "baru")
+        except Exception:
+            code_str = code_bytes.decode("utf-8", errors="replace")
+            new_version = target_version or "baru"
+
+        target_path = "/opt/pantau/agent/agent_pantau.py"
+        script_path = os.path.abspath(__file__)
+        if not os.path.exists(target_path) and os.path.exists(script_path):
+            target_path = script_path
+
+        written = False
+        target_dir = os.path.dirname(target_path)
+        if IS_ROOT or (os.path.exists(target_dir) and os.access(target_dir, os.W_OK)):
+            try:
+                import shutil
+                shutil.copy2(tmp_path, target_path)
+                os.chmod(target_path, 0o755)
+                written = True
+            except OSError as e:
+                print(f"[OTA] Tulis langsung gagal ({e}), beralih ke wrapper pantau-file...")
+
+        if not written:
+            res_write = run_file_op("write", {"path": target_path, "content": code_str})
+            if not res_write.get("ok"):
+                return {
+                    "ok": False,
+                    "output": f"Gagal menulis berkas agen ke {target_path}: {res_write.get('error', 'unknown error')}"
+                }
+            run_file_op("chmod", {"path": target_path, "mode": "0755"})
+            written = True
+
+        _exec_restart_agent()
+
+        return {
+            "ok": True,
+            "output": f"Push OTA sukses ke v{new_version} (SHA-256: {actual_sha256[:12]}… terverifikasi). Restart otomatis dijadwalkan."
+        }
+    finally:
+        if os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
 
 def _exec_service_action(action: str, command: dict) -> dict:

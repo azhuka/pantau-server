@@ -27,7 +27,7 @@
       <button type="button" onclick="window.history.back()" class="btn btn-ghost">&larr; Halaman Sebelumnya</button>
     </div>
 
-    {% if detail_info and user and user.role == 'admin' %}
+    {% if detail_info and user and (user.is_master_admin() or user.is_operator()) %}
     <div style="margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--border); text-align: left;">
       <div style="font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;">
         Informasi Tambahan (Khusus Admin):

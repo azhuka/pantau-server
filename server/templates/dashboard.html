@@ -199,7 +199,7 @@
         {{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}
       </td>
       <td>
-        <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
+        <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm" data-i18n="details">Rincian</a>
       </td>
     </tr>
     {% endfor %}
@@ -210,7 +210,7 @@
   </table>
   {% else %}
   <div class="empty-msg">Belum ada server terdaftar.
-    {% if user.role == 'admin' %} <a href="/servers/add" style="color:var(--blue)">Tambah server pertama</a>{% endif %}
+    {% if user.is_master_admin() or user.has_perm('can_manage_servers') %} <a href="/servers/add" style="color:var(--blue)" data-i18n="add_first_server">Tambah server pertama</a>{% endif %}
   </div>
   {% endif %}
 </div>
@@ -302,7 +302,7 @@ async function dashPoll() {
               html += '<span class="svc-pill down" title="' + (isEn ? 'Down services (' : 'Layanan down (') + dnList.length + '): ' + dnList.join(', ') + '">' + dnList.length + ' down</span>';
             }
             if (ignList.length > 0) {
-              html += '<span class="svc-pill ignored" title="' + (isEn ? 'Stopped & muted services (' : 'Layanan berhenti & diabaikan (') + ignList.length + '): ' + ignList.join(', ') + '">' + ignList.length + (isEn ? ' muted 🔕' : ' diabaikan 🔕') + '</span>';
+              html += '<span class="svc-pill ignored" title="' + (isEn ? 'Stopped & ignored services (' : 'Layanan berhenti & diabaikan (') + ignList.length + '): ' + ignList.join(', ') + '">' + ignList.length + (isEn ? ' ignored 🔕' : ' diabaikan 🔕') + '</span>';
             }
             html += '</div>';
           }
@@ -340,9 +340,9 @@ async function dashPoll() {
         }
         html += '</div>';
         if (ignCnt > 0) {
-          const ignLabel = isEn ? (ignCnt + ' muted 🔕') : (ignCnt + ' diabaikan 🔕');
+          const ignLabel = isEn ? (ignCnt + ' ignored 🔕') : (ignCnt + ' diabaikan 🔕');
           html += '<div class="cell-row">';
-          html += '<span class="svc-pill ignored" title="' + _esc(srv.ignored_msgs || (ignCnt + (isEn ? ' incidents muted' : ' masalah diabaikan'))) + '">' + ignLabel + '</span>';
+          html += '<span class="svc-pill ignored" title="' + _esc(srv.ignored_msgs || (ignCnt + (isEn ? ' incidents ignored' : ' masalah diabaikan'))) + '">' + ignLabel + '</span>';
           html += '</div>';
         }
         html += '</div>';

@@ -487,25 +487,32 @@
         <strong>{{ server.hostname }}</strong>
         <span class="mono copyable-ip" style="font-size:12px" onclick="copyIp('{{ server.ip_address }}', event)" title="Klik untuk salin IP">{{ server.ip_address }}</span>
         <span id="hero-online" class="hero-online {{ 'warn' if server.is_maintenance else ('on' if is_online else 'off') }}">{{ 'pemeliharaan' if server.is_maintenance else ('online' if is_online else 'offline') }}</span>
-        <button type="button" id="hero-maint-badge" class="hero-maint-badge" style="{{ '' if server.is_maintenance else 'display:none;' }}" onclick="openMaintenanceModal()" title="Lihat detail mode pemeliharaan">Lihat</button>
+        <button type="button" id="hero-maint-badge" class="hero-maint-badge" style="{{ '' if server.is_maintenance else 'display:none;' }}" onclick="openMaintenanceModal()" title="Lihat detail mode pemeliharaan" data-i18n-title="view_maint_details"><span id="hero-maint-badge-text" data-i18n="view">Lihat</span></button>
       </div>
       <div class="hero-meta" id="hero-meta">{% if os_label %}{{ os_label }}{% endif %}{% if kernel %} · kernel {{ kernel }}{% endif %}{% if not os_label and not kernel %}memuat data sistem…{% endif %}</div>
     </div>
     <div class="hero-actions hero-toolbar">
-      {% if user.role == 'admin' %}
+      {% if user.is_master_admin() or user.is_operator() %}
       <!-- Grup 1: Akses & Pemeliharaan Server -->
       <div class="toolbar-group" title="Akses &amp; Utilitas Server">
-        <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" title="Buka terminal shell interaktif langsung ke server klien">
+        <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — terminal dinonaktifkan" data-i18n-title="server_offline_terminal_disabled"{% else %}title="Buka terminal shell interaktif langsung ke server klien" data-i18n-title="open_term_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
           Terminal
         </button>
         <span class="toolbar-divider"></span>
-        <a href="/servers/{{ server.id }}/files" target="_blank" rel="noopener" class="btn btn-ghost btn-sm btn-fm" title="Jelajahi dan kelola berkas server lewat antarmuka File Manager di tab baru">
+        {% if is_online %}
+        <a href="/servers/{{ server.id }}/files" data-href="/servers/{{ server.id }}/files" target="_blank" rel="noopener" class="btn btn-ghost btn-sm btn-fm" id="hero-fm-btn" title="Jelajahi dan kelola berkas server lewat antarmuka File Manager di tab baru" data-i18n-title="fm_tooltip">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
           File Manager
         </a>
+        {% else %}
+        <button type="button" class="btn btn-ghost btn-sm btn-fm" id="hero-fm-btn" data-href="/servers/{{ server.id }}/files" disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — File Manager dinonaktifkan" data-i18n-title="server_offline_file_manager_disabled">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          File Manager
+        </button>
+        {% endif %}
         <span class="toolbar-divider"></span>
-        <button class="btn btn-ghost btn-sm {{ 'btn-maint-active-state' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi down dibisukan sementara">
+        <button class="btn btn-ghost btn-sm {{ 'btn-maint-active-state' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi down dibisukan sementara" data-i18n-title="enable_maint_tooltip">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
           <span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span>
         </button>
@@ -513,19 +520,19 @@
 
       <!-- Grup 2: Pembaruan & Kontrol Daya Sistem -->
       <div class="toolbar-group" title="Pembaruan &amp; Daya Mesin">
-        <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="aptAction('APT_UPDATE')" title="Sinkronkan repositori paket OS (apt update) untuk mengecek ketersediaan pembaruan baru">
+        <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="aptAction('APT_UPDATE')" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan" data-i18n-title="server_offline_actions_disabled"{% else %}title="Sinkronkan repositori paket OS (apt update) untuk mengecek ketersediaan pembaruan baru" data-i18n-title="apt_update_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
           Update OS
         </button>
         <span class="toolbar-divider"></span>
-        <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled title="Pasang seluruh pembaruan paket sistem operasi yang tertunda">
+        <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled title="Pasang seluruh pembaruan paket sistem operasi yang tertunda" data-i18n-title="apt_upgrade_tooltip">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
           Upgrade
         </button>
         <span class="toolbar-divider"></span>
         <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline;margin:0" data-confirm data-msg="Reboot server {{ server.hostname }} SEKARANG? Koneksi dashboard terputus ±1-2 menit sampai server kembali." data-msg-extra="Yakin 100%?">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button class="btn btn-ghost btn-sm" type="submit" title="Mulai ulang (reboot) sistem operasi server klien">
+          <button class="btn btn-ghost btn-sm" id="hero-reboot-btn" type="submit" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan" data-i18n-title="server_offline_actions_disabled"{% else %}title="Mulai ulang (reboot) sistem operasi server klien" data-i18n-title="reboot_tooltip"{% endif %}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
             Reboot OS
           </button>
@@ -533,7 +540,7 @@
         <span class="toolbar-divider"></span>
         <form method="post" action="/servers/{{ server.id }}/host/poweroff" style="display:inline;margin:0" data-confirm data-msg="MATIKAN server {{ server.hostname }} SEKARANG? Mesin akan poweroff — TIDAK menyala sendiri — sampai dinyalakan manual (fisik/IPMI).">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button class="btn btn-danger btn-sm" type="submit" title="Matikan daya mesin server klien secara penuh (shutdown/power off)">
+          <button class="btn btn-danger btn-sm" id="hero-poweroff-btn" type="submit" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan" data-i18n-title="server_offline_actions_disabled"{% else %}title="Matikan daya mesin server klien secara penuh (shutdown/power off)" data-i18n-title="poweroff_tooltip"{% endif %}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
             Power Off
           </button>
@@ -544,13 +551,16 @@
       {% endif %}
     </div>
   </div>
-  {% if is_agent_outdated and user.role == 'admin' %}
-  <div style="background:var(--yellow-bg);border:1px solid rgba(234,179,8,.3);border-radius:6px;padding:8px 14px;margin-top:12px;font-size:12px;color:var(--yellow);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+  {% if is_agent_outdated and user.has_perm('can_ota') %}
+  <div id="banner-agent-outdated" style="background:var(--yellow-bg);border:1px solid rgba(234,179,8,.3);border-radius:6px;padding:8px 14px;margin-top:12px;font-size:12px;color:var(--yellow);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:14px">⚠️</span>
-      <span>Versi Agen Pantau di server ini (<b>v{{ agent_version }}</b>) lebih lama dari dashboard (<b>v{{ app_version }}</b>). Perbarui agen untuk mengaktifkan fitur snapshot proses dan kestabilan sistem.</span>
+      <span data-i18n="agent_outdated_banner">Versi Agen Pantau di server ini (v{{ agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Perbarui agen untuk mengaktifkan fitur snapshot proses dan kestabilan sistem.</span>
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" style="border:1px solid rgba(234,179,8,.4);color:var(--yellow);padding:4px 10px;font-size:11px;white-space:nowrap" title="Salin perintah update agen ke clipboard">📋 Salin Perintah Update</button>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">
+      <button class="btn btn-primary btn-sm" id="btn-update-agent" onclick="triggerAgentUpdate({{ server.id }})" style="background:#eab308;border-color:#ca8a04;color:#18181b;font-weight:600;padding:4px 12px;font-size:11px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer" title="Kirim pembaruan Over-The-Air (OTA) dengan verifikasi hash SHA-256 ke agen di server ini" data-i18n-title="push_update_tooltip" data-i18n="push_update_ota">⚡ Push Update (OTA)</button>
+      <button class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" style="border:1px solid rgba(234,179,8,.4);color:var(--yellow);padding:4px 10px;font-size:11px;white-space:nowrap" title="Salin perintah update agen ke clipboard" data-i18n-title="copy_update_tooltip" data-i18n="copy_update_cmd">📋 Salin Perintah Update</button>
+    </div>
   </div>
   {% endif %}
   <div class="apt-state" id="apt-state">
@@ -850,14 +860,14 @@
         {% elif p.is_open and p.action == 'log' and p.log_unit %}
           <button class="btn btn-ghost btn-sm" onclick='jumpToLog({{ p.log_unit|tojson }})'>Log</button>
         {% elif p.is_open and p.action == 'mitigate' %}
-          {% if user.role == 'admin' and p.ip_count and p.ip_count > 0 %}
+          {% if user.has_perm('can_firewall') and p.ip_count and p.ip_count > 0 %}
             <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline" data-confirm data-msg="Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?">
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <button class="btn btn-danger btn-sm">Blokir IP ({{ p.ip_count }})</button>
             </form>
           {% endif %}
           <button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>
-        {% elif p.is_open and p.action == 'agent_restart' and user.role == 'admin' %}
+        {% elif p.is_open and p.action == 'agent_restart' and user.has_perm('can_services') %}
           <form method="post" action="/servers/{{ server.id }}/problems/restart-agent" style="display:inline" data-confirm data-msg="Restart agen (agent_pantau) di {{ server.hostname }}?">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button class="btn btn-ghost btn-sm">Restart agen</button>
@@ -1044,7 +1054,7 @@
 
 <div class="card">
   <div class="card-header"><h3>Daftar Layanan</h3>
-    {% if user.role == 'admin' %}
+    {% if user.has_perm('can_services') %}
     <button type="button" class="btn btn-primary btn-sm" onclick="openAddSvcModal()">+ Tambah Layanan</button>
     {% endif %}
   </div>
@@ -1091,25 +1101,27 @@
       </td>
       <td style="white-space:nowrap">
         <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}">
-          {% if user.role == 'admin' %}
+          {% if user.has_perm('can_services') %}
             {% set is_up = (svc._status == 'up') %}
             {% set is_pending = (svc._pending_cmd is not none and svc._pending_cmd) %}
             <button type="button" class="btn btn-primary btn-sm btn-svc-restart"
-                    {% if is_pending %}disabled{% endif %}
-                    title="Mulai ulang (restart) layanan {{ svc.service_name }}"
+                    {% if is_pending or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
+                    title="{% if not is_online %}Server offline — aksi dinonaktifkan{% else %}Mulai ulang (restart) layanan {{ svc.service_name }}{% endif %}"
                     onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Restart</button>
             <button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px"
-                    {% if is_pending or is_up %}disabled{% endif %}
+                    {% if is_pending or is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
                     onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                    title="{{ 'Layanan sudah dalam kondisi aktif' if is_up else 'Nyalakan / jalankan layanan ' ~ svc.service_name }}">▶</button>
+                    title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_up %}Layanan sudah dalam kondisi aktif{% else %}Nyalakan / jalankan layanan {{ svc.service_name }}{% endif %}">▶</button>
             <button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px"
-                    {% if is_pending or not is_up %}disabled{% endif %}
+                    {% if is_pending or not is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
                     onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                    title="{{ 'Layanan sudah dalam kondisi berhenti' if not is_up else 'Hentikan layanan ' ~ svc.service_name }}">■</button>
-            {% if svc._is_ignored %}
-              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}">🔔 Pantau Kembali</button>
-            {% elif not is_up %}
-              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)" title="Bisukan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan">🔕 Abaikan</button>
+                    title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif not is_up %}Layanan sudah dalam kondisi berhenti{% else %}Hentikan layanan {{ svc.service_name }}{% endif %}">■</button>
+            {% if not is_up %}
+              {% if svc._is_ignored %}
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}">🔔 Pantau Kembali</button>
+              {% else %}
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)" title="Bisukan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan">🔕 Abaikan</button>
+              {% endif %}
             {% endif %}
             {% if is_pending %}
               <span class="badge badge-muted" style="margin-left:4px;font-size:10px" title="Perintah sedang dikirim dan diproses oleh agen">menunggu…</span>
@@ -1117,7 +1129,7 @@
           {% endif %}
         </span>
 
-        {% if user.role == 'admin' %}
+        {% if user.has_perm('can_services') %}
         <button type="button" class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)" title="Hapus konfigurasi pemantauan layanan {{ svc.service_name }}">Hapus</button>
         {% endif %}
       </td>
@@ -1220,13 +1232,13 @@
           <th style="width:140px;text-align:right;cursor:pointer;user-select:none" onclick="toggleProcSort('mem')" title="Klik untuk mengurutkan penggunaan Memori">
             %Memori <span id="sort-icon-mem" style="font-size:11px;opacity:0.6">↕</span>
           </th>
-          {% if user.role == 'admin' %}
+          {% if user.has_perm('can_processes') %}
           <th style="width:170px;text-align:center">Aksi (Kontrol)</th>
           {% endif %}
         </tr>
       </thead>
       <tbody id="tbl-task-manager-tbody">
-        <tr><td colspan="{{ 7 if user.role == 'admin' else 6 }}" class="empty-msg">Memuat data proses…</td></tr>
+        <tr><td colspan="{{ 7 if user.has_perm('can_processes') else 6 }}" class="empty-msg">Memuat data proses…</td></tr>
       </tbody>
     </table>
   </div>
@@ -1316,9 +1328,11 @@
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <span class="badge badge-info" id="cron-jobs-count">{{ (cron_jobs.jobs|length) if cron_jobs and cron_jobs.jobs else 0 }} tugas aktif</span>
-        <button class="btn btn-primary btn-sm" onclick="openAddCronModal()" style="display:flex;align-items:center;gap:4px">
+        {% if user.has_perm('can_cron') %}
+        <button class="btn btn-primary btn-sm" onclick="openAddCronModal()" style="display:flex;align-items:center;gap:4px" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% endif %}>
           <span>＋</span> Tambah Tugas
         </button>
+        {% endif %}
       </div>
     </div>
     {% if cron_jobs and cron_jobs.jobs %}
@@ -1353,7 +1367,7 @@
             </td>
             <td>
               <div style="display:flex;gap:4px;flex-wrap:wrap">
-                {% if c.get('is_managed') %}
+                {% if user.has_perm('can_cron') and c.get('is_managed') %}
                   {% set cron_ident = c.get('ident', '') %}
                   <!-- Toggle aktif/nonaktif -->
                   <form method="post" action="/servers/{{ server.id }}/cron/toggle" style="display:inline">
@@ -1361,7 +1375,7 @@
                     <input type="hidden" name="ident" value="{{ cron_ident }}">
                     <input type="hidden" name="mode" value="{{ 'disable' if c.get('is_enabled', True) else 'enable' }}">
                     <button type="submit" class="btn btn-sm {{ 'btn-warn' if c.get('is_enabled', True) else 'btn-primary' }}"
-                            title="{{ 'Nonaktifkan tugas cron ini' if c.get('is_enabled', True) else 'Aktifkan kembali tugas cron ini' }}">
+                            {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="{{ 'Nonaktifkan tugas cron ini' if c.get('is_enabled', True) else 'Aktifkan kembali tugas cron ini' }}"{% endif %}>
                       {{ '⏸ Jeda' if c.get('is_enabled', True) else '▶ Aktifkan' }}
                     </button>
                   </form>
@@ -1371,7 +1385,7 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="user_target" value="{{ c.user }}">
                     <input type="hidden" name="command" value="{{ c.command }}">
-                    <button type="submit" class="btn btn-sm btn-ghost" title="Jalankan sekarang (uji coba)">
+                    <button type="submit" class="btn btn-sm btn-ghost" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Jalankan sekarang (uji coba)"{% endif %}>
                       ▷ Jalankan
                     </button>
                   </form>
@@ -1380,12 +1394,12 @@
                         onsubmit="return confirm('Hapus tugas cron \\'{{ cron_ident }}\\' secara permanen?')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <input type="hidden" name="ident" value="{{ cron_ident }}">
-                    <button type="submit" class="btn btn-sm btn-danger" title="Hapus tugas cron ini">
+                    <button type="submit" class="btn btn-sm btn-danger" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus tugas cron ini"{% endif %}>
                       🗑 Hapus
                     </button>
                   </form>
                 {% else %}
-                  <span style="font-size:11px;color:var(--dim)">Sistem</span>
+                  <span style="font-size:11px;color:var(--dim)">{{ 'Sistem' if c.get('is_managed') else 'Sistem' }}</span>
                 {% endif %}
               </div>
             </td>
@@ -1449,19 +1463,19 @@
         </span>
         <span class="badge badge-info">{{ firewall.backend | upper }}</span>
 
-        {% if user.role == 'admin' %}
+        {% if user.has_perm('can_firewall') %}
           {% if firewall.status == 'active' %}
             <form method="post" action="/servers/{{ server.id }}/firewall/reload" style="display:inline"
                   data-msg="Muat ulang (reload) konfigurasi firewall?">
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <button type="submit" class="btn btn-ghost btn-sm" title="Muat ulang aturan UFW tanpa memutus koneksi">
+              <button type="submit" class="btn btn-ghost btn-sm" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Muat ulang aturan UFW tanpa memutus koneksi"{% endif %}>
                 &#8635;&nbsp;Reload Aturan
               </button>
             </form>
             <form method="post" action="/servers/{{ server.id }}/firewall/disable" style="display:inline"
                   data-msg="PERINGATAN: Nonaktifkan firewall (UFW)? Seluruh port server akan terbuka tanpa filter penyaringan.">
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="Nonaktifkan UFW">
+              <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Nonaktifkan UFW"{% endif %}>
                 Nonaktifkan Firewall
               </button>
             </form>
@@ -1469,7 +1483,7 @@
             <form method="post" action="/servers/{{ server.id }}/firewall/enable" style="display:inline"
                   data-msg="Aktifkan firewall (UFW) sekarang? Agen akan otomatis memastikan port SSH dilindungi/diizinkan terlebih dahulu.">
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <button type="submit" class="btn btn-primary btn-sm" style="background:#16a34a;border-color:#22c55e" title="Aktifkan UFW (otomatis allow SSH)">
+              <button type="submit" class="btn btn-primary btn-sm" style="background:#16a34a;border-color:#22c55e{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan UFW (otomatis allow SSH)"{% endif %}>
                 &#9654;&nbsp;Aktifkan Firewall
               </button>
             </form>
@@ -1534,9 +1548,9 @@
         <h3 style="margin:0">Daftar Hitam IP Terblokir (iptables DROP)</h3>
         <span style="font-size:12px;color:var(--dim)">Alamat IP sumber penyerang yang di-drop seketika pada level kernel</span>
       </div>
-      {% if user.role == 'admin' %}
+      {% if user.has_perm('can_firewall') %}
       <div>
-        <button type="button" class="btn btn-danger btn-sm" onclick="openBlockIpModal()" title="Blokir sebuah alamat IP secara manual">
+        <button type="button" class="btn btn-danger btn-sm" onclick="openBlockIpModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir sebuah alamat IP secara manual"{% endif %}>
           + Blokir IP Baru
         </button>
       </div>
@@ -1551,7 +1565,7 @@
             <th>IP Penyerang (Sumber)</th>
             <th>Paket Terblokir</th>
             <th>Total Byte</th>
-            {% if user.role == 'admin' %}
+            {% if user.has_perm('can_firewall') %}
             <th style="width:120px;text-align:right">Tindakan</th>
             {% endif %}
           </tr>
@@ -1565,13 +1579,13 @@
             </td>
             <td class="mono">{{ b.pkts }}</td>
             <td class="mono">{{ b.bytes }}</td>
-            {% if user.role == 'admin' %}
+            {% if user.has_perm('can_firewall') %}
             <td style="text-align:right">
               <form method="post" action="/servers/{{ server.id }}/firewall/unblock" style="display:inline"
                     data-msg="Buka blokir IP {{ b.source }}? Aturan DROP pada iptables akan dihapus.">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="ip" value="{{ b.source }}">
-                <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3)" title="Hapus aturan DROP untuk IP ini">
+                <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus aturan DROP untuk IP ini"{% endif %}>
                   Buka Blokir
                 </button>
               </form>
@@ -1591,24 +1605,24 @@
 <!-- Modal Blokir IP Manual -->
 <div id="block-ip-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
-    <h3 style="margin:0 0 8px;color:var(--red)">Blokir Alamat IP (DROP)</h3>
-    <p style="font-size:12px;color:var(--dim);margin:0 0 16px;line-height:1.5">
+    <h3 id="block-ip-title" style="margin:0 0 8px;color:var(--red)">Blokir Alamat IP (DROP)</h3>
+    <p id="block-ip-desc" style="font-size:12px;color:var(--dim);margin:0 0 16px;line-height:1.5">
       Masukkan alamat IPv4 publik penyerang. Perintah <code class="mono">iptables -I INPUT 1 -s &lt;ip&gt; -j DROP</code> akan dikirimkan ke agen.
     </p>
     <form method="post" action="/servers/{{ server.id }}/firewall/block" id="block-ip-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div style="margin-bottom:16px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Alamat IP Target (IPv4) *</label>
-        <input type="text" name="ip" required placeholder="Contoh: 198.51.100.25"
+        <label id="block-ip-target-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Alamat IP Target (IPv4) *</label>
+        <input type="text" name="ip" id="block-ip-input" required placeholder="Contoh: 198.51.100.25"
                pattern="^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$"
                style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
-        <span style="font-size:11px;color:var(--dim);margin-top:4px;display:block">
+        <span id="block-ip-priv-warning" style="font-size:11px;color:var(--dim);margin-top:4px;display:block">
           IP privat (10.*, 192.168.*, 172.16-31.*), loopback (127.*), atau IP server sendiri tidak dapat diblokir.
         </span>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button type="button" class="btn btn-ghost" onclick="closeBlockIpModal()">Batal</button>
-        <button type="submit" class="btn btn-danger">Blokir Sekarang</button>
+        <button type="submit" id="block-ip-submit-btn" class="btn btn-danger">Blokir Sekarang</button>
       </div>
     </form>
   </div>
@@ -1617,29 +1631,29 @@
 <!-- Modal: Buat Pengguna Sistem Baru -->
 <div id="create-user-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(480px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
-    <h3 style="margin:0 0 4px;color:var(--neon)">Buat Pengguna Sistem Baru</h3>
-    <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
+    <h3 id="create-user-title" style="margin:0 0 4px;color:var(--neon)">Buat Pengguna Sistem Baru</h3>
+    <p id="create-user-desc" style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
       Membuat akun login Linux baru pada server ini. Akun akan dibuat menggunakan perintah standar sistem melalui agen.
     </p>
     <form id="create-user-form" onsubmit="submitCreateUser(event)">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div style="margin-bottom:14px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Pengguna *</label>
-        <input type="text" name="username" required placeholder="Contoh: user1"
+        <label id="create-user-uname-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Pengguna *</label>
+        <input type="text" name="username" id="create-user-uname-inp" required placeholder="Contoh: user1"
                pattern="^[a-z_][a-z0-9_-]{1,31}$"
                style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
-        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Diawali huruf kecil/underscore, maks 32 karakter</span>
+        <span id="create-user-uname-help" style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Diawali huruf kecil/underscore, maks 32 karakter</span>
       </div>
       <div style="margin-bottom:14px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Password Akun (Opsional)</label>
-        <input type="password" name="password" placeholder="Kosongkan jika hanya menggunakan SSH Key"
+        <label id="create-user-pwd-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Password Akun (Opsional)</label>
+        <input type="password" name="password" id="create-user-pwd-inp" placeholder="Kosongkan jika hanya menggunakan SSH Key"
                autocomplete="new-password"
                style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
-        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Jika diisi, akun langsung aktif dengan autentikasi password. Jika dikosongkan, akun siap untuk login via SSH Key.</span>
+        <span id="create-user-pwd-help" style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Jika diisi, akun langsung aktif dengan autentikasi password. Jika dikosongkan, akun siap untuk login via SSH Key.</span>
       </div>
       <div style="margin-bottom:14px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Shell Login</label>
-        <select name="shell" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+        <label id="create-user-shell-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Shell Login</label>
+        <select name="shell" id="create-user-shell-sel" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
           <option value="/bin/bash">/bin/bash (default)</option>
           <option value="/bin/sh">/bin/sh</option>
           <option value="/usr/bin/zsh">/usr/bin/zsh</option>
@@ -1648,13 +1662,13 @@
         </select>
       </div>
       <div style="margin-bottom:14px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Keterangan (Comment)</label>
-        <input type="text" name="comment" placeholder="Dibuat via Pantau Server" value="Dibuat via Pantau Server"
+        <label id="create-user-comment-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Keterangan (Comment)</label>
+        <input type="text" name="comment" id="create-user-comment-inp" placeholder="Dibuat via Pantau Server" value="Dibuat via Pantau Server"
                style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
       </div>
       <div style="margin-bottom:18px;display:flex;align-items:center;gap:8px">
         <input type="checkbox" name="is_sudo" value="1" id="new-user-sudo" style="width:16px;height:16px">
-        <label for="new-user-sudo" style="font-size:13px;cursor:pointer">Tambahkan ke grup <code class="mono">sudo</code> (hak superuser)</label>
+        <label for="new-user-sudo" id="create-user-sudo-label" style="font-size:13px;cursor:pointer">Tambahkan ke grup <code class="mono">sudo</code> (hak superuser)</label>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button type="button" class="btn btn-ghost" onclick="closeCreateUserModal()">Batal</button>
@@ -1753,9 +1767,11 @@
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <span class="badge badge-info" id="acc-count-badge">{{ accounts|length if accounts else 0 }} Akun Sistem</span>
-        <button class="btn btn-primary btn-sm" onclick="openCreateUserModal()" style="display:flex;align-items:center;gap:4px">
+        {% if user.has_perm('can_users_sys') %}
+        <button class="btn btn-primary btn-sm" onclick="openCreateUserModal()" style="display:flex;align-items:center;gap:4px" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% endif %}>
           <span>＋</span> Buat Pengguna
         </button>
+        {% endif %}
       </div>
     </div>
     <div id="acc-empty" class="empty-msg" style="{{ 'display:none' if accounts else 'display:block' }}">Belum ada data akun dari server ini.</div>
@@ -1797,13 +1813,13 @@
             <td>
               <div style="display:flex;gap:4px;flex-wrap:wrap">
                 <a href="/servers/{{ server.id }}/user/{{ a.user }}" class="btn btn-ghost btn-sm">Rincian</a>
-                {% if not a.is_protected %}
+                {% if user.has_perm('can_users_sys') and not a.is_protected %}
                   {% if a.is_locked %}
-                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="Buka kunci akun (aktifkan login)" onclick="submitUserAction('unlock', '{{ a.user }}', this)">Buka Kunci</button>
+                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Buka kunci akun (aktifkan login)"{% endif %} onclick="submitUserAction('unlock', '{{ a.user }}', this)">Buka Kunci</button>
                   {% else %}
-                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="Kunci akun (disable login)" onclick="submitUserAction('lock', '{{ a.user }}', this)">Kunci</button>
+                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Kunci akun (disable login)"{% endif %} onclick="submitUserAction('lock', '{{ a.user }}', this)">Kunci</button>
                   {% endif %}
-                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="Hapus akun ini" onclick="submitUserAction('delete', '{{ a.user }}', this)">Hapus</button>
+                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus akun ini"{% endif %} onclick="submitUserAction('delete', '{{ a.user }}', this)">Hapus</button>
                 {% endif %}
               </div>
             </td>
@@ -1905,20 +1921,21 @@
             <td class="mono" style="font-size:12px;color:var(--text)">{{ p.proc or '—' }}</td>
             <td>
               <div style="display:flex;gap:4px;flex-wrap:wrap">
-                {% if p.pid and p.port not in (22, 8400) %}
+                {% if user.has_perm('can_processes') and p.pid and p.port not in (22, 8400) %}
                 <button class="btn btn-sm btn-danger"
                         onclick="openKillProcModal('{{ p.pid }}','{{ p.pname or p.proc or 'proses' }}','TERM')"
-                        title="Kirim sinyal ke proses yang mengelola port ini">
+                        {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Kirim sinyal ke proses yang mengelola port ini"{% endif %}>
                   ⚡ Kill PID
                 </button>
                 {% endif %}
+                {% if user.has_perm('can_firewall') %}
                 {% if p.is_public and p.port not in (22, 8400) %}
                 <form method="post" action="/servers/{{ server.id }}/ports/rule" style="display:inline"
                       onsubmit="return confirm('Blokir port {{ p.port }}/{{ p.proto }} melalui firewall?')">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                   <input type="hidden" name="port" value="{{ p.port }}/{{ p.proto }}">
                   <input type="hidden" name="rule" value="deny">
-                  <button type="submit" class="btn btn-sm btn-warn" title="Blokir port ini via UFW/iptables">
+                  <button type="submit" class="btn btn-sm btn-warn" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir port ini via UFW/iptables"{% endif %}>
                     🚫 Blokir Port
                   </button>
                 </form>
@@ -1928,10 +1945,11 @@
                   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                   <input type="hidden" name="port" value="{{ p.port }}/{{ p.proto }}">
                   <input type="hidden" name="rule" value="allow">
-                  <button type="submit" class="btn btn-sm btn-primary" title="Buka port ini (izinkan koneksi)">
+                  <button type="submit" class="btn btn-sm btn-primary" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Buka port ini (izinkan koneksi)"{% endif %}>
                     🔓 Buka Port
                   </button>
                 </form>
+                {% endif %}
                 {% endif %}
                 {% if p.port in (22, 8400) %}
                 <span style="font-size:11px;color:var(--dim);white-space:nowrap">⛨ Dilindungi</span>
@@ -1960,9 +1978,11 @@
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <span class="badge badge-info">{{ (ssl_certs|length) if ssl_certs else 0 }} sertifikat terdeteksi</span>
-        <button class="btn btn-primary btn-sm" onclick="openAddSslPathModal()" style="display:flex;align-items:center;gap:4px">
+        {% if user.has_perm('can_ssl') %}
+        <button class="btn btn-primary btn-sm" id="btn-add-ssl-path-modal" onclick="openAddSslPathModal()" style="display:flex;align-items:center;gap:4px" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% endif %}>
           <span>＋</span> Tambah Lokasi Sertifikat
         </button>
+        {% endif %}
       </div>
     </div>
     {% if ssl_certs %}
@@ -2008,7 +2028,7 @@
             </td>
             <td class="mono" style="font-size:11px;color:var(--dim)">{{ c.path }}</td>
             <td>
-              {% if c.is_custom %}
+              {% if user.has_perm('can_ssl') and c.is_custom %}
               <form method="post" action="/servers/{{ server.id }}/ssl/remove-path" style="display:inline"
                     onsubmit="return confirm('Hapus lokasi sertifikat \\'{{ c.path }}\\' dari pengawasan?')">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -2180,8 +2200,18 @@
 <script>
 const SID = {{ server.id }};
 const POLL_MS = 3000;
-const IS_ADMIN = {{ 'true' if user.role == 'admin' else 'false' }};
+const IS_ADMIN = {{ 'true' if (user.is_master_admin() or user.is_operator()) else 'false' }};
+const CAN_SERVICES = {{ 'true' if user.has_perm('can_services') else 'false' }};
+const CAN_PROCESSES = {{ 'true' if user.has_perm('can_processes') else 'false' }};
+const CAN_FIREWALL = {{ 'true' if user.has_perm('can_firewall') else 'false' }};
 const SERVER_NAME = {{ server.hostname | tojson }};
+let IS_ONLINE = {{ 'true' if is_online else 'false' }};
+
+function isEnPage() {
+  if (typeof isCurrentLangEn === 'function') return isCurrentLangEn();
+  if (typeof currentLang !== 'undefined') return currentLang === 'en';
+  return (localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en';
+}
 
 // State paginasi untuk tab Riwayat & Masalah (dideklarasikan di awal untuk menghindari TDZ)
 let probLimit = 5; // default 5 masalah
@@ -2226,6 +2256,7 @@ document.querySelectorAll('#detail-tabs .tab').forEach(b =>
 // Inisialisasi Paginasi Terpadu pada Seluruh Tabel Tab Detail Server
 let _servicesTabPagination = {};
 function initServicesTabPagination() {
+  if (typeof attachTablePagination !== 'function') return;
   if (document.getElementById('acc-table') && !_servicesTabPagination['acc']) {
     _servicesTabPagination['acc'] = attachTablePagination('#acc-table', { unitLabel: 'akun', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
   }
@@ -2499,7 +2530,7 @@ function renderTopProcs(data) {
   if (!tbody) return;
 
   if (displayList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="${IS_ADMIN ? 7 : 6}" class="empty-msg" style="text-align:center;padding:24px;color:var(--dim)">${isEn ? 'No processes match the filter.' : 'Tidak ada proses yang cocok dengan filter.'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${CAN_PROCESSES ? 7 : 6}" class="empty-msg" style="text-align:center;padding:24px;color:var(--dim)">${isEn ? 'No Processes' : 'Tidak Ada Proses'}</td></tr>`;
     return;
   }
 
@@ -2524,8 +2555,10 @@ function renderTopProcs(data) {
     const memColor = memVal > 50 ? '#3b82f6' : (memVal > 20 ? '#06b6d4' : 'var(--text)');
 
     let actionBtns = '';
-    if (IS_ADMIN) {
-      if (isProtected) {
+    if (CAN_PROCESSES) {
+      if (!IS_ONLINE) {
+        actionBtns = `<button type="button" class="btn btn-ghost btn-sm" disabled style="opacity:0.35;cursor:not-allowed" title="${isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan'}">${isEn ? 'Offline' : 'Offline'}</button>`;
+      } else if (isProtected) {
         actionBtns = `<span style="font-size:11px;color:var(--dim)" title="${isEn ? 'Protected system process' : 'Proses sistem terlindungi'}">🛡️ ${isEn ? 'System' : 'Sistem'}</span>`;
       } else {
         const pauseBtn = isPaused ? `
@@ -2562,7 +2595,7 @@ function renderTopProcs(data) {
       <td style="text-align:right" class="mono">
         <span style="color:${memColor};font-weight:600">${memVal.toFixed(1)}%</span>
       </td>
-      ${IS_ADMIN ? `<td style="text-align:center">${actionBtns}</td>` : ''}
+      ${CAN_PROCESSES ? `<td style="text-align:center">${actionBtns}</td>` : ''}
     </tr>`;
   }).join('');
   if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
@@ -2610,9 +2643,9 @@ function toggleMaintenanceAction(action) {
   })
   .then(r => r.json())
   .then(res => {
+    const isEn = isEnPage();
     if (res.ok) {
       closeMaintenanceModal();
-      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
       const msg = (action === 'disable')
         ? (isEn ? 'Maintenance mode disabled.' : 'Mode pemeliharaan telah dinonaktifkan.')
         : (isEn ? 'Maintenance mode activated successfully.' : 'Mode pemeliharaan berhasil diaktifkan.');
@@ -2621,17 +2654,20 @@ function toggleMaintenanceAction(action) {
       if (mbanner) mbanner.style.display = (action === 'disable') ? 'none' : 'flex';
       if (typeof poll === 'function') poll();
     } else {
-      showToast('Gagal: ' + (res.detail || 'Terjadi kesalahan'), false);
+      showToast((isEn ? 'Failed: ' : 'Gagal: ') + (res.detail || (isEn ? 'An error occurred' : 'Terjadi kesalahan')), false);
     }
   })
   .catch(err => {
-    showToast('Terjadi kesalahan jaringan: ' + err, false);
+    const isEn = isEnPage();
+    showToast((isEn ? 'Network error: ' : 'Terjadi kesalahan jaringan: ') + err, false);
   });
 }
 
 function copyAgentUpdateCmd(ev) {
-  const cmd = "sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service";
-  const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
+  const host = window.location.host;
+  const proto = window.location.protocol;
+  const cmd = `sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py ${proto}//${host}/api/agent/latest-code || sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service`;
+  const isEn = isEnPage();
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(cmd).then(() => {
       const btn = ev && ev.target;
@@ -2648,6 +2684,65 @@ function copyAgentUpdateCmd(ev) {
   }
 }
 
+function triggerAgentUpdate(sid) {
+  const btn = document.getElementById('btn-update-agent');
+  const isEn = isEnPage();
+  const confirmMsg = isEn
+    ? "Push Over-The-Air (OTA) update to Pantau Agent on this server? The agent will download the latest version and verify cryptographic SHA-256 integrity before applying."
+    : "Kirim perintah Push Update (OTA) ke Agen Pantau di server ini? Agen akan mengunduh versi terbaru dan memverifikasi integritas hash SHA-256 sebelum diterapkan.";
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+    btn.style.cursor = 'wait';
+    btn.innerHTML = `<span class="spinner" style="display:inline-block;width:11px;height:11px;border:2px solid #18181b;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></span> ` + (isEn ? "Pushing OTA update…" : "Mengirim Push OTA…");
+  }
+
+  const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || "";
+  fetch(`/servers/${sid}/agent/update`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: 'csrf_token=' + encodeURIComponent(csrfToken)
+  })
+  .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, data })))
+  .then(({ ok, data }) => {
+    if (ok && data.ok) {
+      showToast(isEn ? "Push Update (OTA) command dispatched. The agent is verifying SHA-256 integrity and updating itself…" : "Perintah Push Update (OTA) berhasil dikirim. Agen sedang memverifikasi hash SHA-256 dan memperbarui dirinya…", true);
+      let checkCount = 0;
+      const pollInterval = setInterval(() => {
+        checkCount++;
+        if (typeof poll === 'function') poll();
+        if (checkCount >= 12) {
+          clearInterval(pollInterval);
+        }
+      }, 2500);
+    } else {
+      showToast((isEn ? "Failed to dispatch OTA update: " : "Gagal mengirim pembaruan OTA: ") + (data.message || data.detail || (isEn ? "Unknown error" : "Kesalahan tidak dikenal")), false);
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.innerHTML = "⚡ Push Update (OTA)";
+      }
+    }
+  })
+  .catch(err => {
+    showToast((isEn ? "Network error: " : "Terjadi kesalahan jaringan: ") + err, false);
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      btn.innerHTML = "⚡ Push Update (OTA)";
+    }
+  });
+}
+
 // ---------- helpers ----------
 const badgeText = {
   up: 'up', down: 'down', success: 'berhasil', failed: 'gagal',
@@ -2661,57 +2756,98 @@ function badgeHtml(status) {
        + (badgeText[status] || status) + '</span>';
 }
 
-function renderServiceActions(sid, svcId, name, status, isPending, problem, isServiceIgnored) {
+const _pendingServiceOps = {}; // svcId -> { action: 'stop'|'start'|'restart', expires: timestamp }
+
+function triggerFastPoll() {
+  setTimeout(poll, 400);
+  setTimeout(poll, 1200);
+  setTimeout(poll, 2500);
+  setTimeout(poll, 4500);
+}
+
+function renderServiceActions(sid, svcId, name, status, isPending, problem, isServiceIgnored, pendingAction) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const online = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
   const isUp = status === 'up';
-  const startDis = isPending || isUp;
-  const stopDis = isPending || !isUp;
-  const rstDis = isPending;
+
+  const op = _pendingServiceOps[svcId];
+  const effectivelyPending = isPending || Boolean(op && Date.now() < op.expires);
+  const effAction = pendingAction || (op ? op.action : null);
+
+  const startDis = effectivelyPending || isUp || !online;
+  const stopDis = effectivelyPending || !isUp || !online;
+  const rstDis = effectivelyPending || !online;
 
   let ignoreBtn = '';
   const isIgnored = Boolean(isServiceIgnored || (problem && problem.is_ignored));
   const probId = (problem && problem.id) ? problem.id : '';
-  const probMsg = (problem && problem.message) ? problem.message : (isEn ? ('Mute monitoring for service ' + name) : ('Abaikan pemantauan layanan ' + name));
+  const probMsg = (problem && problem.message) ? problem.message : (isEn ? ('Ignore monitoring for service ' + name) : ('Abaikan pemantauan layanan ' + name));
 
-  if (isIgnored) {
-    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + (isEn ? 'Resume monitoring this service' : 'Pantau kembali layanan ini') + '">' + (isEn ? '🔔 Unmute' : '🔔 Pantau Kembali') + '</button>';
-  } else if (!isUp) {
-    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="' + (isEn ? 'Mute monitoring for this service' : 'Abaikan pemantauan layanan ini') + '">' + (isEn ? '🔕 Mute' : '🔕 Abaikan') + '</button>';
+  // Tombol Abaikan / Pantau Kembali HANYA relevan bila layanan sedang DOWN
+  if (!isUp) {
+    if (isIgnored) {
+      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + (isEn ? 'Cancel ignore for this service' : 'Pantau kembali layanan ini') + '">' + (isEn ? '🔔 Cancel Ignore' : '🔔 Pantau Kembali') + '</button>';
+    } else {
+      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="' + (isEn ? 'Ignore monitoring for this service' : 'Abaikan pemantauan layanan ini') + '">' + (isEn ? '🔕 Ignore' : '🔕 Abaikan') + '</button>';
+    }
   }
 
-  const startTitle = isUp ? (isEn ? 'Service is already running' : 'Layanan sudah aktif') : (isEn ? 'Start service' : 'Mulai layanan');
-  const stopTitle = !isUp ? (isEn ? 'Service is stopped' : 'Layanan sudah nonaktif / berhenti') : (isEn ? 'Stop service' : 'Hentikan layanan');
-  const pendingText = isEn ? 'pending…' : 'menunggu…';
+  const offlineTitle = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
+  const rstTitle = !online ? offlineTitle : (isEn ? 'Restart service ' + name : 'Mulai ulang (restart) layanan ' + name);
+  const startTitle = !online ? offlineTitle : (isUp ? (isEn ? 'Service is already running' : 'Layanan sudah aktif') : (isEn ? 'Start service' : 'Mulai layanan'));
+  const stopTitle = !online ? offlineTitle : (!isUp ? (isEn ? 'Service is stopped' : 'Layanan sudah nonaktif / berhenti') : (isEn ? 'Stop service' : 'Hentikan layanan'));
+  const disStyle = !online ? 'style="opacity:0.35;cursor:not-allowed" ' : '';
+
+  let pendingBadge = '';
+  if (effectivelyPending) {
+    let pLabel = isEn ? 'pending…' : 'menunggu…';
+    if (effAction === 'stop') pLabel = isEn ? 'stopping…' : 'menghentikan…';
+    else if (effAction === 'start') pLabel = isEn ? 'starting…' : 'memulai…';
+    else if (effAction === 'restart') pLabel = isEn ? 'restarting…' : 'memuat ulang…';
+    pendingBadge = ' <span class="badge badge-warn" style="margin-left:4px;font-size:10px">' + pLabel + '</span>';
+  }
 
   return '<button type="button" class="btn btn-primary btn-sm btn-svc-restart" '
+    + disStyle
     + (rstDis ? 'disabled ' : '')
+    + 'title="' + rstTitle + '" '
     + 'onclick="restartService(' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)">Restart</button>'
-    + '<button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px" '
+    + '<button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px;' + (!online ? 'opacity:0.35;cursor:not-allowed;' : '') + '" '
     + (startDis ? 'disabled ' : '')
     + 'onclick="svcAction(\'start\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
     + 'title="' + startTitle + '">▶</button>'
-    + '<button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px" '
+    + '<button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px;' + (!online ? 'opacity:0.35;cursor:not-allowed;' : '') + '" '
     + (stopDis ? 'disabled ' : '')
     + 'onclick="svcAction(\'stop\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
     + 'title="' + stopTitle + '">■</button>'
     + ignoreBtn
-    + (isPending ? ' <span class="badge badge-muted" style="margin-left:4px;font-size:10px">' + pendingText + '</span>' : '');
+    + pendingBadge;
 }
 
 async function restartService(sid, svcId, svcName, btn) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   if (!confirm(isEn ? ('Restart service ' + svcName + ' on server ' + SERVER_NAME + '?') : ('Restart service ' + svcName + ' di server ' + SERVER_NAME + '?'))) return;
+
+  _pendingServiceOps[svcId] = { action: 'restart', expires: Date.now() + 15000 };
   const act = document.getElementById('act-' + svcId);
+  const sts = document.getElementById('sts-' + svcId);
   if (act) {
     act.querySelectorAll('button').forEach(b => b.disabled = true);
-    if (!act.querySelector('.badge-muted')) {
-      const sp = document.createElement('span');
-      sp.className = 'badge badge-muted';
-      sp.style.cssText = 'margin-left:4px;font-size:10px';
-      sp.textContent = isEn ? 'pending…' : 'menunggu…';
-      act.appendChild(sp);
-    }
+    act.querySelectorAll('.badge').forEach(b => b.remove());
+    const sp = document.createElement('span');
+    sp.className = 'badge badge-warn';
+    sp.style.cssText = 'margin-left:4px;font-size:10px';
+    sp.textContent = isEn ? 'restarting…' : 'memuat ulang…';
+    act.appendChild(sp);
   }
+  if (sts) {
+    sts.innerHTML = '<span class="badge badge-warn">' + (isEn ? 'restarting…' : 'memuat ulang…') + '</span>';
+  }
+
   try {
     const r = await fetch('/servers/' + sid + '/services/' + svcId + '/restart', {
       method: 'POST',
@@ -2724,36 +2860,51 @@ async function restartService(sid, svcId, svcName, btn) {
     const j = await r.json().catch(() => ({}));
     if (r.ok) {
       showToast(j.detail || (isEn ? ('Restart command for service ' + svcName + ' has been sent to Pantau Agent.') : ('Perintah restart service ' + svcName + ' telah dikirim ke Agen Pantau.')), true);
-      setTimeout(poll, 700);
     } else {
       showToast(j.detail || (isEn ? 'Failed to send restart command.' : 'Gagal mengirim perintah restart.'), false);
-      setTimeout(poll, 700);
+      delete _pendingServiceOps[svcId];
     }
   } catch (e) {
     showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + e.message, false);
-    setTimeout(poll, 700);
+    delete _pendingServiceOps[svcId];
+  } finally {
+    triggerFastPoll();
   }
 }
 
 async function svcAction(action, sid, svcId, svcName, btn) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   const labels = isEn ? {start: 'start', stop: 'stop'} : {start: 'mulai', stop: 'hentikan'};
   const label = labels[action] || action;
   const confirmPrompt = isEn
     ? ((action === 'stop' ? 'STOP' : 'Start') + ' service ' + svcName + ' on ' + SERVER_NAME + '?')
     : ((action === 'stop' ? 'HENTIKAN' : 'Mulai') + ' service ' + svcName + ' di ' + SERVER_NAME + '?');
   if (!confirm(confirmPrompt)) return;
+
+  _pendingServiceOps[svcId] = { action: action, expires: Date.now() + 15000 };
   const act = document.getElementById('act-' + svcId);
+  const sts = document.getElementById('sts-' + svcId);
+  const transLabel = isEn
+    ? (action === 'stop' ? 'stopping…' : 'starting…')
+    : (action === 'stop' ? 'menghentikan…' : 'memulai…');
+
   if (act) {
     act.querySelectorAll('button').forEach(b => b.disabled = true);
-    if (!act.querySelector('.badge-muted')) {
-      const sp = document.createElement('span');
-      sp.className = 'badge badge-muted';
-      sp.style.cssText = 'margin-left:4px;font-size:10px';
-      sp.textContent = isEn ? 'pending…' : 'menunggu…';
-      act.appendChild(sp);
-    }
+    act.querySelectorAll('.badge').forEach(b => b.remove());
+    const sp = document.createElement('span');
+    sp.className = 'badge badge-warn';
+    sp.style.cssText = 'margin-left:4px;font-size:10px';
+    sp.textContent = transLabel;
+    act.appendChild(sp);
   }
+  if (sts) {
+    sts.innerHTML = '<span class="badge badge-warn">' + escHtml(transLabel) + '</span>';
+  }
+
   try {
     const r = await fetch('/servers/' + sid + '/services/' + svcId + '/' + action, {
       method: 'POST',
@@ -2763,14 +2914,15 @@ async function svcAction(action, sid, svcId, svcName, btn) {
     const j = await r.json().catch(() => ({}));
     if (r.ok) {
       showToast(j.detail || (isEn ? ('Command ' + label + ' ' + svcName + ' has been sent.') : ('Perintah ' + label + ' ' + svcName + ' telah dikirim.')), true);
-      setTimeout(poll, 700);
     } else {
       showToast(j.detail || (isEn ? 'Failed to send command.' : 'Gagal mengirim perintah.'), false);
-      setTimeout(poll, 700);
+      delete _pendingServiceOps[svcId];
     }
   } catch (e) {
     showToast('Kendala jaringan: ' + e.message, false);
-    setTimeout(poll, 700);
+    delete _pendingServiceOps[svcId];
+  } finally {
+    triggerFastPoll();
   }
 }
 
@@ -2784,14 +2936,48 @@ function closeAddSvcModal() {
   if (m) m.style.display = 'none';
 }
 function openBlockIpModal() {
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    showToast(isEn ? 'Server is offline. Actions disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   const m = document.getElementById('block-ip-modal');
-  if (m) { m.style.display = 'flex'; setTimeout(() => m.querySelector('input[name=ip]')?.focus(), 60); }
+  if (m) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+    const title = document.getElementById('block-ip-title');
+    if (title) title.textContent = isEn ? 'Block IP Address (DROP)' : 'Blokir Alamat IP (DROP)';
+    const desc = document.getElementById('block-ip-desc');
+    if (desc) {
+      desc.innerHTML = isEn
+        ? "Enter the attacker's public IPv4 address. The command <code class=\"mono\">iptables -I INPUT 1 -s &lt;ip&gt; -j DROP</code> will be sent to the agent."
+        : "Masukkan alamat IPv4 publik penyerang. Perintah <code class=\"mono\">iptables -I INPUT 1 -s &lt;ip&gt; -j DROP</code> akan dikirimkan ke agen.";
+    }
+    const label = document.getElementById('block-ip-target-label');
+    if (label) label.textContent = isEn ? 'Target IP Address (IPv4) *' : 'Alamat IP Target (IPv4) *';
+    const inp = document.getElementById('block-ip-input');
+    if (inp) inp.placeholder = isEn ? 'Example: 198.51.100.25' : 'Contoh: 198.51.100.25';
+    const warn = document.getElementById('block-ip-priv-warning');
+    if (warn) {
+      warn.textContent = isEn
+        ? "Private IPs (10.*, 192.168.*, 172.16-31.*), loopback (127.*), or the server's own IP cannot be blocked."
+        : "IP privat (10.*, 192.168.*, 172.16-31.*), loopback (127.*), atau IP server sendiri tidak dapat diblokir.";
+    }
+    const btn = document.getElementById('block-ip-submit-btn');
+    if (btn) btn.textContent = isEn ? 'Block Now' : 'Blokir Sekarang';
+    m.style.display = 'flex';
+    setTimeout(() => m.querySelector('input[name=ip]')?.focus(), 60);
+  }
 }
 function closeBlockIpModal() {
   const m = document.getElementById('block-ip-modal');
   if (m) m.style.display = 'none';
 }
 function openKillProcModal(pid, pname, defaultSig) {
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    showToast(isEn ? 'Server is offline. Actions disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   const m = document.getElementById('kill-proc-modal');
   if (!m) return;
   document.getElementById('kill-proc-pid').value = pid;
@@ -2808,6 +2994,11 @@ function closeKillProcModal() {
   if (m) m.style.display = 'none';
 }
 async function sendProcDirectSignal(pid, pname, sig, btn) {
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    showToast(isEn ? 'Server is offline. Actions disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   const sigName = (sig === 'STOP') ? 'Tangguhkan/Pause' : (sig === 'CONT' ? 'Lanjutkan/Resume' : sig);
   if (!confirm(`Kirim sinyal ${sigName} ke PID ${pid} (${pname})?`)) return;
 
@@ -2904,8 +3095,46 @@ document.addEventListener('click', e => {
 
 // === Modal: Buat Pengguna Sistem ===
 function openCreateUserModal() {
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    showToast(isEn ? 'Server is offline. Actions disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   const m = document.getElementById('create-user-modal');
-  if (m) m.style.display = 'flex';
+  if (m) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+    const title = document.getElementById('create-user-title');
+    if (title) title.textContent = isEn ? 'Create New System User' : 'Buat Pengguna Sistem Baru';
+    const desc = document.getElementById('create-user-desc');
+    if (desc) {
+      desc.textContent = isEn
+        ? 'Create a new Linux login account on this server. The account will be created using standard system commands via the agent.'
+        : 'Membuat akun login Linux baru pada server ini. Akun akan dibuat menggunakan perintah standar sistem melalui agen.';
+    }
+    const uname = document.getElementById('create-user-uname-label');
+    if (uname) uname.textContent = isEn ? 'Username *' : 'Nama Pengguna *';
+    const unameInp = document.getElementById('create-user-uname-inp');
+    if (unameInp) unameInp.placeholder = isEn ? 'Example: user1' : 'Contoh: user1';
+    const unameHelp = document.getElementById('create-user-uname-help');
+    if (unameHelp) unameHelp.textContent = isEn ? 'Starts with lowercase/underscore, max 32 characters' : 'Diawali huruf kecil/underscore, maks 32 karakter';
+    const pwd = document.getElementById('create-user-pwd-label');
+    if (pwd) pwd.textContent = isEn ? 'Account Password (Optional)' : 'Password Akun (Opsional)';
+    const pwdInp = document.getElementById('create-user-pwd-inp');
+    if (pwdInp) pwdInp.placeholder = isEn ? 'Leave blank if using SSH Key only' : 'Kosongkan jika hanya menggunakan SSH Key';
+    const pwdHelp = document.getElementById('create-user-pwd-help');
+    if (pwdHelp) pwdHelp.textContent = isEn ? 'If filled, account is immediately active with password authentication. If blank, account is ready for SSH Key login.' : 'Jika diisi, akun langsung aktif dengan autentikasi password. Jika dikosongkan, akun siap untuk login via SSH Key.';
+    const shell = document.getElementById('create-user-shell-label');
+    if (shell) shell.textContent = isEn ? 'Login Shell' : 'Shell Login';
+    const comment = document.getElementById('create-user-comment-label');
+    if (comment) comment.textContent = isEn ? 'Comment' : 'Keterangan (Comment)';
+    const commentInp = document.getElementById('create-user-comment-inp');
+    if (commentInp) commentInp.placeholder = isEn ? 'Created via Pantau Server' : 'Dibuat via Pantau Server';
+    const sudo = document.getElementById('create-user-sudo-label');
+    if (sudo) sudo.innerHTML = isEn ? 'Add to <code class="mono">sudo</code> group (superuser privileges)' : 'Tambahkan ke grup <code class="mono">sudo</code> (hak superuser)';
+    const btn = document.getElementById('btn-submit-create-user');
+    if (btn) btn.textContent = isEn ? 'Create User' : 'Buat Pengguna';
+    m.style.display = 'flex';
+  }
 }
 function closeCreateUserModal() {
   const m = document.getElementById('create-user-modal');
@@ -2957,6 +3186,10 @@ async function submitCreateUser(e) {
 
 async function submitUserAction(action, username, btn) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Actions disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   let confirmMsg = '';
   if (action === 'lock') {
     confirmMsg = isEn ? ('Lock account ' + username + ' (disable login)?') : ('Kunci akun ' + username + ' (disable login)?');
@@ -3007,6 +3240,11 @@ async function submitUserAction(action, username, btn) {
 
 // === Modal: Tambah Tugas Cron ===
 function openAddCronModal() {
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    showToast(isEn ? 'Server is offline. Actions disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   const m = document.getElementById('add-cron-modal');
   if (m) m.style.display = 'flex';
 }
@@ -3017,6 +3255,11 @@ function closeAddCronModal() {
 
 // === Modal: Tambah Path SSL ===
 function openAddSslPathModal() {
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    showToast(isEn ? 'Server is offline. Actions disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   const m = document.getElementById('add-ssl-path-modal');
   if (m) m.style.display = 'flex';
 }
@@ -3072,6 +3315,8 @@ async function deleteService(sid, svcId, svcName, btn) {
     if (r.ok) {
       showToast(isEn ? ('Service ' + svcName + ' deleted.') : ('Service ' + svcName + ' telah dihapus.'), true);
       if (tr) tr.remove();
+      if (typeof poll === 'function') poll();
+      else if (typeof fetchOverview === 'function') fetchOverview();
     } else {
       showToast(j.detail || (isEn ? 'Failed to delete service.' : 'Gagal menghapus service.'), false);
       btn.disabled = false;
@@ -3109,7 +3354,7 @@ function fmtUptime(sec) {
   const d = Math.floor(sec / 86400);
   const h = Math.floor((sec % 86400) / 3600);
   const m = Math.floor((sec % 3600) / 60);
-  const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
+  const isEn = isEnPage();
   let s = '';
   if (d) s += d + (isEn ? 'd ' : 'h ');
   if (d || h) s += h + (isEn ? 'h ' : 'j ');
@@ -3166,7 +3411,7 @@ function renderApt(data) {
   if (aptRunning) {
     // jangan timpa status proses yang sedang berjalan
   } else if (aptN == null) {
-    aptSetState('', isEn ? 'No package info yet — click <b>Update OS</b> to refresh.' : 'Belum ada info paket — klik <b>Update OS</b> untuk menyegarkan.');
+    aptSetState('', isEn ? 'No package info — click <b>Update OS</b> to refresh.' : 'Belum ada info paket — klik <b>Update OS</b> untuk menyegarkan.');
   } else if (aptN === 0) {
     aptSetState('ok', (isEn ? 'All OS packages are up to date.' : 'Semua paket OS sudah mutakhir.')
       + (data.apt_last_update ? ' <span class="dim">' + (isEn ? 'Last checked ' : 'Terakhir diperiksa ') + fmtAptLast(data.apt_last_update) + '.</span>' : ''));
@@ -3554,7 +3799,8 @@ class WebTerminal {
 
     this.ws.onopen = () => {
       this.state = 'live';
-      this.status('terhubung &middot; shell aktif', 'var(--green)', 'active');
+      const isEn = isEnPage();
+      this.status(isEn ? 'connected &middot; shell active' : 'terhubung &middot; shell aktif', 'var(--green)', 'active');
       this.fit();
       if (this.fitAddon && this.term) {
         this.ws.send(JSON.stringify({
@@ -3583,13 +3829,14 @@ class WebTerminal {
 
     this.ws.onclose = (event) => {
       this.state = 'closed';
-      let reason = 'sesi terputus';
-      if (event.code === 4401) reason = 'autentikasi gagal (login ulang)';
-      else if (event.code === 4403) reason = 'akses ditolak (khusus admin)';
-      else if (event.code === 4404) reason = 'server tidak ditemukan';
+      const isEn = isEnPage();
+      let reason = isEn ? 'session disconnected' : 'sesi terputus';
+      if (event.code === 4401) reason = isEn ? 'auth failed (login again)' : 'autentikasi gagal (login ulang)';
+      else if (event.code === 4403) reason = isEn ? 'access denied (admin only)' : 'akses ditolak (khusus admin)';
+      else if (event.code === 4404) reason = isEn ? 'server not found' : 'server tidak ditemukan';
       this.status(reason, 'var(--dim)', 'closed');
       if (this.term) {
-        this.term.write('\r\n\x1b[90m[Sesi shell ditutup]\x1b[0m\r\n');
+        this.term.write('\r\n\x1b[90m[' + (isEn ? 'Shell session closed' : 'Sesi shell ditutup') + ']\x1b[0m\r\n');
       }
     };
   }
@@ -3602,7 +3849,8 @@ class WebTerminal {
       this.ws = null;
     }
     this.state = 'closed';
-    this.status('shell ditutup', 'var(--dim)', 'closed');
+    const isEn = isEnPage();
+    this.status(isEn ? 'shell closed' : 'shell ditutup', 'var(--dim)', 'closed');
   }
 }
 
@@ -3827,12 +4075,7 @@ function fmtProbDate(isoStr) {
   return `${day} ${mon} ${h}:${m}`;
 }
 
-function getServicesI18nText(text, isEn) {
-  if (!isEn || !text) return text;
-  if (typeof replaceWithSmartBoundary === 'function' && typeof UI_TEXT_PAIRS !== 'undefined') {
-    const sortedPairs = [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length);
-    return replaceWithSmartBoundary(text, sortedPairs, true);
-  }
+function getServicesI18nText(text) {
   return text;
 }
 
@@ -3869,11 +4112,11 @@ function renderProblemsTab(level, openList, histList) {
   const headEl = document.getElementById('prob-header-status');
   if (headEl) {
     if (level === null || level === undefined) {
-      headEl.innerHTML = '<span class="badge badge-muted">' + (isEn ? 'no data yet' : 'belum ada data') + '</span>';
+      headEl.innerHTML = '<span class="badge badge-muted">' + (isEn ? 'no data' : 'belum ada data') + '</span>';
     } else {
       let sub = isEn ? `${activeCount} active issues` : `${activeCount} masalah aktif`;
       if (ignoredCount > 0) {
-        sub += isEn ? ` · ${ignoredCount} muted (🔕)` : ` · ${ignoredCount} diabaikan (🔕)`;
+        sub += isEn ? ` · ${ignoredCount} ignored (🔕)` : ` · ${ignoredCount} diabaikan (🔕)`;
       }
       headEl.innerHTML = `<span class="badge badge-${meta[1]}">${meta[0]}</span> <span style="font-size:12px;color:var(--dim)">${sub}</span>`;
     }
@@ -3893,7 +4136,7 @@ function renderProblemsTab(level, openList, histList) {
   if (rows.length === 0) {
     wrap.innerHTML = `<div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;padding:12px 0">
       <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
-      ${isEn ? 'No incidents detected at this time.' : 'Tidak ada masalah terdeteksi saat ini.'}
+      ${isEn ? 'No incidents detected.' : 'Tidak ada masalah terdeteksi.'}
     </div>`;
     return;
   }
@@ -3909,7 +4152,7 @@ function renderProblemsTab(level, openList, histList) {
         <option value="danger"${oldFilter === 'danger' ? ' selected' : ''}>Danger</option>
         <option value="warning"${oldFilter === 'warning' ? ' selected' : ''}>Warning</option>
         <option value="info"${oldFilter === 'info' ? ' selected' : ''}>Info</option>
-        <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>${isEn ? 'Muted (🔕)' : 'Diabaikan (🔕)'}</option>
+        <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>${isEn ? 'Ignored (🔕)' : 'Diabaikan (🔕)'}</option>
       </select>
       <input type="search" id="prob-search" oninput="probFilter()" value="${escapeHtml(oldSearch)}" placeholder="${isEn ? 'Search incident…' : 'Cari kejadian…'}"
              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;min-width:200px">
@@ -3946,7 +4189,7 @@ function renderProblemsTab(level, openList, histList) {
     const checkMark = isOpen ? '' : '<span style="color:var(--green)">✓</span> ';
     const msgStyle = isOpen ? '' : ' style="text-decoration:line-through"';
     const ignoredBadge = isIgnored
-      ? `<span class="badge badge-muted" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (p.ignored_by ? (isEn ? 'Muted by ' : 'Diabaikan oleh ') + escapeHtml(p.ignored_by) : '')}">${isEn ? '🔕 muted' : '🔕 diabaikan'}${p.ignored_until ? (isEn ? ' until ' : ' s/d ') + fmtProbDate(p.ignored_until) : (isEn ? ' permanent' : ' permanen')}</span> `
+      ? `<span class="badge badge-muted" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (p.ignored_by ? (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(p.ignored_by) : '')}">${isEn ? '🔕 ignored' : '🔕 diabaikan'}${p.ignored_until ? (isEn ? ' until ' : ' s/d ') + fmtProbDate(p.ignored_until) : (isEn ? ' permanent' : ' permanen')}</span> `
       : '';
     const ackBadge = p.acknowledged_by ? `<span class="badge badge-up" title="${isEn ? 'Acknowledged by ' : 'Diakui '}${escapeHtml(p.acknowledged_by)}">✓ ${isEn ? 'acknowledged' : 'diakui'}</span>` : '';
     const kambuhBadge = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
@@ -3967,14 +4210,14 @@ function renderProblemsTab(level, openList, histList) {
       } else if (p.action === 'log' && p.log_unit) {
         actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')">Log</button>`;
       } else if (p.action === 'mitigate') {
-        if (IS_ADMIN && p.ip_count && p.ip_count > 0) {
+        if (CAN_FIREWALL && p.ip_count && p.ip_count > 0) {
           actHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline" data-confirm data-msg="${isEn ? `Block ${p.ip_count} source IPs (iptables) on ` : `Blokir ${p.ip_count} IP sumber (iptables) di `}${escapeHtml(SERVER_NAME)}?">
             <input type="hidden" name="csrf_token" value="${getCsrf()}">
             <button class="btn btn-danger btn-sm">${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</button>
           </form>`;
         }
         actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>`;
-      } else if (p.action === 'agent_restart' && IS_ADMIN) {
+      } else if (p.action === 'agent_restart' && CAN_SERVICES) {
         actHtml += `<form method="post" action="/servers/${SID}/problems/restart-agent" style="display:inline" data-confirm data-msg="${isEn ? 'Restart agent (agent_pantau) on ' : 'Restart agen (agent_pantau) di '}${escapeHtml(SERVER_NAME)}?">
           <input type="hidden" name="csrf_token" value="${getCsrf()}">
           <button class="btn btn-ghost btn-sm">${isEn ? 'Restart agent' : 'Restart agen'}</button>
@@ -3986,9 +4229,9 @@ function renderProblemsTab(level, openList, histList) {
       }
 
       if (isIgnored) {
-        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Unmute this incident' : 'Pantau kembali masalah ini'}">🔔 ${isEn ? 'Unmute' : 'Pantau Kembali'}</button>`;
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">🔔 ${isEn ? 'Cancel Ignore' : 'Pantau Kembali'}</button>`;
       } else {
-        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Mute this incident' : 'Abaikan masalah ini'}">🔕 ${isEn ? 'Mute' : 'Abaikan'}</button>`;
+        actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">🔕 ${isEn ? 'Ignore' : 'Abaikan'}</button>`;
       }
 
       if (p.acknowledged_by) {
@@ -4224,10 +4467,12 @@ function formatActionRowI18n(a, isEn) {
       'Restart Layanan': 'Restart Service',
       'Hentikan Layanan': 'Stop Service',
       'Jalankan Layanan': 'Start Service',
-      'Abaikan Masalah': 'Mute Incident',
-      'Pantau Kembali': 'Unmute Monitoring',
+      'Abaikan Masalah': 'Ignore Incident',
+      'Pantau Kembali': 'Cancel Ignore',
       'Tandai Ditangani': 'Mark Acknowledged',
       'Selesaikan Masalah': 'Resolve Incident',
+      'Layanan Pulih': 'Service Recovered',
+      'layanan pulih': 'Service Recovered',
       'Mode Pemeliharaan': 'Maintenance Mode',
       'Tambah Layanan': 'Add Service',
       'Hapus Layanan': 'Delete Service',
@@ -4269,7 +4514,7 @@ function formatActionRowI18n(a, isEn) {
       'menunggu…': 'pending…',
       'dieksekusi…': 'executing…',
       'dieksekusi': 'executed',
-      'diabaikan': 'muted',
+      'diabaikan': 'ignored',
       'dipantau': 'monitored',
       'ditangani': 'acknowledged',
       'selesai': 'resolved',
@@ -4316,7 +4561,7 @@ function renderActionHistory(actions) {
     if (pageInfo) pageInfo.textContent = isEn ? 'Page 1 of 1' : 'Halaman 1 dari 1';
     if (prevBtn) prevBtn.disabled = true;
     if (nextBtn) nextBtn.disabled = true;
-    tbody.innerHTML = '<tr id="act-row-empty"><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">' + (isEn ? 'No action history on this server yet.' : 'Belum ada riwayat tindakan di server ini.') + '</td></tr>';
+    tbody.innerHTML = '<tr id="act-row-empty"><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">' + (isEn ? 'No action history on this server.' : 'Belum ada riwayat tindakan di server ini.') + '</td></tr>';
     return;
   }
 
@@ -4366,7 +4611,7 @@ function renderActionHistory(actions) {
     }
     if (!accActions.length) {
       accTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">' +
-        (isEn ? 'No user account action history on this server yet.' : 'Belum ada riwayat tindakan akun pengguna di server ini.') + '</td></tr>';
+        (isEn ? 'No user account action history on this server.' : 'Belum ada riwayat tindakan akun pengguna di server ini.') + '</td></tr>';
     } else {
       accTbody.innerHTML = accActions.slice(0, 25).map(a => {
         const f = formatActionRowI18n(a, isEn);
@@ -4409,6 +4654,114 @@ window.onAppLangChanged = function(lang) {
 // Inisialisasi limit riwayat tindakan server-side render
 setTimeout(() => setActionLimit(10), 100);
 
+// ---------- universal offline sync ----------
+function updateAllOfflineGuards(online) {
+  const isEn = isEnPage();
+  const offTitle = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
+
+  // 1. Tombol & Aksi Layanan
+  document.querySelectorAll('#tbl-services button, #tbl-services input[type="submit"], #form-add-svc button[type="submit"]').forEach(btn => {
+    btn.disabled = !online;
+    btn.style.opacity = !online ? '0.35' : '';
+    btn.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) btn.title = offTitle;
+  });
+
+  // 2. Tombol & Aksi Pengguna (Tab Akun)
+  const btnCreateUser = document.getElementById('btn-create-user-modal');
+  if (btnCreateUser) {
+    btnCreateUser.disabled = !online;
+    btnCreateUser.style.opacity = !online ? '0.35' : '';
+    btnCreateUser.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) btnCreateUser.title = offTitle;
+  }
+  document.querySelectorAll('#acc-table button, #acc-table input[type="submit"]').forEach(btn => {
+    btn.disabled = !online;
+    btn.style.opacity = !online ? '0.35' : '';
+    btn.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) btn.title = offTitle;
+  });
+
+  // 3. Tombol & Aksi Port (Tab Ports)
+  document.querySelectorAll('#ports-table button, #ports-table input[type="submit"]').forEach(btn => {
+    btn.disabled = !online;
+    btn.style.opacity = !online ? '0.35' : '';
+    btn.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) btn.title = offTitle;
+  });
+
+  // 4. Tombol & Aksi Firewall (Tab Firewall)
+  ['btn-fw-enable', 'btn-fw-disable', 'btn-fw-reload', 'btn-fw-block-modal'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.disabled = !online;
+      el.style.opacity = !online ? '0.35' : '';
+      el.style.cursor = !online ? 'not-allowed' : '';
+      if (!online) el.title = offTitle;
+    }
+  });
+  document.querySelectorAll('#fw-blocked-table button, #fw-blocked-table input[type="submit"]').forEach(btn => {
+    btn.disabled = !online;
+    btn.style.opacity = !online ? '0.35' : '';
+    btn.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) btn.title = offTitle;
+  });
+
+  // 5. Tombol & Aksi SSL (Tab SSL)
+  const btnAddSsl = document.getElementById('btn-add-ssl-path-modal');
+  if (btnAddSsl) {
+    btnAddSsl.disabled = !online;
+    btnAddSsl.style.opacity = !online ? '0.35' : '';
+    btnAddSsl.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) btnAddSsl.title = offTitle;
+  }
+  document.querySelectorAll('#ssl-paths-table button, #ssl-paths-table input[type="submit"]').forEach(btn => {
+    btn.disabled = !online;
+    btn.style.opacity = !online ? '0.35' : '';
+    btn.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) btn.title = offTitle;
+  });
+
+  // 6. Tombol & Aksi Cron (Tab Cron)
+  const btnAddCron = document.getElementById('btn-cron-add-modal');
+  if (btnAddCron) {
+    btnAddCron.disabled = !online;
+    btnAddCron.style.opacity = !online ? '0.35' : '';
+    btnAddCron.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) btnAddCron.title = offTitle;
+  }
+  document.querySelectorAll('#cron-table button, #cron-table input[type="submit"]').forEach(btn => {
+    btn.disabled = !online;
+    btn.style.opacity = !online ? '0.35' : '';
+    btn.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) btn.title = offTitle;
+  });
+
+  // 7. Tombol Tindakan pada Tab Masalah
+  const probRestart = document.getElementById('btn-prob-restart-agent');
+  if (probRestart) {
+    probRestart.disabled = !online;
+    probRestart.style.opacity = !online ? '0.35' : '';
+    probRestart.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) probRestart.title = offTitle;
+  }
+  const probBlockIp = document.getElementById('btn-prob-block-ip');
+  if (probBlockIp) {
+    probBlockIp.disabled = !online;
+    probBlockIp.style.opacity = !online ? '0.35' : '';
+    probBlockIp.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) probBlockIp.title = offTitle;
+  }
+
+  // 8. Tombol Tindakan pada Tab Manajer Tugas (Processes)
+  document.querySelectorAll('#top-procs-tbody button, .btn-kill-proc').forEach(btn => {
+    btn.disabled = !online;
+    btn.style.opacity = !online ? '0.35' : '';
+    btn.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) btn.title = offTitle;
+  });
+}
+
 // ---------- service patch (existing) ----------
 function patch(data) {
   // Resume otomatis: bila proses apt masih berjalan di server (mis. karena
@@ -4440,42 +4793,189 @@ function patch(data) {
     } else {
       aver.textContent = isEn ? 'unknown agent' : 'agen tidak dikenal';
       aver.className = 'badge badge-muted';
-      aver.title = isEn ? 'Agent has not reported its version yet' : 'Agen belum melaporkan versi';
+      aver.title = isEn ? 'Agent has not reported its version' : 'Agen belum melaporkan versi';
     }
   }
+
+  const obanner = document.getElementById('banner-agent-outdated');
+  if (obanner && data.agent_outdated !== undefined) {
+    obanner.style.display = data.agent_outdated ? 'flex' : 'none';
+  }
+
+  const online = Boolean(data.online);
+  IS_ONLINE = online;
+  const isEnHero = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
 
   const hd = document.getElementById('hero-dot');
   const ho = document.getElementById('hero-online');
   if (hd && ho) {
-    const online = typeof data.last_seen_ago_ms === 'number'
-      ? data.last_seen_ago_ms < 30000
-      : data.online === true;
-    if (data.is_maintenance) {
-      hd.className = 'dot warn';
-      ho.textContent = 'pemeliharaan';
-      ho.className = 'hero-online warn';
-    } else {
-      hd.className = 'dot ' + (online ? 'up' : 'down');
-      ho.textContent = online ? 'online' : 'offline';
-      ho.className = 'hero-online ' + (online ? 'on' : 'off');
-    }
-    const hm = document.getElementById('hero-maint-badge');
-    const bm = document.getElementById('btn-maint');
-    const ml = document.getElementById('maint-btn-label');
-    if (data.is_maintenance) {
-      if (hm) {
-        hm.style.display = 'inline-flex';
-        hm.textContent = 'Lihat';
+    const curStatus = data.is_maintenance ? 'maint' : (online ? 'up' : 'down');
+    if (ho.dataset.statusState !== curStatus) {
+      ho.dataset.statusState = curStatus;
+      if (data.is_maintenance) {
+        hd.className = 'dot warn';
+        ho.textContent = isEnHero ? 'maintenance' : 'pemeliharaan';
+        ho.className = 'hero-online warn';
+      } else {
+        hd.className = 'dot ' + (online ? 'up' : 'down');
+        ho.textContent = online ? 'online' : 'offline';
+        ho.className = 'hero-online ' + (online ? 'on' : 'off');
       }
-      if (bm) bm.classList.add('btn-maint-active-state');
-      if (ml) ml.textContent = 'Pemeliharaan (Aktif)';
-    } else {
-      if (hm) hm.style.display = 'none';
-      if (bm) bm.classList.remove('btn-maint-active-state');
-      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-      if (ml) ml.textContent = isEn ? 'Maintenance' : 'Pemeliharaan';
     }
   }
+
+  // Hero maintenance badge & view button (Bilingual: View / Lihat)
+  const hm = document.getElementById('hero-maint-badge');
+  const hmt = document.getElementById('hero-maint-badge-text') || hm;
+  if (hm) {
+    const showHm = !!data.is_maintenance;
+    const targetDisp = showHm ? 'inline-flex' : 'none';
+    if (hm.style.display !== targetDisp) hm.style.display = targetDisp;
+    const badgeTxt = isEnHero ? 'View' : 'Lihat';
+    if (showHm && hmt && hmt.textContent !== badgeTxt) {
+      hmt.textContent = badgeTxt;
+    }
+    const badgeTitle = isEnHero ? 'View maintenance mode details' : 'Lihat detail mode pemeliharaan';
+    if (hm.title !== badgeTitle) {
+      hm.title = badgeTitle;
+    }
+  }
+
+  // Maintenance button: Disabled when server is offline, smooth state transition
+  const bm = document.getElementById('btn-maint');
+  const ml = document.getElementById('maint-btn-label');
+  if (bm) {
+    bm.disabled = false;
+    bm.style.opacity = '';
+    bm.style.cursor = '';
+    bm.title = isEnHero ? 'Enable or schedule maintenance mode to temporarily suppress alert notifications' : 'Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi down dibisukan sementara';
+    bm.dataset.i18nTitle = 'enable_maint_tooltip';
+
+    const isMaintActive = !!data.is_maintenance;
+    const maintStateStr = String(isMaintActive);
+    if (bm.dataset.maintActive !== maintStateStr) {
+      bm.dataset.maintActive = maintStateStr;
+      if (isMaintActive) {
+        bm.classList.add('btn-maint-active-state');
+      } else {
+        bm.classList.remove('btn-maint-active-state');
+      }
+    }
+
+    const expectedLabel = isMaintActive
+      ? (isEnHero ? 'Maintenance (Active)' : 'Pemeliharaan (Aktif)')
+      : (isEnHero ? 'Maintenance' : 'Pemeliharaan');
+    if (ml && ml.textContent !== expectedLabel) {
+      ml.textContent = expectedLabel;
+    }
+  }
+
+  // File Manager toolbar button: Disable when offline, update title dynamically
+  const fmBtn = document.getElementById('hero-fm-btn');
+  if (fmBtn) {
+    const targetHref = fmBtn.dataset.href || '/servers/{{ server.id }}/files';
+    if (!online) {
+      if (fmBtn.tagName.toLowerCase() === 'a') {
+        fmBtn.removeAttribute('href');
+        fmBtn.removeAttribute('target');
+      }
+      fmBtn.style.opacity = '0.35';
+      fmBtn.style.cursor = 'not-allowed';
+      fmBtn.disabled = true;
+      fmBtn.title = isEnHero ? 'Server offline — File Manager disabled' : 'Server offline — File Manager dinonaktifkan';
+      fmBtn.dataset.i18nTitle = 'server_offline_file_manager_disabled';
+    } else {
+      fmBtn.setAttribute('href', targetHref);
+      fmBtn.setAttribute('target', '_blank');
+      fmBtn.style.opacity = '';
+      fmBtn.style.cursor = '';
+      fmBtn.disabled = false;
+      fmBtn.title = isEnHero ? 'Explore and manage server files via File Manager in new tab' : 'Jelajahi dan kelola berkas server lewat antarmuka File Manager di tab baru';
+      fmBtn.dataset.i18nTitle = 'fm_tooltip';
+    }
+  }
+
+  // Terminal toolbar button: Disable when offline
+  const termBtn = document.getElementById('apt-term-toggle-btn');
+  if (termBtn) {
+    const shouldDisableTerm = !online;
+    if (termBtn.disabled !== shouldDisableTerm) {
+      termBtn.disabled = shouldDisableTerm;
+      if (shouldDisableTerm) {
+        termBtn.style.opacity = '0.35';
+        termBtn.style.cursor = 'not-allowed';
+        termBtn.title = isEnHero ? 'Server offline — terminal disabled' : 'Server offline — terminal dinonaktifkan';
+        termBtn.dataset.i18nTitle = 'server_offline_terminal_disabled';
+      } else {
+        termBtn.style.opacity = '';
+        termBtn.style.cursor = '';
+        termBtn.title = isEnHero ? 'Open interactive shell terminal directly to client server' : 'Buka terminal shell interaktif langsung ke server klien';
+        termBtn.dataset.i18nTitle = 'open_term_tooltip';
+      }
+    }
+  }
+
+  // Update OS button: Disable when offline
+  const updateBtn = document.getElementById('apt-update-btn');
+  if (updateBtn) {
+    const shouldDisableUpd = !online;
+    if (updateBtn.disabled !== shouldDisableUpd) {
+      updateBtn.disabled = shouldDisableUpd;
+      if (shouldDisableUpd) {
+        updateBtn.style.opacity = '0.35';
+        updateBtn.style.cursor = 'not-allowed';
+        updateBtn.title = isEnHero ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
+        updateBtn.dataset.i18nTitle = 'server_offline_actions_disabled';
+      } else {
+        updateBtn.style.opacity = '';
+        updateBtn.style.cursor = '';
+        updateBtn.title = isEnHero ? 'Sync OS package repository (apt update) to check for available updates' : 'Sinkronkan repositori paket OS (apt update) untuk mengecek ketersediaan pembaruan baru';
+        updateBtn.dataset.i18nTitle = 'apt_update_tooltip';
+      }
+    }
+  }
+
+  // Reboot & Power Off buttons: Disable when offline
+  const rebootBtn = document.getElementById('hero-reboot-btn');
+  if (rebootBtn) {
+    const shouldDisableRbt = !online;
+    if (rebootBtn.disabled !== shouldDisableRbt) {
+      rebootBtn.disabled = shouldDisableRbt;
+      if (shouldDisableRbt) {
+        rebootBtn.style.opacity = '0.35';
+        rebootBtn.style.cursor = 'not-allowed';
+        rebootBtn.title = isEnHero ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
+        rebootBtn.dataset.i18nTitle = 'server_offline_actions_disabled';
+      } else {
+        rebootBtn.style.opacity = '';
+        rebootBtn.style.cursor = '';
+        rebootBtn.title = isEnHero ? 'Reboot client server operating system' : 'Mulai ulang (reboot) sistem operasi server klien';
+        rebootBtn.dataset.i18nTitle = 'reboot_tooltip';
+      }
+    }
+  }
+
+  const poweroffBtn = document.getElementById('hero-poweroff-btn');
+  if (poweroffBtn) {
+    const shouldDisablePwf = !online;
+    if (poweroffBtn.disabled !== shouldDisablePwf) {
+      poweroffBtn.disabled = shouldDisablePwf;
+      if (shouldDisablePwf) {
+        poweroffBtn.style.opacity = '0.35';
+        poweroffBtn.style.cursor = 'not-allowed';
+        poweroffBtn.title = isEnHero ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
+        poweroffBtn.dataset.i18nTitle = 'server_offline_actions_disabled';
+      } else {
+        poweroffBtn.style.opacity = '';
+        poweroffBtn.style.cursor = '';
+        poweroffBtn.title = isEnHero ? 'Shut down client server machine completely (power off)' : 'Matikan daya mesin server klien secara penuh (shutdown/power off)';
+        poweroffBtn.dataset.i18nTitle = 'poweroff_tooltip';
+      }
+    }
+  }
+
+  // Sinkronisasi status offline ke semua tombol aksi di seluruh tab
+  updateAllOfflineGuards(online);
   const ackx = document.getElementById('host-ack');
   if (ackx && typeof ackLive === 'function') {
     const recent = typeof data.last_seen_ago_ms === 'number'
@@ -4486,12 +4986,36 @@ function patch(data) {
   if (data.services) primeSvcGraph(data.services);
   const isEnPatch = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   for (const s of data.services) {
+    const op = _pendingServiceOps[s.id];
+    if (op) {
+      if (Date.now() >= op.expires) {
+        delete _pendingServiceOps[s.id];
+      } else if (op.action === 'stop' && s.status === 'down') {
+        delete _pendingServiceOps[s.id];
+      } else if (op.action === 'start' && s.status === 'up') {
+        delete _pendingServiceOps[s.id];
+      }
+    }
+    const effOp = _pendingServiceOps[s.id];
+    let effStatus = s.status;
+    if (effOp) {
+      if (effOp.action === 'stop' && s.status !== 'down') {
+        effStatus = isEnPatch ? 'stopping…' : 'menghentikan…';
+      } else if (effOp.action === 'start' && s.status !== 'up') {
+        effStatus = isEnPatch ? 'starting…' : 'memulai…';
+      } else if (effOp.action === 'restart') {
+        effStatus = isEnPatch ? 'restarting…' : 'memuat ulang…';
+      }
+    }
+
     const sts = document.getElementById('sts-' + s.id);
     if (sts) {
-      if (s.status === 'down' && s.ignored) {
-        sts.innerHTML = '<span class="badge badge-muted" title="' + (isEnPatch ? 'Service stopped (monitoring muted)' : 'Layanan berhenti (diabaikan)') + '">down 🔕</span>';
+      if (effOp && effStatus !== s.status) {
+        sts.innerHTML = '<span class="badge badge-warn">' + escHtml(effStatus) + '</span>';
+      } else if (s.status === 'down' && s.ignored) {
+        sts.innerHTML = '<span class="badge badge-muted" title="' + (isEnPatch ? 'Service stopped (monitoring ignored)' : 'Layanan berhenti (diabaikan)') + '">down 🔕</span>';
       } else if (s.status === 'up' && s.ignored) {
-        sts.innerHTML = '<span class="badge badge-up" title="' + (isEnPatch ? 'Service running (down monitoring muted)' : 'Layanan aktif (pengawasan down diabaikan)') + '">up 🔕</span>';
+        sts.innerHTML = '<span class="badge badge-up" title="' + (isEnPatch ? 'Service running (down monitoring ignored)' : 'Layanan aktif (pengawasan down diabaikan)') + '">up 🔕</span>';
       } else {
         const st = s.status === 'unknown' ? 'inactive' : s.status;
         sts.innerHTML = '<span class="badge badge-' + st + '">' + escHtml(s.status) + '</span>';
@@ -4507,13 +5031,13 @@ function patch(data) {
       health.style.color = s.health_message ? '' : 'var(--dim)';
     }
     const act = document.getElementById('act-' + s.id);
-    if (act && IS_ADMIN) {
+    if (act && CAN_SERVICES) {
       let prob = null;
       if (s.problem_id) {
         prob = { id: s.problem_id, is_ignored: s.ignored, message: s.problem_msg };
       }
       act.innerHTML = renderServiceActions(
-        act.dataset.sid, act.dataset.svc, act.dataset.name, s.status, s.pending, prob, s.ignored
+        act.dataset.sid, act.dataset.svc, act.dataset.name, s.status, s.pending, prob, s.ignored, s.pending_action
       );
     }
 
@@ -4651,7 +5175,7 @@ function renderSys(data) {
   body.style.display = hasData ? 'block' : 'none';
   if (!hasData) return;
 
-  const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
+  const isEn = isEnPage();
   document.getElementById('sys-ts').textContent = data.ts ? (isEn ? 'updated: ' : 'update: ') + new Date(data.ts).toLocaleTimeString(isEn ? 'en-US' : 'id-ID') : '';
 
   const cpu = sys.cpu;
@@ -4683,7 +5207,7 @@ function renderSys(data) {
     if (data.kernel) parts.push('kernel ' + data.kernel);
     if (sys.uptime != null) parts.push('uptime ' + fmtUptime(sys.uptime));
     if (sys.load1 != null) parts.push((isEn ? 'load ' : 'beban ') + sys.load1.toFixed(2));
-    heroMeta.textContent = parts.length ? parts.join(' · ') : (isEn ? 'loading system data…' : 'memuat data sistem…');
+    heroMeta.textContent = parts.length ? parts.join(' · ') : (isEn ? 'Loading system data…' : 'Memuat data sistem…');
   }
 
   renderApt(data);

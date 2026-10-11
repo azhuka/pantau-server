@@ -279,7 +279,7 @@ window.poll = async function() {
       if (s.danger_open) bh += `<span class="badge badge-danger">Danger ${s.danger_open}</span> `;
       if (s.warning_open) bh += `<span class="badge badge-warn">Warning ${s.warning_open}</span> `;
       if (s.info_open) bh += `<span class="badge badge-info">Info ${s.info_open}</span> `;
-      if (s.ignored_open) bh += `<span class="badge badge-muted" title="${s.ignored_open} ${isEn ? 'incidents muted' : 'masalah diabaikan'}">🔕 ${s.ignored_open} ${isEn ? 'muted' : 'diabaikan'}</span> `;
+      if (s.ignored_open) bh += `<span class="badge badge-muted" title="${s.ignored_open} ${isEn ? 'incidents ignored' : 'masalah diabaikan'}">🔕 ${s.ignored_open} ${isEn ? 'ignored' : 'diabaikan'}</span> `;
       bh += `<span class="badge badge-up">✓ ${s.ok_count} ${isEn ? 'servers normal' : 'server normal'}</span>`;
       badgeWrap.innerHTML = bh;
     }
@@ -289,7 +289,7 @@ window.poll = async function() {
     if (actBadge && data.summary) {
       const s = data.summary;
       const act = s.total_open - s.ignored_open;
-      actBadge.textContent = `${act} ${isEn ? 'active' : 'aktif'}${s.ignored_open ? ' · ' + s.ignored_open + (isEn ? ' muted' : ' diabaikan') : ''}`;
+      actBadge.textContent = `${act} ${isEn ? 'active' : 'aktif'}${s.ignored_open ? ' · ' + s.ignored_open + (isEn ? ' ignored' : ' diabaikan') : ''}`;
     }
 
     // 3. Perbarui Daftar Masalah Terbuka
@@ -299,7 +299,7 @@ window.poll = async function() {
       if (openList.length === 0) {
         wrapper.innerHTML = `<div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px">
           <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
-          ${isEn ? 'No open incidents' : 'Tidak ada masalah terbuka'}${FILTER_SID ? (isEn ? ' for this server' : ' untuk server ini') : ''} ${isEn ? 'at this time.' : 'saat ini.'}
+          ${isEn ? 'No open incidents' : 'Tidak ada masalah terbuka'}${FILTER_SID ? (isEn ? ' for this server' : ' untuk server ini') : ''}.
         </div>`;
       } else {
         let table = document.getElementById('probtable');
@@ -311,7 +311,7 @@ window.poll = async function() {
               <th title="${isEn ? 'Urgency level: Danger, Warning, or Info' : 'Tingkat urgensi: Danger (kritis), Warning (waspada), atau Info (informasi)'}">${isEn ? 'Level' : 'Tingkat'}</th>
               <th title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'Event' : 'Kejadian'}</th>
               <th title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'Duration' : 'Durasi'}</th>
-              <th title="${isEn ? 'Action: Details, Mark Acknowledged, or Mute' : 'Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan'}">${isEn ? 'Actions' : 'Aksi'}</th>
+              <th title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan'}">${isEn ? 'Actions' : 'Aksi'}</th>
               <th title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'Solution Guide' : 'Panduan Solusi'}</th>
             </tr></thead>
             <tbody></tbody>
@@ -326,15 +326,10 @@ window.poll = async function() {
             const sevBadge = isIgn ? 'badge badge-muted' : ('badge badge-' + ({danger:'danger',warning:'warn',info:'info'}[p.severity] || 'info'));
             let pMsg = p.message || '';
             let pTip = p.tip || '—';
-            if (isEn && typeof replaceWithSmartBoundary === 'function' && typeof UI_TEXT_PAIRS !== 'undefined') {
-              const sortedPairs = [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length);
-              pMsg = replaceWithSmartBoundary(pMsg, sortedPairs, true);
-              pTip = replaceWithSmartBoundary(pTip, sortedPairs, true);
-            }
             const textSearch = _esc((p.hostname + ' ' + pMsg + ' ' + (p.key || '')).toLowerCase());
             const ctxStr = p.context ? _esc(typeof p.context === 'object' ? JSON.stringify(p.context) : p.context) : '';
             const count24 = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
-            const ignBadge = isIgn ? `<span class="badge badge-muted">${isEn ? '🔕 muted' : '🔕 diabaikan'}${p.ignored_until_str ? (isEn ? ' until ' : ' s/d ') + _esc(p.ignored_until_str) : (isEn ? ' permanent' : ' permanen')}</span>` : '';
+            const ignBadge = isIgn ? `<span class="badge badge-muted">${isEn ? '🔕 ignored' : '🔕 diabaikan'}${p.ignored_until_str ? (isEn ? ' until ' : ' s/d ') + _esc(p.ignored_until_str) : (isEn ? ' permanent' : ' permanen')}</span>` : '';
 
             let ackBtn = '';
             if (p.acknowledged_by) {
@@ -344,9 +339,9 @@ window.poll = async function() {
               ackBtn = `<button type="button" class="btn btn-${bcls} btn-sm" style="margin-left:4px" onclick="ackProblem(${p.id}, this, '${p.severity}')" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${isEn ? 'Acknowledge' : 'Ditangani'}</button>`;
             }
 
-            const muteBtn = isIgn
-              ? `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Unmute this incident' : 'Pantau kembali masalah ini'}">🔔 ${isEn ? 'Unmute' : 'Pantau Kembali'}</button>`
-              : `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)" title="${isEn ? 'Mute this incident' : 'Abaikan masalah ini'}">🔕 ${isEn ? 'Mute' : 'Abaikan'}</button>`;
+            const ignBtn = isIgn
+              ? `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">🔔 ${isEn ? 'Cancel Ignore' : 'Pantau Kembali'}</button>`
+              : `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">🔕 ${isEn ? 'Ignore' : 'Abaikan'}</button>`;
 
             return `<tr${rowStyle}
               data-sev="${_esc(p.severity)}"
@@ -376,7 +371,7 @@ window.poll = async function() {
               <td style="white-space:nowrap">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}" style="margin-right:4px">🔍 ${isEn ? 'Diagnose' : 'Diagnosa'}</button>
                 <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm">${isEn ? 'Details' : 'Rincian'}</a>
-                ${muteBtn}
+                ${ignBtn}
                 ${ackBtn}
               </td>
               <td style="font-size:12px;color:var(--dim);max-width:360px">

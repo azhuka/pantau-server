@@ -2,8 +2,8 @@
 {% block title %}{{ 'Edit' if server else 'Tambah' }} Server{% endblock %}
 {% block content %}
 <div class="topbar">
-  <h2>{{ 'Edit' if server else 'Tambah' }} Server</h2>
-  <a href="/servers" class="btn btn-ghost">&larr; Kembali</a>
+  <h2 data-i18n="{{ 'edit_server' if server else 'add_server' }}">{{ 'Edit Server' if server else 'Tambah Server' }}</h2>
+  <a href="/servers" class="btn btn-ghost" data-i18n="back">&larr; Kembali</a>
 </div>
 
 {% if error %}
@@ -34,7 +34,7 @@
       </select>
     </div>
     {% endif %}
-    <button type="submit" class="btn btn-primary">{{ 'Simpan Perubahan' if server else 'Tambah Server' }}</button>
+    <button type="submit" class="btn btn-primary" data-i18n="{{ 'save_changes' if server else 'add_server' }}">{{ 'Simpan Perubahan' if server else 'Tambah Server' }}</button>
   </form>
 </div>
 

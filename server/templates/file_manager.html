@@ -12,7 +12,7 @@
     </div>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
-    <a href="/servers/{{ server.id }}/services" class="btn btn-ghost">&larr; Kembali ke Rincian Server</a>
+    <a href="/servers/{{ server.id }}/services" class="btn btn-ghost">&larr; Kembali</a>
   </div>
 </div>
 
@@ -104,17 +104,17 @@
 
     <!-- Action & Search Toolbar -->
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input type="text" id="fm-filter" class="fm-search-input" oninput="fmFilterItems(this.value)" placeholder="Filter berkas di folder ini...">
+      <input type="text" id="fm-filter" class="fm-search-input" oninput="fmFilterItems(this.value)" placeholder="Filter berkas di folder ini..." {% if not is_online %}disabled title="Server offline"{% endif %}>
       <button type="button" class="btn btn-sm" id="fm-btn-paste" onclick="fmPasteClipboard()" style="display:none;align-items:center;gap:4px;border-color:var(--blue);color:var(--blue)">
         📋 Tempel
       </button>
-      <button type="button" class="btn btn-sm" onclick="fmOpenNewFolder()" style="display:flex;align-items:center;gap:4px">
+      <button type="button" id="fm-btn-new-folder" class="btn btn-sm" onclick="fmOpenNewFolder()" style="display:flex;align-items:center;gap:4px" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% endif %}>
         + Folder Baru
       </button>
-      <button type="button" class="btn btn-sm" onclick="fmOpenNewFile()" style="display:flex;align-items:center;gap:4px">
+      <button type="button" id="fm-btn-new-file" class="btn btn-sm" onclick="fmOpenNewFile()" style="display:flex;align-items:center;gap:4px" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% endif %}>
         + Berkas Baru
       </button>
-      <button type="button" class="btn btn-sm btn-primary" onclick="fmOpenUpload()" style="display:flex;align-items:center;gap:4px">
+      <button type="button" id="fm-btn-upload" class="btn btn-sm btn-primary" onclick="fmOpenUpload()" style="display:flex;align-items:center;gap:4px" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% endif %}>
         &uarr; Unggah Berkas
       </button>
     </div>
@@ -248,7 +248,7 @@
 <div id="fm-upload-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card">
     <div class="fm-modal-header">
-      <span>↑ Unggah Berkas ke Server</span>
+      <span id="fm-upload-modal-title">↑ Unggah Berkas ke Server</span>
       <button type="button" class="btn btn-ghost" onclick="fmCloseUpload()">&times;</button>
     </div>
     <form id="fm-upload-form" onsubmit="fmSubmitUpload(event)">
@@ -359,13 +359,13 @@
         <div style="margin-bottom:10px;font-size:13px;color:var(--dim)">
           Lokasi: <code id="fm-prompt-dest" style="color:var(--blue)"></code>
         </div>
-        <label id="fm-prompt-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama:</label>
+        <label id="fm-prompt-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Berkas / Folder:</label>
         <input type="text" id="fm-prompt-input" style="width:100%;font-size:13px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)" required autofocus>
         <div id="fm-prompt-error" style="display:none;color:var(--red);font-size:12px;margin-top:8px"></div>
       </div>
       <div class="fm-modal-footer">
         <button type="button" class="btn btn-ghost" onclick="fmClosePrompt()">Batal</button>
-        <button type="submit" id="fm-prompt-submit-btn" class="btn btn-primary">Buat</button>
+        <button type="submit" id="fm-prompt-submit-btn" class="btn btn-primary">Simpan</button>
       </div>
     </form>
   </div>
@@ -435,6 +435,7 @@
 <script>
 const SID = {{ server.id }};
 const SERVER_NAME = {{ server.hostname | tojson }};
+const IS_ONLINE = {{ 'true' if is_online else 'false' }};
 
 function escapeHtml(s) {
   if (!s) return '';
@@ -768,9 +769,10 @@ async function fmPasteClipboard() {
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
       body: JSON.stringify({ sources: items, destination: fmCurrentPath })
     });
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const data = await res.json();
     if (!res.ok || !data.ok) {
-      throw new Error(data.detail || data.error || 'Gagal menempelkan item');
+      throw new Error(data.detail || data.error || (isEn ? 'Failed to paste items' : 'Gagal menempelkan item'));
     }
 
     if (isCut) {
@@ -779,7 +781,8 @@ async function fmPasteClipboard() {
     fmUpdateClipboardUI();
     fmLoadDir(fmCurrentPath, false);
   } catch (err) {
-    alert('Gagal menempel berkas/folder: ' + err.message);
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+    alert((isEn ? 'Failed to paste file/folder: ' : 'Gagal menempel berkas/folder: ') + err.message);
   } finally {
     if (btnPaste) btnPaste.disabled = false;
   }
@@ -790,6 +793,19 @@ async function fmLoadDir(path, pushHistory = true) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const tbody = document.getElementById('fm-tbody');
   const statsInfo = document.getElementById('fm-stats-info');
+
+  if (!IS_ONLINE) {
+    errBanner.textContent = isEn
+      ? 'Server is currently offline. File operations are disabled until the server and agent are active.'
+      : 'Server sedang offline. Operasi berkas dinonaktifkan sampai server dan agen aktif.';
+    errBanner.style.display = 'block';
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--dim)">
+      ⚠️ ` + (isEn ? 'Server is offline. Ensure agent_pantau service is running.' : 'Server sedang offline. Pastikan service agent_pantau aktif.') + `
+    </td></tr>`;
+    statsInfo.innerHTML = `<span style="color:var(--yellow)">` + (isEn ? 'Server Offline' : 'Server Offline') + `</span>`;
+    fmUpdateNavButtons();
+    return;
+  }
 
   errBanner.style.display = 'none';
   tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--dim)">
@@ -1015,13 +1031,13 @@ function fmRenderItems(items) {
       <td style="font-size:12px">${ownerStr}</td>
       <td>${dateStr}</td>
       <td class="fm-actions-cell">
-        ${!item.is_dir ? `<button type="button" class="fm-act-btn" title="${isEn ? 'View & Edit File' : 'Lihat & Edit Berkas'}" onclick="fmOpenFile('${safePath}')">✏️</button>` : ''}
-        ${!item.is_dir ? `<button type="button" class="fm-act-btn" title="${isEn ? 'Download File' : 'Unduh Berkas'}" onclick="fmDownloadFile('${safePath}')">⬇️</button>` : ''}
-        <button type="button" class="fm-act-btn" title="${isEn ? 'Copy' : 'Salin (Copy)'}" onclick="fmCopySingle('${safePath}')">📋</button>
-        <button type="button" class="fm-act-btn" title="${isEn ? 'Cut' : 'Potong (Cut)'}" onclick="fmCutSingle('${safePath}')">✂️</button>
-        <button type="button" class="fm-act-btn" title="${isEn ? 'Change Permissions & Owner (chmod/chown)' : 'Ubah Hak Akses & Pemilik (chmod/chown)'}" onclick="fmOpenChmod('${safePath}', '${item.mode_octal || '0644'}', '${escapeHtml(item.owner || '')}', '${escapeHtml(item.group || '')}')">⚙️</button>
-        <button type="button" class="fm-act-btn" title="${isEn ? 'Rename' : 'Ganti Nama'}" onclick="fmOpenRename('${safePath}', '${safeName}')">🏷️</button>
-        <button type="button" class="fm-act-btn" style="color:var(--red)" title="${isEn ? 'Delete' : 'Hapus'}" onclick="fmOpenDelete('${safePath}', ${item.is_dir})">🗑️</button>
+        ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'View & Edit File' : 'Lihat & Edit Berkas'}" onclick="fmOpenFile('${safePath}')">✏️</button>` : ''}
+        ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Download File' : 'Unduh Berkas'}" onclick="fmDownloadFile('${safePath}')">⬇️</button>` : ''}
+        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Copy' : 'Salin (Copy)'}" onclick="fmCopySingle('${safePath}')">📋</button>
+        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Cut' : 'Potong (Cut)'}" onclick="fmCutSingle('${safePath}')">✂️</button>
+        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Change Permissions & Owner (chmod/chown)' : 'Ubah Hak Akses & Pemilik (chmod/chown)'}" onclick="fmOpenChmod('${safePath}', '${item.mode_octal || '0644'}', '${escapeHtml(item.owner || '')}', '${escapeHtml(item.group || '')}')">⚙️</button>
+        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Rename' : 'Ganti Nama'}" onclick="fmOpenRename('${safePath}', '${safeName}')">🏷️</button>
+        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} style="color:var(--red)" title="${isEn ? 'Delete' : 'Hapus'}" onclick="fmOpenDelete('${safePath}', ${item.is_dir})">🗑️</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -1214,11 +1230,23 @@ function fmDownloadFile(filePath) {
 // UNGGAH (UPLOAD) BERKAS
 // ===========================================================================
 function fmOpenUpload() {
+  if (!IS_ONLINE) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+    alert(isEn ? 'Cannot upload file: Server is currently offline.' : 'Tidak dapat mengunggah berkas: Server sedang offline.');
+    return;
+  }
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const titleEl = document.getElementById('fm-upload-modal-title');
+  if (titleEl) titleEl.textContent = isEn ? '↑ Upload File to Server' : '↑ Unggah Berkas ke Server';
+  const submitBtn = document.getElementById('fm-upload-submit-btn');
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = isEn ? 'Upload Now' : 'Unggah Sekarang';
+  }
   document.getElementById('fm-upload-dest').textContent = fmCurrentPath;
   document.getElementById('fm-upload-input').value = '';
   document.getElementById('fm-upload-progress').style.display = 'none';
   document.getElementById('fm-upload-error').style.display = 'none';
-  document.getElementById('fm-upload-submit-btn').disabled = false;
   document.getElementById('fm-upload-modal').style.display = 'flex';
 }
 
@@ -1313,6 +1341,7 @@ async function fmSubmitChmod(e) {
   errorBox.style.display = 'none';
 
   try {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     if (mode) {
       const res = await fetch(`/api/servers/${SID}/files/chmod`, {
         method: 'POST',
@@ -1321,7 +1350,7 @@ async function fmSubmitChmod(e) {
         body: JSON.stringify({ path: fmChmodTarget, mode: mode })
       });
       const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.detail || data.error || 'Gagal mengubah chmod');
+      if (!res.ok || !data.ok) throw new Error(data.detail || data.error || (isEn ? 'Failed to change chmod' : 'Gagal mengubah chmod'));
     }
 
     if (owner || group) {
@@ -1332,15 +1361,16 @@ async function fmSubmitChmod(e) {
         body: JSON.stringify({ path: fmChmodTarget, owner: owner, group: group })
       });
       const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.detail || data.error || 'Gagal mengubah chown');
+      if (!res.ok || !data.ok) throw new Error(data.detail || data.error || (isEn ? 'Failed to change chown' : 'Gagal mengubah chown'));
     }
 
     fmCloseChmod();
     fmLoadDir(fmCurrentPath, false);
 
   } catch (err) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     submitBtn.disabled = false;
-    errorBox.textContent = 'Gagal: ' + err.message;
+    errorBox.textContent = (isEn ? 'Failed: ' : 'Gagal: ') + err.message;
     errorBox.style.display = 'block';
   }
 }
@@ -1380,6 +1410,7 @@ async function fmSubmitRename(e) {
   errorBox.style.display = 'none';
 
   try {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const res = await fetch(`/api/servers/${SID}/files/rename`, {
       method: 'POST',
       credentials: 'same-origin',
@@ -1387,14 +1418,15 @@ async function fmSubmitRename(e) {
       body: JSON.stringify({ old_path: fmRenameTarget, new_path: newPath, src: fmRenameTarget, dst: newPath })
     });
     const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || 'Gagal mengganti nama');
+    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || (isEn ? 'Failed to rename' : 'Gagal mengganti nama'));
 
     fmCloseRename();
     fmLoadDir(fmCurrentPath, false);
 
   } catch (err) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     submitBtn.disabled = false;
-    errorBox.textContent = 'Gagal: ' + err.message;
+    errorBox.textContent = (isEn ? 'Failed: ' : 'Gagal: ') + err.message;
     errorBox.style.display = 'block';
   }
 }
@@ -1449,6 +1481,11 @@ async function fmSubmitDelete() {
 // PROMPT: BUAT FOLDER & BERKAS BARU
 // ===========================================================================
 function fmOpenNewFolder() {
+  if (!IS_ONLINE) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+    alert(isEn ? 'Cannot create folder: Server is currently offline.' : 'Tidak dapat membuat folder: Server sedang offline.');
+    return;
+  }
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   document.getElementById('fm-prompt-title').textContent = isEn ? '📁 Create New Folder' : '📁 Buat Folder Baru';
   document.getElementById('fm-prompt-label').textContent = isEn ? 'Folder Name:' : 'Nama Folder:';
@@ -1456,7 +1493,9 @@ function fmOpenNewFolder() {
   const inp = document.getElementById('fm-prompt-input');
   inp.value = '';
   document.getElementById('fm-prompt-error').style.display = 'none';
-  document.getElementById('fm-prompt-submit-btn').disabled = false;
+  const subBtn = document.getElementById('fm-prompt-submit-btn');
+  subBtn.disabled = false;
+  subBtn.textContent = isEn ? 'Create Folder' : 'Buat Folder';
 
   fmPromptCallback = async (name) => {
     const fullPath = fmCurrentPath.replace(/\/+$/, '') + '/' + name.trim();
@@ -1477,6 +1516,11 @@ function fmOpenNewFolder() {
 }
 
 function fmOpenNewFile() {
+  if (!IS_ONLINE) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+    alert(isEn ? 'Cannot create file: Server is currently offline.' : 'Tidak dapat membuat berkas: Server sedang offline.');
+    return;
+  }
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   document.getElementById('fm-prompt-title').textContent = isEn ? '📄 Create New File' : '📄 Buat Berkas Baru';
   document.getElementById('fm-prompt-label').textContent = isEn ? 'File Name:' : 'Nama Berkas:';
@@ -1484,7 +1528,9 @@ function fmOpenNewFile() {
   const inp = document.getElementById('fm-prompt-input');
   inp.value = '';
   document.getElementById('fm-prompt-error').style.display = 'none';
-  document.getElementById('fm-prompt-submit-btn').disabled = false;
+  const subBtn = document.getElementById('fm-prompt-submit-btn');
+  subBtn.disabled = false;
+  subBtn.textContent = isEn ? 'Create File' : 'Buat Berkas';
 
   fmPromptCallback = async (name) => {
     const fullPath = fmCurrentPath.replace(/\/+$/, '') + '/' + name.trim();
@@ -1513,6 +1559,7 @@ function fmClosePrompt() {
 async function fmSubmitPrompt(e) {
   e.preventDefault();
   if (!fmPromptCallback) return;
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const val = document.getElementById('fm-prompt-input').value.trim();
   if (!val) return;
 
@@ -1525,7 +1572,7 @@ async function fmSubmitPrompt(e) {
     await fmPromptCallback(val);
   } catch (err) {
     btn.disabled = false;
-    errBox.textContent = 'Gagal: ' + err.message;
+    errBox.textContent = (isEn ? 'Failed: ' : 'Gagal: ') + err.message;
     errBox.style.display = 'block';
   }
 }
@@ -1564,6 +1611,7 @@ async function fmSubmitBulkDelete() {
   errBox.style.display = 'none';
 
   try {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const res = await fetch(`/api/servers/${SID}/files/batch-rm`, {
       method: 'POST',
       credentials: 'same-origin',
@@ -1571,14 +1619,15 @@ async function fmSubmitBulkDelete() {
       body: JSON.stringify({ paths: Array.from(fmSelected) })
     });
     const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || 'Gagal menghapus beberapa item');
+    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || (isEn ? 'Failed to delete multiple items' : 'Gagal menghapus beberapa item'));
 
     fmClearSelection();
     fmCloseBulkDelete();
     fmLoadDir(fmCurrentPath, false);
   } catch (err) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     btn.disabled = false;
-    errBox.textContent = 'Gagal: ' + err.message;
+    errBox.textContent = (isEn ? 'Failed: ' : 'Gagal: ') + err.message;
     errBox.style.display = 'block';
   }
 }
@@ -1608,6 +1657,7 @@ async function fmSubmitBulkChmod(e) {
   errBox.style.display = 'none';
 
   try {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const res = await fetch(`/api/servers/${SID}/files/batch-chmod`, {
       method: 'POST',
       credentials: 'same-origin',
@@ -1615,14 +1665,15 @@ async function fmSubmitBulkChmod(e) {
       body: JSON.stringify({ paths: Array.from(fmSelected), mode: mode })
     });
     const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || 'Gagal mengubah izin');
+    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || (isEn ? 'Failed to change permissions' : 'Gagal mengubah izin'));
 
     fmClearSelection();
     fmCloseBulkChmod();
     fmLoadDir(fmCurrentPath, false);
   } catch (err) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     btn.disabled = false;
-    errBox.textContent = 'Gagal: ' + err.message;
+    errBox.textContent = (isEn ? 'Failed: ' : 'Gagal: ') + err.message;
     errBox.style.display = 'block';
   }
 }
@@ -1697,9 +1748,42 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+function updateFmTooltips(isEn) {
+  const map = {
+    'fm-btn-back': { id: 'Kembali', en: 'Back' },
+    'fm-btn-forward': { id: 'Maju', en: 'Forward' },
+    'fm-btn-up': { id: 'Ke Folder Induk', en: 'To Parent Folder' },
+    'fm-btn-home': { id: 'Ke Direktori Root (/)', en: 'To Root Directory (/)' },
+    'fm-address-pencil': { id: 'Ketik / Tempel Path Manual', en: 'Type / Paste Path Manually' },
+    'fm-btn-new-folder': { id: !IS_ONLINE ? 'Server offline — aksi dinonaktifkan' : 'Buat Folder Baru', en: !IS_ONLINE ? 'Server offline — actions disabled' : 'Create New Folder' },
+    'fm-btn-new-file': { id: !IS_ONLINE ? 'Server offline — aksi dinonaktifkan' : 'Buat Berkas Baru', en: !IS_ONLINE ? 'Server offline — actions disabled' : 'Create New File' },
+    'fm-btn-upload': { id: !IS_ONLINE ? 'Server offline — aksi dinonaktifkan' : 'Unggah Berkas ke Server', en: !IS_ONLINE ? 'Server offline — actions disabled' : 'Upload File to Server' },
+    'fm-editor-fs-btn': { id: 'Layar Penuh (Toggle Fullscreen)', en: 'Fullscreen (Toggle Fullscreen)' },
+    'fm-filter': { id: !IS_ONLINE ? 'Server offline' : 'Filter berkas di folder ini...', en: !IS_ONLINE ? 'Server offline' : 'Filter files in this folder...' }
+  };
+  for (const [id, t] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (el) el.title = isEn ? t.en : t.id;
+  }
+  const refreshBtn = document.querySelector('.fm-nav-btn[onclick="fmRefresh()"]');
+  if (refreshBtn) refreshBtn.title = isEn ? 'Refresh Directory' : 'Muat Ulang Direktori';
+  const closeInputBtn = document.querySelector('.fm-address-toggle[onclick="fmTogglePathInput(false)"]');
+  if (closeInputBtn) closeInputBtn.title = isEn ? 'Cancel' : 'Batal';
+  const selectAll = document.getElementById('fm-select-all');
+  if (selectAll) selectAll.title = isEn ? 'Select All (Ctrl+A)' : 'Pilih Semua (Ctrl+A)';
+  const copyBtn = document.querySelector('button[onclick="fmCopySelected()"]');
+  if (copyBtn) copyBtn.title = isEn ? 'Copy (Ctrl+C)' : 'Salin (Ctrl+C)';
+  const cutBtn = document.querySelector('button[onclick="fmCutSelected()"]');
+  if (cutBtn) cutBtn.title = isEn ? 'Cut (Ctrl+X)' : 'Potong (Ctrl+X)';
+  const autoBak = document.querySelector('.badge.badge-info[title]');
+  if (autoBak) autoBak.title = isEn ? 'Automatic backup copy created before file overwrite' : 'Salinan cadangan otomatis dibuat sebelum file ditimpa';
+}
+
 // Sinkronisasi alih bahasa seketika
 window.onAppLangChanged = function(lang) {
   try {
+    const isEn = (lang === 'en');
+    updateFmTooltips(isEn);
     if (typeof fmRenderItems === 'function') {
       const filterVal = (document.getElementById('fm-filter') ? document.getElementById('fm-filter').value : '') || '';
       if (filterVal.trim()) {
@@ -1717,7 +1801,6 @@ window.onAppLangChanged = function(lang) {
         else { fileCount++; totalSize += (i.size || 0); }
       });
       const statsInfo = document.getElementById('fm-stats-info');
-      const isEn = (lang === 'en');
       if (statsInfo) {
         const folderWord = isEn ? (dirCount === 1 ? 'folder' : 'folders') : 'folder';
         const fileWord = isEn ? (fileCount === 1 ? 'file' : 'files') : 'berkas';
@@ -1729,6 +1812,8 @@ window.onAppLangChanged = function(lang) {
 
 // Inisialisasi awal saat halaman dibuka
 document.addEventListener('DOMContentLoaded', () => {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  updateFmTooltips(isEn);
   fmLoadDir(fmCurrentPath);
 });
 </script>

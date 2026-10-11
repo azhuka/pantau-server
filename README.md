@@ -9,7 +9,7 @@ dengan **agen Pantau** (Python) ringan yang berjalan di setiap server klien.
 - [1. Install Dashboard](#1-install-dashboard-server-web-app-pantau-server)
 - [2. Install Agen di Server Klien](#2-install-agen-di-server-klien)
 - [Halaman & Fitur](#halaman--fitur)
-- [Peran Pengguna (Admin vs Viewer)](#peran-pengguna-admin-vs-viewer)
+- [Peran Pengguna & Otoritas (Master Admin, Operator, Viewer)](#peran-pengguna--otoritas-master-admin-operator-viewer)
 - [Update Dashboard](#update-dashboard)
 - [Update Agen](#update-agen)
 - [Kompatibilitas Versi Agen](#kompatibilitas-versi-agen)
@@ -96,7 +96,7 @@ journalctl -u agent_pantau -f
 | **Masalah** | Rekapitulasi seluruh peringatan dan insiden aktif lintas server, dilengkapi filter server, filter tingkat keparahan (*Danger*, *Warning*, *Info*, dan *Diabaikan*), tombol pembungkaman masalah (*Mute/Silence*), konfirmasi penanganan (*ack*), durasi aktif kejadian, serta petunjuk mitigasi. |
 | **Log** | Penelusuran log terpusat: log penggunaan sumber daya sistem, riwayat proses, log unit layanan tertentu, dan log aktivitas aplikasi dashboard. |
 | **Audit** | Catatan jejak audit (*audit trail*) atas setiap tindakan administratif: autentikasi masuk/keluar, pembukaan sesi terminal, modifikasi konfigurasi server/layanan/pengguna, eksekusi perintah remote, dan restart agen. |
-| **Users** | *(Khusus Admin)* Pengelolaan pengguna dashboard: penambahan akun, penetapan peran (*Role*), reset kata sandi, dan pencabutan sesi aktif. |
+| **Profil & Keamanan** | Halaman terpadu untuk pengaturan akun personal (ganti kata sandi, aktivasi autentikasi dua faktor/2FA TOTP RFC 6238 & kode cadangan pemulihan) serta manajemen pengguna terpusat (khusus Master Admin & Operator berwenang): pembuatan akun, delegasi hak akses granular (*sudo-like*), penyuntingan kredensial, penguncian akun, audit aktivitas pengguna, dan terminasi sesi aktif. |
 
 Seluruh angka dan metrik status bersumber dari data tunggal yang sinkron, memastikan konsistensi visual di seluruh halaman.
 
@@ -109,20 +109,27 @@ Indikator warna badge status:
 
 ---
 
-## Peran Pengguna (Admin vs Viewer)
+## Peran Pengguna & Otoritas (Master Admin, Operator, Viewer)
 
-| Hak Akses / Tindakan | Admin | Viewer |
-|---|:---:|:---:|
-| Meninjau Dashboard, Servers, Rincian, Masalah, dan Log | Ya | Ya |
-| Menambah, menyunting, dan menghapus server & layanan | Ya | Tidak |
-| Update OS, Upgrade Paket, Reboot OS, dan Power Off | Ya | Tidak |
-| Membuka dan menggunakan Terminal Bawaan | Ya | Tidak |
-| Mengakses File Manager (baca, sunting, unduh, unggah) | Ya | Tidak |
-| Memulai, menghentikan, atau me-restart layanan remote | Ya | Tidak |
-| Memblokir IP penyerang / melakukan mitigasi masalah | Ya | Tidak |
-| Mengakses halaman Audit dan manajemen Users | Ya | Tidak |
+Pantau Server menerapkan arsitektur otorisasi **RBAC 3-Tier** dengan prinsip isolasi hierarki ketat dan sistem wewenang terdelegasi (*sudo-like privilege*):
 
-Pengguna dengan peran **Viewer** yang membuka halaman Rincian Server hanya dapat melihat informasi dan metrik tanpa tombol kendali administratif.
+1. **Master Admin**: Pemegang otoritas tertinggi sistem dengan proteksi akun mutlak. Operator manapun tidak dapat menghapus atau menurunkan hak akses Master Admin. Memiliki hak penuh untuk konfigurasi server, terminal, file manager, dan pendelegasian wewenang operator.
+2. **Operator (Wewenang Terdelegasi)**: Pengguna operasional yang dapat diberikan hak administratif granular oleh Master Admin tanpa harus membagikan akun Master Admin. Mematuhi prinsip isolasi: Operator **tidak dapat melihat atau mengetahui keberadaan akun Master Admin**.
+3. **Viewer**: Akun pemantau baca-saja (*read-only*). Terisolasi sepenuhnya: Viewer **tidak dapat melihat akun Master Admin maupun Operator**, serta **tidak memiliki akses ke menu Profil & Keamanan**. Kredensial akun Viewer dikelola penuh oleh Master Admin atau Operator berwenang.
+
+| Hak Akses / Tindakan | Master Admin | Operator (Terdelegasi) | Viewer |
+|---|:---:|:---:|:---:|
+| Meninjau Dashboard, Servers, Rincian, Masalah, dan Log | Ya | Ya | Ya |
+| Menambah, menyunting, dan menghapus server & layanan | Ya | Sesuai Izin Granular | Tidak |
+| Memulai, menghentikan, atau me-restart layanan | Ya | Sesuai Izin Granular | Tidak |
+| Update OS, Upgrade Paket, Reboot OS, dan Power Off | Ya | Sesuai Izin Granular | Tidak |
+| Membuka dan menggunakan Terminal Bawaan | Ya | Sesuai Izin Granular | Tidak |
+| Mengakses File Manager (baca, sunting, unduh, unggah) | Ya | Sesuai Izin Granular | Tidak |
+| Memblokir IP penyerang / melakukan mitigasi masalah | Ya | Sesuai Izin Granular | Tidak |
+| Mengakses halaman Audit Sistem | Ya | Sesuai Izin Granular | Tidak |
+| Manajemen Pengguna (Tambah, Edit Izin, Kunci Akun) | Ya | Sesuai Izin Granular | Tidak |
+| Menghapus / Mengubah Akun Master Admin | Ya (Personal) | Ditolak Mutlak | Tidak |
+| Akses Menu Profil & Keamanan (2FA & Sandi Mandiri) | Ya | Ya | Tidak |
 
 ---
 
@@ -142,9 +149,17 @@ Skrip pembaruan aman dijalankan ulang: konfigurasi pada berkas `.env` (termasuk 
 
 ## Update Agen
 
-Pusat Dashboard tidak menggunakan koneksi SSH inbound ke server klien. Komunikasi dilakukan melalui agen yang melapor secara periodik ke dashboard. Pembaruan agen dilakukan langsung pada server klien.
+Pusat Dashboard tidak memerlukan koneksi SSH inbound ke server klien. Komunikasi dilakukan melalui agen yang melapor secara periodik ke dashboard. Pembaruan agen dapat dilakukan secara otomatis langsung dari dashboard atau manual pada terminal klien:
 
-### Memperbarui Server Klien
+### 1. Pembaruan Otomatis (OTA - Over-The-Air) melalui Dashboard [Direkomendasikan]
+
+Dashboard menyediakan fitur **Push Update (OTA)** otomatis:
+- Jika versi agen di server klien lebih lama dari dashboard, banner peringatan kuning akan muncul dengan tombol **`⚡ Push Update (OTA)`**.
+- Cukup klik tombol tersebut, dashboard akan mengirimkan URL kode agen terbaru beserta checksum hash **SHA-256** dan versi target ke agen klien.
+- Agen klien memverifikasi integritas hash SHA-256 secara ketat (mencegah berkas rusak atau termanipulasi), memeriksa validasi sintaks Python (`py_compile`), mengganti berkas `/opt/pantau/agent/agent_pantau.py` secara atomik (izin 0755), dan menjadwalkan restart otomatis melalui systemd watchdog.
+- Seluruh riwayat dan status pembaruan tercatat secara transparan pada **Audit Trail** dan tabel **Riwayat Tindakan** server.
+
+### 2. Pembaruan Manual via Terminal Klien (Alternatif / Agen Versi Lama)
 
 Jalankan perintah berikut pada terminal server klien (perintah ini juga dapat disalin langsung dari tombol **📋 Salin Perintah Update** pada banner dasbor jika versi agen usang terdeteksi):
 
@@ -173,7 +188,7 @@ sudo systemctl restart agent_pantau.service
 ### Verifikasi Setelah Pembaruan
 
 Setelah me-restart agen (proses restart tidak menghapus riwayat metrik):
-1. Label versi agen di halaman Rincian Server akan terbarui menjadi `agen v3.23.0`.
+1. Label versi agen di halaman Rincian Server akan terbarui menjadi `agen v4.0.0`.
 2. Server kembali terhubung dalam ±10 detik.
 3. Tab **⚡ Proses Teratas** menampilkan snapshot proses sistem secara aktif.
 
@@ -181,7 +196,7 @@ Setelah me-restart agen (proses restart tidak menghapus riwayat metrik):
 
 ## Kompatibilitas Versi Agen
 
-Sangat dianjurkan untuk selalu menggunakan versi agen yang selaras dengan versi dashboard (**v3.23.0**) agar seluruh kapabilitas dapat beroperasi optimal.
+Sangat dianjurkan untuk selalu menggunakan versi agen yang selaras dengan versi dashboard (**v4.0.0**) agar seluruh kapabilitas dapat beroperasi optimal.
 
 | Kelompok Fitur | Versi Agen Minimum |
 |---|:---:|
@@ -193,6 +208,7 @@ Sangat dianjurkan untuk selalu menggunakan versi agen yang selaras dengan versi 
 | Dukungan Socket Activation (SSH shutdown aman) & Mute Layanan Fleksibel | v3.16.0+ |
 | Throughput Disk I/O, Journal Error Tracking, Cron Jobs, Port Audit & SSL Expiry | v3.17.0+ |
 | Interaktif Manajemen User, Cron, Port (Kill/Block), Custom SSL Path | v3.23.0+ |
+| Arsitektur RBAC 3-Tier, 2FA TOTP & Pemulihan Layanan Realtime (Auto-Unignore) | v4.0.0+ |
 
 Agen dengan versi sebelum persyaratan di atas tetap dapat menjalankan fungsi monitoring dasar, namun fitur baru yang tidak didukung akan menampilkan pemberitahuan yang jelas pada dashboard.
 

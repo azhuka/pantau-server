@@ -21,24 +21,31 @@
   </p>
 
   <form method="get" action="/audit" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
-    <select name="action" id="audit-action-filter" title="Saring berdasarkan jenis aktivitas" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
-      <option value="">Semua aksi</option>
+    <select name="user" id="audit-user-filter" title="Saring berdasarkan nama pengguna" onchange="this.form.submit()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
+      <option value="">Semua pengguna</option>
+      {% for u_name in available_users %}
+      <option value="{{ u_name }}" {% if selected_user == u_name %}selected{% endif %}>👤 {{ u_name }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="action" id="audit-action-filter" title="Saring berdasarkan jenis aktivitas" onchange="this.form.submit()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
+      <option value="" data-label-id="Semua aksi" data-label-en="All actions">Semua aksi</option>
       {% for cat in categories %}
-      <optgroup label="{{ cat.name }}">
-        <option value="{{ cat.id }}" {% if action == cat.id %}selected{% endif %}>★ Semua {{ cat.name }}</option>
+      <optgroup label="{{ cat.name }}" data-label-id="{{ cat.name }}" data-label-en="{{ cat.name_en }}">
+        <option value="{{ cat.id }}" data-label-id="★ Semua {{ cat.name }}" data-label-en="★ All {{ cat.name_en }}" {% if action == cat.id %}selected{% endif %}>★ Semua {{ cat.name }}</option>
         {% for a_key, a_label, a_label_en in cat.actions %}
-        <option value="{{ a_key }}" {% if action == a_key %}selected{% endif %}>{{ a_label }}</option>
+        <option value="{{ a_key }}" data-label-id="{{ a_label }}" data-label-en="{{ a_label_en }}" {% if action == a_key %}selected{% endif %}>{{ a_label }}</option>
         {% endfor %}
       </optgroup>
       {% endfor %}
     </select>
     <div style="position:relative;display:flex;align-items:center;flex:1;min-width:240px">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="search" name="q" value="{{ q }}" placeholder="Cari user / target / hasil…"
+      <input type="search" name="q" value="{{ q }}" placeholder="Cari target / server / hasil…"
              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px 8px 30px;font-size:12px;width:100%;outline:none;transition:border-color .15s">
     </div>
     <button class="btn btn-primary btn-sm" type="submit" title="Terapkan filter pencarian audit">Terapkan</button>
-    <a href="/audit" class="btn btn-ghost btn-sm" title="Hapus filter dan tampilkan semua catatan" style="margin-left:auto{% if not q and not action %};display:none{% endif %}">Reset</a>
+    <a href="/audit" class="btn btn-ghost btn-sm" title="Hapus filter dan tampilkan semua catatan" style="margin-left:auto{% if not q and not action and not selected_user %};display:none{% endif %}">Reset</a>
   </form>
 
   <table>
@@ -46,8 +53,9 @@
       <tr>
         <th style="width:150px" title="Waktu eksekusi atau pencatatan tindakan">Waktu</th>
         <th title="Nama akun administrator yang menjalankan aksi">Pengguna</th>
+        <th title="Server yang dituju">Server</th>
         <th title="Jenis operasi atau perintah yang dijalankan">Tindakan</th>
-        <th title="Entitas sasaran (nama server, host, atau id layanan)">Target</th>
+        <th title="Entitas sasaran spesifik (layanan, IP, akun, file, atau parameter)">Target</th>
         <th style="width:90px" title="Status hasil eksekusi perintah">Status</th>
         <th title="Pesan respons atau keluaran perintah">Hasil / Respons</th>
       </tr>
@@ -56,24 +64,25 @@
       {% for r in rows %}
       <tr>
         <td class="mono" style="white-space:nowrap">{{ r.t.strftime('%d %b %Y %H:%M:%S') }}</td>
-        <td><span class="mono">{{ r.user }}</span></td>
+        <td><a href="/audit?user={{ r.user }}" class="mono" style="color:var(--blue);text-decoration:none;font-weight:600" title="Saring hanya aktivitas pengguna {{ r.user }}">{{ r.user }}</a></td>
+        <td style="font-size:13px;font-weight:600"><span class="audit-srv-cell">{{ r.server or '-' }}</span></td>
         <td>
           {% if r.kind == 'cmd' %}
-            <span class="badge badge-muted">{{ r.label }}</span>
+            <span class="badge badge-muted audit-act-cell" data-label="{{ r.label }}">{{ r.label }}</span>
           {% else %}
-            {{ r.label }}
+            <span class="audit-act-cell" data-label="{{ r.label }}">{{ r.label }}</span>
           {% endif %}
         </td>
-        <td style="font-size:13px">{{ r.target }}</td>
+        <td style="font-size:13px" class="audit-tgt-cell" data-raw="{{ r.target }}">{{ r.target }}</td>
         <td>
           {% if r.status %}
-            <span class="badge badge-{{ st_cls.get(r.status, 'inactive') }}">{{ st_label.get(r.status, r.status) }}</span>
+            <span class="badge badge-{{ st_cls.get(r.status, 'inactive') }} audit-st-cell" data-st="{{ r.status }}">{{ st_label.get(r.status, r.status) }}</span>
           {% else %}<span style="color:var(--dim)">—</span>{% endif %}
         </td>
-        <td style="font-size:12px;color:var(--dim)">{{ r.result }}</td>
+        <td style="font-size:12px;color:var(--dim)" class="audit-res-cell" data-raw="{{ r.result }}">{{ r.result }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="6" class="empty-msg">Belum ada jejak audit.</td></tr>
+      <tr><td colspan="7" class="empty-msg" data-i18n="audit_empty">Belum ada jejak audit.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -86,6 +95,25 @@
 <script>
 let auditPagination = null;
 
+const AUDIT_ST_LABELS = {
+  'PENDING': 'Menunggu',
+  'EXECUTING': 'Dinyalakan',
+  'SUCCESS': 'Berhasil',
+  'FAILED': 'Gagal'
+};
+
+function renderAuditI18n() {
+  document.querySelectorAll('#audit-tbody tr').forEach(tr => {
+    const stCell = tr.querySelector('.audit-st-cell');
+    if (stCell) {
+      const st = (stCell.dataset.st || '').toUpperCase();
+      if (st && AUDIT_ST_LABELS[st]) {
+        stCell.textContent = AUDIT_ST_LABELS[st];
+      }
+    }
+  });
+}
+
 // Perbarui isi tabel tanpa reload penuh supaya filter, posisi scroll,
 // dan fokus input pencarian tidak hilang.
 function auditPatch(html) {
@@ -96,6 +124,7 @@ function auditPatch(html) {
     if (auditPagination) {
       auditPagination.update();
     }
+    renderAuditI18n();
     if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
       applyAppLang();
     }
@@ -127,6 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
     defaultLimit: 25,
     pageSizeOptions: [10, 25, 50, 100, 'all']
   });
+  renderAuditI18n();
 });
 </script>
 {% endblock %}

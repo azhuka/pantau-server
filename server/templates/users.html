@@ -1,82 +1,298 @@
 {% extends "base.html" %}
-{% block title %}Users - Pantau Server{% endblock %}
+{% block title %}Pengguna & Hak Akses - Pantau Server{% endblock %}
+
 {% block content %}
-<div class="topbar">
-  <h2>User Management</h2>
+<div class="content-header">
+  <div class="header-left">
+    <h1 style="display:flex;align-items:center;gap:10px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+      </svg>
+      Manajemen Pengguna &amp; Hak Akses
+    </h1>
+    <p class="subtitle" style="color:var(--dim);font-size:13px;margin-top:4px">
+      {% if user.is_master_admin() %}
+      Kelola akun Master Admin, delegasikan wewenang ke akun Operator, atau daftarkan akun Viewer (hanya pantau).
+      {% else %}
+      Kelola akun Viewer pemantau sistem (hanya-baca).
+      {% endif %}
+    </p>
+  </div>
 </div>
 
-<div class="grid-2">
-  <div class="card">
-    <div class="card-header">
-      <h3 style="margin:0">Daftar Pengguna</h3>
-      <span style="font-size:12px;color:var(--dim)">{{ users|length }} akun terdaftar</span>
+{% if flash_msg %}
+<div class="alert {% if flash_ok %}alert-success{% else %}alert-danger{% endif %}" style="padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:14px;display:flex;align-items:center;gap:10px;{% if flash_ok %}background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:#4ade80{% else %}background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#f87171{% endif %}">
+  <span>{% if flash_ok %}✔{% else %}⚠{% endif %}</span>
+  <span>{{ flash_msg }}</span>
+</div>
+{% endif %}
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(420px, 1fr));gap:24px;align-items:start">
+
+  <!-- Tabel Pengguna -->
+  <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="font-size:16px;font-weight:700;margin:0">Daftar Pengguna Terdaftar</h3>
+      <span style="font-size:12px;color:var(--dim)">{{ users|length }} akun</span>
     </div>
-    <table id="users-table">
-      <thead><tr>
-        <th title="Nama akun untuk masuk ke dashboard">Username</th>
-        <th title="Tingkat izin hak akses: Administrator (penuh) atau Viewer (hanya lihat)">Peran</th>
-        <th title="Tanggal akun pertama kali dibuat">Dibuat Pada</th>
-        <th title="Tindakan penghapusan akun">Aksi</th>
-      </tr></thead>
+
+    <table id="users-table" style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:var(--dim);text-align:left">
+          <th style="padding:10px 8px">Username</th>
+          <th style="padding:10px 8px">Peran</th>
+          <th style="padding:10px 8px">Status / 2FA</th>
+          <th style="padding:10px 8px">Login Terakhir</th>
+          <th style="padding:10px 8px;text-align:right">Tindakan</th>
+        </tr>
+      </thead>
       <tbody>
-      {% for u in users %}
-      <tr>
-        <td><strong>{{ u.username }}</strong></td>
-        <td><span class="badge {% if u.role=='admin' %}badge-up{% else %}badge-muted{% endif %}" title="{{ 'Akses penuh administrasi server' if u.role=='admin' else 'Akses pantau hanya-baca' }}">{{ 'Administrator' if u.role=='admin' else 'Viewer' }}</span></td>
-        <td class="mono">{{ u.created_at.strftime('%d %b %Y') }}</td>
-        <td>
-          {% if u.id != user.id %}
-          <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline" data-confirm data-msg="Hapus akun pengguna {{ u.username }}?">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button class="btn btn-danger btn-sm" title="Hapus pengguna ini">Hapus</button>
-          </form>
-          {% else %}
-          <span class="mono" style="font-size:11px;color:var(--blue)">(Akun Anda)</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
+        {% for u in users %}
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+          <td style="padding:12px 8px">
+            <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace">
+              {{ u.username }}
+              {% if u.id == user.id %}
+              <span style="font-size:10px;color:var(--blue);font-weight:normal">(Anda)</span>
+              {% endif %}
+            </div>
+            {% if u.role == 'operator' %}
+              <div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">
+                {% set uperms = u.get_permissions() %}
+                {% set perm_count = 0 %}
+                {% for pk, pv in uperms.items() %}
+                  {% if pv %}{% set perm_count = perm_count + 1 %}{% endif %}
+                {% endfor %}
+                <span class="badge" style="background:rgba(56,189,248,0.1);color:#38bdf8;font-size:10px;padding:1px 6px;border:1px solid rgba(56,189,248,0.25)">
+                  {{ perm_count }} Izin Aktif
+                </span>
+              </div>
+            {% endif %}
+          </td>
+          <td style="padding:12px 8px">
+            {% if u.is_master_admin() %}
+            <span class="badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:11px;padding:2px 8px;font-weight:700">Master Admin</span>
+            {% elif u.is_operator() %}
+            <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);font-size:11px;padding:2px 8px;font-weight:700">Operator</span>
+            {% else %}
+            <span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3);font-size:11px;padding:2px 8px">Viewer</span>
+            {% endif %}
+          </td>
+          <td style="padding:12px 8px">
+            <div style="display:flex;align-items:center;gap:6px">
+              {% if u.is_active %}
+              <span style="color:#4ade80;font-size:11px;font-weight:600">● Aktif</span>
+              {% else %}
+              <span style="color:#f87171;font-size:11px;font-weight:600">🔒 Terkunci</span>
+              {% endif %}
+              <span style="color:var(--dim);font-size:11px">/</span>
+              {% if u.totp_enabled %}
+              <span style="color:#4ade80;font-size:11px" title="2FA Aktif">2FA ✔</span>
+              {% else %}
+              <span style="color:var(--dim);font-size:11px" title="2FA Nonaktif">2FA -</span>
+              {% endif %}
+            </div>
+          </td>
+          <td style="padding:12px 8px;font-size:11px;color:var(--dim)">
+            {% if u.last_login_at %}
+            {{ u.last_login_at.strftime('%d %b %Y %H:%M') }}
+            {% else %}-{% endif %}
+          </td>
+          <td style="padding:12px 8px;text-align:right">
+            <div style="display:inline-flex;gap:6px;align-items:center">
+              {% if user.is_master_admin() and u.is_operator() %}
+              <button type="button" class="btn btn-secondary btn-sm" onclick="openEditPermsModal({{ u.id }}, '{{ u.username }}', {{ u.permissions or '{}' }})" style="font-size:11px;padding:4px 8px" title="Atur izin operator">
+                ⚙️ Izin
+              </button>
+              {% endif %}
+
+              {% if user.is_master_admin() and u.id != user.id and not u.is_master_admin() %}
+              <form method="POST" action="/users/{{ u.id }}/toggle-active" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                {% if u.is_active %}
+                <button type="submit" class="btn btn-secondary btn-sm" style="font-size:11px;padding:4px 8px;color:#f87171" title="Kunci akun agar tidak bisa login" onclick="return confirm('Kunci akun {{ u.username }}? Pengguna tidak akan bisa login.');">
+                  🔒 Kunci
+                </button>
+                {% else %}
+                <button type="submit" class="btn btn-secondary btn-sm" style="font-size:11px;padding:4px 8px;color:#4ade80" title="Buka kunci akun" onclick="return confirm('Buka kunci akun {{ u.username }}?');">
+                  🔓 Buka
+                </button>
+                {% endif %}
+              </form>
+              {% endif %}
+
+              {% if u.id != user.id and not u.is_master_admin() %}
+              <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun {{ u.username }} secara permanen?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn btn-danger btn-sm" style="font-size:11px;padding:4px 8px" title="Hapus pengguna">
+                  Hapus
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
 
-  <div class="card">
-    <div class="card-header">
-      <h3 style="margin:0">Tambah Pengguna Baru</h3>
-      <span style="font-size:12px;color:var(--dim)">Buat akun user baru</span>
+  <!-- Form Tambah Pengguna Baru -->
+  <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px">
+    <div style="margin-bottom:16px">
+      <h3 style="font-size:16px;font-weight:700;margin:0">Tambah Pengguna Baru</h3>
+      <p style="font-size:12px;color:var(--dim);margin-top:4px">Daftarkan akun operator harian atau akun viewer.</p>
     </div>
+
     <form method="POST" action="/users/add">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div class="form-group">
-        <label for="u-username">Username</label>
-        <input type="text" id="u-username" name="username" required minlength="3" maxlength="100" autocomplete="off" placeholder="Contoh: user1">
+
+      <div class="form-group" style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Username</label>
+        <input type="text" name="username" required minlength="3" maxlength="50" placeholder="Contoh: sysops-andi" autocomplete="off" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
       </div>
-      <div class="form-group">
-        <label for="u-password">Password</label>
-        <input type="password" id="u-password" name="password" required minlength="8" autocomplete="new-password" placeholder="Minimal 8 karakter">
-        <div style="font-size:11px;color:var(--dim);margin-top:4px">Gunakan kombinasi yang kuat dan aman.</div>
+
+      <div class="form-group" style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Kata Sandi Awal</label>
+        <input type="password" name="password" required autocomplete="new-password" placeholder="Minimal 12 karakter kombinasi kuat" oninput="checkAddPwdStrength(this.value)" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <div id="add-pwd-hint" style="font-size:11px;color:var(--dim);margin-top:4px">Wajib minimal 12 karakter, huruf besar, huruf kecil, angka, dan simbol.</div>
       </div>
-      <div class="form-group">
-        <label for="u-role">Peran / Hak Akses</label>
-        <select id="u-role" name="role" title="Pilih tingkat hak akses akun">
-          <option value="viewer">Viewer (Hanya pantau &amp; baca data)</option>
-          <option value="admin">Administrator (Akses penuh &amp; eksekusi remote)</option>
+
+      <div class="form-group" style="margin-bottom:16px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Peran / Hak Akses</label>
+        <select id="select-role" name="role" onchange="togglePermsSection(this.value)" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.9);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+          {% if user.is_master_admin() %}
+          <option value="operator" selected>Operator (Pengguna harian dengan izin terpilih)</option>
+          <option value="viewer">Viewer (Tamu pemantau, hanya-baca tanpa izin kontrol)</option>
+          {% else %}
+          <option value="viewer" selected>Viewer (Tamu pemantau, hanya-baca)</option>
+          {% endif %}
         </select>
       </div>
-      <button type="submit" class="btn btn-primary" title="Simpan dan daftarkan akun baru">Tambah Pengguna</button>
+
+      {% if user.is_master_admin() %}
+      <!-- Checklist Wewenang Operator -->
+      <div id="perms-box" style="margin-bottom:20px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px">Wewenang Khusus Operator:</span>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="setAllPerms(true)" style="font-size:10px;padding:2px 8px">Pilih Semua</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="setAllPerms(false)" style="font-size:10px;padding:2px 8px">Kosongkan</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr;gap:8px;max-height:280px;overflow-y:auto;padding-right:4px">
+          {% for p_key, p_meta in all_perms.items() %}
+          <label style="display:flex;align-items:flex-start;gap:10px;font-size:12px;cursor:pointer;padding:6px;border-radius:4px;background:rgba(255,255,255,0.02)">
+            <input type="checkbox" name="perm_{{ p_key }}" class="perm-cb" style="margin-top:2px">
+            <div>
+              <div style="font-weight:600;color:var(--text)">{{ p_meta.label }}</div>
+              <div style="color:var(--dim);font-size:11px">{{ p_meta.desc }}</div>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <button type="submit" class="btn btn-primary" style="width:100%;padding:10px;font-size:13px;font-weight:700">Daftarkan Pengguna</button>
+    </form>
+  </div>
+
+</div>
+
+<!-- Modal Edit Izin Operator (Khusus Master Admin) -->
+<div id="editPermsModal" class="modal-backdrop" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:520px;width:90%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.6)">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <h3 style="font-size:16px;font-weight:700;margin:0" id="modal-operator-title">Atur Izin Operator</h3>
+      <button type="button" onclick="closeEditPermsModal()" style="background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer">&times;</button>
+    </div>
+
+    <form id="edit-perms-form" method="POST" action="" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      
+      <div style="padding:18px 22px;overflow-y:auto;flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <span style="font-size:12px;color:var(--dim)">Centang hak akses yang diizinkan untuk operator ini:</span>
+          <div style="display:flex;gap:6px">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="setModalAllPerms(true)" style="font-size:10px;padding:2px 8px">Semua</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="setModalAllPerms(false)" style="font-size:10px;padding:2px 8px">Kosong</button>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr;gap:8px">
+          {% for p_key, p_meta in all_perms.items() %}
+          <label style="display:flex;align-items:flex-start;gap:10px;font-size:12px;cursor:pointer;padding:8px;border-radius:6px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)">
+            <input type="checkbox" name="perm_{{ p_key }}" id="m_perm_{{ p_key }}" class="modal-perm-cb" style="margin-top:2px">
+            <div>
+              <div style="font-weight:600;color:var(--text)">{{ p_meta.label }}</div>
+              <div style="color:var(--dim);font-size:11px">{{ p_meta.desc }}</div>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px">
+        <button type="button" class="btn btn-secondary" onclick="closeEditPermsModal()" style="font-size:12px;padding:8px 14px">Batal</button>
+        <button type="submit" class="btn btn-primary" style="font-size:12px;padding:8px 16px;font-weight:700">Simpan Perubahan Izin</button>
+      </div>
     </form>
   </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  attachTablePagination('#users-table', {
-    unitLabel: 'pengguna',
-    defaultLimit: 10,
-    pageSizeOptions: [10, 25, 50, 'all']
+function togglePermsSection(role) {
+  const box = document.getElementById('perms-box');
+  if (box) {
+    box.style.display = (role === 'operator') ? 'block' : 'none';
+  }
+}
+
+function setAllPerms(val) {
+  document.querySelectorAll('.perm-cb').forEach(cb => cb.checked = val);
+}
+
+function setModalAllPerms(val) {
+  document.querySelectorAll('.modal-perm-cb').forEach(cb => cb.checked = val);
+}
+
+function checkAddPwdStrength(pwd) {
+  const hint = document.getElementById('add-pwd-hint');
+  if (!hint) return;
+  if (!pwd) {
+    hint.innerText = 'Wajib minimal 12 karakter, huruf besar, huruf kecil, angka, dan simbol.';
+    hint.style.color = 'var(--dim)';
+    return;
+  }
+  let ok = pwd.length >= 12 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /[0-9]/.test(pwd) && /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?/~`]/.test(pwd);
+  if (ok) {
+    hint.innerText = '✔ Password memenuhi standar keamanan.';
+    hint.style.color = '#4ade80';
+  } else {
+    hint.innerText = '⚠ Password belum memenuhi standar (min. 12 karakter, huruf besar, huruf kecil, angka, simbol).';
+    hint.style.color = '#f87171';
+  }
+}
+
+function openEditPermsModal(uid, username, perms) {
+  document.getElementById('modal-operator-title').innerText = `Atur Izin Operator: ${username}`;
+  document.getElementById('edit-perms-form').action = `/users/${uid}/edit-permissions`;
+  document.querySelectorAll('.modal-perm-cb').forEach(cb => {
+    const key = cb.id.replace('m_perm_', '');
+    cb.checked = !!perms[key];
   });
-});
+  const m = document.getElementById('editPermsModal');
+  m.style.display = 'flex';
+}
+
+function closeEditPermsModal() {
+  const m = document.getElementById('editPermsModal');
+  m.style.display = 'none';
+}
 </script>
 {% endblock %}
