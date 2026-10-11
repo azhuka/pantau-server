@@ -234,7 +234,7 @@ Pembaruan armada agen pada puluhan atau ratusan server tidak boleh bergantung pa
      "action": "update_agent",
      "url": "https://dashboard.domain.com/api/agent/download",
      "sha256": "386f3e7b2354c7d0d0840b3ff646e29783f609b185e493e9bbf04ae78f6920f0",
-     "version": "4.0.0"
+     "version": "4.1.1"
    }
    ```
 
@@ -371,48 +371,97 @@ $$\text{Kinerja Ringkas} \longrightarrow \text{Riwayat \& Masalah} \longrightarr
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
 
-## Versi 4.0.0
+## Versi 4.1.1
 
 - **Label Rilis (Release Label):** None
-- **Tipe Rilis:** Rilis Mayor (*Major Release*)
+- **Tipe Rilis:** Rilis Patch (*Patch Release*) & Konsolidasi Rilis SemVer (Mayor 4, Minor 1, Patch 1)
 
-### Ringkasan Rilis
-Pembaruan versi 4.0.0 menandai transformasi fundamental pada arsitektur keamanan, tata kelola akses pengguna, dan mesin pemantauan Pantau Server:
+### Dekomposisi Riwayat Perubahan Berdasarkan Kaidah SemVer
 
-1. **Arsitektur Keamanan RBAC 3-Tier & Model Otoritas Terdelegasi (*Enterprise Sudo Privilege*)**:
-   - Memperkenalkan pemisahan peran yang tegas antara **Master Admin**, **Operator** (dengan wewenang terdelegasi), dan **Viewer**.
-   - Model wewenang *sudo-like*: Master Admin dapat mendelegasikan wewenang khusus kepada Operator (seperti manajemen server, kontrol layanan, akses terminal interaktif, file manager, dan administrasi pengguna) tanpa harus membagikan kredensial Master Admin.
-   - Proteksi Mutlak Master Admin: Operator dengan izin penuh sekalipun tidak dapat menghapus atau menurunkan hak akses akun Master Admin.
-   - **Prinsip Isolasi Hierarki**:
-     - Pengguna Operator dan Viewer diisolasi total dari informasi akun Master Admin (kartu ringkasan jumlah Master Admin disembunyikan sepenuhnya).
-     - Pengguna Viewer diisolasi total dari keberadaan Operator dan tidak memiliki akses ke menu Profil & Keamanan. Kredensial Viewer dikelola sepenuhnya oleh Master Admin atau Operator berwenang.
-   - Tombol inspeksi wewenang interaktif (**"Lihat"**) untuk meninjau detail izin pengguna, serta formulir penyuntingan (**"Edit"**) untuk mengatur hak akses, nama pengguna, dan kata sandi.
+Rilis ini mengonsolidasikan evolusi arsitektur sistem dari perubahan tingkat mayor, minor, hingga patch:
 
-2. **Autentikasi Dua Faktor (2FA) TOTP RFC 6238 & Pemulihan Darurat**:
-   - Dukungan autentikasi berbasis waktu (*Time-based One-Time Password*) yang kompatibel dengan aplikasi authenticator standar (Google Authenticator, Microsoft Authenticator, Aegis, 1Password, Bitwarden).
-   - Alur Login Dua Tahap Terisolasi (*Two-Stage Pre-Auth Flow*) menggunakan token HMAC sementara (`preauth_session`) dengan masa berlaku 5 menit sebelum penerbitan sesi penuh.
-   - Penyediaan 10 kode cadangan pemulihan sekali pakai (*one-time recovery codes*) yang di-hash dengan SHA-256.
-   - Fitur pembuatan ulang kode cadangan pemulihan (*Regenerate Backup Codes*) interaktif dengan modal konfirmasi kata sandi, tombol salin instan, dan opsi unduh berkas teks yang selaras dengan tema sistem.
-   - Utilitas administrasi CLI darurat (`seed_admin.py --reset-2fa`) untuk memulihkan akses administrator jika perangkat authenticator hilang.
+```
+v4.1.1
+ │
+ ├── 4 (Mayor) : Restrukturisasi Fundamental Keamanan & RBAC 3-Tier
+ ├── 1 (Minor) : Penambahan Fitur Otoritas Granular, Audit Pengguna & Fast Polling
+ └── 1 (Patch) : Perbaikan Bug Siklus Layanan, Auto-Unignore SSH & Standardisasi Status
+```
 
-3. **Penyatuan Menu Pengguna ke "Profil & Keamanan"**:
-   - Eliminasi menu terpisah "Users" pada navigasi utama dan konsolidasi penuh seluruh manajemen pengguna ke dalam halaman **Profil & Keamanan** (`/profile`).
-   - Tampilan dinamis berbasis hak akses: Master Admin dan Operator berwenang dapat mengelola akun pengguna langsung dari halaman profil.
-   - Penambahan halaman **Audit Aktivitas Pengguna** (`/users/{id}/activity`) untuk melacak rekam jejak setiap tindakan administratif pengguna secara terperinci.
+---
 
-4. **Manajemen Sistem Interaktif Klien (Host Management)**:
-   - **Manajemen Akun Pengguna Sistem (System Users)**: Pembuatan akun Linux baru, penguncian akun (*lock*), pembukaan kunci (*unlock*), penghapusan akun, dan proteksi akun sistem/root.
-   - **Manajemen Tugas Terjadwal (Cron Jobs)**: Penambahan tugas cron baru, aktivasi/deaktivasi (*toggle*), penghapusan, dan eksekusi instan (*Run Now*).
-   - **Manajemen Port Terbuka (Listening Ports)**: Terminasi proses pendudukan port (*Kill Process*) dan pemblokiran port instan via UFW (*Block Port*).
-   - **Manajemen Sertifikat SSL**: Penambahan dan penghapusan jalur pantauan sertifikat SSL kustom.
-   - Peningkatan wrapper sudo agen (`pantau-user`, `pantau-cron`, `pantau-ssl`, `pantau-firewall`) untuk eksekusi perintah aman berprinsip *least privilege*.
+### I. Perubahan Mayor — Versi 4.0.0 (Major Release)
+Fokus pada transformasi fondasi keamanan, arsitektur hak akses (RBAC), serta privasi akun:
 
-5. **Responsivitas Antarmuka Layanan & Perbaikan Siklus Hidup (Minor & Patch)**:
-   - **Optimistic UI Service Control**: Tombol tindakan layanan (Start, Stop, Restart) pada tab Layanan memberikan umpan balik visual instan tanpa menunggu siklus polling.
-   - **Fast Polling Cascade**: Percepatan polling status ke interval 1 detik secara berjenjang setelah tindakan pengguna, memastikan status visual di dasbor segera mencerminkan status riil unit systemd.
-   - **Auto-Unignore Service Recovery**: Pendeteksian cerdas saat layanan yang sebelumnya diabaikan (*ignored*) pulih menjadi aktif (misalnya dijalankan manual via SSH di terminal), otomatis mencabut status pengabaian dan mencatat riwayat tindakan keberhasilan pemulihan.
-   - **Standardisasi Status Riwayat Tindakan**: Penyeragaman status riwayat tindakan menjadi nilai biner tegas (**Berhasil** / **Gagal**) dengan rincian kolom hasil/keterangan yang jelas dan deskriptif.
-   - Penyelarasan tema visual tombol aksi, modal konfirmasi, dan tombol unduh/salin kode cadangan.
+1. **Arsitektur Keamanan RBAC 3-Tier (Enterprise Sudo Model):**
+   - **Tiga Tingkatan Peran Hierarkis**: Pengenalan peran baku **Master Admin**, **Operator** (dengan wewenang terdelegasi), dan **Viewer**.
+   - **Prinsip Isolasi Hierarkis Mutlak (*Zero-Knowledge Account Isolation*)**:
+     - Pengguna Operator dan Viewer sama sekali tidak mengetahui keberadaan pengguna Master Admin. Kartu jumlah Master Admin, data akun, serta jejak Master Admin disembunyikan sepenuhnya dari antarmuka mereka.
+     - Pengguna Viewer diisolasi total dari keberadaan Operator dan tidak memiliki akses ke menu Profil & Keamanan. Kredensial akun Viewer dikelola 100% secara terpusat oleh Master Admin atau Operator berwenang.
+   - **Proteksi Akun Master Admin Mutlak**: Operator dengan hak akses tertinggi sekalipun dilarang keras mengubah username, mengubah peran, atau menghapus akun Master Admin (analog dengan proteksi akun root/sudo di lingkungan Linux).
+
+2. **Autentikasi Dua Faktor (2FA) TOTP RFC 6238:**
+   - Standar keamanan waktu (*Time-based One-Time Password*) yang kompatibel dengan seluruh aplikasi authenticator (Google Authenticator, Microsoft Authenticator, Aegis, Bitwarden, 1Password).
+   - **Alur Pra-Autentikasi Terisolasi (*Two-Stage Pre-Auth Flow*)**: Kredensial dasar yang lolos tidak langsung menerima sesi aplikasi, melainkan token HMAC sementara (`preauth_session`) berdurasi 5 menit hingga kode TOTP terverifikasi.
+   - **10 Kode Cadangan Pemulihan (*Backup Recovery Codes*)**: Dihasilkan secara acak kriptografis dan disimpan dalam format hash SHA-256 untuk pemulihan darurat jika perangkat hilang.
+   - **Utilitas Darurat Baris Perintah (Emergency CLI Seed)**: Perintah `python3 seed_admin.py --reset-2fa` pada server untuk membuka blokir darurat administrator.
+
+3. **Penyatuan Menu Pengguna ke dalam "Profil & Keamanan":**
+   - Menghapus menu terpisah "Users" dari bilah navigasi utama dan mengintegrasikan manajemen pengguna ke dalam halaman **Profil & Keamanan** (`/profile`).
+   - Memberikan pengalaman satu pintu untuk pengelolaan kata sandi pribadi, aktivasi 2FA, serta administrasi akun bagi pengguna yang memiliki wewenang.
+
+4. **Manajemen Sistem Interaktif Klien (Host Management Suite):**
+   - Manajemen akun pengguna sistem Linux (tambah user, kunci/buka kunci akun, proteksi root).
+   - Manajemen tugas terjadwal cron (tambah, aktifkan/nonaktifkan, eksekusi instan *Run Now*).
+   - Manajemen port terbuka (terminasi proses *Kill Process*, blokir firewall UFW instan).
+   - Manajemen inspeksi sertifikat SSL kustom dan wrapper sudo berprinsip *least privilege*.
+
+---
+
+### II. Perubahan Minor — Versi 4.1.0 (Minor Release)
+Fokus pada penambahan kapabilitas pendelegasian wewenang operator, audit jejak tindakan, dan akselerasi interaktivitas antarmuka:
+
+1. **Delegasi Hak Akses Granular Operator (*Sudo-like Privileges*):**
+   - Master Admin dapat memberikan hak akses terperinci kepada akun Operator: pengelolaan server, tindakan layanan (Start/Stop/Restart), akses shell Terminal, File Manager, hingga izin pengelolaan pengguna lainnya.
+   - **Modal Inspeksi Wewenang ("Lihat")**: Tombol untuk memeriksa matriks izin yang sedang aktif pada suatu pengguna secara transparan.
+   - **Formulir Manajemen Granular ("Edit")**: Antarmuka terpadu untuk menyunting kredensial, peran, serta kombinasi izin akses pengguna.
+
+2. **Jejak Audit Aktivitas Pengguna Spesifik (*User Activity Audit Trail*):**
+   - Halaman pelacakan terdedikasi (`/users/{id}/activity`) untuk menginspeksi secara terperinci seluruh tindakan operasional yang dilakukan oleh masing-masing operator atau pengguna.
+   - Memberikan akuntabilitas penuh terhadap aksi penghentian layanan, perubahan konfigurasi, eksekusi perintah terminal, dan mitigasi insiden.
+
+3. **Pembuatan Ulang Kode Cadangan Mandiri (*Regenerate Backup Codes*):**
+   - Fasilitas regenerasi 10 kode cadangan pemulihan baru langsung dari antarmuka web tanpa harus mematikan dan mengulang konfigurasi 2FA.
+   - Dilengkapi proteksi verifikasi ulang kata sandi sebelum kode cadangan baru diterbitkan.
+
+4. **Akselerasi Responsivitas Tab Layanan (*Optimistic UI & Fast Polling Cascade*):**
+   - **Optimistic UI Service Control**: Tombol Start, Stop, dan Restart merespons klik pengguna secara seketika dengan status pemuatan (*loading spinner*) dan perubahan status visual sementara tanpa menunggu round-trip jaringan.
+   - **Mekanisme Fast Polling Cascade**: Dasbor memicu percepatan polling berjenjang setiap 1 detik selama beberapa siklus setelah tindakan pengguna, memastikan status visual segera sinkron dengan status riil unit systemd di server klien.
+
+---
+
+### III. Perbaikan Masalah & Patch — Versi 4.1.1 (Patch Release)
+Fokus pada eliminasi anomali siklus hidup pemantauan, auto-unignore pemulihan SSH, dan perbaikan antarmuka keamanan:
+
+1. **Penyelesaian Masalah Delay Visual & Pencegahan Klik Ganda Layanan:**
+   - Mengatasi desinkronisasi visual antara tab Layanan dan tab Riwayat & Masalah ketika layanan dihentikan/dimulai.
+   - Mencegah klik ganda beruntun oleh operator yang sebelumnya dapat memicu galat `Unit service not loaded. systemctl stop gagal`.
+
+2. **Otomatisasi Pembatalan Pengabaian Layanan (*Auto-Unignore on Service Recovery*):**
+   - Mengatasi anomali di mana layanan yang sebelumnya dihentikan dan diabaikan (*ignored*) dinyalakan kembali secara manual via SSH terminal oleh sysadmin, namun tombol "abaikan" masih melekat di antarmuka.
+   - Mesin pemantau kini otomatis mendeteksi saat layanan pulih menjadi aktif (*active/running*), mencabut status pengabaian (*auto-unignore*) secara instan, dan mencatat riwayat pemulihan layanan ke riwayat tindakan.
+
+3. **Standardisasi Status Riwayat Tindakan Menjadi Nilai Biner:**
+   - Menghilangkan anomali pencatatan status non-standar (seperti status bertuliskan "diabaikan" pada kolom status riwayat tindakan).
+   - Kolom status dibakukan secara tegas hanya memiliki 2 nilai biner: **Berhasil** (*success*) atau **Gagal** (*failed*), dengan rincian tindakan dicatat pada kolom keterangan/hasil (misalnya: `"diabaikan (permanen)"`).
+
+4. **Perbaikan Penanganan Rute & Payload Regenerasi Kode Cadangan 2FA:**
+   - Memperbaiki galat `422 Unprocessable Entity` (`missing body password`) saat mengklik dialog pembuatan ulang kode cadangan 2FA.
+   - Mengganti navigasi langsung peramban dengan alur modal dialog sandi interaktif dan permintaan AJAX POST terproteksi.
+
+5. **Penyelarasan UX & Fungsi Tombol Salin/Unduh Kode Cadangan:**
+   - Memperbaiki kegagalan fungsi tombol "Salin Semua Kode" dan "Unduh File Teks" agar berfungsi andal di seluruh lingkungan peramban.
+   - Menyeragamkan seluruh gaya visual tombol aksi di menu Profil & Keamanan dengan palet tema sistem.
 
 ---
 

@@ -188,7 +188,7 @@ sudo systemctl restart agent_pantau.service
 ### Verifikasi Setelah Pembaruan
 
 Setelah me-restart agen (proses restart tidak menghapus riwayat metrik):
-1. Label versi agen di halaman Rincian Server akan terbarui menjadi `agen v4.0.0`.
+1. Label versi agen di halaman Rincian Server akan terbarui menjadi `agen v4.1.1`.
 2. Server kembali terhubung dalam ±10 detik.
 3. Tab **⚡ Proses Teratas** menampilkan snapshot proses sistem secara aktif.
 
@@ -196,7 +196,7 @@ Setelah me-restart agen (proses restart tidak menghapus riwayat metrik):
 
 ## Kompatibilitas Versi Agen
 
-Sangat dianjurkan untuk selalu menggunakan versi agen yang selaras dengan versi dashboard (**v4.0.0**) agar seluruh kapabilitas dapat beroperasi optimal.
+Sangat dianjurkan untuk selalu menggunakan versi agen yang selaras dengan versi dashboard (**v4.1.1**) agar seluruh kapabilitas dapat beroperasi optimal.
 
 | Kelompok Fitur | Versi Agen Minimum |
 |---|:---:|
@@ -208,7 +208,7 @@ Sangat dianjurkan untuk selalu menggunakan versi agen yang selaras dengan versi 
 | Dukungan Socket Activation (SSH shutdown aman) & Mute Layanan Fleksibel | v3.16.0+ |
 | Throughput Disk I/O, Journal Error Tracking, Cron Jobs, Port Audit & SSL Expiry | v3.17.0+ |
 | Interaktif Manajemen User, Cron, Port (Kill/Block), Custom SSL Path | v3.23.0+ |
-| Arsitektur RBAC 3-Tier, 2FA TOTP & Pemulihan Layanan Realtime (Auto-Unignore) | v4.0.0+ |
+| Arsitektur RBAC 3-Tier, 2FA TOTP & Pemulihan Layanan Realtime (Auto-Unignore) | v4.1.1+ |
 
 Agen dengan versi sebelum persyaratan di atas tetap dapat menjalankan fungsi monitoring dasar, namun fitur baru yang tidak didukung akan menampilkan pemberitahuan yang jelas pada dashboard.
 
