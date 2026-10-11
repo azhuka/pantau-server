@@ -7,7 +7,7 @@ Dashboard monitoring & management multi-server berbasis web (FastAPI + MariaDB) 
 ## Fitur Utama
 
 - **Live Resource Monitoring:** CPU, RAM, Swap, Disk per mount point, Load Average, dan bandwidth network realtime (auto-polling tanpa refresh browser).
-- **Service & Process Control:** Start, Stop, Restart service systemd, kill process pemakan resource, dan auto-unignore status saat service dinyalakan manual via SSH.
+- **Service & Process Control:** Start, Stop, Restart service systemd, dan kill process pemakan resource langsung dari web.
 - **Web Terminal (xterm.js):** Akses shell root interaktif langsung di browser. Mendukung ANSI color, shortcut bash, nano, htop, dan full screen.
 - **Web File Manager:** Browse folder, edit config (auto-backup `.bak`), upload/download file, serta chmod/chown dengan proteksi path sistem kritis.
 - **Alert & Incident Tracking:** Peringatan otomatis untuk CPU/RAM tinggi, disk penuh, atau service down, lengkap dengan opsi Mute/Silence dan ack.
@@ -90,7 +90,7 @@ sudo journalctl -u agent_pantau -f
 ### Detail Server
 - **Tab Riwayat:** Grafik utilisasi CPU, RAM, Swap, Disk I/O, Load Average, dan Disk per mount point (1 jam s/d 30 hari).
 - **Tab Service:** Kontrol service systemd (Start, Stop, Restart, Add Service). Status tombol responsif instan (*Optimistic UI*) dan sinkron cepat via *fast-polling*.
-- **Tab Masalah:** Daftar alert & insiden realtime. Tombol mitigasi cepat, Mute/Silence (2 jam, 24 jam, permanen), ack status, dan *auto-unignore* saat service pulih via SSH.
+- **Tab Masalah:** Daftar alert & insiden realtime, tombol mitigasi cepat, opsi Mute/Silence (2 jam, 24 jam, permanen), dan konfirmasi penanganan (ack/resolve).
 - **Tab ⚡ Top Process:** Snapshot 20 proses pemakan CPU & RAM tertinggi, lengkap dengan opsi kill process (*SIGTERM* / *SIGKILL*).
 - **Tab Jaringan:** Interface network, IP address (IPv4/IPv6), link status, dan data throughput (KB/s / MB/s).
 - **Tab User Host:** Daftar user lokal Linux, status lock/unlock, riwayat login SSH, dan log aktivitas sudo.
