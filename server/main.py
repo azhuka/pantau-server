@@ -1818,6 +1818,14 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         .order_by(LogRequest.created_at)
         .first()
     )
+    if apt_run:
+        apt_limit = timedelta(minutes=15) if "UPGRADE" in (apt_run.unit or "") else timedelta(minutes=4)
+        ref_time = apt_run.updated_at or apt_run.created_at
+        if ref_time and ref_time < (datetime.utcnow() - apt_limit):
+            apt_run.status = "failed"
+            apt_run.result = (apt_run.result or "").strip() + "\n[proses apt kedaluwarsa]"
+            db.commit()
+            apt_run = None
     # Sesi Terminal Bawaan yang masih hidup, supaya halaman yang di-reload
     # menyambung lagi ke shell yang sama (tidak membuka shell kedua).
     shell_run = (

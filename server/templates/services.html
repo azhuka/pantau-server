@@ -3982,6 +3982,7 @@ class WebTerminal {
   }
 
   suspendForApt() {
+    this.wasLiveBeforeApt = (this.state === 'live');
     this.aptActive = true;
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
     if (this.titleEl) this.titleEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg><span>' + (isEn ? 'Terminal &middot; package updates' : 'Terminal &middot; pembaruan paket') + '</span>';
@@ -3992,11 +3993,12 @@ class WebTerminal {
     this.aptActive = false;
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
     if (this.titleEl) this.titleEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg><span>' + (isEn ? 'Embedded Terminal &middot; root shell' : 'Terminal Bawaan &middot; shell root') + '</span>';
-    if (this.state === 'live') {
+    if (this.wasLiveBeforeApt && this.state === 'live') {
       this.status(isEn ? 'connected &middot; shell ready' : 'terhubung &middot; shell siap', 'var(--green)', 'active');
       this.focus();
     } else {
-      this.connect();
+      this.state = 'closed';
+      this.status(isEn ? 'process completed' : 'proses selesai', 'var(--dim)', 'closed');
     }
   }
 
@@ -5013,7 +5015,7 @@ function patch(data) {
   }
   // Terminal Bawaan: kalau shell masih hidup di server ini, sambungkan ke
   // sesi yang sama (bukan membuka shell baru).
-  if (data.shell_exec) getTerm().attach(data.shell_exec.id);
+  if (data.shell_exec && typeof getTerm().attach === 'function') getTerm().attach(data.shell_exec.id);
   const aver = document.getElementById('agent-ver');
   if (aver) {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');

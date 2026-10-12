@@ -47,13 +47,9 @@ mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
 if [ -z "$CMD" ]; then
     # --- check ---
     echo "INFO $(date -Is) [check] dipanggil oleh: ${SUDO_USER:-<langsung>}" >> "$LOG" 2>/dev/null
-    if /usr/bin/systemctl is-system-running >/dev/null 2>&1; then
-        state="$(/usr/bin/systemctl is-system-running 2>/dev/null || true)"
-        if [ "$state" = "running" ]; then
-            echo "systemd OK ($state) — siap terima reboot|poweroff."
-            exit 0
-        fi
-        echo "systemd aktif namun state='$state' — reboot/poweroff mungkin terhalang. Periksa: systemctl --failed"
+    if [ -d /run/systemd/system ]; then
+        state="$(/usr/bin/systemctl is-system-running 2>/dev/null || echo 'active')"
+        echo "systemd OK ($state) — siap terima reboot|poweroff."
         exit 0
     fi
     echo "systemd TIDAK berjalan sebagai host (mis. container/WSL) — reboot/poweroff TIDAK akan mematikan mesin ini."
