@@ -1,6 +1,6 @@
-# Pantau Server (v4.1.1)
+# Pantau Server
 
-Dashboard monitoring & management multi-server berbasis web (FastAPI + MariaDB) dengan agent daemon Python ringan untuk mengelola armada server Linux dari satu layar.
+Dashboard monitoring & management multi-server berbasis web (FastAPI + MariaDB) dengan agent daemon Python ringan untuk mengelola multi server Linux dari satu layar.
 
 ---
 
