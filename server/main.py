@@ -1985,6 +1985,7 @@ def _normalize_unit_for_systemctl(name: str | None) -> str | None:
 
 @app.get("/api/commands")
 def api_commands_pending(
+    request: Request,
     x_api_key: str = Header(alias="X-Api-Key"),
     db: Session = Depends(get_db),
 ):
@@ -1999,6 +2000,48 @@ def api_commands_pending(
         .order_by(Command.created_at)
         .all()
     )
+
+    # Self-update OTA otomatis armada agen jika versi agen lebih lama dari dashboard
+    extras = db.query(ServerExtras).filter(ServerExtras.server_id == server.id).first()
+    if extras and extras.agent_version and _is_agent_outdated(extras.agent_version, settings.APP_VERSION):
+        has_ota = any(c.action == "update_agent" for c in pending)
+        if not has_ota:
+            in_flight = (
+                db.query(Command)
+                .filter(Command.server_id == server.id, Command.action == "update_agent", Command.status == "executing")
+                .first()
+            )
+            if not in_flight:
+                recent_failed = (
+                    db.query(Command)
+                    .filter(
+                        Command.server_id == server.id,
+                        Command.action == "update_agent",
+                        Command.status == "failed",
+                        Command.created_at > datetime.utcnow() - timedelta(minutes=15)
+                    )
+                    .first()
+                )
+                if not recent_failed:
+                    _, sha256_hash, version = _get_agent_code_and_sha256()
+                    base_url = str(request.base_url).rstrip("/")
+                    ota_params = {
+                        "url": f"{base_url}/api/agent/latest-code",
+                        "sha256": sha256_hash,
+                        "version": version,
+                    }
+                    auto_cmd = Command(
+                        server_id=server.id,
+                        action="update_agent",
+                        params=json.dumps(ota_params),
+                        issued_by="system (auto-update)",
+                        status="pending",
+                    )
+                    db.add(auto_cmd)
+                    db.commit()
+                    pending.append(auto_cmd)
+                    logger.info("[AUTO-OTA] Otomatis mendispatch self-update agen v%s ke %s (ID %s)", version, server.hostname, server.id)
+
     return {
         "commands": [
             {

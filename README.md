@@ -1,4 +1,4 @@
-# Pantau Server (v4.2.0)
+# Pantau Server (v4.2.1)
 
 Dashboard monitoring & management multi-server berbasis web (FastAPI + MariaDB) dengan agent daemon Python ringan untuk mengelola multi server Linux dari satu layar.
 
@@ -8,13 +8,14 @@ Dashboard monitoring & management multi-server berbasis web (FastAPI + MariaDB) 
 
 - **Live Resource Monitoring:** CPU, RAM, Swap, Disk per mount point, Load Average, dan bandwidth network realtime (auto-polling tanpa refresh browser).
 - **Deep Hardware & Platform Telemetry:** Deteksi model prosesor & clock speed, hypervisor/virtualisasi platform (DMI & systemd-detect-virt), jenis block storage (SSD/HDD), default gateway, DNS, interface network MAC & link speed, serta waktu boot sistem.
+- **Fleet-Wide OTA Agent Self-Update:** Pembaruan versi armada agen otomatis (*self-update*) secara mandiri via polling heartbeat berkala tanpa perlu menekan tombol satu per satu, dengan verifikasi kriptografis SHA-256 dan auto-restart systemd.
 - **Service & Process Control:** Start, Stop, Restart service systemd, dan kill process pemakan resource langsung dari web dengan guardrail proteksi sistem kritis.
 - **Web Terminal (xterm.js):** Akses shell root interaktif langsung di browser. Mendukung ANSI color, shortcut bash, nano, htop, dan full screen.
 - **Web File Manager:** Browse folder, edit config (auto-backup `.bak`), upload/download file, serta chmod/chown dengan proteksi path sistem kritis.
 - **Emergency Critical Incident & Alert Tracking:** Sistem banner peringatan darurat global untuk insiden kritis (server tidak melapor / offline), eskalasi severity bertahap (Warning → Average → Critical), panduan mitigasi fisik/VM, serta alur penanganan (*acknowledge/resolve*).
 - **Security & RBAC 3-Tier:** Pembagian role (Master Admin, Operator dengan wewenang sudo terdelegasi, Viewer), 2FA TOTP (Google/Microsoft Authenticator), recovery backup code, dan user activity audit trail.
 - **Host Management Suite:** Kelola user Linux host (add, lock, unlock), cron job, port listening (kill/block via UFW), dan inspeksi masa aktif SSL.
-- **One-Click OTA Agent Update:** Push update agent ke seluruh client langsung dari dashboard dengan verifikasi hash SHA-256 dan auto-restart systemd.
+- **One-Click & Automatic OTA Agent Update:** Push update agent manual per-server atau otomatis menyeluruh ke seluruh client langsung dari dashboard.
 
 ---
 
@@ -151,20 +152,19 @@ sudo bash install-server.sh
 ```
 *Script aman dijalankan ulang: file `.env` dan database tidak akan tertimpa.*
 
-### 2. Update Agent via Dashboard (Push OTA) [Direkomendasikan]
-Jika versi agent di server client lebih lama dari dashboard, banner kuning otomatis muncul di halaman detail server:
-1. Klik tombol **`⚡ Push Update (OTA)`**.
-2. Dashboard mengirim perintah update beserta URL file dan hash SHA-256 resmi.
-3. Agent memverifikasi hash SHA-256, menguji sintaks script (`py_compile`), menimpa file `/opt/pantau/agent/agent_pantau.py` secara aman (`chmod 0755`), dan auto-restart via systemd watchdog.
-4. Status update langsung tercatat di Audit Trail.
+### 2. Update Agent Otomatis (Fleet-Wide Self-Update OTA) [Bawaan & Otomatis ⭐]
+Saat Dashboard diperbarui, seluruh armada agen di server client yang masih menjalankan versi lebih lama akan **otomatis melakukan self-update mandiri** pada siklus polling berikutnya (dalam ~10 detik) tanpa perlu campur tangan manual:
+1. Server mendeteksi versi agen client lebih lama dari versi dashboard saat polling `/api/commands`.
+2. Server secara otomatis mengantrekan instruksi pembaruan dengan URL binary dan hash SHA-256 resmi.
+3. Agen client mengunduh pembaruan, memverifikasi integritas SHA-256, menguji sintaks via `py_compile`, memperbarui berkas `/opt/pantau/agent/agent_pantau.py` secara atomik (`chmod 0755`), dan me-restart dirinya sendiri via systemd watchdog.
+4. Versi agen langsung sinkron ke versi dashboard terbaru.
 
-### 3. Update Agent Manual di Client (One-Liner)
-Jalankan di server client via terminal/SSH:
-```bash
-sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py \
-  https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py && \
-sudo systemctl restart agent_pantau.service
-```
+### 3. Update Agent Manual (Opsional)
+- **Via Dashboard**: Klik tombol **`⚡ Push Update (OTA)`** pada halaman detail server jika ingin memicu update manual seketika.
+- **Via Terminal Client (One-Liner)**:
+  ```bash
+  sudo curl -fsSL -o /opt/pantau-update.sh https://raw.githubusercontent.com/azhuka/pantau-server/master/package/install.sh && sudo bash /opt/pantau-update.sh
+  ```
 
 ---
 
