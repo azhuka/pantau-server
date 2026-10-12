@@ -33,7 +33,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
-from sqlalchemy import create_engine, desc, func, text
+from sqlalchemy import create_engine, desc, func, text, or_
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -42,7 +42,7 @@ import security_auth
 from models import (
     AppSession, AuditLog, Base, Command, LogRequest, LoginAttempt, Metric,
     Server, ServerExtras, ServerProblem, Service, SysSnapshotHour,
-    SystemSnapshot, User,
+    SystemSetting, SystemSnapshot, User,
 )
 
 # ---------------------------------------------------------------------------
@@ -482,15 +482,90 @@ def migrate_service_ignored():
         db.close()
 
 
+def migrate_server_extras_specs():
+    """Migrasi penambahan kolom spesifikasi perangkat keras pada tabel server_extras."""
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    if "server_extras" not in inspector.get_table_names():
+        return
+    existing = {c["name"] for c in inspector.get_columns("server_extras")}
+    wanted = {
+        "hardware_specs": "TEXT NULL",
+    }
+    missing = {k: v for k, v in wanted.items() if k not in existing}
+    if not missing:
+        return
+    db = SessionLocal()
+    try:
+        for col, ddl in missing.items():
+            db.execute(text(f"ALTER TABLE server_extras ADD COLUMN {col} {ddl}"))
+        db.commit()
+        logger.info("[startup] Kolom baru server_extras (hardware_specs): %s", ", ".join(missing))
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        logger.warning("[startup] Migrasi kolom hardware_specs gagal: %s", exc)
+    finally:
+        db.close()
+
+
+def migrate_server_groups_and_thresholds():
+    """Migrasi penambahan kolom group_name, tags, dan custom_thresholds pada tabel servers."""
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    if "servers" not in inspector.get_table_names():
+        return
+    existing = {c["name"] for c in inspector.get_columns("servers")}
+    wanted = {
+        "group_name": "VARCHAR(64) NULL DEFAULT NULL",
+        "tags": "VARCHAR(255) NULL",
+        "custom_thresholds": "TEXT NULL",
+    }
+    missing = {k: v for k, v in wanted.items() if k not in existing}
+    db = SessionLocal()
+    try:
+        if missing:
+            for col, ddl in missing.items():
+                db.execute(text(f"ALTER TABLE servers ADD COLUMN {col} {ddl}"))
+            logger.info("[startup] Kolom baru servers (group_name, tags, custom_thresholds): %s", ", ".join(missing))
+        # Bersihkan sisa grup 'Default' jika ada
+        db.execute(text("UPDATE servers SET group_name = NULL WHERE group_name = 'Default' OR group_name = ''"))
+        db.commit()
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        logger.warning("[startup] Migrasi kolom servers gagal: %s", exc)
+    finally:
+        db.close()
+
+
+def get_existing_groups_and_tags(db: Session) -> tuple[list[str], list[str]]:
+    """Ambil daftar grup dan tag unik dari semua server untuk auto-complete / chips."""
+    servers = db.query(Server).all()
+    groups = set()
+    tags = set()
+    for s in servers:
+        if s.group_name and s.group_name.strip() and s.group_name.strip().lower() != "default":
+            groups.add(s.group_name.strip())
+        if s.tags:
+            for t in s.tags.split(","):
+                t_clean = t.strip()
+                if t_clean:
+                    tags.add(t_clean)
+    return sorted(list(groups)), sorted(list(tags))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _SECRET_KEY
     _SECRET_KEY = settings.resolve_secret_key()
     Base.metadata.create_all(bind=engine)
-    migrate_api_keys()
-    migrate_log_request_input()
+    migrate_server_groups_and_thresholds()
+    migrate_server_extras_specs()
     migrate_server_problem_ignored()
     migrate_service_ignored()
+    migrate_log_request_input()
+    migrate_api_keys()
     try:
         with SessionLocal() as sess:
             _prune_expired_sessions(sess)
@@ -733,7 +808,7 @@ def _sanitize_net_list(raw) -> str | None:
     return json.dumps(cleaned) if cleaned else None
 
 
-OFFLINE_AFTER_SECONDS = 60
+OFFLINE_AFTER_SECONDS = 15
 
 
 def _server_stale(srv) -> bool:
@@ -865,17 +940,9 @@ def agent_report(
             health_message=health_message or None,
         ))
 
-        # Deteksi pemulihan layanan (down -> up)
-        if status == "up" and prev_status == "down":
-            # 1. Bersihkan pengabaian mode insiden seketika
-            has_future_timer = service.ignored_until and service.ignored_until > datetime.utcnow()
-            if not has_future_timer or getattr(service, "ignore_mode", None) == "incident":
-                service.is_ignored = 0
-                service.ignored_until = None
-                service.ignored_reason = None
-                service.ignore_mode = None
-
-            # 2. Tutup masalah service_down seketika agar tidak tertahan jeda waktu
+        # Deteksi pemulihan / status aktif layanan
+        if status == "up":
+            # 1. Tutup masalah service_down seketika jika masih terbuka
             open_probs = db.query(ServerProblem).filter(
                 ServerProblem.server_id == server.id,
                 ServerProblem.key == f"service_down:{service.service_name}",
@@ -887,16 +954,24 @@ def agent_report(
                 op.resolved_note = "auto"
                 op.is_ignored = 0
 
-            # 3. Catat audit pemulihan layanan agar ada riwayat resmi
-            try:
-                _audit(
-                    db, "sistem", "service_recovered",
-                    f"{server.hostname}:{service.service_name}",
-                    "kembali aktif (pulih)",
-                    server_id=server.id,
-                )
-            except Exception as e:
-                logger.warning("[agent_report] Gagal catat audit service_recovered: %s", e)
+            # 2. Jika sebelumnya bermasalah (down/offline), bersihkan pengabaian mode insiden & catat audit
+            if prev_status in ("down", "offline", "unknown"):
+                has_future_timer = service.ignored_until and service.ignored_until > datetime.utcnow()
+                if not has_future_timer or getattr(service, "ignore_mode", None) == "incident":
+                    service.is_ignored = 0
+                    service.ignored_until = None
+                    service.ignored_reason = None
+                    service.ignore_mode = None
+
+                try:
+                    _audit(
+                        db, "sistem", "service_recovered",
+                        f"{server.hostname}:{service.service_name}",
+                        "kembali aktif (pulih)",
+                        server_id=server.id,
+                    )
+                except Exception as e:
+                    logger.warning("[agent_report] Gagal catat audit service_recovered: %s", e)
 
     # Service yang sudah terdaftar tapi tidak dilaporkan lagi -> tandai down dengan redam flapping
     existing = (
@@ -966,6 +1041,11 @@ def agent_report(
     extras.os_label = _clean_str(body.get("os_label"), None, 120) or None
     extras.arch = _clean_str(body.get("arch"), None, 24) or None
     extras.agent_version = _clean_str(body.get("agent_version"), None, 16) or None
+    if "hardware_specs" in body and isinstance(body.get("hardware_specs"), dict):
+        try:
+            extras.hardware_specs = json.dumps(body["hardware_specs"])
+        except Exception:
+            pass
 
     if isinstance(sysd, dict) and isinstance(sysd.get("top_procs"), dict):
         top_p = sysd["top_procs"]
@@ -1184,6 +1264,124 @@ def agent_report(
 
 
 # ---------------------------------------------------------------------------
+# Hardware formatting & specs helpers
+# ---------------------------------------------------------------------------
+def _format_bytes_gb(b: int | float | None) -> str:
+    if b is None or b <= 0:
+        return "—"
+    gb = b / (1024 ** 3)
+    if gb >= 1000:
+        return f"{round(gb / 1024, 1)} TB"
+    return f"{round(gb, 1)} GB"
+
+
+def _format_uptime_str(secs: int | None) -> str:
+    if secs is None or secs <= 0:
+        return "—"
+    days = secs // 86400
+    hours = (secs % 86400) // 3600
+    mins = (secs % 3600) // 60
+    if days > 0:
+        return f"{days}h {hours}j" if hours else f"{days} hari"
+    if hours > 0:
+        return f"{hours}j {mins}m"
+    return f"{mins} mnt"
+
+
+def _extract_disk_stats(disks_raw):
+    if not disks_raw:
+        return "—", "—", None
+    try:
+        data = json.loads(disks_raw) if isinstance(disks_raw, str) else disks_raw
+        if not isinstance(data, list) or not data:
+            return "—", "—", None
+        root_d = next((d for d in data if d.get("mount") == "/"), data[0])
+        tot = root_d.get("total", 0)
+        used = root_d.get("used", 0)
+        pct = root_d.get("pct", 0.0)
+        avail = max(0, tot - used)
+        return _format_bytes_gb(tot), _format_bytes_gb(avail), round(float(pct), 1)
+    except Exception:
+        return "—", "—", None
+
+
+def _get_hardware_specs_dict(server: Server, extra: ServerExtras | None, latest: SystemSnapshot | None) -> dict:
+    if extra and extra.hardware_specs:
+        try:
+            parsed = json.loads(extra.hardware_specs)
+            if isinstance(parsed, dict) and parsed.get("cpu"):
+                return parsed
+        except Exception:
+            pass
+
+    has_reported = bool(server.last_seen or latest)
+    # Baseline fallback apabila agen belum mengirim hardware_specs (versi lama)
+    disks_baseline = []
+    if latest and latest.disks:
+        try:
+            disks_raw = json.loads(latest.disks) if isinstance(latest.disks, str) else latest.disks
+            for d in (disks_raw if isinstance(disks_raw, list) else []):
+                total_b = d.get("total", 0)
+                sz_str = f"{round(total_b / (1024**3), 1)}G" if total_b > 0 else "-"
+                disks_baseline.append({
+                    "name": d.get("mount", "/"),
+                    "size": sz_str,
+                    "type": d.get("type", "Disk"),
+                    "model": "Storage Partition"
+                })
+        except Exception:
+            pass
+
+    net_interfaces = []
+    if latest and latest.net:
+        try:
+            net_raw = json.loads(latest.net) if isinstance(latest.net, str) else latest.net
+            for n in (net_raw if isinstance(net_raw, list) else []):
+                net_interfaces.append({
+                    "name": n.get("iface", "eth0"),
+                    "mac": "-",
+                    "speed": ""
+                })
+        except Exception:
+            pass
+    if not net_interfaces and has_reported:
+        net_interfaces = [{"name": "primary", "mac": "-", "speed": ""}]
+
+    return {
+        "cpu": {
+            "model": f"Prosesor ({extra.arch if extra and extra.arch else 'x86_64'})" if has_reported else "—",
+            "cores": 1 if has_reported else None,
+            "arch": extra.arch if extra and extra.arch else ("x86_64" if has_reported else "—"),
+            "mhz": "",
+            "cache": "",
+        },
+        "platform": {
+            "virt": "Virtual / Host Linux",
+            "vendor": "-",
+            "product": server.hostname,
+            "bios_version": "-",
+            "bios_date": "-",
+        },
+        "memory": {
+            "ram_total": latest.mem_total if latest else 0,
+            "swap_total": latest.swap_total if latest else 0,
+        },
+        "disks": disks_baseline,
+        "network": {
+            "gateway": "-",
+            "dns": [],
+            "interfaces": net_interfaces,
+        },
+        "os": {
+            "os_name": extra.os_label if extra and extra.os_label else "Linux",
+            "kernel": extra.kernel if extra and extra.kernel else "-",
+            "hostname": server.hostname,
+            "boot_time": "-",
+        }
+    }
+
+
+# ---------------------------------------------------------------------------
 # JSON API (read-only)
 # ---------------------------------------------------------------------------
 @app.get("/api/servers")
@@ -1214,7 +1412,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
         ignored_keys = {p.get("key") for p in open_prob if p.get("is_ignored")}
         svc_ignored_db = {s.service_name for s in services if getattr(s, "is_ignored", 0)}
         for s in svc_list:
-            if f"service_down:{s['name']}" in ignored_keys or s["name"] in svc_ignored_db:
+            if (f"service_down:{s['name']}" in ignored_keys) or (s["name"] in svc_ignored_db):
                 s["ignored"] = True
 
         stale = _server_stale(srv)
@@ -1248,44 +1446,76 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
         ignored_svc_count = sum(1 for s in svc_list if s["status"] in ("down", "offline") and s.get("ignored"))
         active_p = [p for p in open_prob if not p.get("is_ignored")]
         danger_p = [p for p in active_p if p.get("severity") == "danger"]
+        average_p = [p for p in active_p if p.get("severity") == "average"]
         warning_p = [p for p in active_p if p.get("severity") == "warning"]
         info_p = [p for p in active_p if p.get("severity") == "info"]
         ignored_p = [p for p in open_prob if p.get("is_ignored")]
 
         danger_count = len(danger_p)
+        average_count = len(average_p)
         warning_count = len(warning_p)
         info_count = len(info_p)
         active_prob_count = len(active_p)
         ignored_prob_count = len(ignored_p)
         danger_msgs = " • ".join(p.get("message", "") for p in danger_p)
+        average_msgs = " • ".join(p.get("message", "") for p in average_p)
         warning_msgs = " • ".join(p.get("message", "") for p in warning_p)
         info_msgs = " • ".join(p.get("message", "") for p in info_p)
         ignored_msgs = " • ".join(p.get("message", "") for p in ignored_p)
 
+        hw = _get_hardware_specs_dict(srv, ex, latest_sys)
+        cpu_cores = hw.get("cpu", {}).get("cores") or hw.get("cpu", {}).get("logical_cores")
+        cpu_cores_str = f"{cpu_cores} Core" if (srv.last_seen and cpu_cores) else "—"
+        d_tot, d_avail, d_pct = _extract_disk_stats(latest_sys.disks if latest_sys else None)
+        m_tot = _format_bytes_gb(latest_sys.mem_total if latest_sys else None)
+        m_avail = _format_bytes_gb(latest_sys.mem_avail if latest_sys else None)
+        m_used = _format_bytes_gb(latest_sys.mem_used if latest_sys else None)
+        up_str = _format_uptime_str(latest_sys.uptime_secs if latest_sys else None)
+
+        formatted_probs = []
+        for p in open_prob:
+            p_dict = dict(p)
+            p_dict["server_id"] = srv.id
+            p_dict["hostname"] = srv.hostname
+            p_dict["group_name"] = srv.group_name or ""
+            formatted_probs.append(p_dict)
+
         result.append({
             "id": srv.id, "hostname": srv.hostname, "ip_address": srv.ip_address,
+            "group_name": srv.group_name or "",
             "is_active": srv.is_active,
             "is_maintenance": bool(srv.is_maintenance),
             "online": overall != "offline",
             "last_seen": srv.last_seen.isoformat() if srv.last_seen else None,
             "overall_status": overall, "services": svc_list,
+            "problems": _serialize_problem_list(formatted_probs),
             "apt_upgradable": ex.apt_upgradable if ex else None,
             "apt_last_update": ex.apt_last_update.isoformat() if ex and ex.apt_last_update else None,
             "kernel": ex.kernel if ex else None,
             "os_label": ex.os_label if ex else None,
             "arch": ex.arch if ex else None,
             "cpu": cpu_pct,
+            "cpu_cores": cpu_cores_str,
             "mem_pct": mem_pct,
+            "mem_total_str": m_tot,
+            "mem_avail_str": m_avail,
+            "mem_used_str": m_used,
+            "disk_total_str": d_tot,
+            "disk_avail_str": d_avail,
+            "disk_pct": d_pct,
             "uptime_secs": uptime_secs,
+            "uptime_str": up_str,
             "down_svc_count": down_svc_count,
             "ignored_svc_count": ignored_svc_count,
             "problem_level": prob_level,
             "active_problem_count": active_prob_count,
             "ignored_problem_count": ignored_prob_count,
             "danger_count": danger_count,
+            "average_count": average_count,
             "warning_count": warning_count,
             "info_count": info_count,
             "danger_msgs": danger_msgs,
+            "average_msgs": average_msgs,
             "warning_msgs": warning_msgs,
             "info_msgs": info_msgs,
             "ignored_msgs": ignored_msgs,
@@ -1844,6 +2074,34 @@ def api_command_result(
         except Exception as e:
             logger.warning("[cmd_result] Gagal menambah metrik down seketika: %s", e)
 
+    # Jika aksi service start / restart sukses, segera sisipkan metrik up & tutup masalah seketika
+    if cmd.service_id and cmd.action in ("start", "restart", "service_start", "service_restart") and status == "success":
+        try:
+            m = Metric(
+                service_id=cmd.service_id,
+                status="up",
+                response_time_ms=1.0,
+                active_connections=0,
+                timestamp=datetime.utcnow(),
+                health_message="Layanan berhasil dimulai oleh operator",
+            )
+            db.add(m)
+            svc_obj = db.query(Service).filter(Service.id == cmd.service_id).first()
+            if svc_obj:
+                for op in db.query(ServerProblem).filter(
+                    ServerProblem.server_id == cmd.server_id,
+                    ServerProblem.key == f"service_down:{svc_obj.service_name}",
+                    ServerProblem.resolved_at.is_(None),
+                ).all():
+                    op.resolved_at = datetime.utcnow()
+                    op.updated_at = datetime.utcnow()
+                    op.resolved_note = "operator_start"
+                    op.is_ignored = 0
+                svc_obj.is_ignored = 0
+                svc_obj.ignored_until = None
+        except Exception as e:
+            logger.warning("[cmd_result] Gagal update metrik/problem up seketika: %s", e)
+
     db.commit()
     return {"ok": True}
 
@@ -1934,14 +2192,69 @@ LOGIN_MAX_FAILS = 5
 LOGIN_LOCK_DURATIONS = [60, 300, 1800, 7200]  # 1 menit, 5 menit, 30 menit, 2 jam
 
 
+def _is_trusted_proxy(ip_str: str) -> bool:
+    """Periksa apakah IP sumber merupakan proxy terpercaya (IP tunggal, CIDR, atau wildcard *)."""
+    if not ip_str or ip_str == "unknown":
+        return False
+    trusted_set = settings.trusted_proxy_set
+    if "*" in trusted_set or ip_str in trusted_set:
+        return True
+    try:
+        ip_obj = ipaddress.ip_address(ip_str)
+        for t in trusted_set:
+            try:
+                if "/" in t and ip_obj in ipaddress.ip_network(t, strict=False):
+                    return True
+            except ValueError:
+                pass
+    except ValueError:
+        pass
+    return False
+
+
+def _clean_ua(ua: str | None) -> str:
+    """Ringkas User-Agent browser menjadi identitas perangkat/OS ringkas untuk sysadmin."""
+    if not ua:
+        return ""
+    ua_lower = ua.lower()
+    os_name = (
+        "Windows" if "windows" in ua_lower
+        else "macOS" if ("macintosh" in ua_lower or "mac os" in ua_lower)
+        else "Android" if "android" in ua_lower
+        else "iOS" if ("iphone" in ua_lower or "ipad" in ua_lower)
+        else "Linux" if "linux" in ua_lower
+        else "OS"
+    )
+    browser_name = (
+        "Edge" if "edg/" in ua_lower
+        else "Opera" if ("opr/" in ua_lower or "opera" in ua_lower)
+        else "Chrome" if ("chrome/" in ua_lower and "chromium" not in ua_lower)
+        else "Firefox" if "firefox/" in ua_lower
+        else "Safari" if ("safari/" in ua_lower and "chrome" not in ua_lower)
+        else "Browser"
+    )
+    return f"{browser_name} · {os_name}"
+
+
 def _client_ip(request: Request) -> str:
-    """Dapatkan IP klien. Hanya percaya X-Forwarded-For dari proxy terpercaya."""
+    """Dapatkan IP asli klien. Mendukung CF-Connecting-IP, True-Client-IP, X-Forwarded-For, X-Real-IP dari proxy terpercaya."""
     real_ip = request.client.host if request.client else "unknown"
-    if real_ip in settings.trusted_proxy_set:
+    if _is_trusted_proxy(real_ip):
+        # 1. Header Cloudflare / Akamai
+        for hdr in ("CF-Connecting-IP", "True-Client-IP"):
+            val = request.headers.get(hdr)
+            if val:
+                return val.strip()[:45]
+        # 2. X-Forwarded-For (ambil IP pertama)
         xff = request.headers.get("X-Forwarded-For")
         if xff:
             candidate = xff.split(",")[0].strip()[:45]
-            return candidate
+            if candidate:
+                return candidate
+        # 3. X-Real-IP
+        x_real = request.headers.get("X-Real-IP")
+        if x_real:
+            return x_real.strip()[:45]
     return real_ip
 
 
@@ -2018,7 +2331,9 @@ def login_submit(
     user.last_login_ip = ip
     _prune_expired_sessions(db)
     sid = create_session(db, user.id, ip, request.headers.get("user-agent"))
-    _audit(db, user.username, "login", f"masuk dari {ip}", "berhasil")
+    ua_summary = _clean_ua(request.headers.get("user-agent"))
+    client_target = f"masuk dari {ip}" + (f" ({ua_summary})" if ua_summary else "")
+    _audit(db, user.username, "login", client_target, "berhasil", meta={"ip": ip, "ua": request.headers.get("user-agent", ""), "browser": ua_summary})
     db.commit()
     resp = RedirectResponse("/", status_code=303)
     resp.set_cookie(
@@ -2078,7 +2393,9 @@ def login_2fa_submit(
     _prune_expired_sessions(db)
     sid = create_session(db, user.id, ip, request.headers.get("user-agent"))
     action_note = "masuk via 2FA (Recovery Code)" if used_recovery else "masuk via 2FA (TOTP)"
-    _audit(db, user.username, "login_2fa", f"{action_note} dari {ip}", "berhasil")
+    ua_summary = _clean_ua(request.headers.get("user-agent"))
+    client_target = f"{action_note} dari {ip}" + (f" ({ua_summary})" if ua_summary else "")
+    _audit(db, user.username, "login_2fa", client_target, "berhasil", meta={"ip": ip, "ua": request.headers.get("user-agent", ""), "browser": ua_summary})
     db.commit()
 
     resp = RedirectResponse("/", status_code=303)
@@ -2094,6 +2411,13 @@ def login_2fa_submit(
 @app.get("/logout")
 @app.post("/logout")
 def logout(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if user:
+        ip = _client_ip(request)
+        ua_summary = _clean_ua(request.headers.get("user-agent"))
+        client_target = f"keluar dari {ip}" + (f" ({ua_summary})" if ua_summary else "")
+        _audit(db, user.username, "logout", client_target, "berhasil", meta={"ip": ip, "ua": request.headers.get("user-agent", ""), "browser": ua_summary})
+        db.commit()
     sid = request.cookies.get(SESSION_COOKIE)
     if sid:
         db.query(AppSession).filter(AppSession.sid == sid).delete(synchronize_session=False)
@@ -2108,6 +2432,7 @@ def logout(request: Request, db: Session = Depends(get_db)):
 # DASHBOARD
 # ---------------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
@@ -2148,15 +2473,18 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             db, srv, _problem_instances(srv, ex, srv._svc_data, db))
         active_probs = [p for p in srv._problems if not p.get("is_ignored")]
         danger_probs = [p for p in active_probs if p.get("severity") == "danger"]
+        average_probs = [p for p in active_probs if p.get("severity") == "average"]
         warning_probs = [p for p in active_probs if p.get("severity") == "warning"]
         info_probs = [p for p in active_probs if p.get("severity") == "info"]
         ignored_probs = [p for p in srv._problems if p.get("is_ignored")]
 
         srv._danger_count = len(danger_probs)
+        srv._average_count = len(average_probs)
         srv._warning_count = len(warning_probs)
         srv._info_count = len(info_probs)
         srv._ignored_count = len(ignored_probs)
         srv._danger_msgs = " • ".join(p.get("message", "") for p in danger_probs)
+        srv._average_msgs = " • ".join(p.get("message", "") for p in average_probs)
         srv._warning_msgs = " • ".join(p.get("message", "") for p in warning_probs)
         srv._info_msgs = " • ".join(p.get("message", "") for p in info_probs)
         srv._ignored_msgs = " • ".join(p.get("message", "") for p in ignored_probs)
@@ -2164,6 +2492,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         ignored_keys = {p.get("key") for p in srv._problems if p.get("is_ignored")}
         svc_ignored_db = {s.service_name for s in services if getattr(s, "is_ignored", 0)}
         unignored_down = 0
+        server_ignored_down = 0
         for d in srv._svc_data:
             if d.get("status") in ("down", "offline"):
                 if f"service_down:{d['name']}" not in ignored_keys and d['name'] not in svc_ignored_db:
@@ -2171,9 +2500,12 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                     down_services += 1
                 else:
                     d["ignored"] = True
+                    server_ignored_down += 1
                     ignored_services += 1
             elif d.get("name") in svc_ignored_db:
                 d["ignored"] = True
+        srv._unignored_down = unignored_down
+        srv._ignored_down = server_ignored_down
 
         stale = _server_stale(srv)
         if stale:
@@ -2185,6 +2517,32 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             srv._status_label, srv._status_cls = _server_status(
                 srv, stale, bool(srv._svc_data), any(d["status"] == "up" for d in srv._svc_data),
                 has_unignored_down=(unignored_down > 0))
+        latest_sys = (
+            db.query(SystemSnapshot)
+            .filter(SystemSnapshot.server_id == srv.id)
+            .order_by(desc(SystemSnapshot.timestamp))
+            .first()
+        )
+        srv._cpu = round(latest_sys.cpu, 1) if latest_sys else None
+        srv._mem_pct = (
+            round(latest_sys.mem_used / latest_sys.mem_total * 100, 1)
+            if latest_sys and latest_sys.mem_total else None
+        )
+        srv._load1 = round(latest_sys.load1, 2) if (latest_sys and latest_sys.load1 is not None) else None
+
+        hw = _get_hardware_specs_dict(srv, ex, latest_sys)
+        cpu_cores = hw.get("cpu", {}).get("cores") or hw.get("cpu", {}).get("logical_cores")
+        srv._cpu_cores_str = f"{cpu_cores} Core" if (srv.last_seen and cpu_cores) else "—"
+        d_tot, d_avail, d_pct = _extract_disk_stats(latest_sys.disks if latest_sys else None)
+        srv._disk_total_str = d_tot
+        srv._disk_avail_str = d_avail
+        srv._disk_pct = d_pct
+        srv._mem_total_str = _format_bytes_gb(latest_sys.mem_total if latest_sys else None)
+        srv._mem_avail_str = _format_bytes_gb(latest_sys.mem_avail if latest_sys else None)
+        srv._mem_used_str = _format_bytes_gb(latest_sys.mem_used if latest_sys else None)
+        srv._uptime_str = _format_uptime_str(latest_sys.uptime_secs if latest_sys else None)
+        srv._uptime_secs = latest_sys.uptime_secs if latest_sys else 0
+
         if srv._status_cls == "badge-up":
             up_count += 1
 
@@ -2197,11 +2555,70 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     else:
         last_update_secs = -1
 
+    existing_groups, existing_tags = get_existing_groups_and_tags(db)
+    group_counts = {}
+    ungrouped_count = 0
+    for srv in servers:
+        if srv.group_name:
+            group_counts[srv.group_name] = group_counts.get(srv.group_name, 0) + 1
+        else:
+            ungrouped_count += 1
+
+    danger_total = sum(srv._danger_count for srv in servers)
+    average_total = sum(srv._average_count for srv in servers)
+    warning_total = sum(srv._warning_count for srv in servers)
+    info_total = sum(srv._info_count for srv in servers)
+    ignored_total = sum(srv._ignored_count for srv in servers)
+    healthy_total = sum(1 for srv in servers if srv._status_cls == "badge-up" and (srv._danger_count + srv._average_count + srv._warning_count) == 0)
+
+    all_open_problems = []
+    for srv in servers:
+        for p in (srv._problems or []):
+            is_ign = bool(p.get("is_ignored"))
+            p_started = p.get("started_at")
+            dur_str = "—"
+            if p_started:
+                diff_s = max(0, int((datetime.utcnow() - p_started).total_seconds()))
+                if diff_s < 60: dur_str = f"{diff_s} dtk"
+                elif diff_s < 3600: dur_str = f"{diff_s//60} mnt"
+                elif diff_s < 86400: dur_str = f"{diff_s//3600} jam"
+                else: dur_str = f"{diff_s//86400} hari"
+            all_open_problems.append({
+                "server_id": srv.id,
+                "hostname": srv.hostname,
+                "group_name": srv.group_name,
+                "severity": p.get("severity", "warning"),
+                "message": p.get("message", ""),
+                "key": p.get("key", ""),
+                "is_ignored": is_ign,
+                "started_at": p_started,
+                "started_at_str": p_started.strftime("%d %b %H:%M") if p_started else "—",
+                "durasi": dur_str,
+            })
+    sev_order = {"danger": 0, "average": 1, "warning": 2, "info": 3}
+    all_open_problems.sort(key=lambda p: (1 if p["is_ignored"] else 0, sev_order.get(p["severity"], 4), p["started_at"] or datetime.min))
+
+    top_cpu = sorted([s for s in servers if s._cpu is not None], key=lambda s: s._cpu, reverse=True)[:5]
+    top_mem = sorted([s for s in servers if s._mem_pct is not None], key=lambda s: s._mem_pct, reverse=True)[:5]
+
     return tpl(request, "dashboard.html", {
         "user": user, "servers": servers, "total": total,
         "up_count": up_count, "down_count": total - up_count,
         "down_services": down_services, "ignored_services": ignored_services,
         "last_update_secs": last_update_secs,
+        "all_groups": existing_groups,
+        "all_tags": existing_tags,
+        "group_counts": group_counts,
+        "ungrouped_count": ungrouped_count,
+        "danger_total": danger_total,
+        "average_total": average_total,
+        "warning_total": warning_total,
+        "info_total": info_total,
+        "ignored_total": ignored_total,
+        "healthy_total": healthy_total,
+        "all_open_problems": all_open_problems,
+        "top_cpu": top_cpu,
+        "top_mem": top_mem,
     })
 
 
@@ -2241,19 +2658,74 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
             latest = latest_map.get(svc.id)
             svc_data.append({
                 "name": svc.service_name,
+                "port": svc.port, "process": svc.process_name,
                 "status": latest.status if latest else "unknown",
             })
         srv._problem_level, srv._problems, _ph = sync_server_problems(
             db, srv, _problem_instances(srv, ex, svc_data, db))
         ignored_keys = {p.get("key") for p in srv._problems if p.get("is_ignored")}
-        unignored_down = [d for d in svc_data if d.get("status") in ("down", "offline") and f"service_down:{d['name']}" not in ignored_keys]
+        svc_ignored_db = {s.service_name for s in services if getattr(s, "is_ignored", 0)}
+        for d in svc_data:
+            if f"service_down:{d['name']}" in ignored_keys or d['name'] in svc_ignored_db:
+                d["ignored"] = True
+        srv._svc_data = svc_data
+
+        active_probs = [p for p in srv._problems if not p.get("is_ignored")]
+        danger_probs = [p for p in active_probs if p.get("severity") == "danger"]
+        average_probs = [p for p in active_probs if p.get("severity") == "average"]
+        warning_probs = [p for p in active_probs if p.get("severity") == "warning"]
+        info_probs = [p for p in active_probs if p.get("severity") == "info"]
+        ignored_probs = [p for p in srv._problems if p.get("is_ignored")]
+        srv._danger_count = len(danger_probs)
+        srv._average_count = len(average_probs)
+        srv._warning_count = len(warning_probs)
+        srv._info_count = len(info_probs)
+        srv._ignored_count = len(ignored_probs)
+        srv._danger_msgs = " • ".join(p.get("message", "") for p in danger_probs)
+        srv._average_msgs = " • ".join(p.get("message", "") for p in average_probs)
+        srv._warning_msgs = " • ".join(p.get("message", "") for p in warning_probs)
+        srv._info_msgs = " • ".join(p.get("message", "") for p in info_probs)
+        srv._ignored_msgs = " • ".join(p.get("message", "") for p in ignored_probs)
+
+        latest_sys = (
+            db.query(SystemSnapshot)
+            .filter(SystemSnapshot.server_id == srv.id)
+            .order_by(desc(SystemSnapshot.timestamp))
+            .first()
+        )
+        srv._cpu = round(latest_sys.cpu, 1) if latest_sys else None
+        srv._mem_pct = (
+            round(latest_sys.mem_used / latest_sys.mem_total * 100, 1)
+            if latest_sys and latest_sys.mem_total else None
+        )
+
+        unignored_down = [d for d in svc_data if d.get("status") in ("down", "offline") and not d.get("ignored")]
         if srv.is_maintenance:
             srv._status_label, srv._status_cls = "Pemeliharaan", "badge-warn"
         else:
             srv._status_label, srv._status_cls = _server_status(
                 srv, not srv._online, bool(svc_data), any(d["status"] == "up" for d in svc_data),
                 has_unignored_down=bool(unignored_down))
-    return tpl(request, "servers.html", {"user": user, "servers": servers})
+
+    existing_groups, existing_tags = get_existing_groups_and_tags(db)
+    group_counts = {}
+    ungrouped_count = 0
+    for srv in servers:
+        if srv.group_name:
+            group_counts[srv.group_name] = group_counts.get(srv.group_name, 0) + 1
+        else:
+            ungrouped_count += 1
+
+    # Urutkan servers: grup bernama lebih dulu (abjad grup, lalu hostname), lalu tanpa grup (abjad hostname)
+    servers.sort(key=lambda s: (0 if s.group_name else 1, (s.group_name or "").lower(), s.hostname.lower()))
+
+    return tpl(request, "servers.html", {
+        "user": user, "servers": servers,
+        "all_groups": existing_groups,
+        "all_tags": existing_tags,
+        "group_counts": group_counts,
+        "ungrouped_count": ungrouped_count,
+    })
 
 
 @app.get("/servers/add", response_class=HTMLResponse)
@@ -2261,7 +2733,15 @@ def server_add_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user or not (user.is_master_admin() or user.has_perm("can_manage_servers")):
         return RedirectResponse("/", status_code=303)
-    return tpl(request, "server_form.html", {"user": user, "server": None, "mode": "add"})
+    existing_groups, existing_tags = get_existing_groups_and_tags(db)
+    global_th = get_global_thresholds(db)
+    return tpl(request, "server_form.html", {
+        "user": user, "server": None, "mode": "add",
+        "existing_groups": existing_groups,
+        "existing_tags": existing_tags,
+        "global_thresholds": global_th,
+        "custom_thresholds": {},
+    })
 
 
 @app.post("/servers/add")
@@ -2269,6 +2749,16 @@ def server_add_submit(
     request: Request,
     hostname: str = Form(...),
     ip_address: str = Form(...),
+    group_name: str = Form(default=""),
+    tags: str = Form(default=""),
+    th_cpu_warn: str = Form(default=""),
+    th_cpu_danger: str = Form(default=""),
+    th_ram_warn: str = Form(default=""),
+    th_ram_danger: str = Form(default=""),
+    th_disk_warn: str = Form(default=""),
+    th_disk_danger: str = Form(default=""),
+    th_swap_warn: str = Form(default=""),
+    th_swap_danger: str = Form(default=""),
     csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
@@ -2278,15 +2768,42 @@ def server_add_submit(
     _verify_csrf_form(request, csrf_token)
     hostname = _clean_str(hostname, "", 255)
     ip_address = _clean_str(ip_address, "", 45)[:45]
+    group_name_clean = _clean_str(group_name, "", 64).strip()
+    group_name = group_name_clean if group_name_clean and group_name_clean.lower() != "default" else None
+    tags_clean = _clean_str(tags, "", 255).strip()
+    tags = tags_clean if tags_clean else None
     if ip_address and not _validate_ip(ip_address):
+        existing_groups, existing_tags = get_existing_groups_and_tags(db)
         return tpl(request, "server_form.html", {
             "user": user, "server": None, "mode": "add",
+            "existing_groups": existing_groups,
+            "existing_tags": existing_tags,
+            "global_thresholds": get_global_thresholds(db),
+            "custom_thresholds": {},
             "error": "Format IP address tidak valid. Gunakan IPv4 (contoh: 192.168.1.1) atau IPv6."
         })
+
+    custom_th = {}
+    for k, val in [("cpu_warn", th_cpu_warn), ("cpu_danger", th_cpu_danger),
+                   ("ram_warn", th_ram_warn), ("ram_danger", th_ram_danger),
+                   ("disk_warn", th_disk_warn), ("disk_danger", th_disk_danger),
+                   ("swap_warn", th_swap_warn), ("swap_danger", th_swap_danger)]:
+        if val is not None and str(val).strip() != "":
+            try:
+                custom_th[k] = float(val)
+            except ValueError:
+                pass
+    custom_th_json = json.dumps(custom_th) if custom_th else None
+
     raw = secrets.token_hex(32)
-    srv = Server(hostname=hostname, ip_address=ip_address, api_key=hash_api_key(raw))
+    srv = Server(
+        hostname=hostname, ip_address=ip_address,
+        group_name=group_name, tags=tags,
+        custom_thresholds=custom_th_json,
+        api_key=hash_api_key(raw)
+    )
     db.add(srv)
-    _audit(db, user.username, "server_add", f"{hostname} ({ip_address})", "berhasil")
+    _audit(db, user.username, "server_add", f"{hostname} ({ip_address})" + (f" [Grup: {group_name}]" if group_name else ""), "berhasil")
     db.commit()
     resp = tpl(request, "key_reveal.html", {"user": user, "server": srv, "api_key": raw})
     resp.headers["Cache-Control"] = "no-store"
@@ -2302,7 +2819,21 @@ def server_edit_page(request: Request, sid: int, db: Session = Depends(get_db)):
     if not server:
         return RedirectResponse("/servers", status_code=303)
     server._key_fp = api_key_fingerprint(server.api_key)
-    return tpl(request, "server_form.html", {"user": user, "server": server, "mode": "edit"})
+    existing_groups, existing_tags = get_existing_groups_and_tags(db)
+    global_th = get_global_thresholds(db)
+    custom_th = {}
+    if server.custom_thresholds:
+        try:
+            custom_th = json.loads(server.custom_thresholds)
+        except Exception:
+            pass
+    return tpl(request, "server_form.html", {
+        "user": user, "server": server, "mode": "edit",
+        "existing_groups": existing_groups,
+        "existing_tags": existing_tags,
+        "global_thresholds": global_th,
+        "custom_thresholds": custom_th,
+    })
 
 
 @app.post("/servers/{sid}/edit")
@@ -2310,7 +2841,17 @@ def server_edit_submit(
     request: Request, sid: int,
     hostname: str = Form(...),
     ip_address: str = Form(...),
+    group_name: str = Form(default=""),
+    tags: str = Form(default=""),
     is_active: int = Form(1),
+    th_cpu_warn: str = Form(default=""),
+    th_cpu_danger: str = Form(default=""),
+    th_ram_warn: str = Form(default=""),
+    th_ram_danger: str = Form(default=""),
+    th_disk_warn: str = Form(default=""),
+    th_disk_danger: str = Form(default=""),
+    th_swap_warn: str = Form(default=""),
+    th_swap_danger: str = Form(default=""),
     csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
@@ -2322,17 +2863,42 @@ def server_edit_submit(
     if server:
         hostname = _clean_str(hostname, server.hostname, 255)
         ip_address = _clean_str(ip_address, server.ip_address, 45)[:45]
+        group_name_clean = _clean_str(group_name, "", 64).strip()
+        group_name = group_name_clean if group_name_clean and group_name_clean.lower() != "default" else None
+        tags_clean = _clean_str(tags, "", 255).strip()
+        tags = tags_clean if tags_clean else None
         if ip_address and not _validate_ip(ip_address):
             server._key_fp = api_key_fingerprint(server.api_key)
+            existing_groups, existing_tags = get_existing_groups_and_tags(db)
             return tpl(request, "server_form.html", {
                 "user": user, "server": server, "mode": "edit",
+                "existing_groups": existing_groups,
+                "existing_tags": existing_tags,
+                "global_thresholds": get_global_thresholds(db),
+                "custom_thresholds": {},
                 "error": "Format IP address tidak valid. Gunakan IPv4 (contoh: 192.168.1.1) atau IPv6."
             })
+
+        custom_th = {}
+        for k, val in [("cpu_warn", th_cpu_warn), ("cpu_danger", th_cpu_danger),
+                       ("ram_warn", th_ram_warn), ("ram_danger", th_ram_danger),
+                       ("disk_warn", th_disk_warn), ("disk_danger", th_disk_danger),
+                       ("swap_warn", th_swap_warn), ("swap_danger", th_swap_danger)]:
+            if val is not None and str(val).strip() != "":
+                try:
+                    custom_th[k] = float(val)
+                except ValueError:
+                    pass
+        custom_th_json = json.dumps(custom_th) if custom_th else None
+
         server.hostname = hostname
         server.ip_address = ip_address
+        server.group_name = group_name
+        server.tags = tags
+        server.custom_thresholds = custom_th_json
         server.is_active = 1 if is_active else 0
         _audit(db, user.username, "server_edit",
-               f"id={server.id} {server.hostname} ({server.ip_address})", "berhasil")
+               f"id={server.id} {server.hostname} ({server.ip_address})" + (f" [Grup: {group_name}]" if group_name else ""), "berhasil")
         db.commit()
         return RedirectResponse("/servers" + _flash_qs(True, "Server diperbarui"), status_code=303)
     return RedirectResponse("/servers" + _flash_qs(False, "Server tidak ditemukan"), status_code=303)
@@ -2378,6 +2944,9 @@ def server_delete(
         db.commit()
         return RedirectResponse("/servers" + _flash_qs(True, "Server dihapus"), status_code=303)
     return RedirectResponse("/servers" + _flash_qs(False, "Server tidak ditemukan"), status_code=303)
+
+
+
 
 
 # ---------------------------------------------------------------------------
@@ -2503,6 +3072,9 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         except Exception:
             pass
 
+    latest_sn = db.query(SystemSnapshot).filter(SystemSnapshot.server_id == sid).order_by(desc(SystemSnapshot.timestamp)).first()
+    hw_specs = _get_hardware_specs_dict(server, extra, latest_sn)
+
     return tpl(request, "services.html", {
         "user": user, "server": server, "services": services, "commands": commands, "actions": actions,
         "agent_version": extra.agent_version if extra else None,
@@ -2519,6 +3091,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         "listening_ports": ports_data,
         "ssl_certs": ssl_data,
         "system_logs": sys_logs_data,
+        "hardware_specs": hw_specs,
     })
 
 
@@ -3480,24 +4053,69 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login", status_code=303)
     filter_sid_str = request.query_params.get("server", "")
     filter_sid = int(filter_sid_str) if filter_sid_str.isdigit() else None
+    filter_group = (request.query_params.get("group") or "").strip()
+
     open_problems, recent_resolved = problems_aggregate(db)
     if filter_sid:
         open_problems = [p for p in open_problems if p["server_id"] == filter_sid]
         recent_resolved = [p for p in recent_resolved if p["server_id"] == filter_sid]
-    servers_total = db.query(Server).count()
-    active_open_servers = {p["server_id"] for p in open_problems if not p.get("is_ignored")}
+    if filter_group:
+        if filter_group == "__none__":
+            open_problems = [p for p in open_problems if not p.get("group_name")]
+            recent_resolved = [p for p in recent_resolved if not p.get("group_name")]
+        else:
+            open_problems = [p for p in open_problems if (p.get("group_name") or "") == filter_group]
+            recent_resolved = [p for p in recent_resolved if (p.get("group_name") or "") == filter_group]
+
     all_servers = db.query(Server).order_by(Server.hostname).all()
+    servers_total = len(all_servers)
+    active_open_servers = {p["server_id"] for p in open_problems if not p.get("is_ignored")}
+    existing_groups, existing_tags = get_existing_groups_and_tags(db)
+
+    global_thresholds = get_global_thresholds(db)
+
+    res_durations = []
+    auto_res_cnt = 0
+    manual_res_cnt = 0
+    for p in recent_resolved:
+        st = p.get("started_at")
+        res = p.get("resolved_at")
+        if isinstance(st, datetime) and isinstance(res, datetime):
+            res_durations.append(max(0, int((res - st).total_seconds())))
+        if p.get("acknowledged_by"):
+            manual_res_cnt += 1
+        elif p.get("resolved_note") in ("auto", "server_offline"):
+            auto_res_cnt += 1
+        else:
+            auto_res_cnt += 1
+    avg_secs = int(sum(res_durations) / len(res_durations)) if res_durations else 0
+    avg_mttr_str = _fmt_duration(datetime.min, datetime.min + timedelta(seconds=avg_secs)) if avg_secs > 0 else "—"
+
+    resolved_stats = {
+        "total": len(recent_resolved),
+        "avg_mttr": avg_mttr_str,
+        "auto_count": auto_res_cnt,
+        "manual_count": manual_res_cnt,
+    }
+
     return tpl(request, "problems.html", {
         "user": user,
         "open_problems": open_problems,
         "recent_resolved": recent_resolved,
+        "resolved_stats": resolved_stats,
         "danger_open": sum(1 for p in open_problems if p["severity"] == "danger" and not p.get("is_ignored")),
+        "average_open": sum(1 for p in open_problems if p["severity"] == "average" and not p.get("is_ignored")),
         "warning_open": sum(1 for p in open_problems if p["severity"] == "warning" and not p.get("is_ignored")),
         "info_open": sum(1 for p in open_problems if p["severity"] == "info" and not p.get("is_ignored")),
         "ignored_open": sum(1 for p in open_problems if p.get("is_ignored")),
         "ok_count": servers_total - len(active_open_servers),
         "all_servers": all_servers,
         "filter_sid": filter_sid,
+        "filter_group": filter_group,
+        "all_groups": existing_groups,
+        "all_tags": existing_tags,
+        "global_thresholds": global_thresholds,
+        "default_thresholds": DEFAULT_THRESHOLDS,
     })
 
 
@@ -3754,29 +4372,88 @@ SYSLOG_FILE = "/var/log/syslog"
 AUTH_FILE = "/var/log/auth.log"
 STALE_LOG_SECONDS = 600
 # Server dianggap offline bila tidak ada laporan dalam rentang ini (interval agent 10s)
-OFFLINE_AFTER_SECONDS = 60
+OFFLINE_AFTER_SECONDS = 15
 # Batas output apt update/upgrade yang disimpan/streaming (praktis tak terpotong;
 # MEDIUMTEXT di DB kuota 16MB, ini masih jauh di bawahnya).
 APT_STREAM_MAXCHARS = 4_000_000
 APT_STREAM_MAXLINES = 120_000
 
-# Ambang indikator keamanan (dari ringkasan auth.log window agen)
-SECURITY_DANGER_FAILED = 12      # >= -> kemungkinan brute force
-SECURITY_DANGER_INVALID = 4      # >= upaya user invalid -> recon/serangan
-SECURITY_WARNING_FAILED = 5      # >= -> warning
-PROBLEM_RANK = {"ok": 0, "info": 1, "warning": 2, "danger": 3}
+# Ambang batas masalah default (Bawaan Pabrik)
+DEFAULT_THRESHOLDS = {
+    "cpu_warn": 85.0,
+    "cpu_danger": 95.0,
+    "ram_warn": 85.0,
+    "ram_danger": 95.0,
+    "disk_warn": 90.0,
+    "disk_danger": 95.0,
+    "swap_warn": 80.0,
+    "swap_danger": 92.0,
+    "ssh_fail_warn": 5,
+    "ssh_fail_danger": 12,
+}
 
-# Ambang sumber daya (data real-time dari agen). Data dianggap segar bila
-# snapshot terakhir < FRESH_SNAP_SECS (interval agen 10-15 detik).
+# Alias kompatibilitas
+SECURITY_DANGER_FAILED = 12
+SECURITY_DANGER_INVALID = 4
+SECURITY_WARNING_FAILED = 5
+PROBLEM_RANK = {"ok": 0, "info": 1, "warning": 2, "average": 3, "danger": 4}
 FRESH_SNAP_SECS = 90
-RAM_DANGER_PCT = 95.0        # persentase RAM terpakai -> danger
+RAM_DANGER_PCT = 95.0
 RAM_WARNING_PCT = 85.0
 SWAP_DANGER_PCT = 92.0
 SWAP_WARNING_PCT = 80.0
-CPU_DANGER_PCT = 95.0        # rata-rata CPU % -> danger
+CPU_DANGER_PCT = 95.0
 CPU_WARNING_PCT = 85.0
-DISK_DANGER_PCT = 95.0       # persentase disk terpakai -> danger
+DISK_DANGER_PCT = 95.0
 DISK_WARNING_PCT = 90.0
+
+
+def get_global_thresholds(db: Session | None = None) -> dict:
+    """Ambil ambang batas global dari tabel system_settings (fallback ke DEFAULT_THRESHOLDS)."""
+    close_db = False
+    if db is None:
+        db = SessionLocal()
+        close_db = True
+    try:
+        row = db.query(SystemSetting).filter(SystemSetting.key == "thresholds").first()
+        if row and row.value:
+            data = json.loads(row.value)
+            res = dict(DEFAULT_THRESHOLDS)
+            for k in res:
+                if k in data and data[k] is not None and str(data[k]).strip() != "":
+                    try:
+                        res[k] = int(data[k]) if "fail" in k else float(data[k])
+                    except (ValueError, TypeError):
+                        pass
+            return res
+    except Exception as e:
+        logger.warning("[thresholds] Gagal membaca global thresholds: %s", e)
+    finally:
+        if close_db:
+            db.close()
+    return dict(DEFAULT_THRESHOLDS)
+
+
+def get_server_thresholds(srv, db: Session | None = None) -> dict:
+    """Ambil ambang batas efektif untuk server tertentu (per-server override -> global -> default)."""
+    global_th = get_global_thresholds(db)
+    if not srv or not getattr(srv, "custom_thresholds", None):
+        return global_th
+    try:
+        raw = srv.custom_thresholds
+        custom = json.loads(raw) if isinstance(raw, str) else raw
+        if isinstance(custom, dict):
+            res = dict(global_th)
+            for k in res:
+                if k in custom and custom[k] is not None and str(custom[k]).strip() != "":
+                    try:
+                        res[k] = int(custom[k]) if "fail" in k else float(custom[k])
+                    except (ValueError, TypeError):
+                        pass
+            return res
+    except Exception:
+        pass
+    return global_th
 
 RAM_TIP = ("Cek proses pemakan memori: sudo ps aux --sort=-%mem | head | Hentikan/mulai ulang proses: "
            "sudo systemctl restart <unit> | Tambah alokasi RAM. Server bisa crash/OOM bila dibiarkan.")
@@ -3799,7 +4476,7 @@ def _quiet_secs_for(key: str) -> int:
     if key.startswith(("ram_", "swap_", "cpu_", "disk_")):
         return RESOURCE_QUIET_SECS
     if key.startswith("service_down:"):
-        return 10   # Redam flapping berulang dalam waktu singkat (10 detik)
+        return 0   # Pemulihan layanan langsung seketika tanpa jeda penahanan
     if key == "agent_conflict":
         return 120  # Pertahankan peringatan konflik setidaknya 2 menit setelah stabil
     return 0
@@ -4117,37 +4794,42 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 ]
             }, ensure_ascii=False)
 
-        # 9. Agen Stale (Offline)
+        # 9. Agen Stale (Offline / Agen Tidak Melapor)
         if key == "agent_stale":
             return json.dumps({
-                "diagnosa": "Agen Pantau Tidak Melaporkan Status (Offline / Stale)",
-                "diagnosa_en": "Monitoring Agent Not Reporting (Offline / Stale)",
-                "penyebab": f"Server {srv.hostname} tidak mengirim telemetri metrik lebih dari batas toleransi. Layanan agent_pantau kemungkinan mati, server reboot, atau koneksi jaringan terputus.",
-                "penyebab_en": f"Server {srv.hostname} has stopped transmitting telemetry beyond threshold. Service agent_pantau may be stopped, host rebooted, or network offline.",
-                "dampak": "Metrik kinerja dan status layanan tidak terbarui di dashboard Pantau Server.",
-                "dampak_en": "Performance telemetry and service health indicators are no longer live on the dashboard.",
+                "diagnosa": "Agen Tidak Melapor",
+                "diagnosa_en": "Agent Not Reporting",
+                "penyebab": f"Agen Pantau pada server {srv.hostname} tidak mengirimkan telemetri metrik ke server pusat. Faktor penyebab mencakup server fisik/virtual mati atau dimatikan, koneksi jaringan terputus, service agent_pantau terhenti, atau terjadi pemblokiran firewall dan kendala keamanan.",
+                "penyebab_en": f"Monitoring agent on server {srv.hostname} stopped transmitting telemetry to central server. Causes include powered-off / offline host, network disconnection, halted agent service, or firewall / security rule blocking.",
+                "dampak": "Metrik kinerja hardware (CPU, RAM, Disk), status layanan, dan telemetri keamanan server tidak dapat diperbarui secara live di dashboard.",
+                "dampak_en": "Hardware performance metrics (CPU, RAM, Disk), service states, and security telemetry are no longer live on the dashboard.",
                 "data_teknis": {
                     "server_hostname": srv.hostname,
                     "server_ip": srv.ip_address,
                     "terakhir_melapor": srv.last_seen.strftime("%Y-%m-%d %H:%M:%S UTC") if srv.last_seen else "Belum pernah",
+                    "durasi_tidak_melapor_detik": kwargs.get("sec_silent"),
+                    "level_eskalasi": (kwargs.get("escalation_level") or "").upper(),
                     "waktu_kejadian": now_str,
                 },
                 "rekomendasi": [
-                    "Periksa apakah mesin server hidup dan dapat di-ping/SSH.",
-                    "Periksa status daemon agen: sudo systemctl status agent_pantau",
-                    "Lihat log agen: sudo journalctl -u agent_pantau -n 30 --no-pager",
-                    "Mulai ulang agen: sudo systemctl restart agent_pantau"
+                    "Verifikasi status daya fisik atau virtual mesin: pastikan server dalam kondisi aktif (Power ON).",
+                    "Uji konektivitas jaringan: lakukan ping atau uji jangkauan SSH ke alamat host server.",
+                    "Lakukan inspeksi keamanan & firewall: pastikan port telemetri atau akses keluar server tidak diblokir.",
+                    "Bila server aktif dan dapat diakses, periksa status service agen: sudo systemctl status agent_pantau",
+                    "Periksa log sistem dan agen untuk diagnosa mendalam: sudo journalctl -u agent_pantau -n 30 --no-pager"
                 ],
                 "rekomendasi_en": [
-                    "Check host reachability via ping or SSH.",
-                    "Inspect agent daemon: sudo systemctl status agent_pantau",
-                    "Check agent logs: sudo journalctl -u agent_pantau -n 30 --no-pager",
-                    "Restart agent daemon: sudo systemctl restart agent_pantau"
+                    "Check host machine power status: ensure server is powered ON.",
+                    "Check network connectivity: ping host or test console / SSH reachability.",
+                    "Inspect security & firewall rules: verify agent outbound connection or SSH port is not blocked.",
+                    "If machine is running, inspect agent daemon: sudo systemctl status agent_pantau",
+                    "Inspect agent logs for detailed diagnosis: sudo journalctl -u agent_pantau -n 30 --no-pager"
                 ],
                 "perintah_diagnosa": [
+                    "ping -c 3 " + (srv.ip_address or "127.0.0.1"),
+                    "ssh -o ConnectTimeout=5 " + (srv.ip_address or srv.hostname),
                     "sudo systemctl status agent_pantau",
-                    "sudo journalctl -u agent_pantau -n 30 --no-pager",
-                    "sudo systemctl restart agent_pantau"
+                    "sudo journalctl -u agent_pantau -n 30 --no-pager"
                 ]
             }, ensure_ascii=False)
 
@@ -4371,62 +5053,64 @@ def _resource_problem_instances(db, srv) -> list:
     if latest.timestamp < now - timedelta(seconds=FRESH_SNAP_SECS):
         return inst
 
+    th = get_server_thresholds(srv, db)
+
     mem_total, mem_used = latest.mem_total or 0, latest.mem_used or 0
     if mem_total > 0:
         pct = mem_used / mem_total * 100
-        if pct >= RAM_DANGER_PCT:
+        if pct >= th["ram_danger"]:
             inst.append({
                 "key": "ram_critical", "severity": "danger",
-                "message": (f"RAM HAMPIR PENUH: {pct:.0f}% "
+                "message": (f"RAM HAMPIR PENUH: {pct:.0f}% (ambang {th['ram_danger']:.0f}%) "
                             f"({_fmt_size(mem_used)} / {_fmt_size(mem_total)})"),
                 "tip": RAM_TIP,
-                "context": _build_problem_context("ram_critical", srv, pct=pct, used=mem_used, total=mem_total),
+                "context": _build_problem_context("ram_critical", srv, pct=pct, used=mem_used, total=mem_total, threshold=th["ram_danger"]),
             })
-        elif pct >= RAM_WARNING_PCT:
+        elif pct >= th["ram_warn"]:
             inst.append({
                 "key": "ram_high", "severity": "warning",
-                "message": (f"RAM tinggi: {pct:.0f}% "
+                "message": (f"RAM tinggi: {pct:.0f}% (ambang {th['ram_warn']:.0f}%) "
                             f"({_fmt_size(mem_used)} / {_fmt_size(mem_total)})"),
                 "tip": RAM_TIP,
-                "context": _build_problem_context("ram_high", srv, pct=pct, used=mem_used, total=mem_total),
+                "context": _build_problem_context("ram_high", srv, pct=pct, used=mem_used, total=mem_total, threshold=th["ram_warn"]),
             })
 
     swap_total, swap_used = latest.swap_total or 0, latest.swap_used or 0
     if swap_total > 0:
         spct = swap_used / swap_total * 100
-        if spct >= SWAP_DANGER_PCT:
+        if spct >= th["swap_danger"]:
             inst.append({
                 "key": "swap_critical", "severity": "danger",
-                "message": f"Swap hampir penuh: {spct:.0f}% — RAM menipis",
+                "message": f"Swap hampir penuh: {spct:.0f}% (ambang {th['swap_danger']:.0f}%) — RAM menipis",
                 "tip": SWAP_TIP,
-                "context": _build_problem_context("swap_critical", srv, pct=spct, used=swap_used, total=swap_total),
+                "context": _build_problem_context("swap_critical", srv, pct=spct, used=swap_used, total=swap_total, threshold=th["swap_danger"]),
             })
-        elif spct >= SWAP_WARNING_PCT:
+        elif spct >= th["swap_warn"]:
             inst.append({
                 "key": "swap_high", "severity": "warning",
-                "message": f"Swap terpakai tinggi: {spct:.0f}%",
+                "message": f"Swap terpakai tinggi: {spct:.0f}% (ambang {th['swap_warn']:.0f}%)",
                 "tip": SWAP_TIP,
-                "context": _build_problem_context("swap_high", srv, pct=spct, used=swap_used, total=swap_total),
+                "context": _build_problem_context("swap_high", srv, pct=spct, used=swap_used, total=swap_total, threshold=th["swap_warn"]),
             })
 
     cpu_vals = [s.cpu for s in snaps if s.cpu is not None]
     if cpu_vals:
         cpu_avg = sum(cpu_vals) / len(cpu_vals)
         cpu_max = max(cpu_vals)
-        if cpu_avg >= CPU_DANGER_PCT:
+        if cpu_avg >= th["cpu_danger"]:
             inst.append({
                 "key": "cpu_saturated", "severity": "danger",
-                "message": (f"CPU jenuh/saturasi: rata-rata {cpu_avg:.0f}% "
+                "message": (f"CPU jenuh/saturasi: rata-rata {cpu_avg:.0f}% (ambang {th['cpu_danger']:.0f}%) "
                             f"(puncak {cpu_max:.0f}%)"),
                 "tip": CPU_TIP,
-                "context": _build_problem_context("cpu_saturated", srv, cpu_avg=cpu_avg, cpu_max=cpu_max),
+                "context": _build_problem_context("cpu_saturated", srv, cpu_avg=cpu_avg, cpu_max=cpu_max, threshold=th["cpu_danger"]),
             })
-        elif cpu_avg >= CPU_WARNING_PCT:
+        elif cpu_avg >= th["cpu_warn"]:
             inst.append({
                 "key": "cpu_high", "severity": "warning",
-                "message": f"CPU tinggi: rata-rata {cpu_avg:.0f}% (puncak {cpu_max:.0f}%)",
+                "message": f"CPU tinggi: rata-rata {cpu_avg:.0f}% (ambang {th['cpu_warn']:.0f}%) (puncak {cpu_max:.0f}%)",
                 "tip": CPU_TIP,
-                "context": _build_problem_context("cpu_high", srv, cpu_avg=cpu_avg, cpu_max=cpu_max),
+                "context": _build_problem_context("cpu_high", srv, cpu_avg=cpu_avg, cpu_max=cpu_max, threshold=th["cpu_warn"]),
             })
 
     disks = None
@@ -4441,19 +5125,19 @@ def _resource_problem_instances(db, srv) -> list:
         if total <= 0:
             continue
         dpct = used / total * 100 if total else 0
-        if dpct >= DISK_DANGER_PCT:
+        if dpct >= th["disk_danger"]:
             inst.append({
                 "key": f"disk_critical:{mount}", "severity": "danger",
-                "message": f"Disk {mount} HAMPIR PENUH: {dpct:.0f}% ({_fmt_size(used)} / {_fmt_size(total)})",
+                "message": f"Disk {mount} HAMPIR PENUH: {dpct:.0f}% (ambang {th['disk_danger']:.0f}%) ({_fmt_size(used)} / {_fmt_size(total)})",
                 "tip": DISK_TIP,
-                "context": _build_problem_context(f"disk_critical:{mount}", srv, mount=mount, used=used, total=total, pct=dpct),
+                "context": _build_problem_context(f"disk_critical:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=th["disk_danger"]),
             })
-        elif dpct >= DISK_WARNING_PCT:
+        elif dpct >= th["disk_warn"]:
             inst.append({
                 "key": f"disk_high:{mount}", "severity": "warning",
-                "message": f"Disk {mount} terisi tinggi: {dpct:.0f}%",
+                "message": f"Disk {mount} terisi tinggi: {dpct:.0f}% (ambang {th['disk_warn']:.0f}%)",
                 "tip": DISK_TIP,
-                "context": _build_problem_context(f"disk_high:{mount}", srv, mount=mount, used=used, total=total, pct=dpct),
+                "context": _build_problem_context(f"disk_high:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=th["disk_warn"]),
             })
     return inst
 
@@ -4478,16 +5162,53 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             "context": _build_problem_context("agent_conflict", srv, ips=active_ips_sorted),
         })
 
-    if db is not None:
-        inst += _resource_problem_instances(db, srv)
     if srv.last_seen is None:
         return inst
+
+    # 2. Deteksi Host Terputus / Agen Tidak Melapor dengan Eskalasi Keparahan Dinamis
+    ls = srv.last_seen
+    if ls.tzinfo is None:
+        ls = ls.replace(tzinfo=timezone.utc)
+    sec_silent = (datetime.now(timezone.utc) - ls).total_seconds()
+
     if _server_stale(srv):
-        inst.append({"key": "agent_stale", "severity": "warning",
-                     "message": "Agen tidak melapor (data kedaluwarsa)",
-                     "tip": AGENT_STALE_TIP,
-                     "context": _build_problem_context("agent_stale", srv)})
+        # Eskalasi keparahan seiring bertambahnya waktu tidak melapor:
+        # - Detik awal deteksi (> 15s) s/d menit 2 (< 120s): Warning (Peringatan awal selama 2 menit)
+        # - Menit 2 s/d menit 5 (120s s/d 299s): Average (Down: server mati / mesin offline / jaringan terputus)
+        # - Mulai detik awal setelah Average selesai (>= 300s / 5 mnt): Danger (Kritis / Gawat)
+        if sec_silent >= 300:
+            stale_sev = "danger"
+            stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt)"
+            stale_tip = "Segera lakukan inspeksi langsung pada fisik atau virtual mesin server, periksa suplai daya, dan verifikasi konektivitas jaringan."
+        elif sec_silent >= 120:
+            stale_sev = "average"
+            stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt)"
+            stale_tip = "Periksa suplai daya server, koneksi jaringan, atau status service agent_pantau."
+        else:
+            stale_sev = "warning"
+            stale_msg = f"Agen tidak melapor (> {int(sec_silent)} dtk)"
+            stale_tip = "Periksa latensi konektivitas jaringan atau pastikan service agent_pantau berjalan aktif."
+
+        inst.append({
+            "key": "agent_stale",
+            "severity": stale_sev,
+            "message": stale_msg,
+            "tip": stale_tip,
+            "context": _build_problem_context(
+                "agent_stale", srv,
+                sec_silent=int(sec_silent),
+                escalation_level=stale_sev,
+                last_seen_str=ls.strftime("%d %b %Y %H:%M:%S UTC")
+            )
+        })
+        # PENTING: Karena server mati/offline, HENTIKAN penambahan masalah layanan (service_down:*)
+        # dan metrik resource hardware (CPU/RAM/Disk). Seluruh status layanan tersupresi oleh status server mati.
+        return inst
+
+    if db is not None:
+        inst += _resource_problem_instances(db, srv)
     if extras is not None:
+        th = get_server_thresholds(srv, db)
         if extras.agent_version and _is_agent_outdated(extras.agent_version, settings.APP_VERSION):
             inst.append({
                 "key": "agent_outdated",
@@ -4517,20 +5238,20 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                     event_at = None
             if event_at is None and extras is not None and extras.updated_at is not None:
                 event_at = extras.updated_at  # fallback bila agen tak mengirim last_seen
-            if invalid >= SECURITY_DANGER_INVALID or failed >= SECURITY_DANGER_FAILED:
+            if invalid >= SECURITY_DANGER_INVALID or failed >= th["ssh_fail_danger"]:
                 inst.append({"key": "security_danger", "severity": "danger",
-                             "message": f"Kemungkinan serangan SSH: {failed} login gagal, "
+                             "message": f"Kemungkinan serangan SSH: {failed} login gagal (ambang >={th['ssh_fail_danger']}), "
                                          f"{invalid} user invalid, dari {nips} IP"
                                          + (f" · terakhir {_rel_dt(event_at)}" if event_at else ""),
                              "tip": SECURITY_TIPS["danger"], "event_at": event_at,
-                             "context": _build_problem_context("security_danger", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {})})
-            elif failed >= SECURITY_WARNING_FAILED:
+                             "context": _build_problem_context("security_danger", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {}, threshold=th["ssh_fail_danger"])})
+            elif failed >= th["ssh_fail_warn"]:
                 inst.append({"key": "failed_logins", "severity": "warning",
-                             "message": f"{failed} login SSH gagal dari {nips} IP"
+                             "message": f"{failed} login SSH gagal dari {nips} IP (ambang >={th['ssh_fail_warn']})"
                                          + (f" · terakhir {_rel_dt(event_at)}" if event_at else "")
                                          + " — waspada brute force",
                              "tip": SECURITY_TIPS["warning"], "event_at": event_at,
-                             "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {})})
+                             "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {}, threshold=th["ssh_fail_warn"])})
             elif failed >= 1:
                 inst.append({"key": "failed_logins", "severity": "info",
                              "message": f"{failed} login SSH gagal (ringan)"
@@ -4542,7 +5263,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
         st = d.get("status")
         if st == "down":
             inst.append({
-                "key": f"service_down:{name}", "severity": "warning",
+                "key": f"service_down:{name}", "severity": "average",
                 "message": f"Layanan {name} down",
                 "tip": SVC_DOWN_TIP.format(name=name),
                 "context": _build_problem_context("service_down:", srv, service_name=name, port=d.get("port"), proc=d.get("proc"), health_msg=d.get("health_msg"), conflict_ips=active_ips if len(active_ips) > 1 else None),
@@ -4584,6 +5305,36 @@ def _rel_dt(dt: datetime, now: datetime | None = None) -> str:
     return f"{s // 86400} h lalu"
 
 
+templates.env.globals["_rel_dt"] = _rel_dt
+
+
+def _problem_component(key: str) -> str:
+    if not key:
+        return "Sistem"
+    if key.startswith("service_down:"):
+        svc = key.split(":", 1)[1]
+        return f"Layanan ({svc})"
+    if key.startswith("svc_no_data:"):
+        svc = key.split(":", 1)[1]
+        return f"Layanan ({svc})"
+    if key == "agent_stale":
+        return "Agen / Host"
+    if key in ("cpu_high", "cpu_load"):
+        return "Processor (CPU)"
+    if key in ("mem_high", "swap_high"):
+        return "Memori (RAM)"
+    if key.startswith("disk_high:"):
+        mount = key.split(":", 1)[1] if ":" in key else ""
+        return f"Penyimpanan ({mount})" if mount else "Penyimpanan (Disk)"
+    if key in ("security_danger", "failed_logins"):
+        return "Keamanan (SSH)"
+    if key == "apt_updates":
+        return "Paket OS (APT)"
+    if key == "agent_conflict":
+        return "Jaringan / IP Agen"
+    return "Sistem"
+
+
 def _problem_row2dict(row) -> dict:
     end = row.resolved_at
     return {
@@ -4591,6 +5342,7 @@ def _problem_row2dict(row) -> dict:
         "key": row.key, "severity": row.severity, "message": row.message,
         "tip": row.tip, "started_at": row.started_at, "resolved_at": end,
         "is_open": end is None,
+        "component": _problem_component(row.key),
         "acknowledged_by": row.acknowledged_by,
         "acknowledged_at": row.acknowledged_at,
         "resolved_note": row.resolved_note,
@@ -4632,7 +5384,7 @@ def _enrich_problems_for_ui(open_problems, services, extra, user_or_role="viewer
             r["log_unit"] = "AUTH"
             r["ip_count"] = len(sec.get("source_ips") or {})
         elif r["key"] == "agent_stale":
-            r["action"] = "agent_restart"
+            r["action"] = None
         elif r["key"] == "agent_outdated":
             r["action"] = "agent_update_cmd"
         elif r["key"] == "apt_updates":
@@ -4646,6 +5398,8 @@ def _serialize_problem_list(prob_list):
     res = []
     for p in prob_list:
         d = dict(p)
+        if isinstance(d.get("started_at"), datetime):
+            d["started_at_str"] = d["started_at"].strftime("%d %b %H:%M")
         for k in ("started_at", "resolved_at", "acknowledged_at", "last_active_at", "ignored_until"):
             v = d.get(k)
             if isinstance(v, datetime):
@@ -4747,8 +5501,17 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 row.last_active_at = active
             if (row.severity != p["severity"] or row.message != p["message"]
                     or row.tip != p["tip"]):
+                old_sev = row.severity
+                new_sev = p["severity"]
                 row.severity, row.message, row.tip = p["severity"], p["message"], p["tip"]
-            if p.get("context") and (not row.context or p["severity"] == "danger"):
+                if old_sev != new_sev:
+                    try:
+                        _audit(db, "sistem", "eskalasi_insiden",
+                               f"{srv.hostname}: eskalasi keparahan [{old_sev.upper()} → {new_sev.upper()}] — {p['message']}",
+                               "eskalasi", server_id=srv.id)
+                    except Exception:
+                        pass
+            if p.get("context") and (not row.context or p["severity"] in ("average", "danger")):
                 row.context = p.get("context")
             row.updated_at = now
 
@@ -4775,9 +5538,17 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
         if quiet <= 0 or (now - last).total_seconds() >= quiet:
             row.resolved_at = now
             row.updated_at = now
-            row.resolved_note = "auto" if quiet > 0 else None
+            if _server_stale(srv) and (row.key.startswith("service_down:") or row.key.startswith("svc_no_data:")):
+                row.resolved_note = "server_offline"
+            elif row.key == "agent_stale":
+                row.resolved_note = "server_online"
+            elif row.key.startswith("service_down:"):
+                row.resolved_note = "service_up"
+            else:
+                row.resolved_note = "auto" if quiet > 0 else "resolved"
+            audit_msg = f"{srv.hostname}: server kembali online dan aktif melapor" if row.key == "agent_stale" else f"{srv.hostname}: masalah '{row.message}' telah selesai"
             try:
-                _audit(db, "sistem", "masalah_selesai", f"{srv.hostname}: masalah '{row.message}' telah selesai", "selesai", server_id=srv.id)
+                _audit(db, "sistem", "masalah_selesai", audit_msg, "selesai", server_id=srv.id)
             except Exception:
                 pass
 
@@ -4835,7 +5606,12 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
 
 def _agg_row(srv, row, counts=None) -> dict:
     d = _problem_row2dict(row)
-    d.update({"server_id": srv.id, "hostname": srv.hostname})
+    d.update({
+        "server_id": srv.id,
+        "hostname": srv.hostname,
+        "group_name": getattr(srv, "group_name", None) or None,
+        "tags": getattr(srv, "tags", "") or "",
+    })
     if counts:
         d["count_24h"] = counts.get(row.key, 0)
     return d
@@ -4881,7 +5657,7 @@ def problems_aggregate(db):
             ServerProblem.resolved_at >= cutoff_24,
         ).all():
             resolved_list.append(_agg_row(srv, r, counts))
-    rank = {"danger": 3, "warning": 2, "info": 1}
+    rank = {"danger": 4, "average": 3, "warning": 2, "info": 1}
     open_list.sort(key=lambda r: (rank.get(r["severity"], 0), r["started_at"]),
                    reverse=True)
     resolved_list.sort(key=lambda r: r["resolved_at"], reverse=True)
@@ -4898,7 +5674,7 @@ def _server_status(srv, stale: bool, has_services: bool, any_up: bool, has_unign
     if not srv.is_active:
         return "nonaktif", "badge-muted"
     if stale:
-        return ("offline", "badge-down") if srv.last_seen else ("belum ada data", "badge-muted")
+        return ("offline", "badge-down") if srv.last_seen else ("-", "badge-muted")
     if not has_services:
         # agen melapor normal, hanya belum ada service yang terdeteksi
         return "online", "badge-up"
@@ -4912,6 +5688,8 @@ def _server_status(srv, stale: bool, has_services: bool, any_up: bool, has_unign
 # ---------------------------------------------------------------------------
 AUDIT_ACTION_LABELS = {
     "login": "Login",
+    "login_2fa": "Login 2FA",
+    "logout": "Logout",
     "server_add": "Tambah Server",
     "server_edit": "Ubah Server",
     "server_delete": "Hapus Server",
@@ -5010,9 +5788,11 @@ AUDIT_CATEGORIES = [
         "id": "cat:auth",
         "name": "Autentikasi & Akun",
         "name_en": "Auth & User Accounts",
-        "keys": ["login", "user_create", "cmd:user_create", "user_lock", "cmd:user_lock", "user_unlock", "cmd:user_unlock", "user_delete", "cmd:user_delete", "user_add"],
+        "keys": ["login", "login_2fa", "logout", "user_create", "cmd:user_create", "user_lock", "cmd:user_lock", "user_unlock", "cmd:user_unlock", "user_delete", "cmd:user_delete", "user_add"],
         "actions": [
             ("login", "Login", "Login"),
+            ("login_2fa", "Login 2FA", "2FA Login"),
+            ("logout", "Logout", "Logout"),
             ("user_create", "Buat Pengguna Sistem", "Create System User"),
             ("user_lock", "Kunci Akun Pengguna", "Lock User Account"),
             ("user_unlock", "Buka Kunci Akun", "Unlock User Account"),
@@ -5304,6 +6084,12 @@ def audit_page(
 # ALERT DANGER (popup yang tidak bisa diabaikan)
 # ---------------------------------------------------------------------------
 def _alert_dict(row, hostname: str, now: datetime) -> dict:
+    ctx = row.context
+    if isinstance(ctx, str) and ctx:
+        try:
+            ctx = json.loads(ctx)
+        except Exception:
+            pass
     return {
         "id": row.id,
         "server_id": row.server_id,
@@ -5316,6 +6102,7 @@ def _alert_dict(row, hostname: str, now: datetime) -> dict:
         "durasi": _fmt_duration(row.started_at, now),
         "acknowledged": row.acknowledged_at is not None,
         "acknowledged_by": row.acknowledged_by,
+        "context": ctx,
     }
 
 
@@ -5326,11 +6113,22 @@ def api_alerts(
 ):
     """Danger terbuka. `alerts` = belum diakui (harus dimunculkan), sisanya rangkuman."""
     now = datetime.utcnow()
+    # Pastikan server offline/stale langsung tersinkronisasi tanpa jeda background loop
+    stale_servers = [s for s in db.query(Server).filter(Server.is_active == 1, Server.last_seen.isnot(None)).all() if _server_stale(s)]
+    for st in stale_servers:
+        try:
+            sync_server_problems(db, st, _problem_instances(st, None, None, db))
+        except Exception:
+            pass
+
     host = {s.id: s.hostname for s in db.query(Server).all()}
     open_danger = (
         db.query(ServerProblem)
         .filter(
-            ServerProblem.severity == "danger",
+            or_(
+                ServerProblem.severity == "danger",
+                ServerProblem.key == "agent_stale",
+            ),
             ServerProblem.resolved_at.is_(None),
             (ServerProblem.is_ignored == 0) | (ServerProblem.is_ignored.is_(None)),
         )
@@ -5338,17 +6136,35 @@ def api_alerts(
     )
     alerts = [_alert_dict(r, host.get(r.server_id, "?"), now)
               for r in open_danger if r.acknowledged_at is None]
+    danger_hosts = sorted(list({host.get(r.server_id, "?") for r in open_danger if host.get(r.server_id)}))
+    for st in stale_servers:
+        if st.hostname not in danger_hosts:
+            danger_hosts.append(st.hostname)
+    danger_hosts.sort()
+
+    host_danger_counts = {}
+    for r in open_danger:
+        hname = host.get(r.server_id) or f"Server #{r.server_id}"
+        host_danger_counts[hname] = host_danger_counts.get(hname, 0) + 1
+    for st in stale_servers:
+        if st.hostname not in host_danger_counts:
+            host_danger_counts[st.hostname] = 1
+
+    total_danger_count = max(len(open_danger), len(danger_hosts))
     return {
         "alerts": alerts,
         "unack_count": len(alerts),
-        "open_danger_count": len(open_danger),
+        "open_danger_count": total_danger_count,
         "acked_count": len(open_danger) - len(alerts),
+        "danger_hosts": danger_hosts,
+        "host_danger_counts": host_danger_counts,
     }
 
 
 @app.get("/api/problems")
 def api_problems(
     server: int | None = None,
+    group: str | None = None,
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
@@ -5357,6 +6173,14 @@ def api_problems(
     if server:
         open_problems = [p for p in open_problems if p.get("server_id") == server]
         recent_resolved = [p for p in recent_resolved if p.get("server_id") == server]
+    if group:
+        g_clean = group.strip()
+        if g_clean == "__none__":
+            open_problems = [p for p in open_problems if not p.get("group_name")]
+            recent_resolved = [p for p in recent_resolved if not p.get("group_name")]
+        else:
+            open_problems = [p for p in open_problems if (p.get("group_name") or "") == g_clean]
+            recent_resolved = [p for p in recent_resolved if (p.get("group_name") or "") == g_clean]
 
     def _serialize(prob):
         p = dict(prob)
@@ -5382,17 +6206,36 @@ def api_problems(
     servers_total = db.query(Server).count()
     active_open_servers = {p["server_id"] for p in open_problems if not p.get("is_ignored")}
 
+    res_durations = []
+    auto_cnt = 0
+    manual_cnt = 0
+    for p in recent_resolved:
+        st = p.get("started_at")
+        res = p.get("resolved_at")
+        if isinstance(st, datetime) and isinstance(res, datetime):
+            res_durations.append(max(0, int((res - st).total_seconds())))
+        if p.get("acknowledged_by"):
+            manual_cnt += 1
+        else:
+            auto_cnt += 1
+    avg_s = int(sum(res_durations) / len(res_durations)) if res_durations else 0
+    avg_mttr_str = _fmt_duration(datetime.min, datetime.min + timedelta(seconds=avg_s)) if avg_s > 0 else "—"
+
     return {
         "open_problems": open_serialized,
         "recent_resolved": resolved_serialized,
         "summary": {
             "danger_open": sum(1 for p in open_problems if p.get("severity") == "danger" and not p.get("is_ignored")),
+            "average_open": sum(1 for p in open_problems if p.get("severity") == "average" and not p.get("is_ignored")),
             "warning_open": sum(1 for p in open_problems if p.get("severity") == "warning" and not p.get("is_ignored")),
             "info_open": sum(1 for p in open_problems if p.get("severity") == "info" and not p.get("is_ignored")),
             "ignored_open": sum(1 for p in open_problems if p.get("is_ignored")),
             "ok_count": servers_total - len(active_open_servers),
             "total_open": len(open_problems),
             "total_resolved": len(recent_resolved),
+            "avg_mttr": avg_mttr_str,
+            "auto_resolved": auto_cnt,
+            "manual_resolved": manual_cnt,
         }
     }
 
@@ -5688,6 +6531,89 @@ def api_service_unignore(
     )
     db.commit()
     return {"ok": True, "service_id": svc_id, "is_ignored": False}
+
+
+@app.post("/api/settings/thresholds")
+def api_update_thresholds(
+    request: Request,
+    body: dict = Body(default={}),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Perbarui ambang batas masalah global."""
+    _verify_csrf_header(request)
+    if not (user.is_master_admin() or user.has_perm("can_manage_servers")):
+        raise HTTPException(status_code=403, detail="Akses ditolak")
+
+    new_th = {}
+    float_keys = ["cpu_warn", "cpu_danger", "ram_warn", "ram_danger", "disk_warn", "disk_danger", "swap_warn", "swap_danger"]
+    int_keys = ["ssh_fail_warn", "ssh_fail_danger"]
+
+    for k in float_keys:
+        if k in body and body[k] is not None:
+            try:
+                val = float(body[k])
+                if 1.0 <= val <= 100.0:
+                    new_th[k] = val
+            except (ValueError, TypeError):
+                pass
+
+    for k in int_keys:
+        if k in body and body[k] is not None:
+            try:
+                val = int(body[k])
+                if val >= 1:
+                    new_th[k] = val
+            except (ValueError, TypeError):
+                pass
+
+    pairs = [
+        ("cpu_warn", "cpu_danger"),
+        ("ram_warn", "ram_danger"),
+        ("disk_warn", "disk_danger"),
+        ("swap_warn", "swap_danger"),
+        ("ssh_fail_warn", "ssh_fail_danger"),
+    ]
+    for w_k, d_k in pairs:
+        w_val = new_th.get(w_k, DEFAULT_THRESHOLDS[w_k])
+        d_val = new_th.get(d_k, DEFAULT_THRESHOLDS[d_k])
+        if w_val > d_val:
+            raise HTTPException(status_code=400, detail=f"Nilai Warning ({w_k}) tidak boleh lebih besar dari Danger ({d_k})")
+
+    current_th = get_global_thresholds(db)
+    current_th.update(new_th)
+
+    row = db.query(SystemSetting).filter(SystemSetting.key == "thresholds").first()
+    if not row:
+        row = SystemSetting(key="thresholds", value=json.dumps(current_th), updated_at=datetime.utcnow())
+        db.add(row)
+    else:
+        row.value = json.dumps(current_th)
+        row.updated_at = datetime.utcnow()
+
+    _audit(db, user.username, "settings_update", target="Ambang Batas Masalah Global", result="disimpan")
+    db.commit()
+    return {"ok": True, "thresholds": current_th}
+
+
+@app.post("/api/settings/thresholds/reset")
+def api_reset_thresholds(
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Reset ambang batas masalah global ke bawaan pabrik."""
+    _verify_csrf_header(request)
+    if not (user.is_master_admin() or user.has_perm("can_manage_servers")):
+        raise HTTPException(status_code=403, detail="Akses ditolak")
+
+    row = db.query(SystemSetting).filter(SystemSetting.key == "thresholds").first()
+    if row:
+        db.delete(row)
+        _audit(db, user.username, "settings_reset", target="Ambang Batas Masalah Global", result="direset ke bawaan pabrik")
+        db.commit()
+
+    return {"ok": True, "thresholds": dict(DEFAULT_THRESHOLDS)}
 
 
 
@@ -6350,6 +7276,7 @@ def api_server_system(
         "apt_last_update": (extra.apt_last_update.isoformat()
                             if extra and extra.apt_last_update else None),
         "apt_packages": parse_list(extra.apt_packages if extra else None),
+        "hardware_specs": _get_hardware_specs_dict(server, extra, latest),
         "extras": ["SYSLOG", "AUTH"],
     }
 

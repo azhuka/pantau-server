@@ -1,22 +1,29 @@
 {% extends "base.html" %}
-{% block title %}Masalah - Pantau Server{% endblock %}
+{% block title %}Insiden - Pantau Server{% endblock %}
 {% block content %}
 <div class="topbar">
-  <h2>Masalah Server</h2>
-  <div>
+  <h2>Insiden Server</h2>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <span id="prob-summary-badges" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      {% if danger_open %}<span class="badge badge-danger">Danger {{ danger_open }}</span>{% endif %}
+      {% if danger_open %}<span class="badge badge-danger">Critical {{ danger_open }}</span>{% endif %}
+      {% if average_open %}<span class="badge badge-orange">Down {{ average_open }}</span>{% endif %}
       {% if warning_open %}<span class="badge badge-warn">Warning {{ warning_open }}</span>{% endif %}
       {% if info_open %}<span class="badge badge-info">Info {{ info_open }}</span>{% endif %}
-      {% if ignored_open %}<span class="badge badge-muted" title="{{ ignored_open }} masalah diabaikan">🔕 {{ ignored_open }} diabaikan</span>{% endif %}
+      {% if ignored_open %}<span class="badge badge-muted" title="{{ ignored_open }} insiden diabaikan">🔕 {{ ignored_open }} diabaikan</span>{% endif %}
       <span class="badge badge-up">✓ {{ ok_count }} server normal</span>
     </span>
+    {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
+    <button type="button" class="btn btn-ghost btn-sm" onclick="openThresholdModal()" style="display:flex;align-items:center;gap:6px" title="Atur ambang batas peringatan insiden (CPU, RAM, Disk, Swap, SSH)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      ⚙️ Ambang Batas Insiden
+    </button>
+    {% endif %}
   </div>
 </div>
 
 <div class="card">
   <div class="card-header">
-    <h3>Masalah Terbuka</h3>
+    <h3>Insiden Terbuka</h3>
     {% set active_open = open_problems | rejectattr('is_ignored') | list %}
     <span id="prob-active-badge" class="badge badge-muted">{{ active_open|length }} aktif{% if ignored_open %} · {{ ignored_open }} diabaikan{% endif %}</span>
   </div>
@@ -30,22 +37,31 @@
         <option value="{{ srv.id }}" {% if filter_sid == srv.id %}selected{% endif %}>{{ srv.hostname }}</option>
         {% endfor %}
       </select>
+      <select name="group" onchange="this.form.submit()"
+              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
+        <option value="">Semua grup server</option>
+        {% for grp in all_groups %}
+        <option value="{{ grp }}" {% if filter_group == grp %}selected{% endif %}>❖ {{ grp }}</option>
+        {% endfor %}
+        <option value="__none__" {% if filter_group == '__none__' %}selected{% endif %}>Tanpa Grup</option>
+      </select>
     </form>
     <select id="prob-filter" onchange="probFilter()"
             style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
       <option value="">Semua level</option>
-      <option value="danger">Danger</option>
+      <option value="danger">Critical</option>
+      <option value="average">Down (Layanan)</option>
       <option value="warning">Warning</option>
       <option value="info">Info</option>
       <option value="ignored">Diabaikan (🔕)</option>
     </select>
     <div style="position:relative;display:flex;align-items:center">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari server / kejadian…"
+      <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari server / grup / kejadian…"
              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px 8px 30px;font-size:12px;min-width:240px;outline:none;transition:border-color .15s">
     </div>
     <span style="font-size:11px;color:var(--dim);align-self:center" id="prob-count"></span>
-    {% if filter_sid %}<a href="/problems" class="btn btn-ghost btn-sm">Reset filter</a>{% endif %}
+    {% if filter_sid or filter_group %}<a href="/problems" class="btn btn-ghost btn-sm">Reset filter</a>{% endif %}
   </div>
   {% endif %}
   
@@ -55,7 +71,7 @@
       <thead><tr>
         <th title="Waktu saat insiden atau masalah mulai terdeteksi">Waktu Mulai</th>
         <th title="Mesin server tempat anomali atau gangguan terjadi">Server</th>
-        <th title="Tingkat urgensi: Danger (kritis), Warning (waspada), atau Info (informasi)">Tingkat</th>
+        <th title="Tingkat urgensi: Critical (kritis), Warning (waspada), atau Info (informasi)">Tingkat</th>
         <th title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
         <th title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
         <th title="Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan">Aksi</th>
@@ -66,7 +82,8 @@
       <tr{% if p.is_ignored %} style="opacity:.75;background:rgba(255,255,255,0.02)"{% endif %}
           data-sev="{{ p.severity }}"
           data-ignored="{{ '1' if p.is_ignored else '0' }}"
-          data-text="{{ (p.hostname ~ ' ' ~ p.message ~ ' ' ~ p.key) | lower }}"
+          data-group="{{ p.group_name or '' }}"
+          data-text="{{ (p.hostname ~ ' ' ~ (p.group_name or '') ~ ' ' ~ p.message ~ ' ' ~ p.key) | lower }}"
           data-prob-id="{{ p.id }}"
           data-prob-key="{{ p.key }}"
           data-prob-sev="{{ p.severity }}"
@@ -80,8 +97,18 @@
           data-prob-sid="{{ p.server_id }}"
           data-prob-context='{{ p.context or "" }}'>
         <td style="white-space:nowrap" class="mono">{{ p.started_at.strftime('%d %b %H:%M') }}</td>
-        <td><strong>{{ p.hostname }}</strong></td>
-        <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+        <td>
+          <strong>{{ p.hostname }}</strong>
+          {% if p.group_name %}
+          <div style="margin-top:2px">
+            <span class="badge badge-muted" style="font-size:10px;display:inline-flex;align-items:center;gap:3px">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+              {{ p.group_name }}
+            </span>
+          </div>
+          {% endif %}
+        </td>
+        <td><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DOWN' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
         <td>
           <span>{{ p.message }}</span>
           {% if p.is_ignored %}
@@ -120,56 +147,235 @@
     {% else %}
     <div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px">
       <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
-      Tidak ada masalah terbuka{% if filter_sid %} untuk server ini{% endif %} saat ini.
+      Tidak ada insiden terbuka{% if filter_sid %} untuk server ini{% endif %} saat ini.
     </div>
     {% endif %}
   </div>
 </div>
 
-{% if recent_resolved %}
 <div class="card" id="prob-resolved-card">
-  <div class="card-header"><h3>Teratasi (24 jam terakhir)</h3>
-    <span style="font-size:12px;color:var(--dim)">{{ recent_resolved|length }} masalah</span>
+  <div class="card-header" style="flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:16px">📜</span>
+      <div>
+        <h3 style="margin:0;font-size:15px;font-weight:700">Riwayat Insiden</h3>
+        <div style="font-size:11.5px;color:var(--dim);margin-top:2px">Rekapitulasi insiden yang telah teratasi dan catatan pemulihan sistem (24 jam terakhir).</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="prob-resolved-stats-badges">
+      <span class="badge badge-up" style="font-size:11.5px;padding:3px 8px" title="Total insiden yang berhasil dipulihkan dalam 24 jam">{{ recent_resolved|length }} Teratasi</span>
+      {% if resolved_stats and resolved_stats.avg_mttr != '—' %}
+      <span class="badge badge-info" style="font-size:11.5px;padding:3px 8px" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: {{ resolved_stats.avg_mttr }}</span>
+      {% endif %}
+      {% if resolved_stats and resolved_stats.manual_count > 0 %}
+      <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Ditangani langsung oleh operator">{{ resolved_stats.manual_count }} ditangani operator</span>
+      {% endif %}
+    </div>
   </div>
-  <table>
-    <thead><tr><th>Waktu</th><th>Server</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Tindakan</th></tr></thead>
-    <tbody>
-    {% for p in recent_resolved %}
-    <tr style="opacity:.65"
-        data-prob-id="{{ p.id }}"
-        data-prob-key="{{ p.key }}"
-        data-prob-sev="{{ p.severity }}"
-        data-prob-msg="{{ p.message }}"
-        data-prob-tip="{{ p.tip or '' }}"
-        data-prob-start="{{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '' }}"
-        data-prob-res="{{ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '' }}"
-        data-prob-durasi="{{ p.durasi or '' }}"
-        data-prob-open="0"
-        data-prob-host="{{ p.hostname }}"
-        data-prob-sid="{{ p.server_id }}"
-        data-prob-context='{{ p.context or "" }}'>
-      <td style="white-space:nowrap" class="mono">
-        {{ p.started_at.strftime('%d %b %H:%M') }}
-        <span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>
-      </td>
-      <td><strong>{{ p.hostname }}</strong></td>
-      <td><span class="badge badge-{{ {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}">{{ p.severity }}</span></td>
-      <td><span style="color:var(--green)">✓</span> <span style="text-decoration:line-through">{{ p.message }}</span>
-        {% if p.resolved_note == 'auto' %}
-          <span class="badge badge-muted" title="Tidak ada deteksi baru selama jendela tenang">otomatis berakhir</span>
-        {% elif p.resolved_note %}
-          <span class="badge badge-muted" title="Catatan: {{ p.resolved_note }}">{{ p.resolved_note }}</span>
-        {% endif %}
-      </td>
-      <td class="mono">{{ p.durasi }}</td>
-      <td style="white-space:nowrap">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" style="margin-right:4px">🔍 Diagnosa</button>
-        <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
-      </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+
+  {% if recent_resolved %}
+  <div style="overflow-x:auto" id="prob-resolved-table-wrap">
+    <table style="width:100%;margin:0;border-collapse:collapse">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border)">
+          <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Waktu insiden mulai dan berhasil teratasi">Waktu Gangguan</th>
+          <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Nama host dan grup server">Server</th>
+          <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Tingkat keparahan insiden saat terjadi">Tingkat</th>
+          <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
+          <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
+          <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Total durasi downtime hingga sistem pulih kembali">Durasi Gangguan</th>
+          <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Catatan status penanganan atau pemulihan">Resolusi</th>
+          <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:center;white-space:nowrap" title="Aksi ke rincian server">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="prob-resolved-tbody">
+      {% for p in recent_resolved %}
+      <tr style="opacity:.8;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease"
+          data-group="{{ p.group_name or '' }}"
+          data-prob-id="{{ p.id }}"
+          data-prob-key="{{ p.key }}"
+          data-prob-sev="{{ p.severity }}"
+          data-prob-msg="{{ p.message }}"
+          data-prob-start="{{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '' }}"
+          data-prob-res="{{ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '' }}"
+          data-prob-durasi="{{ p.durasi or '' }}"
+          data-prob-open="0"
+          data-prob-host="{{ p.hostname }}"
+          data-prob-sid="{{ p.server_id }}">
+        <!-- 1. Waktu Gangguan -->
+        <td style="padding:8px 10px;white-space:nowrap">
+          <div class="mono" style="font-size:12px;color:var(--text);font-weight:600">
+            {{ p.started_at.strftime('%d %b %H:%M') }} <span style="color:var(--dim)">→</span> {{ p.resolved_at.strftime('%H:%M') }}
+          </div>
+          <div style="font-size:11px;color:var(--dim);margin-top:2px">
+            {{ p.resolved_at.strftime('%d %b') }} ({{ _rel_dt(p.resolved_at) }})
+          </div>
+        </td>
+        <!-- 2. Server & Grup -->
+        <td style="padding:8px 10px;white-space:nowrap">
+          <div style="font-size:13px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
+          {% if p.group_name %}
+          <div style="margin-top:2px">
+            <span class="badge badge-muted" style="font-size:10px;padding:1px 6px">❖ {{ p.group_name }}</span>
+          </div>
+          {% endif %}
+        </td>
+        <!-- 3. Tingkat / Keparahan -->
+        <td style="padding:8px 10px;white-space:nowrap">
+          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:11px;padding:2px 7px">
+            {{ 'DOWN' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}
+          </span>
+        </td>
+        <!-- 4. Komponen -->
+        <td style="padding:8px 10px;white-space:nowrap">
+          <span style="font-size:12px;color:var(--text);font-weight:500">
+            {{ p.component or 'Sistem' }}
+          </span>
+        </td>
+        <!-- 5. Deskripsi Insiden -->
+        <td style="padding:8px 10px;font-size:12.5px;color:var(--text)">
+          <span style="color:var(--dim);text-decoration:line-through">{{ p.message }}</span>
+        </td>
+        <!-- 6. Durasi Gangguan (Downtime) -->
+        <td style="padding:8px 10px;white-space:nowrap" class="mono">
+          <span class="badge badge-muted" style="font-size:11px;padding:2px 7px;font-weight:600" title="Total waktu insiden berlangsung hingga teratasi">{{ p.durasi }}</span>
+        </td>
+        <!-- 7. Resolusi -->
+        <td style="padding:8px 10px;white-space:nowrap">
+          {% if p.resolved_note == 'server_offline' %}
+            <span class="badge badge-muted" style="font-size:11px;padding:2px 7px" title="Ditutup karena host/server offline">Host Offline</span>
+          {% elif p.resolved_note == 'server_online' or p.key == 'agent_stale' %}
+            <span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="Server dinyalakan kembali dan aktif melapor">✓ Server Kembali Online</span>
+          {% elif p.resolved_note == 'service_up' %}
+            <span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="Layanan aktif kembali">✓ Layanan Aktif Kembali</span>
+          {% elif p.acknowledged_by %}
+            <span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="Ditangani oleh {{ p.acknowledged_by }}">✓ {{ p.acknowledged_by }}</span>
+          {% elif p.resolved_note == 'auto' %}
+            <span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="Kondisi kembali normal dan tenang">✓ Normal Kembali</span>
+          {% elif p.resolved_note %}
+            <span class="badge badge-muted" style="font-size:11px;padding:2px 7px">{{ p.resolved_note }}</span>
+          {% else %}
+            <span class="badge badge-up" style="font-size:11px;padding:2px 7px">✓ Selesai</span>
+          {% endif %}
+        </td>
+        <!-- 8. Aksi (DIAGNOSA DIHAPUS, HANYA RINCIAN) -->
+        <td style="padding:8px 10px;white-space:nowrap;text-align:center">
+          <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px" title="Buka rincian server {{ p.hostname }}">Rincian &rarr;</a>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="font-size:13px;color:var(--dim);display:flex;align-items:center;gap:8px;padding:8px 4px">
+    <span>Belum ada riwayat insiden dalam 24 jam terakhir. Seluruh sistem beroperasi normal.</span>
+  </div>
+  {% endif %}
+</div>
+
+{% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
+<!-- Modal Ambang Batas Masalah Global -->
+<div id="threshold-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:8px">⚙️ Ambang Batas Masalah Global</h3>
+      <button type="button" onclick="closeThresholdModal()" style="background:none;border:0;color:var(--dim);font-size:20px;cursor:pointer">&times;</button>
+    </div>
+    <form id="threshold-form" onsubmit="submitThresholds(event)" style="padding:20px">
+      <p style="font-size:12px;color:var(--dim);margin-top:0;margin-bottom:16px">
+        Konfigurasi ini berlaku sebagai standar global untuk semua server klien yang tidak memiliki ambang batas khusus (override).
+      </p>
+
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Beban Prosesor CPU (%)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-cpu-warn" name="cpu_warn" value="{{ global_thresholds.cpu_warn | int }}" required
+                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+          </div>
+          <div>
+            <span style="font-size:11px;color:var(--red)">Critical Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-cpu-danger" name="cpu_danger" value="{{ global_thresholds.cpu_danger | int }}" required
+                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Penggunaan Memori RAM (%)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-ram-warn" name="ram_warn" value="{{ global_thresholds.ram_warn | int }}" required
+                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+          </div>
+          <div>
+            <span style="font-size:11px;color:var(--red)">Critical Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-ram-danger" name="ram_danger" value="{{ global_thresholds.ram_danger | int }}" required
+                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Kapasitas Partisi Disk (%)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-disk-warn" name="disk_warn" value="{{ global_thresholds.disk_warn | int }}" required
+                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+          </div>
+          <div>
+            <span style="font-size:11px;color:var(--red)">Critical Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-disk-danger" name="disk_danger" value="{{ global_thresholds.disk_danger | int }}" required
+                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Kapasitas Swap Memory (%)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-swap-warn" name="swap_warn" value="{{ global_thresholds.swap_warn | int }}" required
+                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+          </div>
+          <div>
+            <span style="font-size:11px;color:var(--red)">Critical Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-swap-danger" name="swap_danger" value="{{ global_thresholds.swap_danger | int }}" required
+                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Percobaan Login Gagal SSH (kali)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
+            <input type="number" step="1" min="1" id="th-g-ssh-warn" name="ssh_fail_warn" value="{{ global_thresholds.ssh_fail_warn | int }}" required
+                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+          </div>
+          <div>
+            <span style="font-size:11px;color:var(--red)">Critical Level</span>
+            <input type="number" step="1" min="1" id="th-g-ssh-danger" name="ssh_fail_danger" value="{{ global_thresholds.ssh_fail_danger | int }}" required
+                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border)">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="resetThresholds()" style="color:var(--red)" title="Kembalikan semua nilai ke bawaan instalasi awal">↺ Reset ke Bawaan</button>
+        <div style="display:flex;gap:8px">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="closeThresholdModal()">Batal</button>
+          <button type="submit" id="th-submit-btn" class="btn btn-primary btn-sm">Simpan Ambang Batas</button>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 {% endif %}
 {% endblock %}
@@ -177,6 +383,80 @@
 {% block scripts %}
 <script>
 const FILTER_SID = {{ filter_sid or 'null' }};
+const FILTER_GROUP = {{ filter_group | tojson if filter_group else "''" }};
+
+function openThresholdModal() {
+  const m = document.getElementById('threshold-modal');
+  if (m) m.style.display = 'flex';
+}
+function closeThresholdModal() {
+  const m = document.getElementById('threshold-modal');
+  if (m) m.style.display = 'none';
+}
+async function submitThresholds(e) {
+  e.preventDefault();
+  const btn = document.getElementById('th-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Menyimpan…';
+  const payload = {
+    cpu_warn: parseFloat(document.getElementById('th-g-cpu-warn').value),
+    cpu_danger: parseFloat(document.getElementById('th-g-cpu-danger').value),
+    ram_warn: parseFloat(document.getElementById('th-g-ram-warn').value),
+    ram_danger: parseFloat(document.getElementById('th-g-ram-danger').value),
+    disk_warn: parseFloat(document.getElementById('th-g-disk-warn').value),
+    disk_danger: parseFloat(document.getElementById('th-g-disk-danger').value),
+    swap_warn: parseFloat(document.getElementById('th-g-swap-warn').value),
+    swap_danger: parseFloat(document.getElementById('th-g-swap-danger').value),
+    ssh_fail_warn: parseInt(document.getElementById('th-g-ssh-warn').value),
+    ssh_fail_danger: parseInt(document.getElementById('th-g-ssh-danger').value),
+  };
+  try {
+    const res = await fetch('/api/settings/thresholds', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf(),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Ambang batas masalah berhasil disimpan.', true);
+      closeThresholdModal();
+      setTimeout(() => location.reload(), 600);
+    } else {
+      showToast('Gagal: ' + (data.detail || 'Terjadi kesalahan'), false);
+    }
+  } catch (err) {
+    showToast('Kendala jaringan: ' + err.message, false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Simpan Ambang Batas';
+  }
+}
+async function resetThresholds() {
+  if (!confirm('Kembalikan semua ambang batas global ke pengaturan bawaan pabrik?')) return;
+  try {
+    const res = await fetch('/api/settings/thresholds/reset', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': getCsrf(),
+      },
+      credentials: 'same-origin',
+    });
+    if (res.ok) {
+      showToast('Ambang batas berhasil direset ke bawaan.', true);
+      closeThresholdModal();
+      setTimeout(() => location.reload(), 600);
+    } else {
+      const data = await res.json();
+      showToast('Gagal: ' + (data.detail || 'Terjadi kesalahan'), false);
+    }
+  } catch (err) {
+    showToast('Kendala jaringan: ' + err.message, false);
+  }
+}
 
 let probOpenPagination = null;
 let probResolvedPagination = null;
@@ -266,7 +546,11 @@ window.poll = async function() {
   _isPolling = true;
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    const url = '/api/problems' + (FILTER_SID ? '?server=' + FILTER_SID : '');
+    const params = new URLSearchParams();
+    if (FILTER_SID) params.set('server', FILTER_SID);
+    if (FILTER_GROUP) params.set('group', FILTER_GROUP);
+    const qs = params.toString();
+    const url = '/api/problems' + (qs ? '?' + qs : '');
     const r = await fetch(url, { credentials: 'same-origin' });
     if (!r.ok) return;
     const data = await r.json();
@@ -276,7 +560,8 @@ window.poll = async function() {
     if (badgeWrap && data.summary) {
       const s = data.summary;
       let bh = '';
-      if (s.danger_open) bh += `<span class="badge badge-danger">Danger ${s.danger_open}</span> `;
+      if (s.danger_open) bh += `<span class="badge badge-danger">Critical ${s.danger_open}</span> `;
+      if (s.average_open) bh += `<span class="badge badge-orange">Down ${s.average_open}</span> `;
       if (s.warning_open) bh += `<span class="badge badge-warn">Warning ${s.warning_open}</span> `;
       if (s.info_open) bh += `<span class="badge badge-info">Info ${s.info_open}</span> `;
       if (s.ignored_open) bh += `<span class="badge badge-muted" title="${s.ignored_open} ${isEn ? 'incidents ignored' : 'masalah diabaikan'}">🔕 ${s.ignored_open} ${isEn ? 'ignored' : 'diabaikan'}</span> `;
@@ -308,7 +593,7 @@ window.poll = async function() {
             <thead><tr>
               <th title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden atau masalah mulai terdeteksi'}">${isEn ? 'Start Time' : 'Waktu Mulai'}</th>
               <th title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">Server</th>
-              <th title="${isEn ? 'Urgency level: Danger, Warning, or Info' : 'Tingkat urgensi: Danger (kritis), Warning (waspada), atau Info (informasi)'}">${isEn ? 'Level' : 'Tingkat'}</th>
+              <th title="${isEn ? 'Urgency level: Critical, Down, Warning, or Info' : 'Tingkat urgensi: Critical (kritis), Down, Warning (waspada), atau Info (informasi)'}">${isEn ? 'Level' : 'Tingkat'}</th>
               <th title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'Event' : 'Kejadian'}</th>
               <th title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'Duration' : 'Durasi'}</th>
               <th title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan'}">${isEn ? 'Actions' : 'Aksi'}</th>
@@ -323,10 +608,11 @@ window.poll = async function() {
           tbody.innerHTML = openList.map(p => {
             const isIgn = !!p.is_ignored;
             const rowStyle = isIgn ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '';
-            const sevBadge = isIgn ? 'badge badge-muted' : ('badge badge-' + ({danger:'danger',warning:'warn',info:'info'}[p.severity] || 'info'));
+            const sevBadge = isIgn ? 'badge badge-muted' : ('badge badge-' + ({danger:'danger',average:'orange',warning:'warn',info:'info'}[p.severity] || 'info'));
             let pMsg = p.message || '';
             let pTip = p.tip || '—';
-            const textSearch = _esc((p.hostname + ' ' + pMsg + ' ' + (p.key || '')).toLowerCase());
+            const grp = p.group_name || 'Default';
+            const textSearch = _esc((p.hostname + ' ' + grp + ' ' + pMsg + ' ' + (p.key || '')).toLowerCase());
             const ctxStr = p.context ? _esc(typeof p.context === 'object' ? JSON.stringify(p.context) : p.context) : '';
             const count24 = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
             const ignBadge = isIgn ? `<span class="badge badge-muted">${isEn ? '🔕 ignored' : '🔕 diabaikan'}${p.ignored_until_str ? (isEn ? ' until ' : ' s/d ') + _esc(p.ignored_until_str) : (isEn ? ' permanent' : ' permanen')}</span>` : '';
@@ -346,6 +632,7 @@ window.poll = async function() {
             return `<tr${rowStyle}
               data-sev="${_esc(p.severity)}"
               data-ignored="${isIgn ? '1' : '0'}"
+              data-group="${_esc(grp)}"
               data-text="${textSearch}"
               data-prob-id="${p.id}"
               data-prob-key="${_esc(p.key)}"
@@ -360,8 +647,11 @@ window.poll = async function() {
               data-prob-sid="${p.server_id}"
               data-prob-context="${ctxStr}">
               <td style="white-space:nowrap" class="mono">${_esc(p.started_at_str || '')}</td>
-              <td><strong>${_esc(p.hostname)}</strong></td>
-              <td><span class="${sevBadge}">${_esc(p.severity)}${isIgn ? ' 🔕' : ''}</span></td>
+              <td>
+                <strong>${_esc(p.hostname)}</strong>
+                ${p.group_name ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:10px;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> ${_esc(p.group_name)}</span></div>` : ''}
+              </td>
+              <td><span class="${sevBadge}">${_esc(p.severity === 'average' ? 'DOWN' : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}${isIgn ? ' 🔕' : ''}</span></td>
               <td>
                 <span>${_esc(pMsg)}</span>
                 ${ignBadge}
@@ -382,6 +672,73 @@ window.poll = async function() {
           }).join('');
         }
       }
+    }
+
+    // 4. Perbarui Riwayat Insiden (Teratasi)
+    const resTbody = document.getElementById('prob-resolved-tbody');
+    const resList = data.recent_resolved || [];
+    if (resTbody && resList.length > 0) {
+      resTbody.innerHTML = resList.map(p => {
+        const sevBadge = 'badge badge-' + ({danger:'danger',average:'orange',warning:'warn',info:'info'}[p.severity] || 'info');
+        const grp = p.group_name || '';
+        let resBadge = '';
+        if (p.resolved_note === 'server_offline') {
+          resBadge = `<span class="badge badge-muted" style="font-size:11px;padding:2px 7px" title="Ditutup karena host/server offline">${isEn ? 'Host Offline' : 'Host Offline'}</span>`;
+        } else if (p.resolved_note === 'server_online' || p.key === 'agent_stale') {
+          resBadge = `<span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="${isEn ? 'Server powered on / back online' : 'Server dinyalakan kembali dan aktif melapor'}">✓ ${isEn ? 'Host Back Online' : 'Server Kembali Online'}</span>`;
+        } else if (p.resolved_note === 'service_up') {
+          resBadge = `<span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="${isEn ? 'Service active again' : 'Layanan aktif kembali'}">✓ ${isEn ? 'Service Running' : 'Layanan Aktif Kembali'}</span>`;
+        } else if (p.acknowledged_by) {
+          resBadge = `<span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${_esc(p.acknowledged_by)}">✓ ${_esc(p.acknowledged_by)}</span>`;
+        } else if (p.resolved_note === 'auto') {
+          resBadge = `<span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="${isEn ? 'Condition normal' : 'Kondisi kembali normal dan tenang'}">✓ ${isEn ? 'Condition Normal' : 'Normal Kembali'}</span>`;
+        } else if (p.resolved_note) {
+          resBadge = `<span class="badge badge-muted" style="font-size:11px;padding:2px 7px">${_esc(p.resolved_note)}</span>`;
+        } else {
+          resBadge = `<span class="badge badge-up" style="font-size:11px;padding:2px 7px">${isEn ? '✓ Resolved' : '✓ Selesai'}</span>`;
+        }
+
+        return `<tr style="opacity:.8;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease"
+            data-group="${_esc(grp)}"
+            data-prob-id="${p.id}"
+            data-prob-key="${_esc(p.key)}"
+            data-prob-sev="${_esc(p.severity)}"
+            data-prob-msg="${_esc(p.message || '')}"
+            data-prob-start="${_esc(p.started_at || '')}"
+            data-prob-res="${_esc(p.resolved_at || '')}"
+            data-prob-durasi="${_esc(p.durasi || '')}"
+            data-prob-open="0"
+            data-prob-host="${_esc(p.hostname)}"
+            data-prob-sid="${p.server_id}">
+          <td style="padding:8px 10px;white-space:nowrap">
+            <div class="mono" style="font-size:12px;color:var(--text);font-weight:600">
+              ${_esc(p.started_at_str || '')} <span style="color:var(--dim)">→</span> ${_esc(p.resolved_at_str || '')}
+            </div>
+          </td>
+          <td style="padding:8px 10px;white-space:nowrap">
+            <div style="font-size:13px;font-weight:600;color:var(--text-bright)">${_esc(p.hostname)}</div>
+            ${grp ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:10px;padding:1px 6px">❖ ${_esc(grp)}</span></div>` : ''}
+          </td>
+          <td style="padding:8px 10px;white-space:nowrap">
+            <span class="${sevBadge}" style="font-size:11px;padding:2px 7px">
+              ${_esc(p.severity === 'average' ? 'DOWN' : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}
+            </span>
+          </td>
+          <td style="padding:8px 10px;white-space:nowrap">
+            <span style="font-size:12px;color:var(--text);font-weight:500">${_esc(p.component || 'Sistem')}</span>
+          </td>
+          <td style="padding:8px 10px;font-size:12.5px;color:var(--text)">
+            <span style="color:var(--dim);text-decoration:line-through">${_esc(p.message || '')}</span>
+          </td>
+          <td style="padding:8px 10px;white-space:nowrap" class="mono">
+            <span class="badge badge-muted" style="font-size:11px;padding:2px 7px;font-weight:600">${_esc(p.durasi || '')}</span>
+          </td>
+          <td style="padding:8px 10px;white-space:nowrap">${resBadge}</td>
+          <td style="padding:8px 10px;white-space:nowrap;text-align:center">
+            <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px">${isEn ? 'Details →' : 'Rincian →'}</a>
+          </td>
+        </tr>`;
+      }).join('');
     }
 
     probFilter();

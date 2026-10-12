@@ -468,7 +468,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.1.1"
+AGENT_VERSION = "4.2.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -544,6 +544,7 @@ def http_json_request(cfg: dict, path: str, method: str = "GET", data: dict | No
     body = json.dumps(data).encode("utf-8") if data is not None else None
 
     req = urllib.request.Request(url, data=body, method=method)
+    req.add_header("User-Agent", f"AgentPantau/{AGENT_VERSION}")
     req.add_header("Content-Type", "application/json")
     req.add_header("X-Api-Key", cfg["api_key"])
 
@@ -592,6 +593,7 @@ def send_report(cfg: dict, services: list, system: dict,
     payload["listening_ports"] = collect_listening_ports()
     payload["ssl_certs"] = collect_ssl_certs()
     payload["system_logs"] = collect_system_logs()
+    payload["hardware_specs"] = collect_hardware_specs()
 
     for attempt in range(1, 4):
         code, _ = http_json_request(cfg, "/api/report", "POST", payload)
@@ -1277,6 +1279,193 @@ def _read_meminfo() -> dict:
     except OSError:
         pass
     return mem
+
+
+_hw_specs_cache = {"at": 0.0, "data": {}}
+
+def collect_hardware_specs() -> dict:
+    """Kumpulkan spesifikasi mendalam perangkat keras & platform sistem klien."""
+    global _hw_specs_cache
+    now = time.monotonic()
+    if (now - _hw_specs_cache["at"]) < 45.0 and _hw_specs_cache["data"]:
+        return _hw_specs_cache["data"]
+
+    specs = {
+        "cpu": {
+            "model": "Unknown CPU",
+            "cores": os.cpu_count() or 1,
+            "arch": platform.machine() or "x86_64",
+            "mhz": "",
+            "cache": "",
+        },
+        "platform": {
+            "virt": "Bare Metal / Physical",
+            "vendor": "",
+            "product": "",
+            "bios_version": "",
+            "bios_date": "",
+        },
+        "memory": {
+            "ram_total": 0,
+            "swap_total": 0,
+        },
+        "disks": [],
+        "network": {
+            "gateway": "",
+            "dns": [],
+            "interfaces": [],
+        },
+        "os": {
+            "os_name": _os_pretty(),
+            "kernel": _kernel_release(),
+            "hostname": get_hostname(),
+            "boot_time": "",
+        }
+    }
+
+    # 1. CPU Detail dari /proc/cpuinfo
+    try:
+        if os.path.exists("/proc/cpuinfo"):
+            with open("/proc/cpuinfo", "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if ":" in line:
+                        k, v = [x.strip() for x in line.split(":", 1)]
+                        if k in ("model name", "Hardware", "Processor") and specs["cpu"]["model"] == "Unknown CPU":
+                            specs["cpu"]["model"] = v
+                        elif k == "cpu MHz" and not specs["cpu"]["mhz"]:
+                            specs["cpu"]["mhz"] = v
+                        elif k == "cache size" and not specs["cpu"]["cache"]:
+                            specs["cpu"]["cache"] = v
+    except Exception:
+        pass
+
+    # 2. Total RAM & Swap dari meminfo
+    mem = _read_meminfo()
+    specs["memory"]["ram_total"] = mem.get("MemTotal", 0)
+    specs["memory"]["swap_total"] = mem.get("SwapTotal", 0)
+
+    # 3. Platform & DMI data
+    dmi_map = {
+        "vendor": "/sys/class/dmi/id/sys_vendor",
+        "product": "/sys/class/dmi/id/product_name",
+        "bios_version": "/sys/class/dmi/id/bios_version",
+        "bios_date": "/sys/class/dmi/id/bios_date",
+    }
+    for k, p in dmi_map.items():
+        try:
+            if os.path.exists(p):
+                with open(p, "r", encoding="utf-8", errors="replace") as f:
+                    specs["platform"][k] = f.read().strip()
+        except Exception:
+            pass
+
+    # Deteksi Hypervisor / Virtualisasi
+    try:
+        res = subprocess.run(
+            ["systemd-detect-virt"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=2,
+        )
+        if res.returncode == 0:
+            out = res.stdout.strip()
+            if out and out.lower() != "none":
+                specs["platform"]["virt"] = out.upper()
+    except Exception:
+        pass
+
+    # 4. Storage Block Devices (lsblk)
+    try:
+        res = subprocess.run(
+            ["lsblk", "-d", "-n", "-o", "NAME,SIZE,TYPE,ROTA,TRAN,MODEL"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=3,
+        )
+        if res.returncode == 0:
+            for line in res.stdout.splitlines():
+                parts = line.split()
+                if len(parts) >= 3 and parts[2] == "disk":
+                    name = parts[0]
+                    size = parts[1]
+                    rota = parts[3] if len(parts) > 3 else "1"
+                    dtype = "SSD" if rota == "0" else "HDD"
+                    model = " ".join(parts[5:]) if len(parts) > 5 else ""
+                    specs["disks"].append({"name": name, "size": size, "type": dtype, "model": model})
+    except Exception:
+        pass
+
+    # 5. Network (Default Gateway, DNS, & Interfaces)
+    try:
+        if os.path.exists("/proc/net/route"):
+            with open("/proc/net/route", "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    fields = line.strip().split()
+                    if len(fields) >= 3 and fields[1] == "00000000":
+                        specs["network"]["gateway"] = socket.inet_ntoa(struct.pack("<L", int(fields[2], 16)))
+                        break
+    except Exception:
+        pass
+
+    try:
+        if os.path.exists("/etc/resolv.conf"):
+            with open("/etc/resolv.conf", "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if line.startswith("nameserver"):
+                        parts = line.split()
+                        if len(parts) > 1 and parts[1] not in specs["network"]["dns"]:
+                            specs["network"]["dns"].append(parts[1])
+    except Exception:
+        pass
+
+    try:
+        net_dir = "/sys/class/net"
+        if os.path.exists(net_dir):
+            for iface in sorted(os.listdir(net_dir)):
+                if iface == "lo":
+                    continue
+                mac_path = os.path.join(net_dir, iface, "address")
+                speed_path = os.path.join(net_dir, iface, "speed")
+                mac = ""
+                speed = ""
+                try:
+                    if os.path.exists(mac_path):
+                        with open(mac_path, "r", encoding="utf-8", errors="replace") as f:
+                            mac = f.read().strip()
+                except Exception:
+                    pass
+                try:
+                    if os.path.exists(speed_path):
+                        with open(speed_path, "r", encoding="utf-8", errors="replace") as f:
+                            sp = f.read().strip()
+                            if sp and int(sp) > 0:
+                                speed = f"{sp} Mbps"
+                except Exception:
+                    pass
+                specs["network"]["interfaces"].append({
+                    "name": iface,
+                    "mac": mac,
+                    "speed": speed,
+                })
+    except Exception:
+        pass
+
+    # 6. Waktu Boot (Boot Time)
+    try:
+        if os.path.exists("/proc/uptime"):
+            with open("/proc/uptime", "r", encoding="utf-8", errors="replace") as f:
+                up_secs = float(f.read().split()[0])
+                import datetime as _dt
+                btime = _dt.datetime.now() - _dt.timedelta(seconds=up_secs)
+                specs["os"]["boot_time"] = btime.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        pass
+
+    _hw_specs_cache["at"] = now
+    _hw_specs_cache["data"] = specs
+    return specs
 
 
 def collect_disks() -> list[dict]:

@@ -1,4 +1,4 @@
-# Pantau Server
+# Pantau Server (v4.2.0)
 
 Dashboard monitoring & management multi-server berbasis web (FastAPI + MariaDB) dengan agent daemon Python ringan untuk mengelola multi server Linux dari satu layar.
 
@@ -7,11 +7,12 @@ Dashboard monitoring & management multi-server berbasis web (FastAPI + MariaDB) 
 ## Fitur Utama
 
 - **Live Resource Monitoring:** CPU, RAM, Swap, Disk per mount point, Load Average, dan bandwidth network realtime (auto-polling tanpa refresh browser).
-- **Service & Process Control:** Start, Stop, Restart service systemd, dan kill process pemakan resource langsung dari web.
+- **Deep Hardware & Platform Telemetry:** Deteksi model prosesor & clock speed, hypervisor/virtualisasi platform (DMI & systemd-detect-virt), jenis block storage (SSD/HDD), default gateway, DNS, interface network MAC & link speed, serta waktu boot sistem.
+- **Service & Process Control:** Start, Stop, Restart service systemd, dan kill process pemakan resource langsung dari web dengan guardrail proteksi sistem kritis.
 - **Web Terminal (xterm.js):** Akses shell root interaktif langsung di browser. Mendukung ANSI color, shortcut bash, nano, htop, dan full screen.
 - **Web File Manager:** Browse folder, edit config (auto-backup `.bak`), upload/download file, serta chmod/chown dengan proteksi path sistem kritis.
-- **Alert & Incident Tracking:** Peringatan otomatis untuk CPU/RAM tinggi, disk penuh, atau service down, lengkap dengan opsi Mute/Silence dan ack.
-- **Security & RBAC 3-Tier:** Pembagian role (Master Admin, Operator dengan wewenang sudo, Viewer), 2FA TOTP (Google/Microsoft Authenticator), recovery backup code, dan user activity audit trail.
+- **Emergency Critical Incident & Alert Tracking:** Sistem banner peringatan darurat global untuk insiden kritis (server tidak melapor / offline), eskalasi severity bertahap (Warning → Average → Critical), panduan mitigasi fisik/VM, serta alur penanganan (*acknowledge/resolve*).
+- **Security & RBAC 3-Tier:** Pembagian role (Master Admin, Operator dengan wewenang sudo terdelegasi, Viewer), 2FA TOTP (Google/Microsoft Authenticator), recovery backup code, dan user activity audit trail.
 - **Host Management Suite:** Kelola user Linux host (add, lock, unlock), cron job, port listening (kill/block via UFW), dan inspeksi masa aktif SSL.
 - **One-Click OTA Agent Update:** Push update agent ke seluruh client langsung dari dashboard dengan verifikasi hash SHA-256 dan auto-restart systemd.
 
@@ -58,18 +59,27 @@ sudo /opt/pantau/server/env/bin/python /opt/pantau/server/seed_admin.py \
 
 ## 2. Install Agent di Server Client
 
-Agent tidak butuh port inbound (tidak perlu buka port SSH ke arah client). Agent aktif melapor keluar (*outbound pull*) ke dashboard setiap 5–10 detik via HTTP POST, sehingga aman di balik NAT atau firewall ketat.
+Agent tidak butuh port inbound (tidak perlu buka port SSH ke arah client). Agent aktif melapor keluar (*outbound pull*) ke dashboard setiap 5–10 detik via HTTP POST, sehingga aman di balik NAT, firewall ketat, atau jaringan private LAN/VPN.
 
-1. Buka dashboard: Masuk ke menu **Servers → Tambah Server**, lalu copy **API Key**.
-2. Di server client yang mau dimonitor, jalankan script installer:
+1. Buka dashboard: Masuk ke menu **Servers → Tambah Server**, lalu salin **API Key** (64 hex).
+2. Di server client yang ingin dimonitor, unduh dan jalankan script installer:
 
 ```bash
 sudo curl -fsSL -o /tmp/pantau-install.sh \
   https://raw.githubusercontent.com/azhuka/pantau-server/master/package/install.sh
-sudo bash /tmp/pantau-install.sh "http://<IP-DASHBOARD>:8400" "<API_KEY>"
+sudo bash /tmp/pantau-install.sh
 ```
 
-*Jika dijalankan tanpa argumen, script akan meminta URL dashboard dan API Key secara interaktif.*
+Installer akan meminta konfigurasi secara interaktif dan fleksibel:
+- **URL Dashboard**: Masukkan alamat server Dashboard (misal via LAN/VPN: `http://172.30.1.40:8400` atau via reverse proxy `https://pantau.domain.com`).
+- **API Key**: Masukkan 64 karakter hex API Key yang telah disalin.
+
+Script secara otomatis:
+- Memvalidasi keterjangkauan dan keabsahan API Key ke Dashboard sebelum menyimpan data.
+- Menulis konfigurasi aman di `/etc/pantau/config.json` (permission `0640`, owner `root:pantau`).
+- Mendaftarkan dan mengaktifkan service systemd `agent_pantau.service` di bawah user `pantau`.
+
+*(Opsi non-interaktif untuk script otomasi/Ansible tetap didukung: `sudo bash /tmp/pantau-install.sh "http://<IP-DASHBOARD>:8400" "<API_KEY>"`)*
 
 Dalam ±10 detik, server client otomatis muncul dengan status online di dashboard.
 
@@ -227,4 +237,5 @@ Daemon background dashboard secara berkala membersihkan data log lama setiap jam
 | Terminal error `409 Conflict` | Ada sesi terminal lain yang sedang aktif di server tersebut (hanya 1 sesi aktif per server demi keamanan). |
 | Update OS via web macet / lock error | Lock file APT sedang dipakai proses lain di client. Buka Web Terminal dan jalankan `sudo dpkg --configure -a`. |
 | Tombol Push OTA tidak muncul | Versi agent di server client sudah sama atau lebih baru dari versi dashboard. |
+| Validasi installer gagal / HTTP 403 | Jika server client dan dashboard berada di subnet lokal (LAN/VPN) yang sama, gunakan alamat IP LAN langsung (misal `http://172.30.1.40:8400`) saat installer meminta URL agar koneksi langsung dan bebas hambatan firewall/WAF. |
 | Lupa kode 2FA / Handphone hilang | Buka terminal server dashboard dan jalankan perintah: `sudo /opt/pantau/server/env/bin/python /opt/pantau/server/seed_admin.py --username <user> --reset-2fa`. |

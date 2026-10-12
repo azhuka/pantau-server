@@ -25,6 +25,52 @@
         <input type="text" id="f-ip" name="ip_address" value="{{ server.ip_address if server else '' }}" required placeholder="192.168.1.10">
       </div>
     </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="f-group">Grup Server</label>
+        <input type="text" id="f-group" name="group_name" list="existing-groups" value="{{ server.group_name if server and server.group_name else '' }}" placeholder="Contoh: Produksi, Staging, Web (opsional)">
+        <datalist id="existing-groups">
+          {% for grp in existing_groups %}
+          <option value="{{ grp }}"></option>
+          {% endfor %}
+        </datalist>
+        {% if existing_groups %}
+        <div style="margin-top:6px;display:flex;flex-wrap:wrap;align-items:center;gap:6px">
+          <span style="font-size:11px;color:var(--dim)">Grup yang ada:</span>
+          {% for grp in existing_groups %}
+          <button type="button" class="btn btn-ghost btn-xs grp-pick-btn" data-grp="{{ grp }}"
+                  style="font-size:11px;padding:2px 8px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,0.03);display:inline-flex;align-items:center;gap:4px;cursor:pointer"
+                  onclick="selectGroup('{{ grp }}')">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            {{ grp }}
+          </button>
+          {% endfor %}
+          <button type="button" class="btn btn-ghost btn-xs" style="font-size:11px;padding:2px 8px;border-radius:12px;color:var(--dim);cursor:pointer" onclick="selectGroup('')" title="Kosongkan grup">
+            ✕ Kosongkan
+          </button>
+        </div>
+        {% endif %}
+        <span style="font-size:11px;color:var(--dim);margin-top:4px;display:block">Kategori grup untuk mengelompokkan server di dashboard dan daftar server (kosongkan jika tanpa grup).</span>
+      </div>
+      <div class="form-group">
+        <label for="f-tags">Label / Tags</label>
+        <input type="text" id="f-tags" name="tags" value="{{ server.tags if server and server.tags else '' }}" placeholder="web, nginx, primary, db (opsional)">
+        {% if existing_tags %}
+        <div style="margin-top:6px;display:flex;flex-wrap:wrap;align-items:center;gap:6px">
+          <span style="font-size:11px;color:var(--dim)">Pilih tag:</span>
+          {% for tg in existing_tags %}
+          <button type="button" class="btn btn-ghost btn-xs tag-pick-btn" data-tag="{{ tg }}"
+                  style="font-size:11px;padding:2px 8px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,0.03);display:inline-flex;align-items:center;gap:4px;cursor:pointer"
+                  onclick="toggleTag('{{ tg }}')">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+            {{ tg }}
+          </button>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <span style="font-size:11px;color:var(--dim);margin-top:4px;display:block">Label tambahan dipisahkan koma (opsional).</span>
+      </div>
+    </div>
     {% if server %}
     <div class="form-group">
       <label for="f-active">Status</label>
@@ -34,9 +80,141 @@
       </select>
     </div>
     {% endif %}
+
+    <div style="margin-top:20px;margin-bottom:20px;border:1px solid var(--border);border-radius:var(--radius-sm);background:rgba(255,255,255,0.015);overflow:hidden">
+      <div style="padding:12px 16px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleThSection()">
+        <div>
+          <strong style="font-size:13px;display:flex;align-items:center;gap:6px">⚙️ Ambang Batas Masalah (Custom Thresholds)</strong>
+          <div style="font-size:11px;color:var(--dim);margin-top:2px">Batas peringatan khusus server ini. Kosongkan untuk mewarisi batas global.</div>
+        </div>
+        <span id="th-toggle-icon" style="font-size:12px;color:var(--dim)">{% if custom_thresholds %}▲{% else %}▼{% endif %}</span>
+      </div>
+      <div id="th-section-body" style="padding:16px;display:{% if custom_thresholds %}block{% else %}none{% endif %};">
+        <div style="font-size:12px;color:var(--dim);margin-bottom:14px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);padding:8px 12px;border-radius:6px">
+          💡 Angka di placeholder (abu-abu) adalah nilai global aktif. Isi jika ingin menentukan batas khusus server ini.
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>CPU Usage Warning (%)</label>
+            <input type="number" step="1" min="1" max="100" name="th_cpu_warn" value="{{ custom_thresholds.cpu_warn if custom_thresholds.get('cpu_warn') is not none else '' }}" placeholder="{{ (global_thresholds.cpu_warn | int) if global_thresholds else 85 }}">
+          </div>
+          <div class="form-group">
+            <label>CPU Usage Danger (%)</label>
+            <input type="number" step="1" min="1" max="100" name="th_cpu_danger" value="{{ custom_thresholds.cpu_danger if custom_thresholds.get('cpu_danger') is not none else '' }}" placeholder="{{ (global_thresholds.cpu_danger | int) if global_thresholds else 95 }}">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>RAM Usage Warning (%)</label>
+            <input type="number" step="1" min="1" max="100" name="th_ram_warn" value="{{ custom_thresholds.ram_warn if custom_thresholds.get('ram_warn') is not none else '' }}" placeholder="{{ (global_thresholds.ram_warn | int) if global_thresholds else 85 }}">
+          </div>
+          <div class="form-group">
+            <label>RAM Usage Danger (%)</label>
+            <input type="number" step="1" min="1" max="100" name="th_ram_danger" value="{{ custom_thresholds.ram_danger if custom_thresholds.get('ram_danger') is not none else '' }}" placeholder="{{ (global_thresholds.ram_danger | int) if global_thresholds else 95 }}">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Disk Usage Warning (%)</label>
+            <input type="number" step="1" min="1" max="100" name="th_disk_warn" value="{{ custom_thresholds.disk_warn if custom_thresholds.get('disk_warn') is not none else '' }}" placeholder="{{ (global_thresholds.disk_warn | int) if global_thresholds else 90 }}">
+          </div>
+          <div class="form-group">
+            <label>Disk Usage Danger (%)</label>
+            <input type="number" step="1" min="1" max="100" name="th_disk_danger" value="{{ custom_thresholds.disk_danger if custom_thresholds.get('disk_danger') is not none else '' }}" placeholder="{{ (global_thresholds.disk_danger | int) if global_thresholds else 95 }}">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Swap Usage Warning (%)</label>
+            <input type="number" step="1" min="1" max="100" name="th_swap_warn" value="{{ custom_thresholds.swap_warn if custom_thresholds.get('swap_warn') is not none else '' }}" placeholder="{{ (global_thresholds.swap_warn | int) if global_thresholds else 80 }}">
+          </div>
+          <div class="form-group">
+            <label>Swap Usage Danger (%)</label>
+            <input type="number" step="1" min="1" max="100" name="th_swap_danger" value="{{ custom_thresholds.swap_danger if custom_thresholds.get('swap_danger') is not none else '' }}" placeholder="{{ (global_thresholds.swap_danger | int) if global_thresholds else 92 }}">
+          </div>
+        </div>
+      </div>
+    </div>
+
     <button type="submit" class="btn btn-primary" data-i18n="{{ 'save_changes' if server else 'add_server' }}">{{ 'Simpan Perubahan' if server else 'Tambah Server' }}</button>
   </form>
 </div>
+
+<script>
+function toggleThSection() {
+  const b = document.getElementById('th-section-body');
+  const icon = document.getElementById('th-toggle-icon');
+  if (b.style.display === 'none') {
+    b.style.display = 'block';
+    icon.textContent = '▲';
+  } else {
+    b.style.display = 'none';
+    icon.textContent = '▼';
+  }
+}
+
+function selectGroup(val) {
+  const el = document.getElementById('f-group');
+  if (el) el.value = val;
+  updateGroupHighlight();
+}
+
+function updateGroupHighlight() {
+  const cur = (document.getElementById('f-group')?.value || '').trim().toLowerCase();
+  document.querySelectorAll('.grp-pick-btn').forEach(btn => {
+    const bGrp = (btn.dataset.grp || '').trim().toLowerCase();
+    if (cur && bGrp === cur) {
+      btn.style.borderColor = 'var(--blue)';
+      btn.style.background = 'rgba(59,130,246,0.18)';
+      btn.style.color = '#fff';
+      btn.style.fontWeight = '600';
+    } else {
+      btn.style.borderColor = 'var(--border)';
+      btn.style.background = 'rgba(255,255,255,0.03)';
+      btn.style.color = '';
+      btn.style.fontWeight = 'normal';
+    }
+  });
+}
+
+function toggleTag(tg) {
+  const el = document.getElementById('f-tags');
+  if (!el) return;
+  let tags = el.value.split(',').map(s => s.trim()).filter(Boolean);
+  const idx = tags.findIndex(t => t.toLowerCase() === tg.toLowerCase());
+  if (idx >= 0) {
+    tags.splice(idx, 1);
+  } else {
+    tags.push(tg);
+  }
+  el.value = tags.join(', ');
+  updateTagHighlight();
+}
+
+function updateTagHighlight() {
+  const el = document.getElementById('f-tags');
+  const tags = (el?.value || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  document.querySelectorAll('.tag-pick-btn').forEach(btn => {
+    const tg = (btn.dataset.tag || '').trim().toLowerCase();
+    if (tags.includes(tg)) {
+      btn.style.borderColor = 'var(--blue)';
+      btn.style.background = 'rgba(59,130,246,0.18)';
+      btn.style.color = '#fff';
+      btn.style.fontWeight = '600';
+    } else {
+      btn.style.borderColor = 'var(--border)';
+      btn.style.background = 'rgba(255,255,255,0.03)';
+      btn.style.color = '';
+      btn.style.fontWeight = 'normal';
+    }
+  });
+}
+
+document.getElementById('f-group')?.addEventListener('input', updateGroupHighlight);
+document.getElementById('f-tags')?.addEventListener('input', updateTagHighlight);
+updateGroupHighlight();
+updateTagHighlight();
+</script>
 
 {% if server %}
 <div class="card" style="border-color:var(--border)">

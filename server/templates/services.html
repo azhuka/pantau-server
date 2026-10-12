@@ -422,8 +422,9 @@
 </div>
 
 {% set pmeta = {'ok': ('OK', 'up', 'green'), 'info': ('Info', 'info', 'var(--blue)'),
+                'average': ('Down', 'orange', '#f97316'),
                 'warning': ('Warning', 'warn', 'var(--yellow)'),
-                'danger': ('Danger', 'danger', 'var(--red)')} %}
+                'danger': ('Critical', 'danger', 'var(--red)')} %}
 {% set act = request.query_params.get('action') %}
 {% set acted = act in ('block', 'unblock', 'invalid_ip', 'fw_enabled', 'fw_disabled', 'fw_reloaded', 'process_killed', 'invalid_pid', 'agent', 'noips', 'reboot', 'poweroff') or request.query_params.get('restarted') %}
 {% if acted %}
@@ -485,6 +486,22 @@
       <div class="hero-host">
         <span class="dot {{ 'warn' if server.is_maintenance else ('up' if is_online else 'down') }}" id="hero-dot"></span>
         <strong>{{ server.hostname }}</strong>
+        {% if server.group_name %}
+        <span class="badge badge-muted" style="font-size:11px;display:inline-flex;align-items:center;gap:4px" title="Grup Server">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          {{ server.group_name }}
+        </span>
+        {% endif %}
+        {% if server.tags %}
+          {% for tag in (server.tags or '').split(',') %}
+            {% if tag.strip() %}
+              <span class="badge" style="font-size:11px;background:rgba(255,255,255,0.06);color:var(--dim);display:inline-flex;align-items:center;gap:3px">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                {{ tag.strip() }}
+              </span>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
         <span class="mono copyable-ip" style="font-size:12px" onclick="copyIp('{{ server.ip_address }}', event)" title="Klik untuk salin IP">{{ server.ip_address }}</span>
         <span id="hero-online" class="hero-online {{ 'warn' if server.is_maintenance else ('on' if is_online else 'off') }}">{{ 'pemeliharaan' if server.is_maintenance else ('online' if is_online else 'offline') }}</span>
         <button type="button" id="hero-maint-badge" class="hero-maint-badge" style="{{ '' if server.is_maintenance else 'display:none;' }}" onclick="openMaintenanceModal()" title="Lihat detail mode pemeliharaan" data-i18n-title="view_maint_details"><span id="hero-maint-badge-text" data-i18n="view">Lihat</span></button>
@@ -595,77 +612,8 @@
   <div id="apt-msg" style="display:none;font-size:12px;line-height:1.5;margin-top:10px"></div>
 </div>
 
-<div class="card">
-  <div class="card-header"><h3>Performa Sekarang — Perangkat Keras</h3>
-    <span id="sys-ts" style="font-size:12px;color:var(--dim)"></span>
-  </div>
-  <div id="sys-empty" class="empty-msg" style="display:none">
-    Belum ada data kinerja dari server ini.
-  </div>
-  <div id="sys-body">
-    <div class="stats-grid" style="margin-bottom:16px">
-      <div class="stat-card">
-        <div class="label">CPU</div>
-        <div class="value" id="sys-cpu">-</div>
-        <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-cpu-bar" style="width:0%"></div></div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Beban (1/5/15 menit)</div>
-        <div class="value" style="font-size:18px" id="sys-load">-</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Memori</div>
-        <div class="value" id="sys-mem">-</div>
-        <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-mem-bar" style="width:0%"></div></div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Swap</div>
-        <div class="value" id="sys-swap">-</div>
-        <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-swap-bar" style="width:0%"></div></div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Proses</div>
-        <div class="value" id="sys-procs">-</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Uptime</div>
-        <div class="value" style="font-size:16px" id="sys-uptime">-</div>
-        <div style="font-size:11px;color:var(--dim);margin-top:4px" id="sys-kernel">-</div>
-      </div>
-    </div>
-
-    <div class="grid-2" style="margin-bottom:16px">
-      <div>
-        <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">CPU (riwayat ±10 mnt)</div>
-        <div id="spark-cpu"></div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Memori Terpakai (riwayat ±10 mnt)</div>
-        <div id="spark-mem"></div>
-      </div>
-    </div>
-
-    <div id="disks-wrap" style="display:none">
-      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Penyimpanan (Disk &amp; I/O Throughput)</div>
-      <table id="disks-table">
-        <thead>
-          <tr>
-            <th>Mount</th>
-            <th>Tipe</th>
-            <th>Terpakai</th>
-            <th style="width:25%">Pemakaian</th>
-            <th title="Kecepatan baca dan tulis disk saat ini">Laju I/O (R / W)</th>
-            <th title="Persentase utilisasi waktu aktif disk (I/O util)">Util I/O</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
 <div class="tabbar" id="detail-tabs" role="tablist">
-  <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true" id="tab-perf-btn" data-i18n="tab_perf"><span class="tab-text">Kinerja</span><span id="tab-dot-perf" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true" id="tab-perf-btn" data-i18n="tab_perf"><span class="tab-text">Kinerja &amp; Spesifikasi</span><span id="tab-dot-perf" class="tab-warn-dot" style="display:none"></span></button>
   {% set active_open = open_problems | rejectattr('is_ignored') | list %}
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
   <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Riwayat &amp; Masalah</span><span id="tab-dot-masalah" class="tab-warn-dot" style="display:none"></span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
@@ -680,93 +628,351 @@
 </div>
 
 <div class="tab-body" id="tab-perf">
-<div class="card">
-  <div class="card-header" style="align-items:center">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <h3 style="margin:0">Riwayat Kinerja</h3>
-      <span style="font-size:12px;color:var(--dim)">Grafik utilisasi sumber daya mesin</span>
-    </div>
-    <div id="perf-ranges" class="segmented-control">
-      <button class="btn btn-sm" data-range="1h">1 Jam</button>
-      <button class="btn btn-sm" data-range="6h">6 Jam</button>
-      <button class="btn btn-sm is-on" data-range="24h">24 Jam</button>
-      <button class="btn btn-sm" data-range="7d">7 Hari</button>
-      <button class="btn btn-sm" data-range="30d">30 Hari</button>
-    </div>
-  </div>
-  <div id="perf-empty" class="empty-msg" style="display:none">
-    Belum ada data riwayat — grafik terisi setelah agen aktif beberapa menit/jam.
-  </div>
-  <div class="perf-grid">
-    <div class="perf-metric-card">
-      <div class="perf-card-header">
-        <div class="perf-card-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" style="vertical-align:middle"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
-          <span>CPU</span>
-        </div>
-        <div class="perf-card-stats" id="stats-cpu"></div>
-      </div>
-      <div id="chart-cpu" class="perf-chart-box"></div>
-    </div>
-    <div class="perf-metric-card">
-      <div class="perf-card-header">
-        <div class="perf-card-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" style="vertical-align:middle"><path d="M6 19v-3"/><path d="M10 19v-3"/><path d="M14 19v-3"/><path d="M18 19v-3"/><path d="M6 5v3"/><path d="M10 5v3"/><path d="M14 5v3"/><path d="M18 5v3"/><rect x="2" y="8" width="20" height="8" rx="2"/></svg>
-          <span>Memori Terpakai</span>
-        </div>
-        <div class="perf-card-stats" id="stats-mem"></div>
-      </div>
-      <div id="chart-mem" class="perf-chart-box"></div>
-    </div>
-    <div class="perf-metric-card">
-      <div class="perf-card-header">
-        <div class="perf-card-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" style="vertical-align:middle"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <span>Swap Terpakai</span>
-        </div>
-        <div class="perf-card-stats" id="stats-swap"></div>
-      </div>
-      <div id="chart-swap" class="perf-chart-box"></div>
-    </div>
-    <div class="perf-metric-card">
-      <div class="perf-card-header">
-        <div class="perf-card-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2" style="vertical-align:middle"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <span>Beban Sistem (Load 1)</span>
-        </div>
-        <div class="perf-card-stats" id="stats-load"></div>
-      </div>
-      <div id="chart-load" class="perf-chart-box"></div>
-    </div>
-  </div>
-  <div id="disk-charts-wrap" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:16px"></div>
-</div>
 
-<div class="card" style="margin-top:16px">
-  <div class="card-header" style="align-items:center">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <h3 style="margin:0">Statistik Antarmuka Jaringan</h3>
-      <span style="font-size:12px;color:var(--dim)">Pemantauan lalu lintas data antarmuka, laju transfer, dan alamat IP</span>
+  <!-- 1. Performa Sekarang — Beban & Utilisasi Mesin (Live) -->
+  <div class="card">
+    <div class="card-header" style="align-items:center;justify-content:space-between">
+      <div>
+        <h3 style="margin:0">Performa Sekarang — Beban &amp; Utilisasi Mesin</h3>
+        <span style="font-size:12px;color:var(--dim)">Metrik vital sistem real-time diperbarui otomatis setiap beberapa detik</span>
+      </div>
+      <span id="sys-ts" style="font-size:12px;color:var(--dim)"></span>
+    </div>
+    <div id="sys-empty" class="empty-msg" style="display:none">
+      Belum ada data kinerja dari server ini.
+    </div>
+    <div id="sys-body">
+      <div class="stats-grid" style="margin-bottom:16px">
+        <div class="stat-card">
+          <div class="label">CPU</div>
+          <div class="value" id="sys-cpu">-</div>
+          <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-cpu-bar" style="width:0%"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Beban (1/5/15 menit)</div>
+          <div class="value" style="font-size:18px" id="sys-load">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Memori</div>
+          <div class="value" id="sys-mem">-</div>
+          <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-mem-bar" style="width:0%"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Swap</div>
+          <div class="value" id="sys-swap">-</div>
+          <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-swap-bar" style="width:0%"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Proses</div>
+          <div class="value" id="sys-procs">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Uptime</div>
+          <div class="value" style="font-size:16px" id="sys-uptime">-</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:4px" id="sys-kernel">-</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">CPU (riwayat ±10 mnt)</div>
+          <div id="spark-cpu"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Memori Terpakai (riwayat ±10 mnt)</div>
+          <div id="spark-mem"></div>
+        </div>
+      </div>
     </div>
   </div>
-  <div id="net-empty" class="empty-msg" style="display:none">Belum ada data jaringan dari server ini.</div>
-  <div style="overflow-x:auto">
-    <table id="net-table" style="display:none;width:100%">
-      <thead>
-        <tr>
-          <th>Antarmuka</th>
-          <th>IP Address</th>
-          <th>Status</th>
-          <th title="Total akumulasi byte diterima sejak boot">RX Total</th>
-          <th title="Total akumulasi byte dikirim sejak boot">TX Total</th>
-          <th title="Kecepatan unduh / lalu lintas masuk saat ini">Laju Masuk (RX)</th>
-          <th title="Kecepatan unggah / lalu lintas keluar saat ini">Laju Keluar (TX)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+
+  <!-- 2. Spesifikasi Perangkat Keras & Platform -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-header" style="align-items:center;justify-content:space-between">
+      <div>
+        <h3 style="margin:0">Spesifikasi Perangkat Keras &amp; Platform</h3>
+        <span style="font-size:12px;color:var(--dim)">Identitas perangkat keras, prosesor, RAM fisik, hypervisor, dan sistem operasi</span>
+      </div>
+      <span class="badge badge-purple mono" id="spec-virt-badge" style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.3)">{{ hardware_specs.platform.virt if hardware_specs and hardware_specs.platform and hardware_specs.platform.virt else 'Host' }}</span>
+    </div>
+    
+    <!-- 4 Grid Ringkas (CPU, RAM, Platform, OS) -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:14px;margin-bottom:16px">
+      
+      <!-- CPU -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+            <strong style="font-size:13px">Prosesor (CPU)</strong>
+          </div>
+          <span class="badge badge-info mono" id="spec-cpu-cores" style="font-size:10px">{{ (hardware_specs.cpu.cores ~ ' Cores') if (server.last_seen and hardware_specs and hardware_specs.cpu and hardware_specs.cpu.cores) else '-' }}</span>
+        </div>
+        <table class="table-compact" style="width:100%;font-size:12px">
+          <tbody>
+            <tr><td style="color:var(--dim);width:40%">Model</td><td><strong id="spec-cpu-model">{{ hardware_specs.cpu.model if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.model else '—' }}</strong></td></tr>
+            <tr><td style="color:var(--dim)">Arsitektur</td><td class="mono" id="spec-cpu-arch">{{ hardware_specs.cpu.arch if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.arch else 'x86_64' }}</td></tr>
+            <tr><td style="color:var(--dim)">Clock</td><td class="mono" id="spec-cpu-mhz">{{ (hardware_specs.cpu.mhz ~ ' MHz') if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.mhz else '—' }}</td></tr>
+            <tr><td style="color:var(--dim)">Cache</td><td class="mono" id="spec-cpu-cache">{{ hardware_specs.cpu.cache if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.cache else '—' }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RAM & Swap -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            <strong style="font-size:13px">Kapasitas Memori</strong>
+          </div>
+          <span class="badge badge-success mono" style="font-size:10px">RAM</span>
+        </div>
+        <table class="table-compact" style="width:100%;font-size:12px">
+          <tbody>
+            <tr><td style="color:var(--dim);width:40%">Total RAM</td><td><strong id="spec-ram-total">{{ ((hardware_specs.memory.ram_total / (1024**3))|round(2)) ~ ' GB' if hardware_specs and hardware_specs.memory and hardware_specs.memory.ram_total else '0 GB' }}</strong></td></tr>
+            <tr><td style="color:var(--dim)">Total Swap</td><td class="mono" id="spec-swap-total">{{ ((hardware_specs.memory.swap_total / (1024**3))|round(2)) ~ ' GB' if hardware_specs and hardware_specs.memory and hardware_specs.memory.swap_total else '0 GB' }}</td></tr>
+            <tr><td style="color:var(--dim)">Alokasi</td><td><span class="badge badge-muted" style="font-size:10px">Dinamis (Kernel)</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Platform & Virtualisasi -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <strong style="font-size:13px">Platform &amp; Mesin</strong>
+          </div>
+        </div>
+        <table class="table-compact" style="width:100%;font-size:12px">
+          <tbody>
+            <tr><td style="color:var(--dim);width:40%">Virtualisasi</td><td><strong id="spec-virt-type">{{ hardware_specs.platform.virt if hardware_specs and hardware_specs.platform and hardware_specs.platform.virt else 'Bare Metal / Physical' }}</strong></td></tr>
+            <tr><td style="color:var(--dim)">Vendor</td><td class="mono" id="spec-board-vendor">{{ hardware_specs.platform.vendor if hardware_specs and hardware_specs.platform and hardware_specs.platform.vendor else '—' }}</td></tr>
+            <tr><td style="color:var(--dim)">Model</td><td class="mono" id="spec-board-product">{{ hardware_specs.platform.product if hardware_specs and hardware_specs.platform and hardware_specs.platform.product else '—' }}</td></tr>
+            <tr><td style="color:var(--dim)">BIOS</td><td class="mono" id="spec-bios-ver" style="font-size:11px">{{ hardware_specs.platform.bios_version if hardware_specs and hardware_specs.platform and hardware_specs.platform.bios_version else '—' }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Sistem Operasi -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+            <strong style="font-size:13px">Sistem Operasi</strong>
+          </div>
+        </div>
+        <table class="table-compact" style="width:100%;font-size:12px">
+          <tbody>
+            <tr><td style="color:var(--dim);width:40%">Distro</td><td><strong id="spec-os-name">{{ hardware_specs.os.os_name if hardware_specs and hardware_specs.os and hardware_specs.os.os_name else (os_label or 'Linux') }}</strong></td></tr>
+            <tr><td style="color:var(--dim)">Kernel</td><td class="mono" id="spec-kernel-ver">{{ hardware_specs.os.kernel if hardware_specs and hardware_specs.os and hardware_specs.os.kernel else (kernel or '—') }}</td></tr>
+            <tr><td style="color:var(--dim)">Hostname</td><td class="mono" id="spec-hostname">{{ hardware_specs.os.hostname if hardware_specs and hardware_specs.os and hardware_specs.os.hostname else server.hostname }}</td></tr>
+            <tr><td style="color:var(--dim)">Boot Time</td><td class="mono" id="spec-boot-time" style="font-size:11px">{{ hardware_specs.os.boot_time if hardware_specs and hardware_specs.os and hardware_specs.os.boot_time else '—' }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- 2 Kolom Bawah: Disk Fisik & Jaringan/Gateway -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:14px">
+      
+      <!-- Block Devices -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            <strong style="font-size:13px">Perangkat Penyimpanan Fisik (Block Devices)</strong>
+          </div>
+          <span class="badge badge-info" id="spec-disk-count" style="font-size:10px">{{ hardware_specs.disks|length if hardware_specs and hardware_specs.disks else 0 }} Disks</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;font-size:12px" id="spec-disks-table">
+            <thead>
+              <tr>
+                <th>Perangkat</th>
+                <th>Kapasitas</th>
+                <th>Tipe Media</th>
+                <th>Model Drive</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if hardware_specs and hardware_specs.disks %}
+                {% for d in hardware_specs.disks %}
+                <tr>
+                  <td class="mono"><strong>/dev/{{ d.name }}</strong></td>
+                  <td class="mono">{{ d.size }}</td>
+                  <td><span class="badge {{ 'badge-success' if d.type == 'SSD' else 'badge-muted' }}" style="font-size:10px">{{ d.type }}</span></td>
+                  <td style="color:var(--dim);font-size:11px">{{ d.model or 'Disk Volume' }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="4" class="empty-msg" style="padding:12px">Tidak ada data disk blok fisik.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Network Configuration -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            <strong style="font-size:13px">Konfigurasi Gateway &amp; Resolver DNS</strong>
+          </div>
+          <span class="badge badge-info mono" style="font-size:10px">{{ server.ip_address }}</span>
+        </div>
+        <table class="table-compact" style="width:100%;font-size:12px;margin-bottom:10px">
+          <tbody>
+            <tr><td style="color:var(--dim);width:36%">Gateway</td><td class="mono" id="spec-net-gw">{{ hardware_specs.network.gateway if hardware_specs and hardware_specs.network and hardware_specs.network.gateway else '—' }}</td></tr>
+            <tr><td style="color:var(--dim)">DNS Server</td><td class="mono" id="spec-net-dns">{{ hardware_specs.network.dns|join(', ') if hardware_specs and hardware_specs.network and hardware_specs.network.dns else '—' }}</td></tr>
+          </tbody>
+        </table>
+        <div style="overflow-x:auto">
+          <table style="width:100%;font-size:12px" id="spec-ifaces-table">
+            <thead>
+              <tr>
+                <th>Antarmuka</th>
+                <th>MAC Address</th>
+                <th>Kecepatan</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if hardware_specs and hardware_specs.network and hardware_specs.network.interfaces %}
+                {% for iface in hardware_specs.network.interfaces %}
+                <tr>
+                  <td class="mono"><strong>{{ iface.name }}</strong></td>
+                  <td class="mono" style="font-size:11px">{{ iface.mac or '—' }}</td>
+                  <td class="mono" style="font-size:11px;color:var(--dim)">{{ iface.speed or 'Auto / Virtual' }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr><td colspan="3" class="empty-msg" style="padding:12px">Tidak ada data antarmuka jaringan.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
   </div>
-</div>
+
+  <!-- 3. Partisi Penyimpanan & Laju I/O Disk (Live) -->
+  <div class="card" id="disks-wrap" style="display:none;margin-top:16px">
+    <div class="card-header" style="align-items:center;justify-content:space-between">
+      <div>
+        <h3 style="margin:0">Partisi Penyimpanan &amp; Laju I/O Disk</h3>
+        <span style="font-size:12px;color:var(--dim)">Pemakaian ruang filesystem dan kecepatan baca/tulis disk secara real-time</span>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table id="disks-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Mount</th>
+            <th>Tipe</th>
+            <th>Terpakai</th>
+            <th style="width:25%">Pemakaian</th>
+            <th title="Kecepatan baca dan tulis disk saat ini">Laju I/O (R / W)</th>
+            <th title="Persentase utilisasi waktu aktif disk (I/O util)">Util I/O</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4. Statistik Antarmuka Jaringan (Live) -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-header" style="align-items:center;justify-content:space-between">
+      <div>
+        <h3 style="margin:0">Statistik Lalu Lintas Jaringan</h3>
+        <span style="font-size:12px;color:var(--dim)">Pemantauan lalu lintas data antarmuka, laju transfer, dan alamat IP</span>
+      </div>
+    </div>
+    <div id="net-empty" class="empty-msg" style="display:none">Belum ada data jaringan dari server ini.</div>
+    <div style="overflow-x:auto">
+      <table id="net-table" style="display:none;width:100%">
+        <thead>
+          <tr>
+            <th>Antarmuka</th>
+            <th>IP Address</th>
+            <th>Status</th>
+            <th title="Total akumulasi byte diterima sejak boot">RX Total</th>
+            <th title="Total akumulasi byte dikirim sejak boot">TX Total</th>
+            <th title="Kecepatan unduh / lalu lintas masuk saat ini">Laju Masuk (RX)</th>
+            <th title="Kecepatan unggah / lalu lintas keluar saat ini">Laju Keluar (TX)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 5. Riwayat Kinerja (Historical Performance Charts) -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-header" style="align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <h3 style="margin:0">Riwayat Kinerja</h3>
+        <span style="font-size:12px;color:var(--dim)">Grafik utilisasi sumber daya mesin jangka panjang</span>
+      </div>
+      <div id="perf-ranges" class="segmented-control">
+        <button class="btn btn-sm" data-range="1h">1 Jam</button>
+        <button class="btn btn-sm" data-range="6h">6 Jam</button>
+        <button class="btn btn-sm is-on" data-range="24h">24 Jam</button>
+        <button class="btn btn-sm" data-range="7d">7 Hari</button>
+        <button class="btn btn-sm" data-range="30d">30 Hari</button>
+      </div>
+    </div>
+    <div id="perf-empty" class="empty-msg" style="display:none">
+      Belum ada data riwayat — grafik terisi setelah agen aktif beberapa menit/jam.
+    </div>
+    <div class="perf-grid">
+      <div class="perf-metric-card">
+        <div class="perf-card-header">
+          <div class="perf-card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" style="vertical-align:middle"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+            <span>CPU</span>
+          </div>
+          <div class="perf-card-stats" id="stats-cpu"></div>
+        </div>
+        <div id="chart-cpu" class="perf-chart-box"></div>
+      </div>
+      <div class="perf-metric-card">
+        <div class="perf-card-header">
+          <div class="perf-card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" style="vertical-align:middle"><path d="M6 19v-3"/><path d="M10 19v-3"/><path d="M14 19v-3"/><path d="M18 19v-3"/><path d="M6 5v3"/><path d="M10 5v3"/><path d="M14 5v3"/><path d="M18 5v3"/><rect x="2" y="8" width="20" height="8" rx="2"/></svg>
+            <span>Memori Terpakai</span>
+          </div>
+          <div class="perf-card-stats" id="stats-mem"></div>
+        </div>
+        <div id="chart-mem" class="perf-chart-box"></div>
+      </div>
+      <div class="perf-metric-card">
+        <div class="perf-card-header">
+          <div class="perf-card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" style="vertical-align:middle"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span>Swap Terpakai</span>
+          </div>
+          <div class="perf-card-stats" id="stats-swap"></div>
+        </div>
+        <div id="chart-swap" class="perf-chart-box"></div>
+      </div>
+      <div class="perf-metric-card">
+        <div class="perf-card-header">
+          <div class="perf-card-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2" style="vertical-align:middle"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span>Beban Sistem (Load 1)</span>
+          </div>
+          <div class="perf-card-stats" id="stats-load"></div>
+        </div>
+        <div id="chart-load" class="perf-chart-box"></div>
+      </div>
+    </div>
+    <div id="disk-charts-wrap" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:16px"></div>
+  </div>
+
 </div>
 
 <div class="tab-body" id="tab-masalah" hidden>
@@ -778,7 +984,8 @@
     {% else %}
       {% set active_open = open_problems | rejectattr('is_ignored') | list %}
       {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
-      <span class="badge badge-{{ pmeta[problem_level][1] }}">{{ pmeta[problem_level][0] }}</span>
+      {% set meta_info = pmeta.get(problem_level, (problem_level|upper, 'orange')) %}
+      <span class="badge badge-{{ meta_info[1] }}">{{ meta_info[0] }}</span>
       <span style="font-size:12px;color:var(--dim)">{{ active_open|length }} masalah aktif{% if ignored_open %} · {{ ignored_open|length }} diabaikan (🔕){% endif %}</span>
     {% endif %}
     </div>
@@ -791,7 +998,8 @@
       <select id="prob-filter" onchange="probFilter()"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
         <option value="">Semua level</option>
-        <option value="danger">Danger</option>
+        <option value="danger">Critical</option>
+        <option value="average">Down (Layanan)</option>
         <option value="warning">Warning</option>
         <option value="info">Info</option>
         <option value="ignored">Diabaikan (🔕)</option>
@@ -836,7 +1044,7 @@
         {{ p.started_at.strftime('%d %b %H:%M') }}
         {% if p.resolved_at %}<span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>{% endif %}
       </td>
-      <td><span class="badge badge-{{ 'muted' if p.is_ignored else {'danger':'danger','warning':'warn','info':'info'}[p.severity] }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ p.severity }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+      <td><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DOWN' if p.severity == 'average' else p.severity | upper }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
       <td>
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
@@ -867,11 +1075,7 @@
             </form>
           {% endif %}
           <button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>
-        {% elif p.is_open and p.action == 'agent_restart' and user.has_perm('can_services') %}
-          <form method="post" action="/servers/{{ server.id }}/problems/restart-agent" style="display:inline" data-confirm data-msg="Restart agen (agent_pantau) di {{ server.hostname }}?">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button class="btn btn-ghost btn-sm">Restart agen</button>
-          </form>
+
         {% elif p.is_open and p.action == 'apt_update' %}
           <button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">Update OS</button>
         {% elif p.is_open and p.action == 'agent_update_cmd' %}
@@ -1055,11 +1259,11 @@
 <div class="card">
   <div class="card-header"><h3>Daftar Layanan</h3>
     {% if user.has_perm('can_services') %}
-    <button type="button" class="btn btn-primary btn-sm" onclick="openAddSvcModal()">+ Tambah Layanan</button>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-add-svc-modal" onclick="openAddSvcModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% endif %}>+ Tambah Layanan</button>
     {% endif %}
   </div>
   {% if services %}
-  <table>
+  <table id="tbl-services">
     <thead><tr>
       <th title="Nama layanan atau daemon yang dipantau">Layanan</th>
       <th title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
@@ -1108,19 +1312,19 @@
                     {% if is_pending or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
                     title="{% if not is_online %}Server offline — aksi dinonaktifkan{% else %}Mulai ulang (restart) layanan {{ svc.service_name }}{% endif %}"
                     onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Restart</button>
-            <button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px"
-                    {% if is_pending or is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
+            <button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px;{% if not is_online %}opacity:0.35;cursor:not-allowed{% endif %}"
+                    {% if is_pending or is_up or not is_online %}disabled{% endif %}
                     onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
                     title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_up %}Layanan sudah dalam kondisi aktif{% else %}Nyalakan / jalankan layanan {{ svc.service_name }}{% endif %}">▶</button>
-            <button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px"
-                    {% if is_pending or not is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
+            <button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px;{% if not is_online %}opacity:0.35;cursor:not-allowed{% endif %}"
+                    {% if is_pending or not is_up or not is_online %}disabled{% endif %}
                     onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
                     title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif not is_up %}Layanan sudah dalam kondisi berhenti{% else %}Hentikan layanan {{ svc.service_name }}{% endif %}">■</button>
             {% if not is_up %}
               {% if svc._is_ignored %}
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)" title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}">🔔 Pantau Kembali</button>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}"{% endif %} data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)">🔔 Pantau Kembali</button>
               {% else %}
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)" title="Bisukan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan">🔕 Abaikan</button>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Bisukan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan"{% endif %} data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)">🔕 Abaikan</button>
               {% endif %}
             {% endif %}
             {% if is_pending %}
@@ -1130,7 +1334,7 @@
         </span>
 
         {% if user.has_perm('can_services') %}
-        <button type="button" class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)" title="Hapus konfigurasi pemantauan layanan {{ svc.service_name }}">Hapus</button>
+        <button type="button" class="btn btn-danger btn-sm" style="margin-left:4px{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus konfigurasi pemantauan layanan {{ svc.service_name }}"{% endif %} onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Hapus</button>
         {% endif %}
       </td>
     </tr>
@@ -2204,6 +2408,12 @@ const IS_ADMIN = {{ 'true' if (user.is_master_admin() or user.is_operator()) els
 const CAN_SERVICES = {{ 'true' if user.has_perm('can_services') else 'false' }};
 const CAN_PROCESSES = {{ 'true' if user.has_perm('can_processes') else 'false' }};
 const CAN_FIREWALL = {{ 'true' if user.has_perm('can_firewall') else 'false' }};
+const CAN_USERS_SYS = {{ 'true' if user.has_perm('can_users_sys') else 'false' }};
+const CAN_CRON = {{ 'true' if user.has_perm('can_cron') else 'false' }};
+const CAN_SSL = {{ 'true' if user.has_perm('can_ssl') else 'false' }};
+const CAN_OTA = {{ 'true' if user.has_perm('can_ota') else 'false' }};
+const CAN_APT = {{ 'true' if user.has_perm('can_apt') else 'false' }};
+const IS_VIEWER = {{ 'true' if user.is_viewer() else 'false' }};
 const SERVER_NAME = {{ server.hostname | tojson }};
 let IS_ONLINE = {{ 'true' if is_online else 'false' }};
 
@@ -2222,6 +2432,7 @@ let _cachedActions = [];
 
 // ---------- tab ringkasan ----------
 function showTab(name) {
+  if (name === 'specs' || name === 'kinerja') name = 'perf';
   document.querySelectorAll('#detail-tabs .tab').forEach(b =>
     b.classList.toggle('is-on', b.dataset.tab === name));
   document.querySelectorAll('.tab-body').forEach(body => {
@@ -2783,16 +2994,19 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
   const probId = (problem && problem.id) ? problem.id : '';
   const probMsg = (problem && problem.message) ? problem.message : (isEn ? ('Ignore monitoring for service ' + name) : ('Abaikan pemantauan layanan ' + name));
 
+  const offlineTitle = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
+
   // Tombol Abaikan / Pantau Kembali HANYA relevan bila layanan sedang DOWN
   if (!isUp) {
+    const ignDis = !online ? 'disabled style="margin-left:4px;opacity:0.35;cursor:not-allowed" ' : 'style="margin-left:4px" ';
+    const ignTitle = !online ? offlineTitle : (isEn ? 'Cancel ignore for this service' : 'Pantau kembali layanan ini');
+    const abkTitle = !online ? offlineTitle : (isEn ? 'Ignore monitoring for this service' : 'Abaikan pemantauan layanan ini');
     if (isIgnored) {
-      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + (isEn ? 'Cancel ignore for this service' : 'Pantau kembali layanan ini') + '">' + (isEn ? '🔔 Cancel Ignore' : '🔔 Pantau Kembali') + '</button>';
+      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" ' + ignDis + 'data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + ignTitle + '">' + (isEn ? '🔔 Cancel Ignore' : '🔔 Pantau Kembali') + '</button>';
     } else {
-      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="' + (isEn ? 'Ignore monitoring for this service' : 'Abaikan pemantauan layanan ini') + '">' + (isEn ? '🔕 Ignore' : '🔕 Abaikan') + '</button>';
+      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" ' + ignDis + 'data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="' + abkTitle + '">' + (isEn ? '🔕 Ignore' : '🔕 Abaikan') + '</button>';
     }
   }
-
-  const offlineTitle = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
   const rstTitle = !online ? offlineTitle : (isEn ? 'Restart service ' + name : 'Mulai ulang (restart) layanan ' + name);
   const startTitle = !online ? offlineTitle : (isUp ? (isEn ? 'Service is already running' : 'Layanan sudah aktif') : (isEn ? 'Start service' : 'Mulai layanan'));
   const stopTitle = !online ? offlineTitle : (!isUp ? (isEn ? 'Service is stopped' : 'Layanan sudah nonaktif / berhenti') : (isEn ? 'Stop service' : 'Hentikan layanan'));
@@ -2928,6 +3142,11 @@ async function svcAction(action, sid, svcId, svcName, btn) {
 
 
 function openAddSvcModal() {
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   const m = document.getElementById('add-svc-modal');
   if (m) { m.style.display = 'flex'; setTimeout(() => m.querySelector('input[name=service_name]')?.focus(), 60); }
 }
@@ -3143,6 +3362,11 @@ function closeCreateUserModal() {
 
 async function submitCreateUser(e) {
   if (e && e.preventDefault) e.preventDefault();
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (!CAN_USERS_SYS) {
+    showToast(isEn ? 'Access denied: You do not have permission to create users.' : 'Akses ditolak: Anda tidak memiliki wewenang membuat pengguna sistem.', false);
+    return;
+  }
   const form = document.getElementById('create-user-form');
   if (!form) return;
   const btn = document.getElementById('btn-submit-create-user');
@@ -3186,6 +3410,10 @@ async function submitCreateUser(e) {
 
 async function submitUserAction(action, username, btn) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (!CAN_USERS_SYS) {
+    showToast(isEn ? 'Access denied: You do not have permission to manage system users.' : 'Akses ditolak: Anda tidak memiliki wewenang mengelola pengguna sistem.', false);
+    return;
+  }
   if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
     showToast(isEn ? 'Server is offline. Actions disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
     return;
@@ -3297,6 +3525,10 @@ async function ackProblemInDetail(id, btn) {
 
 async function deleteService(sid, svcId, svcName, btn) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   if (!confirm(isEn ? ('Delete service ' + svcName + '?') : ('Hapus service ' + svcName + '?'))) return;
   const tr = btn.closest('tr');
   const originalHtml = btn.innerHTML;
@@ -4084,8 +4316,9 @@ function renderProblemsTab(level, openList, histList) {
   const pmeta = {
     ok: ['OK', 'up'],
     info: ['Info', 'info'],
+    average: ['Down', 'orange'],
     warning: ['Warning', 'warn'],
-    danger: ['Danger', 'danger']
+    danger: ['Critical', 'danger']
   };
   const meta = pmeta[level] || ['OK', 'up'];
   const openArr = openList || [];
@@ -4149,7 +4382,8 @@ function renderProblemsTab(level, openList, histList) {
       <select id="prob-filter" onchange="probFilter()"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
         <option value=""${oldFilter === '' ? ' selected' : ''}>${isEn ? 'All levels' : 'Semua level'}</option>
-        <option value="danger"${oldFilter === 'danger' ? ' selected' : ''}>Danger</option>
+        <option value="danger"${oldFilter === 'danger' ? ' selected' : ''}>Critical</option>
+        <option value="average"${oldFilter === 'average' ? ' selected' : ''}>${isEn ? 'Down (Services)' : 'Down (Layanan)'}</option>
         <option value="warning"${oldFilter === 'warning' ? ' selected' : ''}>Warning</option>
         <option value="info"${oldFilter === 'info' ? ' selected' : ''}>Info</option>
         <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>${isEn ? 'Ignored (🔕)' : 'Diabaikan (🔕)'}</option>
@@ -4178,8 +4412,8 @@ function renderProblemsTab(level, openList, histList) {
     const isOpen = !!p.is_open;
     const isIgnored = !!p.is_ignored;
     const sev = p.severity || 'info';
-    const sevBadge = isIgnored ? 'muted' : ({danger: 'danger', warning: 'warn', info: 'info'}[sev] || 'muted');
-    const sevLabel = escapeHtml(sev) + (isIgnored ? ' 🔕' : '');
+    const sevBadge = isIgnored ? 'muted' : ({danger: 'danger', average: 'orange', warning: 'warn', info: 'info'}[sev] || 'muted');
+    const sevLabel = escapeHtml(sev === 'average' ? 'DOWN' : (isEn ? sev : sev.toUpperCase())) + (isIgnored ? ' 🔕' : '');
     const pMsg = isEn ? getServicesI18nText(p.message || '', true) : (p.message || '');
     const pTip = isEn ? getServicesI18nText(p.tip || '—', true) : (p.tip || '—');
     const searchTxt = ((pMsg || '') + ' ' + (p.key || '')).toLowerCase();
@@ -4217,11 +4451,7 @@ function renderProblemsTab(level, openList, histList) {
           </form>`;
         }
         actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>`;
-      } else if (p.action === 'agent_restart' && CAN_SERVICES) {
-        actHtml += `<form method="post" action="/servers/${SID}/problems/restart-agent" style="display:inline" data-confirm data-msg="${isEn ? 'Restart agent (agent_pantau) on ' : 'Restart agen (agent_pantau) di '}${escapeHtml(SERVER_NAME)}?">
-          <input type="hidden" name="csrf_token" value="${getCsrf()}">
-          <button class="btn btn-ghost btn-sm">${isEn ? 'Restart agent' : 'Restart agen'}</button>
-        </form>`;
+
       } else if (p.action === 'apt_update') {
         actHtml += `<button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">${isEn ? 'Update OS' : 'Update OS'}</button>`;
       } else if (p.action === 'agent_update_cmd') {
@@ -4660,6 +4890,13 @@ function updateAllOfflineGuards(online) {
   const offTitle = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
 
   // 1. Tombol & Aksi Layanan
+  const btnAddSvc = document.getElementById('btn-add-svc-modal');
+  if (btnAddSvc) {
+    btnAddSvc.disabled = !online;
+    btnAddSvc.style.opacity = !online ? '0.35' : '';
+    btnAddSvc.style.cursor = !online ? 'not-allowed' : '';
+    if (!online) btnAddSvc.title = offTitle;
+  }
   document.querySelectorAll('#tbl-services button, #tbl-services input[type="submit"], #form-add-svc button[type="submit"]').forEach(btn => {
     btn.disabled = !online;
     btn.style.opacity = !online ? '0.35' : '';
@@ -5203,11 +5440,70 @@ function renderSys(data) {
   const heroMeta = document.getElementById('hero-meta');
   if (heroMeta) {
     const parts = [];
+    if (data.hardware_specs && data.hardware_specs.cpu && data.hardware_specs.cpu.model) {
+      const cpuShort = data.hardware_specs.cpu.model.replace(/\(R\)|\(TM\)/gi, '').replace(/\s+/g, ' ').trim();
+      const cCount = data.hardware_specs.cpu.cores ? (' (' + data.hardware_specs.cpu.cores + ' ' + (isEn ? 'Cores' : 'Core') + ')') : '';
+      parts.push(cpuShort + cCount);
+    }
+    if (data.hardware_specs && data.hardware_specs.memory && data.hardware_specs.memory.ram_total) {
+      parts.push(fmtBytes(data.hardware_specs.memory.ram_total) + ' RAM');
+    }
     if (data.os_label) parts.push(String(data.os_label));
     if (data.kernel) parts.push('kernel ' + data.kernel);
     if (sys.uptime != null) parts.push('uptime ' + fmtUptime(sys.uptime));
     if (sys.load1 != null) parts.push((isEn ? 'load ' : 'beban ') + sys.load1.toFixed(2));
     heroMeta.textContent = parts.length ? parts.join(' · ') : (isEn ? 'Loading system data…' : 'Memuat data sistem…');
+  }
+
+  // Update elemen tab spesifikasi jika data hardware_specs tersedia
+  if (data.hardware_specs) {
+    const hs = data.hardware_specs;
+    if (hs.cpu) {
+      const elCpuMod = document.getElementById('spec-cpu-model');
+      if (elCpuMod && hs.cpu.model) elCpuMod.textContent = hs.cpu.model;
+      const elCpuArch = document.getElementById('spec-cpu-arch');
+      if (elCpuArch && hs.cpu.arch) elCpuArch.textContent = hs.cpu.arch;
+      const elCpuCores = document.getElementById('spec-cpu-cores');
+      if (elCpuCores && hs.cpu.cores) elCpuCores.textContent = hs.cpu.cores + ' Cores';
+      const elCpuMhz = document.getElementById('spec-cpu-mhz');
+      if (elCpuMhz && hs.cpu.mhz) elCpuMhz.textContent = hs.cpu.mhz + ' MHz';
+      const elCpuCache = document.getElementById('spec-cpu-cache');
+      if (elCpuCache && hs.cpu.cache) elCpuCache.textContent = hs.cpu.cache;
+    }
+    if (hs.memory) {
+      const elRam = document.getElementById('spec-ram-total');
+      if (elRam && hs.memory.ram_total) elRam.textContent = fmtBytes(hs.memory.ram_total);
+      const elSwap = document.getElementById('spec-swap-total');
+      if (elSwap && hs.memory.swap_total) elSwap.textContent = fmtBytes(hs.memory.swap_total);
+    }
+    if (hs.platform) {
+      const elVirt = document.getElementById('spec-virt-type');
+      if (elVirt && hs.platform.virt) elVirt.textContent = hs.platform.virt;
+      const elVirtBadge = document.getElementById('spec-virt-badge');
+      if (elVirtBadge && hs.platform.virt) elVirtBadge.textContent = hs.platform.virt;
+      const elVendor = document.getElementById('spec-board-vendor');
+      if (elVendor && hs.platform.vendor) elVendor.textContent = hs.platform.vendor;
+      const elProduct = document.getElementById('spec-board-product');
+      if (elProduct && hs.platform.product) elProduct.textContent = hs.platform.product;
+      const elBios = document.getElementById('spec-bios-ver');
+      if (elBios && hs.platform.bios_version) elBios.textContent = hs.platform.bios_version + (hs.platform.bios_date ? (' (' + hs.platform.bios_date + ')') : '');
+    }
+    if (hs.os) {
+      const elOs = document.getElementById('spec-os-name');
+      if (elOs && hs.os.os_name) elOs.textContent = hs.os.os_name;
+      const elKernel = document.getElementById('spec-kernel-ver');
+      if (elKernel && hs.os.kernel) elKernel.textContent = hs.os.kernel;
+      const elHost = document.getElementById('spec-hostname');
+      if (elHost && hs.os.hostname) elHost.textContent = hs.os.hostname;
+      const elBoot = document.getElementById('spec-boot-time');
+      if (elBoot && hs.os.boot_time) elBoot.textContent = hs.os.boot_time;
+    }
+    if (hs.network) {
+      const elGw = document.getElementById('spec-net-gw');
+      if (elGw && hs.network.gateway) elGw.textContent = hs.network.gateway;
+      const elDns = document.getElementById('spec-net-dns');
+      if (elDns && hs.network.dns) elDns.textContent = hs.network.dns.join(', ');
+    }
   }
 
   renderApt(data);
@@ -5283,7 +5579,7 @@ function renderSys(data) {
     const userEnc = encodeURIComponent(a.user);
     const userEsc = escHtml(a.user);
     let actions = '<a href="/servers/' + SID + '/user/' + userEnc + '" class="btn btn-ghost btn-sm">' + (isEn ? 'Details' : 'Rincian') + '</a>';
-    if (!isProtected) {
+    if (CAN_USERS_SYS && !isProtected) {
       if (isLocked) {
         actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="' + (isEn ? 'Unlock account (enable login)' : 'Buka kunci akun (aktifkan login)') + '" onclick="submitUserAction(\'unlock\', \'' + userEsc + '\', this)">' + (isEn ? 'Unlock' : 'Buka Kunci') + '</button>';
       } else {
@@ -5848,7 +6144,8 @@ setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
 
 // Deep-link tab via ?tab= (dijalankan setelah semua fungsi dan state selesai dimuat)
 (function () {
-  const want = new URLSearchParams(location.search).get('tab');
+  let want = new URLSearchParams(location.search).get('tab');
+  if (want === 'specs' || want === 'kinerja') want = 'perf';
   if (want) {
     const b = document.querySelector('#detail-tabs .tab[data-tab="' + want + '"]');
     if (b) showTab(want);

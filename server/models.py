@@ -106,6 +106,10 @@ class Server(Base):
     last_seen = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    group_name = Column(String(64), nullable=True, default=None, index=True)
+    tags = Column(String(255), nullable=True)
+    custom_thresholds = Column(Text, nullable=True)  # JSON: ambang batas CPU, RAM, Disk per-server
+
     services = relationship("Service", back_populates="server", cascade="all, delete-orphan")
     commands = relationship("Command", back_populates="server", cascade="all, delete-orphan")
 
@@ -256,6 +260,7 @@ class ServerExtras(Base):
     listening_ports = Column(Text, nullable=True)        # JSON: daftar port listening & proses (ss -tulpn)
     ssl_certs = Column(Text, nullable=True)              # JSON: sertifikat SSL/TLS & masa kedaluwarsa
     system_logs = Column(Text, nullable=True)            # JSON: log kegagalan sistem penting (journalctl err/crit)
+    hardware_specs = Column(Text, nullable=True)         # JSON: spesifikasi hardware & platform server (CPU, RAM, Disks, Board, BIOS)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -372,4 +377,14 @@ class LoginAttempt(Base):
     ip_address = Column(String(45), primary_key=True)
     fails = Column(Integer, nullable=False, default=0)
     lock_until = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class SystemSetting(Base):
+    """Pengaturan sistem dan ambang batas global (kunci-nilai persisten)."""
+
+    __tablename__ = "system_settings"
+
+    key = Column(String(64), primary_key=True)
+    value = Column(Text, nullable=False)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)

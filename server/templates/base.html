@@ -117,6 +117,7 @@ pre{white-space:pre;overflow-x:auto;max-width:100%}
 .badge-warn{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(251,191,36,0.35);box-shadow:0 0 8px rgba(251,191,36,0.12)}
 .badge-info{background:var(--blue-bg);color:var(--blue);border:1px solid rgba(56,189,248,0.35);box-shadow:0 0 8px rgba(56,189,248,0.12)}
 .badge-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(248,113,113,0.4);box-shadow:0 0 8px rgba(248,113,113,0.15)}
+.badge-orange, .badge-average{background:rgba(249,115,22,0.15);color:#f97316;border:1px solid rgba(249,115,22,0.35);box-shadow:0 0 8px rgba(249,115,22,0.12)}
 .badge-muted{background:rgba(255,255,255,0.04);color:var(--dim);border:1px solid var(--border)}
 .badge-ignore{background:rgba(132,146,166,0.14);color:#94a3b8;border:1px solid rgba(132,146,166,0.35)}
 
@@ -383,20 +384,52 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
   .stats-grid{grid-template-columns:1fr 1fr}
 }
 
-/* ---------- ALERT DANGER (tidak bisa diabaikan) ---------- */
-.alert-banner{position:fixed;top:0;left:0;right:0;z-index:1500;background:#b91c1c;color:#fff;font-weight:700;font-size:14px;padding:10px 16px;display:flex;align-items:center;gap:10px;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.45)}
-.alert-banner:hover{background:#dc2626}
+/* ---------- ALERT GAWAT DARURAT (Dashboard) ---------- */
+.alert-banner{position:fixed;top:0;left:0;right:0;z-index:1500;background:linear-gradient(90deg,#7f1d1d 0%,#991b1b 30%,#b91c1c 70%,#7f1d1d 100%);border-bottom:1px solid rgba(254,202,202,.35);color:#fff;padding:8px 20px;cursor:pointer;box-shadow:0 6px 20px rgba(185,28,28,.4);transition:background .2s}
+.alert-banner:hover{background:linear-gradient(90deg,#881337 0%,#b91c1c 30%,#dc2626 70%,#881337 100%)}
+.alert-banner-inner{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.alert-banner-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13.5px;line-height:1.4}
+.alert-tag-emergency{background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.3);color:#fecaca;font-size:11px;font-weight:800;padding:3px 8px;border-radius:5px;letter-spacing:0.5px;display:inline-flex;align-items:center;gap:5px;text-transform:uppercase;flex-shrink:0}
+.alert-host-chip{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.25);border-radius:4px;padding:1px 6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;font-weight:700;color:#fff;display:inline-block}
+.alert-host-more{background:rgba(255,255,255,0.2);border-radius:4px;padding:1px 6px;font-size:11.5px;font-weight:600;color:#ffe4e6;display:inline-block}
+.alert-banner-btn{background:#fff;color:#991b1b;font-weight:700;font-size:12px;padding:6px 14px;border-radius:6px;border:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.25);text-decoration:none;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.alert-banner-btn:hover{background:#fff1f2;color:#881337;transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.35)}
 body.alert-locked{overflow:hidden}
-body.show-alert-banner .sidebar{padding-top:44px}
-body.show-alert-banner .main{padding-top:68px}
+body.show-alert-banner .sidebar{padding-top:48px}
+body.show-alert-banner .main{padding-top:72px}
 .alert-overlay{display:none;position:fixed;inset:0;z-index:2000;background:rgba(5,5,10,.78);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:20px}
 .alert-overlay.show{display:flex}
-.alert-panel{background:var(--card);border:2px solid var(--red);border-radius:12px;max-width:720px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-.alert-panel-head{background:var(--red-bg);color:var(--red);font-weight:800;font-size:16px;padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.alert-panel{background:var(--card);border:2px solid var(--red);border-radius:12px;max-width:780px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6);display:flex;flex-direction:column}
+.alert-panel-head{background:var(--red-bg);color:var(--red);font-weight:800;font-size:15px;padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
 .alert-panel-head .pulse{animation:apulse 1.2s infinite}
 @keyframes apulse{0%,100%{opacity:1}50%{opacity:.35}}
-.alert-list{padding:8px 18px}
-.alert-item{border:1px solid var(--border);border-left:4px solid var(--red);border-radius:8px;padding:12px 14px;margin:12px 0;background:rgba(239,68,68,.05)}
+.alert-panel-sub{font-size:12.5px;color:var(--text);padding:10px 18px 0;line-height:1.5;flex-shrink:0}
+.alert-list{padding:8px 18px;overflow-y:auto;flex:1}
+.alert-panel-foot{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:rgba(0,0,0,0.25);border-top:1px solid var(--border);gap:12px;flex-wrap:wrap;flex-shrink:0}
+
+/* Gaya Pengelompokan Insiden Kritis (Unified Incident Grouping) */
+.alert-group{background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.3);border-left:4px solid var(--red);border-radius:8px;padding:14px 16px;margin:12px 0}
+.alert-group-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.alert-group-title{display:flex;align-items:center;gap:8px}
+.alert-badge-critical{background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:0.5px}
+.alert-group-name{font-size:14px;font-weight:700;color:#fff}
+.alert-group-count{font-size:11.5px;font-weight:600;color:#fca5a5;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.35);padding:2px 8px;border-radius:999px}
+.alert-group-info{background:rgba(0,0,0,0.32);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;line-height:1.55;display:flex;flex-direction:column;gap:6px}
+.alert-info-row{display:flex;gap:7px;align-items:baseline}
+.alert-info-label{font-weight:700;color:#f8fafc;font-size:12px;white-space:nowrap;flex-shrink:0}
+.alert-info-desc{color:#cbd5e1}
+.alert-info-tip{color:#fde047}
+.alert-servers-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.25)}
+.alert-servers-table{width:100%;border-collapse:collapse;font-size:12px}
+.alert-servers-table th{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--dim);font-size:11px;text-transform:uppercase;font-weight:600;text-align:left}
+.alert-servers-table td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:middle}
+.alert-servers-table tr:last-child td{border-bottom:none}
+.alert-srv-cell{display:flex;align-items:center;gap:7px}
+.alert-dot-danger{width:7px;height:7px;border-radius:50%;background:#ef4444;box-shadow:0 0 6px #ef4444;flex-shrink:0}
+.alert-srv-name{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;color:#fff;font-size:12.5px;text-decoration:none}
+.alert-srv-name:hover{text-decoration:underline;color:var(--blue)}
+.alert-dur-tag{font-size:11px;color:#fca5a5;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);padding:2px 6px;border-radius:4px;font-weight:600;white-space:nowrap}
+.alert-acked-badge{color:var(--green);font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
 
 /* Terminal live Update/Upgrade — Gaya Konsol Terminal Linux Modern */
 .terminal-window{background:#0b0e14;border:1px solid #282f3e;border-radius:10px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.5);margin:0;width:100%;transition:border-color .2s,box-shadow .2s}
@@ -539,7 +572,7 @@ body.show-alert-banner .main{padding-top:68px}
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span> <span class="nav-label" data-i18n="menu_servers">Servers</span>
     </a>
     <a href="/problems" class="nav-link {% if '/problems' in request.url.path %}active{% endif %}">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span> <span class="nav-label" data-i18n="menu_problems">Masalah</span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span> <span class="nav-label" data-i18n="menu_problems">Insiden</span>
     </a>
     <a href="/logs" class="nav-link {% if '/logs' in request.url.path %}active{% endif %}">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></span> <span class="nav-label" data-i18n="menu_logs">Log</span>
@@ -552,7 +585,7 @@ body.show-alert-banner .main{padding-top:68px}
     {% endif %}
     {% if user and not user.is_viewer() %}
     <a href="/profile" class="nav-link {% if '/profile' in request.url.path %}active{% endif %}">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span> <span class="nav-label">Profil & Keamanan</span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span> <span class="nav-label">Akun Pengguna</span>
     </a>
     {% endif %}
     <a href="/logout" class="nav-link mob-logout">
@@ -560,7 +593,7 @@ body.show-alert-banner .main{padding-top:68px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.1.1' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.2.0' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -574,10 +607,7 @@ body.show-alert-banner .main{padding-top:68px}
       </div>
       {% endif %}
     </div>
-    <div style="display:flex;gap:12px;font-size:11px;margin-top:4px">
-      {% if not user.is_viewer() %}
-      <a href="/profile" style="color:var(--blue)">Keamanan</a>
-      {% endif %}
+    <div style="font-size:11px;margin-top:4px">
       <a href="/logout" style="color:var(--red)">Keluar</a>
     </div>
     {% else %}
@@ -590,26 +620,39 @@ body.show-alert-banner .main{padding-top:68px}
 {% block content %}{% endblock %}
 </main>
 
+{% if request.url.path in ("/", "", "/dashboard") %}
 <div id="alertBanner" class="alert-banner" style="display:none" onclick="location.href='/problems'">
-  <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg></span>
-  <span><b id="alertBannerCount">0</b> masalah DANGER belum ditangani — butuh penanganan segera. Klik untuk buka Masalah.</span>
+  <div class="alert-banner-inner">
+    <div class="alert-banner-left">
+      <span class="alert-tag-emergency">
+        <span class="pulse">🚨</span> GAWAT DARURAT
+      </span>
+      <span id="alertBannerText"><b id="alertBannerCount">0</b> Server: Agen tidak melapor.</span>
+    </div>
+    <div class="alert-banner-right">
+      <a href="/problems" class="alert-banner-btn" onclick="event.stopPropagation()">
+        Buka Halaman Insiden &rarr;
+      </a>
+    </div>
+  </div>
 </div>
-
-<div id="toast" class="toast ok" role="status" aria-live="polite" hidden></div>
 
 <div id="alertOverlay" class="alert-overlay">
   <div class="alert-panel">
     <div class="alert-panel-head">
-      <span class="pulse"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg></span> PERINGATAN DANGER — TINDAKAN DIPERLUKAN SEGERA
+      <span class="pulse"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg></span> PERINGATAN GAWAT DARURAT — DIPERLUKAN TINDAKAN SEGERA
     </div>
-    <div style="font-size:12px;color:var(--dim);padding:10px 18px 0">Masalah ini belum boleh Anda abaikan. Sampaikan bahwa Anda sudah menyadarinya untuk melanjutkan.</div>
+    <div class="alert-panel-sub">Terdeteksi insiden berstatus gawat darurat yang memerlukan penanganan langsung oleh operator sistem.</div>
     <div class="alert-list"></div>
     <div class="alert-panel-foot">
-      <a class="btn btn-ghost btn-sm" href="/problems">Buka halaman Masalah</a>
+      <a class="btn btn-ghost btn-sm" href="/problems">Buka halaman Insiden</a>
       <button class="btn btn-danger btn-sm" onclick="return alertAckAll()">Tandai semua ditangani</button>
     </div>
   </div>
 </div>
+{% endif %}
+
+<div id="toast" class="toast ok" role="status" aria-live="polite" hidden></div>
 
 <script>
 // Bahasa Aplikasi: Standar Bahasa Indonesia (Fitur alih bahasa dinonaktifkan)
@@ -826,29 +869,158 @@ function escHtml(s){
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-function alertCardHtml(a){
-  const acked = a.acknowledged
-    ? '<div class="alert-sub">Sudah ditangani oleh <b>' + escHtml(a.acknowledged_by) + '</b> — masih berlangsung.</div>'
-    : '';
-  return '<div class="alert-item">'
-    + '<div class="alert-h"><span class="alert-srv">' + escHtml(a.hostname) + '</span>'
-    + '<span class="alert-key">' + escHtml(a.key) + '</span>'
-    + '<span class="alert-dur">berjalan ' + escHtml(a.durasi) + '</span></div>'
-    + '<div class="alert-msg">' + escHtml(a.message) + '</div>'
-    + (a.tip ? '<div class="alert-tip">💡 ' + escHtml(a.tip) + '</div>' : '')
-    + acked
-    + '<button class="btn btn-danger btn-sm ack-btn" data-id="' + a.id + '" onclick="alertAck(this,' + a.id + ')">Tandai ditangani</button>'
-    + '</div>';
+function getAlertGroupTitle(key, firstMsg) {
+  if (key === 'agent_stale') return 'Agen Tidak Melapor';
+  if (key === 'agent_conflict') return 'Konflik Agen / Duplikasi API Key';
+  if (key && key.startsWith('service_down:')) return 'Layanan Sistem Terhenti: ' + key.split(':')[1];
+  if (key === 'ram_critical') return 'Kapasitas RAM Kritis (Hampir Penuh)';
+  if (key === 'swap_critical') return 'Kapasitas Swap Kritis';
+  if (key === 'cpu_saturated') return 'CPU Jenuh / Beban Maksimal';
+  if (key && key.startsWith('disk_critical:')) return 'Kapasitas Disk Kritis (' + key.split(':')[1] + ')';
+  if (firstMsg) {
+    return firstMsg.split('(')[0].replace(/^Insiden Kritis:\s*/i, '').trim();
+  }
+  return key || 'Insiden Gawat Darurat';
+}
+
+function getAlertGroupDesc(key, firstMsg) {
+  if (key === 'agent_stale') {
+    return 'Agen pantau pada server klien tidak merespons telemetri (server kemungkinan offline/mati, koneksi jaringan terputus, atau agen mengalami kerusakan).';
+  }
+  if (key === 'agent_conflict') {
+    return 'Terdeteksi lebih dari satu host aktif melapor menggunakan API key yang sama (kemungkinan duplikasi VM atau kloning OS).';
+  }
+  if (key && key.startsWith('service_down:')) {
+    return 'Layanan sistem ' + key.split(':')[1] + ' dilaporkan terhenti (down) atau mengalami kegagalan proses.';
+  }
+  if (key === 'ram_critical') {
+    return 'Penggunaan memori RAM telah mendekati batas maksimal sistem.';
+  }
+  if (key === 'swap_critical') {
+    return 'Penggunaan swap memori mendekati batas maksimal akibat kehabisan memori RAM fisik.';
+  }
+  if (key === 'cpu_saturated') {
+    return 'Beban pemrosesan CPU telah mencapai tingkat saturasi jenuh secara berkelanjutan.';
+  }
+  if (key && key.startsWith('disk_critical:')) {
+    return 'Ruang penyimpanan disk pada partisi ' + (key.split(':')[1] || '') + ' hampir habis.';
+  }
+  return firstMsg || 'Terdeteksi insiden gawat darurat yang memerlukan penanganan operator.';
+}
+
+function getCleanGlobalTip(key, firstTip) {
+  if (key === 'agent_stale') {
+    return 'Segera lakukan inspeksi langsung pada fisik atau virtual mesin server, periksa suplai daya, dan verifikasi konektivitas jaringan.';
+  }
+  if (!firstTip) return '';
+  return String(firstTip)
+    .replace(/^💡\s*/, '')
+    .replace(/^Insiden Kritis:\s*Server\s+\S+\s+offline\s*[^.]*\.\s*/i, '')
+    .trim();
+}
+
+function renderAlertGroupsHtml(alerts) {
+  if (!alerts || !alerts.length) return '';
+  const groupsMap = new Map();
+  alerts.forEach(a => {
+    const k = a.key || 'other';
+    if (!groupsMap.has(k)) {
+      groupsMap.set(k, []);
+    }
+    groupsMap.get(k).push(a);
+  });
+
+  let html = '';
+  groupsMap.forEach((groupAlerts, key) => {
+    const first = groupAlerts[0];
+    const groupTitle = getAlertGroupTitle(key, first.message);
+    const groupDesc = getAlertGroupDesc(key, first.message);
+    const globalTip = getCleanGlobalTip(key, first.tip);
+    const countLabel = groupAlerts.length > 1
+      ? groupAlerts.length + ' Server Terdampak'
+      : '1 Server Terdampak';
+
+    let infoHtml = '<div class="alert-group-info">'
+      + '<div class="alert-info-row">'
+      + '<span class="alert-info-label">Keterangan:</span>'
+      + '<span class="alert-info-desc">' + escHtml(groupDesc) + '</span>'
+      + '</div>';
+    if (globalTip) {
+      infoHtml += '<div class="alert-info-row">'
+        + '<span class="alert-info-label">💡 Panduan:</span>'
+        + '<span class="alert-info-tip">' + escHtml(globalTip) + '</span>'
+        + '</div>';
+    }
+    infoHtml += '</div>';
+
+    const rowsHtml = groupAlerts.map(a => {
+      const actionHtml = a.acknowledged
+        ? '<span class="alert-acked-badge">✓ Ditangani (' + escHtml(a.acknowledged_by || 'operator') + ')</span>'
+        : '<button class="btn btn-danger btn-sm ack-btn" data-id="' + a.id + '" onclick="alertAck(this,' + a.id + ')">Tandai ditangani</button>';
+
+      return '<tr>'
+        + '<td><div class="alert-srv-cell">'
+        + '<span class="alert-dot-danger"></span>'
+        + (a.server_id
+            ? '<a href="/servers/' + a.server_id + '" class="alert-srv-name" target="_blank">' + escHtml(a.hostname) + '</a>'
+            : '<span class="alert-srv-name">' + escHtml(a.hostname) + '</span>')
+        + '</div></td>'
+        + '<td><span class="alert-dur-tag">' + escHtml(a.durasi) + '</span></td>'
+        + '<td style="text-align:right">' + actionHtml + '</td>'
+        + '</tr>';
+    }).join('');
+
+    html += '<div class="alert-group">'
+      + '<div class="alert-group-head">'
+      + '<div class="alert-group-title">'
+      + '<span class="alert-badge-critical">CRITICAL</span>'
+      + '<span class="alert-group-name">' + escHtml(groupTitle) + '</span>'
+      + '</div>'
+      + '<span class="alert-group-count">' + escHtml(countLabel) + '</span>'
+      + '</div>'
+      + infoHtml
+      + '<div class="alert-servers-wrap">'
+      + '<table class="alert-servers-table">'
+      + '<thead><tr>'
+      + '<th>Server Terdampak</th>'
+      + '<th>Durasi Terputus</th>'
+      + '<th style="text-align:right">Tindakan</th>'
+      + '</tr></thead>'
+      + '<tbody>' + rowsHtml + '</tbody>'
+      + '</table>'
+      + '</div>'
+      + '</div>';
+  });
+
+  return html;
 }
 function renderAlerts(d){
   const overlay = document.getElementById('alertOverlay');
   const listEl = overlay ? overlay.querySelector('.alert-list') : null;
   const banner = document.getElementById('alertBanner');
+  const bannerText = document.getElementById('alertBannerText');
+  const bc = document.getElementById('alertBannerCount');
+
+  // Overlay modal danger dan banner hanya aktif di dashboard ('/' atau '' atau '/dashboard')
+  const isDashboard = (window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname === '/dashboard');
+  if (!isDashboard) {
+    if (overlay) {
+      overlay.classList.remove('show');
+      overlay._key = '';
+    }
+    document.body.classList.remove('alert-locked');
+    if (banner) {
+      banner.style.display = 'none';
+      document.body.classList.remove('show-alert-banner');
+    }
+    return;
+  }
+
   if (overlay && listEl) {
     const key = (d.alerts || []).map(a => a.id + ':' + a.acknowledged).join('|');
     if (overlay._key !== key) {
       overlay._key = key;
-      listEl.innerHTML = (d.alerts || []).map(alertCardHtml).join('');
+      listEl.innerHTML = renderAlertGroupsHtml(d.alerts || []);
     }
     if (d.alerts && d.alerts.length) {
       overlay.classList.add('show');
@@ -859,21 +1031,51 @@ function renderAlerts(d){
       overlay._key = '';
     }
   }
-  const bc = document.getElementById('alertBannerCount');
-  if (banner && bc) {
+
+  if (banner) {
     const n = d.open_danger_count || 0;
-    bc.textContent = n;
+    if (bc) bc.textContent = n;
+    if (bannerText && n > 0) {
+      const dangerHosts = (d.danger_hosts && d.danger_hosts.length)
+        ? d.danger_hosts
+        : Array.from(new Set((d.alerts || []).map(a => a.hostname))).filter(Boolean);
+      const hostCount = dangerHosts.length || n;
+
+      if (hostCount === 1) {
+        bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(dangerHosts[0])}</span>: Agen tidak melapor.`;
+      } else {
+        bannerText.innerHTML = `<strong>${hostCount} Server</strong>: Agen tidak melapor.`;
+      }
+
+      const btn = banner.querySelector('.alert-banner-btn');
+      if (btn) {
+        btn.innerHTML = (hostCount > 1)
+          ? `Buka Halaman Insiden (${hostCount}) &rarr;`
+          : `Buka Halaman Insiden &rarr;`;
+      }
+    }
     banner.style.display = n ? 'flex' : 'none';
     document.body.classList.toggle('show-alert-banner', n > 0);
   }
+
   if (d.unack_count > 0) {
-    if (document.title.indexOf('🚨') !== 0) document.title = '🚨 ' + d.unack_count + ' DANGER · ' + ORIG_TITLE;
+    if (document.title.indexOf('🚨') !== 0) document.title = '🚨 ' + d.unack_count + ' GAWAT DARURAT · ' + ORIG_TITLE;
   } else {
     document.title = ORIG_TITLE;
   }
 }
 async function alertFetch(){
   if (document.hidden) return;
+  const isDashboard = (window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname === '/dashboard');
+  if (!isDashboard) {
+    const overlay = document.getElementById('alertOverlay');
+    const banner = document.getElementById('alertBanner');
+    if (overlay) overlay.classList.remove('show');
+    document.body.classList.remove('alert-locked');
+    if (banner) banner.style.display = 'none';
+    document.body.classList.remove('show-alert-banner');
+    return;
+  }
   try {
     const r = await fetch('/api/alerts', {credentials: 'same-origin'});
     if (r.ok) renderAlerts(await r.json());
@@ -902,7 +1104,7 @@ async function alertAckAll(){
   const btns = Array.from(document.querySelectorAll('#alertOverlay .ack-btn'));
   if (!btns.length) return false;
   const n = btns.length;
-  if (!confirm('Tandai ' + n + ' masalah DANGER sebagai sudah ditangani?\n\n'
+  if (!confirm('Tandai ' + n + ' insiden GAWAT DARURAT sebagai sudah ditangani?\n\n'
     + 'Ini hanya menandai sudah ditangani, bukan menyelesaikan masalahnya.')) return false;
   for (const b of btns) await alertAck(b, b.dataset.id);
   return false;
@@ -914,6 +1116,11 @@ let _ignoreTargetSid = null;
 let _ignoreCallback = null;
 
 function openIgnoreModal(target, msg, onDone) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   let id = target;
   let text = msg;
   let svcid = null;
@@ -928,7 +1135,6 @@ function openIgnoreModal(target, msg, onDone) {
   _ignoreTargetSvcId = svcid;
   _ignoreTargetSid = sid;
   _ignoreCallback = (typeof onDone === 'function') ? onDone : null;
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const m = document.getElementById('ignore-problem-modal');
   const txt = document.getElementById('ignore-modal-msg');
   if (txt) {
@@ -1010,6 +1216,11 @@ async function submitIgnoreProblem() {
 }
 
 async function unignoreProblem(target, onDone) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
   let btn = target instanceof HTMLElement ? target : null;
   let id = btn ? btn.dataset.id : target;
   let svcid = btn ? btn.dataset.svcid : null;
@@ -1018,7 +1229,7 @@ async function unignoreProblem(target, onDone) {
     btn = arguments[1];
     onDone = arguments[2];
   }
-  if (!confirm('Aktifkan kembali pemantauan untuk layanan/masalah ini?')) return;
+  if (!confirm(isEn ? 'Resume monitoring for this incident / service?' : 'Aktifkan kembali pemantauan untuk layanan/insiden ini?')) return;
   const orig = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
@@ -1302,15 +1513,33 @@ function renderProblemDetailModal(p) {
       cmdList = ['sudo journalctl -u ssh -n 50 --no-pager', 'sudo iptables -L INPUT -v -n --line-numbers', 'sudo fail2ban-client status sshd'];
     } else if (p.key === 'agent_stale') {
       causeText = isEn
-        ? 'Pantau Agent on this server stopped sending telemetry beyond tolerance window (offline/stale).'
-        : 'Agen Pantau di server ini tidak mengirim telemetri metrik dalam batas toleransi (offline/stale).';
+        ? 'Monitoring Agent on this server stopped transmitting telemetry to central server. Possible causes include host offline/powered down, severed network connection, halted agent service, or firewall/security blocking.'
+        : 'Agen Pantau pada server ini tidak mengirimkan telemetri metrik ke server pusat. Faktor penyebab mencakup server fisik/virtual mati atau dimatikan, koneksi jaringan terputus, service agent_pantau terhenti, atau terjadi pemblokiran firewall dan kendala keamanan.';
       impactText = isEn
-        ? 'Server metrics and service health indicators are no longer live on the dashboard.'
-        : 'Metrik kinerja dan status layanan di dashboard Pantau Server kedaluwarsa.';
+        ? 'Hardware performance metrics, service health indicators, and security telemetry are no longer live on the dashboard.'
+        : 'Metrik kinerja hardware (CPU, RAM, Disk), status layanan, dan telemetri keamanan server tidak dapat diperbarui secara live di dashboard.';
       recoList = isEn
-        ? ['Check if host machine is reachable via ping/SSH', 'Inspect agent daemon: sudo systemctl status agent_pantau', 'Restart agent: sudo systemctl restart agent_pantau']
-        : ['Periksa apakah mesin server hidup dan dapat di-ping/SSH', 'Periksa status daemon agen: sudo systemctl status agent_pantau', 'Mulai ulang agen: sudo systemctl restart agent_pantau'];
-      cmdList = ['sudo systemctl status agent_pantau', 'sudo journalctl -u agent_pantau -n 30 --no-pager', 'sudo systemctl restart agent_pantau'];
+        ? [
+            'Verify host machine power status: ensure server is powered ON.',
+            'Check network connectivity: ping host or test console / SSH reachability.',
+            'Inspect security & firewall rules: verify agent outbound connection or SSH port is not blocked.',
+            'If machine is running, inspect agent daemon: sudo systemctl status agent_pantau',
+            'Inspect agent logs for detailed diagnosis: sudo journalctl -u agent_pantau -n 30 --no-pager'
+          ]
+        : [
+            'Verifikasi status daya fisik atau virtual mesin: pastikan server dalam kondisi aktif (Power ON).',
+            'Uji konektivitas jaringan: lakukan ping atau uji jangkauan SSH ke alamat host server.',
+            'Lakukan inspeksi keamanan & firewall: pastikan port telemetri atau akses keluar server tidak diblokir.',
+            'Bila server aktif dan dapat diakses, periksa status service agen: sudo systemctl status agent_pantau',
+            'Periksa log sistem dan agen untuk diagnosa mendalam: sudo journalctl -u agent_pantau -n 30 --no-pager'
+          ];
+      const srvIp = (ctx.data_teknis && ctx.data_teknis.server_ip) || '127.0.0.1';
+      cmdList = [
+        'ping -c 3 ' + srvIp,
+        'ssh -o ConnectTimeout=5 ' + srvIp,
+        'sudo systemctl status agent_pantau',
+        'sudo journalctl -u agent_pantau -n 30 --no-pager'
+      ];
     } else if (p.key === 'apt_updates') {
       causeText = isEn
         ? `Operating system package updates are available for installation (${_esc(pMsg)}).`
@@ -1429,7 +1658,11 @@ function renderProblemDetailModal(p) {
   // 7. Footer Actions
   if (actionFooterEl) {
     let btns = [];
-    if (p.key.startsWith('service_down:')) {
+    if (p.server_id) {
+      const srvBtnText = isEn ? '🖥️ View Server' : '🖥️ Buka Server';
+      btns.push(`<a href="/servers/${p.server_id}" class="btn btn-ghost btn-sm" target="_blank">${srvBtnText}</a>`);
+    }
+    if (p.key && p.key.startsWith('service_down:')) {
       const sname = p.key.split(':', 2)[1];
       if (typeof jumpToLog === 'function') {
         const logBtnText = isEn ? ('📜 View ' + _esc(sname) + ' Logs') : ('📜 Lihat Log ' + _esc(sname));
@@ -1445,6 +1678,10 @@ function renderProblemDetailModal(p) {
       const copyBtnText = isEn ? '📋 Copy Update Command' : '📋 Salin Perintah Update';
       btns.push(`<button type="button" class="btn btn-ghost btn-sm" onclick="copyCommandText(this, '${updateCmd}')">${copyBtnText}</button>`);
     }
+    if (p.id && p.is_open && !p.acknowledged) {
+      const ackBtnText = isEn ? '✓ Mark Acknowledged' : '✓ Tandai Ditangani';
+      btns.push(`<button type="button" class="btn btn-danger btn-sm" onclick="alertAck(this, ${p.id}); closeProblemDetailModal();">${ackBtnText}</button>`);
+    }
     const closeBtnText = isEn ? 'Close' : 'Tutup';
     btns.push(`<button type="button" class="btn btn-primary btn-sm" onclick="closeProblemDetailModal()">${closeBtnText}</button>`);
     actionFooterEl.innerHTML = btns.join(' ');
@@ -1452,7 +1689,7 @@ function renderProblemDetailModal(p) {
 }
 
 setTimeout(alertFetch, 1500);
-setInterval(alertFetch, 10000);
+setInterval(alertFetch, 5000);
 </script>
 
 <!-- Modal Abaikan Masalah -->
