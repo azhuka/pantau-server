@@ -369,138 +369,175 @@
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(420px, 1fr));gap:24px;align-items:start">
+  <style>
+    .users-mgmt-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 1080px) {
+      .users-mgmt-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
+    .user-act-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 3.5px;
+      font-size: 11px;
+      padding: 3px 6px;
+      border-radius: 5px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .user-act-icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 6px;
+      border-radius: 5px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+  </style>
+
+  <div class="users-mgmt-grid">
 
     <!-- Panel Tabel Pengguna -->
-    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h3 style="font-size:16px;font-weight:700;margin:0">Daftar Pengguna Terdaftar</h3>
-        <span style="font-size:12px;color:var(--dim)">{{ users|length }} akun</span>
+    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <h3 style="font-size:15px;font-weight:700;margin:0">Daftar Pengguna Terdaftar</h3>
+          <span class="badge" style="background:rgba(56,189,248,0.12);color:var(--blue);border:1px solid rgba(56,189,248,0.25);font-size:11px;padding:1px 7px">{{ users|length }} akun</span>
+        </div>
       </div>
 
       <div style="overflow-x:auto">
-        <table id="users-table" style="width:100%;border-collapse:collapse;font-size:13px">
+        <table id="users-table" style="width:100%;border-collapse:collapse;font-size:12.5px">
           <thead>
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:var(--dim);text-align:left">
-              <th style="padding:10px 8px">Username</th>
-              <th style="padding:10px 8px">Peran</th>
-              <th style="padding:10px 8px">Status / 2FA</th>
-              <th style="padding:10px 8px">Login Terakhir</th>
-              <th style="padding:10px 8px;text-align:right">Aksi</th>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:var(--dim);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">
+              <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Pengguna</th>
+              <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Peran</th>
+              <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Status &amp; 2FA</th>
+              <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Login Terakhir</th>
+              <th style="padding:8px 8px;text-align:right;font-weight:600;white-space:nowrap">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {% for u in users %}
             {% set uperms = u.get_permissions() %}
             <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-              <td style="padding:12px 8px">
-                <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace">
-                  {{ u.username }}
+              <td style="padding:10px 8px;white-space:nowrap">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:13px">{{ u.username }}</span>
                   {% if u.id == user.id %}
-                  <span style="font-size:10px;color:var(--blue);font-weight:normal">(Anda)</span>
+                  <span style="font-size:10px;color:var(--blue);font-weight:600;background:rgba(56,189,248,0.1);padding:1px 5px;border-radius:4px">(Anda)</span>
                   {% endif %}
                 </div>
                 {% if u.role == 'operator' %}
-                  <div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">
+                  <div style="margin-top:2px">
                     {% set ns_p = namespace(count=0) %}
                     {% for pk, pv in uperms.items() %}
                       {% if pv %}{% set ns_p.count = ns_p.count + 1 %}{% endif %}
                     {% endfor %}
-                    <span class="badge" style="background:rgba(56,189,248,0.1);color:#38bdf8;font-size:10px;padding:1px 6px;border:1px solid rgba(56,189,248,0.25)">
+                    <span class="badge" style="background:rgba(56,189,248,0.08);color:#38bdf8;font-size:10px;padding:1px 5px;border:1px solid rgba(56,189,248,0.2)">
                       {{ ns_p.count }} Izin Aktif
                     </span>
                   </div>
                 {% endif %}
               </td>
-              <td style="padding:12px 8px">
+              <td style="padding:10px 8px;white-space:nowrap">
                 {% if u.is_master_admin() %}
-                <span class="badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:11px;padding:2px 8px;font-weight:700">Master Admin</span>
+                <span class="badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:10.5px;padding:2px 7px;font-weight:700">Master Admin</span>
                 {% elif u.is_operator() %}
-                <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);font-size:11px;padding:2px 8px;font-weight:700">Operator</span>
+                <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);font-size:10.5px;padding:2px 7px;font-weight:700">Operator</span>
                 {% else %}
-                <span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3);font-size:11px;padding:2px 8px">Viewer</span>
+                <span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3);font-size:10.5px;padding:2px 7px">Viewer</span>
                 {% endif %}
               </td>
-              <td style="padding:12px 8px">
-                <div style="display:flex;align-items:center;gap:6px">
+              <td style="padding:10px 8px;white-space:nowrap">
+                <div style="display:inline-flex;align-items:center;gap:5px">
                   {% if u.is_active %}
-                  <span style="color:#4ade80;font-size:11px;font-weight:600">● Aktif</span>
+                  <span style="color:#4ade80;font-size:11px;font-weight:600" title="Akun aktif">● Aktif</span>
                   {% else %}
-                  <span style="color:#f87171;font-size:11px;font-weight:600">🔒 Terkunci</span>
+                  <span style="color:#f87171;font-size:11px;font-weight:600" title="Akun terkunci">🔒 Terkunci</span>
                   {% endif %}
-                  <span style="color:var(--dim);font-size:11px">/</span>
+                  <span style="color:var(--dim);font-size:10px">·</span>
                   {% if u.totp_enabled %}
-                  <span class="badge" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:10px;padding:1px 6px">2FA Aktif</span>
+                  <span class="badge" style="background:rgba(34,197,94,0.12);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:10px;padding:1px 5px" title="2FA TOTP Aktif">2FA Aktif</span>
                   {% else %}
-                  <span class="badge" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);font-size:10px;padding:1px 6px">2FA Nonaktif</span>
+                  <span class="badge" style="background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);font-size:10px;padding:1px 5px" title="2FA Belum Diaktifkan">2FA Nonaktif</span>
                   {% endif %}
                 </div>
               </td>
-              <td style="padding:12px 8px;font-size:11px;color:var(--dim)">
+              <td style="padding:10px 8px;font-size:11px;color:var(--dim);white-space:nowrap">
                 {% if u.last_login_at %}
-                {{ u.last_login_at.strftime('%d %b %Y %H:%M') }}
-                {% else %}-{% endif %}
+                <span title="{{ u.last_login_at.strftime('%d %b %Y %H:%M:%S UTC') }}">{{ u.last_login_at.strftime('%d %b %Y %H:%M') }}</span>
+                {% else %}
+                <span style="color:var(--dim);opacity:0.6">-</span>
+                {% endif %}
               </td>
-              <td style="padding:12px 8px;text-align:right">
-                <div style="display:inline-flex;gap:5px;align-items:center;flex-wrap:nowrap">
+              <td style="padding:10px 8px;text-align:right;white-space:nowrap">
+                <div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:nowrap">
                   <!-- Tombol 1: LIHAT Detail Hak Akses -->
-                  <button type="button" class="btn btn-ghost btn-sm" onclick='openViewUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ u.totp_enabled }}, {{ (u.last_login_at.strftime("%d %b %Y %H:%M UTC") if u.last_login_at else "-")|tojson }}, {{ (u.last_login_ip or "-")|tojson }}, {{ uperms|tojson }})' style="font-size:11px;padding:4px 9px" title="Lihat detail hak akses">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openViewUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ u.totp_enabled }}, {{ (u.last_login_at.strftime("%d %b %Y %H:%M UTC") if u.last_login_at else "-")|tojson }}, {{ (u.last_login_ip or "-")|tojson }}, {{ uperms|tojson }})' title="Lihat detail hak akses {{ u.username }}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                       <circle cx="12" cy="12" r="3"></circle>
                     </svg>
-                    Lihat
+                    <span>Lihat</span>
                   </button>
 
                   <!-- Tombol 2FA (Khusus Master Admin & Pengelola Akun) -->
                   {% if (can_manage_users or (can_manage_viewers and u.role == 'viewer')) and (not u.is_master_admin() or user.is_master_admin()) %}
                     {% if not u.totp_enabled %}
-                    <button type="button" class="btn btn-ghost btn-sm" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' style="font-size:11px;padding:4px 8px;color:#fbbf24" title="Setup &amp; Aktifkan 2FA untuk akun ini">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' style="color:#fbbf24;border-color:rgba(251,191,36,0.35)" title="Setup &amp; Aktifkan 2FA untuk {{ u.username }}">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                       </svg>
-                      Setup 2FA
+                      <span>+2FA</span>
                     </button>
                     {% else %}
-                    <button type="button" class="btn btn-ghost btn-sm" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' style="font-size:11px;padding:4px 8px;color:#38bdf8" title="Reset / konfigurasi ulang 2FA">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' style="color:#38bdf8;border-color:rgba(56,189,248,0.35)" title="Reset konfigurasi 2FA {{ u.username }}">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
                       </svg>
-                      Reset 2FA
+                      <span>Reset</span>
                     </button>
-                    <button type="button" class="btn btn-ghost btn-sm" onclick='disableAdmin2fa({{ u.id }}, {{ u.username|tojson }})' style="font-size:11px;padding:4px 8px;color:#f87171" title="Matikan 2FA akun ini">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button type="button" class="btn btn-ghost btn-sm user-act-icon-btn" onclick='disableAdmin2fa({{ u.id }}, {{ u.username|tojson }})' style="color:#f87171" title="Matikan 2FA {{ u.username }}">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
                       </svg>
-                      Matikan 2FA
                     </button>
                     {% endif %}
                   {% endif %}
 
                   <!-- Tombol Audit Jejak Aktivitas Pengguna -->
                   {% if user.is_master_admin() or user.has_perm('can_audit') %}
-                  <a href="/audit?user={{ u.username }}" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px;color:#38bdf8;text-decoration:none" title="Lihat catatan jejak audit aktivitas {{ u.username }}">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <a href="/audit?user={{ u.username }}" class="btn btn-ghost btn-sm user-act-btn" style="color:#38bdf8;text-decoration:none" title="Catatan jejak audit aktivitas {{ u.username }}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                       <polyline points="14 2 14 8 20 8"></polyline>
                       <line x1="16" y1="13" x2="8" y2="13"></line>
                       <line x1="16" y1="17" x2="8" y2="17"></line>
                       <polyline points="10 9 9 9 8 9"></polyline>
                     </svg>
-                    Audit
+                    <span>Audit</span>
                   </a>
                   {% endif %}
 
                   <!-- Tombol 2: EDIT Akun Pengguna -->
                   {% if can_manage_users and (not u.is_master_admin() or user.is_master_admin()) %}
-                  <button type="button" class="btn btn-ghost btn-sm" onclick='openEditUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ uperms|tojson }}, {{ u.is_master_admin()|tojson }})' style="font-size:11px;padding:4px 9px" title="Edit akun & wewenang">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openEditUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ uperms|tojson }}, {{ u.is_master_admin()|tojson }})' title="Edit akun &amp; wewenang {{ u.username }}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </svg>
-                    Edit
+                    <span>Edit</span>
                   </button>
                   {% endif %}
 
@@ -509,20 +546,18 @@
                   <form method="POST" action="/users/{{ u.id }}/toggle-active" style="display:inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     {% if u.is_active %}
-                    <button type="submit" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px;color:#f87171" title="Kunci akun agar tidak bisa login" onclick="return confirm('Kunci akun {{ u.username }}? Pengguna tidak akan bisa login.');">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button type="submit" class="btn btn-ghost btn-sm user-act-icon-btn" style="color:#f87171" title="Kunci akun {{ u.username }} agar tidak bisa login" onclick="return confirm('Kunci akun {{ u.username }}? Pengguna tidak akan bisa login.');">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                       </svg>
-                      Kunci
                     </button>
                     {% else %}
-                    <button type="submit" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 8px;color:#4ade80" title="Buka kunci akun" onclick="return confirm('Buka kunci akun {{ u.username }}?');">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button type="submit" class="btn btn-ghost btn-sm user-act-icon-btn" style="color:#4ade80" title="Buka kunci akun {{ u.username }}" onclick="return confirm('Buka kunci akun {{ u.username }}?');">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
                       </svg>
-                      Buka
                     </button>
                     {% endif %}
                   </form>
@@ -532,12 +567,11 @@
                   {% if u.id != user.id and not u.is_master_admin() %}
                   <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun {{ u.username }} secara permanen?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <button type="submit" class="btn btn-danger btn-sm" style="font-size:11px;padding:4px 8px" title="Hapus pengguna">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button type="submit" class="btn btn-danger btn-sm user-act-icon-btn" title="Hapus akun {{ u.username }} secara permanen">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                       </svg>
-                      Hapus
                     </button>
                   </form>
                   {% endif %}
@@ -551,14 +585,22 @@
     </div>
 
     <!-- Panel Tambah Pengguna Baru -->
-    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px">
-      <div style="margin-bottom:16px">
-        <h3 style="font-size:16px;font-weight:700;margin:0">Tambah Pengguna Baru</h3>
-        <p style="font-size:12px;color:var(--dim);margin-top:4px">
+    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px">
+      <div style="margin-bottom:12px">
+        <h3 style="font-size:15px;font-weight:700;margin:0;display:flex;align-items:center;gap:6px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="8.5" cy="7" r="4"></circle>
+            <line x1="20" y1="8" x2="20" y2="14"></line>
+            <line x1="23" y1="11" x2="17" y2="11"></line>
+          </svg>
+          Tambah Pengguna Baru
+        </h3>
+        <p style="font-size:11.5px;color:var(--dim);margin:3px 0 0 0;line-height:1.4">
           {% if can_manage_users %}
-          Daftarkan akun Operator (dengan hak sudo/granular) atau akun Viewer.
+          Daftarkan akun Operator atau Viewer.
           {% else %}
-          Daftarkan akun Viewer pemantau sistem (hanya-baca).
+          Daftarkan akun Viewer (hanya-baca).
           {% endif %}
         </p>
       </div>
@@ -566,53 +608,53 @@
       <form method="POST" action="/users/add">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-        <div class="form-group" style="margin-bottom:14px">
-          <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Username</label>
-          <input type="text" name="username" required minlength="3" maxlength="50" placeholder="Contoh: sysops-andi" autocomplete="off" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <div class="form-group" style="margin-bottom:10px">
+          <label style="display:block;font-size:10.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Username</label>
+          <input type="text" name="username" required minlength="3" maxlength="50" placeholder="Contoh: sysops-andi" autocomplete="off" style="width:100%;padding:7px 10px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
         </div>
 
-        <div class="form-group" style="margin-bottom:14px">
-          <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Kata Sandi Awal</label>
-          <input type="password" name="password" required autocomplete="new-password" placeholder="Minimal 12 karakter kombinasi kuat" oninput="checkAddPwdStrength(this.value)" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
-          <div id="add-pwd-hint" style="font-size:11px;color:var(--dim);margin-top:4px">Wajib minimal 12 karakter, huruf besar, huruf kecil, angka, dan simbol.</div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label style="display:block;font-size:10.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Kata Sandi Awal</label>
+          <input type="password" name="password" required autocomplete="new-password" placeholder="Minimal 12 karakter kombinasi kuat" oninput="checkAddPwdStrength(this.value)" style="width:100%;padding:7px 10px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
+          <div id="add-pwd-hint" style="font-size:10.5px;color:var(--dim);margin-top:3px;line-height:1.3">Wajib min. 12 karakter (huruf besar, kecil, angka, simbol).</div>
         </div>
 
-        <div class="form-group" style="margin-bottom:16px">
-          <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Peran / Hak Akses</label>
-          <select id="select-role" name="role" onchange="toggleAddPermsSection(this.value)" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.9);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="display:block;font-size:10.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Peran / Hak Akses</label>
+          <select id="select-role" name="role" onchange="toggleAddPermsSection(this.value)" style="width:100%;padding:7px 10px;background:rgba(9,13,22,0.9);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
             {% if can_manage_users %}
-            <option value="operator" selected>Operator (Pengguna harian / Hak Sudo Terpilih)</option>
-            <option value="viewer">Viewer (Tamu pemantau, hanya-baca tanpa izin kontrol)</option>
+            <option value="operator" selected>Operator (Hak Sudo Terpilih)</option>
+            <option value="viewer">Viewer (Hanya-Baca)</option>
             {% else %}
-            <option value="viewer" selected>Viewer (Tamu pemantau, hanya-baca)</option>
+            <option value="viewer" selected>Viewer (Hanya-Baca)</option>
             {% endif %}
           </select>
         </div>
 
         {% if can_manage_users %}
         <!-- Checklist Wewenang Operator Baru -->
-        <div id="add-perms-box" style="margin-bottom:20px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:8px;padding:14px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-            <span style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px">Wewenang Khusus Operator:</span>
-            <div style="display:flex;gap:6px">
-              <button type="button" class="btn btn-ghost btn-sm" onclick="setAddAllPerms(true)" style="font-size:10px;padding:3px 9px;color:#38bdf8;border-color:rgba(56,189,248,0.4)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                Hak Sudo Penuh
+        <div id="add-perms-box" style="margin-bottom:14px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:8px;padding:10px 12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+            <span style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px">Wewenang Operator:</span>
+            <div style="display:flex;gap:4px">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="setAddAllPerms(true)" style="font-size:10px;padding:2px 7px;color:#38bdf8;border-color:rgba(56,189,248,0.4)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                Sudo Penuh
               </button>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="setAddAllPerms(false)" style="font-size:10px;padding:3px 9px">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="setAddAllPerms(false)" style="font-size:10px;padding:2px 7px">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 Kosongkan
               </button>
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr;gap:8px;max-height:280px;overflow-y:auto;padding-right:4px">
+          <div style="display:grid;grid-template-columns:1fr;gap:6px;max-height:220px;overflow-y:auto;padding-right:4px">
             {% for p_key, p_meta in all_perms.items() %}
-            <label style="display:flex;align-items:flex-start;gap:10px;font-size:12px;cursor:pointer;padding:6px;border-radius:4px;background:rgba(255,255,255,0.02)">
+            <label style="display:flex;align-items:flex-start;gap:8px;font-size:11.5px;cursor:pointer;padding:5px 6px;border-radius:4px;background:rgba(255,255,255,0.02)">
               <input type="checkbox" name="perm_{{ p_key }}" class="add-perm-cb" style="margin-top:2px">
               <div>
-                <div style="font-weight:600;color:var(--text)">{{ p_meta.label }}</div>
-                <div style="color:var(--dim);font-size:11px">{{ p_meta.desc }}</div>
+                <div style="font-weight:600;color:var(--text);line-height:1.2">{{ p_meta.label }}</div>
+                <div style="color:var(--dim);font-size:10.5px;line-height:1.2;margin-top:1px">{{ p_meta.desc }}</div>
               </div>
             </label>
             {% endfor %}
@@ -620,8 +662,8 @@
         </div>
         {% endif %}
 
-        <button type="submit" class="btn btn-primary" style="width:100%;padding:10px;font-size:13px;font-weight:700">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button type="submit" class="btn btn-primary" style="width:100%;padding:8px 12px;font-size:12.5px;font-weight:700">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="8.5" cy="7" r="4"></circle>
             <line x1="20" y1="8" x2="20" y2="14"></line>

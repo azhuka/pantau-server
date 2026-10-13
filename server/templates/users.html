@@ -30,23 +30,38 @@
 </div>
 {% endif %}
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(420px, 1fr));gap:24px;align-items:start">
+<style>
+  .users-mgmt-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 1080px) {
+    .users-mgmt-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  }
+</style>
+
+<div class="users-mgmt-grid">
 
   <!-- Tabel Pengguna -->
-  <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="font-size:16px;font-weight:700;margin:0">Daftar Pengguna Terdaftar</h3>
+  <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="font-size:15px;font-weight:700;margin:0">Daftar Pengguna Terdaftar</h3>
       <span style="font-size:12px;color:var(--dim)">{{ users|length }} akun</span>
     </div>
 
-    <table id="users-table" style="width:100%;border-collapse:collapse;font-size:13px">
+    <table id="users-table" style="width:100%;border-collapse:collapse;font-size:12.5px">
       <thead>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:var(--dim);text-align:left">
-          <th style="padding:10px 8px">Username</th>
-          <th style="padding:10px 8px">Peran</th>
-          <th style="padding:10px 8px">Status / 2FA</th>
-          <th style="padding:10px 8px">Login Terakhir</th>
-          <th style="padding:10px 8px;text-align:right">Aksi</th>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:var(--dim);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px">
+          <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Username</th>
+          <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Peran</th>
+          <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Status &amp; 2FA</th>
+          <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Login Terakhir</th>
+          <th style="padding:8px 8px;text-align:right;font-weight:600;white-space:nowrap">Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -96,15 +111,15 @@
               {% endif %}
             </div>
           </td>
-          <td style="padding:12px 8px;font-size:11px;color:var(--dim)">
+          <td style="padding:10px 8px;font-size:11px;color:var(--dim);white-space:nowrap">
             {% if u.last_login_at %}
             {{ u.last_login_at.strftime('%d %b %Y %H:%M') }}
             {% else %}-{% endif %}
           </td>
-          <td style="padding:12px 8px;text-align:right">
-            <div style="display:inline-flex;gap:6px;align-items:center">
+          <td style="padding:10px 8px;text-align:right;white-space:nowrap">
+            <div style="display:inline-flex;gap:4px;align-items:center">
               {% if user.is_master_admin() and u.is_operator() %}
-              <button type="button" class="btn btn-secondary btn-sm" onclick="openEditPermsModal({{ u.id }}, '{{ u.username }}', {{ u.permissions or '{}' }})" style="font-size:11px;padding:4px 8px" title="Atur izin operator">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="openEditPermsModal({{ u.id }}, '{{ u.username }}', {{ u.permissions or '{}' }})" style="font-size:11px;padding:3px 7px" title="Atur izin operator">
                 ⚙️ Izin
               </button>
               {% endif %}
@@ -113,11 +128,11 @@
               <form method="POST" action="/users/{{ u.id }}/toggle-active" style="display:inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 {% if u.is_active %}
-                <button type="submit" class="btn btn-secondary btn-sm" style="font-size:11px;padding:4px 8px;color:#f87171" title="Kunci akun agar tidak bisa login" onclick="return confirm('Kunci akun {{ u.username }}? Pengguna tidak akan bisa login.');">
+                <button type="submit" class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 7px;color:#f87171" title="Kunci akun agar tidak bisa login" onclick="return confirm('Kunci akun {{ u.username }}? Pengguna tidak akan bisa login.');">
                   🔒 Kunci
                 </button>
                 {% else %}
-                <button type="submit" class="btn btn-secondary btn-sm" style="font-size:11px;padding:4px 8px;color:#4ade80" title="Buka kunci akun" onclick="return confirm('Buka kunci akun {{ u.username }}?');">
+                <button type="submit" class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 7px;color:#4ade80" title="Buka kunci akun" onclick="return confirm('Buka kunci akun {{ u.username }}?');">
                   🔓 Buka
                 </button>
                 {% endif %}
@@ -127,7 +142,7 @@
               {% if u.id != user.id and not u.is_master_admin() %}
               <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun {{ u.username }} secara permanen?');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <button type="submit" class="btn btn-danger btn-sm" style="font-size:11px;padding:4px 8px" title="Hapus pengguna">
+                <button type="submit" class="btn btn-danger btn-sm" style="font-size:11px;padding:3px 7px" title="Hapus pengguna">
                   Hapus
                 </button>
               </form>
@@ -141,24 +156,24 @@
   </div>
 
   <!-- Form Tambah Pengguna Baru -->
-  <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px">
-    <div style="margin-bottom:16px">
-      <h3 style="font-size:16px;font-weight:700;margin:0">Tambah Pengguna Baru</h3>
-      <p style="font-size:12px;color:var(--dim);margin-top:4px">Daftarkan akun operator harian atau akun viewer.</p>
+  <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px">
+    <div style="margin-bottom:12px">
+      <h3 style="font-size:15px;font-weight:700;margin:0">Tambah Pengguna Baru</h3>
+      <p style="font-size:11.5px;color:var(--dim);margin:3px 0 0 0">Daftarkan akun operator harian atau akun viewer.</p>
     </div>
 
     <form method="POST" action="/users/add">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-      <div class="form-group" style="margin-bottom:14px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Username</label>
-        <input type="text" name="username" required minlength="3" maxlength="50" placeholder="Contoh: sysops-andi" autocomplete="off" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+      <div class="form-group" style="margin-bottom:10px">
+        <label style="display:block;font-size:10.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Username</label>
+        <input type="text" name="username" required minlength="3" maxlength="50" placeholder="Contoh: sysops-andi" autocomplete="off" style="width:100%;padding:7px 10px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
       </div>
 
-      <div class="form-group" style="margin-bottom:14px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Kata Sandi Awal</label>
-        <input type="password" name="password" required autocomplete="new-password" placeholder="Minimal 12 karakter kombinasi kuat" oninput="checkAddPwdStrength(this.value)" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
-        <div id="add-pwd-hint" style="font-size:11px;color:var(--dim);margin-top:4px">Wajib minimal 12 karakter, huruf besar, huruf kecil, angka, dan simbol.</div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label style="display:block;font-size:10.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Kata Sandi Awal</label>
+        <input type="password" name="password" required autocomplete="new-password" placeholder="Minimal 12 karakter kombinasi kuat" oninput="checkAddPwdStrength(this.value)" style="width:100%;padding:7px 10px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
+        <div id="add-pwd-hint" style="font-size:10.5px;color:var(--dim);margin-top:3px">Wajib minimal 12 karakter, huruf besar, huruf kecil, angka, dan simbol.</div>
       </div>
 
       <div class="form-group" style="margin-bottom:16px">
