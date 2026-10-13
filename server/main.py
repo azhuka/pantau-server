@@ -5397,6 +5397,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             "severity": stale_sev,
             "message": stale_msg,
             "tip": stale_tip,
+            "event_at": srv.last_seen.replace(tzinfo=None) if srv.last_seen else None,
             "context": _build_problem_context(
                 "agent_stale", srv,
                 sec_silent=int(sec_silent),
@@ -5610,7 +5611,12 @@ def _serialize_problem_list(prob_list):
         for k in ("started_at", "resolved_at", "acknowledged_at", "last_active_at", "ignored_until"):
             v = d.get(k)
             if isinstance(v, datetime):
-                d[k] = v.isoformat()
+                iso_str = v.isoformat()
+                if not iso_str.endswith("Z") and not v.tzinfo:
+                    iso_str += "Z"
+                d[k] = iso_str
+        if d.get("started_at"):
+            d["started_at_iso"] = d["started_at"]
         res.append(d)
     return res
 
@@ -5676,9 +5682,10 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
         is_svc_ignored = bool(svc_obj and getattr(svc_obj, "is_ignored", 0))
 
         if row is None:
+            start_time = ev if (ev and p["key"] == "agent_stale") else now
             new_row = ServerProblem(
                 server_id=srv.id, key=p["key"], severity=p["severity"],
-                message=p["message"], tip=p["tip"], started_at=now,
+                message=p["message"], tip=p["tip"], started_at=start_time,
                 last_active_at=active,
                 context=p.get("context"),
             )
@@ -5703,6 +5710,9 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 row.ignored_by = svc_obj.ignored_by
                 new_row_reason = svc_obj.ignored_reason
                 row.ignored_reason = new_row_reason
+
+            if p["key"] == "agent_stale" and ev and (row.started_at > ev):
+                row.started_at = ev
 
             if active > (row.last_active_at or row.started_at):
                 row.last_active_at = active
@@ -6297,6 +6307,9 @@ def _alert_dict(row, hostname: str, now: datetime) -> dict:
             ctx = json.loads(ctx)
         except Exception:
             pass
+    s_iso = row.started_at.isoformat()
+    if not s_iso.endswith("Z"):
+        s_iso += "Z"
     return {
         "id": row.id,
         "server_id": row.server_id,
@@ -6305,7 +6318,7 @@ def _alert_dict(row, hostname: str, now: datetime) -> dict:
         "severity": row.severity,
         "message": row.message,
         "tip": row.tip,
-        "started_at": row.started_at.isoformat(),
+        "started_at": s_iso,
         "durasi": _fmt_duration(row.started_at, now),
         "acknowledged": row.acknowledged_at is not None,
         "acknowledged_by": row.acknowledged_by,
@@ -6332,10 +6345,7 @@ def api_alerts(
     open_danger = (
         db.query(ServerProblem)
         .filter(
-            or_(
-                ServerProblem.severity == "danger",
-                ServerProblem.key == "agent_stale",
-            ),
+            ServerProblem.severity == "danger",
             ServerProblem.resolved_at.is_(None),
             (ServerProblem.is_ignored == 0) | (ServerProblem.is_ignored.is_(None)),
         )
@@ -6343,21 +6353,14 @@ def api_alerts(
     )
     alerts = [_alert_dict(r, host.get(r.server_id, "?"), now)
               for r in open_danger if r.acknowledged_at is None]
-    danger_hosts = sorted(list({host.get(r.server_id, "?") for r in open_danger if host.get(r.server_id)}))
-    for st in stale_servers:
-        if st.hostname not in danger_hosts:
-            danger_hosts.append(st.hostname)
-    danger_hosts.sort()
+    danger_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in open_danger if r.server_id}))
 
     host_danger_counts = {}
     for r in open_danger:
         hname = host.get(r.server_id) or f"Server #{r.server_id}"
         host_danger_counts[hname] = host_danger_counts.get(hname, 0) + 1
-    for st in stale_servers:
-        if st.hostname not in host_danger_counts:
-            host_danger_counts[st.hostname] = 1
 
-    total_danger_count = max(len(open_danger), len(danger_hosts))
+    total_danger_count = len(open_danger)
     return {
         "alerts": alerts,
         "unack_count": len(alerts),

@@ -921,14 +921,27 @@ function fmtDur(secs, isEn){
   if (m) return m + (isEn ? ' m ' : ' mnt ') + s + (isEn ? ' s' : ' dtk');
   return s + (isEn ? ' s' : ' dtk');
 }
-setInterval(() => {
+function tickAllDurations(){
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const now = Date.now();
-  document.querySelectorAll('td[data-start]').forEach(td => {
-    const start = Date.parse(td.dataset.start);
-    if (!isNaN(start)) td.textContent = fmtDur((now - start)/1000, isEn);
+  document.querySelectorAll('[data-start]').forEach(el => {
+    let sStr = el.dataset.start;
+    if (!sStr) return;
+    if (!sStr.endsWith('Z') && !sStr.includes('+')) sStr += 'Z';
+    const start = Date.parse(sStr);
+    if (!isNaN(start)) {
+      const dur = fmtDur((now - start)/1000, isEn);
+      const sfx = el.dataset.suffix || '';
+      const tag = el.querySelector ? el.querySelector('.alert-dur-tag') : null;
+      if (tag) {
+        tag.textContent = dur + sfx;
+      } else {
+        el.textContent = dur + sfx;
+      }
+    }
   });
-}, 1000);
+}
+setInterval(tickAllDurations, 1000);
 
 // ---------- jam UTC (semua timestamp UI memakai UTC; lokal Anda bisa berbeda) ----------
 function tickUtcClock(){
@@ -1065,7 +1078,7 @@ function renderAlertGroupsHtml(alerts) {
             ? '<a href="/servers/' + a.server_id + '" class="alert-srv-name" target="_blank">' + escHtml(a.hostname) + '</a>'
             : '<span class="alert-srv-name">' + escHtml(a.hostname) + '</span>')
         + '</div></td>'
-        + '<td><span class="alert-dur-tag">' + escHtml(a.durasi) + '</span></td>'
+        + '<td data-start="' + escHtml(a.started_at) + '"><span class="alert-dur-tag" data-start="' + escHtml(a.started_at) + '">' + escHtml(a.durasi) + '</span></td>'
         + '<td style="text-align:right">' + actionHtml + '</td>'
         + '</tr>';
     }).join('');
@@ -1121,6 +1134,7 @@ function renderAlerts(d){
     if (overlay._key !== key) {
       overlay._key = key;
       listEl.innerHTML = renderAlertGroupsHtml(d.alerts || []);
+      tickAllDurations();
     }
     if (d.alerts && d.alerts.length) {
       overlay.classList.add('show');
