@@ -1058,53 +1058,83 @@
       <td class="prob-act-cell">
         <div class="prob-act-wrap">
           <div class="prob-act-row prob-act-tools">
-            <button type="button" class="btn btn-ghost prob-btn prob-btn-diag" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah">🔍 Diagnosa</button>
+            <button type="button" class="prob-btn prob-btn-primary" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <span>Diagnosa</span>
+            </button>
             {% if p.log_unit %}
-              <button type="button" class="btn btn-ghost prob-btn prob-btn-log" onclick='jumpToLog({{ p.log_unit|tojson }})' title="Lihat log unit {{ p.log_unit }}">Log</button>
+              <button type="button" class="prob-btn" onclick='jumpToLog({{ p.log_unit|tojson }})' title="Lihat log unit {{ p.log_unit }}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                <span>Log</span>
+              </button>
             {% elif p.action == 'mitigate' %}
-              <button type="button" class="btn btn-ghost prob-btn prob-btn-log" onclick="jumpToLog('AUTH')" title="Lihat log autentikasi SSH">Log auth</button>
+              <button type="button" class="prob-btn" onclick="jumpToLog('AUTH')" title="Lihat log autentikasi SSH">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                <span>Log auth</span>
+              </button>
+            {% endif %}
+            {% if not user.is_viewer() and p.is_open %}
+              {% if p.action == 'restart' and p.svc_id %}
+                <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline;margin:0" data-confirm data-msg="Restart service ini di {{ server.hostname }}?">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <button class="prob-btn prob-btn-primary" title="Restart layanan">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                    <span>Restart</span>
+                  </button>
+                </form>
+              {% elif p.action == 'mitigate' and user.has_perm('can_firewall') and p.ip_count and p.ip_count > 0 %}
+                <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline;margin:0" data-confirm data-msg="Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <button class="prob-btn prob-btn-danger" title="Blokir {{ p.ip_count }} IP sumber via iptables">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span>Blokir IP ({{ p.ip_count }})</span>
+                  </button>
+                </form>
+              {% elif p.action == 'apt_update' %}
+                <button class="prob-btn prob-btn-primary" onclick="aptAction('APT_UPDATE')" title="Perbarui paket sistem">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>
+                  <span>Update OS</span>
+                </button>
+              {% elif p.action == 'agent_update_cmd' %}
+                <button type="button" class="prob-btn" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                  <span>Update Agen</span>
+                </button>
+              {% endif %}
             {% endif %}
           </div>
-          {% if not user.is_viewer() %}
-            {% if p.is_open %}
-              <div class="prob-act-row prob-act-ops">
-                {% if p.action == 'restart' and p.svc_id %}
-                  <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline;margin:0" data-confirm data-msg="Restart service ini di {{ server.hostname }}?">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <button class="btn btn-primary prob-btn">Restart</button>
-                  </form>
-                {% elif p.action == 'mitigate' %}
-                  {% if user.has_perm('can_firewall') and p.ip_count and p.ip_count > 0 %}
-                    <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline;margin:0" data-confirm data-msg="Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                      <button class="btn btn-danger prob-btn">Blokir IP ({{ p.ip_count }})</button>
-                    </form>
-                  {% endif %}
-                {% elif p.action == 'apt_update' %}
-                  <button class="btn btn-primary prob-btn" onclick="aptAction('APT_UPDATE')">Update OS</button>
-                {% elif p.action == 'agent_update_cmd' %}
-                  <button type="button" class="btn btn-ghost prob-btn" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard">📋 Update Agen</button>
-                {% endif %}
-
-                {% if p.is_ignored %}
-                  <button type="button" class="btn btn-ghost prob-btn" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>
-                {% else %}
-                  <button type="button" class="btn btn-ghost prob-btn" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>
-                {% endif %}
-
+          {% if p.is_open or p.acknowledged_by %}
+            <div class="prob-act-row prob-act-ops">
+              {% if not user.is_viewer() and p.is_open %}
                 {% if p.acknowledged_by %}
-                  <span class="badge badge-up prob-badge-ack" title="Ditangani {{ p.acknowledged_by }}">✓ Ditangani</span>
+                  <span class="prob-btn prob-status-ack" title="Ditangani {{ p.acknowledged_by }}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span>Ditangani</span>
+                  </span>
                 {% else %}
-                  <button type="button" class="btn btn-ghost prob-btn" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai sudah ditangani">Ditangani</button>
+                  <button type="button" class="prob-btn prob-btn-success" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai masalah ini sudah ditangani">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span>Ditangani</span>
+                  </button>
                 {% endif %}
-              </div>
-            {% endif %}
-          {% else %}
-            {% if p.acknowledged_by %}
-              <div class="prob-act-row prob-act-ops">
-                <span class="badge badge-up prob-badge-ack" title="Ditangani {{ p.acknowledged_by }}">✓ Ditangani</span>
-              </div>
-            {% endif %}
+                {% if p.is_ignored %}
+                  <button type="button" class="prob-btn prob-btn-primary" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    <span>Pantau Kembali</span>
+                  </button>
+                {% else %}
+                  <button type="button" class="prob-btn prob-btn-warn" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                    <span>Abaikan</span>
+                  </button>
+                {% endif %}
+              {% elif p.acknowledged_by %}
+                <span class="prob-btn prob-status-ack" title="Ditangani {{ p.acknowledged_by }}">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Ditangani</span>
+                </span>
+              {% endif %}
+            </div>
           {% endif %}
         </div>
       </td>
@@ -3527,8 +3557,8 @@ async function ackProblemInDetail(id, btn) {
     });
     if (r.ok) {
       showToast(isEn ? 'Problem marked as resolved.' : 'Masalah ditandai sebagai ditangani.', true);
-      btn.className = 'badge badge-up prob-badge-ack';
-      btn.textContent = isEn ? '✓ Acknowledged' : '✓ Ditangani';
+      btn.className = 'prob-btn prob-status-ack';
+      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
       btn.onclick = null;
       if (typeof poll === 'function') poll();
       return;
@@ -4449,55 +4479,65 @@ function renderProblemsTab(level, openList, histList) {
     const isoStart = isOpen && p.started_at ? (p.started_at.endsWith('Z') ? p.started_at : p.started_at + 'Z') : '';
     const dataStart = isoStart ? ` data-start="${isoStart}"` : '';
 
-    const diagBtn = `<button type="button" class="btn btn-ghost prob-btn prob-btn-diag" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}">🔍 ${isEn ? 'Diagnose' : 'Diagnosa'}</button>`;
-    let logBtn = '';
+    const svgDiag = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
+    const svgLog = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
+    const svgRestart = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>`;
+    const svgShield = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+    const svgDownload = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>`;
+    const svgTerm = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>`;
+    const svgCheck = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+    const svgCheckBadge = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+    const svgBellOff = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+    const svgBell = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
+
+    let toolsHtml = `<button type="button" class="prob-btn prob-btn-primary" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}">${svgDiag}<span>${isEn ? 'Diagnose' : 'Diagnosa'}</span></button>`;
     if (p.log_unit) {
-      logBtn = `<button type="button" class="btn btn-ghost prob-btn prob-btn-log" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" title="${isEn ? 'View unit logs' : 'Lihat log unit'}">Log</button>`;
+      toolsHtml += `<button type="button" class="prob-btn" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" title="${isEn ? 'View unit logs' : 'Lihat log unit'}">${svgLog}<span>Log</span></button>`;
     } else if (p.action === 'mitigate') {
-      logBtn = `<button type="button" class="btn btn-ghost prob-btn prob-btn-log" onclick="jumpToLog('AUTH')" title="${isEn ? 'View SSH auth logs' : 'Lihat log auth SSH'}">Log auth</button>`;
+      toolsHtml += `<button type="button" class="prob-btn" onclick="jumpToLog('AUTH')" title="${isEn ? 'View SSH auth logs' : 'Lihat log auth SSH'}">${svgLog}<span>Log auth</span></button>`;
     }
 
     let opsHtml = '';
     if (isOpen) {
       if (!IS_VIEWER) {
         if (p.action === 'restart' && p.svc_id && CAN_SERVICES) {
-          opsHtml += `<form method="post" action="/servers/${SID}/services/${p.svc_id}/restart" style="display:inline;margin:0" data-confirm data-msg="${isEn ? 'Restart this service on ' : 'Restart service ini di '}${escapeHtml(SERVER_NAME)}?">
+          toolsHtml += `<form method="post" action="/servers/${SID}/services/${p.svc_id}/restart" style="display:inline;margin:0" data-confirm data-msg="${isEn ? 'Restart this service on ' : 'Restart service ini di '}${escapeHtml(SERVER_NAME)}?">
             <input type="hidden" name="csrf_token" value="${getCsrf()}">
-            <button class="btn btn-primary prob-btn">Restart</button>
+            <button class="prob-btn prob-btn-primary" title="${isEn ? 'Restart service' : 'Restart layanan'}">${svgRestart}<span>Restart</span></button>
           </form>`;
-        } else if (p.action === 'mitigate') {
-          if (CAN_FIREWALL && p.ip_count && p.ip_count > 0) {
-            opsHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline;margin:0" data-confirm data-msg="${isEn ? `Block ${p.ip_count} source IPs (iptables) on ` : `Blokir ${p.ip_count} IP sumber (iptables) di `}${escapeHtml(SERVER_NAME)}?">
-              <input type="hidden" name="csrf_token" value="${getCsrf()}">
-              <button class="btn btn-danger prob-btn">${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</button>
-            </form>`;
-          }
+        } else if (p.action === 'mitigate' && CAN_FIREWALL && p.ip_count && p.ip_count > 0) {
+          toolsHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline;margin:0" data-confirm data-msg="${isEn ? `Block ${p.ip_count} source IPs (iptables) on ` : `Blokir ${p.ip_count} IP sumber (iptables) di `}${escapeHtml(SERVER_NAME)}?">
+            <input type="hidden" name="csrf_token" value="${getCsrf()}">
+            <button class="prob-btn prob-btn-danger" title="${isEn ? 'Block source IPs via iptables' : 'Blokir IP sumber via iptables'}">${svgShield}<span>${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</span></button>
+          </form>`;
         } else if (p.action === 'apt_update' && CAN_APT) {
-          opsHtml += `<button class="btn btn-primary prob-btn" onclick="aptAction('APT_UPDATE')">${isEn ? 'Update OS' : 'Update OS'}</button>`;
+          toolsHtml += `<button class="prob-btn prob-btn-primary" onclick="aptAction('APT_UPDATE')" title="${isEn ? 'Update OS packages' : 'Perbarui paket sistem'}">${svgDownload}<span>Update OS</span></button>`;
         } else if (p.action === 'agent_update_cmd' && CAN_OTA) {
-          opsHtml += `<button type="button" class="btn btn-ghost prob-btn" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}">📋 ${isEn ? 'Update Agent' : 'Update Agen'}</button>`;
+          toolsHtml += `<button type="button" class="prob-btn" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}">${svgTerm}<span>${isEn ? 'Update Agent' : 'Update Agen'}</span></button>`;
+        }
+
+        if (p.acknowledged_by) {
+          opsHtml += `<span class="prob-btn prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
+        } else {
+          opsHtml += `<button type="button" class="prob-btn prob-btn-success" onclick="ackProblemInDetail(${p.id}, this)" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${svgCheck}<span>${isEn ? 'Acknowledge' : 'Ditangani'}</span></button>`;
         }
 
         if (isIgnored) {
-          opsHtml += `<button type="button" class="btn btn-ghost prob-btn" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">🔔 ${isEn ? 'Cancel Ignore' : 'Pantau Kembali'}</button>`;
+          opsHtml += `<button type="button" class="prob-btn prob-btn-primary" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">${svgBell}<span>${isEn ? 'Monitor' : 'Pantau Kembali'}</span></button>`;
         } else {
-          opsHtml += `<button type="button" class="btn btn-ghost prob-btn" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">🔕 ${isEn ? 'Ignore' : 'Abaikan'}</button>`;
-        }
-
-        if (p.acknowledged_by) {
-          opsHtml += `<span class="badge badge-up prob-badge-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">✓ ${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
-        } else {
-          opsHtml += `<button type="button" class="btn btn-ghost prob-btn" onclick="ackProblemInDetail(${p.id}, this)" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${isEn ? 'Acknowledge' : 'Ditangani'}</button>`;
+          opsHtml += `<button type="button" class="prob-btn prob-btn-warn" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">${svgBellOff}<span>${isEn ? 'Ignore' : 'Abaikan'}</span></button>`;
         }
       } else {
         if (p.acknowledged_by) {
-          opsHtml += `<span class="badge badge-up prob-badge-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">✓ ${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
+          opsHtml += `<span class="prob-btn prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
         }
       }
+    } else if (p.acknowledged_by) {
+      opsHtml += `<span class="prob-btn prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
     }
 
     const actHtml = `<div class="prob-act-wrap">
-      <div class="prob-act-row prob-act-tools">${diagBtn}${logBtn}</div>
+      <div class="prob-act-row prob-act-tools">${toolsHtml}</div>
       ${opsHtml ? `<div class="prob-act-row prob-act-ops">${opsHtml}</div>` : ''}
     </div>`;
 
