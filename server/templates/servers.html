@@ -129,7 +129,7 @@
         </tr>
       {% endif %}
 
-    <tr data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' ' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '')) | lower }}"
+    <tr data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' ' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '') ~ (' proxmox ha' if srv.is_proxmox_ha else '')) | lower }}"
         data-group="{{ srv.group_name or '' }}"
         data-group-membership="{{ srv_grp }}"
         data-id="{{ srv.id }}"
@@ -139,6 +139,12 @@
         <div style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap">
           <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
           <strong style="font-size:13.5px">{{ srv.hostname }}</strong>
+          {% if srv.is_proxmox_ha %}
+            <span class="badge" style="font-size:10.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server ini dipantau oleh Proxmox HA (High Availability)">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              HA
+            </span>
+          {% endif %}
           {% if srv._agent_version %}
             {% if srv._agent_outdated %}
               <span style="font-size:11.5px;color:#d97706;font-family:var(--font-mono);font-weight:500" title="Versi agen di server (v{{ srv._agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Perlu update.">v{{ srv._agent_version }} (update)</span>

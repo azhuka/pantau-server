@@ -51,3 +51,15 @@ Setiap kali perubahan selesai diuji:
 ## 4. Keamanan & Integritas Agen Klien
 - Setiap perubahan pada berkas agen harus kompatibel dengan Python 3.10+ tanpa dependensi pustaka luar (*zero-dependency*).
 - Setiap instruksi atau wrapper sudo harus berprinsip hak akses terkecil (*least privilege*) dan aman dari *shell injection* (`shell=False`).
+
+---
+
+## 5. Kebijakan Manajemen Host & Proxmox HA (High Availability)
+- **Karakteristik Proxmox HA:** VM atau LXC yang terdaftar dalam cluster Proxmox HA (`pve-ha-crm`/`pve-ha-lrm`) memiliki target state `started`. Jika dimatikan dari *dalam* guest OS (misal `systemctl poweroff` / `pantau-host poweroff`), hypervisor Proxmox menganggap insiden ini sebagai crash tidak terduga dan secara otomatis menyalakan kembali mesin dalam ±5 detik.
+- **Proteksi Pantau Server:** Server klien yang memiliki flag `is_proxmox_ha = 1`:
+  1. Tombol **Power OFF** pada UI dashboard wajib dinonaktifkan (`disabled`, opacity rendah, kursor `not-allowed`) dan dilindungi tooltip edukatif.
+  2. Menampilkan badge `[HA]` / `[Proxmox HA]` di samping nama server pada tabel dan kartu rincian.
+  3. Backend endpoint `POST /servers/{sid}/host/poweroff` wajib menolak permintaan dengan pesan audit log dan peringatan resmi: *"Perintah Power OFF ditolak: Server ini terdaftar dalam Proxmox HA..."*.
+  4. Tombol **Reboot OS** tetap diizinkan karena alur reboot memang mengharapkan server hidup kembali.
+- **SOP Operator untuk Mematikan Server HA:** Untuk mematikan server HA secara permanen, operator harus mengubah state HA menjadi `stopped` di Proxmox VE (`ha-manager set <ct/vm>:<vmid> --state stopped` atau melalui Web UI Proxmox: Datacenter -> HA -> Edit Resource -> State: stopped) atau menonaktifkan pengawasan sementara (`state: disabled`).
+

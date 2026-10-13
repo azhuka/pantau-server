@@ -444,6 +444,12 @@
             <div style="display:inline-flex;align-items:center;gap:6px">
               <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else ('down' if srv._status_label == 'offline' else 'muted')) }}" id="tbl-dot-{{ srv.id }}"></span>
               <strong style="color:var(--text-bright);font-size:13.5px">{{ srv.hostname }}</strong>
+              {% if srv.is_proxmox_ha %}
+                <span class="badge" style="font-size:10px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server ini dipantau oleh Proxmox HA (High Availability)">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  HA
+                </span>
+              {% endif %}
             </div>
           </td>
 
@@ -616,6 +622,12 @@
             <div style="display:flex;align-items:center;gap:6px">
               <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else ('down' if srv._status_label == 'offline' else 'muted')) }}" style="flex-shrink:0" id="card-dot-{{ srv.id }}"></span>
               <strong style="font-size:13.5px;color:var(--text-bright)">{{ srv.hostname }}</strong>
+              {% if srv.is_proxmox_ha %}
+                <span class="badge" style="font-size:10px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server ini dipantau oleh Proxmox HA (High Availability)">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  HA
+                </span>
+              {% endif %}
             </div>
             {% if srv.group_name %}
             <div style="margin-top:3px">

@@ -162,6 +162,10 @@ CREATE TABLE `servers` (
   `maintenance_reason` varchar(255) DEFAULT NULL,
   `last_seen` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
+  `group_name` varchar(64) DEFAULT 'Default',
+  `tags` varchar(255) DEFAULT NULL,
+  `custom_thresholds` text DEFAULT NULL,
+  `is_proxmox_ha` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `api_key` (`api_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

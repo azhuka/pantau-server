@@ -468,7 +468,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.2.14"
+AGENT_VERSION = "4.2.16"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -938,8 +938,8 @@ def _exec_host_control(action: str) -> dict:
                     'LOG="/var/log/pantau-host.log"\n'
                     "fail() { echo \"$*\" >&2; echo \"FAIL $(date -Is) [${ACTION}] $*\" >> \"$LOG\" 2>/dev/null; exit 1; }\n"
                     'case "$ACTION" in\n'
-                    '    reboot)   CMD="/usr/bin/systemctl -i reboot" ;;\n'
-                    '    poweroff) CMD="/usr/bin/systemctl -i poweroff" ;;\n'
+                    '    reboot)   CMD="/usr/bin/systemctl -i reboot || /usr/bin/systemctl --force reboot || /sbin/reboot -f || /sbin/shutdown -r now || /sbin/init 6" ;;\n'
+                    '    poweroff) CMD="/usr/bin/systemctl -i poweroff || /usr/bin/systemctl --force poweroff || /sbin/poweroff -f || /sbin/shutdown -h now || /sbin/init 0" ;;\n'
                     '    check)    CMD="" ;;\n'
                     '    *)        fail "Aksi tidak dikenal: \'${ACTION}\'" ;;\n'
                     "esac\n"

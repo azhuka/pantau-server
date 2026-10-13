@@ -81,6 +81,18 @@
     </div>
     {% endif %}
 
+    <div style="margin-top:16px;margin-bottom:16px;padding:12px 14px;border:1px solid rgba(234,179,8,0.3);border-radius:var(--radius-sm);background:rgba(234,179,8,0.04);display:flex;align-items:flex-start;gap:12px">
+      <input type="checkbox" id="f-proxmox-ha" name="is_proxmox_ha" value="1" {% if server and server.is_proxmox_ha %}checked{% endif %} style="margin-top:3px;accent-color:#eab308;cursor:pointer;width:16px;height:16px">
+      <label for="f-proxmox-ha" style="cursor:pointer;font-weight:normal;margin:0;flex:1">
+        <strong style="color:var(--text);display:flex;align-items:center;gap:6px;font-size:13px">
+          🛡️ Terdaftar di Proxmox HA (High Availability)
+        </strong>
+        <span style="font-size:12px;color:var(--dim);display:block;margin-top:3px;line-height:1.4">
+          Centang jika VM/LXC ini dikelola oleh cluster Proxmox HA. Fitur <strong>Power OFF</strong> pada dashboard akan dinonaktifkan secara otomatis untuk mencegah server menyala kembali sendiri akibat pengawasan hypervisor.
+        </span>
+      </label>
+    </div>
+
     <div style="margin-top:20px;margin-bottom:20px;border:1px solid var(--border);border-radius:var(--radius-sm);background:rgba(255,255,255,0.015);overflow:hidden">
       <div style="padding:12px 16px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleThSection()">
         <div>

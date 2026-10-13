@@ -1500,6 +1500,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             "group_name": srv.group_name or "",
             "is_active": srv.is_active,
             "is_maintenance": bool(srv.is_maintenance),
+            "is_proxmox_ha": bool(srv.is_proxmox_ha),
             "online": overall != "offline",
             "last_seen": srv.last_seen.isoformat() if srv.last_seen else None,
             "overall_status": overall, "services": svc_list,
@@ -1893,6 +1894,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             if apt_run.created_at else None,
         } if apt_run else None,
         "is_maintenance": bool(server.is_maintenance),
+        "is_proxmox_ha": bool(server.is_proxmox_ha),
         "maintenance_until": server.maintenance_until.isoformat() if server.maintenance_until else None,
         "maintenance_reason": server.maintenance_reason,
         # Sesi Terminal Bawaan yang masih hidup (resume setelah reload).
@@ -2817,6 +2819,7 @@ def server_add_submit(
     ip_address: str = Form(...),
     group_name: str = Form(default=""),
     tags: str = Form(default=""),
+    is_proxmox_ha: int = Form(0),
     th_cpu_warn: str = Form(default=""),
     th_cpu_danger: str = Form(default=""),
     th_ram_warn: str = Form(default=""),
@@ -2865,6 +2868,7 @@ def server_add_submit(
     srv = Server(
         hostname=hostname, ip_address=ip_address,
         group_name=group_name, tags=tags,
+        is_proxmox_ha=1 if is_proxmox_ha else 0,
         custom_thresholds=custom_th_json,
         api_key=hash_api_key(raw)
     )
@@ -2910,6 +2914,7 @@ def server_edit_submit(
     group_name: str = Form(default=""),
     tags: str = Form(default=""),
     is_active: int = Form(1),
+    is_proxmox_ha: int = Form(0),
     th_cpu_warn: str = Form(default=""),
     th_cpu_danger: str = Form(default=""),
     th_ram_warn: str = Form(default=""),
@@ -2963,6 +2968,7 @@ def server_edit_submit(
         server.tags = tags
         server.custom_thresholds = custom_th_json
         server.is_active = 1 if is_active else 0
+        server.is_proxmox_ha = 1 if is_proxmox_ha else 0
         _audit(db, user.username, "server_edit",
                f"id={server.id} {server.hostname} ({server.ip_address})" + (f" [Grup: {group_name}]" if group_name else ""), "berhasil")
         db.commit()
@@ -3712,14 +3718,29 @@ def server_agent_update(
     return RedirectResponse(f"/servers/{sid}/services?action=agent_updated", status_code=303)
 
 
-def _host_control(request: Request, sid: int, db: Session, action: str, csrf_token: str = "") -> RedirectResponse:
+def _host_control(request: Request, sid: int, db: Session, action: str, csrf_token: str = "") -> Response:
     user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
     if not user or not user.has_perm("can_server_control"):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
     _verify_csrf_form(request, csrf_token)
-    server, err_resp = _check_server_online(db, sid, is_json=False)
+    server, err_resp = _check_server_online(db, sid, is_json=is_json)
     if err_resp:
         return err_resp
+    if action == "poweroff_host" and getattr(server, "is_proxmox_ha", 0):
+        _audit(db, user.username, "poweroff_host",
+               f"{server.hostname} ({server.ip_address})", "Ditolak: Terdaftar di Proxmox HA", server_id=sid)
+        db.commit()
+        if is_json:
+            return JSONResponse({
+                "ok": False,
+                "detail": "Perintah Power OFF ditolak: Server ini terdaftar dalam Proxmox HA (High Availability). "
+                          "Matikan server melalui host Proxmox VE (ubah HA state ke 'stopped') untuk mencegah server menyala kembali secara otomatis."
+            }, status_code=400)
+        at_epoch = int(datetime.now(timezone.utc).timestamp())
+        return RedirectResponse(f"/servers/{sid}/services?action=poweroff_ha_blocked&at={at_epoch}", status_code=303)
     _enqueue_mitigation(db, sid, action, issued_by=user.username)
     _audit(db, user.username, action,
            f"{server.hostname} ({server.ip_address})", "dikirim ke agen", server_id=sid)

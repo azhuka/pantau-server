@@ -109,6 +109,7 @@ class Server(Base):
     group_name = Column(String(64), nullable=True, default=None, index=True)
     tags = Column(String(255), nullable=True)
     custom_thresholds = Column(Text, nullable=True)  # JSON: ambang batas CPU, RAM, Disk per-server
+    is_proxmox_ha = Column(SmallInteger, nullable=False, default=0)
 
     services = relationship("Service", back_populates="server", cascade="all, delete-orphan")
     commands = relationship("Command", back_populates="server", cascade="all, delete-orphan")

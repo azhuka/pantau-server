@@ -27,10 +27,10 @@ fail() {
 # --- Validasi aksi ---
 case "$ACTION" in
     reboot)
-        CMD="/usr/bin/systemctl -i reboot"
+        CMD="/usr/bin/systemctl -i reboot || /usr/bin/systemctl --force reboot || /sbin/reboot -f || /sbin/shutdown -r now || /sbin/init 6"
         ;;
     poweroff)
-        CMD="/usr/bin/systemctl -i poweroff"
+        CMD="/usr/bin/systemctl -i poweroff || /usr/bin/systemctl --force poweroff || /sbin/poweroff -f || /sbin/shutdown -h now || /sbin/init 0"
         ;;
     check)
         CMD=""
