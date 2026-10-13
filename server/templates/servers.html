@@ -157,6 +157,12 @@
               HA
             </span>
           {% endif %}
+          {% if srv.is_isolated_net %}
+            <span class="badge" style="font-size:10px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server Terisolasi (Hanya Jaringan Lokal / Tanpa Akses Internet Luar)">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+              Lokal
+            </span>
+          {% endif %}
           {% if srv._agent_version %}
             {% if srv._agent_outdated %}
               <span style="font-size:11.5px;color:#d97706;font-family:var(--font-mono);font-weight:500" title="Versi agen di server (v{{ srv._agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Perlu update.">v{{ srv._agent_version }} (update)</span>
@@ -257,7 +263,14 @@
           <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm" style="font-size:12px;padding:3px 9px" data-i18n="details">Rincian</a>
           {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
           <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm" style="font-size:12px;padding:3px 9px" data-i18n="edit">Edit</a>
-          <form method="POST" action="/servers/{{ srv.id }}/delete" style="display:inline;margin:0" data-confirm data-msg="Hapus server {{ srv.hostname }}? Semua data miliknya ikut terhapus.">
+          <form method="POST" action="/servers/{{ srv.id }}/delete" style="display:inline;margin:0"
+                data-guardrail
+                data-guardrail-title="Hapus Server dari Pantau"
+                data-guardrail-target="{{ srv.hostname }}"
+                data-guardrail-badge="Hapus Permanen"
+                data-guardrail-msg="Server <strong>{{ srv.hostname }}</strong> ({{ srv.ip_address }}) beserta seluruh riwayat metrik, snapshot, serta pencatatan masalah akan dihapus secara permanen dari basis data."
+                data-guardrail-btn="Hapus Server Sekarang"
+                data-guardrail-color="danger">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button class="btn btn-danger btn-sm" style="font-size:12px;padding:3px 9px" type="submit" data-i18n="delete">Hapus</button>
           </form>

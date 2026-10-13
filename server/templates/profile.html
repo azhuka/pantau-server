@@ -565,7 +565,14 @@
 
                   <!-- Tombol 4: HAPUS -->
                   {% if u.id != user.id and not u.is_master_admin() %}
-                  <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun {{ u.username }} secara permanen?');">
+                  <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline"
+                        data-guardrail
+                        data-guardrail-title="Hapus Akun Pengguna"
+                        data-guardrail-target="{{ u.username }}"
+                        data-guardrail-badge="Keamanan Akun"
+                        data-guardrail-msg="Akun pengguna <strong>{{ u.username }}</strong> akan dihapus secara permanen. Pengguna tidak akan dapat login lagi dan seluruh sesi aktifnya akan dicabut."
+                        data-guardrail-btn="Hapus Pengguna Sekarang"
+                        data-guardrail-color="danger">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <button type="submit" class="btn btn-danger btn-sm user-act-icon-btn" title="Hapus akun {{ u.username }} secara permanen">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

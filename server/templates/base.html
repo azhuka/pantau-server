@@ -853,11 +853,96 @@ function showToast(msg, ok){
   else if (err) showToast(decodeURIComponent(err), false);
   if (clean) history.replaceState({}, '', location.pathname + location.hash);
 })();
-// Konfirmasi destruktif via data-confirm/data-msg pada <form>. Aman terhadap injeksi:
-// pesan disimpan di data-attribute (bukan disisipkan ke string JS), lalu dibaca DOM.
+// ---------- Guardrail Dialogue Modal (High-SLA Production Safe Guard) ----------
+let _activeGuardrailForm = null;
+
+function openGuardrailModal(form) {
+  _activeGuardrailForm = form;
+  const modal = document.getElementById('guardrail-modal');
+  if (!modal) {
+    if (confirm(form.getAttribute('data-guardrail-msg')?.replace(/<[^>]+>/g, '') || 'Konfirmasi tindakan berdampak tinggi?')) {
+      form.dataset.guardrailConfirmed = '1';
+      form.submit();
+    }
+    return;
+  }
+  const title = form.getAttribute('data-guardrail-title') || 'Konfirmasi Tindakan Berdampak Tinggi';
+  const target = form.getAttribute('data-guardrail-target') || '';
+  const badgeText = form.getAttribute('data-guardrail-badge') || 'SLA PRODUKSI';
+  const msgHtml = form.getAttribute('data-guardrail-msg') || 'Tindakan ini dapat berdampak langsung pada operasional server produksi.';
+  const btnText = form.getAttribute('data-guardrail-btn') || 'Konfirmasi & Lanjutkan';
+  const color = form.getAttribute('data-guardrail-color') || 'danger';
+
+  const titleEl = document.getElementById('guardrail-modal-title');
+  if (titleEl) titleEl.textContent = title;
+  const badgeEl = document.getElementById('guardrail-modal-badge');
+  if (badgeEl) badgeEl.textContent = badgeText;
+
+  const targetRow = document.getElementById('guardrail-modal-target-row');
+  const targetEl = document.getElementById('guardrail-modal-target');
+  if (target && targetRow && targetEl) {
+    targetEl.textContent = target;
+    targetRow.style.display = 'flex';
+  } else if (targetRow) {
+    targetRow.style.display = 'none';
+  }
+
+  const msgEl = document.getElementById('guardrail-modal-msg');
+  if (msgEl) msgEl.innerHTML = msgHtml;
+
+  const submitBtn = document.getElementById('guardrail-modal-submit-btn');
+  if (submitBtn) {
+    submitBtn.textContent = btnText;
+    if (color === 'warning') {
+      submitBtn.className = 'btn btn-warning btn-sm';
+      submitBtn.style.background = '#d97706';
+      submitBtn.style.borderColor = '#d97706';
+    } else {
+      submitBtn.className = 'btn btn-danger btn-sm';
+      submitBtn.style.background = '#dc2626';
+      submitBtn.style.borderColor = '#dc2626';
+    }
+    submitBtn.disabled = true;
+  }
+
+  const cb = document.getElementById('guardrail-confirm-cb');
+  if (cb) {
+    cb.checked = false;
+    cb.onchange = function() {
+      if (submitBtn) submitBtn.disabled = !this.checked;
+    };
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeGuardrailModal() {
+  const modal = document.getElementById('guardrail-modal');
+  if (modal) modal.style.display = 'none';
+  _activeGuardrailForm = null;
+}
+
+function submitGuardrailAction() {
+  if (!_activeGuardrailForm) return;
+  const f = _activeGuardrailForm;
+  closeGuardrailModal();
+  f.dataset.guardrailConfirmed = '1';
+  if (typeof f.requestSubmit === 'function') {
+    f.requestSubmit();
+  } else {
+    f.submit();
+  }
+}
+
+// Konfirmasi destruktif via data-guardrail atau data-confirm/data-msg pada <form>.
 document.addEventListener('submit', function(ev){
   const f = ev.target && ev.target.tagName === 'FORM' ? ev.target : ev.target.closest('form');
   if (!f) return;
+  if (f.hasAttribute('data-guardrail') && !f.dataset.guardrailConfirmed) {
+    ev.preventDefault();
+    openGuardrailModal(f);
+    return;
+  }
   if (f.hasAttribute('data-confirm')) {
     const msg = f.getAttribute('data-msg') || 'Yakin?';
     const extra = f.getAttribute('data-msg-extra');
@@ -1817,6 +1902,38 @@ function renderProblemDetailModal(p) {
 setTimeout(alertFetch, 1500);
 setInterval(alertFetch, 5000);
 </script>
+
+<!-- Modal Guardrail Dialog untuk Tindakan Berdampak Tinggi / Produksi SLA -->
+<div id="guardrail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+  <div class="card" style="width:100%;max-width:480px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,0.8);color:var(--text)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">🛡️</span>
+        <h3 id="guardrail-modal-title" style="margin:0;font-size:15px;font-weight:600;color:var(--text)">Konfirmasi Tindakan Berdampak Tinggi</h3>
+      </div>
+      <span id="guardrail-modal-badge" class="badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:10px;font-weight:600">SLA PRODUKSI</span>
+    </div>
+
+    <div id="guardrail-modal-target-row" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;margin-bottom:12px">
+      <span style="font-size:11.5px;color:var(--dim)">Target:</span>
+      <strong id="guardrail-modal-target" style="font-size:13px;font-family:var(--font-mono)"></strong>
+    </div>
+
+    <div id="guardrail-modal-msg" style="font-size:12.5px;color:var(--dim);margin:0 0 14px 0;padding:12px 14px;background:#0d1117;border:1px solid #30363d;border-radius:6px;line-height:1.5;word-break:break-word"></div>
+
+    <div style="margin-bottom:18px">
+      <label style="cursor:pointer;display:flex;align-items:flex-start;gap:9px;font-size:12px;color:var(--text);padding:9px 12px;background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.2);border-radius:6px;line-height:1.4">
+        <input type="checkbox" id="guardrail-confirm-cb" style="margin-top:2px;cursor:pointer;accent-color:#ef4444;width:15px;height:15px">
+        <span>Saya memahami risiko operasional dan dampak tindakan ini terhadap ketersediaan layanan produksi.</span>
+      </label>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeGuardrailModal()">Batalkan</button>
+      <button type="button" class="btn btn-danger btn-sm" id="guardrail-modal-submit-btn" onclick="submitGuardrailAction()" disabled>Konfirmasi &amp; Lanjutkan</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Abaikan Masalah -->
 <div id="ignore-problem-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px)">

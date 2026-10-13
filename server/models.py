@@ -110,6 +110,9 @@ class Server(Base):
     tags = Column(String(255), nullable=True)
     custom_thresholds = Column(Text, nullable=True)  # JSON: ambang batas CPU, RAM, Disk per-server
     is_proxmox_ha = Column(SmallInteger, nullable=False, default=0)
+    platform_override = Column(String(20), nullable=True, default=None)  # 'baremetal', 'vm', 'lxc', atau None/auto
+    is_isolated_net = Column(SmallInteger, nullable=False, default=0)    # 1=jaringan lokal/terisolasi, 0=standar
+    allow_web_terminal = Column(SmallInteger, nullable=False, default=1) # 1=izinkan terminal root web, 0=blokir
 
     services = relationship("Service", back_populates="server", cascade="all, delete-orphan")
     commands = relationship("Command", back_populates="server", cascade="all, delete-orphan")

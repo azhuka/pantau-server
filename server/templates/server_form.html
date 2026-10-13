@@ -81,16 +81,67 @@
     </div>
     {% endif %}
 
-    <div style="margin-top:16px;margin-bottom:16px;padding:12px 14px;border:1px solid rgba(234,179,8,0.3);border-radius:var(--radius-sm);background:rgba(234,179,8,0.04);display:flex;align-items:flex-start;gap:12px">
-      <input type="checkbox" id="f-proxmox-ha" name="is_proxmox_ha" value="1" {% if server and server.is_proxmox_ha %}checked{% endif %} style="margin-top:3px;accent-color:#eab308;cursor:pointer;width:16px;height:16px">
-      <label for="f-proxmox-ha" style="cursor:pointer;font-weight:normal;margin:0;flex:1">
-        <strong style="color:var(--text);display:flex;align-items:center;gap:6px;font-size:13px">
-          🛡️ Terproteksi Proxmox HA (High Availability)
-        </strong>
-        <span style="font-size:12px;color:var(--dim);display:block;margin-top:3px;line-height:1.4">
-          Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE (state: stopped). Tombol Power OFF pada Pantau Server dinonaktifkan secara otomatis.
+    <div style="margin-top:16px;margin-bottom:16px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:rgba(255,255,255,0.02)">
+      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        Karakteristik &amp; Kebijakan Operasional
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px">
+        <label for="f-platform-override" style="font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px">
+          Tipe Platform Lingkungan
+        </label>
+        <select id="f-platform-override" name="platform_override" style="width:100%" onchange="handlePlatformChange()">
+          <option value="auto" {% if not server or not server.platform_override or server.platform_override == 'auto' %}selected{% endif %}>🤖 Auto Deteksi (Laporan Agen)</option>
+          <option value="baremetal" {% if server and server.platform_override == 'baremetal' %}selected{% endif %}>🖥️ Fisik / Baremetal</option>
+          <option value="vm" {% if server and server.platform_override == 'vm' %}selected{% endif %}>☁️ Mesin Virtual (VM - KVM / QEMU / dll)</option>
+          <option value="lxc" {% if server and server.platform_override == 'lxc' %}selected{% endif %}>📦 Kontainer (LXC / Proxmox CT)</option>
+        </select>
+        <span style="font-size:11px;color:var(--dim);margin-top:4px;display:block">
+          Pilih jenis platform server. Jika disetel ke Auto Deteksi, sistem mengidentifikasi otomatis via agen.
         </span>
-      </label>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid rgba(255,255,255,0.05);padding-top:12px">
+        <!-- Proxmox HA toggle (dinamis: otomatis disembunyikan bila platform Baremetal) -->
+        <div id="row-proxmox-ha" style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:6px;background:rgba(234,179,8,0.03);border:1px solid rgba(234,179,8,0.18)">
+          <input type="checkbox" id="f-proxmox-ha" name="is_proxmox_ha" value="1" {% if server and server.is_proxmox_ha %}checked{% endif %} style="margin-top:2px;accent-color:#eab308;cursor:pointer;width:15px;height:15px">
+          <label for="f-proxmox-ha" style="cursor:pointer;margin:0;flex:1">
+            <strong style="color:var(--text);font-size:12.5px;display:flex;align-items:center;gap:5px">
+              🛡️ Terproteksi Proxmox HA (High Availability)
+            </strong>
+            <span style="font-size:11.5px;color:var(--dim);display:block;margin-top:2px;line-height:1.4">
+              Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE. Tombol Power OFF pada Pantau Server dinonaktifkan untuk mencegah loop pemulihan.
+            </span>
+          </label>
+        </div>
+
+        <!-- Jaringan Terisolasi toggle -->
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,0.02);border:1px solid var(--border)">
+          <input type="checkbox" id="f-isolated-net" name="is_isolated_net" value="1" {% if server and server.is_isolated_net %}checked{% endif %} style="margin-top:2px;cursor:pointer;width:15px;height:15px">
+          <label for="f-isolated-net" style="cursor:pointer;margin:0;flex:1">
+            <strong style="color:var(--text);font-size:12.5px;display:flex;align-items:center;gap:5px">
+              🌐 Server Terisolasi (Jaringan Lokal / Air-Gapped)
+            </strong>
+            <span style="font-size:11.5px;color:var(--dim);display:block;margin-top:2px;line-height:1.4">
+              Server berada dalam jaringan tertutup tanpa akses internet luar. Notifikasi pembaruan repositori paket OS eksternal (APT) disembunyikan.
+            </span>
+          </label>
+        </div>
+
+        <!-- Web Terminal Access toggle -->
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,0.02);border:1px solid var(--border)">
+          <input type="checkbox" id="f-allow-terminal" name="allow_web_terminal" value="1" {% if not server or server.allow_web_terminal %}checked{% endif %} style="margin-top:2px;cursor:pointer;width:15px;height:15px">
+          <label for="f-allow-terminal" style="cursor:pointer;margin:0;flex:1">
+            <strong style="color:var(--text);font-size:12.5px;display:flex;align-items:center;gap:5px">
+              💻 Izinkan Akses Web Terminal Root (Shell Interaktif)
+            </strong>
+            <span style="font-size:11.5px;color:var(--dim);display:block;margin-top:2px;line-height:1.4">
+              Bila dinonaktifkan, akses shell web interaktif ke server ini diblokir untuk mematuhi kebijakan kepatuhan keamanan.
+            </span>
+          </label>
+        </div>
+      </div>
     </div>
 
     <div style="margin-top:20px;margin-bottom:20px;border:1px solid var(--border);border-radius:var(--radius-sm);background:rgba(255,255,255,0.015);overflow:hidden">
@@ -226,13 +277,33 @@ document.getElementById('f-group')?.addEventListener('input', updateGroupHighlig
 document.getElementById('f-tags')?.addEventListener('input', updateTagHighlight);
 updateGroupHighlight();
 updateTagHighlight();
+
+function handlePlatformChange() {
+  const plat = document.getElementById('f-platform-override')?.value;
+  const rowHa = document.getElementById('row-proxmox-ha');
+  const cbHa = document.getElementById('f-proxmox-ha');
+  if (plat === 'baremetal') {
+    if (rowHa) rowHa.style.display = 'none';
+    if (cbHa) cbHa.checked = false;
+  } else {
+    if (rowHa) rowHa.style.display = 'flex';
+  }
+}
+handlePlatformChange();
 </script>
 
 {% if server %}
 <div class="card" style="border-color:var(--border)">
   <div class="card-header">
     <h3>API Key</h3>
-    <form method="POST" action="/servers/{{ server.id }}/regenerate-key" data-confirm data-msg="Generate API Key baru? Agent harus di-update dengan key baru, dan key lama dibatalkan.">
+    <form method="POST" action="/servers/{{ server.id }}/regenerate-key"
+          data-guardrail
+          data-guardrail-title="Regenerate API Key"
+          data-guardrail-target="{{ server.hostname }}"
+          data-guardrail-badge="Otentikasi Agen"
+          data-guardrail-msg="Menghasilkan API Key baru akan membatalkan key lama seketika. Agen di host <strong>{{ server.hostname }}</strong> tidak akan dapat melapor sampai file konfigurasi agen diperbarui dengan key baru ini."
+          data-guardrail-btn="Regenerate API Key"
+          data-guardrail-color="warning">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button class="btn btn-danger btn-sm">Regenerate Key</button>
     </form>

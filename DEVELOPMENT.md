@@ -305,6 +305,49 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.2.20
+
+- **Release Label:** None
+- **Tipe Rilis:** Rilis Patch (*Patch Release*) — Restrukturisasi Kebijakan & Karakteristik Server (Platform Override, Proxmox HA Dinamis, Isolasi Jaringan, Pembatasan Web Terminal) dan Implementasi Universal *Guardrail Dialogue* untuk Proteksi Server Produksi Ber-SLA Tinggi
+
+### Struktur Rilis SemVer (Major.Minor.Patch)
+
+```
+v4.2.20
+ │
+ ├── 4  (Mayor) : Restrukturisasi Keamanan & Arsitektur RBAC 3-Tier, 2FA TOTP RFC 6238, dan Isolasi Akun
+ ├── 2  (Minor) : Sistem Insiden Kritis Global, Emergency Alert Modal, Telemetri Spek Hardware Mendalam, Dukungan Proxy/Cloudflare & Instalasi Interaktif
+ └── 20 (Patch) : Karakteristik & Kebijakan Server Kompak, Proteksi Proxmox HA Dinamis, dan Universal Guardrail Dialogue untuk Infrastruktur Produksi Ber-SLA Tinggi
+```
+
+---
+
+### Perbaikan Masalah & Peningkatan UX — Versi 4.2.20 (Patch Release)
+
+1. **Filosofi Proteksi Produksi Universal (Zero SLA Segmentation):**
+   - Seluruh server yang terdaftar pada Pantau Server diperlakukan sebagai **Server Produksi dengan SLA Tinggi**, tanpa memecah server ke dalam kategori/tier artificial ("uji coba" vs "produksi").
+   - Tindakan berdampak tinggi (Reboot Host, Power Off, Hapus Server, Hapus Pengguna, Regenerate API Key) diproteksi secara universal oleh mekanisme **Guardrail Dialogue** terintegrasi, bukan dengan checkbox izin seadanya.
+
+2. **Universal Guardrail Dialogue Modal (`base.html`):**
+   - Menggantikan dialog konfirmasi bawaan browser (`window.confirm`) yang rentan keliru diklik dengan dialog modal interaktif bertema gelap (*dark-mode*) yang elegan dan sengaja (*deliberate*).
+   - Menampilkan judul tindakan, badge kategori (`SLA PRODUKSI`), target host/pengguna, rincian konsekuensi operasional terhadap ketersediaan layanan, serta **kotak centang persetujuan risiko operasional** yang wajib dicentang sebelum tombol eksekusi aktif.
+
+3. **Restrukturisasi Form Tambah & Edit Server (`server_form.html`):**
+   - Menghapus kotak kuning besar Proxmox HA yang sebelumnya terisolasi dan terlalu dominan.
+   - Menggantinya dengan kartu ringkas dan profesional: **Karakteristik & Kebijakan Operasional**:
+     - **Tipe Platform Lingkungan (`platform_override`):** Pilihan ringkas antara `🤖 Auto Deteksi (Laporan Agen)`, `🖥️ Fisik / Baremetal`, `☁️ Mesin Virtual (VM)`, dan `📦 Kontainer (LXC)`.
+     - **🛡️ Terproteksi Proxmox HA (`is_proxmox_ha`):** Tampil dinamis hanya jika platform adalah VM, LXC, atau Auto. Otomatis disembunyikan dan di-uncheck bila platform disetel ke Fisik / Baremetal.
+     - **🌐 Server Terisolasi (`is_isolated_net`):** Menandai server dalam jaringan lokal tertutup tanpa akses internet luar, sehingga notifikasi repositori paket OS eksternal (APT) disupresi secara otomatis.
+     - **💻 Kebijakan Web Terminal Root (`allow_web_terminal`):** Opsi kepatuhan keamanan untuk menonaktifkan shell interaktif web pada host sensitif.
+
+4. **Penegakan Keamanan & Integrasi Dashboard (`services.html`, `servers.html`, `main.py`):**
+   - Tombol Web Terminal di hero toolbar `services.html` otomatis dinonaktifkan dengan tooltip kepatuhan keamanan bila `allow_web_terminal == 0`.
+   - Endpoint WebSocket (`/ws/servers/{sid}/terminal`) dan permintaan log interaktif (`api_logs_request`) menolak akses terminal (HTTP 403) jika web terminal dinonaktifkan pada server tersebut.
+   - Menambahkan badge visual `Jaringan Terisolasi` / `Lokal` pada daftar server dan rincian server bila host berstatus jaringan tertutup.
+   - Migrasi skema database otomatis pada saat startup (`ALTER TABLE servers ADD COLUMN IF NOT EXISTS ...`) untuk menambahkan kolom `platform_override`, `is_isolated_net`, dan `allow_web_terminal`.
+
+---
+
 ## Versi 4.2.19
 
 - **Release Label:** None

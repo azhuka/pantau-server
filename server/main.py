@@ -510,7 +510,7 @@ def migrate_server_extras_specs():
 
 
 def migrate_server_groups_and_thresholds():
-    """Migrasi penambahan kolom group_name, tags, dan custom_thresholds pada tabel servers."""
+    """Migrasi penambahan kolom group_name, tags, custom_thresholds, is_proxmox_ha, platform_override, is_isolated_net, dan allow_web_terminal pada tabel servers."""
     from sqlalchemy import inspect, text
 
     inspector = inspect(engine)
@@ -521,6 +521,10 @@ def migrate_server_groups_and_thresholds():
         "group_name": "VARCHAR(64) NULL DEFAULT NULL",
         "tags": "VARCHAR(255) NULL",
         "custom_thresholds": "TEXT NULL",
+        "is_proxmox_ha": "TINYINT NOT NULL DEFAULT 0",
+        "platform_override": "VARCHAR(20) NULL DEFAULT NULL",
+        "is_isolated_net": "TINYINT NOT NULL DEFAULT 0",
+        "allow_web_terminal": "TINYINT NOT NULL DEFAULT 1",
     }
     missing = {k: v for k, v in wanted.items() if k not in existing}
     db = SessionLocal()
@@ -528,7 +532,7 @@ def migrate_server_groups_and_thresholds():
         if missing:
             for col, ddl in missing.items():
                 db.execute(text(f"ALTER TABLE servers ADD COLUMN {col} {ddl}"))
-            logger.info("[startup] Kolom baru servers (group_name, tags, custom_thresholds): %s", ", ".join(missing))
+            logger.info("[startup] Kolom baru servers: %s", ", ".join(missing))
         # Bersihkan sisa grup 'Default' jika ada
         db.execute(text("UPDATE servers SET group_name = NULL WHERE group_name = 'Default' OR group_name = ''"))
         db.commit()
@@ -1356,8 +1360,40 @@ def _extract_disk_stats(disks_raw):
         return "—", "—", None
 
 
-def _classify_platform(platform_dict: dict | None) -> dict:
+def _classify_platform(platform_dict: dict | None, override: str | None = None) -> dict:
     """Klasifikasi tipe platform host: LXC Container, VM (KVM/QEMU/dll), atau Baremetal."""
+    if override in ("baremetal", "vm", "lxc"):
+        if override == "baremetal":
+            return {
+                "type": "baremetal",
+                "virt": "Baremetal",
+                "label": "Baremetal",
+                "short_label": "Baremetal",
+                "badge_color": "#34d399",
+                "badge_bg": "rgba(16,185,129,0.15)",
+                "badge_border": "rgba(16,185,129,0.3)",
+            }
+        elif override == "vm":
+            return {
+                "type": "vm",
+                "virt": "VM",
+                "label": "Mesin Virtual (VM)",
+                "short_label": "VM",
+                "badge_color": "#c084fc",
+                "badge_bg": "rgba(168,85,247,0.15)",
+                "badge_border": "rgba(168,85,247,0.3)",
+            }
+        elif override == "lxc":
+            return {
+                "type": "lxc",
+                "virt": "LXC",
+                "label": "LXC Container",
+                "short_label": "LXC",
+                "badge_color": "#22d3ee",
+                "badge_bg": "rgba(6,182,212,0.15)",
+                "badge_border": "rgba(6,182,212,0.3)",
+            }
+
     if not isinstance(platform_dict, dict):
         platform_dict = {}
     virt = str(platform_dict.get("virt") or "").strip().upper()
@@ -1413,7 +1449,11 @@ def _get_hardware_specs_dict(server: Server, extra: ServerExtras | None, latest:
                 # Kontainer LXC tidak memiliki block storage fisik host (mis. HPE DL380 sda 7.6T).
                 # Bila terdeteksi LXC dan disk masih melaporkan disk host, koreksi dengan kuota rootfs dari snapshot.
                 plat = parsed.get("platform", {})
-                is_lxc = str(plat.get("virt", "")).upper() == "LXC" or plat.get("platform_type") == "lxc"
+                plat_ovr = getattr(server, "platform_override", None)
+                is_lxc = (
+                    plat_ovr == "lxc"
+                    or (plat_ovr not in ("baremetal", "vm") and (str(plat.get("virt", "")).upper() == "LXC" or plat.get("platform_type") == "lxc"))
+                )
                 if is_lxc:
                     has_host_disk = any(d.get("name", "").startswith("sd") or "T" in str(d.get("size", "")) for d in parsed.get("disks", []))
                     if has_host_disk or not parsed.get("disks"):
@@ -1612,7 +1652,10 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             "is_active": srv.is_active,
             "is_maintenance": bool(srv.is_maintenance),
             "is_proxmox_ha": bool(srv.is_proxmox_ha),
-            "platform": _classify_platform(hw.get("platform", {})),
+            "platform_override": getattr(srv, "platform_override", None),
+            "is_isolated_net": bool(getattr(srv, "is_isolated_net", 0)),
+            "allow_web_terminal": bool(getattr(srv, "allow_web_terminal", 1)),
+            "platform": _classify_platform(hw.get("platform", {}), getattr(srv, "platform_override", None)),
             "online": overall != "offline",
             "last_seen": srv.last_seen.isoformat() if srv.last_seen else None,
             "overall_status": overall, "services": svc_list,
@@ -2007,6 +2050,9 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         } if apt_run else None,
         "is_maintenance": bool(server.is_maintenance),
         "is_proxmox_ha": bool(server.is_proxmox_ha),
+        "platform_override": getattr(server, "platform_override", None),
+        "is_isolated_net": bool(getattr(server, "is_isolated_net", 0)),
+        "allow_web_terminal": bool(getattr(server, "allow_web_terminal", 1)),
         "maintenance_until": server.maintenance_until.isoformat() if server.maintenance_until else None,
         "maintenance_reason": server.maintenance_reason,
         # Sesi Terminal Bawaan yang masih hidup (resume setelah reload).
@@ -2713,7 +2759,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         hw = _get_hardware_specs_dict(srv, ex, latest_sys)
         cpu_cores = hw.get("cpu", {}).get("cores") or hw.get("cpu", {}).get("logical_cores")
         srv._cpu_cores_str = f"{cpu_cores} Core" if (srv.last_seen and cpu_cores) else "—"
-        srv._platform = _classify_platform(hw.get("platform", {}))
+        srv._platform = _classify_platform(hw.get("platform", {}), getattr(srv, "platform_override", None))
         d_tot, d_avail, d_pct = _extract_disk_stats(latest_sys.disks if latest_sys else None)
         srv._disk_total_str = d_tot
         srv._disk_avail_str = d_avail
@@ -2880,7 +2926,7 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
             if latest_sys and latest_sys.mem_total else None
         )
         hw = _get_hardware_specs_dict(srv, ex, latest_sys)
-        srv._platform = _classify_platform(hw.get("platform", {}))
+        srv._platform = _classify_platform(hw.get("platform", {}), getattr(srv, "platform_override", None))
 
         unignored_down = [d for d in svc_data if d.get("status") in ("down", "offline") and not d.get("ignored")]
         if srv.is_maintenance:
@@ -2934,7 +2980,10 @@ def server_add_submit(
     ip_address: str = Form(...),
     group_name: str = Form(default=""),
     tags: str = Form(default=""),
+    platform_override: str = Form(default="auto"),
     is_proxmox_ha: int = Form(0),
+    is_isolated_net: int = Form(0),
+    allow_web_terminal: int = Form(1),
     th_cpu_warn: str = Form(default=""),
     th_cpu_danger: str = Form(default=""),
     th_ram_warn: str = Form(default=""),
@@ -2979,11 +3028,18 @@ def server_add_submit(
                 pass
     custom_th_json = json.dumps(custom_th) if custom_th else None
 
+    plat_override_clean = (platform_override or "").strip().lower()
+    if plat_override_clean not in ("baremetal", "vm", "lxc"):
+        plat_override_clean = None
+
     raw = secrets.token_hex(32)
     srv = Server(
         hostname=hostname, ip_address=ip_address,
         group_name=group_name, tags=tags,
-        is_proxmox_ha=1 if is_proxmox_ha else 0,
+        is_proxmox_ha=1 if (is_proxmox_ha and plat_override_clean != "baremetal") else 0,
+        platform_override=plat_override_clean,
+        is_isolated_net=1 if is_isolated_net else 0,
+        allow_web_terminal=1 if allow_web_terminal else 0,
         custom_thresholds=custom_th_json,
         api_key=hash_api_key(raw)
     )
@@ -3029,7 +3085,10 @@ def server_edit_submit(
     group_name: str = Form(default=""),
     tags: str = Form(default=""),
     is_active: int = Form(1),
+    platform_override: str = Form(default="auto"),
     is_proxmox_ha: int = Form(0),
+    is_isolated_net: int = Form(0),
+    allow_web_terminal: int = Form(1),
     th_cpu_warn: str = Form(default=""),
     th_cpu_danger: str = Form(default=""),
     th_ram_warn: str = Form(default=""),
@@ -3077,13 +3136,20 @@ def server_edit_submit(
                     pass
         custom_th_json = json.dumps(custom_th) if custom_th else None
 
+        plat_override_clean = (platform_override or "").strip().lower()
+        if plat_override_clean not in ("baremetal", "vm", "lxc"):
+            plat_override_clean = None
+
         server.hostname = hostname
         server.ip_address = ip_address
         server.group_name = group_name
         server.tags = tags
         server.custom_thresholds = custom_th_json
         server.is_active = 1 if is_active else 0
-        server.is_proxmox_ha = 1 if is_proxmox_ha else 0
+        server.platform_override = plat_override_clean
+        server.is_proxmox_ha = 1 if (is_proxmox_ha and plat_override_clean != "baremetal") else 0
+        server.is_isolated_net = 1 if is_isolated_net else 0
+        server.allow_web_terminal = 1 if allow_web_terminal else 0
         _audit(db, user.username, "server_edit",
                f"id={server.id} {server.hostname} ({server.ip_address})" + (f" [Grup: {group_name}]" if group_name else ""), "berhasil")
         db.commit()
@@ -3261,7 +3327,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
 
     latest_sn = db.query(SystemSnapshot).filter(SystemSnapshot.server_id == sid).order_by(desc(SystemSnapshot.timestamp)).first()
     hw_specs = _get_hardware_specs_dict(server, extra, latest_sn)
-    platform_info = _classify_platform(hw_specs.get("platform", {}))
+    platform_info = _classify_platform(hw_specs.get("platform", {}), getattr(server, "platform_override", None))
 
     return tpl(request, "services.html", {
         "user": user, "server": server, "services": services, "commands": commands, "actions": actions,
@@ -5421,7 +5487,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                 "tip": AGENT_OUTDATED_TIP,
                 "context": _build_problem_context("agent_outdated", srv, agent_version=extras.agent_version, app_version=settings.APP_VERSION),
             })
-        if (extras.apt_upgradable or 0) > 0:
+        if (extras.apt_upgradable or 0) > 0 and getattr(srv, "is_isolated_net", 0) != 1:
             inst.append({"key": "apt_updates", "severity": "info",
                          "message": f"{extras.apt_upgradable} paket menunggu upgrade",
                          "tip": APT_TIP,
@@ -7499,7 +7565,7 @@ def api_server_system(
                             if extra and extra.apt_last_update else None),
         "apt_packages": parse_list(extra.apt_packages if extra else None),
         "hardware_specs": _get_hardware_specs_dict(server, extra, latest),
-        "platform": _classify_platform(_get_hardware_specs_dict(server, extra, latest).get("platform", {})),
+        "platform": _classify_platform(_get_hardware_specs_dict(server, extra, latest).get("platform", {}), getattr(server, "platform_override", None)),
         "extras": ["SYSLOG", "AUTH"],
     }
 
@@ -7539,6 +7605,11 @@ def api_logs_request(
         raise HTTPException(
             status_code=403,
             detail="Akses ditolak: Anda tidak memiliki wewenang Terminal Shell Web",
+        )
+    if is_shell and getattr(server, "allow_web_terminal", 1) == 0:
+        raise HTTPException(
+            status_code=403,
+            detail="Akses Terminal Web dinonaktifkan untuk server ini sesuai kebijakan keamanan",
         )
     if is_apt:
         busy = (
@@ -7849,6 +7920,9 @@ async def ws_server_terminal(websocket: WebSocket, sid: int):
         server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
         if not server:
             await websocket.close(code=4404)
+            return
+        if getattr(server, "allow_web_terminal", 1) == 0:
+            await websocket.close(code=4403, reason="Web terminal disabled for this server")
             return
         if _server_stale(server):
             await websocket.close(code=4409)
