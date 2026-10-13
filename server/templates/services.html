@@ -1021,7 +1021,14 @@
     </div>
   </div>
   <table id="probtable">
-    <thead><tr><th>Waktu</th><th>Keparahan</th><th>Kejadian</th><th>Durasi</th><th>Aksi</th><th>Tips</th></tr></thead>
+    <thead><tr>
+      <th class="col-time" style="width:140px;min-width:140px">Waktu</th>
+      <th class="col-sev" style="width:105px;min-width:105px;text-align:center">Keparahan</th>
+      <th>Kejadian</th>
+      <th class="col-durasi" style="width:130px;min-width:130px">Durasi</th>
+      <th class="col-act" style="width:160px;min-width:160px">Aksi</th>
+      <th class="col-tips" style="width:260px;min-width:220px">Tips</th>
+    </tr></thead>
     <tbody>
     {% for p in rows %}
     <tr{% if not p.is_open %} style="opacity:.65"{% elif p.is_ignored %} style="opacity:.75;background:rgba(255,255,255,0.02)"{% endif %}
@@ -1040,11 +1047,11 @@
         data-prob-host="{{ server.hostname }}"
         data-prob-sid="{{ server.id }}"
         data-prob-context='{{ p.context or "" }}'>
-      <td style="white-space:nowrap" class="mono">
+      <td style="white-space:nowrap;width:140px" class="mono col-time">
         {{ p.started_at.strftime('%d %b %H:%M') }}
         {% if p.resolved_at %}<span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>{% endif %}
       </td>
-      <td><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DOWN' if p.severity == 'average' else p.severity | upper }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+      <td style="width:105px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DOWN' if p.severity == 'average' else p.severity | upper }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
       <td>
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
@@ -1054,7 +1061,7 @@
         {% if p.acknowledged_by %}<span class="badge badge-up" title="Diakui {{ p.acknowledged_by }}">✓ diakui</span>{% endif %}
         {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
-      <td class="mono"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
+      <td class="mono col-durasi" style="width:130px;min-width:130px;white-space:nowrap"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
       <td class="prob-act-cell">
         <div class="prob-act-wrap">
           <div class="prob-act-row prob-act-tools">
@@ -1307,15 +1314,15 @@
   {% if services %}
   <table id="tbl-services">
     <thead><tr>
-      <th title="Nama layanan atau daemon yang dipantau">Layanan</th>
-      <th title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
-      <th title="Nama proses sistem operasi yang dieksekusi">Proses</th>
-      <th title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
-      <th title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
-      <th title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
+      <th style="width:150px;min-width:140px" title="Nama layanan atau daemon yang dipantau">Layanan</th>
+      <th style="width:75px;min-width:70px" title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
+      <th style="width:120px;min-width:110px" title="Nama proses sistem operasi yang dieksekusi">Proses</th>
+      <th style="width:85px;min-width:80px" title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
+      <th style="width:85px;min-width:80px" title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
+      <th style="width:115px;min-width:110px" title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
       <th title="Keterangan atau hasil pemeriksaan status layanan">Keterangan</th>
-      <th title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
-      <th title="Kontrol layanan: Restart, Mulai, Berhenti, Log, Abaikan/Pantau, atau Hapus">Aksi</th>
+      <th style="width:100px;min-width:95px" title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
+      <th style="width:310px;min-width:290px" title="Kontrol layanan: Restart, Mulai, Berhenti, Log, Abaikan/Pantau, atau Hapus">Aksi</th>
     </tr></thead>
     <tbody>
     {% for svc in services %}
@@ -4483,7 +4490,14 @@ function renderProblemsTab(level, openList, histList) {
     </div>
   </div>
   <table id="probtable">
-    <thead><tr><th>${isEn ? 'Time' : 'Waktu'}</th><th>${isEn ? 'Severity' : 'Keparahan'}</th><th>${isEn ? 'Event' : 'Kejadian'}</th><th>${isEn ? 'Duration' : 'Durasi'}</th><th>${isEn ? 'Action' : 'Aksi'}</th><th>${isEn ? 'Advice' : 'Tips'}</th></tr></thead>
+    <thead><tr>
+      <th class="col-time" style="width:140px;min-width:140px">${isEn ? 'Time' : 'Waktu'}</th>
+      <th class="col-sev" style="width:105px;min-width:105px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
+      <th>${isEn ? 'Event' : 'Kejadian'}</th>
+      <th class="col-durasi" style="width:130px;min-width:130px">${isEn ? 'Duration' : 'Durasi'}</th>
+      <th class="col-act" style="width:160px;min-width:160px">${isEn ? 'Action' : 'Aksi'}</th>
+      <th class="col-tips" style="width:260px;min-width:220px">${isEn ? 'Advice' : 'Tips'}</th>
+    </tr></thead>
     <tbody>`;
 
   for (const p of rows) {
@@ -4585,11 +4599,11 @@ function renderProblemsTab(level, openList, histList) {
       data-prob-host="${escapeHtml(SERVER_NAME)}"
       data-prob-sid="${SID}"
       data-prob-context="${escapeHtml(ctxAttr)}">
-      <td style="white-space:nowrap" class="mono">${startStr}${resStr}</td>
-      <td><span class="badge badge-${sevBadge}">${sevLabel}</span></td>
+      <td style="white-space:nowrap;width:140px" class="mono col-time">${startStr}${resStr}</td>
+      <td style="width:105px;text-align:center" class="col-sev"><span class="badge badge-${sevBadge}">${sevLabel}</span></td>
       <td>${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${ackBadge} ${kambuhBadge}</td>
-      <td class="mono"${dataStart}>${escapeHtml(p.durasi || '')}</td>
-      <td class="prob-act-cell">${actHtml}</td>
+      <td class="mono col-durasi" style="width:130px;min-width:130px;white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
+      <td class="prob-act-cell col-act" style="width:160px">${actHtml}</td>
       <td style="font-size:12px;line-height:1.55;max-width:360px">${escapeHtml(pTip || '—')}</td>
     </tr>`;
   }
@@ -4702,17 +4716,6 @@ setTimeout(() => {
   if (typeof probFilter === 'function') probFilter();
   if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
 }, 100);
-
-// Live durasi insiden di tab Riwayat & Masalah
-setInterval(() => {
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-  document.querySelectorAll('#probtable [data-start]').forEach(td => {
-    const d = Math.floor((Date.now() - new Date(td.dataset.start).getTime()) / 1000);
-    if (d < 60) td.textContent = d + (isEn ? ' s' : ' dtk');
-    else if (d < 3600) td.textContent = Math.floor(d/60) + (isEn ? ' m' : ' mnt');
-    else td.textContent = Math.floor(d/3600) + (isEn ? ' h ' : ' j ') + Math.floor((d%3600)/60) + ' m';
-  });
-}, 5000);
 
 function setActionLimit(lim) {
   window._lastActionSig = null;

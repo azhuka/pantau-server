@@ -141,8 +141,43 @@ table{width:100%;border-collapse:collapse}
 th{text-align:left;padding:12px 14px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.6px;font-weight:600;border-bottom:1px solid var(--border)}
 td{padding:13px 14px;font-size:13px;border-bottom:1px solid var(--border-subtle);vertical-align:middle}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(255,255,255,0.03)}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px;color:var(--dim)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+
+/* Stabilisasi Lebar Kolom Tabel & Eliminasi Pergeseran Tata Letak (Anti-Jitter) */
+.col-durasi, th.col-durasi, td.col-durasi, td[data-start] {
+  width: 130px !important;
+  min-width: 130px !important;
+  max-width: 130px !important;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums !important;
+  box-sizing: border-box !important;
+}
+.col-time, th.col-time, td.col-time {
+  width: 135px !important;
+  min-width: 135px !important;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums !important;
+}
+.col-server, th.col-server, td.col-server {
+  width: 160px !important;
+  min-width: 160px !important;
+  white-space: nowrap !important;
+}
+.col-sev, th.col-sev, td.col-sev {
+  width: 110px !important;
+  min-width: 110px !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+}
+.col-act, th.col-act, td.col-act, .prob-act-cell {
+  width: 160px !important;
+  min-width: 160px !important;
+  white-space: nowrap !important;
+}
+.col-tips, th.col-tips, td.col-tips {
+  width: 260px !important;
+  min-width: 220px !important;
+}
 
 /* Tombol Modern dengan sentuhan Neon Halus */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;border:1px solid transparent;cursor:pointer;text-decoration:none;transition:all .18s cubic-bezier(0.16,1,0.3,1);white-space:nowrap;user-select:none;position:relative}
@@ -636,7 +671,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.2.9' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.2.10' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -868,18 +903,23 @@ function probFilter(){
 }
 
 // ---------- problems: durasi live ----------
-function fmtDur(secs){
+function fmtDur(secs, isEn){
   secs = Math.max(0, Math.floor(secs));
-  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
-  if (h) return h + ' j ' + m + ' mnt';
-  if (m) return m + ' mnt ' + s + ' dtk';
-  return s + ' dtk';
+  const d = Math.floor(secs/86400);
+  const h = Math.floor((secs%86400)/3600);
+  const m = Math.floor((secs%3600)/60);
+  const s = secs%60;
+  if (d) return d + (isEn ? ' d ' : ' h ') + h + (isEn ? ' h' : ' j');
+  if (h) return h + (isEn ? ' h ' : ' j ') + m + (isEn ? ' m' : ' mnt');
+  if (m) return m + (isEn ? ' m ' : ' mnt ') + s + (isEn ? ' s' : ' dtk');
+  return s + (isEn ? ' s' : ' dtk');
 }
 setInterval(() => {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const now = Date.now();
   document.querySelectorAll('td[data-start]').forEach(td => {
     const start = Date.parse(td.dataset.start);
-    if (!isNaN(start)) td.textContent = fmtDur((now - start)/1000);
+    if (!isNaN(start)) td.textContent = fmtDur((now - start)/1000, isEn);
   });
 }, 1000);
 

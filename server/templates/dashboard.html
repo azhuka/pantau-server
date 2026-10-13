@@ -283,9 +283,9 @@
     <table style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.01)">
-          <th style="padding:8px 10px;font-size:12px;width:140px;color:var(--dim);text-align:left">Waktu &amp; Durasi</th>
-          <th style="padding:8px 10px;font-size:12px;width:160px;color:var(--dim);text-align:left">Server</th>
-          <th style="padding:8px 10px;font-size:12px;width:100px;color:var(--dim);text-align:left">Keparahan</th>
+          <th class="col-time" style="padding:8px 10px;font-size:12px;width:150px;min-width:150px;color:var(--dim);text-align:left">Waktu &amp; Durasi</th>
+          <th class="col-server" style="padding:8px 10px;font-size:12px;width:160px;min-width:160px;color:var(--dim);text-align:left">Server</th>
+          <th class="col-sev" style="padding:8px 10px;font-size:12px;width:105px;min-width:105px;color:var(--dim);text-align:center">Keparahan</th>
           <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left">Deskripsi Masalah</th>
         </tr>
       </thead>
@@ -382,29 +382,29 @@
       <thead>
         <!-- Baris Header 1: Kolom Utama & Pengelompokan -->
         <tr>
-          <th rowspan="2" class="sortable" data-col="0" style="vertical-align:middle;cursor:pointer" title="Nama host server">Hostname <span class="sort-arrow">↕</span></th>
-          <th rowspan="2" class="sortable" data-col="1" style="vertical-align:middle;cursor:pointer" title="Grup server">Grup <span class="sort-arrow">↕</span></th>
-          <th rowspan="2" class="sortable" data-col="2" style="vertical-align:middle;cursor:pointer" title="Status koneksi server saat ini">Status <span class="sort-arrow">↕</span></th>
-          <th rowspan="2" class="sortable" data-col="3" style="vertical-align:middle;cursor:pointer" title="Waktu aktif sejak reboot terakhir">Uptime <span class="sort-arrow">↕</span></th>
+          <th rowspan="2" class="sortable" data-col="0" style="vertical-align:middle;cursor:pointer;width:150px;min-width:140px" title="Nama host server">Hostname <span class="sort-arrow">↕</span></th>
+          <th rowspan="2" class="sortable" data-col="1" style="vertical-align:middle;cursor:pointer;width:110px;min-width:100px" title="Grup server">Grup <span class="sort-arrow">↕</span></th>
+          <th rowspan="2" class="sortable" data-col="2" style="vertical-align:middle;cursor:pointer;width:95px;min-width:90px" title="Status koneksi server saat ini">Status <span class="sort-arrow">↕</span></th>
+          <th rowspan="2" class="sortable col-durasi" data-col="3" style="vertical-align:middle;cursor:pointer;width:130px;min-width:125px" title="Waktu aktif sejak reboot terakhir">Uptime <span class="sort-arrow">↕</span></th>
           <th colspan="2" style="text-align:center;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)">Processor</th>
           <th colspan="3" style="text-align:center;background:rgba(255,255,255,0.01);border-bottom:1px solid var(--border)">Memori</th>
           <th colspan="3" style="text-align:center;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)">Penyimpanan</th>
-          <th rowspan="2" class="sortable" data-col="12" style="vertical-align:middle;text-align:center;cursor:pointer" title="Rasio total layanan yang dipantau terhadap layanan aktif">Layanan <span class="sort-arrow">↕</span></th>
-          <th rowspan="2" class="sortable" data-col="13" style="vertical-align:middle;text-align:center;cursor:pointer" title="Status masalah / gangguan aktif">Insiden <span class="sort-arrow">↕</span></th>
+          <th rowspan="2" class="sortable" data-col="12" style="vertical-align:middle;text-align:center;cursor:pointer;width:90px;min-width:85px" title="Rasio total layanan yang dipantau terhadap layanan aktif">Layanan <span class="sort-arrow">↕</span></th>
+          <th rowspan="2" class="sortable" data-col="13" style="vertical-align:middle;text-align:center;cursor:pointer;width:90px;min-width:85px" title="Status masalah / gangguan aktif">Insiden <span class="sort-arrow">↕</span></th>
         </tr>
         <!-- Baris Header 2: Sub-Kolom Metrik Detail -->
         <tr>
           <!-- Processor -->
-          <th class="sortable" data-col="4" style="cursor:pointer;background:rgba(255,255,255,0.02)" title="Jumlah inti CPU">CPU Core <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="5" style="cursor:pointer;background:rgba(255,255,255,0.02)" title="Persentase beban CPU">Beban CPU (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="4" style="cursor:pointer;background:rgba(255,255,255,0.02);width:80px;min-width:75px" title="Jumlah inti CPU">CPU Core <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="5" style="cursor:pointer;background:rgba(255,255,255,0.02);width:110px;min-width:100px" title="Persentase beban CPU">Beban CPU (%) <span class="sort-arrow">↕</span></th>
           <!-- Memori -->
-          <th class="sortable" data-col="6" style="cursor:pointer;background:rgba(255,255,255,0.01)" title="Total kapasitas RAM">Total <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="7" style="cursor:pointer;background:rgba(255,255,255,0.01)" title="Persentase beban RAM">Beban (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="8" style="cursor:pointer;background:rgba(255,255,255,0.01)" title="Sisa kapasitas RAM tersedia">Tersedia <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="6" style="cursor:pointer;background:rgba(255,255,255,0.01);width:85px;min-width:80px" title="Total kapasitas RAM">Total <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="7" style="cursor:pointer;background:rgba(255,255,255,0.01);width:95px;min-width:90px" title="Persentase beban RAM">Beban (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="8" style="cursor:pointer;background:rgba(255,255,255,0.01);width:90px;min-width:85px" title="Sisa kapasitas RAM tersedia">Tersedia <span class="sort-arrow">↕</span></th>
           <!-- Penyimpanan -->
-          <th class="sortable" data-col="9" style="cursor:pointer;background:rgba(255,255,255,0.02)" title="Total kapasitas penyimpanan sistem">Total <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="10" style="cursor:pointer;background:rgba(255,255,255,0.02)" title="Persentase beban disk sistem">Beban (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="11" style="cursor:pointer;background:rgba(255,255,255,0.02)" title="Sisa ruang penyimpanan tersedia">Tersedia <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="9" style="cursor:pointer;background:rgba(255,255,255,0.02);width:85px;min-width:80px" title="Total kapasitas penyimpanan sistem">Total <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="10" style="cursor:pointer;background:rgba(255,255,255,0.02);width:95px;min-width:90px" title="Persentase beban disk sistem">Beban (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="11" style="cursor:pointer;background:rgba(255,255,255,0.02);width:90px;min-width:85px" title="Sisa ruang penyimpanan tersedia">Tersedia <span class="sort-arrow">↕</span></th>
         </tr>
       </thead>
       <tbody>
