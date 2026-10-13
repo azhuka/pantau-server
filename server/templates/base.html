@@ -593,7 +593,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.2.3' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.2.4' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -851,9 +851,14 @@ setInterval(tickUtcClock, 15000);
 // ---------- log: lompat ke kartu log + unit ----------
 function jumpToLog(unit){
   const sel = document.getElementById('log-unit');
-  if (!sel) return;
-  const ok = !!unit && Array.from(sel.options).some(o => o.value === unit);
-  if (!ok){ alert('Unit ' + (unit || '') + ' tidak tersedia di Agen Pantau.'); return; }
+  if (!sel || !unit) return;
+  const ok = Array.from(sel.options).some(o => o.value === unit);
+  if (!ok){
+    const opt = document.createElement('option');
+    opt.value = unit;
+    opt.textContent = unit;
+    sel.appendChild(opt);
+  }
   if (typeof switchLoggingView === 'function') switchLoggingView('svc');
   if (window.showTab) showTab('log');
   sel.value = unit;

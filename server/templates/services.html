@@ -1057,17 +1057,17 @@
       <td class="mono"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
       <td style="white-space:nowrap">
         <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat rincian &amp; diagnosa akar masalah" style="margin-right:4px">🔍 Diagnosa</button>
+        {% if p.log_unit %}
+          <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ p.log_unit|tojson }})' style="margin-right:4px" title="Lihat log unit {{ p.log_unit }}">Log</button>
+        {% elif p.action == 'mitigate' %}
+          <button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-right:4px" title="Lihat log autentikasi SSH">Log auth</button>
+        {% endif %}
         {% if not user.is_viewer() %}
-          {% if p.is_open and p.action == 'restart' %}
+          {% if p.is_open and p.action == 'restart' and p.svc_id %}
             <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline" data-confirm data-msg="Restart service ini di {{ server.hostname }}?">
               <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <button class="btn btn-primary btn-sm">Restart</button>
             </form>
-            {% if p.log_unit %}
-              <button class="btn btn-ghost btn-sm" onclick='jumpToLog({{ p.log_unit|tojson }})' style="margin-left:4px">Log</button>
-            {% endif %}
-          {% elif p.is_open and p.action == 'log' and p.log_unit %}
-            <button class="btn btn-ghost btn-sm" onclick='jumpToLog({{ p.log_unit|tojson }})'>Log</button>
           {% elif p.is_open and p.action == 'mitigate' %}
             {% if user.has_perm('can_firewall') and p.ip_count and p.ip_count > 0 %}
               <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline" data-confirm data-msg="Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?">
@@ -1075,8 +1075,6 @@
                 <button class="btn btn-danger btn-sm">Blokir IP ({{ p.ip_count }})</button>
               </form>
             {% endif %}
-            <button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>
-
           {% elif p.is_open and p.action == 'apt_update' %}
             <button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">Update OS</button>
           {% elif p.is_open and p.action == 'agent_update_cmd' %}
@@ -1096,16 +1094,10 @@
             {% endif %}
           {% endif %}
         {% else %}
-          {% if p.log_unit %}
-            <button class="btn btn-ghost btn-sm" onclick='jumpToLog({{ p.log_unit|tojson }})' style="margin-left:4px">Log</button>
-          {% elif p.action == 'mitigate' %}
-            <button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>
-          {% endif %}
           {% if p.acknowledged_by %}
             <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }}">✓ Ditangani</span>
           {% endif %}
         {% endif %}
-
       </td>
       <td style="font-size:12px;line-height:1.55;max-width:360px">{{ p.tip or '—' }}</td>
     </tr>
@@ -1316,7 +1308,9 @@
       </td>
       <td style="white-space:nowrap">
         <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}">
-          {% if user.has_perm('can_services') %}
+          {% if user.is_viewer() or not user.has_perm('can_services') %}
+            <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}">Log</button>
+          {% else %}
             {% set is_up = (svc._status == 'up') %}
             {% set is_pending = (svc._pending_cmd is not none and svc._pending_cmd) %}
             <button type="button" class="btn btn-primary btn-sm btn-svc-restart"
@@ -1331,6 +1325,7 @@
                     {% if is_pending or not is_up or not is_online %}disabled{% endif %}
                     onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
                     title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif not is_up %}Layanan sudah dalam kondisi berhenti{% else %}Hentikan layanan {{ svc.service_name }}{% endif %}">■</button>
+            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:3px" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}">Log</button>
             {% if not is_up %}
               {% if svc._is_ignored %}
                 <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}"{% endif %} data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)">🔔 Pantau Kembali</button>
@@ -2987,8 +2982,9 @@ function triggerFastPoll() {
 }
 
 function renderServiceActions(sid, svcId, name, status, isPending, problem, isServiceIgnored, pendingAction) {
-  if (IS_VIEWER || !CAN_SERVICES) return '';
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const logBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:3px" onclick="jumpToLog(\'' + escHtml(name) + '\')" title="' + (isEn ? 'View logs for ' + name : 'Lihat log layanan ' + name) + '">Log</button>';
+  if (IS_VIEWER || !CAN_SERVICES) return logBtn;
   const online = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
   const isUp = status === 'up';
 
@@ -3045,6 +3041,7 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
     + (stopDis ? 'disabled ' : '')
     + 'onclick="svcAction(\'stop\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
     + 'title="' + stopTitle + '">■</button>'
+    + logBtn
     + ignoreBtn
     + pendingBadge;
 }
@@ -4445,6 +4442,13 @@ function renderProblemsTab(level, openList, histList) {
 
     let actHtml = '';
     const diagBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}" style="margin-right:4px">🔍 ${isEn ? 'Diagnose' : 'Diagnosa'}</button>`;
+    let logBtn = '';
+    if (p.log_unit) {
+      logBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" style="margin-right:4px" title="${isEn ? 'View unit logs' : 'Lihat log unit'}">Log</button>`;
+    } else if (p.action === 'mitigate') {
+      logBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-right:4px" title="${isEn ? 'View SSH auth logs' : 'Lihat log auth SSH'}">Log auth</button>`;
+    }
+
     if (isOpen) {
       if (!IS_VIEWER) {
         if (p.action === 'restart' && p.svc_id && CAN_SERVICES) {
@@ -4452,11 +4456,6 @@ function renderProblemsTab(level, openList, histList) {
             <input type="hidden" name="csrf_token" value="${getCsrf()}">
             <button class="btn btn-primary btn-sm">Restart</button>
           </form>`;
-          if (p.log_unit) {
-            actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" style="margin-left:4px">Log</button>`;
-          }
-        } else if (p.action === 'log' && p.log_unit) {
-          actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')">Log</button>`;
         } else if (p.action === 'mitigate') {
           if (CAN_FIREWALL && p.ip_count && p.ip_count > 0) {
             actHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline" data-confirm data-msg="${isEn ? `Block ${p.ip_count} source IPs (iptables) on ` : `Blokir ${p.ip_count} IP sumber (iptables) di `}${escapeHtml(SERVER_NAME)}?">
@@ -4464,8 +4463,6 @@ function renderProblemsTab(level, openList, histList) {
               <button class="btn btn-danger btn-sm">${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</button>
             </form>`;
           }
-          actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>`;
-
         } else if (p.action === 'apt_update' && CAN_APT) {
           actHtml += `<button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">${isEn ? 'Update OS' : 'Update OS'}</button>`;
         } else if (p.action === 'agent_update_cmd' && CAN_OTA) {
@@ -4484,17 +4481,12 @@ function renderProblemsTab(level, openList, histList) {
           actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail(${p.id}, this)" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${isEn ? 'Acknowledge' : 'Ditangani'}</button>`;
         }
       } else {
-        if (p.log_unit) {
-          actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" style="margin-left:4px">Log</button>`;
-        } else if (p.action === 'mitigate') {
-          actHtml += `<button class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-left:4px">Log auth</button>`;
-        }
         if (p.acknowledged_by) {
           actHtml += `<span class="badge badge-up" style="margin-left:4px" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">✓ ${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
         }
       }
     }
-    actHtml = diagBtn + actHtml;
+    actHtml = diagBtn + logBtn + actHtml;
 
     const ctxAttr = typeof p.context === 'object' && p.context !== null ? JSON.stringify(p.context) : (p.context || '');
 

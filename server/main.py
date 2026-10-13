@@ -5423,13 +5423,15 @@ def _enrich_problems_for_ui(open_problems, services, extra, user_or_role="viewer
 
     for r in open_problems:
         if r["key"].startswith("service_down:"):
-            svc = svc_map.get(r["key"].split(":", 1)[1])
+            sname = r["key"].split(":", 1)[1]
+            svc = svc_map.get(sname)
             r["action"] = "restart" if svc else None
             r["svc_id"] = svc.id if svc else None
-            r["log_unit"] = r["key"].split(":", 1)[1] if r["key"].split(":", 1)[1] in log_units else None
+            r["log_unit"] = sname
         elif r["key"].startswith("svc_no_data:"):
+            sname = r["key"].split(":", 1)[1]
             r["action"] = "log"
-            r["log_unit"] = r["key"].split(":", 1)[1] if r["key"].split(":", 1)[1] in log_units else None
+            r["log_unit"] = sname
         elif r["key"] in ("security_danger", "failed_logins"):
             r["action"] = "mitigate"
             r["log_unit"] = "AUTH"
