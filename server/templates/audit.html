@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Audit - Pantau Server{% endblock %}
+{% block title %}Riwayat Tindakan - Pantau Server{% endblock %}
 {% set st_label = {'PENDING': 'Menunggu', 'EXECUTING': 'Dinyalakan', 'SUCCESS': 'Berhasil', 'FAILED': 'Gagal'} %}
 {% set st_cls = {'PENDING': 'inactive', 'EXECUTING': 'inactive', 'SUCCESS': 'up', 'FAILED': 'danger'} %}
 {% block content %}
 <div class="topbar">
-  <h2>Audit</h2>
+  <h2>Riwayat Tindakan</h2>
   <div style="display:flex;gap:8px;align-items:center">
     <span id="audit-live" class="badge badge-up" style="opacity:.35;transition:opacity .3s" title="Diperbarui otomatis setiap 5 detik">live</span>
     <button type="button" class="btn btn-ghost btn-sm" id="audit-refresh" title="Muat ulang data riwayat audit seketika">Perbarui</button>
@@ -13,26 +13,26 @@
 
 <div class="card">
   <div class="card-header">
-    <h3>Jejak Aksi Admin</h3>
+    <h3>Riwayat Tindakan Pengguna</h3>
     <span style="font-size:12px;color:var(--dim)">{{ rows|length }} terbaru</span>
   </div>
   <p style="font-size:12px;color:var(--dim);margin:0 0 14px">
-    Catatan aktivitas login, manajemen server, layanan, pengguna, serta riwayat eksekusi perintah remote (restart, blokir IP, pembaruan paket) beserta pelaksana dan hasilnya.
+    Catatan aktivitas autentikasi, manajemen server, layanan, pengguna, serta eksekusi perintah remote beserta pelaksana dan hasilnya.
   </p>
 
   <form method="get" action="/audit" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
     <select name="user" id="audit-user-filter" title="Saring berdasarkan nama pengguna" onchange="this.form.submit()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
       <option value="">Semua pengguna</option>
       {% for u_name in available_users %}
-      <option value="{{ u_name }}" {% if selected_user == u_name %}selected{% endif %}>👤 {{ u_name }}</option>
+      <option value="{{ u_name }}" {% if selected_user == u_name %}selected{% endif %}>{{ u_name }}</option>
       {% endfor %}
     </select>
 
     <select name="action" id="audit-action-filter" title="Saring berdasarkan jenis aktivitas" onchange="this.form.submit()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
-      <option value="" data-label-id="Semua aksi" data-label-en="All actions">Semua aksi</option>
+      <option value="" data-label-id="Semua tindakan" data-label-en="All actions">Semua tindakan</option>
       {% for cat in categories %}
       <optgroup label="{{ cat.name }}" data-label-id="{{ cat.name }}" data-label-en="{{ cat.name_en }}">
-        <option value="{{ cat.id }}" data-label-id="★ Semua {{ cat.name }}" data-label-en="★ All {{ cat.name_en }}" {% if action == cat.id %}selected{% endif %}>★ Semua {{ cat.name }}</option>
+        <option value="{{ cat.id }}" data-label-id="Semua {{ cat.name }}" data-label-en="All {{ cat.name_en }}" {% if action == cat.id %}selected{% endif %}>Semua {{ cat.name }}</option>
         {% for a_key, a_label, a_label_en in cat.actions %}
         <option value="{{ a_key }}" data-label-id="{{ a_label }}" data-label-en="{{ a_label_en }}" {% if action == a_key %}selected{% endif %}>{{ a_label }}</option>
         {% endfor %}
@@ -52,7 +52,7 @@
     <thead>
       <tr>
         <th style="width:150px" title="Waktu eksekusi atau pencatatan tindakan">Waktu</th>
-        <th title="Nama akun administrator yang menjalankan aksi">Pengguna</th>
+        <th title="Nama akun pengguna yang menjalankan tindakan">Pengguna</th>
         <th title="Server yang dituju">Server</th>
         <th title="Jenis operasi atau perintah yang dijalankan">Tindakan</th>
         <th title="Entitas sasaran spesifik (layanan, IP, akun, file, atau parameter)">Target</th>
@@ -82,13 +82,13 @@
         <td style="font-size:12px;color:var(--dim)" class="audit-res-cell" data-raw="{{ r.result }}">{{ r.result }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="7" class="empty-msg" data-i18n="audit_empty">Belum ada jejak audit.</td></tr>
+      <tr><td colspan="7" class="empty-msg" data-i18n="audit_empty">Belum ada riwayat tindakan pengguna.</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 
-<p style="font-size:12px;color:var(--dim)">Menampilkan maks 500 baris terbaru. Status perintah remote berubah otomatis setelah agen mengeksekusinya.</p>
+<p style="font-size:12px;color:var(--dim)">Menampilkan maksimal 500 catatan terbaru. Status perintah remote diperbarui otomatis setelah agen selesai mengeksekusinya.</p>
 {% endblock %}
 
 {% block scripts %}

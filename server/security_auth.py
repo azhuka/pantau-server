@@ -72,8 +72,8 @@ OPERATOR_PERMISSIONS: Dict[str, Dict[str, str]] = {
         "desc": "Tambah server baru, ubah hostname/IP, dan atur mode pemeliharaan.",
     },
     "can_audit": {
-        "label": "Akses Audit Trail (/audit)",
-        "desc": "Lihat seluruh catatan riwayat audit kepatuhan dan log aktivitas sistem.",
+        "label": "Akses Riwayat Tindakan (/audit)",
+        "desc": "Lihat seluruh catatan riwayat tindakan pengguna, kepatuhan, dan log aktivitas sistem.",
     },
     "can_manage_users": {
         "label": "Manajemen Pengguna Sistem",
