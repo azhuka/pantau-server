@@ -1055,49 +1055,58 @@
         {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
       <td class="mono"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
-      <td style="white-space:nowrap">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat rincian &amp; diagnosa akar masalah" style="margin-right:4px">🔍 Diagnosa</button>
-        {% if p.log_unit %}
-          <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ p.log_unit|tojson }})' style="margin-right:4px" title="Lihat log unit {{ p.log_unit }}">Log</button>
-        {% elif p.action == 'mitigate' %}
-          <button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-right:4px" title="Lihat log autentikasi SSH">Log auth</button>
-        {% endif %}
-        {% if not user.is_viewer() %}
-          {% if p.is_open and p.action == 'restart' and p.svc_id %}
-            <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline" data-confirm data-msg="Restart service ini di {{ server.hostname }}?">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <button class="btn btn-primary btn-sm">Restart</button>
-            </form>
-          {% elif p.is_open and p.action == 'mitigate' %}
-            {% if user.has_perm('can_firewall') and p.ip_count and p.ip_count > 0 %}
-              <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline" data-confirm data-msg="Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <button class="btn btn-danger btn-sm">Blokir IP ({{ p.ip_count }})</button>
-              </form>
+      <td class="prob-act-cell">
+        <div class="prob-act-wrap">
+          <div class="prob-act-row prob-act-tools">
+            <button type="button" class="btn btn-ghost prob-btn prob-btn-diag" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah">🔍 Diagnosa</button>
+            {% if p.log_unit %}
+              <button type="button" class="btn btn-ghost prob-btn prob-btn-log" onclick='jumpToLog({{ p.log_unit|tojson }})' title="Lihat log unit {{ p.log_unit }}">Log</button>
+            {% elif p.action == 'mitigate' %}
+              <button type="button" class="btn btn-ghost prob-btn prob-btn-log" onclick="jumpToLog('AUTH')" title="Lihat log autentikasi SSH">Log auth</button>
             {% endif %}
-          {% elif p.is_open and p.action == 'apt_update' %}
-            <button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">Update OS</button>
-          {% elif p.is_open and p.action == 'agent_update_cmd' %}
-            <button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard">📋 Update Agen</button>
-          {% endif %}
+          </div>
+          {% if not user.is_viewer() %}
+            {% if p.is_open %}
+              <div class="prob-act-row prob-act-ops">
+                {% if p.action == 'restart' and p.svc_id %}
+                  <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline;margin:0" data-confirm data-msg="Restart service ini di {{ server.hostname }}?">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button class="btn btn-primary prob-btn">Restart</button>
+                  </form>
+                {% elif p.action == 'mitigate' %}
+                  {% if user.has_perm('can_firewall') and p.ip_count and p.ip_count > 0 %}
+                    <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline;margin:0" data-confirm data-msg="Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <button class="btn btn-danger prob-btn">Blokir IP ({{ p.ip_count }})</button>
+                    </form>
+                  {% endif %}
+                {% elif p.action == 'apt_update' %}
+                  <button class="btn btn-primary prob-btn" onclick="aptAction('APT_UPDATE')">Update OS</button>
+                {% elif p.action == 'agent_update_cmd' %}
+                  <button type="button" class="btn btn-ghost prob-btn" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard">📋 Update Agen</button>
+                {% endif %}
 
-          {% if p.is_open %}
-            {% if p.is_ignored %}
-              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>
-            {% else %}
-              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>
+                {% if p.is_ignored %}
+                  <button type="button" class="btn btn-ghost prob-btn" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>
+                {% else %}
+                  <button type="button" class="btn btn-ghost prob-btn" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>
+                {% endif %}
+
+                {% if p.acknowledged_by %}
+                  <span class="badge badge-up prob-badge-ack" title="Ditangani {{ p.acknowledged_by }}">✓ Ditangani</span>
+                {% else %}
+                  <button type="button" class="btn btn-ghost prob-btn" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai sudah ditangani">Ditangani</button>
+                {% endif %}
+              </div>
             {% endif %}
+          {% else %}
             {% if p.acknowledged_by %}
-              <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }}">✓ Ditangani</span>
-            {% else %}
-              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai sudah ditangani">Ditangani</button>
+              <div class="prob-act-row prob-act-ops">
+                <span class="badge badge-up prob-badge-ack" title="Ditangani {{ p.acknowledged_by }}">✓ Ditangani</span>
+              </div>
             {% endif %}
           {% endif %}
-        {% else %}
-          {% if p.acknowledged_by %}
-            <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }}">✓ Ditangani</span>
-          {% endif %}
-        {% endif %}
+        </div>
       </td>
       <td style="font-size:12px;line-height:1.55;max-width:360px">{{ p.tip or '—' }}</td>
     </tr>
@@ -3518,8 +3527,8 @@ async function ackProblemInDetail(id, btn) {
     });
     if (r.ok) {
       showToast(isEn ? 'Problem marked as resolved.' : 'Masalah ditandai sebagai ditangani.', true);
-      btn.className = 'badge badge-up';
-      btn.textContent = isEn ? '✓ Acknowledged' : '✓ Diakui';
+      btn.className = 'badge badge-up prob-badge-ack';
+      btn.textContent = isEn ? '✓ Acknowledged' : '✓ Ditangani';
       btn.onclick = null;
       if (typeof poll === 'function') poll();
       return;
@@ -4440,53 +4449,57 @@ function renderProblemsTab(level, openList, histList) {
     const isoStart = isOpen && p.started_at ? (p.started_at.endsWith('Z') ? p.started_at : p.started_at + 'Z') : '';
     const dataStart = isoStart ? ` data-start="${isoStart}"` : '';
 
-    let actHtml = '';
-    const diagBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}" style="margin-right:4px">🔍 ${isEn ? 'Diagnose' : 'Diagnosa'}</button>`;
+    const diagBtn = `<button type="button" class="btn btn-ghost prob-btn prob-btn-diag" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}">🔍 ${isEn ? 'Diagnose' : 'Diagnosa'}</button>`;
     let logBtn = '';
     if (p.log_unit) {
-      logBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" style="margin-right:4px" title="${isEn ? 'View unit logs' : 'Lihat log unit'}">Log</button>`;
+      logBtn = `<button type="button" class="btn btn-ghost prob-btn prob-btn-log" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" title="${isEn ? 'View unit logs' : 'Lihat log unit'}">Log</button>`;
     } else if (p.action === 'mitigate') {
-      logBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" style="margin-right:4px" title="${isEn ? 'View SSH auth logs' : 'Lihat log auth SSH'}">Log auth</button>`;
+      logBtn = `<button type="button" class="btn btn-ghost prob-btn prob-btn-log" onclick="jumpToLog('AUTH')" title="${isEn ? 'View SSH auth logs' : 'Lihat log auth SSH'}">Log auth</button>`;
     }
 
+    let opsHtml = '';
     if (isOpen) {
       if (!IS_VIEWER) {
         if (p.action === 'restart' && p.svc_id && CAN_SERVICES) {
-          actHtml += `<form method="post" action="/servers/${SID}/services/${p.svc_id}/restart" style="display:inline" data-confirm data-msg="${isEn ? 'Restart this service on ' : 'Restart service ini di '}${escapeHtml(SERVER_NAME)}?">
+          opsHtml += `<form method="post" action="/servers/${SID}/services/${p.svc_id}/restart" style="display:inline;margin:0" data-confirm data-msg="${isEn ? 'Restart this service on ' : 'Restart service ini di '}${escapeHtml(SERVER_NAME)}?">
             <input type="hidden" name="csrf_token" value="${getCsrf()}">
-            <button class="btn btn-primary btn-sm">Restart</button>
+            <button class="btn btn-primary prob-btn">Restart</button>
           </form>`;
         } else if (p.action === 'mitigate') {
           if (CAN_FIREWALL && p.ip_count && p.ip_count > 0) {
-            actHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline" data-confirm data-msg="${isEn ? `Block ${p.ip_count} source IPs (iptables) on ` : `Blokir ${p.ip_count} IP sumber (iptables) di `}${escapeHtml(SERVER_NAME)}?">
+            opsHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline;margin:0" data-confirm data-msg="${isEn ? `Block ${p.ip_count} source IPs (iptables) on ` : `Blokir ${p.ip_count} IP sumber (iptables) di `}${escapeHtml(SERVER_NAME)}?">
               <input type="hidden" name="csrf_token" value="${getCsrf()}">
-              <button class="btn btn-danger btn-sm">${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</button>
+              <button class="btn btn-danger prob-btn">${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</button>
             </form>`;
           }
         } else if (p.action === 'apt_update' && CAN_APT) {
-          actHtml += `<button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')">${isEn ? 'Update OS' : 'Update OS'}</button>`;
+          opsHtml += `<button class="btn btn-primary prob-btn" onclick="aptAction('APT_UPDATE')">${isEn ? 'Update OS' : 'Update OS'}</button>`;
         } else if (p.action === 'agent_update_cmd' && CAN_OTA) {
-          actHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}">📋 ${isEn ? 'Update Agent' : 'Update Agen'}</button>`;
+          opsHtml += `<button type="button" class="btn btn-ghost prob-btn" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}">📋 ${isEn ? 'Update Agent' : 'Update Agen'}</button>`;
         }
 
         if (isIgnored) {
-          actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">🔔 ${isEn ? 'Cancel Ignore' : 'Pantau Kembali'}</button>`;
+          opsHtml += `<button type="button" class="btn btn-ghost prob-btn" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">🔔 ${isEn ? 'Cancel Ignore' : 'Pantau Kembali'}</button>`;
         } else {
-          actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">🔕 ${isEn ? 'Ignore' : 'Abaikan'}</button>`;
+          opsHtml += `<button type="button" class="btn btn-ghost prob-btn" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">🔕 ${isEn ? 'Ignore' : 'Abaikan'}</button>`;
         }
 
         if (p.acknowledged_by) {
-          actHtml += `<span class="badge badge-up" style="margin-left:4px" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">✓ ${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
+          opsHtml += `<span class="badge badge-up prob-badge-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">✓ ${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
         } else {
-          actHtml += `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="ackProblemInDetail(${p.id}, this)" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${isEn ? 'Acknowledge' : 'Ditangani'}</button>`;
+          opsHtml += `<button type="button" class="btn btn-ghost prob-btn" onclick="ackProblemInDetail(${p.id}, this)" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${isEn ? 'Acknowledge' : 'Ditangani'}</button>`;
         }
       } else {
         if (p.acknowledged_by) {
-          actHtml += `<span class="badge badge-up" style="margin-left:4px" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">✓ ${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
+          opsHtml += `<span class="badge badge-up prob-badge-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">✓ ${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
         }
       }
     }
-    actHtml = diagBtn + logBtn + actHtml;
+
+    const actHtml = `<div class="prob-act-wrap">
+      <div class="prob-act-row prob-act-tools">${diagBtn}${logBtn}</div>
+      ${opsHtml ? `<div class="prob-act-row prob-act-ops">${opsHtml}</div>` : ''}
+    </div>`;
 
     const ctxAttr = typeof p.context === 'object' && p.context !== null ? JSON.stringify(p.context) : (p.context || '');
 
@@ -4507,7 +4520,7 @@ function renderProblemsTab(level, openList, histList) {
       <td><span class="badge badge-${sevBadge}">${sevLabel}</span></td>
       <td>${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${ackBadge} ${kambuhBadge}</td>
       <td class="mono"${dataStart}>${escapeHtml(p.durasi || '')}</td>
-      <td style="white-space:nowrap">${actHtml}</td>
+      <td class="prob-act-cell">${actHtml}</td>
       <td style="font-size:12px;line-height:1.55;max-width:360px">${escapeHtml(pTip || '—')}</td>
     </tr>`;
   }

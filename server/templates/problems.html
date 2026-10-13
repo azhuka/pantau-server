@@ -117,28 +117,36 @@
           {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
         </td>
         <td class="mono" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">{{ p.durasi }}</td>
-        <td style="white-space:nowrap">
-          <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" style="margin-right:4px">🔍 Diagnosa</button>
-          <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm">Rincian</a>
-          {% if not user.is_viewer() %}
-            {% if p.is_ignored %}
-              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                      data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>
+        <td class="prob-act-cell">
+          <div class="prob-act-wrap">
+            <div class="prob-act-row prob-act-tools">
+              <button type="button" class="btn btn-ghost prob-btn prob-btn-diag" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah">🔍 Diagnosa</button>
+              <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost prob-btn">Rincian</a>
+            </div>
+            {% if not user.is_viewer() %}
+              <div class="prob-act-row prob-act-ops">
+                {% if p.is_ignored %}
+                  <button type="button" class="btn btn-ghost prob-btn"
+                          data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">🔔 Pantau Kembali</button>
+                {% else %}
+                  <button type="button" class="btn btn-ghost prob-btn"
+                          data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>
+                {% endif %}
+                {% if p.acknowledged_by %}
+                  <span class="badge badge-up prob-badge-ack" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">✓ Ditangani</span>
+                {% elif p.is_open %}
+                  <button type="button" class="btn btn-{{ 'danger' if p.severity == 'danger' else 'ghost' }} prob-btn"
+                          onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')">Ditangani</button>
+                {% endif %}
+              </div>
             {% else %}
-              <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px"
-                      data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">🔕 Abaikan</button>
+              {% if p.acknowledged_by %}
+                <div class="prob-act-row prob-act-ops">
+                  <span class="badge badge-up prob-badge-ack" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">✓ Ditangani</span>
+                </div>
+              {% endif %}
             {% endif %}
-            {% if p.acknowledged_by %}
-              <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">✓ Ditangani</span>
-            {% elif p.is_open %}
-              <button type="button" class="btn btn-{{ 'danger' if p.severity == 'danger' else 'ghost' }} btn-sm" style="margin-left:4px"
-                      onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')">Ditangani</button>
-            {% endif %}
-          {% else %}
-            {% if p.acknowledged_by %}
-              <span class="badge badge-up" style="margin-left:4px" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">✓ Ditangani</span>
-            {% endif %}
-          {% endif %}
+          </div>
         </td>
         <td style="font-size:12px;color:var(--dim);max-width:360px">
           {% if p.acknowledged_by %}
@@ -534,9 +542,9 @@ async function ackProblem(id, btn, sev) {
     if (r.ok) {
       showToast(isEn ? 'Incident marked as acknowledged.' : 'Masalah ditandai sebagai ditangani.', true);
       const span = document.createElement('span');
-      span.className = 'badge badge-up';
-      span.title = isEn ? 'Acknowledged' : 'Diakui';
-      span.textContent = isEn ? '✓ acknowledged' : '✓ diakui';
+      span.className = 'badge badge-up prob-badge-ack';
+      span.title = isEn ? 'Acknowledged' : 'Ditangani';
+      span.textContent = isEn ? '✓ Acknowledged' : '✓ Ditangani';
       btn.replaceWith(span);
       if (typeof window.poll === 'function') window.poll();
       return;
@@ -629,17 +637,17 @@ window.poll = async function() {
 
             let ackBtn = '';
             if (p.acknowledged_by) {
-              ackBtn = `<span class="badge badge-up" style="margin-left:4px" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${_esc(p.acknowledged_by)}${p.acknowledged_at_str ? (isEn ? ' on ' : ' pada ') + _esc(p.acknowledged_at_str) : ''}">✓ ${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
+              ackBtn = `<span class="badge badge-up prob-badge-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${_esc(p.acknowledged_by)}${p.acknowledged_at_str ? (isEn ? ' on ' : ' pada ') + _esc(p.acknowledged_at_str) : ''}">✓ ${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
             } else if (p.is_open && !IS_VIEWER) {
               const bcls = p.severity === 'danger' ? 'danger' : 'ghost';
-              ackBtn = `<button type="button" class="btn btn-${bcls} btn-sm" style="margin-left:4px" onclick="ackProblem(${p.id}, this, '${p.severity}')" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${isEn ? 'Acknowledge' : 'Ditangani'}</button>`;
+              ackBtn = `<button type="button" class="btn btn-${bcls} prob-btn" onclick="ackProblem(${p.id}, this, '${p.severity}')" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${isEn ? 'Acknowledge' : 'Ditangani'}</button>`;
             }
 
             const ignBtn = IS_VIEWER
               ? ''
               : (isIgn
-                ? `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">🔔 ${isEn ? 'Cancel Ignore' : 'Pantau Kembali'}</button>`
-                : `<button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">🔕 ${isEn ? 'Ignore' : 'Abaikan'}</button>`);
+                ? `<button type="button" class="btn btn-ghost prob-btn" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">🔔 ${isEn ? 'Cancel Ignore' : 'Pantau Kembali'}</button>`
+                : `<button type="button" class="btn btn-ghost prob-btn" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">🔕 ${isEn ? 'Ignore' : 'Abaikan'}</button>`);
 
             return `<tr${rowStyle}
               data-sev="${_esc(p.severity)}"
@@ -670,11 +678,14 @@ window.poll = async function() {
                 ${count24}
               </td>
               <td class="mono" data-start="${_esc(p.started_at_iso || '')}">${_esc(p.durasi || '')}</td>
-              <td style="white-space:nowrap">
-                <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}" style="margin-right:4px">🔍 ${isEn ? 'Diagnose' : 'Diagnosa'}</button>
-                <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm">${isEn ? 'Details' : 'Rincian'}</a>
-                ${ignBtn}
-                ${ackBtn}
+              <td class="prob-act-cell">
+                <div class="prob-act-wrap">
+                  <div class="prob-act-row prob-act-tools">
+                    <button type="button" class="btn btn-ghost prob-btn prob-btn-diag" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}">🔍 ${isEn ? 'Diagnose' : 'Diagnosa'}</button>
+                    <a href="/servers/${p.server_id}/services" class="btn btn-ghost prob-btn">${isEn ? 'Details' : 'Rincian'}</a>
+                  </div>
+                  ${(ignBtn || ackBtn) ? `<div class="prob-act-row prob-act-ops">${ignBtn}${ackBtn}</div>` : ''}
+                </div>
               </td>
               <td style="font-size:12px;color:var(--dim);max-width:360px">
                 ${p.acknowledged_by ? '<span style="color:var(--green)">' + (isEn ? 'Acknowledged by ' : 'Ditangani oleh ') + _esc(p.acknowledged_by) + '</span><br>' : ''}
