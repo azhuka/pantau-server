@@ -1022,7 +1022,7 @@
   </div>
   <table id="probtable">
     <thead><tr>
-      <th class="col-time" style="width:130px;min-width:125px">Waktu</th>
+      <th class="col-time-detailed" style="width:200px;min-width:190px">Waktu</th>
       <th class="col-sev" style="width:100px;min-width:95px;text-align:center">Keparahan</th>
       <th>Kejadian</th>
       <th class="col-durasi" style="width:120px;min-width:110px">Durasi</th>
@@ -1047,9 +1047,15 @@
         data-prob-host="{{ server.hostname }}"
         data-prob-sid="{{ server.id }}"
         data-prob-context='{{ p.context or "" }}'>
-      <td style="white-space:nowrap;width:130px" class="mono col-time">
-        {{ p.started_at.strftime('%d %b %H:%M') }}
-        {% if p.resolved_at %}<span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>{% endif %}
+      <td style="white-space:nowrap" class="mono col-time-detailed">
+        <div style="font-size:11.5px;color:var(--text);font-weight:600">
+          <span style="color:var(--dim);font-size:10px;text-transform:uppercase;margin-right:4px">Mulai</span>{{ _fmt_dt(p.started_at) if p.started_at else '—' }}
+        </div>
+        {% if p.resolved_at %}
+        <div style="font-size:11.5px;color:var(--dim);margin-top:3px">
+          <span style="font-size:10px;text-transform:uppercase;margin-right:4px">Selesai</span>{{ _fmt_dt(p.resolved_at) }}
+        </div>
+        {% endif %}
       </td>
       <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DOWN' if p.severity == 'average' else p.severity | upper }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
       <td>
@@ -1205,7 +1211,7 @@
     <table id="tbl-action-history">
       <thead>
         <tr>
-          <th style="white-space:nowrap;width:130px">Waktu</th>
+          <th class="col-time-detailed" style="white-space:nowrap;width:195px;min-width:185px">Waktu</th>
           <th style="width:100px">User</th>
           <th style="width:160px">Tindakan</th>
           <th>Sasaran</th>
@@ -1217,7 +1223,7 @@
       {% if actions %}
         {% for a in actions %}
         <tr id="act-row-{{ a.id }}">
-          <td class="mono" style="white-space:nowrap">{{ a.time.strftime('%d %b %H:%M:%S') if a.time else '—' }}</td>
+          <td class="mono col-time-detailed" style="white-space:nowrap">{{ _fmt_dt(a.time) if a.time else '—' }}</td>
           <td><span class="mono">{{ a.user }}</span></td>
           <td><span class="badge badge-muted">{{ a.action_label }}</span></td>
           <td style="font-size:13px"><strong>{{ a.target }}</strong></td>
@@ -2129,7 +2135,7 @@
       <table class="table" style="margin:0;width:100%">
         <thead>
           <tr>
-            <th style="width:170px">Waktu</th>
+            <th class="col-time-detailed" style="white-space:nowrap;width:195px;min-width:185px">Waktu</th>
             <th>Pengguna (Admin)</th>
             <th>Tindakan</th>
             <th>Target Akun</th>
@@ -2141,7 +2147,7 @@
           {% if acc_acts %}
             {% for a in acc_acts[:25] %}
             <tr>
-              <td class="mono" style="white-space:nowrap">{{ a.time.strftime('%H:%M:%S') if a.time and a.time.strftime is defined else (a.time or '—') }}</td>
+              <td class="mono col-time-detailed" style="white-space:nowrap">{{ _fmt_dt(a.time) if a.time and a.time.strftime is defined else (a.time or '—') }}</td>
               <td><span class="mono">{{ a.user or '-' }}</span></td>
               <td><span class="badge badge-muted">{{ a.action_label or a.action or '—' }}</span></td>
               <td style="font-size:13px"><strong>{{ a.target or '—' }}</strong></td>
@@ -4387,9 +4393,11 @@ function fmtProbDate(isoStr) {
   const monthsEn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const mon = (isEn ? monthsEn[d.getMonth()] : months[d.getMonth()]) || '';
+  const y = d.getFullYear();
   const h = String(d.getHours()).padStart(2, '0');
   const m = String(d.getMinutes()).padStart(2, '0');
-  return `${day} ${mon} ${h}:${m}`;
+  const s = String(d.getSeconds()).padStart(2, '0');
+  return `${day} ${mon} ${y} ${h}:${m}:${s}`;
 }
 
 function getServicesI18nText(text) {
@@ -4491,7 +4499,7 @@ function renderProblemsTab(level, openList, histList) {
   </div>
   <table id="probtable">
     <thead><tr>
-      <th class="col-time" style="width:130px;min-width:125px">${isEn ? 'Time' : 'Waktu'}</th>
+      <th class="col-time-detailed" style="width:200px;min-width:190px">${isEn ? 'Time' : 'Waktu'}</th>
       <th class="col-sev" style="width:100px;min-width:95px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
       <th>${isEn ? 'Event' : 'Kejadian'}</th>
       <th class="col-durasi" style="width:120px;min-width:110px">${isEn ? 'Duration' : 'Durasi'}</th>
@@ -4510,8 +4518,8 @@ function renderProblemsTab(level, openList, histList) {
     const pTip = isEn ? getServicesI18nText(p.tip || '—', true) : (p.tip || '—');
     const searchTxt = ((pMsg || '') + ' ' + (p.key || '')).toLowerCase();
     const rowStyle = !isOpen ? ' style="opacity:.65"' : (isIgnored ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '');
-    const startStr = fmtProbDate(p.started_at);
-    const resStr = p.resolved_at ? `<span style="color:var(--dim)"> → ${fmtProbDate(p.resolved_at)}</span>` : '';
+    const startStr = `<div style="font-size:11.5px;color:var(--text);font-weight:600"><span style="color:var(--dim);font-size:10px;text-transform:uppercase;margin-right:4px">${isEn ? 'START' : 'MULAI'}</span>${fmtProbDate(p.started_at)}</div>`;
+    const resStr = p.resolved_at ? `<div style="font-size:11.5px;color:var(--dim);margin-top:3px"><span style="font-size:10px;text-transform:uppercase;margin-right:4px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>${fmtProbDate(p.resolved_at)}</div>` : '';
     const checkMark = isOpen ? '' : '<span style="color:var(--green)">✓</span> ';
     const msgStyle = isOpen ? '' : ' style="text-decoration:line-through"';
     const ignoredBadge = isIgnored
@@ -4599,7 +4607,7 @@ function renderProblemsTab(level, openList, histList) {
       data-prob-host="${escapeHtml(SERVER_NAME)}"
       data-prob-sid="${SID}"
       data-prob-context="${escapeHtml(ctxAttr)}">
-      <td style="white-space:nowrap;width:130px" class="mono col-time">${startStr}${resStr}</td>
+      <td style="white-space:nowrap" class="mono col-time-detailed">${startStr}${resStr}</td>
       <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-${sevBadge}">${sevLabel}</span></td>
       <td>${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${ackBadge} ${kambuhBadge}</td>
       <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
@@ -4919,7 +4927,7 @@ function renderActionHistory(actions) {
   tbody.innerHTML = displayList.map(a => {
     const f = formatActionRowI18n(a, isEn);
     return `<tr id="act-row-${escHtml(a.id || '')}">
-      <td class="mono" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
+      <td class="mono col-time-detailed" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
       <td><span class="mono">${escHtml(a.user || '-')}</span></td>
       <td><span class="badge badge-muted">${escHtml(f.act)}</span></td>
       <td style="font-size:13px"><strong>${escHtml(f.tgt)}</strong></td>
@@ -4947,7 +4955,7 @@ function renderActionHistory(actions) {
       accTbody.innerHTML = accActions.slice(0, 25).map(a => {
         const f = formatActionRowI18n(a, isEn);
         return `<tr>
-          <td class="mono" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
+          <td class="mono col-time-detailed" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
           <td><span class="mono">${escHtml(a.user || '-')}</span></td>
           <td><span class="badge badge-muted">${escHtml(f.act)}</span></td>
           <td style="font-size:13px"><strong>${escHtml(f.tgt)}</strong></td>

@@ -204,7 +204,7 @@
     <table style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border)">
-          <th class="col-time" style="width:145px;min-width:140px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Waktu insiden mulai dan berhasil teratasi">Waktu Gangguan</th>
+          <th class="col-time-detailed" style="width:200px;min-width:190px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
           <th class="col-server" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Nama host dan grup server">Server</th>
           <th class="col-sev" style="width:100px;min-width:95px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:center;white-space:nowrap" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
           <th style="width:105px;min-width:95px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
@@ -228,13 +228,13 @@
           data-prob-open="0"
           data-prob-host="{{ p.hostname }}"
           data-prob-sid="{{ p.server_id }}">
-        <!-- 1. Waktu Gangguan -->
-        <td style="padding:8px 10px;white-space:nowrap">
-          <div class="mono" style="font-size:12px;color:var(--text);font-weight:600">
-            {{ p.started_at.strftime('%d %b %H:%M') }} <span style="color:var(--dim)">→</span> {{ p.resolved_at.strftime('%H:%M') }}
+        <!-- 1. Waktu -->
+        <td style="padding:8px 10px;white-space:nowrap" class="col-time-detailed">
+          <div class="mono" style="font-size:11.5px;color:var(--text);font-weight:600">
+            <span style="color:var(--dim);font-size:10px;text-transform:uppercase;margin-right:4px">Mulai</span>{{ _fmt_dt(p.started_at) if p.started_at else '—' }}
           </div>
-          <div style="font-size:11px;color:var(--dim);margin-top:2px">
-            {{ p.resolved_at.strftime('%d %b') }} ({{ _rel_dt(p.resolved_at) }})
+          <div class="mono" style="font-size:11.5px;color:var(--dim);margin-top:3px">
+            <span style="font-size:10px;text-transform:uppercase;margin-right:4px">Selesai</span>{{ _fmt_dt(p.resolved_at) if p.resolved_at else '—' }}
           </div>
         </td>
         <!-- 2. Server & Grup -->
@@ -750,9 +750,12 @@ window.poll = async function() {
             data-prob-open="0"
             data-prob-host="${_esc(p.hostname)}"
             data-prob-sid="${p.server_id}">
-          <td style="padding:8px 10px;white-space:nowrap;width:160px" class="col-time">
-            <div class="mono" style="font-size:12px;color:var(--text);font-weight:600">
-              ${_esc(p.started_at_str || '')} <span style="color:var(--dim)">→</span> ${_esc(p.resolved_at_str || '')}
+          <td style="padding:8px 10px;white-space:nowrap;width:200px" class="col-time-detailed">
+            <div class="mono" style="font-size:11.5px;color:var(--text);font-weight:600">
+              <span style="color:var(--dim);font-size:10px;text-transform:uppercase;margin-right:4px">${isEn ? 'START' : 'MULAI'}</span>${_esc(p.started_at || p.started_at_str || '—')}
+            </div>
+            <div class="mono" style="font-size:11.5px;color:var(--dim);margin-top:3px">
+              <span style="font-size:10px;text-transform:uppercase;margin-right:4px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>${_esc(p.resolved_at || p.resolved_at_str || '—')}
             </div>
           </td>
           <td style="padding:8px 10px;white-space:nowrap;width:160px" class="col-server">

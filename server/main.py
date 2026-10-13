@@ -589,6 +589,21 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Pantau Server", docs_url=None, redoc_url=None, lifespan=lifespan)
 templates = Jinja2Templates(directory=settings.templates_dir)
 
+MONTHS_ID = ("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
+
+
+def _fmt_dt(dt: datetime | None, with_sec: bool = True) -> str:
+    """Format tanggal dan waktu rinci dalam bahasa Indonesia: DD Mon YYYY HH:MM:SS (tanpa nama hari)."""
+    if not dt or not isinstance(dt, datetime):
+        return "—"
+    mon = MONTHS_ID[dt.month - 1]
+    if with_sec:
+        return f"{dt.day:02d} {mon} {dt.year} {dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}"
+    return f"{dt.day:02d} {mon} {dt.year} {dt.hour:02d}:{dt.minute:02d}"
+
+
+templates.env.globals["_fmt_dt"] = _fmt_dt
+
 static_dir = Path(__file__).resolve().parent / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
@@ -1797,7 +1812,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
     actions_raw = _get_server_actions(db, sid, limit=50)
     actions_list = [{
         "id": a["id"],
-        "time": a["time"].strftime("%H:%M:%S") if a["time"] else "",
+        "time": _fmt_dt(a["time"], with_sec=True) if a["time"] else "",
         "user": a["user"],
         "action": a["action"],
         "action_label": a["action_label"],
@@ -5452,7 +5467,9 @@ def _serialize_problem_list(prob_list):
     for p in prob_list:
         d = dict(p)
         if isinstance(d.get("started_at"), datetime):
-            d["started_at_str"] = d["started_at"].strftime("%d %b %H:%M")
+            d["started_at_str"] = _fmt_dt(d["started_at"], with_sec=True)
+        if isinstance(d.get("resolved_at"), datetime):
+            d["resolved_at_str"] = _fmt_dt(d["resolved_at"], with_sec=True)
         for k in ("started_at", "resolved_at", "acknowledged_at", "last_active_at", "ignored_until"):
             v = d.get(k)
             if isinstance(v, datetime):
@@ -6239,18 +6256,18 @@ def api_problems(
         p = dict(prob)
         if isinstance(p.get("started_at"), datetime):
             p["started_at_iso"] = p["started_at"].replace(tzinfo=None).isoformat() + "Z"
-            p["started_at_str"] = p["started_at"].strftime("%d %b %H:%M")
-            p["started_at"] = p["started_at"].strftime("%d %b %Y %H:%M:%S")
+            p["started_at_str"] = _fmt_dt(p["started_at"], with_sec=True)
+            p["started_at"] = _fmt_dt(p["started_at"], with_sec=True)
         if isinstance(p.get("resolved_at"), datetime):
             p["resolved_at_iso"] = p["resolved_at"].replace(tzinfo=None).isoformat() + "Z"
-            p["resolved_at_str"] = p["resolved_at"].strftime("%d %b %H:%M")
-            p["resolved_at"] = p["resolved_at"].strftime("%d %b %Y %H:%M:%S")
+            p["resolved_at_str"] = _fmt_dt(p["resolved_at"], with_sec=True)
+            p["resolved_at"] = _fmt_dt(p["resolved_at"], with_sec=True)
         if isinstance(p.get("acknowledged_at"), datetime):
-            p["acknowledged_at_str"] = p["acknowledged_at"].strftime("%d %b %H:%M")
-            p["acknowledged_at"] = p["acknowledged_at"].strftime("%d %b %Y %H:%M:%S")
+            p["acknowledged_at_str"] = _fmt_dt(p["acknowledged_at"], with_sec=True)
+            p["acknowledged_at"] = _fmt_dt(p["acknowledged_at"], with_sec=True)
         if isinstance(p.get("ignored_until"), datetime):
-            p["ignored_until_str"] = p["ignored_until"].strftime("%d %b %H:%M")
-            p["ignored_until"] = p["ignored_until"].strftime("%d %b %Y %H:%M:%S")
+            p["ignored_until_str"] = _fmt_dt(p["ignored_until"], with_sec=True)
+            p["ignored_until"] = _fmt_dt(p["ignored_until"], with_sec=True)
         return p
 
     open_serialized = [_serialize(p) for p in open_problems]
