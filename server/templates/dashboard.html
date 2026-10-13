@@ -284,7 +284,7 @@
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.01)">
           <th class="col-time" style="padding:8px 10px;font-size:12px;width:130px;min-width:125px;color:var(--dim);text-align:left">Waktu &amp; Durasi</th>
-          <th class="col-server" style="padding:8px 10px;font-size:12px;min-width:130px;width:auto;white-space:nowrap;color:var(--dim);text-align:left">Server</th>
+          <th class="col-server" style="padding:8px 10px;font-size:12px;width:150px;min-width:135px;max-width:180px;white-space:nowrap;color:var(--dim);text-align:left">Server</th>
           <th class="col-sev" style="padding:8px 10px;font-size:12px;width:100px;min-width:95px;color:var(--dim);text-align:center">Keparahan</th>
           <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left">Deskripsi Masalah</th>
         </tr>
@@ -382,7 +382,7 @@
       <thead>
         <!-- Baris Header 1: Kolom Utama & Pengelompokan -->
         <tr>
-          <th rowspan="2" class="sortable" data-col="0" style="vertical-align:middle;cursor:pointer;min-width:130px;width:auto;white-space:nowrap" title="Nama host server">Hostname <span class="sort-arrow">↕</span></th>
+          <th rowspan="2" class="sortable" data-col="0" style="vertical-align:middle;cursor:pointer;width:150px;min-width:140px;max-width:180px;white-space:nowrap" title="Nama host server">Hostname <span class="sort-arrow">↕</span></th>
           <th rowspan="2" class="sortable" data-col="1" style="vertical-align:middle;cursor:pointer;width:85px;min-width:80px;text-align:center" title="Grup server">Grup <span class="sort-arrow">↕</span></th>
           <th rowspan="2" class="sortable" data-col="2" style="vertical-align:middle;cursor:pointer;width:85px;min-width:80px;text-align:center" title="Status koneksi server saat ini">Status <span class="sort-arrow">↕</span></th>
           <th rowspan="2" class="sortable" data-col="3" style="vertical-align:middle;cursor:pointer;width:100px;min-width:90px;text-align:center" title="Waktu aktif sejak reboot terakhir">Uptime <span class="sort-arrow">↕</span></th>
@@ -471,14 +471,14 @@
           </td>
 
           <!-- 4. Processor: CPU Core -->
-          <td class="mono" id="tbl-cpu-core-{{ srv.id }}" data-sort-val="{{ srv._cpu_cores_str if srv.last_seen else '-' }}" style="font-size:12.5px">
+          <td class="mono" id="tbl-cpu-core-{{ srv.id }}" data-sort-val="{{ srv._cpu_cores_str if srv.last_seen else '-' }}" style="font-size:12.5px;text-align:center">
             {{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }}
           </td>
 
           <!-- 5. Processor: Beban CPU (%) [Threshold Bar] -->
-          <td data-sort-val="{{ cpu_v }}">
+          <td data-sort-val="{{ cpu_v }}" style="text-align:center">
             {% if srv._cpu is not none %}
-            <div style="display:inline-flex;align-items:center;gap:5px">
+            <div style="display:inline-flex;align-items:center;justify-content:center;gap:5px">
               <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="min-width:40px;text-align:right;font-size:12.5px;color:{{ cpu_color }}">
                 {{ srv._cpu ~ '%' }}
               </strong>
@@ -492,14 +492,14 @@
           </td>
 
           <!-- 6. Memori: Total -->
-          <td class="mono" id="tbl-mem-tot-{{ srv.id }}" data-sort-val="{{ srv._mem_total_str }}" style="font-size:12.5px">
+          <td class="mono" id="tbl-mem-tot-{{ srv.id }}" data-sort-val="{{ srv._mem_total_str }}" style="font-size:12.5px;text-align:center">
             {{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }}
           </td>
 
           <!-- 7. Memori: Beban (%) [Threshold Bar] -->
-          <td data-sort-val="{{ mem_v }}">
+          <td data-sort-val="{{ mem_v }}" style="text-align:center">
             {% if srv._mem_pct is not none %}
-            <div style="display:inline-flex;align-items:center;gap:5px">
+            <div style="display:inline-flex;align-items:center;justify-content:center;gap:5px">
               <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="min-width:40px;text-align:right;font-size:12.5px;color:{{ mem_color }}">
                 {{ srv._mem_pct ~ '%' }}
               </strong>
@@ -513,19 +513,19 @@
           </td>
 
           <!-- 8. Memori: Tersedia -->
-          <td class="mono" id="tbl-mem-avail-{{ srv.id }}" data-sort-val="{{ srv._mem_avail_str or '' }}" style="font-size:12.5px">
+          <td class="mono" id="tbl-mem-avail-{{ srv.id }}" data-sort-val="{{ srv._mem_avail_str or '' }}" style="font-size:12.5px;text-align:center">
             {{ srv._mem_avail_str if srv._mem_avail_str and srv._mem_avail_str != '—' else '-' }}
           </td>
 
           <!-- 9. Penyimpanan: Total -->
-          <td class="mono" id="tbl-disk-tot-{{ srv.id }}" data-sort-val="{{ srv._disk_total_str }}" style="font-size:12.5px">
+          <td class="mono" id="tbl-disk-tot-{{ srv.id }}" data-sort-val="{{ srv._disk_total_str }}" style="font-size:12.5px;text-align:center">
             {{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}
           </td>
 
           <!-- 10. Penyimpanan: Beban (%) [Threshold Bar] -->
-          <td data-sort-val="{{ disk_v }}">
+          <td data-sort-val="{{ disk_v }}" style="text-align:center">
             {% if srv._disk_pct is not none %}
-            <div style="display:inline-flex;align-items:center;gap:5px">
+            <div style="display:inline-flex;align-items:center;justify-content:center;gap:5px">
               <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="min-width:40px;text-align:right;font-size:12.5px;color:{{ disk_color }}">
                 {{ srv._disk_pct ~ '%' }}
               </strong>
@@ -539,7 +539,7 @@
           </td>
 
           <!-- 11. Penyimpanan: Tersedia -->
-          <td class="mono" id="tbl-disk-avail-{{ srv.id }}" data-sort-val="{{ srv._disk_avail_str or '' }}" style="font-size:12.5px">
+          <td class="mono" id="tbl-disk-avail-{{ srv.id }}" data-sort-val="{{ srv._disk_avail_str or '' }}" style="font-size:12.5px;text-align:center">
             {{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }}
           </td>
 
