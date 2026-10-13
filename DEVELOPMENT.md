@@ -305,6 +305,44 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.2.21
+
+- **Release Label:** None
+- **Tipe Rilis:** Rilis Patch (*Patch Release*) — Pengerasan Keamanan Web Terminal Root via *Sudo-Style Step-Up Authentication* & *Ephemeral Lease Session*, Nonaktifkan Akses Terminal secara Bawaan (*Disabled by Default*), dan Pembersihan Ikon UI Minimalis Bebas Emoji Berlebihan
+
+### Struktur Rilis SemVer (Major.Minor.Patch)
+
+```
+v4.2.21
+ │
+ ├── 4  (Mayor) : Restrukturisasi Keamanan & Arsitektur RBAC 3-Tier, 2FA TOTP RFC 6238, dan Isolasi Akun
+ ├── 2  (Minor) : Sistem Insiden Kritis Global, Emergency Alert Modal, Telemetri Spek Hardware Mendalam, Dukungan Proxy/Cloudflare & Instalasi Interaktif
+ └── 21 (Patch) : Sudo-Style Step-Up Challenge & Ephemeral Lease Terminal Root, Safe-by-Default allow_web_terminal, dan Standarisasi Ikon SVG Minimalis
+```
+
+---
+
+### Perbaikan Masalah & Peningkatan UX — Versi 4.2.21 (Patch Release)
+
+1. **Pengerasan Keamanan Web Terminal Root (*Sudo-Style Step-Up Challenge*):**
+   - Akses web terminal interaktif root pada detail server kini terkunci secara bawaan dan mewajibkan otentikasi ulang (*step-up authentication challenge*) menggunakan kata sandi akun pengguna dan kode 2FA TOTP (bila akun mengaktifkan 2FA).
+   - Menghasilkan sewa akses sementara (*ephemeral lease*) dengan durasi terukur (15, 30, atau 60 menit) serta kolom catatan tujuan/alasan akses yang diaudit secara transparan ke tabel audit log.
+   - Endpoint WebSocket `/ws/servers/{sid}/terminal` dan API runner memvalidasi status lease aktif secara ketat dan otomatis memutuskan sesi shell seketika saat masa berlaku habis atau dikunci manual oleh operator.
+
+2. **Safe-by-Default (*Default 0* untuk Web Terminal Server):**
+   - Nilai bawaan izin Web Terminal (`allow_web_terminal`) pada formulir tambah server baru dan migrasi skema database diubah menjadi `0` (Nonaktif).
+   - Mencegah server klien membuka akses terminal root tanpa persetujuan eksplisit dari Master Admin/Operator.
+
+3. **Pembersihan Ikon Antarmuka (*Zero Lebay Emojis*):**
+   - Menghapus penggunaan emoji yang berlebihan (*lebay*) pada dropdown platform override, opsi kebijakan server, header Task Manager, modal sinyal proses, modal mode pemeliharaan, banner pembaruan agen, dan Guardrail Dialogue.
+   - Menggantikannya dengan ikon vektor SVG yang bersih, tajam, profesional, dan serasi dengan palet desain gelap antarmuka Pantau Server.
+
+4. **Kontrol Sesi Realtime & Countdown Badge:**
+   - Ditambahkan indikator sisa durasi masa sewa (*countdown badge*) pada titlebar terminal bawaan Linux.
+   - Tombol "Kunci" instan pada titlebar memungkinkan operator mencabut izin sesi dan memutus koneksi terminal secara langsung sewaktu-waktu.
+
+---
+
 ## Versi 4.2.20
 
 - **Release Label:** None

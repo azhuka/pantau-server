@@ -7,8 +7,9 @@
 </div>
 
 {% if error %}
-<div style="background:var(--red-bg);border:1px solid var(--red);color:var(--red);padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px">
-  ⚠️ {{ error }}
+<div style="background:var(--red-bg);border:1px solid var(--red);color:var(--red);padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;display:flex;align-items:center;gap:8px">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+  <span>{{ error }}</span>
 </div>
 {% endif %}
 
@@ -46,7 +47,7 @@
           </button>
           {% endfor %}
           <button type="button" class="btn btn-ghost btn-xs" style="font-size:11px;padding:2px 8px;border-radius:12px;color:var(--dim);cursor:pointer" onclick="selectGroup('')" title="Kosongkan grup">
-            ✕ Kosongkan
+            Kosongkan
           </button>
         </div>
         {% endif %}
@@ -92,10 +93,10 @@
           Tipe Platform Lingkungan
         </label>
         <select id="f-platform-override" name="platform_override" style="width:100%" onchange="handlePlatformChange()">
-          <option value="auto" {% if not server or not server.platform_override or server.platform_override == 'auto' %}selected{% endif %}>🤖 Auto Deteksi (Laporan Agen)</option>
-          <option value="baremetal" {% if server and server.platform_override == 'baremetal' %}selected{% endif %}>🖥️ Fisik / Baremetal</option>
-          <option value="vm" {% if server and server.platform_override == 'vm' %}selected{% endif %}>☁️ Mesin Virtual (VM - KVM / QEMU / dll)</option>
-          <option value="lxc" {% if server and server.platform_override == 'lxc' %}selected{% endif %}>📦 Kontainer (LXC / Proxmox CT)</option>
+          <option value="auto" {% if not server or not server.platform_override or server.platform_override == 'auto' %}selected{% endif %}>Auto Deteksi (Laporan Agen)</option>
+          <option value="baremetal" {% if server and server.platform_override == 'baremetal' %}selected{% endif %}>Fisik / Baremetal</option>
+          <option value="vm" {% if server and server.platform_override == 'vm' %}selected{% endif %}>Mesin Virtual (VM - KVM / QEMU / dll)</option>
+          <option value="lxc" {% if server and server.platform_override == 'lxc' %}selected{% endif %}>Kontainer (LXC / Proxmox CT)</option>
         </select>
         <span style="font-size:11px;color:var(--dim);margin-top:4px;display:block">
           Pilih jenis platform server. Jika disetel ke Auto Deteksi, sistem mengidentifikasi otomatis via agen.
@@ -108,7 +109,7 @@
           <input type="checkbox" id="f-proxmox-ha" name="is_proxmox_ha" value="1" {% if server and server.is_proxmox_ha %}checked{% endif %} style="margin-top:2px;accent-color:#eab308;cursor:pointer;width:15px;height:15px">
           <label for="f-proxmox-ha" style="cursor:pointer;margin:0;flex:1">
             <strong style="color:var(--text);font-size:12.5px;display:flex;align-items:center;gap:5px">
-              🛡️ Terproteksi Proxmox HA (High Availability)
+              Terproteksi Proxmox HA (High Availability)
             </strong>
             <span style="font-size:11.5px;color:var(--dim);display:block;margin-top:2px;line-height:1.4">
               Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE. Tombol Power OFF pada Pantau Server dinonaktifkan untuk mencegah loop pemulihan.
@@ -121,7 +122,7 @@
           <input type="checkbox" id="f-isolated-net" name="is_isolated_net" value="1" {% if server and server.is_isolated_net %}checked{% endif %} style="margin-top:2px;cursor:pointer;width:15px;height:15px">
           <label for="f-isolated-net" style="cursor:pointer;margin:0;flex:1">
             <strong style="color:var(--text);font-size:12.5px;display:flex;align-items:center;gap:5px">
-              🌐 Server Terisolasi (Jaringan Lokal / Air-Gapped)
+              Server Terisolasi (Jaringan Lokal / Air-Gapped)
             </strong>
             <span style="font-size:11.5px;color:var(--dim);display:block;margin-top:2px;line-height:1.4">
               Server berada dalam jaringan tertutup tanpa akses internet luar. Notifikasi pembaruan repositori paket OS eksternal (APT) disembunyikan.
@@ -131,13 +132,13 @@
 
         <!-- Web Terminal Access toggle -->
         <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,0.02);border:1px solid var(--border)">
-          <input type="checkbox" id="f-allow-terminal" name="allow_web_terminal" value="1" {% if not server or server.allow_web_terminal %}checked{% endif %} style="margin-top:2px;cursor:pointer;width:15px;height:15px">
+          <input type="checkbox" id="f-allow-terminal" name="allow_web_terminal" value="1" {% if server and server.allow_web_terminal %}checked{% endif %} style="margin-top:2px;cursor:pointer;width:15px;height:15px">
           <label for="f-allow-terminal" style="cursor:pointer;margin:0;flex:1">
             <strong style="color:var(--text);font-size:12.5px;display:flex;align-items:center;gap:5px">
-              💻 Izinkan Akses Web Terminal Root (Shell Interaktif)
+              Izinkan Akses Web Terminal Root (Shell Interaktif)
             </strong>
             <span style="font-size:11.5px;color:var(--dim);display:block;margin-top:2px;line-height:1.4">
-              Bila dinonaktifkan, akses shell web interaktif ke server ini diblokir untuk mematuhi kebijakan kepatuhan keamanan.
+              Bila dinonaktifkan (default aman), akses shell web interaktif ke server ini diblokir untuk mematuhi kebijakan kepatuhan keamanan.
             </span>
           </label>
         </div>
@@ -147,14 +148,14 @@
     <div style="margin-top:20px;margin-bottom:20px;border:1px solid var(--border);border-radius:var(--radius-sm);background:rgba(255,255,255,0.015);overflow:hidden">
       <div style="padding:12px 16px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleThSection()">
         <div>
-          <strong style="font-size:13px;display:flex;align-items:center;gap:6px">⚙️ Ambang Batas Masalah (Custom Thresholds)</strong>
+          <strong style="font-size:13px;display:flex;align-items:center;gap:6px">Ambang Batas Masalah (Custom Thresholds)</strong>
           <div style="font-size:11px;color:var(--dim);margin-top:2px">Batas peringatan khusus server ini. Kosongkan untuk mewarisi batas global.</div>
         </div>
         <span id="th-toggle-icon" style="font-size:12px;color:var(--dim)">{% if custom_thresholds %}▲{% else %}▼{% endif %}</span>
       </div>
       <div id="th-section-body" style="padding:16px;display:{% if custom_thresholds %}block{% else %}none{% endif %};">
         <div style="font-size:12px;color:var(--dim);margin-bottom:14px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);padding:8px 12px;border-radius:6px">
-          💡 Angka di placeholder (abu-abu) adalah nilai global aktif. Isi jika ingin menentukan batas khusus server ini.
+          Angka di placeholder (abu-abu) adalah nilai global aktif. Isi jika ingin menentukan batas khusus server ini.
         </div>
         <div class="form-row">
           <div class="form-group">

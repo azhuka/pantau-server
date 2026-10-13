@@ -91,6 +91,44 @@ _prune_lock = threading.Lock()
 _agent_ip_tracker: dict[int, dict[str, float]] = {}  # server_id -> {ip_str: timestamp_epoch}
 _agent_tracker_lock = threading.Lock()
 
+# Sesi unlock terminal berbasis step-up password / TOTP (ephemeral lease per operator per server)
+_terminal_unlocks: dict[tuple[int, int], datetime] = {}
+_terminal_unlocks_lock = threading.Lock()
+
+
+def is_terminal_unlocked(user_id: int, server_id: int) -> bool:
+    with _terminal_unlocks_lock:
+        exp = _terminal_unlocks.get((user_id, server_id))
+        if not exp:
+            return False
+        if datetime.utcnow() > exp:
+            _terminal_unlocks.pop((user_id, server_id), None)
+            return False
+        return True
+
+
+def get_terminal_lease_remaining(user_id: int, server_id: int) -> int:
+    with _terminal_unlocks_lock:
+        exp = _terminal_unlocks.get((user_id, server_id))
+        if not exp:
+            return 0
+        rem = int((exp - datetime.utcnow()).total_seconds())
+        if rem <= 0:
+            _terminal_unlocks.pop((user_id, server_id), None)
+            return 0
+        return rem
+
+
+def set_terminal_unlock(user_id: int, server_id: int, duration_minutes: int):
+    with _terminal_unlocks_lock:
+        _terminal_unlocks[(user_id, server_id)] = datetime.utcnow() + timedelta(minutes=duration_minutes)
+
+
+def revoke_terminal_unlock(user_id: int, server_id: int):
+    with _terminal_unlocks_lock:
+        _terminal_unlocks.pop((user_id, server_id), None)
+
+
 
 def _prune_expired_sessions(db: Session) -> None:
     """Hapus sesi kedaluwarsa (dipanggil ringan saat login/startup/maintanen)."""
@@ -524,7 +562,7 @@ def migrate_server_groups_and_thresholds():
         "is_proxmox_ha": "TINYINT NOT NULL DEFAULT 0",
         "platform_override": "VARCHAR(20) NULL DEFAULT NULL",
         "is_isolated_net": "TINYINT NOT NULL DEFAULT 0",
-        "allow_web_terminal": "TINYINT NOT NULL DEFAULT 1",
+        "allow_web_terminal": "TINYINT NOT NULL DEFAULT 0",
     }
     missing = {k: v for k, v in wanted.items() if k not in existing}
     db = SessionLocal()
@@ -1654,7 +1692,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             "is_proxmox_ha": bool(srv.is_proxmox_ha),
             "platform_override": getattr(srv, "platform_override", None),
             "is_isolated_net": bool(getattr(srv, "is_isolated_net", 0)),
-            "allow_web_terminal": bool(getattr(srv, "allow_web_terminal", 1)),
+            "allow_web_terminal": bool(getattr(srv, "allow_web_terminal", 0)),
             "platform": _classify_platform(hw.get("platform", {}), getattr(srv, "platform_override", None)),
             "online": overall != "offline",
             "last_seen": srv.last_seen.isoformat() if srv.last_seen else None,
@@ -2052,7 +2090,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "is_proxmox_ha": bool(server.is_proxmox_ha),
         "platform_override": getattr(server, "platform_override", None),
         "is_isolated_net": bool(getattr(server, "is_isolated_net", 0)),
-        "allow_web_terminal": bool(getattr(server, "allow_web_terminal", 1)),
+        "allow_web_terminal": bool(getattr(server, "allow_web_terminal", 0)),
         "maintenance_until": server.maintenance_until.isoformat() if server.maintenance_until else None,
         "maintenance_reason": server.maintenance_reason,
         # Sesi Terminal Bawaan yang masih hidup (resume setelah reload).
@@ -2983,7 +3021,7 @@ def server_add_submit(
     platform_override: str = Form(default="auto"),
     is_proxmox_ha: int = Form(0),
     is_isolated_net: int = Form(0),
-    allow_web_terminal: int = Form(1),
+    allow_web_terminal: int = Form(0),
     th_cpu_warn: str = Form(default=""),
     th_cpu_danger: str = Form(default=""),
     th_ram_warn: str = Form(default=""),
@@ -3088,7 +3126,7 @@ def server_edit_submit(
     platform_override: str = Form(default="auto"),
     is_proxmox_ha: int = Form(0),
     is_isolated_net: int = Form(0),
-    allow_web_terminal: int = Form(1),
+    allow_web_terminal: int = Form(0),
     th_cpu_warn: str = Form(default=""),
     th_cpu_danger: str = Form(default=""),
     th_ram_warn: str = Form(default=""),
@@ -7606,10 +7644,15 @@ def api_logs_request(
             status_code=403,
             detail="Akses ditolak: Anda tidak memiliki wewenang Terminal Shell Web",
         )
-    if is_shell and getattr(server, "allow_web_terminal", 1) == 0:
+    if is_shell and getattr(server, "allow_web_terminal", 0) == 0:
         raise HTTPException(
             status_code=403,
             detail="Akses Terminal Web dinonaktifkan untuk server ini sesuai kebijakan keamanan",
+        )
+    if is_shell and not is_terminal_unlocked(user.id, sid):
+        raise HTTPException(
+            status_code=403,
+            detail="Terminal terkunci: Memerlukan otentikasi kata sandi untuk membuka sesi",
         )
     if is_apt:
         busy = (
@@ -7896,7 +7939,129 @@ class TerminalBridgeDispatcher:
                 if self._server_to_session.get(bridge.server_id) == sess_id:
                     self._server_to_session.pop(bridge.server_id, None)
 
+    async def close_session_by_server(self, server_id: int):
+        lock = self._get_lock()
+        async with lock:
+            sess_id = self._server_to_session.pop(server_id, None)
+            if sess_id:
+                bridge = self._sessions.pop(sess_id, None)
+                if bridge:
+                    bridge.closed = True
+                    if bridge.browser_ws:
+                        try:
+                            await bridge.browser_ws.send_text(json.dumps({
+                                "type": "stdout",
+                                "data": "\r\n\x1b[33;1m[TERMINAL DIKUNCI] Operator telah mengunci sesi terminal ini.\x1b[0m\r\n"
+                            }))
+                            await bridge.browser_ws.close(code=4403, reason="Terminal locked by operator")
+                        except Exception:
+                            pass
+
 term_dispatcher = TerminalBridgeDispatcher()
+
+
+@app.get("/api/servers/{sid}/terminal/status")
+def api_terminal_status(
+    sid: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Cek status izin dan sisa durasi sewa (lease) otentikasi terminal untuk server ini."""
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    allow_term = bool(getattr(server, "allow_web_terminal", 0))
+    user_can = user.has_perm("can_terminal")
+    remaining = get_terminal_lease_remaining(user.id, sid)
+    unlocked = remaining > 0
+
+    return {
+        "server_id": sid,
+        "allow_web_terminal": allow_term,
+        "can_terminal": user_can,
+        "is_unlocked": unlocked,
+        "remaining_seconds": remaining,
+        "user_has_totp": bool(user.totp_enabled and user.totp_secret),
+    }
+
+
+@app.post("/api/servers/{sid}/terminal/unlock")
+def api_terminal_unlock(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Buka kunci akses Web Terminal dengan tantangan kata sandi (sudo step-up auth) + TOTP."""
+    _verify_csrf_header(request)
+
+    if not user.has_perm("can_terminal"):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Anda tidak memiliki wewenang Terminal Shell Web")
+
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    if getattr(server, "allow_web_terminal", 0) == 0:
+        raise HTTPException(status_code=403, detail="Akses Web Terminal dinonaktifkan untuk server ini pada konfigurasi sistem")
+
+    password = _clean_str(body.get("password"), "", 256)
+    totp_code = _clean_str(body.get("totp"), "", 10)
+    duration_minutes = _clamp_int(body.get("duration_minutes"), 15, 5, 120)
+    reason = _clean_str(body.get("reason"), "", 255)
+
+    if not password:
+        raise HTTPException(status_code=400, detail="Kata sandi akun pengguna diperlukan")
+
+    # Verifikasi kata sandi operator login
+    if not pwd_ctx.verify(password, user.password_hash):
+        _audit(db, user.username, "terminal_unlock_fail", f"{server.hostname} (kata sandi salah)", "gagal")
+        db.commit()
+        raise HTTPException(status_code=401, detail="Kata sandi akun salah. Akses terminal ditolak.")
+
+    # Verifikasi TOTP 2FA jika akun mengaktifkannya
+    if user.totp_enabled and user.totp_secret:
+        if not totp_code or not security_auth.verify_totp(user.totp_secret, totp_code):
+            _audit(db, user.username, "terminal_unlock_fail", f"{server.hostname} (kode 2FA salah)", "gagal")
+            db.commit()
+            raise HTTPException(status_code=401, detail="Kode 2FA / TOTP tidak valid atau telah kedaluwarsa")
+
+    # Berikan lease otentikasi
+    set_terminal_unlock(user.id, sid, duration_minutes)
+    audit_detail = f"{server.hostname} [durasi: {duration_minutes}m" + (f", alasan: {reason}]" if reason else "]")
+    _audit(db, user.username, "terminal_unlock", audit_detail, "berhasil")
+    db.commit()
+
+    return {
+        "ok": True,
+        "remaining_seconds": duration_minutes * 60,
+        "message": f"Kunci terminal berhasil dibuka ({duration_minutes} menit)"
+    }
+
+
+@app.post("/api/servers/{sid}/terminal/lock")
+async def api_terminal_lock(
+    sid: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Kunci kembali akses terminal dan putus sesi aktif jika ada."""
+    _verify_csrf_header(request)
+
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    hostname = server.hostname if server else f"sid={sid}"
+
+    revoke_terminal_unlock(user.id, sid)
+    await term_dispatcher.close_session_by_server(sid)
+
+    _audit(db, user.username, "terminal_lock", hostname, "berhasil")
+    db.commit()
+
+    return {"ok": True, "message": "Terminal berhasil dikunci"}
 
 
 @app.websocket("/ws/servers/{sid}/terminal")
@@ -7921,14 +8086,18 @@ async def ws_server_terminal(websocket: WebSocket, sid: int):
         if not server:
             await websocket.close(code=4404)
             return
-        if getattr(server, "allow_web_terminal", 1) == 0:
+        if getattr(server, "allow_web_terminal", 0) == 0:
             await websocket.close(code=4403, reason="Web terminal disabled for this server")
+            return
+        if not is_terminal_unlocked(user.id, sid):
+            await websocket.close(code=4403, reason="Terminal locked: step-up auth required")
             return
         if _server_stale(server):
             await websocket.close(code=4409)
             return
         hostname = server.hostname
         username = user.username
+        user_id = user.id
     finally:
         db.close()
 
@@ -7945,6 +8114,16 @@ async def ws_server_terminal(websocket: WebSocket, sid: int):
 
     try:
         while not bridge.closed:
+            if not is_terminal_unlocked(user_id, sid):
+                try:
+                    await websocket.send_text(json.dumps({
+                        "type": "stdout",
+                        "data": "\r\n\x1b[31;1m[SESI HABIS] Masa berlaku izin akses terminal telah kedaluwarsa. Sesi ditutup demi keamanan.\x1b[0m\r\n"
+                    }))
+                    await websocket.close(code=4403, reason="Terminal lease expired")
+                except Exception:
+                    pass
+                break
             raw = await websocket.receive_text()
             bridge.last_active = time.time()
             try:

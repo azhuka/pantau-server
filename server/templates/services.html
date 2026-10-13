@@ -621,12 +621,18 @@
   {% if is_agent_outdated and user.has_perm('can_ota') %}
   <div id="banner-agent-outdated" style="background:var(--yellow-bg);border:1px solid rgba(234,179,8,.3);border-radius:6px;padding:8px 14px;margin-top:12px;font-size:12px;color:var(--yellow);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:14px">⚠️</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--yellow);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
       <span data-i18n="agent_outdated_banner">Versi Agen Pantau di server ini (v{{ agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Perbarui agen untuk mengaktifkan fitur snapshot proses dan kestabilan sistem.</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">
-      <button class="btn btn-primary btn-sm" id="btn-update-agent" onclick="triggerAgentUpdate({{ server.id }})" style="background:#eab308;border-color:#ca8a04;color:#18181b;font-weight:600;padding:4px 12px;font-size:11px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer" title="Kirim pembaruan Over-The-Air (OTA) dengan verifikasi hash SHA-256 ke agen di server ini" data-i18n-title="push_update_tooltip" data-i18n="push_update_ota">⚡ Push Update (OTA)</button>
-      <button class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" style="border:1px solid rgba(234,179,8,.4);color:var(--yellow);padding:4px 10px;font-size:11px;white-space:nowrap" title="Salin perintah update agen ke clipboard" data-i18n-title="copy_update_tooltip" data-i18n="copy_update_cmd">📋 Salin Perintah Update</button>
+      <button class="btn btn-primary btn-sm" id="btn-update-agent" onclick="triggerAgentUpdate({{ server.id }})" style="background:#eab308;border-color:#ca8a04;color:#18181b;font-weight:600;padding:4px 12px;font-size:11px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer" title="Kirim pembaruan Over-The-Air (OTA) dengan verifikasi hash SHA-256 ke agen di server ini" data-i18n-title="push_update_tooltip" data-i18n="push_update_ota">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        Push Update (OTA)
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" style="border:1px solid rgba(234,179,8,.4);color:var(--yellow);padding:4px 10px;font-size:11px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px" title="Salin perintah update agen ke clipboard" data-i18n-title="copy_update_tooltip" data-i18n="copy_update_cmd">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        Salin Perintah Update
+      </button>
     </div>
   </div>
   {% endif %}
@@ -646,6 +652,12 @@
         <span id="term-title">Terminal Bawaan &middot; shell root</span>
       </div>
       <div class="terminal-actions">
+        <span id="term-lease-badge" class="terminal-status-badge" style="display:none;color:var(--yellow);border:1px solid rgba(234,179,8,0.3);background:rgba(234,179,8,0.08);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:11px" title="Sisa durasi otentikasi terminal">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="term-lease-timer">--:--</span>
+        </span>
+        <button type="button" class="terminal-btn-icon" id="term-lock-btn" onclick="lockTerminalSession()" style="display:none;color:var(--red)" title="Kunci terminal dan akhiri sesi sekarang">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>&nbsp;Kunci
+        </button>
         <span id="apt-status" class="terminal-status-badge"></span>
         <button type="button" class="terminal-btn-icon terminal-btn-reconnect" id="term-reconnect-btn" onclick="getTerm().connect(true)" style="display:none" title="Buka Sesi Shell Baru">&#8635;&nbsp;Sambung Ulang</button>
         <button type="button" class="terminal-btn-icon" onclick="getTerm().clearScreen()" title="Bersihkan Layar Konsol">&#10005;&nbsp;Clear</button>
@@ -1516,7 +1528,7 @@
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <div>
       <h3 style="margin:0;display:flex;align-items:center;gap:8px">
-        <span>⚡ Manajer Tugas</span>
+        <span>Manajer Tugas</span>
         <span class="badge badge-info" id="proc-total-badge" style="font-size:11px">10 proses</span>
       </h3>
       <span style="font-size:12px;color:var(--dim)">Pantau dan kelola proses server secara interaktif (CPU, Memori, Status, Pause, Lanjut, Kill)</span>
@@ -1532,7 +1544,9 @@
     <div style="position:relative;width:100%;max-width:320px">
       <input type="search" id="proc-search-input" oninput="onProcFilterChange()" placeholder="Cari nama proses / PID / user…"
              style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 12px 7px 30px;font-size:12px">
-      <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:12px">🔍</span>
+      <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--dim);display:flex;align-items:center;pointer-events:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      </span>
     </div>
 
     <!-- Dropdown Limit / Pagination Bagian Atas -->
@@ -1604,7 +1618,8 @@
 <div id="kill-proc-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(470px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
     <h3 style="margin:0 0 8px;color:var(--red);display:flex;align-items:center;gap:6px">
-      <span>⚙️ Kelola Sinyal Proses</span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red)"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      <span>Kelola Sinyal Proses</span>
     </h3>
     <p style="font-size:12px;color:var(--dim);margin:0 0 16px;line-height:1.5">
       Kirimkan sinyal kendali ke proses <strong id="kill-proc-name" style="color:var(--text)"></strong> (PID: <span id="kill-proc-pid-label" class="mono" style="color:var(--blue);font-weight:700"></span>).
@@ -2399,7 +2414,8 @@
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <h3 style="margin:0;display:flex;align-items:center;gap:8px">
-        <span>📜 Logging</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span>Logging</span>
       </h3>
       <!-- Sub-view switcher modern: Log Layanan vs Log Sistem -->
       <div class="segmented-control" id="logging-sub-ctrl" style="margin-left:4px">
@@ -2489,7 +2505,8 @@
   <div class="card" style="width:100%;max-width:480px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 16px 40px rgba(0,0,0,0.7);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:8px">
-        <span>🔧</span> Mode Pemeliharaan
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--yellow)"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        <span>Mode Pemeliharaan</span>
       </h3>
       <button type="button" class="btn btn-ghost btn-sm" onclick="closeMaintenanceModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
     </div>
@@ -2529,6 +2546,59 @@
         <button type="button" class="btn btn-primary btn-sm" onclick="toggleMaintenanceAction('enable')">{% if server.is_maintenance %}Perbarui Durasi{% else %}Aktifkan Pemeliharaan{% endif %}</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Modal Verifikasi Akses Web Terminal Root (Step-Up Auth) -->
+<div id="term-unlock-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+  <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>Otentikasi Akses Terminal Root</span>
+      </h3>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeTerminalUnlockModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+    </div>
+    
+    <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
+      Akses shell interaktif memberikan wewenang <strong>root penuh</strong> pada sistem klien. Masukkan kata sandi akun Anda untuk membuka sesi.
+    </p>
+
+    <div id="term-unlock-error" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 12px;margin-bottom:14px;color:var(--red);font-size:12px;line-height:1.4"></div>
+
+    <form id="term-unlock-form" onsubmit="submitTerminalUnlock(event)">
+      <div style="margin-bottom:14px">
+        <label for="term-unlock-pwd" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Kata Sandi Akun Pengguna:</label>
+        <input type="password" id="term-unlock-pwd" required autocomplete="current-password" placeholder="Masukkan kata sandi login Anda" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+
+      <div id="term-unlock-totp-grp" style="display:none;margin-bottom:14px">
+        <label for="term-unlock-totp" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Kode Otentikator 2FA (TOTP):</label>
+        <input type="text" id="term-unlock-totp" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="6-digit kode authenticator" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;letter-spacing:2px;font-family:monospace;box-sizing:border-box">
+      </div>
+
+      <div style="margin-bottom:14px">
+        <label for="term-unlock-duration" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Durasi Izin Sesi:</label>
+        <select id="term-unlock-duration" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+          <option value="15" selected>15 Menit</option>
+          <option value="30">30 Menit</option>
+          <option value="60">60 Menit (1 Jam)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:18px">
+        <label for="term-unlock-reason" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Tujuan / Alasan Akses (Opsional, untuk audit log):</label>
+        <input type="text" id="term-unlock-reason" placeholder="Contoh: Investigasi bottleneck aplikasi" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeTerminalUnlockModal()">Batal</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="term-unlock-submit-btn" style="display:inline-flex;align-items:center;gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
+          Buka Akses Terminal
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -3072,7 +3142,7 @@ function triggerAgentUpdate(sid) {
         btn.disabled = false;
         btn.style.opacity = '1';
         btn.style.cursor = 'pointer';
-        btn.innerHTML = "⚡ Push Update (OTA)";
+        btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Push Update (OTA)';
       }
     }
   })
@@ -3082,7 +3152,7 @@ function triggerAgentUpdate(sid) {
       btn.disabled = false;
       btn.style.opacity = '1';
       btn.style.cursor = 'pointer';
-      btn.innerHTML = "⚡ Push Update (OTA)";
+      btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Push Update (OTA)';
     }
   });
 }
@@ -4209,7 +4279,10 @@ class WebTerminal {
       const isEn = isEnPage();
       let reason = isEn ? 'session disconnected' : 'sesi terputus';
       if (event.code === 4401) reason = isEn ? 'auth failed (login again)' : 'autentikasi gagal (login ulang)';
-      else if (event.code === 4403) reason = isEn ? 'access denied (admin only)' : 'akses ditolak (khusus admin)';
+      else if (event.code === 4403) {
+        reason = isEn ? 'terminal locked / lease expired' : 'terminal terkunci / masa izin habis';
+        if (typeof stopTermLeaseCountdown === 'function') stopTermLeaseCountdown();
+      }
       else if (event.code === 4404) reason = isEn ? 'server not found' : 'server tidak ditemukan';
       this.status(reason, 'var(--dim)', 'closed');
       if (this.term) {
@@ -4240,8 +4313,187 @@ function getTerm() {
   }
   return termInstance;
 }
-function toggleTerminalView() {
-  getTerm().toggle();
+// ---------- Terminal Step-Up Authentication & Ephemeral Lease ----------
+let termLeaseTimerId = null;
+let termLeaseSecondsLeft = 0;
+
+function formatLeaseTime(secs) {
+  if (secs < 0) secs = 0;
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function startTermLeaseCountdown(seconds) {
+  stopTermLeaseCountdown();
+  termLeaseSecondsLeft = seconds;
+  const badge = document.getElementById('term-lease-badge');
+  const timer = document.getElementById('term-lease-timer');
+  const lockBtn = document.getElementById('term-lock-btn');
+  if (badge) badge.style.display = 'inline-flex';
+  if (lockBtn) lockBtn.style.display = 'inline-flex';
+  if (timer) timer.textContent = formatLeaseTime(termLeaseSecondsLeft);
+
+  termLeaseTimerId = setInterval(() => {
+    termLeaseSecondsLeft -= 1;
+    if (termLeaseSecondsLeft <= 0) {
+      stopTermLeaseCountdown();
+      const term = getTerm();
+      if (term) {
+        term.hide();
+        term.status('Masa aktif terminal berakhir (terkunci)', 'var(--dim)', 'closed');
+      }
+      alert('Masa berlaku otentikasi terminal telah habis. Sesi terminal ditutup otomatis.');
+      return;
+    }
+    if (timer) timer.textContent = formatLeaseTime(termLeaseSecondsLeft);
+  }, 1000);
+}
+
+function stopTermLeaseCountdown() {
+  if (termLeaseTimerId) {
+    clearInterval(termLeaseTimerId);
+    termLeaseTimerId = null;
+  }
+  const badge = document.getElementById('term-lease-badge');
+  const lockBtn = document.getElementById('term-lock-btn');
+  if (badge) badge.style.display = 'none';
+  if (lockBtn) lockBtn.style.display = 'none';
+}
+
+function openTerminalUnlockModal(userHasTotp) {
+  const modal = document.getElementById('term-unlock-modal');
+  const errBox = document.getElementById('term-unlock-error');
+  const pwdInput = document.getElementById('term-unlock-pwd');
+  const totpGrp = document.getElementById('term-unlock-totp-grp');
+  const totpInput = document.getElementById('term-unlock-totp');
+  const reasonInput = document.getElementById('term-unlock-reason');
+
+  if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
+  if (pwdInput) pwdInput.value = '';
+  if (reasonInput) reasonInput.value = '';
+  if (totpGrp) totpGrp.style.display = userHasTotp ? 'block' : 'none';
+  if (totpInput) {
+    totpInput.value = '';
+    if (userHasTotp) totpInput.setAttribute('required', 'required');
+    else totpInput.removeAttribute('required');
+  }
+
+  if (modal) {
+    modal.style.display = 'flex';
+    setTimeout(() => { if (pwdInput) pwdInput.focus(); }, 50);
+  }
+}
+
+function closeTerminalUnlockModal() {
+  const modal = document.getElementById('term-unlock-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function submitTerminalUnlock(e) {
+  if (e) e.preventDefault();
+  const btn = document.getElementById('term-unlock-submit-btn');
+  const errBox = document.getElementById('term-unlock-error');
+  const pwd = (document.getElementById('term-unlock-pwd') || {}).value || '';
+  const totp = (document.getElementById('term-unlock-totp') || {}).value || '';
+  const dur = parseInt((document.getElementById('term-unlock-duration') || {}).value || '15', 10);
+  const reason = (document.getElementById('term-unlock-reason') || {}).value || '';
+
+  if (btn) btn.disabled = true;
+  if (errBox) errBox.style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/servers/${SID}/terminal/unlock`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf(),
+      },
+      body: JSON.stringify({
+        password: pwd,
+        totp: totp,
+        duration_minutes: dur,
+        reason: reason,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || ('HTTP ' + res.status));
+    }
+    closeTerminalUnlockModal();
+    startTermLeaseCountdown(data.remaining_seconds || (dur * 60));
+    const term = getTerm();
+    term.show();
+    term.connect();
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = err.message || 'Gagal memverifikasi kata sandi';
+      errBox.style.display = 'block';
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function lockTerminalSession() {
+  if (!confirm('Kunci akses terminal dan putus sesi aktif di server ini sekarang?')) return;
+  try {
+    await fetch(`/api/servers/${SID}/terminal/lock`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'X-CSRF-Token': getCsrf(),
+      },
+    });
+  } catch (e) {
+    console.error('Lock error:', e);
+  }
+  stopTermLeaseCountdown();
+  const term = getTerm();
+  if (term) {
+    term.hide();
+    term.status('Terminal telah dikunci', 'var(--dim)', 'closed');
+  }
+}
+
+async function toggleTerminalView() {
+  const term = getTerm();
+  if (term.windowEl && term.windowEl.style.display !== 'none') {
+    term.hide();
+    return;
+  }
+
+  // Jika sedang tertutup, cek status otentikasi step-up dari backend
+  try {
+    const r = await fetch(`/api/servers/${SID}/terminal/status`, { credentials: 'same-origin' });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || 'Gagal memeriksa status terminal');
+
+    if (!data.allow_web_terminal) {
+      alert('Akses Terminal Web dinonaktifkan untuk server ini sesuai konfigurasi keamanan.');
+      return;
+    }
+    if (!data.can_terminal) {
+      alert('Akses ditolak: Anda tidak memiliki wewenang Terminal Shell Web.');
+      return;
+    }
+
+    if (data.is_unlocked && data.remaining_seconds > 0) {
+      startTermLeaseCountdown(data.remaining_seconds);
+      term.show();
+      if (term.state === 'idle' || term.state === 'closed') {
+        term.connect();
+      } else {
+        term.fit();
+        term.focus();
+      }
+    } else {
+      openTerminalUnlockModal(Boolean(data.user_has_totp));
+    }
+  } catch (e) {
+    alert('Gagal memeriksa otentikasi terminal: ' + e.message);
+  }
 }
 
 // Listener Escape untuk keluar dari Full Screen Terminal
