@@ -129,7 +129,7 @@
         </tr>
       {% endif %}
 
-    <tr data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' ' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '') ~ (' proxmox ha' if srv.is_proxmox_ha else '')) | lower }}"
+    <tr data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' ' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '') ~ (' proxmox ha' if srv.is_proxmox_ha else '') ~ ((' ' ~ srv._platform.short_label ~ ' ' ~ srv._platform.type) if srv._platform else '')) | lower }}"
         data-group="{{ srv.group_name or '' }}"
         data-group-membership="{{ srv_grp }}"
         data-id="{{ srv.id }}"
@@ -139,8 +139,20 @@
         <div style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap">
           <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
           <strong style="font-size:13.5px">{{ srv.hostname }}</strong>
+          {% if srv._platform %}
+            <span class="badge" style="font-size:10px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: {{ srv._platform.label }}">
+              {% if srv._platform.type == 'lxc' %}
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              {% elif srv._platform.type == 'vm' %}
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+              {% else %}
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              {% endif %}
+              {{ srv._platform.short_label }}
+            </span>
+          {% endif %}
           {% if srv.is_proxmox_ha %}
-            <span class="badge" style="font-size:10.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server ini dipantau oleh Proxmox HA (High Availability)">
+            <span class="badge" style="font-size:10.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE (state: stopped).">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
               HA
             </span>

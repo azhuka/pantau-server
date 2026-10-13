@@ -1047,6 +1047,42 @@ def agent_report(
         # Materialisasikan rollup per jam (idempotent, hanya jam yang sudah lewat)
         _rollup_sys_hours(db, server.id)
 
+        # Heuristik Deteksi Otomatis Proxmox HA (Auto-Revive Heuristic):
+        # Jika server baru saja diperintahkan 'poweroff_host' dalam 5 menit terakhir,
+        # namun kembali hidup dan melapor dengan uptime rendah (< 180 detik),
+        # berarti server dikelola dan dihidupkan kembali otomatis oleh cluster Proxmox HA.
+        # Otomatis tandai server.is_proxmox_ha = 1 agar aksi Power OFF diblokir di UI/API.
+        uptime_val = _clamp_int(sysd.get("uptime"), None, 0, 2 ** 63 - 1)
+        if uptime_val is not None and uptime_val < 180 and getattr(server, "is_proxmox_ha", 0) == 0:
+            recent_cutoff = datetime.utcnow() - timedelta(seconds=300)
+            recent_poweroff = (
+                db.query(Command)
+                .filter(
+                    Command.server_id == server.id,
+                    Command.action == "poweroff_host",
+                    Command.created_at >= recent_cutoff,
+                )
+                .order_by(desc(Command.created_at))
+                .first()
+            )
+            if recent_poweroff:
+                server.is_proxmox_ha = 1
+                try:
+                    _audit(
+                        db,
+                        "sistem",
+                        "proxmox_ha_detected",
+                        f"{server.hostname} ({server.ip_address})",
+                        "Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE (state: stopped).",
+                        server_id=server.id,
+                    )
+                except Exception as exc:
+                    logger.warning("[agent_report] Gagal catat audit proxmox_ha_detected: %s", exc)
+                logger.info(
+                    "[PROXMOX HA] Auto-revive terdeteksi pada server ID %s (%s) setelah poweroff (uptime: %ss). Otomatis set is_proxmox_ha=1.",
+                    server.id, server.hostname, uptime_val
+                )
+
     # Data berubah-sedikit: kernel, unit aktif, daftar akun
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == server.id).first()
     if extras is None:
@@ -1320,11 +1356,86 @@ def _extract_disk_stats(disks_raw):
         return "—", "—", None
 
 
+def _classify_platform(platform_dict: dict | None) -> dict:
+    """Klasifikasi tipe platform host: LXC Container, VM (KVM/QEMU/dll), atau Baremetal."""
+    if not isinstance(platform_dict, dict):
+        platform_dict = {}
+    virt = str(platform_dict.get("virt") or "").strip().upper()
+    vendor = str(platform_dict.get("vendor") or "").strip()
+    product = str(platform_dict.get("product") or "").strip()
+
+    # Kontainer (LXC / Docker / WSL / etc.)
+    if virt in ("LXC", "LXC-LIBVIRT", "DOCKER", "PODMAN", "CONTAINER", "WSL", "SYSTEMD-NSPAWN"):
+        label = "LXC Container" if virt in ("LXC", "LXC-LIBVIRT") else f"Container ({virt})"
+        return {
+            "type": "lxc",
+            "virt": virt,
+            "label": label,
+            "short_label": "LXC" if virt in ("LXC", "LXC-LIBVIRT") else virt,
+            "badge_color": "#22d3ee",
+            "badge_bg": "rgba(6,182,212,0.15)",
+            "badge_border": "rgba(6,182,212,0.3)",
+        }
+
+    # Mesin Virtual (KVM, QEMU, VMware, VirtualBox, etc.)
+    vm_types = ("KVM", "QEMU", "VMWARE", "XEN", "VIRTUALBOX", "ORACLE", "HYPERV", "BOCHS", "BHYVE")
+    is_vm = virt in vm_types or any(x in (vendor + product).upper() for x in ("QEMU", "KVM", "VMWARE", "VIRTUALBOX"))
+    if is_vm:
+        v_name = virt if virt in vm_types else "KVM"
+        return {
+            "type": "vm",
+            "virt": v_name,
+            "label": f"VM ({v_name})" if v_name != "VM" else "Virtual Machine",
+            "short_label": f"VM ({v_name})" if v_name != "VM" else "VM",
+            "badge_color": "#c084fc",
+            "badge_bg": "rgba(168,85,247,0.15)",
+            "badge_border": "rgba(168,85,247,0.3)",
+        }
+
+    # Baremetal / Server Fisik
+    return {
+        "type": "baremetal",
+        "virt": "Baremetal",
+        "label": "Baremetal",
+        "short_label": "Baremetal",
+        "badge_color": "#34d399",
+        "badge_bg": "rgba(16,185,129,0.15)",
+        "badge_border": "rgba(16,185,129,0.3)",
+    }
+
+
 def _get_hardware_specs_dict(server: Server, extra: ServerExtras | None, latest: SystemSnapshot | None) -> dict:
     if extra and extra.hardware_specs:
         try:
             parsed = json.loads(extra.hardware_specs)
             if isinstance(parsed, dict) and parsed.get("cpu"):
+                # Koreksi Storage untuk LXC Container:
+                # Kontainer LXC tidak memiliki block storage fisik host (mis. HPE DL380 sda 7.6T).
+                # Bila terdeteksi LXC dan disk masih melaporkan disk host, koreksi dengan kuota rootfs dari snapshot.
+                plat = parsed.get("platform", {})
+                is_lxc = str(plat.get("virt", "")).upper() == "LXC" or plat.get("platform_type") == "lxc"
+                if is_lxc:
+                    has_host_disk = any(d.get("name", "").startswith("sd") or "T" in str(d.get("size", "")) for d in parsed.get("disks", []))
+                    if has_host_disk or not parsed.get("disks"):
+                        root_total = 0
+                        if latest and latest.disks:
+                            try:
+                                d_raw = json.loads(latest.disks) if isinstance(latest.disks, str) else latest.disks
+                                for d in (d_raw if isinstance(d_raw, list) else []):
+                                    if d.get("mount") == "/":
+                                        root_total = d.get("total", 0)
+                                        break
+                            except Exception:
+                                pass
+                        if root_total > 0:
+                            gb = root_total / (1024 ** 3)
+                            sz_str = f"{round(gb / 1024, 1)}T" if gb >= 1024 else f"{round(gb, 1)}G"
+                            parsed["disks"] = [{
+                                "name": "rootfs",
+                                "size": sz_str,
+                                "type": "Virtual (LXC)",
+                                "model": "Container Allocation",
+                            }]
                 return parsed
         except Exception:
             pass
@@ -1501,6 +1612,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             "is_active": srv.is_active,
             "is_maintenance": bool(srv.is_maintenance),
             "is_proxmox_ha": bool(srv.is_proxmox_ha),
+            "platform": _classify_platform(hw.get("platform", {})),
             "online": overall != "offline",
             "last_seen": srv.last_seen.isoformat() if srv.last_seen else None,
             "overall_status": overall, "services": svc_list,
@@ -2601,6 +2713,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         hw = _get_hardware_specs_dict(srv, ex, latest_sys)
         cpu_cores = hw.get("cpu", {}).get("cores") or hw.get("cpu", {}).get("logical_cores")
         srv._cpu_cores_str = f"{cpu_cores} Core" if (srv.last_seen and cpu_cores) else "—"
+        srv._platform = _classify_platform(hw.get("platform", {}))
         d_tot, d_avail, d_pct = _extract_disk_stats(latest_sys.disks if latest_sys else None)
         srv._disk_total_str = d_tot
         srv._disk_avail_str = d_avail
@@ -2766,6 +2879,8 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
             round(latest_sys.mem_used / latest_sys.mem_total * 100, 1)
             if latest_sys and latest_sys.mem_total else None
         )
+        hw = _get_hardware_specs_dict(srv, ex, latest_sys)
+        srv._platform = _classify_platform(hw.get("platform", {}))
 
         unignored_down = [d for d in svc_data if d.get("status") in ("down", "offline") and not d.get("ignored")]
         if srv.is_maintenance:
@@ -3146,6 +3261,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
 
     latest_sn = db.query(SystemSnapshot).filter(SystemSnapshot.server_id == sid).order_by(desc(SystemSnapshot.timestamp)).first()
     hw_specs = _get_hardware_specs_dict(server, extra, latest_sn)
+    platform_info = _classify_platform(hw_specs.get("platform", {}))
 
     return tpl(request, "services.html", {
         "user": user, "server": server, "services": services, "commands": commands, "actions": actions,
@@ -3164,6 +3280,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         "ssl_certs": ssl_data,
         "system_logs": sys_logs_data,
         "hardware_specs": hw_specs,
+        "platform_info": platform_info,
     })
 
 
@@ -3731,13 +3848,12 @@ def _host_control(request: Request, sid: int, db: Session, action: str, csrf_tok
         return err_resp
     if action == "poweroff_host" and getattr(server, "is_proxmox_ha", 0):
         _audit(db, user.username, "poweroff_host",
-               f"{server.hostname} ({server.ip_address})", "Ditolak: Terdaftar di Proxmox HA", server_id=sid)
+               f"{server.hostname} ({server.ip_address})", "Ditolak: Server terproteksi Proxmox HA", server_id=sid)
         db.commit()
         if is_json:
             return JSONResponse({
                 "ok": False,
-                "detail": "Perintah Power OFF ditolak: Server ini terdaftar dalam Proxmox HA (High Availability). "
-                          "Matikan server melalui host Proxmox VE (ubah HA state ke 'stopped') untuk mencegah server menyala kembali secara otomatis."
+                "detail": "Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE (state: stopped)."
             }, status_code=400)
         at_epoch = int(datetime.now(timezone.utc).timestamp())
         return RedirectResponse(f"/servers/{sid}/services?action=poweroff_ha_blocked&at={at_epoch}", status_code=303)
@@ -7380,6 +7496,7 @@ def api_server_system(
                             if extra and extra.apt_last_update else None),
         "apt_packages": parse_list(extra.apt_packages if extra else None),
         "hardware_specs": _get_hardware_specs_dict(server, extra, latest),
+        "platform": _classify_platform(_get_hardware_specs_dict(server, extra, latest).get("platform", {})),
         "extras": ["SYSLOG", "AUTH"],
     }
 

@@ -468,7 +468,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.2.16"
+AGENT_VERSION = "4.2.17"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1398,7 +1398,8 @@ def collect_hardware_specs() -> dict:
         except Exception:
             pass
 
-    # Deteksi Hypervisor / Virtualisasi
+    # Deteksi Hypervisor / Virtualisasi / Kontainer
+    detected_virt = ""
     try:
         res = subprocess.run(
             ["systemd-detect-virt"],
@@ -1410,31 +1411,106 @@ def collect_hardware_specs() -> dict:
         if res.returncode == 0:
             out = res.stdout.strip()
             if out and out.lower() != "none":
-                specs["platform"]["virt"] = out.upper()
+                detected_virt = out.upper()
     except Exception:
         pass
 
-    # 4. Storage Block Devices (lsblk)
-    try:
-        res = subprocess.run(
-            ["lsblk", "-d", "-n", "-o", "NAME,SIZE,TYPE,ROTA,TRAN,MODEL"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True,
-            timeout=3,
-        )
-        if res.returncode == 0:
-            for line in res.stdout.splitlines():
-                parts = line.split()
-                if len(parts) >= 3 and parts[2] == "disk":
-                    name = parts[0]
-                    size = parts[1]
-                    rota = parts[3] if len(parts) > 3 else "1"
-                    dtype = "SSD" if rota == "0" else "HDD"
-                    model = " ".join(parts[5:]) if len(parts) > 5 else ""
-                    specs["disks"].append({"name": name, "size": size, "type": dtype, "model": model})
-    except Exception:
-        pass
+    # Fallback deteksi kontainer via file system jika systemd-detect-virt belum/tidak mendeteksi
+    if not detected_virt:
+        try:
+            if os.path.exists("/run/systemd/container"):
+                with open("/run/systemd/container", "r", encoding="utf-8", errors="replace") as f:
+                    c = f.read().strip()
+                    if c:
+                        detected_virt = c.upper()
+            elif os.path.exists("/proc/1/environ"):
+                with open("/proc/1/environ", "rb") as f:
+                    env_raw = f.read()
+                    if b"container=lxc" in env_raw:
+                        detected_virt = "LXC"
+                    elif b"container=docker" in env_raw or os.path.exists("/.dockerenv"):
+                        detected_virt = "DOCKER"
+                    elif b"container=podman" in env_raw:
+                        detected_virt = "PODMAN"
+        except Exception:
+            pass
+
+    if detected_virt:
+        specs["platform"]["virt"] = detected_virt
+
+    # Klasifikasi Tipe Platform & Label
+    virt_upper = specs["platform"]["virt"].upper()
+    if virt_upper in ("LXC", "LXC-LIBVIRT", "DOCKER", "PODMAN", "CONTAINER", "WSL", "SYSTEMD-NSPAWN"):
+        specs["platform"]["platform_type"] = "lxc"
+        specs["platform"]["platform_label"] = "LXC Container" if virt_upper in ("LXC", "LXC-LIBVIRT") else f"Container ({virt_upper})"
+    elif virt_upper in ("KVM", "QEMU", "VMWARE", "XEN", "VIRTUALBOX", "ORACLE", "HYPERV", "BOCHS", "BHYVE"):
+        specs["platform"]["platform_type"] = "vm"
+        specs["platform"]["platform_label"] = f"VM ({virt_upper})"
+    elif virt_upper not in ("", "BARE METAL / PHYSICAL", "NONE", "UNKNOWN"):
+        specs["platform"]["platform_type"] = "vm"
+        specs["platform"]["platform_label"] = f"VM ({virt_upper})"
+    else:
+        specs["platform"]["virt"] = "Bare Metal / Physical"
+        specs["platform"]["platform_type"] = "baremetal"
+        specs["platform"]["platform_label"] = "Baremetal"
+
+    # 4. Storage Block Devices
+    # Pada kontainer LXC, block devices di host (mis. HPE DL380 sda 7.6T) tidak dimiliki oleh kontainer.
+    # Laporkan kuota/alokasi partisi container (rootfs) via statvfs('/'), bukan disk fisik host.
+    is_container_ct = specs["platform"].get("platform_type") == "lxc" or virt_upper in ("LXC", "LXC-LIBVIRT", "DOCKER", "PODMAN")
+    if is_container_ct:
+        try:
+            st = os.statvfs("/")
+            tot_bytes = st.f_frsize * st.f_blocks
+            if tot_bytes > 0:
+                gb = tot_bytes / (1024 ** 3)
+                sz_str = f"{round(gb / 1024, 1)}T" if gb >= 1024 else f"{round(gb, 1)}G"
+                specs["disks"].append({
+                    "name": "rootfs",
+                    "size": sz_str,
+                    "type": "Virtual (LXC)",
+                    "model": "Container Allocation",
+                })
+        except Exception:
+            pass
+    else:
+        try:
+            res = subprocess.run(
+                ["lsblk", "-d", "-n", "-o", "NAME,SIZE,TYPE,ROTA,TRAN,MODEL"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=3,
+            )
+            if res.returncode == 0:
+                for line in res.stdout.splitlines():
+                    parts = line.split()
+                    if len(parts) >= 3 and parts[2] == "disk":
+                        name = parts[0]
+                        size = parts[1]
+                        rota = parts[3] if len(parts) > 3 else "1"
+                        dtype = "SSD" if rota == "0" else "HDD"
+                        model = " ".join(parts[5:]) if len(parts) > 5 else ""
+                        specs["disks"].append({"name": name, "size": size, "type": dtype, "model": model})
+        except Exception:
+            pass
+
+    # Fallback disk jika specs["disks"] masih kosong
+    if not specs["disks"]:
+        try:
+            st = os.statvfs("/")
+            tot_bytes = st.f_frsize * st.f_blocks
+            if tot_bytes > 0:
+                gb = tot_bytes / (1024 ** 3)
+                sz_str = f"{round(gb / 1024, 1)}T" if gb >= 1024 else f"{round(gb, 1)}G"
+                specs["disks"].append({
+                    "name": "rootfs",
+                    "size": sz_str,
+                    "type": "Virtual (LXC)" if is_container_ct else "Disk",
+                    "model": "Root Partition",
+                })
+        except Exception:
+            pass
 
     # 5. Network (Default Gateway, DNS, & Interfaces)
     try:

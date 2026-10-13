@@ -465,8 +465,8 @@
     <span style="color:var(--red);font-weight:600">Perintah POWER OFF dikirim ke server klien.</span>
     <span style="font-size:13px;color:var(--dim)"> Server akan mati; hidupkan kembali manual (fisik/IPMI/host). Status di bawah ini diperbarui otomatis.</span>
   {% elif act == 'poweroff_ha_blocked' %}
-    <span style="color:var(--yellow);font-weight:600">Perintah Power OFF Ditolak: Server Terdaftar di Proxmox HA!</span>
-    <span style="font-size:13px;color:var(--dim)"> Server ini berada dalam pengawasan Proxmox HA. Mematikan server dari dalam akan memicu hypervisor menyalakannya kembali secara otomatis. Untuk mematikan server ini, ubah status HA menjadi 'stopped' langsung di panel Proxmox VE.</span>
+    <span style="color:var(--yellow);font-weight:600">Perintah Power OFF Ditolak: Server Terproteksi Proxmox HA</span>
+    <span style="font-size:13px;color:var(--dim)"> Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE (state: stopped).</span>
   {% else %}
     <span style="color:var(--blue);font-weight:600">Perintah restart telah dikirim ke Agen Pantau.</span>
     <span style="font-size:13px;color:var(--dim)"> Status service akan di-update dalam beberapa detik setelah agent mengeksekusi.</span>
@@ -489,8 +489,20 @@
       <div class="hero-host">
         <span class="dot {{ 'warn' if server.is_maintenance else ('up' if is_online else 'down') }}" id="hero-dot"></span>
         <strong>{{ server.hostname }}</strong>
+        {% if platform_info %}
+        <span class="badge" id="hero-platform-badge" style="font-size:11px;background:{{ platform_info.badge_bg }};color:{{ platform_info.badge_color }};border:1px solid {{ platform_info.badge_border }};display:inline-flex;align-items:center;gap:4px;font-weight:600" title="Platform: {{ platform_info.label }}">
+          {% if platform_info.type == 'lxc' %}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          {% elif platform_info.type == 'vm' %}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+          {% else %}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          {% endif %}
+          {{ platform_info.short_label }}
+        </span>
+        {% endif %}
         {% if server.is_proxmox_ha %}
-        <span class="badge" style="font-size:11px;background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.3);display:inline-flex;align-items:center;gap:4px" title="Server ini berada dalam pengawasan Proxmox HA (High Availability)">
+        <span class="badge" style="font-size:11px;background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.3);display:inline-flex;align-items:center;gap:4px" title="Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE (state: stopped).">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
           Proxmox HA
         </span>
@@ -565,8 +577,8 @@
         </form>
         <span class="toolbar-divider"></span>
         {% if server.is_proxmox_ha %}
-        <span class="ha-protected-wrapper" style="display:inline-flex;align-items:center;gap:6px" title="Server ini terdaftar dalam Proxmox HA (High Availability). Power OFF dinonaktifkan untuk mencegah server menyala kembali otomatis. Matikan melalui host Proxmox VE (state: stopped).">
-          <button class="btn btn-danger btn-sm" id="hero-poweroff-btn" type="button" disabled style="opacity:0.4;cursor:not-allowed;background:rgba(239,68,68,0.12);color:var(--dim);border:1px dashed rgba(239,68,68,0.35)" title="Server ini terdaftar dalam Proxmox HA (High Availability). Power OFF dinonaktifkan untuk mencegah server menyala kembali otomatis. Matikan melalui host Proxmox VE (state: stopped).">
+        <span class="ha-protected-wrapper" style="display:inline-flex;align-items:center;gap:6px" title="Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE (state: stopped).">
+          <button class="btn btn-danger btn-sm" id="hero-poweroff-btn" type="button" disabled style="opacity:0.4;cursor:not-allowed;background:rgba(239,68,68,0.12);color:var(--dim);border:1px dashed rgba(239,68,68,0.35)" title="Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE (state: stopped).">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
             Power Off
           </button>
@@ -711,7 +723,11 @@
         <h3 style="margin:0">Spesifikasi Perangkat Keras &amp; Platform</h3>
         <span style="font-size:12px;color:var(--dim)">Identitas perangkat keras, prosesor, RAM fisik, hypervisor, dan sistem operasi</span>
       </div>
+      {% if platform_info %}
+      <span class="badge mono" id="spec-virt-badge" style="background:{{ platform_info.badge_bg }};color:{{ platform_info.badge_color }};border:1px solid {{ platform_info.badge_border }}">{{ platform_info.label }}</span>
+      {% else %}
       <span class="badge badge-purple mono" id="spec-virt-badge" style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.3)">{{ hardware_specs.platform.virt if hardware_specs and hardware_specs.platform and hardware_specs.platform.virt else 'Host' }}</span>
+      {% endif %}
     </div>
     
     <!-- 4 Grid Ringkas (CPU, RAM, Platform, OS) -->
@@ -764,7 +780,7 @@
         </div>
         <table class="table-compact" style="width:100%;font-size:12px">
           <tbody>
-            <tr><td style="color:var(--dim);width:40%">Virtualisasi</td><td><strong id="spec-virt-type">{{ hardware_specs.platform.virt if hardware_specs and hardware_specs.platform and hardware_specs.platform.virt else 'Bare Metal / Physical' }}</strong></td></tr>
+            <tr><td style="color:var(--dim);width:40%">Platform / Tipe</td><td><strong id="spec-virt-type">{{ platform_info.label if platform_info else (hardware_specs.platform.virt if hardware_specs and hardware_specs.platform and hardware_specs.platform.virt else 'Bare Metal / Physical') }}</strong></td></tr>
             <tr><td style="color:var(--dim)">Vendor</td><td class="mono" id="spec-board-vendor">{{ hardware_specs.platform.vendor if hardware_specs and hardware_specs.platform and hardware_specs.platform.vendor else '—' }}</td></tr>
             <tr><td style="color:var(--dim)">Model</td><td class="mono" id="spec-board-product">{{ hardware_specs.platform.product if hardware_specs and hardware_specs.platform and hardware_specs.platform.product else '—' }}</td></tr>
             <tr><td style="color:var(--dim)">BIOS</td><td class="mono" id="spec-bios-ver" style="font-size:11px">{{ hardware_specs.platform.bios_version if hardware_specs and hardware_specs.platform and hardware_specs.platform.bios_version else '—' }}</td></tr>
@@ -795,12 +811,12 @@
     <!-- 2 Kolom Bawah: Disk Fisik & Jaringan/Gateway -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:14px">
       
-      <!-- Block Devices -->
+      <!-- Block Devices / Storage -->
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:6px">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-            <strong style="font-size:13px">Perangkat Penyimpanan Fisik (Block Devices)</strong>
+            <strong style="font-size:13px">Perangkat Penyimpanan ({% if platform_info and platform_info.type == 'lxc' %}Alokasi Kontainer{% else %}Block Devices{% endif %})</strong>
           </div>
           <span class="badge badge-info" id="spec-disk-count" style="font-size:10px">{{ hardware_specs.disks|length if hardware_specs and hardware_specs.disks else 0 }} Disks</span>
         </div>
@@ -811,21 +827,21 @@
                 <th>Perangkat</th>
                 <th>Kapasitas</th>
                 <th>Tipe Media</th>
-                <th>Model Drive</th>
+                <th>Model / Partisi</th>
               </tr>
             </thead>
             <tbody>
               {% if hardware_specs and hardware_specs.disks %}
                 {% for d in hardware_specs.disks %}
                 <tr>
-                  <td class="mono"><strong>/dev/{{ d.name }}</strong></td>
+                  <td class="mono"><strong>{{ d.name if (d.name == 'rootfs' or d.name.startswith('/')) else ('/dev/' ~ d.name) }}</strong></td>
                   <td class="mono">{{ d.size }}</td>
-                  <td><span class="badge {{ 'badge-success' if d.type == 'SSD' else 'badge-muted' }}" style="font-size:10px">{{ d.type }}</span></td>
+                  <td><span class="badge {{ 'badge-success' if d.type == 'SSD' else ('badge-info' if 'LXC' in d.type else 'badge-muted') }}" style="font-size:10px">{{ d.type }}</span></td>
                   <td style="color:var(--dim);font-size:11px">{{ d.model or 'Disk Volume' }}</td>
                 </tr>
                 {% endfor %}
               {% else %}
-                <tr><td colspan="4" class="empty-msg" style="padding:12px">Tidak ada data disk blok fisik.</td></tr>
+                <tr><td colspan="4" class="empty-msg" style="padding:12px">Tidak ada data perangkat penyimpanan.</td></tr>
               {% endif %}
             </tbody>
           </table>
