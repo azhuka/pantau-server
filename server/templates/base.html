@@ -159,97 +159,49 @@ tr:hover td{background:rgba(255,255,255,0.03)}
 .btn-ghost{background:rgba(255,255,255,0.04);color:var(--text);border:1px solid var(--border)}
 .btn-ghost:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.18);color:#fff;box-shadow:0 0 8px rgba(255,255,255,0.08)}
 .btn-sm{padding:5px 11px;font-size:12px;border-radius:6px}
+.btn svg{width:12px;height:12px;flex-shrink:0;stroke-width:2;vertical-align:middle;pointer-events:none}
 
-/* ---------- Tata Letak Tombol Tindakan Masalah / Insiden (Harmonis, Berdimensi & Profesional) ---------- */
+/* ---------- Tata Letak Kolom Aksi Tabel Masalah / Insiden (Harmonis & Terstruktur) ---------- */
 .prob-act-cell{white-space:nowrap !important;vertical-align:middle !important;padding:8px 10px !important}
 .prob-act-wrap{display:flex !important;flex-direction:column !important;gap:5px !important;align-items:flex-start !important}
-.prob-act-row{display:flex !important;align-items:center !important;gap:5px !important;flex-wrap:nowrap !important}
+.prob-act-row{display:flex !important;align-items:center !important;gap:4px !important;flex-wrap:nowrap !important}
+
+/* Standardisasi tombol prob-btn agar identik 100% dengan .btn .btn-sm */
 .prob-btn{
-  display:inline-flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  gap:5px !important;
-  height:26px !important;
-  padding:0 9px !important;
-  font-size:11.5px !important;
-  font-weight:600 !important;
-  font-family:inherit !important;
-  line-height:1 !important;
-  border-radius:6px !important;
-  border:1px solid rgba(255,255,255,0.14) !important;
-  background:linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%) !important;
-  color:var(--text, #e2e8f0) !important;
-  text-decoration:none !important;
-  white-space:nowrap !important;
-  cursor:pointer !important;
-  user-select:none !important;
-  box-sizing:border-box !important;
-  transition:all .16s ease !important;
-  box-shadow:0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  padding:5px 11px;
+  font-size:12px;
+  font-weight:600;
+  font-family:inherit;
+  line-height:1;
+  border-radius:6px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,0.04);
+  color:var(--text);
+  text-decoration:none;
+  white-space:nowrap;
+  cursor:pointer;
+  user-select:none;
+  transition:all .18s cubic-bezier(0.16,1,0.3,1);
 }
-.prob-btn svg{width:13px !important;height:13px !important;flex-shrink:0 !important;stroke-width:2 !important;stroke:currentColor !important;vertical-align:middle !important;pointer-events:none !important}
-.prob-btn:hover{filter:brightness(1.15) !important;box-shadow:0 3px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15) !important;transform:translateY(-1px) !important;border-color:rgba(255,255,255,0.3) !important;color:#fff !important;background:linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%) !important}
-.prob-btn:active{transform:translateY(0) scale(0.97) !important}
-.prob-btn-primary{
-  background:linear-gradient(180deg, rgba(56,189,248,0.2) 0%, rgba(56,189,248,0.08) 100%) !important;
-  border:1px solid rgba(56,189,248,0.45) !important;
-  color:#38bdf8 !important;
-  box-shadow:0 1px 3px rgba(0,0,0,0.3), 0 0 8px rgba(56,189,248,0.18), inset 0 1px 0 rgba(255,255,255,0.1) !important;
-}
-.prob-btn-primary:hover{
-  background:linear-gradient(180deg, #38bdf8 0%, #0284c7 100%) !important;
-  border-color:#38bdf8 !important;
-  color:#0b1120 !important;
-  font-weight:700 !important;
-  box-shadow:0 3px 12px rgba(56,189,248,0.48) !important;
-}
-.prob-btn-danger{
-  background:linear-gradient(180deg, rgba(248,113,113,0.2) 0%, rgba(248,113,113,0.08) 100%) !important;
-  border:1px solid rgba(248,113,113,0.45) !important;
-  color:#f87171 !important;
-  box-shadow:0 1px 3px rgba(0,0,0,0.3), 0 0 8px rgba(248,113,113,0.18), inset 0 1px 0 rgba(255,255,255,0.1) !important;
-}
-.prob-btn-danger:hover{
-  background:linear-gradient(180deg, #ef4444 0%, #dc2626 100%) !important;
-  border-color:#ef4444 !important;
-  color:#fff !important;
-  font-weight:700 !important;
-  box-shadow:0 3px 12px rgba(248,113,113,0.48) !important;
-}
-.prob-btn-warn{
-  background:linear-gradient(180deg, rgba(251,191,36,0.2) 0%, rgba(251,191,36,0.08) 100%) !important;
-  border:1px solid rgba(251,191,36,0.45) !important;
-  color:#fbbf24 !important;
-  box-shadow:0 1px 3px rgba(0,0,0,0.3), 0 0 8px rgba(251,191,36,0.18), inset 0 1px 0 rgba(255,255,255,0.1) !important;
-}
-.prob-btn-warn:hover{
-  background:linear-gradient(180deg, #f59e0b 0%, #d97706 100%) !important;
-  border-color:#f59e0b !important;
-  color:#0b1120 !important;
-  font-weight:700 !important;
-  box-shadow:0 3px 12px rgba(251,191,36,0.48) !important;
-}
-.prob-btn-success{
-  background:linear-gradient(180deg, rgba(52,211,153,0.2) 0%, rgba(52,211,153,0.08) 100%) !important;
-  border:1px solid rgba(52,211,153,0.45) !important;
-  color:#34d399 !important;
-  box-shadow:0 1px 3px rgba(0,0,0,0.3), 0 0 8px rgba(52,211,153,0.18), inset 0 1px 0 rgba(255,255,255,0.1) !important;
-}
-.prob-btn-success:hover{
-  background:linear-gradient(180deg, #10b981 0%, #059669 100%) !important;
-  border-color:#10b981 !important;
-  color:#0b1120 !important;
-  font-weight:700 !important;
-  box-shadow:0 3px 12px rgba(52,211,153,0.48) !important;
-}
-.prob-status-ack{
-  background:linear-gradient(180deg, rgba(52,211,153,0.16) 0%, rgba(52,211,153,0.08) 100%) !important;
-  border-color:rgba(52,211,153,0.4) !important;
-  color:#34d399 !important;
-  box-shadow:0 0 8px rgba(52,211,153,0.18) !important;
-  cursor:default !important;
-}
-.prob-status-ack:hover{transform:none !important;filter:none !important;border-color:rgba(52,211,153,0.4) !important;color:#34d399 !important;background:linear-gradient(180deg, rgba(52,211,153,0.16) 0%, rgba(52,211,153,0.08) 100%) !important}
+.prob-btn svg{width:12px;height:12px;flex-shrink:0;stroke-width:2;stroke:currentColor;vertical-align:middle;pointer-events:none}
+.prob-btn:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.18);color:#fff;box-shadow:0 0 8px rgba(255,255,255,0.08);filter:brightness(1.12)}
+.prob-btn:active{transform:scale(0.97)}
+
+/* Varian semantik sesuai filosofi dan sistem tombol standar Pantau */
+.prob-btn-primary{background:var(--blue);color:#0b1120;border-color:rgba(56,189,248,0.7);box-shadow:0 0 10px rgba(56,189,248,0.28), inset 0 1px 0 rgba(255,255,255,0.2)}
+.prob-btn-primary:hover{background:var(--blue-hover);color:#fff;border-color:var(--blue);box-shadow:0 0 16px rgba(56,189,248,0.48)}
+.prob-btn-danger{background:rgba(248,113,113,0.18);color:#fca5a5;border-color:rgba(248,113,113,0.4);box-shadow:0 0 8px rgba(248,113,113,0.15)}
+.prob-btn-danger:hover{background:var(--red);color:#fff;border-color:var(--red);box-shadow:0 0 16px rgba(248,113,113,0.45)}
+.prob-btn-warn{background:rgba(251,191,36,0.18);color:#fde047;border-color:rgba(251,191,36,0.4);box-shadow:0 0 8px rgba(251,191,36,0.15)}
+.prob-btn-warn:hover{background:var(--yellow);color:#0b1120;border-color:var(--yellow);box-shadow:0 0 16px rgba(251,191,36,0.45)}
+.prob-btn-success{background:rgba(52,211,153,0.18);color:#6ee7b7;border-color:rgba(52,211,153,0.4);box-shadow:0 0 8px rgba(52,211,153,0.15)}
+.prob-btn-success:hover{background:var(--green);color:#fff;border-color:var(--green);box-shadow:0 0 16px rgba(52,211,153,0.45)}
+.prob-status-ack{background:rgba(52,211,153,0.12);color:#34d399;border-color:rgba(52,211,153,0.3);cursor:default;box-shadow:none}
+.prob-status-ack:hover{background:rgba(52,211,153,0.12);color:#34d399;border-color:rgba(52,211,153,0.3);transform:none;filter:none;box-shadow:none}
 .btn.is-on{background:var(--blue);color:#0b1120;border-color:var(--blue);box-shadow:0 0 12px rgba(56,189,248,0.4)}
 
 .btn:disabled,.btn[disabled]{opacity:.38;filter:grayscale(.8) brightness(.9);cursor:not-allowed;background:rgba(255,255,255,0.02) !important;color:var(--dim) !important;border:1px dashed rgba(255,255,255,0.12) !important;box-shadow:none !important;transform:none !important}
@@ -684,7 +636,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.2.7' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.2.8' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -1085,7 +1037,7 @@ function renderAlertGroupsHtml(alerts) {
       + '<thead><tr>'
       + '<th>Server Terdampak</th>'
       + '<th>Durasi Terputus</th>'
-      + '<th style="text-align:right">Tindakan</th>'
+      + '<th style="text-align:right">Aksi</th>'
       + '</tr></thead>'
       + '<tbody>' + rowsHtml + '</tbody>'
       + '</table>'

@@ -120,8 +120,8 @@
         <td class="prob-act-cell">
           <div class="prob-act-wrap">
             <div class="prob-act-row prob-act-tools">
-              <a href="/servers/{{ p.server_id }}/services" class="prob-btn" title="Buka halaman rincian server">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+              <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm" title="Buka halaman rincian server">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                 <span>Rincian</span>
               </a>
             </div>
@@ -129,29 +129,29 @@
               <div class="prob-act-row prob-act-ops">
                 {% if not user.is_viewer() and p.is_open %}
                   {% if p.acknowledged_by %}
-                    <span class="prob-btn prob-status-ack" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">
+                    <span class="btn btn-success btn-sm prob-status-ack" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                       <span>Ditangani</span>
                     </span>
                   {% else %}
-                    <button type="button" class="prob-btn prob-btn-success" onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')" title="Tandai masalah ini sudah ditangani">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <button type="button" class="btn btn-success btn-sm" onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')" title="Tandai masalah ini sudah ditangani">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                       <span>Ditangani</span>
                     </button>
                   {% endif %}
                   {% if p.is_ignored %}
-                    <button type="button" class="prob-btn prob-btn-primary" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                       <span>Pantau Kembali</span>
                     </button>
                   {% else %}
-                    <button type="button" class="prob-btn prob-btn-warn" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                    <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                       <span>Abaikan</span>
                     </button>
                   {% endif %}
                 {% elif p.acknowledged_by %}
-                  <span class="prob-btn prob-status-ack" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">
+                  <span class="btn btn-success btn-sm prob-status-ack" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     <span>Ditangani</span>
                   </span>
@@ -554,7 +554,7 @@ async function ackProblem(id, btn, sev) {
     if (r.ok) {
       showToast(isEn ? 'Incident marked as acknowledged.' : 'Masalah ditandai sebagai ditangani.', true);
       const span = document.createElement('span');
-      span.className = 'prob-btn prob-status-ack';
+      span.className = 'btn btn-success btn-sm prob-status-ack';
       span.title = isEn ? 'Acknowledged' : 'Ditangani';
       span.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
       btn.replaceWith(span);
@@ -656,16 +656,16 @@ window.poll = async function() {
 
             let ackBtn = '';
             if (p.acknowledged_by) {
-              ackBtn = `<span class="prob-btn prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${_esc(p.acknowledged_by)}${p.acknowledged_at_str ? (isEn ? ' on ' : ' pada ') + _esc(p.acknowledged_at_str) : ''}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
+              ackBtn = `<span class="btn btn-success btn-sm prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${_esc(p.acknowledged_by)}${p.acknowledged_at_str ? (isEn ? ' on ' : ' pada ') + _esc(p.acknowledged_at_str) : ''}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
             } else if (p.is_open && !IS_VIEWER) {
-              ackBtn = `<button type="button" class="prob-btn prob-btn-success" onclick="ackProblem(${p.id}, this, '${p.severity}')" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${svgCheck}<span>${isEn ? 'Acknowledge' : 'Ditangani'}</span></button>`;
+              ackBtn = `<button type="button" class="btn btn-success btn-sm" onclick="ackProblem(${p.id}, this, '${p.severity}')" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${svgCheck}<span>${isEn ? 'Acknowledge' : 'Ditangani'}</span></button>`;
             }
 
             const ignBtn = IS_VIEWER
               ? ''
               : (isIgn
-                ? `<button type="button" class="prob-btn prob-btn-primary" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">${svgBell}<span>${isEn ? 'Monitor' : 'Pantau Kembali'}</span></button>`
-                : `<button type="button" class="prob-btn prob-btn-warn" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">${svgBellOff}<span>${isEn ? 'Ignore' : 'Abaikan'}</span></button>`);
+                ? `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">${svgBell}<span>${isEn ? 'Monitor' : 'Pantau Kembali'}</span></button>`
+                : `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">${svgBellOff}<span>${isEn ? 'Ignore' : 'Abaikan'}</span></button>`);
 
             return `<tr${rowStyle}
               data-sev="${_esc(p.severity)}"
@@ -699,7 +699,7 @@ window.poll = async function() {
               <td class="prob-act-cell">
                 <div class="prob-act-wrap">
                   <div class="prob-act-row prob-act-tools">
-                    <a href="/servers/${p.server_id}/services" class="prob-btn" title="${isEn ? 'Open server details' : 'Buka halaman rincian server'}">${svgLink}<span>${isEn ? 'Details' : 'Rincian'}</span></a>
+                    <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm" title="${isEn ? 'Open server details' : 'Buka halaman rincian server'}">${svgLink}<span>${isEn ? 'Details' : 'Rincian'}</span></a>
                   </div>
                   ${(ignBtn || ackBtn) ? `<div class="prob-act-row prob-act-ops">${ackBtn}${ignBtn}</div>` : ''}
                 </div>

@@ -1021,7 +1021,7 @@
     </div>
   </div>
   <table id="probtable">
-    <thead><tr><th>Waktu</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Tindakan</th><th>Tips</th></tr></thead>
+    <thead><tr><th>Waktu</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Aksi</th><th>Tips</th></tr></thead>
     <tbody>
     {% for p in rows %}
     <tr{% if not p.is_open %} style="opacity:.65"{% elif p.is_ignored %} style="opacity:.75;background:rgba(255,255,255,0.02)"{% endif %}
@@ -1058,18 +1058,18 @@
       <td class="prob-act-cell">
         <div class="prob-act-wrap">
           <div class="prob-act-row prob-act-tools">
-            <button type="button" class="prob-btn prob-btn-primary" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               <span>Diagnosa</span>
             </button>
             {% if p.log_unit %}
-              <button type="button" class="prob-btn" onclick='jumpToLog({{ p.log_unit|tojson }})' title="Lihat log unit {{ p.log_unit }}">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+              <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ p.log_unit|tojson }})' title="Lihat log unit {{ p.log_unit }}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                 <span>Log</span>
               </button>
             {% elif p.action == 'mitigate' %}
-              <button type="button" class="prob-btn" onclick="jumpToLog('AUTH')" title="Lihat log autentikasi SSH">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" title="Lihat log autentikasi SSH">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                 <span>Log auth</span>
               </button>
             {% endif %}
@@ -1077,27 +1077,27 @@
               {% if p.action == 'restart' and p.svc_id %}
                 <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline-flex;margin:0" data-confirm data-msg="Restart service ini di {{ server.hostname }}?">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <button class="prob-btn prob-btn-primary" title="Restart layanan">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                  <button class="btn btn-primary btn-sm" title="Restart layanan">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                     <span>Restart</span>
                   </button>
                 </form>
               {% elif p.action == 'mitigate' and user.has_perm('can_firewall') and p.ip_count and p.ip_count > 0 %}
                 <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline-flex;margin:0" data-confirm data-msg="Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <button class="prob-btn prob-btn-danger" title="Blokir {{ p.ip_count }} IP sumber via iptables">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  <button class="btn btn-danger btn-sm" title="Blokir {{ p.ip_count }} IP sumber via iptables">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                     <span>Blokir IP ({{ p.ip_count }})</span>
                   </button>
                 </form>
               {% elif p.action == 'apt_update' %}
-                <button class="prob-btn prob-btn-primary" onclick="aptAction('APT_UPDATE')" title="Perbarui paket sistem">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>
+                <button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')" title="Perbarui paket sistem">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>
                   <span>Update OS</span>
                 </button>
               {% elif p.action == 'agent_update_cmd' %}
-                <button type="button" class="prob-btn" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
                   <span>Update Agen</span>
                 </button>
               {% endif %}
@@ -1107,29 +1107,29 @@
             <div class="prob-act-row prob-act-ops">
               {% if not user.is_viewer() and p.is_open %}
                 {% if p.acknowledged_by %}
-                  <span class="prob-btn prob-status-ack" title="Ditangani {{ p.acknowledged_by }}">
+                  <span class="btn btn-success btn-sm prob-status-ack" title="Ditangani {{ p.acknowledged_by }}">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     <span>Ditangani</span>
                   </span>
                 {% else %}
-                  <button type="button" class="prob-btn prob-btn-success" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai masalah ini sudah ditangani">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <button type="button" class="btn btn-success btn-sm" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai masalah ini sudah ditangani">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     <span>Ditangani</span>
                   </button>
                 {% endif %}
                 {% if p.is_ignored %}
-                  <button type="button" class="prob-btn prob-btn-primary" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                  <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                     <span>Pantau Kembali</span>
                   </button>
                 {% else %}
-                  <button type="button" class="prob-btn prob-btn-warn" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                  <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                     <span>Abaikan</span>
                   </button>
                 {% endif %}
               {% elif p.acknowledged_by %}
-                <span class="prob-btn prob-status-ack" title="Ditangani {{ p.acknowledged_by }}">
+                <span class="btn btn-success btn-sm prob-status-ack" title="Ditangani {{ p.acknowledged_by }}">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   <span>Ditangani</span>
                 </span>
@@ -1504,7 +1504,7 @@
             %Memori <span id="sort-icon-mem" style="font-size:11px;opacity:0.6">↕</span>
           </th>
           {% if user.has_perm('can_processes') %}
-          <th style="width:170px;text-align:center">Aksi (Kontrol)</th>
+          <th style="width:170px;text-align:center">Aksi</th>
           {% endif %}
         </tr>
       </thead>
@@ -1837,7 +1837,7 @@
             <th>Paket Terblokir</th>
             <th>Total Byte</th>
             {% if user.has_perm('can_firewall') %}
-            <th style="width:120px;text-align:right">Tindakan</th>
+            <th style="width:120px;text-align:right">Aksi</th>
             {% endif %}
           </tr>
         </thead>
@@ -2173,7 +2173,7 @@
             <th title="Alamat IP yang di-bind oleh socket">Bind IP</th>
             <th title="Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)">Akses</th>
             <th title="Nama proses sistem dan PID yang membuka port ini">Proses &amp; PID</th>
-            <th title="Tindakan yang dapat dilakukan pada port ini">Tindakan</th>
+            <th title="Aksi yang dapat dilakukan pada port ini">Aksi</th>
           </tr>
         </thead>
         <tbody>
@@ -3586,7 +3586,7 @@ async function ackProblemInDetail(id, btn) {
     });
     if (r.ok) {
       showToast(isEn ? 'Problem marked as resolved.' : 'Masalah ditandai sebagai ditangani.', true);
-      btn.className = 'prob-btn prob-status-ack';
+      btn.className = 'btn btn-success btn-sm prob-status-ack';
       btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
       btn.onclick = null;
       if (typeof poll === 'function') poll();
@@ -4483,7 +4483,7 @@ function renderProblemsTab(level, openList, histList) {
     </div>
   </div>
   <table id="probtable">
-    <thead><tr><th>${isEn ? 'Time' : 'Waktu'}</th><th>${isEn ? 'Level' : 'Level'}</th><th>${isEn ? 'Event' : 'Kejadian'}</th><th>${isEn ? 'Duration' : 'Durasi'}</th><th>${isEn ? 'Action' : 'Tindakan'}</th><th>${isEn ? 'Advice' : 'Tips'}</th></tr></thead>
+    <thead><tr><th>${isEn ? 'Time' : 'Waktu'}</th><th>${isEn ? 'Level' : 'Level'}</th><th>${isEn ? 'Event' : 'Kejadian'}</th><th>${isEn ? 'Duration' : 'Durasi'}</th><th>${isEn ? 'Action' : 'Aksi'}</th><th>${isEn ? 'Advice' : 'Tips'}</th></tr></thead>
     <tbody>`;
 
   for (const p of rows) {
@@ -4508,22 +4508,22 @@ function renderProblemsTab(level, openList, histList) {
     const isoStart = isOpen && p.started_at ? (p.started_at.endsWith('Z') ? p.started_at : p.started_at + 'Z') : '';
     const dataStart = isoStart ? ` data-start="${isoStart}"` : '';
 
-    const svgDiag = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
-    const svgLog = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
-    const svgRestart = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>`;
-    const svgShield = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
-    const svgDownload = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>`;
-    const svgTerm = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>`;
-    const svgCheck = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+    const svgDiag = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
+    const svgLog = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
+    const svgRestart = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>`;
+    const svgShield = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+    const svgDownload = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>`;
+    const svgTerm = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>`;
+    const svgCheck = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
     const svgCheckBadge = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-    const svgBellOff = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
-    const svgBell = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
+    const svgBellOff = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+    const svgBell = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
 
-    let toolsHtml = `<button type="button" class="prob-btn prob-btn-primary" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}">${svgDiag}<span>${isEn ? 'Diagnose' : 'Diagnosa'}</span></button>`;
+    let toolsHtml = `<button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}">${svgDiag}<span>${isEn ? 'Diagnose' : 'Diagnosa'}</span></button>`;
     if (p.log_unit) {
-      toolsHtml += `<button type="button" class="prob-btn" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" title="${isEn ? 'View unit logs' : 'Lihat log unit'}">${svgLog}<span>Log</span></button>`;
+      toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" title="${isEn ? 'View unit logs' : 'Lihat log unit'}">${svgLog}<span>Log</span></button>`;
     } else if (p.action === 'mitigate') {
-      toolsHtml += `<button type="button" class="prob-btn" onclick="jumpToLog('AUTH')" title="${isEn ? 'View SSH auth logs' : 'Lihat log auth SSH'}">${svgLog}<span>Log auth</span></button>`;
+      toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" title="${isEn ? 'View SSH auth logs' : 'Lihat log auth SSH'}">${svgLog}<span>Log auth</span></button>`;
     }
 
     let opsHtml = '';
@@ -4532,37 +4532,37 @@ function renderProblemsTab(level, openList, histList) {
         if (p.action === 'restart' && p.svc_id && CAN_SERVICES) {
           toolsHtml += `<form method="post" action="/servers/${SID}/services/${p.svc_id}/restart" style="display:inline-flex;margin:0" data-confirm data-msg="${isEn ? 'Restart this service on ' : 'Restart service ini di '}${escapeHtml(SERVER_NAME)}?">
             <input type="hidden" name="csrf_token" value="${getCsrf()}">
-            <button class="prob-btn prob-btn-primary" title="${isEn ? 'Restart service' : 'Restart layanan'}">${svgRestart}<span>Restart</span></button>
+            <button class="btn btn-primary btn-sm" title="${isEn ? 'Restart service' : 'Restart layanan'}">${svgRestart}<span>Restart</span></button>
           </form>`;
         } else if (p.action === 'mitigate' && CAN_FIREWALL && p.ip_count && p.ip_count > 0) {
           toolsHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline-flex;margin:0" data-confirm data-msg="${isEn ? `Block ${p.ip_count} source IPs (iptables) on ` : `Blokir ${p.ip_count} IP sumber (iptables) di `}${escapeHtml(SERVER_NAME)}?">
             <input type="hidden" name="csrf_token" value="${getCsrf()}">
-            <button class="prob-btn prob-btn-danger" title="${isEn ? 'Block source IPs via iptables' : 'Blokir IP sumber via iptables'}">${svgShield}<span>${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</span></button>
+            <button class="btn btn-danger btn-sm" title="${isEn ? 'Block source IPs via iptables' : 'Blokir IP sumber via iptables'}">${svgShield}<span>${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</span></button>
           </form>`;
         } else if (p.action === 'apt_update' && CAN_APT) {
-          toolsHtml += `<button class="prob-btn prob-btn-primary" onclick="aptAction('APT_UPDATE')" title="${isEn ? 'Update OS packages' : 'Perbarui paket sistem'}">${svgDownload}<span>Update OS</span></button>`;
+          toolsHtml += `<button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')" title="${isEn ? 'Update OS packages' : 'Perbarui paket sistem'}">${svgDownload}<span>Update OS</span></button>`;
         } else if (p.action === 'agent_update_cmd' && CAN_OTA) {
-          toolsHtml += `<button type="button" class="prob-btn" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}">${svgTerm}<span>${isEn ? 'Update Agent' : 'Update Agen'}</span></button>`;
+          toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}">${svgTerm}<span>${isEn ? 'Update Agent' : 'Update Agen'}</span></button>`;
         }
 
         if (p.acknowledged_by) {
-          opsHtml += `<span class="prob-btn prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
+          opsHtml += `<span class="btn btn-success btn-sm prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
         } else {
-          opsHtml += `<button type="button" class="prob-btn prob-btn-success" onclick="ackProblemInDetail(${p.id}, this)" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${svgCheck}<span>${isEn ? 'Acknowledge' : 'Ditangani'}</span></button>`;
+          opsHtml += `<button type="button" class="btn btn-success btn-sm" onclick="ackProblemInDetail(${p.id}, this)" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${svgCheck}<span>${isEn ? 'Acknowledge' : 'Ditangani'}</span></button>`;
         }
 
         if (isIgnored) {
-          opsHtml += `<button type="button" class="prob-btn prob-btn-primary" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">${svgBell}<span>${isEn ? 'Monitor' : 'Pantau Kembali'}</span></button>`;
+          opsHtml += `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">${svgBell}<span>${isEn ? 'Monitor' : 'Pantau Kembali'}</span></button>`;
         } else {
-          opsHtml += `<button type="button" class="prob-btn prob-btn-warn" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">${svgBellOff}<span>${isEn ? 'Ignore' : 'Abaikan'}</span></button>`;
+          opsHtml += `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">${svgBellOff}<span>${isEn ? 'Ignore' : 'Abaikan'}</span></button>`;
         }
       } else {
         if (p.acknowledged_by) {
-          opsHtml += `<span class="prob-btn prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
+          opsHtml += `<span class="btn btn-success btn-sm prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
         }
       }
     } else if (p.acknowledged_by) {
-      opsHtml += `<span class="prob-btn prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
+      opsHtml += `<span class="btn btn-success btn-sm prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
     }
 
     const actHtml = `<div class="prob-act-wrap">
