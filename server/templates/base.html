@@ -654,7 +654,7 @@ body.show-alert-banner .main{padding-top:72px}
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></span> <span class="nav-label" data-i18n="menu_dashboard">Dashboard</span>
     </a>
     <a href="/servers" class="nav-link {% if '/servers' in request.url.path %}active{% endif %}">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span> <span class="nav-label" data-i18n="menu_servers">Servers</span>
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span> <span class="nav-label" data-i18n="menu_servers">Daftar Server</span>
     </a>
     <a href="/problems" class="nav-link {% if '/problems' in request.url.path %}active{% endif %}">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span> <span class="nav-label" data-i18n="menu_problems">Insiden</span>
@@ -1870,23 +1870,23 @@ function renderProblemDetailModal(p) {
   if (actionFooterEl) {
     let btns = [];
     if (p.server_id) {
-      const srvBtnText = isEn ? '🖥️ View Server' : '🖥️ Buka Server';
+      const srvBtnText = isEn ? 'View Server' : 'Buka Server';
       btns.push(`<a href="/servers/${p.server_id}" class="btn btn-ghost btn-sm" target="_blank">${srvBtnText}</a>`);
     }
     if (p.key && p.key.startsWith('service_down:')) {
       const sname = p.key.split(':', 2)[1];
       if (typeof jumpToLog === 'function') {
-        const logBtnText = isEn ? ('📜 View ' + _esc(sname) + ' Logs') : ('📜 Lihat Log ' + _esc(sname));
+        const logBtnText = isEn ? ('View ' + _esc(sname) + ' Logs') : ('Lihat Log ' + _esc(sname));
         btns.push(`<button type="button" class="btn btn-ghost btn-sm" onclick="closeProblemDetailModal(); jumpToLog('${_esc(sname)}');">${logBtnText}</button>`);
       }
     } else if (['security_danger', 'failed_logins'].includes(p.key)) {
       if (typeof jumpToLog === 'function') {
-        const logBtnText = isEn ? '📜 View SSH Auth Logs' : '📜 Lihat Log Auth SSH';
+        const logBtnText = isEn ? 'View SSH Auth Logs' : 'Lihat Log Auth SSH';
         btns.push(`<button type="button" class="btn btn-ghost btn-sm" onclick="closeProblemDetailModal(); jumpToLog('AUTH');">${logBtnText}</button>`);
       }
     } else if (p.key === 'agent_outdated') {
       const updateCmd = "sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service";
-      const copyBtnText = isEn ? '📋 Copy Update Command' : '📋 Salin Perintah Update';
+      const copyBtnText = isEn ? 'Copy Update Command' : 'Salin Perintah Update';
       btns.push(`<button type="button" class="btn btn-ghost btn-sm" onclick="copyCommandText(this, '${updateCmd}')">${copyBtnText}</button>`);
     }
     if (p.id && p.is_open && !p.acknowledged && !IS_VIEWER) {
