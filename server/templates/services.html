@@ -1075,7 +1075,7 @@
             {% endif %}
             {% if not user.is_viewer() and p.is_open %}
               {% if p.action == 'restart' and p.svc_id %}
-                <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline;margin:0" data-confirm data-msg="Restart service ini di {{ server.hostname }}?">
+                <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline-flex;margin:0" data-confirm data-msg="Restart service ini di {{ server.hostname }}?">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                   <button class="prob-btn prob-btn-primary" title="Restart layanan">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
@@ -1083,7 +1083,7 @@
                   </button>
                 </form>
               {% elif p.action == 'mitigate' and user.has_perm('can_firewall') and p.ip_count and p.ip_count > 0 %}
-                <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline;margin:0" data-confirm data-msg="Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?">
+                <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline-flex;margin:0" data-confirm data-msg="Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                   <button class="prob-btn prob-btn-danger" title="Blokir {{ p.ip_count }} IP sumber via iptables">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -1313,9 +1313,9 @@
       <th title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
       <th title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
       <th title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
-      <th title="Hasil pemeriksaan kesehatan (health check) layanan">Kesehatan</th>
+      <th title="Keterangan atau hasil pemeriksaan status layanan">Keterangan</th>
       <th title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
-      <th title="Kontrol layanan: Restart, Mulai (▶), Berhenti (■), Abaikan (🔕), atau Hapus">Aksi</th>
+      <th title="Kontrol layanan: Restart, Mulai, Berhenti, Log, Abaikan/Pantau, atau Hapus">Aksi</th>
     </tr></thead>
     <tbody>
     {% for svc in services %}
@@ -1346,41 +1346,63 @@
         {% endif %}
       </td>
       <td style="white-space:nowrap">
-        <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}">
-          {% if user.is_viewer() or not user.has_perm('can_services') %}
-            <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}">Log</button>
-          {% else %}
-            {% set is_up = (svc._status == 'up') %}
-            {% set is_pending = (svc._pending_cmd is not none and svc._pending_cmd) %}
-            <button type="button" class="btn btn-primary btn-sm btn-svc-restart"
-                    {% if is_pending or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
-                    title="{% if not is_online %}Server offline — aksi dinonaktifkan{% else %}Mulai ulang (restart) layanan {{ svc.service_name }}{% endif %}"
-                    onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Restart</button>
-            <button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px;{% if not is_online %}opacity:0.35;cursor:not-allowed{% endif %}"
-                    {% if is_pending or is_up or not is_online %}disabled{% endif %}
-                    onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                    title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_up %}Layanan sudah dalam kondisi aktif{% else %}Nyalakan / jalankan layanan {{ svc.service_name }}{% endif %}">▶</button>
-            <button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px;{% if not is_online %}opacity:0.35;cursor:not-allowed{% endif %}"
-                    {% if is_pending or not is_up or not is_online %}disabled{% endif %}
-                    onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                    title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif not is_up %}Layanan sudah dalam kondisi berhenti{% else %}Hentikan layanan {{ svc.service_name }}{% endif %}">■</button>
-            <button type="button" class="btn btn-ghost btn-sm" style="margin-left:3px" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}">Log</button>
-            {% if not is_up %}
+        <div style="display:inline-flex;align-items:center;gap:4px">
+          <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}" style="display:inline-flex;align-items:center;gap:4px">
+            {% if user.is_viewer() or not user.has_perm('can_services') %}
+              <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                <span>Log</span>
+              </button>
+            {% else %}
+              {% set is_up = (svc._status == 'up') %}
+              {% set is_pending = (svc._pending_cmd is not none and svc._pending_cmd) %}
+              <button type="button" class="btn btn-primary btn-sm btn-svc-restart"
+                      {% if is_pending or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
+                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% else %}Mulai ulang (restart) layanan {{ svc.service_name }}{% endif %}"
+                      onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                <span>Restart</span>
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm btn-svc-start"
+                      {% if is_pending or is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
+                      onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
+                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_up %}Layanan sudah dalam kondisi aktif{% else %}Nyalakan / jalankan layanan {{ svc.service_name }}{% endif %}">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm btn-svc-stop"
+                      {% if is_pending or not is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
+                      onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
+                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif not is_up %}Layanan sudah dalam kondisi berhenti{% else %}Hentikan layanan {{ svc.service_name }}{% endif %}">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                <span>Log</span>
+              </button>
               {% if svc._is_ignored %}
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}"{% endif %} data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)">🔔 Pantau Kembali</button>
+                <button type="button" class="btn btn-ghost btn-sm" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}"{% endif %} data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                  <span>Pantau</span>
+                </button>
               {% else %}
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-left:4px{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Bisukan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan"{% endif %} data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)">🔕 Abaikan</button>
+                <button type="button" class="btn btn-ghost btn-sm" {% if not is_online or is_up %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} {% if not is_online %}title="Server offline — aksi dinonaktifkan"{% elif is_up %}title="Layanan aktif normal — opsi abaikan hanya untuk layanan bermasalah/berhenti"{% else %}title="Bisukan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan"{% endif %} data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                  <span>Abaikan</span>
+                </button>
+              {% endif %}
+              {% if is_pending %}
+                <span class="badge badge-muted" style="font-size:10px" title="Perintah sedang dikirim dan diproses oleh agen">menunggu…</span>
               {% endif %}
             {% endif %}
-            {% if is_pending %}
-              <span class="badge badge-muted" style="margin-left:4px;font-size:10px" title="Perintah sedang dikirim dan diproses oleh agen">menunggu…</span>
-            {% endif %}
-          {% endif %}
-        </span>
+          </span>
 
-        {% if user.has_perm('can_services') %}
-        <button type="button" class="btn btn-danger btn-sm" style="margin-left:4px{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus konfigurasi pemantauan layanan {{ svc.service_name }}"{% endif %} onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">Hapus</button>
-        {% endif %}
+          {% if not user.is_viewer() and user.has_perm('can_services') %}
+          <button type="button" class="btn btn-danger btn-sm" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus konfigurasi pemantauan layanan {{ svc.service_name }}"{% endif %} onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            <span>Hapus</span>
+          </button>
+          {% endif %}
+        </div>
       </td>
     </tr>
     {% endfor %}
@@ -3022,7 +3044,8 @@ function triggerFastPoll() {
 
 function renderServiceActions(sid, svcId, name, status, isPending, problem, isServiceIgnored, pendingAction) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  const logBtn = '<button type="button" class="btn btn-ghost btn-sm" style="margin-left:3px" onclick="jumpToLog(\'' + escHtml(name) + '\')" title="' + (isEn ? 'View logs for ' + name : 'Lihat log layanan ' + name) + '">Log</button>';
+  const svgLog = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>';
+  const logBtn = '<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog(\'' + escHtml(name) + '\')" title="' + (isEn ? 'View logs for ' + name : 'Lihat log layanan ' + name) + '">' + svgLog + '<span>Log</span></button>';
   if (IS_VIEWER || !CAN_SERVICES) return logBtn;
   const online = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
   const isUp = status === 'up';
@@ -3035,24 +3058,26 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
   const stopDis = effectivelyPending || !isUp || !online;
   const rstDis = effectivelyPending || !online;
 
-  let ignoreBtn = '';
   const isIgnored = Boolean(isServiceIgnored || (problem && problem.is_ignored));
   const probId = (problem && problem.id) ? problem.id : '';
   const probMsg = (problem && problem.message) ? problem.message : (isEn ? ('Ignore monitoring for service ' + name) : ('Abaikan pemantauan layanan ' + name));
 
   const offlineTitle = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
 
-  // Tombol Abaikan / Pantau Kembali HANYA relevan bila layanan sedang DOWN
-  if (!isUp) {
-    const ignDis = !online ? 'disabled style="margin-left:4px;opacity:0.35;cursor:not-allowed" ' : 'style="margin-left:4px" ';
+  let ignoreBtn = '';
+  const svgBell = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>';
+  const svgBellOff = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+
+  if (isIgnored) {
+    const ignDis = !online ? 'disabled style="opacity:0.35;cursor:not-allowed" ' : '';
     const ignTitle = !online ? offlineTitle : (isEn ? 'Cancel ignore for this service' : 'Pantau kembali layanan ini');
-    const abkTitle = !online ? offlineTitle : (isEn ? 'Ignore monitoring for this service' : 'Abaikan pemantauan layanan ini');
-    if (isIgnored) {
-      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" ' + ignDis + 'data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + ignTitle + '">' + (isEn ? '🔔 Cancel Ignore' : '🔔 Pantau Kembali') + '</button>';
-    } else {
-      ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" ' + ignDis + 'data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="' + abkTitle + '">' + (isEn ? '🔕 Ignore' : '🔕 Abaikan') + '</button>';
-    }
+    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" ' + ignDis + 'data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + ignTitle + '">' + svgBell + '<span>' + (isEn ? 'Monitor' : 'Pantau') + '</span></button>';
+  } else {
+    const abkDis = (!online || isUp) ? 'disabled style="opacity:0.35;cursor:not-allowed" ' : '';
+    const abkTitle = !online ? offlineTitle : (isUp ? (isEn ? 'Service is running normally — ignore is only for stopped services' : 'Layanan aktif normal — opsi abaikan hanya untuk layanan bermasalah/berhenti') : (isEn ? 'Ignore monitoring for this service' : 'Abaikan pemantauan layanan ini'));
+    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" ' + abkDis + 'data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="' + abkTitle + '">' + svgBellOff + '<span>' + (isEn ? 'Ignore' : 'Abaikan') + '</span></button>';
   }
+
   const rstTitle = !online ? offlineTitle : (isEn ? 'Restart service ' + name : 'Mulai ulang (restart) layanan ' + name);
   const startTitle = !online ? offlineTitle : (isUp ? (isEn ? 'Service is already running' : 'Layanan sudah aktif') : (isEn ? 'Start service' : 'Mulai layanan'));
   const stopTitle = !online ? offlineTitle : (!isUp ? (isEn ? 'Service is stopped' : 'Layanan sudah nonaktif / berhenti') : (isEn ? 'Stop service' : 'Hentikan layanan'));
@@ -3064,22 +3089,26 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
     if (effAction === 'stop') pLabel = isEn ? 'stopping…' : 'menghentikan…';
     else if (effAction === 'start') pLabel = isEn ? 'starting…' : 'memulai…';
     else if (effAction === 'restart') pLabel = isEn ? 'restarting…' : 'memuat ulang…';
-    pendingBadge = ' <span class="badge badge-warn" style="margin-left:4px;font-size:10px">' + pLabel + '</span>';
+    pendingBadge = ' <span class="badge badge-warn" style="font-size:10px">' + pLabel + '</span>';
   }
+
+  const svgRst = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>';
+  const svgStart = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>';
+  const svgStop = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>';
 
   return '<button type="button" class="btn btn-primary btn-sm btn-svc-restart" '
     + disStyle
     + (rstDis ? 'disabled ' : '')
     + 'title="' + rstTitle + '" '
-    + 'onclick="restartService(' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)">Restart</button>'
-    + '<button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="margin-left:3px;' + (!online ? 'opacity:0.35;cursor:not-allowed;' : '') + '" '
+    + 'onclick="restartService(' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)">' + svgRst + '<span>Restart</span></button>'
+    + '<button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="' + (startDis ? 'opacity:0.35;cursor:not-allowed;' : '') + '" '
     + (startDis ? 'disabled ' : '')
     + 'onclick="svcAction(\'start\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
-    + 'title="' + startTitle + '">▶</button>'
-    + '<button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="margin-left:3px;' + (!online ? 'opacity:0.35;cursor:not-allowed;' : '') + '" '
+    + 'title="' + startTitle + '">' + svgStart + '</button>'
+    + '<button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="' + (stopDis ? 'opacity:0.35;cursor:not-allowed;' : '') + '" '
     + (stopDis ? 'disabled ' : '')
     + 'onclick="svcAction(\'stop\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
-    + 'title="' + stopTitle + '">■</button>'
+    + 'title="' + stopTitle + '">' + svgStop + '</button>'
     + logBtn
     + ignoreBtn
     + pendingBadge;
@@ -4501,12 +4530,12 @@ function renderProblemsTab(level, openList, histList) {
     if (isOpen) {
       if (!IS_VIEWER) {
         if (p.action === 'restart' && p.svc_id && CAN_SERVICES) {
-          toolsHtml += `<form method="post" action="/servers/${SID}/services/${p.svc_id}/restart" style="display:inline;margin:0" data-confirm data-msg="${isEn ? 'Restart this service on ' : 'Restart service ini di '}${escapeHtml(SERVER_NAME)}?">
+          toolsHtml += `<form method="post" action="/servers/${SID}/services/${p.svc_id}/restart" style="display:inline-flex;margin:0" data-confirm data-msg="${isEn ? 'Restart this service on ' : 'Restart service ini di '}${escapeHtml(SERVER_NAME)}?">
             <input type="hidden" name="csrf_token" value="${getCsrf()}">
             <button class="prob-btn prob-btn-primary" title="${isEn ? 'Restart service' : 'Restart layanan'}">${svgRestart}<span>Restart</span></button>
           </form>`;
         } else if (p.action === 'mitigate' && CAN_FIREWALL && p.ip_count && p.ip_count > 0) {
-          toolsHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline;margin:0" data-confirm data-msg="${isEn ? `Block ${p.ip_count} source IPs (iptables) on ` : `Blokir ${p.ip_count} IP sumber (iptables) di `}${escapeHtml(SERVER_NAME)}?">
+          toolsHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline-flex;margin:0" data-confirm data-msg="${isEn ? `Block ${p.ip_count} source IPs (iptables) on ` : `Blokir ${p.ip_count} IP sumber (iptables) di `}${escapeHtml(SERVER_NAME)}?">
             <input type="hidden" name="csrf_token" value="${getCsrf()}">
             <button class="prob-btn prob-btn-danger" title="${isEn ? 'Block source IPs via iptables' : 'Blokir IP sumber via iptables'}">${svgShield}<span>${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</span></button>
           </form>`;

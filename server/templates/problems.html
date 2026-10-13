@@ -120,10 +120,6 @@
         <td class="prob-act-cell">
           <div class="prob-act-wrap">
             <div class="prob-act-row prob-act-tools">
-              <button type="button" class="prob-btn prob-btn-primary" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <span>Diagnosa</span>
-              </button>
               <a href="/servers/{{ p.server_id }}/services" class="prob-btn" title="Buka halaman rincian server">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                 <span>Rincian</span>
@@ -703,7 +699,6 @@ window.poll = async function() {
               <td class="prob-act-cell">
                 <div class="prob-act-wrap">
                   <div class="prob-act-row prob-act-tools">
-                    <button type="button" class="prob-btn prob-btn-primary" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}">${svgDiag}<span>${isEn ? 'Diagnose' : 'Diagnosa'}</span></button>
                     <a href="/servers/${p.server_id}/services" class="prob-btn" title="${isEn ? 'Open server details' : 'Buka halaman rincian server'}">${svgLink}<span>${isEn ? 'Details' : 'Rincian'}</span></a>
                   </div>
                   ${(ignBtn || ackBtn) ? `<div class="prob-act-row prob-act-ops">${ackBtn}${ignBtn}</div>` : ''}

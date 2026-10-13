@@ -160,24 +160,24 @@ tr:hover td{background:rgba(255,255,255,0.03)}
 .btn-ghost:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.18);color:#fff;box-shadow:0 0 8px rgba(255,255,255,0.08)}
 .btn-sm{padding:5px 11px;font-size:12px;border-radius:6px}
 
-/* ---------- Tata Letak Tombol Tindakan Masalah / Insiden (Harmonis & Profesional) ---------- */
-.prob-act-cell{white-space:normal !important;vertical-align:middle !important;padding:8px 10px !important}
-.prob-act-wrap{display:flex !important;flex-direction:column !important;gap:5px !important;align-items:flex-start !important;min-width:140px !important;max-width:250px !important}
-.prob-act-row{display:flex !important;align-items:center !important;gap:5px !important;flex-wrap:wrap !important}
+/* ---------- Tata Letak Tombol Tindakan Masalah / Insiden (Harmonis, Berdimensi & Profesional) ---------- */
+.prob-act-cell{white-space:nowrap !important;vertical-align:middle !important;padding:8px 10px !important}
+.prob-act-wrap{display:flex !important;flex-direction:column !important;gap:5px !important;align-items:flex-start !important}
+.prob-act-row{display:flex !important;align-items:center !important;gap:5px !important;flex-wrap:nowrap !important}
 .prob-btn{
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
   gap:5px !important;
   height:26px !important;
-  padding:3px 9px !important;
+  padding:0 9px !important;
   font-size:11.5px !important;
-  font-weight:500 !important;
+  font-weight:600 !important;
   font-family:inherit !important;
   line-height:1 !important;
   border-radius:6px !important;
-  border:1px solid rgba(255,255,255,0.12) !important;
-  background:rgba(255,255,255,0.04) !important;
+  border:1px solid rgba(255,255,255,0.14) !important;
+  background:linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%) !important;
   color:var(--text, #e2e8f0) !important;
   text-decoration:none !important;
   white-space:nowrap !important;
@@ -185,23 +185,71 @@ tr:hover td{background:rgba(255,255,255,0.03)}
   user-select:none !important;
   box-sizing:border-box !important;
   transition:all .16s ease !important;
-  box-shadow:0 1px 2px rgba(0,0,0,0.2) !important;
+  box-shadow:0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08) !important;
 }
 .prob-btn svg{width:13px !important;height:13px !important;flex-shrink:0 !important;stroke-width:2 !important;stroke:currentColor !important;vertical-align:middle !important;pointer-events:none !important}
-.prob-btn:hover{filter:brightness(1.15) !important;box-shadow:0 2px 6px rgba(0,0,0,0.35) !important;transform:translateY(-1px) !important;border-color:rgba(255,255,255,0.25) !important;color:#fff !important;background:rgba(255,255,255,0.08) !important}
+.prob-btn:hover{filter:brightness(1.15) !important;box-shadow:0 3px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15) !important;transform:translateY(-1px) !important;border-color:rgba(255,255,255,0.3) !important;color:#fff !important;background:linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%) !important}
 .prob-btn:active{transform:translateY(0) scale(0.97) !important}
-.prob-btn-primary:hover{border-color:rgba(56,189,248,0.5) !important;color:#38bdf8 !important;background:rgba(56,189,248,0.1) !important}
-.prob-btn-danger:hover{border-color:rgba(248,113,113,0.5) !important;color:#f87171 !important;background:rgba(248,113,113,0.1) !important}
-.prob-btn-warn:hover{border-color:rgba(251,191,36,0.5) !important;color:#fbbf24 !important;background:rgba(251,191,36,0.1) !important}
-.prob-btn-success:hover{border-color:rgba(52,211,153,0.5) !important;color:#34d399 !important;background:rgba(52,211,153,0.1) !important}
-.prob-status-ack{
-  border-color:rgba(52,211,153,0.35) !important;
-  color:#34d399 !important;
-  background:rgba(52,211,153,0.08) !important;
-  cursor:default !important;
-  box-shadow:none !important;
+.prob-btn-primary{
+  background:linear-gradient(180deg, rgba(56,189,248,0.2) 0%, rgba(56,189,248,0.08) 100%) !important;
+  border:1px solid rgba(56,189,248,0.45) !important;
+  color:#38bdf8 !important;
+  box-shadow:0 1px 3px rgba(0,0,0,0.3), 0 0 8px rgba(56,189,248,0.18), inset 0 1px 0 rgba(255,255,255,0.1) !important;
 }
-.prob-status-ack:hover{transform:none !important;filter:none !important;border-color:rgba(52,211,153,0.35) !important;color:#34d399 !important;background:rgba(52,211,153,0.08) !important}
+.prob-btn-primary:hover{
+  background:linear-gradient(180deg, #38bdf8 0%, #0284c7 100%) !important;
+  border-color:#38bdf8 !important;
+  color:#0b1120 !important;
+  font-weight:700 !important;
+  box-shadow:0 3px 12px rgba(56,189,248,0.48) !important;
+}
+.prob-btn-danger{
+  background:linear-gradient(180deg, rgba(248,113,113,0.2) 0%, rgba(248,113,113,0.08) 100%) !important;
+  border:1px solid rgba(248,113,113,0.45) !important;
+  color:#f87171 !important;
+  box-shadow:0 1px 3px rgba(0,0,0,0.3), 0 0 8px rgba(248,113,113,0.18), inset 0 1px 0 rgba(255,255,255,0.1) !important;
+}
+.prob-btn-danger:hover{
+  background:linear-gradient(180deg, #ef4444 0%, #dc2626 100%) !important;
+  border-color:#ef4444 !important;
+  color:#fff !important;
+  font-weight:700 !important;
+  box-shadow:0 3px 12px rgba(248,113,113,0.48) !important;
+}
+.prob-btn-warn{
+  background:linear-gradient(180deg, rgba(251,191,36,0.2) 0%, rgba(251,191,36,0.08) 100%) !important;
+  border:1px solid rgba(251,191,36,0.45) !important;
+  color:#fbbf24 !important;
+  box-shadow:0 1px 3px rgba(0,0,0,0.3), 0 0 8px rgba(251,191,36,0.18), inset 0 1px 0 rgba(255,255,255,0.1) !important;
+}
+.prob-btn-warn:hover{
+  background:linear-gradient(180deg, #f59e0b 0%, #d97706 100%) !important;
+  border-color:#f59e0b !important;
+  color:#0b1120 !important;
+  font-weight:700 !important;
+  box-shadow:0 3px 12px rgba(251,191,36,0.48) !important;
+}
+.prob-btn-success{
+  background:linear-gradient(180deg, rgba(52,211,153,0.2) 0%, rgba(52,211,153,0.08) 100%) !important;
+  border:1px solid rgba(52,211,153,0.45) !important;
+  color:#34d399 !important;
+  box-shadow:0 1px 3px rgba(0,0,0,0.3), 0 0 8px rgba(52,211,153,0.18), inset 0 1px 0 rgba(255,255,255,0.1) !important;
+}
+.prob-btn-success:hover{
+  background:linear-gradient(180deg, #10b981 0%, #059669 100%) !important;
+  border-color:#10b981 !important;
+  color:#0b1120 !important;
+  font-weight:700 !important;
+  box-shadow:0 3px 12px rgba(52,211,153,0.48) !important;
+}
+.prob-status-ack{
+  background:linear-gradient(180deg, rgba(52,211,153,0.16) 0%, rgba(52,211,153,0.08) 100%) !important;
+  border-color:rgba(52,211,153,0.4) !important;
+  color:#34d399 !important;
+  box-shadow:0 0 8px rgba(52,211,153,0.18) !important;
+  cursor:default !important;
+}
+.prob-status-ack:hover{transform:none !important;filter:none !important;border-color:rgba(52,211,153,0.4) !important;color:#34d399 !important;background:linear-gradient(180deg, rgba(52,211,153,0.16) 0%, rgba(52,211,153,0.08) 100%) !important}
 .btn.is-on{background:var(--blue);color:#0b1120;border-color:var(--blue);box-shadow:0 0 12px rgba(56,189,248,0.4)}
 
 .btn:disabled,.btn[disabled]{opacity:.38;filter:grayscale(.8) brightness(.9);cursor:not-allowed;background:rgba(255,255,255,0.02) !important;color:var(--dim) !important;border:1px dashed rgba(255,255,255,0.12) !important;box-shadow:none !important;transform:none !important}
@@ -636,7 +684,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.2.6' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.2.7' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
