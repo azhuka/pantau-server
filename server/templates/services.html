@@ -539,7 +539,7 @@
       {% if user.is_master_admin() or user.is_operator() %}
       <!-- Grup 1: Akses & Pemeliharaan Server -->
       <div class="toolbar-group" title="Akses &amp; Utilitas Server">
-        <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" {% if getattr(server, 'allow_web_terminal', 1) == 0 %}disabled style="opacity:0.35;cursor:not-allowed" title="Akses Web Terminal dinonaktifkan untuk server ini sesuai kebijakan keamanan" data-i18n-title="web_terminal_disabled"{% elif not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — terminal dinonaktifkan" data-i18n-title="server_offline_terminal_disabled"{% else %}title="Buka terminal shell interaktif langsung ke server klien" data-i18n-title="open_term_tooltip"{% endif %}>
+        <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" {% if not server.allow_web_terminal %}disabled style="opacity:0.35;cursor:not-allowed" title="Akses Web Terminal dinonaktifkan untuk server ini sesuai kebijakan keamanan" data-i18n-title="web_terminal_disabled"{% elif not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — terminal dinonaktifkan" data-i18n-title="server_offline_terminal_disabled"{% else %}title="Buka terminal shell interaktif langsung ke server klien" data-i18n-title="open_term_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
           Terminal
         </button>

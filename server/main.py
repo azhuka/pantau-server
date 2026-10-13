@@ -645,6 +645,7 @@ def _fmt_dt(dt: datetime | None, with_sec: bool = True) -> str:
 
 
 templates.env.globals["_fmt_dt"] = _fmt_dt
+templates.env.globals["getattr"] = getattr
 
 static_dir = Path(__file__).resolve().parent / "static"
 if static_dir.exists():
