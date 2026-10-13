@@ -468,7 +468,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.2.13"
+AGENT_VERSION = "4.2.14"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -927,8 +927,47 @@ def _exec_host_control(action: str) -> dict:
                           f"terpasang/diizinkan di server ini. {msg_check} "
                           "-- jalankan ulang package install.sh (agen v3.6+)."}
     if "systemd TIDAK berjalan" in msg_check or "TIDAK berjalan" in msg_check:
-        return {"ok": False,
-                "output": f"Perintah {sub_action} DIBATALKAN: {msg_check}"}
+        # Deteksi false positive dari wrapper pantau-host versi lama pada sistem dengan status degraded.
+        # Jika /run/systemd/system ada, systemd aktif dan siap menerima reboot/poweroff (termasuk pada Proxmox LXC).
+        if os.path.isdir("/run/systemd/system"):
+            try:
+                new_host_script = (
+                    "#!/usr/bin/env bash\n"
+                    "set -u\n"
+                    'ACTION="${1:-}"\n'
+                    'LOG="/var/log/pantau-host.log"\n'
+                    "fail() { echo \"$*\" >&2; echo \"FAIL $(date -Is) [${ACTION}] $*\" >> \"$LOG\" 2>/dev/null; exit 1; }\n"
+                    'case "$ACTION" in\n'
+                    '    reboot)   CMD="/usr/bin/systemctl -i reboot" ;;\n'
+                    '    poweroff) CMD="/usr/bin/systemctl -i poweroff" ;;\n'
+                    '    check)    CMD="" ;;\n'
+                    '    *)        fail "Aksi tidak dikenal: \'${ACTION}\'" ;;\n'
+                    "esac\n"
+                    "[ -x /usr/bin/systemctl ] || fail \"/usr/bin/systemctl tidak ditemukan\"\n"
+                    'mkdir -p "$(dirname "$LOG")" 2>/dev/null || true\n'
+                    'if [ -z "$CMD" ]; then\n'
+                    '    echo "INFO $(date -Is) [check] dipanggil oleh: ${SUDO_USER:-<langsung>}" >> "$LOG" 2>/dev/null\n'
+                    "    if [ -d /run/systemd/system ]; then\n"
+                    "        state=\"$(/usr/bin/systemctl is-system-running 2>/dev/null || echo 'active')\"\n"
+                    "        echo \"systemd OK ($state) — siap terima reboot|poweroff.\"\n"
+                    "        exit 0\n"
+                    "    fi\n"
+                    "    echo \"systemd TIDAK berjalan sebagai host (mis. container/WSL) — reboot/poweroff TIDAK akan mematikan mesin ini.\"\n"
+                    "    exit 0\n"
+                    "fi\n"
+                    'echo "INFO $(date -Is) [${ACTION}] mengeksekusi: $CMD" >> "$LOG" 2>/dev/null\n'
+                    '/bin/sh -c "$CMD"\n'
+                    "rc=$?\n"
+                    '[ $rc -ne 0 ] && fail "gagal (rc=$rc): $CMD"\n'
+                    'echo "OK: $ACTION dieksekusi."\n'
+                )
+                run_file_op("write", {"path": PANTUAN_HOST_CMD, "content": new_host_script})
+                run_file_op("chmod", {"path": PANTUAN_HOST_CMD, "mode": "0755"})
+            except Exception:
+                pass
+        else:
+            return {"ok": False,
+                    "output": f"Perintah {sub_action} DIBATALKAN: {msg_check}"}
 
     label = f"{PANTUAN_HOST_CMD} {sub_action}"
     if not IS_ROOT:
