@@ -48,7 +48,7 @@
     </form>
     <select id="prob-filter" onchange="probFilter()"
             style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
-      <option value="">Semua level</option>
+      <option value="">Semua keparahan</option>
       <option value="danger">Critical</option>
       <option value="average">Down (Layanan)</option>
       <option value="warning">Warning</option>
@@ -71,7 +71,7 @@
       <thead><tr>
         <th title="Waktu saat insiden atau masalah mulai terdeteksi">Waktu Mulai</th>
         <th title="Mesin server tempat anomali atau gangguan terjadi">Server</th>
-        <th title="Tingkat urgensi: Critical (kritis), Warning (waspada), atau Info (informasi)">Tingkat</th>
+        <th title="Tingkat keparahan: Critical (kritis), Warning (waspada), atau Info (informasi)">Keparahan</th>
         <th title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
         <th title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
         <th title="Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan">Aksi</th>
@@ -206,7 +206,7 @@
         <tr style="border-bottom:1px solid var(--border)">
           <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Waktu insiden mulai dan berhasil teratasi">Waktu Gangguan</th>
           <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Nama host dan grup server">Server</th>
-          <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Tingkat keparahan insiden saat terjadi">Tingkat</th>
+          <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
           <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
           <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
           <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Total durasi downtime hingga sistem pulih kembali">Durasi Gangguan</th>
@@ -623,7 +623,7 @@ window.poll = async function() {
             <thead><tr>
               <th title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden atau masalah mulai terdeteksi'}">${isEn ? 'Start Time' : 'Waktu Mulai'}</th>
               <th title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">Server</th>
-              <th title="${isEn ? 'Urgency level: Critical, Down, Warning, or Info' : 'Tingkat urgensi: Critical (kritis), Down, Warning (waspada), atau Info (informasi)'}">${isEn ? 'Level' : 'Tingkat'}</th>
+              <th title="${isEn ? 'Urgency level: Critical, Down, Warning, or Info' : 'Tingkat keparahan: Critical (kritis), Down, Warning (waspada), atau Info (informasi)'}">${isEn ? 'Severity' : 'Keparahan'}</th>
               <th title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'Event' : 'Kejadian'}</th>
               <th title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'Duration' : 'Durasi'}</th>
               <th title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan'}">${isEn ? 'Actions' : 'Aksi'}</th>

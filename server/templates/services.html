@@ -997,7 +997,7 @@
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       <select id="prob-filter" onchange="probFilter()"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
-        <option value="">Semua level</option>
+        <option value="">Semua keparahan</option>
         <option value="danger">Critical</option>
         <option value="average">Down (Layanan)</option>
         <option value="warning">Warning</option>
@@ -1021,7 +1021,7 @@
     </div>
   </div>
   <table id="probtable">
-    <thead><tr><th>Waktu</th><th>Level</th><th>Kejadian</th><th>Durasi</th><th>Aksi</th><th>Tips</th></tr></thead>
+    <thead><tr><th>Waktu</th><th>Keparahan</th><th>Kejadian</th><th>Durasi</th><th>Aksi</th><th>Tips</th></tr></thead>
     <tbody>
     {% for p in rows %}
     <tr{% if not p.is_open %} style="opacity:.65"{% elif p.is_ignored %} style="opacity:.75;background:rgba(255,255,255,0.02)"{% endif %}
@@ -4459,7 +4459,7 @@ function renderProblemsTab(level, openList, histList) {
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       <select id="prob-filter" onchange="probFilter()"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
-        <option value=""${oldFilter === '' ? ' selected' : ''}>${isEn ? 'All levels' : 'Semua level'}</option>
+        <option value=""${oldFilter === '' ? ' selected' : ''}>${isEn ? 'All severities' : 'Semua keparahan'}</option>
         <option value="danger"${oldFilter === 'danger' ? ' selected' : ''}>Critical</option>
         <option value="average"${oldFilter === 'average' ? ' selected' : ''}>${isEn ? 'Down (Services)' : 'Down (Layanan)'}</option>
         <option value="warning"${oldFilter === 'warning' ? ' selected' : ''}>Warning</option>
@@ -4483,7 +4483,7 @@ function renderProblemsTab(level, openList, histList) {
     </div>
   </div>
   <table id="probtable">
-    <thead><tr><th>${isEn ? 'Time' : 'Waktu'}</th><th>${isEn ? 'Level' : 'Level'}</th><th>${isEn ? 'Event' : 'Kejadian'}</th><th>${isEn ? 'Duration' : 'Durasi'}</th><th>${isEn ? 'Action' : 'Aksi'}</th><th>${isEn ? 'Advice' : 'Tips'}</th></tr></thead>
+    <thead><tr><th>${isEn ? 'Time' : 'Waktu'}</th><th>${isEn ? 'Severity' : 'Keparahan'}</th><th>${isEn ? 'Event' : 'Kejadian'}</th><th>${isEn ? 'Duration' : 'Durasi'}</th><th>${isEn ? 'Action' : 'Aksi'}</th><th>${isEn ? 'Advice' : 'Tips'}</th></tr></thead>
     <tbody>`;
 
   for (const p of rows) {
