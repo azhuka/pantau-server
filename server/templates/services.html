@@ -1022,12 +1022,12 @@
   </div>
   <table id="probtable">
     <thead><tr>
-      <th class="col-time" style="width:140px;min-width:140px">Waktu</th>
-      <th class="col-sev" style="width:105px;min-width:105px;text-align:center">Keparahan</th>
+      <th class="col-time" style="width:130px;min-width:125px">Waktu</th>
+      <th class="col-sev" style="width:100px;min-width:95px;text-align:center">Keparahan</th>
       <th>Kejadian</th>
-      <th class="col-durasi" style="width:130px;min-width:130px">Durasi</th>
-      <th class="col-act" style="width:160px;min-width:160px">Aksi</th>
-      <th class="col-tips" style="width:260px;min-width:220px">Tips</th>
+      <th class="col-durasi" style="width:120px;min-width:110px">Durasi</th>
+      <th class="col-act" style="width:160px;min-width:150px">Aksi</th>
+      <th class="col-tips" style="width:250px;min-width:200px">Tips</th>
     </tr></thead>
     <tbody>
     {% for p in rows %}
@@ -1047,11 +1047,11 @@
         data-prob-host="{{ server.hostname }}"
         data-prob-sid="{{ server.id }}"
         data-prob-context='{{ p.context or "" }}'>
-      <td style="white-space:nowrap;width:140px" class="mono col-time">
+      <td style="white-space:nowrap;width:130px" class="mono col-time">
         {{ p.started_at.strftime('%d %b %H:%M') }}
         {% if p.resolved_at %}<span style="color:var(--dim)"> → {{ p.resolved_at.strftime('%d %b %H:%M') }}</span>{% endif %}
       </td>
-      <td style="width:105px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DOWN' if p.severity == 'average' else p.severity | upper }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+      <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DOWN' if p.severity == 'average' else p.severity | upper }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
       <td>
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
@@ -1061,7 +1061,7 @@
         {% if p.acknowledged_by %}<span class="badge badge-up" title="Diakui {{ p.acknowledged_by }}">✓ diakui</span>{% endif %}
         {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
-      <td class="mono col-durasi" style="width:130px;min-width:130px;white-space:nowrap"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
+      <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
       <td class="prob-act-cell">
         <div class="prob-act-wrap">
           <div class="prob-act-row prob-act-tools">
@@ -1314,15 +1314,15 @@
   {% if services %}
   <table id="tbl-services">
     <thead><tr>
-      <th style="width:150px;min-width:140px" title="Nama layanan atau daemon yang dipantau">Layanan</th>
-      <th style="width:75px;min-width:70px" title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
-      <th style="width:120px;min-width:110px" title="Nama proses sistem operasi yang dieksekusi">Proses</th>
-      <th style="width:85px;min-width:80px" title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
-      <th style="width:85px;min-width:80px" title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
-      <th style="width:115px;min-width:110px" title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
+      <th style="min-width:130px;width:auto" title="Nama layanan atau daemon yang dipantau">Layanan</th>
+      <th style="width:70px;min-width:65px;text-align:center" title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
+      <th style="width:110px;min-width:100px" title="Nama proses sistem operasi yang dieksekusi">Proses</th>
+      <th style="width:80px;min-width:75px;text-align:center" title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
+      <th style="width:80px;min-width:75px;text-align:center" title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
+      <th style="width:105px;min-width:95px;text-align:center" title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
       <th title="Keterangan atau hasil pemeriksaan status layanan">Keterangan</th>
-      <th style="width:100px;min-width:95px" title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
-      <th style="width:310px;min-width:290px" title="Kontrol layanan: Restart, Mulai, Berhenti, Log, Abaikan/Pantau, atau Hapus">Aksi</th>
+      <th style="width:95px;min-width:90px;text-align:center" title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
+      <th style="width:300px;min-width:280px;text-align:center" title="Kontrol layanan: Restart, Mulai, Berhenti, Log, Abaikan/Pantau, atau Hapus">Aksi</th>
     </tr></thead>
     <tbody>
     {% for svc in services %}
@@ -1504,10 +1504,10 @@
           <th style="width:100px;text-align:center;cursor:pointer;user-select:none" onclick="toggleProcSort('state')" title="Klik untuk mengurutkan Status">
             Status <span id="sort-icon-state" style="font-size:11px;opacity:0.6">↕</span>
           </th>
-          <th style="width:140px;text-align:right;cursor:pointer;user-select:none" onclick="toggleProcSort('cpu')" title="Klik untuk mengurutkan penggunaan CPU">
+          <th style="width:95px;min-width:90px;text-align:right;cursor:pointer;user-select:none" onclick="toggleProcSort('cpu')" title="Klik untuk mengurutkan penggunaan CPU">
             %CPU <span id="sort-icon-cpu" style="font-size:11px;color:var(--blue)">▼</span>
           </th>
-          <th style="width:140px;text-align:right;cursor:pointer;user-select:none" onclick="toggleProcSort('mem')" title="Klik untuk mengurutkan penggunaan Memori">
+          <th style="width:95px;min-width:90px;text-align:right;cursor:pointer;user-select:none" onclick="toggleProcSort('mem')" title="Klik untuk mengurutkan penggunaan Memori">
             %Memori <span id="sort-icon-mem" style="font-size:11px;opacity:0.6">↕</span>
           </th>
           {% if user.has_perm('can_processes') %}
@@ -4491,12 +4491,12 @@ function renderProblemsTab(level, openList, histList) {
   </div>
   <table id="probtable">
     <thead><tr>
-      <th class="col-time" style="width:140px;min-width:140px">${isEn ? 'Time' : 'Waktu'}</th>
-      <th class="col-sev" style="width:105px;min-width:105px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
+      <th class="col-time" style="width:130px;min-width:125px">${isEn ? 'Time' : 'Waktu'}</th>
+      <th class="col-sev" style="width:100px;min-width:95px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
       <th>${isEn ? 'Event' : 'Kejadian'}</th>
-      <th class="col-durasi" style="width:130px;min-width:130px">${isEn ? 'Duration' : 'Durasi'}</th>
-      <th class="col-act" style="width:160px;min-width:160px">${isEn ? 'Action' : 'Aksi'}</th>
-      <th class="col-tips" style="width:260px;min-width:220px">${isEn ? 'Advice' : 'Tips'}</th>
+      <th class="col-durasi" style="width:120px;min-width:110px">${isEn ? 'Duration' : 'Durasi'}</th>
+      <th class="col-act" style="width:160px;min-width:150px">${isEn ? 'Action' : 'Aksi'}</th>
+      <th class="col-tips" style="width:250px;min-width:200px">${isEn ? 'Advice' : 'Tips'}</th>
     </tr></thead>
     <tbody>`;
 
@@ -4599,10 +4599,10 @@ function renderProblemsTab(level, openList, histList) {
       data-prob-host="${escapeHtml(SERVER_NAME)}"
       data-prob-sid="${SID}"
       data-prob-context="${escapeHtml(ctxAttr)}">
-      <td style="white-space:nowrap;width:140px" class="mono col-time">${startStr}${resStr}</td>
-      <td style="width:105px;text-align:center" class="col-sev"><span class="badge badge-${sevBadge}">${sevLabel}</span></td>
+      <td style="white-space:nowrap;width:130px" class="mono col-time">${startStr}${resStr}</td>
+      <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-${sevBadge}">${sevLabel}</span></td>
       <td>${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${ackBadge} ${kambuhBadge}</td>
-      <td class="mono col-durasi" style="width:130px;min-width:130px;white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
+      <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
       <td class="prob-act-cell col-act" style="width:160px">${actHtml}</td>
       <td style="font-size:12px;line-height:1.55;max-width:360px">${escapeHtml(pTip || '—')}</td>
     </tr>`;

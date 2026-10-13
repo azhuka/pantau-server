@@ -69,13 +69,13 @@
     {% if open_problems %}
     <table id="probtable">
       <thead><tr>
-        <th class="col-time" style="width:130px;min-width:130px" title="Waktu saat insiden atau masalah mulai terdeteksi">Waktu Mulai</th>
-        <th class="col-server" style="width:160px;min-width:160px" title="Mesin server tempat anomali atau gangguan terjadi">Server</th>
-        <th class="col-sev" style="width:105px;min-width:105px;text-align:center" title="Tingkat keparahan: Critical (kritis), Warning (waspada), atau Info (informasi)">Keparahan</th>
+        <th class="col-time" style="width:130px;min-width:125px" title="Waktu saat insiden atau masalah mulai terdeteksi">Waktu Mulai</th>
+        <th class="col-server" style="min-width:130px;width:auto;white-space:nowrap" title="Mesin server tempat anomali atau gangguan terjadi">Server</th>
+        <th class="col-sev" style="width:100px;min-width:95px;text-align:center" title="Tingkat keparahan: Critical (kritis), Warning (waspada), atau Info (informasi)">Keparahan</th>
         <th title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
-        <th class="col-durasi" style="width:130px;min-width:130px" title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
-        <th class="col-act" style="width:160px;min-width:160px" title="Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan">Aksi</th>
-        <th class="col-tips" style="width:280px;min-width:220px" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Panduan Solusi</th>
+        <th class="col-durasi" style="width:120px;min-width:110px" title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
+        <th class="col-act" style="width:160px;min-width:150px" title="Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan">Aksi</th>
+        <th class="col-tips" style="width:250px;min-width:200px" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Panduan Solusi</th>
       </tr></thead>
       <tbody>
       {% for p in open_problems %}
@@ -97,7 +97,7 @@
           data-prob-sid="{{ p.server_id }}"
           data-prob-context='{{ p.context or "" }}'>
         <td style="white-space:nowrap;width:130px" class="mono col-time">{{ p.started_at.strftime('%d %b %H:%M') }}</td>
-        <td style="width:160px" class="col-server">
+        <td class="col-server" style="min-width:130px;width:auto;white-space:nowrap">
           <strong>{{ p.hostname }}</strong>
           {% if p.group_name %}
           <div style="margin-top:2px">
@@ -108,7 +108,7 @@
           </div>
           {% endif %}
         </td>
-        <td style="width:105px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DOWN' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+        <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DOWN' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
         <td>
           <span>{{ p.message }}</span>
           {% if p.is_ignored %}
@@ -116,7 +116,7 @@
           {% endif %}
           {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
         </td>
-        <td class="mono col-durasi" style="width:130px;min-width:130px;white-space:nowrap" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">{{ p.durasi }}</td>
+        <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">{{ p.durasi }}</td>
         <td class="prob-act-cell">
           <div class="prob-act-wrap">
             <div class="prob-act-row prob-act-tools">
@@ -204,14 +204,14 @@
     <table style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border)">
-          <th class="col-time" style="width:160px;min-width:160px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Waktu insiden mulai dan berhasil teratasi">Waktu Gangguan</th>
-          <th class="col-server" style="width:160px;min-width:160px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Nama host dan grup server">Server</th>
-          <th class="col-sev" style="width:105px;min-width:105px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:center;white-space:nowrap" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
-          <th style="width:110px;min-width:110px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
+          <th class="col-time" style="width:145px;min-width:140px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Waktu insiden mulai dan berhasil teratasi">Waktu Gangguan</th>
+          <th class="col-server" style="min-width:130px;width:auto;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Nama host dan grup server">Server</th>
+          <th class="col-sev" style="width:100px;min-width:95px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:center;white-space:nowrap" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
+          <th style="width:105px;min-width:95px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
           <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
-          <th class="col-durasi" style="width:130px;min-width:130px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Total durasi downtime hingga sistem pulih kembali">Durasi Gangguan</th>
-          <th style="width:140px;min-width:140px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Catatan status penanganan atau pemulihan">Resolusi</th>
-          <th style="width:90px;min-width:90px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:center;white-space:nowrap" title="Aksi ke rincian server">Aksi</th>
+          <th class="col-durasi" style="width:120px;min-width:110px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Total durasi downtime hingga sistem pulih kembali">Durasi Gangguan</th>
+          <th style="width:130px;min-width:120px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Catatan status penanganan atau pemulihan">Resolusi</th>
+          <th style="width:85px;min-width:80px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:center;white-space:nowrap" title="Aksi ke rincian server">Aksi</th>
         </tr>
       </thead>
       <tbody id="prob-resolved-tbody">
@@ -621,13 +621,13 @@ window.poll = async function() {
         if (!table) {
           wrapper.innerHTML = `<table id="probtable">
             <thead><tr>
-              <th class="col-time" style="width:130px;min-width:130px" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden atau masalah mulai terdeteksi'}">${isEn ? 'Start Time' : 'Waktu Mulai'}</th>
-              <th class="col-server" style="width:160px;min-width:160px" title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">Server</th>
-              <th class="col-sev" style="width:105px;min-width:105px;text-align:center" title="${isEn ? 'Urgency level: Critical, Down, Warning, or Info' : 'Tingkat keparahan: Critical (kritis), Down, Warning (waspada), atau Info (informasi)'}">${isEn ? 'Severity' : 'Keparahan'}</th>
+              <th class="col-time" style="width:130px;min-width:125px" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden atau masalah mulai terdeteksi'}">${isEn ? 'Start Time' : 'Waktu Mulai'}</th>
+              <th class="col-server" style="min-width:130px;width:auto;white-space:nowrap" title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">Server</th>
+              <th class="col-sev" style="width:100px;min-width:95px;text-align:center" title="${isEn ? 'Urgency level: Critical, Down, Warning, or Info' : 'Tingkat keparahan: Critical (kritis), Down, Warning (waspada), atau Info (informasi)'}">${isEn ? 'Severity' : 'Keparahan'}</th>
               <th title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'Event' : 'Kejadian'}</th>
-              <th class="col-durasi" style="width:130px;min-width:130px" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'Duration' : 'Durasi'}</th>
-              <th class="col-act" style="width:160px;min-width:160px" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan'}">${isEn ? 'Actions' : 'Aksi'}</th>
-              <th class="col-tips" style="width:280px;min-width:220px" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'Solution Guide' : 'Panduan Solusi'}</th>
+              <th class="col-durasi" style="width:120px;min-width:110px" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'Duration' : 'Durasi'}</th>
+              <th class="col-act" style="width:160px;min-width:150px" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan'}">${isEn ? 'Actions' : 'Aksi'}</th>
+              <th class="col-tips" style="width:250px;min-width:200px" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'Solution Guide' : 'Panduan Solusi'}</th>
             </tr></thead>
             <tbody></tbody>
           </table>`;
@@ -685,17 +685,17 @@ window.poll = async function() {
               data-prob-sid="${p.server_id}"
               data-prob-context="${ctxStr}">
               <td style="white-space:nowrap;width:130px" class="mono col-time">${_esc(p.started_at_str || '')}</td>
-              <td style="width:160px" class="col-server">
+              <td class="col-server" style="min-width:130px;width:auto;white-space:nowrap">
                 <strong>${_esc(p.hostname)}</strong>
                 ${p.group_name ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:10px;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> ${_esc(p.group_name)}</span></div>` : ''}
               </td>
-              <td style="width:105px;text-align:center" class="col-sev"><span class="${sevBadge}">${_esc(p.severity === 'average' ? 'DOWN' : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}${isIgn ? ' 🔕' : ''}</span></td>
+              <td style="width:100px;text-align:center" class="col-sev"><span class="${sevBadge}">${_esc(p.severity === 'average' ? 'DOWN' : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}${isIgn ? ' 🔕' : ''}</span></td>
               <td>
                 <span>${_esc(pMsg)}</span>
                 ${ignBadge}
                 ${count24}
               </td>
-              <td class="mono col-durasi" style="width:130px;min-width:130px;white-space:nowrap" data-start="${_esc(p.started_at_iso || '')}">${_esc(p.durasi || '')}</td>
+              <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap" data-start="${_esc(p.started_at_iso || '')}">${_esc(p.durasi || '')}</td>
               <td class="prob-act-cell col-act" style="width:160px">
                 <div class="prob-act-wrap">
                   <div class="prob-act-row prob-act-tools">
