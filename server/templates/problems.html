@@ -389,8 +389,7 @@
 {% block scripts %}
 <script>
 const FILTER_SID = {{ filter_sid or 'null' }};
-const FILTER_GROUP = {{ filter_group | tojson if filter_group else "''" }};
-const IS_VIEWER = {{ 'true' if user.is_viewer() else 'false' }};
+const FILTER_GROUP = {{ (filter_group or '') | tojson }};
 
 function openThresholdModal() {
   const m = document.getElementById('threshold-modal');

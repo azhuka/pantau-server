@@ -2424,7 +2424,6 @@ const CAN_CRON = {{ 'true' if user.has_perm('can_cron') else 'false' }};
 const CAN_SSL = {{ 'true' if user.has_perm('can_ssl') else 'false' }};
 const CAN_OTA = {{ 'true' if user.has_perm('can_ota') else 'false' }};
 const CAN_APT = {{ 'true' if user.has_perm('can_apt') else 'false' }};
-const IS_VIEWER = {{ 'true' if user.is_viewer() else 'false' }};
 const SERVER_NAME = {{ server.hostname | tojson }};
 let IS_ONLINE = {{ 'true' if is_online else 'false' }};
 
@@ -5900,9 +5899,11 @@ function setLogState(t) {
 let logPinned = true;
 {
   const pre = document.getElementById('log-pre');
-  pre.addEventListener('scroll', () => {
-    logPinned = pre.scrollHeight - pre.scrollTop - pre.clientHeight < 60;
-  });
+  if (pre) {
+    pre.addEventListener('scroll', () => {
+      logPinned = pre.scrollHeight - pre.scrollTop - pre.clientHeight < 60;
+    });
+  }
 }
 
 function pickDefaultUnit(units, extras) {
