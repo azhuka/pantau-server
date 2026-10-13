@@ -430,9 +430,9 @@
                   {% endif %}
                   <span style="color:var(--dim);font-size:11px">/</span>
                   {% if u.totp_enabled %}
-                  <span style="color:#4ade80;font-size:11px" title="2FA Aktif">2FA ✔</span>
+                  <span class="badge" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:10px;padding:1px 6px">2FA Aktif</span>
                   {% else %}
-                  <span style="color:var(--dim);font-size:11px" title="2FA Nonaktif">2FA -</span>
+                  <span class="badge" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);font-size:10px;padding:1px 6px">2FA Nonaktif</span>
                   {% endif %}
                 </div>
               </td>
@@ -451,6 +451,33 @@
                     </svg>
                     Lihat
                   </button>
+
+                  <!-- Tombol 2FA (Khusus Master Admin & Pengelola Akun) -->
+                  {% if (can_manage_users or (can_manage_viewers and u.role == 'viewer')) and (not u.is_master_admin() or user.is_master_admin()) %}
+                    {% if not u.totp_enabled %}
+                    <button type="button" class="btn btn-ghost btn-sm" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' style="font-size:11px;padding:4px 8px;color:#fbbf24" title="Setup &amp; Aktifkan 2FA untuk akun ini">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      </svg>
+                      Setup 2FA
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-ghost btn-sm" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' style="font-size:11px;padding:4px 8px;color:#38bdf8" title="Reset / konfigurasi ulang 2FA">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                      </svg>
+                      Reset 2FA
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick='disableAdmin2fa({{ u.id }}, {{ u.username|tojson }})' style="font-size:11px;padding:4px 8px;color:#f87171" title="Matikan 2FA akun ini">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                      </svg>
+                      Matikan 2FA
+                    </button>
+                    {% endif %}
+                  {% endif %}
 
                   <!-- Tombol Audit Jejak Aktivitas Pengguna -->
                   {% if user.is_master_admin() or user.has_perm('can_audit') %}
@@ -774,6 +801,92 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal Setup 2FA Terkelola oleh Admin / Operator -->
+<div id="admin2faModal" class="modal-backdrop" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)">
+  <div class="card" style="background:#161b22;border:1px solid #30363d;border-radius:12px;max-width:540px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,0.8);overflow:hidden">
+    <div style="padding:16px 20px;border-bottom:1px solid #30363d;display:flex;justify-content:space-between;align-items:center">
+      <h3 style="font-size:15px;font-weight:700;margin:0;display:flex;align-items:center;gap:8px;color:#f8fafc">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fbbf24">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>Konfigurasi 2FA: <strong id="admin-2fa-title-user" style="color:var(--blue)"></strong></span>
+      </h3>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeAdmin2faModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+    </div>
+
+    <!-- State 1: Loading -->
+    <div id="admin-2fa-loading" style="padding:40px 20px;text-align:center;color:var(--dim)">
+      <div style="font-size:13px">Menghasilkan kunci rahasia TOTP &amp; kode QR...</div>
+    </div>
+
+    <!-- State 2: QR & Verifikasi Input (Setup Step) -->
+    <div id="admin-2fa-setup-view" style="display:none;padding:20px">
+      <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;line-height:1.5;color:var(--text)">
+        Minta pemilik akun <strong id="admin-2fa-instruction-user" style="color:#38bdf8"></strong> menginstal aplikasi autentikator di ponselnya (<strong>Google Authenticator</strong>, <strong>Microsoft Authenticator</strong>, <strong>Aegis</strong>, atau <strong>2FAS</strong>), lalu arahkan kamera ponsel untuk memindai kode QR di bawah ini:
+      </div>
+
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="display:inline-block;padding:10px;background:#ffffff;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.4)">
+          <img id="admin-2fa-qr-img" src="" alt="QR Code 2FA" style="display:block;width:180px;height:180px">
+        </div>
+        <div style="margin-top:10px;font-size:11.5px;color:var(--dim)">Atau masukkan kunci rahasia manual pada aplikasi:</div>
+        <div style="display:inline-flex;align-items:center;gap:8px;margin-top:4px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);padding:4px 12px;border-radius:6px">
+          <code id="admin-2fa-secret-text" class="mono" style="font-size:13px;font-weight:700;color:var(--blue);letter-spacing:1px"></code>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="copyAdminSecretKey()" style="font-size:11px;padding:2px 6px">Salin</button>
+        </div>
+      </div>
+
+      <div style="background:rgba(15,23,42,0.6);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
+        <label for="admin-2fa-code-input" style="display:block;font-size:12.5px;font-weight:600;margin-bottom:8px;color:var(--text)">
+          Masukkan 6-Digit Kode Verifikasi yang Muncul di Ponsel:
+        </label>
+        <input type="text" id="admin-2fa-code-input" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" class="mono"
+               style="width:180px;font-size:22px;font-weight:800;letter-spacing:6px;text-align:center;padding:8px 12px;background:#0d1117;border:1px solid var(--blue);border-radius:6px;color:#fff;outline:none"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();submitAdmin2faConfirm();}">
+        <div id="admin-2fa-error" style="display:none;color:#f87171;font-size:12px;margin-top:8px"></div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeAdmin2faModal()" style="font-size:12px;padding:8px 16px">Batal</button>
+        <button type="button" id="admin-2fa-confirm-btn" class="btn btn-primary btn-sm" onclick="submitAdmin2faConfirm()" style="font-size:12px;padding:8px 20px;font-weight:700">
+          Verifikasi &amp; Aktifkan 2FA
+        </button>
+      </div>
+    </div>
+
+    <!-- State 3: Sukses & Kode Cadangan Darurat (Recovery Codes) -->
+    <div id="admin-2fa-success-view" style="display:none;padding:20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span style="font-size:20px;color:#4ade80">✔</span>
+        <h4 style="margin:0;font-size:15px;color:#4ade80;font-weight:700">2FA Berhasil Diaktifkan!</h4>
+      </div>
+      <p style="font-size:12.5px;color:var(--text);line-height:1.5;margin-bottom:14px">
+        Berikan 8 kode cadangan darurat (recovery codes) di bawah ini kepada pemilik akun <strong id="admin-2fa-success-user" style="color:var(--blue)"></strong> untuk disimpan di tempat yang aman (mis. password manager). Setiap kode hanya dapat dipakai <strong>satu kali</strong> bila ponsel hilang.
+      </p>
+
+      <div id="admin-2fa-codes-grid" style="display:grid;grid-template-columns:repeat(2, 1fr);gap:8px;margin-bottom:16px;background:#0d1117;padding:12px;border-radius:8px;border:1px solid #30363d">
+      </div>
+
+      <textarea id="admin-raw-recovery-codes" style="display:none" readonly></textarea>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #30363d">
+        <div style="display:flex;gap:8px">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="copyAdminRecoveryCodes()">
+            📋 Salin Semua Kode
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="downloadAdminRecoveryCodes()">
+            💾 Unduh Berkas Teks
+          </button>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="finishAdmin2faModal()" style="font-weight:700">
+          Selesai
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1106,6 +1219,213 @@ function copySecretKey(secret) {
     });
   } else {
     legacyCopyText(secret, msg);
+  }
+}
+
+// --- PENGELOLAAN 2FA ADMIN / OPERATOR ---
+let _currentAdmin2faUid = null;
+let _currentAdmin2faUsername = '';
+let _currentAdmin2faSecret = '';
+let _currentAdmin2faCodes = [];
+
+async function openAdmin2faModal(uid, username, roleDisplay) {
+  _currentAdmin2faUid = uid;
+  _currentAdmin2faUsername = username;
+  _currentAdmin2faSecret = '';
+  _currentAdmin2faCodes = [];
+
+  const modal = document.getElementById('admin2faModal');
+  const titleUser = document.getElementById('admin-2fa-title-user');
+  const instrUser = document.getElementById('admin-2fa-instruction-user');
+  const loadView = document.getElementById('admin-2fa-loading');
+  const setupView = document.getElementById('admin-2fa-setup-view');
+  const succView = document.getElementById('admin-2fa-success-view');
+  const errDiv = document.getElementById('admin-2fa-error');
+  const codeInp = document.getElementById('admin-2fa-code-input');
+
+  if (titleUser) titleUser.textContent = username + ' (' + roleDisplay + ')';
+  if (instrUser) instrUser.textContent = username;
+  if (errDiv) errDiv.style.display = 'none';
+  if (codeInp) codeInp.value = '';
+
+  if (loadView) loadView.style.display = 'block';
+  if (setupView) setupView.style.display = 'none';
+  if (succView) succView.style.display = 'none';
+
+  if (modal) modal.style.display = 'flex';
+
+  try {
+    const res = await fetch('/api/users/' + uid + '/2fa/init', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': (typeof getCsrf === 'function' ? getCsrf() : '')
+      }
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      throw new Error(data.detail || 'Gagal inisialisasi 2FA');
+    }
+
+    _currentAdmin2faSecret = data.secret;
+    const qrImg = document.getElementById('admin-2fa-qr-img');
+    const secTxt = document.getElementById('admin-2fa-secret-text');
+    if (qrImg) qrImg.src = data.qr_data_url;
+    if (secTxt) secTxt.textContent = data.secret_display;
+
+    if (loadView) loadView.style.display = 'none';
+    if (setupView) setupView.style.display = 'block';
+    setTimeout(() => { if (codeInp) codeInp.focus(); }, 100);
+  } catch (err) {
+    if (loadView) loadView.innerHTML = '<div style="color:#f87171;padding:20px">Gagal inisialisasi 2FA: ' + (err.message || err) + '<br><button type="button" class="btn btn-ghost btn-sm" onclick="closeAdmin2faModal()" style="margin-top:12px">Tutup</button></div>';
+  }
+}
+
+function closeAdmin2faModal() {
+  const modal = document.getElementById('admin2faModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function copyAdminSecretKey() {
+  if (!_currentAdmin2faSecret) return;
+  copySecretKey(_currentAdmin2faSecret);
+}
+
+async function submitAdmin2faConfirm() {
+  const codeInp = document.getElementById('admin-2fa-code-input');
+  const errDiv = document.getElementById('admin-2fa-error');
+  const btn = document.getElementById('admin-2fa-confirm-btn');
+  const val = codeInp ? codeInp.value.trim() : '';
+
+  if (!val || val.length !== 6 || !/^\d{6}$/.test(val)) {
+    if (errDiv) {
+      errDiv.textContent = 'Masukkan 6 digit angka dari aplikasi autentikator ponsel!';
+      errDiv.style.display = 'block';
+    }
+    return;
+  }
+
+  if (errDiv) errDiv.style.display = 'none';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Memverifikasi...';
+  }
+
+  try {
+    const res = await fetch('/api/users/' + _currentAdmin2faUid + '/2fa/confirm', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': (typeof getCsrf === 'function' ? getCsrf() : '')
+      },
+      body: JSON.stringify({
+        secret: _currentAdmin2faSecret,
+        code: val
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      throw new Error(data.detail || 'Verifikasi gagal');
+    }
+
+    _currentAdmin2faCodes = data.recovery_codes || [];
+    const setupView = document.getElementById('admin-2fa-setup-view');
+    const succView = document.getElementById('admin-2fa-success-view');
+    const succUser = document.getElementById('admin-2fa-success-user');
+    const grid = document.getElementById('admin-2fa-codes-grid');
+    const rawTa = document.getElementById('admin-raw-recovery-codes');
+
+    if (succUser) succUser.textContent = _currentAdmin2faUsername;
+    if (rawTa) rawTa.value = _currentAdmin2faCodes.join('\n');
+    if (grid) {
+      grid.innerHTML = _currentAdmin2faCodes.map(c => `
+        <div style="font-family:ui-monospace,monospace;font-size:14px;font-weight:700;letter-spacing:1px;color:var(--blue);text-align:center;padding:8px;background:rgba(255,255,255,0.04);border-radius:6px">
+          ${c}
+        </div>
+      `).join('');
+    }
+
+    if (setupView) setupView.style.display = 'none';
+    if (succView) succView.style.display = 'block';
+  } catch (err) {
+    if (errDiv) {
+      errDiv.textContent = err.message || 'Verifikasi kode gagal. Pastikan jam ponsel akurat.';
+      errDiv.style.display = 'block';
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Verifikasi & Aktifkan 2FA';
+    }
+  }
+}
+
+function copyAdminRecoveryCodes() {
+  const text = _currentAdmin2faCodes.join('\n');
+  if (!text) return;
+  const msg = 'Kode cadangan darurat untuk ' + _currentAdmin2faUsername + ' berhasil disalin!';
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (typeof showToast === 'function') showToast(msg, true);
+      else alert(msg);
+    }).catch(() => {
+      legacyCopyText(text, msg);
+    });
+  } else {
+    legacyCopyText(text, msg);
+  }
+}
+
+function downloadAdminRecoveryCodes() {
+  const text = _currentAdmin2faCodes.join('\n');
+  if (!text) return;
+  try {
+    const blob = new Blob([
+      '# KODE CADANGAN DARURAT 2FA (PANTAU SERVER)\n' +
+      '# Pengguna: ' + _currentAdmin2faUsername + '\n' +
+      '# Tanggal: ' + new Date().toISOString() + '\n' +
+      '# PERHATIAN: Setiap kode hanya dapat dipakai 1 kali bila ponsel hilang.\n\n' +
+      text + '\n'
+    ], {type: 'text/plain;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pantau-2fa-' + _currentAdmin2faUsername + '-recovery-codes.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (typeof showToast === 'function') showToast('Berkas kode cadangan berhasil diunduh!', true);
+  } catch (e) {
+    alert('Gagal mengunduh: ' + e.message);
+  }
+}
+
+function finishAdmin2faModal() {
+  closeAdmin2faModal();
+  window.location.reload();
+}
+
+async function disableAdmin2fa(uid, username) {
+  if (!confirm('Matikan perlindungan 2FA untuk akun \'' + username + '\'? Pengguna akan dapat login kembali hanya menggunakan kata sandi.')) {
+    return;
+  }
+  try {
+    const res = await fetch('/api/users/' + uid + '/2fa/disable', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': (typeof getCsrf === 'function' ? getCsrf() : '')
+      }
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      throw new Error(data.detail || 'Gagal mematikan 2FA');
+    }
+    if (typeof showToast === 'function') {
+      showToast(data.message || '2FA dinonaktifkan', true);
+    }
+    setTimeout(() => { window.location.reload(); }, 600);
+  } catch (err) {
+    alert('Gagal mematikan 2FA: ' + (err.message || err));
   }
 }
 </script>

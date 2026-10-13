@@ -6300,6 +6300,8 @@ def api_alert_ack(
 ):
     """Acknowledge peringatan (semua level) agar tidak mengganggu terus-menerus."""
     _verify_csrf_header(request)
+    if user.is_viewer():
+        raise HTTPException(status_code=403, detail="Akses ditolak: Viewer tidak memiliki izin melakukan tindakan pada insiden")
     row = db.query(ServerProblem).filter(
         ServerProblem.id == pid,
         ServerProblem.resolved_at.is_(None),
@@ -6325,6 +6327,8 @@ def api_alert_resolve(
 ):
     """Tandai masalah selesai/teratasi secara manual oleh admin/user."""
     _verify_csrf_header(request)
+    if user.is_viewer():
+        raise HTTPException(status_code=403, detail="Akses ditolak: Viewer tidak memiliki izin menyelesaikan insiden")
     row = db.query(ServerProblem).filter(
         ServerProblem.id == pid,
         ServerProblem.resolved_at.is_(None),
@@ -6354,6 +6358,8 @@ def api_alert_ignore(
 ):
     """Abaikan / bungkam peringatan atau masalah."""
     _verify_csrf_header(request)
+    if user.is_viewer():
+        raise HTTPException(status_code=403, detail="Akses ditolak: Viewer tidak memiliki izin mengabaikan insiden")
     row = db.query(ServerProblem).filter(
         ServerProblem.id == pid,
         ServerProblem.resolved_at.is_(None),
@@ -6436,6 +6442,8 @@ def api_alert_unignore(
 ):
     """Batalkan pengabaian / aktifkan kembali pemantauan masalah."""
     _verify_csrf_header(request)
+    if user.is_viewer():
+        raise HTTPException(status_code=403, detail="Akses ditolak: Viewer tidak memiliki izin memulihkan pengabaian insiden")
     row = db.query(ServerProblem).filter(
         ServerProblem.id == pid,
         ServerProblem.resolved_at.is_(None),
@@ -6480,6 +6488,8 @@ def api_service_ignore(
 ):
     """Abaikan pemantauan suatu layanan secara langsung (bisa permanen atau durasi)."""
     _verify_csrf_header(request)
+    if user.is_viewer() or not (user.is_master_admin() or user.has_perm("can_services")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin kontrol layanan diperlukan")
     svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
     if not svc:
         raise HTTPException(status_code=404, detail="Layanan tidak ditemukan")
@@ -6556,6 +6566,8 @@ def api_service_unignore(
 ):
     """Aktifkan kembali pemantauan suatu layanan."""
     _verify_csrf_header(request)
+    if user.is_viewer() or not (user.is_master_admin() or user.has_perm("can_services")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin kontrol layanan diperlukan")
     svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
     if not svc:
         raise HTTPException(status_code=404, detail="Layanan tidak ditemukan")
@@ -8686,6 +8698,152 @@ async def user_edit_permissions(
     _audit(db, user.username, "user_edit_perms", f"{target_u.username} (wewenang diperbarui)", "berhasil")
     db.commit()
     return RedirectResponse(_flash_profile_users(True, f"Wewenang untuk operator '{target_u.username}' berhasil diperbarui"), status_code=303)
+
+
+# ---------------------------------------------------------------------------
+# PENGELOLAAN 2FA TERKELOLA OLEH ADMINISTRATOR / OPERATOR (TOTP RFC 6238)
+# ---------------------------------------------------------------------------
+@app.post("/api/users/{uid}/2fa/init")
+def api_user_2fa_init(
+    request: Request,
+    uid: int,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Inisialisasi pengaturan 2FA TOTP untuk pengguna (khusus Master Admin & Operator)."""
+    _verify_csrf_header(request)
+    if user.is_viewer():
+        raise HTTPException(status_code=403, detail="Akses ditolak: Viewer tidak memiliki izin manajemen pengguna")
+
+    can_manage_users = user.is_master_admin() or user.has_perm("can_manage_users")
+    can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
+    if not can_manage_viewers:
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin manajemen pengguna diperlukan")
+
+    target_u = db.query(User).filter(User.id == uid).first()
+    if not target_u:
+        raise HTTPException(status_code=404, detail="Pengguna tidak ditemukan")
+
+    if target_u.is_master_admin() and not user.is_master_admin():
+        raise HTTPException(status_code=403, detail="Akses ditolak: tidak dapat mengubah akun Master Admin")
+
+    if not can_manage_users and target_u.role != "viewer":
+        raise HTTPException(status_code=403, detail="Akses ditolak: hanya berwenang mengelola akun Viewer")
+
+    secret = security_auth.generate_totp_secret()
+    secret_display = security_auth.format_secret_display(secret)
+    uri = security_auth.generate_totp_uri(secret, target_u.username, "Pantau Server")
+    qr_data_url = security_auth.generate_qr_data_url(uri)
+
+    return {
+        "ok": True,
+        "user_id": target_u.id,
+        "username": target_u.username,
+        "role": target_u.role,
+        "secret": secret,
+        "secret_display": secret_display,
+        "qr_data_url": qr_data_url,
+    }
+
+
+@app.post("/api/users/{uid}/2fa/confirm")
+def api_user_2fa_confirm(
+    request: Request,
+    uid: int,
+    body: dict = Body(...),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Verifikasi 6-digit kode TOTP dari ponsel pengguna dan aktifkan 2FA secara permanen."""
+    _verify_csrf_header(request)
+    if user.is_viewer():
+        raise HTTPException(status_code=403, detail="Akses ditolak: Viewer tidak memiliki izin manajemen pengguna")
+
+    can_manage_users = user.is_master_admin() or user.has_perm("can_manage_users")
+    can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
+    if not can_manage_viewers:
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin manajemen pengguna diperlukan")
+
+    target_u = db.query(User).filter(User.id == uid).first()
+    if not target_u:
+        raise HTTPException(status_code=404, detail="Pengguna tidak ditemukan")
+
+    if target_u.is_master_admin() and not user.is_master_admin():
+        raise HTTPException(status_code=403, detail="Akses ditolak: tidak dapat mengubah akun Master Admin")
+
+    if not can_manage_users and target_u.role != "viewer":
+        raise HTTPException(status_code=403, detail="Akses ditolak: hanya berwenang mengelola akun Viewer")
+
+    secret = str(body.get("secret", "")).strip().replace(" ", "")
+    code = str(body.get("code", "")).strip().replace(" ", "")
+
+    if not secret or not code:
+        raise HTTPException(status_code=400, detail="Kunci rahasia (secret) dan kode verifikasi 6-digit wajib diisi")
+
+    if not security_auth.verify_totp(secret, code):
+        raise HTTPException(status_code=400, detail="Kode verifikasi 6-digit salah atau jam perangkat ponsel pengguna tidak sinkron.")
+
+    plain_codes, hashed_codes = security_auth.generate_recovery_codes(8)
+    target_u.totp_secret = secret
+    target_u.totp_enabled = 1
+    target_u.recovery_codes = json.dumps(hashed_codes)
+
+    _audit(
+        db, user.username, "user_2fa_enable",
+        f"Pengguna {target_u.username} ({target_u.role})", "2FA berhasil diaktifkan oleh admin"
+    )
+    db.commit()
+
+    return {
+        "ok": True,
+        "message": f"Perlindungan 2FA untuk pengguna '{target_u.username}' berhasil diaktifkan!",
+        "recovery_codes": plain_codes,
+        "username": target_u.username,
+    }
+
+
+@app.post("/api/users/{uid}/2fa/disable")
+def api_user_2fa_disable(
+    request: Request,
+    uid: int,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Nonaktifkan perlindungan 2FA untuk pengguna yang ditentukan."""
+    _verify_csrf_header(request)
+    if user.is_viewer():
+        raise HTTPException(status_code=403, detail="Akses ditolak: Viewer tidak memiliki izin manajemen pengguna")
+
+    can_manage_users = user.is_master_admin() or user.has_perm("can_manage_users")
+    can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
+    if not can_manage_viewers:
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin manajemen pengguna diperlukan")
+
+    target_u = db.query(User).filter(User.id == uid).first()
+    if not target_u:
+        raise HTTPException(status_code=404, detail="Pengguna tidak ditemukan")
+
+    if target_u.is_master_admin() and not user.is_master_admin():
+        raise HTTPException(status_code=403, detail="Akses ditolak: tidak dapat mengubah akun Master Admin")
+
+    if not can_manage_users and target_u.role != "viewer":
+        raise HTTPException(status_code=403, detail="Akses ditolak: hanya berwenang mengelola akun Viewer")
+
+    target_u.totp_enabled = 0
+    target_u.totp_secret = None
+    target_u.recovery_codes = None
+
+    _audit(
+        db, user.username, "user_2fa_disable",
+        f"Pengguna {target_u.username} ({target_u.role})", "2FA dinonaktifkan oleh admin"
+    )
+    db.commit()
+
+    return {
+        "ok": True,
+        "message": f"Perlindungan 2FA untuk pengguna '{target_u.username}' telah dinonaktifkan.",
+        "username": target_u.username,
+    }
 
 
 # ---------------------------------------------------------------------------
