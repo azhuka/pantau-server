@@ -468,7 +468,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.2.22"
+AGENT_VERSION = "4.2.23"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1135,6 +1135,74 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
                 }
             run_file_op("chmod", {"path": target_path, "mode": "0755"})
             written = True
+
+        # Sanitasi dan perbarui unit service systemd jika masih memakai direktif sandbox usang
+        # (ProtectKernelModules, PrivateTmp, dll.) yang memicu NoNewPrivileges & Read-only FS.
+        clean_service_unit = (
+            "[Unit]\n"
+            "Description=Pantau Monitoring Agent (agent_pantau)\n"
+            "Wants=network-online.target\n"
+            "After=network-online.target\n"
+            "StartLimitIntervalSec=0\n\n"
+            "[Service]\n"
+            "Type=simple\n"
+            "User=pantau\n"
+            "Group=pantau\n"
+            "ExecStart=/opt/pantau/agent/agent_pantau.py\n"
+            "Restart=always\n"
+            "RestartSec=5\n"
+            "Nice=5\n"
+            "StandardOutput=journal\n"
+            "StandardError=journal\n\n"
+            "# CATATAN ARSITEKTUR KEAMANAN:\n"
+            "# Isolasi mount namespace (PrivateTmp, ProtectSystem, ProtectKernel*, dll.) sengaja tidak digunakan.\n"
+            "# Sesuai standar Linux & systemd, direktif tersebut secara otomatis memaksa kernel menyematkan flag\n"
+            "# PR_SET_NO_NEW_PRIVS pada Linux Container (LXC/Proxmox CT unprivileged), yang akan memblokir eskalasi\n"
+            "# sudo oleh biner wrapper. Keamanan agen sepenuhnya dijamin oleh isolasi user 'pantau' (tanpa shell login)\n"
+            "# dan pembatasan ketat whitelist perintah pada /etc/sudoers.d/pantau-agent.\n\n"
+            "[Install]\n"
+            "WantedBy=multi-user.target\n"
+        )
+        svc_path = "/etc/systemd/system/agent_pantau.service"
+        needs_reload = False
+        try:
+            if os.path.exists(svc_path):
+                curr_svc = ""
+                try:
+                    with open(svc_path, "r", encoding="utf-8", errors="replace") as sf:
+                        curr_svc = sf.read()
+                except Exception:
+                    pass
+                sandbox_keywords = (
+                    "ProtectKernelModules", "PrivateTmp", "ProtectKernelTunables",
+                    "ProtectControlGroups", "ProtectClock", "\nEOF"
+                )
+                if any(k in curr_svc for k in sandbox_keywords):
+                    print("[OTA] Konfigurasi isolasi namespace usang terdeteksi pada unit service, memperbarui...")
+                    if IS_ROOT:
+                        with open(svc_path, "w", encoding="utf-8") as sf:
+                            sf.write(clean_service_unit)
+                        os.chmod(svc_path, 0o644)
+                        needs_reload = True
+                    else:
+                        rw = run_file_op("write", {"path": svc_path, "content": clean_service_unit})
+                        if rw.get("ok"):
+                            run_file_op("chmod", {"path": svc_path, "mode": "0644"})
+                            needs_reload = True
+        except Exception as e:
+            print(f"[OTA] Peringatan saat sanitasi service unit: {e}")
+
+        if needs_reload:
+            try:
+                if IS_ROOT:
+                    subprocess.run(["systemctl", "daemon-reload"], timeout=10)
+                elif os.path.exists(PANTUAN_CRON_CMD):
+                    subprocess.run(["/usr/bin/sudo", "-n", PANTUAN_CRON_CMD, "run", "root", "systemctl daemon-reload"], timeout=10)
+                elif os.path.exists(PANTUAN_SHELL_CMD):
+                    subprocess.run(["/usr/bin/sudo", "-n", PANTUAN_SHELL_CMD], input="systemctl daemon-reload\nexit\n", text=True, timeout=10)
+                print("[OTA] systemctl daemon-reload berhasil dieksekusi.")
+            except Exception as e:
+                print(f"[OTA] Gagal reload systemd daemon: {e}")
 
         _exec_restart_agent()
 
