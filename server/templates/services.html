@@ -133,6 +133,34 @@
   background: #484f58;
 }
 
+.terminal-resize-handle {
+  height: 10px;
+  background: #161b22;
+  border-top: 1px solid #30363d;
+  border-radius: 0 0 10px 10px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+}
+.terminal-resize-handle:hover, .terminal-resize-handle.is-resizing {
+  background: #21262d;
+  border-color: #58a6ff;
+}
+.resize-grip {
+  width: 36px;
+  height: 3px;
+  border-radius: 2px;
+  background: #484f58;
+}
+.terminal-resize-handle:hover .resize-grip, .terminal-resize-handle.is-resizing .resize-grip {
+  background: #58a6ff;
+}
+.terminal-window.is-fullscreen .terminal-resize-handle {
+  display: none !important;
+}
+
 /* Fullscreen Terminal Window */
 .terminal-window.is-fullscreen {
   position: fixed !important;
@@ -852,6 +880,9 @@
     </div>
     <div class="real-terminal-screen" id="real-term" tabindex="0" aria-label="Terminal Bawaan Linux">
       <div id="xterm-container"></div>
+    </div>
+    <div id="term-resize-handle" class="terminal-resize-handle" title="Tarik ke atas/bawah untuk mengubah tinggi jendela terminal">
+      <span class="resize-grip"></span>
     </div>
   </div>
   <div id="apt-msg" style="display:none;font-size:12px;line-height:1.5;margin-top:10px"></div>
@@ -4226,8 +4257,34 @@ class WebTerminal {
       }
     });
 
-    // Menangani Escape key di dalam terminal untuk keluar dari fullscreen
+    // Smart Key Handler: Copy on Ctrl+C if text selected, Paste on Ctrl+V, Escape for fullscreen
     this.term.attachCustomKeyEventHandler(e => {
+      // 1. Copy pada Ctrl+C / Cmd+C bila ada teks yang diblok
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === 'c' || e.key === 'C')) {
+        if (this.term && this.term.hasSelection()) {
+          if (e.type === 'keydown') {
+            const sel = this.term.getSelection();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(sel).catch(() => {});
+            }
+          }
+          return false; // JANGAN kirim ^C (SIGINT) ke bash jika sedang ingin copy teks
+        }
+      }
+      // 2. Paste pada Ctrl+V / Cmd+V
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === 'v' || e.key === 'V')) {
+        if (e.type === 'keydown') {
+          if (navigator.clipboard && navigator.clipboard.readText) {
+            navigator.clipboard.readText().then(text => {
+              if (text && this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({ type: 'input', data: text }));
+              }
+            }).catch(() => {});
+          }
+        }
+        return false;
+      }
+      // 3. Escape untuk keluar dari fullscreen
       if (e.key === 'Escape' && this.windowEl && this.windowEl.classList.contains('is-fullscreen')) {
         if (e.type === 'keydown') {
           this.toggleFullscreen();
@@ -4236,6 +4293,73 @@ class WebTerminal {
       }
       return true;
     });
+
+    // Klik kanan: jika ada teks terseleksi -> Copy; jika tidak ada teks -> Paste dari clipboard
+    if (this.containerEl) {
+      this.containerEl.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (this.term && this.term.hasSelection()) {
+          const sel = this.term.getSelection();
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(sel).catch(() => {});
+          }
+          this.term.clearSelection();
+        } else {
+          if (navigator.clipboard && navigator.clipboard.readText) {
+            navigator.clipboard.readText().then(text => {
+              if (text && this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({ type: 'input', data: text }));
+              }
+            }).catch(() => {});
+          }
+        }
+        this.focus();
+      });
+
+      this.containerEl.addEventListener('click', () => {
+        this.focus();
+      });
+    }
+
+    if (this.screenEl) {
+      this.screenEl.addEventListener('click', () => {
+        this.focus();
+      });
+    }
+
+    // Drag-resize handle untuk tinggi terminal
+    const rzHandle = document.getElementById('term-resize-handle');
+    if (rzHandle && this.screenEl && !this._resizeHandleBound) {
+      this._resizeHandleBound = true;
+      let isDragging = false;
+      let startY = 0;
+      let startH = 0;
+      rzHandle.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startY = e.clientY;
+        startH = this.screenEl.offsetHeight;
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'ns-resize';
+        rzHandle.classList.add('is-resizing');
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const newH = Math.max(220, Math.min(window.innerHeight * 0.9, startH + (e.clientY - startY)));
+        this.screenEl.style.height = newH + 'px';
+        this.screenEl.style.maxHeight = 'none';
+        this.fit();
+      });
+      window.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          document.body.style.userSelect = '';
+          document.body.style.cursor = '';
+          rzHandle.classList.remove('is-resizing');
+          this.fit();
+          this.focus();
+        }
+      });
+    }
 
     // Fit otomatis saat jendela di-resize
     if (window.ResizeObserver && this.screenEl) {
