@@ -468,7 +468,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.2.23"
+AGENT_VERSION = "4.2.24"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1729,12 +1729,14 @@ def collect_disks() -> list[dict]:
         if len(parts) < 3:
             continue
         mount, fstype = parts[1], parts[2]
+        opts = parts[3].split(",") if len(parts) >= 4 else []
         if fstype not in DISK_TYPES or len(out) >= 20:
             continue
         try:
             st = os.statvfs(mount)
         except OSError:
             continue
+        is_ro = ("ro" in opts) or bool(getattr(st, "f_flag", 0) & getattr(os, "ST_RDONLY", 1))
         total = st.f_frsize * st.f_blocks
         used = total - st.f_frsize * st.f_bavail
         pct = round(used * 100.0 / total, 1) if total else 0.0
@@ -1752,6 +1754,7 @@ def collect_disks() -> list[dict]:
         item = {
             "mount": mount, "type": fstype,
             "total": total, "used": used, "pct": pct,
+            "is_ro": is_ro,
         }
         if rates:
             item["read_kb_s"] = rates["read_kb_s"]

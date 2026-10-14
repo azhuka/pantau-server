@@ -4079,7 +4079,7 @@ function renderApt(data) {
     aptSetState('pending', '<b>' + aptN + (isEn ? ' packages</b> can be upgraded' : ' paket</b> dapat di-upgrade')
       + (names ? ': <span class="mono dim">' + escapeHtml(names) + (pkgs.length > 8 ? '…' : '') + '</span>' : '.'));
   }
-  const canUpgrade = !aptRunning && (aptArmed || aptUpdated) && aptN > 0;
+  const canUpgrade = !aptRunning && (aptN != null && aptN > 0);
   if (upBtn) {
     upBtn.disabled = !canUpgrade;
     let tipText = '';
@@ -4091,10 +4091,10 @@ function renderApt(data) {
       tipText = isEn
         ? `Upgrade ${aptN} pending operating system package${aptN > 1 ? 's' : ''} interactively via Web Terminal`
         : `Tingkatkan ${aptN} paket sistem operasi secara interaktif di Web Terminal`;
-    } else if (aptN == null && !aptUpdated) {
+    } else if (aptN == null) {
       tipText = isEn
-        ? 'No packages need upgrade (click Update OS to check for latest updates)'
-        : 'Tidak ada paket yang perlu di-upgrade (klik Update OS untuk memeriksa pembaruan)';
+        ? 'No package info — click Update OS to check for latest updates'
+        : 'Belum ada info paket — klik Update OS untuk memeriksa pembaruan';
     } else {
       tipText = isEn
         ? 'No packages need upgrade. All operating system packages are up to date.'
@@ -4146,6 +4146,10 @@ let aptHeader = '';
 function aptLiveAppend(text, replace) {
   if (!text) return;
   const term = getTerm();
+  // Jika shell interaktif sedang live, jangan timpa buffer layar xterm dengan log polling apt
+  if (term.state === 'live' && term.ws && term.ws.readyState === WebSocket.OPEN && !term.aptActive) {
+    return;
+  }
   if (replace) {
     aptLiveBuf = String(text);
     term.setRawBuffer(aptHeader + aptLiveBuf);
@@ -4155,25 +4159,34 @@ function aptLiveAppend(text, replace) {
   }
 }
 
-// Ambil alih tampilan Terminal untuk proses apt
+// Ambil alih tampilan Terminal untuk proses apt (hanya bila shell tidak sedang aktif)
 function aptLiveShow(kind) {
   const term = getTerm();
-  term.suspendForApt();
+  const isLiveShell = (term.state === 'live' && term.ws && term.ws.readyState === WebSocket.OPEN);
+  if (!isLiveShell) {
+    term.suspendForApt();
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    aptHeader = '\r\n\x1b[33m──── ' + aptLabel(kind)
+      + (isEn ? ' · triggered from Dashboard button ────' : ' · dipicu dari tombol Dashboard ────') + '\x1b[0m\r\n';
+    aptLiveBuf = '';
+    term.setRawBuffer(aptHeader);
+    // Hanya tampilkan jendela terminal jika bukan update rutin ringan atau jika jendela sudah terbuka
+    if (kind !== 'APT_UPDATE' || (term.windowEl && term.windowEl.style.display !== 'none')) {
+      term.show();
+    }
+  }
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-  aptHeader = '\r\n\x1b[33m──── ' + aptLabel(kind)
-    + (isEn ? ' · triggered from Dashboard button ────' : ' · dipicu dari tombol Dashboard ────') + '\x1b[0m\r\n';
-  aptLiveBuf = '';
-  term.setRawBuffer(aptHeader);
-  term.show();
   aptLiveStatus(isEn ? 'sending command to server…' : 'mengirim perintah ke server…', 'var(--dim)');
 }
 
 // Setelah proses apt selesai, Terminal kembali ke shell
 function aptLiveDone() {
   const term = getTerm();
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-  aptLiveAppend('\r\n\x1b[33m──── ' + (isEn ? 'completed; returned to shell' : 'selesai; kembali ke shell') + ' ────\x1b[0m\r\n', false);
-  term.resumeAfterApt();
+  if (term.aptActive) {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    aptLiveAppend('\r\n\x1b[33m──── ' + (isEn ? 'completed; returned to shell' : 'selesai; kembali ke shell') + ' ────\x1b[0m\r\n', false);
+    term.resumeAfterApt();
+  }
 }
 
 
@@ -4916,7 +4929,7 @@ async function triggerInteractiveUpgrade() {
     return;
   }
 
-  const cmdToRun = "apt --fix-broken install && apt update && apt upgrade\n";
+  const cmdToRun = "apt upgrade\n";
 
   try {
     const r = await fetch(`/api/servers/${SID}/terminal/status`, { credentials: 'same-origin' });

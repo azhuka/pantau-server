@@ -835,6 +835,7 @@ def _sanitize_disk_list(raw) -> str | None:
             "total": _clamp_int(d.get("total"), 0, 0, 2 ** 63 - 1),
             "used": _clamp_int(d.get("used"), 0, 0, 2 ** 63 - 1),
             "pct": _clamp_float(d.get("pct"), 0.0, 0.0, 100.0),
+            "is_ro": bool(d.get("is_ro")),
             "read_kb_s": _clamp_float(d.get("read_kb_s"), 0.0, 0.0, 1e9),
             "write_kb_s": _clamp_float(d.get("write_kb_s"), 0.0, 0.0, 1e9),
             "read_iops": _clamp_float(d.get("read_iops"), 0.0, 0.0, 1e7),
@@ -1354,6 +1355,25 @@ def agent_report(
     extras.updated_at = datetime.utcnow()
 
     db.commit()
+
+    # Rekonsiliasi insiden server seketika pada saat laporan telemetri diterima
+    try:
+        services = db.query(Service).filter(Service.server_id == server.id).all()
+        latest_map = _latest_metrics(db, (s.id for s in services))
+        svc_data = [
+            {
+                "name": s.service_name,
+                "status": latest_map[s.id].status if s.id in latest_map else "unknown",
+                "port": s.port,
+                "proc": s.process_name,
+                "health_msg": latest_map[s.id].health_message if s.id in latest_map else None,
+            }
+            for s in services
+        ]
+        sync_server_problems(db, server, _problem_instances(server, extras, svc_data, db))
+    except Exception as exc:
+        logger.warning("[api_report] Error rekonsiliasi insiden untuk %s: %s", server.hostname, exc)
+
     return {"ok": True}
 
 
@@ -5429,6 +5449,13 @@ def _resource_problem_instances(db, srv) -> list:
             disks = None
     for d in disks or []:
         mount = d.get("mount", "?")
+        if d.get("is_ro"):
+            inst.append({
+                "key": f"disk_ro:{mount}", "severity": "danger",
+                "message": f"Partisi disk {mount} READ-ONLY (sistem berkas terkunci — operasi tulis ditolak!)",
+                "tip": f"Filesystem beralih ke mode read-only akibat proteksi kernel/error I/O. Cek kernel: 'dmesg -T | grep -i ext4'. Lakukan remount: 'sudo mount -o remount,rw {mount}'.",
+                "context": _build_problem_context(f"disk_ro:{mount}", srv, mount=mount),
+            })
         total, used = d.get("total") or 0, d.get("used") or 0
         if total <= 0:
             continue
@@ -5632,7 +5659,7 @@ def _problem_component(key: str) -> str:
         return "Processor (CPU)"
     if key in ("mem_high", "swap_high"):
         return "Memori (RAM)"
-    if key.startswith("disk_high:"):
+    if key.startswith("disk_high:") or key.startswith("disk_critical:") or key.startswith("disk_ro:"):
         mount = key.split(":", 1)[1] if ":" in key else ""
         return f"Penyimpanan ({mount})" if mount else "Penyimpanan (Disk)"
     if key in ("security_danger", "failed_logins"):
@@ -6436,7 +6463,7 @@ def api_alerts(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Danger terbuka. `alerts` = belum diakui (harus dimunculkan), sisanya rangkuman."""
+    """Insiden terbuka lintas semua tingkat keparahan (danger, average, warning, info)."""
     now = datetime.utcnow()
     # Pastikan server offline/stale langsung tersinkronisasi tanpa jeda background loop
     stale_servers = [s for s in db.query(Server).filter(Server.is_active == 1, Server.last_seen.isnot(None)).all() if _server_stale(s)]
@@ -6447,32 +6474,90 @@ def api_alerts(
             pass
 
     host = {s.id: s.hostname for s in db.query(Server).all()}
-    open_danger = (
+    open_problems = (
         db.query(ServerProblem)
         .filter(
-            ServerProblem.severity == "danger",
             ServerProblem.resolved_at.is_(None),
             (ServerProblem.is_ignored == 0) | (ServerProblem.is_ignored.is_(None)),
         )
         .order_by(desc(ServerProblem.started_at)).all()
     )
-    alerts = [_alert_dict(r, host.get(r.server_id, "?"), now)
-              for r in open_danger if r.acknowledged_at is None]
+
+    open_danger = [r for r in open_problems if r.severity == "danger"]
+    open_average = [r for r in open_problems if r.severity == "average"]
+    open_warning = [r for r in open_problems if r.severity == "warning"]
+    open_info = [r for r in open_problems if r.severity == "info"]
+
+    unack_danger = [r for r in open_danger if r.acknowledged_at is None]
+    unack_average = [r for r in open_average if r.acknowledged_at is None]
+    unack_warning = [r for r in open_warning if r.acknowledged_at is None]
+
+    rank = {"danger": 4, "average": 3, "warning": 2, "info": 1}
+    unack_operational = sorted(
+        unack_danger + unack_average + unack_warning,
+        key=lambda r: (rank.get(r.severity, 0), r.started_at),
+        reverse=True,
+    )
+
+    danger_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_danger]
+    average_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_average]
+    warning_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_warning]
+    all_unack_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_operational]
+
     danger_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in open_danger if r.server_id}))
+    average_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in open_average if r.server_id}))
+    warning_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in open_warning if r.server_id}))
 
     host_danger_counts = {}
     for r in open_danger:
         hname = host.get(r.server_id) or f"Server #{r.server_id}"
         host_danger_counts[hname] = host_danger_counts.get(hname, 0) + 1
 
-    total_danger_count = len(open_danger)
+    host_average_counts = {}
+    for r in open_average:
+        hname = host.get(r.server_id) or f"Server #{r.server_id}"
+        host_average_counts[hname] = host_average_counts.get(hname, 0) + 1
+
+    host_warning_counts = {}
+    for r in open_warning:
+        hname = host.get(r.server_id) or f"Server #{r.server_id}"
+        host_warning_counts[hname] = host_warning_counts.get(hname, 0) + 1
+
+    if open_danger:
+        highest_severity = "danger"
+    elif open_average:
+        highest_severity = "average"
+    elif open_warning:
+        highest_severity = "warning"
+    elif open_info:
+        highest_severity = "info"
+    else:
+        highest_severity = "ok"
+
     return {
-        "alerts": alerts,
-        "unack_count": len(alerts),
-        "open_danger_count": total_danger_count,
-        "acked_count": len(open_danger) - len(alerts),
+        "alerts": danger_alerts,
+        "all_alerts": all_unack_alerts,
+        "danger_alerts": danger_alerts,
+        "average_alerts": average_alerts,
+        "warning_alerts": warning_alerts,
+        "unack_count": len(danger_alerts),
+        "unack_danger_count": len(danger_alerts),
+        "unack_average_count": len(average_alerts),
+        "unack_warning_count": len(warning_alerts),
+        "unack_total_count": len(all_unack_alerts),
+        "open_danger_count": len(open_danger),
+        "open_average_count": len(open_average),
+        "open_warning_count": len(open_warning),
+        "open_info_count": len(open_info),
+        "total_open_count": len(open_problems),
+        "acked_count": len(open_danger) - len(danger_alerts),
         "danger_hosts": danger_hosts,
+        "average_hosts": average_hosts,
+        "warning_hosts": warning_hosts,
         "host_danger_counts": host_danger_counts,
+        "host_average_counts": host_average_counts,
+        "host_warning_counts": host_warning_counts,
+        "highest_severity": highest_severity,
     }
 
 

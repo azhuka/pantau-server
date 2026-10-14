@@ -715,16 +715,27 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
   .topbar h2{font-size:18px}
 }
 
-/* ---------- ALERT GAWAT DARURAT (Dashboard) ---------- */
-.alert-banner{position:fixed;top:0;left:0;right:0;z-index:1500;background:linear-gradient(90deg,#7f1d1d 0%,#991b1b 30%,#b91c1c 70%,#7f1d1d 100%);border-bottom:1px solid rgba(254,202,202,.35);color:#fff;padding:8px 20px;cursor:pointer;box-shadow:0 6px 20px rgba(185,28,28,.4);transition:background .2s}
-.alert-banner:hover{background:linear-gradient(90deg,#881337 0%,#b91c1c 30%,#dc2626 70%,#881337 100%)}
+/* ---------- ALERT BANNER (Dashboard - Multi-Severity) ---------- */
+.alert-banner{position:fixed;top:0;left:0;right:0;z-index:1500;padding:8px 20px;cursor:pointer;transition:background .2s}
+.alert-banner.banner-danger{background:linear-gradient(90deg,#7f1d1d 0%,#991b1b 30%,#b91c1c 70%,#7f1d1d 100%);border-bottom:1px solid rgba(254,202,202,.35);color:#fff;box-shadow:0 6px 20px rgba(185,28,28,.4)}
+.alert-banner.banner-danger:hover{background:linear-gradient(90deg,#881337 0%,#b91c1c 30%,#dc2626 70%,#881337 100%)}
+.alert-banner.banner-danger .alert-banner-btn{color:#991b1b}
+
+.alert-banner.banner-average{background:linear-gradient(90deg,#9a3412 0%,#c2410c 30%,#ea580c 70%,#9a3412 100%);border-bottom:1px solid rgba(254,215,170,.4);color:#fff;box-shadow:0 6px 20px rgba(234,88,12,.35)}
+.alert-banner.banner-average:hover{background:linear-gradient(90deg,#7c2d12 0%,#ea580c 30%,#f97316 70%,#7c2d12 100%)}
+.alert-banner.banner-average .alert-banner-btn{color:#c2410c}
+
+.alert-banner.banner-warning{background:linear-gradient(90deg,#854d0e 0%,#a16207 30%,#ca8a04 70%,#854d0e 100%);border-bottom:1px solid rgba(254,240,138,.4);color:#fff;box-shadow:0 6px 20px rgba(202,138,4,.35)}
+.alert-banner.banner-warning:hover{background:linear-gradient(90deg,#713f12 0%,#ca8a04 30%,#eab308 70%,#713f12 100%)}
+.alert-banner.banner-warning .alert-banner-btn{color:#a16207}
+
 .alert-banner-inner{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
 .alert-banner-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13.5px;line-height:1.4}
 .alert-tag-emergency{background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.3);color:#fecaca;font-size:11px;font-weight:800;padding:3px 8px;border-radius:5px;letter-spacing:0.5px;display:inline-flex;align-items:center;gap:5px;text-transform:uppercase;flex-shrink:0}
 .alert-host-chip{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.25);border-radius:4px;padding:1px 6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;font-weight:700;color:#fff;display:inline-block}
 .alert-host-more{background:rgba(255,255,255,0.2);border-radius:4px;padding:1px 6px;font-size:11.5px;font-weight:600;color:#ffe4e6;display:inline-block}
-.alert-banner-btn{background:#fff;color:#991b1b;font-weight:700;font-size:12px;padding:6px 14px;border-radius:6px;border:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.25);text-decoration:none;white-space:nowrap;transition:all .15s;flex-shrink:0}
-.alert-banner-btn:hover{background:#fff1f2;color:#881337;transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.35)}
+.alert-banner-btn{background:#fff;font-weight:700;font-size:12px;padding:6px 14px;border-radius:6px;border:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.25);text-decoration:none;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.alert-banner-btn:hover{background:#fff1f2;transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.35)}
 body.alert-locked{overflow:hidden}
 body.show-alert-banner .sidebar{padding-top:48px}
 body.show-alert-banner .main{padding-top:72px}
@@ -926,6 +937,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
     <a href="/problems" class="nav-link {% if '/problems' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span> <span class="nav-label" data-i18n="menu_problems">Insiden</span>
+      <span id="nav-incident-badge" class="badge" style="display:none;margin-left:auto;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:10px"></span>
     </a>
     <a href="/logs" class="nav-link {% if '/logs' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></span> <span class="nav-label" data-i18n="menu_logs">Log</span>
@@ -974,16 +986,16 @@ body.show-alert-banner .main{padding-top:72px}
 </main>
 
 {% if request.url.path in ("/", "", "/dashboard") %}
-<div id="alertBanner" class="alert-banner" style="display:none" onclick="location.href='/problems'">
+<div id="alertBanner" class="alert-banner banner-danger" style="display:none" onclick="location.href='/problems'">
   <div class="alert-banner-inner">
     <div class="alert-banner-left">
-      <span class="alert-tag-emergency">
+      <span class="alert-tag-emergency" id="alertBannerTag">
         <span class="pulse">🚨</span> GAWAT DARURAT
       </span>
-      <span id="alertBannerText"><b id="alertBannerCount">0</b> Server: Agen tidak melapor.</span>
+      <span id="alertBannerText"><b id="alertBannerCount">0</b> Server: Memuat data insiden…</span>
     </div>
     <div class="alert-banner-right">
-      <a href="/problems" class="alert-banner-btn" onclick="event.stopPropagation()">
+      <a href="/problems" id="alertBannerActionBtn" class="alert-banner-btn" onclick="event.stopPropagation()">
         Buka Halaman Insiden &rarr;
       </a>
     </div>
@@ -1357,6 +1369,7 @@ function getAlertGroupTitle(key, firstMsg) {
   if (key === 'agent_stale') return 'Agen Tidak Melapor';
   if (key === 'agent_conflict') return 'Konflik Agen / Duplikasi API Key';
   if (key && key.startsWith('service_down:')) return 'Layanan Sistem Terhenti: ' + key.split(':')[1];
+  if (key && key.startsWith('disk_ro:')) return 'Partisi Disk Read-Only (' + (key.split(':')[1] || '') + ')';
   if (key === 'ram_critical') return 'Kapasitas RAM Kritis (Hampir Penuh)';
   if (key === 'swap_critical') return 'Kapasitas Swap Kritis';
   if (key === 'cpu_saturated') return 'CPU Jenuh / Beban Maksimal';
@@ -1376,6 +1389,9 @@ function getAlertGroupDesc(key, firstMsg) {
   }
   if (key && key.startsWith('service_down:')) {
     return 'Layanan sistem ' + key.split(':')[1] + ' dilaporkan terhenti (down) atau mengalami kegagalan proses.';
+  }
+  if (key && key.startsWith('disk_ro:')) {
+    return 'Sistem berkas partisi disk ' + (key.split(':')[1] || '') + ' terkunci dalam mode Read-Only akibat proteksi kernel atau kegagalan I/O storage. Seluruh operasi tulis ditolak.';
   }
   if (key === 'ram_critical') {
     return 'Penggunaan memori RAM telah mendekati batas maksimal sistem.';
@@ -1487,6 +1503,42 @@ function renderAlerts(d){
   const bannerText = document.getElementById('alertBannerText');
   const bc = document.getElementById('alertBannerCount');
 
+  // Perbarui indikator badge Insiden di menu navigasi sidebar (berlaku di semua halaman)
+  const navBadge = document.getElementById('nav-incident-badge');
+  if (navBadge) {
+    const dangerN = d.open_danger_count || 0;
+    const avgN = d.open_average_count || 0;
+    const warnN = d.open_warning_count || 0;
+    const totalIncidents = dangerN + avgN + warnN;
+    if (totalIncidents > 0) {
+      navBadge.style.display = 'inline-flex';
+      navBadge.textContent = totalIncidents;
+      if (dangerN > 0) {
+        navBadge.style.background = '#ef4444';
+        navBadge.style.color = '#fff';
+      } else if (avgN > 0) {
+        navBadge.style.background = '#f97316';
+        navBadge.style.color = '#fff';
+      } else {
+        navBadge.style.background = '#eab308';
+        navBadge.style.color = '#18181b';
+      }
+    } else {
+      navBadge.style.display = 'none';
+    }
+  }
+
+  // Perbarui judul tab browser sesuai keparahan tertinggi (berlaku di semua halaman)
+  if ((d.open_danger_count || 0) > 0) {
+    if (document.title.indexOf('🚨') !== 0) document.title = '🚨 ' + d.open_danger_count + ' GAWAT DARURAT · ' + ORIG_TITLE;
+  } else if ((d.open_average_count || 0) > 0) {
+    if (document.title.indexOf('⚠️') !== 0) document.title = '⚠️ ' + d.open_average_count + ' LAYANAN DOWN · ' + ORIG_TITLE;
+  } else if ((d.open_warning_count || 0) > 0) {
+    if (document.title.indexOf('⚡') !== 0) document.title = '⚡ ' + d.open_warning_count + ' PERINGATAN · ' + ORIG_TITLE;
+  } else {
+    document.title = ORIG_TITLE;
+  }
+
   // Overlay modal danger dan banner hanya aktif di dashboard ('/' atau '' atau '/dashboard')
   const isDashboard = (window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname === '/dashboard');
   if (!isDashboard) {
@@ -1502,14 +1554,15 @@ function renderAlerts(d){
     return;
   }
 
+  const dangerList = d.danger_alerts || d.alerts || [];
   if (overlay && listEl) {
-    const key = (d.alerts || []).map(a => a.id + ':' + a.acknowledged).join('|');
+    const key = dangerList.map(a => a.id + ':' + a.acknowledged).join('|');
     if (overlay._key !== key) {
       overlay._key = key;
-      listEl.innerHTML = renderAlertGroupsHtml(d.alerts || []);
+      listEl.innerHTML = renderAlertGroupsHtml(dangerList);
       tickAllDurations();
     }
-    if (d.alerts && d.alerts.length) {
+    if (dangerList.length) {
       overlay.classList.add('show');
       document.body.classList.add('alert-locked');
     } else {
@@ -1520,49 +1573,64 @@ function renderAlerts(d){
   }
 
   if (banner) {
-    const n = d.open_danger_count || 0;
-    if (bc) bc.textContent = n;
-    if (bannerText && n > 0) {
-      const dangerHosts = (d.danger_hosts && d.danger_hosts.length)
-        ? d.danger_hosts
-        : Array.from(new Set((d.alerts || []).map(a => a.hostname))).filter(Boolean);
-      const hostCount = dangerHosts.length || n;
+    const dangerN = d.open_danger_count || 0;
+    const avgN = d.open_average_count || 0;
+    const warnN = d.open_warning_count || 0;
+    const bannerTag = document.getElementById('alertBannerTag');
+    const actionBtn = document.getElementById('alertBannerActionBtn') || banner.querySelector('.alert-banner-btn');
 
-      if (hostCount === 1) {
-        bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(dangerHosts[0])}</span>: Agen tidak melapor.`;
+    if (dangerN > 0) {
+      banner.className = 'alert-banner banner-danger';
+      if (bannerTag) bannerTag.innerHTML = '<span class="pulse">🚨</span> GAWAT DARURAT';
+      const hosts = d.danger_hosts || [];
+      const hCount = hosts.length || dangerN;
+      const sampleMsg = (dangerList[0] && dangerList[0].message) ? dangerList[0].message : 'Insiden kritis aktif';
+      if (hCount === 1) {
+        bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(hosts[0] || 'Klien')}</span>: ${escHtml(sampleMsg)}`;
       } else {
-        bannerText.innerHTML = `<strong>${hostCount} Server</strong>: Agen tidak melapor.`;
+        bannerText.innerHTML = `<strong>${hCount} Server</strong> dalam status Gawat Darurat (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
       }
-
-      const btn = banner.querySelector('.alert-banner-btn');
-      if (btn) {
-        btn.innerHTML = (hostCount > 1)
-          ? `Buka Halaman Insiden (${hostCount}) &rarr;`
-          : `Buka Halaman Insiden &rarr;`;
+      if (actionBtn) actionBtn.innerHTML = `Buka Halaman Insiden (${dangerN}) &rarr;`;
+      banner.style.display = 'flex';
+      document.body.classList.add('show-alert-banner');
+    } else if (avgN > 0) {
+      banner.className = 'alert-banner banner-average';
+      if (bannerTag) bannerTag.innerHTML = '<span class="pulse">⚠️</span> GANGGUAN LAYANAN';
+      const hosts = d.average_hosts || [];
+      const hCount = hosts.length || avgN;
+      const avgList = d.average_alerts || [];
+      const sampleMsg = (avgList[0] && avgList[0].message) ? avgList[0].message : 'Layanan sistem terhenti';
+      if (hCount === 1) {
+        bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(hosts[0] || 'Klien')}</span>: ${escHtml(sampleMsg)}`;
+      } else {
+        bannerText.innerHTML = `<strong>${hCount} Server</strong> mengalami Gangguan Layanan (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
       }
+      if (actionBtn) actionBtn.innerHTML = `Buka Halaman Insiden (${avgN}) &rarr;`;
+      banner.style.display = 'flex';
+      document.body.classList.add('show-alert-banner');
+    } else if (warnN > 0) {
+      banner.className = 'alert-banner banner-warning';
+      if (bannerTag) bannerTag.innerHTML = '<span class="pulse">⚡</span> PERINGATAN AMBANG BATAS';
+      const hosts = d.warning_hosts || [];
+      const hCount = hosts.length || warnN;
+      const warnList = d.warning_alerts || [];
+      const sampleMsg = (warnList[0] && warnList[0].message) ? warnList[0].message : 'Resource melebihi ambang batas';
+      if (hCount === 1) {
+        bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(hosts[0] || 'Klien')}</span>: ${escHtml(sampleMsg)}`;
+      } else {
+        bannerText.innerHTML = `<strong>${hCount} Server</strong> melebihi ambang batas (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
+      }
+      if (actionBtn) actionBtn.innerHTML = `Buka Halaman Insiden (${warnN}) &rarr;`;
+      banner.style.display = 'flex';
+      document.body.classList.add('show-alert-banner');
+    } else {
+      banner.style.display = 'none';
+      document.body.classList.remove('show-alert-banner');
     }
-    banner.style.display = n ? 'flex' : 'none';
-    document.body.classList.toggle('show-alert-banner', n > 0);
-  }
-
-  if (d.unack_count > 0) {
-    if (document.title.indexOf('🚨') !== 0) document.title = '🚨 ' + d.unack_count + ' GAWAT DARURAT · ' + ORIG_TITLE;
-  } else {
-    document.title = ORIG_TITLE;
   }
 }
 async function alertFetch(){
   if (document.hidden) return;
-  const isDashboard = (window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname === '/dashboard');
-  if (!isDashboard) {
-    const overlay = document.getElementById('alertOverlay');
-    const banner = document.getElementById('alertBanner');
-    if (overlay) overlay.classList.remove('show');
-    document.body.classList.remove('alert-locked');
-    if (banner) banner.style.display = 'none';
-    document.body.classList.remove('show-alert-banner');
-    return;
-  }
   try {
     const r = await fetch('/api/alerts', {credentials: 'same-origin'});
     if (r.ok) renderAlerts(await r.json());
