@@ -4,7 +4,7 @@
 {% block content %}
 <div class="topbar">
   <div>
-    <h2>📁 File Manager — {{ server.hostname }}
+    <h2>File Manager — {{ server.hostname }}
       <span class="mono copyable-ip" style="font-size:12px;margin-left:8px" onclick="copyIp('{{ server.ip_address }}', event)" title="Klik untuk salin IP">{{ server.ip_address }}</span>
     </h2>
     <div style="font-size:12px;color:var(--dim);margin-top:2px">
@@ -75,6 +75,32 @@
   .fm-editor-textarea:focus { border-color: var(--blue); }
 
   .fm-bar-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 14px; border-radius: 6px; font-size: 13px; flex-wrap: wrap; }
+
+  @media (max-width: 640px) {
+    .fm-toolbar-top > div {
+      min-width: 0 !important;
+      width: 100% !important;
+    }
+    .fm-address-bar {
+      min-width: 0 !important;
+      width: 100% !important;
+    }
+    .fm-search-input {
+      width: 100% !important;
+    }
+    .fm-modal-backdrop {
+      padding: 8px !important;
+    }
+    .fm-modal-card {
+      max-width: 100% !important;
+      width: 100% !important;
+      border-radius: 8px !important;
+    }
+    .fm-editor-textarea {
+      font-size: 11.5px !important;
+      height: 50vh !important;
+    }
+  }
 </style>
 
 <div class="card fm-wrapper" id="fm-container" style="padding:16px">
@@ -106,7 +132,7 @@
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <input type="text" id="fm-filter" class="fm-search-input" oninput="fmFilterItems(this.value)" placeholder="Filter berkas di folder ini..." {% if not is_online %}disabled title="Server offline"{% endif %}>
       <button type="button" class="btn btn-sm" id="fm-btn-paste" onclick="fmPasteClipboard()" style="display:none;align-items:center;gap:4px;border-color:var(--blue);color:var(--blue)">
-        📋 Tempel
+        Tempel
       </button>
       <button type="button" id="fm-btn-new-folder" class="btn btn-sm" onclick="fmOpenNewFolder()" style="display:flex;align-items:center;gap:4px" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% endif %}>
         + Folder Baru
@@ -115,7 +141,7 @@
         + Berkas Baru
       </button>
       <button type="button" id="fm-btn-upload" class="btn btn-sm btn-primary" onclick="fmOpenUpload()" style="display:flex;align-items:center;gap:4px" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% endif %}>
-        &uarr; Unggah Berkas
+        Unggah Berkas
       </button>
     </div>
   </div>
@@ -137,20 +163,20 @@
       <button type="button" class="btn btn-sm btn-ghost" onclick="fmClearSelection()">Batal Pilih (Esc)</button>
     </div>
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <button type="button" class="btn btn-sm" onclick="fmCopySelected()" title="Ctrl+C">📋 Salin</button>
-      <button type="button" class="btn btn-sm" onclick="fmCutSelected()" title="Ctrl+X">✂️ Potong</button>
-      <button type="button" class="btn btn-sm" onclick="fmOpenBulkChmod()">⚙ Ubah Izin</button>
-      <button type="button" class="btn btn-sm btn-danger" onclick="fmOpenBulkDelete()">🗑 Hapus Terpilih</button>
+      <button type="button" class="btn btn-sm" onclick="fmCopySelected()" title="Ctrl+C">Salin</button>
+      <button type="button" class="btn btn-sm" onclick="fmCutSelected()" title="Ctrl+X">Potong</button>
+      <button type="button" class="btn btn-sm" onclick="fmOpenBulkChmod()">Ubah Izin</button>
+      <button type="button" class="btn btn-sm btn-danger" onclick="fmOpenBulkDelete()">Hapus Terpilih</button>
     </div>
   </div>
 
   <!-- Clipboard Indicator Bar -->
   <div id="fm-clipboard-bar" class="fm-bar-banner" style="display:none;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3)">
     <div style="display:flex;align-items:center;gap:8px">
-      <span id="fm-clipboard-desc">📋 0 item siap ditempel</span>
+      <span id="fm-clipboard-desc">0 item siap ditempel</span>
     </div>
     <div style="display:flex;gap:6px;align-items:center">
-      <button type="button" class="btn btn-sm btn-primary" onclick="fmPasteClipboard()">📋 Tempel di Sini (Ctrl+V)</button>
+      <button type="button" class="btn btn-sm btn-primary" onclick="fmPasteClipboard()">Tempel di Sini (Ctrl+V)</button>
       <button type="button" class="btn btn-sm btn-ghost" onclick="fmClearClipboard()">Batal</button>
     </div>
   </div>
@@ -186,7 +212,7 @@
   <div class="fm-modal-card fm-modal-card-editor" id="fm-editor-card">
     <div class="fm-modal-header">
       <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
-        <span>📝 Editor Berkas:</span>
+        <span>Editor Berkas:</span>
         <code id="fm-editor-path" style="background:var(--card);padding:2px 6px;border-radius:4px;color:var(--blue);word-break:break-all"></code>
         <span id="fm-editor-perms" class="badge badge-muted"></span>
         <span class="badge badge-info" title="Salinan cadangan otomatis dibuat sebelum file ditimpa">auto .bak</span>
@@ -215,7 +241,7 @@
     </div>
     <div class="fm-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="fmCloseEditor()">Batal / Tutup</button>
-      <button type="button" id="fm-editor-save-btn" class="btn btn-primary" onclick="fmSaveFile()">💾 Simpan Perubahan (Ctrl+S)</button>
+      <button type="button" id="fm-editor-save-btn" class="btn btn-primary" onclick="fmSaveFile()">Simpan Perubahan (Ctrl+S)</button>
     </div>
   </div>
 </div>
@@ -224,7 +250,7 @@
 <div id="fm-rename-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card">
     <div class="fm-modal-header">
-      <span>🏷️ Ganti Nama</span>
+      <span>Ganti Nama</span>
       <button type="button" class="btn btn-ghost" onclick="fmCloseRename()">&times;</button>
     </div>
     <form id="fm-rename-form" onsubmit="fmSubmitRename(event)">
@@ -248,7 +274,7 @@
 <div id="fm-upload-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card">
     <div class="fm-modal-header">
-      <span id="fm-upload-modal-title">↑ Unggah Berkas ke Server</span>
+      <span id="fm-upload-modal-title">Unggah Berkas ke Server</span>
       <button type="button" class="btn btn-ghost" onclick="fmCloseUpload()">&times;</button>
     </div>
     <form id="fm-upload-form" onsubmit="fmSubmitUpload(event)">
@@ -281,7 +307,7 @@
 <div id="fm-chmod-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card">
     <div class="fm-modal-header">
-      <span>⚙ Ubah Hak Akses (Permissions) & Pemilik</span>
+      <span>Ubah Hak Akses & Pemilik</span>
       <button type="button" class="btn btn-ghost" onclick="fmCloseChmod()">&times;</button>
     </div>
     <form id="fm-chmod-form" onsubmit="fmSubmitChmod(event)">
@@ -327,7 +353,7 @@
 <div id="fm-delete-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card" style="border-color:rgba(239,68,68,0.4)">
     <div class="fm-modal-header" style="color:var(--red)">
-      <span>🗑 Konfirmasi Hapus</span>
+      <span>Konfirmasi Hapus</span>
       <button type="button" class="btn btn-ghost" onclick="fmCloseDelete()">&times;</button>
     </div>
     <div class="fm-modal-body">
@@ -336,7 +362,7 @@
         <code id="fm-delete-path" style="color:var(--red);word-break:break-all;font-size:13px"></code>
       </div>
       <div style="font-size:12px;color:var(--dim)">
-        ⚠️ Tindakan ini tidak dapat dibatalkan. Berkas atau seluruh sub-folder di dalamnya akan dihapus dari server klien.
+        Tindakan ini tidak dapat dibatalkan. Berkas atau seluruh sub-folder di dalamnya akan dihapus dari server klien.
       </div>
       <div id="fm-delete-error" style="display:none;color:var(--red);font-size:12px;margin-top:10px"></div>
     </div>
@@ -375,7 +401,7 @@
 <div id="fm-bulk-delete-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card" style="border-color:rgba(239,68,68,0.4)">
     <div class="fm-modal-header" style="color:var(--red)">
-      <span>🗑 Konfirmasi Hapus Massal</span>
+      <span>Konfirmasi Hapus Massal</span>
       <button type="button" class="btn btn-ghost" onclick="fmCloseBulkDelete()">&times;</button>
     </div>
     <div class="fm-modal-body">
@@ -385,7 +411,7 @@
       <div id="fm-bulk-delete-list" style="background:var(--bg);padding:10px 14px;border-radius:6px;border:1px solid var(--border);margin-bottom:14px;max-height:160px;overflow-y:auto;font-family:monospace;font-size:12px;display:flex;flex-direction:column;gap:4px">
       </div>
       <div style="font-size:12px;color:var(--dim)">
-        ⚠️ Tindakan ini tidak dapat dibatalkan. Berkas atau seluruh sub-folder di dalamnya akan dihapus dari server klien.
+        Tindakan ini tidak dapat dibatalkan. Berkas atau seluruh sub-folder di dalamnya akan dihapus dari server klien.
       </div>
       <div id="fm-bulk-delete-error" style="display:none;color:var(--red);font-size:12px;margin-top:10px"></div>
     </div>
@@ -436,6 +462,19 @@
 const SID = {{ server.id }};
 const SERVER_NAME = {{ server.hostname | tojson }};
 const IS_ONLINE = {{ 'true' if is_online else 'false' }};
+
+const FM_ICONS = {
+  folder: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;color:var(--blue)"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>',
+  file: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;color:var(--dim)"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>',
+  symlink: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;color:var(--green)"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>',
+  edit: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>',
+  download: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>',
+  copy: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
+  cut: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>',
+  chmod: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>',
+  rename: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>',
+  delete: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>'
+};
 
 function escapeHtml(s) {
   if (!s) return '';
@@ -733,13 +772,13 @@ function fmUpdateClipboardUI() {
     const more = count > 3 ? (isEn ? ` and ${count - 3} more` : ` dan ${count - 3} lainnya`) : '';
     if (clipDesc) {
       clipDesc.innerHTML = isEn
-        ? `<span>📋 <strong>${count} ${count === 1 ? 'item' : 'items'} ${actText}</strong>: <code style="color:var(--blue)">${escapeHtml(names + more)}</code></span>`
-        : `<span>📋 <strong>${count} item ${actText}</strong>: <code style="color:var(--blue)">${escapeHtml(names + more)}</code></span>`;
+        ? `<span><strong>${count} ${count === 1 ? 'item' : 'items'} ${actText}</strong>: <code style="color:var(--blue)">${escapeHtml(names + more)}</code></span>`
+        : `<span><strong>${count} item ${actText}</strong>: <code style="color:var(--blue)">${escapeHtml(names + more)}</code></span>`;
     }
     if (clipBar) clipBar.style.display = 'flex';
     if (btnPaste) {
       btnPaste.style.display = 'inline-flex';
-      btnPaste.textContent = isEn ? `📋 Paste (${count})` : `📋 Tempel (${count})`;
+      btnPaste.textContent = isEn ? `Paste (${count})` : `Tempel (${count})`;
     }
   } else {
     if (clipBar) clipBar.style.display = 'none';
@@ -925,23 +964,9 @@ function fmRenderBreadcrumbs(currentPath) {
 }
 
 function getFileIcon(item) {
-  if (item.is_dir) return '📁';
-  if (item.is_symlink) return '🔗';
-  const ext = item.name.split('.').pop().toLowerCase();
-  switch (ext) {
-    case 'py': return '🐍';
-    case 'sh': case 'bash': return '🐚';
-    case 'js': case 'mjs': return '📄';
-    case 'json': return '📋';
-    case 'html': case 'htm': return '🌐';
-    case 'css': return '🎨';
-    case 'md': case 'txt': case 'log': return '📄';
-    case 'conf': case 'cfg': case 'ini': case 'service': return '⚙️';
-    case 'zip': case 'tar': case 'gz': case 'bz2': case 'xz': return '📦';
-    case 'png': case 'jpg': case 'jpeg': case 'gif': case 'svg': return '🖼️';
-    case 'pdf': return '📕';
-    default: return '📄';
-  }
+  if (item.is_dir) return FM_ICONS.folder;
+  if (item.is_symlink) return FM_ICONS.symlink;
+  return FM_ICONS.file;
 }
 
 function fmFilterItems(keyword) {
@@ -975,7 +1000,7 @@ function fmRenderItems(items) {
       <td style="text-align:center;color:var(--dim)">-</td>
       <td colspan="6">
         <a class="fm-item-name" style="color:var(--dim)" onclick="fmLoadDir('${escapeHtml(parent)}')">
-          <span class="fm-icon">📂</span>
+          <span class="fm-icon">${FM_ICONS.folder}</span>
           <span>.. ` + (isEn ? '(Parent Directory)' : '(Folder Induk)') + `</span>
         </a>
       </td>
@@ -1031,13 +1056,13 @@ function fmRenderItems(items) {
       <td style="font-size:12px">${ownerStr}</td>
       <td>${dateStr}</td>
       <td class="fm-actions-cell">
-        ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'View & Edit File' : 'Lihat & Edit Berkas'}" onclick="fmOpenFile('${safePath}')">✏️</button>` : ''}
-        ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Download File' : 'Unduh Berkas'}" onclick="fmDownloadFile('${safePath}')">⬇️</button>` : ''}
-        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Copy' : 'Salin (Copy)'}" onclick="fmCopySingle('${safePath}')">📋</button>
-        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Cut' : 'Potong (Cut)'}" onclick="fmCutSingle('${safePath}')">✂️</button>
-        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Change Permissions & Owner (chmod/chown)' : 'Ubah Hak Akses & Pemilik (chmod/chown)'}" onclick="fmOpenChmod('${safePath}', '${item.mode_octal || '0644'}', '${escapeHtml(item.owner || '')}', '${escapeHtml(item.group || '')}')">⚙️</button>
-        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Rename' : 'Ganti Nama'}" onclick="fmOpenRename('${safePath}', '${safeName}')">🏷️</button>
-        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} style="color:var(--red)" title="${isEn ? 'Delete' : 'Hapus'}" onclick="fmOpenDelete('${safePath}', ${item.is_dir})">🗑️</button>
+        ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'View & Edit File' : 'Lihat & Edit Berkas'}" onclick="fmOpenFile('${safePath}')">${FM_ICONS.edit}</button>` : ''}
+        ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Download File' : 'Unduh Berkas'}" onclick="fmDownloadFile('${safePath}')">${FM_ICONS.download}</button>` : ''}
+        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Copy' : 'Salin (Copy)'}" onclick="fmCopySingle('${safePath}')">${FM_ICONS.copy}</button>
+        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Cut' : 'Potong (Cut)'}" onclick="fmCutSingle('${safePath}')">${FM_ICONS.cut}</button>
+        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Change Permissions & Owner (chmod/chown)' : 'Ubah Hak Akses & Pemilik (chmod/chown)'}" onclick="fmOpenChmod('${safePath}', '${item.mode_octal || '0644'}', '${escapeHtml(item.owner || '')}', '${escapeHtml(item.group || '')}')">${FM_ICONS.chmod}</button>
+        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Rename' : 'Ganti Nama'}" onclick="fmOpenRename('${safePath}', '${safeName}')">${FM_ICONS.rename}</button>
+        <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} style="color:var(--red)" title="${isEn ? 'Delete' : 'Hapus'}" onclick="fmOpenDelete('${safePath}', ${item.is_dir})">${FM_ICONS.delete}</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -1487,7 +1512,7 @@ function fmOpenNewFolder() {
     return;
   }
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  document.getElementById('fm-prompt-title').textContent = isEn ? '📁 Create New Folder' : '📁 Buat Folder Baru';
+  document.getElementById('fm-prompt-title').textContent = isEn ? 'Create New Folder' : 'Buat Folder Baru';
   document.getElementById('fm-prompt-label').textContent = isEn ? 'Folder Name:' : 'Nama Folder:';
   document.getElementById('fm-prompt-dest').textContent = fmCurrentPath;
   const inp = document.getElementById('fm-prompt-input');
@@ -1522,7 +1547,7 @@ function fmOpenNewFile() {
     return;
   }
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  document.getElementById('fm-prompt-title').textContent = isEn ? '📄 Create New File' : '📄 Buat Berkas Baru';
+  document.getElementById('fm-prompt-title').textContent = isEn ? 'Create New File' : 'Buat Berkas Baru';
   document.getElementById('fm-prompt-label').textContent = isEn ? 'File Name:' : 'Nama Berkas:';
   document.getElementById('fm-prompt-dest').textContent = fmCurrentPath;
   const inp = document.getElementById('fm-prompt-input');

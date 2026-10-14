@@ -204,36 +204,83 @@
   color: #fff;
   transform: translateY(-1px);
 }
-/* Toolbar Grouping Modern di Hero */
+/* Header Hero & Toolbar Presisi Terpadu */
+.hero-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 16px !important;
+  flex-wrap: nowrap !important;
+}
+.hero-ident {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+.hero-host {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+}
+.hero-host strong {
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+  color: #fff !important;
+  white-space: nowrap !important;
+  max-width: 250px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.hero-meta-bar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  font-size: 12px !important;
+  color: var(--dim) !important;
+  line-height: 1.5 !important;
+  margin-top: 2px !important;
+}
+.hero-meta-sys {
+  font-size: 12px !important;
+  color: var(--dim) !important;
+}
 .hero-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  flex-shrink: 0 !important;
 }
 .toolbar-group {
   display: inline-flex;
   align-items: center;
-  background: rgba(30, 41, 59, 0.7);
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 8px;
   padding: 3px;
   gap: 2px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  flex-shrink: 0;
 }
 .toolbar-group .btn {
   border: none !important;
   background: transparent !important;
   color: var(--dim) !important;
-  font-size: 12px !important;
+  font-size: 11.5px !important;
   font-weight: 500 !important;
-  padding: 6px 12px !important;
+  padding: 5px 10px !important;
   border-radius: 6px !important;
   line-height: 1.4 !important;
   box-shadow: none !important;
   transition: all .15s ease !important;
+  white-space: nowrap !important;
 }
 .toolbar-group .btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08) !important;
@@ -288,10 +335,139 @@
 }
 .toolbar-divider {
   width: 1px;
-  height: 18px;
-  background: rgba(148, 163, 184, 0.22);
+  height: 16px;
+  background: rgba(148, 163, 184, 0.2);
   margin: 0 1px;
   align-self: center;
+  flex-shrink: 0;
+}
+@media (max-width: 1080px) {
+  .hero-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+  }
+  .hero-host {
+    flex-wrap: wrap !important;
+  }
+  .hero-actions.hero-toolbar {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
+}
+@media (max-width: 768px) {
+  .hero-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  .hero-host {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .hero-host strong {
+    font-size: 16px !important;
+    max-width: 100% !important;
+  }
+  .hero-meta-bar {
+    gap: 6px !important;
+    margin-top: 4px !important;
+  }
+  .hero-actions.hero-toolbar {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+  .toolbar-group {
+    display: flex !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    justify-content: space-between !important;
+    padding: 3px !important;
+    gap: 2px !important;
+  }
+  .toolbar-group .btn,
+  .toolbar-group form,
+  .toolbar-group .ha-protected-wrapper {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 6px 3px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+  .toolbar-group form .btn,
+  .toolbar-group .ha-protected-wrapper .btn {
+    width: 100% !important;
+    padding: 6px 3px !important;
+    font-size: 11px !important;
+    justify-content: center !important;
+  }
+  .toolbar-group .btn svg {
+    margin-right: 3px !important;
+    width: 12px !important;
+    height: 12px !important;
+  }
+  .toolbar-divider {
+    height: 14px !important;
+    margin: 0 1px !important;
+  }
+  .real-terminal-screen {
+    height: 320px !important;
+    max-height: 55vh !important;
+    padding: 8px 10px !important;
+  }
+  .terminal-titlebar {
+    padding: 6px 10px !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .terminal-actions {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+  .terminal-btn-icon {
+    padding: 3px 6px !important;
+    font-size: 10px !important;
+  }
+  .specs-grid-4, .specs-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+  .segmented-control {
+    display: flex !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .segmented-control .btn {
+    flex: 1 1 auto !important;
+    text-align: center !important;
+    padding: 4px 6px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+  #term-unlock-modal > div,
+  #maint-modal > div,
+  #add-svc-modal > div,
+  #kill-proc-modal > div,
+  #block-ip-modal > div,
+  #create-user-modal > div,
+  #add-cron-modal > div,
+  #add-ssl-path-modal > div {
+    max-width: calc(100vw - 20px) !important;
+    width: calc(100vw - 20px) !important;
+    margin: 10px auto !important;
+    padding: 16px 14px !important;
+    box-sizing: border-box !important;
+  }
 }
 .btn-svc-start, .btn-svc-stop {
   width: 28px !important;
@@ -488,7 +664,7 @@
     <div class="hero-ident">
       <div class="hero-host">
         <span class="dot {{ 'warn' if server.is_maintenance else ('up' if is_online else 'down') }}" id="hero-dot"></span>
-        <strong>{{ server.hostname }}</strong>
+        <strong title="{{ server.hostname }}">{{ server.hostname }}</strong>
         {% if platform_info %}
         <span class="badge" id="hero-platform-badge" style="font-size:11px;background:{{ platform_info.badge_bg }};color:{{ platform_info.badge_color }};border:1px solid {{ platform_info.badge_border }};display:inline-flex;align-items:center;gap:4px;font-weight:600" title="Platform: {{ platform_info.label }}">
           {% if platform_info.type == 'lxc' %}
@@ -499,6 +675,18 @@
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
           {% endif %}
           {{ platform_info.short_label }}
+        </span>
+        {% endif %}
+        <span class="mono copyable-ip" style="font-size:12px" onclick="copyIp('{{ server.ip_address }}', event)" title="Klik untuk salin IP">{{ server.ip_address }}</span>
+        <span id="hero-online" class="hero-online {{ 'warn' if server.is_maintenance else ('on' if is_online else 'off') }}">{{ 'pemeliharaan' if server.is_maintenance else ('online' if is_online else 'offline') }}</span>
+        <button type="button" id="hero-maint-badge" class="hero-maint-badge" style="{{ '' if server.is_maintenance else 'display:none;' }}" onclick="openMaintenanceModal()" title="Lihat detail mode pemeliharaan" data-i18n-title="view_maint_details"><span id="hero-maint-badge-text" data-i18n="view">Lihat</span></button>
+      </div>
+      <div class="hero-meta-bar">
+        <span id="hero-meta" class="hero-meta-sys">{% if os_label %}{{ os_label }}{% endif %}{% if kernel %} · kernel {{ kernel }}{% endif %}{% if not os_label and not kernel %}memuat data sistem…{% endif %}</span>
+        {% if server.group_name %}
+        <span class="badge badge-muted" style="font-size:11px;display:inline-flex;align-items:center;gap:4px" title="Grup Server">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          {{ server.group_name }}
         </span>
         {% endif %}
         {% if server.is_proxmox_ha %}
@@ -513,12 +701,6 @@
           Jaringan Terisolasi
         </span>
         {% endif %}
-        {% if server.group_name %}
-        <span class="badge badge-muted" style="font-size:11px;display:inline-flex;align-items:center;gap:4px" title="Grup Server">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-          {{ server.group_name }}
-        </span>
-        {% endif %}
         {% if server.tags %}
           {% for tag in (server.tags or '').split(',') %}
             {% if tag.strip() %}
@@ -529,16 +711,12 @@
             {% endif %}
           {% endfor %}
         {% endif %}
-        <span class="mono copyable-ip" style="font-size:12px" onclick="copyIp('{{ server.ip_address }}', event)" title="Klik untuk salin IP">{{ server.ip_address }}</span>
-        <span id="hero-online" class="hero-online {{ 'warn' if server.is_maintenance else ('on' if is_online else 'off') }}">{{ 'pemeliharaan' if server.is_maintenance else ('online' if is_online else 'offline') }}</span>
-        <button type="button" id="hero-maint-badge" class="hero-maint-badge" style="{{ '' if server.is_maintenance else 'display:none;' }}" onclick="openMaintenanceModal()" title="Lihat detail mode pemeliharaan" data-i18n-title="view_maint_details"><span id="hero-maint-badge-text" data-i18n="view">Lihat</span></button>
       </div>
-      <div class="hero-meta" id="hero-meta">{% if os_label %}{{ os_label }}{% endif %}{% if kernel %} · kernel {{ kernel }}{% endif %}{% if not os_label and not kernel %}memuat data sistem…{% endif %}</div>
     </div>
     <div class="hero-actions hero-toolbar">
       {% if user.is_master_admin() or user.is_operator() %}
       <!-- Grup 1: Akses & Pemeliharaan Server -->
-      <div class="toolbar-group" title="Akses &amp; Utilitas Server">
+      <div class="toolbar-group">
         <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" {% if not server.allow_web_terminal %}disabled style="opacity:0.35;cursor:not-allowed" title="Akses Web Terminal dinonaktifkan untuk server ini sesuai kebijakan keamanan" data-i18n-title="web_terminal_disabled"{% elif not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — terminal dinonaktifkan" data-i18n-title="server_offline_terminal_disabled"{% else %}title="Buka terminal shell interaktif langsung ke server klien" data-i18n-title="open_term_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
           Terminal
@@ -563,13 +741,13 @@
       </div>
 
       <!-- Grup 2: Pembaruan & Kontrol Daya Sistem -->
-      <div class="toolbar-group" title="Pembaruan &amp; Daya Mesin">
+      <div class="toolbar-group">
         <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="aptAction('APT_UPDATE')" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan" data-i18n-title="server_offline_actions_disabled"{% else %}title="Sinkronkan repositori paket OS (apt update) untuk mengecek ketersediaan pembaruan baru" data-i18n-title="apt_update_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
           Update OS
         </button>
         <span class="toolbar-divider"></span>
-        <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="aptAction('APT_UPGRADE_INTERACT')" disabled title="Pasang seluruh pembaruan paket sistem operasi yang tertunda" data-i18n-title="apt_upgrade_tooltip">
+        <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="triggerInteractiveUpgrade()" disabled title="Tidak ada paket yang perlu di-upgrade. Seluruh paket sistem operasi telah mutakhir." data-i18n-title="no_packages_to_upgrade">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
           Upgrade
         </button>
@@ -652,6 +830,11 @@
         <span id="term-title">Terminal Bawaan &middot; shell root</span>
       </div>
       <div class="terminal-actions">
+        <span id="term-upgrade-banner" class="terminal-status-badge" style="display:none;color:#fca5a5;background:rgba(239,68,68,0.18);border:1px solid rgba(239,68,68,0.4);font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px" title="Proses upgrade interaktif sedang aktif. Jangan tinggalkan halaman ini sampai selesai.">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ef4444;margin-right:5px;box-shadow:0 0 6px #ef4444"></span>
+          Upgrade Aktif &mdash; Jangan Tinggalkan Halaman
+          <button type="button" onclick="finishUpgradeSession()" style="margin-left:6px;background:none;border:none;color:#fff;cursor:pointer;text-decoration:underline;font-size:10.5px" title="Tandai proses upgrade telah selesai dan matikan guardrail halaman">Selesai</button>
+        </span>
         <span id="term-lease-badge" class="terminal-status-badge" style="display:none;color:var(--yellow);border:1px solid rgba(234,179,8,0.3);background:rgba(234,179,8,0.08);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:11px" title="Sisa durasi otentikasi terminal">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="term-lease-timer">--:--</span>
         </span>
@@ -763,7 +946,7 @@
     </div>
     
     <!-- 4 Grid Ringkas (CPU, RAM, Platform, OS) -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:14px;margin-bottom:16px">
+    <div class="specs-grid-4" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:14px;margin-bottom:16px">
       
       <!-- CPU -->
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
@@ -841,7 +1024,7 @@
     </div>
 
     <!-- 2 Kolom Bawah: Disk Fisik & Jaringan/Gateway -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:14px">
+    <div class="specs-grid-2" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:14px">
       
       <!-- Block Devices / Storage -->
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
@@ -3868,10 +4051,27 @@ function renderApt(data) {
   const canUpgrade = !aptRunning && (aptArmed || aptUpdated) && aptN > 0;
   if (upBtn) {
     upBtn.disabled = !canUpgrade;
-    upBtn.title = aptRunning ? (isEn ? 'Update/Upgrade process is running…' : 'Proses Update/Upgrade sedang berjalan…')
-      : canUpgrade ? (isEn ? 'Upgrade all pending packages' : 'Tingkatkan semua paket tertunda')
-      : !aptUpdated ? (isEn ? 'Click Update OS first' : 'Klik Update OS terlebih dahulu')
-      : (isEn ? 'No packages need upgrade' : 'Tidak ada paket yang perlu di-upgrade');
+    let tipText = '';
+    if (aptRunning) {
+      tipText = isEn
+        ? 'Operating system package upgrade is currently in progress…'
+        : 'Proses pembaruan paket sistem operasi sedang berlangsung…';
+    } else if (canUpgrade) {
+      tipText = isEn
+        ? `Upgrade ${aptN} pending operating system package${aptN > 1 ? 's' : ''} interactively via Web Terminal`
+        : `Tingkatkan ${aptN} paket sistem operasi secara interaktif di Web Terminal`;
+    } else if (aptN == null && !aptUpdated) {
+      tipText = isEn
+        ? 'No packages need upgrade (click Update OS to check for latest updates)'
+        : 'Tidak ada paket yang perlu di-upgrade (klik Update OS untuk memeriksa pembaruan)';
+    } else {
+      tipText = isEn
+        ? 'No packages need upgrade. All operating system packages are up to date.'
+        : 'Tidak ada paket yang perlu di-upgrade. Seluruh paket sistem operasi telah mutakhir.';
+    }
+    upBtn.setAttribute('data-tooltip', tipText);
+    upBtn.setAttribute('data-tooltip-orig', tipText);
+    upBtn.removeAttribute('title');
   }
   aptSetUpgradeEnabled(canUpgrade);
 }
@@ -4257,6 +4457,19 @@ class WebTerminal {
         }));
       }
       this.focus();
+
+      if (window._pendingUpgradeCommand) {
+        const cmd = window._pendingUpgradeCommand;
+        window._pendingUpgradeCommand = null;
+        if (typeof setUpgradeSessionActive === 'function') {
+          setUpgradeSessionActive(true);
+        }
+        setTimeout(() => {
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({ type: 'input', data: cmd }));
+          }
+        }, 600);
+      }
     };
 
     this.ws.onmessage = (event) => {
@@ -4361,7 +4574,41 @@ function stopTermLeaseCountdown() {
   if (lockBtn) lockBtn.style.display = 'none';
 }
 
-function openTerminalUnlockModal(userHasTotp) {
+window._isUpgradeInProgress = false;
+window._upgradeBeforeUnload = null;
+window._pendingUpgradeCommand = null;
+
+function setUpgradeSessionActive(active) {
+  window._isUpgradeInProgress = Boolean(active);
+  const banner = document.getElementById('term-upgrade-banner');
+  if (banner) banner.style.display = active ? 'inline-flex' : 'none';
+
+  if (active) {
+    if (!window._upgradeBeforeUnload) {
+      window._upgradeBeforeUnload = function(e) {
+        const msg = "Proses upgrade sistem sedang berjalan di Web Terminal. Meninggalkan atau menutup halaman ini dapat memutus sesi instalasi sistem operasi!";
+        e.preventDefault();
+        e.returnValue = msg;
+        return msg;
+      };
+      window.addEventListener('beforeunload', window._upgradeBeforeUnload);
+    }
+  } else {
+    if (window._upgradeBeforeUnload) {
+      window.removeEventListener('beforeunload', window._upgradeBeforeUnload);
+      window._upgradeBeforeUnload = null;
+    }
+  }
+}
+
+function finishUpgradeSession() {
+  if (window._isUpgradeInProgress) {
+    setUpgradeSessionActive(false);
+    showToast("Sesi upgrade interaktif ditandai selesai. Guardrail navigasi dinonaktifkan.", true);
+  }
+}
+
+function openTerminalUnlockModal(userHasTotp, defaultReason = '') {
   const modal = document.getElementById('term-unlock-modal');
   const errBox = document.getElementById('term-unlock-error');
   const pwdInput = document.getElementById('term-unlock-pwd');
@@ -4371,7 +4618,7 @@ function openTerminalUnlockModal(userHasTotp) {
 
   if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
   if (pwdInput) pwdInput.value = '';
-  if (reasonInput) reasonInput.value = '';
+  if (reasonInput) reasonInput.value = defaultReason || '';
   if (totpGrp) totpGrp.style.display = userHasTotp ? 'block' : 'none';
   if (totpInput) {
     totpInput.value = '';
@@ -4385,9 +4632,12 @@ function openTerminalUnlockModal(userHasTotp) {
   }
 }
 
-function closeTerminalUnlockModal() {
+function closeTerminalUnlockModal(canceled = true) {
   const modal = document.getElementById('term-unlock-modal');
   if (modal) modal.style.display = 'none';
+  if (canceled) {
+    window._pendingUpgradeCommand = null;
+  }
 }
 
 async function submitTerminalUnlock(e) {
@@ -4421,11 +4671,34 @@ async function submitTerminalUnlock(e) {
     if (!res.ok) {
       throw new Error(data.detail || ('HTTP ' + res.status));
     }
-    closeTerminalUnlockModal();
+    
+    const pendingCmd = window._pendingUpgradeCommand;
+    const modal = document.getElementById('term-unlock-modal');
+    if (modal) modal.style.display = 'none';
+
     startTermLeaseCountdown(data.remaining_seconds || (dur * 60));
     const term = getTerm();
     term.show();
-    term.connect();
+    if (term.windowEl) {
+      term.windowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    if (pendingCmd) {
+      if (term.state === 'live' && term.ws && term.ws.readyState === WebSocket.OPEN) {
+        window._pendingUpgradeCommand = null;
+        if (typeof setUpgradeSessionActive === 'function') setUpgradeSessionActive(true);
+        term.fit();
+        term.focus();
+        setTimeout(() => {
+          term.sendRaw(pendingCmd);
+        }, 300);
+      } else {
+        window._pendingUpgradeCommand = pendingCmd;
+        term.connect();
+      }
+    } else {
+      term.connect();
+    }
   } catch (err) {
     if (errBox) {
       errBox.textContent = err.message || 'Gagal memverifikasi kata sandi';
@@ -4438,6 +4711,7 @@ async function submitTerminalUnlock(e) {
 
 async function lockTerminalSession() {
   if (!confirm('Kunci akses terminal dan putus sesi aktif di server ini sekarang?')) return;
+  finishUpgradeSession();
   try {
     await fetch(`/api/servers/${SID}/terminal/lock`, {
       method: 'POST',
@@ -4460,6 +4734,11 @@ async function lockTerminalSession() {
 async function toggleTerminalView() {
   const term = getTerm();
   if (term.windowEl && term.windowEl.style.display !== 'none') {
+    if (window._isUpgradeInProgress) {
+      if (!confirm('Proses upgrade sistem mungkin masih berlangsung di terminal ini. Yakin ingin menyembunyikan terminal? (Sesi shell akan tetap aktif di server).')) {
+        return;
+      }
+    }
     term.hide();
     return;
   }
@@ -4493,6 +4772,65 @@ async function toggleTerminalView() {
     }
   } catch (e) {
     alert('Gagal memeriksa otentikasi terminal: ' + e.message);
+  }
+}
+
+async function triggerInteractiveUpgrade() {
+  const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
+  if (!isOnline) {
+    showToast('Server sedang offline. Operasi upgrade dinonaktifkan.', false);
+    return;
+  }
+
+  const allowWebTerm = {{ 1 if server.allow_web_terminal else 0 }};
+  if (!allowWebTerm) {
+    alert("Akses Web Terminal dinonaktifkan untuk server ini. Mohon aktifkan opsi 'Izinkan Akses Web Terminal (Root Shell)' pada halaman Edit Server terlebih dahulu agar dapat menjalankan upgrade interaktif.");
+    return;
+  }
+
+  if (!confirm("Jalankan upgrade paket sistem operasi secara interaktif melalui Web Terminal Root?\n\nSesi terminal fisik/SSH interaktif akan dibuka langsung ke server untuk menjalankan pembaruan paket. Anda dapat melihat dan menentukan seluruh pilihan konfigurasi jika ada sesi interaktif penting.")) {
+    return;
+  }
+
+  const cmdToRun = "apt --fix-broken install && apt update && apt upgrade\n";
+
+  try {
+    const r = await fetch(`/api/servers/${SID}/terminal/status`, { credentials: 'same-origin' });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || 'Gagal memeriksa status terminal');
+
+    if (!data.allow_web_terminal) {
+      alert('Akses Terminal Web dinonaktifkan untuk server ini sesuai konfigurasi keamanan.');
+      return;
+    }
+    if (!data.can_terminal) {
+      alert('Akses ditolak: Anda tidak memiliki wewenang Terminal Shell Web.');
+      return;
+    }
+
+    const term = getTerm();
+    term.show();
+    if (term.windowEl) {
+      term.windowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    if (data.is_unlocked && data.remaining_seconds > 0) {
+      startTermLeaseCountdown(data.remaining_seconds);
+      if (term.state === 'live' && term.ws && term.ws.readyState === WebSocket.OPEN) {
+        setUpgradeSessionActive(true);
+        term.fit();
+        term.focus();
+        term.sendRaw(cmdToRun);
+      } else {
+        window._pendingUpgradeCommand = cmdToRun;
+        term.connect();
+      }
+    } else {
+      window._pendingUpgradeCommand = cmdToRun;
+      openTerminalUnlockModal(Boolean(data.user_has_totp), "Pembaruan Paket Sistem Operasi (Interactive Upgrade)");
+    }
+  } catch (e) {
+    alert('Gagal menginisialisasi sesi terminal: ' + e.message);
   }
 }
 

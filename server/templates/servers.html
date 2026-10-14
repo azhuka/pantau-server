@@ -37,11 +37,34 @@
   padding: 8px 12px;
   font-size: 13px;
 }
+@media (max-width: 640px) {
+  .servers-controls-wrap {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  #servers-group-filter {
+    width: 100% !important;
+  }
+  .servers-search-box {
+    width: 100% !important;
+  }
+  #servers-search {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .servers-controls-wrap a.btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
 </style>
 
 <div class="topbar">
   <h2>Daftar Server</h2>
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+  <div class="servers-controls-wrap" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     {% if servers %}
     {% if all_groups and all_groups|length > 0 %}
     <select id="servers-group-filter" onchange="serversFilter()"
@@ -55,7 +78,7 @@
       {% endif %}
     </select>
     {% endif %}
-    <div style="position:relative;display:flex;align-items:center">
+    <div class="servers-search-box" style="position:relative;display:flex;align-items:center">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
       <input type="search" id="servers-search" placeholder="Cari server, IP, tag…" data-i18n-placeholder="search_server_agent" oninput="serversFilter()"
              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:7px 12px 7px 30px;font-size:12px;width:240px;outline:none;transition:border-color .15s">
@@ -192,7 +215,7 @@
         {% endif %}
       </td>
       <td style="text-align:center">
-        <span class="badge {{ srv._status_cls }}" id="srv-sts-{{ srv.id }}" style="font-size:11.5px;padding:2.5px 8px">{{ srv._status_label }}</span>
+        <span class="badge {{ srv._status_cls }}" id="srv-sts-{{ srv.id }}" style="font-size:10.5px;padding:2px 7px">{{ srv._status_label }}</span>
         {% if srv.is_maintenance and srv.maintenance_reason %}
         <span style="font-size:11px;color:var(--yellow);margin-left:4px" title="{{ srv.maintenance_reason }}">ℹ️</span>
         {% endif %}
@@ -247,9 +270,9 @@
       <td style="text-align:center">
         {% if srv._apt_upgradable is not none %}
           {% if srv._apt_upgradable > 0 %}
-            <span class="badge badge-warn" style="font-size:11.5px;padding:2.5px 7px" title="{{ srv._apt_upgradable }} paket tersedia">{{ srv._apt_upgradable }} paket</span>
+            <span class="badge badge-warn" style="font-size:10.5px;padding:2px 6px" title="{{ srv._apt_upgradable }} paket tersedia">{{ srv._apt_upgradable }} paket</span>
           {% else %}
-            <span class="badge badge-up" style="font-size:11.5px;padding:2.5px 7px">mutakhir</span>
+            <span class="badge badge-up" style="font-size:10.5px;padding:2px 6px">mutakhir</span>
           {% endif %}
         {% else %}
           <span style="color:var(--dim);font-size:12.5px">—</span>

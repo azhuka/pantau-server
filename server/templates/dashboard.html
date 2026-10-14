@@ -221,6 +221,41 @@
 .meter-bar.green { background: var(--green, #10b981); }
 .meter-bar.yellow { background: var(--yellow, #f59e0b); }
 .meter-bar.red { background: var(--red, #ef4444); }
+
+@media (max-width: 640px) {
+  .noc-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .dash-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .dash-controls-wrap {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .view-switch-group {
+    width: 100% !important;
+    display: flex !important;
+  }
+  .view-switch-group .view-btn {
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+  #dash-group-filter {
+    width: 100% !important;
+  }
+  .dash-search-box {
+    width: 100% !important;
+  }
+  #dash-search {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
 </style>
 
 <div class="topbar">
@@ -234,7 +269,7 @@
 </div>
 
 <!-- 1. Global KPI Banner (Zabbix-Style Alert Strip) -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:10px;margin-bottom:12px">
+<div class="dash-kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:10px;margin-bottom:12px">
   <a href="/servers" class="card kpi-link-card" style="margin:0;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-left:3px solid var(--blue);text-decoration:none;color:inherit;cursor:pointer" title="Kelola Seluruh Server">
     <div>
       <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em">Total Server</div>
@@ -301,7 +336,7 @@
           <td style="padding:8px 10px;white-space:nowrap">
             <div style="font-size:13.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
             {% if p.group_name %}
-            <div style="font-size:11.5px;color:var(--dim);margin-top:2px">❖ {{ p.group_name }}</div>
+            <div style="font-size:11.5px;color:var(--dim);margin-top:2px">{{ p.group_name }}</div>
             {% endif %}
           </td>
           <td style="padding:8px 10px;white-space:nowrap">
@@ -343,7 +378,7 @@
       <div style="font-size:12.5px;color:var(--dim);margin-top:2px">Metrik hardware real-time, ketersediaan, penyimpanan, dan status layanan per host.</div>
     </div>
 
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <div class="dash-controls-wrap" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <!-- Layout Switcher Toggle -->
       <div class="view-switch-group">
         <button type="button" id="btn-view-table" onclick="setDashboardView('table')" class="view-btn active" title="Tampilan Tabel Ringkas (1 Baris per Server)">
@@ -369,7 +404,7 @@
       {% endif %}
 
       <!-- Search input -->
-      <div style="position:relative;display:flex;align-items:center">
+      <div class="dash-search-box" style="position:relative;display:flex;align-items:center">
         <input type="search" id="dash-search" placeholder="Cari host…" oninput="dashFilterAll()"
                style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:11.5px;width:160px;outline:none">
       </div>
@@ -386,7 +421,7 @@
           <th rowspan="2" class="sortable" data-col="1" style="vertical-align:middle;cursor:pointer;width:85px;min-width:80px;text-align:center" title="Grup server">Grup <span class="sort-arrow">↕</span></th>
           <th rowspan="2" class="sortable" data-col="2" style="vertical-align:middle;cursor:pointer;width:85px;min-width:80px;text-align:center" title="Status koneksi server saat ini">Status <span class="sort-arrow">↕</span></th>
           <th rowspan="2" class="sortable" data-col="3" style="vertical-align:middle;cursor:pointer;width:100px;min-width:90px;text-align:center" title="Waktu aktif sejak reboot terakhir">Uptime <span class="sort-arrow">↕</span></th>
-          <th colspan="2" style="text-align:center;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)">Processor</th>
+          <th colspan="2" style="text-align:center;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)">Prosesor</th>
           <th colspan="3" style="text-align:center;background:rgba(255,255,255,0.01);border-bottom:1px solid var(--border)">Memori</th>
           <th colspan="3" style="text-align:center;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)">Penyimpanan</th>
           <th rowspan="2" class="sortable" data-col="12" style="vertical-align:middle;text-align:center;cursor:pointer;width:85px;min-width:80px" title="Rasio total layanan yang dipantau terhadap layanan aktif">Layanan <span class="sort-arrow">↕</span></th>
@@ -394,7 +429,7 @@
         </tr>
         <!-- Baris Header 2: Sub-Kolom Metrik Detail -->
         <tr>
-          <!-- Processor -->
+          <!-- Prosesor -->
           <th class="sortable" data-col="4" style="cursor:pointer;background:rgba(255,255,255,0.02);width:75px;min-width:70px" title="Jumlah inti CPU">CPU Core <span class="sort-arrow">↕</span></th>
           <th class="sortable" data-col="5" style="cursor:pointer;background:rgba(255,255,255,0.02);width:95px;min-width:90px" title="Persentase beban CPU">Beban CPU (%) <span class="sort-arrow">↕</span></th>
           <!-- Memori -->
@@ -468,7 +503,7 @@
           <!-- 1. Grup (Kolom Khusus Setelah Hostname) -->
           <td data-sort-val="{{ srv.group_name or '' }}" style="text-align:center">
             {% if srv.group_name %}
-              <span class="badge badge-muted" style="font-size:11px;padding:2px 7px">❖ {{ srv.group_name }}</span>
+              <span class="badge badge-muted" style="font-size:11px;padding:2px 7px">{{ srv.group_name }}</span>
             {% else %}
               <span style="color:var(--dim)">-</span>
             {% endif %}
@@ -479,7 +514,7 @@
             {% if not srv.last_seen or srv._status_label == '-' %}
               <span id="tbl-sts-{{ srv.id }}" style="color:var(--dim)">-</span>
             {% else %}
-              <span class="badge {{ srv._status_cls }}" id="tbl-sts-{{ srv.id }}" style="font-size:11.5px;padding:3px 8px">{{ srv._status_label }}</span>
+              <span class="badge {{ srv._status_cls }}" id="tbl-sts-{{ srv.id }}" style="font-size:10.5px;padding:2.5px 7px">{{ srv._status_label }}</span>
             {% endif %}
           </td>
 
@@ -579,7 +614,7 @@
               {% if not srv.last_seen %}
                 <span style="color:var(--dim)">-</span>
               {% elif tot_prob == 0 and ign_cnt == 0 %}
-                <span class="badge badge-up" style="font-size:11.5px;padding:3px 8px;font-weight:600">Normal</span>
+                <span class="badge badge-up" style="font-size:10.5px;padding:2.5px 7px;font-weight:600">Normal</span>
               {% else %}
                 {% if d_cnt > 0 %}
                   <span class="badge badge-danger" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
@@ -655,7 +690,7 @@
             </div>
             {% if srv.group_name %}
             <div style="margin-top:3px">
-              <span class="badge badge-muted" style="font-size:9.5px;padding:1px 5px">❖ {{ srv.group_name }}</span>
+              <span class="badge badge-muted" style="font-size:9.5px;padding:1px 5px">{{ srv.group_name }}</span>
             </div>
             {% endif %}
           </div>
@@ -1045,7 +1080,7 @@ async function pollNocDashboard() {
         } else {
           const totActive = dCnt + avgCnt + wCnt + iCnt;
           if (totActive === 0 && ignCnt === 0) {
-            tblProb.innerHTML = '<span class="badge badge-up" style="font-size:11.5px;padding:2px 7px;font-weight:600">Normal</span>';
+            tblProb.innerHTML = '<span class="badge badge-up" style="font-size:10.5px;padding:2px 7px;font-weight:600">Normal</span>';
           } else {
             let html = '';
             if (dCnt > 0) html += `<span class="badge badge-danger" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="${(srv.danger_msgs || (isEn ? 'Critical' : 'Kritis')).replace(/"/g, '&quot;')}">${dCnt}</span>`;
@@ -1263,7 +1298,7 @@ async function pollNocDashboard() {
             msgHtml = escMsg;
           }
 
-          const grpHtml = p.group_name ? `<div style="font-size:11.5px;color:var(--dim);margin-top:1px">❖ ${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>` : '';
+          const grpHtml = p.group_name ? `<div style="font-size:11.5px;color:var(--dim);margin-top:1px">${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>` : '';
           const startedStr = p.started_at_str || (p.started_at ? relTime(p.started_at) : '—');
           const durStr = p.durasi ? `${p.durasi} yang lalu` : (p.started_at ? relTime(p.started_at) : '');
           const trStyle = `border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;${p.is_ignored ? 'background:rgba(255,255,255,0.01);opacity:0.85;' : ''}`;

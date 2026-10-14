@@ -2,7 +2,6 @@
 Description=Pantau Monitoring Agent (agent_pantau)
 Wants=network-online.target
 After=network-online.target
-# tanpa batas laju restart: sekali crash tidak membuat systemd menyerah
 StartLimitIntervalSec=0
 
 [Service]
@@ -16,19 +15,12 @@ Nice=5
 StandardOutput=journal
 StandardError=journal
 
-# Hardening sandbox.
-# CATATAN: ProtectSystem sengaja TIDAK dipakai — unit ini menjalankan
-# "apt-get update/upgrade" (lewat sudo NOPASSWD untuk apt-get saja), yang
-# sah menulis ke /var/lib/apt, /var/cache/apt, /var/lib/dpkg, /usr, /etc.
-# Proteksi baca-tulis seluruh-fs (ProtectSystem=strict/full) akan membuat
-# apt gagal. Hak root melalui sudo tetap disempitkan di /etc/sudoers.d.
-# ProtectHome juga dilepas: fitur "riwayat perintah (history)" membaca
-# /home/<user>/.bash_history lewat wrapper sudo. Arah baca diawasi wrapper.
-PrivateTmp=yes
-ProtectKernelTunables=yes
-ProtectKernelModules=yes
-ProtectControlGroups=yes
-ProtectClock=yes
+# CATATAN ARSITEKTUR KEAMANAN:
+# Isolasi mount namespace (PrivateTmp, ProtectSystem, ProtectKernel*, dll.) sengaja tidak digunakan.
+# Sesuai standar Linux & systemd, direktif tersebut secara otomatis memaksa kernel menyematkan flag
+# PR_SET_NO_NEW_PRIVS pada Linux Container (LXC/Proxmox CT unprivileged), yang akan memblokir eskalasi
+# sudo oleh biner wrapper. Keamanan agen sepenuhnya dijamin oleh isolasi user 'pantau' (tanpa shell login)
+# dan pembatasan ketat whitelist perintah pada /etc/sudoers.d/pantau-agent.
 
 [Install]
 WantedBy=multi-user.target

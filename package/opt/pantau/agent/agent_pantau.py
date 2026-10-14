@@ -468,7 +468,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.2.21"
+AGENT_VERSION = "4.2.22"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -2005,24 +2005,40 @@ def collect_apt() -> dict | None:
 
 def _apt_cmd(kind: str):
     """Command apt (lewat wrapper sempit) + timeout per jenis aksi."""
+    prefix = [] if IS_ROOT else ["/usr/bin/sudo", "-n"]
     if kind == "APT_UPDATE":
-        return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "update"], 300
+        return prefix + [PANTUAN_APT_CMD, "update"], 300
     if kind == "APT_UPGRADE":
-        return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "upgrade"], 900
+        return prefix + [PANTUAN_APT_CMD, "upgrade"], 900
     if kind == "APT_UPGRADE_INTERACT":
         # Interaktif menunggu admin mengetik; timeout lebih longgar, dan HANYA
         # diakhiri bila proses benar-benar tidak bergerak (mis. admin lupa).
-        return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "upgrade-interact"], 3600
+        return prefix + [PANTUAN_APT_CMD, "upgrade-interact"], 3600
     if kind == "APT_DIST_UPGRADE":
-        return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "dist-upgrade"], 3600
+        return prefix + [PANTUAN_APT_CMD, "dist-upgrade"], 3600
     if kind == "APT_FIX":
         # Reparasi dpkg & pemulihan paket rusak
-        return ["/usr/bin/sudo", "-n", PANTUAN_APT_CMD, "fix"], 1800
+        return prefix + [PANTUAN_APT_CMD, "fix"], 1800
     raise ValueError(f"unit apt tidak dikenal: {kind}")
 
 
 def _apt_sudo_denied_hint(err: str) -> str:
     """Pesan bantuan bila wrapper/sudoers belum tersedia di host klien."""
+    low_err = (err or "").lower()
+    if "no new privileges" in low_err:
+        return (
+            "[apt tidak dapat dijalankan] Konfigurasi systemd agen pada host/container ini "
+            "mengaktifkan flag 'NoNewPrivileges' atau isolasi namespace (PrivateTmp/Protect*), "
+            "sehingga kernel menolak eskalasi sudo.\n"
+            "Perbaiki (sebagai root di host ini):\n"
+            "  sudo sed -i 's/^PrivateTmp=yes/PrivateTmp=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  sudo sed -i 's/^ProtectKernelTunables=yes/ProtectKernelTunables=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  sudo sed -i 's/^ProtectControlGroups=yes/ProtectControlGroups=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  sudo sed -i 's/^ProtectClock=yes/ProtectClock=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  echo 'NoNewPrivileges=no' | sudo tee -a /etc/systemd/system/agent_pantau.service\n"
+            "  sudo systemctl daemon-reload && sudo systemctl restart agent_pantau.service\n"
+            "Rincian teknis:\n" + (err or "")
+        )
     return (
         "[apt tidak dapat dijalankan] hak sudo agen 'pantau' untuk wrapper "
         "pantau-apt belum tersedia di host ini.\n"
@@ -2499,6 +2515,20 @@ _SHELL_RIDS: set[int] = set()
 
 def _shell_sudo_denied_hint(err: str) -> str:
     """Petunjuk bila wrapper pantau-shell belum terpasang/berhak di host klien."""
+    low_err = (err or "").lower()
+    if "no new privileges" in low_err:
+        return (
+            "[terminal tidak dapat dibuka] Konfigurasi systemd agen pada host/container ini "
+            "mengaktifkan flag 'NoNewPrivileges' atau isolasi namespace, sehingga kernel menolak eskalasi sudo.\n"
+            "Perbaiki (sebagai root di host ini):\n"
+            "  sudo sed -i 's/^PrivateTmp=yes/PrivateTmp=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  sudo sed -i 's/^ProtectKernelTunables=yes/ProtectKernelTunables=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  sudo sed -i 's/^ProtectControlGroups=yes/ProtectControlGroups=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  sudo sed -i 's/^ProtectClock=yes/ProtectClock=no/' /etc/systemd/system/agent_pantau.service\n"
+            "  echo 'NoNewPrivileges=no' | sudo tee -a /etc/systemd/system/agent_pantau.service\n"
+            "  sudo systemctl daemon-reload && sudo systemctl restart agent_pantau.service\n"
+            "Rincian teknis:\n" + (err or "")
+        )
     return (
         "[terminal tidak dapat dibuka] hak sudo agen 'pantau' untuk wrapper "
         "pantau-shell belum tersedia di host ini.\n"
@@ -2542,7 +2572,7 @@ def _run_shell_inner(cfg: dict, rid: int) -> None:
     admin mengetik "exit", dashboard menutup jendelanya, atau timeout 8 jam.
     Semua ketikan admin diteruskan apa adanya ke stdin shell lewat pty.
     """
-    cmd = ["/usr/bin/sudo", "-n", PANTUAN_SHELL_CMD]
+    cmd = [PANTUAN_SHELL_CMD] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTUAN_SHELL_CMD]
     output_parts: list[str] = []
     raw_len = 0
     truncated = False
@@ -3259,7 +3289,8 @@ def _collect_user_history(user: str, max_lines: int) -> list:
     """
     if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,32}", str(user)):
         return []
-    res = _run_cmd(["/usr/bin/sudo", "-n", PANTUAN_HISTORY_CMD, str(user)], timeout=15)
+    cmd = [PANTUAN_HISTORY_CMD, str(user)] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTUAN_HISTORY_CMD, str(user)]
+    res = _run_cmd(cmd, timeout=15)
     if res is None or res.returncode != 0:
         return []
     entries = _parse_history_entries(res.stdout or "")
@@ -3345,8 +3376,9 @@ def run_file_op(action: str, params: dict) -> dict:
     payload = json.dumps({"action": action, "params": params}).encode("utf-8")
     if os.path.exists(PANTAU_FILE_CMD):
         try:
+            cmd = [PANTAU_FILE_CMD] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_FILE_CMD]
             proc = subprocess.run(
-                ["/usr/bin/sudo", "-n", PANTAU_FILE_CMD],
+                cmd,
                 input=payload,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -3428,7 +3460,7 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
     _set_terminal_winsize(master_fd, 24, 80)
 
     if os.path.exists(PANTUAN_SHELL_CMD):
-        cmd = ["/usr/bin/sudo", "-n", PANTUAN_SHELL_CMD]
+        cmd = [PANTUAN_SHELL_CMD] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTUAN_SHELL_CMD]
     else:
         cmd = ["/bin/bash", "-i"]
 

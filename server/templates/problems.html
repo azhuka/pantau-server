@@ -21,6 +21,30 @@
   </div>
 </div>
 
+<style>
+#prob-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+@media (max-width: 640px) {
+  .prob-filters-row {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .prob-filters-row select,
+  .prob-filters-row .prob-search-box,
+  .prob-filters-row input[type="search"] {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+}
+</style>
+
 <div class="card">
   <div class="card-header">
     <h3>Insiden Terbuka</h3>
@@ -28,7 +52,7 @@
     <span id="prob-active-badge" class="badge badge-muted">{{ active_open|length }} aktif{% if ignored_open %} · {{ ignored_open }} diabaikan{% endif %}</span>
   </div>
   {% if open_problems or all_servers %}
-  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+  <div class="prob-filters-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
     <form method="get" action="/problems" style="display:contents">
       <select name="server" onchange="this.form.submit()"
               style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
@@ -55,7 +79,7 @@
       <option value="info">Info</option>
       <option value="ignored">Diabaikan (🔕)</option>
     </select>
-    <div style="position:relative;display:flex;align-items:center">
+    <div class="prob-search-box" style="position:relative;display:flex;align-items:center">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
       <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari server / grup / kejadian…"
              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px 8px 30px;font-size:12px;min-width:240px;outline:none;transition:border-color .15s">
@@ -242,7 +266,7 @@
           <div style="font-size:13px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
           {% if p.group_name %}
           <div style="margin-top:2px">
-            <span class="badge badge-muted" style="font-size:10px;padding:1px 6px">❖ {{ p.group_name }}</span>
+            <span class="badge badge-muted" style="font-size:10px;padding:1px 6px">{{ p.group_name }}</span>
           </div>
           {% endif %}
         </td>
@@ -763,7 +787,7 @@ window.poll = async function() {
           </td>
           <td style="padding:8px 10px;white-space:nowrap;width:160px" class="col-server">
             <div style="font-size:13px;font-weight:600;color:var(--text-bright)">${_esc(p.hostname)}</div>
-            ${grp ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:10px;padding:1px 6px">❖ ${_esc(grp)}</span></div>` : ''}
+            ${grp ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:10px;padding:1px 6px">${_esc(grp)}</span></div>` : ''}
           </td>
           <td style="padding:8px 10px;white-space:nowrap;width:105px;text-align:center" class="col-sev">
             <span class="${sevBadge}" style="font-size:11px;padding:2px 7px">

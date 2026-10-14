@@ -327,20 +327,21 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
 
 /* ---------- Halaman Rincian: hero ringkasan + tab ---------- */
 .hero-card{padding:18px 20px}
-.hero-row{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap}
-.hero-ident{display:flex;flex-direction:column;gap:5px;min-width:250px}
-.hero-host{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.hero-host strong{font-size:16px}
+.hero-row{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:nowrap}
+.hero-ident{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 auto}
+.hero-host{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+.hero-host strong{font-size:17px;font-weight:700;color:#fff;letter-spacing:-0.015em}
 .hero-host .dot{width:9px;height:9px}
 .hero-online{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
 .hero-online.on{color:var(--green)}
 .hero-online.off{color:var(--red)}
 .hero-online.warn{color:var(--yellow)}
+.hero-meta-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--dim);line-height:1.5;margin-top:2px}
 .hero-meta{font-size:12px;color:var(--dim);line-height:1.6}
-.hero-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hero-actions{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;flex-shrink:0}
 .hero-aptline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .hero-sep{width:1px;height:26px;background:var(--border);margin:0 4px}
-@media(max-width:820px){.hero-row{flex-direction:column;align-items:flex-start}}
+@media(max-width:1080px){.hero-row{flex-direction:column;align-items:flex-start;gap:14px}.hero-host{flex-wrap:wrap}.hero-actions{width:100%;justify-content:flex-start;flex-wrap:wrap}}
 
 .tabbar{
   display:inline-flex;
@@ -445,28 +446,273 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
   body.sb-collapsed .nav-section{display:none}
   body.sb-collapsed .sidebar-footer{display:none}
   body.sb-collapsed .main{margin-left:64px}
+  .mob-header, .mob-drawer-backdrop, .mob-drawer-close{display:none !important}
 }
-@media(max-width:1000px){.main{padding:16px 20px}}
-@media(max-width:900px){.grid-2{grid-template-columns:1fr}}
+
+@media(max-width:1080px){
+  .main{padding:20px 22px}
+  .hero-row{flex-direction:column;align-items:flex-start;gap:14px}
+  .hero-host{flex-wrap:wrap}
+  .hero-actions{width:100%;justify-content:flex-start;flex-wrap:wrap}
+}
+
+@media(max-width:900px){
+  .grid-2{grid-template-columns:1fr}
+}
 
 .mob-logout{display:none}
 
 @media(max-width:820px){
-  body{flex-direction:column}
+  body{flex-direction:column;min-width:0}
   .mob-logout{display:flex}
-  .sidebar{position:static;width:100%;height:auto;flex-direction:row;align-items:center;border-right:none;border-bottom:1px solid var(--border);overflow-x:auto}
-  .sidebar-brand{padding:12px 16px;border-bottom:none;flex:0 0 auto}
-  .sidebar-nav{flex:1;display:flex;align-items:center;gap:2px;padding:0 8px;overflow-x:auto}
-  .nav-section{display:none}
-  .nav-link{padding:10px 12px;white-space:nowrap}
-  .main{margin-left:0;padding:16px}
-  .sidebar-footer{display:none}
-  .topbar{flex-wrap:wrap}
+  .sb-toggle{display:none !important}
+
+  /* Header Aplikasi Mobile Terpadu */
+  .mob-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 16px;
+    background:var(--sidebar);
+    border-bottom:1px solid var(--border);
+    position:sticky;
+    top:0;
+    z-index:900;
+    box-shadow:var(--shadow-sm);
+  }
+  .mob-brand{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    text-decoration:none;
+    color:var(--text);
+    font-weight:700;
+    font-size:15px;
+  }
+  .mob-hamburger-btn{
+    background:rgba(255,255,255,0.06);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:6px;
+    width:36px;
+    height:36px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    padding:0;
+    transition:background .15s ease;
+  }
+  .mob-hamburger-btn:active{
+    background:rgba(255,255,255,0.15);
+  }
+  .mob-user-chip{
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    background:linear-gradient(135deg, var(--blue), #6366f1);
+    color:#fff;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:13px;
+    font-weight:700;
+    box-shadow:0 0 10px rgba(56,189,248,0.25);
+  }
+
+  /* Backdrop & Slide-out Drawer Navigasi */
+  .mob-drawer-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.65);
+    backdrop-filter:blur(3px);
+    -webkit-backdrop-filter:blur(3px);
+    z-index:10000;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .24s ease;
+  }
+  body.mob-drawer-open .mob-drawer-backdrop{
+    opacity:1;
+    pointer-events:auto;
+  }
+  body.mob-drawer-open{
+    overflow:hidden;
+  }
+  .sidebar{
+    position:fixed !important;
+    top:0 !important;
+    left:0 !important;
+    bottom:0 !important;
+    width:280px !important;
+    max-width:85vw !important;
+    height:100vh !important;
+    height:100dvh !important;
+    z-index:10001 !important;
+    transform:translateX(-100%) !important;
+    transition:transform .24s cubic-bezier(0.16,1,0.3,1) !important;
+    box-shadow:0 0 40px rgba(0,0,0,0.85);
+    flex-direction:column !important;
+    overflow-y:auto;
+    border-right:1px solid var(--border);
+    border-bottom:none !important;
+  }
+  body.mob-drawer-open .sidebar{
+    transform:translateX(0) !important;
+  }
+  .mob-drawer-close{
+    display:flex !important;
+    align-items:center;
+    justify-content:center;
+    width:32px;
+    height:32px;
+    margin-left:auto;
+    background:rgba(255,255,255,0.06);
+    border:1px solid var(--border);
+    border-radius:6px;
+    color:var(--dim);
+    font-size:20px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .mob-drawer-close:active{
+    color:#fff;
+    background:rgba(255,255,255,0.12);
+  }
+  .sidebar-brand{
+    padding:16px 18px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border-bottom:1px solid var(--border);
+  }
+  .sidebar-nav{
+    flex:1;
+    padding:12px 10px;
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    overflow-x:visible;
+  }
+  .nav-section{
+    display:block;
+    padding:12px 14px 4px;
+    font-size:10px;
+    font-weight:700;
+    color:var(--dim-subtle);
+    text-transform:uppercase;
+  }
+  .nav-link{
+    padding:11px 14px;
+    font-size:13.5px;
+    border-radius:8px;
+  }
+  .sidebar-footer{
+    display:block;
+    padding:14px 18px;
+    border-top:1px solid var(--border);
+    background:rgba(0,0,0,0.25);
+  }
+
+  /* Konten Utama & Komponen Mobile */
+  .main{
+    margin-left:0 !important;
+    padding:14px 14px 28px 14px;
+    width:100% !important;
+    box-sizing:border-box;
+    min-width:0;
+  }
+  .topbar{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:12px;
+    margin-bottom:16px;
+  }
+  .topbar > div{
+    width:100%;
+  }
+  .card{
+    padding:16px 14px;
+    margin-bottom:14px;
+    border-radius:10px;
+  }
+  .form-row{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .table-pagination-bar{
+    flex-direction:column;
+    align-items:stretch;
+    gap:10px;
+    text-align:center;
+  }
+  .table-pagination-nav{
+    justify-content:center;
+  }
+  
+  /* Horizontal Touch-Scroll Tabs */
+  .tabbar{
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch !important;
+    scrollbar-width:none !important;
+    width:100% !important;
+    box-sizing:border-box !important;
+    margin-bottom:14px !important;
+    padding:4px !important;
+    border-radius:10px !important;
+  }
+  .tabbar::-webkit-scrollbar{
+    display:none !important;
+  }
+  .tab{
+    flex-shrink:0 !important;
+    padding:8px 14px !important;
+    font-size:12.5px !important;
+    white-space:nowrap !important;
+  }
+
+  /* Touch-scroll untuk semua kontainer tabel */
+  div[style*="overflow-x:auto"], div[style*="overflow-x: auto"], .table-responsive {
+    -webkit-overflow-scrolling:touch !important;
+    max-width:100% !important;
+  }
+  .table-responsive {
+    width:100% !important;
+    overflow-x:auto !important;
+    box-sizing:border-box !important;
+    margin-bottom:8px;
+  }
+
+  /* Penyesuaian Modal pada Mobile */
+  #guardrail-modal > div,
+  #ignore-problem-modal > div,
+  #problem-detail-modal > div,
+  .modal-card {
+    max-width:calc(100vw - 20px) !important;
+    width:calc(100vw - 20px) !important;
+    margin:10px auto !important;
+    padding:16px 14px !important;
+    box-sizing:border-box !important;
+  }
 }
+
+.table-responsive {
+  width:100%;
+  max-width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  box-sizing:border-box;
+}
+
 @media(max-width:560px){
-  .main{padding:12px}
-  .form-row{grid-template-columns:1fr}
-  .stats-grid{grid-template-columns:1fr 1fr}
+  .main{padding:10px 10px 24px 10px}
+  .card{padding:13px 10px;border-radius:8px}
+  .stats-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .stat-card{padding:12px 12px}
+  .stat-card .value{font-size:20px}
+  .topbar h2{font-size:18px}
 }
 
 /* ---------- ALERT GAWAT DARURAT (Dashboard) ---------- */
@@ -640,40 +886,62 @@ body.show-alert-banner .main{padding-top:72px}
 </head>
 <body>
 
-<aside class="sidebar">
+<!-- Header Aplikasi Mobile Terpadu (Sticky Top) -->
+<header class="mob-header">
+  <button type="button" class="mob-hamburger-btn" onclick="toggleMobDrawer()" aria-label="Buka navigasi menu">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+  </button>
+  <a href="/" class="mob-brand">
+    <span class="brand-dot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);vertical-align:middle"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3" fill="currentColor"></circle></svg></span>
+    <span>Pantau Server</span>
+  </a>
+  <div class="mob-header-right">
+    {% if user %}
+    <span class="mob-user-chip" title="Login: {{ user.username }}">
+      {{ user.username[:1].upper() }}
+    </span>
+    {% else %}
+    <a href="/login" class="btn btn-ghost btn-sm" style="font-size:12px;padding:3px 8px">Masuk</a>
+    {% endif %}
+  </div>
+</header>
+<div id="mobDrawerBackdrop" class="mob-drawer-backdrop" onclick="closeMobDrawer()"></div>
+
+<aside class="sidebar" id="appSidebar">
   <div class="sidebar-brand">
     <span class="brand-dot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);vertical-align:middle"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3" fill="currentColor"></circle></svg></span>
     <span class="brand-label">Pantau Server</span>
     <button class="sb-toggle" id="sbToggle" onclick="toggleSb()" title="Minimalkan / perluas sidebar" aria-label="Minimalkan / perluas sidebar" type="button">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
     </button>
+    <button class="mob-drawer-close" onclick="closeMobDrawer()" aria-label="Tutup navigasi" type="button">&times;</button>
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section" data-i18n="menu_section_menu">Menu</div>
-    <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">
+    <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}" onclick="closeMobDrawer()">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></span> <span class="nav-label" data-i18n="menu_dashboard">Dashboard</span>
     </a>
-    <a href="/servers" class="nav-link {% if '/servers' in request.url.path %}active{% endif %}">
+    <a href="/servers" class="nav-link {% if '/servers' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span> <span class="nav-label" data-i18n="menu_servers">Daftar Server</span>
     </a>
-    <a href="/problems" class="nav-link {% if '/problems' in request.url.path %}active{% endif %}">
+    <a href="/problems" class="nav-link {% if '/problems' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span> <span class="nav-label" data-i18n="menu_problems">Insiden</span>
     </a>
-    <a href="/logs" class="nav-link {% if '/logs' in request.url.path %}active{% endif %}">
+    <a href="/logs" class="nav-link {% if '/logs' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></span> <span class="nav-label" data-i18n="menu_logs">Log</span>
     </a>
     {% if user and (user.is_master_admin() or user.has_perm('can_audit')) %}
     <div class="nav-section">Kelola</div>
-    <a href="/audit" class="nav-link {% if '/audit' in request.url.path %}active{% endif %}">
+    <a href="/audit" class="nav-link {% if '/audit' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span> <span class="nav-label">Riwayat Tindakan</span>
     </a>
     {% endif %}
     {% if user and not user.is_viewer() %}
-    <a href="/profile" class="nav-link {% if '/profile' in request.url.path %}active{% endif %}">
+    <a href="/profile" class="nav-link {% if '/profile' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span> <span class="nav-label">Akun Pengguna</span>
     </a>
     {% endif %}
-    <a href="/logout" class="nav-link mob-logout">
+    <a href="/logout" class="nav-link mob-logout" onclick="closeMobDrawer()">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span> <span class="nav-label">Keluar</span>
     </a>
   </nav>
@@ -783,6 +1051,26 @@ function toggleSb(){
   if(t) t.textContent = b.classList.contains('sb-collapsed') ? '\u00bb' : '\u2630';
   try{ localStorage.setItem('sb', b.classList.contains('sb-collapsed') ? '1' : '0'); }catch(e){}
 }
+
+function toggleMobDrawer(){
+  document.body.classList.toggle('mob-drawer-open');
+}
+
+function closeMobDrawer(){
+  document.body.classList.remove('mob-drawer-open');
+}
+
+window.addEventListener('resize', function(){
+  if(window.innerWidth > 820 && document.body.classList.contains('mob-drawer-open')){
+    closeMobDrawer();
+  }
+});
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && document.body.classList.contains('mob-drawer-open')){
+    closeMobDrawer();
+  }
+});
 function copyKey(el){
   const box=el.parentElement;
   const kt=box.querySelector('.key-text');
@@ -1853,7 +2141,7 @@ function renderProblemDetailModal(p) {
   if (cmdsEl) {
     if (cmdList && cmdList.length > 0) {
       cmdsEl.parentElement.style.display = 'block';
-      const copyBtnText = isEn ? '📋 Copy' : '📋 Salin';
+      const copyBtnText = isEn ? 'Copy' : 'Salin';
       const copyBtnTitle = isEn ? 'Copy command' : 'Salin perintah';
       cmdsEl.innerHTML = cmdList.filter(c => !!c).map(cmd => {
         return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 12px;margin-bottom:6px">
@@ -2042,6 +2330,20 @@ setInterval(alertFetch, 5000);
   let showTimer = null;
   let hideTimer = null;
 
+  function stripAncestorTitles(el) {
+    let parent = el.parentElement;
+    while (parent && parent !== document.body && parent !== document.documentElement) {
+      if (parent.hasAttribute('title')) {
+        const pText = parent.getAttribute('title').trim();
+        if (pText && !parent.hasAttribute('data-tooltip-orig')) {
+          parent.setAttribute('data-tooltip-orig', pText);
+        }
+        parent.removeAttribute('title');
+      }
+      parent = parent.parentElement;
+    }
+  }
+
   function getTooltipText(el) {
     if (!el || el === document.body || el === document.documentElement) return null;
     if (el.hasAttribute('title')) {
@@ -2053,8 +2355,10 @@ setInterval(alertFetch, 5000);
         el.setAttribute('data-tooltip', text);
       }
       el.removeAttribute('title');
+      stripAncestorTitles(el);
     }
     if (el.hasAttribute('data-tooltip') && el.getAttribute('data-tooltip').trim()) {
+      stripAncestorTitles(el);
       return el.getAttribute('data-tooltip').trim();
     }
     return getTooltipText(el.parentElement);
@@ -2318,6 +2622,23 @@ function attachTablePagination(target, options = {}) {
       }).length;
     }
   };
+}
+
+// Auto-wrap stand-alone tables in a scroll container so they are smoothly swipeable on mobile
+function makeTablesResponsive() {
+  document.querySelectorAll('table').forEach(tbl => {
+    if (!tbl.closest('div[style*="overflow"], .table-responsive, .terminal-window')) {
+      const wrap = document.createElement('div');
+      wrap.className = 'table-responsive';
+      tbl.parentNode.insertBefore(wrap, tbl);
+      wrap.appendChild(tbl);
+    }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', makeTablesResponsive);
+} else {
+  makeTablesResponsive();
 }
 </script>
 {% block scripts %}{% endblock %}
