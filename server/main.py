@@ -2876,11 +2876,17 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     ignored_total = sum(srv._ignored_count for srv in servers)
     healthy_total = sum(1 for srv in servers if srv._status_cls == "badge-up" and (srv._danger_count + srv._average_count + srv._warning_count) == 0)
 
+    problems_by_sev = {
+        "danger": [],
+        "average": [],
+        "warning": [],
+        "info": [],
+        "ignored": [],
+    }
     all_open_problems = []
     for srv in servers:
         for p in (srv._problems or []):
-            if p.get("is_ignored"):
-                continue  # Lewati insiden yang diabaikan agar kartu Insiden Terkini di Dashboard tetap bersih
+            is_ign = bool(p.get("is_ignored"))
             p_started = p.get("started_at")
             dur_str = "—"
             if p_started:
@@ -2889,20 +2895,30 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 elif diff_s < 3600: dur_str = f"{diff_s//60} mnt"
                 elif diff_s < 86400: dur_str = f"{diff_s//3600} jam"
                 else: dur_str = f"{diff_s//86400} hari"
-            all_open_problems.append({
+            item = {
                 "server_id": srv.id,
                 "hostname": srv.hostname,
-                "group_name": srv.group_name,
+                "group_name": srv.group_name or "",
                 "severity": p.get("severity", "warning"),
                 "message": p.get("message", ""),
                 "key": p.get("key", ""),
-                "is_ignored": False,
-                "started_at": p_started,
+                "is_ignored": is_ign,
+                "started_at": p_started.isoformat() if p_started else "",
                 "started_at_str": p_started.strftime("%d %b %H:%M") if p_started else "—",
                 "durasi": dur_str,
-            })
+            }
+            if is_ign:
+                problems_by_sev["ignored"].append(item)
+            else:
+                sev = item["severity"]
+                if sev in problems_by_sev:
+                    problems_by_sev[sev].append(item)
+                else:
+                    problems_by_sev["warning"].append(item)
+                all_open_problems.append(item)
+
     sev_order = {"danger": 0, "average": 1, "warning": 2, "info": 3}
-    all_open_problems.sort(key=lambda p: (sev_order.get(p["severity"], 4), p["started_at"] or datetime.min))
+    all_open_problems.sort(key=lambda p: (sev_order.get(p["severity"], 4), p["started_at"] or ""))
 
     top_cpu = sorted([s for s in servers if s._cpu is not None], key=lambda s: s._cpu, reverse=True)[:5]
     top_mem = sorted([s for s in servers if s._mem_pct is not None], key=lambda s: s._mem_pct, reverse=True)[:5]
@@ -2923,6 +2939,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         "ignored_total": ignored_total,
         "healthy_total": healthy_total,
         "all_open_problems": all_open_problems,
+        "problems_by_sev": problems_by_sev,
         "top_cpu": top_cpu,
         "top_mem": top_mem,
         "global_thresholds": get_global_thresholds(db),

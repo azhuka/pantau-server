@@ -43,6 +43,120 @@
   font-weight: 600;
 }
 
+/* Zabbix-Style Problems by Severity Widget Strip */
+.zbx-severity-strip {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+.zbx-sev-tile {
+  flex: 1;
+  min-width: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 4px;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  transition: all 0.15s ease;
+  user-select: none;
+  text-align: center;
+}
+.zbx-sev-tile:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.zbx-sev-count {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-family: var(--font-mono, monospace);
+  color: var(--dim);
+}
+.zbx-sev-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* Critical (Red) */
+.zbx-sev-tile.zbx-tile-danger.is-active {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.65);
+}
+.zbx-sev-tile.zbx-tile-danger.is-active .zbx-sev-count {
+  color: #ef4444;
+}
+.zbx-sev-tile.zbx-tile-danger.is-active .zbx-sev-label {
+  color: #fca5a5;
+}
+
+/* Down (Orange) */
+.zbx-sev-tile.zbx-tile-average.is-active {
+  background: rgba(249, 115, 22, 0.18);
+  border-color: rgba(249, 115, 22, 0.65);
+}
+.zbx-sev-tile.zbx-tile-average.is-active .zbx-sev-count {
+  color: #f97316;
+}
+.zbx-sev-tile.zbx-tile-average.is-active .zbx-sev-label {
+  color: #fdba74;
+}
+
+/* Warning (Yellow) */
+.zbx-sev-tile.zbx-tile-warning.is-active {
+  background: rgba(234, 179, 8, 0.18);
+  border-color: rgba(234, 179, 8, 0.65);
+}
+.zbx-sev-tile.zbx-tile-warning.is-active .zbx-sev-count {
+  color: #eab308;
+}
+.zbx-sev-tile.zbx-tile-warning.is-active .zbx-sev-label {
+  color: #fde047;
+}
+
+/* Info (Blue) */
+.zbx-sev-tile.zbx-tile-info.is-active {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.65);
+}
+.zbx-sev-tile.zbx-tile-info.is-active .zbx-sev-count {
+  color: #3b82f6;
+}
+.zbx-sev-tile.zbx-tile-info.is-active .zbx-sev-label {
+  color: #93c5fd;
+}
+
+/* Diabaikan (Netral Slate - Low Distraction!) */
+.zbx-sev-tile.zbx-tile-ignored.is-active {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.4);
+}
+.zbx-sev-tile.zbx-tile-ignored.is-active .zbx-sev-count {
+  color: #cbd5e1;
+}
+.zbx-sev-tile.zbx-tile-ignored.is-active .zbx-sev-label {
+  color: #94a3b8;
+}
+
+@media (max-width: 600px) {
+  .zbx-severity-strip {
+    flex-wrap: wrap;
+  }
+  .zbx-sev-tile {
+    min-width: calc(33.333% - 6px);
+    padding: 6px 2px;
+  }
+}
+
 /* Compact Table Layout (Harmonized with Theme & 1 Step Smaller) */
 #dash-server-table {
   width: 100%;
@@ -290,22 +404,39 @@
 
   {% set total_active = danger_total + average_total + warning_total + info_total %}
   {% set total_all = total_active + ignored_total %}
-  <a href="/problems" class="card kpi-link-card" id="kpi-card-prob" style="margin:0;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-left:3px solid {% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% elif ignored_total > 0 %}rgba(148,163,184,0.45){% else %}var(--border){% endif %};text-decoration:none;color:inherit;cursor:pointer" title="Buka Masalah &amp; Insiden">
-    <div>
-      <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em">Insiden Aktif</div>
-      <div style="font-size:22px;font-weight:700;color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% elif ignored_total > 0 %}var(--dim){% else %}var(--dim){% endif %};margin-top:2px" id="dash-total-prob">
-        {{ total_all }}
+  <div class="card" id="kpi-card-prob" style="margin:0;padding:8px 12px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid {% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% elif ignored_total > 0 %}rgba(148,163,184,0.45){% else %}var(--border){% endif %}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;font-weight:600;display:flex;align-items:center;gap:6px">
+        <span>Problems by severity</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11.5px;color:var(--dim)" id="zbx-strip-total">Total: <strong id="dash-total-prob" style="color:var(--text-bright)">{{ total_all }}</strong></span>
+        <a href="/problems" style="font-size:11.5px;color:var(--blue);text-decoration:none;display:inline-flex;align-items:center;gap:2px" title="Buka Halaman Masalah &amp; Insiden">Lihat Semua &rarr;</a>
       </div>
     </div>
-    <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center" id="dash-prob-badges">
-      {% if danger_total > 0 %}<span class="badge badge-danger" style="font-size:12px;padding:3px 8px" id="kpi-danger-cnt">{{ danger_total }} Kritis</span>{% endif %}
-      {% if average_total > 0 %}<span class="badge badge-orange" style="font-size:12px;padding:3px 8px" id="kpi-avg-cnt">{{ average_total }} Down</span>{% endif %}
-      {% if warning_total > 0 %}<span class="badge badge-warn" style="font-size:12px;padding:3px 8px" id="kpi-warn-cnt">{{ warning_total }} Peringatan</span>{% endif %}
-      {% if info_total > 0 %}<span class="badge badge-info" style="font-size:12px;padding:3px 8px" id="kpi-info-cnt">{{ info_total }} Info</span>{% endif %}
-      {% if ignored_total > 0 %}<span class="badge badge-muted" style="font-size:12px;padding:3px 8px" id="kpi-ign-cnt" title="Insiden yang diabaikan oleh operator">{{ ignored_total }} diabaikan 🔕</span>{% endif %}
-      {% if total_all == 0 %}<span class="badge badge-up" style="font-size:12px;padding:3px 8px">Nihil Masalah</span>{% endif %}
+    <div class="zbx-severity-strip" id="zbx-severity-strip">
+      <div class="zbx-sev-tile zbx-tile-danger {% if danger_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('danger')" title="Klik untuk rincian insiden Kritis">
+        <span class="zbx-sev-count" id="zbx-count-danger">{{ danger_total }}</span>
+        <span class="zbx-sev-label">Kritis</span>
+      </div>
+      <div class="zbx-sev-tile zbx-tile-average {% if average_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('average')" title="Klik untuk rincian insiden Down">
+        <span class="zbx-sev-count" id="zbx-count-average">{{ average_total }}</span>
+        <span class="zbx-sev-label">Down</span>
+      </div>
+      <div class="zbx-sev-tile zbx-tile-warning {% if warning_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('warning')" title="Klik untuk rincian insiden Peringatan">
+        <span class="zbx-sev-count" id="zbx-count-warning">{{ warning_total }}</span>
+        <span class="zbx-sev-label">Peringatan</span>
+      </div>
+      <div class="zbx-sev-tile zbx-tile-info {% if info_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('info')" title="Klik untuk rincian insiden Info">
+        <span class="zbx-sev-count" id="zbx-count-info">{{ info_total }}</span>
+        <span class="zbx-sev-label">Info</span>
+      </div>
+      <div class="zbx-sev-tile zbx-tile-ignored {% if ignored_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('ignored')" title="Klik untuk rincian insiden yang Diabaikan (Netral)">
+        <span class="zbx-sev-count" id="zbx-count-ignored">{{ ignored_total }}</span>
+        <span class="zbx-sev-label" title="Insiden yang diabaikan oleh operator">Diabaikan 🔕</span>
+      </div>
     </div>
-  </a>
+  </div>
 </div>
 
 <!-- 2. Kartu Insiden Terkini -->
@@ -340,7 +471,7 @@
             style="border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;cursor:pointer">
           <td style="padding:8px 10px;white-space:nowrap">
             <div class="mono" style="font-size:12.5px;font-weight:600;color:var(--text)">{{ p.started_at_str }}</div>
-            <div style="font-size:11.5px;color:var(--dim);margin-top:2px" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z" data-suffix=" yang lalu">{{ p.durasi }} yang lalu</div>
+            <div style="font-size:11.5px;color:var(--dim);margin-top:2px" data-start="{{ p.started_at }}{{ 'Z' if p.started_at and not p.started_at.endswith('Z') else '' }}" data-suffix=" yang lalu">{{ p.durasi }} yang lalu</div>
           </td>
           <td style="padding:8px 10px;white-space:nowrap">
             <div style="font-size:13.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
@@ -792,11 +923,212 @@
     Tidak ada server yang sesuai dengan filter pencarian.
   </div>
 </div>
+
+<!-- Modal Detail Insiden Berdasarkan Severity (Zabbix-Style In-Page Detail Modal) -->
+<div id="sev-detail-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeSevDetailModal()">
+  <div class="card" style="width:min(880px,96vw);max-height:86vh;display:flex;flex-direction:column;background:#161b22;border:1px solid #30363d;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.85);color:var(--text);padding:0;overflow:hidden" onclick="event.stopPropagation()">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #30363d;background:rgba(255,255,255,0.02)">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span id="sdm-icon" style="font-size:18px">⚠️</span>
+        <h3 id="sdm-title" style="margin:0;font-size:15.5px;font-weight:600;color:var(--text)">Rincian Masalah</h3>
+        <span id="sdm-badge" class="badge">0 Insiden</span>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeSevDetailModal()" style="font-size:20px;line-height:1;padding:2px 8px;cursor:pointer;color:var(--dim)" title="Tutup (Esc)">&times;</button>
+    </div>
+
+    <!-- Body Scrollable -->
+    <div style="padding:0;overflow-y:auto;flex:1;max-height:calc(86vh - 120px)">
+      <!-- Empty State -->
+      <div id="sdm-empty" style="display:none;padding:45px 20px;text-align:center;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+        <div style="width:44px;height:44px;border-radius:50%;background:rgba(16,185,129,0.12);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:22px">✓</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-bright);margin-top:6px" id="sdm-empty-title">Nihil Masalah</div>
+        <div style="font-size:12.5px;color:var(--dim);max-width:380px" id="sdm-empty-sub">Tidak ditemukan insiden aktif pada kategori keparahan ini.</div>
+      </div>
+
+      <!-- Table of Problems -->
+      <div id="sdm-table-wrap" style="display:none;width:100%;overflow-x:auto">
+        <table style="width:100%;margin:0;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:1px solid #30363d;background:rgba(255,255,255,0.02)">
+              <th style="padding:8px 12px;font-size:11.5px;width:140px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em">Waktu &amp; Durasi</th>
+              <th style="padding:8px 12px;font-size:11.5px;width:170px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em">Server</th>
+              <th style="padding:8px 12px;font-size:11.5px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em">Kejadian / Anomali</th>
+              <th style="padding:8px 12px;font-size:11.5px;width:160px;color:var(--dim);text-align:center;text-transform:uppercase;letter-spacing:0.04em">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="sdm-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-top:1px solid #30363d;background:rgba(255,255,255,0.015);gap:10px;flex-wrap:wrap">
+      <div style="font-size:12px;color:var(--dim)" id="sdm-footer-info">
+        Menampilkan insiden berdasarkan keparahan
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <a href="/problems" class="btn btn-ghost btn-sm" style="text-decoration:none;font-size:12px">Buka Halaman Masalah &rarr;</a>
+        <button type="button" class="btn btn-primary btn-sm" onclick="closeSevDetailModal()">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 const GLOBAL_THRESHOLDS = {{ (global_thresholds or {}) | tojson }};
+let currentProblemsBySev = {{ (problems_by_sev or {}) | tojson }};
+let activeModalSev = null;
+
+const SEV_CONFIG = {
+  danger: {
+    label: 'Kritis (Critical / Disaster)',
+    badgeCls: 'badge-danger',
+    icon: '🔴',
+    emptyMsg: 'Tidak ada insiden Kritis saat ini.'
+  },
+  average: {
+    label: 'Down (High / Down)',
+    badgeCls: 'badge-orange',
+    icon: '🟠',
+    emptyMsg: 'Tidak ada server atau layanan Down saat ini.'
+  },
+  warning: {
+    label: 'Peringatan (Warning)',
+    badgeCls: 'badge-warn',
+    icon: '🟡',
+    emptyMsg: 'Tidak ada anomali atau ambang batas Peringatan yang terlampaui.'
+  },
+  info: {
+    label: 'Informasi (Info)',
+    badgeCls: 'badge-info',
+    icon: '🔵',
+    emptyMsg: 'Tidak ada catatan informasi operasional saat ini.'
+  },
+  ignored: {
+    label: 'Diabaikan (Silenced / Ignored 🔕)',
+    badgeCls: 'badge-muted',
+    icon: '🔕',
+    emptyMsg: 'Tidak ada insiden yang sedang diabaikan.'
+  }
+};
+
+function openSevDetailModal(sev) {
+  activeModalSev = sev;
+  renderSevDetailModal(sev);
+  const modal = document.getElementById('sev-detail-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function closeSevDetailModal() {
+  activeModalSev = null;
+  const modal = document.getElementById('sev-detail-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+function renderSevDetailModal(sev) {
+  const cfg = SEV_CONFIG[sev] || {
+    label: (sev || '').toUpperCase(),
+    badgeCls: 'badge-muted',
+    icon: '⚠️',
+    emptyMsg: 'Tidak ada data.'
+  };
+
+  const list = (currentProblemsBySev && currentProblemsBySev[sev]) ? currentProblemsBySev[sev] : [];
+  
+  const titleEl = document.getElementById('sdm-title');
+  const iconEl = document.getElementById('sdm-icon');
+  const badgeEl = document.getElementById('sdm-badge');
+  const footerInfo = document.getElementById('sdm-footer-info');
+  const emptyBox = document.getElementById('sdm-empty');
+  const emptyTitle = document.getElementById('sdm-empty-title');
+  const emptySub = document.getElementById('sdm-empty-sub');
+  const tableWrap = document.getElementById('sdm-table-wrap');
+  const tbody = document.getElementById('sdm-tbody');
+
+  if (titleEl) titleEl.textContent = cfg.label;
+  if (iconEl) iconEl.textContent = cfg.icon;
+  if (badgeEl) {
+    badgeEl.className = 'badge ' + cfg.badgeCls;
+    badgeEl.textContent = list.length + ' Insiden';
+  }
+  if (footerInfo) {
+    footerInfo.textContent = `Menampilkan ${list.length} insiden kategori ${cfg.label}`;
+  }
+
+  if (list.length === 0) {
+    if (tableWrap) tableWrap.style.display = 'none';
+    if (emptyBox) emptyBox.style.display = 'flex';
+    if (emptyTitle) emptyTitle.textContent = 'Nihil Insiden';
+    if (emptySub) emptySub.textContent = cfg.emptyMsg;
+    if (tbody) tbody.innerHTML = '';
+    return;
+  }
+
+  if (emptyBox) emptyBox.style.display = 'none';
+  if (tableWrap) tableWrap.style.display = 'block';
+
+  if (tbody) {
+    let html = '';
+    list.forEach(p => {
+      const escMsg = (p.message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const escHost = (p.hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const escGrp = (p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const grpHtml = escGrp ? `<div style="font-size:11px;color:var(--dim);margin-top:2px">${escGrp}</div>` : '';
+      const startedStr = p.started_at_str || (p.started_at ? relTime(p.started_at) : '—');
+      const durStr = p.durasi ? `${p.durasi} yang lalu` : (p.started_at ? relTime(p.started_at) : '');
+
+      let ignBadge = '';
+      if (p.is_ignored) {
+        ignBadge = '<span class="badge badge-muted" style="font-size:10.5px;padding:1px 5px;margin-left:6px">Diabaikan 🔕</span>';
+      }
+
+      html += `
+        <tr style="border-bottom:1px solid #30363d;transition:background .12s ease">
+          <td style="padding:10px 12px;white-space:nowrap;vertical-align:middle">
+            <div class="mono" style="font-size:12px;font-weight:600;color:var(--text)">${startedStr}</div>
+            <div style="font-size:11px;color:var(--dim);margin-top:2px">${durStr}</div>
+          </td>
+          <td style="padding:10px 12px;white-space:nowrap;vertical-align:middle">
+            <a href="/servers/${p.server_id}/services" style="font-size:13px;font-weight:600;color:var(--blue);text-decoration:none" title="Buka Detail Server">
+              ${escHost}
+            </a>
+            ${grpHtml}
+          </td>
+          <td style="padding:10px 12px;font-size:12.5px;color:var(--text);vertical-align:middle">
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+              <span>${escMsg}</span>
+              ${ignBadge}
+            </div>
+          </td>
+          <td style="padding:10px 12px;text-align:center;vertical-align:middle;white-space:nowrap">
+            <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+              <button type="button" class="btn btn-ghost btn-sm" onclick='try{openProblemDetailModal(${JSON.stringify(p).replace(/'/g, "&#39;")});}catch(e){window.location.href="/servers/${p.server_id}/services";}' style="font-size:11px;padding:3px 7px" title="Buka Diagnosa & Solusi">
+                Diagnosa
+              </button>
+              <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 7px;text-decoration:none" title="Buka Halaman Layanan Server">
+                Periksa &rarr;
+              </a>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeSevDetailModal();
+  }
+});
 
 // 1. Threshold Evaluation Helper (Menyesuaikan dengan ambang batas konfigurasi global)
 function getThreshold(val, type) {
@@ -1206,19 +1538,71 @@ async function pollNocDashboard() {
     const totalAll = activeTot + ignTot;
     if (totPrbEl) totPrbEl.textContent = totalAll;
 
-    const probBadges = document.getElementById('dash-prob-badges');
-    if (probBadges) {
-      if (totalAll === 0) {
-        probBadges.innerHTML = '<span class="badge badge-up" style="font-size:11px">Nihil Masalah</span>';
-      } else {
-        let bHtml = '';
-        if (dangerTot > 0) bHtml += `<span class="badge badge-danger" style="font-size:11px" id="kpi-danger-cnt">${dangerTot} Kritis</span>`;
-        if (avgTot > 0) bHtml += `<span class="badge badge-orange" style="font-size:11px" id="kpi-avg-cnt">${avgTot} Down</span>`;
-        if (warnTot > 0) bHtml += `<span class="badge badge-warn" style="font-size:11px" id="kpi-warn-cnt">${warnTot} Peringatan</span>`;
-        if (infoTot > 0) bHtml += `<span class="badge badge-info" style="font-size:11px" id="kpi-info-cnt">${infoTot} Info</span>`;
-        if (ignTot > 0) bHtml += `<span class="badge badge-muted" style="font-size:11px" id="kpi-ign-cnt" title="Insiden yang diabaikan oleh operator">${ignTot} diabaikan 🔕</span>`;
-        probBadges.innerHTML = bHtml;
+    // Update Zabbix Severity Strip counts & active state
+    const tileDanger = document.querySelector('.zbx-sev-tile.zbx-tile-danger');
+    const tileAverage = document.querySelector('.zbx-sev-tile.zbx-tile-average');
+    const tileWarning = document.querySelector('.zbx-sev-tile.zbx-tile-warning');
+    const tileInfo = document.querySelector('.zbx-sev-tile.zbx-tile-info');
+    const tileIgnored = document.querySelector('.zbx-sev-tile.zbx-tile-ignored');
+
+    const cntDanger = document.getElementById('zbx-count-danger');
+    const cntAverage = document.getElementById('zbx-count-average');
+    const cntWarning = document.getElementById('zbx-count-warning');
+    const cntInfo = document.getElementById('zbx-count-info');
+    const cntIgnored = document.getElementById('zbx-count-ignored');
+
+    if (cntDanger) cntDanger.textContent = dangerTot;
+    if (cntAverage) cntAverage.textContent = avgTot;
+    if (cntWarning) cntWarning.textContent = warnTot;
+    if (cntInfo) cntInfo.textContent = infoTot;
+    if (cntIgnored) cntIgnored.textContent = ignTot;
+
+    if (tileDanger) tileDanger.classList.toggle('is-active', dangerTot > 0);
+    if (tileAverage) tileAverage.classList.toggle('is-active', avgTot > 0);
+    if (tileWarning) tileWarning.classList.toggle('is-active', warnTot > 0);
+    if (tileInfo) tileInfo.classList.toggle('is-active', infoTot > 0);
+    if (tileIgnored) tileIgnored.classList.toggle('is-active', ignTot > 0);
+
+    const stripTotal = document.getElementById('zbx-strip-total');
+    if (stripTotal) stripTotal.innerHTML = `Total: <strong id="dash-total-prob" style="color:var(--text-bright)">${totalAll}</strong>`;
+
+    // Reconstruct problems_by_sev data structure for live in-page detail modal
+    const newProblemsBySev = { danger: [], average: [], warning: [], info: [], ignored: [] };
+    list.forEach(srv => {
+      if (Array.isArray(srv.problems)) {
+        srv.problems.forEach(p => {
+          const isIgn = Boolean(p.is_ignored);
+          const pStarted = p.started_at;
+          const durStr = pStarted ? relTime(pStarted).replace(' lalu', '').replace(' ago', '') : '—';
+          const item = {
+            server_id: srv.id,
+            hostname: srv.hostname,
+            group_name: srv.group_name || '',
+            severity: p.severity || 'warning',
+            message: p.message || '',
+            key: p.key || '',
+            is_ignored: isIgn,
+            started_at: pStarted || '',
+            started_at_str: p.started_at_str || (pStarted ? relTime(pStarted) : '—'),
+            durasi: durStr,
+          };
+          if (isIgn) {
+            newProblemsBySev.ignored.push(item);
+          } else {
+            const s = item.severity;
+            if (newProblemsBySev[s]) {
+              newProblemsBySev[s].push(item);
+            } else {
+              newProblemsBySev.warning.push(item);
+            }
+          }
+        });
       }
+    });
+    currentProblemsBySev = newProblemsBySev;
+
+    if (activeModalSev) {
+      renderSevDetailModal(activeModalSev);
     }
 
     // Update KPI card border and text color
@@ -1339,7 +1723,7 @@ async function pollNocDashboard() {
               ${grpHtml}
             </td>
             <td style="padding:7px 10px;white-space:nowrap">${sevBadge}</td>
-            <td style="padding:7px 10px;font-size:13px;color:var(--text)">${msgHtml}</td>
+            <td style="padding:7px 10px;font-size:13px;color:var(--text)">${escMsg}</td>
           </tr>`;
         });
         tbody.innerHTML = tHtml;
