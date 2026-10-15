@@ -1617,15 +1617,24 @@ function renderAlerts(d){
         document.body.classList.add('show-alert-banner');
       } else if (warnN > 0) {
         banner.className = 'alert-banner banner-warning';
-        if (bannerTag) bannerTag.innerHTML = '<span class="pulse">⚡</span> PERINGATAN AMBANG BATAS';
-        const hosts = d.warning_hosts || [];
+        const hosts = d.firing_warning_hosts || d.warning_hosts || [];
         const hCount = hosts.length || warnN;
-        const warnList = d.warning_alerts || [];
-        const sampleMsg = (warnList[0] && warnList[0].message) ? warnList[0].message : 'Resource melebihi ambang batas';
+        const warnList = d.firing_warning_alerts || d.warning_alerts || [];
+        const isResourceWarn = warnList.some(w => (w.key || '').startsWith('cpu_') || (w.key || '').startsWith('ram_') || (w.key || '').startsWith('disk_') || (w.key || '').startsWith('swap_'));
+        const isAgentWarn = warnList.length > 0 && warnList.every(w => (w.key || '') === 'agent_outdated');
+
+        let tagText = isResourceWarn ? 'PERINGATAN AMBANG BATAS' : (isAgentWarn ? 'PEMBARUAN AGEN' : 'PERINGATAN SISTEM');
+        if (bannerTag) bannerTag.innerHTML = `<span class="pulse">⚡</span> ${tagText}`;
+
+        const sampleMsg = (warnList[0] && warnList[0].message) ? warnList[0].message : 'Peringatan sistem aktif';
         if (hCount === 1) {
           bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(hosts[0] || 'Klien')}</span>: ${escHtml(sampleMsg)}`;
+        } else if (isAgentWarn) {
+          bannerText.innerHTML = `<strong>${hCount} Server</strong> menjalankan versi agen lama (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
+        } else if (isResourceWarn) {
+          bannerText.innerHTML = `<strong>${hCount} Server</strong> beban resource mendekati ambang batas (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
         } else {
-          bannerText.innerHTML = `<strong>${hCount} Server</strong> melebihi ambang batas (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
+          bannerText.innerHTML = `<strong>${hCount} Server</strong> memiliki peringatan (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}): ${escHtml(sampleMsg)}`;
         }
         if (actionBtn) actionBtn.innerHTML = `Buka Halaman Insiden (${warnN}) &rarr;`;
         banner.style.display = 'flex';

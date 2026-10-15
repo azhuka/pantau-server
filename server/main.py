@@ -6709,6 +6709,10 @@ def api_alerts(
 
     def _is_alert_banner_firing(r, now_dt):
         key = getattr(r, "key", "") or ""
+        # Peringatan non-darurat operasional (seperti versi agen atau pembaruan paket OS)
+        # tidak boleh memicu Alert Banner darurat di atas layar
+        if key in ("agent_outdated", "apt_updates"):
+            return False
         if key.startswith(("ram_", "cpu_", "swap_")):
             st = getattr(r, "started_at", None)
             if st and (now_dt - st).total_seconds() < RESOURCE_ALERT_DELAY_SECS:
@@ -6734,12 +6738,16 @@ def api_alerts(
     danger_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_danger]
     average_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_average]
     warning_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_warning]
+    firing_warning_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in firing_warning]
     all_unack_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_operational]
     firing_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in firing_operational]
 
     danger_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in open_danger if r.server_id}))
     average_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in open_average if r.server_id}))
     warning_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in open_warning if r.server_id}))
+    firing_danger_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in firing_danger if r.server_id}))
+    firing_average_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in firing_average if r.server_id}))
+    firing_warning_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in firing_warning if r.server_id}))
 
     host_danger_counts = {}
     for r in open_danger:
@@ -6792,6 +6800,10 @@ def api_alerts(
         "danger_hosts": danger_hosts,
         "average_hosts": average_hosts,
         "warning_hosts": warning_hosts,
+        "firing_danger_hosts": firing_danger_hosts,
+        "firing_average_hosts": firing_average_hosts,
+        "firing_warning_hosts": firing_warning_hosts,
+        "firing_warning_alerts": firing_warning_alerts,
         "host_danger_counts": host_danger_counts,
         "host_average_counts": host_average_counts,
         "host_warning_counts": host_warning_counts,
