@@ -1134,7 +1134,7 @@ def agent_report(
                         "sistem",
                         "proxmox_ha_detected",
                         f"{server.hostname} ({server.ip_address})",
-                        "Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE (state: stopped).",
+                        "Server terproteksi Proxmox HA.",
                         server_id=server.id,
                     )
                 except Exception as exc:
@@ -4038,7 +4038,7 @@ def _host_control(request: Request, sid: int, db: Session, action: str, csrf_tok
         if is_json:
             return JSONResponse({
                 "ok": False,
-                "detail": "Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE (state: stopped)."
+                "detail": "Server terproteksi Proxmox HA."
             }, status_code=400)
         at_epoch = int(datetime.now(timezone.utc).timestamp())
         return RedirectResponse(f"/servers/{sid}/services?action=poweroff_ha_blocked&at={at_epoch}", status_code=303)

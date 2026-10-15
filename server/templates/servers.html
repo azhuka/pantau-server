@@ -175,20 +175,20 @@
             </span>
           {% endif %}
           {% if srv.is_proxmox_ha %}
-            <span class="badge" style="font-size:10.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server terproteksi Proxmox HA. Matikan langsung pada dashboard Proxmox VE (state: stopped).">
+            <span class="badge" style="font-size:10.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server terproteksi Proxmox HA">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
               HA
             </span>
           {% endif %}
           {% if srv.is_isolated_net %}
-            <span class="badge" style="font-size:10px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server Terisolasi (Hanya Jaringan Lokal / Tanpa Akses Internet Luar)">
+            <span class="badge" style="font-size:10px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Jaringan Terisolasi">
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
               Lokal
             </span>
           {% endif %}
           {% if srv._agent_version %}
             {% if srv._agent_outdated %}
-              <span style="font-size:11.5px;color:#d97706;font-family:var(--font-mono);font-weight:500" title="Versi agen di server (v{{ srv._agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Perlu update.">v{{ srv._agent_version }} (update)</span>
+              <span style="font-size:11.5px;color:#d97706;font-family:var(--font-mono);font-weight:500" title="Perlu pembaruan agen (v{{ srv._agent_version }})">v{{ srv._agent_version }} (update)</span>
             {% else %}
               <span style="font-size:11.5px;color:var(--blue,#3b82f6);font-family:var(--font-mono)" title="Versi agen mutakhir">v{{ srv._agent_version }}</span>
             {% endif %}
