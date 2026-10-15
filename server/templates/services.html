@@ -775,9 +775,9 @@
           Update OS
         </button>
         <span class="toolbar-divider"></span>
-        <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="triggerUpgradeOS()" {% if not server.allow_web_terminal %}disabled style="opacity:0.35;cursor:not-allowed" title="Akses Web Terminal dinonaktifkan" data-i18n-title="web_terminal_disabled"{% elif not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Perbarui paket sistem operasi" data-i18n-title="apt_upgrade_tooltip"{% endif %}>
+        <button class="btn btn-danger btn-sm {% if apt_upgradable and apt_upgradable > 0 and server.allow_web_terminal and is_online %}has-updates{% endif %}" id="apt-upgrade-btn" onclick="triggerUpgradeOS()" {% if not server.allow_web_terminal %}disabled style="opacity:0.35;cursor:not-allowed" title="Akses Web Terminal dinonaktifkan" data-i18n-title="web_terminal_disabled"{% elif not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% elif not apt_upgradable or apt_upgradable == 0 %}disabled style="opacity:0.35;cursor:not-allowed" title="Semua paket OS sudah mutakhir" data-i18n-title="all_packages_up_to_date"{% else %}title="Perbarui paket sistem operasi" data-i18n-title="apt_upgrade_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-          <span id="apt-upgrade-label">Upgrade</span>
+          <span id="apt-upgrade-label">{% if apt_upgradable and apt_upgradable > 0 %}Upgrade ({{ apt_upgradable }}){% else %}Upgrade{% endif %}</span>
         </button>
         <span class="toolbar-divider"></span>
         <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline;margin:0"
@@ -861,12 +861,11 @@
         <span id="term-active-banner" class="terminal-status-badge" style="display:none;color:#86efac;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.35);font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px" title="Sesi terminal sedang aktif di server klien. Proses tetap berjalan di latar belakang jika jendela ditutup.">
           <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;margin-right:5px;box-shadow:0 0 6px #22c55e"></span>
           <span>Sesi sedang aktif</span>
-          <button type="button" onclick="openTerminalCloseConfirmModal()" style="margin-left:8px;background:none;border:none;color:#fff;cursor:pointer;text-decoration:underline;font-size:10.5px" title="Tutup jendela terminal">Tutup</button>
         </span>
         <span id="term-lease-badge" class="terminal-status-badge" style="display:none;color:var(--yellow);border:1px solid rgba(234,179,8,0.3);background:rgba(234,179,8,0.08);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:11px" title="Sisa durasi otentikasi terminal">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="term-lease-timer">--:--</span>
         </span>
-        <button type="button" class="terminal-btn-icon" id="term-lock-btn" onclick="lockTerminalSession()" style="display:none;color:var(--red)" title="Kunci terminal dan akhiri sesi sekarang">
+        <button type="button" class="terminal-btn-icon" id="term-lock-btn" onclick="openTerminalLockConfirmModal()" style="display:none;color:var(--red)" title="Kunci terminal dan putus sesi koneksi aktif">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>&nbsp;Kunci
         </button>
         <span id="apt-status" class="terminal-status-badge"></span>
@@ -2843,6 +2842,34 @@
   </div>
 </div>
 
+<!-- Modal Konfirmasi Kunci Terminal & Putus Sesi -->
+<div id="term-lock-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+  <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;color:#f87171">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Kunci Terminal &amp; Putus Sesi?</span>
+      </h3>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeTerminalLockConfirmModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+    </div>
+    
+    <p style="font-size:13px;color:var(--text);margin:0 0 10px 0;line-height:1.5">
+      Mengunci terminal akan mencabut izin akses terminal dan <strong>memutus sesi koneksi aktif</strong> di server ini.
+    </p>
+    <p style="font-size:12px;color:var(--dim);margin:0 0 20px 0;line-height:1.4">
+      Sesi terminal dan proses yang sedang berjalan akan dihentikan. Anda harus membuka kunci kembali jika ingin mengakses shell di kemudian waktu.
+    </p>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeTerminalLockConfirmModal()">Batal</button>
+      <button type="button" class="btn btn-danger btn-sm" onclick="proceedLockTerminalSession()" style="display:inline-flex;align-items:center;gap:6px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Kunci &amp; Putus Sesi</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -3768,6 +3795,8 @@ document.addEventListener('click', e => {
   if (m6 && e.target === m6) m6.style.display = 'none';
   const m7 = document.getElementById('term-close-confirm-modal');
   if (m7 && e.target === m7) m7.style.display = 'none';
+  const m8 = document.getElementById('term-lock-confirm-modal');
+  if (m8 && e.target === m8) m8.style.display = 'none';
 });
 
 // === Modal: Buat Pengguna Sistem ===
@@ -4071,10 +4100,31 @@ function aptLabel(kind) {
 function aptSetUpgradeEnabled(ok) {
   const b = document.getElementById('apt-upgrade-btn');
   if (b) {
-    if (ok) {
-      b.classList.add('has-updates');
-    } else {
+    const isOnline = (typeof IS_ONLINE !== 'undefined' ? IS_ONLINE : true);
+    const allowTerm = (typeof ALLOW_WEB_TERMINAL !== 'undefined' ? ALLOW_WEB_TERMINAL : true);
+    const isEn = isEnPage();
+    if (!isOnline || !allowTerm || !ok) {
+      b.disabled = true;
+      b.style.opacity = '0.35';
+      b.style.cursor = 'not-allowed';
       b.classList.remove('has-updates');
+      if (!isOnline) {
+        b.title = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
+        b.dataset.i18nTitle = 'server_offline_actions_disabled';
+      } else if (!allowTerm) {
+        b.title = isEn ? 'Web Terminal disabled' : 'Akses Web Terminal dinonaktifkan';
+        b.dataset.i18nTitle = 'web_terminal_disabled';
+      } else {
+        b.title = isEn ? 'All OS packages are up to date' : 'Semua paket OS sudah mutakhir';
+        b.dataset.i18nTitle = 'all_packages_up_to_date';
+      }
+    } else {
+      b.disabled = false;
+      b.style.opacity = '';
+      b.style.cursor = '';
+      b.classList.add('has-updates');
+      b.title = isEn ? 'Upgrade OS packages' : 'Perbarui paket sistem operasi';
+      b.dataset.i18nTitle = 'apt_upgrade_tooltip';
     }
   }
 }
@@ -4121,9 +4171,18 @@ function renderApt(data) {
   if (upBtn) {
     const lbl = document.getElementById('apt-upgrade-label');
     if (lbl) {
-      lbl.textContent = canUpgrade ? (isEn ? `Upgrade (${aptN})` : `Upgrade (${aptN})`) : 'Upgrade';
+      lbl.textContent = canUpgrade ? `Upgrade (${aptN})` : 'Upgrade';
     }
+    const isOnline = (typeof IS_ONLINE !== 'undefined' ? IS_ONLINE : true);
+    const allowTerm = (typeof ALLOW_WEB_TERMINAL !== 'undefined' ? ALLOW_WEB_TERMINAL : true);
     let tipText = isEn ? 'Upgrade OS packages' : 'Perbarui paket sistem operasi';
+    if (!isOnline) {
+      tipText = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
+    } else if (!allowTerm) {
+      tipText = isEn ? 'Web Terminal disabled' : 'Akses Web Terminal dinonaktifkan';
+    } else if (!canUpgrade) {
+      tipText = isEn ? 'All OS packages are up to date' : 'Semua paket OS sudah mutakhir';
+    }
     upBtn.setAttribute('data-tooltip', tipText);
     upBtn.setAttribute('data-tooltip-orig', tipText);
     upBtn.title = tipText;
@@ -4781,6 +4840,44 @@ function proceedCloseTerminalView() {
   }
 }
 
+function openTerminalLockConfirmModal() {
+  const modal = document.getElementById('term-lock-confirm-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeTerminalLockConfirmModal() {
+  const modal = document.getElementById('term-lock-confirm-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function proceedLockTerminalSession() {
+  closeTerminalLockConfirmModal();
+  finishUpgradeSession();
+  try {
+    await fetch(`/api/servers/${SID}/terminal/lock`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'X-CSRF-Token': getCsrf(),
+      },
+    });
+  } catch (e) {
+    console.error('Lock error:', e);
+  }
+  stopTermLeaseCountdown();
+  const term = getTerm();
+  if (term) {
+    term.close();
+    term.hideViewOnly();
+    term.status(isEnPage() ? 'Terminal locked' : 'Terminal telah dikunci', 'var(--dim)', 'closed');
+  }
+  setTerminalSessionActive(false);
+}
+
+function lockTerminalSession() {
+  openTerminalLockConfirmModal();
+}
+
 function openTerminalUnlockModal(userHasTotp, defaultReason = '') {
   const modal = document.getElementById('term-unlock-modal');
   const errBox = document.getElementById('term-unlock-error');
@@ -4879,28 +4976,6 @@ async function submitTerminalUnlock(e) {
     }
   } finally {
     if (btn) btn.disabled = false;
-  }
-}
-
-async function lockTerminalSession() {
-  if (!confirm('Kunci akses terminal dan putus sesi aktif di server ini sekarang?')) return;
-  finishUpgradeSession();
-  try {
-    await fetch(`/api/servers/${SID}/terminal/lock`, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        'X-CSRF-Token': getCsrf(),
-      },
-    });
-  } catch (e) {
-    console.error('Lock error:', e);
-  }
-  stopTermLeaseCountdown();
-  const term = getTerm();
-  if (term) {
-    term.hide();
-    term.status('Terminal telah dikunci', 'var(--dim)', 'closed');
   }
 }
 
@@ -5015,9 +5090,11 @@ function triggerInteractiveUpgrade() {
   return triggerUpgradeOS();
 }
 
-// Listener Escape untuk keluar dari Full Screen Terminal
+// Listener Escape untuk keluar dari Full Screen Terminal dan menutup modal konfirmasi
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    closeTerminalCloseConfirmModal();
+    closeTerminalLockConfirmModal();
     const term = getTerm();
     if (term && term.windowEl && term.windowEl.classList.contains('is-fullscreen')) {
       term.toggleFullscreen();
@@ -6085,25 +6162,35 @@ function patch(data) {
     }
   }
 
-  // Upgrade OS button: Disable when offline or Web Terminal disabled
+  // Upgrade OS button: Disable when offline, Web Terminal disabled, or no upgradable packages
   const upgradeBtn = document.getElementById('apt-upgrade-btn');
   if (upgradeBtn) {
-    const shouldDisableUpg = !online || !ALLOW_WEB_TERMINAL;
+    let aptN = data.apt_upgradable;
+    if (typeof aptArmed !== 'undefined' && aptArmed && (aptN == null || aptN === 0) && typeof aptLastCount !== 'undefined' && aptLastCount > 0) {
+      aptN = aptLastCount;
+    }
+    const hasUpdates = (aptN != null && aptN > 0);
+    const shouldDisableUpg = !online || !ALLOW_WEB_TERMINAL || !hasUpdates;
     if (upgradeBtn.disabled !== shouldDisableUpg) {
       upgradeBtn.disabled = shouldDisableUpg;
       if (shouldDisableUpg) {
         upgradeBtn.style.opacity = '0.35';
         upgradeBtn.style.cursor = 'not-allowed';
-        if (!ALLOW_WEB_TERMINAL) {
+        upgradeBtn.classList.remove('has-updates');
+        if (!online) {
+          upgradeBtn.title = isEnHero ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
+          upgradeBtn.dataset.i18nTitle = 'server_offline_actions_disabled';
+        } else if (!ALLOW_WEB_TERMINAL) {
           upgradeBtn.title = isEnHero ? 'Web Terminal disabled' : 'Akses Web Terminal dinonaktifkan';
           upgradeBtn.dataset.i18nTitle = 'web_terminal_disabled';
         } else {
-          upgradeBtn.title = isEnHero ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
-          upgradeBtn.dataset.i18nTitle = 'server_offline_actions_disabled';
+          upgradeBtn.title = isEnHero ? 'All OS packages are up to date' : 'Semua paket OS sudah mutakhir';
+          upgradeBtn.dataset.i18nTitle = 'all_packages_up_to_date';
         }
       } else {
         upgradeBtn.style.opacity = '';
         upgradeBtn.style.cursor = '';
+        upgradeBtn.classList.add('has-updates');
         upgradeBtn.title = isEnHero ? 'Upgrade OS packages' : 'Perbarui paket sistem operasi';
         upgradeBtn.dataset.i18nTitle = 'apt_upgrade_tooltip';
       }

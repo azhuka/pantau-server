@@ -3450,6 +3450,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         "is_agent_outdated": _is_agent_outdated(extra.agent_version if extra else None, settings.APP_VERSION),
         "os_label": extra.os_label if extra else None,
         "kernel": extra.kernel if extra else None,
+        "apt_upgradable": extra.apt_upgradable if extra else None,
         "is_online": not _server_stale(server),
         "problem_level": problem_level, "open_problems": open_problems,
         "problem_history": problem_history,
