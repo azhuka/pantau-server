@@ -185,10 +185,10 @@
   border-right: 1px solid rgba(255, 255, 255, 0.03);
   color: var(--text);
 }
-/* Asymmetric Global KPI Strip: Compact Server Stat (240px) + Expanded Severity Strip (1fr) */
+/* Balanced 3-Column Operations Strip: Total Server (minmax 190-220px) + Insiden Aktif (1fr) + Waktu Sistem (minmax 260-290px) */
 .dash-kpi-grid {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: minmax(190px, 220px) 1fr minmax(260px, 290px);
   gap: 12px;
   margin-bottom: 14px;
   align-items: stretch;
@@ -201,6 +201,14 @@
   border-color: rgba(56, 189, 248, 0.45) !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 12px rgba(56, 189, 248, 0.1);
   background: rgba(26, 35, 54, 0.98);
+}
+.dash-clock-card {
+  transition: transform .18s cubic-bezier(0.16,1,0.3,1), border-color .18s ease, box-shadow .18s ease;
+}
+.dash-clock-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 12px rgba(16, 185, 129, 0.1);
 }
 #dash-server-table tbody tr {
   cursor: pointer;
@@ -352,10 +360,20 @@
 .meter-bar.yellow { background: var(--yellow, #f59e0b); }
 .meter-bar.red { background: var(--red, #ef4444); }
 
-@media (max-width: 860px) {
+@media (max-width: 1040px) {
   .dash-kpi-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr 1fr !important;
     gap: 10px;
+  }
+  .dash-kpi-grid #kpi-card-prob {
+    grid-column: 1 / -1;
+    order: 1;
+  }
+  .dash-kpi-grid .kpi-link-card {
+    order: 2;
+  }
+  .dash-kpi-grid .dash-clock-card {
+    order: 3;
   }
 }
 
@@ -365,6 +383,12 @@
   }
   .dash-kpi-grid {
     grid-template-columns: 1fr !important;
+  }
+  .dash-kpi-grid #kpi-card-prob,
+  .dash-kpi-grid .kpi-link-card,
+  .dash-kpi-grid .dash-clock-card {
+    grid-column: auto;
+    order: initial;
   }
   .dash-controls-wrap {
     width: 100% !important;
@@ -449,41 +473,15 @@ body.show-alert-banner .kiosk-toggle-btn {
 }
 
 /* ===================================================================
-   WIDGET WAKTU TERKINI (Hari, Tanggal, Jam, Menit, Detik)
+   WIDGET WAKTU SISTEM (Hari, Tanggal, Jam, Menit, Detik)
    =================================================================== */
-.dash-clock-widget {
-  display: inline-flex;
-  align-items: center;
-  background: linear-gradient(135deg, rgba(26, 35, 54, 0.88) 0%, rgba(15, 23, 42, 0.94) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 8px 16px;
-  gap: 14px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  user-select: none;
-  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
-  margin-right: 48px;
-  flex-shrink: 0;
-}
-.dash-clock-widget:hover {
-  border-color: rgba(56, 189, 248, 0.35);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 0 16px rgba(56, 189, 248, 0.12);
-  transform: translateY(-1px);
-}
 .dash-clock-cal {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: flex-end;
-  text-align: right;
+  align-items: flex-start;
+  text-align: left;
   line-height: 1.25;
-}
-.dash-clock-day-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 .dash-clock-live-ping {
   display: inline-block;
@@ -500,14 +498,14 @@ body.show-alert-banner .kiosk-toggle-btn {
   50% { opacity: 0.35; transform: scale(0.85); }
 }
 .dash-clock-day {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
   color: #f1f5f9;
   letter-spacing: -0.01em;
   text-transform: capitalize;
 }
 .dash-clock-date {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--dim, #94a3b8);
   margin-top: 1px;
@@ -516,25 +514,22 @@ body.show-alert-banner .kiosk-toggle-btn {
 }
 .dash-clock-divider {
   width: 1px;
-  height: 30px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0.04) 100%);
+  height: 26px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.04) 100%);
   flex-shrink: 0;
-}
-.dash-clock-time-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  margin: 0 2px;
 }
 .dash-clock-digits {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1;
   color: #ffffff;
   letter-spacing: 0.5px;
   display: flex;
   align-items: baseline;
+  flex-shrink: 0;
 }
 .dash-clock-num {
   display: inline-block;
@@ -543,7 +538,7 @@ body.show-alert-banner .kiosk-toggle-btn {
 }
 .dash-clock-sep {
   color: rgba(255, 255, 255, 0.4);
-  margin: 0 1.5px;
+  margin: 0 1px;
   font-weight: 500;
   animation: dashColonBlink 1s ease-in-out infinite;
 }
@@ -553,73 +548,25 @@ body.show-alert-banner .kiosk-toggle-btn {
 }
 .dash-clock-sep-sec {
   color: rgba(56, 189, 248, 0.45);
-  margin: 0 1.5px;
+  margin: 0 1px;
   font-weight: 500;
 }
 .dash-clock-sec {
   color: var(--blue, #38bdf8);
-  font-size: 15.5px;
+  font-size: 15px;
   font-weight: 600;
 }
 .dash-clock-tz {
   font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  padding: 2.5px 6px;
+  padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(56, 189, 248, 0.12);
-  color: var(--blue, #38bdf8);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--green, #10b981);
+  border: 1px solid rgba(16, 185, 129, 0.3);
   text-transform: uppercase;
   line-height: 1;
-}
-
-@media (max-width: 820px) {
-  .dash-clock-widget {
-    margin-right: 0 !important;
-    width: 100%;
-    box-sizing: border-box;
-    justify-content: space-between;
-    padding: 8px 14px;
-    gap: 10px;
-  }
-  .dash-clock-cal {
-    align-items: flex-start;
-    text-align: left;
-  }
-  .dash-clock-digits {
-    font-size: 19px;
-  }
-  .dash-clock-sec {
-    font-size: 14px;
-  }
-  .dash-clock-day {
-    font-size: 12.5px;
-  }
-  .dash-clock-date {
-    font-size: 11px;
-  }
-}
-@media (max-width: 440px) {
-  .dash-clock-widget {
-    padding: 7px 12px;
-    gap: 8px;
-  }
-  .dash-clock-divider {
-    margin: 0 2px;
-  }
-  .dash-clock-digits {
-    font-size: 17px;
-  }
-  .dash-clock-sec {
-    font-size: 13px;
-  }
-}
-body.kiosk-mode .dash-clock-widget {
-  margin-right: 52px;
-  background: rgba(15, 23, 42, 0.92);
-  border-color: rgba(56, 189, 248, 0.22);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 20px rgba(56, 189, 248, 0.08);
 }
 </style>
 
@@ -631,24 +578,6 @@ body.kiosk-mode .dash-clock-widget {
       <span id="dash-kiosk-badge" class="badge" style="display:none;background:rgba(56,189,248,0.15);color:var(--blue);border:1px solid rgba(56,189,248,0.35);font-size:10px;padding:1px 7px;letter-spacing:0.5px">OVERWATCH</span>
     </h2>
     <div style="font-size:13px;color:var(--dim);margin-top:2px">Ringkasan kondisi terkini seluruh server klien &amp; metrik operasional terpusat.</div>
-  </div>
-
-  <!-- Realtime Clock & Date Widget (Hari, Tanggal, Jam, Menit, Detik) -->
-  <div class="dash-clock-widget" id="dashClockWidget" title="Waktu Sistem Terkini">
-    <div class="dash-clock-cal">
-      <div class="dash-clock-day-row">
-        <span class="dash-clock-live-ping" title="Sinkron Waktu Nyata"></span>
-        <span class="dash-clock-day" id="dashClockDay">--</span>
-      </div>
-      <div class="dash-clock-date" id="dashClockDate">-- --- ----</div>
-    </div>
-    <div class="dash-clock-divider" aria-hidden="true"></div>
-    <div class="dash-clock-time-wrap">
-      <div class="dash-clock-digits" aria-label="Waktu Terkini">
-        <span id="dashClockHours" class="dash-clock-num">00</span><span class="dash-clock-sep">:</span><span id="dashClockMinutes" class="dash-clock-num">00</span><span class="dash-clock-sep-sec">:</span><span id="dashClockSeconds" class="dash-clock-num dash-clock-sec">00</span>
-      </div>
-      <span class="dash-clock-tz" id="dashClockTz">WIB</span>
-    </div>
   </div>
 </div>
 
@@ -718,6 +647,29 @@ body.kiosk-mode .dash-clock-widget {
       <div class="zbx-sev-tile zbx-tile-ignored {% if ignored_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('ignored')" title="Klik untuk rincian insiden yang Diabaikan (Netral)">
         <span class="zbx-sev-count" id="zbx-count-ignored">{{ ignored_total }}</span>
         <span class="zbx-sev-label" title="Insiden yang diabaikan oleh operator">Diabaikan 🔕</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3: Waktu Sistem (Hari, Tanggal, Jam, Menit, Detik) -->
+  <div class="card dash-clock-card" id="dashClockWidget" style="margin:0;padding:10px 14px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid var(--green);user-select:none" title="Waktu Sistem Terkini">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;display:flex;align-items:center;gap:6px">
+        <span class="dash-clock-live-ping" title="Sinkron Waktu Nyata"></span>
+        <span>Waktu Sistem</span>
+      </div>
+      <span class="dash-clock-tz" id="dashClockTz">WIB</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <!-- Kalender: Hari & Tanggal -->
+      <div class="dash-clock-cal">
+        <div class="dash-clock-day" id="dashClockDay">--</div>
+        <div class="dash-clock-date" id="dashClockDate">-- --- ----</div>
+      </div>
+      <div class="dash-clock-divider" aria-hidden="true"></div>
+      <!-- Jam Digital: Jam : Menit : Detik -->
+      <div class="dash-clock-digits" aria-label="Waktu Terkini">
+        <span id="dashClockHours" class="dash-clock-num">00</span><span class="dash-clock-sep">:</span><span id="dashClockMinutes" class="dash-clock-num">00</span><span class="dash-clock-sep-sec">:</span><span id="dashClockSeconds" class="dash-clock-num dash-clock-sec">00</span>
       </div>
     </div>
   </div>
