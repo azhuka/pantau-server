@@ -113,23 +113,29 @@
   width: 100%;
   height: 100%;
 }
-#xterm-container .xterm {
+#xterm-container .xterm,
+#apt-task-xterm-container .xterm {
   height: 100%;
 }
-#xterm-container .xterm-viewport {
+#xterm-container .xterm-viewport,
+#apt-task-xterm-container .xterm-viewport {
   overflow-y: auto !important;
 }
-#xterm-container .xterm-viewport::-webkit-scrollbar {
+#xterm-container .xterm-viewport::-webkit-scrollbar,
+#apt-task-xterm-container .xterm-viewport::-webkit-scrollbar {
   width: 8px;
 }
-#xterm-container .xterm-viewport::-webkit-scrollbar-track {
+#xterm-container .xterm-viewport::-webkit-scrollbar-track,
+#apt-task-xterm-container .xterm-viewport::-webkit-scrollbar-track {
   background: #0d1117;
 }
-#xterm-container .xterm-viewport::-webkit-scrollbar-thumb {
+#xterm-container .xterm-viewport::-webkit-scrollbar-thumb,
+#apt-task-xterm-container .xterm-viewport::-webkit-scrollbar-thumb {
   background: #30363d;
   border-radius: 4px;
 }
-#xterm-container .xterm-viewport::-webkit-scrollbar-thumb:hover {
+#xterm-container .xterm-viewport::-webkit-scrollbar-thumb:hover,
+#apt-task-xterm-container .xterm-viewport::-webkit-scrollbar-thumb:hover {
   background: #484f58;
 }
 
@@ -770,12 +776,12 @@
 
       <!-- Grup 2: Pembaruan & Kontrol Daya Sistem -->
       <div class="toolbar-group">
-        <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="triggerUpdateOS()" {% if not server.allow_web_terminal %}disabled style="opacity:0.35;cursor:not-allowed" title="Akses Web Terminal dinonaktifkan" data-i18n-title="web_terminal_disabled"{% elif not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Perbarui repositori paket sistem operasi" data-i18n-title="apt_update_tooltip"{% endif %}>
+        <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="triggerUpdateOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Perbarui repositori paket sistem operasi" data-i18n-title="apt_update_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
           Update OS
         </button>
         <span class="toolbar-divider"></span>
-        <button class="btn btn-danger btn-sm {% if apt_upgradable and apt_upgradable > 0 and server.allow_web_terminal and is_online %}has-updates{% endif %}" id="apt-upgrade-btn" onclick="triggerUpgradeOS()" {% if not server.allow_web_terminal %}disabled style="opacity:0.35;cursor:not-allowed" title="Akses Web Terminal dinonaktifkan" data-i18n-title="web_terminal_disabled"{% elif not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% elif not apt_upgradable or apt_upgradable == 0 %}disabled style="opacity:0.35;cursor:not-allowed" title="Semua paket OS sudah mutakhir" data-i18n-title="all_packages_up_to_date"{% else %}title="Perbarui paket sistem operasi" data-i18n-title="apt_upgrade_tooltip"{% endif %}>
+        <button class="btn btn-danger btn-sm {% if apt_upgradable and apt_upgradable > 0 and is_online %}has-updates{% endif %}" id="apt-upgrade-btn" onclick="triggerUpgradeOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% elif not apt_upgradable or apt_upgradable == 0 %}disabled style="opacity:0.35;cursor:not-allowed" title="Semua paket OS sudah mutakhir" data-i18n-title="all_packages_up_to_date"{% else %}title="Perbarui paket sistem operasi" data-i18n-title="apt_upgrade_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
           <span id="apt-upgrade-label">{% if apt_upgradable and apt_upgradable > 0 %}Upgrade ({{ apt_upgradable }}){% else %}Upgrade{% endif %}</span>
         </button>
@@ -844,6 +850,20 @@
   {% endif %}
   <div class="apt-state" id="apt-state">
     <span id="apt-state-text">Memeriksa pembaruan…</span>
+  </div>
+  <!-- Banner Notifikasi Tugas Latar Belakang APT (Update/Upgrade OS) -->
+  <div id="apt-task-active-banner" style="display:none;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:8px 14px;margin-top:10px;font-size:12px;color:var(--text);align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="spinner" style="display:inline-block;width:12px;height:12px;border:2px solid rgba(59,130,246,0.3);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite"></span>
+      <span id="apt-task-banner-text" style="font-weight:500">Tugas sistem sedang berjalan di latar belakang...</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="apt-task-banner-timer" class="badge badge-muted mono" style="font-size:11px">00:00</span>
+      <button class="btn btn-primary btn-sm" onclick="openAptTaskModal()" style="padding:3px 10px;font-size:11px;display:inline-flex;align-items:center;gap:5px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+        <span>Lihat Log / Pantau</span>
+      </button>
+    </div>
   </div>
   <!-- Jendela Terminal Bawaan Linux (Terintegrasi, Bukan Jendela Baru) -->
   <div class="terminal-window" id="apt-live" style="display:none;margin-top:14px">
@@ -2870,6 +2890,49 @@
   </div>
 </div>
 
+<!-- Modal Task Runner Sistem (Update/Upgrade OS) -->
+<div id="apt-task-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px" onclick="if(event.target===this)closeAptTaskModal()">
+  <div class="card" style="width:100%;max-width:860px;max-height:90vh;background:#161b22;border:1px solid #30363d;border-radius:12px;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,0.85);color:var(--text);overflow:hidden">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #30363d;background:#0d1117">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="apt-task-icon-wrap" style="color:var(--blue);display:flex;align-items:center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+        </div>
+        <div>
+          <h3 id="apt-task-title" style="margin:0;font-size:15px;font-weight:600;line-height:1.2">Tugas Sistem: Update OS</h3>
+          <span id="apt-task-subtitle" style="font-size:11px;color:var(--dim)">Dijalankan secara terisolasi via daemon agen</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="apt-task-status-badge" class="badge badge-warning" style="font-size:11px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px">
+          <span class="spinner" style="display:inline-block;width:8px;height:8px;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite"></span>
+          <span>Berjalan</span>
+        </span>
+        <span id="apt-task-elapsed" class="badge badge-muted mono" style="font-size:11px;padding:3px 8px" title="Waktu berjalan">00:00</span>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeAptTaskModal()" style="font-size:20px;line-height:1;padding:2px 8px;cursor:pointer;color:var(--dim)" title="Tutup Jendela (Proses tetap berjalan)">&times;</button>
+      </div>
+    </div>
+    
+    <!-- Body: xterm view -->
+    <div style="position:relative;background:#0d1117;flex:1;min-height:360px;max-height:550px;padding:10px 12px;overflow:hidden">
+      <div id="apt-task-xterm-container" style="width:100%;height:100%"></div>
+    </div>
+
+    <!-- Footer -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-top:1px solid #30363d;background:#161b22">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="apt-task-footer-status" style="font-size:12px;color:var(--dim)">Menunggu keluaran agen...</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button type="button" id="apt-task-close-btn" class="btn btn-ghost btn-sm" onclick="closeAptTaskModal()">
+          Biarkan Berjalan di Latar Belakang
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -4103,9 +4166,8 @@ function aptSetUpgradeEnabled(ok) {
   const b = document.getElementById('apt-upgrade-btn');
   if (b) {
     const isOnline = (typeof IS_ONLINE !== 'undefined' ? IS_ONLINE : true);
-    const allowTerm = (typeof ALLOW_WEB_TERMINAL !== 'undefined' ? ALLOW_WEB_TERMINAL : true);
     const isEn = isEnPage();
-    if (!isOnline || !allowTerm || !ok) {
+    if (!isOnline || !ok) {
       b.disabled = true;
       b.style.opacity = '0.35';
       b.style.cursor = 'not-allowed';
@@ -4113,9 +4175,6 @@ function aptSetUpgradeEnabled(ok) {
       if (!isOnline) {
         b.title = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
         b.dataset.i18nTitle = 'server_offline_actions_disabled';
-      } else if (!allowTerm) {
-        b.title = isEn ? 'Web Terminal disabled' : 'Akses Web Terminal dinonaktifkan';
-        b.dataset.i18nTitle = 'web_terminal_disabled';
       } else {
         b.title = isEn ? 'All OS packages are up to date' : 'Semua paket OS sudah mutakhir';
         b.dataset.i18nTitle = 'all_packages_up_to_date';
@@ -4176,12 +4235,9 @@ function renderApt(data) {
       lbl.textContent = canUpgrade ? `Upgrade (${aptN})` : 'Upgrade';
     }
     const isOnline = (typeof IS_ONLINE !== 'undefined' ? IS_ONLINE : true);
-    const allowTerm = (typeof ALLOW_WEB_TERMINAL !== 'undefined' ? ALLOW_WEB_TERMINAL : true);
     let tipText = isEn ? 'Upgrade OS packages' : 'Perbarui paket sistem operasi';
     if (!isOnline) {
       tipText = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
-    } else if (!allowTerm) {
-      tipText = isEn ? 'Web Terminal disabled' : 'Akses Web Terminal dinonaktifkan';
     } else if (!canUpgrade) {
       tipText = isEn ? 'All OS packages are up to date' : 'Semua paket OS sudah mutakhir';
     }
@@ -4218,58 +4274,212 @@ function aptMsg(html, color) {
   m.style.color = color || 'var(--text)';
 }
 
-// ---------- output proses apt DI DALAM Terminal Bawaan ----------
-// Shell root dan proses apt berbagi SATU jendela. Ketika apt berjalan, shell
-// dijemput (tidak diketik ke sana); begitu selesai, tampilan kembali ke shell.
-let aptLiveBuf = '';
-// Header/pemisah disimpan terpisah dari aptLiveBuf karena setiap pembaruan apt
-// datang dengan replace=true dan akan menimpa seluruh buffer.
-let aptHeader = '';
+// ===================================================================
+// DEDICATED TASK RUNNER (Update & Upgrade OS - Terisolasi dari Shell)
+// ===================================================================
+let aptTaskXterm = null;
+let aptTaskFitAddon = null;
+let aptTaskKind = null;
+let aptTaskTimerInterval = null;
+let aptTaskStartMs = 0;
+let aptTaskLastOutput = '';
 
-// Buffer output mentah dari agen untuk proses apt.
-function aptLiveAppend(text, replace) {
-  if (!text) return;
-  const term = getTerm();
-  // Jika shell interaktif sedang live, jangan timpa buffer layar xterm dengan log polling apt
-  if (term.state === 'live' && term.ws && term.ws.readyState === WebSocket.OPEN && !term.aptActive) {
-    return;
+function initAptTaskXterm() {
+  if (aptTaskXterm || typeof Terminal === 'undefined') return;
+  const container = document.getElementById('apt-task-xterm-container');
+  if (!container) return;
+
+  aptTaskXterm = new Terminal({
+    cursorBlink: false,
+    cursorStyle: 'underline',
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+    fontSize: 13,
+    lineHeight: 1.25,
+    theme: {
+      background: '#0d1117',
+      foreground: '#c9d1d9',
+      cursor: '#58a6ff',
+      selectionBackground: 'rgba(56, 139, 253, 0.4)',
+      black: '#484f58',
+      red: '#ff7b72',
+      green: '#3fb950',
+      yellow: '#d29922',
+      blue: '#58a6ff',
+      magenta: '#bc8cff',
+      cyan: '#39c5cf',
+      white: '#b1bac4',
+      brightBlack: '#6e7681',
+      brightRed: '#ffa198',
+      brightGreen: '#56d364',
+      brightYellow: '#e3b341',
+      brightBlue: '#79c0ff',
+      brightMagenta: '#d2a8ff',
+      brightCyan: '#56d4dd',
+      brightWhite: '#f0f6fc'
+    },
+    convertEol: true,
+    scrollback: 5000,
+    disableStdin: true,
+  });
+
+  if (window.FitAddon && window.FitAddon.FitAddon) {
+    aptTaskFitAddon = new window.FitAddon.FitAddon();
+    aptTaskXterm.loadAddon(aptTaskFitAddon);
   }
-  if (replace) {
-    aptLiveBuf = String(text);
-    term.setRawBuffer(aptHeader + aptLiveBuf);
-  } else {
-    aptLiveBuf += String(text);
-    term.write(String(text));
+
+  aptTaskXterm.open(container);
+}
+
+function openAptTaskModal(kind) {
+  if (kind) aptTaskKind = kind;
+  initAptTaskXterm();
+  const modal = document.getElementById('apt-task-modal');
+  if (modal) modal.style.display = 'flex';
+
+  if (aptTaskKind) {
+    updateAptTaskTitles(aptTaskKind);
+  }
+
+  setTimeout(() => {
+    if (aptTaskFitAddon && aptTaskXterm) {
+      try { aptTaskFitAddon.fit(); } catch (e) {}
+    }
+  }, 100);
+  updateAptTaskActiveBanner();
+}
+
+function closeAptTaskModal() {
+  const modal = document.getElementById('apt-task-modal');
+  if (modal) modal.style.display = 'none';
+  updateAptTaskActiveBanner();
+}
+
+function startAptTaskTimer(startMs) {
+  stopAptTaskTimer();
+  aptTaskStartMs = startMs || Date.now();
+  updateAptTaskTimerDisplay();
+  aptTaskTimerInterval = setInterval(updateAptTaskTimerDisplay, 1000);
+}
+
+function stopAptTaskTimer() {
+  if (aptTaskTimerInterval) {
+    clearInterval(aptTaskTimerInterval);
+    aptTaskTimerInterval = null;
   }
 }
 
-// Ambil alih tampilan Terminal untuk proses apt (hanya bila shell tidak sedang aktif)
-function aptLiveShow(kind) {
-  const term = getTerm();
-  const isLiveShell = (term.state === 'live' && term.ws && term.ws.readyState === WebSocket.OPEN);
-  if (!isLiveShell) {
-    term.suspendForApt();
-    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-    aptHeader = '\r\n\x1b[33m──── ' + aptLabel(kind)
-      + (isEn ? ' · triggered from Dashboard button ────' : ' · dipicu dari tombol Dashboard ────') + '\x1b[0m\r\n';
-    aptLiveBuf = '';
-    term.setRawBuffer(aptHeader);
-    // Hanya tampilkan jendela terminal jika bukan update rutin ringan atau jika jendela sudah terbuka
-    if (kind !== 'APT_UPDATE' || (term.windowEl && term.windowEl.style.display !== 'none')) {
-      term.show();
+function fmtTaskTimer(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function updateAptTaskTimerDisplay() {
+  if (!aptTaskStartMs) return;
+  const elapsedSecs = Math.max(0, Math.floor((Date.now() - aptTaskStartMs) / 1000));
+  const text = fmtTaskTimer(elapsedSecs);
+  const el = document.getElementById('apt-task-elapsed');
+  if (el) el.textContent = text;
+  const bannerTimer = document.getElementById('apt-task-banner-timer');
+  if (bannerTimer) bannerTimer.textContent = text;
+}
+
+function updateAptTaskTitles(kind) {
+  const isEn = isEnPage();
+  const titleEl = document.getElementById('apt-task-title');
+  const subEl = document.getElementById('apt-task-subtitle');
+  const bannerTxt = document.getElementById('apt-task-banner-text');
+
+  let title = '';
+  let sub = isEn ? 'Executed in isolated background runner via pantau agent' : 'Dijalankan secara terisolasi via daemon agen';
+  let banner = '';
+
+  if (kind === 'APT_UPDATE') {
+    title = isEn ? 'System Task: Update OS (apt update)' : 'Tugas Sistem: Update OS (apt update)';
+    banner = isEn ? 'OS repository update (apt update) is running in the background...' : 'Pembaruan repositori OS (apt update) sedang berjalan di latar belakang...';
+  } else if (kind === 'APT_UPGRADE') {
+    title = isEn ? 'System Task: Upgrade OS (apt upgrade)' : 'Tugas Sistem: Upgrade OS (apt upgrade)';
+    banner = isEn ? 'OS package upgrade (apt upgrade) is running in the background...' : 'Peningkatan paket OS (apt upgrade) sedang berjalan di latar belakang...';
+  } else {
+    title = isEn ? 'System Task: APT Process' : 'Tugas Sistem: Proses APT';
+    banner = isEn ? 'System task is running in the background...' : 'Tugas sistem sedang berjalan di latar belakang...';
+  }
+
+  if (titleEl) titleEl.textContent = title;
+  if (subEl) subEl.textContent = sub;
+  if (bannerTxt) bannerTxt.textContent = banner;
+}
+
+function updateAptTaskActiveBanner() {
+  const banner = document.getElementById('apt-task-active-banner');
+  if (!banner) return;
+  const modal = document.getElementById('apt-task-modal');
+  const modalOpen = (modal && modal.style.display !== 'none');
+
+  if (aptRunning && !modalOpen) {
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function setAptTaskModalState(state, kind, extra) {
+  const badge = document.getElementById('apt-task-status-badge');
+  const foot = document.getElementById('apt-task-footer-status');
+  const closeBtn = document.getElementById('apt-task-close-btn');
+  const isEn = isEnPage();
+
+  if (state === 'starting' || state === 'running') {
+    if (badge) {
+      badge.className = 'badge badge-warning';
+      badge.style.display = 'inline-flex';
+      badge.innerHTML = `<span class="spinner" style="display:inline-block;width:8px;height:8px;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin-right:4px"></span><span>${isEn ? 'Running' : 'Berjalan'}</span>`;
+    }
+    if (foot) {
+      foot.textContent = extra || (isEn ? 'Streaming logs from client server...' : 'Mengalirkan log dari server klien...');
+      foot.style.color = 'var(--dim)';
+    }
+    if (closeBtn) {
+      closeBtn.className = 'btn btn-ghost btn-sm';
+      closeBtn.textContent = isEn ? 'Run in Background' : 'Biarkan Berjalan di Latar Belakang';
+    }
+  } else if (state === 'success') {
+    if (badge) {
+      badge.className = 'badge badge-success';
+      badge.style.display = 'inline-flex';
+      badge.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px"><polyline points="20 6 9 17 4 12"></polyline></svg><span>${isEn ? 'Completed' : 'Selesai'}</span>`;
+    }
+    if (foot) {
+      foot.textContent = extra || (isEn ? 'Task completed successfully.' : 'Tugas berhasil diselesaikan.');
+      foot.style.color = 'var(--green)';
+    }
+    if (closeBtn) {
+      closeBtn.className = 'btn btn-primary btn-sm';
+      closeBtn.textContent = isEn ? 'Close' : 'Tutup';
+    }
+  } else if (state === 'error' || state === 'failed') {
+    if (badge) {
+      badge.className = 'badge badge-danger';
+      badge.style.display = 'inline-flex';
+      badge.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg><span>${isEn ? 'Failed' : 'Gagal'}</span>`;
+    }
+    if (foot) {
+      foot.textContent = extra || (isEn ? 'Task encountered an error.' : 'Terjadi kegagalan saat menjalankan tugas.');
+      foot.style.color = 'var(--red)';
+    }
+    if (closeBtn) {
+      closeBtn.className = 'btn btn-danger btn-sm';
+      closeBtn.textContent = isEn ? 'Close' : 'Tutup';
     }
   }
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-  aptLiveStatus(isEn ? 'sending command to server…' : 'mengirim perintah ke server…', 'var(--dim)');
+  updateAptTaskActiveBanner();
 }
 
-// Setelah proses apt selesai, Terminal kembali ke shell
-function aptLiveDone() {
-  const term = getTerm();
-  if (term.aptActive) {
-    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
-    aptLiveAppend('\r\n\x1b[33m──── ' + (isEn ? 'completed; returned to shell' : 'selesai; kembali ke shell') + ' ────\x1b[0m\r\n', false);
-    term.resumeAfterApt();
+function setAptTaskBuffer(buf) {
+  initAptTaskXterm();
+  if (aptTaskXterm) {
+    aptTaskXterm.reset();
+    aptTaskXterm.write(buf);
   }
 }
 
@@ -4690,16 +4900,6 @@ class WebTerminal {
         }));
       }
       this.focus();
-
-      if (window._pendingUpgradeCommand) {
-        const cmd = window._pendingUpgradeCommand;
-        window._pendingUpgradeCommand = null;
-        setTimeout(() => {
-          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify({ type: 'input', data: cmd }));
-          }
-        }, 600);
-      }
     };
 
     this.ws.onmessage = (event) => {
@@ -4808,20 +5008,11 @@ function stopTermLeaseCountdown() {
 }
 
 window._isTerminalSessionActive = false;
-window._pendingUpgradeCommand = null;
 
 function setTerminalSessionActive(active) {
   window._isTerminalSessionActive = Boolean(active);
   const banner = document.getElementById('term-active-banner') || document.getElementById('term-upgrade-banner');
   if (banner) banner.style.display = active ? 'inline-flex' : 'none';
-}
-
-function setUpgradeSessionActive(active) {
-  setTerminalSessionActive(active);
-}
-
-function finishUpgradeSession() {
-  setTerminalSessionActive(false);
 }
 
 function openTerminalCloseConfirmModal() {
@@ -4912,7 +5103,6 @@ function closeTerminalUnlockModal(canceled = true) {
   const modal = document.getElementById('term-unlock-modal');
   if (modal) modal.style.display = 'none';
   if (canceled) {
-    window._pendingUpgradeCommand = null;
     const term = getTerm();
     if (term) {
       term.hideViewOnly();
@@ -4954,7 +5144,6 @@ async function submitTerminalUnlock(e) {
       throw new Error(data.detail || ('HTTP ' + res.status));
     }
     
-    const pendingCmd = window._pendingUpgradeCommand;
     const modal = document.getElementById('term-unlock-modal');
     if (modal) modal.style.display = 'none';
 
@@ -4964,23 +5153,7 @@ async function submitTerminalUnlock(e) {
     if (term.windowEl) {
       term.windowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-
-    if (pendingCmd) {
-      if (term.state === 'live' && term.ws && term.ws.readyState === WebSocket.OPEN) {
-        window._pendingUpgradeCommand = null;
-        if (typeof setUpgradeSessionActive === 'function' && pendingCmd.includes('upgrade')) setUpgradeSessionActive(true);
-        term.fit();
-        term.focus();
-        setTimeout(() => {
-          term.sendRaw(pendingCmd);
-        }, 300);
-      } else {
-        window._pendingUpgradeCommand = pendingCmd;
-        term.connect();
-      }
-    } else {
-      term.connect();
-    }
+    term.connect();
   } catch (err) {
     if (errBox) {
       errBox.textContent = err.message || 'Gagal memverifikasi kata sandi';
@@ -4993,7 +5166,7 @@ async function submitTerminalUnlock(e) {
 }
 
 // ===================================================================
-// KONTROL TERMINAL, UPDATE & UPGRADE (Mekanisme Terpadu Langsung Shell)
+// KONTROL TERMINAL BAWAAN (Root Shell Interaktif Saja)
 // ===================================================================
 async function openTerminalWithCommand(commandToRun = null, customReason = '') {
   const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
@@ -5012,8 +5185,8 @@ async function openTerminalWithCommand(commandToRun = null, customReason = '') {
 
   const term = getTerm();
 
-  // Jika tombol terminal biasa diklik (tanpa perintah khusus) saat terminal sudah terbuka -> konfirmasi tutup
-  if (!commandToRun && term.windowEl && term.windowEl.style.display !== 'none') {
+  // Jika tombol terminal biasa diklik saat terminal sudah terbuka -> konfirmasi tutup
+  if (term.windowEl && term.windowEl.style.display !== 'none') {
     openTerminalCloseConfirmModal();
     return;
   }
@@ -5035,36 +5208,19 @@ async function openTerminalWithCommand(commandToRun = null, customReason = '') {
     }
 
     if (data.is_unlocked && data.remaining_seconds > 0) {
-      // Buka dan tampilkan jendela terminal hanya saat otentikasi valid
       term.show();
       if (term.windowEl) {
         term.windowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       startTermLeaseCountdown(data.remaining_seconds);
       if (term.state === 'live' && term.ws && term.ws.readyState === WebSocket.OPEN) {
-        if (commandToRun) {
-          if (typeof setUpgradeSessionActive === 'function' && commandToRun.includes('upgrade')) {
-            setUpgradeSessionActive(true);
-          }
-          term.fit();
-          term.focus();
-          term.sendRaw(commandToRun);
-        } else {
-          term.fit();
-          term.focus();
-        }
+        term.fit();
+        term.focus();
       } else {
-        if (commandToRun) {
-          window._pendingUpgradeCommand = commandToRun;
-        }
         term.connect();
       }
     } else {
-      // Terminal terkunci: pastikan jendela terminal tetap tertutup sebelum otentikasi diisi
       term.hideViewOnly();
-      if (commandToRun) {
-        window._pendingUpgradeCommand = commandToRun;
-      }
       openTerminalUnlockModal(Boolean(data.user_has_totp), customReason);
     }
   } catch (e) {
@@ -5083,16 +5239,63 @@ function toggleTerminalView() {
   return openTerminalWithCommand(null);
 }
 
-// Tombol Update OS: Buka terminal & jalankan 'apt update'
-function triggerUpdateOS() {
+// ===================================================================
+// PEMICU TUGAS SISTEM TERISOLASI (Update & Upgrade OS)
+// ===================================================================
+async function triggerAptTask(kind) {
+  const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
   const isEn = isEnPage();
-  return openTerminalWithCommand('apt update\n', isEn ? 'OS Package Repository Update (apt update)' : 'Pembaruan Repositori Paket OS (apt update)');
+  if (!isOnline) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  if (!CAN_APT) {
+    showToast(isEn ? 'Access denied: You do not have APT permissions.' : 'Akses ditolak: Anda tidak memiliki wewenang Update/Upgrade OS.', false);
+    return;
+  }
+  if (aptRunning) {
+    showToast(isEn ? 'Another task is currently running.' : 'Proses pembaruan lain sedang berjalan.', false);
+    openAptTaskModal();
+    return;
+  }
+
+  openAptTaskModal(kind);
+  setAptTaskModalState('starting', kind, isEn ? 'Sending task to client server...' : 'Mengirim perintah tugas ke server klien...');
+  aptTaskLastOutput = '';
+
+  try {
+    const res = await fetch('/api/logs/request', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf(),
+      },
+      body: JSON.stringify({
+        server_id: SID,
+        unit: kind,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || ('HTTP ' + res.status));
+    }
+    const rid = data.id;
+    aptFollow(rid, kind, Date.now());
+  } catch (err) {
+    setAptTaskModalState('error', kind, err.message);
+    setAptTaskBuffer('\x1b[31m[ERROR: ' + escapeHtml(err.message) + ']\x1b[0m\r\n');
+  }
 }
 
-// Tombol Upgrade: Buka terminal & jalankan 'apt upgrade -y'
+// Tombol Update OS: Menjalankan tugas pembaruan repositori paket
+function triggerUpdateOS() {
+  return triggerAptTask('APT_UPDATE');
+}
+
+// Tombol Upgrade: Menjalankan tugas peningkatan paket sistem operasi
 function triggerUpgradeOS() {
-  const isEn = isEnPage();
-  return openTerminalWithCommand('apt upgrade -y\n', isEn ? 'Operating System Package Upgrade (apt upgrade)' : 'Pembaruan Paket Sistem Operasi (apt upgrade)');
+  return triggerAptTask('APT_UPGRADE');
 }
 
 // Alias kompatibilitas
@@ -5100,12 +5303,13 @@ function triggerInteractiveUpgrade() {
   return triggerUpgradeOS();
 }
 
-// Listener Escape untuk keluar dari Full Screen Terminal dan menutup modal konfirmasi / unlock
+// Listener Escape untuk keluar dari Full Screen Terminal dan menutup modal
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeTerminalUnlockModal(true);
     closeTerminalCloseConfirmModal();
     closeTerminalLockConfirmModal();
+    closeAptTaskModal();
     const term = getTerm();
     if (term && term.windowEl && term.windowEl.classList.contains('is-fullscreen')) {
       term.toggleFullscreen();
@@ -5127,24 +5331,38 @@ async function aptAction(kind) {
   return triggerUpgradeOS();
 }
 
-// Ikuti live dari sebuah request apt. Dipakai saat baru memulai ATAU saat
-// halaman dimuat ulang padahal proses masih berjalan (resume otomatis).
+// Ikuti live dari sebuah request apt secara terisolasi via modal & banner tugas.
+// Dipakai saat baru memulai ATAU saat halaman dimuat ulang padahal proses masih berjalan (resume otomatis).
 async function aptFollow(rid, kind, startedMs) {
   if (aptFollowActive) return;
   aptFollowActive = true;
   aptRunning = true;
-  const upD = document.getElementById('apt-update-btn');
-  const label = aptLabel(kind);
+  aptTaskKind = kind;
   aptRid = rid;
-  aptLiveShow(kind);
-  aptLiveStatus('menyambung proses ' + label + ' yang masih berjalan…', 'var(--dim)');
+
+  const upD = document.getElementById('apt-update-btn');
+  const upG = document.getElementById('apt-upgrade-btn');
+  const label = aptLabel(kind);
+  const isEn = isEnPage();
+
   if (upD) upD.disabled = true;
-  aptSetUpgradeEnabled(false);
+  if (upG) aptSetUpgradeEnabled(false);
+
+  startAptTaskTimer(startedMs || Date.now());
+  updateAptTaskTitles(kind);
+  setAptTaskModalState('running', kind, isEn ? 'Executing command on server...' : 'Mengeksekusi perintah di server...');
+  updateAptTaskActiveBanner();
+
+  let header = '\x1b[36m──── ' + label + (isEn ? ' (isolated system task) ────' : ' (tugas sistem terisolasi) ────') + '\x1b[0m\r\n\r\n';
+  if (!aptTaskLastOutput) {
+    setAptTaskBuffer(header + (isEn ? 'Connecting to client agent...\r\n' : 'Menghubungkan ke agen klien...\r\n'));
+  }
 
   const start = startedMs || Date.now();
   const limit = (kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_DIST_UPGRADE' || kind === 'APT_FIX') ? 3700000
     : (kind === 'APT_UPGRADE' ? 920000 : 320000);
   let j = null;
+
   while (Date.now() - start < limit) {
     await sleepMs(750);
     try {
@@ -5154,20 +5372,14 @@ async function aptFollow(rid, kind, startedMs) {
       continue;
     }
     if (j && j.status === 'executing') {
-      if (!getTerm().aptReady) {
-        getTerm().aptReady = true;                 // stdin proses sudah boleh ditulis
-        getTerm().flushInput();
-        getTerm().queue.splice(0).forEach(chunk => getTerm().sendRaw(chunk));
-        getTerm().flushInput();
+      const live = j.result || '';
+      if (live !== aptTaskLastOutput) {
+        aptTaskLastOutput = live;
+        setAptTaskBuffer(header + live);
       }
       const secs = Math.round((Date.now() - start) / 1000);
-      const live = j.result || '';
-      if (live !== aptLiveBuf) aptLiveAppend(live, true);
-      const spin = secs % 2 === 0 ? '●' : '○';
-      aptLiveStatus('<span style="color:var(--blue)">' + spin + '&nbsp;' + label +
-        '</span>&nbsp;berjalan <b>' + secs + '</b> dtk'
-        + ' &nbsp;<span style="color:var(--dim)">' + fmtBytes(aptLiveBuf.length) + ' live</span>',
-        'var(--blue)');
+      const infoText = (isEn ? 'Running: ' : 'Berjalan: ') + secs + 's (' + fmtBytes(live.length) + ')';
+      setAptTaskModalState('running', kind, infoText);
       continue;
     }
     if (j && (j.status === 'success' || j.status === 'failed')) break;
@@ -5176,35 +5388,33 @@ async function aptFollow(rid, kind, startedMs) {
   aptRunning = false;
   aptFollowActive = false;
   aptRid = null;
+  stopAptTaskTimer();
   if (upD) upD.disabled = false;
 
   if (!j || j.status !== 'success') {
     if (Date.now() - start >= limit) {
-      aptSetState('error', 'Gagal — batas waktu habis.');
-      aptLiveStatus('<b style="color:var(--red)">Gagal — batas waktu habis.</b> Periksa status agen.', 'var(--red)');
-      aptMsg('<b>Agen tidak merespons dalam batas waktu — periksa status agen.</b>', 'var(--red)');
-      aptFollowCooldown = Date.now() + 120000; // tunda resume agar tidak langsung mengulang
+      aptSetState('error', isEn ? 'Failed — timeout.' : 'Gagal — batas waktu habis.');
+      setAptTaskModalState('error', kind, isEn ? 'Failed: Timeout reached.' : 'Gagal: Batas waktu habis.');
+      setAptTaskBuffer(header + (aptTaskLastOutput || '') + '\r\n\x1b[31m[ERROR: ' + (isEn ? 'Timeout reached' : 'Batas waktu habis') + ']\x1b[0m\r\n');
+      aptFollowCooldown = Date.now() + 120000;
     } else if (j) {
-      aptLiveShow(kind);
-      if (j.result && !aptLiveBuf.includes(j.result)) {
-        aptLiveAppend(j.result + '\n', false);
-      }
+      const errMsg = j.result || j.status || 'Error';
       aptSetState('error', 'Gagal (' + escapeHtml(j.status) + ').');
-      aptLiveStatus('<b style="color:var(--red)">Gagal (' + escapeHtml(j.status) + ').</b>', 'var(--red)');
-      aptMsg('Status: ' + escapeHtml(j.status) + (j.result ? ' — ' + escapeHtml(j.result) : ''), 'var(--red)');
+      setAptTaskModalState('error', kind, 'Gagal (' + escapeHtml(j.status) + ')');
+      setAptTaskBuffer(header + (aptTaskLastOutput || '') + '\r\n\x1b[31m[ERROR: ' + escapeHtml(errMsg) + ']\x1b[0m\r\n');
     } else {
       aptSetState('error', 'Gagal mengambil hasil.');
-      aptLiveStatus('<b style="color:var(--red)">Gagal mengambil hasil.</b>', 'var(--red)');
-      aptMsg('Gagal mengambil hasil.', 'var(--red)');
+      setAptTaskModalState('error', kind, 'Gagal mengambil hasil.');
     }
   } else {
     let info = null;
     try { info = JSON.parse(j.result); } catch (e) { /* hasil teks biasa */ }
+    const finalOutput = (info && info.output) ? info.output : (j.result || '');
+    setAptTaskBuffer(header + finalOutput + '\r\n\x1b[32m✔ ' + (isEn ? 'Completed successfully.' : 'Selesai dengan sukses.') + '\x1b[0m\r\n');
+    setAptTaskModalState('success', kind, isEn ? 'Task completed successfully.' : 'Tugas berhasil diselesaikan.');
+
     if (info && info.apt) {
       const apt = info.apt;
-      const final = info.output || '';
-      aptLiveAppend(final, true);
-      const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
       if (apt.upgradable > 0) {
         aptSetState('pending', '<b>' + apt.upgradable + (isEn ? ' packages</b> ready to upgrade. <span class="dim">See list below.</span>' : ' paket</b> siap di-upgrade. <span class="dim">Lihat daftar di bawah.</span>'));
         const pkgs = apt.packages || [];
@@ -5221,36 +5431,26 @@ async function aptFollow(rid, kind, startedMs) {
             + enriched.slice(0, 60).map(pkgItemHtml).join('<br>') + '</div>'
           : '';
         aptMsg('<b>' + apt.upgradable + (isEn ? ' packages ready for upgrade.</b>' : ' paket siap untuk di-upgrade.</b>') + listHtml, 'var(--yellow)');
-        aptLiveStatus('<b style="color:var(--yellow)">' + (isEn ? 'Completed — ' + apt.upgradable + ' packages ready for upgrade.</b> Click Upgrade button to execute.' : 'Selesai — ' + apt.upgradable + ' paket siap di-upgrade.</b> Klik tombol Upgrade untuk mengeksekusi.'), 'var(--yellow)');
       } else if (kind === 'APT_UPGRADE' || kind === 'APT_UPGRADE_INTERACT' || kind === 'APT_DIST_UPGRADE') {
         aptSetState('ok', isEn ? 'Upgrade completed — all packages are up to date.' : 'Proses upgrade selesai — semua paket sudah ditingkatkan.');
         aptMsg('<b>' + (isEn ? 'Upgrade completed — all packages are up to date.' : 'Proses upgrade selesai — semua paket sudah ditingkatkan.') + '</b>', 'var(--green)');
-        aptLiveStatus('<b style="color:var(--green)">' + (isEn ? 'Completed — upgrade successful.' : 'Selesai — upgrade berhasil.') + '</b>', 'var(--green)');
-      } else if (kind === 'APT_FIX') {
-        aptSetState('ok', isEn ? 'Package repair completed — dpkg & dependencies resolved.' : 'Reparasi paket selesai — dpkg & dependensi telah dipulihkan.');
-        aptMsg('<b>' + (isEn ? 'Package repair completed — dpkg & dependencies resolved.' : 'Reparasi paket selesai — dpkg & dependensi telah dipulihkan.') + '</b>', 'var(--green)');
-        aptLiveStatus('<b style="color:var(--green)">' + (isEn ? 'Completed — package repair successful.' : 'Selesai — reparasi paket berhasil.') + '</b>', 'var(--green)');
       } else {
         aptSetState('ok', (isEn ? 'All OS packages are up to date.' : 'Semua paket OS sudah mutakhir.')
           + (apt.last_update ? ' <span class="dim">' + (isEn ? 'Last checked ' : 'Terakhir diperiksa ') + fmtAptLast(apt.last_update) + '.</span>' : ''));
         aptMsg(isEn ? '<b>All OS packages are up to date.</b>' : '<b>Semua paket OS sudah mutakhir.</b>', 'var(--green)');
-        aptLiveStatus(isEn ? '<b style="color:var(--green)">Done — all OS packages are up to date.</b>' : '<b style="color:var(--green)">Selesai — semua paket OS sudah mutakhir.</b>', 'var(--green)');
       }
-      aptUpdated = true; // Update (atau Upgrade) sudah dijalankan & tuntas di sesi ini
+      aptUpdated = true;
       aptLastCount = apt.upgradable;
       aptArmed = (apt.upgradable > 0);
       aptSetUpgradeEnabled(aptArmed);
-    } else if (info) {
-      const final = info.output || j.result || '';
-      aptLiveAppend(final, true);
-      aptLiveStatus('<b style="color:var(--green)">Selesai.</b>', 'var(--green)');
-      aptMsg('<b>Selesai.</b>', 'var(--green)');
+      const lbl = document.getElementById('apt-upgrade-label');
+      if (lbl) {
+        lbl.textContent = (aptArmed ? `Upgrade (${apt.upgradable})` : 'Upgrade');
+      }
     } else {
-      aptLiveAppend(String(j.result || ''), true);
-      aptLiveStatus('<b style="color:var(--green)">Selesai.</b>', 'var(--green)');
-      aptMsg('<b>Selesai.</b> ' + escapeHtml(String(j.result || '').slice(-400)), 'var(--green)');
+      aptSetState('ok', isEn ? 'Task completed.' : 'Tugas selesai.');
     }
-    // sinkronkan angka/badge dari data agent terbaru
+
     try {
       const rs = await fetch('/api/servers/' + SID + '/system', {credentials: 'same-origin'});
       if (rs.ok) {
@@ -5258,12 +5458,10 @@ async function aptFollow(rid, kind, startedMs) {
         renderApt(d);
       }
     } catch (e) { /* polling berkala tetap berjalan */ }
-    poll();
+    if (typeof poll === 'function') poll();
   }
 
-  // Dipanggil paling akhir: penanda "kembali ke shell" harus jadi baris
-  // terakhir yang terlihat, tidak ditimpa oleh output/aptLiveAppend di atas.
-  aptLiveDone();
+  updateAptTaskActiveBanner();
 }
 
 function fmtProbDate(isoStr) {
@@ -6148,22 +6346,17 @@ function patch(data) {
     }
   }
 
-  // Update OS button: Disable when offline or Web Terminal disabled
+  // Update OS button: Disable when offline
   const updateBtn = document.getElementById('apt-update-btn');
   if (updateBtn) {
-    const shouldDisableUpd = !online || !ALLOW_WEB_TERMINAL;
+    const shouldDisableUpd = !online;
     if (updateBtn.disabled !== shouldDisableUpd) {
       updateBtn.disabled = shouldDisableUpd;
       if (shouldDisableUpd) {
         updateBtn.style.opacity = '0.35';
         updateBtn.style.cursor = 'not-allowed';
-        if (!ALLOW_WEB_TERMINAL) {
-          updateBtn.title = isEnHero ? 'Web Terminal disabled' : 'Akses Web Terminal dinonaktifkan';
-          updateBtn.dataset.i18nTitle = 'web_terminal_disabled';
-        } else {
-          updateBtn.title = isEnHero ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
-          updateBtn.dataset.i18nTitle = 'server_offline_actions_disabled';
-        }
+        updateBtn.title = isEnHero ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
+        updateBtn.dataset.i18nTitle = 'server_offline_actions_disabled';
       } else {
         updateBtn.style.opacity = '';
         updateBtn.style.cursor = '';
@@ -6173,7 +6366,7 @@ function patch(data) {
     }
   }
 
-  // Upgrade OS button: Disable when offline, Web Terminal disabled, or no upgradable packages
+  // Upgrade OS button: Disable when offline or no upgradable packages
   const upgradeBtn = document.getElementById('apt-upgrade-btn');
   if (upgradeBtn) {
     let aptN = data.apt_upgradable;
@@ -6181,7 +6374,7 @@ function patch(data) {
       aptN = aptLastCount;
     }
     const hasUpdates = (aptN != null && aptN > 0);
-    const shouldDisableUpg = !online || !ALLOW_WEB_TERMINAL || !hasUpdates;
+    const shouldDisableUpg = !online || !hasUpdates;
     if (upgradeBtn.disabled !== shouldDisableUpg) {
       upgradeBtn.disabled = shouldDisableUpg;
       if (shouldDisableUpg) {
@@ -6191,9 +6384,6 @@ function patch(data) {
         if (!online) {
           upgradeBtn.title = isEnHero ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
           upgradeBtn.dataset.i18nTitle = 'server_offline_actions_disabled';
-        } else if (!ALLOW_WEB_TERMINAL) {
-          upgradeBtn.title = isEnHero ? 'Web Terminal disabled' : 'Akses Web Terminal dinonaktifkan';
-          upgradeBtn.dataset.i18nTitle = 'web_terminal_disabled';
         } else {
           upgradeBtn.title = isEnHero ? 'All OS packages are up to date' : 'Semua paket OS sudah mutakhir';
           upgradeBtn.dataset.i18nTitle = 'all_packages_up_to_date';
