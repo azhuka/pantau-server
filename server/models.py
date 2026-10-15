@@ -294,6 +294,7 @@ class ServerProblem(Base):
     ignored_until = Column(DateTime, nullable=True)    # batas waktu abaikan (None jika permanen / tidak diabaikan)
     ignored_by = Column(String(100), nullable=True)    # user yang mengabaikan
     ignored_reason = Column(String(255), nullable=True)# catatan alasan pengabaian
+    ignore_mode = Column(String(20), nullable=True, default="permanent")
     context = Column(Text, nullable=True)              # JSON data konteks diagnostik / log snapshot saat insiden terjadi
 
     __table_args__ = (

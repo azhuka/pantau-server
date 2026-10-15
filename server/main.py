@@ -472,6 +472,7 @@ def migrate_server_problem_ignored():
         "ignored_until": "DATETIME NULL",
         "ignored_by": "VARCHAR(100) NULL",
         "ignored_reason": "VARCHAR(255) NULL",
+        "ignore_mode": "VARCHAR(20) DEFAULT 'permanent'",
     }
     missing = {k: v for k, v in wanted.items() if k not in existing}
     if not missing:
@@ -1011,16 +1012,32 @@ def agent_report(
                 op.resolved_at = datetime.utcnow()
                 op.updated_at = datetime.utcnow()
                 op.resolved_note = "auto"
-                op.is_ignored = 0
 
-            # 2. Jika sebelumnya bermasalah (down/offline), bersihkan pengabaian mode insiden & catat audit
+            # 2. Jika sebelumnya bermasalah (down/offline), evaluasi pengabaian sesuai mode & catat audit
             if prev_status in ("down", "offline", "unknown"):
-                has_future_timer = service.ignored_until and service.ignored_until > datetime.utcnow()
-                if not has_future_timer or getattr(service, "ignore_mode", None) == "incident":
+                svc_mode = getattr(service, "ignore_mode", None)
+                if svc_mode == "incident":
+                    # Mode insiden: hanya untuk satu insiden saat itu, reset ke normal saat layanan pulih
                     service.is_ignored = 0
                     service.ignored_until = None
                     service.ignored_reason = None
                     service.ignore_mode = None
+                elif svc_mode == "duration":
+                    # Mode durasi: jika batas waktu telah habis, kembalikan ke pemantauan normal
+                    if not (service.ignored_until and service.ignored_until > datetime.utcnow()):
+                        service.is_ignored = 0
+                        service.ignored_until = None
+                        service.ignored_reason = None
+                        service.ignore_mode = None
+                elif svc_mode == "permanent":
+                    # Mode permanen: TETAP diabaikan (is_ignored = 1), tidak di-reset saat layanan pulih!
+                    pass
+                else:
+                    if service.ignored_until and service.ignored_until <= datetime.utcnow():
+                        service.is_ignored = 0
+                        service.ignored_until = None
+                        service.ignored_reason = None
+                        service.ignore_mode = None
 
                 try:
                     _audit(
@@ -2381,9 +2398,11 @@ def api_command_result(
                     op.resolved_at = datetime.utcnow()
                     op.updated_at = datetime.utcnow()
                     op.resolved_note = "operator_start"
-                    op.is_ignored = 0
-                svc_obj.is_ignored = 0
-                svc_obj.ignored_until = None
+                if getattr(svc_obj, "ignore_mode", None) != "permanent":
+                    svc_obj.is_ignored = 0
+                    svc_obj.ignored_until = None
+                    svc_obj.ignored_reason = None
+                    svc_obj.ignore_mode = None
         except Exception as e:
             logger.warning("[cmd_result] Gagal update metrik/problem up seketika: %s", e)
 
@@ -3513,21 +3532,23 @@ def service_restart(
         server_id=sid, service_id=svc_id, action="restart", status="pending",
         issued_by=user.username,
     ))
-    # Otomatis aktifkan kembali pemantauan saat admin merestart layanan
-    svc.is_ignored = 0
-    svc.ignored_until = None
-    svc.ignored_reason = None
-    svc.ignore_mode = None
-    prob = db.query(ServerProblem).filter(
-        ServerProblem.server_id == sid,
-        ServerProblem.key == f"service_down:{svc.service_name}",
-        ServerProblem.resolved_at.is_(None),
-    ).first()
-    if prob:
-        prob.is_ignored = 0
-        prob.ignored_until = None
-        prob.ignored_reason = None
-        prob.updated_at = datetime.utcnow()
+    # Otomatis aktifkan kembali pemantauan saat admin merestart layanan (hanya bila bukan mode permanen)
+    if getattr(svc, "ignore_mode", None) != "permanent":
+        svc.is_ignored = 0
+        svc.ignored_until = None
+        svc.ignored_reason = None
+        svc.ignore_mode = None
+        prob = db.query(ServerProblem).filter(
+            ServerProblem.server_id == sid,
+            ServerProblem.key == f"service_down:{svc.service_name}",
+            ServerProblem.resolved_at.is_(None),
+        ).first()
+        if prob:
+            prob.is_ignored = 0
+            prob.ignored_until = None
+            prob.ignored_reason = None
+            prob.ignore_mode = None
+            prob.updated_at = datetime.utcnow()
     db.commit()
     if is_json:
         return Response(json.dumps({"ok": True, "detail": f"Perintah restart {svc.service_name} telah dikirim ke Agen Pantau."}), media_type="application/json")
@@ -3587,21 +3608,23 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
     _audit(db, user.username, f"service_{action}",
            f"{server.hostname if server else sid}:{svc.service_name}", "dikirim ke agen", server_id=sid)
     if action == "start":
-        # Otomatis aktifkan kembali pemantauan saat admin memulai/menyalakan layanan
-        svc.is_ignored = 0
-        svc.ignored_until = None
-        svc.ignored_reason = None
-        svc.ignore_mode = None
-        prob = db.query(ServerProblem).filter(
-            ServerProblem.server_id == sid,
-            ServerProblem.key == f"service_down:{svc.service_name}",
-            ServerProblem.resolved_at.is_(None),
-        ).first()
-        if prob:
-            prob.is_ignored = 0
-            prob.ignored_until = None
-            prob.ignored_reason = None
-            prob.updated_at = datetime.utcnow()
+        # Otomatis aktifkan kembali pemantauan saat admin memulai/menyalakan layanan (hanya bila bukan mode permanen)
+        if getattr(svc, "ignore_mode", None) != "permanent":
+            svc.is_ignored = 0
+            svc.ignored_until = None
+            svc.ignored_reason = None
+            svc.ignore_mode = None
+            prob = db.query(ServerProblem).filter(
+                ServerProblem.server_id == sid,
+                ServerProblem.key == f"service_down:{svc.service_name}",
+                ServerProblem.resolved_at.is_(None),
+            ).first()
+            if prob:
+                prob.is_ignored = 0
+                prob.ignored_until = None
+                prob.ignored_reason = None
+                prob.ignore_mode = None
+                prob.updated_at = datetime.utcnow()
     db.commit()
     if is_json:
         return Response(json.dumps({"ok": True, "detail": f"Perintah {label_id} {svc.service_name} telah dikirim ke Agen Pantau."}), media_type="application/json")
@@ -5687,6 +5710,7 @@ def _problem_row2dict(row) -> dict:
         "ignored_until": getattr(row, "ignored_until", None),
         "ignored_by": getattr(row, "ignored_by", None),
         "ignored_reason": getattr(row, "ignored_reason", None),
+        "ignore_mode": getattr(row, "ignore_mode", None),
         "context": getattr(row, "context", None),
     }
 
@@ -5779,7 +5803,8 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
     svc_map = {}
     try:
         for s in db.query(Service).filter(Service.server_id == srv.id).all():
-            if getattr(s, "is_ignored", 0) and s.ignored_until and s.ignored_until <= now:
+            s_mode = getattr(s, "ignore_mode", None)
+            if getattr(s, "is_ignored", 0) and s_mode == "duration" and s.ignored_until and s.ignored_until <= now:
                 s.is_ignored = 0
                 s.ignored_until = None
                 s.ignored_reason = None
@@ -5821,27 +5846,59 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 last_active_at=active,
                 context=p.get("context"),
             )
+            # 1. Warisi pengabaian dari objek Service (jika masalah service_down)
             if is_svc_ignored:
                 new_row.is_ignored = 1
                 new_row.ignored_until = svc_obj.ignored_until
                 new_row.ignored_by = svc_obj.ignored_by
                 new_row.ignored_reason = svc_obj.ignored_reason
+                new_row.ignore_mode = getattr(svc_obj, "ignore_mode", "permanent") or "permanent"
+            else:
+                # 2. Cek riwayat ServerProblem sebelumnya untuk key ini (termasuk non-service atau flappy)
+                prev_prob = (
+                    db.query(ServerProblem)
+                    .filter(
+                        ServerProblem.server_id == srv.id,
+                        ServerProblem.key == p["key"],
+                        ServerProblem.is_ignored == 1,
+                    )
+                    .order_by(desc(ServerProblem.updated_at))
+                    .first()
+                )
+                if prev_prob:
+                    prev_mode = getattr(prev_prob, "ignore_mode", None)
+                    if prev_mode == "permanent" or (prev_mode is None and prev_prob.ignored_until is None):
+                        new_row.is_ignored = 1
+                        new_row.ignore_mode = "permanent"
+                        new_row.ignored_until = None
+                        new_row.ignored_by = prev_prob.ignored_by
+                        new_row.ignored_reason = prev_prob.ignored_reason
+                    elif prev_mode == "duration" and prev_prob.ignored_until and prev_prob.ignored_until > now:
+                        new_row.is_ignored = 1
+                        new_row.ignore_mode = "duration"
+                        new_row.ignored_until = prev_prob.ignored_until
+                        new_row.ignored_by = prev_prob.ignored_by
+                        new_row.ignored_reason = prev_prob.ignored_reason
+
             db.add(new_row)
             try:
-                _audit(db, "sistem", f"masalah_{p['severity']}", f"{srv.hostname}: terdeteksi [{p['severity'].upper()}] {p['message']}", "aktif", server_id=srv.id)
+                audit_status = "diabaikan" if new_row.is_ignored else "aktif"
+                _audit(db, "sistem", f"masalah_{p['severity']}", f"{srv.hostname}: terdeteksi [{p['severity'].upper()}] {p['message']}", audit_status, server_id=srv.id)
             except Exception:
                 pass
         else:
-            if getattr(row, "is_ignored", 0) and row.ignored_until and row.ignored_until <= now:
+            if getattr(row, "is_ignored", 0) and getattr(row, "ignore_mode", None) == "duration" and row.ignored_until and row.ignored_until <= now:
                 row.is_ignored = 0
                 row.ignored_until = None
                 row.ignored_reason = None
+                row.ignore_mode = None
             elif is_svc_ignored:
                 row.is_ignored = 1
                 row.ignored_until = svc_obj.ignored_until
                 row.ignored_by = svc_obj.ignored_by
                 new_row_reason = svc_obj.ignored_reason
                 row.ignored_reason = new_row_reason
+                row.ignore_mode = getattr(svc_obj, "ignore_mode", "permanent") or "permanent"
 
             if p["key"] == "agent_stale" and ev and (row.started_at > ev):
                 row.started_at = ev
@@ -5905,20 +5962,36 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 svc_name = row.key.split(":", 1)[1]
                 svc_obj = svc_map.get(svc_name)
                 if svc_obj:
-                    # Bila layanan sudah kembali UP / pulih, reset pengabaian agar layanan kembali dipantau normal
-                    # (kecuali jika ada batas waktu khusus yang belum kedaluwarsa)
-                    has_future_timer = svc_obj.ignored_until and svc_obj.ignored_until > now
-                    if not has_future_timer or getattr(svc_obj, "ignore_mode", None) == "incident":
+                    svc_mode = getattr(svc_obj, "ignore_mode", None)
+                    if svc_mode == "incident":
+                        # Mode insiden: hanya untuk satu kejadian, reset saat layanan kembali normal
                         svc_obj.is_ignored = 0
                         svc_obj.ignored_until = None
                         svc_obj.ignored_reason = None
                         svc_obj.ignore_mode = None
+                    elif svc_mode == "duration":
+                        # Mode durasi: jika batas waktu telah lewat, kembalikan ke pemantauan normal
+                        if not (svc_obj.ignored_until and svc_obj.ignored_until > now):
+                            svc_obj.is_ignored = 0
+                            svc_obj.ignored_until = None
+                            svc_obj.ignored_reason = None
+                            svc_obj.ignore_mode = None
+                    elif svc_mode == "permanent":
+                        # Mode permanen: TETAP diabaikan (is_ignored = 1), tidak di-reset saat layanan pulih!
+                        pass
+                    else:
+                        if svc_obj.ignored_until and svc_obj.ignored_until <= now:
+                            svc_obj.is_ignored = 0
+                            svc_obj.ignored_until = None
+                            svc_obj.ignored_reason = None
+                            svc_obj.ignore_mode = None
 
     stale = now - timedelta(days=30)
     db.query(ServerProblem).filter(
         ServerProblem.server_id == srv.id,
         ServerProblem.resolved_at.isnot(None),
         ServerProblem.resolved_at < stale,
+        (ServerProblem.is_ignored == 0) | (ServerProblem.is_ignored.is_(None)) | (ServerProblem.ignore_mode != "permanent"),
     ).delete(synchronize_session=False)
     db.commit()  # Simpan pembaruan status problem ke database agar ID valid saat di-ack/resolve
 
@@ -6455,6 +6528,11 @@ def _alert_dict(row, hostname: str, now: datetime) -> dict:
         "acknowledged": row.acknowledged_at is not None,
         "acknowledged_by": row.acknowledged_by,
         "context": ctx,
+        "is_ignored": bool(getattr(row, "is_ignored", 0)),
+        "ignore_mode": getattr(row, "ignore_mode", None),
+        "ignored_until": row.ignored_until.isoformat() if getattr(row, "ignored_until", None) else None,
+        "ignored_by": getattr(row, "ignored_by", None),
+        "ignored_reason": getattr(row, "ignored_reason", None),
     }
 
 
@@ -6743,6 +6821,7 @@ def api_alert_ignore(
     row.ignored_until = until
     row.ignored_by = user.username
     row.ignored_reason = reason
+    row.ignore_mode = ignore_mode
     row.updated_at = now
     if not row.acknowledged_at:
         row.acknowledged_at = now
@@ -6800,9 +6879,21 @@ def api_alert_unignore(
     if not row:
         raise HTTPException(status_code=404, detail="Masalah tidak ditemukan")
 
+    # Bersihkan seluruh riwayat pengabaian pada masalah ini dan key terkait di server ini
+    db.query(ServerProblem).filter(
+        ServerProblem.server_id == row.server_id,
+        ServerProblem.key == row.key,
+    ).update({
+        ServerProblem.is_ignored: 0,
+        ServerProblem.ignored_until: None,
+        ServerProblem.ignored_reason: None,
+        ServerProblem.ignore_mode: None,
+    }, synchronize_session=False)
+
     row.is_ignored = 0
     row.ignored_until = None
     row.ignored_reason = None
+    row.ignore_mode = None
     row.updated_at = datetime.utcnow()
 
     # Jika masalah ini adalah service_down, batalkan juga abaikan pada tabel Service
@@ -6883,6 +6974,7 @@ def api_service_ignore(
         prob.ignored_until = until
         prob.ignored_by = user.username
         prob.ignored_reason = reason
+        prob.ignore_mode = ignore_mode
         prob.updated_at = now
 
     dur_label = f" ({duration})" if ignore_mode != "permanent" else " (permanen)"
@@ -6926,16 +7018,16 @@ def api_service_unignore(
     svc.ignored_reason = None
     svc.ignore_mode = None
 
-    prob = db.query(ServerProblem).filter(
+    # Bersihkan pengabaian pada seluruh riwayat ServerProblem untuk layanan ini
+    db.query(ServerProblem).filter(
         ServerProblem.server_id == sid,
         ServerProblem.key == f"service_down:{svc.service_name}",
-        ServerProblem.resolved_at.is_(None),
-    ).first()
-    if prob:
-        prob.is_ignored = 0
-        prob.ignored_until = None
-        prob.ignored_reason = None
-        prob.updated_at = datetime.utcnow()
+    ).update({
+        ServerProblem.is_ignored: 0,
+        ServerProblem.ignored_until: None,
+        ServerProblem.ignored_reason: None,
+        ServerProblem.ignore_mode: None,
+    }, synchronize_session=False)
 
     _audit(
         db, user.username, "problem_unignore",
