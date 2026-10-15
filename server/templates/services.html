@@ -770,14 +770,14 @@
 
       <!-- Grup 2: Pembaruan & Kontrol Daya Sistem -->
       <div class="toolbar-group">
-        <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="aptAction('APT_UPDATE')" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan" data-i18n-title="server_offline_actions_disabled"{% else %}title="Sinkronkan repositori paket OS (apt update) untuk mengecek ketersediaan pembaruan baru" data-i18n-title="apt_update_tooltip"{% endif %}>
+        <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="triggerUpdateOS()" {% if not server.allow_web_terminal %}disabled style="opacity:0.35;cursor:not-allowed" title="Akses Web Terminal dinonaktifkan untuk server ini" data-i18n-title="web_terminal_disabled"{% elif not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan" data-i18n-title="server_offline_actions_disabled"{% else %}title="Buka terminal dan jalankan pembaruan repositori paket OS (apt update)" data-i18n-title="apt_update_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
           Update OS
         </button>
         <span class="toolbar-divider"></span>
-        <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="triggerInteractiveUpgrade()" disabled title="Tidak ada paket yang perlu di-upgrade. Seluruh paket sistem operasi telah mutakhir." data-i18n-title="no_packages_to_upgrade">
+        <button class="btn btn-danger btn-sm" id="apt-upgrade-btn" onclick="triggerUpgradeOS()" {% if not server.allow_web_terminal %}disabled style="opacity:0.35;cursor:not-allowed" title="Akses Web Terminal dinonaktifkan untuk server ini" data-i18n-title="web_terminal_disabled"{% elif not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan" data-i18n-title="server_offline_actions_disabled"{% else %}title="Buka terminal dan jalankan pembaruan paket sistem operasi (apt upgrade)" data-i18n-title="apt_upgrade_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-          Upgrade
+          <span id="apt-upgrade-label">Upgrade</span>
         </button>
         <span class="toolbar-divider"></span>
         <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline;margin:0"
@@ -1384,7 +1384,7 @@
                   </button>
                 </form>
               {% elif p.action == 'apt_update' %}
-                <button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')" title="Perbarui paket sistem">
+                <button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="Perbarui paket sistem">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>
                   <span>Update OS</span>
                 </button>
@@ -2831,6 +2831,8 @@ const CAN_CRON = {{ 'true' if user.has_perm('can_cron') else 'false' }};
 const CAN_SSL = {{ 'true' if user.has_perm('can_ssl') else 'false' }};
 const CAN_OTA = {{ 'true' if user.has_perm('can_ota') else 'false' }};
 const CAN_APT = {{ 'true' if user.has_perm('can_apt') else 'false' }};
+const CAN_TERMINAL = {{ 'true' if user.has_perm('can_terminal') else 'false' }};
+const ALLOW_WEB_TERMINAL = {{ 'true' if server.allow_web_terminal else 'false' }};
 const SERVER_NAME = {{ server.hostname | tojson }};
 let IS_ONLINE = {{ 'true' if is_online else 'false' }};
 
@@ -4039,7 +4041,13 @@ function aptLabel(kind) {
 
 function aptSetUpgradeEnabled(ok) {
   const b = document.getElementById('apt-upgrade-btn');
-  if (b) b.disabled = !ok;
+  if (b) {
+    if (ok) {
+      b.classList.add('has-updates');
+    } else {
+      b.classList.remove('has-updates');
+    }
+  }
 }
 
 // Baris status tunggal tepat di bawah tombol Update/Upgrade: jelas dan instan.
@@ -4079,32 +4087,20 @@ function renderApt(data) {
     aptSetState('pending', '<b>' + aptN + (isEn ? ' packages</b> can be upgraded' : ' paket</b> dapat di-upgrade')
       + (names ? ': <span class="mono dim">' + escapeHtml(names) + (pkgs.length > 8 ? '…' : '') + '</span>' : '.'));
   }
-  const canUpgrade = !aptRunning && (aptN != null && aptN > 0);
+  const canUpgrade = (aptN != null && aptN > 0);
+  aptSetUpgradeEnabled(canUpgrade);
   if (upBtn) {
-    upBtn.disabled = !canUpgrade;
-    let tipText = '';
-    if (aptRunning) {
-      tipText = isEn
-        ? 'Operating system package upgrade is currently in progress…'
-        : 'Proses pembaruan paket sistem operasi sedang berlangsung…';
-    } else if (canUpgrade) {
-      tipText = isEn
-        ? `Upgrade ${aptN} pending operating system package${aptN > 1 ? 's' : ''} interactively via Web Terminal`
-        : `Tingkatkan ${aptN} paket sistem operasi secara interaktif di Web Terminal`;
-    } else if (aptN == null) {
-      tipText = isEn
-        ? 'No package info — click Update OS to check for latest updates'
-        : 'Belum ada info paket — klik Update OS untuk memeriksa pembaruan';
-    } else {
-      tipText = isEn
-        ? 'No packages need upgrade. All operating system packages are up to date.'
-        : 'Tidak ada paket yang perlu di-upgrade. Seluruh paket sistem operasi telah mutakhir.';
+    const lbl = document.getElementById('apt-upgrade-label');
+    if (lbl) {
+      lbl.textContent = canUpgrade ? (isEn ? `Upgrade (${aptN})` : `Upgrade (${aptN})`) : 'Upgrade';
     }
+    let tipText = canUpgrade
+      ? (isEn ? `Open terminal & upgrade ${aptN} pending package(s) (apt upgrade)` : `Buka terminal dan upgrade ${aptN} paket yang tertunda (apt upgrade)`)
+      : (isEn ? 'Open terminal & run package upgrade (apt upgrade)' : 'Buka terminal dan jalankan pembaruan paket sistem operasi (apt upgrade)');
     upBtn.setAttribute('data-tooltip', tipText);
     upBtn.setAttribute('data-tooltip-orig', tipText);
-    upBtn.removeAttribute('title');
+    upBtn.title = tipText;
   }
-  aptSetUpgradeEnabled(canUpgrade);
 }
 
 function escapeHtml(s) {
@@ -4598,7 +4594,7 @@ class WebTerminal {
       if (window._pendingUpgradeCommand) {
         const cmd = window._pendingUpgradeCommand;
         window._pendingUpgradeCommand = null;
-        if (typeof setUpgradeSessionActive === 'function') {
+        if (typeof setUpgradeSessionActive === 'function' && cmd.includes('upgrade')) {
           setUpgradeSessionActive(true);
         }
         setTimeout(() => {
@@ -4823,7 +4819,7 @@ async function submitTerminalUnlock(e) {
     if (pendingCmd) {
       if (term.state === 'live' && term.ws && term.ws.readyState === WebSocket.OPEN) {
         window._pendingUpgradeCommand = null;
-        if (typeof setUpgradeSessionActive === 'function') setUpgradeSessionActive(true);
+        if (typeof setUpgradeSessionActive === 'function' && pendingCmd.includes('upgrade')) setUpgradeSessionActive(true);
         term.fit();
         term.focus();
         setTimeout(() => {
@@ -4868,11 +4864,32 @@ async function lockTerminalSession() {
   }
 }
 
-async function toggleTerminalView() {
+// ===================================================================
+// KONTROL TERMINAL, UPDATE & UPGRADE (Mekanisme Terpadu Langsung Shell)
+// ===================================================================
+async function openTerminalWithCommand(commandToRun = null, customReason = '') {
+  const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
+  if (!isOnline) {
+    showToast(isEnPage() ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+
+  const allowWebTerm = {{ 1 if server.allow_web_terminal else 0 }};
+  if (!allowWebTerm) {
+    alert(isEnPage()
+      ? "Web Terminal access is disabled for this server according to security settings."
+      : "Akses Web Terminal dinonaktifkan untuk server ini sesuai konfigurasi keamanan.");
+    return;
+  }
+
   const term = getTerm();
-  if (term.windowEl && term.windowEl.style.display !== 'none') {
+
+  // Jika tombol terminal biasa diklik (tanpa perintah khusus) saat terminal sudah terbuka -> sembunyikan (toggle)
+  if (!commandToRun && term.windowEl && term.windowEl.style.display !== 'none') {
     if (window._isUpgradeInProgress) {
-      if (!confirm('Proses upgrade sistem mungkin masih berlangsung di terminal ini. Yakin ingin menyembunyikan terminal? (Sesi shell akan tetap aktif di server).')) {
+      if (!confirm(isEnPage()
+        ? 'A system upgrade process may still be running in this terminal. Are you sure you want to hide the terminal? (The shell session will remain active on the server).'
+        : 'Proses upgrade sistem mungkin masih berlangsung di terminal ini. Yakin ingin menyembunyikan terminal? (Sesi shell akan tetap aktif di server).')) {
         return;
       }
     }
@@ -4880,56 +4897,11 @@ async function toggleTerminalView() {
     return;
   }
 
-  // Jika sedang tertutup, cek status otentikasi step-up dari backend
-  try {
-    const r = await fetch(`/api/servers/${SID}/terminal/status`, { credentials: 'same-origin' });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.detail || 'Gagal memeriksa status terminal');
-
-    if (!data.allow_web_terminal) {
-      alert('Akses Terminal Web dinonaktifkan untuk server ini sesuai konfigurasi keamanan.');
-      return;
-    }
-    if (!data.can_terminal) {
-      alert('Akses ditolak: Anda tidak memiliki wewenang Terminal Shell Web.');
-      return;
-    }
-
-    if (data.is_unlocked && data.remaining_seconds > 0) {
-      startTermLeaseCountdown(data.remaining_seconds);
-      term.show();
-      if (term.state === 'idle' || term.state === 'closed') {
-        term.connect();
-      } else {
-        term.fit();
-        term.focus();
-      }
-    } else {
-      openTerminalUnlockModal(Boolean(data.user_has_totp));
-    }
-  } catch (e) {
-    alert('Gagal memeriksa otentikasi terminal: ' + e.message);
+  // Buka jendela terminal dan gulir ke pandangan pengguna
+  term.show();
+  if (term.windowEl) {
+    term.windowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
-}
-
-async function triggerInteractiveUpgrade() {
-  const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
-  if (!isOnline) {
-    showToast('Server sedang offline. Operasi upgrade dinonaktifkan.', false);
-    return;
-  }
-
-  const allowWebTerm = {{ 1 if server.allow_web_terminal else 0 }};
-  if (!allowWebTerm) {
-    alert("Akses Web Terminal dinonaktifkan untuk server ini. Mohon aktifkan opsi 'Izinkan Akses Web Terminal (Root Shell)' pada halaman Edit Server terlebih dahulu agar dapat menjalankan upgrade interaktif.");
-    return;
-  }
-
-  if (!confirm("Jalankan upgrade paket sistem operasi secara interaktif melalui Web Terminal Root?\n\nSesi terminal fisik/SSH interaktif akan dibuka langsung ke server untuk menjalankan pembaruan paket. Anda dapat melihat dan menentukan seluruh pilihan konfigurasi jika ada sesi interaktif penting.")) {
-    return;
-  }
-
-  const cmdToRun = "apt upgrade\n";
 
   try {
     const r = await fetch(`/api/servers/${SID}/terminal/status`, { credentials: 'same-origin' });
@@ -4937,38 +4909,65 @@ async function triggerInteractiveUpgrade() {
     if (!r.ok) throw new Error(data.detail || 'Gagal memeriksa status terminal');
 
     if (!data.allow_web_terminal) {
-      alert('Akses Terminal Web dinonaktifkan untuk server ini sesuai konfigurasi keamanan.');
+      alert(isEnPage() ? 'Web Terminal is disabled for this server.' : 'Akses Terminal Web dinonaktifkan untuk server ini sesuai konfigurasi keamanan.');
       return;
     }
     if (!data.can_terminal) {
-      alert('Akses ditolak: Anda tidak memiliki wewenang Terminal Shell Web.');
+      alert(isEnPage() ? 'Access denied: You do not have Web Terminal permission.' : 'Akses ditolak: Anda tidak memiliki wewenang Terminal Shell Web.');
       return;
-    }
-
-    const term = getTerm();
-    term.show();
-    if (term.windowEl) {
-      term.windowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     if (data.is_unlocked && data.remaining_seconds > 0) {
       startTermLeaseCountdown(data.remaining_seconds);
       if (term.state === 'live' && term.ws && term.ws.readyState === WebSocket.OPEN) {
-        setUpgradeSessionActive(true);
-        term.fit();
-        term.focus();
-        term.sendRaw(cmdToRun);
+        if (commandToRun) {
+          if (typeof setUpgradeSessionActive === 'function' && commandToRun.includes('upgrade')) {
+            setUpgradeSessionActive(true);
+          }
+          term.fit();
+          term.focus();
+          term.sendRaw(commandToRun);
+        } else {
+          term.fit();
+          term.focus();
+        }
       } else {
-        window._pendingUpgradeCommand = cmdToRun;
+        if (commandToRun) {
+          window._pendingUpgradeCommand = commandToRun;
+        }
         term.connect();
       }
     } else {
-      window._pendingUpgradeCommand = cmdToRun;
-      openTerminalUnlockModal(Boolean(data.user_has_totp), "Pembaruan Paket Sistem Operasi (Interactive Upgrade)");
+      if (commandToRun) {
+        window._pendingUpgradeCommand = commandToRun;
+      }
+      openTerminalUnlockModal(Boolean(data.user_has_totp), customReason);
     }
   } catch (e) {
-    alert('Gagal menginisialisasi sesi terminal: ' + e.message);
+    alert((isEnPage() ? 'Failed to initialize terminal session: ' : 'Gagal menginisialisasi sesi terminal: ') + e.message);
   }
+}
+
+// Tombol Terminal: Buka / sembunyikan terminal shell root
+function toggleTerminalView() {
+  return openTerminalWithCommand(null);
+}
+
+// Tombol Update OS: Buka terminal & jalankan 'apt update'
+function triggerUpdateOS() {
+  const isEn = isEnPage();
+  return openTerminalWithCommand('apt update\n', isEn ? 'OS Package Repository Update (apt update)' : 'Pembaruan Repositori Paket OS (apt update)');
+}
+
+// Tombol Upgrade: Buka terminal & jalankan 'apt upgrade -y'
+function triggerUpgradeOS() {
+  const isEn = isEnPage();
+  return openTerminalWithCommand('apt upgrade -y\n', isEn ? 'Operating System Package Upgrade (apt upgrade)' : 'Pembaruan Paket Sistem Operasi (apt upgrade)');
+}
+
+// Alias kompatibilitas
+function triggerInteractiveUpgrade() {
+  return triggerUpgradeOS();
 }
 
 // Listener Escape untuk keluar dari Full Screen Terminal
@@ -4989,41 +4988,10 @@ function aptLiveStatus(html, color) {
 }
 
 async function aptAction(kind) {
-  const upD = document.getElementById('apt-update-btn');
-  if (kind === 'APT_DIST_UPGRADE'
-      && !confirm('Jalankan apt dist-upgrade (upgrade penuh termasuk dependensi & kernel baru) di server ini?')) return;
-  if (kind === 'APT_UPGRADE_INTERACT'
-      && !confirm('Tingkatkan semua paket tertunda di server ini sekarang?')) return;
-  if (kind === 'APT_FIX'
-      && !confirm('Jalankan reparasi paket (dpkg --configure -a & apt -f install) di server ini?')) return;
-  aptRunning = true;
-  if (upD) upD.disabled = true;
-  aptSetUpgradeEnabled(false);
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  aptSetState('busy', (isEn ? 'Processing <span class="dim">' : 'Memproses <span class="dim">') + aptLabel(kind) + '</span>…');
-  aptRid = null;
-  aptLiveShow(kind);
-
-  let rid;
-  try {
-    const r = await fetch('/api/logs/request', {
-      method: 'POST', credentials: 'same-origin',
-      headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()},
-      body: JSON.stringify({server_id: SID, unit: kind, lines: 10}),
-    });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status));
-    rid = j.id;
-  } catch (e) {
-    aptRunning = false;
-    if (upD) upD.disabled = false;
-    aptSetUpgradeEnabled(aptArmed && aptLastCount > 0);
-    aptLiveStatus('<b style="color:var(--red)">Gagal mengirim perintah:</b> ' + escapeHtml(e.message), 'var(--red)');
-    aptLiveDone();
-    return;
+  if (kind === 'APT_UPDATE') {
+    return triggerUpdateOS();
   }
-  aptRid = rid;
-  aptFollow(rid, kind, Date.now());
+  return triggerUpgradeOS();
 }
 
 // Ikuti live dari sebuah request apt. Dipakai saat baru memulai ATAU saat
@@ -5343,7 +5311,7 @@ function renderProblemsTab(level, openList, histList) {
             <button class="btn btn-danger btn-sm" title="${isEn ? 'Block source IPs via iptables' : 'Blokir IP sumber via iptables'}">${svgShield}<span>${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</span></button>
           </form>`;
         } else if (p.action === 'apt_update' && CAN_APT) {
-          toolsHtml += `<button class="btn btn-primary btn-sm" onclick="aptAction('APT_UPDATE')" title="${isEn ? 'Update OS packages' : 'Perbarui paket sistem'}">${svgDownload}<span>Update OS</span></button>`;
+          toolsHtml += `<button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="${isEn ? 'Update OS packages' : 'Perbarui paket sistem'}">${svgDownload}<span>Update OS</span></button>`;
         } else if (p.action === 'agent_update_cmd' && CAN_OTA) {
           toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}">${svgTerm}<span>${isEn ? 'Update Agent' : 'Update Agen'}</span></button>`;
         }
@@ -6025,14 +5993,19 @@ function patch(data) {
   // Terminal toolbar button: Disable when offline
   const termBtn = document.getElementById('apt-term-toggle-btn');
   if (termBtn) {
-    const shouldDisableTerm = !online;
+    const shouldDisableTerm = !online || !ALLOW_WEB_TERMINAL;
     if (termBtn.disabled !== shouldDisableTerm) {
       termBtn.disabled = shouldDisableTerm;
       if (shouldDisableTerm) {
         termBtn.style.opacity = '0.35';
         termBtn.style.cursor = 'not-allowed';
-        termBtn.title = isEnHero ? 'Server offline — terminal disabled' : 'Server offline — terminal dinonaktifkan';
-        termBtn.dataset.i18nTitle = 'server_offline_terminal_disabled';
+        if (!ALLOW_WEB_TERMINAL) {
+          termBtn.title = isEnHero ? 'Web Terminal disabled for this server' : 'Akses Web Terminal dinonaktifkan untuk server ini sesuai kebijakan keamanan';
+          termBtn.dataset.i18nTitle = 'web_terminal_disabled';
+        } else {
+          termBtn.title = isEnHero ? 'Server offline — terminal disabled' : 'Server offline — terminal dinonaktifkan';
+          termBtn.dataset.i18nTitle = 'server_offline_terminal_disabled';
+        }
       } else {
         termBtn.style.opacity = '';
         termBtn.style.cursor = '';
@@ -6042,22 +6015,56 @@ function patch(data) {
     }
   }
 
-  // Update OS button: Disable when offline
+  // Update OS button: Disable when offline or Web Terminal disabled
   const updateBtn = document.getElementById('apt-update-btn');
   if (updateBtn) {
-    const shouldDisableUpd = !online;
+    const shouldDisableUpd = !online || !ALLOW_WEB_TERMINAL;
     if (updateBtn.disabled !== shouldDisableUpd) {
       updateBtn.disabled = shouldDisableUpd;
       if (shouldDisableUpd) {
         updateBtn.style.opacity = '0.35';
         updateBtn.style.cursor = 'not-allowed';
-        updateBtn.title = isEnHero ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
-        updateBtn.dataset.i18nTitle = 'server_offline_actions_disabled';
+        if (!ALLOW_WEB_TERMINAL) {
+          updateBtn.title = isEnHero ? 'Web Terminal disabled for this server' : 'Akses Web Terminal dinonaktifkan untuk server ini';
+          updateBtn.dataset.i18nTitle = 'web_terminal_disabled';
+        } else {
+          updateBtn.title = isEnHero ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
+          updateBtn.dataset.i18nTitle = 'server_offline_actions_disabled';
+        }
       } else {
         updateBtn.style.opacity = '';
         updateBtn.style.cursor = '';
         updateBtn.title = isEnHero ? 'Sync OS package repository (apt update) to check for available updates' : 'Sinkronkan repositori paket OS (apt update) untuk mengecek ketersediaan pembaruan baru';
         updateBtn.dataset.i18nTitle = 'apt_update_tooltip';
+      }
+    }
+  }
+
+  // Upgrade OS button: Disable when offline or Web Terminal disabled
+  const upgradeBtn = document.getElementById('apt-upgrade-btn');
+  if (upgradeBtn) {
+    const shouldDisableUpg = !online || !ALLOW_WEB_TERMINAL;
+    if (upgradeBtn.disabled !== shouldDisableUpg) {
+      upgradeBtn.disabled = shouldDisableUpg;
+      if (shouldDisableUpg) {
+        upgradeBtn.style.opacity = '0.35';
+        upgradeBtn.style.cursor = 'not-allowed';
+        if (!ALLOW_WEB_TERMINAL) {
+          upgradeBtn.title = isEnHero ? 'Web Terminal disabled for this server' : 'Akses Web Terminal dinonaktifkan untuk server ini';
+          upgradeBtn.dataset.i18nTitle = 'web_terminal_disabled';
+        } else {
+          upgradeBtn.title = isEnHero ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
+          upgradeBtn.dataset.i18nTitle = 'server_offline_actions_disabled';
+        }
+      } else {
+        upgradeBtn.style.opacity = '';
+        upgradeBtn.style.cursor = '';
+        const canUpg = (typeof aptLastCount !== 'undefined' && aptLastCount > 0);
+        const upgTip = canUpg
+          ? (isEnHero ? `Open terminal & upgrade ${aptLastCount} pending package(s) (apt upgrade)` : `Buka terminal dan upgrade ${aptLastCount} paket yang tertunda (apt upgrade)`)
+          : (isEnHero ? 'Open terminal & run package upgrade (apt upgrade)' : 'Buka terminal dan jalankan pembaruan paket sistem operasi (apt upgrade)');
+        upgradeBtn.title = upgTip;
+        upgradeBtn.dataset.i18nTitle = 'apt_upgrade_tooltip';
       }
     }
   }

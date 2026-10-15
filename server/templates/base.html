@@ -249,7 +249,7 @@ tr:last-child td{border-bottom:none}
 .btn:disabled,.btn[disabled]{opacity:.38;filter:grayscale(.8) brightness(.9);cursor:not-allowed;background:rgba(255,255,255,0.02) !important;color:var(--dim) !important;border:1px dashed rgba(255,255,255,0.12) !important;box-shadow:none !important;transform:none !important}
 .btn:disabled:hover,.btn[disabled]:hover{filter:grayscale(.8) brightness(.9);opacity:.38;box-shadow:none !important}
 
-#apt-upgrade-btn:not(:disabled){background:var(--red);color:#fff;border-color:var(--red);animation:upgGlow 1.8s ease-in-out infinite}
+#apt-upgrade-btn.has-updates{background:var(--red);color:#fff;border-color:var(--red);animation:upgGlow 1.8s ease-in-out infinite}
 @keyframes upgGlow{0%,100%{box-shadow:0 0 6px 1px rgba(239,68,68,.35)}50%{box-shadow:0 0 18px 4px rgba(239,68,68,.6)}}
 
 .form-group{margin-bottom:16px}
