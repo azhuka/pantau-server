@@ -1532,7 +1532,7 @@ function renderAlerts(d){
   if ((d.open_danger_count || 0) > 0) {
     if (document.title.indexOf('🚨') !== 0) document.title = '🚨 ' + d.open_danger_count + ' GAWAT DARURAT · ' + ORIG_TITLE;
   } else if ((d.open_average_count || 0) > 0) {
-    if (document.title.indexOf('⚠️') !== 0) document.title = '⚠️ ' + d.open_average_count + ' LAYANAN DOWN · ' + ORIG_TITLE;
+    if (document.title.indexOf('⚠️') !== 0) document.title = '⚠️ ' + d.open_average_count + ' GAWAT · ' + ORIG_TITLE;
   } else if ((d.open_warning_count || 0) > 0) {
     if (document.title.indexOf('⚡') !== 0) document.title = '⚡ ' + d.open_warning_count + ' PERINGATAN · ' + ORIG_TITLE;
   } else {
@@ -1948,7 +1948,7 @@ function renderProblemDetailModal(p) {
 
   if (badgeEl) {
     badgeEl.className = 'badge badge-' + ({danger: 'danger', average: 'orange', warning: 'warn', info: 'info'}[sev] || 'ignored');
-    badgeEl.textContent = sev === 'average' ? 'DOWN' : sev.toUpperCase();
+    badgeEl.textContent = sev === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : sev.toUpperCase();
   }
 
   // 2. Status Box

@@ -626,7 +626,7 @@
 </div>
 
 {% set pmeta = {'ok': ('OK', 'up', 'green'), 'info': ('Info', 'info', 'var(--blue)'),
-                'average': ('Down', 'orange', '#f97316'),
+                'average': ('Gawat', 'orange', '#f97316'),
                 'warning': ('Warning', 'warn', 'var(--yellow)'),
                 'danger': ('Critical', 'danger', 'var(--red)')} %}
 {% set act = request.query_params.get('action') %}
@@ -1279,7 +1279,7 @@
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
         <option value="">Semua keparahan</option>
         <option value="danger">Critical</option>
-        <option value="average">Down (Layanan)</option>
+        <option value="average">Gawat</option>
         <option value="warning">Warning</option>
         <option value="info">Info</option>
         <option value="ignored">Diabaikan (🔕)</option>
@@ -1337,7 +1337,7 @@
         </div>
         {% endif %}
       </td>
-      <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DOWN' if p.severity == 'average' else p.severity | upper }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+      <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'GAWAT' if p.severity == 'average' else p.severity | upper }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
       <td>
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
@@ -5156,7 +5156,7 @@ function renderProblemsTab(level, openList, histList) {
   const pmeta = {
     ok: ['OK', 'up'],
     info: ['Info', 'info'],
-    average: ['Down', 'orange'],
+    average: [isEn ? 'High' : 'Gawat', 'orange'],
     warning: ['Warning', 'warn'],
     danger: ['Critical', 'danger']
   };
@@ -5223,7 +5223,7 @@ function renderProblemsTab(level, openList, histList) {
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
         <option value=""${oldFilter === '' ? ' selected' : ''}>${isEn ? 'All severities' : 'Semua keparahan'}</option>
         <option value="danger"${oldFilter === 'danger' ? ' selected' : ''}>Critical</option>
-        <option value="average"${oldFilter === 'average' ? ' selected' : ''}>${isEn ? 'Down (Services)' : 'Down (Layanan)'}</option>
+        <option value="average"${oldFilter === 'average' ? ' selected' : ''}>${isEn ? 'High' : 'Gawat'}</option>
         <option value="warning"${oldFilter === 'warning' ? ' selected' : ''}>Warning</option>
         <option value="info"${oldFilter === 'info' ? ' selected' : ''}>Info</option>
         <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>${isEn ? 'Ignored (🔕)' : 'Diabaikan (🔕)'}</option>
@@ -5260,7 +5260,7 @@ function renderProblemsTab(level, openList, histList) {
     const isIgnored = !!p.is_ignored;
     const sev = p.severity || 'info';
     const sevBadge = isIgnored ? 'muted' : ({danger: 'danger', average: 'orange', warning: 'warn', info: 'info'}[sev] || 'muted');
-    const sevLabel = escapeHtml(sev === 'average' ? 'DOWN' : (isEn ? sev : sev.toUpperCase())) + (isIgnored ? ' 🔕' : '');
+    const sevLabel = escapeHtml(sev === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (isEn ? sev : sev.toUpperCase())) + (isIgnored ? ' 🔕' : '');
     const pMsg = isEn ? getServicesI18nText(p.message || '', true) : (p.message || '');
     const pTip = isEn ? getServicesI18nText(p.tip || '—', true) : (p.tip || '—');
     const searchTxt = ((pMsg || '') + ' ' + (p.key || '')).toLowerCase();

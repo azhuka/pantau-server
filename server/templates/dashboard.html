@@ -99,7 +99,7 @@
   color: #fca5a5;
 }
 
-/* Down (Orange) */
+/* Gawat (Orange) */
 .zbx-sev-tile.zbx-tile-average.is-active {
   background: rgba(249, 115, 22, 0.18);
   border-color: rgba(249, 115, 22, 0.65);
@@ -419,9 +419,9 @@
         <span class="zbx-sev-count" id="zbx-count-danger">{{ danger_total }}</span>
         <span class="zbx-sev-label">Kritis</span>
       </div>
-      <div class="zbx-sev-tile zbx-tile-average {% if average_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('average')" title="Klik untuk rincian insiden Down">
+      <div class="zbx-sev-tile zbx-tile-average {% if average_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('average')" title="Klik untuk rincian insiden Gawat">
         <span class="zbx-sev-count" id="zbx-count-average">{{ average_total }}</span>
-        <span class="zbx-sev-label">Down</span>
+        <span class="zbx-sev-label">Gawat</span>
       </div>
       <div class="zbx-sev-tile zbx-tile-warning {% if warning_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('warning')" title="Klik untuk rincian insiden Peringatan">
         <span class="zbx-sev-count" id="zbx-count-warning">{{ warning_total }}</span>
@@ -483,7 +483,7 @@
             {% if p.severity == 'danger' %}
               <span class="badge badge-danger" style="font-size:11.5px;padding:2px 7px">KRITIS</span>
             {% elif p.severity == 'average' %}
-              <span class="badge badge-orange" style="font-size:11.5px;padding:2px 7px">DOWN</span>
+              <span class="badge badge-orange" style="font-size:11.5px;padding:2px 7px">GAWAT</span>
             {% elif p.severity == 'warning' %}
               <span class="badge badge-warn" style="font-size:11.5px;padding:2px 7px">PERINGATAN</span>
             {% else %}
@@ -750,7 +750,7 @@
             {% endif %}
           </td>
 
-          <!-- 13. Insiden (Default: Normal Hijau; Angka Berwarna Sesuai Severity: Merah Kritis, Oranye Down, Kuning Warn, Biru Info, Abu Diabaikan) -->
+          <!-- 13. Insiden (Default: Normal Hijau; Angka Berwarna Sesuai Severity: Merah Kritis, Oranye Gawat, Kuning Warn, Biru Info, Abu Diabaikan) -->
           <td style="text-align:center" data-sort-val="{{ d_cnt * 1000000 + avg_cnt * 10000 + w_cnt * 100 + i_cnt * 10 + ign_cnt }}">
             <div id="tbl-prob-{{ srv.id }}" style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">
               {% if not srv.last_seen %}
@@ -762,7 +762,7 @@
                   <span class="badge badge-danger" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
                 {% endif %}
                 {% if avg_cnt > 0 %}
-                  <span class="badge badge-orange" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Down' }}">{{ avg_cnt }}</span>
+                  <span class="badge badge-orange" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
                 {% endif %}
                 {% if w_cnt > 0 %}
                   <span class="badge badge-warn" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
@@ -897,7 +897,7 @@
               <span class="badge badge-up" style="font-size:10.5px">Normal</span>
             {% else %}
               {% if d_cnt > 0 %}<span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>{% endif %}
-              {% if avg_cnt > 0 %}<span class="badge badge-orange" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Down' }}">{{ avg_cnt }}</span>{% endif %}
+              {% if avg_cnt > 0 %}<span class="badge badge-orange" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>{% endif %}
               {% if w_cnt > 0 %}<span class="badge badge-warn" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>{% endif %}
               {% if i_cnt > 0 %}<span class="badge badge-info" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>{% endif %}
               {% if ign_cnt > 0 %}<span class="badge badge-muted" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._ignored_msgs or 'Insiden diabaikan' }}">{{ ign_cnt }}</span>{% endif %}
@@ -990,10 +990,10 @@ const SEV_CONFIG = {
     emptyMsg: 'Tidak ada insiden Kritis saat ini.'
   },
   average: {
-    label: 'Down (High / Down)',
+    label: 'Gawat',
     badgeCls: 'badge-orange',
     icon: '🟠',
-    emptyMsg: 'Tidak ada server atau layanan Down saat ini.'
+    emptyMsg: 'Tidak ada insiden Gawat saat ini.'
   },
   warning: {
     label: 'Peringatan (Warning)',
@@ -1433,7 +1433,7 @@ async function pollNocDashboard() {
         }
       }
 
-      // Insiden (Pills warna-warni untuk Down, Kritis, Warn, Info, Diabaikan)
+      // Insiden (Pills warna-warni untuk Gawat, Kritis, Warn, Info, Diabaikan)
       const tblProb = document.getElementById('tbl-prob-' + srv.id);
       if (tblProb) {
         if (!hasReported) {
@@ -1445,7 +1445,7 @@ async function pollNocDashboard() {
           } else {
             let html = '';
             if (dCnt > 0) html += `<span class="badge badge-danger" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="${(srv.danger_msgs || (isEn ? 'Critical' : 'Kritis')).replace(/"/g, '&quot;')}">${dCnt}</span>`;
-            if (avgCnt > 0) html += `<span class="badge badge-orange" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="${(srv.average_msgs || 'Down').replace(/"/g, '&quot;')}">${avgCnt}</span>`;
+            if (avgCnt > 0) html += `<span class="badge badge-orange" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="${(srv.average_msgs || (isEn ? 'High' : 'Gawat')).replace(/"/g, '&quot;')}">${avgCnt}</span>`;
             if (wCnt > 0) html += `<span class="badge badge-warn" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="${(srv.warning_msgs || (isEn ? 'Warning' : 'Peringatan')).replace(/"/g, '&quot;')}">${wCnt}</span>`;
             if (iCnt > 0) html += `<span class="badge badge-info" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="${(srv.info_msgs || 'Info').replace(/"/g, '&quot;')}">${iCnt}</span>`;
             if (ignCnt > 0) html += `<span class="badge badge-muted" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="${(srv.ignored_msgs || (isEn ? 'Ignored' : 'Diabaikan')).replace(/"/g, '&quot;')}">${ignCnt}</span>`;
@@ -1512,7 +1512,7 @@ async function pollNocDashboard() {
           } else {
             let html = '';
             if (dCnt > 0) html += `<span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="${(srv.danger_msgs || (isEn ? 'Critical' : 'Kritis')).replace(/"/g, '&quot;')}">${dCnt}</span>`;
-            if (avgCnt > 0) html += `<span class="badge badge-orange" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="${(srv.average_msgs || 'Down').replace(/"/g, '&quot;')}">${avgCnt}</span>`;
+            if (avgCnt > 0) html += `<span class="badge badge-orange" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="${(srv.average_msgs || (isEn ? 'High' : 'Gawat')).replace(/"/g, '&quot;')}">${avgCnt}</span>`;
             if (wCnt > 0) html += `<span class="badge badge-warn" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="${(srv.warning_msgs || (isEn ? 'Warning' : 'Peringatan')).replace(/"/g, '&quot;')}">${wCnt}</span>`;
             if (iCnt > 0) html += `<span class="badge badge-info" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="${(srv.info_msgs || 'Info').replace(/"/g, '&quot;')}">${iCnt}</span>`;
             if (ignCnt > 0) html += `<span class="badge badge-muted" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="${(srv.ignored_msgs || (isEn ? 'Ignored' : 'Diabaikan')).replace(/"/g, '&quot;')}">${ignCnt}</span>`;
@@ -1697,7 +1697,7 @@ async function pollNocDashboard() {
           if (p.severity === 'danger') {
             sevBadge = '<span class="badge badge-danger" style="font-size:11.5px;padding:2px 7px">KRITIS</span>';
           } else if (p.severity === 'average') {
-            sevBadge = '<span class="badge badge-orange" style="font-size:11.5px;padding:2px 7px">DOWN</span>';
+            sevBadge = '<span class="badge badge-orange" style="font-size:11.5px;padding:2px 7px">GAWAT</span>';
           } else if (p.severity === 'warning') {
             sevBadge = '<span class="badge badge-warn" style="font-size:11.5px;padding:2px 7px">PERINGATAN</span>';
           } else {

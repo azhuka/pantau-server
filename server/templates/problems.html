@@ -6,7 +6,7 @@
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <span id="prob-summary-badges" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       {% if danger_open %}<span class="badge badge-danger">Critical {{ danger_open }}</span>{% endif %}
-      {% if average_open %}<span class="badge badge-orange">Down {{ average_open }}</span>{% endif %}
+      {% if average_open %}<span class="badge badge-orange">Gawat {{ average_open }}</span>{% endif %}
       {% if warning_open %}<span class="badge badge-warn">Warning {{ warning_open }}</span>{% endif %}
       {% if info_open %}<span class="badge badge-info">Info {{ info_open }}</span>{% endif %}
       {% if ignored_open %}<span class="badge badge-muted" title="{{ ignored_open }} insiden diabaikan">🔕 {{ ignored_open }} diabaikan</span>{% endif %}
@@ -128,7 +128,7 @@
       <span>🚨 Critical</span> <span class="prob-pill-count" id="pill-count-danger">{{ danger_open }}</span>
     </button>
     <button type="button" class="prob-pill-btn pill-average" data-sev="average" onclick="setProbFilterPill('average', this)">
-      <span>⚠️ Down</span> <span class="prob-pill-count" id="pill-count-average">{{ average_open }}</span>
+      <span id="pill-label-average">⚠️ Gawat</span> <span class="prob-pill-count" id="pill-count-average">{{ average_open }}</span>
     </button>
     <button type="button" class="prob-pill-btn pill-warning" data-sev="warning" onclick="setProbFilterPill('warning', this)">
       <span>⚡ Warning</span> <span class="prob-pill-count" id="pill-count-warning">{{ warning_open }}</span>
@@ -162,7 +162,7 @@
             style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
       <option value="">Semua keparahan</option>
       <option value="danger">Critical</option>
-      <option value="average">Down (Layanan)</option>
+      <option value="average">Gawat</option>
       <option value="warning">Warning</option>
       <option value="info">Info</option>
       <option value="ignored">Diabaikan (🔕)</option>
@@ -220,7 +220,7 @@
           </div>
           {% endif %}
         </td>
-        <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DOWN' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+        <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
         <td>
           <span>{{ p.message }}</span>
           {% if p.is_ignored %}
@@ -361,7 +361,7 @@
         <!-- 3. Tingkat / Keparahan -->
         <td style="padding:8px 10px;white-space:nowrap">
           <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:11px;padding:2px 7px">
-            {{ 'DOWN' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}
+            {{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}
           </span>
         </td>
         <!-- 4. Komponen -->
@@ -724,7 +724,7 @@ window.poll = async function() {
       const s = data.summary;
       let bh = '';
       if (s.danger_open) bh += `<span class="badge badge-danger">Critical ${s.danger_open}</span> `;
-      if (s.average_open) bh += `<span class="badge badge-orange">Down ${s.average_open}</span> `;
+      if (s.average_open) bh += `<span class="badge badge-orange">${isEn ? 'High ' : 'Gawat '}${s.average_open}</span> `;
       if (s.warning_open) bh += `<span class="badge badge-warn">Warning ${s.warning_open}</span> `;
       if (s.info_open) bh += `<span class="badge badge-info">Info ${s.info_open}</span> `;
       if (s.ignored_open) bh += `<span class="badge badge-muted" title="${s.ignored_open} ${isEn ? 'incidents ignored' : 'masalah diabaikan'}">🔕 ${s.ignored_open} ${isEn ? 'ignored' : 'diabaikan'}</span> `;
@@ -758,6 +758,8 @@ window.poll = async function() {
 
       const lblAll = document.getElementById('pill-label-all');
       if (lblAll) lblAll.textContent = isEn ? 'All' : 'Semua';
+      const lblAvg = document.getElementById('pill-label-average');
+      if (lblAvg) lblAvg.textContent = isEn ? '⚠️ High' : '⚠️ Gawat';
       const lblIgn = document.getElementById('pill-label-ignored');
       if (lblIgn) lblIgn.textContent = isEn ? '🔕 Ignored' : '🔕 Diabaikan';
     }
@@ -778,7 +780,7 @@ window.poll = async function() {
             <thead><tr>
               <th class="col-time" style="width:130px;min-width:125px" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden atau masalah mulai terdeteksi'}">${isEn ? 'Start Time' : 'Waktu Mulai'}</th>
               <th class="col-server" title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">Server</th>
-              <th class="col-sev" style="width:100px;min-width:95px;text-align:center" title="${isEn ? 'Urgency level: Critical, Down, Warning, or Info' : 'Tingkat keparahan: Critical (kritis), Down, Warning (waspada), atau Info (informasi)'}">${isEn ? 'Severity' : 'Keparahan'}</th>
+              <th class="col-sev" style="width:100px;min-width:95px;text-align:center" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'Severity' : 'Keparahan'}</th>
               <th title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'Event' : 'Kejadian'}</th>
               <th class="col-durasi" style="width:120px;min-width:110px" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'Duration' : 'Durasi'}</th>
               <th class="col-act" style="width:160px;min-width:150px" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan'}">${isEn ? 'Actions' : 'Aksi'}</th>
@@ -844,7 +846,7 @@ window.poll = async function() {
                 <strong>${_esc(p.hostname)}</strong>
                 ${p.group_name ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:10px;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> ${_esc(p.group_name)}</span></div>` : ''}
               </td>
-              <td style="width:100px;text-align:center" class="col-sev"><span class="${sevBadge}">${_esc(p.severity === 'average' ? 'DOWN' : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}${isIgn ? ' 🔕' : ''}</span></td>
+              <td style="width:100px;text-align:center" class="col-sev"><span class="${sevBadge}">${_esc(p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}${isIgn ? ' 🔕' : ''}</span></td>
               <td>
                 <span>${_esc(pMsg)}</span>
                 ${ignBadge}
@@ -919,7 +921,7 @@ window.poll = async function() {
           </td>
           <td style="padding:8px 10px;white-space:nowrap;width:105px;text-align:center" class="col-sev">
             <span class="${sevBadge}" style="font-size:11px;padding:2px 7px">
-              ${_esc(p.severity === 'average' ? 'DOWN' : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}
+              ${_esc(p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}
             </span>
           </td>
           <td style="padding:8px 10px;white-space:nowrap;width:110px">
@@ -963,6 +965,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (isEn) {
     const lblAll = document.getElementById('pill-label-all');
     if (lblAll) lblAll.textContent = 'All';
+    const lblAvg = document.getElementById('pill-label-average');
+    if (lblAvg) lblAvg.textContent = '⚠️ High';
     const lblIgn = document.getElementById('pill-label-ignored');
     if (lblIgn) lblIgn.textContent = '🔕 Ignored';
   }
