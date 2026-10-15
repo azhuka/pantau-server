@@ -2879,7 +2879,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     all_open_problems = []
     for srv in servers:
         for p in (srv._problems or []):
-            is_ign = bool(p.get("is_ignored"))
+            if p.get("is_ignored"):
+                continue  # Lewati insiden yang diabaikan agar kartu Insiden Terkini di Dashboard tetap bersih
             p_started = p.get("started_at")
             dur_str = "—"
             if p_started:
@@ -2895,13 +2896,13 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 "severity": p.get("severity", "warning"),
                 "message": p.get("message", ""),
                 "key": p.get("key", ""),
-                "is_ignored": is_ign,
+                "is_ignored": False,
                 "started_at": p_started,
                 "started_at_str": p_started.strftime("%d %b %H:%M") if p_started else "—",
                 "durasi": dur_str,
             })
     sev_order = {"danger": 0, "average": 1, "warning": 2, "info": 3}
-    all_open_problems.sort(key=lambda p: (1 if p["is_ignored"] else 0, sev_order.get(p["severity"], 4), p["started_at"] or datetime.min))
+    all_open_problems.sort(key=lambda p: (sev_order.get(p["severity"], 4), p["started_at"] or datetime.min))
 
     top_cpu = sorted([s for s in servers if s._cpu is not None], key=lambda s: s._cpu, reverse=True)[:5]
     top_mem = sorted([s for s in servers if s._mem_pct is not None], key=lambda s: s._mem_pct, reverse=True)[:5]

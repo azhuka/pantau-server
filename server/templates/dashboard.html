@@ -335,7 +335,7 @@
         {% for p in all_open_problems %}
         <tr onclick="window.location.href='/servers/{{ p.server_id }}/services'"
             title="Klik untuk buka rincian server {{ p.hostname }}"
-            style="border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;cursor:pointer;{% if p.is_ignored %}background:rgba(255,255,255,0.01);opacity:0.85;{% endif %}">
+            style="border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;cursor:pointer">
           <td style="padding:8px 10px;white-space:nowrap">
             <div class="mono" style="font-size:12.5px;font-weight:600;color:var(--text)">{{ p.started_at_str }}</div>
             <div style="font-size:11.5px;color:var(--dim);margin-top:2px" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z" data-suffix=" yang lalu">{{ p.durasi }} yang lalu</div>
@@ -347,9 +347,7 @@
             {% endif %}
           </td>
           <td style="padding:8px 10px;white-space:nowrap">
-            {% if p.is_ignored %}
-              <span class="badge badge-muted" style="font-size:11.5px;padding:2px 7px" title="Insiden diabaikan">DIABAIKAN 🔕</span>
-            {% elif p.severity == 'danger' %}
+            {% if p.severity == 'danger' %}
               <span class="badge badge-danger" style="font-size:11.5px;padding:2px 7px">KRITIS</span>
             {% elif p.severity == 'average' %}
               <span class="badge badge-orange" style="font-size:11.5px;padding:2px 7px">DOWN</span>
@@ -360,11 +358,7 @@
             {% endif %}
           </td>
           <td style="padding:8px 10px;font-size:13px;color:var(--text)">
-            {% if p.is_ignored %}
-              <span style="color:var(--dim)">{{ p.message }}</span> <span style="font-size:11.5px;color:var(--dim);font-style:italic">— diabaikan</span>
-            {% else %}
-              {{ p.message }}
-            {% endif %}
+            {{ p.message }}
           </td>
         </tr>
         {% endfor %}
@@ -1243,11 +1237,12 @@ async function pollNocDashboard() {
     if (kpiCardProb) kpiCardProb.style.borderLeftColor = kpiColor;
     if (totPrbEl) totPrbEl.style.color = kpiTextColor;
 
-    // Aggregate all active problems
+    // Aggregate all active problems (hanya insiden aktif yang TIDAK diabaikan)
     const allProblems = [];
     list.forEach(srv => {
       if (Array.isArray(srv.problems)) {
         srv.problems.forEach(p => {
+          if (p.is_ignored) return; // Lewati insiden yang diabaikan dari kartu Insiden Terkini di Dashboard
           allProblems.push({
             ...p,
             server_id: srv.id,
@@ -1260,9 +1255,6 @@ async function pollNocDashboard() {
 
     const sevOrder = { danger: 0, average: 1, warning: 2, info: 3 };
     allProblems.sort((a, b) => {
-      const aIgn = a.is_ignored ? 1 : 0;
-      const bIgn = b.is_ignored ? 1 : 0;
-      if (aIgn !== bIgn) return aIgn - bIgn;
       const aSev = sevOrder[a.severity] != null ? sevOrder[a.severity] : 4;
       const bSev = sevOrder[b.severity] != null ? sevOrder[b.severity] : 4;
       if (aSev !== bSev) return aSev - bSev;
@@ -1311,9 +1303,7 @@ async function pollNocDashboard() {
         let tHtml = '';
         allProblems.forEach(p => {
           let sevBadge = '';
-          if (p.is_ignored) {
-            sevBadge = '<span class="badge badge-muted" style="font-size:11.5px;padding:2px 7px" title="Insiden diabaikan">DIABAIKAN 🔕</span>';
-          } else if (p.severity === 'danger') {
+          if (p.severity === 'danger') {
             sevBadge = '<span class="badge badge-danger" style="font-size:11.5px;padding:2px 7px">KRITIS</span>';
           } else if (p.severity === 'average') {
             sevBadge = '<span class="badge badge-orange" style="font-size:11.5px;padding:2px 7px">DOWN</span>';
@@ -1324,17 +1314,10 @@ async function pollNocDashboard() {
           }
 
           const escMsg = (p.message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-          let msgHtml = '';
-          if (p.is_ignored) {
-            msgHtml = `<span style="color:var(--dim)">${escMsg}</span> <span style="font-size:11.5px;color:var(--dim);font-style:italic">— diabaikan</span>`;
-          } else {
-            msgHtml = escMsg;
-          }
-
           const grpHtml = p.group_name ? `<div style="font-size:11.5px;color:var(--dim);margin-top:1px">${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>` : '';
           const startedStr = p.started_at_str || (p.started_at ? relTime(p.started_at) : '—');
           const durStr = p.durasi ? `${p.durasi} yang lalu` : (p.started_at ? relTime(p.started_at) : '');
-          const trStyle = `border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;${p.is_ignored ? 'background:rgba(255,255,255,0.01);opacity:0.85;' : ''}`;
+          const trStyle = 'border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;';
 
           tHtml += `
           <tr onclick="window.location.href='/servers/${p.server_id}/services'"
