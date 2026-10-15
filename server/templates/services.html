@@ -869,7 +869,7 @@
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>&nbsp;Kunci
         </button>
         <span id="apt-status" class="terminal-status-badge"></span>
-        <button type="button" class="terminal-btn-icon terminal-btn-reconnect" id="term-reconnect-btn" onclick="getTerm().connect(true)" style="display:none" title="Buka Sesi Shell Baru">&#8635;&nbsp;Sambung Ulang</button>
+        <button type="button" class="terminal-btn-icon terminal-btn-reconnect" id="term-reconnect-btn" onclick="openTerminalWithCommand(null)" style="display:none" title="Buka Sesi Shell Baru">&#8635;&nbsp;Sambung Ulang</button>
         <button type="button" class="terminal-btn-icon" onclick="getTerm().clearScreen()" title="Bersihkan Layar Konsol">&#10005;&nbsp;Clear</button>
         <button type="button" class="terminal-btn-icon" id="term-fullscreen-btn" onclick="getTerm().toggleFullscreen()" title="Layar Penuh (Full Screen)">
           <svg id="term-fullscreen-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>&nbsp;<span id="term-fullscreen-text">Full Screen</span>
@@ -2779,7 +2779,7 @@
 
     <div id="term-unlock-error" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 12px;margin-bottom:14px;color:var(--red);font-size:12px;line-height:1.4"></div>
 
-    <form id="term-unlock-form" onsubmit="submitTerminalUnlock(event)">
+    <form id="term-unlock-form" data-no-loading onsubmit="submitTerminalUnlock(event)">
       <div style="margin-bottom:14px">
         <label for="term-unlock-pwd" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Kata Sandi Akun Pengguna:</label>
         <input type="password" id="term-unlock-pwd" required autocomplete="current-password" placeholder="Masukkan kata sandi login Anda" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
@@ -2808,7 +2808,7 @@
         <button type="button" class="btn btn-ghost btn-sm" onclick="closeTerminalUnlockModal()">Batal</button>
         <button type="submit" class="btn btn-primary btn-sm" id="term-unlock-submit-btn" style="display:inline-flex;align-items:center;gap:6px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
-          Buka Akses Terminal
+          <span id="term-unlock-btn-label">Buka</span>
         </button>
       </div>
     </form>
@@ -3797,6 +3797,8 @@ document.addEventListener('click', e => {
   if (m7 && e.target === m7) m7.style.display = 'none';
   const m8 = document.getElementById('term-lock-confirm-modal');
   if (m8 && e.target === m8) m8.style.display = 'none';
+  const mUnlock = document.getElementById('term-unlock-modal');
+  if (mUnlock && e.target === mUnlock) closeTerminalUnlockModal(true);
 });
 
 // === Modal: Buat Pengguna Sistem ===
@@ -4885,6 +4887,8 @@ function openTerminalUnlockModal(userHasTotp, defaultReason = '') {
   const totpGrp = document.getElementById('term-unlock-totp-grp');
   const totpInput = document.getElementById('term-unlock-totp');
   const reasonInput = document.getElementById('term-unlock-reason');
+  const submitBtn = document.getElementById('term-unlock-submit-btn');
+  const btnLabel = document.getElementById('term-unlock-btn-label');
 
   if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
   if (pwdInput) pwdInput.value = '';
@@ -4895,6 +4899,8 @@ function openTerminalUnlockModal(userHasTotp, defaultReason = '') {
     if (userHasTotp) totpInput.setAttribute('required', 'required');
     else totpInput.removeAttribute('required');
   }
+  if (submitBtn) submitBtn.disabled = false;
+  if (btnLabel) btnLabel.textContent = 'Buka';
 
   if (modal) {
     modal.style.display = 'flex';
@@ -4907,12 +4913,17 @@ function closeTerminalUnlockModal(canceled = true) {
   if (modal) modal.style.display = 'none';
   if (canceled) {
     window._pendingUpgradeCommand = null;
+    const term = getTerm();
+    if (term) {
+      term.hideViewOnly();
+    }
   }
 }
 
 async function submitTerminalUnlock(e) {
   if (e) e.preventDefault();
   const btn = document.getElementById('term-unlock-submit-btn');
+  const btnLabel = document.getElementById('term-unlock-btn-label');
   const errBox = document.getElementById('term-unlock-error');
   const pwd = (document.getElementById('term-unlock-pwd') || {}).value || '';
   const totp = (document.getElementById('term-unlock-totp') || {}).value || '';
@@ -4920,6 +4931,7 @@ async function submitTerminalUnlock(e) {
   const reason = (document.getElementById('term-unlock-reason') || {}).value || '';
 
   if (btn) btn.disabled = true;
+  if (btnLabel) btnLabel.textContent = 'Buka';
   if (errBox) errBox.style.display = 'none';
 
   try {
@@ -4976,6 +4988,7 @@ async function submitTerminalUnlock(e) {
     }
   } finally {
     if (btn) btn.disabled = false;
+    if (btnLabel) btnLabel.textContent = 'Buka';
   }
 }
 
@@ -4999,23 +5012,10 @@ async function openTerminalWithCommand(commandToRun = null, customReason = '') {
 
   const term = getTerm();
 
-  // Jika tombol terminal biasa diklik (tanpa perintah khusus) saat terminal sudah terbuka -> sembunyikan (toggle)
+  // Jika tombol terminal biasa diklik (tanpa perintah khusus) saat terminal sudah terbuka -> konfirmasi tutup
   if (!commandToRun && term.windowEl && term.windowEl.style.display !== 'none') {
-    if (window._isUpgradeInProgress) {
-      if (!confirm(isEnPage()
-        ? 'A system upgrade process may still be running in this terminal. Are you sure you want to hide the terminal? (The shell session will remain active on the server).'
-        : 'Proses upgrade sistem mungkin masih berlangsung di terminal ini. Yakin ingin menyembunyikan terminal? (Sesi shell akan tetap aktif di server).')) {
-        return;
-      }
-    }
-    term.hide();
+    openTerminalCloseConfirmModal();
     return;
-  }
-
-  // Buka jendela terminal dan gulir ke pandangan pengguna
-  term.show();
-  if (term.windowEl) {
-    term.windowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   try {
@@ -5025,14 +5025,21 @@ async function openTerminalWithCommand(commandToRun = null, customReason = '') {
 
     if (!data.allow_web_terminal) {
       alert(isEnPage() ? 'Web Terminal is disabled for this server.' : 'Akses Terminal Web dinonaktifkan untuk server ini sesuai konfigurasi keamanan.');
+      term.hideViewOnly();
       return;
     }
     if (!data.can_terminal) {
       alert(isEnPage() ? 'Access denied: You do not have Web Terminal permission.' : 'Akses ditolak: Anda tidak memiliki wewenang Terminal Shell Web.');
+      term.hideViewOnly();
       return;
     }
 
     if (data.is_unlocked && data.remaining_seconds > 0) {
+      // Buka dan tampilkan jendela terminal hanya saat otentikasi valid
+      term.show();
+      if (term.windowEl) {
+        term.windowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       startTermLeaseCountdown(data.remaining_seconds);
       if (term.state === 'live' && term.ws && term.ws.readyState === WebSocket.OPEN) {
         if (commandToRun) {
@@ -5053,12 +5060,15 @@ async function openTerminalWithCommand(commandToRun = null, customReason = '') {
         term.connect();
       }
     } else {
+      // Terminal terkunci: pastikan jendela terminal tetap tertutup sebelum otentikasi diisi
+      term.hideViewOnly();
       if (commandToRun) {
         window._pendingUpgradeCommand = commandToRun;
       }
       openTerminalUnlockModal(Boolean(data.user_has_totp), customReason);
     }
   } catch (e) {
+    term.hideViewOnly();
     alert((isEnPage() ? 'Failed to initialize terminal session: ' : 'Gagal menginisialisasi sesi terminal: ') + e.message);
   }
 }
@@ -5090,9 +5100,10 @@ function triggerInteractiveUpgrade() {
   return triggerUpgradeOS();
 }
 
-// Listener Escape untuk keluar dari Full Screen Terminal dan menutup modal konfirmasi
+// Listener Escape untuk keluar dari Full Screen Terminal dan menutup modal konfirmasi / unlock
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    closeTerminalUnlockModal(true);
     closeTerminalCloseConfirmModal();
     closeTerminalLockConfirmModal();
     const term = getTerm();
