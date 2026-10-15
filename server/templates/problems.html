@@ -27,6 +27,74 @@
   -webkit-overflow-scrolling: touch;
   width: 100%;
 }
+.prob-triage-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.prob-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  color: var(--dim);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.prob-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.prob-pill-btn.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
+  color: #93c5fd;
+  font-weight: 600;
+}
+.prob-pill-btn.active.pill-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+.prob-pill-btn.active.pill-average {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: #f97316;
+  color: #fdba74;
+}
+.prob-pill-btn.active.pill-warning {
+  background: rgba(234, 179, 8, 0.15);
+  border-color: #eab308;
+  color: #fde047;
+}
+.prob-pill-btn.active.pill-info {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
+  color: #93c5fd;
+}
+.prob-pill-btn.active.pill-ignored {
+  background: rgba(148, 163, 184, 0.15);
+  border-color: #94a3b8;
+  color: #cbd5e1;
+}
+.prob-pill-count {
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+}
+.prob-pill-btn.active .prob-pill-count {
+  background: rgba(255, 255, 255, 0.2);
+}
 @media (max-width: 640px) {
   .prob-filters-row {
     width: 100% !important;
@@ -52,6 +120,26 @@
     <span id="prob-active-badge" class="badge badge-muted">{{ active_open|length }} aktif{% if ignored_open %} · {{ ignored_open }} diabaikan{% endif %}</span>
   </div>
   {% if open_problems or all_servers %}
+  <div class="prob-triage-pills">
+    <button type="button" class="prob-pill-btn active" data-sev="" onclick="setProbFilterPill('', this)">
+      <span id="pill-label-all">Semua</span> <span class="prob-pill-count" id="pill-count-all">{{ open_problems|length }}</span>
+    </button>
+    <button type="button" class="prob-pill-btn pill-danger" data-sev="danger" onclick="setProbFilterPill('danger', this)">
+      <span>🚨 Critical</span> <span class="prob-pill-count" id="pill-count-danger">{{ danger_open }}</span>
+    </button>
+    <button type="button" class="prob-pill-btn pill-average" data-sev="average" onclick="setProbFilterPill('average', this)">
+      <span>⚠️ Down</span> <span class="prob-pill-count" id="pill-count-average">{{ average_open }}</span>
+    </button>
+    <button type="button" class="prob-pill-btn pill-warning" data-sev="warning" onclick="setProbFilterPill('warning', this)">
+      <span>⚡ Warning</span> <span class="prob-pill-count" id="pill-count-warning">{{ warning_open }}</span>
+    </button>
+    <button type="button" class="prob-pill-btn pill-info" data-sev="info" onclick="setProbFilterPill('info', this)">
+      <span>ℹ️ Info</span> <span class="prob-pill-count" id="pill-count-info">{{ info_open }}</span>
+    </button>
+    <button type="button" class="prob-pill-btn pill-ignored" data-sev="ignored" onclick="setProbFilterPill('ignored', this)">
+      <span id="pill-label-ignored">🔕 Diabaikan</span> <span class="prob-pill-count" id="pill-count-ignored">{{ ignored_open }}</span>
+    </button>
+  </div>
   <div class="prob-filters-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
     <form method="get" action="/problems" style="display:contents">
       <select name="server" onchange="this.form.submit()"
@@ -532,10 +620,28 @@ function initProbPagination() {
   }
 }
 
+function setProbFilterPill(val, btn) {
+  const sel = document.getElementById('prob-filter');
+  if (sel) {
+    sel.value = val;
+  }
+  document.querySelectorAll('.prob-pill-btn').forEach(b => b.classList.remove('active'));
+  if (btn) {
+    btn.classList.add('active');
+  }
+  probFilter();
+}
+
 function probFilter() {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const sev = (document.getElementById('prob-filter')?.value || '').toLowerCase();
   const q = (document.getElementById('prob-search')?.value || '').toLowerCase().trim();
+
+  // Sinkronisasi status aktif triage pills
+  document.querySelectorAll('.prob-pill-btn').forEach(b => {
+    b.classList.toggle('active', (b.dataset.sev || '').toLowerCase() === sev);
+  });
+
   const rows = document.querySelectorAll('#probtable tbody tr');
   let vis = 0;
   rows.forEach(tr => {
@@ -632,6 +738,28 @@ window.poll = async function() {
       const s = data.summary;
       const act = s.total_open - s.ignored_open;
       actBadge.textContent = `${act} ${isEn ? 'active' : 'aktif'}${s.ignored_open ? ' · ' + s.ignored_open + (isEn ? ' ignored' : ' diabaikan') : ''}`;
+    }
+
+    // 2b. Perbarui Triage Filter Pills Badge Count & Labels
+    if (data.summary) {
+      const s = data.summary;
+      const elAll = document.getElementById('pill-count-all');
+      if (elAll) elAll.textContent = s.total_open ?? 0;
+      const elDan = document.getElementById('pill-count-danger');
+      if (elDan) elDan.textContent = s.danger_open ?? 0;
+      const elAvg = document.getElementById('pill-count-average');
+      if (elAvg) elAvg.textContent = s.average_open ?? 0;
+      const elWrn = document.getElementById('pill-count-warning');
+      if (elWrn) elWrn.textContent = s.warning_open ?? 0;
+      const elInf = document.getElementById('pill-count-info');
+      if (elInf) elInf.textContent = s.info_open ?? 0;
+      const elIgn = document.getElementById('pill-count-ignored');
+      if (elIgn) elIgn.textContent = s.ignored_open ?? 0;
+
+      const lblAll = document.getElementById('pill-label-all');
+      if (lblAll) lblAll.textContent = isEn ? 'All' : 'Semua';
+      const lblIgn = document.getElementById('pill-label-ignored');
+      if (lblIgn) lblIgn.textContent = isEn ? '🔕 Ignored' : '🔕 Diabaikan';
     }
 
     // 3. Perbarui Daftar Masalah Terbuka
@@ -831,6 +959,13 @@ setInterval(() => {
 }, 5000);
 
 document.addEventListener('DOMContentLoaded', () => {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (isEn) {
+    const lblAll = document.getElementById('pill-label-all');
+    if (lblAll) lblAll.textContent = 'All';
+    const lblIgn = document.getElementById('pill-label-ignored');
+    if (lblIgn) lblIgn.textContent = '🔕 Ignored';
+  }
   initProbPagination();
   probFilter();
 });

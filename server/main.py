@@ -5130,7 +5130,7 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
             source_ips = kwargs.get("source_ips") or {}
             top_ips = sorted(source_ips.items(), key=lambda x: x[1] if isinstance(x[1], int) else 0, reverse=True)[:10]
             ip_list = [f"{ip} ({cnt}x)" for ip, cnt in top_ips]
-            is_crit = key == "security_danger"
+            is_crit = (key == "security_danger") or (kwargs.get("severity") == "danger") or (failed >= kwargs.get("threshold", 12)) or (invalid >= 4)
             return json.dumps({
                 "diagnosa": "Indikasi Serangan SSH Brute-Force" if is_crit else "Percobaan Login SSH Gagal Repetitif",
                 "diagnosa_en": "Suspected SSH Brute-Force Attack" if is_crit else "Repetitive Failed SSH Login Attempts",
@@ -5425,62 +5425,130 @@ def _resource_problem_instances(db, srv) -> list:
 
     th = get_server_thresholds(srv, db)
 
-    mem_total, mem_used = latest.mem_total or 0, latest.mem_used or 0
-    if mem_total > 0:
-        pct = mem_used / mem_total * 100
-        if pct >= th["ram_danger"]:
+    # Kunci masalah yang saat ini aktif terbuka untuk server ini
+    open_keys = {
+        r[0] for r in db.query(ServerProblem.key).filter(
+            ServerProblem.server_id == srv.id,
+            ServerProblem.resolved_at.is_(None),
+        ).all()
+    }
+
+    # 1. Evaluasi Memori RAM (Unified Key: ram_usage)
+    recent_mems = [
+        (s.mem_used / s.mem_total * 100)
+        for s in snaps[:3]
+        if (s.mem_total or 0) > 0 and s.mem_used is not None
+    ]
+    if recent_mems:
+        cur_ram = recent_mems[0]
+        mem_total, mem_used = latest.mem_total or 0, latest.mem_used or 0
+        is_ram_open = "ram_usage" in open_keys
+        should_emit_ram = False
+        ram_sev = "warning"
+
+        if is_ram_open:
+            if cur_ram >= th["ram_danger"]:
+                should_emit_ram = True
+                ram_sev = "danger"
+            elif cur_ram >= th["ram_warn"]:
+                should_emit_ram = True
+                ram_sev = "warning"
+        else:
+            if len(recent_mems) >= 3 and all(m >= th["ram_warn"] for m in recent_mems):
+                should_emit_ram = True
+                ram_avg = sum(recent_mems) / len(recent_mems)
+                if cur_ram >= th["ram_danger"] and ram_avg >= th["ram_danger"]:
+                    ram_sev = "danger"
+                else:
+                    ram_sev = "warning"
+
+        if should_emit_ram:
+            active_th = th["ram_danger"] if ram_sev == "danger" else th["ram_warn"]
+            label_text = f"RAM HAMPIR PENUH: {cur_ram:.0f}% (ambang {active_th:.0f}%)" if ram_sev == "danger" else f"RAM tinggi: {cur_ram:.0f}% (ambang {active_th:.0f}%)"
             inst.append({
-                "key": "ram_usage", "severity": "danger",
-                "message": (f"RAM HAMPIR PENUH: {pct:.0f}% (ambang {th['ram_danger']:.0f}%) "
-                            f"({_fmt_size(mem_used)} / {_fmt_size(mem_total)})"),
+                "key": "ram_usage",
+                "severity": ram_sev,
+                "message": f"{label_text} ({_fmt_size(mem_used)} / {_fmt_size(mem_total)})",
                 "tip": RAM_TIP,
-                "context": _build_problem_context("ram_usage", srv, pct=pct, used=mem_used, total=mem_total, threshold=th["ram_danger"], severity="danger"),
-            })
-        elif pct >= th["ram_warn"]:
-            inst.append({
-                "key": "ram_usage", "severity": "warning",
-                "message": (f"RAM tinggi: {pct:.0f}% (ambang {th['ram_warn']:.0f}%) "
-                            f"({_fmt_size(mem_used)} / {_fmt_size(mem_total)})"),
-                "tip": RAM_TIP,
-                "context": _build_problem_context("ram_usage", srv, pct=pct, used=mem_used, total=mem_total, threshold=th["ram_warn"], severity="warning"),
+                "event_at": snaps[min(len(snaps) - 1, 2)].timestamp if not is_ram_open else None,
+                "context": _build_problem_context("ram_usage", srv, pct=cur_ram, used=mem_used, total=mem_total, threshold=active_th, severity=ram_sev),
             })
 
-    swap_total, swap_used = latest.swap_total or 0, latest.swap_used or 0
-    if swap_total > 0:
-        spct = swap_used / swap_total * 100
-        if spct >= th["swap_danger"]:
+    # 2. Evaluasi Swap Disk (Unified Key: swap_usage)
+    recent_swaps = [
+        (s.swap_used / s.swap_total * 100)
+        for s in snaps[:3]
+        if (s.swap_total or 0) > 0 and s.swap_used is not None
+    ]
+    if recent_swaps:
+        cur_swap = recent_swaps[0]
+        swap_total, swap_used = latest.swap_total or 0, latest.swap_used or 0
+        is_swap_open = "swap_usage" in open_keys
+        should_emit_swap = False
+        swap_sev = "warning"
+
+        if is_swap_open:
+            if cur_swap >= th["swap_danger"]:
+                should_emit_swap = True
+                swap_sev = "danger"
+            elif cur_swap >= th["swap_warn"]:
+                should_emit_swap = True
+                swap_sev = "warning"
+        else:
+            if len(recent_swaps) >= 3 and all(s >= th["swap_warn"] for s in recent_swaps):
+                should_emit_swap = True
+                swap_avg = sum(recent_swaps) / len(recent_swaps)
+                if cur_swap >= th["swap_danger"] and swap_avg >= th["swap_danger"]:
+                    swap_sev = "danger"
+                else:
+                    swap_sev = "warning"
+
+        if should_emit_swap:
+            active_th = th["swap_danger"] if swap_sev == "danger" else th["swap_warn"]
+            label_text = f"Swap hampir penuh: {cur_swap:.0f}% (ambang {active_th:.0f}%) — RAM menipis" if swap_sev == "danger" else f"Swap terpakai tinggi: {cur_swap:.0f}% (ambang {active_th:.0f}%)"
             inst.append({
-                "key": "swap_usage", "severity": "danger",
-                "message": f"Swap hampir penuh: {spct:.0f}% (ambang {th['swap_danger']:.0f}%) — RAM menipis",
+                "key": "swap_usage",
+                "severity": swap_sev,
+                "message": label_text,
                 "tip": SWAP_TIP,
-                "context": _build_problem_context("swap_usage", srv, pct=spct, used=swap_used, total=swap_total, threshold=th["swap_danger"], severity="danger"),
-            })
-        elif spct >= th["swap_warn"]:
-            inst.append({
-                "key": "swap_usage", "severity": "warning",
-                "message": f"Swap terpakai tinggi: {spct:.0f}% (ambang {th['swap_warn']:.0f}%)",
-                "tip": SWAP_TIP,
-                "context": _build_problem_context("swap_usage", srv, pct=spct, used=swap_used, total=swap_total, threshold=th["swap_warn"], severity="warning"),
+                "event_at": snaps[min(len(snaps) - 1, 2)].timestamp if not is_swap_open else None,
+                "context": _build_problem_context("swap_usage", srv, pct=cur_swap, used=swap_used, total=swap_total, threshold=active_th, severity=swap_sev),
             })
 
-    recent_cpu = [s.cpu for s in snaps[:3] if s.cpu is not None]
-    if recent_cpu:
-        cur_cpu = latest.cpu if latest.cpu is not None else recent_cpu[0]
-        recent_avg = sum(recent_cpu) / len(recent_cpu)
-        if recent_avg >= th["cpu_danger"]:
+    # 3. Evaluasi Prosesor CPU (Unified Key: cpu_usage)
+    recent_cpus = [s.cpu for s in snaps[:3] if s.cpu is not None]
+    if recent_cpus:
+        cur_cpu = recent_cpus[0]
+        recent_avg = sum(recent_cpus) / len(recent_cpus)
+        is_cpu_open = "cpu_usage" in open_keys
+        should_emit_cpu = False
+        cpu_sev = "warning"
+
+        if is_cpu_open:
+            if cur_cpu >= th["cpu_danger"] or recent_avg >= th["cpu_danger"]:
+                should_emit_cpu = True
+                cpu_sev = "danger"
+            elif cur_cpu >= th["cpu_warn"] or recent_avg >= th["cpu_warn"]:
+                should_emit_cpu = True
+                cpu_sev = "warning"
+        else:
+            if len(recent_cpus) >= 3 and (all(c >= th["cpu_warn"] for c in recent_cpus) or recent_avg >= th["cpu_warn"]):
+                should_emit_cpu = True
+                if recent_avg >= th["cpu_danger"] and cur_cpu >= th["cpu_danger"]:
+                    cpu_sev = "danger"
+                else:
+                    cpu_sev = "warning"
+
+        if should_emit_cpu:
+            active_th = th["cpu_danger"] if cpu_sev == "danger" else th["cpu_warn"]
+            label_text = f"CPU jenuh/saturasi: {cur_cpu:.0f}% (ambang {active_th:.0f}%) (rata-rata {recent_avg:.0f}%)" if cpu_sev == "danger" else f"CPU tinggi: {cur_cpu:.0f}% (ambang {active_th:.0f}%) (rata-rata {recent_avg:.0f}%)"
             inst.append({
-                "key": "cpu_usage", "severity": "danger",
-                "message": (f"CPU jenuh/saturasi: {cur_cpu:.0f}% (ambang {th['cpu_danger']:.0f}%) "
-                            f"(rata-rata {recent_avg:.0f}%)"),
+                "key": "cpu_usage",
+                "severity": cpu_sev,
+                "message": label_text,
                 "tip": CPU_TIP,
-                "context": _build_problem_context("cpu_usage", srv, cpu_avg=recent_avg, cpu_max=cur_cpu, threshold=th["cpu_danger"], severity="danger"),
-            })
-        elif recent_avg >= th["cpu_warn"]:
-            inst.append({
-                "key": "cpu_usage", "severity": "warning",
-                "message": f"CPU tinggi: {cur_cpu:.0f}% (ambang {th['cpu_warn']:.0f}%) (rata-rata {recent_avg:.0f}%)",
-                "tip": CPU_TIP,
-                "context": _build_problem_context("cpu_usage", srv, cpu_avg=recent_avg, cpu_max=cur_cpu, threshold=th["cpu_warn"], severity="warning"),
+                "event_at": snaps[min(len(snaps) - 1, 2)].timestamp if not is_cpu_open else None,
+                "context": _build_problem_context("cpu_usage", srv, cpu_avg=recent_avg, cpu_max=cur_cpu, threshold=active_th, severity=cpu_sev),
             })
 
     disks = None
@@ -5617,25 +5685,25 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             if event_at is None and extras is not None and extras.updated_at is not None:
                 event_at = extras.updated_at  # fallback bila agen tak mengirim last_seen
             if invalid >= SECURITY_DANGER_INVALID or failed >= th["ssh_fail_danger"]:
-                inst.append({"key": "security_danger", "severity": "danger",
+                inst.append({"key": "failed_logins", "severity": "danger",
                              "message": f"Kemungkinan serangan SSH: {failed} login gagal (ambang >={th['ssh_fail_danger']}), "
                                          f"{invalid} user invalid, dari {nips} IP"
                                          + (f" · terakhir {_rel_dt(event_at)}" if event_at else ""),
                              "tip": SECURITY_TIPS["danger"], "event_at": event_at,
-                             "context": _build_problem_context("security_danger", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {}, threshold=th["ssh_fail_danger"])})
+                             "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {}, threshold=th["ssh_fail_danger"], severity="danger")})
             elif failed >= th["ssh_fail_warn"]:
                 inst.append({"key": "failed_logins", "severity": "warning",
                              "message": f"{failed} login SSH gagal dari {nips} IP (ambang >={th['ssh_fail_warn']})"
                                          + (f" · terakhir {_rel_dt(event_at)}" if event_at else "")
                                          + " — waspada brute force",
                              "tip": SECURITY_TIPS["warning"], "event_at": event_at,
-                             "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {}, threshold=th["ssh_fail_warn"])})
+                             "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {}, threshold=th["ssh_fail_warn"], severity="warning")})
             elif failed >= 1:
                 inst.append({"key": "failed_logins", "severity": "info",
                              "message": f"{failed} login SSH gagal (ringan)"
                                          + (f" · terakhir {_rel_dt(event_at)}" if event_at else ""),
                              "tip": SECURITY_TIPS["info"], "event_at": event_at,
-                             "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {})})
+                             "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {}, severity="info")})
     for d in svc_data or []:
         name = d.get("name", "?")
         st = d.get("status")
@@ -5823,6 +5891,7 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
         "cpu_saturated": "cpu_usage",
         "swap_high": "swap_usage",
         "swap_critical": "swap_usage",
+        "security_danger": "failed_logins",
     }
     open_legacy = (
         db.query(ServerProblem)
@@ -5884,7 +5953,7 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
         is_svc_ignored = bool(svc_obj and getattr(svc_obj, "is_ignored", 0))
 
         if row is None:
-            start_time = ev if (ev and p["key"] == "agent_stale") else now
+            start_time = ev if (ev and (p["key"] == "agent_stale" or "_usage" in p["key"] or p["key"] == "failed_logins")) else now
             new_row = ServerProblem(
                 server_id=srv.id, key=p["key"], severity=p["severity"],
                 message=p["message"], tip=p["tip"], started_at=start_time,
