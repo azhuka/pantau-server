@@ -288,11 +288,13 @@
     </div>
   </a>
 
-  <a href="/problems" class="card kpi-link-card" id="kpi-card-prob" style="margin:0;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-left:3px solid {% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% else %}var(--border){% endif %};text-decoration:none;color:inherit;cursor:pointer" title="Buka Masalah &amp; Insiden">
+  {% set total_active = danger_total + average_total + warning_total + info_total %}
+  {% set total_all = total_active + ignored_total %}
+  <a href="/problems" class="card kpi-link-card" id="kpi-card-prob" style="margin:0;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-left:3px solid {% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% elif ignored_total > 0 %}rgba(148,163,184,0.45){% else %}var(--border){% endif %};text-decoration:none;color:inherit;cursor:pointer" title="Buka Masalah &amp; Insiden">
     <div>
       <div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em">Insiden Aktif</div>
-      <div style="font-size:22px;font-weight:700;color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% else %}var(--dim){% endif %};margin-top:2px" id="dash-total-prob">
-        {{ danger_total + average_total + warning_total + info_total }}
+      <div style="font-size:22px;font-weight:700;color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% elif ignored_total > 0 %}var(--dim){% else %}var(--dim){% endif %};margin-top:2px" id="dash-total-prob">
+        {{ total_all }}
       </div>
     </div>
     <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center" id="dash-prob-badges">
@@ -301,7 +303,7 @@
       {% if warning_total > 0 %}<span class="badge badge-warn" style="font-size:12px;padding:3px 8px" id="kpi-warn-cnt">{{ warning_total }} Peringatan</span>{% endif %}
       {% if info_total > 0 %}<span class="badge badge-info" style="font-size:12px;padding:3px 8px" id="kpi-info-cnt">{{ info_total }} Info</span>{% endif %}
       {% if ignored_total > 0 %}<span class="badge badge-muted" style="font-size:12px;padding:3px 8px" id="kpi-ign-cnt" title="Insiden yang diabaikan oleh operator">{{ ignored_total }} diabaikan 🔕</span>{% endif %}
-      {% if danger_total == 0 and average_total == 0 and warning_total == 0 and info_total == 0 and ignored_total == 0 %}<span class="badge badge-up" style="font-size:12px;padding:3px 8px">Nihil Masalah</span>{% endif %}
+      {% if total_all == 0 %}<span class="badge badge-up" style="font-size:12px;padding:3px 8px">Nihil Masalah</span>{% endif %}
     </div>
   </a>
 </div>
@@ -1200,11 +1202,13 @@ async function pollNocDashboard() {
     const totPrbEl = document.getElementById('dash-total-prob');
     if (upEl) upEl.textContent = upCnt + ' up';
     if (dnEl) dnEl.textContent = dnCnt + ' down';
-    if (totPrbEl) totPrbEl.textContent = (dangerTot + avgTot + warnTot + infoTot);
+    const activeTot = dangerTot + avgTot + warnTot + infoTot;
+    const totalAll = activeTot + ignTot;
+    if (totPrbEl) totPrbEl.textContent = totalAll;
 
     const probBadges = document.getElementById('dash-prob-badges');
     if (probBadges) {
-      if (dangerTot === 0 && avgTot === 0 && warnTot === 0 && infoTot === 0 && ignTot === 0) {
+      if (totalAll === 0) {
         probBadges.innerHTML = '<span class="badge badge-up" style="font-size:11px">Nihil Masalah</span>';
       } else {
         let bHtml = '';
@@ -1233,6 +1237,9 @@ async function pollNocDashboard() {
     } else if (infoTot > 0) {
       kpiColor = 'var(--blue)';
       kpiTextColor = 'var(--blue)';
+    } else if (ignTot > 0) {
+      kpiColor = 'rgba(148, 163, 184, 0.45)';
+      kpiTextColor = 'var(--dim)';
     }
     if (kpiCardProb) kpiCardProb.style.borderLeftColor = kpiColor;
     if (totPrbEl) totPrbEl.style.color = kpiTextColor;
