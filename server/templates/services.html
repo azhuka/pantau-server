@@ -3965,7 +3965,7 @@ async function submitCreateUser(e) {
       showToast(res.detail || 'Pengguna berhasil dibuat!', true);
       closeCreateUserModal();
       form.reset();
-      if (typeof fetchMetrics === 'function') fetchMetrics();
+      if (typeof pollSystem === 'function') pollSystem();
       if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
     } else {
       showToast(res.detail || 'Gagal membuat pengguna.', false);
@@ -4023,7 +4023,41 @@ async function submitUserAction(action, username, btn) {
     const res = await r.json().catch(() => ({}));
     if (r.ok && (res.ok !== false)) {
       showToast(res.detail || (isEn ? ('Action ' + action + ' for user ' + username + ' sent successfully.') : ('Perintah ' + action + ' pengguna ' + username + ' berhasil dikirim.')), true);
-      if (typeof fetchMetrics === 'function') fetchMetrics();
+      if (action === 'delete') {
+        const row = btn ? btn.closest('tr') : null;
+        if (row) {
+          row.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+          row.style.opacity = '0';
+          row.style.transform = 'translateX(20px)';
+          setTimeout(() => {
+            row.remove();
+            if (typeof _servicesTabPagination !== 'undefined' && _servicesTabPagination['acc']) {
+              _servicesTabPagination['acc'].update();
+            }
+            const tbody = document.querySelector('#acc-table tbody');
+            const remaining = tbody ? tbody.querySelectorAll('tr').length : 0;
+            const accBadge = document.getElementById('acc-count-badge');
+            if (accBadge) {
+              accBadge.textContent = remaining + (isEn ? (remaining === 1 ? ' Account' : ' Accounts') : ' Akun');
+            }
+            if (remaining === 0) {
+              const at = document.getElementById('acc-table');
+              const ae = document.getElementById('acc-empty');
+              if (at) at.style.display = 'none';
+              if (ae) ae.style.display = 'block';
+            }
+          }, 200);
+        }
+        if (typeof _cachedLastSysData !== 'undefined' && _cachedLastSysData && Array.isArray(_cachedLastSysData.accounts)) {
+          _cachedLastSysData.accounts = _cachedLastSysData.accounts.filter(a => a.user !== username);
+        }
+      } else if (action === 'lock' || action === 'unlock') {
+        if (typeof _cachedLastSysData !== 'undefined' && _cachedLastSysData && Array.isArray(_cachedLastSysData.accounts)) {
+          const tgt = _cachedLastSysData.accounts.find(a => a.user === username);
+          if (tgt) tgt.is_locked = (action === 'lock');
+        }
+        if (typeof pollSystem === 'function') pollSystem();
+      }
       if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
     } else {
       showToast(res.detail || (isEn ? ('Failed to ' + action + ' account ' + username) : ('Gagal memproses ' + action + ' akun ' + username)), false);

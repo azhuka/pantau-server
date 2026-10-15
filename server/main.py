@@ -4139,6 +4139,16 @@ def server_user_lock(
     if err_resp:
         return err_resp
     u_clean = username.strip().lower()
+    extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    if extra and extra.accounts:
+        try:
+            acc_list = json.loads(extra.accounts)
+            for a in acc_list:
+                if str(a.get("user", "")).lower() == u_clean:
+                    a["is_locked"] = True
+            extra.accounts = json.dumps(acc_list)
+        except Exception:
+            pass
     _enqueue_mitigation(db, sid, "user_lock", {"username": u_clean}, issued_by=user.username)
     _audit(db, user.username, "user_lock", f"{server.hostname}: kunci user {u_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
@@ -4164,6 +4174,16 @@ def server_user_unlock(
     if err_resp:
         return err_resp
     u_clean = username.strip().lower()
+    extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    if extra and extra.accounts:
+        try:
+            acc_list = json.loads(extra.accounts)
+            for a in acc_list:
+                if str(a.get("user", "")).lower() == u_clean:
+                    a["is_locked"] = False
+            extra.accounts = json.dumps(acc_list)
+        except Exception:
+            pass
     _enqueue_mitigation(db, sid, "user_unlock", {"username": u_clean}, issued_by=user.username)
     _audit(db, user.username, "user_unlock", f"{server.hostname}: buka kunci user {u_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
@@ -4190,6 +4210,14 @@ def server_user_delete(
     if err_resp:
         return err_resp
     u_clean = username.strip().lower()
+    extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    if extra and extra.accounts:
+        try:
+            acc_list = json.loads(extra.accounts)
+            acc_list = [a for a in acc_list if str(a.get("user", "")).lower() != u_clean]
+            extra.accounts = json.dumps(acc_list)
+        except Exception:
+            pass
     _enqueue_mitigation(db, sid, "user_delete", {"username": u_clean, "remove_home": "1" if remove_home else "0"}, issued_by=user.username)
     _audit(db, user.username, "user_delete", f"{server.hostname}: hapus user {u_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
@@ -9448,28 +9476,38 @@ def user_delete(
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
     if not user or user.is_viewer():
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
     can_manage_users = user.is_master_admin() or user.has_perm("can_manage_users")
     can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
     if not can_manage_viewers:
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/profile?tab=users", status_code=303)
-    _verify_csrf_form(request, csrf_token)
+    token = csrf_token or request.headers.get("X-CSRF-Token", "")
+    _verify_csrf_form(request, token)
 
     if uid == user.id:
-        return RedirectResponse(_flash_profile_users(False, "Tidak bisa menghapus akun Anda sendiri"), status_code=303)
+        msg = "Tidak bisa menghapus akun Anda sendiri"
+        if is_json: return JSONResponse({"ok": False, "detail": msg}, status_code=400)
+        return RedirectResponse(_flash_profile_users(False, msg), status_code=303)
 
     target_u = db.query(User).filter(User.id == uid).first()
     if not target_u:
-        return RedirectResponse(_flash_profile_users(False, "Pengguna tidak ditemukan"), status_code=303)
+        msg = "Pengguna tidak ditemukan"
+        if is_json: return JSONResponse({"ok": False, "detail": msg}, status_code=404)
+        return RedirectResponse(_flash_profile_users(False, msg), status_code=303)
 
     if target_u.is_master_admin():
-        if not user.is_master_admin():
-            return RedirectResponse(_flash_profile_users(False, "Pengguna tidak ditemukan"), status_code=303)
-        return RedirectResponse(_flash_profile_users(False, "Akun Master Administrator tidak dapat dihapus"), status_code=303)
+        msg = "Akun Master Administrator tidak dapat dihapus" if user.is_master_admin() else "Pengguna tidak ditemukan"
+        if is_json: return JSONResponse({"ok": False, "detail": msg}, status_code=400)
+        return RedirectResponse(_flash_profile_users(False, msg), status_code=303)
 
     if not can_manage_users and target_u.role != "viewer":
-        return RedirectResponse(_flash_profile_users(False, "Pengguna tidak ditemukan"), status_code=303)
+        msg = "Pengguna tidak ditemukan"
+        if is_json: return JSONResponse({"ok": False, "detail": msg}, status_code=404)
+        return RedirectResponse(_flash_profile_users(False, msg), status_code=303)
 
     # Cabut sesi pengguna yang dihapus
     db.query(AppSession).filter(AppSession.user_id == uid).delete(synchronize_session=False)
@@ -9477,7 +9515,9 @@ def user_delete(
     _audit(db, user.username, "user_delete", f"{target_u.username} ({target_u.role})", "berhasil")
     db.delete(target_u)
     db.commit()
-    return RedirectResponse(_flash_profile_users(True, f"Pengguna '{target_u.username}' berhasil dihapus"), status_code=303)
+    msg = f"Pengguna '{target_u.username}' berhasil dihapus"
+    if is_json: return JSONResponse({"ok": True, "detail": msg})
+    return RedirectResponse(_flash_profile_users(True, msg), status_code=303)
 
 
 @app.post("/users/{uid}/toggle-active")
@@ -9487,28 +9527,38 @@ def user_toggle_active(
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
     if not user or user.is_viewer():
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
     can_manage_users = user.is_master_admin() or user.has_perm("can_manage_users")
     can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
     if not can_manage_viewers:
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/profile?tab=users", status_code=303)
-    _verify_csrf_form(request, csrf_token)
+    token = csrf_token or request.headers.get("X-CSRF-Token", "")
+    _verify_csrf_form(request, token)
 
     if uid == user.id:
-        return RedirectResponse(_flash_profile_users(False, "Tidak bisa menonaktifkan akun sendiri"), status_code=303)
+        msg = "Tidak bisa menonaktifkan akun sendiri"
+        if is_json: return JSONResponse({"ok": False, "detail": msg}, status_code=400)
+        return RedirectResponse(_flash_profile_users(False, msg), status_code=303)
 
     target_u = db.query(User).filter(User.id == uid).first()
     if not target_u:
-        return RedirectResponse(_flash_profile_users(False, "Pengguna tidak ditemukan"), status_code=303)
+        msg = "Pengguna tidak ditemukan"
+        if is_json: return JSONResponse({"ok": False, "detail": msg}, status_code=404)
+        return RedirectResponse(_flash_profile_users(False, msg), status_code=303)
 
     if target_u.is_master_admin():
-        if not user.is_master_admin():
-            return RedirectResponse(_flash_profile_users(False, "Pengguna tidak ditemukan"), status_code=303)
-        return RedirectResponse(_flash_profile_users(False, "Status akun Master Administrator tidak dapat diubah"), status_code=303)
+        msg = "Status akun Master Administrator tidak dapat diubah" if user.is_master_admin() else "Pengguna tidak ditemukan"
+        if is_json: return JSONResponse({"ok": False, "detail": msg}, status_code=400)
+        return RedirectResponse(_flash_profile_users(False, msg), status_code=303)
 
     if not can_manage_users and target_u.role != "viewer":
-        return RedirectResponse(_flash_profile_users(False, "Pengguna tidak ditemukan"), status_code=303)
+        msg = "Pengguna tidak ditemukan"
+        if is_json: return JSONResponse({"ok": False, "detail": msg}, status_code=404)
+        return RedirectResponse(_flash_profile_users(False, msg), status_code=303)
 
     new_active = 0 if target_u.is_active else 1
     target_u.is_active = new_active
@@ -9520,7 +9570,9 @@ def user_toggle_active(
 
     _audit(db, user.username, "user_toggle_active", f"{target_u.username} ({status_label})", "berhasil")
     db.commit()
-    return RedirectResponse(_flash_profile_users(True, f"Akun '{target_u.username}' berhasil {status_label}"), status_code=303)
+    msg = f"Akun '{target_u.username}' berhasil {status_label}"
+    if is_json: return JSONResponse({"ok": True, "detail": msg, "is_active": bool(new_active)})
+    return RedirectResponse(_flash_profile_users(True, msg), status_code=303)
 
 
 @app.post("/users/{uid}/edit-permissions")

@@ -572,7 +572,8 @@
                         data-guardrail-badge="Keamanan Akun"
                         data-guardrail-msg="Akun pengguna <strong>{{ u.username }}</strong> akan dihapus secara permanen. Pengguna tidak akan dapat login lagi dan seluruh sesi aktifnya akan dicabut."
                         data-guardrail-btn="Hapus Pengguna Sekarang"
-                        data-guardrail-color="danger">
+                        data-guardrail-color="danger"
+                        onsubmit="handleDeleteUserForm(event, '{{ u.username }}')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <button type="submit" class="btn btn-danger btn-sm user-act-icon-btn" title="Hapus akun {{ u.username }} secara permanen">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1478,9 +1479,61 @@ async function disableAdmin2fa(uid, username) {
   }
 }
 
+let usersPagination = null;
+
+async function handleDeleteUserForm(ev, username) {
+  const f = ev.target;
+  if (!f.dataset.guardrailConfirmed) return;
+  ev.preventDefault();
+  const formData = new FormData(f);
+  try {
+    const csrf = f.querySelector('input[name="csrf_token"]')?.value || '';
+    const res = await fetch(f.action, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrf
+      }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok !== false) {
+      if (typeof showToast === 'function') {
+        showToast(data.detail || `Pengguna '${username}' berhasil dihapus`, true);
+      }
+      const row = f.closest('tr');
+      if (row) {
+        row.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(20px)';
+        setTimeout(() => {
+          row.remove();
+          if (usersPagination) usersPagination.update();
+          const badge = document.querySelector('#tab-btn-users .badge');
+          const tbody = document.querySelector('#users-table tbody');
+          const remaining = tbody ? tbody.querySelectorAll('tr').length : 0;
+          if (badge) badge.textContent = remaining;
+        }, 200);
+      }
+    } else {
+      if (typeof showToast === 'function') {
+        showToast(data.detail || 'Gagal menghapus pengguna', false);
+      } else {
+        alert(data.detail || 'Gagal menghapus pengguna');
+      }
+    }
+  } catch (err) {
+    if (typeof showToast === 'function') {
+      showToast('Kendala jaringan: ' + err.message, false);
+    } else {
+      alert('Kendala jaringan: ' + err.message);
+    }
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('users-table') && typeof attachTablePagination === 'function') {
-    attachTablePagination('#users-table', {
+    usersPagination = attachTablePagination('#users-table', {
       unitLabel: 'pengguna',
       defaultLimit: 25,
       pageSizeOptions: [10, 25, 50, 100, 'all']

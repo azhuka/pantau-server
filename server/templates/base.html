@@ -1165,7 +1165,12 @@ function showToast(msg, ok){
   const clean = qs.has('msg') || qs.has('err');
   if (msg) showToast(decodeURIComponent(msg), true);
   else if (err) showToast(decodeURIComponent(err), false);
-  if (clean) history.replaceState({}, '', location.pathname + location.hash);
+  if (clean) {
+    qs.delete('msg');
+    qs.delete('err');
+    const remaining = qs.toString();
+    history.replaceState({}, '', location.pathname + (remaining ? '?' + remaining : '') + location.hash);
+  }
 })();
 // ---------- Guardrail Dialogue Modal (High-SLA Production Safe Guard) ----------
 let _activeGuardrailForm = null;
