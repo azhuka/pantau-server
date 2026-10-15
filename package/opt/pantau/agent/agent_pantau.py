@@ -3522,6 +3522,15 @@ def _set_terminal_winsize(fd: int, rows: int, cols: int) -> None:
         pass
 
 
+# Pola escape sequence probe/query terminal dan respon internal xterm.js
+DA_QUERY_PATTERN = re.compile(
+    r"\x1b\[c|\x1b\[0c|\x1b\[>c|\x1b\[>0c|\x1b\[>q|\x1b\]1[01];\?(?:\x07|\x1b\\)"
+)
+DA_RESP_PATTERN = re.compile(
+    r"\x1b\[[?>!][0-9;]*c|\x1b\[\??[0-9]+;[0-9]+R|\x1b\[[0-9]+n|\x1b\](?:10|11);[^\x07\x1b]*(?:\x07|\x1b\\)"
+)
+
+
 def _run_terminal_session(cfg: dict, session_id: str) -> None:
     """Jalankan proses shell interaktif di pseudo-terminal (PTY) realtime.
 
@@ -3605,6 +3614,9 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
                         break
 
                 chunk = b"".join(chunks).decode("utf-8", errors="replace")
+                chunk = DA_QUERY_PATTERN.sub("", chunk)
+                if not chunk and not pending_out:
+                    continue
                 if pending_out:
                     chunk = "".join(pending_out) + chunk
                     pending_out.clear()
@@ -3649,7 +3661,9 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
                 if mtype == "input":
                     text = data.get("data", "")
                     if text:
-                        os.write(master_fd, text.encode("utf-8", errors="replace"))
+                        cleaned = DA_RESP_PATTERN.sub("", text)
+                        if cleaned:
+                            os.write(master_fd, cleaned.encode("utf-8", errors="replace"))
                 elif mtype == "resize":
                     cols = data.get("cols", 80)
                     rows = data.get("rows", 24)

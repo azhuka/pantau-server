@@ -4548,8 +4548,20 @@ class WebTerminal {
 
     // Kirim ketikan user ke WebSocket seketika tanpa latency
     this.term.onData(data => {
+      if (!data) return;
+      // Filter respon otomatis Device Attributes (DA1, DA2, DA3), kursor (CPR), dan DSR
+      // agar respon internal emulator xterm.js (seperti \x1b[?1;2c dan \x1b[>0;276;0c)
+      // tidak bocor ke stdin shell (yang menyebabkan '1;2c0;276;0c' muncul pada prompt).
+      const filtered = (typeof data === 'string')
+        ? data
+          .replace(/\x1b\[[?>!][0-9;]*c/g, '')
+          .replace(/\x1b\[\??[0-9]+;[0-9]+R/g, '')
+          .replace(/\x1b\[[0-9]+n/g, '')
+          .replace(/\x1b\](?:10|11);[^\x07\x1b]*(?:\x07|\x1b\\)/g, '')
+        : data;
+      if (!filtered) return;
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: 'input', data: data }));
+        this.ws.send(JSON.stringify({ type: 'input', data: filtered }));
       }
     });
 
@@ -4827,8 +4839,17 @@ class WebTerminal {
 
   flushInput() {}
   sendRaw(chunk) {
+    if (!chunk) return;
+    const filtered = (typeof chunk === 'string')
+      ? chunk
+        .replace(/\x1b\[[?>!][0-9;]*c/g, '')
+        .replace(/\x1b\[\??[0-9]+;[0-9]+R/g, '')
+        .replace(/\x1b\[[0-9]+n/g, '')
+        .replace(/\x1b\](?:10|11);[^\x07\x1b]*(?:\x07|\x1b\\)/g, '')
+      : chunk;
+    if (!filtered) return;
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: 'input', data: chunk }));
+      this.ws.send(JSON.stringify({ type: 'input', data: filtered }));
     }
   }
 
@@ -4902,7 +4923,10 @@ class WebTerminal {
       try {
         const msg = JSON.parse(event.data);
         if (msg.type === 'stdout' && msg.data) {
-          this.term.write(msg.data);
+          const sanitized = (typeof msg.data === 'string')
+            ? msg.data.replace(/\x1b\[c|\x1b\[0c|\x1b\[>c|\x1b\[>0c|\x1b\[>q|\x1b\]1[01];\?(?:\x07|\x1b\\)/g, '')
+            : msg.data;
+          if (sanitized) this.term.write(sanitized);
         }
       } catch (err) {
         this.term.write(event.data);

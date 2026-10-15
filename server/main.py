@@ -8207,6 +8207,17 @@ async def api_agent_file_result(
 # ---------------------------------------------------------------------------
 # Terminal Realtime WebSocket Bridge (Memory-only, Zero DB Polling)
 # ---------------------------------------------------------------------------
+# Pola escape sequence probe/query terminal (DA1, DA2, CPR, OSC color queries)
+# dan respon otomatis yang dihasilkan oleh emulator terminal web (xterm.js).
+# Pola ini ditekan/dibersihkan agar tidak bocor ke stdin shell sebagai input tak diinginkan (misal '1;2c0;276;0c').
+DA_QUERY_PATTERN = re.compile(
+    r"\x1b\[c|\x1b\[0c|\x1b\[>c|\x1b\[>0c|\x1b\[>q|\x1b\]1[01];\?(?:\x07|\x1b\\)"
+)
+DA_RESP_PATTERN = re.compile(
+    r"\x1b\[[?>!][0-9;]*c|\x1b\[\??[0-9]+;[0-9]+R|\x1b\[[0-9]+n|\x1b\](?:10|11);[^\x07\x1b]*(?:\x07|\x1b\\)"
+)
+
+
 class TerminalSessionBridge:
     def __init__(self, session_id: str, server_id: int):
         self.session_id = session_id
@@ -8223,14 +8234,19 @@ class TerminalSessionBridge:
         self.MAX_BUFFER_CHARS = 250000
 
     def append_output(self, chunk: str):
-        self.output_buffer.append(chunk)
-        self.buffer_len += len(chunk)
+        if not chunk:
+            return
+        cleaned = DA_QUERY_PATTERN.sub("", chunk)
+        if not cleaned:
+            return
+        self.output_buffer.append(cleaned)
+        self.buffer_len += len(cleaned)
         while self.buffer_len > self.MAX_BUFFER_CHARS and self.output_buffer:
             removed = self.output_buffer.pop(0)
             self.buffer_len -= len(removed)
 
     def get_buffered_output(self) -> str:
-        return "".join(self.output_buffer)
+        return DA_QUERY_PATTERN.sub("", "".join(self.output_buffer))
 
 
 class TerminalBridgeDispatcher:
@@ -8503,6 +8519,14 @@ async def ws_server_terminal(websocket: WebSocket, sid: int):
             except Exception:
                 msg = {"type": "input", "data": raw}
 
+            if msg.get("type") == "input":
+                data_str = msg.get("data", "")
+                if isinstance(data_str, str):
+                    cleaned = DA_RESP_PATTERN.sub("", data_str)
+                    if not cleaned:
+                        continue
+                    msg["data"] = cleaned
+
             await bridge.stdin_queue.put(msg)
     except WebSocketDisconnect:
         pass
@@ -8564,8 +8588,16 @@ async def api_agent_terminal_stdin(
         raise HTTPException(status_code=410, detail="Sesi terminal sudah ditutup")
 
     try:
-        msg = await asyncio.wait_for(bridge.stdin_queue.get(), timeout=15.0)
-        return msg
+        while True:
+            msg = await asyncio.wait_for(bridge.stdin_queue.get(), timeout=15.0)
+            if msg.get("type") == "input":
+                data_str = msg.get("data", "")
+                if isinstance(data_str, str):
+                    cleaned = DA_RESP_PATTERN.sub("", data_str)
+                    if not cleaned:
+                        continue
+                    msg["data"] = cleaned
+            return msg
     except asyncio.TimeoutError:
         return {"type": "ping"}
 
@@ -8588,15 +8620,17 @@ async def api_agent_terminal_stdout(
 
     chunk = body.get("chunk", "")
     if chunk:
-        bridge.append_output(chunk)
-        bridge.last_active = time.time()
-        if bridge.browser_ws:
-            try:
-                await bridge.browser_ws.send_text(json.dumps({"type": "stdout", "data": chunk}))
-            except Exception:
-                bridge.browser_ws = None
-                bridge.detached = True
-                bridge.detached_at = time.time()
+        clean_chunk = DA_QUERY_PATTERN.sub("", chunk)
+        if clean_chunk:
+            bridge.append_output(clean_chunk)
+            bridge.last_active = time.time()
+            if bridge.browser_ws:
+                try:
+                    await bridge.browser_ws.send_text(json.dumps({"type": "stdout", "data": clean_chunk}))
+                except Exception:
+                    bridge.browser_ws = None
+                    bridge.detached = True
+                    bridge.detached_at = time.time()
 
     return {"ok": True}
 
