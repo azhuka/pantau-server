@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - Pantau Server{% endblock %}
 {% block content %}
+{% set g_th = global_thresholds or {} %}
+{% set cpu_w = (g_th.cpu_warn if g_th.cpu_warn is defined else 85.0) or 85.0 %}
+{% set cpu_d = (g_th.cpu_danger if g_th.cpu_danger is defined else 95.0) or 95.0 %}
+{% set ram_w = (g_th.ram_warn if g_th.ram_warn is defined else 85.0) or 85.0 %}
+{% set ram_d = (g_th.ram_danger if g_th.ram_danger is defined else 95.0) or 95.0 %}
+{% set disk_w = (g_th.disk_warn if g_th.disk_warn is defined else 90.0) or 90.0 %}
+{% set disk_d = (g_th.disk_danger if g_th.disk_danger is defined else 95.0) or 95.0 %}
 <style>
 /* Dashboard Styles & Layout Modes */
 .view-switch-group {
@@ -721,7 +728,9 @@
             </div>
             <div class="meter-track">
               {% set cpu_val = srv._cpu or 0 %}
-              {% set cpu_cls = 'red' if cpu_val >= cpu_d else ('yellow' if cpu_val >= cpu_w else 'green') %}
+              {% set cpu_limit_d = cpu_d if cpu_d is defined else 95.0 %}
+              {% set cpu_limit_w = cpu_w if cpu_w is defined else 85.0 %}
+              {% set cpu_cls = 'red' if cpu_val >= cpu_limit_d else ('yellow' if cpu_val >= cpu_limit_w else 'green') %}
               <div class="meter-bar {{ cpu_cls }}" id="card-cpu-bar-{{ srv.id }}" style="width:{{ [cpu_val, 100]|min }}%"></div>
             </div>
           </div>
@@ -733,7 +742,9 @@
             </div>
             <div class="meter-track">
               {% set ram_val = srv._mem_pct or 0 %}
-              {% set ram_cls = 'red' if ram_val >= ram_d else ('yellow' if ram_val >= ram_w else 'green') %}
+              {% set ram_limit_d = ram_d if ram_d is defined else 95.0 %}
+              {% set ram_limit_w = ram_w if ram_w is defined else 85.0 %}
+              {% set ram_cls = 'red' if ram_val >= ram_limit_d else ('yellow' if ram_val >= ram_limit_w else 'green') %}
               <div class="meter-bar {{ ram_cls }}" id="card-ram-bar-{{ srv.id }}" style="width:{{ [ram_val, 100]|min }}%"></div>
             </div>
           </div>
