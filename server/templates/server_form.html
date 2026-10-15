@@ -197,6 +197,16 @@
             <input type="number" step="1" min="1" max="100" name="th_swap_danger" value="{{ custom_thresholds.swap_danger if custom_thresholds.get('swap_danger') is not none else '' }}" placeholder="{{ (global_thresholds.swap_danger | int) if global_thresholds else 92 }}">
           </div>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>SSH Login Gagal Warning (kali)</label>
+            <input type="number" step="1" min="1" name="th_ssh_fail_warn" value="{{ custom_thresholds.ssh_fail_warn if custom_thresholds.get('ssh_fail_warn') is not none else '' }}" placeholder="{{ (global_thresholds.ssh_fail_warn | int) if global_thresholds else 5 }}">
+          </div>
+          <div class="form-group">
+            <label>SSH Login Gagal Danger (kali)</label>
+            <input type="number" step="1" min="1" name="th_ssh_fail_danger" value="{{ custom_thresholds.ssh_fail_danger if custom_thresholds.get('ssh_fail_danger') is not none else '' }}" placeholder="{{ (global_thresholds.ssh_fail_danger | int) if global_thresholds else 12 }}">
+          </div>
+        </div>
       </div>
     </div>
 

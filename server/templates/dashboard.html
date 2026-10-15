@@ -444,18 +444,26 @@
       </thead>
       <tbody>
         {% for srv in servers %}
+        {% set g_th = global_thresholds or {} %}
+        {% set cpu_w = g_th.cpu_warn if g_th.cpu_warn is defined else 85.0 %}
+        {% set cpu_d = g_th.cpu_danger if g_th.cpu_danger is defined else 95.0 %}
+        {% set ram_w = g_th.ram_warn if g_th.ram_warn is defined else 85.0 %}
+        {% set ram_d = g_th.ram_danger if g_th.ram_danger is defined else 95.0 %}
+        {% set disk_w = g_th.disk_warn if g_th.disk_warn is defined else 90.0 %}
+        {% set disk_d = g_th.disk_danger if g_th.disk_danger is defined else 95.0 %}
+
         {% set cpu_v = srv._cpu if srv._cpu is not none else -1 %}
-        {% set cpu_cls = 'red' if cpu_v > 70 else ('yellow' if cpu_v > 50 else 'green') %}
-        {% set cpu_color = 'var(--red)' if cpu_v > 70 else ('var(--yellow)' if cpu_v > 50 else ('var(--green)' if srv._cpu is not none else 'var(--dim)')) %}
+        {% set cpu_cls = 'red' if cpu_v >= cpu_d else ('yellow' if cpu_v >= cpu_w else 'green') %}
+        {% set cpu_color = 'var(--red)' if cpu_v >= cpu_d else ('var(--yellow)' if cpu_v >= cpu_w else ('var(--green)' if srv._cpu is not none else 'var(--dim)')) %}
 
         {% set mem_v = srv._mem_pct if srv._mem_pct is not none else -1 %}
-        {% set mem_cls = 'red' if mem_v > 70 else ('yellow' if mem_v > 50 else 'green') %}
-        {% set mem_color = 'var(--red)' if mem_v > 70 else ('var(--yellow)' if mem_v > 50 else ('var(--green)' if srv._mem_pct is not none else 'var(--dim)')) %}
+        {% set mem_cls = 'red' if mem_v >= ram_d else ('yellow' if mem_v >= ram_w else 'green') %}
+        {% set mem_color = 'var(--red)' if mem_v >= ram_d else ('var(--yellow)' if mem_v >= ram_w else ('var(--green)' if srv._mem_pct is not none else 'var(--dim)')) %}
         {% set mem_avail_pct = (100.0 - srv._mem_pct)|round(1) if srv._mem_pct is not none else None %}
 
         {% set disk_v = srv._disk_pct if srv._disk_pct is not none else -1 %}
-        {% set disk_cls = 'red' if disk_v > 70 else ('yellow' if disk_v > 50 else 'green') %}
-        {% set disk_color = 'var(--red)' if disk_v > 70 else ('var(--yellow)' if disk_v > 50 else ('var(--green)' if srv._disk_pct is not none else 'var(--dim)')) %}
+        {% set disk_cls = 'red' if disk_v >= disk_d else ('yellow' if disk_v >= disk_w else 'green') %}
+        {% set disk_color = 'var(--red)' if disk_v >= disk_d else ('var(--yellow)' if disk_v >= disk_w else ('var(--green)' if srv._disk_pct is not none else 'var(--dim)')) %}
         {% set disk_avail_pct = (100.0 - srv._disk_pct)|round(1) if srv._disk_pct is not none else None %}
 
         {% set tot_svcs = (srv._svc_data or []) | length %}
@@ -713,7 +721,7 @@
             </div>
             <div class="meter-track">
               {% set cpu_val = srv._cpu or 0 %}
-              {% set cpu_cls = 'red' if cpu_val > 70 else ('yellow' if cpu_val > 50 else 'green') %}
+              {% set cpu_cls = 'red' if cpu_val >= cpu_d else ('yellow' if cpu_val >= cpu_w else 'green') %}
               <div class="meter-bar {{ cpu_cls }}" id="card-cpu-bar-{{ srv.id }}" style="width:{{ [cpu_val, 100]|min }}%"></div>
             </div>
           </div>
@@ -725,7 +733,7 @@
             </div>
             <div class="meter-track">
               {% set ram_val = srv._mem_pct or 0 %}
-              {% set ram_cls = 'red' if ram_val > 70 else ('yellow' if ram_val > 50 else 'green') %}
+              {% set ram_cls = 'red' if ram_val >= ram_d else ('yellow' if ram_val >= ram_w else 'green') %}
               <div class="meter-bar {{ ram_cls }}" id="card-ram-bar-{{ srv.id }}" style="width:{{ [ram_val, 100]|min }}%"></div>
             </div>
           </div>
@@ -781,11 +789,25 @@
 
 {% block scripts %}
 <script>
-// 1. Threshold Evaluation Helper (1-50% Hijau, 51-70% Kuning, 71-100% Merah)
-function getThreshold(val) {
+const GLOBAL_THRESHOLDS = {{ (global_thresholds or {}) | tojson }};
+
+// 1. Threshold Evaluation Helper (Menyesuaikan dengan ambang batas konfigurasi global)
+function getThreshold(val, type) {
   if (val == null || isNaN(val)) return { cls: 'green', color: 'var(--dim)' };
-  if (val > 70) return { cls: 'red', color: 'var(--red)' };
-  if (val > 50) return { cls: 'yellow', color: 'var(--yellow)' };
+  let w = 85;
+  let d = 95;
+  if (type === 'cpu') {
+    w = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.cpu_warn != null) ? GLOBAL_THRESHOLDS.cpu_warn : 85;
+    d = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.cpu_danger != null) ? GLOBAL_THRESHOLDS.cpu_danger : 95;
+  } else if (type === 'mem') {
+    w = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.ram_warn != null) ? GLOBAL_THRESHOLDS.ram_warn : 85;
+    d = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.ram_danger != null) ? GLOBAL_THRESHOLDS.ram_danger : 95;
+  } else if (type === 'disk') {
+    w = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.disk_warn != null) ? GLOBAL_THRESHOLDS.disk_warn : 90;
+    d = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.disk_danger != null) ? GLOBAL_THRESHOLDS.disk_danger : 95;
+  }
+  if (val >= d) return { cls: 'red', color: 'var(--red)' };
+  if (val >= w) return { cls: 'yellow', color: 'var(--yellow)' };
   return { cls: 'green', color: 'var(--green)' };
 }
 
@@ -990,7 +1012,7 @@ async function pollNocDashboard() {
       const tblCpuBar = document.getElementById('tbl-cpu-bar-' + srv.id);
       if (tblCpuVal) {
         if (srv.cpu != null) {
-          const th = getThreshold(srv.cpu);
+          const th = getThreshold(srv.cpu, 'cpu');
           tblCpuVal.textContent = srv.cpu.toFixed(1) + '%';
           tblCpuVal.style.color = th.color;
         } else {
@@ -999,7 +1021,7 @@ async function pollNocDashboard() {
         }
       }
       if (tblCpuBar && srv.cpu != null) {
-        const th = getThreshold(srv.cpu);
+        const th = getThreshold(srv.cpu, 'cpu');
         tblCpuBar.style.width = Math.min(srv.cpu, 100) + '%';
         tblCpuBar.className = 'meter-mini-bar ' + th.cls;
       }
@@ -1012,7 +1034,7 @@ async function pollNocDashboard() {
       const tblMemBar = document.getElementById('tbl-mem-bar-' + srv.id);
       if (tblMemVal) {
         if (srv.mem_pct != null) {
-          const th = getThreshold(srv.mem_pct);
+          const th = getThreshold(srv.mem_pct, 'mem');
           tblMemVal.textContent = srv.mem_pct.toFixed(1) + '%';
           tblMemVal.style.color = th.color;
         } else {
@@ -1021,7 +1043,7 @@ async function pollNocDashboard() {
         }
       }
       if (tblMemBar && srv.mem_pct != null) {
-        const th = getThreshold(srv.mem_pct);
+        const th = getThreshold(srv.mem_pct, 'mem');
         tblMemBar.style.width = Math.min(srv.mem_pct, 100) + '%';
         tblMemBar.className = 'meter-mini-bar ' + th.cls;
       }
@@ -1039,7 +1061,7 @@ async function pollNocDashboard() {
       const tblDiskBar = document.getElementById('tbl-disk-bar-' + srv.id);
       if (tblDiskVal) {
         if (srv.disk_pct != null) {
-          const th = getThreshold(srv.disk_pct);
+          const th = getThreshold(srv.disk_pct, 'disk');
           tblDiskVal.textContent = srv.disk_pct.toFixed(1) + '%';
           tblDiskVal.style.color = th.color;
         } else {
@@ -1048,7 +1070,7 @@ async function pollNocDashboard() {
         }
       }
       if (tblDiskBar && srv.disk_pct != null) {
-        const th = getThreshold(srv.disk_pct);
+        const th = getThreshold(srv.disk_pct, 'disk');
         tblDiskBar.style.width = Math.min(srv.disk_pct, 100) + '%';
         tblDiskBar.className = 'meter-mini-bar ' + th.cls;
       }
@@ -1113,7 +1135,7 @@ async function pollNocDashboard() {
       const cardCpuBar = document.getElementById('card-cpu-bar-' + srv.id);
       if (cardCpuVal) cardCpuVal.textContent = srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '-';
       if (cardCpuBar && srv.cpu != null) {
-        const th = getThreshold(srv.cpu);
+        const th = getThreshold(srv.cpu, 'cpu');
         cardCpuBar.style.width = Math.min(srv.cpu, 100) + '%';
         cardCpuBar.className = 'meter-bar ' + th.cls;
       }
@@ -1122,7 +1144,7 @@ async function pollNocDashboard() {
       const cardRamBar = document.getElementById('card-ram-bar-' + srv.id);
       if (cardRamVal) cardRamVal.textContent = srv.mem_pct != null ? srv.mem_pct.toFixed(1) + '%' : '-';
       if (cardRamBar && srv.mem_pct != null) {
-        const th = getThreshold(srv.mem_pct);
+        const th = getThreshold(srv.mem_pct, 'mem');
         cardRamBar.style.width = Math.min(srv.mem_pct, 100) + '%';
         cardRamBar.className = 'meter-bar ' + th.cls;
       }

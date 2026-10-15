@@ -2924,6 +2924,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         "all_open_problems": all_open_problems,
         "top_cpu": top_cpu,
         "top_mem": top_mem,
+        "global_thresholds": get_global_thresholds(db),
     })
 
 
@@ -3070,6 +3071,8 @@ def server_add_submit(
     th_disk_danger: str = Form(default=""),
     th_swap_warn: str = Form(default=""),
     th_swap_danger: str = Form(default=""),
+    th_ssh_fail_warn: str = Form(default=""),
+    th_ssh_fail_danger: str = Form(default=""),
     csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
@@ -3098,12 +3101,19 @@ def server_add_submit(
     for k, val in [("cpu_warn", th_cpu_warn), ("cpu_danger", th_cpu_danger),
                    ("ram_warn", th_ram_warn), ("ram_danger", th_ram_danger),
                    ("disk_warn", th_disk_warn), ("disk_danger", th_disk_danger),
-                   ("swap_warn", th_swap_warn), ("swap_danger", th_swap_danger)]:
+                   ("swap_warn", th_swap_warn), ("swap_danger", th_swap_danger),
+                   ("ssh_fail_warn", th_ssh_fail_warn), ("ssh_fail_danger", th_ssh_fail_danger)]:
         if val is not None and str(val).strip() != "":
             try:
-                custom_th[k] = float(val)
+                custom_th[k] = int(val) if "fail" in k else float(val)
             except ValueError:
                 pass
+    # Validasi dan auto-koreksi bila user terbalik mengisi warn > danger
+    for metric in ("cpu", "ram", "disk", "swap", "ssh_fail"):
+        w = custom_th.get(f"{metric}_warn")
+        d = custom_th.get(f"{metric}_danger")
+        if w is not None and d is not None and w > d:
+            custom_th[f"{metric}_warn"], custom_th[f"{metric}_danger"] = d, w
     custom_th_json = json.dumps(custom_th) if custom_th else None
 
     plat_override_clean = (platform_override or "").strip().lower()
@@ -3175,6 +3185,8 @@ def server_edit_submit(
     th_disk_danger: str = Form(default=""),
     th_swap_warn: str = Form(default=""),
     th_swap_danger: str = Form(default=""),
+    th_ssh_fail_warn: str = Form(default=""),
+    th_ssh_fail_danger: str = Form(default=""),
     csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
@@ -3206,12 +3218,19 @@ def server_edit_submit(
         for k, val in [("cpu_warn", th_cpu_warn), ("cpu_danger", th_cpu_danger),
                        ("ram_warn", th_ram_warn), ("ram_danger", th_ram_danger),
                        ("disk_warn", th_disk_warn), ("disk_danger", th_disk_danger),
-                       ("swap_warn", th_swap_warn), ("swap_danger", th_swap_danger)]:
+                       ("swap_warn", th_swap_warn), ("swap_danger", th_swap_danger),
+                       ("ssh_fail_warn", th_ssh_fail_warn), ("ssh_fail_danger", th_ssh_fail_danger)]:
             if val is not None and str(val).strip() != "":
                 try:
-                    custom_th[k] = float(val)
+                    custom_th[k] = int(val) if "fail" in k else float(val)
                 except ValueError:
                     pass
+        # Validasi dan auto-koreksi bila user terbalik mengisi warn > danger
+        for metric in ("cpu", "ram", "disk", "swap", "ssh_fail"):
+            w = custom_th.get(f"{metric}_warn")
+            d = custom_th.get(f"{metric}_danger")
+            if w is not None and d is not None and w > d:
+                custom_th[f"{metric}_warn"], custom_th[f"{metric}_danger"] = d, w
         custom_th_json = json.dumps(custom_th) if custom_th else None
 
         plat_override_clean = (platform_override or "").strip().lower()
@@ -4956,11 +4975,11 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
             }, ensure_ascii=False)
 
         # 4. RAM Kritis / Tinggi
-        if key in ("ram_critical", "ram_high"):
+        if key in ("ram_usage", "ram_critical", "ram_high"):
             pct = kwargs.get("pct", 0)
             used = kwargs.get("used", 0)
             total = kwargs.get("total", 0)
-            is_crit = "critical" in key
+            is_crit = ("critical" in key) or (kwargs.get("severity") == "danger") or (pct >= kwargs.get("threshold", 95))
             return json.dumps({
                 "diagnosa": f"Konsumsi Memori RAM Kritis ({pct:.1f}%)" if is_crit else f"Konsumsi Memori RAM Tinggi ({pct:.1f}%)",
                 "diagnosa_en": f"Critical RAM Memory Consumption ({pct:.1f}%)" if is_crit else f"High RAM Memory Consumption ({pct:.1f}%)",
@@ -4994,11 +5013,11 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
             }, ensure_ascii=False)
 
         # 5. Swap Kritis / Tinggi
-        if key in ("swap_critical", "swap_high"):
+        if key in ("swap_usage", "swap_critical", "swap_high"):
             pct = kwargs.get("pct", 0)
             used = kwargs.get("used", 0)
             total = kwargs.get("total", 0)
-            is_crit = "critical" in key
+            is_crit = ("critical" in key) or (kwargs.get("severity") == "danger") or (pct >= kwargs.get("threshold", 92))
             return json.dumps({
                 "diagnosa": f"Kapasitas Swap Hampir Penuh ({pct:.1f}%)" if is_crit else f"Pemakaian Swap Tinggi ({pct:.1f}%)",
                 "diagnosa_en": f"Swap Space Nearly Full ({pct:.1f}%)" if is_crit else f"High Swap Space Usage ({pct:.1f}%)",
@@ -5032,10 +5051,10 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
             }, ensure_ascii=False)
 
         # 6. CPU Jenuh / Tinggi
-        if key in ("cpu_saturated", "cpu_high"):
+        if key in ("cpu_usage", "cpu_saturated", "cpu_high"):
             cpu_avg = kwargs.get("cpu_avg", 0)
             cpu_max = kwargs.get("cpu_max", 0)
-            is_crit = "saturated" in key
+            is_crit = ("saturated" in key) or (kwargs.get("severity") == "danger") or (cpu_avg >= kwargs.get("threshold", 95))
             return json.dumps({
                 "diagnosa": "Saturasi Beban Prosesor (CPU Saturated)" if is_crit else "Beban Prosesor Tinggi (CPU High)",
                 "diagnosa_en": "Processor Saturation (CPU Saturated)" if is_crit else "High Processor Load (CPU High)",
@@ -5065,12 +5084,12 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
             }, ensure_ascii=False)
 
         # 7. Partisi Disk Kritis / Tinggi
-        if key.startswith("disk_critical:") or key.startswith("disk_high:"):
+        if key.startswith("disk_usage:") or key.startswith("disk_critical:") or key.startswith("disk_high:"):
             mount = kwargs.get("mount") or key.split(":", 1)[1]
             used = kwargs.get("used", 0)
             total = kwargs.get("total", 0)
             pct = kwargs.get("pct", 0)
-            is_crit = "critical" in key
+            is_crit = ("critical" in key) or (kwargs.get("severity") == "danger") or (pct >= kwargs.get("threshold", 95))
             return json.dumps({
                 "diagnosa": f"Penyimpanan Partisi {mount} Hampir Penuh ({pct:.0f}%)" if is_crit else f"Penyimpanan Partisi {mount} Terisi Tinggi ({pct:.0f}%)",
                 "diagnosa_en": f"Disk Partition {mount} Nearly Full ({pct:.0f}%)" if is_crit else f"Disk Partition {mount} High Usage ({pct:.0f}%)",
@@ -5411,19 +5430,19 @@ def _resource_problem_instances(db, srv) -> list:
         pct = mem_used / mem_total * 100
         if pct >= th["ram_danger"]:
             inst.append({
-                "key": "ram_critical", "severity": "danger",
+                "key": "ram_usage", "severity": "danger",
                 "message": (f"RAM HAMPIR PENUH: {pct:.0f}% (ambang {th['ram_danger']:.0f}%) "
                             f"({_fmt_size(mem_used)} / {_fmt_size(mem_total)})"),
                 "tip": RAM_TIP,
-                "context": _build_problem_context("ram_critical", srv, pct=pct, used=mem_used, total=mem_total, threshold=th["ram_danger"]),
+                "context": _build_problem_context("ram_usage", srv, pct=pct, used=mem_used, total=mem_total, threshold=th["ram_danger"], severity="danger"),
             })
         elif pct >= th["ram_warn"]:
             inst.append({
-                "key": "ram_high", "severity": "warning",
+                "key": "ram_usage", "severity": "warning",
                 "message": (f"RAM tinggi: {pct:.0f}% (ambang {th['ram_warn']:.0f}%) "
                             f"({_fmt_size(mem_used)} / {_fmt_size(mem_total)})"),
                 "tip": RAM_TIP,
-                "context": _build_problem_context("ram_high", srv, pct=pct, used=mem_used, total=mem_total, threshold=th["ram_warn"]),
+                "context": _build_problem_context("ram_usage", srv, pct=pct, used=mem_used, total=mem_total, threshold=th["ram_warn"], severity="warning"),
             })
 
     swap_total, swap_used = latest.swap_total or 0, latest.swap_used or 0
@@ -5431,37 +5450,37 @@ def _resource_problem_instances(db, srv) -> list:
         spct = swap_used / swap_total * 100
         if spct >= th["swap_danger"]:
             inst.append({
-                "key": "swap_critical", "severity": "danger",
+                "key": "swap_usage", "severity": "danger",
                 "message": f"Swap hampir penuh: {spct:.0f}% (ambang {th['swap_danger']:.0f}%) — RAM menipis",
                 "tip": SWAP_TIP,
-                "context": _build_problem_context("swap_critical", srv, pct=spct, used=swap_used, total=swap_total, threshold=th["swap_danger"]),
+                "context": _build_problem_context("swap_usage", srv, pct=spct, used=swap_used, total=swap_total, threshold=th["swap_danger"], severity="danger"),
             })
         elif spct >= th["swap_warn"]:
             inst.append({
-                "key": "swap_high", "severity": "warning",
+                "key": "swap_usage", "severity": "warning",
                 "message": f"Swap terpakai tinggi: {spct:.0f}% (ambang {th['swap_warn']:.0f}%)",
                 "tip": SWAP_TIP,
-                "context": _build_problem_context("swap_high", srv, pct=spct, used=swap_used, total=swap_total, threshold=th["swap_warn"]),
+                "context": _build_problem_context("swap_usage", srv, pct=spct, used=swap_used, total=swap_total, threshold=th["swap_warn"], severity="warning"),
             })
 
-    cpu_vals = [s.cpu for s in snaps if s.cpu is not None]
-    if cpu_vals:
-        cpu_avg = sum(cpu_vals) / len(cpu_vals)
-        cpu_max = max(cpu_vals)
-        if cpu_avg >= th["cpu_danger"]:
+    recent_cpu = [s.cpu for s in snaps[:3] if s.cpu is not None]
+    if recent_cpu:
+        cur_cpu = latest.cpu if latest.cpu is not None else recent_cpu[0]
+        recent_avg = sum(recent_cpu) / len(recent_cpu)
+        if recent_avg >= th["cpu_danger"]:
             inst.append({
-                "key": "cpu_saturated", "severity": "danger",
-                "message": (f"CPU jenuh/saturasi: rata-rata {cpu_avg:.0f}% (ambang {th['cpu_danger']:.0f}%) "
-                            f"(puncak {cpu_max:.0f}%)"),
+                "key": "cpu_usage", "severity": "danger",
+                "message": (f"CPU jenuh/saturasi: {cur_cpu:.0f}% (ambang {th['cpu_danger']:.0f}%) "
+                            f"(rata-rata {recent_avg:.0f}%)"),
                 "tip": CPU_TIP,
-                "context": _build_problem_context("cpu_saturated", srv, cpu_avg=cpu_avg, cpu_max=cpu_max, threshold=th["cpu_danger"]),
+                "context": _build_problem_context("cpu_usage", srv, cpu_avg=recent_avg, cpu_max=cur_cpu, threshold=th["cpu_danger"], severity="danger"),
             })
-        elif cpu_avg >= th["cpu_warn"]:
+        elif recent_avg >= th["cpu_warn"]:
             inst.append({
-                "key": "cpu_high", "severity": "warning",
-                "message": f"CPU tinggi: rata-rata {cpu_avg:.0f}% (ambang {th['cpu_warn']:.0f}%) (puncak {cpu_max:.0f}%)",
+                "key": "cpu_usage", "severity": "warning",
+                "message": f"CPU tinggi: {cur_cpu:.0f}% (ambang {th['cpu_warn']:.0f}%) (rata-rata {recent_avg:.0f}%)",
                 "tip": CPU_TIP,
-                "context": _build_problem_context("cpu_high", srv, cpu_avg=cpu_avg, cpu_max=cpu_max, threshold=th["cpu_warn"]),
+                "context": _build_problem_context("cpu_usage", srv, cpu_avg=recent_avg, cpu_max=cur_cpu, threshold=th["cpu_warn"], severity="warning"),
             })
 
     disks = None
@@ -5485,17 +5504,17 @@ def _resource_problem_instances(db, srv) -> list:
         dpct = used / total * 100 if total else 0
         if dpct >= th["disk_danger"]:
             inst.append({
-                "key": f"disk_critical:{mount}", "severity": "danger",
+                "key": f"disk_usage:{mount}", "severity": "danger",
                 "message": f"Disk {mount} HAMPIR PENUH: {dpct:.0f}% (ambang {th['disk_danger']:.0f}%) ({_fmt_size(used)} / {_fmt_size(total)})",
                 "tip": DISK_TIP,
-                "context": _build_problem_context(f"disk_critical:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=th["disk_danger"]),
+                "context": _build_problem_context(f"disk_usage:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=th["disk_danger"], severity="danger"),
             })
         elif dpct >= th["disk_warn"]:
             inst.append({
-                "key": f"disk_high:{mount}", "severity": "warning",
+                "key": f"disk_usage:{mount}", "severity": "warning",
                 "message": f"Disk {mount} terisi tinggi: {dpct:.0f}% (ambang {th['disk_warn']:.0f}%)",
                 "tip": DISK_TIP,
-                "context": _build_problem_context(f"disk_high:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=th["disk_warn"]),
+                "context": _build_problem_context(f"disk_usage:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=th["disk_warn"], severity="warning"),
             })
     return inst
 
@@ -5670,19 +5689,16 @@ templates.env.globals["_rel_dt"] = _rel_dt
 def _problem_component(key: str) -> str:
     if not key:
         return "Sistem"
-    if key.startswith("service_down:"):
-        svc = key.split(":", 1)[1]
-        return f"Layanan ({svc})"
-    if key.startswith("svc_no_data:"):
+    if key.startswith("service_down:") or key.startswith("svc_no_data:"):
         svc = key.split(":", 1)[1]
         return f"Layanan ({svc})"
     if key == "agent_stale":
         return "Agen / Host"
-    if key in ("cpu_high", "cpu_load"):
+    if key in ("cpu_usage", "cpu_high", "cpu_saturated", "cpu_load"):
         return "Processor (CPU)"
-    if key in ("mem_high", "swap_high"):
+    if key in ("ram_usage", "ram_high", "ram_critical", "swap_usage", "swap_high", "swap_critical", "mem_high"):
         return "Memori (RAM)"
-    if key.startswith("disk_high:") or key.startswith("disk_critical:") or key.startswith("disk_ro:"):
+    if key.startswith("disk_usage:") or key.startswith("disk_high:") or key.startswith("disk_critical:") or key.startswith("disk_ro:"):
         mount = key.split(":", 1)[1] if ":" in key else ""
         return f"Penyimpanan ({mount})" if mount else "Penyimpanan (Disk)"
     if key in ("security_danger", "failed_logins"):
@@ -5798,6 +5814,35 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             db.commit()
         else:
             instances = []
+
+    # Migrasi transparan key lama (ram_high/ram_critical, dll) ke key terpadu (ram_usage, dll)
+    LEGACY_KEY_MAP = {
+        "ram_high": "ram_usage",
+        "ram_critical": "ram_usage",
+        "cpu_high": "cpu_usage",
+        "cpu_saturated": "cpu_usage",
+        "swap_high": "swap_usage",
+        "swap_critical": "swap_usage",
+    }
+    open_legacy = (
+        db.query(ServerProblem)
+        .filter(ServerProblem.server_id == srv.id, ServerProblem.resolved_at.is_(None))
+        .all()
+    )
+    for r in open_legacy:
+        tgt_key = LEGACY_KEY_MAP.get(r.key)
+        if not tgt_key:
+            if r.key.startswith("disk_high:"):
+                tgt_key = "disk_usage:" + r.key.split(":", 1)[1]
+            elif r.key.startswith("disk_critical:"):
+                tgt_key = "disk_usage:" + r.key.split(":", 1)[1]
+        if tgt_key:
+            dupe = next((x for x in open_legacy if x.key == tgt_key and x.id != r.id), None)
+            if dupe:
+                db.delete(r)
+            else:
+                r.key = tgt_key
+
     current_keys = {p["key"] for p in instances}
 
     svc_map = {}
@@ -6570,9 +6615,30 @@ def api_alerts(
     unack_average = [r for r in open_average if r.acknowledged_at is None]
     unack_warning = [r for r in open_warning if r.acknowledged_at is None]
 
+    # Filter Anti-Spike: Beban resource (CPU/RAM/Swap) yang menyentuh ambang batas
+    # ditahan selama 60 detik sebelum memicu Alert Banner & Audio darurat
+    RESOURCE_ALERT_DELAY_SECS = 60
+
+    def _is_alert_banner_firing(r, now_dt):
+        key = getattr(r, "key", "") or ""
+        if key.startswith(("ram_", "cpu_", "swap_")):
+            st = getattr(r, "started_at", None)
+            if st and (now_dt - st).total_seconds() < RESOURCE_ALERT_DELAY_SECS:
+                return False
+        return True
+
+    firing_danger = [r for r in unack_danger if _is_alert_banner_firing(r, now)]
+    firing_average = [r for r in unack_average if _is_alert_banner_firing(r, now)]
+    firing_warning = [r for r in unack_warning if _is_alert_banner_firing(r, now)]
+
     rank = {"danger": 4, "average": 3, "warning": 2, "info": 1}
     unack_operational = sorted(
         unack_danger + unack_average + unack_warning,
+        key=lambda r: (rank.get(r.severity, 0), r.started_at),
+        reverse=True,
+    )
+    firing_operational = sorted(
+        firing_danger + firing_average + firing_warning,
         key=lambda r: (rank.get(r.severity, 0), r.started_at),
         reverse=True,
     )
@@ -6581,6 +6647,7 @@ def api_alerts(
     average_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_average]
     warning_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_warning]
     all_unack_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_operational]
+    firing_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in firing_operational]
 
     danger_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in open_danger if r.server_id}))
     average_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in open_average if r.server_id}))
@@ -6618,11 +6685,16 @@ def api_alerts(
         "danger_alerts": danger_alerts,
         "average_alerts": average_alerts,
         "warning_alerts": warning_alerts,
+        "firing_alerts": firing_alerts,
         "unack_count": len(danger_alerts),
         "unack_danger_count": len(danger_alerts),
         "unack_average_count": len(average_alerts),
         "unack_warning_count": len(warning_alerts),
         "unack_total_count": len(all_unack_alerts),
+        "firing_danger_count": len(firing_danger),
+        "firing_average_count": len(firing_average),
+        "firing_warning_count": len(firing_warning),
+        "firing_total_count": len(firing_operational),
         "open_danger_count": len(open_danger),
         "open_average_count": len(open_average),
         "open_warning_count": len(open_warning),
