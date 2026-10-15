@@ -2971,9 +2971,7 @@ function showTab(name) {
   if (name === 'berkas' && typeof initFileManager === 'function') {
     initFileManager();
   }
-  if (['akun', 'ports', 'ssl', 'cron', 'firewall'].includes(name)) {
-    initServicesTabPagination();
-  }
+  initServicesTabPagination();
 }
 document.querySelectorAll('#detail-tabs .tab').forEach(b =>
   b.addEventListener('click', () => showTab(b.dataset.tab)));
@@ -3284,9 +3282,6 @@ function renderTopProcs(data) {
     });
   }
 
-  // Terapkan Limit (20, 50, 100, all)
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  const totalCount = filtered.length;
   // Terapkan Paginasi & Pencarian
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const totalCount = filtered.length;
