@@ -889,7 +889,6 @@
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>&nbsp;Kunci
         </button>
         <span id="apt-status" class="terminal-status-badge"></span>
-        <button type="button" class="terminal-btn-icon terminal-btn-reconnect" id="term-reconnect-btn" onclick="openTerminalWithCommand(null)" style="display:none" title="Buka Sesi Shell Baru">&#8635;&nbsp;Sambung Ulang</button>
         <button type="button" class="terminal-btn-icon" onclick="getTerm().clearScreen()" title="Bersihkan Layar Konsol">&#10005;&nbsp;Clear</button>
         <button type="button" class="terminal-btn-icon" id="term-fullscreen-btn" onclick="getTerm().toggleFullscreen()" title="Layar Penuh (Full Screen)">
           <svg id="term-fullscreen-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>&nbsp;<span id="term-fullscreen-text">Full Screen</span>
@@ -2924,6 +2923,9 @@
         <span id="apt-task-footer-status" style="font-size:12px;color:var(--dim)">Menjalankan proses...</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
+        <button type="button" id="apt-task-upgrade-btn" class="btn btn-primary btn-sm" onclick="triggerUpgradeFromModal()" style="display:none;align-items:center;gap:5px" title="Tingkatkan paket OS yang tersedia">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><polyline points="18 15 12 9 6 15"></polyline></svg><span id="apt-task-upgrade-label">Upgrade</span>
+        </button>
         <button type="button" id="apt-task-close-btn" class="btn btn-ghost btn-sm" onclick="closeAptTaskModal()">
           Tutup
         </button>
@@ -4244,6 +4246,7 @@ function renderApt(data) {
     upBtn.setAttribute('data-tooltip-orig', tipText);
     upBtn.title = tipText;
   }
+  if (typeof updateAptTaskModalUpgradeBtn === 'function') updateAptTaskModalUpgradeBtn(aptTaskKind);
 }
 
 function escapeHtml(s) {
@@ -4338,6 +4341,7 @@ function openAptTaskModal(kind) {
   if (aptTaskKind) {
     updateAptTaskTitles(aptTaskKind);
   }
+  updateAptTaskModalUpgradeBtn(aptTaskKind);
 
   setTimeout(() => {
     if (aptTaskFitAddon && aptTaskXterm) {
@@ -4419,6 +4423,48 @@ function updateAptTaskActiveBanner() {
   }
 }
 
+function updateAptTaskModalUpgradeBtn(kind) {
+  const upBtn = document.getElementById('apt-task-upgrade-btn');
+  const upLabel = document.getElementById('apt-task-upgrade-label');
+  if (!upBtn) return;
+  const isEn = isEnPage();
+  const currentKind = kind || aptTaskKind;
+
+  if (currentKind === 'APT_UPDATE') {
+    upBtn.style.display = 'inline-flex';
+    if (aptRunning) {
+      upBtn.disabled = true;
+      upBtn.style.opacity = '0.55';
+      upBtn.style.cursor = 'not-allowed';
+      if (upLabel) upLabel.textContent = isEn ? 'Upgrade' : 'Upgrade';
+      upBtn.title = isEn ? 'Waiting for package update to complete...' : 'Menunggu proses update paket selesai...';
+    } else {
+      const count = (typeof aptLastCount !== 'undefined') ? aptLastCount : 0;
+      if (count > 0) {
+        upBtn.disabled = false;
+        upBtn.style.opacity = '1';
+        upBtn.style.cursor = 'pointer';
+        if (upLabel) upLabel.textContent = isEn ? `Upgrade (${count})` : `Upgrade (${count})`;
+        upBtn.title = isEn ? `Upgrade ${count} available OS packages` : `Tingkatkan ${count} paket OS yang tersedia`;
+      } else {
+        upBtn.disabled = true;
+        upBtn.style.opacity = '0.45';
+        upBtn.style.cursor = 'not-allowed';
+        if (upLabel) upLabel.textContent = isEn ? 'All Up to Date' : 'Semua Mutakhir';
+        upBtn.title = isEn ? 'All OS packages are up to date' : 'Semua paket OS sudah mutakhir';
+      }
+    }
+  } else {
+    // Sembunyikan saat sedang menjalankan upgrade atau tugas lainnya
+    upBtn.style.display = 'none';
+  }
+}
+
+function triggerUpgradeFromModal() {
+  if (aptRunning) return;
+  triggerUpgradeOS();
+}
+
 function setAptTaskModalState(state, kind, extra) {
   const badge = document.getElementById('apt-task-status-badge');
   const foot = document.getElementById('apt-task-footer-status');
@@ -4468,6 +4514,7 @@ function setAptTaskModalState(state, kind, extra) {
       closeBtn.textContent = isEn ? 'Close' : 'Tutup';
     }
   }
+  updateAptTaskModalUpgradeBtn(kind || aptTaskKind);
   updateAptTaskActiveBanner();
 }
 
@@ -4489,7 +4536,6 @@ class WebTerminal {
     this.containerEl = document.getElementById('xterm-container');
     this.windowEl = document.getElementById('apt-live');
     this.statusEl = document.getElementById('apt-status');
-    this.reconnectBtn = document.getElementById('term-reconnect-btn');
     this.titleEl = document.getElementById('term-title');
 
     this.ws = null;
@@ -4802,9 +4848,6 @@ class WebTerminal {
   }
 
   status(html, color, dotType) {
-    if (this.reconnectBtn) {
-      this.reconnectBtn.style.display = (this.state === 'closed' && !this.aptActive) ? 'inline-flex' : 'none';
-    }
     if (!this.statusEl) return;
     const dotCls = dotType || (this.state === 'live' ? 'active' : (this.state === 'connecting' ? 'busy' : 'closed'));
     this.statusEl.style.color = color || 'var(--blue)';
@@ -5467,6 +5510,7 @@ async function aptFollow(rid, kind, startedMs) {
       if (lbl) {
         lbl.textContent = (aptArmed ? `Upgrade (${apt.upgradable})` : 'Upgrade');
       }
+      updateAptTaskModalUpgradeBtn(aptTaskKind);
     } else {
       aptSetState('ok', isEn ? 'Task completed.' : 'Tugas selesai.');
     }
