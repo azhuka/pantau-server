@@ -377,6 +377,60 @@
     box-sizing: border-box !important;
   }
 }
+
+/* Tombol Kiosk / Overwatch di Sudut Kanan Layar */
+.kiosk-toggle-btn {
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(26, 35, 54, 0.88);
+  border: 1px solid var(--border);
+  color: var(--dim);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all .18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+.kiosk-toggle-btn:hover {
+  color: #fff;
+  background: rgba(37, 99, 235, 0.88);
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
+  transform: translateY(-1px);
+}
+.kiosk-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+/* Tampilan saat Mode Kiosk / Overwatch Aktif */
+body.kiosk-mode .kiosk-toggle-btn {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--dim);
+  opacity: 0.65;
+}
+body.kiosk-mode .kiosk-toggle-btn:hover {
+  opacity: 1;
+  background: rgba(239, 68, 68, 0.88);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.5);
+}
+body.kiosk-mode .topbar {
+  margin-bottom: 14px;
+}
+body.show-alert-banner .kiosk-toggle-btn {
+  top: 58px;
+}
 </style>
 
 <div class="topbar">
@@ -384,10 +438,22 @@
     <h2 style="display:flex;align-items:center;gap:10px;font-size:20px">
       Dashboard
       <span id="dash-live-indicator" class="badge badge-up" style="font-size:11px;padding:2px 7px;font-weight:normal" title="Metrik diperbarui otomatis setiap 10 detik">● live</span>
+      <span id="dash-kiosk-badge" class="badge" style="display:none;background:rgba(56,189,248,0.15);color:var(--blue);border:1px solid rgba(56,189,248,0.35);font-size:10px;padding:1px 7px;letter-spacing:0.5px">OVERWATCH</span>
     </h2>
     <div style="font-size:13px;color:var(--dim);margin-top:2px">Ringkasan kondisi terkini seluruh server klien &amp; metrik operasional terpusat.</div>
   </div>
 </div>
+
+<button type="button" id="kioskToggleBtn" class="kiosk-toggle-btn" onclick="toggleKioskMode()" title="Mode Overwatch / Kiosk (Monitor Kedua)" aria-label="Mode Overwatch">
+  <!-- Ikon Masuk Kiosk Mode (Expand) -->
+  <svg id="kioskIconEnter" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+  </svg>
+  <!-- Ikon Keluar Kiosk Mode / Kembali ke Normal (Compress) -->
+  <svg id="kioskIconExit" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+  </svg>
+</button>
 
 <!-- 1. Global KPI Banner (Zabbix-Style Alert Strip) -->
 <div class="dash-kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:10px;margin-bottom:12px">
@@ -1744,5 +1810,83 @@ async function pollNocDashboard() {
 }
 setInterval(pollNocDashboard, 5000);
 setTimeout(pollNocDashboard, 500);
+
+// ===================================================================
+// KIOSK / OVERWATCH MODE (Monitor Kedua / NOC Wallboard)
+// ===================================================================
+function setKioskMode(active, updateUrl = true) {
+  const isKiosk = Boolean(active);
+  const body = document.body;
+  const btn = document.getElementById('kioskToggleBtn');
+  const iconEnter = document.getElementById('kioskIconEnter');
+  const iconExit = document.getElementById('kioskIconExit');
+  const badge = document.getElementById('dash-kiosk-badge');
+
+  if (isKiosk) {
+    body.classList.add('kiosk-mode');
+    sessionStorage.setItem('pantau_kiosk_mode', '1');
+    if (iconEnter) iconEnter.style.display = 'none';
+    if (iconExit) iconExit.style.display = 'inline-block';
+    if (badge) badge.style.display = 'inline-flex';
+    if (btn) {
+      btn.title = 'Mode Normal / Keluar dari Overwatch (Esc)';
+      btn.setAttribute('aria-label', 'Mode Normal');
+    }
+    if (updateUrl) {
+      try {
+        const url = new URL(window.location);
+        url.searchParams.set('kiosk', '1');
+        window.history.replaceState({}, '', url);
+      } catch (e) {}
+    }
+  } else {
+    body.classList.remove('kiosk-mode');
+    sessionStorage.removeItem('pantau_kiosk_mode');
+    if (iconEnter) iconEnter.style.display = 'inline-block';
+    if (iconExit) iconExit.style.display = 'none';
+    if (badge) badge.style.display = 'none';
+    if (btn) {
+      btn.title = 'Mode Overwatch / Kiosk (Monitor Kedua)';
+      btn.setAttribute('aria-label', 'Mode Overwatch');
+    }
+    if (updateUrl) {
+      try {
+        const url = new URL(window.location);
+        url.searchParams.delete('kiosk');
+        window.history.replaceState({}, '', url);
+      } catch (e) {}
+    }
+  }
+}
+
+function toggleKioskMode() {
+  const isKiosk = document.body.classList.contains('kiosk-mode');
+  setKioskMode(!isKiosk, true);
+}
+
+// Inisialisasi awal saat halaman dimuat (mendukung URL ?kiosk=1 dan sessionStorage)
+(function initKioskMode() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramKiosk = urlParams.get('kiosk');
+    if (paramKiosk === '1' || paramKiosk === 'true') {
+      setKioskMode(true, false);
+    } else if (paramKiosk === '0' || paramKiosk === 'false') {
+      setKioskMode(false, false);
+    } else if (sessionStorage.getItem('pantau_kiosk_mode') === '1') {
+      setKioskMode(true, false);
+    }
+  } catch (e) {}
+})();
+
+// Shortcut tombol Escape untuk kembali ke mode normal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.body.classList.contains('kiosk-mode')) {
+    const openModal = document.querySelector('.modal[style*="display: flex"], [id$="-modal"][style*="display: flex"]');
+    if (!openModal) {
+      setKioskMode(false, true);
+    }
+  }
+});
 </script>
 {% endblock %}

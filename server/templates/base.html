@@ -445,8 +445,22 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
   body.sb-collapsed .nav-label{display:none}
   body.sb-collapsed .nav-section{display:none}
   body.sb-collapsed .sidebar-footer{display:none}
-  body.sb-collapsed .main{margin-left:64px}
   .mob-header, .mob-drawer-backdrop, .mob-drawer-close{display:none !important}
+}
+
+/* Mode Kiosk / Overwatch (NOC Wallboard / Monitor Kedua) */
+body.kiosk-mode .sidebar,
+body.kiosk-mode .mob-header,
+body.kiosk-mode .mob-drawer-backdrop,
+body.kiosk-mode .mob-drawer-close {
+  display: none !important;
+}
+body.kiosk-mode .main {
+  margin-left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 16px 24px !important;
+  transition: margin-left .2s cubic-bezier(0.4, 0, 0.2, 1), padding .2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media(max-width:1080px){
