@@ -2263,35 +2263,40 @@ def api_commands_pending(
                 .first()
             )
             if not in_flight:
-                recent_failed = (
+                # Cegah loop berulang: jika sudah ada perintah update dalam 5 menit terakhir, jangan dispatch lagi
+                recent_cmd = (
                     db.query(Command)
                     .filter(
                         Command.server_id == server.id,
                         Command.action == "update_agent",
-                        Command.status == "failed",
-                        Command.created_at > datetime.utcnow() - timedelta(minutes=15)
+                        Command.created_at > datetime.utcnow() - timedelta(minutes=5)
                     )
                     .first()
                 )
-                if not recent_failed:
-                    _, sha256_hash, version = _get_agent_code_and_sha256()
-                    base_url = str(request.base_url).rstrip("/")
-                    ota_params = {
-                        "url": f"{base_url}/api/agent/latest-code",
-                        "sha256": sha256_hash,
-                        "version": version,
-                    }
-                    auto_cmd = Command(
-                        server_id=server.id,
-                        action="update_agent",
-                        params=json.dumps(ota_params),
-                        issued_by="system (auto-update)",
-                        status="pending",
-                    )
-                    db.add(auto_cmd)
-                    db.commit()
-                    pending.append(auto_cmd)
-                    logger.info("[AUTO-OTA] Otomatis mendispatch self-update agen v%s ke %s (ID %s)", version, server.hostname, server.id)
+                if not recent_cmd:
+                    try:
+                        _, sha256_hash, file_ver = _get_agent_code_and_sha256()
+                        # Hanya kirim pembaruan jika versi berkas agen di dashboard memang lebih baru dari versi agen saat ini
+                        if _is_agent_outdated(extras.agent_version, file_ver):
+                            base_url = str(request.base_url).rstrip("/")
+                            ota_params = {
+                                "url": f"{base_url}/api/agent/latest-code",
+                                "sha256": sha256_hash,
+                                "version": file_ver,
+                            }
+                            auto_cmd = Command(
+                                server_id=server.id,
+                                action="update_agent",
+                                params=json.dumps(ota_params),
+                                issued_by="system (auto-update)",
+                                status="pending",
+                            )
+                            db.add(auto_cmd)
+                            db.commit()
+                            pending.append(auto_cmd)
+                            logger.info("[AUTO-OTA] Otomatis mendispatch self-update agen v%s ke %s (ID %s)", file_ver, server.hostname, server.id)
+                    except Exception as ota_err:
+                        logger.warning("[AUTO-OTA] Gagal memproses auto-OTA untuk %s: %s", server.hostname, ota_err)
 
     return {
         "commands": [
@@ -3949,7 +3954,10 @@ def _get_agent_code_and_sha256() -> tuple[bytes, str, str]:
             try:
                 data = p.read_bytes()
                 h = hashlib.sha256(data).hexdigest()
-                return data, h, settings.APP_VERSION
+                code_str = data.decode("utf-8", errors="replace")
+                m = re.search(r'AGENT_VERSION\s*=\s*["\']([^"\']+)["\']', code_str)
+                file_version = m.group(1) if m else settings.APP_VERSION
+                return data, h, file_version
             except Exception as e:
                 logger.warning(f"[AGENT CODE] Gagal membaca {p}: {e}")
     raise HTTPException(status_code=404, detail="Berkas agen tidak ditemukan di dashboard")
