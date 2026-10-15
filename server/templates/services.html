@@ -1781,15 +1781,9 @@
       </span>
     </div>
 
-    <!-- Dropdown Limit / Pagination Bagian Atas -->
+    <!-- Info Tips Urut Kolom Bagian Atas -->
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
-      <select id="proc-limit-top" onchange="setProcLimit(this.value)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
-        <option value="20" selected>20 proses</option>
-        <option value="50">50 proses</option>
-        <option value="100">100 proses</option>
-        <option value="all">Semua proses</option>
-      </select>
+      <span style="font-size:11px;color:var(--dim)">Tip: Klik header kolom untuk membalikkan urutan (▲ / ▼)</span>
     </div>
   </div>
 
@@ -1825,23 +1819,6 @@
         <tr><td colspan="{{ 7 if user.has_perm('can_processes') else 6 }}" class="empty-msg">Memuat data proses…</td></tr>
       </tbody>
     </table>
-  </div>
-
-  <!-- Footer Task Manager: Summary Info & Dropdown Pagination Bagian Bawah -->
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:11.5px;color:var(--dim);flex-wrap:wrap;gap:12px">
-    <div style="display:flex;align-items:center;gap:14px">
-      <span id="proc-showing-summary">Menampilkan 0 proses</span>
-      <span style="font-size:11px">Tip: Klik nama kolom header untuk membalikkan urutan (▲ Ringan/A-Z, ▼ Berat/Z-A)</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
-      <select id="proc-limit-bottom" onchange="setProcLimit(this.value)" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
-        <option value="20" selected>20 proses</option>
-        <option value="50">50 proses</option>
-        <option value="100">100 proses</option>
-        <option value="all">Semua proses</option>
-      </select>
-    </div>
   </div>
 </div>
 </div>
@@ -2008,7 +1985,7 @@
     </div>
     {% if cron_jobs and cron_jobs.timers %}
     <div style="overflow-x:auto">
-      <table>
+      <table id="systemd-timers-table">
         <thead>
           <tr>
             <th title="Nama unit timer systemd">Nama Timer</th>
@@ -2433,7 +2410,7 @@
       <span class="badge badge-muted" id="acc-action-badge">{{ acc_acts|length }} tindakan</span>
     </div>
     <div class="table-wrap" style="overflow-x:auto">
-      <table class="table" style="margin:0;width:100%">
+      <table class="table" id="acc-action-table" style="margin:0;width:100%">
         <thead>
           <tr>
             <th class="col-time-detailed" style="white-space:nowrap;width:195px;min-width:185px">Waktu</th>
@@ -2446,7 +2423,7 @@
         </thead>
         <tbody id="acc-action-tbody">
           {% if acc_acts %}
-            {% for a in acc_acts[:25] %}
+            {% for a in acc_acts %}
             <tr>
               <td class="mono col-time-detailed" style="white-space:nowrap">{{ _fmt_dt(a.time) if a.time and a.time.strftime is defined else (a.time or '—') }}</td>
               <td><span class="mono">{{ a.user or '-' }}</span></td>
@@ -2694,7 +2671,7 @@
     </div>
     {% if system_logs %}
     <div style="overflow-x:auto">
-      <table>
+      <table id="tbl-system-logs">
         <thead>
           <tr>
             <th style="width:190px" title="Waktu kejadian tercatat di sistem">Waktu (Terbaru di Atas)</th>
@@ -3005,20 +2982,66 @@ document.querySelectorAll('#detail-tabs .tab').forEach(b =>
 let _servicesTabPagination = {};
 function initServicesTabPagination() {
   if (typeof attachTablePagination !== 'function') return;
+
+  // 1. Tab Layanan
+  if (document.getElementById('tbl-services') && !_servicesTabPagination['services']) {
+    _servicesTabPagination['services'] = attachTablePagination('#tbl-services', { unitLabel: 'layanan', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 100, 'all'] });
+  }
+  // 2. Tab Manajer Tugas (Proses)
+  if (document.getElementById('tbl-task-manager') && !_servicesTabPagination['task-manager']) {
+    _servicesTabPagination['task-manager'] = attachTablePagination('#tbl-task-manager', { unitLabel: 'proses', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 100, 'all'] });
+  }
+  // 3. Tab Akun (Linux User Accounts)
   if (document.getElementById('acc-table') && !_servicesTabPagination['acc']) {
     _servicesTabPagination['acc'] = attachTablePagination('#acc-table', { unitLabel: 'akun', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
   }
+  // 4. Tab Akun (Riwayat Tindakan Akun)
+  if (document.getElementById('acc-action-table') && !_servicesTabPagination['acc-action']) {
+    _servicesTabPagination['acc-action'] = attachTablePagination('#acc-action-table', { unitLabel: 'tindakan', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+  }
+  // 5. Tab Port (Listening Sockets)
   if (document.getElementById('ports-table') && !_servicesTabPagination['ports']) {
     _servicesTabPagination['ports'] = attachTablePagination('#ports-table', { unitLabel: 'port', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
   }
+  // 6. Tab Cron (Crontab Jobs)
   if (document.getElementById('cron-table') && !_servicesTabPagination['cron']) {
     _servicesTabPagination['cron'] = attachTablePagination('#cron-table', { unitLabel: 'tugas', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
   }
+  // 7. Tab Cron (Systemd Timers)
+  if (document.getElementById('systemd-timers-table') && !_servicesTabPagination['timers']) {
+    _servicesTabPagination['timers'] = attachTablePagination('#systemd-timers-table', { unitLabel: 'timer', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+  }
+  // 8. Tab SSL (Certificates)
   if (document.getElementById('ssl-table') && !_servicesTabPagination['ssl']) {
     _servicesTabPagination['ssl'] = attachTablePagination('#ssl-table', { unitLabel: 'sertifikat', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
   }
+  // 9. Tab Firewall (Rules)
+  if (document.getElementById('fw-rules-table') && !_servicesTabPagination['fw-rules']) {
+    _servicesTabPagination['fw-rules'] = attachTablePagination('#fw-rules-table', { unitLabel: 'aturan', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+  }
+  // 10. Tab Firewall (Blocked IPs)
   if (document.getElementById('fw-blocked-table') && !_servicesTabPagination['fw-blocked']) {
     _servicesTabPagination['fw-blocked'] = attachTablePagination('#fw-blocked-table', { unitLabel: 'baris', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+  }
+  // 11. Tab Logging (System Journal Errors)
+  if (document.getElementById('tbl-system-logs') && !_servicesTabPagination['syslog']) {
+    _servicesTabPagination['syslog'] = attachTablePagination('#tbl-system-logs', { unitLabel: 'log', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 100, 'all'] });
+  }
+  // 12. Tab Kinerja (Partisi Disks)
+  if (document.getElementById('disks-table') && !_servicesTabPagination['disks']) {
+    _servicesTabPagination['disks'] = attachTablePagination('#disks-table', { unitLabel: 'disk', defaultLimit: 10, pageSizeOptions: [5, 10, 25, 'all'] });
+  }
+  // 13. Tab Kinerja (Antarmuka Jaringan)
+  if (document.getElementById('net-table') && !_servicesTabPagination['net']) {
+    _servicesTabPagination['net'] = attachTablePagination('#net-table', { unitLabel: 'antarmuka', defaultLimit: 10, pageSizeOptions: [5, 10, 25, 'all'] });
+  }
+  // 14. Tab Spesifikasi (Perangkat Penyimpanan)
+  if (document.getElementById('spec-disks-table') && !_servicesTabPagination['spec-disks']) {
+    _servicesTabPagination['spec-disks'] = attachTablePagination('#spec-disks-table', { unitLabel: 'disk', defaultLimit: 10, pageSizeOptions: [5, 10, 25, 'all'] });
+  }
+  // 15. Tab Spesifikasi (Antarmuka Jaringan)
+  if (document.getElementById('spec-ifaces-table') && !_servicesTabPagination['spec-ifaces']) {
+    _servicesTabPagination['spec-ifaces'] = attachTablePagination('#spec-ifaces-table', { unitLabel: 'antarmuka', defaultLimit: 10, pageSizeOptions: [5, 10, 25, 'all'] });
   }
 }
 
@@ -3264,25 +3287,23 @@ function renderTopProcs(data) {
   // Terapkan Limit (20, 50, 100, all)
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const totalCount = filtered.length;
-  let displayList = filtered;
-  if (procLimit !== 'all') {
-    const maxN = parseInt(procLimit, 10) || 20;
-    displayList = filtered.slice(0, maxN);
-  }
+  // Terapkan Paginasi & Pencarian
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const totalCount = filtered.length;
 
-  if (totalBadge) totalBadge.textContent = `${displayList.length} ${isEn ? 'processes' : 'proses'}`;
-  if (summaryEl) summaryEl.textContent = isEn
-    ? `Showing ${displayList.length} of total ${allList.length} system processes (Limit: ${procLimit === 'all' ? 'All' : procLimit})`
-    : `Menampilkan ${displayList.length} dari total ${allList.length} proses sistem (Limit: ${procLimit === 'all' ? 'Semua' : procLimit})`;
+  if (totalBadge) totalBadge.textContent = `${totalCount} ${isEn ? 'processes' : 'proses'}`;
 
   if (!tbody) return;
 
-  if (displayList.length === 0) {
+  if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="${CAN_PROCESSES ? 7 : 6}" class="empty-msg" style="text-align:center;padding:24px;color:var(--dim)">${isEn ? 'No Processes' : 'Tidak Ada Proses'}</td></tr>`;
+    if (_servicesTabPagination['task-manager']) {
+      _servicesTabPagination['task-manager'].update();
+    }
     return;
   }
 
-  tbody.innerHTML = displayList.map(p => {
+  tbody.innerHTML = filtered.map(p => {
     const isProtected = (p.pid <= 1 || p.comm === 'sshd' || p.comm === 'agent_pantau');
     const stateChar = (p.state || 'S').toUpperCase().charAt(0);
     let stateBadge = `<span class="badge badge-muted" title="${isEn ? 'Sleeping / Waiting' : 'Sleeping / Menunggu'}">S</span>`;
@@ -3346,6 +3367,9 @@ function renderTopProcs(data) {
       ${CAN_PROCESSES ? `<td style="text-align:center">${actionBtns}</td>` : ''}
     </tr>`;
   }).join('');
+  if (_servicesTabPagination['task-manager']) {
+    _servicesTabPagination['task-manager'].update();
+  }
   if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
     applyAppLang();
   }
@@ -6096,7 +6120,7 @@ function renderActionHistory(actions) {
       accTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">' +
         (isEn ? 'No user account action history on this server.' : 'Belum ada riwayat tindakan akun pengguna di server ini.') + '</td></tr>';
     } else {
-      accTbody.innerHTML = accActions.slice(0, 25).map(a => {
+      accTbody.innerHTML = accActions.map(a => {
         const f = formatActionRowI18n(a, isEn);
         return `<tr>
           <td class="mono col-time-detailed" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
@@ -6107,6 +6131,9 @@ function renderActionHistory(actions) {
           <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">${escHtml(f.res)}</td>
         </tr>`;
       }).join('');
+    }
+    if (_servicesTabPagination['acc-action']) {
+      _servicesTabPagination['acc-action'].update();
     }
   }
 }
@@ -6827,6 +6854,9 @@ function renderSys(data) {
       + '<td class="mono" style="font-size:12px">' + ioText + '</td>'
       + '<td class="mono" style="font-size:12px">' + utilText + '</td></tr>';
   }).join('');
+  if (_servicesTabPagination['disks']) {
+    _servicesTabPagination['disks'].update();
+  }
 
   // jaringan
   const net = sys.net || [];
@@ -6855,6 +6885,9 @@ function renderSys(data) {
       + '<td class="mono" style="font-size:12px">' + rxRateStr + '</td>'
       + '<td class="mono" style="font-size:12px">' + txRateStr + '</td></tr>';
   }).join('');
+  if (_servicesTabPagination['net']) {
+    _servicesTabPagination['net'].update();
+  }
 
   // akun
   const acc = data.accounts || [];
@@ -6890,6 +6923,9 @@ function renderSys(data) {
       + '</td>'
       + '<td><div style="display:flex;gap:4px;flex-wrap:wrap">' + actions + '</div></td></tr>';
   }).join('');
+  if (_servicesTabPagination['acc']) {
+    _servicesTabPagination['acc'].update();
+  }
 
   const accBadge = document.getElementById('acc-count-badge');
   if (accBadge) accBadge.textContent = acc.length + (isEn ? (acc.length === 1 ? ' Account' : ' Accounts') : ' Akun');

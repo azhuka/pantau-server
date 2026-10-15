@@ -1477,5 +1477,15 @@ async function disableAdmin2fa(uid, username) {
     alert('Gagal mematikan 2FA: ' + (err.message || err));
   }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('users-table') && typeof attachTablePagination === 'function') {
+    attachTablePagination('#users-table', {
+      unitLabel: 'pengguna',
+      defaultLimit: 25,
+      pageSizeOptions: [10, 25, 50, 100, 'all']
+    });
+  }
+});
 </script>
 {% endblock %}

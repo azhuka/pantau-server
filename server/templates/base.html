@@ -2635,6 +2635,16 @@ function attachTablePagination(target, options = {}) {
       else if (unitLabel === 'socket') displayUnit = 'sockets';
       else if (unitLabel === 'tugas') displayUnit = 'tasks';
       else if (unitLabel === 'sertifikat') displayUnit = 'certificates';
+      else if (unitLabel === 'server') displayUnit = 'servers';
+      else if (unitLabel === 'layanan') displayUnit = 'services';
+      else if (unitLabel === 'proses') displayUnit = 'processes';
+      else if (unitLabel === 'aturan') displayUnit = 'rules';
+      else if (unitLabel === 'port') displayUnit = 'ports';
+      else if (unitLabel === 'disk' || unitLabel === 'partisi') displayUnit = 'disks';
+      else if (unitLabel === 'antarmuka') displayUnit = 'interfaces';
+      else if (unitLabel === 'aktivitas') displayUnit = 'activities';
+      else if (unitLabel === 'log') displayUnit = 'logs';
+      else if (unitLabel === 'timer') displayUnit = 'timers';
       else if (unitLabel === 'baris') displayUnit = 'rows';
     }
 
@@ -2669,6 +2679,14 @@ function attachTablePagination(target, options = {}) {
         : `Halaman ${currentPage} dari ${totalPages}`;
       prevBtn.disabled = (currentPage <= 1);
       nextBtn.disabled = (currentPage >= totalPages);
+    }
+
+    if (typeof options.onUpdate === 'function') {
+      try {
+        options.onUpdate({ currentPage, totalPages, total, limit, startIdx, endIdx, pageSize, visibleRows });
+      } catch (err) {
+        console.error('Error in pagination onUpdate callback:', err);
+      }
     }
   }
 

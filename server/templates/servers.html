@@ -379,18 +379,23 @@ function serversFilter() {
     }
 
     const show = matchesFilter && !isCollapsed;
-    tr.style.display = show ? '' : 'none';
+    tr.dataset.filterHidden = show ? '0' : '1';
     if (show) visible++;
   });
 
-  document.querySelectorAll('#servers-table tbody tr.group-header-row').forEach(hdr => {
-    const hGrp = hdr.getAttribute('data-header-group');
-    if (isTableSorted) {
-      hdr.style.display = 'none';
-    } else {
-      hdr.style.display = visibleGroups.has(hGrp) ? '' : 'none';
-    }
-  });
+  if (serversPagination) {
+    serversPagination.update();
+  } else {
+    rows.forEach(tr => { tr.style.display = (tr.dataset.filterHidden === '1' ? 'none' : ''); });
+    document.querySelectorAll('#servers-table tbody tr.group-header-row').forEach(hdr => {
+      const hGrp = hdr.getAttribute('data-header-group');
+      if (isTableSorted) {
+        hdr.style.display = 'none';
+      } else {
+        hdr.style.display = visibleGroups.has(hGrp) ? '' : 'none';
+      }
+    });
+  }
 
   const noMatch = document.getElementById('servers-no-match');
   if (noMatch) noMatch.style.display = (visible === 0 && rows.length > 0) ? '' : 'none';
@@ -532,7 +537,39 @@ document.querySelectorAll('#servers-table th.sortable').forEach(th => {
       hdr.style.display = 'none';
     });
     rows.forEach(r => tbody.appendChild(r));
+    if (serversPagination) {
+      serversPagination.update();
+    }
   });
+});
+
+let serversPagination = null;
+function updateServerGroupHeaders() {
+  const tbody = document.querySelector('#servers-table tbody');
+  if (!tbody) return;
+  document.querySelectorAll('#servers-table tbody tr.group-header-row').forEach(hdr => {
+    const hGrp = hdr.getAttribute('data-header-group');
+    if (isTableSorted) {
+      hdr.style.display = 'none';
+    } else {
+      const hasVisibleMember = Array.from(tbody.querySelectorAll(`tr[data-group-membership="${hGrp}"]`))
+        .some(r => r.style.display !== 'none');
+      hdr.style.display = hasVisibleMember ? '' : 'none';
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('servers-table') && typeof attachTablePagination === 'function') {
+    serversPagination = attachTablePagination('#servers-table', {
+      unitLabel: 'server',
+      defaultLimit: 25,
+      pageSizeOptions: [10, 25, 50, 100, 'all'],
+      onUpdate: () => {
+        updateServerGroupHeaders();
+      }
+    });
+  }
 });
 </script>
 {% endblock %}
