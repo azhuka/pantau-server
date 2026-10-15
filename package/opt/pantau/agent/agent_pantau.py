@@ -3576,6 +3576,7 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
     stop_event = threading.Event()
 
     def pty_reader():
+        pending_out = []
         try:
             while not stop_event.is_set():
                 r, _, _ = select.select([master_fd], [], [], 0.05)
@@ -3604,6 +3605,10 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
                         break
 
                 chunk = b"".join(chunks).decode("utf-8", errors="replace")
+                if pending_out:
+                    chunk = "".join(pending_out) + chunk
+                    pending_out.clear()
+
                 code, _ = http_json_request(
                     cfg,
                     f"/api/agent/terminal/{session_id}/stdout",
@@ -3613,6 +3618,11 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
                 )
                 if code == 410:
                     break
+                elif code == 0:
+                    pending_out.append(chunk)
+                    if len(pending_out) > 50:
+                        pending_out.pop(0)
+                    time.sleep(0.5)
         except Exception:
             pass
         finally:
@@ -3621,6 +3631,8 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
     def stdin_poller():
         try:
             while not stop_event.is_set():
+                if proc.poll() is not None:
+                    break
                 code, data = http_json_request(
                     cfg,
                     f"/api/agent/terminal/{session_id}/stdin",
@@ -3630,7 +3642,7 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
                 if code in (404, 410):
                     break
                 if code != 200 or not data:
-                    time.sleep(0.5)
+                    time.sleep(1.0)
                     continue
 
                 mtype = data.get("type")

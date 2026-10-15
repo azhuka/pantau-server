@@ -58,13 +58,13 @@ log() {
 # Shell dibuka: catat supaya selalu ada jejak kapan dan oleh siapa.
 log "shell dibuka oleh uid=$(id -u) host=$HOSTN"
 
-# Dijalankan langsung di pty agen supaya bash berperilaku sama persis seperti
-# di SSH: echo karakter, warna, program interaktif (vim/less/htop), dan Ctrl+C
-# serta penyesuaian ukuran layar (SIGWINCH) langsung sampai ke proses shell.
-/bin/bash --noprofile --rcfile "$RCFILE" -i
-_rc=$?
-
-# Shell ditutup: catat kode keluar supaya jejak auditnya lengkap.
-log "shell ditutup dengan kode=$_rc"
-
-exit $_rc
+# Jika tmux tersedia di server klien, gunakan sesi persisten tmux (auto-create atau attach).
+# Jika tmux tidak ada, fallback ke bash murni (didukung Python Native PTY Supervisor di Agen).
+if command -v tmux >/dev/null 2>&1; then
+    exec tmux -u new-session -A -s pantau-shell /bin/bash --noprofile --rcfile "$RCFILE" -i
+else
+    /bin/bash --noprofile --rcfile "$RCFILE" -i
+    _rc=$?
+    log "shell ditutup dengan kode=$_rc"
+    exit $_rc
+fi

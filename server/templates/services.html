@@ -849,7 +849,7 @@
   <div class="terminal-window" id="apt-live" style="display:none;margin-top:14px">
     <div class="terminal-titlebar">
       <div class="terminal-dots">
-        <span class="t-dot t-dot-red" title="Sembunyikan Terminal" onclick="toggleTerminalView()"></span>
+        <span class="t-dot t-dot-red" title="Tutup Terminal" onclick="openTerminalCloseConfirmModal()"></span>
         <span class="t-dot t-dot-yellow" title="Bersihkan Layar (Clear)" onclick="getTerm().clearScreen()"></span>
         <span class="t-dot t-dot-green" title="Layar Penuh (Full Screen)" onclick="getTerm().toggleFullscreen()"></span>
       </div>
@@ -858,10 +858,10 @@
         <span id="term-title">Terminal Bawaan &middot; shell root</span>
       </div>
       <div class="terminal-actions">
-        <span id="term-upgrade-banner" class="terminal-status-badge" style="display:none;color:#fca5a5;background:rgba(239,68,68,0.18);border:1px solid rgba(239,68,68,0.4);font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px" title="Proses upgrade interaktif sedang aktif. Jangan tinggalkan halaman ini sampai selesai.">
-          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ef4444;margin-right:5px;box-shadow:0 0 6px #ef4444"></span>
-          Upgrade Aktif &mdash; Jangan Tinggalkan Halaman
-          <button type="button" onclick="finishUpgradeSession()" style="margin-left:6px;background:none;border:none;color:#fff;cursor:pointer;text-decoration:underline;font-size:10.5px" title="Tandai proses upgrade telah selesai dan matikan guardrail halaman">Selesai</button>
+        <span id="term-active-banner" class="terminal-status-badge" style="display:none;color:#86efac;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.35);font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px" title="Sesi terminal sedang aktif di server klien. Proses tetap berjalan di latar belakang jika jendela ditutup.">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;margin-right:5px;box-shadow:0 0 6px #22c55e"></span>
+          <span>Sesi sedang aktif</span>
+          <button type="button" onclick="openTerminalCloseConfirmModal()" style="margin-left:8px;background:none;border:none;color:#fff;cursor:pointer;text-decoration:underline;font-size:10.5px" title="Tutup jendela terminal">Tutup</button>
         </span>
         <span id="term-lease-badge" class="terminal-status-badge" style="display:none;color:var(--yellow);border:1px solid rgba(234,179,8,0.3);background:rgba(234,179,8,0.08);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:11px" title="Sisa durasi otentikasi terminal">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="term-lease-timer">--:--</span>
@@ -875,7 +875,7 @@
         <button type="button" class="terminal-btn-icon" id="term-fullscreen-btn" onclick="getTerm().toggleFullscreen()" title="Layar Penuh (Full Screen)">
           <svg id="term-fullscreen-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>&nbsp;<span id="term-fullscreen-text">Full Screen</span>
         </button>
-        <button type="button" class="terminal-btn-icon" onclick="toggleTerminalView()" title="Sembunyikan Terminal">&#x2715;&nbsp;Tutup</button>
+        <button type="button" class="terminal-btn-icon" onclick="openTerminalCloseConfirmModal()" title="Tutup Jendela Terminal">&#x2715;&nbsp;Tutup</button>
       </div>
     </div>
     <div class="real-terminal-screen" id="real-term" tabindex="0" aria-label="Terminal Bawaan Linux">
@@ -2816,6 +2816,33 @@
   </div>
 </div>
 
+<!-- Modal Konfirmasi Penutupan Terminal -->
+<div id="term-close-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+  <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--yellow)"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span>Konfirmasi Penutupan Terminal</span>
+      </h3>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeTerminalCloseConfirmModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+    </div>
+    
+    <p style="font-size:13px;color:var(--text);margin:0 0 10px 0;line-height:1.5">
+      Sesi shell dan proses yang sedang berjalan di server klien akan <strong>tetap aktif di latar belakang</strong> tanpa terputus.
+    </p>
+    <p style="font-size:12px;color:var(--dim);margin:0 0 20px 0;line-height:1.4">
+      Anda dapat membuka kembali terminal kapan saja untuk melihat perkembangannya.
+    </p>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeTerminalCloseConfirmModal()">Batal</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="proceedCloseTerminalView()" style="display:inline-flex;align-items:center;gap:6px">
+        Tutup Jendela Terminal
+      </button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -3739,6 +3766,8 @@ document.addEventListener('click', e => {
   if (m5 && e.target === m5) m5.style.display = 'none';
   const m6 = document.getElementById('add-ssl-path-modal');
   if (m6 && e.target === m6) m6.style.display = 'none';
+  const m7 = document.getElementById('term-close-confirm-modal');
+  if (m7 && e.target === m7) m7.style.display = 'none';
 });
 
 // === Modal: Buat Pengguna Sistem ===
@@ -4455,12 +4484,23 @@ class WebTerminal {
   }
 
   hide() {
+    this.hideViewOnly();
+    this.close();
+  }
+
+  hideViewOnly() {
     if (!this.windowEl) return;
     if (this.windowEl.classList.contains('is-fullscreen')) {
       this.toggleFullscreen();
     }
     this.windowEl.style.display = 'none';
-    this.close();
+    if (this.ws) {
+      try {
+        this.ws.close();
+      } catch (e) {}
+      this.ws = null;
+    }
+    this.state = 'closed';
   }
 
   toggle() {
@@ -4474,7 +4514,7 @@ class WebTerminal {
         this.focus();
       }
     } else {
-      this.hide();
+      openTerminalCloseConfirmModal();
     }
   }
 
@@ -4577,6 +4617,7 @@ class WebTerminal {
 
     this.ws.onopen = () => {
       this.state = 'live';
+      if (typeof setTerminalSessionActive === 'function') setTerminalSessionActive(true);
       const isEn = isEnPage();
       this.status(isEn ? 'connected &middot; shell active' : 'terhubung &middot; shell aktif', 'var(--green)', 'active');
       this.fit();
@@ -4592,9 +4633,6 @@ class WebTerminal {
       if (window._pendingUpgradeCommand) {
         const cmd = window._pendingUpgradeCommand;
         window._pendingUpgradeCommand = null;
-        if (typeof setUpgradeSessionActive === 'function' && cmd.includes('upgrade')) {
-          setUpgradeSessionActive(true);
-        }
         setTimeout(() => {
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({ type: 'input', data: cmd }));
@@ -4620,6 +4658,9 @@ class WebTerminal {
 
     this.ws.onclose = (event) => {
       this.state = 'closed';
+      if (event.code === 4403 || event.code === 1000) {
+        if (typeof setTerminalSessionActive === 'function') setTerminalSessionActive(false);
+      }
       const isEn = isEnPage();
       let reason = isEn ? 'session disconnected' : 'sesi terputus';
       if (event.code === 4401) reason = isEn ? 'auth failed (login again)' : 'autentikasi gagal (login ulang)';
@@ -4705,37 +4746,38 @@ function stopTermLeaseCountdown() {
   if (lockBtn) lockBtn.style.display = 'none';
 }
 
-window._isUpgradeInProgress = false;
-window._upgradeBeforeUnload = null;
+window._isTerminalSessionActive = false;
 window._pendingUpgradeCommand = null;
 
-function setUpgradeSessionActive(active) {
-  window._isUpgradeInProgress = Boolean(active);
-  const banner = document.getElementById('term-upgrade-banner');
+function setTerminalSessionActive(active) {
+  window._isTerminalSessionActive = Boolean(active);
+  const banner = document.getElementById('term-active-banner') || document.getElementById('term-upgrade-banner');
   if (banner) banner.style.display = active ? 'inline-flex' : 'none';
+}
 
-  if (active) {
-    if (!window._upgradeBeforeUnload) {
-      window._upgradeBeforeUnload = function(e) {
-        const msg = "Proses upgrade sistem sedang berjalan di Web Terminal. Meninggalkan atau menutup halaman ini dapat memutus sesi instalasi sistem operasi!";
-        e.preventDefault();
-        e.returnValue = msg;
-        return msg;
-      };
-      window.addEventListener('beforeunload', window._upgradeBeforeUnload);
-    }
-  } else {
-    if (window._upgradeBeforeUnload) {
-      window.removeEventListener('beforeunload', window._upgradeBeforeUnload);
-      window._upgradeBeforeUnload = null;
-    }
-  }
+function setUpgradeSessionActive(active) {
+  setTerminalSessionActive(active);
 }
 
 function finishUpgradeSession() {
-  if (window._isUpgradeInProgress) {
-    setUpgradeSessionActive(false);
-    showToast("Sesi upgrade interaktif ditandai selesai. Guardrail navigasi dinonaktifkan.", true);
+  setTerminalSessionActive(false);
+}
+
+function openTerminalCloseConfirmModal() {
+  const modal = document.getElementById('term-close-confirm-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeTerminalCloseConfirmModal() {
+  const modal = document.getElementById('term-close-confirm-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function proceedCloseTerminalView() {
+  closeTerminalCloseConfirmModal();
+  const term = getTerm();
+  if (term) {
+    term.hideViewOnly();
   }
 }
 
@@ -4946,8 +4988,13 @@ async function openTerminalWithCommand(commandToRun = null, customReason = '') {
   }
 }
 
-// Tombol Terminal: Buka / sembunyikan terminal shell root
+// Tombol Terminal: Buka / konfirmasi sembunyikan terminal shell root
 function toggleTerminalView() {
+  const term = getTerm();
+  if (term && term.windowEl && term.windowEl.style.display !== 'none') {
+    openTerminalCloseConfirmModal();
+    return;
+  }
   return openTerminalWithCommand(null);
 }
 

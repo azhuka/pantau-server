@@ -8215,6 +8215,21 @@ class TerminalSessionBridge:
         self.created_at = time.time()
         self.last_active = time.time()
         self.closed = False
+        self.detached = False
+        self.detached_at = 0.0
+        self.output_buffer: list[str] = []
+        self.buffer_len = 0
+        self.MAX_BUFFER_CHARS = 250000
+
+    def append_output(self, chunk: str):
+        self.output_buffer.append(chunk)
+        self.buffer_len += len(chunk)
+        while self.buffer_len > self.MAX_BUFFER_CHARS and self.output_buffer:
+            removed = self.output_buffer.pop(0)
+            self.buffer_len -= len(removed)
+
+    def get_buffered_output(self) -> str:
+        return "".join(self.output_buffer)
 
 
 class TerminalBridgeDispatcher:
@@ -8235,15 +8250,25 @@ class TerminalBridgeDispatcher:
             self._events[server_id] = asyncio.Event()
         return self._events[server_id]
 
-    async def open_session(self, server_id: int, ws: WebSocket) -> TerminalSessionBridge:
+    async def open_or_attach_session(self, server_id: int, ws: WebSocket) -> tuple[TerminalSessionBridge, bool]:
         lock = self._get_lock()
         async with lock:
             old_sid = self._server_to_session.get(server_id)
             if old_sid and old_sid in self._sessions:
-                old_session = self._sessions.pop(old_sid, None)
-                if old_session:
-                    old_session.closed = True
+                existing = self._sessions[old_sid]
+                if not existing.closed:
+                    # Sesi shell masih aktif di server klien: sambungkan kembali browser baru
+                    if existing.browser_ws and existing.browser_ws != ws:
+                        try:
+                            await existing.browser_ws.close(code=4409, reason="Replaced by new browser connection")
+                        except Exception:
+                            pass
+                    existing.browser_ws = ws
+                    existing.detached = False
+                    existing.last_active = time.time()
+                    return existing, True
 
+            # Buat sesi baru jika belum ada atau sesi sebelumnya sudah ditutup
             sess_id = secrets.token_hex(16)
             bridge = TerminalSessionBridge(sess_id, server_id)
             bridge.browser_ws = ws
@@ -8254,7 +8279,7 @@ class TerminalBridgeDispatcher:
             if server_id not in self._events:
                 self._events[server_id] = asyncio.Event()
             self._events[server_id].set()
-            return bridge
+            return bridge, False
 
     async def pop_pending_open(self, server_id: int) -> str | None:
         lock = self._get_lock()
@@ -8440,14 +8465,23 @@ async def ws_server_terminal(websocket: WebSocket, sid: int):
 
     await websocket.accept()
 
-    bridge = await term_dispatcher.open_session(sid, websocket)
+    bridge, is_reconnected = await term_dispatcher.open_or_attach_session(sid, websocket)
 
     db = SessionLocal()
     try:
-        _audit(db, username, "terminal_open", f"{hostname}:{bridge.session_id}", "berhasil")
+        audit_action = "terminal_reconnect" if is_reconnected else "terminal_open"
+        _audit(db, username, audit_action, f"{hostname}:{bridge.session_id}", "berhasil")
         db.commit()
     finally:
         db.close()
+
+    if is_reconnected:
+        buf = bridge.get_buffered_output()
+        if buf:
+            try:
+                await websocket.send_text(json.dumps({"type": "stdout", "data": buf}))
+            except Exception:
+                pass
 
     try:
         while not bridge.closed:
@@ -8474,10 +8508,16 @@ async def ws_server_terminal(websocket: WebSocket, sid: int):
     except Exception as e:
         logger.warning(f"[WS TERM] Sesi {bridge.session_id} error: {e}")
     finally:
-        await term_dispatcher.close_session(bridge.session_id)
+        # Lepaskan browser_ws saat browser terputus / F5, namun JANGAN membunuh proses shell di server klien!
+        lock = term_dispatcher._get_lock()
+        async with lock:
+            if bridge.browser_ws == websocket:
+                bridge.browser_ws = None
+                bridge.detached = True
+                bridge.detached_at = time.time()
         db = SessionLocal()
         try:
-            _audit(db, username, "terminal_close", f"{hostname}:{bridge.session_id}", "selesai")
+            _audit(db, username, "terminal_detach", f"{hostname}:{bridge.session_id}", "selesai")
             db.commit()
         finally:
             db.close()
@@ -8546,13 +8586,16 @@ async def api_agent_terminal_stdout(
         raise HTTPException(status_code=410, detail="Sesi terminal sudah ditutup")
 
     chunk = body.get("chunk", "")
-    if chunk and bridge.browser_ws:
-        try:
-            await bridge.browser_ws.send_text(json.dumps({"type": "stdout", "data": chunk}))
-        except Exception:
-            bridge.closed = True
-            await term_dispatcher.close_session(session_id)
-            return {"ok": False}
+    if chunk:
+        bridge.append_output(chunk)
+        bridge.last_active = time.time()
+        if bridge.browser_ws:
+            try:
+                await bridge.browser_ws.send_text(json.dumps({"type": "stdout", "data": chunk}))
+            except Exception:
+                bridge.browser_ws = None
+                bridge.detached = True
+                bridge.detached_at = time.time()
 
     return {"ok": True}
 
@@ -8572,6 +8615,10 @@ async def api_agent_terminal_close(
     if bridge:
         if bridge.browser_ws:
             try:
+                await bridge.browser_ws.send_text(json.dumps({
+                    "type": "stdout",
+                    "data": "\r\n\x1b[90m[Sesi shell selesai]\x1b[0m\r\n"
+                }))
                 await bridge.browser_ws.close()
             except Exception:
                 pass
