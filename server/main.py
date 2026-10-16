@@ -5825,7 +5825,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             stale_msg = f"Host dimatikan oleh operator ({op_by}) (> {dur_txt})"
             stale_tip = "Server sengaja dimatikan melalui perintah poweroff oleh operator."
         elif tier == 1:
-            # Tier 1: Server Kritis / Bernilai Tinggi (misal Absensi ASN)
+            # Tier 1: Server Kritis / Produksi Utama (Layanan Vital 24/7)
             # - Detik awal (> 15s) s/d menit 2 (< 120s): Warning
             # - Menit 2 s/d menit 5 (120s s/d 299s): Average (Gawat)
             # - >= 300s (5 menit): Danger (KRITIS — Memicu sirene darurat & banner merah)
@@ -5842,7 +5842,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                 stale_msg = f"Agen tidak melapor (> {int(sec_silent)} dtk)"
                 stale_tip = "Periksa latensi konektivitas jaringan atau pastikan service agent_pantau berjalan aktif."
         elif tier == 2:
-            # Tier 2: Server Pendukung Operasional (Pantau Server, MeshCentral, File Upload, dsb)
+            # Tier 2: Server Pendukung Operasional
             # - < 120s: Warning
             # - >= 120s: Average (GAWAT). Maksimal GAWAT, tidak memicu banner merah darurat.
             if sec_silent >= 120:

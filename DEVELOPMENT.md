@@ -367,9 +367,9 @@ v4.4.0
 ### Fitur Baru & Peningkatan Arsitektur — Versi 4.4.0 (Minor Release)
 
 1. **Sistem Klasifikasi Aset Multi-Tier (3-Tier Asset Criticality):**
-   - **Tier 1 (Server Kritis / 24/7):** Server bernilai tinggi yang menjalankan layanan vital organisasi (misalnya: *Aplikasi Absensi ASN*, Master Database). Bencana fatal (host offline $\ge 300\text{s}$, partisi disk read-only, disk penuh 100%, core service crash) dievaluasi sebagai **🔴 KRITIS (`danger`)**. Menjadi **satu-satunya** tier yang memicu Banner Merah `#alertBanner` dan Sirene Audio Darurat NOC.
-   - **Tier 2 (Server Pendukung Operasional):** Server pendukung operasional kantor (misalnya: *Pantau Server*, *MeshCentral*, server upload/input data). Host offline $\ge 120\text{s}$ atau layanan inti down dievaluasi sebagai **🟠 GAWAT (`average`)**, dan secara ketat tidak pernah memicu banner merah maupun sirene darurat.
-   - **Tier 3 (Server Lab / Clone / Eksperimen):** Mesin virtual pengujian, staging, atau eksperimen pribadi sysadmin (misalnya: `bolata-clone`, `e-kinerja-clone`). Gangguan atau pemadaman server maksimal hanya berstatus **🟡 PERINGATAN (`warning`)**, mengeliminasi alarm palsu (*alert fatigue*).
+   - **Tier 1 (Server Kritis / 24/7):** Server bernilai tinggi yang menjalankan layanan vital organisasi (misalnya: *Database Cluster Utama*, *Core API Gateway*). Bencana fatal (host offline $\ge 300\text{s}$, partisi disk read-only, disk penuh 100%, core service crash) dievaluasi sebagai **🔴 KRITIS (`danger`)**. Menjadi **satu-satunya** tier yang memicu Banner Merah `#alertBanner` dan Sirene Audio Darurat NOC.
+   - **Tier 2 (Server Pendukung Operasional):** Server pendukung operasional (misalnya: server pelaporan, server monitoring, server backup/file processing). Host offline $\ge 120\text{s}$ atau layanan inti down dievaluasi sebagai **🟠 GAWAT (`average`)**, dan secara ketat tidak pernah memicu banner merah maupun sirene darurat.
+   - **Tier 3 (Server Lab / Staging / Eksperimen):** Mesin virtual pengujian, staging, atau eksperimen/lab pengembangan. Gangguan atau pemadaman server maksimal hanya berstatus **🟡 PERINGATAN (`warning`)**, mengeliminasi alarm palsu (*alert fatigue*).
 
 2. **Klasifikasi Peran Layanan (Core vs Secondary Services):**
    - Penambahan kolom `is_core` (default 1) pada tabel `services` untuk membedakan layanan utama aplikasi (*Core Service*) dari layanan pendukung (*Secondary Service*, seperti Redis cache, Zabbix agent, systemd-resolve).

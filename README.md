@@ -147,12 +147,12 @@ Sistem hak akses 3-tier dengan model delegasi seperti perintah `sudo` di Linux:
 Pantau Server menerapkan standar hierarki keparahan insiden berbasis nilai aset (*asset criticality-driven incident severity*), terinspirasi dari standar pemantauan enterprise (seperti Zabbix dan Prometheus Alertmanager):
 
 ### 1. Klasifikasi Tier Aset Server
-- **Tier 1 — Server Kritis (Bernilai Tinggi / 24/7):**
-  Server produksi utama yang memegang operasional vital dan tidak boleh mati sedetik pun (contoh: *Aplikasi Absensi ASN*, server database master, core application gateway). Satu-satunya tier yang dapat memicu eskalasi **🔴 KRITIS (`danger`)**, menampilkan **Banner Merah Global (`#alertBanner`)**, serta membunyikan **Sirene Darurat Audio NOC**.
+- **Tier 1 — Server Kritis (Produksi Utama / Layanan Vital 24/7):**
+  Server produksi utama yang memegang operasional vital dan tidak boleh terhenti (misalnya: database cluster utama, core backend API, authentication server). Menjadi satu-satunya tier yang dapat memicu eskalasi **🔴 KRITIS (`danger`)**, menampilkan **Banner Merah Global (`#alertBanner`)**, serta membunyikan **Sirene Darurat Audio NOC**.
 - **Tier 2 — Server Pendukung Operasional:**
-  Server penunjang operasional kantor yang penting namun memiliki toleransi downtime singkat (contoh: *Pantau Server*, *MeshCentral*, portal upload berkas, server input data internal). Insiden offline atau core service down berstatus **🟠 GAWAT (`average`)**, dan secara ketat **tidak pernah** memicu banner merah atau sirene darurat.
-- **Tier 3 — Server Lab / Clone / Eksperimen:**
-  Server pengujian, mesin virtual clone, staging, atau riset pribadi (contoh: `bolata-clone`, `e-kinerja-clone`). Gangguan atau pemadaman server maksimal hanya berstatus **🟡 PERINGATAN (`warning`)**, memberikan kebebasan bagi sysadmin untuk bereksperimen tanpa mengganggu konsentrasi tim NOC.
+  Server penunjang operasional yang penting namun memiliki toleransi downtime singkat (misalnya: server pelaporan, server pemantauan, backup worker, file storage sekunder). Insiden offline atau core service down berstatus **🟠 GAWAT (`average`)**, dan secara ketat **tidak pernah** memicu banner merah atau sirene darurat.
+- **Tier 3 — Server Lab / Staging / Eksperimen:**
+  Server pengujian, mesin virtual staging, clone uji coba, atau lab pengembangan internal. Gangguan atau pemadaman server maksimal hanya berstatus **🟡 PERINGATAN (`warning`)**, mengeliminasi alarm darurat palsu (*alert fatigue*).
 
 ### 2. Matriks Keparahan Insiden Terhadap Tier Aset
 
