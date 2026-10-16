@@ -634,8 +634,28 @@
       <span id="agent-ver" class="badge badge-muted" title="Agen belum melaporkan versi">agen tidak dikenal</span>
     {% endif %}
   </h2>
-  <div>
-    <a href="/servers" class="btn btn-ghost">&larr; Servers</a>
+  <div style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap">
+    {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
+    <a href="/servers/{{ server.id }}/edit" class="btn btn-ghost btn-sm" style="font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" title="Edit konfigurasi server" data-i18n-title="edit">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+      <span data-i18n="edit">Edit</span>
+    </a>
+    <form method="POST" action="/servers/{{ server.id }}/delete" style="display:inline;margin:0"
+          data-guardrail
+          data-guardrail-title="Hapus Server dari Pantau"
+          data-guardrail-target="{{ server.hostname }}"
+          data-guardrail-badge="Hapus Permanen"
+          data-guardrail-msg="Server <strong>{{ server.hostname }}</strong> ({{ server.ip_address }}) beserta seluruh riwayat metrik, snapshot, serta pencatatan masalah akan dihapus secara permanen dari basis data."
+          data-guardrail-btn="Hapus Server Sekarang"
+          data-guardrail-color="danger">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-danger btn-sm" style="font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" type="submit" title="Hapus server ini" data-i18n-title="delete">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+        <span data-i18n="delete">Hapus</span>
+      </button>
+    </form>
+    {% endif %}
+    <a href="/servers" class="btn btn-ghost btn-sm" style="font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px">&larr; Servers</a>
   </div>
 </div>
 

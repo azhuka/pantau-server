@@ -351,6 +351,15 @@ v4.4.1
      - `Tier 2 — Layanan Pendukung / Sekunder` (Layanan Pendukung operasional).
      - `Tier 3 — Layanan Sementara / Non-Kritis` (Layanan bersifat sementara/uji coba).
 
+4. **Tombol Aksi Cepat Edit & Hapus pada Halaman Rincian Server (`services.html`):**
+   - Menambahkan tombol **Edit** dan **Hapus** langsung pada topbar header halaman rincian server ([`server/templates/services.html`](file:///home/bos/rj45/server/templates/services.html)) di samping tombol navigasi `← Servers`.
+   - Tombol Hapus server dilengkapi dialog konfirmasi proteksi sistem (*guardrail modal*) dengan perlindungan token CSRF.
+   - Memutakhirkan endpoint `POST /servers/{sid}/delete` di [`server/main.py`](file:///home/bos/rj45/server/main.py) agar dapat diakses oleh Master Admin dan Operator yang memiliki hak izin `can_manage_servers`.
+   - Operator tidak perlu lagi beralih kembali ke halaman daftar server hanya untuk mengubah konfigurasi atau menghapus server yang sedang diperiksa.
+
+5. **Penyelarasan Nama Kolom Tabel Daftar Server Menjadi INSIDEN:**
+   - Mengubah judul kolom tabel pada [`server/templates/servers.html`](file:///home/bos/rj45/server/templates/servers.html) dari sebelumnya **Masalah** menjadi **Insiden** agar sinkron dengan terminologi global aplikasi (*Menu Insiden*, *Kartu Insiden Terkini*, badge status keparahan).
+
 ---
 
 ## Versi 4.4.0

@@ -3352,7 +3352,7 @@ def server_delete(
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
-    if not user or not user.is_master_admin():
+    if not user or not (user.is_master_admin() or user.has_perm("can_manage_servers")):
         return RedirectResponse("/", status_code=303)
     _verify_csrf_form(request, csrf_token)
     server = db.query(Server).filter(Server.id == sid).first()
