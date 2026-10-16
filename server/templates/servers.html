@@ -104,12 +104,13 @@
         <th class="sortable" data-col="1" style="cursor:pointer;width:120px;min-width:110px" title="Urutkan berdasarkan alamat IP — klik IP pada baris untuk menyalin">Alamat IP ↕</th>
         <th class="sortable" data-col="2" style="cursor:pointer;width:90px;min-width:80px" title="Urutkan berdasarkan tag">Tag / Label ↕</th>
         <th style="width:85px;min-width:80px;text-align:center" title="Kondisi koneksi mesin saat ini (Online, Pemeliharaan, atau Offline)">Status</th>
-        <th class="sortable" data-col="4" style="cursor:pointer;width:75px;min-width:70px;text-align:center" title="Persentase pemakaian CPU">CPU ↕</th>
-        <th class="sortable" data-col="5" style="cursor:pointer;width:75px;min-width:70px;text-align:center" title="Persentase pemakaian RAM">RAM ↕</th>
+        <th class="sortable" data-col="4" style="cursor:pointer;width:95px;min-width:85px;text-align:center" title="Kapasitas core prosesor dan persentase pemakaian CPU">CPU ↕</th>
+        <th class="sortable" data-col="5" style="cursor:pointer;width:115px;min-width:105px;text-align:center" title="Total kapasitas memori dan persentase pemakaian RAM">RAM ↕</th>
+        <th class="sortable" data-col="6" style="cursor:pointer;width:115px;min-width:105px;text-align:center" title="Total ruang penyimpanan dan persentase pemakaian Disk">Disk ↕</th>
         <th style="width:85px;min-width:80px;text-align:center" title="Ringkasan jumlah layanan: total, aktif, berhenti, atau diabaikan">Layanan</th>
         <th style="width:95px;min-width:85px;text-align:center" title="Tingkat keparahan anomali atau insiden yang terdeteksi">Insiden</th>
         <th style="width:105px;min-width:95px;text-align:center" title="Jumlah pembaruan paket sistem operasi (APT) yang tersedia">Pembaruan OS</th>
-        <th class="sortable" data-col="9" style="cursor:pointer;width:125px;min-width:115px;text-align:center" title="Waktu terakhir kali server mengirimkan data ke panel">Terakhir Lapor ↕</th>
+        <th class="sortable" data-col="10" style="cursor:pointer;width:125px;min-width:115px;text-align:center" title="Waktu terakhir kali server mengirimkan data ke panel">Terakhir Lapor ↕</th>
         <th style="width:145px;min-width:135px;text-align:center" title="Menu aksi cepat: Rincian, Edit, atau Hapus server">Aksi</th>
       </tr>
     </thead>
@@ -120,7 +121,7 @@
       {% if all_groups and (srv_grp != ns.current_grp) %}
         {% set ns.current_grp = srv_grp %}
         <tr class="group-header-row" data-header-group="{{ srv_grp }}" onclick="toggleGroupCollapse('{{ srv_grp }}')" title="Klik untuk ciutkan / bentangkan grup ini">
-          <td colspan="11" style="background:linear-gradient(90deg, {% if srv_grp != '__none__' %}rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.02) 100%{% else %}rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%{% endif %});border-top:{% if not loop.first %}1px solid var(--border){% else %}none{% endif %};border-bottom:1px solid var(--border);padding:7px 12px">
+          <td colspan="12" style="background:linear-gradient(90deg, {% if srv_grp != '__none__' %}rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.02) 100%{% else %}rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%{% endif %});border-top:{% if not loop.first %}1px solid var(--border){% else %}none{% endif %};border-bottom:1px solid var(--border);padding:7px 12px">
             <div style="display:flex;align-items:center;justify-content:space-between">
               <div style="display:flex;align-items:center;gap:8px">
                 <span class="group-collapse-icon" id="collapse-icon-{{ srv_grp }}" title="Ciutkan / Bentangkan">
@@ -228,8 +229,56 @@
         <span style="font-size:11px;color:var(--yellow);margin-left:4px" title="{{ srv.maintenance_reason }}">ℹ️</span>
         {% endif %}
       </td>
-      <td id="srv-cpu-{{ srv.id }}" class="mono" style="font-size:13px;text-align:center">{{ srv._cpu ~ '%' if srv._cpu is not none else '—' }}</td>
-      <td id="srv-ram-{{ srv.id }}" class="mono" style="font-size:13px;text-align:center">{{ srv._mem_pct ~ '%' if srv._mem_pct is not none else '—' }}</td>
+      <!-- CPU -->
+      <td id="srv-cpu-{{ srv.id }}" style="text-align:center;white-space:nowrap">
+        {% if srv._cpu is not none %}
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div style="display:inline-flex;align-items:center;justify-content:center;gap:4px">
+            <span class="mono" style="font-size:12px;font-weight:600">{{ srv._cpu ~ '%' }}</span>
+            <div class="meter-mini-track" style="width:34px;height:4px">
+              <div class="meter-mini-bar {{ 'red' if srv._cpu >= (global_thresholds.cpu_danger if global_thresholds else 95) else ('yellow' if srv._cpu >= (global_thresholds.cpu_warn if global_thresholds else 85) else 'green') }}" style="width:{{ [srv._cpu or 0, 100]|min }}%"></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--dim)">{{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }}</span>
+        </div>
+        {% else %}
+          <span style="color:var(--dim);font-size:12px">—</span>
+        {% endif %}
+      </td>
+
+      <!-- RAM -->
+      <td id="srv-ram-{{ srv.id }}" style="text-align:center;white-space:nowrap">
+        {% if srv._mem_pct is not none %}
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div style="display:inline-flex;align-items:center;justify-content:center;gap:4px">
+            <span class="mono" style="font-size:12px;font-weight:600">{{ srv._mem_pct ~ '%' }}</span>
+            <div class="meter-mini-track" style="width:34px;height:4px">
+              <div class="meter-mini-bar {{ 'red' if srv._mem_pct >= (global_thresholds.ram_danger if global_thresholds else 95) else ('yellow' if srv._mem_pct >= (global_thresholds.ram_warn if global_thresholds else 85) else 'green') }}" style="width:{{ [srv._mem_pct or 0, 100]|min }}%"></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--dim)">{{ (srv._mem_used_str ~ ' / ' ~ srv._mem_total_str) if srv._mem_used_str and srv._mem_total_str else '-' }}</span>
+        </div>
+        {% else %}
+          <span style="color:var(--dim);font-size:12px">—</span>
+        {% endif %}
+      </td>
+
+      <!-- Disk -->
+      <td id="srv-disk-{{ srv.id }}" style="text-align:center;white-space:nowrap">
+        {% if srv._disk_pct is not none %}
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div style="display:inline-flex;align-items:center;justify-content:center;gap:4px">
+            <span class="mono" style="font-size:12px;font-weight:600">{{ srv._disk_pct ~ '%' }}</span>
+            <div class="meter-mini-track" style="width:34px;height:4px">
+              <div class="meter-mini-bar {{ 'red' if srv._disk_pct >= (global_thresholds.disk_danger if global_thresholds else 95) else ('yellow' if srv._disk_pct >= (global_thresholds.disk_warn if global_thresholds else 90) else 'green') }}" style="width:{{ [srv._disk_pct or 0, 100]|min }}%"></div>
+            </div>
+          </div>
+          <span class="mono" style="font-size:10px;color:var(--dim)">{{ (srv._disk_total_str ~ ' (sisa ' ~ srv._disk_avail_str ~ ')') if srv._disk_total_str and srv._disk_avail_str else (srv._disk_total_str or '-') }}</span>
+        </div>
+        {% else %}
+          <span style="color:var(--dim);font-size:12px">—</span>
+        {% endif %}
+      </td>
       <td id="srv-svc-{{ srv.id }}" style="text-align:center;font-size:12px;font-family:ui-monospace,monospace">
         {% set total_svc_count = (srv._svc_data or [])|length %}
         {% if not srv.last_seen or total_svc_count == 0 %}
@@ -311,7 +360,7 @@
     </tr>
     {% endfor %}
     <tr id="servers-no-match" style="display:none">
-      <td colspan="11" class="empty-msg" style="padding:20px">Tidak ada server yang sesuai dengan pencarian.</td>
+      <td colspan="12" class="empty-msg" style="padding:20px">Tidak ada server yang sesuai dengan pencarian.</td>
     </tr>
     </tbody>
   </table>
@@ -444,10 +493,51 @@ async function srvPoll() {
         else { sts.textContent = 'Online'; sts.className = 'badge badge-up'; }
       }
       const cpu = document.getElementById('srv-cpu-' + srv.id);
-      if (cpu) cpu.textContent = srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '—';
+      if (cpu && srv.cpu != null) {
+        const th = (srv.cpu >= 95 ? 'red' : (srv.cpu >= 85 ? 'yellow' : 'green'));
+        cpu.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <div style="display:inline-flex;align-items:center;justify-content:center;gap:4px">
+              <span class="mono" style="font-size:12px;font-weight:600">${srv.cpu.toFixed(1)}%</span>
+              <div class="meter-mini-track" style="width:34px;height:4px">
+                <div class="meter-mini-bar ${th}" style="width:${Math.min(srv.cpu, 100)}%"></div>
+              </div>
+            </div>
+            <span class="mono" style="font-size:10px;color:var(--dim)">${srv.cpu_cores || '-'}</span>
+          </div>`;
+      }
 
       const ram = document.getElementById('srv-ram-' + srv.id);
-      if (ram) ram.textContent = srv.mem_pct != null ? srv.mem_pct.toFixed(1) + '%' : '—';
+      if (ram && srv.mem_pct != null) {
+        const th = (srv.mem_pct >= 95 ? 'red' : (srv.mem_pct >= 85 ? 'yellow' : 'green'));
+        const sub = (srv.mem_used_str && srv.mem_total_str) ? `${srv.mem_used_str} / ${srv.mem_total_str}` : '-';
+        ram.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <div style="display:inline-flex;align-items:center;justify-content:center;gap:4px">
+              <span class="mono" style="font-size:12px;font-weight:600">${srv.mem_pct.toFixed(1)}%</span>
+              <div class="meter-mini-track" style="width:34px;height:4px">
+                <div class="meter-mini-bar ${th}" style="width:${Math.min(srv.mem_pct, 100)}%"></div>
+              </div>
+            </div>
+            <span class="mono" style="font-size:10px;color:var(--dim)">${sub}</span>
+          </div>`;
+      }
+
+      const disk = document.getElementById('srv-disk-' + srv.id);
+      if (disk && srv.disk_pct != null) {
+        const th = (srv.disk_pct >= 95 ? 'red' : (srv.disk_pct >= 90 ? 'yellow' : 'green'));
+        const sub = (srv.disk_total_str && srv.disk_avail_str) ? `${srv.disk_total_str} (sisa ${srv.disk_avail_str})` : (srv.disk_total_str || '-');
+        disk.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <div style="display:inline-flex;align-items:center;justify-content:center;gap:4px">
+              <span class="mono" style="font-size:12px;font-weight:600">${srv.disk_pct.toFixed(1)}%</span>
+              <div class="meter-mini-track" style="width:34px;height:4px">
+                <div class="meter-mini-bar ${th}" style="width:${Math.min(srv.disk_pct, 100)}%"></div>
+              </div>
+            </div>
+            <span class="mono" style="font-size:10px;color:var(--dim)">${sub}</span>
+          </div>`;
+      }
 
       const svcEl = document.getElementById('srv-svc-' + srv.id);
       if (svcEl) {
@@ -529,12 +619,12 @@ document.querySelectorAll('#servers-table th.sortable').forEach(th => {
     rows.sort((a, b) => {
       let av = (a.cells[col]?.textContent || '').trim().toLowerCase();
       let bv = (b.cells[col]?.textContent || '').trim().toLowerCase();
-      if (col === 4 || col === 5) {
+      if (col === 4 || col === 5 || col === 6) {
         const af = parseFloat(av) || 0;
         const bf = parseFloat(bv) || 0;
         return sortAsc ? af - bf : bf - af;
       }
-      if (col === 9) {
+      if (col === 10) {
         av = a.dataset.lastSeen || '';
         bv = b.dataset.lastSeen || '';
       }

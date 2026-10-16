@@ -311,6 +311,49 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.4.2
+
+- **Release Label:** None
+- **Tipe Rilis:** Rilis Patch (*Patch Release*) — Restrukturisasi Tabel Dashboard Utama (Single-Row 9 Kolom NOC dengan Quick Verdict 'Situasi Terkini') dan Adaptasi Inventaris Hardware Lengkap Armada Server pada Daftar Server
+
+### Struktur Rilis SemVer (Major.Minor.Patch)
+
+```
+v4.4.2
+ │
+ ├── 4  (Mayor) : Restrukturisasi Keamanan & Arsitektur RBAC 3-Tier, 2FA TOTP RFC 6238, dan Isolasi Akun
+ ├── 4  (Minor) : Sistem Klasifikasi Kepentingan Layanan (Level Operasional Tier 1/2/3), Matriks Keparahan Insiden Multi-Tier, Pembagian Peran Layanan Utama/Sekunder, dan Klasifikasi Sadar Operator
+ └── 2  (Patch) : Restrukturisasi Tabel Dashboard Utama 9-Kolom Single-Row NOC, Quick Verdict Situasi Terkini, & Adaptasi IT Fleet Asset Inventory
+```
+
+---
+
+### Peningkatan & Perbaikan UX — Versi 4.4.2 (Patch Release)
+
+1. **Restrukturisasi Tabel Dashboard Utama (Single-Row 9 Kolom NOC):**
+   - **Akar Masalah:** Kolom Hostname sebelumnya terlalu padat dan berdesakan karena menggabungkan Dot status, Nama Host, Badge Tier, Badge Platform, dan Badge HA ke dalam satu sel, sementara tabel menggunakan 2 baris header kompleks dengan 14 kolom yang menyajikan data terlalu granular untuk pintu gerbang utama NOC.
+   - **Solusi Implementasi:**
+     - Mengubah tabel dashboard menjadi format **single-row 9 kolom** yang ringkas, bersih, dan langsung terbaca (*glanceable*):
+       `Server` | `Level Prioritas (Tier)` | `IP & Platform` | `Status & Uptime` | `Situasi Terkini` | `CPU (%)` | `RAM (%)` | `Disk (%)` | `Svc / Inc`.
+     - **Kolom 0 (Server):** Bersih dan terfokus pada Dot status koneksi dan Nama Host server tebal, disertai subtitle nama grup di bawahnya.
+     - **Kolom 1 (Level Prioritas / Tier):** Kolom tersendiri yang dapat diurutkan (*sortable*), menampilkan klasifikasi layanan: `TIER 1 (Utama)`, `TIER 2 (Pendukung)`, atau `TIER 3 (Sementara)`.
+     - **Kolom 2 (IP & Platform):** Menampilkan alamat IP monospace yang dapat diklik untuk disalin (*copyable IP*) bersanding dengan badge tipe platform (`LXC`, `VM`, `Fisik`) serta indikator proteksi `HA`.
+     - **Kolom 3 (Status & Uptime):** Menampilkan badge status koneksi (`Online`/`Offline`/`Pemeliharaan`) dan subtitle durasi uptime sistem.
+     - **Kolom 4 (Situasi Terkini / Quick Verdict):** Menyajikan ringkasan kalimat operasional seketika (*instant verdict*) untuk mempercepat respon operator (contoh: `🟢 Normal / Layanan Stabil`, `🔴 Host Tidak Melapor`, `🔴 1 Layanan Berhenti`, `🔴 Kritis: ...`, `🟠 Gawat: ...`, `🟡 Peringatan: ...`, `🟡 Beban Sumber Daya Tinggi`, `🟡 Pemeliharaan`).
+     - **Kolom 5, 6, 7 (CPU, RAM, Disk):** Menyajikan persentase beban berwarna dengan mini meter-bar serta subtitle kapasitas aktual (RAM `used / total`, Disk `total (sisa ...)`).
+     - **Kolom 8 (Svc / Inc):** Menampilkan rasio ketersediaan layanan aktif (`total/up`) bersanding dengan pill badge warna-warni insiden terbuka atau `Normal`.
+     - **Live Realtime Reactive Polling:** Seluruh 9 kolom tabel diperbarui secara live realtime setiap 10 detik via fungsi `pollNocDashboard()` tanpa kedipan dan tanpa memerlukan reload halaman.
+
+2. **Adaptasi Inventaris IT Asset & Fleet Hardware pada Menu Daftar Server (`/servers`):**
+   - Mengadaptasikan telemetri kapasitas dan spesifikasi fisik hardware yang sebelumnya berada di dashboard ke dalam tabel menu **Daftar Server** (`servers.html`).
+   - Menambahkan kolom terpadu:
+     - **CPU:** Menampilkan persentase beban prosesor beserta mini meter-bar dan jumlah core vCPU (`... Core`).
+     - **RAM:** Menampilkan persentase beban memori beserta mini meter-bar dan ringkasan kapasitas `digunakan / total GB`.
+     - **Penyimpanan (Disk):** Menampilkan persentase beban ruang disk sistem beserta mini meter-bar dan detail kapasitas `total (sisa ... GB)`.
+   - Mengintegrasikan pembaruan realtime pada polling `srvPoll()` dan mengaktifkan sorting numerik cerdas pada seluruh kolom metrik hardware baru.
+
+---
+
 ## Versi 4.4.1
 
 - **Release Label:** None
