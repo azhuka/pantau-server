@@ -347,9 +347,9 @@ v4.4.1
 
 3. **Penyempurnaan Label Klasifikasi Kepentingan Layanan (Level Operasional):**
    - Menyelaraskan teks pada form input server (`server_form.html`), badge rincian server (`services.html`), dan tooltip dashboard agar ringkas dan on-point:
-     - `Tier 1 — Layanan Utama / Prioritas` (Fungsi vital, memicu alarm darurat).
-     - `Tier 2 — Layanan Pendukung / Sekunder` (Pendukung operasional, batas keparahan gawat).
-     - `Tier 3 — Layanan Sementara / Non-Kritis` (Uji coba/sementara, batas keparahan peringatan).
+     - `Tier 1 — Layanan Utama / Prioritas` (Layanan vital & Prioritas).
+     - `Tier 2 — Layanan Pendukung / Sekunder` (Layanan Pendukung operasional).
+     - `Tier 3 — Layanan Sementara / Non-Kritis` (Layanan bersifat sementara/uji coba).
 
 ---
 
