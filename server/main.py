@@ -645,7 +645,16 @@ def _fmt_dt(dt: datetime | None, with_sec: bool = True) -> str:
     return f"{dt.day:02d} {mon} {dt.year} {dt.hour:02d}:{dt.minute:02d}"
 
 
+def _fmt_short_dt(dt: datetime | None) -> str:
+    """Format tanggal dan waktu ringkas untuk tabel insiden: DD Mon HH:MM (misal: 16 Okt 17:29)."""
+    if not dt or not isinstance(dt, datetime):
+        return "—"
+    mon = MONTHS_ID[dt.month - 1]
+    return f"{dt.day:02d} {mon} {dt.hour:02d}:{dt.minute:02d}"
+
+
 templates.env.globals["_fmt_dt"] = _fmt_dt
+templates.env.globals["_fmt_short_dt"] = _fmt_short_dt
 templates.env.globals["getattr"] = getattr
 
 static_dir = Path(__file__).resolve().parent / "static"
@@ -2907,10 +2916,14 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             dur_str = "—"
             if p_started:
                 diff_s = max(0, int((datetime.utcnow() - p_started).total_seconds()))
-                if diff_s < 60: dur_str = f"{diff_s} dtk"
-                elif diff_s < 3600: dur_str = f"{diff_s//60} mnt"
-                elif diff_s < 86400: dur_str = f"{diff_s//3600} jam"
-                else: dur_str = f"{diff_s//86400} hari"
+                d = diff_s // 86400
+                h = (diff_s % 86400) // 3600
+                m = (diff_s % 3600) // 60
+                s = diff_s % 60
+                if d: dur_str = f"{d} h {h} j"
+                elif h: dur_str = f"{h} j {m} mnt"
+                elif m: dur_str = f"{m} mnt {s} dtk"
+                else: dur_str = f"{s} dtk"
             item = {
                 "server_id": srv.id,
                 "hostname": srv.hostname,
@@ -2922,7 +2935,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 "ignored_reason": p.get("ignored_reason"),
                 "ignored_by": p.get("ignored_by"),
                 "started_at": p_started.isoformat() if p_started else "",
-                "started_at_str": p_started.strftime("%d %b %H:%M") if p_started else "—",
+                "started_at_str": _fmt_short_dt(p_started),
                 "durasi": dur_str,
             }
             if is_ign:
@@ -2933,7 +2946,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                     problems_by_sev[sev].append(item)
                 else:
                     problems_by_sev["warning"].append(item)
-            all_open_problems.append(item)
+            if p.get("key") != "apt_updates":
+                all_open_problems.append(item)
 
     sev_order = {"danger": 0, "average": 1, "warning": 2, "info": 3}
     all_open_problems.sort(key=lambda p: (1 if p["is_ignored"] else 0, sev_order.get(p["severity"], 4), p["started_at"] or ""), reverse=False)
@@ -5958,9 +5972,11 @@ def _serialize_problem_list(prob_list):
     for p in prob_list:
         d = dict(p)
         if isinstance(d.get("started_at"), datetime):
-            d["started_at_str"] = _fmt_dt(d["started_at"], with_sec=True)
+            d["started_at_str"] = _fmt_short_dt(d["started_at"])
+            d["started_at_full"] = _fmt_dt(d["started_at"], with_sec=True)
         if isinstance(d.get("resolved_at"), datetime):
-            d["resolved_at_str"] = _fmt_dt(d["resolved_at"], with_sec=True)
+            d["resolved_at_str"] = _fmt_short_dt(d["resolved_at"])
+            d["resolved_at_full"] = _fmt_dt(d["resolved_at"], with_sec=True)
         for k in ("started_at", "resolved_at", "acknowledged_at", "last_active_at", "ignored_until"):
             v = d.get(k)
             if isinstance(v, datetime):

@@ -679,7 +679,7 @@ body.show-alert-banner .kiosk-toggle-btn {
 <div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:center;gap:8px">
-      <span id="dash-inc-icon" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:{% if danger_total > 0 %}rgba(239,68,68,0.15){% elif average_total > 0 %}rgba(249,115,22,0.15){% elif warning_total > 0 %}rgba(245,158,11,0.15){% else %}rgba(16,185,129,0.12){% endif %};color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% else %}var(--green){% endif %}">
+      <span id="dash-inc-icon" data-state="{% if danger_total > 0 %}danger{% elif average_total > 0 %}avg{% elif warning_total > 0 %}warn{% else %}ok{% endif %}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:{% if danger_total > 0 %}rgba(239,68,68,0.15){% elif average_total > 0 %}rgba(249,115,22,0.15){% elif warning_total > 0 %}rgba(245,158,11,0.15){% else %}rgba(16,185,129,0.12){% endif %};color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% else %}var(--green){% endif %}">
         {% if danger_total > 0 or average_total > 0 or warning_total > 0 %}
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         {% else %}
@@ -696,26 +696,26 @@ body.show-alert-banner .kiosk-toggle-btn {
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.01)">
           <th class="col-time" style="padding:8px 10px;font-size:12px;width:130px;min-width:125px;color:var(--dim);text-align:left">Waktu &amp; Durasi</th>
           <th class="col-server" style="padding:8px 10px;font-size:12px;width:150px;min-width:135px;max-width:180px;white-space:nowrap;color:var(--dim);text-align:left">Server</th>
-          <th class="col-sev" style="padding:8px 10px;font-size:12px;width:100px;min-width:95px;color:var(--dim);text-align:center">Keparahan</th>
+          <th class="col-sev" style="padding:8px 10px;font-size:12px;width:115px;min-width:110px;color:var(--dim);text-align:center">Keparahan</th>
           <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left">Deskripsi Masalah</th>
         </tr>
       </thead>
-      <tbody id="dash-problems-tbody">
+      <tbody id="dash-problems-tbody" data-sig="{% for p in all_open_problems %}{{ p.server_id }}:{{ p.key }}:{{ p.severity }}:{{ 1 if p.is_ignored else 0 }}:{{ p.started_at_str }}{% if not loop.last %}|{% endif %}{% endfor %}">
         {% for p in all_open_problems %}
         <tr onclick="window.location.href='/servers/{{ p.server_id }}/services'"
             title="Klik untuk buka rincian server {{ p.hostname }}"
             style="border-bottom:1px solid rgba(255,255,255,0.03);{{ 'opacity:0.8;background:rgba(255,255,255,0.015);' if p.is_ignored else '' }}transition:background .12s ease;cursor:pointer">
-          <td style="padding:8px 10px;white-space:nowrap">
+          <td style="padding:8px 10px;white-space:nowrap;width:130px;min-width:125px">
             <div class="mono" style="font-size:12.5px;font-weight:600;color:var(--text)">{{ p.started_at_str }}</div>
             <div style="font-size:11.5px;color:var(--dim);margin-top:2px" data-start="{{ p.started_at }}{{ 'Z' if p.started_at and not p.started_at.endswith('Z') else '' }}" data-suffix=" yang lalu">{{ p.durasi }} yang lalu</div>
           </td>
-          <td style="padding:8px 10px;white-space:nowrap">
+          <td style="padding:8px 10px;white-space:nowrap;width:150px;min-width:135px;max-width:180px">
             <div style="font-size:13.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
             {% if p.group_name %}
             <div style="font-size:11.5px;color:var(--dim);margin-top:2px">{{ p.group_name }}</div>
             {% endif %}
           </td>
-          <td style="padding:8px 10px;white-space:nowrap">
+          <td style="padding:8px 10px;white-space:nowrap;width:115px;min-width:110px;text-align:center">
             {% if p.is_ignored %}
               <span class="badge badge-muted" style="font-size:11.5px;padding:2px 7px">DIABAIKAN 🔕</span>
             {% elif p.severity == 'danger' %}
@@ -1882,11 +1882,12 @@ async function pollNocDashboard() {
     if (kpiCardProb) kpiCardProb.style.borderLeftColor = kpiColor;
     if (totPrbEl) totPrbEl.style.color = kpiTextColor;
 
-    // Aggregate all active problems (termasuk yang diabaikan agar tetap tercatat di sistem)
+    // Aggregate all active operational problems (termasuk yang diabaikan agar tetap tercatat di sistem)
     const allProblems = [];
     list.forEach(srv => {
       if (Array.isArray(srv.problems)) {
         srv.problems.forEach(p => {
+          if (p.key === 'apt_updates') return; // Bukan insiden operasional
           allProblems.push({
             ...p,
             server_id: srv.id,
@@ -1910,27 +1911,29 @@ async function pollNocDashboard() {
       return bTime - aTime;
     });
 
-    const activeTotalProb = dangerTot + avgTot + warnTot + infoTot;
-
-    // Update Insiden Terkini Header Icon & Badges
+    // Update Insiden Terkini Header Icon (menggunakan state cache agar tidak berkedip)
     const incIcon = document.getElementById('dash-inc-icon');
     if (incIcon) {
-      if (dangerTot > 0) {
-        incIcon.style.background = 'rgba(239,68,68,0.15)';
-        incIcon.style.color = 'var(--red)';
-        incIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
-      } else if (avgTot > 0) {
-        incIcon.style.background = 'rgba(249,115,22,0.15)';
-        incIcon.style.color = '#f97316';
-        incIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
-      } else if (warnTot > 0) {
-        incIcon.style.background = 'rgba(245,158,11,0.15)';
-        incIcon.style.color = 'var(--yellow)';
-        incIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
-      } else {
-        incIcon.style.background = 'rgba(16,185,129,0.12)';
-        incIcon.style.color = 'var(--green)';
-        incIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      const curIconState = dangerTot > 0 ? 'danger' : (avgTot > 0 ? 'avg' : (warnTot > 0 ? 'warn' : 'ok'));
+      if (incIcon.dataset.state !== curIconState) {
+        incIcon.dataset.state = curIconState;
+        if (curIconState === 'danger') {
+          incIcon.style.background = 'rgba(239,68,68,0.15)';
+          incIcon.style.color = 'var(--red)';
+          incIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+        } else if (curIconState === 'avg') {
+          incIcon.style.background = 'rgba(249,115,22,0.15)';
+          incIcon.style.color = '#f97316';
+          incIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+        } else if (curIconState === 'warn') {
+          incIcon.style.background = 'rgba(245,158,11,0.15)';
+          incIcon.style.color = 'var(--yellow)';
+          incIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+        } else {
+          incIcon.style.background = 'rgba(16,185,129,0.12)';
+          incIcon.style.color = 'var(--green)';
+          incIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        }
       }
     }
 
@@ -1942,60 +1945,78 @@ async function pollNocDashboard() {
     if (allProblems.length === 0) {
       if (tableWrap) tableWrap.style.display = 'none';
       if (emptyState) emptyState.style.display = 'flex';
-      if (tbody) tbody.innerHTML = '';
+      if (tbody) {
+        tbody.innerHTML = '';
+        tbody.dataset.sig = '';
+      }
     } else {
       if (tableWrap) tableWrap.style.display = '';
       if (emptyState) emptyState.style.display = 'none';
       if (tbody) {
-        let tHtml = '';
-        allProblems.forEach(p => {
-          const isIgn = Boolean(p.is_ignored);
-          let sevBadge = '';
-          if (isIgn) {
-            sevBadge = '<span class="badge badge-muted" style="font-size:11.5px;padding:2px 7px">DIABAIKAN 🔕</span>';
-          } else if (p.severity === 'danger') {
-            sevBadge = '<span class="badge badge-danger" style="font-size:11.5px;padding:2px 7px">KRITIS</span>';
-          } else if (p.severity === 'average') {
-            sevBadge = '<span class="badge badge-orange" style="font-size:11.5px;padding:2px 7px">GAWAT</span>';
-          } else if (p.severity === 'warning') {
-            sevBadge = '<span class="badge badge-warn" style="font-size:11.5px;padding:2px 7px">PERINGATAN</span>';
-          } else {
-            sevBadge = `<span class="badge badge-info" style="font-size:11.5px;padding:2px 7px">${(p.severity || 'INFO').toUpperCase()}</span>`;
-          }
-
-          const escMsg = (p.message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-          let ignNote = '';
-          if (isIgn) {
-            const reasonTxt = p.ignored_reason || (p.ignored_by ? 'oleh ' + p.ignored_by : '');
-            if (reasonTxt) {
-              const escReason = reasonTxt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-              ignNote = `<span class="badge badge-muted" style="font-size:10.5px;padding:1px 5px;margin-left:6px" title="${escReason}">${escReason}</span>`;
+        // Anti-jitter: Bandingkan signature masalah agar tidak membongkar/memasang ulang DOM bila data tetap sama
+        const newSig = allProblems.map(p => `${p.server_id}:${p.key}:${p.severity}:${p.is_ignored ? 1 : 0}:${p.started_at_str || ''}`).join('|');
+        if (tbody.dataset.sig !== newSig) {
+          tbody.dataset.sig = newSig;
+          let tHtml = '';
+          allProblems.forEach(p => {
+            const isIgn = Boolean(p.is_ignored);
+            let sevBadge = '';
+            if (isIgn) {
+              sevBadge = '<span class="badge badge-muted" style="font-size:11.5px;padding:2px 7px">DIABAIKAN 🔕</span>';
+            } else if (p.severity === 'danger') {
+              sevBadge = '<span class="badge badge-danger" style="font-size:11.5px;padding:2px 7px">KRITIS</span>';
+            } else if (p.severity === 'average') {
+              sevBadge = '<span class="badge badge-orange" style="font-size:11.5px;padding:2px 7px">GAWAT</span>';
+            } else if (p.severity === 'warning') {
+              sevBadge = '<span class="badge badge-warn" style="font-size:11.5px;padding:2px 7px">PERINGATAN</span>';
+            } else {
+              sevBadge = `<span class="badge badge-info" style="font-size:11.5px;padding:2px 7px">${(p.severity || 'INFO').toUpperCase()}</span>`;
             }
-          }
-          const grpHtml = p.group_name ? `<div style="font-size:11.5px;color:var(--dim);margin-top:1px">${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>` : '';
-          const startedStr = p.started_at_str || (p.started_at ? relTime(p.started_at) : '—');
-          const durStr = p.durasi ? `${p.durasi} yang lalu` : (p.started_at ? relTime(p.started_at) : '');
-          const trStyle = isIgn
-            ? 'border-bottom:1px solid rgba(255,255,255,0.03);opacity:0.8;background:rgba(255,255,255,0.015);transition:background .12s ease;'
-            : 'border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;';
 
-          tHtml += `
-          <tr onclick="window.location.href='/servers/${p.server_id}/services'"
-              title="Klik untuk buka rincian server ${(p.hostname || '').replace(/"/g, '&quot;')}"
-              style="cursor:pointer;${trStyle}">
-            <td style="padding:7px 10px;white-space:nowrap">
-              <div class="mono" style="font-size:12.5px;font-weight:600;color:var(--text)">${startedStr}</div>
-              <div style="font-size:11.5px;color:var(--dim);margin-top:1px" data-start="${p.started_at ? (p.started_at.endsWith('Z') ? p.started_at : p.started_at + 'Z') : ''}" data-suffix=" yang lalu">${durStr}</div>
-            </td>
-            <td style="padding:7px 10px;white-space:nowrap">
-              <div style="font-size:13.5px;font-weight:600;color:var(--text-bright)">${(p.hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-              ${grpHtml}
-            </td>
-            <td style="padding:7px 10px;white-space:nowrap">${sevBadge}</td>
-            <td style="padding:7px 10px;font-size:13px;color:var(--text)">${escMsg}${ignNote}</td>
-          </tr>`;
-        });
-        tbody.innerHTML = tHtml;
+            const escMsg = (p.message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            let ignNote = '';
+            if (isIgn) {
+              const reasonTxt = p.ignored_reason || (p.ignored_by ? 'oleh ' + p.ignored_by : '');
+              if (reasonTxt) {
+                const escReason = reasonTxt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                ignNote = `<span class="badge badge-muted" style="font-size:10.5px;padding:1px 5px;margin-left:6px" title="${escReason}">${escReason}</span>`;
+              }
+            }
+            const grpHtml = p.group_name ? `<div style="font-size:11.5px;color:var(--dim);margin-top:2px">${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>` : '';
+            const startedStr = p.started_at_str || '—';
+            let durStr = '—';
+            if (p.started_at) {
+              const startTs = new Date(p.started_at.endsWith('Z') ? p.started_at : p.started_at + 'Z').getTime();
+              if (!isNaN(startTs) && typeof fmtDur === 'function') {
+                durStr = fmtDur((Date.now() - startTs) / 1000, isEn) + ' yang lalu';
+              } else if (p.durasi) {
+                durStr = p.durasi + ' yang lalu';
+              } else {
+                durStr = relTime(p.started_at);
+              }
+            }
+            const trStyle = isIgn
+              ? 'border-bottom:1px solid rgba(255,255,255,0.03);opacity:0.8;background:rgba(255,255,255,0.015);transition:background .12s ease;'
+              : 'border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;';
+
+            tHtml += `
+            <tr onclick="window.location.href='/servers/${p.server_id}/services'"
+                title="Klik untuk buka rincian server ${(p.hostname || '').replace(/"/g, '&quot;')}"
+                style="cursor:pointer;${trStyle}">
+              <td style="padding:8px 10px;white-space:nowrap;width:130px;min-width:125px">
+                <div class="mono" style="font-size:12.5px;font-weight:600;color:var(--text)">${startedStr}</div>
+                <div style="font-size:11.5px;color:var(--dim);margin-top:2px" data-start="${p.started_at ? (p.started_at.endsWith('Z') ? p.started_at : p.started_at + 'Z') : ''}" data-suffix=" yang lalu">${durStr}</div>
+              </td>
+              <td style="padding:8px 10px;white-space:nowrap;width:150px;min-width:135px;max-width:180px">
+                <div style="font-size:13.5px;font-weight:600;color:var(--text-bright)">${(p.hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                ${grpHtml}
+              </td>
+              <td style="padding:8px 10px;white-space:nowrap;width:115px;min-width:110px;text-align:center">${sevBadge}</td>
+              <td style="padding:8px 10px;font-size:13px;color:var(--text)">${escMsg}${ignNote}</td>
+            </tr>`;
+          });
+          tbody.innerHTML = tHtml;
+        }
       }
     }
 
