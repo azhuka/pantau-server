@@ -220,7 +220,7 @@
           </div>
           {% endif %}
         </td>
-        <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+        <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DIABAIKAN 🔕' if p.is_ignored else ('GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper)) }}</span></td>
         <td>
           <span>{{ p.message }}</span>
           {% if p.is_ignored %}
@@ -846,7 +846,7 @@ window.poll = async function() {
                 <strong>${_esc(p.hostname)}</strong>
                 ${p.group_name ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:10px;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> ${_esc(p.group_name)}</span></div>` : ''}
               </td>
-              <td style="width:100px;text-align:center" class="col-sev"><span class="${sevBadge}">${_esc(p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}${isIgn ? ' 🔕' : ''}</span></td>
+              <td style="width:100px;text-align:center" class="col-sev"><span class="${sevBadge}">${isIgn ? (isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕') : _esc(p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}</span></td>
               <td>
                 <span>${_esc(pMsg)}</span>
                 ${ignBadge}

@@ -1029,7 +1029,7 @@ body.show-alert-banner .kiosk-toggle-btn {
   <div id="dash-grid-container" style="display:none;padding:12px">
     <div class="noc-grid" id="dash-server-grid">
       {% for srv in servers %}
-      {% set is_crit = (srv._danger_count > 0 or srv.overall_status == 'offline') %}
+      {% set is_crit = (srv._danger_count > 0 or (srv.overall_status == 'offline' and not getattr(srv, '_is_ignored_stale', False))) %}
       {% set is_warn = (srv._warning_count > 0 or srv.is_maintenance) %}
       {% set tot_svcs = (srv._svc_data or []) | length %}
       {% set up_svcs = (srv._svc_data or []) | selectattr('status', 'equalto', 'up') | list | length %}
@@ -1884,12 +1884,11 @@ async function pollNocDashboard() {
     if (kpiCardProb) kpiCardProb.style.borderLeftColor = kpiColor;
     if (totPrbEl) totPrbEl.style.color = kpiTextColor;
 
-    // Aggregate all active problems (hanya insiden aktif yang TIDAK diabaikan)
+    // Aggregate all active problems (termasuk yang diabaikan agar tetap tercatat di sistem)
     const allProblems = [];
     list.forEach(srv => {
       if (Array.isArray(srv.problems)) {
         srv.problems.forEach(p => {
-          if (p.is_ignored) return; // Lewati insiden yang diabaikan dari kartu Insiden Terkini di Dashboard
           allProblems.push({
             ...p,
             server_id: srv.id,
@@ -1902,12 +1901,15 @@ async function pollNocDashboard() {
 
     const sevOrder = { danger: 0, average: 1, warning: 2, info: 3 };
     allProblems.sort((a, b) => {
+      const aIgn = a.is_ignored ? 1 : 0;
+      const bIgn = b.is_ignored ? 1 : 0;
+      if (aIgn !== bIgn) return aIgn - bIgn;
       const aSev = sevOrder[a.severity] != null ? sevOrder[a.severity] : 4;
       const bSev = sevOrder[b.severity] != null ? sevOrder[b.severity] : 4;
       if (aSev !== bSev) return aSev - bSev;
       const aTime = a.started_at ? new Date(a.started_at).getTime() : 0;
       const bTime = b.started_at ? new Date(b.started_at).getTime() : 0;
-      return aTime - bTime;
+      return bTime - aTime;
     });
 
     const activeTotalProb = dangerTot + avgTot + warnTot + infoTot;
@@ -1927,6 +1929,10 @@ async function pollNocDashboard() {
         incIcon.style.background = 'rgba(245,158,11,0.15)';
         incIcon.style.color = 'var(--yellow)';
         incIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+      } else if (ignTot > 0) {
+        incIcon.style.background = 'rgba(148,163,184,0.12)';
+        incIcon.style.color = 'var(--dim)';
+        incIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
       } else {
         incIcon.style.background = 'rgba(16,185,129,0.12)';
         incIcon.style.color = 'var(--green)';
@@ -1949,8 +1955,11 @@ async function pollNocDashboard() {
       if (tbody) {
         let tHtml = '';
         allProblems.forEach(p => {
+          const isIgn = Boolean(p.is_ignored);
           let sevBadge = '';
-          if (p.severity === 'danger') {
+          if (isIgn) {
+            sevBadge = '<span class="badge badge-muted" style="font-size:11.5px;padding:2px 7px">DIABAIKAN 🔕</span>';
+          } else if (p.severity === 'danger') {
             sevBadge = '<span class="badge badge-danger" style="font-size:11.5px;padding:2px 7px">KRITIS</span>';
           } else if (p.severity === 'average') {
             sevBadge = '<span class="badge badge-orange" style="font-size:11.5px;padding:2px 7px">GAWAT</span>';
@@ -1961,10 +1970,20 @@ async function pollNocDashboard() {
           }
 
           const escMsg = (p.message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          let ignNote = '';
+          if (isIgn) {
+            const reasonTxt = p.ignored_reason || (p.ignored_by ? 'oleh ' + p.ignored_by : '');
+            if (reasonTxt) {
+              const escReason = reasonTxt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+              ignNote = `<span class="badge badge-muted" style="font-size:10.5px;padding:1px 5px;margin-left:6px" title="${escReason}">${escReason}</span>`;
+            }
+          }
           const grpHtml = p.group_name ? `<div style="font-size:11.5px;color:var(--dim);margin-top:1px">${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>` : '';
           const startedStr = p.started_at_str || (p.started_at ? relTime(p.started_at) : '—');
           const durStr = p.durasi ? `${p.durasi} yang lalu` : (p.started_at ? relTime(p.started_at) : '');
-          const trStyle = 'border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;';
+          const trStyle = isIgn
+            ? 'border-bottom:1px solid rgba(255,255,255,0.03);opacity:0.8;background:rgba(255,255,255,0.015);transition:background .12s ease;'
+            : 'border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;';
 
           tHtml += `
           <tr onclick="window.location.href='/servers/${p.server_id}/services'"
@@ -1979,7 +1998,7 @@ async function pollNocDashboard() {
               ${grpHtml}
             </td>
             <td style="padding:7px 10px;white-space:nowrap">${sevBadge}</td>
-            <td style="padding:7px 10px;font-size:13px;color:var(--text)">${escMsg}</td>
+            <td style="padding:7px 10px;font-size:13px;color:var(--text)">${escMsg}${ignNote}</td>
           </tr>`;
         });
         tbody.innerHTML = tHtml;

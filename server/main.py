@@ -460,7 +460,7 @@ def migrate_log_request_input():
 
 
 def migrate_server_problem_ignored():
-    """Migrasi penambahan kolom pembungkaman/abaikan masalah pada tabel server_problems."""
+    """Migrasi penambahan kolom status abaikan masalah pada tabel server_problems."""
     from sqlalchemy import inspect, text
 
     inspector = inspect(engine)
@@ -491,7 +491,7 @@ def migrate_server_problem_ignored():
 
 
 def migrate_service_ignored():
-    """Migrasi penambahan kolom pembungkaman/abaikan layanan pada tabel services."""
+    """Migrasi penambahan kolom status abaikan layanan pada tabel services."""
     from sqlalchemy import inspect, text
 
     inspector = inspect(engine)
@@ -1659,17 +1659,20 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
 
         stale = _server_stale(srv)
         active_svcs = [s for s in svc_list if not s.get("ignored")]
+        is_ignored_stale = any(p.get("key") == "agent_stale" and p.get("is_ignored") for p in open_prob)
         if srv.is_maintenance:
             overall = "maintenance"
+        elif stale:
+            overall = "offline (diabaikan)" if is_ignored_stale else "offline"
         elif not active_svcs:
-            overall = "offline" if stale else "up"
+            overall = "up"
         else:
             overall = "down" if not any(s["status"] == "up" for s in active_svcs) else "up"
         if stale:
             for s in svc_list:
                 s["status"] = "offline"
             if not srv.is_maintenance:
-                overall = "offline"
+                overall = "offline (diabaikan)" if is_ignored_stale else "offline"
 
         # Snapshot HW terbaru untuk CPU/RAM/uptime di dashboard
         latest_sys = (
@@ -1732,7 +1735,8 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             "is_isolated_net": bool(getattr(srv, "is_isolated_net", 0)),
             "allow_web_terminal": bool(getattr(srv, "allow_web_terminal", 0)),
             "platform": _classify_platform(hw.get("platform", {}), getattr(srv, "platform_override", None)),
-            "online": overall != "offline",
+            "online": overall not in ("offline", "offline (diabaikan)"),
+            "is_ignored_stale": is_ignored_stale,
             "last_seen": srv.last_seen.isoformat() if srv.last_seen else None,
             "overall_status": overall, "services": svc_list,
             "problems": _serialize_problem_list(formatted_probs),
@@ -2817,15 +2821,22 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         srv._ignored_down = server_ignored_down
 
         stale = _server_stale(srv)
+        is_ign_stale = False
         if stale:
             for d in srv._svc_data:
                 d["status"] = "offline"
+            is_ign_stale = any(
+                p.get("key") == "agent_stale" and p.get("is_ignored")
+                for p in getattr(srv, "_problems", []) or []
+            )
+        srv._is_ignored_stale = is_ign_stale
         if srv.is_maintenance:
             srv._status_label, srv._status_cls = "Pemeliharaan", "badge-warn"
         else:
             srv._status_label, srv._status_cls = _server_status(
                 srv, stale, bool(srv._svc_data), any(d["status"] == "up" for d in srv._svc_data),
-                has_unignored_down=(unignored_down > 0))
+                has_unignored_down=(unignored_down > 0),
+                is_ignored_stale=is_ign_stale)
         latest_sys = (
             db.query(SystemSnapshot)
             .filter(SystemSnapshot.server_id == srv.id)
@@ -3031,12 +3042,20 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
         srv._platform = _classify_platform(hw.get("platform", {}), getattr(srv, "platform_override", None))
 
         unignored_down = [d for d in svc_data if d.get("status") in ("down", "offline") and not d.get("ignored")]
+        is_ign_stale = False
+        if not srv._online:
+            is_ign_stale = any(
+                p.get("key") == "agent_stale" and p.get("is_ignored")
+                for p in getattr(srv, "_problems", []) or []
+            )
+        srv._is_ignored_stale = is_ign_stale
         if srv.is_maintenance:
             srv._status_label, srv._status_cls = "Pemeliharaan", "badge-warn"
         else:
             srv._status_label, srv._status_cls = _server_status(
                 srv, not srv._online, bool(svc_data), any(d["status"] == "up" for d in svc_data),
-                has_unignored_down=bool(unignored_down))
+                has_unignored_down=bool(unignored_down),
+                is_ignored_stale=is_ign_stale)
 
     existing_groups, existing_tags = get_existing_groups_and_tags(db)
     group_counts = {}
@@ -3650,24 +3669,43 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
     server = db.query(Server).filter(Server.id == sid).first()
     _audit(db, user.username, f"service_{action}",
            f"{server.hostname if server else sid}:{svc.service_name}", "dikirim ke agen", server_id=sid)
-    if action == "start":
-        # Otomatis aktifkan kembali pemantauan saat admin memulai/menyalakan layanan (hanya bila bukan mode permanen)
-        if getattr(svc, "ignore_mode", None) != "permanent":
-            svc.is_ignored = 0
-            svc.ignored_until = None
-            svc.ignored_reason = None
-            svc.ignore_mode = None
-            prob = db.query(ServerProblem).filter(
-                ServerProblem.server_id == sid,
-                ServerProblem.key == f"service_down:{svc.service_name}",
-                ServerProblem.resolved_at.is_(None),
-            ).first()
-            if prob:
-                prob.is_ignored = 0
-                prob.ignored_until = None
-                prob.ignored_reason = None
-                prob.ignore_mode = None
-                prob.updated_at = datetime.utcnow()
+    if action == "stop":
+        # Tindakan sengaja oleh operator: tandai layanan diabaikan agar insiden
+        # tetap tercatat aktif tetapi tidak memicu alarm banner kritis atau sirine
+        svc.is_ignored = 1
+        svc.ignored_until = None
+        svc.ignored_by = user.username
+        svc.ignored_reason = f"Dihentikan oleh operator ({user.username})"
+        svc.ignore_mode = "permanent"
+        prob = db.query(ServerProblem).filter(
+            ServerProblem.server_id == sid,
+            ServerProblem.key == f"service_down:{svc.service_name}",
+            ServerProblem.resolved_at.is_(None),
+        ).first()
+        if prob:
+            prob.is_ignored = 1
+            prob.ignored_until = None
+            prob.ignored_by = user.username
+            prob.ignored_reason = f"Dihentikan oleh operator ({user.username})"
+            prob.ignore_mode = "permanent"
+            prob.updated_at = datetime.utcnow()
+    elif action == "start":
+        # Otomatis pulihkan pemantauan saat admin memulai/menyalakan layanan
+        svc.is_ignored = 0
+        svc.ignored_until = None
+        svc.ignored_reason = None
+        svc.ignore_mode = None
+        prob = db.query(ServerProblem).filter(
+            ServerProblem.server_id == sid,
+            ServerProblem.key == f"service_down:{svc.service_name}",
+            ServerProblem.resolved_at.is_(None),
+        ).first()
+        if prob:
+            prob.is_ignored = 0
+            prob.ignored_until = None
+            prob.ignored_reason = None
+            prob.ignore_mode = None
+            prob.updated_at = datetime.utcnow()
     db.commit()
     if is_json:
         return Response(json.dumps({"ok": True, "detail": f"Perintah {label_id} {svc.service_name} telah dikirim ke Agen Pantau."}), media_type="application/json")
@@ -4052,6 +4090,21 @@ def _host_control(request: Request, sid: int, db: Session, action: str, csrf_tok
         at_epoch = int(datetime.now(timezone.utc).timestamp())
         return RedirectResponse(f"/servers/{sid}/services?action=poweroff_ha_blocked&at={at_epoch}", status_code=303)
     _enqueue_mitigation(db, sid, action, issued_by=user.username)
+    if action == "poweroff_host":
+        # Tindakan sengaja oleh operator mematikan host:
+        # Jika problem agent_stale sudah ada, tandai diabaikan agar tidak memicu alarm banner atau sirine
+        prob = db.query(ServerProblem).filter(
+            ServerProblem.server_id == sid,
+            ServerProblem.key == "agent_stale",
+            ServerProblem.resolved_at.is_(None),
+        ).first()
+        if prob:
+            prob.is_ignored = 1
+            prob.ignored_until = None
+            prob.ignored_by = user.username
+            prob.ignored_reason = f"Dimatikan oleh operator ({user.username})"
+            prob.ignore_mode = "permanent"
+            prob.updated_at = datetime.utcnow()
     _audit(db, user.username, action,
            f"{server.hostname} ({server.ip_address})", "dikirim ke agen", server_id=sid)
     db.commit()
@@ -5928,6 +5981,8 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
     Arsip teratasi > 30 hari dihapus. Kembalikan (level, open, history).
     """
     now = now or datetime.utcnow()
+    is_srv_maint = False
+    maint_reason = None
     if getattr(srv, "is_maintenance", 0):
         m_until = getattr(srv, "maintenance_until", None)
         if m_until and m_until < now:
@@ -5936,7 +5991,8 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             srv.maintenance_reason = None
             db.commit()
         else:
-            instances = []
+            is_srv_maint = True
+            maint_reason = getattr(srv, "maintenance_reason", None) or "Mode Pemeliharaan Aktif"
 
     # Migrasi transparan key lama (ram_high/ram_critical, dll) ke key terpadu (ram_usage, dll)
     LEGACY_KEY_MAP = {
@@ -6007,6 +6063,50 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             svc_obj = svc_map.get(svc_name)
         is_svc_ignored = bool(svc_obj and getattr(svc_obj, "is_ignored", 0))
 
+        # Tentukan apakah insiden ini merupakan tindakan yang disengaja oleh operator
+        target_ignored = 0
+        target_ignored_until = None
+        target_ignored_by = None
+        target_ignored_reason = None
+        target_ignore_mode = None
+
+        if is_srv_maint:
+            # Mode Pemeliharaan aktif: tetap catat insiden sebagai masalah terbuka,
+            # tetapi statusnya diabaikan sehingga tidak memicu alarm banner atau sirine kritis
+            target_ignored = 1
+            target_ignored_by = "Mode Pemeliharaan"
+            target_ignored_reason = maint_reason
+            target_ignore_mode = "duration" if srv.maintenance_until else "permanent"
+            target_ignored_until = srv.maintenance_until
+        elif p["key"] == "agent_stale":
+            # Periksa apakah host dimatikan melalui perintah poweroff_host resmi oleh operator
+            last_po = (
+                db.query(Command)
+                .filter(
+                    Command.server_id == srv.id,
+                    Command.action == "poweroff_host",
+                )
+                .order_by(desc(Command.created_at))
+                .first()
+            )
+            if last_po:
+                po_time = last_po.created_at
+                ls_time = srv.last_seen
+                if ls_time and ls_time.tzinfo:
+                    ls_time = ls_time.replace(tzinfo=None)
+                # Jika poweroff dikirim dan sejak itu mesin belum melapor kembali
+                if po_time and (ls_time is None or po_time >= ls_time - timedelta(seconds=60)):
+                    target_ignored = 1
+                    target_ignored_by = last_po.issued_by or "operator"
+                    target_ignored_reason = f"Dimatikan oleh operator ({target_ignored_by})"
+                    target_ignore_mode = "permanent"
+        elif is_svc_ignored:
+            target_ignored = 1
+            target_ignored_by = svc_obj.ignored_by
+            target_ignored_reason = svc_obj.ignored_reason
+            target_ignore_mode = getattr(svc_obj, "ignore_mode", "permanent") or "permanent"
+            target_ignored_until = svc_obj.ignored_until
+
         if row is None:
             start_time = ev if (ev and (p["key"] == "agent_stale" or "_usage" in p["key"] or p["key"] == "failed_logins")) else now
             new_row = ServerProblem(
@@ -6015,20 +6115,28 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 last_active_at=active,
                 context=p.get("context"),
             )
-            # 1. Warisi pengabaian dari objek Service (jika masalah service_down)
-            if is_svc_ignored:
+            if target_ignored:
                 new_row.is_ignored = 1
-                new_row.ignored_until = svc_obj.ignored_until
-                new_row.ignored_by = svc_obj.ignored_by
-                new_row.ignored_reason = svc_obj.ignored_reason
-                new_row.ignore_mode = getattr(svc_obj, "ignore_mode", "permanent") or "permanent"
+                new_row.ignored_until = target_ignored_until
+                new_row.ignored_by = target_ignored_by
+                new_row.ignored_reason = target_ignored_reason
+                new_row.ignore_mode = target_ignore_mode
             else:
                 # 2. Cek riwayat ServerProblem sebelumnya untuk key ini (termasuk non-service atau flappy)
+                lookup_keys = [p["key"]]
+                tgt_k = LEGACY_KEY_MAP.get(p["key"])
+                if not tgt_k:
+                    if p["key"].startswith("disk_high:"):
+                        tgt_k = "disk_usage:" + p["key"].split(":", 1)[1]
+                    elif p["key"].startswith("disk_critical:"):
+                        tgt_k = "disk_usage:" + p["key"].split(":", 1)[1]
+                if tgt_k:
+                    lookup_keys.append(tgt_k)
                 prev_prob = (
                     db.query(ServerProblem)
                     .filter(
                         ServerProblem.server_id == srv.id,
-                        ServerProblem.key == p["key"],
+                        ServerProblem.key.in_(lookup_keys),
                         ServerProblem.is_ignored == 1,
                     )
                     .order_by(desc(ServerProblem.updated_at))
@@ -6056,18 +6164,23 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             except Exception:
                 pass
         else:
-            if getattr(row, "is_ignored", 0) and getattr(row, "ignore_mode", None) == "duration" and row.ignored_until and row.ignored_until <= now:
+            if target_ignored:
+                row.is_ignored = 1
+                row.ignored_until = target_ignored_until
+                row.ignored_by = target_ignored_by
+                row.ignored_reason = target_ignored_reason
+                row.ignore_mode = target_ignore_mode
+            elif getattr(row, "is_ignored", 0) and getattr(row, "ignore_mode", None) == "duration" and row.ignored_until and row.ignored_until <= now:
                 row.is_ignored = 0
                 row.ignored_until = None
                 row.ignored_reason = None
                 row.ignore_mode = None
-            elif is_svc_ignored:
-                row.is_ignored = 1
-                row.ignored_until = svc_obj.ignored_until
-                row.ignored_by = svc_obj.ignored_by
-                new_row_reason = svc_obj.ignored_reason
-                row.ignored_reason = new_row_reason
-                row.ignore_mode = getattr(svc_obj, "ignore_mode", "permanent") or "permanent"
+            elif getattr(row, "is_ignored", 0) and getattr(row, "ignored_by", None) == "Mode Pemeliharaan" and not is_srv_maint:
+                row.is_ignored = 0
+                row.ignored_until = None
+                row.ignored_by = None
+                row.ignored_reason = None
+                row.ignore_mode = None
 
             if p["key"] == "agent_stale" and ev and (row.started_at > ev):
                 row.started_at = ev
@@ -6256,7 +6369,7 @@ def problems_aggregate(db):
 
 
 
-def _server_status(srv, stale: bool, has_services: bool, any_up: bool, has_unignored_down: bool = True):
+def _server_status(srv, stale: bool, has_services: bool, any_up: bool, has_unignored_down: bool = True, is_ignored_stale: bool = False):
     """Status server dalam satu kosakata untuk semua halaman.
 
     Kembalikan (label, kelas_badge) supaya Dashboard, Servers, dan Rincian
@@ -6264,7 +6377,11 @@ def _server_status(srv, stale: bool, has_services: bool, any_up: bool, has_unign
     """
     if not srv.is_active:
         return "nonaktif", "badge-muted"
+    if getattr(srv, "is_maintenance", 0):
+        return "pemeliharaan", "badge-warn"
     if stale:
+        if is_ignored_stale:
+            return "offline (diabaikan)", "badge-muted"
         return ("offline", "badge-down") if srv.last_seen else ("-", "badge-muted")
     if not has_services:
         # agen melapor normal, hanya belum ada service yang terdeteksi
@@ -6744,6 +6861,8 @@ def api_alerts(
     RESOURCE_ALERT_DELAY_SECS = 60
 
     def _is_alert_banner_firing(r, now_dt):
+        if getattr(r, "is_ignored", 0):
+            return False
         key = getattr(r, "key", "") or ""
         # Peringatan non-darurat operasional (seperti versi agen atau pembaruan paket OS)
         # tidak boleh memicu Alert Banner darurat di atas layar
@@ -6991,7 +7110,7 @@ def api_alert_ignore(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Abaikan / bungkam peringatan atau masalah."""
+    """Abaikan peringatan atau masalah (tunda alarm kritis)."""
     _verify_csrf_header(request)
     if user.is_viewer():
         raise HTTPException(status_code=403, detail="Akses ditolak: Viewer tidak memiliki izin mengabaikan insiden")

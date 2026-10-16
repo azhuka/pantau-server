@@ -1355,7 +1355,7 @@
         </div>
         {% endif %}
       </td>
-      <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'GAWAT' if p.severity == 'average' else p.severity | upper }}{{ ' 🔕' if p.is_ignored else '' }}</span></td>
+      <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DIABAIKAN 🔕' if p.is_ignored else ('GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper)) }}</span></td>
       <td>
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
@@ -5709,8 +5709,7 @@ function renderProblemsTab(level, openList, histList) {
     const isOpen = !!p.is_open;
     const isIgnored = !!p.is_ignored;
     const sev = p.severity || 'info';
-    const sevBadge = isIgnored ? 'muted' : ({danger: 'danger', average: 'orange', warning: 'warn', info: 'info'}[sev] || 'muted');
-    const sevLabel = escapeHtml(sev === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (isEn ? sev : sev.toUpperCase())) + (isIgnored ? ' 🔕' : '');
+    const sevLabel = isIgnored ? (isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕') : escapeHtml(sev === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (isEn ? (sev === 'danger' ? 'CRITICAL' : sev) : (sev === 'danger' ? 'CRITICAL' : sev.toUpperCase())));
     const pMsg = isEn ? getServicesI18nText(p.message || '', true) : (p.message || '');
     const pTip = isEn ? getServicesI18nText(p.tip || '—', true) : (p.tip || '—');
     const searchTxt = ((pMsg || '') + ' ' + (p.key || '')).toLowerCase();
