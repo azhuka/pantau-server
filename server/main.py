@@ -2919,6 +2919,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 "message": p.get("message", ""),
                 "key": p.get("key", ""),
                 "is_ignored": is_ign,
+                "ignored_reason": p.get("ignored_reason"),
+                "ignored_by": p.get("ignored_by"),
                 "started_at": p_started.isoformat() if p_started else "",
                 "started_at_str": p_started.strftime("%d %b %H:%M") if p_started else "—",
                 "durasi": dur_str,
@@ -2931,10 +2933,10 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                     problems_by_sev[sev].append(item)
                 else:
                     problems_by_sev["warning"].append(item)
-                all_open_problems.append(item)
+            all_open_problems.append(item)
 
     sev_order = {"danger": 0, "average": 1, "warning": 2, "info": 3}
-    all_open_problems.sort(key=lambda p: (sev_order.get(p["severity"], 4), p["started_at"] or ""))
+    all_open_problems.sort(key=lambda p: (1 if p["is_ignored"] else 0, sev_order.get(p["severity"], 4), p["started_at"] or ""), reverse=False)
 
     top_cpu = sorted([s for s in servers if s._cpu is not None], key=lambda s: s._cpu, reverse=True)[:5]
     top_mem = sorted([s for s in servers if s._mem_pct is not None], key=lambda s: s._mem_pct, reverse=True)[:5]
@@ -3672,10 +3674,12 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
     if action == "stop":
         # Tindakan sengaja oleh operator: tandai layanan diabaikan agar insiden
         # tetap tercatat aktif tetapi tidak memicu alarm banner kritis atau sirine
+        op_name = (user.username if user else "OPERATOR").upper()
+        reason_txt = f"LAYANAN DIMATIKAN OLEH OPERATOR ({op_name})"
         svc.is_ignored = 1
         svc.ignored_until = None
         svc.ignored_by = user.username
-        svc.ignored_reason = f"Dihentikan oleh operator ({user.username})"
+        svc.ignored_reason = reason_txt
         svc.ignore_mode = "permanent"
         prob = db.query(ServerProblem).filter(
             ServerProblem.server_id == sid,
@@ -3686,7 +3690,7 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
             prob.is_ignored = 1
             prob.ignored_until = None
             prob.ignored_by = user.username
-            prob.ignored_reason = f"Dihentikan oleh operator ({user.username})"
+            prob.ignored_reason = reason_txt
             prob.ignore_mode = "permanent"
             prob.updated_at = datetime.utcnow()
     elif action == "start":
@@ -4093,6 +4097,7 @@ def _host_control(request: Request, sid: int, db: Session, action: str, csrf_tok
     if action == "poweroff_host":
         # Tindakan sengaja oleh operator mematikan host:
         # Jika problem agent_stale sudah ada, tandai diabaikan agar tidak memicu alarm banner atau sirine
+        op_name = (user.username if user else "OPERATOR").upper()
         prob = db.query(ServerProblem).filter(
             ServerProblem.server_id == sid,
             ServerProblem.key == "agent_stale",
@@ -4102,7 +4107,7 @@ def _host_control(request: Request, sid: int, db: Session, action: str, csrf_tok
             prob.is_ignored = 1
             prob.ignored_until = None
             prob.ignored_by = user.username
-            prob.ignored_reason = f"Dimatikan oleh operator ({user.username})"
+            prob.ignored_reason = f"SERVER DIMATIKAN OLEH OPERATOR ({op_name})"
             prob.ignore_mode = "permanent"
             prob.updated_at = datetime.utcnow()
     _audit(db, user.username, action,
@@ -6098,7 +6103,7 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 if po_time and (ls_time is None or po_time >= ls_time - timedelta(seconds=60)):
                     target_ignored = 1
                     target_ignored_by = last_po.issued_by or "operator"
-                    target_ignored_reason = f"Dimatikan oleh operator ({target_ignored_by})"
+                    target_ignored_reason = f"SERVER DIMATIKAN OLEH OPERATOR ({target_ignored_by.upper()})"
                     target_ignore_mode = "permanent"
         elif is_svc_ignored:
             target_ignored = 1
