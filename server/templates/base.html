@@ -1560,7 +1560,7 @@ function renderAlerts(d){
 
   // Modal overlay darurat hanya mengunci fokus di dashboard agar tidak mengganggu terminal/form di halaman lain
   const isDashboard = (window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname === '/dashboard');
-  const dangerList = d.danger_alerts || d.alerts || [];
+  const dangerList = d.firing_danger_alerts || d.danger_alerts || d.alerts || [];
   if (overlay && listEl) {
     if (isDashboard && dangerList.length) {
       const key = dangerList.map(a => a.id + ':' + a.acknowledged).join('|');

@@ -6893,6 +6893,8 @@ def api_alerts(
     danger_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_danger]
     average_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_average]
     warning_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_warning]
+    firing_danger_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in firing_danger]
+    firing_average_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in firing_average]
     firing_warning_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in firing_warning]
     all_unack_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_operational]
     firing_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in firing_operational]
@@ -6931,10 +6933,12 @@ def api_alerts(
         highest_severity = "ok"
 
     return {
-        "alerts": danger_alerts,
+        "alerts": firing_danger_alerts if firing_danger_alerts else danger_alerts,
         "all_alerts": all_unack_alerts,
         "danger_alerts": danger_alerts,
+        "firing_danger_alerts": firing_danger_alerts,
         "average_alerts": average_alerts,
+        "firing_average_alerts": firing_average_alerts,
         "warning_alerts": warning_alerts,
         "firing_alerts": firing_alerts,
         "unack_count": len(danger_alerts),
