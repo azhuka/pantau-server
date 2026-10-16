@@ -311,6 +311,42 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.4.1
+
+- **Release Label:** None
+- **Tipe Rilis:** Rilis Patch (*Patch Release*) — *Offline Server Incident Ignore Support & Operator Intentional Action Ignore Lifecycle Correction*.
+
+### Struktur Rilis SemVer (Major.Minor.Patch)
+
+```
+v4.4.1
+ │
+ ├── 4  (Mayor) : Restrukturisasi Keamanan & Arsitektur RBAC 3-Tier, 2FA TOTP RFC 6238, dan Isolasi Akun
+ ├── 4  (Minor) : Sistem Klasifikasi Aset 3-Tier (Tier 1 Kritis, Tier 2 Pendukung, Tier 3 Lab/Eksperimen), Matriks Keparahan Insiden Multi-Tier, Pembagian Peran Layanan Utama/Sekunder, dan Klasifikasi Sadar Operator
+ └── 1  (Patch) : Perbaikan Tombol Abaikan pada Server Offline & Siklus Hidup Pengabaian Insiden Tindakan Operator
+```
+
+---
+
+### Peningkatan & Perbaikan Bug — Versi 4.4.1 (Patch Release)
+
+1. **Dukungan Pengabaian (*Ignore / Mute*) Insiden pada Server Offline:**
+   - **Latar Belakang Masalah:** Pada halaman Rincian Server (`/servers/{sid}/services`) tab *Riwayat & Masalah*, tombol "Abaikan" tidak dapat diklik atau memunculkan pesan toast peringatan ketika server berstatus offline, padahal tombol abaikan pada menu Insiden Global (`/problems`) berfungsi normal.
+   - **Solusi Implementasi:**
+     - Menghapus guardrail frontend `typeof IS_ONLINE !== 'undefined' && !IS_ONLINE` pada fungsi `openIgnoreModal` dan `unignoreProblem` di [`server/templates/base.html`](file:///home/bos/rj45/server/templates/base.html).
+     - Menghapus pembatasan atribut `disabled` berbasis kondisi offline pada tombol Abaikan dan Pantau layanan di [`server/templates/services.html`](file:///home/bos/rj45/server/templates/services.html) (baik pada saat SSR Jinja2 maupun re-render dinamis JS `renderServiceActions`).
+     - Aksi pengabaian insiden merupakan mutasi data operasional di database dashboard pusat yang tidak memerlukan interaksi soket RPC langsung ke agen klien, sehingga kini dapat dioperasikan secara konsisten di seluruh halaman tanpa terhalang status online/offline host.
+
+2. **Perbaikan Siklus Hidup Pengabaian Tindakan Sadar Operator (*Operator Intentional Action Lifecycle*):**
+   - **Latar Belakang Masalah:** Ketika operator sengaja mematikan server (*Power Off Host*) atau mematikan layanan (*Stop Service*), insiden berhasil diklasifikasikan ke keparahan **🟡 PERINGATAN (`warning`)** sebagai insiden aktif (`is_ignored = 0`). Namun, ketika operator secara eksplisit mengklik tombol "Abaikan", insiden tidak dapat berpindah ke daftar keparahan *Diabaikan* dan tidak keluar dari total insiden Peringatan karena fungsi sinkronisasi periodik `sync_server_problems` secara terus-menerus menimpa dan me-reset `is_ignored = 0`.
+   - **Solusi Implementasi:**
+     - Memperbaiki logika rekonsiliasi pada [`server/main.py`](file:///home/bos/rj45/server/main.py) fungsi `sync_server_problems`: status awal saat terdeteksi tindakan sadar operator tetap berstatus aktif (`is_ignored = 0`), tetapi apabila operator telah melakukan pengabaian manual (`row.is_ignored == 1`), status pengabaian tersebut dipertahankan dan tidak di-reset ke 0.
+     - Insiden tindakan sadar yang diabaikan kini secara tepat keluar dari total/daftar keparahan aktif Peringatan dan masuk ke kategori *Diabaikan* (`is_ignored = 1`).
+     - Jika operator memilih "Pantau Kembali", insiden kembali ke status aktif keparahan Peringatan.
+     - Menyempurnakan endpoint API `api_alert_ignore` dan `api_service_ignore` agar mempertahankan riwayat alasan operator (`row.ignored_reason = reason or row.ignored_reason`) apabila modal abaikan disubmit tanpa mengisi alasan khusus baru.
+
+---
+
 ## Versi 4.4.0
 
 - **Release Label:** None

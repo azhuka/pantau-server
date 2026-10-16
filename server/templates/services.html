@@ -1708,12 +1708,12 @@
                 <span>Log</span>
               </button>
               {% if svc._is_ignored %}
-                <button type="button" class="btn btn-ghost btn-sm" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}"{% endif %} data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)">
+                <button type="button" class="btn btn-ghost btn-sm" title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                   <span>Pantau</span>
                 </button>
               {% else %}
-                <button type="button" class="btn btn-ghost btn-sm" {% if not is_online or is_up %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} {% if not is_online %}title="Server offline — aksi dinonaktifkan"{% elif is_up %}title="Layanan aktif normal — opsi abaikan hanya untuk layanan bermasalah/berhenti"{% else %}title="Bisukan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan"{% endif %} data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)">
+                <button type="button" class="btn btn-ghost btn-sm" {% if is_up %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} {% if is_up %}title="Layanan aktif normal — opsi abaikan hanya untuk layanan bermasalah/berhenti"{% else %}title="Bisukan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan"{% endif %} data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                   <span>Abaikan</span>
                 </button>
@@ -3594,12 +3594,11 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
   const svgBellOff = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
 
   if (isIgnored) {
-    const ignDis = !online ? 'disabled style="opacity:0.35;cursor:not-allowed" ' : '';
-    const ignTitle = !online ? offlineTitle : (isEn ? 'Cancel ignore for this service' : 'Pantau kembali layanan ini');
-    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" ' + ignDis + 'data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + ignTitle + '">' + svgBell + '<span>' + (isEn ? 'Monitor' : 'Pantau') + '</span></button>';
+    const ignTitle = isEn ? 'Cancel ignore for this service' : 'Pantau kembali layanan ini';
+    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + ignTitle + '">' + svgBell + '<span>' + (isEn ? 'Monitor' : 'Pantau') + '</span></button>';
   } else {
-    const abkDis = (!online || isUp) ? 'disabled style="opacity:0.35;cursor:not-allowed" ' : '';
-    const abkTitle = !online ? offlineTitle : (isUp ? (isEn ? 'Service is running normally — ignore is only for stopped services' : 'Layanan aktif normal — opsi abaikan hanya untuk layanan bermasalah/berhenti') : (isEn ? 'Ignore monitoring for this service' : 'Abaikan pemantauan layanan ini'));
+    const abkDis = isUp ? 'disabled style="opacity:0.35;cursor:not-allowed" ' : '';
+    const abkTitle = isUp ? (isEn ? 'Service is running normally — ignore is only for stopped services' : 'Layanan aktif normal — opsi abaikan hanya untuk layanan bermasalah/berhenti') : (isEn ? 'Ignore monitoring for this service' : 'Abaikan pemantauan layanan ini');
     ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" ' + abkDis + 'data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="' + abkTitle + '">' + svgBellOff + '<span>' + (isEn ? 'Ignore' : 'Abaikan') + '</span></button>';
   }
 

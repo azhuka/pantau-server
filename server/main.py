@@ -5942,7 +5942,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
         if db is not None:
             try:
                 svc_entity = db.query(Service).filter(Service.server_id == srv.id, Service.service_name == name).first()
-                if svc_entity and svc_entity.ignored_reason and "DIMATIKAN OLEH OPERATOR" in svc_entity.ignored_reason:
+                if svc_entity and svc_entity.ignored_reason and ("DIMATIKAN OLEH OPERATOR" in svc_entity.ignored_reason or "DIHENTIKAN OLEH OPERATOR" in svc_entity.ignored_reason):
                     is_op_stop = True
                     op_by = (svc_entity.ignored_by or "OPERATOR").upper()
             except Exception:
@@ -6240,6 +6240,10 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
         target_ignored_reason = None
         target_ignore_mode = None
 
+        is_operator_action = False
+        operator_action_reason = None
+        operator_action_by = None
+
         if is_srv_maint:
             # Mode Pemeliharaan aktif: tetap catat insiden sebagai masalah terbuka,
             # tetapi statusnya diabaikan sehingga tidak memicu alarm banner atau sirine kritis
@@ -6266,21 +6270,26 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                     ls_time = ls_time.replace(tzinfo=None)
                 # Jika poweroff dikirim dan sejak itu mesin belum melapor kembali
                 if po_time and (ls_time is None or po_time >= ls_time - timedelta(seconds=60)):
-                    target_ignored = 0
-                    target_ignored_by = last_po.issued_by or "operator"
-                    target_ignored_reason = f"SERVER DIMATIKAN OLEH OPERATOR ({target_ignored_by.upper()})"
-                    target_ignore_mode = None
+                    is_operator_action = True
+                    operator_action_by = last_po.issued_by or "operator"
+                    operator_action_reason = f"SERVER DIMATIKAN OLEH OPERATOR ({operator_action_by.upper()})"
         elif is_svc_ignored:
             target_ignored = 1
             target_ignored_by = svc_obj.ignored_by
             target_ignored_reason = svc_obj.ignored_reason
             target_ignore_mode = getattr(svc_obj, "ignore_mode", "permanent") or "permanent"
             target_ignored_until = svc_obj.ignored_until
-        elif svc_obj and svc_obj.ignored_reason and "DIMATIKAN OLEH OPERATOR" in svc_obj.ignored_reason:
-            target_ignored = 0
-            target_ignored_by = svc_obj.ignored_by
-            target_ignored_reason = svc_obj.ignored_reason
-            target_ignore_mode = None
+        elif svc_obj and svc_obj.ignored_reason and ("DIMATIKAN OLEH OPERATOR" in svc_obj.ignored_reason or "DIHENTIKAN OLEH OPERATOR" in svc_obj.ignored_reason):
+            is_operator_action = True
+            operator_action_by = svc_obj.ignored_by
+            operator_action_reason = svc_obj.ignored_reason
+
+        if row and row.ignored_reason and ("DIMATIKAN OLEH OPERATOR" in row.ignored_reason or "DIHENTIKAN OLEH OPERATOR" in row.ignored_reason):
+            is_operator_action = True
+            if not operator_action_reason:
+                operator_action_reason = row.ignored_reason
+            if not operator_action_by:
+                operator_action_by = row.ignored_by
 
         if row is None:
             start_time = ev if (ev and (p["key"] == "agent_stale" or "_usage" in p["key"] or p["key"] == "failed_logins")) else now
@@ -6296,12 +6305,12 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 new_row.ignored_by = target_ignored_by
                 new_row.ignored_reason = target_ignored_reason
                 new_row.ignore_mode = target_ignore_mode
-            elif target_ignored_reason and "DIMATIKAN OLEH OPERATOR" in target_ignored_reason:
+            elif is_operator_action:
                 new_row.severity = "warning"
                 new_row.is_ignored = 0
                 new_row.ignored_until = None
-                new_row.ignored_by = target_ignored_by
-                new_row.ignored_reason = target_ignored_reason
+                new_row.ignored_by = operator_action_by
+                new_row.ignored_reason = operator_action_reason
                 new_row.ignore_mode = None
             else:
                 # 2. Cek riwayat ServerProblem sebelumnya untuk key ini (termasuk non-service atau flappy)
@@ -6346,12 +6355,16 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             except Exception:
                 pass
         else:
-            if target_ignored_reason and "DIMATIKAN OLEH OPERATOR" in target_ignored_reason:
-                row.severity = "warning"
+            if getattr(row, "is_ignored", 0) and getattr(row, "ignore_mode", None) == "duration" and row.ignored_until and row.ignored_until <= now:
                 row.is_ignored = 0
                 row.ignored_until = None
-                row.ignored_by = target_ignored_by
-                row.ignored_reason = target_ignored_reason
+                row.ignored_reason = operator_action_reason if is_operator_action else None
+                row.ignore_mode = None
+            elif getattr(row, "is_ignored", 0) and getattr(row, "ignored_by", None) == "Mode Pemeliharaan" and not is_srv_maint:
+                row.is_ignored = 0
+                row.ignored_until = None
+                row.ignored_by = None
+                row.ignored_reason = operator_action_reason if is_operator_action else None
                 row.ignore_mode = None
             elif target_ignored:
                 row.is_ignored = 1
@@ -6359,24 +6372,21 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 row.ignored_by = target_ignored_by
                 row.ignored_reason = target_ignored_reason
                 row.ignore_mode = target_ignore_mode
-            elif getattr(row, "is_ignored", 0) and getattr(row, "ignore_mode", None) == "duration" and row.ignored_until and row.ignored_until <= now:
-                row.is_ignored = 0
-                row.ignored_until = None
-                row.ignored_reason = None
-                row.ignore_mode = None
-            elif getattr(row, "is_ignored", 0) and getattr(row, "ignored_by", None) == "Mode Pemeliharaan" and not is_srv_maint:
-                row.is_ignored = 0
-                row.ignored_until = None
-                row.ignored_by = None
-                row.ignored_reason = None
-                row.ignore_mode = None
+            elif is_operator_action:
+                row.severity = "warning"
+                if not row.ignored_reason:
+                    row.ignored_reason = operator_action_reason
+                if not row.ignored_by:
+                    row.ignored_by = operator_action_by
+                # Menjaga status pengabaian: bila operator telah mengabaikan insiden ini (row.is_ignored == 1),
+                # status diabaikan tetap dipertahankan dan tidak di-reset ke 0.
 
             if p["key"] == "agent_stale" and ev and (row.started_at > ev):
                 row.started_at = ev
 
             if active > (row.last_active_at or row.started_at):
                 row.last_active_at = active
-            incoming_sev = "warning" if (target_ignored_reason and "DIMATIKAN OLEH OPERATOR" in target_ignored_reason) else p["severity"]
+            incoming_sev = "warning" if is_operator_action else p["severity"]
             if (row.severity != incoming_sev or row.message != p["message"]
                     or row.tip != p["tip"]):
                 old_sev = row.severity
@@ -7051,7 +7061,7 @@ def api_alerts(
             return False
         # Tindakan yang sengaja dilakukan oleh operator tidak memicu banner darurat atau modal gawat darurat
         reason = getattr(r, "ignored_reason", None) or ""
-        if "DIMATIKAN OLEH OPERATOR" in reason:
+        if "DIMATIKAN OLEH OPERATOR" in reason or "DIHENTIKAN OLEH OPERATOR" in reason:
             return False
         key = getattr(r, "key", "") or ""
         # Peringatan non-darurat operasional (seperti versi agen atau pembaruan paket OS)
@@ -7341,7 +7351,7 @@ def api_alert_ignore(
     row.is_ignored = 1
     row.ignored_until = until
     row.ignored_by = user.username
-    row.ignored_reason = reason
+    row.ignored_reason = reason or row.ignored_reason
     row.ignore_mode = ignore_mode
     row.updated_at = now
     if not row.acknowledged_at:
@@ -7359,7 +7369,7 @@ def api_alert_ignore(
             svc.is_ignored = 1
             svc.ignored_until = until
             svc.ignored_by = user.username
-            svc.ignored_reason = reason
+            svc.ignored_reason = reason or svc.ignored_reason
             svc.ignore_mode = ignore_mode
 
     dur_label = f" ({duration})" if ignore_mode != "permanent" else " (permanen)"
@@ -7482,7 +7492,7 @@ def api_service_ignore(
     svc.is_ignored = 1
     svc.ignored_until = until
     svc.ignored_by = user.username
-    svc.ignored_reason = reason
+    svc.ignored_reason = reason or svc.ignored_reason
     svc.ignore_mode = ignore_mode
 
     prob = db.query(ServerProblem).filter(
@@ -7494,7 +7504,7 @@ def api_service_ignore(
         prob.is_ignored = 1
         prob.ignored_until = until
         prob.ignored_by = user.username
-        prob.ignored_reason = reason
+        prob.ignored_reason = reason or prob.ignored_reason
         prob.ignore_mode = ignore_mode
         prob.updated_at = now
 

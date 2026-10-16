@@ -1650,10 +1650,6 @@ function openIgnoreModal(target, msg, onDone) {
     showToast(isEn ? 'Viewer accounts do not have permission to ignore incidents.' : 'Akun Viewer tidak memiliki izin mengabaikan insiden.', false);
     return;
   }
-  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
-    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
-    return;
-  }
   let id = target;
   let text = msg;
   let svcid = null;
@@ -1750,10 +1746,6 @@ async function submitIgnoreProblem() {
 
 async function unignoreProblem(target, onDone) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
-    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
-    return;
-  }
   let btn = target instanceof HTMLElement ? target : null;
   let id = btn ? btn.dataset.id : target;
   let svcid = btn ? btn.dataset.svcid : null;

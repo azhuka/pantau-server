@@ -1,4 +1,4 @@
-# Pantau Server (v4.4.0)
+# Pantau Server (v4.4.1)
 
 Dashboard monitoring & management multi-server berbasis web (FastAPI + MariaDB) dengan agent daemon Python ringan untuk mengelola multi server Linux dari satu layar.
 
@@ -8,7 +8,7 @@ Dashboard monitoring & management multi-server berbasis web (FastAPI + MariaDB) 
 
 - **Live Resource Monitoring:** CPU, RAM, Swap, Disk per mount point, Load Average, dan bandwidth network realtime (auto-polling tanpa refresh browser).
 - **Deep Hardware & Platform Telemetry:** Deteksi model prosesor & clock speed, hypervisor/virtualisasi platform (DMI & systemd-detect-virt), jenis block storage (SSD/HDD), default gateway, DNS, interface network MAC & link speed, serta waktu boot sistem.
-- **3-Tier Asset Criticality & Enterprise Incident Severity (v4.4.0):** Pengelompokan server ke dalam 3 tier aset (Tier 1 Kritis 24/7, Tier 2 Pendukung Operasional, Tier 3 Lab/Eksperimen). Keparahan KRITIS (`danger`) dan banner darurat/sirene hanya terpicu jika server Tier 1 mengalami bencana fatal. Gangguan server pendukung berstatus GAWAT (`average`), dan server lab berstatus PERINGATAN (`warning`). Pemadaman sadar/sengaja oleh operator di seluruh tier tercatat aktif sebagai PERINGATAN tanpa memicu banner darurat atau sirene.
+- **3-Tier Asset Criticality & Enterprise Incident Severity (v4.4.1):** Pengelompokan server ke dalam 3 tier aset (Tier 1 Kritis 24/7, Tier 2 Pendukung Operasional, Tier 3 Lab/Eksperimen). Keparahan KRITIS (`danger`) dan banner darurat/sirene hanya terpicu jika server Tier 1 mengalami bencana fatal. Gangguan server pendukung berstatus GAWAT (`average`), dan server lab berstatus PERINGATAN (`warning`). Pemadaman sadar/sengaja oleh operator di seluruh tier tercatat aktif sebagai PERINGATAN tanpa memicu banner darurat atau sirene.
 - **Fleet-Wide OTA Agent Self-Update:** Pembaruan versi armada agen otomatis (*self-update*) secara mandiri via polling heartbeat berkala tanpa perlu menekan tombol satu per satu, dengan verifikasi kriptografis SHA-256 dan auto-restart systemd.
 - **Service & Process Control:** Start, Stop, Restart service systemd, penentuan peran layanan Utama (*Core*) vs Sekunder, dan kill process pemakan resource langsung dari web dengan guardrail proteksi sistem kritis.
 - **Web Terminal (xterm.js):** Akses shell root interaktif langsung di browser. Mendukung ANSI color, shortcut bash, nano, htop, dan full screen.
@@ -142,7 +142,7 @@ Sistem hak akses 3-tier dengan model delegasi seperti perintah `sudo` di Linux:
 
 ---
 
-## Klasifikasi Aset (3-Tier Asset Criticality) & Keparahan Insiden (v4.4.0)
+## Klasifikasi Aset (3-Tier Asset Criticality) & Keparahan Insiden (v4.4.1)
 
 Pantau Server menerapkan standar hierarki keparahan insiden berbasis nilai aset (*asset criticality-driven incident severity*), terinspirasi dari standar pemantauan enterprise (seperti Zabbix dan Prometheus Alertmanager):
 
@@ -168,7 +168,7 @@ Pantau Server menerapkan standar hierarki keparahan insiden berbasis nilai aset 
 | **Pembaruan Paket Sistem (APT Updates Available)** | 🔵 **INFO** | 🔵 **INFO** | 🔵 **INFO** | Tugas pemeliharaan rutin administratif |
 
 > [!IMPORTANT]
-> **Tindakan Sadar Operator**: Apabila operator sengaja mematikan server via dashboard (*Power Off Host*) atau menghentikan service (*Stop Service*), insiden **TIDAK diabaikan** melainkan tetap tercatat aktif di kartu *Insiden Terkini* dengan status **🟡 PERINGATAN** dan label transparan `DIMATIKAN OLEH OPERATOR (Nama Operator)`. Insiden ini tidak memicu alarm merah maupun sirene.
+> **Tindakan Sadar Operator**: Apabila operator sengaja mematikan server via dashboard (*Power Off Host*) atau menghentikan service (*Stop Service*), insiden **TIDAK langsung diabaikan secara otomatis**, melainkan tetap tercatat aktif di kartu *Insiden Terkini* dengan status **🟡 PERINGATAN** dan label transparan `DIMATIKAN OLEH OPERATOR (Nama Operator)` tanpa memicu banner merah atau sirene. Jika operator kemudian memilih tombol **Abaikan**, insiden berpindah ke daftar *Diabaikan* dan keluar dari status *Peringatan* aktif hingga operator membatalkannya (*Pantau Kembali*).
 
 ---
 
