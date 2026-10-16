@@ -3686,26 +3686,26 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
     _audit(db, user.username, f"service_{action}",
            f"{server.hostname if server else sid}:{svc.service_name}", "dikirim ke agen", server_id=sid)
     if action == "stop":
-        # Tindakan sengaja oleh operator: tandai layanan diabaikan agar insiden
-        # tetap tercatat aktif tetapi tidak memicu alarm banner kritis atau sirine
+        # Tindakan sengaja oleh operator: catat alasan penghentian namun BUKAN DIABAIKAN (is_ignored = 0)
+        # Insiden tetap berstatus GAWAT aktif, namun tidak memicu alarm banner atau overlay darurat
         op_name = (user.username if user else "OPERATOR").upper()
         reason_txt = f"LAYANAN DIMATIKAN OLEH OPERATOR ({op_name})"
-        svc.is_ignored = 1
+        svc.is_ignored = 0
         svc.ignored_until = None
         svc.ignored_by = user.username
         svc.ignored_reason = reason_txt
-        svc.ignore_mode = "permanent"
+        svc.ignore_mode = None
         prob = db.query(ServerProblem).filter(
             ServerProblem.server_id == sid,
             ServerProblem.key == f"service_down:{svc.service_name}",
             ServerProblem.resolved_at.is_(None),
         ).first()
         if prob:
-            prob.is_ignored = 1
+            prob.is_ignored = 0
             prob.ignored_until = None
             prob.ignored_by = user.username
             prob.ignored_reason = reason_txt
-            prob.ignore_mode = "permanent"
+            prob.ignore_mode = None
             prob.updated_at = datetime.utcnow()
     elif action == "start":
         # Otomatis pulihkan pemantauan saat admin memulai/menyalakan layanan
@@ -4110,7 +4110,8 @@ def _host_control(request: Request, sid: int, db: Session, action: str, csrf_tok
     _enqueue_mitigation(db, sid, action, issued_by=user.username)
     if action == "poweroff_host":
         # Tindakan sengaja oleh operator mematikan host:
-        # Jika problem agent_stale sudah ada, tandai diabaikan agar tidak memicu alarm banner atau sirine
+        # Catat alasan penghentian namun BUKAN DIABAIKAN (is_ignored = 0).
+        # Insiden tetap berstatus KRITIS aktif, namun tidak memicu alarm banner atau overlay darurat
         op_name = (user.username if user else "OPERATOR").upper()
         prob = db.query(ServerProblem).filter(
             ServerProblem.server_id == sid,
@@ -4118,11 +4119,11 @@ def _host_control(request: Request, sid: int, db: Session, action: str, csrf_tok
             ServerProblem.resolved_at.is_(None),
         ).first()
         if prob:
-            prob.is_ignored = 1
+            prob.is_ignored = 0
             prob.ignored_until = None
             prob.ignored_by = user.username
             prob.ignored_reason = f"SERVER DIMATIKAN OLEH OPERATOR ({op_name})"
-            prob.ignore_mode = "permanent"
+            prob.ignore_mode = None
             prob.updated_at = datetime.utcnow()
     _audit(db, user.username, action,
            f"{server.hostname} ({server.ip_address})", "dikirim ke agen", server_id=sid)
@@ -6117,16 +6118,21 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                     ls_time = ls_time.replace(tzinfo=None)
                 # Jika poweroff dikirim dan sejak itu mesin belum melapor kembali
                 if po_time and (ls_time is None or po_time >= ls_time - timedelta(seconds=60)):
-                    target_ignored = 1
+                    target_ignored = 0
                     target_ignored_by = last_po.issued_by or "operator"
                     target_ignored_reason = f"SERVER DIMATIKAN OLEH OPERATOR ({target_ignored_by.upper()})"
-                    target_ignore_mode = "permanent"
+                    target_ignore_mode = None
         elif is_svc_ignored:
             target_ignored = 1
             target_ignored_by = svc_obj.ignored_by
             target_ignored_reason = svc_obj.ignored_reason
             target_ignore_mode = getattr(svc_obj, "ignore_mode", "permanent") or "permanent"
             target_ignored_until = svc_obj.ignored_until
+        elif svc_obj and svc_obj.ignored_reason and "DIMATIKAN OLEH OPERATOR" in svc_obj.ignored_reason:
+            target_ignored = 0
+            target_ignored_by = svc_obj.ignored_by
+            target_ignored_reason = svc_obj.ignored_reason
+            target_ignore_mode = None
 
         if row is None:
             start_time = ev if (ev and (p["key"] == "agent_stale" or "_usage" in p["key"] or p["key"] == "failed_logins")) else now
@@ -6142,6 +6148,12 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 new_row.ignored_by = target_ignored_by
                 new_row.ignored_reason = target_ignored_reason
                 new_row.ignore_mode = target_ignore_mode
+            elif target_ignored_reason and "DIMATIKAN OLEH OPERATOR" in target_ignored_reason:
+                new_row.is_ignored = 0
+                new_row.ignored_until = None
+                new_row.ignored_by = target_ignored_by
+                new_row.ignored_reason = target_ignored_reason
+                new_row.ignore_mode = None
             else:
                 # 2. Cek riwayat ServerProblem sebelumnya untuk key ini (termasuk non-service atau flappy)
                 lookup_keys = [p["key"]]
@@ -6185,7 +6197,13 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             except Exception:
                 pass
         else:
-            if target_ignored:
+            if target_ignored_reason and "DIMATIKAN OLEH OPERATOR" in target_ignored_reason:
+                row.is_ignored = 0
+                row.ignored_until = None
+                row.ignored_by = target_ignored_by
+                row.ignored_reason = target_ignored_reason
+                row.ignore_mode = None
+            elif target_ignored:
                 row.is_ignored = 1
                 row.ignored_until = target_ignored_until
                 row.ignored_by = target_ignored_by
@@ -6878,6 +6896,10 @@ def api_alerts(
     def _is_alert_banner_firing(r, now_dt):
         if getattr(r, "is_ignored", 0):
             return False
+        # Tindakan yang sengaja dilakukan oleh operator tidak memicu banner darurat atau modal gawat darurat
+        reason = getattr(r, "ignored_reason", None) or ""
+        if "DIMATIKAN OLEH OPERATOR" in reason:
+            return False
         key = getattr(r, "key", "") or ""
         # Peringatan non-darurat operasional (seperti versi agen atau pembaruan paket OS)
         # tidak boleh memicu Alert Banner darurat di atas layar
@@ -6948,7 +6970,7 @@ def api_alerts(
         highest_severity = "ok"
 
     return {
-        "alerts": firing_danger_alerts if firing_danger_alerts else danger_alerts,
+        "alerts": firing_danger_alerts,
         "all_alerts": all_unack_alerts,
         "danger_alerts": danger_alerts,
         "firing_danger_alerts": firing_danger_alerts,
@@ -6956,8 +6978,8 @@ def api_alerts(
         "firing_average_alerts": firing_average_alerts,
         "warning_alerts": warning_alerts,
         "firing_alerts": firing_alerts,
-        "unack_count": len(danger_alerts),
-        "unack_danger_count": len(danger_alerts),
+        "unack_count": len(firing_danger),
+        "unack_danger_count": len(firing_danger),
         "unack_average_count": len(average_alerts),
         "unack_warning_count": len(warning_alerts),
         "unack_total_count": len(all_unack_alerts),
