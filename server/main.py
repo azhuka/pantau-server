@@ -3061,18 +3061,7 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
             if latest_sys and latest_sys.mem_total else None
         )
         hw = _get_hardware_specs_dict(srv, ex, latest_sys)
-        cpu_cores = hw.get("cpu", {}).get("cores") or hw.get("cpu", {}).get("logical_cores")
-        srv._cpu_cores_str = f"{cpu_cores} Core" if (srv.last_seen and cpu_cores) else "—"
         srv._platform = _classify_platform(hw.get("platform", {}), getattr(srv, "platform_override", None))
-        d_tot, d_avail, d_pct = _extract_disk_stats(latest_sys.disks if latest_sys else None)
-        srv._disk_total_str = d_tot
-        srv._disk_avail_str = d_avail
-        srv._disk_pct = d_pct
-        srv._mem_total_str = _format_bytes_gb(latest_sys.mem_total if latest_sys else None)
-        srv._mem_avail_str = _format_bytes_gb(latest_sys.mem_avail if latest_sys else None)
-        srv._mem_used_str = _format_bytes_gb(latest_sys.mem_used if latest_sys else None)
-        srv._uptime_str = _format_uptime_str(latest_sys.uptime_secs if latest_sys else None)
-        srv._uptime_secs = latest_sys.uptime_secs if latest_sys else 0
 
         unignored_down = [d for d in svc_data if d.get("status") in ("down", "offline") and not d.get("ignored")]
         is_ign_stale = False
@@ -3108,7 +3097,6 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
         "all_tags": existing_tags,
         "group_counts": group_counts,
         "ungrouped_count": ungrouped_count,
-        "global_thresholds": get_global_thresholds(db),
     })
 
 

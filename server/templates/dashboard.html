@@ -798,16 +798,31 @@ body.show-alert-banner .kiosk-toggle-btn {
   <div id="dash-table-container" style="overflow-x:auto">
     <table id="dash-server-table">
       <thead>
+        <!-- Baris Header 1: Kolom Utama & Pengelompokan -->
         <tr>
-          <th class="sortable" data-col="0" style="cursor:pointer;width:170px;min-width:150px;white-space:nowrap" title="Nama host server & grup">Server <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="1" style="cursor:pointer;width:130px;min-width:120px;text-align:center;white-space:nowrap" title="Klasifikasi Kepentingan Layanan (Tier 1 Utama, Tier 2 Pendukung, Tier 3 Sementara)">Level Prioritas <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="2" style="cursor:pointer;width:135px;min-width:125px;white-space:nowrap" title="Alamat IP jaringan dan jenis platform host (LXC, VM, Fisik)">IP &amp; Platform <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="3" style="cursor:pointer;width:115px;min-width:105px;text-align:center;white-space:nowrap" title="Status koneksi dan durasi aktif sistem">Status &amp; Uptime <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="4" style="cursor:pointer;width:230px;min-width:200px;white-space:nowrap" title="Ringkasan situasi atau anomali terkini untuk respon cepat operator">Situasi Terkini <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="5" style="cursor:pointer;width:95px;min-width:90px;text-align:center;white-space:nowrap" title="Persentase beban prosesor CPU">CPU (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="6" style="cursor:pointer;width:115px;min-width:105px;text-align:center;white-space:nowrap" title="Persentase dan kapasitas pemakaian memori RAM">RAM (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="7" style="cursor:pointer;width:115px;min-width:105px;text-align:center;white-space:nowrap" title="Persentase dan sisa ruang penyimpanan sistem">Disk (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="8" style="cursor:pointer;width:110px;min-width:100px;text-align:center;white-space:nowrap" title="Ketersediaan layanan aktif dan rincian insiden yang terjadi">Svc / Inc <span class="sort-arrow">↕</span></th>
+          <th rowspan="2" class="sortable" data-col="0" style="vertical-align:middle;cursor:pointer;width:150px;min-width:140px;max-width:180px;white-space:nowrap" title="Nama host server">Hostname <span class="sort-arrow">↕</span></th>
+          <th rowspan="2" class="sortable" data-col="1" style="vertical-align:middle;cursor:pointer;width:85px;min-width:80px;text-align:center" title="Grup server">Grup <span class="sort-arrow">↕</span></th>
+          <th rowspan="2" class="sortable" data-col="2" style="vertical-align:middle;cursor:pointer;width:85px;min-width:80px;text-align:center" title="Status koneksi server saat ini">Status <span class="sort-arrow">↕</span></th>
+          <th rowspan="2" class="sortable" data-col="3" style="vertical-align:middle;cursor:pointer;width:100px;min-width:90px;text-align:center" title="Waktu aktif sejak reboot terakhir">Uptime <span class="sort-arrow">↕</span></th>
+          <th colspan="2" style="text-align:center;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)">Prosesor</th>
+          <th colspan="3" style="text-align:center;background:rgba(255,255,255,0.01);border-bottom:1px solid var(--border)">Memori</th>
+          <th colspan="3" style="text-align:center;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)">Penyimpanan</th>
+          <th rowspan="2" class="sortable" data-col="12" style="vertical-align:middle;text-align:center;cursor:pointer;width:85px;min-width:80px" title="Rasio total layanan yang dipantau terhadap layanan aktif">Layanan <span class="sort-arrow">↕</span></th>
+          <th rowspan="2" class="sortable" data-col="13" style="vertical-align:middle;text-align:center;cursor:pointer;width:85px;min-width:80px" title="Status masalah / gangguan aktif">Insiden <span class="sort-arrow">↕</span></th>
+        </tr>
+        <!-- Baris Header 2: Sub-Kolom Metrik Detail -->
+        <tr>
+          <!-- Prosesor -->
+          <th class="sortable" data-col="4" style="cursor:pointer;background:rgba(255,255,255,0.02);width:75px;min-width:70px" title="Jumlah inti CPU">CPU Core <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="5" style="cursor:pointer;background:rgba(255,255,255,0.02);width:95px;min-width:90px" title="Persentase beban CPU">Beban CPU (%) <span class="sort-arrow">↕</span></th>
+          <!-- Memori -->
+          <th class="sortable" data-col="6" style="cursor:pointer;background:rgba(255,255,255,0.01);width:75px;min-width:70px" title="Total kapasitas RAM">Total <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="7" style="cursor:pointer;background:rgba(255,255,255,0.01);width:85px;min-width:80px" title="Persentase beban RAM">Beban (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="8" style="cursor:pointer;background:rgba(255,255,255,0.01);width:80px;min-width:75px" title="Sisa kapasitas RAM tersedia">Tersedia <span class="sort-arrow">↕</span></th>
+          <!-- Penyimpanan -->
+          <th class="sortable" data-col="9" style="cursor:pointer;background:rgba(255,255,255,0.02);width:75px;min-width:70px" title="Total kapasitas penyimpanan sistem">Total <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="10" style="cursor:pointer;background:rgba(255,255,255,0.02);width:85px;min-width:80px" title="Persentase beban disk sistem">Beban (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="11" style="cursor:pointer;background:rgba(255,255,255,0.02);width:80px;min-width:75px" title="Sisa ruang penyimpanan tersedia">Tersedia <span class="sort-arrow">↕</span></th>
         </tr>
       </thead>
       <tbody>
@@ -827,10 +842,12 @@ body.show-alert-banner .kiosk-toggle-btn {
         {% set mem_v = srv._mem_pct if srv._mem_pct is not none else -1 %}
         {% set mem_cls = 'red' if mem_v >= ram_d else ('yellow' if mem_v >= ram_w else 'green') %}
         {% set mem_color = 'var(--red)' if mem_v >= ram_d else ('var(--yellow)' if mem_v >= ram_w else ('var(--green)' if srv._mem_pct is not none else 'var(--dim)')) %}
+        {% set mem_avail_pct = (100.0 - srv._mem_pct)|round(1) if srv._mem_pct is not none else None %}
 
         {% set disk_v = srv._disk_pct if srv._disk_pct is not none else -1 %}
         {% set disk_cls = 'red' if disk_v >= disk_d else ('yellow' if disk_v >= disk_w else 'green') %}
         {% set disk_color = 'var(--red)' if disk_v >= disk_d else ('var(--yellow)' if disk_v >= disk_w else ('var(--green)' if srv._disk_pct is not none else 'var(--dim)')) %}
+        {% set disk_avail_pct = (100.0 - srv._disk_pct)|round(1) if srv._disk_pct is not none else None %}
 
         {% set tot_svcs = (srv._svc_data or []) | length %}
         {% set up_svcs = (srv._svc_data or []) | selectattr('status', 'equalto', 'up') | list | length %}
@@ -843,237 +860,177 @@ body.show-alert-banner .kiosk-toggle-btn {
         {% set ign_cnt = srv._ignored_count if srv._ignored_count is defined else 0 %}
         {% set tot_prob = d_cnt + avg_cnt + w_cnt + i_cnt %}
 
-        {% set s_tier = srv.tier|default(2) %}
-
-        {% set v_rank = 6 %}
-        {% if srv.is_maintenance %}{% set v_rank = 4 %}
-        {% elif not srv.last_seen %}{% set v_rank = 5 %}
-        {% elif srv.overall_status == 'offline' or srv._status_label == 'offline' or srv._status_label == 'Offline' %}{% set v_rank = 0 %}
-        {% elif d_cnt > 0 %}{% set v_rank = 1 %}
-        {% elif avg_cnt > 0 %}{% set v_rank = 2 %}
-        {% elif w_cnt > 0 %}{% set v_rank = 3 %}
-        {% elif dn_svcs > 0 %}{% set v_rank = 1 %}
-        {% elif (cpu_v >= cpu_w) or (mem_v >= ram_w) or (disk_v >= disk_w) %}{% set v_rank = 3 %}
-        {% elif ign_cnt > 0 %}{% set v_rank = 5 %}
-        {% endif %}
-
         <tr data-srv-id="{{ srv.id }}"
             data-row-group="{{ srv.group_name or '' }}"
-            data-row-text="{{ (srv.hostname ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.ip_address or '') ~ ' ' ~ (srv.tags or '')) | lower }}"
+            data-row-text="{{ (srv.hostname ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '')) | lower }}"
             onclick="window.location.href='/servers/{{ srv.id }}/services'"
             title="Klik untuk buka rincian server {{ srv.hostname }}">
-          <!-- 0. Server (Hostname, Dot, Group) -->
+          <!-- 0. Hostname (Tanpa IP Address) -->
           <td data-sort-val="{{ srv.hostname | lower }}" style="white-space:nowrap">
-            <div style="display:inline-flex;align-items:center;gap:8px">
-              <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else ('down' if srv._status_label == 'offline' or srv._status_label == 'Offline' else 'muted')) }}" id="tbl-dot-{{ srv.id }}"></span>
-              <div>
-                <strong style="color:var(--text-bright);font-size:13.5px">{{ srv.hostname }}</strong>
-                {% if srv.group_name %}
-                  <div style="font-size:11px;color:var(--dim);margin-top:1px">
-                    <span style="opacity:0.8">{{ srv.group_name }}</span>
-                  </div>
-                {% endif %}
-              </div>
+            <div style="display:inline-flex;align-items:center;gap:6px">
+              <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else ('down' if srv._status_label == 'offline' else 'muted')) }}" id="tbl-dot-{{ srv.id }}"></span>
+              <strong style="color:var(--text-bright);font-size:13.5px">{{ srv.hostname }}</strong>
+              {% set s_tier = srv.tier|default(2) %}
+              {% if s_tier == 1 %}
+                <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="Tier 1: Layanan Utama / Prioritas">TIER 1</span>
+              {% elif s_tier == 3 %}
+                <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="Tier 3: Layanan Sementara / Non-Kritis">TIER 3</span>
+              {% else %}
+                <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="Tier 2: Layanan Pendukung / Sekunder">TIER 2</span>
+              {% endif %}
+              {% if srv._platform %}
+                <span class="badge" style="font-size:9.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: {{ srv._platform.label }}">
+                  {% if srv._platform.type == 'lxc' %}
+                    <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                  {% elif srv._platform.type == 'vm' %}
+                    <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                  {% else %}
+                    <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                  {% endif %}
+                  {{ srv._platform.short_label }}
+                </span>
+              {% endif %}
+              {% if srv.is_proxmox_ha %}
+                <span class="badge" style="font-size:10px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server terproteksi Proxmox HA">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  HA
+                </span>
+              {% endif %}
             </div>
           </td>
 
-          <!-- 1. Level Prioritas (Tier) -->
-          <td data-sort-val="{{ s_tier }}" style="text-align:center;white-space:nowrap">
-            {% if s_tier == 1 %}
-              <span class="badge" style="font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:2px 7px;font-weight:700" title="Tier 1: Layanan vital &amp; Prioritas">TIER 1 (Utama)</span>
-            {% elif s_tier == 3 %}
-              <span class="badge" style="font-size:10px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:2px 7px" title="Tier 3: Layanan bersifat sementara/uji coba">TIER 3 (Sementara)</span>
+          <!-- 1. Grup (Kolom Khusus Setelah Hostname) -->
+          <td data-sort-val="{{ srv.group_name or '' }}" style="text-align:center">
+            {% if srv.group_name %}
+              <span class="badge badge-muted" style="font-size:11px;padding:2px 7px">{{ srv.group_name }}</span>
             {% else %}
-              <span class="badge" style="font-size:10px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:2px 7px;font-weight:600" title="Tier 2: Layanan Pendukung operasional">TIER 2 (Pendukung)</span>
+              <span style="color:var(--dim)">-</span>
             {% endif %}
           </td>
 
-          <!-- 2. IP & Platform -->
-          <td data-sort-val="{{ srv.ip_address }}" style="white-space:nowrap">
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <span class="copyable-ip mono" style="font-size:12px" onclick="event.stopPropagation();copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
-              <div style="display:inline-flex;align-items:center;gap:4px">
-                {% if srv._platform %}
-                  <span class="badge" style="font-size:9.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: {{ srv._platform.label }}">
-                    {% if srv._platform.type == 'lxc' %}
-                      <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-                    {% elif srv._platform.type == 'vm' %}
-                      <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
-                    {% else %}
-                      <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                    {% endif %}
-                    {{ srv._platform.short_label }}
-                  </span>
-                {% endif %}
-                {% if srv.is_proxmox_ha %}
-                  <span class="badge" style="font-size:9.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server terproteksi Proxmox HA">
-                    <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    HA
-                  </span>
-                {% endif %}
-                {% if srv.is_isolated_net %}
-                  <span class="badge" style="font-size:9.5px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Jaringan Terisolasi (Lokal)">
-                    Lokal
-                  </span>
-                {% endif %}
-              </div>
-            </div>
+          <!-- 2. Status ("-" jika belum melapor) -->
+          <td data-sort-val="{{ srv._status_label }}" style="text-align:center">
+            {% if not srv.last_seen or srv._status_label == '-' %}
+              <span id="tbl-sts-{{ srv.id }}" style="color:var(--dim)">-</span>
+            {% else %}
+              <span class="badge {{ srv._status_cls }}" id="tbl-sts-{{ srv.id }}" style="font-size:10.5px;padding:2.5px 7px">{{ srv._status_label }}</span>
+            {% endif %}
           </td>
 
-          <!-- 3. Status & Uptime -->
-          <td data-sort-val="{{ srv._uptime_secs or 0 }}" style="text-align:center;white-space:nowrap">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
-              {% if not srv.last_seen or srv._status_label == '-' %}
-                <span id="tbl-sts-{{ srv.id }}" style="color:var(--dim);font-size:11px">-</span>
-              {% else %}
-                <span class="badge {{ srv._status_cls }}" id="tbl-sts-{{ srv.id }}" style="font-size:10.5px;padding:2px 7px">{{ srv._status_label }}</span>
-              {% endif %}
-              <span class="mono" id="tbl-uptime-{{ srv.id }}" style="font-size:11px;color:var(--dim)">
-                {{ srv._uptime_str if srv._uptime_str and srv._uptime_str != '—' else '-' }}
-              </span>
-            </div>
+          <!-- 3. Uptime -->
+          <td class="mono" id="tbl-uptime-{{ srv.id }}" data-sort-val="{{ srv._uptime_secs or 0 }}" style="font-size:12.5px;text-align:center">
+            {{ srv._uptime_str if srv._uptime_str and srv._uptime_str != '—' else '-' }}
           </td>
 
-          <!-- 4. Situasi Terkini (Quick Verdict) -->
-          <td data-sort-val="{{ v_rank }}" style="white-space:nowrap;font-size:12px">
-            <div id="tbl-verdict-{{ srv.id }}">
-              {% if srv.is_maintenance %}
-                <span style="color:var(--yellow);font-weight:600;display:inline-flex;align-items:center;gap:5px" title="{{ srv.maintenance_reason or 'Operasional terencana' }}">
-                  <span>🟡</span> Pemeliharaan
-                </span>
-              {% elif not srv.last_seen %}
-                <span style="color:var(--dim);display:inline-flex;align-items:center;gap:5px">
-                  <span>⚪</span> Belum Melapor
-                </span>
-              {% elif srv.overall_status == 'offline' or srv._status_label == 'offline' or srv._status_label == 'Offline' %}
-                <span style="color:var(--red);font-weight:600;display:inline-flex;align-items:center;gap:5px" title="Host tidak mengirimkan sinyal telemetri">
-                  <span>🔴</span> Host Tidak Melapor
-                </span>
-              {% elif d_cnt > 0 %}
-                <span style="color:var(--red);font-weight:600;display:inline-flex;align-items:center;gap:5px" title="{{ srv._danger_msgs }}">
-                  <span>🔴</span> {{ srv._danger_msgs[:32] ~ ('…' if srv._danger_msgs|length > 32 else '') }}
-                </span>
-              {% elif avg_cnt > 0 %}
-                <span style="color:var(--orange,#f97316);font-weight:600;display:inline-flex;align-items:center;gap:5px" title="{{ srv._average_msgs }}">
-                  <span>🟠</span> {{ srv._average_msgs[:32] ~ ('…' if srv._average_msgs|length > 32 else '') }}
-                </span>
-              {% elif w_cnt > 0 %}
-                <span style="color:var(--yellow);font-weight:600;display:inline-flex;align-items:center;gap:5px" title="{{ srv._warning_msgs }}">
-                  <span>🟡</span> {{ srv._warning_msgs[:32] ~ ('…' if srv._warning_msgs|length > 32 else '') }}
-                </span>
-              {% elif dn_svcs > 0 %}
-                <span style="color:var(--red);font-weight:600;display:inline-flex;align-items:center;gap:5px">
-                  <span>🔴</span> {{ dn_svcs }} Layanan Berhenti
-                </span>
-              {% elif (cpu_v >= cpu_w) or (mem_v >= ram_w) or (disk_v >= disk_w) %}
-                <span style="color:var(--yellow);font-weight:600;display:inline-flex;align-items:center;gap:5px" title="Beban kapasitas sumber daya sistem mendekati ambang batas">
-                  <span>🟡</span> Beban Sumber Daya Tinggi
-                </span>
-              {% elif ign_cnt > 0 %}
-                <span style="color:var(--dim);display:inline-flex;align-items:center;gap:5px" title="{{ srv._ignored_msgs }}">
-                  <span>🔕</span> Masalah Diabaikan
-                </span>
-              {% else %}
-                <span style="color:var(--green);font-weight:600;display:inline-flex;align-items:center;gap:5px">
-                  <span>🟢</span> Normal / Layanan Stabil
-                </span>
-              {% endif %}
-            </div>
+          <!-- 4. Processor: CPU Core -->
+          <td class="mono" id="tbl-cpu-core-{{ srv.id }}" data-sort-val="{{ srv._cpu_cores_str if srv.last_seen else '-' }}" style="font-size:12.5px;text-align:center">
+            {{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }}
           </td>
 
-          <!-- 5. CPU (%) -->
-          <td data-sort-val="{{ cpu_v }}" style="text-align:center;white-space:nowrap">
+          <!-- 5. Processor: Beban CPU (%) [Threshold Bar] -->
+          <td data-sort-val="{{ cpu_v }}" style="text-align:center">
             {% if srv._cpu is not none %}
-            <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-              <div style="display:inline-flex;align-items:center;justify-content:center;gap:5px">
-                <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="min-width:38px;text-align:right;font-size:12.5px;color:{{ cpu_color }}">
-                  {{ srv._cpu ~ '%' }}
-                </strong>
-                <div class="meter-mini-track">
-                  <div class="meter-mini-bar {{ cpu_cls }}" id="tbl-cpu-bar-{{ srv.id }}" style="width:{{ [srv._cpu or 0, 100]|min }}%"></div>
-                </div>
+            <div style="display:inline-flex;align-items:center;justify-content:center;gap:5px">
+              <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="min-width:40px;text-align:right;font-size:12.5px;color:{{ cpu_color }}">
+                {{ srv._cpu ~ '%' }}
+              </strong>
+              <div class="meter-mini-track">
+                <div class="meter-mini-bar {{ cpu_cls }}" id="tbl-cpu-bar-{{ srv.id }}" style="width:{{ [srv._cpu or 0, 100]|min }}%"></div>
               </div>
-              <span class="mono" style="font-size:10px;color:var(--dim)" title="Jumlah Core CPU">{{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '' }}</span>
             </div>
             {% else %}
               <span id="tbl-cpu-val-{{ srv.id }}" style="color:var(--dim)">-</span>
             {% endif %}
           </td>
 
-          <!-- 6. RAM (%) -->
-          <td data-sort-val="{{ mem_v }}" style="text-align:center;white-space:nowrap">
+          <!-- 6. Memori: Total -->
+          <td class="mono" id="tbl-mem-tot-{{ srv.id }}" data-sort-val="{{ srv._mem_total_str }}" style="font-size:12.5px;text-align:center">
+            {{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }}
+          </td>
+
+          <!-- 7. Memori: Beban (%) [Threshold Bar] -->
+          <td data-sort-val="{{ mem_v }}" style="text-align:center">
             {% if srv._mem_pct is not none %}
-            <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-              <div style="display:inline-flex;align-items:center;justify-content:center;gap:5px">
-                <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="min-width:38px;text-align:right;font-size:12.5px;color:{{ mem_color }}">
-                  {{ srv._mem_pct ~ '%' }}
-                </strong>
-                <div class="meter-mini-track">
-                  <div class="meter-mini-bar {{ mem_cls }}" id="tbl-mem-bar-{{ srv.id }}" style="width:{{ [srv._mem_pct or 0, 100]|min }}%"></div>
-                </div>
+            <div style="display:inline-flex;align-items:center;justify-content:center;gap:5px">
+              <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="min-width:40px;text-align:right;font-size:12.5px;color:{{ mem_color }}">
+                {{ srv._mem_pct ~ '%' }}
+              </strong>
+              <div class="meter-mini-track">
+                <div class="meter-mini-bar {{ mem_cls }}" id="tbl-mem-bar-{{ srv.id }}" style="width:{{ [srv._mem_pct or 0, 100]|min }}%"></div>
               </div>
-              <span class="mono" id="tbl-mem-sub-{{ srv.id }}" style="font-size:10px;color:var(--dim)">{{ (srv._mem_used_str ~ ' / ' ~ srv._mem_total_str) if srv._mem_used_str and srv._mem_total_str else '' }}</span>
             </div>
             {% else %}
               <span id="tbl-mem-val-{{ srv.id }}" style="color:var(--dim)">-</span>
             {% endif %}
           </td>
 
-          <!-- 7. Disk (%) -->
-          <td data-sort-val="{{ disk_v }}" style="text-align:center;white-space:nowrap">
+          <!-- 8. Memori: Tersedia -->
+          <td class="mono" id="tbl-mem-avail-{{ srv.id }}" data-sort-val="{{ srv._mem_avail_str or '' }}" style="font-size:12.5px;text-align:center">
+            {{ srv._mem_avail_str if srv._mem_avail_str and srv._mem_avail_str != '—' else '-' }}
+          </td>
+
+          <!-- 9. Penyimpanan: Total -->
+          <td class="mono" id="tbl-disk-tot-{{ srv.id }}" data-sort-val="{{ srv._disk_total_str }}" style="font-size:12.5px;text-align:center">
+            {{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}
+          </td>
+
+          <!-- 10. Penyimpanan: Beban (%) [Threshold Bar] -->
+          <td data-sort-val="{{ disk_v }}" style="text-align:center">
             {% if srv._disk_pct is not none %}
-            <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-              <div style="display:inline-flex;align-items:center;justify-content:center;gap:5px">
-                <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="min-width:38px;text-align:right;font-size:12.5px;color:{{ disk_color }}">
-                  {{ srv._disk_pct ~ '%' }}
-                </strong>
-                <div class="meter-mini-track">
-                  <div class="meter-mini-bar {{ disk_cls }}" id="tbl-disk-bar-{{ srv.id }}" style="width:{{ [srv._disk_pct or 0, 100]|min }}%"></div>
-                </div>
+            <div style="display:inline-flex;align-items:center;justify-content:center;gap:5px">
+              <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="min-width:40px;text-align:right;font-size:12.5px;color:{{ disk_color }}">
+                {{ srv._disk_pct ~ '%' }}
+              </strong>
+              <div class="meter-mini-track">
+                <div class="meter-mini-bar {{ disk_cls }}" id="tbl-disk-bar-{{ srv.id }}" style="width:{{ [srv._disk_pct or 0, 100]|min }}%"></div>
               </div>
-              <span class="mono" id="tbl-disk-sub-{{ srv.id }}" style="font-size:10px;color:var(--dim)" title="Total (Sisa: {{ srv._disk_avail_str }})">{{ srv._disk_total_str ~ (' (sisa ' ~ srv._disk_avail_str ~ ')') if srv._disk_total_str and srv._disk_avail_str else (srv._disk_total_str or '') }}</span>
             </div>
             {% else %}
               <span id="tbl-disk-val-{{ srv.id }}" style="color:var(--dim)">-</span>
             {% endif %}
           </td>
 
-          <!-- 8. Svc / Inc -->
-          <td style="text-align:center;white-space:nowrap" data-sort-val="{{ d_cnt * 1000000 + avg_cnt * 10000 + w_cnt * 100 + i_cnt * 10 + ign_cnt }}">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
-              <div class="mono" id="tbl-svc-td-{{ srv.id }}" style="font-size:12px">
-                {% if not srv.last_seen or tot_svcs == 0 or srv._status_label == 'Offline' or srv._status_label == 'offline' %}
-                  <span id="tbl-svc-{{ srv.id }}" style="color:var(--dim)">-</span>
-                {% else %}
-                  {% set has_svc_inc = (up_svcs < tot_svcs) or (tot_prob > 0) %}
-                  <span id="tbl-svc-{{ srv.id }}" style="font-weight:700">
-                    <span style="color:var(--green)">{{ tot_svcs }}</span>/<span style="color:{% if has_svc_inc %}var(--text){% else %}var(--green){% endif %}">{{ up_svcs }}</span>
-                  </span>
+          <!-- 11. Penyimpanan: Tersedia -->
+          <td class="mono" id="tbl-disk-avail-{{ srv.id }}" data-sort-val="{{ srv._disk_avail_str or '' }}" style="font-size:12.5px;text-align:center">
+            {{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }}
+          </td>
+
+          <!-- 12. Layanan: Total / UP (Default: Hijau/Hijau; Ada Insiden: Hijau/Putih) -->
+          <td class="mono" id="tbl-svc-td-{{ srv.id }}" data-sort-val="{{ up_svcs }}" style="text-align:center;font-size:13px">
+            {% if not srv.last_seen or tot_svcs == 0 or srv._status_label == 'Offline' %}
+              <span id="tbl-svc-{{ srv.id }}" style="color:var(--dim)">-</span>
+            {% else %}
+              {% set has_svc_inc = (up_svcs < tot_svcs) or (tot_prob > 0) %}
+              <span id="tbl-svc-{{ srv.id }}" style="font-weight:700">
+                <span style="color:var(--green)">{{ tot_svcs }}</span>/<span style="color:{% if has_svc_inc %}var(--text){% else %}var(--green){% endif %}">{{ up_svcs }}</span>
+              </span>
+            {% endif %}
+          </td>
+
+          <!-- 13. Insiden (Default: Normal Hijau; Angka Berwarna Sesuai Severity: Merah Kritis, Oranye Gawat, Kuning Warn, Biru Info, Abu Diabaikan) -->
+          <td style="text-align:center" data-sort-val="{{ d_cnt * 1000000 + avg_cnt * 10000 + w_cnt * 100 + i_cnt * 10 + ign_cnt }}">
+            <div id="tbl-prob-{{ srv.id }}" style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">
+              {% if not srv.last_seen %}
+                <span style="color:var(--dim)">-</span>
+              {% elif tot_prob == 0 and ign_cnt == 0 %}
+                <span class="badge badge-up" style="font-size:10.5px;padding:2.5px 7px;font-weight:600">Normal</span>
+              {% else %}
+                {% if d_cnt > 0 %}
+                  <span class="badge badge-danger" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
                 {% endif %}
-              </div>
-              <div id="tbl-prob-{{ srv.id }}" style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">
-                {% if not srv.last_seen %}
-                  <span style="color:var(--dim)">-</span>
-                {% elif tot_prob == 0 and ign_cnt == 0 %}
-                  <span class="badge badge-up" style="font-size:9.5px;padding:1px 6px;font-weight:600">Normal</span>
-                {% else %}
-                  {% if d_cnt > 0 %}
-                    <span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
-                  {% endif %}
-                  {% if avg_cnt > 0 %}
-                    <span class="badge badge-orange" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
-                  {% endif %}
-                  {% if w_cnt > 0 %}
-                    <span class="badge badge-warn" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
-                  {% endif %}
-                  {% if i_cnt > 0 %}
-                    <span class="badge badge-info" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
-                  {% endif %}
-                  {% if ign_cnt > 0 %}
-                    <span class="badge badge-muted" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._ignored_msgs or 'Insiden diabaikan' }}">{{ ign_cnt }}</span>
-                  {% endif %}
+                {% if avg_cnt > 0 %}
+                  <span class="badge badge-orange" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
                 {% endif %}
-              </div>
+                {% if w_cnt > 0 %}
+                  <span class="badge badge-warn" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
+                {% endif %}
+                {% if i_cnt > 0 %}
+                  <span class="badge badge-info" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
+                {% endif %}
+                {% if ign_cnt > 0 %}
+                  <span class="badge badge-muted" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._ignored_msgs or 'Insiden diabaikan' }}">{{ ign_cnt }}</span>
+                {% endif %}
+              {% endif %}
             </div>
           </td>
 
@@ -1475,50 +1432,6 @@ function getThreshold(val, type) {
   return { cls: 'green', color: 'var(--green)' };
 }
 
-function computeServerVerdict(srv, isEn) {
-  if (srv.is_maintenance) {
-    return `<span style="color:var(--yellow);font-weight:600;display:inline-flex;align-items:center;gap:5px" title="${(srv.maintenance_reason || 'Pemeliharaan').replace(/"/g, '&quot;')}"><span>🟡</span> ${isEn ? 'Maintenance' : 'Pemeliharaan'}</span>`;
-  }
-  if (!srv.last_seen) {
-    return `<span style="color:var(--dim);display:inline-flex;align-items:center;gap:5px"><span>⚪</span> ${isEn ? 'No Report Yet' : 'Belum Melapor'}</span>`;
-  }
-  if (srv.overall_status === 'offline') {
-    return `<span style="color:var(--red);font-weight:600;display:inline-flex;align-items:center;gap:5px" title="${isEn ? 'Host Unreachable' : 'Host tidak melapor'}"><span>🔴</span> ${isEn ? 'Host Unreachable' : 'Host Tidak Melapor'}</span>`;
-  }
-  const dCnt = srv.danger_count || 0;
-  const avgCnt = srv.average_count || 0;
-  const wCnt = srv.warning_count || 0;
-  if (dCnt > 0) {
-    const raw = srv.danger_msgs || (isEn ? 'Critical' : 'Kritis');
-    const esc = (raw.length > 32 ? raw.slice(0, 32) + '…' : raw).replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return `<span style="color:var(--red);font-weight:600;display:inline-flex;align-items:center;gap:5px" title="${raw.replace(/"/g, '&quot;')}"><span>🔴</span> ${esc}</span>`;
-  }
-  if (avgCnt > 0) {
-    const raw = srv.average_msgs || (isEn ? 'High' : 'Gawat');
-    const esc = (raw.length > 32 ? raw.slice(0, 32) + '…' : raw).replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return `<span style="color:var(--orange,#f97316);font-weight:600;display:inline-flex;align-items:center;gap:5px" title="${raw.replace(/"/g, '&quot;')}"><span>🟠</span> ${esc}</span>`;
-  }
-  if (wCnt > 0) {
-    const raw = srv.warning_msgs || (isEn ? 'Warning' : 'Peringatan');
-    const esc = (raw.length > 32 ? raw.slice(0, 32) + '…' : raw).replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    return `<span style="color:var(--yellow);font-weight:600;display:inline-flex;align-items:center;gap:5px" title="${raw.replace(/"/g, '&quot;')}"><span>🟡</span> ${esc}</span>`;
-  }
-  const downSvcs = (srv.services || []).filter(s => s.status !== 'up' && !s.ignored).length;
-  if (downSvcs > 0) {
-    return `<span style="color:var(--red);font-weight:600;display:inline-flex;align-items:center;gap:5px"><span>🔴</span> ${downSvcs} ${isEn ? 'Services Down' : 'Layanan Berhenti'}</span>`;
-  }
-  const cpuTh = getThreshold(srv.cpu, 'cpu');
-  const memTh = getThreshold(srv.mem_pct, 'mem');
-  const diskTh = getThreshold(srv.disk_pct, 'disk');
-  if (cpuTh.cls !== 'green' || memTh.cls !== 'green' || diskTh.cls !== 'green') {
-    return `<span style="color:var(--yellow);font-weight:600;display:inline-flex;align-items:center;gap:5px"><span>🟡</span> ${isEn ? 'High Resource Load' : 'Beban Sumber Daya Tinggi'}</span>`;
-  }
-  if ((srv.ignored_problem_count || 0) > 0) {
-    return `<span style="color:var(--dim);display:inline-flex;align-items:center;gap:5px" title="${(srv.ignored_msgs || '').replace(/"/g, '&quot;')}"><span>🔕</span> ${isEn ? 'Problems Silenced' : 'Masalah Diabaikan'}</span>`;
-  }
-  return `<span style="color:var(--green);font-weight:600;display:inline-flex;align-items:center;gap:5px"><span>🟢</span> ${isEn ? 'Normal / Operational' : 'Normal / Layanan Stabil'}</span>`;
-}
-
 // 2. Layout Switching (Default: 'table', Alternative: 'grid')
 function setDashboardView(view) {
   const isTable = view === 'table';
@@ -1730,16 +1643,12 @@ async function pollNocDashboard() {
         tblCpuBar.className = 'meter-mini-bar ' + th.cls;
       }
 
-      // Situasi Terkini (Quick Verdict)
-      const tblVerdict = document.getElementById('tbl-verdict-' + srv.id);
-      if (tblVerdict) {
-        tblVerdict.innerHTML = computeServerVerdict(srv, isEn);
-      }
+      // Memori: Total, Beban (%), Tersedia
+      const tblMemTot = document.getElementById('tbl-mem-tot-' + srv.id);
+      if (tblMemTot) tblMemTot.textContent = (srv.mem_total_str && srv.mem_total_str !== '—') ? srv.mem_total_str : '-';
 
-      // Memori: Beban (%) & Subtitle
       const tblMemVal = document.getElementById('tbl-mem-val-' + srv.id);
       const tblMemBar = document.getElementById('tbl-mem-bar-' + srv.id);
-      const tblMemSub = document.getElementById('tbl-mem-sub-' + srv.id);
       if (tblMemVal) {
         if (srv.mem_pct != null) {
           const th = getThreshold(srv.mem_pct, 'mem');
@@ -1755,14 +1664,18 @@ async function pollNocDashboard() {
         tblMemBar.style.width = Math.min(srv.mem_pct, 100) + '%';
         tblMemBar.className = 'meter-mini-bar ' + th.cls;
       }
-      if (tblMemSub) {
-        tblMemSub.textContent = (srv.mem_used_str && srv.mem_total_str) ? `${srv.mem_used_str} / ${srv.mem_total_str}` : '';
+
+      const tblMemAvail = document.getElementById('tbl-mem-avail-' + srv.id);
+      if (tblMemAvail) {
+        tblMemAvail.textContent = (srv.mem_avail_str && srv.mem_avail_str !== '—') ? srv.mem_avail_str : '-';
       }
 
-      // Penyimpanan: Beban (%) & Subtitle
+      // Penyimpanan: Total, Beban (%), Tersedia
+      const tblDiskTot = document.getElementById('tbl-disk-tot-' + srv.id);
+      if (tblDiskTot) tblDiskTot.textContent = (srv.disk_total_str && srv.disk_total_str !== '—') ? srv.disk_total_str : '-';
+
       const tblDiskVal = document.getElementById('tbl-disk-val-' + srv.id);
       const tblDiskBar = document.getElementById('tbl-disk-bar-' + srv.id);
-      const tblDiskSub = document.getElementById('tbl-disk-sub-' + srv.id);
       if (tblDiskVal) {
         if (srv.disk_pct != null) {
           const th = getThreshold(srv.disk_pct, 'disk');
@@ -1778,8 +1691,10 @@ async function pollNocDashboard() {
         tblDiskBar.style.width = Math.min(srv.disk_pct, 100) + '%';
         tblDiskBar.className = 'meter-mini-bar ' + th.cls;
       }
-      if (tblDiskSub) {
-        tblDiskSub.textContent = (srv.disk_total_str && srv.disk_avail_str) ? `${srv.disk_total_str} (sisa ${srv.disk_avail_str})` : (srv.disk_total_str || '');
+
+      const tblDiskAvail = document.getElementById('tbl-disk-avail-' + srv.id);
+      if (tblDiskAvail) {
+        tblDiskAvail.textContent = (srv.disk_avail_str && srv.disk_avail_str !== '—') ? srv.disk_avail_str : '-';
       }
 
       // Layanan: Total / UP (Default: Hijau/Hijau; Ada Insiden: Hijau/Putih)
