@@ -2946,8 +2946,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                     problems_by_sev[sev].append(item)
                 else:
                     problems_by_sev["warning"].append(item)
-            if p.get("key") != "apt_updates":
-                all_open_problems.append(item)
+            all_open_problems.append(item)
 
     sev_order = {"danger": 0, "average": 1, "warning": 2, "info": 3}
     all_open_problems.sort(key=lambda p: (1 if p["is_ignored"] else 0, sev_order.get(p["severity"], 4), p["started_at"] or ""), reverse=False)

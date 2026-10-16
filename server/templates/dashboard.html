@@ -1895,7 +1895,6 @@ async function pollNocDashboard() {
     list.forEach(srv => {
       if (Array.isArray(srv.problems)) {
         srv.problems.forEach(p => {
-          if (p.key === 'apt_updates') return; // Bukan insiden operasional
           allProblems.push({
             ...p,
             server_id: srv.id,
