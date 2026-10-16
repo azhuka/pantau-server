@@ -1575,14 +1575,10 @@ async function pollNocDashboard() {
         statusLabel = 'Offline';
         statusCls = 'badge-down';
         dotCls = 'down';
-      } else if (srv.overall_status === 'up') {
+      } else {
         statusLabel = 'Online';
         statusCls = 'badge-up';
         dotCls = 'up';
-      } else {
-        statusLabel = isEn ? 'Issues' : 'Masalah';
-        statusCls = 'badge-warn';
-        dotCls = 'warn';
       }
 
       // --- A. Update Table View Elements ---

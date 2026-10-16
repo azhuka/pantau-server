@@ -1663,7 +1663,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
         if srv.is_maintenance:
             overall = "maintenance"
         elif stale:
-            overall = "offline (diabaikan)" if is_ignored_stale else "offline"
+            overall = "offline"
         elif not active_svcs:
             overall = "up"
         else:
@@ -1672,7 +1672,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             for s in svc_list:
                 s["status"] = "offline"
             if not srv.is_maintenance:
-                overall = "offline (diabaikan)" if is_ignored_stale else "offline"
+                overall = "offline"
 
         # Snapshot HW terbaru untuk CPU/RAM/uptime di dashboard
         latest_sys = (
@@ -6379,21 +6379,15 @@ def _server_status(srv, stale: bool, has_services: bool, any_up: bool, has_unign
 
     Kembalikan (label, kelas_badge) supaya Dashboard, Servers, dan Rincian
     tidak lagi berbeda-beda menampilkan server yang sama.
+    Nilai status murni: online (Hijau) atau offline (Merah).
     """
     if not srv.is_active:
         return "nonaktif", "badge-muted"
     if getattr(srv, "is_maintenance", 0):
         return "pemeliharaan", "badge-warn"
     if stale:
-        if is_ignored_stale:
-            return "offline (diabaikan)", "badge-muted"
         return ("offline", "badge-down") if srv.last_seen else ("-", "badge-muted")
-    if not has_services:
-        # agen melapor normal, hanya belum ada service yang terdeteksi
-        return "online", "badge-up"
-    if any_up or not has_unignored_down:
-        return "online", "badge-up"
-    return "service down", "badge-down"
+    return "online", "badge-up"
 
 
 # ---------------------------------------------------------------------------

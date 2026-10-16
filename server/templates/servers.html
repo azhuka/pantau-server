@@ -433,8 +433,7 @@ async function srvPoll() {
       if (sts) {
         if (srv.is_maintenance) { sts.textContent = isEn ? 'Maintenance' : 'Pemeliharaan'; sts.className = 'badge badge-warn'; }
         else if (srv.overall_status === 'offline') { sts.textContent = 'Offline'; sts.className = 'badge badge-down'; }
-        else if (srv.overall_status === 'up') { sts.textContent = 'Online'; sts.className = 'badge badge-up'; }
-        else { sts.textContent = isEn ? 'Issues' : 'Masalah'; sts.className = 'badge badge-warn'; }
+        else { sts.textContent = 'Online'; sts.className = 'badge badge-up'; }
       }
       const cpu = document.getElementById('srv-cpu-' + srv.id);
       if (cpu) cpu.textContent = srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '—';
