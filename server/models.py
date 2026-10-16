@@ -107,6 +107,7 @@ class Server(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     group_name = Column(String(64), nullable=True, default=None, index=True)
+    tier = Column(SmallInteger, nullable=False, default=2)  # 1=Tier 1 (Kritis), 2=Tier 2 (Pendukung), 3=Tier 3 (Eksperimen/Clone)
     tags = Column(String(255), nullable=True)
     custom_thresholds = Column(Text, nullable=True)  # JSON: ambang batas CPU, RAM, Disk per-server
     is_proxmox_ha = Column(SmallInteger, nullable=False, default=0)
@@ -126,6 +127,7 @@ class Service(Base):
     service_name = Column(String(100), nullable=False)
     port = Column(Integer, nullable=False)
     process_name = Column(String(100), nullable=False)
+    is_core = Column(SmallInteger, nullable=False, default=1)  # 1=Layanan Utama (Core), 0=Layanan Pendukung (Secondary)
     is_ignored = Column(SmallInteger, nullable=False, default=0)
     ignored_until = Column(DateTime, nullable=True)
     ignored_by = Column(String(100), nullable=True)

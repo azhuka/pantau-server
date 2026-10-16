@@ -267,8 +267,14 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 ---
 
-## 5. Manajemen Siklus Hidup Insiden & Anti-Flapping
+## 5. Manajemen Siklus Hidup Insiden, Klasifikasi Aset 3-Tier & Anti-Flapping
 
+- **3-Tier Asset Criticality Architecture**:
+  - **Tier 1 (Server Kritis / 24/7)**: Host offline $\ge 300\text{s}$, Disk Read-Only, Disk Penuh 100%, Core Service down memicu keparahan **KRITIS (`danger`)**. Merupakan satu-satunya tier yang mengaktifkan Banner Merah `#alertBanner` dan Sirene Audio Darurat NOC.
+  - **Tier 2 (Server Pendukung Operasional)**: Host offline $\ge 120\text{s}$ atau Core Service down dibatasi pada keparahan **GAWAT (`average`)**, tidak pernah memicu banner merah atau sirene.
+  - **Tier 3 (Server Lab / Clone / Eksperimen)**: Host offline atau service down maksimal berstatus **PERINGATAN (`warning`)**.
+- **Klasifikasi Tindakan Sadar Operator**:
+  - Pemadaman server (*poweroff_host*) atau service (*service stop*) oleh operator melalui dashboard otomatis diklasifikasikan sebagai **PERINGATAN (`warning`)**, dengan `is_ignored = 0` (tetap berstatus aktif dalam pelaporan dan kartu insiden terkini) dan catatan pengabaian/alasan yang mencantumkan nama operator. Tidak memicu banner merah maupun sirene.
 - **Toleransi Anti-Flapping**: Alert service tidak langsung membunyikan alarm pada kegagalan transien tunggal. Ada quiet window (30–45 detik) sebelum berstatus `danger`.
 - **Auto-Resolve saat Hapus Service**: Menghapus service bermasalah dari monitoring langsung menutup insiden secara sinkron dengan note `Dihapus dari konfigurasi` tanpa klaim palsu service pulih.
 - **Maintenance Mode & Service Mute**: Support server-wide maintenance mode untuk mematikan alert saat maintenance OS, serta opsi Mute service individual (2h, 24h, 7d, 30d, atau permanen).
@@ -304,6 +310,51 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 ---
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
+
+## Versi 4.4.0
+
+- **Release Label:** None
+- **Tipe Rilis:** Rilis Minor (*Minor Release*) — *3-Tier Asset Criticality & Enterprise Incident Severity System, Core vs Secondary Service Role Segmentation, and Operator Action Warning Classification*.
+
+### Struktur Rilis SemVer (Major.Minor.Patch)
+
+```
+v4.4.0
+ │
+ ├── 4  (Mayor) : Restrukturisasi Keamanan & Arsitektur RBAC 3-Tier, 2FA TOTP RFC 6238, dan Isolasi Akun
+ ├── 4  (Minor) : Sistem Klasifikasi Aset 3-Tier (Tier 1 Kritis, Tier 2 Pendukung, Tier 3 Lab/Eksperimen), Matriks Keparahan Insiden Multi-Tier, Pembagian Peran Layanan Utama/Sekunder, dan Klasifikasi Sadar Operator
+ └── 0  (Patch) : Rilis Awal Arsitektur 4.4.0
+```
+
+---
+
+### Fitur Baru & Peningkatan Arsitektur — Versi 4.4.0 (Minor Release)
+
+1. **Sistem Klasifikasi Aset Multi-Tier (3-Tier Asset Criticality):**
+   - **Tier 1 (Server Kritis / 24/7):** Server bernilai tinggi yang menjalankan layanan vital organisasi (misalnya: *Aplikasi Absensi ASN*, Master Database). Bencana fatal (host offline $\ge 300\text{s}$, partisi disk read-only, disk penuh 100%, core service crash) dievaluasi sebagai **🔴 KRITIS (`danger`)**. Menjadi **satu-satunya** tier yang memicu Banner Merah `#alertBanner` dan Sirene Audio Darurat NOC.
+   - **Tier 2 (Server Pendukung Operasional):** Server pendukung operasional kantor (misalnya: *Pantau Server*, *MeshCentral*, server upload/input data). Host offline $\ge 120\text{s}$ atau layanan inti down dievaluasi sebagai **🟠 GAWAT (`average`)**, dan secara ketat tidak pernah memicu banner merah maupun sirene darurat.
+   - **Tier 3 (Server Lab / Clone / Eksperimen):** Mesin virtual pengujian, staging, atau eksperimen pribadi sysadmin (misalnya: `bolata-clone`, `e-kinerja-clone`). Gangguan atau pemadaman server maksimal hanya berstatus **🟡 PERINGATAN (`warning`)**, mengeliminasi alarm palsu (*alert fatigue*).
+
+2. **Klasifikasi Peran Layanan (Core vs Secondary Services):**
+   - Penambahan kolom `is_core` (default 1) pada tabel `services` untuk membedakan layanan utama aplikasi (*Core Service*) dari layanan pendukung (*Secondary Service*, seperti Redis cache, Zabbix agent, systemd-resolve).
+   - Layanan sekunder yang mati pada server Tier 1 hanya menghasilkan keparahan **🟡 PERINGATAN (`warning`)**, bukan KRITIS, menjaga proporsionalitas respon tim NOC.
+   - Penambahan toggle cepat 1-klik peran layanan (`POST /servers/{sid}/services/{svc_id}/toggle-core`) dan badge visual `UTAMA` / `SEKUNDER` pada halaman detail service.
+
+3. **Klasifikasi Tindakan Sadar Operator (Operator Intentional Action Classification):**
+   - Seluruh tindakan pemadaman yang disengaja oleh operator (*Power Off Host* atau *Stop Service*) otomatis diklasifikasikan sebagai **🟡 PERINGATAN (`warning`)** di semua tier.
+   - Insiden tetap berstatus aktif (`is_ignored = 0`) dan dicatat transparan di kartu *Insiden Terkini* dengan label `DIMATIKAN OLEH OPERATOR (Nama Operator)`, namun secara ketat **tidak memicu** banner merah `#alertBanner` maupun sirene audio darurat.
+
+4. **Migrasi Skema Database Relasional:**
+   - `ALTER TABLE servers ADD COLUMN tier SMALLINT NOT NULL DEFAULT 2 AFTER group_name;`
+   - `ALTER TABLE services ADD COLUMN is_core SMALLINT NOT NULL DEFAULT 1 AFTER process_name;`
+   - Pemutakhiran model ORM SQLAlchemy [`Server`](file:///home/bos/rj45/server/models.py#L32) dan [`Service`](file:///home/bos/rj45/server/models.py#L52).
+
+5. **Penyempurnaan UI/UX & Tampilan Dashboard:**
+   - Penambahan input seleksi Tier Aset pada formulir pendaftaran dan edit server (`server_form.html`).
+   - Badge visual Tier (`TIER 1`, `TIER 2`, `TIER 3`) pada tabel armada server, grid view card, dan inventory list.
+   - Desain kartu insiden terkini satu-baris (*single line*) yang bersih, bebas tumpukan teks (*layout shift*), dan sinkronisasi realtime dengan strip total widget Zabbix-style.
+
+---
 
 ## Versi 4.2.21
 

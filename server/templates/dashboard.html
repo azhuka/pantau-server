@@ -870,6 +870,14 @@ body.show-alert-banner .kiosk-toggle-btn {
             <div style="display:inline-flex;align-items:center;gap:6px">
               <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else ('down' if srv._status_label == 'offline' else 'muted')) }}" id="tbl-dot-{{ srv.id }}"></span>
               <strong style="color:var(--text-bright);font-size:13.5px">{{ srv.hostname }}</strong>
+              {% set s_tier = srv.tier|default(2) %}
+              {% if s_tier == 1 %}
+                <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="Tier 1: Server Kritis (Bernilai Tinggi)">TIER 1</span>
+              {% elif s_tier == 3 %}
+                <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="Tier 3: Server Eksperimen / Lab">TIER 3</span>
+              {% else %}
+                <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="Tier 2: Server Pendukung Operasional">TIER 2</span>
+              {% endif %}
               {% if srv._platform %}
                 <span class="badge" style="font-size:9.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: {{ srv._platform.label }}">
                   {% if srv._platform.type == 'lxc' %}
@@ -1060,6 +1068,14 @@ body.show-alert-banner .kiosk-toggle-btn {
             <div style="display:flex;align-items:center;gap:6px">
               <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else ('down' if srv._status_label == 'offline' else 'muted')) }}" style="flex-shrink:0" id="card-dot-{{ srv.id }}"></span>
               <strong style="font-size:13.5px;color:var(--text-bright)">{{ srv.hostname }}</strong>
+              {% set s_tier = srv.tier|default(2) %}
+              {% if s_tier == 1 %}
+                <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="Tier 1: Server Kritis (Bernilai Tinggi)">TIER 1</span>
+              {% elif s_tier == 3 %}
+                <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="Tier 3: Server Eksperimen / Lab">TIER 3</span>
+              {% else %}
+                <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="Tier 2: Server Pendukung Operasional">TIER 2</span>
+              {% endif %}
               {% if srv._platform %}
                 <span class="badge" style="font-size:9.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: {{ srv._platform.label }}">
                   {% if srv._platform.type == 'lxc' %}

@@ -1392,6 +1392,7 @@ def agent_report(
                 "status": latest_map[s.id].status if s.id in latest_map else "unknown",
                 "port": s.port,
                 "proc": s.process_name,
+                "is_core": bool(getattr(s, "is_core", 1)),
                 "health_msg": latest_map[s.id].health_message if s.id in latest_map else None,
             }
             for s in services
@@ -1649,6 +1650,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             svc_list.append({
                 "id": svc.id, "name": svc.service_name, "port": svc.port,
                 "process": svc.process_name,
+                "is_core": bool(getattr(svc, "is_core", 1)),
                 "status": latest.status if latest else "unknown",
                 "connections": latest.active_connections if latest else 0,
                 "response_time_ms": latest.response_time_ms if latest else None,
@@ -1658,7 +1660,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
         ex = extras_map.get(srv.id)
         # Evaluasi masalah server & deteksi layanan/masalah yang diabaikan
         prob_level, open_prob, _ = sync_server_problems(
-            db, srv, _problem_instances(srv, ex, [{"name": s["name"], "status": s["status"]} for s in svc_list], db)
+            db, srv, _problem_instances(srv, ex, [{"name": s["name"], "status": s["status"], "port": s["port"], "is_core": s.get("is_core", True)} for s in svc_list], db)
         )
         ignored_keys = {p.get("key") for p in open_prob if p.get("is_ignored")}
         svc_ignored_db = {s.service_name for s in services if getattr(s, "is_ignored", 0)}
@@ -1737,6 +1739,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
         result.append({
             "id": srv.id, "hostname": srv.hostname, "ip_address": srv.ip_address,
             "group_name": srv.group_name or "",
+            "tier": getattr(srv, "tier", 2),
             "is_active": srv.is_active,
             "is_maintenance": bool(srv.is_maintenance),
             "is_proxmox_ha": bool(srv.is_proxmox_ha),
@@ -2028,6 +2031,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         svc_list.append({
             "id": svc.id, "name": svc.service_name, "port": svc.port,
             "status": st,
+            "is_core": bool(getattr(svc, "is_core", 1)),
             "ignored": is_ign,
             "ignored_until": ign_until,
             "ignore_mode": getattr(svc, "ignore_mode", None),
@@ -2105,7 +2109,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             shell_run.result = (shell_run.result or "").strip() + "\n[sesi shell kedaluwarsa]"
             db.commit()
             shell_run = None
-    svc_data = [{"name": s.service_name, "status": latest_map.get(s.id).status if latest_map.get(s.id) else "unknown"}
+    svc_data = [{"name": s.service_name, "status": latest_map.get(s.id).status if latest_map.get(s.id) else "unknown", "is_core": bool(getattr(s, "is_core", 1))}
                 for s in services]
     problem_level, open_problems, problem_history = sync_server_problems(
         db, server, _problem_instances(server, extras, svc_data, db))
@@ -2116,6 +2120,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
     return {
         "services": svc_list, "commands": cmd_list, "actions": actions_list,
         "online": not _server_stale(server),
+        "tier": getattr(server, "tier", 2),
         "last_seen": server.last_seen.isoformat() if server.last_seen else None,
         # Kesegaran akurat (ms sejak laporan terakhir) — dipakai banner konfirmasi
         # Reboot/Power Off dengan jendela pendek (~30 dtk), bukan ambang offline 60 dtk.
@@ -2783,6 +2788,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             latest = latest_map.get(svc.id)
             d = {
                 "name": svc.service_name, "port": svc.port, "process": svc.process_name,
+                "is_core": bool(getattr(svc, "is_core", 1)),
                 "status": latest.status if latest else "unknown",
                 "connections": latest.active_connections if latest else 0,
                 "response_time": latest.response_time_ms if latest else None,
@@ -3014,6 +3020,7 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
             svc_data.append({
                 "name": svc.service_name,
                 "port": svc.port, "process": svc.process_name,
+                "is_core": bool(getattr(svc, "is_core", 1)),
                 "status": latest.status if latest else "unknown",
             })
         srv._problem_level, srv._problems, _ph = sync_server_problems(
@@ -3116,6 +3123,7 @@ def server_add_submit(
     ip_address: str = Form(...),
     group_name: str = Form(default=""),
     tags: str = Form(default=""),
+    tier: int = Form(2),
     platform_override: str = Form(default="auto"),
     is_proxmox_ha: int = Form(0),
     is_isolated_net: int = Form(0),
@@ -3143,6 +3151,7 @@ def server_add_submit(
     group_name = group_name_clean if group_name_clean and group_name_clean.lower() != "default" else None
     tags_clean = _clean_str(tags, "", 255).strip()
     tags = tags_clean if tags_clean else None
+    tier_val = 1 if tier == 1 else (3 if tier == 3 else 2)
     if ip_address and not _validate_ip(ip_address):
         existing_groups, existing_tags = get_existing_groups_and_tags(db)
         return tpl(request, "server_form.html", {
@@ -3180,7 +3189,7 @@ def server_add_submit(
     raw = secrets.token_hex(32)
     srv = Server(
         hostname=hostname, ip_address=ip_address,
-        group_name=group_name, tags=tags,
+        group_name=group_name, tags=tags, tier=tier_val,
         is_proxmox_ha=1 if (is_proxmox_ha and plat_override_clean != "baremetal") else 0,
         platform_override=plat_override_clean,
         is_isolated_net=1 if is_isolated_net else 0,
@@ -3189,7 +3198,7 @@ def server_add_submit(
         api_key=hash_api_key(raw)
     )
     db.add(srv)
-    _audit(db, user.username, "server_add", f"{hostname} ({ip_address})" + (f" [Grup: {group_name}]" if group_name else ""), "berhasil")
+    _audit(db, user.username, "server_add", f"{hostname} ({ip_address}) [Tier: {tier_val}]" + (f" [Grup: {group_name}]" if group_name else ""), "berhasil")
     db.commit()
     resp = tpl(request, "key_reveal.html", {"user": user, "server": srv, "api_key": raw})
     resp.headers["Cache-Control"] = "no-store"
@@ -3229,6 +3238,7 @@ def server_edit_submit(
     ip_address: str = Form(...),
     group_name: str = Form(default=""),
     tags: str = Form(default=""),
+    tier: int = Form(2),
     is_active: int = Form(1),
     platform_override: str = Form(default="auto"),
     is_proxmox_ha: int = Form(0),
@@ -3259,6 +3269,7 @@ def server_edit_submit(
         group_name = group_name_clean if group_name_clean and group_name_clean.lower() != "default" else None
         tags_clean = _clean_str(tags, "", 255).strip()
         tags = tags_clean if tags_clean else None
+        tier_val = 1 if tier == 1 else (3 if tier == 3 else 2)
         if ip_address and not _validate_ip(ip_address):
             server._key_fp = api_key_fingerprint(server.api_key)
             existing_groups, existing_tags = get_existing_groups_and_tags(db)
@@ -3298,6 +3309,7 @@ def server_edit_submit(
         server.ip_address = ip_address
         server.group_name = group_name
         server.tags = tags
+        server.tier = tier_val
         server.custom_thresholds = custom_th_json
         server.is_active = 1 if is_active else 0
         server.platform_override = plat_override_clean
@@ -3305,7 +3317,7 @@ def server_edit_submit(
         server.is_isolated_net = 1 if is_isolated_net else 0
         server.allow_web_terminal = 1 if allow_web_terminal else 0
         _audit(db, user.username, "server_edit",
-               f"id={server.id} {server.hostname} ({server.ip_address})" + (f" [Grup: {group_name}]" if group_name else ""), "berhasil")
+               f"id={server.id} {server.hostname} ({server.ip_address}) [Tier: {tier_val}]" + (f" [Grup: {group_name}]" if group_name else ""), "berhasil")
         db.commit()
         return RedirectResponse("/servers" + _flash_qs(True, "Server diperbarui"), status_code=303)
     return RedirectResponse("/servers" + _flash_qs(False, "Server tidak ditemukan"), status_code=303)
@@ -3416,7 +3428,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     )
     actions = _get_server_actions(db, sid, limit=50)
     extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
-    svc_data = [{"name": s.service_name, "status": getattr(s, "_status", "unknown")}
+    svc_data = [{"name": s.service_name, "status": getattr(s, "_status", "unknown"), "is_core": bool(getattr(s, "is_core", 1))}
                 for s in services]
     problem_level, open_problems, problem_history = sync_server_problems(
         db, server, _problem_instances(server, extra, svc_data, db))
@@ -3538,6 +3550,7 @@ def service_add_submit(
     service_name: str = Form(...),
     port: int = Form(...),
     process_name: str = Form(...),
+    is_core: int = Form(1),
     csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
@@ -3551,6 +3564,7 @@ def service_add_submit(
         service_name=_clean_str(service_name, "", 100),
         port=_clamp_int(port, 0, 1, 65535),
         process_name=_clean_str(process_name, "", 100),
+        is_core=1 if is_core else 0,
     )
     if not svc.service_name or not (1 <= svc.port <= 65535):
         return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(False, "Service tidak lengkap: nama wajib & port 1-65535"), status_code=303)
@@ -4536,6 +4550,37 @@ def service_delete(
         if is_json:
             return Response(json.dumps({"ok": True, "detail": f"Service {svc_name} dihapus"}), media_type="application/json")
     elif is_json:
+        return Response(json.dumps({"ok": False, "detail": "Service tidak ditemukan"}), status_code=404, media_type="application/json")
+    return RedirectResponse(f"/servers/{sid}/services", status_code=303)
+
+
+@app.post("/servers/{sid}/services/{svc_id}/toggle-core")
+def service_toggle_core(
+    request: Request, sid: int, svc_id: int,
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or not user.has_perm("can_services"):
+        if is_json:
+            return Response(json.dumps({"ok": False, "detail": "Akses ditolak"}), status_code=403, media_type="application/json")
+        return RedirectResponse("/", status_code=303)
+    token = csrf_token or request.headers.get("X-CSRF-Token", "")
+    _verify_csrf_form(request, token)
+    svc = db.query(Service).filter(Service.id == svc_id, Service.server_id == sid).first()
+    if svc:
+        new_is_core = 0 if getattr(svc, "is_core", 1) else 1
+        svc.is_core = new_is_core
+        server = db.query(Server).filter(Server.id == sid).first()
+        status_name = "Layanan Utama (Core)" if new_is_core else "Layanan Pendukung (Secondary)"
+        _audit(db, user.username, "service_core_toggle",
+               f"{server.hostname if server else sid}:{svc.service_name} -> {status_name}", "berhasil", server_id=sid)
+        db.commit()
+        if is_json:
+            return Response(json.dumps({"ok": True, "is_core": new_is_core, "status_label": status_name}), media_type="application/json")
+        return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(True, f"Status layanan {svc.service_name} diperbarui menjadi {status_name}"), status_code=303)
+    if is_json:
         return Response(json.dumps({"ok": False, "detail": "Service tidak ditemukan"}), status_code=404, media_type="application/json")
     return RedirectResponse(f"/servers/{sid}/services", status_code=303)
 
@@ -5551,6 +5596,7 @@ def _resource_problem_instances(db, srv) -> list:
         return inst
 
     th = get_server_thresholds(srv, db)
+    tier = getattr(srv, "tier", 2) or 2
 
     # Kunci masalah yang saat ini aktif terbuka untuk server ini
     open_keys = {
@@ -5576,7 +5622,7 @@ def _resource_problem_instances(db, srv) -> list:
         if is_ram_open:
             if cur_ram >= th["ram_danger"]:
                 should_emit_ram = True
-                ram_sev = "danger"
+                ram_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
             elif cur_ram >= th["ram_warn"]:
                 should_emit_ram = True
                 ram_sev = "warning"
@@ -5585,7 +5631,7 @@ def _resource_problem_instances(db, srv) -> list:
                 should_emit_ram = True
                 ram_avg = sum(recent_mems) / len(recent_mems)
                 if cur_ram >= th["ram_danger"] and ram_avg >= th["ram_danger"]:
-                    ram_sev = "danger"
+                    ram_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
                 else:
                     ram_sev = "warning"
 
@@ -5617,7 +5663,7 @@ def _resource_problem_instances(db, srv) -> list:
         if is_swap_open:
             if cur_swap >= th["swap_danger"]:
                 should_emit_swap = True
-                swap_sev = "danger"
+                swap_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
             elif cur_swap >= th["swap_warn"]:
                 should_emit_swap = True
                 swap_sev = "warning"
@@ -5626,7 +5672,7 @@ def _resource_problem_instances(db, srv) -> list:
                 should_emit_swap = True
                 swap_avg = sum(recent_swaps) / len(recent_swaps)
                 if cur_swap >= th["swap_danger"] and swap_avg >= th["swap_danger"]:
-                    swap_sev = "danger"
+                    swap_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
                 else:
                     swap_sev = "warning"
 
@@ -5654,7 +5700,7 @@ def _resource_problem_instances(db, srv) -> list:
         if is_cpu_open:
             if cur_cpu >= th["cpu_danger"] or recent_avg >= th["cpu_danger"]:
                 should_emit_cpu = True
-                cpu_sev = "danger"
+                cpu_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
             elif cur_cpu >= th["cpu_warn"] or recent_avg >= th["cpu_warn"]:
                 should_emit_cpu = True
                 cpu_sev = "warning"
@@ -5662,7 +5708,7 @@ def _resource_problem_instances(db, srv) -> list:
             if len(recent_cpus) >= 3 and (all(c >= th["cpu_warn"] for c in recent_cpus) or recent_avg >= th["cpu_warn"]):
                 should_emit_cpu = True
                 if recent_avg >= th["cpu_danger"] and cur_cpu >= th["cpu_danger"]:
-                    cpu_sev = "danger"
+                    cpu_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
                 else:
                     cpu_sev = "warning"
 
@@ -5687,8 +5733,9 @@ def _resource_problem_instances(db, srv) -> list:
     for d in disks or []:
         mount = d.get("mount", "?")
         if d.get("is_ro"):
+            ro_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
             inst.append({
-                "key": f"disk_ro:{mount}", "severity": "danger",
+                "key": f"disk_ro:{mount}", "severity": ro_sev,
                 "message": f"Partisi disk {mount} READ-ONLY (sistem berkas terkunci — operasi tulis ditolak!)",
                 "tip": f"Filesystem beralih ke mode read-only akibat proteksi kernel/error I/O. Cek kernel: 'dmesg -T | grep -i ext4'. Lakukan remount: 'sudo mount -o remount,rw {mount}'.",
                 "context": _build_problem_context(f"disk_ro:{mount}", srv, mount=mount),
@@ -5698,11 +5745,12 @@ def _resource_problem_instances(db, srv) -> list:
             continue
         dpct = used / total * 100 if total else 0
         if dpct >= th["disk_danger"]:
+            disk_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
             inst.append({
-                "key": f"disk_usage:{mount}", "severity": "danger",
+                "key": f"disk_usage:{mount}", "severity": disk_sev,
                 "message": f"Disk {mount} HAMPIR PENUH: {dpct:.0f}% (ambang {th['disk_danger']:.0f}%) ({_fmt_size(used)} / {_fmt_size(total)})",
                 "tip": DISK_TIP,
-                "context": _build_problem_context(f"disk_usage:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=th["disk_danger"], severity="danger"),
+                "context": _build_problem_context(f"disk_usage:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=th["disk_danger"], severity=disk_sev),
             })
         elif dpct >= th["disk_warn"]:
             inst.append({
@@ -5743,23 +5791,74 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
         ls = ls.replace(tzinfo=timezone.utc)
     sec_silent = (datetime.now(timezone.utc) - ls).total_seconds()
 
+    tier = getattr(srv, "tier", 2) or 2
+
     if _server_stale(srv):
-        # Eskalasi keparahan seiring bertambahnya waktu tidak melapor:
-        # - Detik awal deteksi (> 15s) s/d menit 2 (< 120s): Warning (Peringatan awal selama 2 menit)
-        # - Menit 2 s/d menit 5 (120s s/d 299s): Average (Down: server mati / mesin offline / jaringan terputus)
-        # - Mulai detik awal setelah Average selesai (>= 300s / 5 mnt): Danger (Kritis / Gawat)
-        if sec_silent >= 300:
-            stale_sev = "danger"
-            stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt)"
-            stale_tip = "Segera lakukan inspeksi langsung pada fisik atau virtual mesin server, periksa suplai daya, dan verifikasi konektivitas jaringan."
-        elif sec_silent >= 120:
-            stale_sev = "average"
-            stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt)"
-            stale_tip = "Periksa suplai daya server, koneksi jaringan, atau status service agent_pantau."
-        else:
+        # Periksa apakah server dimatikan secara sadar oleh operator (poweroff_host)
+        is_op_poweroff = False
+        op_by = "OPERATOR"
+        if db is not None:
+            try:
+                last_po = (
+                    db.query(Command)
+                    .filter(
+                        Command.server_id == srv.id,
+                        Command.action == "poweroff_host",
+                    )
+                    .order_by(desc(Command.created_at))
+                    .first()
+                )
+                if last_po:
+                    po_time = last_po.created_at
+                    ls_time = srv.last_seen
+                    if ls_time and ls_time.tzinfo:
+                        ls_time = ls_time.replace(tzinfo=None)
+                    if po_time and (ls_time is None or po_time >= ls_time - timedelta(seconds=60)):
+                        is_op_poweroff = True
+                        op_by = (last_po.issued_by or "OPERATOR").upper()
+            except Exception:
+                pass
+
+        if is_op_poweroff:
             stale_sev = "warning"
-            stale_msg = f"Agen tidak melapor (> {int(sec_silent)} dtk)"
-            stale_tip = "Periksa latensi konektivitas jaringan atau pastikan service agent_pantau berjalan aktif."
+            dur_txt = f"{int(sec_silent // 60)} mnt" if sec_silent >= 60 else f"{int(sec_silent)} dtk"
+            stale_msg = f"Host dimatikan oleh operator ({op_by}) (> {dur_txt})"
+            stale_tip = "Server sengaja dimatikan melalui perintah poweroff oleh operator."
+        elif tier == 1:
+            # Tier 1: Server Kritis / Bernilai Tinggi (misal Absensi ASN)
+            # - Detik awal (> 15s) s/d menit 2 (< 120s): Warning
+            # - Menit 2 s/d menit 5 (120s s/d 299s): Average (Gawat)
+            # - >= 300s (5 menit): Danger (KRITIS — Memicu sirene darurat & banner merah)
+            if sec_silent >= 300:
+                stale_sev = "danger"
+                stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt) — HOST KRITIS OFFLINE"
+                stale_tip = "SEGERA lakukan inspeksi fisik atau virtual mesin server Tier 1, periksa suplai daya, dan verifikasi konektivitas jaringan."
+            elif sec_silent >= 120:
+                stale_sev = "average"
+                stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt)"
+                stale_tip = "Periksa suplai daya server, koneksi jaringan, atau status service agent_pantau."
+            else:
+                stale_sev = "warning"
+                stale_msg = f"Agen tidak melapor (> {int(sec_silent)} dtk)"
+                stale_tip = "Periksa latensi konektivitas jaringan atau pastikan service agent_pantau berjalan aktif."
+        elif tier == 2:
+            # Tier 2: Server Pendukung Operasional (Pantau Server, MeshCentral, File Upload, dsb)
+            # - < 120s: Warning
+            # - >= 120s: Average (GAWAT). Maksimal GAWAT, tidak memicu banner merah darurat.
+            if sec_silent >= 120:
+                stale_sev = "average"
+                stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt)"
+                stale_tip = "Periksa suplai daya server, koneksi jaringan, atau status service agent_pantau."
+            else:
+                stale_sev = "warning"
+                stale_msg = f"Agen tidak melapor (> {int(sec_silent)} dtk)"
+                stale_tip = "Periksa latensi konektivitas jaringan atau pastikan service agent_pantau berjalan aktif."
+        else:
+            # Tier 3: Server Lab / Clone / Eksperimen
+            # - Offline mendadak hanya masuk Warning (Peringatan). Tenang tanpa sirene/banner merah.
+            stale_sev = "warning"
+            stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt)" if sec_silent >= 60 else f"Agen tidak melapor (> {int(sec_silent)} dtk)"
+            stale_tip = "Server pengujian/clone sedang tidak aktif atau agent_pantau belum berjalan."
 
         inst.append({
             "key": "agent_stale",
@@ -5812,12 +5911,13 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             if event_at is None and extras is not None and extras.updated_at is not None:
                 event_at = extras.updated_at  # fallback bila agen tak mengirim last_seen
             if invalid >= SECURITY_DANGER_INVALID or failed >= th["ssh_fail_danger"]:
-                inst.append({"key": "failed_logins", "severity": "danger",
+                ssh_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                inst.append({"key": "failed_logins", "severity": ssh_sev,
                              "message": f"Kemungkinan serangan SSH: {failed} login gagal (ambang >={th['ssh_fail_danger']}), "
                                          f"{invalid} user invalid, dari {nips} IP"
                                          + (f" · terakhir {_rel_dt(event_at)}" if event_at else ""),
-                             "tip": SECURITY_TIPS["danger"], "event_at": event_at,
-                             "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {}, threshold=th["ssh_fail_danger"], severity="danger")})
+                             "tip": SECURITY_TIPS.get(ssh_sev, SECURITY_TIPS["warning"]), "event_at": event_at,
+                             "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {}, threshold=th["ssh_fail_danger"], severity=ssh_sev)})
             elif failed >= th["ssh_fail_warn"]:
                 inst.append({"key": "failed_logins", "severity": "warning",
                              "message": f"{failed} login SSH gagal dari {nips} IP (ambang >={th['ssh_fail_warn']})"
@@ -5834,11 +5934,60 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
     for d in svc_data or []:
         name = d.get("name", "?")
         st = d.get("status")
+        is_core = bool(d.get("is_core", 1))
+
+        # Cek apakah layanan dimatikan oleh operator
+        is_op_stop = False
+        op_by = "OPERATOR"
+        if db is not None:
+            try:
+                svc_entity = db.query(Service).filter(Service.server_id == srv.id, Service.service_name == name).first()
+                if svc_entity and svc_entity.ignored_reason and "DIMATIKAN OLEH OPERATOR" in svc_entity.ignored_reason:
+                    is_op_stop = True
+                    op_by = (svc_entity.ignored_by or "OPERATOR").upper()
+            except Exception:
+                pass
+
         if st == "down":
+            if is_op_stop:
+                svc_sev = "warning"
+                svc_msg = f"Layanan {name} dimatikan oleh operator ({op_by})"
+                svc_tip = "Layanan sengaja dihentikan melalui panel kontrol oleh operator."
+            elif tier == 1:
+                # Tier 1 Server:
+                # - Layanan Inti (Core) down: DANGER (Kritis)
+                # - Layanan Pendukung (Non-core) down: WARNING (Peringatan)
+                if is_core:
+                    svc_sev = "danger"
+                    svc_msg = f"Layanan utama {name} down (KRITIS)"
+                    svc_tip = SVC_DOWN_TIP.format(name=name)
+                else:
+                    svc_sev = "warning"
+                    svc_msg = f"Layanan pendukung {name} down"
+                    svc_tip = SVC_DOWN_TIP.format(name=name)
+            elif tier == 2:
+                # Tier 2 Server:
+                # - Layanan Inti down: AVERAGE (Gawat)
+                # - Layanan Pendukung down: WARNING (Peringatan)
+                if is_core:
+                    svc_sev = "average"
+                    svc_msg = f"Layanan {name} down"
+                    svc_tip = SVC_DOWN_TIP.format(name=name)
+                else:
+                    svc_sev = "warning"
+                    svc_msg = f"Layanan pendukung {name} down"
+                    svc_tip = SVC_DOWN_TIP.format(name=name)
+            else:
+                # Tier 3 Server:
+                # Semua layanan down: WARNING (Peringatan)
+                svc_sev = "warning"
+                svc_msg = f"Layanan {name} down"
+                svc_tip = SVC_DOWN_TIP.format(name=name)
+
             inst.append({
-                "key": f"service_down:{name}", "severity": "average",
-                "message": f"Layanan {name} down",
-                "tip": SVC_DOWN_TIP.format(name=name),
+                "key": f"service_down:{name}", "severity": svc_sev,
+                "message": svc_msg,
+                "tip": svc_tip,
                 "context": _build_problem_context("service_down:", srv, service_name=name, port=d.get("port"), proc=d.get("proc"), health_msg=d.get("health_msg"), conflict_ips=active_ips if len(active_ips) > 1 else None),
             })
         elif st == "unknown":
@@ -6148,6 +6297,7 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 new_row.ignored_reason = target_ignored_reason
                 new_row.ignore_mode = target_ignore_mode
             elif target_ignored_reason and "DIMATIKAN OLEH OPERATOR" in target_ignored_reason:
+                new_row.severity = "warning"
                 new_row.is_ignored = 0
                 new_row.ignored_until = None
                 new_row.ignored_by = target_ignored_by
@@ -6192,11 +6342,12 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             db.add(new_row)
             try:
                 audit_status = "diabaikan" if new_row.is_ignored else "aktif"
-                _audit(db, "sistem", f"masalah_{p['severity']}", f"{srv.hostname}: terdeteksi [{p['severity'].upper()}] {p['message']}", audit_status, server_id=srv.id)
+                _audit(db, "sistem", f"masalah_{new_row.severity}", f"{srv.hostname}: terdeteksi [{new_row.severity.upper()}] {new_row.message}", audit_status, server_id=srv.id)
             except Exception:
                 pass
         else:
             if target_ignored_reason and "DIMATIKAN OLEH OPERATOR" in target_ignored_reason:
+                row.severity = "warning"
                 row.is_ignored = 0
                 row.ignored_until = None
                 row.ignored_by = target_ignored_by
@@ -6225,11 +6376,12 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
 
             if active > (row.last_active_at or row.started_at):
                 row.last_active_at = active
-            if (row.severity != p["severity"] or row.message != p["message"]
+            incoming_sev = "warning" if (target_ignored_reason and "DIMATIKAN OLEH OPERATOR" in target_ignored_reason) else p["severity"]
+            if (row.severity != incoming_sev or row.message != p["message"]
                     or row.tip != p["tip"]):
                 old_sev = row.severity
-                new_sev = p["severity"]
-                row.severity, row.message, row.tip = p["severity"], p["message"], p["tip"]
+                new_sev = incoming_sev
+                row.severity, row.message, row.tip = incoming_sev, p["message"], p["tip"]
                 if old_sev != new_sev:
                     try:
                         _audit(db, "sistem", "eskalasi_insiden",
@@ -6352,6 +6504,7 @@ def _agg_row(srv, row, counts=None) -> dict:
         "server_id": srv.id,
         "hostname": srv.hostname,
         "group_name": getattr(srv, "group_name", None) or None,
+        "tier": getattr(srv, "tier", 2),
         "tags": getattr(srv, "tags", "") or "",
     })
     if counts:
@@ -6377,7 +6530,8 @@ def problems_aggregate(db):
         for svc in services:
             latest = latest_map.get(svc.id)
             svc_data.append({"name": svc.service_name,
-                             "status": latest.status if latest else "unknown"})
+                             "status": latest.status if latest else "unknown",
+                             "is_core": bool(getattr(svc, "is_core", 1))})
         if _server_stale(srv):
             for d in svc_data:
                 d["status"] = "offline"

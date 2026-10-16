@@ -616,6 +616,14 @@
 {% block content %}
 <div class="topbar">
   <h2>Rincian — {{ server.hostname }}
+    {% set s_tier = server.tier|default(2) %}
+    {% if s_tier == 1 %}
+      <span class="badge" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);font-size:11px;font-weight:700" title="Tier 1: Server Kritis / Bernilai Tinggi">TIER 1 (KRITIS)</span>
+    {% elif s_tier == 3 %}
+      <span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);font-size:11px" title="Tier 3: Server Eksperimen / Lab">TIER 3 (LAB)</span>
+    {% else %}
+      <span class="badge" style="background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);font-size:11px;font-weight:600" title="Tier 2: Server Pendukung Operasional">TIER 2</span>
+    {% endif %}
     {% if agent_version %}
       {% if is_agent_outdated %}
         <span id="agent-ver" class="badge badge-warn" title="Versi agen di server klien (v{{ agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Silakan perbarui agen.">agen v{{ agent_version }} (perlu update)</span>
@@ -1631,7 +1639,16 @@
     <tbody>
     {% for svc in services %}
     <tr>
-      <td><strong>{{ svc.service_name }}</strong></td>
+      <td>
+        <div style="display:inline-flex;align-items:center;gap:6px">
+          <strong>{{ svc.service_name }}</strong>
+          {% if svc.is_core %}
+            <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="Layanan Utama (Core) — Down berpotensi memicu status Kritis/Gawat">UTAMA</span>
+          {% else %}
+            <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="Layanan Pendukung (Secondary) — Down hanya memicu status Peringatan">SEKUNDER</span>
+          {% endif %}
+        </div>
+      </td>
       <td class="mono">{{ svc.port }}</td>
       <td class="mono">{{ svc.process_name }}</td>
       <td id="sts-{{ svc.id }}">
@@ -1708,6 +1725,16 @@
           </span>
 
           {% if not user.is_viewer() and user.has_perm('can_services') %}
+          <form method="post" action="/servers/{{ server.id }}/services/{{ svc.id }}/toggle-core" style="display:inline-flex;margin:0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="btn btn-ghost btn-sm" title="Ubah peran layanan (Saat ini: {{ 'Layanan Utama' if svc.is_core else 'Layanan Sekunder' }})">
+              {% if svc.is_core %}
+                <span style="font-size:11px;color:var(--dim)">Jadikan Sekunder</span>
+              {% else %}
+                <span style="font-size:11px;color:var(--blue)">Jadikan Utama</span>
+              {% endif %}
+            </button>
+          </form>
           <button type="button" class="btn btn-danger btn-sm" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus konfigurasi pemantauan layanan {{ svc.service_name }}"{% endif %} onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             <span>Hapus</span>
@@ -1740,10 +1767,18 @@
         <input type="number" name="port" required min="1" max="65535" placeholder="80, 3306, 22…"
                style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
       </div>
-      <div style="margin-bottom:18px">
+      <div style="margin-bottom:14px">
         <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Proses *</label>
         <input type="text" name="process_name" required placeholder="nginx, mysqld, sshd…"
                style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+      </div>
+      <div style="margin-bottom:18px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Peran Layanan</label>
+        <select name="is_core" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+          <option value="1" selected>Layanan Utama / Core (Down berpotensi memicu Kritis/Gawat)</option>
+          <option value="0">Layanan Pendukung / Secondary (Down hanya memicu Peringatan)</option>
+        </select>
+        <span style="font-size:11px;color:var(--dim);display:block;margin-top:3px">Layanan utama adalah proses inti aplikasi yang wajib hidup 24/7.</span>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button type="button" class="btn btn-ghost" onclick="closeAddSvcModal()">Batal</button>
