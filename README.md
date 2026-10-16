@@ -8,7 +8,7 @@ Dashboard monitoring & management multi-server berbasis web (FastAPI + MariaDB) 
 
 - **Live Resource Monitoring:** CPU, RAM, Swap, Disk per mount point, Load Average, dan bandwidth network realtime (auto-polling tanpa refresh browser).
 - **Deep Hardware & Platform Telemetry:** Deteksi model prosesor & clock speed, hypervisor/virtualisasi platform (DMI & systemd-detect-virt), jenis block storage (SSD/HDD), default gateway, DNS, interface network MAC & link speed, serta waktu boot sistem.
-- **3-Tier Asset Criticality & Enterprise Incident Severity (v4.4.1):** Pengelompokan server ke dalam 3 tier aset (Tier 1 Kritis 24/7, Tier 2 Pendukung Operasional, Tier 3 Lab/Eksperimen). Keparahan KRITIS (`danger`) dan banner darurat/sirene hanya terpicu jika server Tier 1 mengalami bencana fatal. Gangguan server pendukung berstatus GAWAT (`average`), dan server lab berstatus PERINGATAN (`warning`). Pemadaman sadar/sengaja oleh operator di seluruh tier tercatat aktif sebagai PERINGATAN tanpa memicu banner darurat atau sirene.
+- **Klasifikasi Kepentingan Layanan (Level Operasional) (v4.4.1):** Pengelompokan server ke dalam 3 level (Tier 1 Layanan Utama/Prioritas, Tier 2 Layanan Pendukung/Sekunder, Tier 3 Layanan Sementara/Non-Kritis). Keparahan KRITIS (`danger`) dan banner darurat/sirene hanya terpicu jika server Tier 1 mengalami bencana fatal. Gangguan server pendukung berstatus GAWAT (`average`), dan server sementara berstatus PERINGATAN (`warning`). Pemadaman sadar oleh operator di seluruh tier tercatat aktif sebagai PERINGATAN tanpa memicu alarm darurat.
 - **Fleet-Wide OTA Agent Self-Update:** Pembaruan versi armada agen otomatis (*self-update*) secara mandiri via polling heartbeat berkala tanpa perlu menekan tombol satu per satu, dengan verifikasi kriptografis SHA-256 dan auto-restart systemd.
 - **Service & Process Control:** Start, Stop, Restart service systemd, penentuan peran layanan Utama (*Core*) vs Sekunder, dan kill process pemakan resource langsung dari web dengan guardrail proteksi sistem kritis.
 - **Web Terminal (xterm.js):** Akses shell root interaktif langsung di browser. Mendukung ANSI color, shortcut bash, nano, htop, dan full screen.
@@ -142,27 +142,27 @@ Sistem hak akses 3-tier dengan model delegasi seperti perintah `sudo` di Linux:
 
 ---
 
-## Klasifikasi Aset (3-Tier Asset Criticality) & Keparahan Insiden (v4.4.1)
+## Klasifikasi Kepentingan Layanan (Level Operasional) & Keparahan Insiden (v4.4.1)
 
-Pantau Server menerapkan standar hierarki keparahan insiden berbasis nilai aset (*asset criticality-driven incident severity*), terinspirasi dari standar pemantauan enterprise (seperti Zabbix dan Prometheus Alertmanager):
+Pantau Server menerapkan standar hierarki keparahan insiden berbasis level operasional layanan (*operational criticality-driven incident severity*):
 
-### 1. Klasifikasi Tier Aset Server
-- **Tier 1 — Server Kritis (Produksi Utama / Layanan Vital 24/7):**
-  Server produksi utama yang memegang operasional vital dan tidak boleh terhenti (misalnya: database cluster utama, core backend API, authentication server). Menjadi satu-satunya tier yang dapat memicu eskalasi **🔴 KRITIS (`danger`)**, menampilkan **Banner Merah Global (`#alertBanner`)**, serta membunyikan **Sirene Darurat Audio NOC**.
-- **Tier 2 — Server Pendukung Operasional:**
-  Server penunjang operasional yang penting namun memiliki toleransi downtime singkat (misalnya: server pelaporan, server pemantauan, backup worker, file storage sekunder). Insiden offline atau core service down berstatus **🟠 GAWAT (`average`)**, dan secara ketat **tidak pernah** memicu banner merah atau sirene darurat.
-- **Tier 3 — Server Lab / Staging / Eksperimen:**
-  Server pengujian, mesin virtual staging, clone uji coba, atau lab pengembangan internal. Gangguan atau pemadaman server maksimal hanya berstatus **🟡 PERINGATAN (`warning`)**, mengeliminasi alarm darurat palsu (*alert fatigue*).
+### 1. Klasifikasi Level Operasional Server
+- **Tier 1 — Layanan Utama / Prioritas:**
+  Server dengan fungsi dan peran vital yang tidak boleh terhenti. Gangguan fatal pada tier ini memicu eskalasi **🔴 KRITIS (`danger`)**, **Banner Merah Global (`#alertBanner`)**, dan **Sirene Darurat Audio NOC**.
+- **Tier 2 — Layanan Pendukung / Sekunder:**
+  Server yang mendukung kelancaran sistem kerja operasional namun memiliki toleransi pemulihan. Gangguan fatal maksimal berstatus **🟠 GAWAT (`average`)**, dan secara ketat tidak memicu banner darurat atau sirene.
+- **Tier 3 — Layanan Sementara / Non-Kritis:**
+  Server uji coba, mesin staging, atau sementara yang tidak berdampak langsung terhadap operasional sistem. Gangguan server maksimal berstatus **🟡 PERINGATAN (`warning`)**.
 
-### 2. Matriks Keparahan Insiden Terhadap Tier Aset
+### 2. Matriks Keparahan Insiden Terhadap Level Operasional
 
-| Kondisi / Insiden Sistem | Tier 1 (Kritis) | Tier 2 (Pendukung) | Tier 3 (Lab/Clone) | Catatan Operasional |
+| Kondisi / Insiden Sistem | Tier 1 (Utama) | Tier 2 (Pendukung) | Tier 3 (Sementara) | Catatan Operasional |
 | :--- | :---: | :---: | :---: | :--- |
 | **Host Offline Mendadak ($\ge 300\text{s}$)** | 🔴 **KRITIS** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Banner merah & sirene **hanya** untuk Tier 1 |
 | **Partisi Disk Read-Only (Hardware Block Error)** | 🔴 **KRITIS** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Risiko kehilangan data storage |
 | **Disk Penuh 100% pada Root/DB Partition** | 🔴 **KRITIS** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Penulisan data terhenti total |
 | **Layanan Utama (*Core Service*) Crash / Down** | 🔴 **KRITIS** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Layanan yang ditandai badge `UTAMA` |
-| **Layanan Sekunder (*Secondary*) Down** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | Layanan pendukung (mis. Redis, Zabbix-Agent) |
+| **Layanan Sekunder (*Secondary*) Down** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | Layanan pendukung (mis. cache/worker) |
 | **Tindakan Sadar Operator (Poweroff/Stop Service)** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | Tetap insiden aktif (`is_ignored = 0`), tanpa banner |
 | **Kapasitas Disk $\ge 90\%$, RAM/CPU $\ge 90\%$** | 🟠 **GAWAT** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Indikasi beban tinggi sistem |
 | **Pembaruan Paket Sistem (APT Updates Available)** | 🔵 **INFO** | 🔵 **INFO** | 🔵 **INFO** | Tugas pemeliharaan rutin administratif |

@@ -90,15 +90,15 @@
 
       <div class="form-group" style="margin-bottom:14px">
         <label for="f-tier" style="font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px">
-          Klasifikasi Kepentingan Aset (Asset Tier)
+          Klasifikasi Kepentingan Layanan (Level Operasional)
         </label>
         <select id="f-tier" name="tier" style="width:100%">
-          <option value="1" {% if server and server.tier == 1 %}selected{% endif %}>Tier 1 — Server Kritis (Produksi Utama / Layanan Vital 24/7 / Sirene Darurat)</option>
-          <option value="2" {% if not server or (server and server.tier == 2) %}selected{% endif %}>Tier 2 — Server Pendukung (Layanan Pendukung Operasional / Maksimal Gawat)</option>
-          <option value="3" {% if server and server.tier == 3 %}selected{% endif %}>Tier 3 — Server Lab / Staging (Uji Coba &amp; Pengembangan / Maksimal Peringatan)</option>
+          <option value="1" {% if server and server.tier == 1 %}selected{% endif %}>Tier 1 — Layanan Utama / Prioritas</option>
+          <option value="2" {% if not server or (server and server.tier == 2) %}selected{% endif %}>Tier 2 — Layanan Pendukung / Sekunder</option>
+          <option value="3" {% if server and server.tier == 3 %}selected{% endif %}>Tier 3 — Layanan Sementara / Non-Kritis</option>
         </select>
         <span style="font-size:11px;color:var(--dim);margin-top:4px;display:block">
-          Menentukan matriks keparahan insiden &amp; eskalasi sirene. Hanya Server Tier 1 yang dapat memicu Keparahan KRITIS (Banner Merah &amp; Sirene Darurat).
+          Tier 1: Fungsi vital &amp; memicu alarm darurat. Tier 2: Pendukung operasional &amp; batas gawat. Tier 3: Sementara/uji coba &amp; batas peringatan.
         </span>
       </div>
 

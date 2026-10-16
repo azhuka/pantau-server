@@ -322,8 +322,8 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 v4.4.1
  │
  ├── 4  (Mayor) : Restrukturisasi Keamanan & Arsitektur RBAC 3-Tier, 2FA TOTP RFC 6238, dan Isolasi Akun
- ├── 4  (Minor) : Sistem Klasifikasi Aset 3-Tier (Tier 1 Kritis, Tier 2 Pendukung, Tier 3 Lab/Eksperimen), Matriks Keparahan Insiden Multi-Tier, Pembagian Peran Layanan Utama/Sekunder, dan Klasifikasi Sadar Operator
- └── 1  (Patch) : Perbaikan Tombol Abaikan pada Server Offline & Siklus Hidup Pengabaian Insiden Tindakan Operator
+ ├── 4  (Minor) : Sistem Klasifikasi Kepentingan Layanan (Level Operasional Tier 1/2/3), Matriks Keparahan Insiden Multi-Tier, Pembagian Peran Layanan Utama/Sekunder, dan Klasifikasi Sadar Operator
+ └── 1  (Patch) : Perbaikan Tombol Abaikan pada Server Offline, Siklus Hidup Pengabaian Tindakan Operator, & Penyempurnaan Label Level Operasional
 ```
 
 ---
@@ -345,12 +345,18 @@ v4.4.1
      - Jika operator memilih "Pantau Kembali", insiden kembali ke status aktif keparahan Peringatan.
      - Menyempurnakan endpoint API `api_alert_ignore` dan `api_service_ignore` agar mempertahankan riwayat alasan operator (`row.ignored_reason = reason or row.ignored_reason`) apabila modal abaikan disubmit tanpa mengisi alasan khusus baru.
 
+3. **Penyempurnaan Label Klasifikasi Kepentingan Layanan (Level Operasional):**
+   - Menyelaraskan teks pada form input server (`server_form.html`), badge rincian server (`services.html`), dan tooltip dashboard agar ringkas dan on-point:
+     - `Tier 1 — Layanan Utama / Prioritas` (Fungsi vital, memicu alarm darurat).
+     - `Tier 2 — Layanan Pendukung / Sekunder` (Pendukung operasional, batas keparahan gawat).
+     - `Tier 3 — Layanan Sementara / Non-Kritis` (Uji coba/sementara, batas keparahan peringatan).
+
 ---
 
 ## Versi 4.4.0
 
 - **Release Label:** None
-- **Tipe Rilis:** Rilis Minor (*Minor Release*) — *3-Tier Asset Criticality & Enterprise Incident Severity System, Core vs Secondary Service Role Segmentation, and Operator Action Warning Classification*.
+- **Tipe Rilis:** Rilis Minor (*Minor Release*) — *Klasifikasi Kepentingan Layanan (Level Operasional), Core vs Secondary Service Role Segmentation, and Operator Action Warning Classification*.
 
 ### Struktur Rilis SemVer (Major.Minor.Patch)
 
@@ -358,7 +364,7 @@ v4.4.1
 v4.4.0
  │
  ├── 4  (Mayor) : Restrukturisasi Keamanan & Arsitektur RBAC 3-Tier, 2FA TOTP RFC 6238, dan Isolasi Akun
- ├── 4  (Minor) : Sistem Klasifikasi Aset 3-Tier (Tier 1 Kritis, Tier 2 Pendukung, Tier 3 Lab/Eksperimen), Matriks Keparahan Insiden Multi-Tier, Pembagian Peran Layanan Utama/Sekunder, dan Klasifikasi Sadar Operator
+ ├── 4  (Minor) : Sistem Klasifikasi Kepentingan Layanan (Level Operasional), Matriks Keparahan Insiden Multi-Tier, Pembagian Peran Layanan Utama/Sekunder, dan Klasifikasi Sadar Operator
  └── 0  (Patch) : Rilis Awal Arsitektur 4.4.0
 ```
 
@@ -366,10 +372,10 @@ v4.4.0
 
 ### Fitur Baru & Peningkatan Arsitektur — Versi 4.4.0 (Minor Release)
 
-1. **Sistem Klasifikasi Aset Multi-Tier (3-Tier Asset Criticality):**
-   - **Tier 1 (Server Kritis / 24/7):** Server bernilai tinggi yang menjalankan layanan vital organisasi (misalnya: *Database Cluster Utama*, *Core API Gateway*). Bencana fatal (host offline $\ge 300\text{s}$, partisi disk read-only, disk penuh 100%, core service crash) dievaluasi sebagai **🔴 KRITIS (`danger`)**. Menjadi **satu-satunya** tier yang memicu Banner Merah `#alertBanner` dan Sirene Audio Darurat NOC.
-   - **Tier 2 (Server Pendukung Operasional):** Server pendukung operasional (misalnya: server pelaporan, server monitoring, server backup/file processing). Host offline $\ge 120\text{s}$ atau layanan inti down dievaluasi sebagai **🟠 GAWAT (`average`)**, dan secara ketat tidak pernah memicu banner merah maupun sirene darurat.
-   - **Tier 3 (Server Lab / Staging / Eksperimen):** Mesin virtual pengujian, staging, atau eksperimen/lab pengembangan. Gangguan atau pemadaman server maksimal hanya berstatus **🟡 PERINGATAN (`warning`)**, mengeliminasi alarm palsu (*alert fatigue*).
+1. **Sistem Klasifikasi Kepentingan Layanan (Level Operasional):**
+   - **Tier 1 — Layanan Utama / Prioritas:** Server dengan fungsi dan peran vital utama yang tidak boleh terhenti. Bencana fatal (host offline $\ge 300\text{s}$, partisi disk read-only, disk penuh 100%, core service crash) dievaluasi sebagai **🔴 KRITIS (`danger`)**. Menjadi **satu-satunya** tier yang memicu Banner Merah `#alertBanner` dan Sirene Audio Darurat NOC.
+   - **Tier 2 — Layanan Pendukung / Sekunder:** Server pendukung kelancaran operasional sistem. Host offline $\ge 120\text{s}$ atau layanan inti down dievaluasi sebagai **🟠 GAWAT (`average`)**, dan secara ketat tidak pernah memicu banner merah maupun sirene darurat.
+   - **Tier 3 — Layanan Sementara / Non-Kritis:** Server pengujian, staging, atau sementara yang tidak berdampak langsung ke operasional sistem. Gangguan atau pemadaman server maksimal hanya berstatus **🟡 PERINGATAN (`warning`)**, mengeliminasi alarm palsu (*alert fatigue*).
 
 2. **Klasifikasi Peran Layanan (Core vs Secondary Services):**
    - Penambahan kolom `is_core` (default 1) pada tabel `services` untuk membedakan layanan utama aplikasi (*Core Service*) dari layanan pendukung (*Secondary Service*, seperti Redis cache, Zabbix agent, systemd-resolve).

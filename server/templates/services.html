@@ -618,11 +618,11 @@
   <h2>Rincian — {{ server.hostname }}
     {% set s_tier = server.tier|default(2) %}
     {% if s_tier == 1 %}
-      <span class="badge" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);font-size:11px;font-weight:700" title="Tier 1: Server Kritis / Bernilai Tinggi">TIER 1 (KRITIS)</span>
+      <span class="badge" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);font-size:11px;font-weight:700" title="Tier 1: Layanan Utama / Prioritas">TIER 1 (UTAMA)</span>
     {% elif s_tier == 3 %}
-      <span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);font-size:11px" title="Tier 3: Server Eksperimen / Lab">TIER 3 (LAB)</span>
+      <span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);font-size:11px" title="Tier 3: Layanan Sementara / Non-Kritis">TIER 3 (SEMENTARA)</span>
     {% else %}
-      <span class="badge" style="background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);font-size:11px;font-weight:600" title="Tier 2: Server Pendukung Operasional">TIER 2</span>
+      <span class="badge" style="background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);font-size:11px;font-weight:600" title="Tier 2: Layanan Pendukung / Sekunder">TIER 2 (PENDUKUNG)</span>
     {% endif %}
     {% if agent_version %}
       {% if is_agent_outdated %}
