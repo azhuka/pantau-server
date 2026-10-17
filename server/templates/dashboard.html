@@ -189,30 +189,84 @@
   color: var(--text);
   transition: padding .15s ease;
 }
-/* Mode Kompak (1 Baris Ringkas per Server) */
+/* Mode Kompak (Ultra-Slim 1 Baris per Server) */
+#dash-server-table.tbl-compact {
+  border-spacing: 0;
+}
 #dash-server-table.tbl-compact th {
-  padding: 5px 8px;
-  font-size: 11px;
+  padding: 4px 6px !important;
+  font-size: 10.5px !important;
+  line-height: 1.2 !important;
 }
 #dash-server-table.tbl-compact td {
-  padding: 3.5px 8px;
-  font-size: 12px;
+  padding: 2px 6px !important;
+  font-size: 11px !important;
+  line-height: 1.15 !important;
+  height: 23px !important;
 }
 #dash-server-table.tbl-compact .tbl-metric-subline {
   display: none !important;
 }
 #dash-server-table.tbl-compact .tbl-metric-box {
   gap: 0 !important;
+  line-height: 1 !important;
+}
+#dash-server-table.tbl-compact .tbl-metric-box > div {
+  gap: 4px !important;
+  align-items: center !important;
+  line-height: 1 !important;
+}
+#dash-server-table.tbl-compact td strong.mono {
+  font-size: 11px !important;
+  line-height: 1 !important;
+  min-width: 36px !important;
 }
 #dash-server-table.tbl-compact .meter-mini-track {
-  height: 4px;
+  height: 3px !important;
+  width: 40px !important;
+  border-width: 0.5px !important;
+}
+#dash-server-table.tbl-compact td:first-child strong {
+  font-size: 11.5px !important;
+  line-height: 1 !important;
+}
+#dash-server-table.tbl-compact .dot {
+  width: 6px !important;
+  height: 6px !important;
 }
 #dash-server-table.tbl-compact .badge {
-  font-size: 8.5px !important;
-  padding: 1px 4px !important;
+  font-size: 8px !important;
+  padding: 0 4px !important;
+  line-height: 13px !important;
+  height: 14px !important;
 }
 #dash-server-table.tbl-compact .copyable-ip {
-  font-size: 11px !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+}
+#dash-server-table.tbl-compact td:nth-child(4) div {
+  gap: 3px !important;
+  line-height: 1 !important;
+}
+#dash-server-table.tbl-compact td:nth-child(4) .badge {
+  font-size: 7.5px !important;
+  padding: 0 3px !important;
+  line-height: 12px !important;
+  height: 13px !important;
+}
+#dash-server-table.tbl-compact td:nth-child(4) .badge svg {
+  width: 7px !important;
+  height: 7px !important;
+}
+#dash-server-table.tbl-compact td:nth-child(10) div {
+  gap: 2px !important;
+}
+#dash-server-table.tbl-compact td:nth-child(10) .badge {
+  font-size: 8.5px !important;
+  padding: 0 3.5px !important;
+  min-width: 14px !important;
+  height: 14px !important;
+  line-height: 14px !important;
 }
 #dash-fleet-card .table-pagination-bar {
   margin: 0;
@@ -1063,7 +1117,7 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 3. IP & Platform (Ramping & Efisien) -->
-          <td data-sort-val="{{ srv.ip_address }}" style="white-space:nowrap;vertical-align:middle;padding:5px 8px">
+          <td data-sort-val="{{ srv.ip_address }}" style="white-space:nowrap;vertical-align:middle">
             <div style="display:inline-flex;align-items:center;gap:5px">
               {% if srv._platform %}
                 {% set p_label = srv._platform.short_label|upper %}
@@ -1089,7 +1143,7 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 5. CPU (%) dengan Visual Mini Meter Bar Terbuka & Jelas -->
-          <td id="tbl-cpu-td-{{ srv.id }}" data-sort-val="{{ cpu_v }}" style="text-align:center;vertical-align:middle;padding:5px 8px" title="CPU: {{ srv._cpu ~ '%' if srv._cpu is not none else '-' }} ({{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }})">
+          <td id="tbl-cpu-td-{{ srv.id }}" data-sort-val="{{ cpu_v }}" style="text-align:center;vertical-align:middle" title="CPU: {{ srv._cpu ~ '%' if srv._cpu is not none else '-' }} ({{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }})">
             {% if srv._cpu is not none %}
               <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
                 <div style="display:inline-flex;align-items:center;gap:7px">
@@ -1109,7 +1163,7 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 6. RAM (%) dengan Visual Mini Meter Bar Terbuka & Jelas -->
-          <td id="tbl-mem-td-{{ srv.id }}" data-sort-val="{{ mem_v }}" style="text-align:center;vertical-align:middle;padding:5px 8px" title="RAM: {{ srv._mem_pct ~ '%' if srv._mem_pct is not none else '-' }} ({{ srv._mem_used_str if srv._mem_used_str and srv._mem_used_str != '—' else '-' }} / {{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }})">
+          <td id="tbl-mem-td-{{ srv.id }}" data-sort-val="{{ mem_v }}" style="text-align:center;vertical-align:middle" title="RAM: {{ srv._mem_pct ~ '%' if srv._mem_pct is not none else '-' }} ({{ srv._mem_used_str if srv._mem_used_str and srv._mem_used_str != '—' else '-' }} / {{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }})">
             {% if srv._mem_pct is not none %}
               <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
                 <div style="display:inline-flex;align-items:center;gap:7px">
@@ -1131,7 +1185,7 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 7. STORAGE (%) dengan Visual Mini Meter Bar Terbuka & Jelas -->
-          <td id="tbl-disk-td-{{ srv.id }}" data-sort-val="{{ disk_v }}" style="text-align:center;vertical-align:middle;padding:5px 8px" title="Storage: {{ srv._disk_pct ~ '%' if srv._disk_pct is not none else '-' }} ({{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}, Sisa: {{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }})">
+          <td id="tbl-disk-td-{{ srv.id }}" data-sort-val="{{ disk_v }}" style="text-align:center;vertical-align:middle" title="Storage: {{ srv._disk_pct ~ '%' if srv._disk_pct is not none else '-' }} ({{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}, Sisa: {{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }})">
             {% if srv._disk_pct is not none %}
               <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
                 <div style="display:inline-flex;align-items:center;gap:7px">
