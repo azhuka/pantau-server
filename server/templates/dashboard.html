@@ -706,21 +706,6 @@ body.popout-server_card .server-card.is-popout-target {
 }
 </style>
 
-<!-- Banner Header Khusus Jendela Pop-out Standalone (Multi-Monitor NOC) -->
-<div id="dash-popout-header" style="display:none;align-items:center;justify-content:space-between;padding:6px 12px;margin-bottom:10px;background:rgba(15,23,42,0.9);border:1px solid rgba(255,255,255,0.08);border-radius:6px;font-size:11px">
-  <div style="display:flex;align-items:center;gap:8px">
-    <span class="dot up" style="width:7px;height:7px"></span>
-    <span style="font-weight:700;color:var(--text-bright);letter-spacing:0.4px" id="dash-popout-title">PANTAU SERVER &bull; WIDGET</span>
-    <span class="badge" style="background:rgba(56,189,248,0.12);color:var(--blue);border:1px solid rgba(56,189,248,0.3);font-size:9.5px;padding:1px 5px;letter-spacing:0.3px">POPOUT</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:10px">
-    <span style="font-size:10px;color:var(--dim)" title="Metrik dan data diperbarui otomatis">● Sinkron Otomatis</span>
-    <button type="button" onclick="window.close()" title="Tutup Jendela Pop-out" style="font-size:10.5px;padding:2px 8px;background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:3px">
-      <span>Tutup</span> &times;
-    </button>
-  </div>
-</div>
-
 <div class="topbar">
   <div>
     <h2 style="display:flex;align-items:center;gap:10px;font-size:20px">
@@ -2409,25 +2394,21 @@ function popoutWidget(widgetName, ev, extra) {
       body.classList.add('popout-' + widget);
     }
 
-    const header = document.getElementById('dash-popout-header');
-    const titleEl = document.getElementById('dash-popout-title');
-    if (header) header.style.display = 'flex';
-
-    let label = 'WIDGET';
-    if (widget === 'clock') label = 'WAKTU SISTEM';
-    else if (widget === 'total_servers') label = 'TOTAL SERVER';
-    else if (widget === 'problems_strip') label = 'INSIDEN AKTIF';
-    else if (widget === 'recent_incidents') label = 'INSIDEN TERKINI';
-    else if (widget === 'fleet_table') label = 'OPERASIONAL SELURUH SERVER';
+    let label = 'Widget';
+    if (widget === 'clock') label = 'Waktu Sistem';
+    else if (widget === 'total_servers') label = 'Total Server';
+    else if (widget === 'problems_strip') label = 'Insiden Aktif';
+    else if (widget === 'recent_incidents') label = 'Insiden Terkini';
+    else if (widget === 'fleet_table') label = 'Operasional Seluruh Server';
     else if (widget === 'server_card') {
-      label = 'KARTU SERVER';
+      label = 'Kartu Server';
       if (srvId) {
         const targetCard = document.querySelector(`.server-card[data-srv-id="${srvId}"]`);
         if (targetCard) {
           targetCard.classList.add('is-popout-target');
           const hName = targetCard.querySelector('strong');
           if (hName && hName.textContent) {
-            label = 'SERVER: ' + hName.textContent.trim();
+            label = 'Server: ' + hName.textContent.trim();
           }
         } else {
           document.querySelectorAll('.server-card').forEach(c => c.classList.add('is-popout-target'));
@@ -2437,9 +2418,6 @@ function popoutWidget(widgetName, ev, extra) {
       }
     }
 
-    if (titleEl) {
-      titleEl.textContent = 'PANTAU SERVER • ' + label;
-    }
     document.title = `${label} - Pantau Server`;
   } catch(e) {
     console.error('Error init popout mode:', e);
