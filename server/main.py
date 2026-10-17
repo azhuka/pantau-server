@@ -3759,15 +3759,10 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
         ))
 
         # 2. Buka atau perbarui ServerProblem seketika
-        is_admin = _is_admin_service(svc.service_name, svc.port, svc.process_name)
-        if getattr(server, "tier", 2) == 1 and not is_admin:
-            sev = "danger"
-            msg = f"Layanan {svc.service_name} dimatikan oleh operator ({op_name}) (KRITIS)"
-            tip = "Layanan inti dihentikan melalui panel kontrol oleh operator. Segera aktifkan kembali untuk mencegah gangguan operasional."
-        else:
-            sev = "warning"
-            msg = f"Layanan {svc.service_name} dimatikan oleh operator ({op_name})"
-            tip = "Layanan sengaja dihentikan melalui panel kontrol oleh operator."
+        # Semua tindakan sengaja dan disadari oleh operator berstatus PERINGATAN (warning)
+        sev = "warning"
+        msg = f"Layanan {svc.service_name} dimatikan oleh operator ({op_name})"
+        tip = "Layanan sengaja dihentikan melalui panel kontrol oleh operator."
 
         prob = db.query(ServerProblem).filter(
             ServerProblem.server_id == sid,
@@ -6065,21 +6060,24 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                 pass
 
         if st == "down":
-            if tier == 1 and not is_admin:
-                # Tier 1 Server: Layanan Inti Aplikasi/Infrastruktur (Web, DB, Docker, App) down
-                # Down karena kegagalan teknis maupun sengaja dimatikan operator adalah insiden KRITIS (danger)
-                svc_sev = "danger"
-                svc_msg = f"Layanan {name} dimatikan oleh operator ({op_by}) (KRITIS)" if is_op_stop else f"Layanan {name} down (KRITIS)"
-                svc_tip = "Layanan inti dihentikan melalui panel kontrol oleh operator. Segera aktifkan kembali untuk mencegah gangguan operasional." if is_op_stop else SVC_DOWN_TIP.format(name=name)
-            elif is_op_stop:
+            if is_op_stop:
+                # Semua tindakan operator yang disengaja dan disadari (baik Tier-1 maupun selainnya)
+                # diklasifikasikan sebagai insiden tingkat keparahan PERINGATAN (warning)
                 svc_sev = "warning"
                 svc_msg = f"Layanan {name} dimatikan oleh operator ({op_by})"
                 svc_tip = "Layanan sengaja dihentikan melalui panel kontrol oleh operator."
-            elif tier == 1 and is_admin:
-                # Layanan Administratif/Remote (sshd, ntp, agent) down: WARNING (Peringatan)
-                svc_sev = "warning"
-                svc_msg = f"Layanan {name} down"
-                svc_tip = SVC_DOWN_TIP.format(name=name)
+            elif tier == 1:
+                # Tier 1 Server (Down/crash tidak disengaja):
+                # - Layanan Inti Aplikasi/Infrastruktur (Web, DB, Docker, App) down: DANGER (Kritis)
+                # - Layanan Administratif/Remote (sshd, ntp, agent, cron) down: WARNING (Peringatan)
+                if not is_admin:
+                    svc_sev = "danger"
+                    svc_msg = f"Layanan {name} down (KRITIS)"
+                    svc_tip = SVC_DOWN_TIP.format(name=name)
+                else:
+                    svc_sev = "warning"
+                    svc_msg = f"Layanan {name} down"
+                    svc_tip = SVC_DOWN_TIP.format(name=name)
             elif tier == 2:
                 # Tier 2 Server (Server Sekunder):
                 svc_sev = "average" if not is_admin else "warning"
@@ -6413,7 +6411,7 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 new_row.ignored_reason = target_ignored_reason
                 new_row.ignore_mode = target_ignore_mode
             elif is_operator_action:
-                new_row.severity = p["severity"]
+                new_row.severity = "warning"
                 new_row.is_ignored = 0
                 new_row.ignored_until = None
                 new_row.ignored_by = operator_action_by
@@ -6480,7 +6478,7 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 row.ignored_reason = target_ignored_reason
                 row.ignore_mode = target_ignore_mode
             elif is_operator_action:
-                row.severity = p["severity"]
+                row.severity = "warning"
                 if not row.ignored_reason:
                     row.ignored_reason = operator_action_reason
                 if not row.ignored_by:
@@ -6493,7 +6491,7 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
 
             if active > (row.last_active_at or row.started_at):
                 row.last_active_at = active
-            incoming_sev = p["severity"]
+            incoming_sev = "warning" if is_operator_action else p["severity"]
             if (row.severity != incoming_sev or row.message != p["message"]
                     or row.tip != p["tip"]):
                 old_sev = row.severity
@@ -7166,12 +7164,10 @@ def api_alerts(
     def _is_alert_banner_firing(r, now_dt):
         if getattr(r, "is_ignored", 0):
             return False
-        # Tindakan yang sengaja dilakukan oleh operator tidak memicu banner darurat atau modal gawat darurat,
-        # KECUALI bila keparahannya DANGER (Kritis, seperti layanan inti pada server Tier-1)
+        # Tindakan yang sengaja dilakukan oleh operator tidak memicu banner darurat atau modal gawat darurat
         reason = getattr(r, "ignored_reason", None) or ""
         if "DIMATIKAN OLEH OPERATOR" in reason or "DIHENTIKAN OLEH OPERATOR" in reason:
-            if getattr(r, "severity", "") != "danger":
-                return False
+            return False
         key = getattr(r, "key", "") or ""
         # Peringatan non-darurat operasional (seperti versi agen atau pembaruan paket OS)
         # tidak boleh memicu Alert Banner darurat di atas layar
