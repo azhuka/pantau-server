@@ -436,14 +436,25 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
 @keyframes tabIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
 @media(min-width:821px){
-  .sb-toggle{display:block}
+  .sb-toggle{display:inline-flex;align-items:center;justify-content:center}
+  .sb-icon-collapse{display:block}
+  .sb-icon-expand{display:none}
+  body.sb-collapsed .sb-icon-collapse{display:none !important}
+  body.sb-collapsed .sb-icon-expand{display:block !important}
   body.sb-collapsed .sidebar{width:64px}
-  body.sb-collapsed .sidebar-brand{padding:16px 0;justify-content:center}
-  body.sb-collapsed .sidebar-brand .brand-label{display:none}
-  body.sb-collapsed .sb-toggle{margin-left:0}
-  body.sb-collapsed .nav-link{justify-content:center;padding:10px 0}
-  body.sb-collapsed .nav-label{display:none}
-  body.sb-collapsed .nav-section{display:none}
+  body.sb-collapsed .main{margin-left:64px !important}
+  body.sb-collapsed .sidebar-brand{padding:12px 0;justify-content:center;gap:0}
+  body.sb-collapsed .sidebar-brand .brand-label{display:none !important}
+  body.sb-collapsed .sidebar-brand .brand-dot{display:none !important}
+  body.sb-collapsed .sb-toggle{margin:0 auto !important;width:38px;height:38px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--text)}
+  body.sb-collapsed .sb-toggle:hover{background:rgba(56,189,248,0.15);border-color:rgba(56,189,248,0.35);color:var(--blue)}
+  body.sb-collapsed .sidebar-nav{padding:12px 8px}
+  body.sb-collapsed .nav-link{justify-content:center;padding:10px 0;width:48px;height:42px;margin:4px auto;border-radius:8px;position:relative}
+  body.sb-collapsed .nav-link .nav-icon{margin:0;width:20px;height:20px}
+  body.sb-collapsed .nav-label{display:none !important}
+  body.sb-collapsed .nav-section{display:none !important}
+  body.sb-collapsed #nav-incident-badge{position:absolute;top:4px;right:6px;margin:0 !important;font-size:9px !important;padding:1px 4px !important;min-width:15px;height:15px;line-height:13px;border-radius:8px;text-align:center;box-shadow:0 0 6px rgba(239,68,68,0.6)}
+  body.sb-collapsed .mob-logout{display:flex !important}
   body.sb-collapsed .sidebar-footer{display:none}
   .mob-header, .mob-drawer-backdrop, .mob-drawer-close{display:none !important}
 }
@@ -936,38 +947,39 @@ body.show-alert-banner .main{padding-top:72px}
   <div class="sidebar-brand">
     <span class="brand-dot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);vertical-align:middle"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3" fill="currentColor"></circle></svg></span>
     <span class="brand-label">Pantau Server</span>
-    <button class="sb-toggle" id="sbToggle" onclick="toggleSb()" title="Minimalkan / perluas sidebar" aria-label="Minimalkan / perluas sidebar" type="button">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    <button class="sb-toggle" id="sbToggle" onclick="toggleSb()" title="Minimalkan sidebar" aria-label="Minimalkan sidebar" type="button">
+      <svg class="sb-icon-collapse" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><path d="M15 15l-3-3 3-3"></path></svg>
+      <svg class="sb-icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><path d="M13 9l3 3-3 3"></path></svg>
     </button>
     <button class="mob-drawer-close" onclick="closeMobDrawer()" aria-label="Tutup navigasi" type="button">&times;</button>
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section" data-i18n="menu_section_menu">Menu</div>
-    <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}" onclick="closeMobDrawer()">
+    <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}" onclick="closeMobDrawer()" title="Dashboard">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></span> <span class="nav-label" data-i18n="menu_dashboard">Dashboard</span>
     </a>
-    <a href="/servers" class="nav-link {% if '/servers' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()">
+    <a href="/servers" class="nav-link {% if '/servers' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Daftar Server">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span> <span class="nav-label" data-i18n="menu_servers">Daftar Server</span>
     </a>
-    <a href="/problems" class="nav-link {% if '/problems' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()">
+    <a href="/problems" class="nav-link {% if '/problems' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Insiden &amp; Masalah">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span> <span class="nav-label" data-i18n="menu_problems">Insiden</span>
       <span id="nav-incident-badge" class="badge" style="display:none;margin-left:auto;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:10px"></span>
     </a>
-    <a href="/logs" class="nav-link {% if '/logs' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()">
+    <a href="/logs" class="nav-link {% if '/logs' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Log Sistem">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></span> <span class="nav-label" data-i18n="menu_logs">Log</span>
     </a>
     {% if user and (user.is_master_admin() or user.has_perm('can_audit')) %}
     <div class="nav-section">Kelola</div>
-    <a href="/audit" class="nav-link {% if '/audit' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()">
+    <a href="/audit" class="nav-link {% if '/audit' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Riwayat Tindakan">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span> <span class="nav-label">Riwayat Tindakan</span>
     </a>
     {% endif %}
     {% if user and not user.is_viewer() %}
-    <a href="/profile" class="nav-link {% if '/profile' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()">
+    <a href="/profile" class="nav-link {% if '/profile' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Akun Pengguna">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span> <span class="nav-label">Akun Pengguna</span>
     </a>
     {% endif %}
-    <a href="/logout" class="nav-link mob-logout" onclick="closeMobDrawer()">
+    <a href="/logout" class="nav-link mob-logout" onclick="closeMobDrawer()" title="Keluar">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span> <span class="nav-label">Keluar</span>
     </a>
   </nav>
@@ -1066,16 +1078,26 @@ try {
   try{
     if(window.innerWidth>820 && localStorage.getItem('sb')==='1') document.body.classList.add('sb-collapsed');
     const t=document.getElementById('sbToggle');
-    if(t && document.body.classList.contains('sb-collapsed')) t.textContent='»';
+    if(t){
+      const isCol = document.body.classList.contains('sb-collapsed');
+      const lbl = isCol ? 'Perluas sidebar' : 'Minimalkan sidebar';
+      t.title = lbl;
+      t.setAttribute('aria-label', lbl);
+    }
   }catch(e){}
 })();
 
 function toggleSb(){
   const b=document.body;
   b.classList.toggle('sb-collapsed');
+  const isCol = b.classList.contains('sb-collapsed');
   const t=document.getElementById('sbToggle');
-  if(t) t.textContent = b.classList.contains('sb-collapsed') ? '\u00bb' : '\u2630';
-  try{ localStorage.setItem('sb', b.classList.contains('sb-collapsed') ? '1' : '0'); }catch(e){}
+  if(t){
+    const lbl = isCol ? 'Perluas sidebar' : 'Minimalkan sidebar';
+    t.title = lbl;
+    t.setAttribute('aria-label', lbl);
+  }
+  try{ localStorage.setItem('sb', isCol ? '1' : '0'); }catch(e){}
 }
 
 function toggleMobDrawer(){

@@ -139,6 +139,7 @@
               </form>
               {% endif %}
 
+              {% if u.id != user.id and not u.is_master_admin() %}
               <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline"
                     data-guardrail
                     data-guardrail-title="Hapus Akun Pengguna"
