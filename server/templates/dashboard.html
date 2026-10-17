@@ -2320,77 +2320,32 @@ document.addEventListener('keydown', (e) => {
 // ===================================================================
 // WIDGET POP-OUT (Jendela Terpisah / Standalone Multi-Monitor Window)
 // ===================================================================
-async function popoutWidget(widgetName, ev, extra) {
+function popoutWidget(widgetName, ev, extra) {
   if (ev) {
     ev.preventDefault();
     ev.stopPropagation();
   }
 
-  // Dimensi jendela ideal berdasarkan jenis widget
+  // Dimensi awal jendela berdasarkan jenis widget
   const winSizes = {
-    'clock': { width: 440, height: 180 },
-    'total_servers': { width: 420, height: 200 },
-    'problems_strip': { width: 780, height: 220 },
-    'recent_incidents': { width: 980, height: 480 },
+    'clock': { width: 460, height: 210 },
+    'total_servers': { width: 440, height: 230 },
+    'problems_strip': { width: 840, height: 250 },
+    'recent_incidents': { width: 1000, height: 520 },
     'fleet_table': { width: 1300, height: 720 }
   };
 
   const targetSize = winSizes[widgetName] || { width: 800, height: 500 };
+  const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - targetSize.width) / 2));
+  const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - targetSize.height) / 2));
 
   let url = `/?popout=1&widget=${encodeURIComponent(widgetName)}`;
   if (extra) {
     url += `&id=${encodeURIComponent(extra)}`;
   }
 
-  let label = 'Widget';
-  if (widgetName === 'clock') label = 'Waktu Sistem';
-  else if (widgetName === 'total_servers') label = 'Total Server';
-  else if (widgetName === 'problems_strip') label = 'Insiden Aktif';
-  else if (widgetName === 'recent_incidents') label = 'Insiden Terkini';
-  else if (widgetName === 'fleet_table') label = 'Operasional Seluruh Server';
-
-  // 1. Coba gunakan Document Picture-in-Picture API (Chrome 116+)
-  // Menghasilkan jendela OS murni chromeless: TANPA address/URL bar, TANPA tombol zoom, TANPA logo browser!
-  if ('documentPictureInPicture' in window) {
-    try {
-      const pipWindow = await window.documentPictureInPicture.requestWindow({
-        width: targetSize.width,
-        height: targetSize.height,
-      });
-
-      pipWindow.document.title = `${label} - Pantau Server`;
-
-      const iframe = pipWindow.document.createElement('iframe');
-      iframe.src = url;
-      iframe.allow = 'fullscreen';
-      iframe.style.width = '100vw';
-      iframe.style.height = '100vh';
-      iframe.style.border = 'none';
-      iframe.style.margin = '0';
-      iframe.style.padding = '0';
-      iframe.style.display = 'block';
-      iframe.style.background = '#090d16';
-
-      iframe.onerror = () => {
-        try { pipWindow.close(); } catch(err) {}
-        window.open(url, winName, features);
-      };
-
-      pipWindow.document.body.style.margin = '0';
-      pipWindow.document.body.style.padding = '0';
-      pipWindow.document.body.style.overflow = 'hidden';
-      pipWindow.document.body.style.background = '#090d16';
-      pipWindow.document.body.appendChild(iframe);
-      return;
-    } catch (pipErr) {
-      console.warn('Document Picture-in-Picture fallback ke window.open:', pipErr);
-    }
-  }
-
-  // 2. Fallback: window.open dengan fitur popup murni jika PiP tidak didukung
-  const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - targetSize.width) / 2));
-  const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - targetSize.height) / 2));
   const winName = `pantau_popout_${widgetName}_${extra || ''}`;
+  // Buka jendela popup OS mandiri: bebas di-resize, punya tombol minimize/maximize/close OS bawaan, dan tidak terkunci always-on-top
   const features = `popup=yes,popup=1,width=${targetSize.width},height=${targetSize.height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
 
   const newWin = window.open(url, winName, features);
