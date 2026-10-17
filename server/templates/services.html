@@ -3702,8 +3702,8 @@ async function restartService(sid, svcId, svcName, btn) {
   const ok = await showSvcConfirmModal({
     title: isEn ? 'Confirm Restart Service' : 'Konfirmasi Restart Layanan',
     message: isEn
-      ? ('Are you sure you want to restart service <strong>' + escHtml(svcName) + '</strong>?<br><br>The service will be temporarily interrupted and may affect server/application operations.')
-      : ('Apakah Anda yakin ingin me-restart layanan <strong>' + escHtml(svcName) + '</strong>?<br><br>Layanan akan terhenti sejenak dan dapat mempengaruhi operasional server/aplikasi.'),
+      ? ('Are you sure you want to <strong>restart</strong> service <strong>' + escHtml(svcName) + '</strong>?<br><br>The service will be temporarily <strong>interrupted</strong> and may affect server/application operations.')
+      : ('Apakah Anda yakin ingin me-<strong>restart</strong> layanan <strong>' + escHtml(svcName) + '</strong>?<br><br>Layanan akan <strong>terhenti</strong> sejenak dan dapat mempengaruhi operasional server/aplikasi.'),
     btnText: isEn ? 'Yes, Restart' : 'Ya, Restart',
     btnClass: 'btn-primary',
     iconType: 'primary'
@@ -3763,8 +3763,8 @@ async function svcAction(action, sid, svcId, svcName, btn) {
     const ok = await showSvcConfirmModal({
       title: isEn ? 'Confirm Stop Service' : 'Konfirmasi Hentikan Layanan',
       message: isEn
-        ? ('Are you sure you want to stop service <strong>' + escHtml(svcName) + '</strong>?<br><br>Ensure this service is safe to stop and will not disrupt server/application operations.')
-        : ('Apakah Anda yakin ingin menghentikan layanan <strong>' + escHtml(svcName) + '</strong>?<br><br>Pastikan layanan ini aman dihentikan dan tidak mengganggu operasional server/aplikasi.'),
+        ? ('Are you sure you want to <strong>stop</strong> service <strong>' + escHtml(svcName) + '</strong>?<br><br>Ensure this service is safe to <strong>stop</strong> and will not disrupt server/application operations.')
+        : ('Apakah Anda yakin ingin <strong>menghentikan</strong> layanan <strong>' + escHtml(svcName) + '</strong>?<br><br>Pastikan layanan ini aman <strong>dihentikan</strong> dan tidak mengganggu operasional server/aplikasi.'),
       btnText: isEn ? 'Yes, Stop' : 'Ya, Hentikan',
       btnClass: 'btn-danger',
       iconType: 'danger'
@@ -4246,8 +4246,8 @@ async function deleteService(sid, svcId, svcName, btn) {
   const ok = await showSvcConfirmModal({
     title: isEn ? 'Confirm Delete Service' : 'Konfirmasi Hapus Layanan',
     message: isEn
-      ? ('Are you sure you want to delete service <strong>' + escHtml(svcName) + '</strong>?<br><br>Metric history and monitoring status for this service will be removed from the system. Ensure it is safe to delete and will not disrupt server/application availability.')
-      : ('Apakah Anda yakin ingin menghapus layanan <strong>' + escHtml(svcName) + '</strong>?<br><br>Riwayat metrik dan pengawasan status layanan ini akan dihapus dari sistem. Pastikan tindakan ini aman dihapus dan tidak mengganggu ketersediaan operasional server/aplikasi.'),
+      ? ('Are you sure you want to <strong>delete</strong> service <strong>' + escHtml(svcName) + '</strong>?<br><br>Metric history and monitoring status for this service will be <strong>removed</strong> from the system. Ensure this service is safe to <strong>delete</strong> and will not disrupt server/application availability.')
+      : ('Apakah Anda yakin ingin <strong>menghapus</strong> layanan <strong>' + escHtml(svcName) + '</strong>?<br><br>Riwayat metrik dan pengawasan status layanan ini akan <strong>dihapus</strong> dari sistem. Pastikan layanan ini aman <strong>dihapus</strong> dan tidak mengganggu ketersediaan operasional server/aplikasi.'),
     btnText: isEn ? 'Yes, Delete' : 'Ya, Hapus',
     btnClass: 'btn-danger',
     iconType: 'danger'
