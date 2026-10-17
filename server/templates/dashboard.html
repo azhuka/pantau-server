@@ -579,10 +579,10 @@ body.show-alert-banner .kiosk-toggle-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 17px;
+  height: 17px;
   padding: 0;
-  border-radius: 4px;
+  border-radius: 3px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--dim, #94a3b8);
@@ -590,6 +590,10 @@ body.show-alert-banner .kiosk-toggle-btn {
   transition: all .15s ease;
   flex-shrink: 0;
   line-height: 1;
+}
+.widget-popout-btn svg {
+  width: 8.5px;
+  height: 8.5px;
 }
 .widget-popout-btn:hover {
   background: rgba(56, 189, 248, 0.16);
@@ -787,16 +791,15 @@ body.popout-fleet_table #dash-fleet-card {
 
 <div class="topbar">
   <div>
-    <h2 style="display:flex;align-items:center;gap:10px;font-size:20px">
+    <h2 style="display:flex;align-items:center;gap:8px;font-size:18px">
       Dashboard
-      <span id="dash-live-indicator" class="badge badge-up" style="font-size:11px;padding:2px 7px;font-weight:normal" title="Metrik diperbarui otomatis setiap 10 detik">● live</span>
-      <span id="dash-kiosk-badge" class="badge" style="display:none;background:rgba(56,189,248,0.15);color:var(--blue);border:1px solid rgba(56,189,248,0.35);font-size:10px;padding:1px 7px;letter-spacing:0.5px">OVERWATCH</span>
+      <span id="dash-live-indicator" class="badge badge-up" style="font-size:9px;padding:1px 5px;font-weight:500;line-height:1.2;vertical-align:middle" title="Metrik diperbarui otomatis setiap 10 detik">● live</span>
     </h2>
     <div style="font-size:13px;color:var(--dim);margin-top:2px">Ringkasan kondisi terkini seluruh server klien &amp; metrik operasional terpusat.</div>
   </div>
 </div>
 
-<button type="button" id="kioskToggleBtn" class="kiosk-toggle-btn" onclick="toggleKioskMode()" title="Mode Overwatch / Kiosk (Monitor Kedua)" aria-label="Mode Overwatch">
+<button type="button" id="kioskToggleBtn" class="kiosk-toggle-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh / Monitor Kedua (Kiosk)" aria-label="Mode Layar Penuh">
   <!-- Ikon Masuk Kiosk Mode (Expand) -->
   <svg id="kioskIconEnter" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
@@ -817,7 +820,7 @@ body.popout-fleet_table #dash-fleet-card {
       </div>
       <div style="display:flex;align-items:center;gap:6px">
         <button type="button" class="widget-popout-btn" onclick="popoutWidget('total_servers', event)" title="Buka Total Server di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
         </button>
       </div>
     </div>
@@ -844,7 +847,7 @@ body.popout-fleet_table #dash-fleet-card {
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-size:10.5px;color:var(--dim)" id="zbx-strip-total">Total: <strong id="dash-total-prob" style="color:var(--text-bright);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace">{{ total_all }}</strong></span>
         <button type="button" class="widget-popout-btn" onclick="popoutWidget('problems_strip', event)" title="Buka Insiden Aktif di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
         </button>
       </div>
     </div>
@@ -882,7 +885,7 @@ body.popout-fleet_table #dash-fleet-card {
       <div style="display:flex;align-items:center;gap:5px">
         <span class="dash-clock-tz" id="dashClockTz" style="font-size:9px;padding:1px 5px">WIB</span>
         <button type="button" class="widget-popout-btn" onclick="popoutWidget('clock', event)" title="Buka Waktu Sistem di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
         </button>
       </div>
     </div>
@@ -916,7 +919,7 @@ body.popout-fleet_table #dash-fleet-card {
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <button type="button" class="widget-popout-btn" onclick="popoutWidget('recent_incidents', event)" title="Buka Insiden Terkini di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
       </button>
     </div>
   </div>
@@ -1032,7 +1035,7 @@ body.popout-fleet_table #dash-fleet-card {
       </div>
 
       <button type="button" class="widget-popout-btn" onclick="popoutWidget('fleet_table', event)" title="Buka Tabel &amp; Grid Operasional di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
       </button>
     </div>
   </div>
@@ -2430,16 +2433,14 @@ function setKioskMode(active, updateUrl = true) {
   const btn = document.getElementById('kioskToggleBtn');
   const iconEnter = document.getElementById('kioskIconEnter');
   const iconExit = document.getElementById('kioskIconExit');
-  const badge = document.getElementById('dash-kiosk-badge');
 
   if (isKiosk) {
     body.classList.add('kiosk-mode');
     sessionStorage.setItem('pantau_kiosk_mode', '1');
     if (iconEnter) iconEnter.style.display = 'none';
     if (iconExit) iconExit.style.display = 'inline-block';
-    if (badge) badge.style.display = 'inline-flex';
     if (btn) {
-      btn.title = 'Mode Normal / Keluar dari Overwatch (Esc)';
+      btn.title = 'Mode Normal (Esc)';
       btn.setAttribute('aria-label', 'Mode Normal');
     }
     if (updateUrl) {
@@ -2454,10 +2455,9 @@ function setKioskMode(active, updateUrl = true) {
     sessionStorage.removeItem('pantau_kiosk_mode');
     if (iconEnter) iconEnter.style.display = 'inline-block';
     if (iconExit) iconExit.style.display = 'none';
-    if (badge) badge.style.display = 'none';
     if (btn) {
-      btn.title = 'Mode Overwatch / Kiosk (Monitor Kedua)';
-      btn.setAttribute('aria-label', 'Mode Overwatch');
+      btn.title = 'Mode Layar Penuh / Monitor Kedua (Kiosk)';
+      btn.setAttribute('aria-label', 'Mode Layar Penuh');
     }
     if (updateUrl) {
       try {
