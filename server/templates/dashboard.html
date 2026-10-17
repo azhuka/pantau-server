@@ -49,17 +49,17 @@
 /* Zabbix-Style Problems by Severity Widget Strip */
 .zbx-severity-strip {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
 }
 .zbx-sev-tile {
   flex: 1;
-  min-width: 50px;
+  min-width: 42px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 7px 4px;
+  padding: 3px 2px;
   border-radius: var(--radius-sm, 6px);
   cursor: pointer;
   background: rgba(255, 255, 255, 0.03);
@@ -74,19 +74,19 @@
   border-color: rgba(255, 255, 255, 0.25);
 }
 .zbx-sev-count {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.1;
   font-family: var(--font-mono, monospace);
   color: var(--dim);
 }
 .zbx-sev-label {
-  font-size: 10px;
+  font-size: 8.5px;
   font-weight: 600;
   color: var(--dim);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  margin-top: 2px;
+  letter-spacing: 0.02em;
+  margin-top: 1px;
   white-space: nowrap;
 }
 
@@ -275,15 +275,21 @@
   border-bottom: none;
   border-top: 1px solid var(--border);
   border-radius: 0;
-  padding: 8px 14px;
+  padding: 6px 12px;
   background: rgba(255, 255, 255, 0.015);
+}
+.topbar {
+  margin-bottom: 10px !important;
+}
+.topbar h2 {
+  font-size: 18px !important;
 }
 /* Balanced 3-Column Operations Strip: Total Server (minmax 190-220px) + Insiden Aktif (1fr) + Waktu Sistem (minmax 260-290px) */
 .dash-kpi-grid {
   display: grid;
   grid-template-columns: minmax(190px, 220px) 1fr minmax(260px, 290px);
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 8px;
   align-items: stretch;
 }
 .kpi-link-card {
@@ -399,17 +405,17 @@
 /* Grid View NOC Tile Styles */
 .noc-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
 }
 .server-card {
   background: var(--card-bg, #111827);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm, 8px);
-  padding: 12px 14px;
+  border-radius: var(--radius-sm, 6px);
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   position: relative;
   cursor: pointer;
   transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
@@ -707,14 +713,14 @@ body.popout-fleet_table #dash-fleet-card {
   50% { opacity: 0.35; transform: scale(0.85); }
 }
 .dash-clock-day {
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #f1f5f9;
   letter-spacing: -0.01em;
   text-transform: capitalize;
 }
 .dash-clock-date {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   color: var(--dim, #94a3b8);
   margin-top: 1px;
@@ -723,7 +729,7 @@ body.popout-fleet_table #dash-fleet-card {
 }
 .dash-clock-divider {
   width: 1px;
-  height: 26px;
+  height: 18px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.04) 100%);
   flex-shrink: 0;
   margin: 0 2px;
@@ -731,7 +737,7 @@ body.popout-fleet_table #dash-fleet-card {
 .dash-clock-digits {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1;
   color: #ffffff;
@@ -762,7 +768,7 @@ body.popout-fleet_table #dash-fleet-card {
 }
 .dash-clock-sec {
   color: var(--blue, #38bdf8);
-  font-size: 15px;
+  font-size: 12.5px;
   font-weight: 600;
 }
 .dash-clock-tz {
@@ -803,44 +809,44 @@ body.popout-fleet_table #dash-fleet-card {
 
 <!-- 1. Global KPI Banner (Asymmetric Layout: Compact Server Stat + Severity Strip) -->
 <div class="dash-kpi-grid">
-  <a href="/servers" id="kpi-card-total" class="card kpi-link-card" style="margin:0;padding:10px 14px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid var(--blue);text-decoration:none;color:inherit;cursor:pointer" title="Kelola Seluruh Server">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;display:flex;align-items:center;gap:6px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--blue);flex-shrink:0"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+  <a href="/servers" id="kpi-card-total" class="card kpi-link-card" style="margin:0;padding:6px 12px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid var(--blue);text-decoration:none;color:inherit;cursor:pointer" title="Kelola Seluruh Server">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+      <div style="font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;display:flex;align-items:center;gap:5px">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--blue);flex-shrink:0"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
         <span>Total Server</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
-        <span class="card-action-link" style="font-size:11px;color:var(--blue);display:inline-flex;align-items:center;gap:2px;font-weight:600">Kelola &rarr;</span>
+        <span class="card-action-link" style="font-size:10.5px;color:var(--blue);display:inline-flex;align-items:center;gap:2px;font-weight:600">Kelola &rarr;</span>
         <button type="button" class="widget-popout-btn" onclick="popoutWidget('total_servers', event)" title="Buka Total Server di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
         </button>
       </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-      <div style="display:flex;align-items:baseline;gap:5px">
-        <span style="font-size:24px;font-weight:800;line-height:1;color:var(--text-bright);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace">{{ total }}</span>
-        <span style="font-size:11px;color:var(--dim);font-weight:500">host</span>
+      <div style="display:flex;align-items:baseline;gap:4px">
+        <span style="font-size:18px;font-weight:800;line-height:1;color:var(--text-bright);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace">{{ total }}</span>
+        <span style="font-size:10.5px;color:var(--dim);font-weight:500">host</span>
       </div>
       <div style="display:flex;gap:4px;align-items:center">
-        <span class="badge badge-up" style="font-size:11px;padding:2px 7px;font-weight:600" title="Server Online" id="dash-up-cnt">{{ up_count }} up</span>
-        <span class="badge badge-{{ 'danger' if down_count > 0 else 'muted' }}" style="font-size:11px;padding:2px 7px;font-weight:600" title="Server Terputus" id="dash-down-cnt">{{ down_count }} down</span>
+        <span class="badge badge-up" style="font-size:10px;padding:1px 6px;font-weight:600" title="Server Online" id="dash-up-cnt">{{ up_count }} up</span>
+        <span class="badge badge-{{ 'danger' if down_count > 0 else 'muted' }}" style="font-size:10px;padding:1px 6px;font-weight:600" title="Server Terputus" id="dash-down-cnt">{{ down_count }} down</span>
       </div>
     </div>
   </a>
 
   {% set total_active = danger_total + average_total + warning_total + info_total %}
   {% set total_all = total_active + ignored_total %}
-  <div class="card" id="kpi-card-prob" style="margin:0;padding:10px 14px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid {% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% elif ignored_total > 0 %}rgba(148,163,184,0.45){% else %}var(--border){% endif %}">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;display:flex;align-items:center;gap:6px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% else %}var(--green){% endif %};flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+  <div class="card" id="kpi-card-prob" style="margin:0;padding:6px 12px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid {% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% elif ignored_total > 0 %}rgba(148,163,184,0.45){% else %}var(--border){% endif %}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+      <div style="font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;display:flex;align-items:center;gap:5px">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% else %}var(--green){% endif %};flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         <span>Insiden Aktif</span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:11px;color:var(--dim)" id="zbx-strip-total">Total: <strong id="dash-total-prob" style="color:var(--text-bright);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace">{{ total_all }}</strong></span>
-        <a href="/problems" class="card-action-link" style="font-size:11px;color:var(--blue);text-decoration:none;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Buka Halaman Masalah &amp; Insiden">Lihat Semua &rarr;</a>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:10.5px;color:var(--dim)" id="zbx-strip-total">Total: <strong id="dash-total-prob" style="color:var(--text-bright);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace">{{ total_all }}</strong></span>
+        <a href="/problems" class="card-action-link" style="font-size:10.5px;color:var(--blue);text-decoration:none;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Buka Halaman Masalah &amp; Insiden">Lihat Semua &rarr;</a>
         <button type="button" class="widget-popout-btn" onclick="popoutWidget('problems_strip', event)" title="Buka Insiden Aktif di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
         </button>
       </div>
     </div>
@@ -869,16 +875,16 @@ body.popout-fleet_table #dash-fleet-card {
   </div>
 
   <!-- Card 3: Waktu Sistem (Hari, Tanggal, Jam, Menit, Detik) -->
-  <div class="card dash-clock-card" id="dashClockWidget" style="margin:0;padding:10px 14px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid var(--green);user-select:none" title="Waktu Sistem Terkini">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;display:flex;align-items:center;gap:6px">
+  <div class="card dash-clock-card" id="dashClockWidget" style="margin:0;padding:6px 12px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid var(--green);user-select:none" title="Waktu Sistem Terkini">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+      <div style="font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;display:flex;align-items:center;gap:5px">
         <span class="dash-clock-live-ping" title="Sinkron Waktu Nyata"></span>
         <span>Waktu Sistem</span>
       </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span class="dash-clock-tz" id="dashClockTz">WIB</span>
+      <div style="display:flex;align-items:center;gap:5px">
+        <span class="dash-clock-tz" id="dashClockTz" style="font-size:9px;padding:1px 5px">WIB</span>
         <button type="button" class="widget-popout-btn" onclick="popoutWidget('clock', event)" title="Buka Waktu Sistem di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
         </button>
       </div>
     </div>
@@ -898,21 +904,21 @@ body.popout-fleet_table #dash-fleet-card {
 </div>
 
 <!-- 2. Kartu Insiden Terkini -->
-<div class="card" id="dash-problems-card" style="margin-bottom:14px;padding:0;overflow:hidden">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);flex-wrap:wrap;gap:8px">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span id="dash-inc-icon" data-state="{% if danger_total > 0 %}danger{% elif average_total > 0 %}avg{% elif warning_total > 0 %}warn{% else %}ok{% endif %}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:{% if danger_total > 0 %}rgba(239,68,68,0.15){% elif average_total > 0 %}rgba(249,115,22,0.15){% elif warning_total > 0 %}rgba(245,158,11,0.15){% else %}rgba(16,185,129,0.12){% endif %};color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% else %}var(--green){% endif %}">
+<div class="card" id="dash-problems-card" style="margin-bottom:8px;padding:0;overflow:hidden">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);flex-wrap:wrap;gap:6px">
+    <div style="display:flex;align-items:center;gap:6px">
+      <span id="dash-inc-icon" data-state="{% if danger_total > 0 %}danger{% elif average_total > 0 %}avg{% elif warning_total > 0 %}warn{% else %}ok{% endif %}" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:{% if danger_total > 0 %}rgba(239,68,68,0.15){% elif average_total > 0 %}rgba(249,115,22,0.15){% elif warning_total > 0 %}rgba(245,158,11,0.15){% else %}rgba(16,185,129,0.12){% endif %};color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% else %}var(--green){% endif %}">
         {% if danger_total > 0 or average_total > 0 or warning_total > 0 %}
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         {% else %}
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
         {% endif %}
       </span>
-      <h3 style="font-size:14px;font-weight:600;margin:0">Insiden Terkini</h3>
+      <h3 style="font-size:13px;font-weight:600;margin:0">Insiden Terkini</h3>
     </div>
-    <div style="display:flex;align-items:center;gap:8px">
+    <div style="display:flex;align-items:center;gap:6px">
       <button type="button" class="widget-popout-btn" onclick="popoutWidget('recent_incidents', event)" title="Buka Insiden Terkini di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
       </button>
     </div>
   </div>
@@ -921,11 +927,11 @@ body.popout-fleet_table #dash-fleet-card {
     <table style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.01)">
-          <th style="padding:10px 14px;font-size:11px;width:125px;min-width:115px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.5px">WAKTU</th>
-          <th style="padding:10px 14px;font-size:11px;width:160px;min-width:140px;max-width:200px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.5px">SERVER</th>
-          <th style="padding:10px 14px;font-size:11px;width:110px;min-width:100px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.5px">KEPARAHAN</th>
-          <th style="padding:10px 14px;font-size:11px;color:var(--dim);text-align:left;letter-spacing:0.5px">DESKRIPSI MASALAH</th>
-          <th style="padding:10px 14px;font-size:11px;width:130px;min-width:120px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.5px">DURASI</th>
+          <th style="padding:4px 10px;font-size:10px;width:115px;min-width:105px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.5px">WAKTU</th>
+          <th style="padding:4px 10px;font-size:10px;width:140px;min-width:125px;max-width:180px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.5px">SERVER</th>
+          <th style="padding:4px 10px;font-size:10px;width:95px;min-width:85px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.5px">KEPARAHAN</th>
+          <th style="padding:4px 10px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.5px">DESKRIPSI MASALAH</th>
+          <th style="padding:4px 10px;font-size:10px;width:110px;min-width:100px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.5px">DURASI</th>
         </tr>
       </thead>
       <tbody id="dash-problems-tbody" data-sig="{% for p in all_open_problems %}{{ p.server_id }}:{{ p.key }}:{{ p.severity }}:{{ 1 if p.is_ignored else 0 }}:{{ p.started_at_str }}{% if not loop.last %}|{% endif %}{% endfor %}">
@@ -933,37 +939,37 @@ body.popout-fleet_table #dash-fleet-card {
         <tr onclick="window.location.href='/servers/{{ p.server_id }}/services'"
             title="Klik untuk buka rincian server {{ p.hostname }}"
             style="border-bottom:1px solid rgba(255,255,255,0.03);{{ 'opacity:0.8;background:rgba(255,255,255,0.015);' if p.is_ignored else '' }}transition:background .12s ease;cursor:pointer">
-          <td style="padding:10px 14px;white-space:nowrap;width:125px;min-width:115px">
-            <span class="mono" style="font-size:12.5px;font-weight:600;color:var(--text)">{{ p.started_at_str }}</span>
+          <td style="padding:3.5px 10px;white-space:nowrap;width:115px;min-width:105px">
+            <span class="mono" style="font-size:11px;font-weight:600;color:var(--text)">{{ p.started_at_str }}</span>
           </td>
-          <td style="padding:10px 14px;white-space:nowrap;width:160px;min-width:140px;max-width:200px;overflow:hidden;text-overflow:ellipsis">
-            <span style="font-size:13px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</span>
+          <td style="padding:3.5px 10px;white-space:nowrap;width:140px;min-width:125px;max-width:180px;overflow:hidden;text-overflow:ellipsis">
+            <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</span>
             {% if p.group_name %}
-            <span style="font-size:11.5px;color:var(--dim);margin-left:5px">({{ p.group_name }})</span>
+            <span style="font-size:10px;color:var(--dim);margin-left:4px">({{ p.group_name }})</span>
             {% endif %}
           </td>
-          <td style="padding:10px 14px;white-space:nowrap;width:110px;min-width:100px;text-align:center">
+          <td style="padding:3.5px 10px;white-space:nowrap;width:95px;min-width:85px;text-align:center">
             {% if p.is_ignored %}
-              <span class="badge badge-muted" style="font-size:11.5px;padding:2px 7px">DIABAIKAN 🔕</span>
+              <span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 5px">DIABAIKAN 🔕</span>
             {% elif p.severity == 'danger' %}
-              <span class="badge badge-danger" style="font-size:11.5px;padding:2px 7px">KRITIS</span>
+              <span class="badge badge-danger" style="font-size:8.5px;padding:0.5px 5px">KRITIS</span>
             {% elif p.severity == 'average' %}
-              <span class="badge badge-orange" style="font-size:11.5px;padding:2px 7px">GAWAT</span>
+              <span class="badge badge-orange" style="font-size:8.5px;padding:0.5px 5px">GAWAT</span>
             {% elif p.severity == 'warning' %}
-              <span class="badge badge-warn" style="font-size:11.5px;padding:2px 7px">PERINGATAN</span>
+              <span class="badge badge-warn" style="font-size:8.5px;padding:0.5px 5px">PERINGATAN</span>
             {% else %}
-              <span class="badge badge-info" style="font-size:11.5px;padding:2px 7px">{{ p.severity | upper }}</span>
+              <span class="badge badge-info" style="font-size:8.5px;padding:0.5px 5px">{{ p.severity | upper }}</span>
             {% endif %}
           </td>
-          <td style="padding:10px 14px;font-size:13px;color:var(--text)">
+          <td style="padding:3.5px 10px;font-size:11.5px;color:var(--text);line-height:1.25">
             <span>{{ p.message }}</span>
             {% if p.ignored_reason %}
-            <span class="badge badge-muted" style="font-size:11px;padding:1px 6px;margin-left:6px;font-weight:500" title="{{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
+            <span class="badge badge-muted" style="font-size:9.5px;padding:0.5px 5px;margin-left:4px;font-weight:500" title="{{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
             {% elif p.is_ignored and p.ignored_by %}
-            <span class="badge badge-muted" style="font-size:11px;padding:1px 6px;margin-left:6px;font-weight:500" title="oleh {{ p.ignored_by }}">oleh {{ p.ignored_by }}</span>
+            <span class="badge badge-muted" style="font-size:9.5px;padding:0.5px 5px;margin-left:4px;font-weight:500" title="oleh {{ p.ignored_by }}">oleh {{ p.ignored_by }}</span>
             {% endif %}
           </td>
-          <td class="mono col-durasi" style="padding:10px 14px;white-space:nowrap;width:130px;min-width:120px;text-align:right" data-start="{{ p.started_at }}{{ 'Z' if p.started_at and not p.started_at.endswith('Z') else '' }}">
+          <td class="mono col-durasi" style="padding:3.5px 10px;white-space:nowrap;width:110px;min-width:100px;text-align:right;font-size:11px" data-start="{{ p.started_at }}{{ 'Z' if p.started_at and not p.started_at.endswith('Z') else '' }}">
             {{ p.durasi }}
           </td>
         </tr>
@@ -971,21 +977,21 @@ body.popout-fleet_table #dash-fleet-card {
       </tbody>
     </table>
   </div>
-  <div id="dash-problems-empty" style="padding:9px 14px;display:{{ 'none' if all_open_problems else 'flex' }};align-items:center;justify-content:space-between;background:rgba(16,185,129,0.03);color:var(--green)">
-    <div style="display:flex;align-items:center;gap:8px">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-      <span style="font-size:12.5px;font-weight:500">Seluruh server beroperasi prima. Tidak ada gangguan atau insiden aktif saat ini.</span>
+  <div id="dash-problems-empty" style="padding:6px 12px;display:{{ 'none' if all_open_problems else 'flex' }};align-items:center;justify-content:space-between;background:rgba(16,185,129,0.03);color:var(--green)">
+    <div style="display:flex;align-items:center;gap:6px">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <span style="font-size:11.5px;font-weight:500">Seluruh server beroperasi prima. Tidak ada gangguan atau insiden aktif saat ini.</span>
     </div>
-    <span class="badge badge-up" style="font-size:10.5px;padding:1px 6px">100% NORMAL</span>
+    <span class="badge badge-up" style="font-size:9.5px;padding:1px 5px">100% NORMAL</span>
   </div>
 </div>
 
 <!-- 3. Fleet Overview (Single-Line Table Default or NOC Card Grid) -->
 <div class="card" id="dash-fleet-card" style="padding:0;overflow:hidden">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);flex-wrap:wrap;gap:8px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);flex-wrap:wrap;gap:6px">
     <div>
-      <h3 style="font-size:14.5px;font-weight:600;margin:0">Kondisi Terkini</h3>
-      <div style="font-size:12px;color:var(--dim);margin-top:2px">Tinjauan cepat situasi, level prioritas, pemakaian hardware, dan kesehatan layanan per host secara real-time.</div>
+      <h3 style="font-size:13.5px;font-weight:600;margin:0">Kondisi Terkini</h3>
+      <div style="font-size:11px;color:var(--dim);margin-top:1px">Tinjauan cepat situasi, level prioritas, pemakaian hardware, dan kesehatan layanan per host secara real-time.</div>
     </div>
 
     <div class="dash-controls-wrap" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -2270,15 +2276,15 @@ async function pollNocDashboard() {
             const isIgn = Boolean(p.is_ignored);
             let sevBadge = '';
             if (isIgn) {
-              sevBadge = '<span class="badge badge-muted" style="font-size:11.5px;padding:2px 7px">DIABAIKAN 🔕</span>';
+              sevBadge = '<span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 5px">DIABAIKAN 🔕</span>';
             } else if (p.severity === 'danger') {
-              sevBadge = '<span class="badge badge-danger" style="font-size:11.5px;padding:2px 7px">KRITIS</span>';
+              sevBadge = '<span class="badge badge-danger" style="font-size:8.5px;padding:0.5px 5px">KRITIS</span>';
             } else if (p.severity === 'average') {
-              sevBadge = '<span class="badge badge-orange" style="font-size:11.5px;padding:2px 7px">GAWAT</span>';
+              sevBadge = '<span class="badge badge-orange" style="font-size:8.5px;padding:0.5px 5px">GAWAT</span>';
             } else if (p.severity === 'warning') {
-              sevBadge = '<span class="badge badge-warn" style="font-size:11.5px;padding:2px 7px">PERINGATAN</span>';
+              sevBadge = '<span class="badge badge-warn" style="font-size:8.5px;padding:0.5px 5px">PERINGATAN</span>';
             } else {
-              sevBadge = `<span class="badge badge-info" style="font-size:11.5px;padding:2px 7px">${(p.severity || 'INFO').toUpperCase()}</span>`;
+              sevBadge = `<span class="badge badge-info" style="font-size:8.5px;padding:0.5px 5px">${(p.severity || 'INFO').toUpperCase()}</span>`;
             }
 
             const escMsg = (p.message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -2287,9 +2293,9 @@ async function pollNocDashboard() {
             const reasonTxt = p.ignored_reason || (isIgn && p.ignored_by ? 'oleh ' + p.ignored_by : '');
             if (reasonTxt) {
               const escReason = reasonTxt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-              noteBadge = `<span class="badge badge-muted" style="font-size:11px;padding:1px 6px;margin-left:6px;font-weight:500" title="${escReason}">${escReason}</span>`;
+              noteBadge = `<span class="badge badge-muted" style="font-size:9.5px;padding:0.5px 5px;margin-left:4px;font-weight:500" title="${escReason}">${escReason}</span>`;
             }
-            const grpHtml = p.group_name ? `<span style="font-size:11.5px;color:var(--dim);margin-left:5px">(${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')})</span>` : '';
+            const grpHtml = p.group_name ? `<span style="font-size:10px;color:var(--dim);margin-left:4px">(${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')})</span>` : '';
             const startedStr = p.started_at_str || '—';
             let durStr = '—';
             let isoStart = '';
@@ -2312,15 +2318,15 @@ async function pollNocDashboard() {
             <tr onclick="window.location.href='/servers/${p.server_id}/services'"
                 title="Klik untuk buka rincian server ${(p.hostname || '').replace(/"/g, '&quot;')}"
                 style="cursor:pointer;${trStyle}">
-              <td style="padding:10px 14px;white-space:nowrap;width:125px;min-width:115px">
-                <span class="mono" style="font-size:12.5px;font-weight:600;color:var(--text)">${startedStr}</span>
+              <td style="padding:3.5px 10px;white-space:nowrap;width:115px;min-width:105px">
+                <span class="mono" style="font-size:11px;font-weight:600;color:var(--text)">${startedStr}</span>
               </td>
-              <td style="padding:10px 14px;white-space:nowrap;width:160px;min-width:140px;max-width:200px;overflow:hidden;text-overflow:ellipsis">
-                <span style="font-size:13px;font-weight:600;color:var(--text-bright)">${escHost}</span>${grpHtml}
+              <td style="padding:3.5px 10px;white-space:nowrap;width:140px;min-width:125px;max-width:180px;overflow:hidden;text-overflow:ellipsis">
+                <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${escHost}</span>${grpHtml}
               </td>
-              <td style="padding:10px 14px;white-space:nowrap;width:110px;min-width:100px;text-align:center">${sevBadge}</td>
-              <td style="padding:10px 14px;font-size:13px;color:var(--text)"><span>${escMsg}</span>${noteBadge}</td>
-              <td class="mono col-durasi" style="padding:10px 14px;white-space:nowrap;width:130px;min-width:120px;text-align:right" data-start="${isoStart}">${durStr}</td>
+              <td style="padding:3.5px 10px;white-space:nowrap;width:95px;min-width:85px;text-align:center">${sevBadge}</td>
+              <td style="padding:3.5px 10px;font-size:11.5px;color:var(--text);line-height:1.25"><span>${escMsg}</span>${noteBadge}</td>
+              <td class="mono col-durasi" style="padding:3.5px 10px;white-space:nowrap;width:110px;min-width:100px;text-align:right;font-size:11px" data-start="${isoStart}">${durStr}</td>
             </tr>`;
           });
           tbody.innerHTML = tHtml;
