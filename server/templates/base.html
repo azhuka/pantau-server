@@ -1011,7 +1011,6 @@ body.show-alert-banner .main{padding-top:72px}
 {% block content %}{% endblock %}
 </main>
 
-{% if request.url.path in ("/", "", "/dashboard") %}
 <div id="alertBanner" class="alert-banner banner-danger" style="display:none" onclick="location.href='/problems'">
   <div class="alert-banner-inner">
     <div class="alert-banner-left">
@@ -1043,7 +1042,6 @@ body.show-alert-banner .main{padding-top:72px}
     </div>
   </div>
 </div>
-{% endif %}
 
 <div id="toast" class="toast ok" role="status" aria-live="polite" hidden></div>
 
