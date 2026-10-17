@@ -5940,7 +5940,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             # - >= 300s (5 menit): Danger (KRITIS — Memicu sirene darurat & banner merah)
             if sec_silent >= 300:
                 stale_sev = "danger"
-                stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt) — HOST KRITIS OFFLINE"
+                stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt) — SERVER OFFLINE"
                 stale_tip = "SEGERA lakukan inspeksi fisik atau virtual mesin server Tier 1, periksa suplai daya, dan verifikasi konektivitas jaringan."
             elif sec_silent >= 120:
                 stale_sev = "average"
@@ -6072,21 +6072,21 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                 # - Layanan Administratif/Remote (sshd, ntp, agent, cron) down: WARNING (Peringatan)
                 if not is_admin:
                     svc_sev = "danger"
-                    svc_msg = f"Layanan {name} down (KRITIS)"
+                    svc_msg = f"Layanan {name} Down (KRITIS)"
                     svc_tip = SVC_DOWN_TIP.format(name=name)
                 else:
                     svc_sev = "warning"
-                    svc_msg = f"Layanan {name} down"
+                    svc_msg = f"Layanan {name} Down"
                     svc_tip = SVC_DOWN_TIP.format(name=name)
             elif tier == 2:
                 # Tier 2 Server (Server Sekunder):
                 svc_sev = "average" if not is_admin else "warning"
-                svc_msg = f"Layanan {name} down"
+                svc_msg = f"Layanan {name} Down"
                 svc_tip = SVC_DOWN_TIP.format(name=name)
             else:
                 # Tier 3 Server:
                 svc_sev = "warning"
-                svc_msg = f"Layanan {name} down"
+                svc_msg = f"Layanan {name} Down"
                 svc_tip = SVC_DOWN_TIP.format(name=name)
 
             inst.append({
