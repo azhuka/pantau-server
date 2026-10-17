@@ -474,6 +474,141 @@ body.show-alert-banner .kiosk-toggle-btn {
 }
 
 /* ===================================================================
+   TOMBOL POPOUT & MODE JENDELA TERPISAH (MULTI-MONITOR WIDGETS)
+   =================================================================== */
+.widget-popout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--dim, #94a3b8);
+  cursor: pointer;
+  transition: all .15s ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.widget-popout-btn:hover {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #38bdf8;
+  transform: translateY(-1px);
+}
+.widget-popout-btn:active {
+  transform: scale(0.95);
+}
+
+/* Tampilan Pop-out Standalone Window */
+body.popout-window {
+  background: #0f172a !important;
+  background-image: none !important;
+  min-height: 100vh !important;
+}
+body.popout-window .sidebar,
+body.popout-window .mob-header,
+body.popout-window .mob-drawer-backdrop,
+body.popout-window .mob-drawer-close,
+body.popout-window .kiosk-toggle-btn,
+body.popout-window .topbar,
+body.popout-window .sidebar-footer {
+  display: none !important;
+}
+body.popout-window .main {
+  margin-left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 10px 14px !important;
+}
+body.popout-window .widget-popout-btn {
+  display: none !important;
+}
+
+/* Isolasi Tampilan Widget Spesifik pada Jendela Pop-out */
+body.popout-clock .dash-kpi-grid { display: block !important; margin-bottom: 0 !important; }
+body.popout-clock #kpi-card-total,
+body.popout-clock #kpi-card-prob,
+body.popout-clock #dash-problems-card,
+body.popout-clock #dash-fleet-card {
+  display: none !important;
+}
+body.popout-clock #dashClockWidget {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+body.popout-total_servers .dash-kpi-grid { display: block !important; margin-bottom: 0 !important; }
+body.popout-total_servers #kpi-card-prob,
+body.popout-total_servers #dashClockWidget,
+body.popout-total_servers #dash-problems-card,
+body.popout-total_servers #dash-fleet-card {
+  display: none !important;
+}
+body.popout-total_servers #kpi-card-total {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+body.popout-problems_strip .dash-kpi-grid { display: block !important; margin-bottom: 0 !important; }
+body.popout-problems_strip #kpi-card-total,
+body.popout-problems_strip #dashClockWidget,
+body.popout-problems_strip #dash-problems-card,
+body.popout-problems_strip #dash-fleet-card {
+  display: none !important;
+}
+body.popout-problems_strip #kpi-card-prob {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+body.popout-recent_incidents .dash-kpi-grid,
+body.popout-recent_incidents #dash-fleet-card {
+  display: none !important;
+}
+body.popout-recent_incidents #dash-problems-card {
+  display: block !important;
+  margin-bottom: 0 !important;
+}
+
+body.popout-fleet_table .dash-kpi-grid,
+body.popout-fleet_table #dash-problems-card {
+  display: none !important;
+}
+body.popout-fleet_table #dash-fleet-card {
+  display: block !important;
+  margin-bottom: 0 !important;
+}
+
+body.popout-server_card .dash-kpi-grid,
+body.popout-server_card #dash-problems-card,
+body.popout-server_card #dash-table-container,
+body.popout-server_card .dash-controls-wrap {
+  display: none !important;
+}
+body.popout-server_card #dash-grid-container {
+  display: block !important;
+  padding: 0 !important;
+}
+body.popout-server_card .noc-grid {
+  display: block !important;
+}
+body.popout-server_card .server-card {
+  display: none !important;
+}
+body.popout-server_card .server-card.is-popout-target {
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+/* ===================================================================
    WIDGET WAKTU SISTEM (Hari, Tanggal, Jam, Menit, Detik)
    =================================================================== */
 .dash-clock-cal {
@@ -571,6 +706,21 @@ body.show-alert-banner .kiosk-toggle-btn {
 }
 </style>
 
+<!-- Banner Header Khusus Jendela Pop-out Standalone (Multi-Monitor NOC) -->
+<div id="dash-popout-header" style="display:none;align-items:center;justify-content:space-between;padding:6px 12px;margin-bottom:10px;background:rgba(15,23,42,0.9);border:1px solid rgba(255,255,255,0.08);border-radius:6px;font-size:11px">
+  <div style="display:flex;align-items:center;gap:8px">
+    <span class="dot up" style="width:7px;height:7px"></span>
+    <span style="font-weight:700;color:var(--text-bright);letter-spacing:0.4px" id="dash-popout-title">PANTAU SERVER &bull; WIDGET</span>
+    <span class="badge" style="background:rgba(56,189,248,0.12);color:var(--blue);border:1px solid rgba(56,189,248,0.3);font-size:9.5px;padding:1px 5px;letter-spacing:0.3px">POPOUT</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:10px;color:var(--dim)" title="Metrik dan data diperbarui otomatis">● Sinkron Otomatis</span>
+    <button type="button" onclick="window.close()" title="Tutup Jendela Pop-out" style="font-size:10.5px;padding:2px 8px;background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:3px">
+      <span>Tutup</span> &times;
+    </button>
+  </div>
+</div>
+
 <div class="topbar">
   <div>
     <h2 style="display:flex;align-items:center;gap:10px;font-size:20px">
@@ -595,13 +745,18 @@ body.show-alert-banner .kiosk-toggle-btn {
 
 <!-- 1. Global KPI Banner (Asymmetric Layout: Compact Server Stat + Severity Strip) -->
 <div class="dash-kpi-grid">
-  <a href="/servers" class="card kpi-link-card" style="margin:0;padding:10px 14px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid var(--blue);text-decoration:none;color:inherit;cursor:pointer" title="Kelola Seluruh Server">
+  <a href="/servers" id="kpi-card-total" class="card kpi-link-card" style="margin:0;padding:10px 14px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid var(--blue);text-decoration:none;color:inherit;cursor:pointer" title="Kelola Seluruh Server">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;display:flex;align-items:center;gap:6px">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--blue);flex-shrink:0"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
         <span>Total Server</span>
       </div>
-      <span style="font-size:11px;color:var(--blue);display:inline-flex;align-items:center;gap:2px;font-weight:600">Kelola &rarr;</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--blue);display:inline-flex;align-items:center;gap:2px;font-weight:600">Kelola &rarr;</span>
+        <button type="button" class="widget-popout-btn" onclick="popoutWidget('total_servers', event)" title="Buka Total Server di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </button>
+      </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div style="display:flex;align-items:baseline;gap:5px">
@@ -623,9 +778,12 @@ body.show-alert-banner .kiosk-toggle-btn {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% else %}var(--green){% endif %};flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         <span>Insiden Aktif</span>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:11px;color:var(--dim)" id="zbx-strip-total">Total: <strong id="dash-total-prob" style="color:var(--text-bright);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace">{{ total_all }}</strong></span>
         <a href="/problems" style="font-size:11px;color:var(--blue);text-decoration:none;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Buka Halaman Masalah &amp; Insiden">Lihat Semua &rarr;</a>
+        <button type="button" class="widget-popout-btn" onclick="popoutWidget('problems_strip', event)" title="Buka Insiden Aktif di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </button>
       </div>
     </div>
     <div class="zbx-severity-strip" id="zbx-severity-strip">
@@ -659,7 +817,12 @@ body.show-alert-banner .kiosk-toggle-btn {
         <span class="dash-clock-live-ping" title="Sinkron Waktu Nyata"></span>
         <span>Waktu Sistem</span>
       </div>
-      <span class="dash-clock-tz" id="dashClockTz">WIB</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="dash-clock-tz" id="dashClockTz">WIB</span>
+        <button type="button" class="widget-popout-btn" onclick="popoutWidget('clock', event)" title="Buka Waktu Sistem di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </button>
+      </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <!-- Kalender: Hari & Tanggal -->
@@ -677,7 +840,7 @@ body.show-alert-banner .kiosk-toggle-btn {
 </div>
 
 <!-- 2. Kartu Insiden Terkini -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div class="card" id="dash-problems-card" style="margin-bottom:14px;padding:0;overflow:hidden">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:center;gap:8px">
       <span id="dash-inc-icon" data-state="{% if danger_total > 0 %}danger{% elif average_total > 0 %}avg{% elif warning_total > 0 %}warn{% else %}ok{% endif %}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:{% if danger_total > 0 %}rgba(239,68,68,0.15){% elif average_total > 0 %}rgba(249,115,22,0.15){% elif warning_total > 0 %}rgba(245,158,11,0.15){% else %}rgba(16,185,129,0.12){% endif %};color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% else %}var(--green){% endif %}">
@@ -688,6 +851,11 @@ body.show-alert-banner .kiosk-toggle-btn {
         {% endif %}
       </span>
       <h3 style="font-size:14px;font-weight:600;margin:0">Insiden Terkini</h3>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button type="button" class="widget-popout-btn" onclick="popoutWidget('recent_incidents', event)" title="Buka Insiden Terkini di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+      </button>
     </div>
   </div>
 
@@ -755,7 +923,7 @@ body.show-alert-banner .kiosk-toggle-btn {
 </div>
 
 <!-- 3. Fleet Overview (Single-Line Table Default or NOC Card Grid) -->
-<div class="card" style="padding:0;overflow:hidden">
+<div class="card" id="dash-fleet-card" style="padding:0;overflow:hidden">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);flex-wrap:wrap;gap:8px">
     <div>
       <h3 style="font-size:14.5px;font-weight:600;margin:0">Kondisi &amp; Situasi Operasional Seluruh Server</h3>
@@ -792,6 +960,10 @@ body.show-alert-banner .kiosk-toggle-btn {
         <input type="search" id="dash-search" placeholder="Cari host…" oninput="dashFilterAll()"
                style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:11.5px;width:160px;outline:none">
       </div>
+
+      <button type="button" class="widget-popout-btn" onclick="popoutWidget('fleet_table', event)" title="Buka Tabel &amp; Grid Operasional di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+      </button>
     </div>
   </div>
 
@@ -1070,12 +1242,15 @@ body.show-alert-banner .kiosk-toggle-btn {
             </div>
             {% endif %}
           </div>
-          <div>
+          <div style="display:flex;align-items:center;gap:6px">
             {% if not srv.last_seen or srv._status_label == '-' %}
               <span id="card-sts-{{ srv.id }}" style="color:var(--dim);font-size:11px">-</span>
             {% else %}
               <span class="badge {{ srv._status_cls }}" id="card-sts-{{ srv.id }}" style="font-size:10px;padding:2px 6px">{{ srv._status_label }}</span>
             {% endif %}
+            <button type="button" class="widget-popout-btn" onclick="popoutWidget('server_card', event, '{{ srv.id }}')" title="Buka Kartu {{ srv.hostname }} di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </button>
           </div>
         </div>
 
@@ -2179,5 +2354,96 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
+
+// ===================================================================
+// WIDGET POP-OUT (Jendela Terpisah / Standalone Multi-Monitor Window)
+// ===================================================================
+function popoutWidget(widgetName, ev, extra) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+
+  // Dimensi jendela ideal berdasarkan jenis widget
+  const winSizes = {
+    'clock': { width: 440, height: 210 },
+    'total_servers': { width: 420, height: 230 },
+    'problems_strip': { width: 780, height: 250 },
+    'recent_incidents': { width: 980, height: 500 },
+    'fleet_table': { width: 1300, height: 720 },
+    'server_card': { width: 440, height: 360 }
+  };
+
+  const targetSize = winSizes[widgetName] || { width: 800, height: 500 };
+  const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - targetSize.width) / 2));
+  const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - targetSize.height) / 2));
+
+  let url = `/?popout=1&widget=${encodeURIComponent(widgetName)}`;
+  if (extra) {
+    url += `&id=${encodeURIComponent(extra)}`;
+  }
+
+  const winName = `pantau_popout_${widgetName}_${extra || ''}`;
+  const features = `width=${targetSize.width},height=${targetSize.height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
+
+  const newWin = window.open(url, winName, features);
+  if (newWin) {
+    newWin.focus();
+  } else {
+    window.open(url, '_blank');
+  }
+}
+
+// Inisialisasi Mode Pop-out jika URL memuat ?popout=1
+(function initPopoutMode() {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('popout') !== '1') return;
+
+    const widget = urlParams.get('widget');
+    const srvId = urlParams.get('id');
+    const body = document.body;
+
+    body.classList.add('popout-window');
+    if (widget) {
+      body.classList.add('popout-' + widget);
+    }
+
+    const header = document.getElementById('dash-popout-header');
+    const titleEl = document.getElementById('dash-popout-title');
+    if (header) header.style.display = 'flex';
+
+    let label = 'WIDGET';
+    if (widget === 'clock') label = 'WAKTU SISTEM';
+    else if (widget === 'total_servers') label = 'TOTAL SERVER';
+    else if (widget === 'problems_strip') label = 'INSIDEN AKTIF';
+    else if (widget === 'recent_incidents') label = 'INSIDEN TERKINI';
+    else if (widget === 'fleet_table') label = 'OPERASIONAL SELURUH SERVER';
+    else if (widget === 'server_card') {
+      label = 'KARTU SERVER';
+      if (srvId) {
+        const targetCard = document.querySelector(`.server-card[data-srv-id="${srvId}"]`);
+        if (targetCard) {
+          targetCard.classList.add('is-popout-target');
+          const hName = targetCard.querySelector('strong');
+          if (hName && hName.textContent) {
+            label = 'SERVER: ' + hName.textContent.trim();
+          }
+        } else {
+          document.querySelectorAll('.server-card').forEach(c => c.classList.add('is-popout-target'));
+        }
+      } else {
+        document.querySelectorAll('.server-card').forEach(c => c.classList.add('is-popout-target'));
+      }
+    }
+
+    if (titleEl) {
+      titleEl.textContent = 'PANTAU SERVER • ' + label;
+    }
+    document.title = `${label} - Pantau Server`;
+  } catch(e) {
+    console.error('Error init popout mode:', e);
+  }
+})();
 </script>
 {% endblock %}
