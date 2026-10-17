@@ -527,27 +527,21 @@ body.popout-window .widget-popout-btn {
   display: none !important;
 }
 
-/* Kontrol Jendela Standalone Pop-out (Minimize, Maximize, Close - Abu-abu Netral) */
-.popout-window-controls {
-  position: fixed;
-  top: 8px;
-  right: 10px;
-  z-index: 99999;
+/* Kontrol Jendela yang MENYATU langsung di dalam Header Kartu */
+.card-inline-controls {
   display: none;
   align-items: center;
   gap: 3px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
-  padding: 2px 4px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-  user-select: none;
+  margin-left: 6px;
 }
-body.popout-window .popout-window-controls {
+body.popout-window .card-inline-controls {
   display: inline-flex !important;
 }
+body.popout-window .widget-popout-btn,
+body.popout-window .card-action-link {
+  display: none !important;
+}
+
 .win-drag-handle {
   font-size: 11px;
   color: #64748b;
@@ -560,6 +554,7 @@ body.popout-window .popout-window-controls {
 .win-drag-handle:hover {
   color: #94a3b8;
 }
+
 .win-ctrl-btn {
   display: inline-flex;
   align-items: center;
@@ -567,8 +562,8 @@ body.popout-window .popout-window-controls {
   width: 20px;
   height: 20px;
   border-radius: 4px;
-  background: transparent;
-  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: #94a3b8;
   cursor: pointer;
   padding: 0;
@@ -576,29 +571,17 @@ body.popout-window .popout-window-controls {
   line-height: 1;
 }
 .win-ctrl-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
   color: #e2e8f0;
 }
 .win-ctrl-btn.btn-close:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
   color: #fca5a5;
 }
 .win-ctrl-btn:active {
   transform: scale(0.92);
-}
-
-/* Margin kanan untuk mencegah bentrok posisi kontrol pop-out */
-body.popout-window .dash-controls-wrap {
-  margin-right: 85px !important;
-}
-body.popout-window .dash-clock-tz {
-  margin-right: 85px !important;
-}
-body.popout-window #kpi-card-total > div:first-child > div:last-child,
-body.popout-window #kpi-card-prob > div:first-child > div:last-child {
-  margin-right: 85px !important;
 }
 
 /* Mode Minimize / Roll-up */
@@ -611,11 +594,13 @@ body.popout-minimized .card {
   padding: 6px 10px !important;
 }
 body.popout-minimized #dash-table-container,
-body.popout-minimized #dash-grid-container,
 body.popout-minimized #dash-problems-table-wrap,
 body.popout-minimized .dash-controls-wrap,
 body.popout-minimized .dash-clock-cal,
-body.popout-minimized .dash-clock-divider {
+body.popout-minimized .dash-clock-divider,
+body.popout-minimized #kpi-card-total > div:last-child,
+body.popout-minimized #kpi-card-prob > div:last-child,
+body.popout-minimized .server-card > div:not(:first-child) {
   display: none !important;
 }
 body.popout-minimized .dash-clock-digits {
@@ -684,6 +669,16 @@ body.popout-server_card .dash-kpi-grid,
 body.popout-server_card #dash-problems-card,
 body.popout-server_card #dash-table-container,
 body.popout-server_card .dash-controls-wrap {
+  display: none !important;
+}
+body.popout-server_card #dash-fleet-card {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+body.popout-server_card #dash-fleet-card > div:first-child {
   display: none !important;
 }
 body.popout-server_card #dash-grid-container {
@@ -801,21 +796,6 @@ body.popout-server_card .server-card.is-popout-target {
 }
 </style>
 
-<!-- Kontrol Jendela Standalone Pop-out (Minimize, Maximize, Close - Abu-abu Netral) -->
-<div class="popout-window-controls" id="popoutWindowControls">
-  <span class="win-drag-handle" id="popoutDragHandle" title="Klik dan seret untuk memindahkan jendela">⋮⋮</span>
-  <button type="button" class="win-ctrl-btn btn-min" onclick="popoutMinimize()" title="Perkecil / Roll-up" aria-label="Minimize">
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-  </button>
-  <button type="button" class="win-ctrl-btn btn-max" id="btnPopoutMax" onclick="popoutMaximize()" title="Perbesar / Layar Penuh" aria-label="Maximize">
-    <svg id="iconMax" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
-    <svg id="iconRestore" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:none"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
-  </button>
-  <button type="button" class="win-ctrl-btn btn-close" onclick="popoutClose()" title="Tutup Jendela" aria-label="Tutup">
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-  </button>
-</div>
-
 <div class="topbar">
   <div>
     <h2 style="display:flex;align-items:center;gap:10px;font-size:20px">
@@ -847,10 +827,22 @@ body.popout-server_card .server-card.is-popout-target {
         <span>Total Server</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:11px;color:var(--blue);display:inline-flex;align-items:center;gap:2px;font-weight:600">Kelola &rarr;</span>
+        <span class="card-action-link" style="font-size:11px;color:var(--blue);display:inline-flex;align-items:center;gap:2px;font-weight:600">Kelola &rarr;</span>
         <button type="button" class="widget-popout-btn" onclick="popoutWidget('total_servers', event)" title="Buka Total Server di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
         </button>
+        <div class="card-inline-controls" onclick="event.stopPropagation()">
+          <span class="win-drag-handle" title="Seret Jendela" aria-label="Seret Jendela">&#x22EE;&#x22EE;</span>
+          <button type="button" class="win-ctrl-btn btn-min" onclick="popoutMinimize(event)" title="Perkecil / Roll-up" aria-label="Minimize">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+          <button type="button" class="win-ctrl-btn btn-max" onclick="popoutMaximize(event)" title="Perbesar / Layar Penuh" aria-label="Maximize">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+          </button>
+          <button type="button" class="win-ctrl-btn btn-close" onclick="popoutClose(event)" title="Tutup Jendela" aria-label="Tutup">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
       </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -875,10 +867,22 @@ body.popout-server_card .server-card.is-popout-target {
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:11px;color:var(--dim)" id="zbx-strip-total">Total: <strong id="dash-total-prob" style="color:var(--text-bright);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace">{{ total_all }}</strong></span>
-        <a href="/problems" style="font-size:11px;color:var(--blue);text-decoration:none;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Buka Halaman Masalah &amp; Insiden">Lihat Semua &rarr;</a>
+        <a href="/problems" class="card-action-link" style="font-size:11px;color:var(--blue);text-decoration:none;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Buka Halaman Masalah &amp; Insiden">Lihat Semua &rarr;</a>
         <button type="button" class="widget-popout-btn" onclick="popoutWidget('problems_strip', event)" title="Buka Insiden Aktif di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
         </button>
+        <div class="card-inline-controls" onclick="event.stopPropagation()">
+          <span class="win-drag-handle" title="Seret Jendela" aria-label="Seret Jendela">&#x22EE;&#x22EE;</span>
+          <button type="button" class="win-ctrl-btn btn-min" onclick="popoutMinimize(event)" title="Perkecil / Roll-up" aria-label="Minimize">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+          <button type="button" class="win-ctrl-btn btn-max" onclick="popoutMaximize(event)" title="Perbesar / Layar Penuh" aria-label="Maximize">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+          </button>
+          <button type="button" class="win-ctrl-btn btn-close" onclick="popoutClose(event)" title="Tutup Jendela" aria-label="Tutup">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
       </div>
     </div>
     <div class="zbx-severity-strip" id="zbx-severity-strip">
@@ -917,6 +921,18 @@ body.popout-server_card .server-card.is-popout-target {
         <button type="button" class="widget-popout-btn" onclick="popoutWidget('clock', event)" title="Buka Waktu Sistem di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
         </button>
+        <div class="card-inline-controls" onclick="event.stopPropagation()">
+          <span class="win-drag-handle" title="Seret Jendela" aria-label="Seret Jendela">&#x22EE;&#x22EE;</span>
+          <button type="button" class="win-ctrl-btn btn-min" onclick="popoutMinimize(event)" title="Perkecil / Roll-up" aria-label="Minimize">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+          <button type="button" class="win-ctrl-btn btn-max" onclick="popoutMaximize(event)" title="Perbesar / Layar Penuh" aria-label="Maximize">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+          </button>
+          <button type="button" class="win-ctrl-btn btn-close" onclick="popoutClose(event)" title="Tutup Jendela" aria-label="Tutup">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
       </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -951,6 +967,18 @@ body.popout-server_card .server-card.is-popout-target {
       <button type="button" class="widget-popout-btn" onclick="popoutWidget('recent_incidents', event)" title="Buka Insiden Terkini di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
       </button>
+      <div class="card-inline-controls" onclick="event.stopPropagation()">
+        <span class="win-drag-handle" title="Seret Jendela" aria-label="Seret Jendela">&#x22EE;&#x22EE;</span>
+        <button type="button" class="win-ctrl-btn btn-min" onclick="popoutMinimize(event)" title="Perkecil / Roll-up" aria-label="Minimize">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <button type="button" class="win-ctrl-btn btn-max" onclick="popoutMaximize(event)" title="Perbesar / Layar Penuh" aria-label="Maximize">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+        </button>
+        <button type="button" class="win-ctrl-btn btn-close" onclick="popoutClose(event)" title="Tutup Jendela" aria-label="Tutup">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1059,6 +1087,18 @@ body.popout-server_card .server-card.is-popout-target {
       <button type="button" class="widget-popout-btn" onclick="popoutWidget('fleet_table', event)" title="Buka Tabel &amp; Grid Operasional di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
       </button>
+      <div class="card-inline-controls" onclick="event.stopPropagation()">
+        <span class="win-drag-handle" title="Seret Jendela" aria-label="Seret Jendela">&#x22EE;&#x22EE;</span>
+        <button type="button" class="win-ctrl-btn btn-min" onclick="popoutMinimize(event)" title="Perkecil / Roll-up" aria-label="Minimize">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <button type="button" class="win-ctrl-btn btn-max" onclick="popoutMaximize(event)" title="Perbesar / Layar Penuh" aria-label="Maximize">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+        </button>
+        <button type="button" class="win-ctrl-btn btn-close" onclick="popoutClose(event)" title="Tutup Jendela" aria-label="Tutup">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1346,6 +1386,18 @@ body.popout-server_card .server-card.is-popout-target {
             <button type="button" class="widget-popout-btn" onclick="popoutWidget('server_card', event, '{{ srv.id }}')" title="Buka Kartu {{ srv.hostname }} di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </button>
+            <div class="card-inline-controls" onclick="event.stopPropagation()">
+              <span class="win-drag-handle" title="Seret Jendela" aria-label="Seret Jendela">&#x22EE;&#x22EE;</span>
+              <button type="button" class="win-ctrl-btn btn-min" onclick="popoutMinimize(event)" title="Perkecil / Roll-up" aria-label="Minimize">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+              <button type="button" class="win-ctrl-btn btn-max" onclick="popoutMaximize(event)" title="Perbesar / Layar Penuh" aria-label="Maximize">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+              </button>
+              <button type="button" class="win-ctrl-btn btn-close" onclick="popoutClose(event)" title="Tutup Jendela" aria-label="Tutup">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2453,7 +2505,7 @@ document.addEventListener('keydown', (e) => {
 // ===================================================================
 // WIDGET POP-OUT (Jendela Terpisah / Standalone Multi-Monitor Window)
 // ===================================================================
-function popoutWidget(widgetName, ev, extra) {
+async function popoutWidget(widgetName, ev, extra) {
   if (ev) {
     ev.preventDefault();
     ev.stopPropagation();
@@ -2466,20 +2518,67 @@ function popoutWidget(widgetName, ev, extra) {
     'problems_strip': { width: 780, height: 220 },
     'recent_incidents': { width: 980, height: 480 },
     'fleet_table': { width: 1300, height: 720 },
-    'server_card': { width: 440, height: 340 }
+    'server_card': { width: 440, height: 350 }
   };
 
   const targetSize = winSizes[widgetName] || { width: 800, height: 500 };
-  const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - targetSize.width) / 2));
-  const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - targetSize.height) / 2));
 
   let url = `/?popout=1&widget=${encodeURIComponent(widgetName)}`;
   if (extra) {
     url += `&id=${encodeURIComponent(extra)}`;
   }
 
+  let label = 'Widget';
+  if (widgetName === 'clock') label = 'Waktu Sistem';
+  else if (widgetName === 'total_servers') label = 'Total Server';
+  else if (widgetName === 'problems_strip') label = 'Insiden Aktif';
+  else if (widgetName === 'recent_incidents') label = 'Insiden Terkini';
+  else if (widgetName === 'fleet_table') label = 'Operasional Seluruh Server';
+  else if (widgetName === 'server_card') {
+    label = 'Kartu Server';
+    if (extra) {
+      const el = document.querySelector(`.server-card[data-srv-id="${extra}"] strong`);
+      if (el && el.textContent) label = 'Server: ' + el.textContent.trim();
+    }
+  }
+
+  // 1. Coba gunakan Document Picture-in-Picture API (Chrome 116+)
+  // Menghasilkan jendela OS murni chromeless: TANPA address/URL bar, TANPA tombol zoom, TANPA logo browser!
+  if ('documentPictureInPicture' in window) {
+    try {
+      const pipWindow = await window.documentPictureInPicture.requestWindow({
+        width: targetSize.width,
+        height: targetSize.height,
+      });
+
+      pipWindow.document.title = `${label} - Pantau Server`;
+
+      const iframe = pipWindow.document.createElement('iframe');
+      iframe.src = url;
+      iframe.allow = 'fullscreen';
+      iframe.style.width = '100vw';
+      iframe.style.height = '100vh';
+      iframe.style.border = 'none';
+      iframe.style.margin = '0';
+      iframe.style.padding = '0';
+      iframe.style.display = 'block';
+      iframe.style.background = '#090d16';
+
+      pipWindow.document.body.style.margin = '0';
+      pipWindow.document.body.style.padding = '0';
+      pipWindow.document.body.style.overflow = 'hidden';
+      pipWindow.document.body.style.background = '#090d16';
+      pipWindow.document.body.appendChild(iframe);
+      return;
+    } catch (pipErr) {
+      console.warn('Document Picture-in-Picture fallback ke window.open:', pipErr);
+    }
+  }
+
+  // 2. Fallback: window.open dengan fitur popup murni jika PiP tidak didukung
+  const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - targetSize.width) / 2));
+  const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - targetSize.height) / 2));
   const winName = `pantau_popout_${widgetName}_${extra || ''}`;
-  // Gunakan 'popup=yes,popup=1' agar browser Chrome/Edge/Firefox membuka jendela aplikasi mandiri tanpa URL bar, search box, bookmark & tab strip!
   const features = `popup=yes,popup=1,width=${targetSize.width},height=${targetSize.height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
 
   const newWin = window.open(url, winName, features);
@@ -2493,63 +2592,68 @@ function popoutWidget(widgetName, ev, extra) {
 // ===================================================================
 // KONTROL JENDELA POPOUT (Minimize, Maximize/Restore, Close & Drag)
 // ===================================================================
-function popoutClose() {
-  window.close();
+function popoutClose(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  try {
+    if (window.parent && window.parent !== window) {
+      if (window.parent.documentPictureInPicture && window.parent.documentPictureInPicture.window) {
+        window.parent.documentPictureInPicture.window.close();
+        return;
+      }
+    }
+  } catch(err) {}
+  try {
+    window.close();
+  } catch(err) {}
 }
 
-function popoutMaximize() {
-  const iconMax = document.getElementById('iconMax');
-  const iconRestore = document.getElementById('iconRestore');
-  const btn = document.getElementById('btnPopoutMax');
-
+function popoutMaximize(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  if (isPopoutMinimized) {
+    popoutMinimize(e);
+    return;
+  }
   if (!document.fullscreenElement) {
     if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().then(() => {
-        if (iconMax) iconMax.style.display = 'none';
-        if (iconRestore) iconRestore.style.display = 'inline-block';
-        if (btn) btn.title = 'Pulihkan Ukuran / Restore';
-      }).catch(() => {
+      document.documentElement.requestFullscreen().catch(() => {
         try {
-          window.moveTo(0, 0);
-          window.resizeTo(screen.availWidth, screen.availHeight);
-        } catch(e) {}
+          const targetWin = (window.parent && window.parent !== window && window.parent.documentPictureInPicture && window.parent.documentPictureInPicture.window)
+            ? window.parent.documentPictureInPicture.window
+            : window;
+          targetWin.moveTo(0, 0);
+          targetWin.resizeTo(screen.availWidth, screen.availHeight);
+        } catch(err) {}
       });
     } else {
       try {
-        window.moveTo(0, 0);
-        window.resizeTo(screen.availWidth, screen.availHeight);
-      } catch(e) {}
+        const targetWin = (window.parent && window.parent !== window && window.parent.documentPictureInPicture && window.parent.documentPictureInPicture.window)
+          ? window.parent.documentPictureInPicture.window
+          : window;
+        targetWin.moveTo(0, 0);
+        targetWin.resizeTo(screen.availWidth, screen.availHeight);
+      } catch(err) {}
     }
   } else {
     if (document.exitFullscreen) {
-      document.exitFullscreen().then(() => {
-        if (iconMax) iconMax.style.display = 'inline-block';
-        if (iconRestore) iconRestore.style.display = 'none';
-        if (btn) btn.title = 'Perbesar / Maximize (Layar Penuh)';
-      }).catch(() => {});
+      document.exitFullscreen().catch(() => {});
     }
   }
 }
-
-document.addEventListener('fullscreenchange', () => {
-  const iconMax = document.getElementById('iconMax');
-  const iconRestore = document.getElementById('iconRestore');
-  const btn = document.getElementById('btnPopoutMax');
-  if (document.fullscreenElement) {
-    if (iconMax) iconMax.style.display = 'none';
-    if (iconRestore) iconRestore.style.display = 'inline-block';
-    if (btn) btn.title = 'Pulihkan Ukuran / Restore';
-  } else {
-    if (iconMax) iconMax.style.display = 'inline-block';
-    if (iconRestore) iconRestore.style.display = 'none';
-    if (btn) btn.title = 'Perbesar / Maximize (Layar Penuh)';
-  }
-});
 
 let isPopoutMinimized = false;
 let preMinSize = null;
 
-function popoutMinimize() {
+function popoutMinimize(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
   const body = document.body;
   if (document.fullscreenElement) {
     document.exitFullscreen().catch(() => {});
@@ -2557,15 +2661,19 @@ function popoutMinimize() {
   isPopoutMinimized = !isPopoutMinimized;
   body.classList.toggle('popout-minimized', isPopoutMinimized);
 
+  const targetWin = (window.parent && window.parent !== window && window.parent.documentPictureInPicture && window.parent.documentPictureInPicture.window)
+    ? window.parent.documentPictureInPicture.window
+    : window;
+
   if (isPopoutMinimized) {
-    preMinSize = { width: window.outerWidth, height: window.outerHeight };
+    preMinSize = { width: targetWin.outerWidth || 420, height: targetWin.outerHeight || 300 };
     try {
-      window.resizeTo(320, 110);
-    } catch(e) {}
+      targetWin.resizeTo(360, 110);
+    } catch(err) {}
   } else {
     try {
       if (preMinSize) {
-        window.resizeTo(preMinSize.width, preMinSize.height);
+        targetWin.resizeTo(preMinSize.width, preMinSize.height);
       } else {
         const urlParams = new URLSearchParams(window.location.search);
         const wName = urlParams.get('widget');
@@ -2575,51 +2683,57 @@ function popoutMinimize() {
           'problems_strip': { width: 780, height: 220 },
           'recent_incidents': { width: 980, height: 480 },
           'fleet_table': { width: 1300, height: 720 },
-          'server_card': { width: 440, height: 340 }
+          'server_card': { width: 440, height: 350 }
         };
         const def = winSizes[wName] || { width: 800, height: 500 };
-        window.resizeTo(def.width, def.height);
+        targetWin.resizeTo(def.width, def.height);
       }
-    } catch(e) {}
+    } catch(err) {}
   }
 }
 
 // Seret jendela popout menggunakan ikon pegangan titik (Drag Handle)
 function setupPopoutDrag() {
-  const handle = document.getElementById('popoutDragHandle');
-  if (!handle) return;
+  const handles = document.querySelectorAll('.win-drag-handle');
+  if (!handles || !handles.length) return;
 
-  let isDragging = false;
-  let startX = 0;
-  let startY = 0;
+  const targetWin = (window.parent && window.parent !== window && window.parent.documentPictureInPicture && window.parent.documentPictureInPicture.window)
+    ? window.parent.documentPictureInPicture.window
+    : window;
 
-  handle.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-    isDragging = true;
-    startX = e.screenX;
-    startY = e.screenY;
-    document.body.style.userSelect = 'none';
+  handles.forEach(handle => {
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
 
-    const onMove = (ev) => {
-      if (!isDragging) return;
-      const dx = ev.screenX - startX;
-      const dy = ev.screenY - startY;
-      startX = ev.screenX;
-      startY = ev.screenY;
-      try {
-        window.moveBy(dx, dy);
-      } catch (err) {}
-    };
+    handle.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      isDragging = true;
+      startX = e.screenX;
+      startY = e.screenY;
+      document.body.style.userSelect = 'none';
 
-    const onUp = () => {
-      isDragging = false;
-      document.body.style.userSelect = '';
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
+      const onMove = (ev) => {
+        if (!isDragging) return;
+        const dx = ev.screenX - startX;
+        const dy = ev.screenY - startY;
+        startX = ev.screenX;
+        startY = ev.screenY;
+        try {
+          targetWin.moveBy(dx, dy);
+        } catch (err) {}
+      };
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+      const onUp = () => {
+        isDragging = false;
+        document.body.style.userSelect = '';
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    });
   });
 }
 
