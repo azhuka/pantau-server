@@ -2564,6 +2564,11 @@ async function popoutWidget(widgetName, ev, extra) {
       iframe.style.display = 'block';
       iframe.style.background = '#090d16';
 
+      iframe.onerror = () => {
+        try { pipWindow.close(); } catch(err) {}
+        window.open(url, winName, features);
+      };
+
       pipWindow.document.body.style.margin = '0';
       pipWindow.document.body.style.padding = '0';
       pipWindow.document.body.style.overflow = 'hidden';

@@ -663,7 +663,7 @@ if static_dir.exists():
 
 _SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
+    "X-Frame-Options": "SAMEORIGIN",
     "X-XSS-Protection": "1; mode=block",
     "Referrer-Policy": "same-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
@@ -671,7 +671,7 @@ _SECURITY_HEADERS = {
         "default-src 'self'; script-src 'self' 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
         "font-src 'self'; connect-src 'self' ws: wss:; form-action 'self'; "
-        "base-uri 'self'; frame-ancestors 'none'; object-src 'none'"
+        "base-uri 'self'; frame-ancestors 'self'; object-src 'none'"
     ),
 }
 # Tambahkan HSTS hanya jika HTTPS aktif
