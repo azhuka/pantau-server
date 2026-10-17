@@ -165,8 +165,8 @@
 }
 #dash-server-table th {
   white-space: nowrap;
-  padding: 7px 9px;
-  font-size: 12px;
+  padding: 8px 10px;
+  font-size: 11.5px;
   line-height: 1.35;
   font-weight: 600;
   letter-spacing: 0.4px;
@@ -178,8 +178,8 @@
 }
 #dash-server-table td {
   white-space: nowrap;
-  padding: 7px 9px;
-  font-size: 13px;
+  padding: 6px 10px;
+  font-size: 12.5px;
   vertical-align: middle;
   border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.04));
   border-right: 1px solid rgba(255, 255, 255, 0.03);
@@ -757,16 +757,16 @@ body.show-alert-banner .kiosk-toggle-btn {
 <div class="card" style="padding:0;overflow:hidden">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);flex-wrap:wrap;gap:8px">
     <div>
-      <h3 style="font-size:14.5px;font-weight:600;margin:0">Status &amp; Kinerja Seluruh Server</h3>
-      <div style="font-size:12px;color:var(--dim);margin-top:2px">Metrik hardware real-time, ketersediaan, penyimpanan, dan status layanan per host.</div>
+      <h3 style="font-size:14.5px;font-weight:600;margin:0">Kondisi &amp; Situasi Operasional Seluruh Server</h3>
+      <div style="font-size:12px;color:var(--dim);margin-top:2px">Tinjauan cepat situasi, level prioritas, pemakaian hardware, dan kesehatan layanan per host secara real-time.</div>
     </div>
 
     <div class="dash-controls-wrap" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <!-- Layout Switcher Toggle -->
       <div class="view-switch-group">
-        <button type="button" id="btn-view-table" onclick="setDashboardView('table')" class="view-btn active" title="Tampilan Tabel Ringkas (1 Baris per Server)">
+        <button type="button" id="btn-view-table" onclick="setDashboardView('table')" class="view-btn active" title="Tampilan Tabel Operasional (1 Baris per Server)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-          <span>Tabel Ringkas</span>
+          <span>Tabel Operasional</span>
         </button>
         <button type="button" id="btn-view-grid" onclick="setDashboardView('grid')" class="view-btn" title="Tampilan Grid Kartu (NOC Tiles)">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -794,35 +794,21 @@ body.show-alert-banner .kiosk-toggle-btn {
     </div>
   </div>
 
-  <!-- VIEW 1: TABEL RINGKAS (GROUPED COLUMNS DENGAN PENANDA TRESHOLD 1-50% / 51-70% / 71-100%) -->
+  <!-- VIEW 1: TABEL OPERASIONAL REAL-TIME -->
   <div id="dash-table-container" style="overflow-x:auto">
     <table id="dash-server-table">
       <thead>
-        <!-- Baris Header 1: Kolom Utama & Pengelompokan -->
         <tr>
-          <th rowspan="2" class="sortable" data-col="0" style="vertical-align:middle;cursor:pointer;width:150px;min-width:140px;max-width:180px;white-space:nowrap" title="Nama host server">Hostname <span class="sort-arrow">↕</span></th>
-          <th rowspan="2" class="sortable" data-col="1" style="vertical-align:middle;cursor:pointer;width:85px;min-width:80px;text-align:center" title="Grup server">Grup <span class="sort-arrow">↕</span></th>
-          <th rowspan="2" class="sortable" data-col="2" style="vertical-align:middle;cursor:pointer;width:85px;min-width:80px;text-align:center" title="Status koneksi server saat ini">Status <span class="sort-arrow">↕</span></th>
-          <th rowspan="2" class="sortable" data-col="3" style="vertical-align:middle;cursor:pointer;width:100px;min-width:90px;text-align:center" title="Waktu aktif sejak reboot terakhir">Uptime <span class="sort-arrow">↕</span></th>
-          <th colspan="2" style="text-align:center;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)">Prosesor</th>
-          <th colspan="3" style="text-align:center;background:rgba(255,255,255,0.01);border-bottom:1px solid var(--border)">Memori</th>
-          <th colspan="3" style="text-align:center;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)">Penyimpanan</th>
-          <th rowspan="2" class="sortable" data-col="12" style="vertical-align:middle;text-align:center;cursor:pointer;width:85px;min-width:80px" title="Rasio total layanan yang dipantau terhadap layanan aktif">Layanan <span class="sort-arrow">↕</span></th>
-          <th rowspan="2" class="sortable" data-col="13" style="vertical-align:middle;text-align:center;cursor:pointer;width:85px;min-width:80px" title="Status masalah / gangguan aktif">Insiden <span class="sort-arrow">↕</span></th>
-        </tr>
-        <!-- Baris Header 2: Sub-Kolom Metrik Detail -->
-        <tr>
-          <!-- Prosesor -->
-          <th class="sortable" data-col="4" style="cursor:pointer;background:rgba(255,255,255,0.02);width:75px;min-width:70px" title="Jumlah inti CPU">CPU Core <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="5" style="cursor:pointer;background:rgba(255,255,255,0.02);width:95px;min-width:90px" title="Persentase beban CPU">Beban CPU (%) <span class="sort-arrow">↕</span></th>
-          <!-- Memori -->
-          <th class="sortable" data-col="6" style="cursor:pointer;background:rgba(255,255,255,0.01);width:75px;min-width:70px" title="Total kapasitas RAM">Total <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="7" style="cursor:pointer;background:rgba(255,255,255,0.01);width:85px;min-width:80px" title="Persentase beban RAM">Beban (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="8" style="cursor:pointer;background:rgba(255,255,255,0.01);width:80px;min-width:75px" title="Sisa kapasitas RAM tersedia">Tersedia <span class="sort-arrow">↕</span></th>
-          <!-- Penyimpanan -->
-          <th class="sortable" data-col="9" style="cursor:pointer;background:rgba(255,255,255,0.02);width:75px;min-width:70px" title="Total kapasitas penyimpanan sistem">Total <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="10" style="cursor:pointer;background:rgba(255,255,255,0.02);width:85px;min-width:80px" title="Persentase beban disk sistem">Beban (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="11" style="cursor:pointer;background:rgba(255,255,255,0.02);width:80px;min-width:75px" title="Sisa ruang penyimpanan tersedia">Tersedia <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="0" style="vertical-align:middle;cursor:pointer;min-width:130px;text-align:left" title="Nama host server">Server <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="1" style="vertical-align:middle;cursor:pointer;width:80px;min-width:75px;text-align:center" title="Status koneksi server saat ini">Status <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="2" style="vertical-align:middle;cursor:pointer;width:95px;min-width:90px;text-align:center" title="Tingkat prioritas dan peran layanan">Level Prioritas <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="3" style="vertical-align:middle;cursor:pointer;min-width:145px;text-align:left" title="Alamat IP dan jenis platform">IP &amp; Platform <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="4" style="vertical-align:middle;cursor:pointer;width:80px;min-width:75px;text-align:center" title="Waktu aktif sejak reboot terakhir">Uptime <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="5" style="vertical-align:middle;cursor:pointer;width:90px;min-width:85px;text-align:center" title="Persentase beban CPU dan jumlah inti prosesor">CPU (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="6" style="vertical-align:middle;cursor:pointer;width:120px;min-width:115px;text-align:center" title="Persentase beban RAM dan pemakaian memori">RAM (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="7" style="vertical-align:middle;cursor:pointer;width:150px;min-width:140px;text-align:center" title="Persentase beban penyimpanan, total dan sisa ruang">STORAGE (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="8" style="vertical-align:middle;cursor:pointer;width:75px;min-width:70px;text-align:center" title="Rasio total layanan yang dipantau terhadap layanan aktif">Layanan <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="9" style="vertical-align:middle;cursor:pointer;width:95px;min-width:90px;text-align:center" title="Insiden dan anomali aktif pada server">Insiden <span class="sort-arrow">↕</span></th>
         </tr>
       </thead>
       <tbody>
@@ -836,22 +822,16 @@ body.show-alert-banner .kiosk-toggle-btn {
         {% set disk_d = g_th.disk_danger if g_th.disk_danger is defined else 95.0 %}
 
         {% set cpu_v = srv._cpu if srv._cpu is not none else -1 %}
-        {% set cpu_cls = 'red' if cpu_v >= cpu_d else ('yellow' if cpu_v >= cpu_w else 'green') %}
         {% set cpu_color = 'var(--red)' if cpu_v >= cpu_d else ('var(--yellow)' if cpu_v >= cpu_w else ('var(--green)' if srv._cpu is not none else 'var(--dim)')) %}
 
         {% set mem_v = srv._mem_pct if srv._mem_pct is not none else -1 %}
-        {% set mem_cls = 'red' if mem_v >= ram_d else ('yellow' if mem_v >= ram_w else 'green') %}
         {% set mem_color = 'var(--red)' if mem_v >= ram_d else ('var(--yellow)' if mem_v >= ram_w else ('var(--green)' if srv._mem_pct is not none else 'var(--dim)')) %}
-        {% set mem_avail_pct = (100.0 - srv._mem_pct)|round(1) if srv._mem_pct is not none else None %}
 
         {% set disk_v = srv._disk_pct if srv._disk_pct is not none else -1 %}
-        {% set disk_cls = 'red' if disk_v >= disk_d else ('yellow' if disk_v >= disk_w else 'green') %}
         {% set disk_color = 'var(--red)' if disk_v >= disk_d else ('var(--yellow)' if disk_v >= disk_w else ('var(--green)' if srv._disk_pct is not none else 'var(--dim)')) %}
-        {% set disk_avail_pct = (100.0 - srv._disk_pct)|round(1) if srv._disk_pct is not none else None %}
 
         {% set tot_svcs = (srv._svc_data or []) | length %}
         {% set up_svcs = (srv._svc_data or []) | selectattr('status', 'equalto', 'up') | list | length %}
-        {% set dn_svcs = (srv._svc_data or []) | rejectattr('status', 'equalto', 'up') | list | length %}
 
         {% set d_cnt = srv._danger_count if srv._danger_count is defined else 0 %}
         {% set avg_cnt = srv._average_count if srv._average_count is defined else 0 %}
@@ -859,27 +839,48 @@ body.show-alert-banner .kiosk-toggle-btn {
         {% set i_cnt = srv._info_count if srv._info_count is defined else 0 %}
         {% set ign_cnt = srv._ignored_count if srv._ignored_count is defined else 0 %}
         {% set tot_prob = d_cnt + avg_cnt + w_cnt + i_cnt %}
+        {% set s_tier = srv.tier|default(2) %}
 
         <tr data-srv-id="{{ srv.id }}"
             data-row-group="{{ srv.group_name or '' }}"
-            data-row-text="{{ (srv.hostname ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '')) | lower }}"
+            data-row-text="{{ (srv.hostname ~ ' ' ~ (srv.ip_address or '') ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' tier-' ~ s_tier) | lower }}"
             onclick="window.location.href='/servers/{{ srv.id }}/services'"
             title="Klik untuk buka rincian server {{ srv.hostname }}">
-          <!-- 0. Hostname (Tanpa IP Address) -->
-          <td data-sort-val="{{ srv.hostname | lower }}" style="white-space:nowrap">
-            <div style="display:inline-flex;align-items:center;gap:6px">
+          <!-- 0. Server -->
+          <td data-sort-val="{{ srv.hostname | lower }}" style="white-space:nowrap;vertical-align:middle">
+            <div style="display:inline-flex;align-items:center;gap:7px">
               <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else ('down' if srv._status_label == 'offline' else 'muted')) }}" id="tbl-dot-{{ srv.id }}"></span>
-              <strong style="color:var(--text-bright);font-size:13.5px">{{ srv.hostname }}</strong>
-              {% set s_tier = srv.tier|default(2) %}
-              {% if s_tier == 1 %}
-                <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="Tier 1: Layanan Utama / Prioritas">TIER 1</span>
-              {% elif s_tier == 3 %}
-                <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="Tier 3: Layanan Sementara / Non-Kritis">TIER 3</span>
-              {% else %}
-                <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="Tier 2: Layanan Pendukung / Sekunder">TIER 2</span>
-              {% endif %}
+              <strong style="color:var(--text-bright);font-size:13px">{{ srv.hostname }}</strong>
+            </div>
+          </td>
+
+          <!-- 1. Status -->
+          <td data-sort-val="{{ srv._status_label }}" style="text-align:center;vertical-align:middle">
+            {% if not srv.last_seen or srv._status_label == '-' %}
+              <span id="tbl-sts-{{ srv.id }}" style="color:var(--dim)">-</span>
+            {% else %}
+              <span class="badge {{ srv._status_cls }}" id="tbl-sts-{{ srv.id }}" style="font-size:10.5px;padding:2px 7px">{{ srv._status_label }}</span>
+            {% endif %}
+          </td>
+
+          <!-- 2. Level Prioritas (Tier) -->
+          <td data-sort-val="{{ s_tier }}" style="text-align:center;vertical-align:middle">
+            {% if s_tier == 1 %}
+              <span class="badge" style="font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:2px 7px;font-weight:700" title="Tier 1 — Layanan Utama / Prioritas (Layanan vital & Prioritas)">Tier-1</span>
+            {% elif s_tier == 3 %}
+              <span class="badge" style="font-size:10px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:2px 7px;font-weight:600" title="Tier 3 — Layanan Sementara / Non-Kritis (Layanan bersifat sementara/uji coba)">Tier-3</span>
+            {% else %}
+              <span class="badge" style="font-size:10px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:2px 7px;font-weight:600" title="Tier 2 — Layanan Pendukung / Sekunder (Layanan Pendukung operasional)">Tier-2</span>
+            {% endif %}
+          </td>
+
+          <!-- 3. IP & Platform -->
+          <td data-sort-val="{{ srv.ip_address }}" style="white-space:nowrap;vertical-align:middle">
+            <div style="display:inline-flex;align-items:center;gap:6px">
               {% if srv._platform %}
-                <span class="badge" style="font-size:9.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: {{ srv._platform.label }}">
+                {% set p_label = srv._platform.short_label|upper %}
+                {% if p_label == 'FISIK' %}{% set p_label = 'BAREMETAL' %}{% endif %}
+                <span class="badge" style="font-size:9.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:700" title="Platform: {{ srv._platform.label }}">
                   {% if srv._platform.type == 'lxc' %}
                     <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                   {% elif srv._platform.type == 'vm' %}
@@ -887,116 +888,75 @@ body.show-alert-banner .kiosk-toggle-btn {
                   {% else %}
                     <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                   {% endif %}
-                  {{ srv._platform.short_label }}
+                  {{ p_label }}
                 </span>
               {% endif %}
               {% if srv.is_proxmox_ha %}
-                <span class="badge" style="font-size:10px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server terproteksi Proxmox HA">
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span class="badge" style="font-size:9.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:700" title="Server terproteksi Proxmox HA">
+                  <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                   HA
                 </span>
               {% endif %}
+              <span class="copyable-ip mono" style="font-size:12px;color:var(--text)" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
             </div>
           </td>
 
-          <!-- 1. Grup (Kolom Khusus Setelah Hostname) -->
-          <td data-sort-val="{{ srv.group_name or '' }}" style="text-align:center">
-            {% if srv.group_name %}
-              <span class="badge badge-muted" style="font-size:11px;padding:2px 7px">{{ srv.group_name }}</span>
-            {% else %}
-              <span style="color:var(--dim)">-</span>
-            {% endif %}
-          </td>
-
-          <!-- 2. Status ("-" jika belum melapor) -->
-          <td data-sort-val="{{ srv._status_label }}" style="text-align:center">
-            {% if not srv.last_seen or srv._status_label == '-' %}
-              <span id="tbl-sts-{{ srv.id }}" style="color:var(--dim)">-</span>
-            {% else %}
-              <span class="badge {{ srv._status_cls }}" id="tbl-sts-{{ srv.id }}" style="font-size:10.5px;padding:2.5px 7px">{{ srv._status_label }}</span>
-            {% endif %}
-          </td>
-
-          <!-- 3. Uptime -->
-          <td class="mono" id="tbl-uptime-{{ srv.id }}" data-sort-val="{{ srv._uptime_secs or 0 }}" style="font-size:12.5px;text-align:center">
+          <!-- 4. Uptime -->
+          <td class="mono" id="tbl-uptime-{{ srv.id }}" data-sort-val="{{ srv._uptime_secs or 0 }}" style="font-size:12px;text-align:center;vertical-align:middle;color:var(--text)">
             {{ srv._uptime_str if srv._uptime_str and srv._uptime_str != '—' else '-' }}
           </td>
 
-          <!-- 4. Processor: CPU Core -->
-          <td class="mono" id="tbl-cpu-core-{{ srv.id }}" data-sort-val="{{ srv._cpu_cores_str if srv.last_seen else '-' }}" style="font-size:12.5px;text-align:center">
-            {{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }}
-          </td>
-
-          <!-- 5. Processor: Beban CPU (%) [Threshold Bar] -->
-          <td data-sort-val="{{ cpu_v }}" style="text-align:center">
+          <!-- 5. CPU (%) -->
+          <td data-sort-val="{{ cpu_v }}" style="text-align:center;vertical-align:middle;padding:5px 8px">
             {% if srv._cpu is not none %}
-            <div style="display:inline-flex;align-items:center;justify-content:center;gap:5px">
-              <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="min-width:40px;text-align:right;font-size:12.5px;color:{{ cpu_color }}">
-                {{ srv._cpu ~ '%' }}
-              </strong>
-              <div class="meter-mini-track">
-                <div class="meter-mini-bar {{ cpu_cls }}" id="tbl-cpu-bar-{{ srv.id }}" style="width:{{ [srv._cpu or 0, 100]|min }}%"></div>
+              <div style="line-height:1.2">
+                <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="font-size:12.5px;color:{{ cpu_color }}">{{ srv._cpu ~ '%' }}</strong>
               </div>
-            </div>
+              <div class="mono" id="tbl-cpu-core-{{ srv.id }}" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:1px">
+                {{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }}
+              </div>
             {% else %}
-              <span id="tbl-cpu-val-{{ srv.id }}" style="color:var(--dim)">-</span>
+              <div id="tbl-cpu-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2">-</div>
+              <div class="mono" id="tbl-cpu-core-{{ srv.id }}" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:1px">-</div>
             {% endif %}
           </td>
 
-          <!-- 6. Memori: Total -->
-          <td class="mono" id="tbl-mem-tot-{{ srv.id }}" data-sort-val="{{ srv._mem_total_str }}" style="font-size:12.5px;text-align:center">
-            {{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }}
-          </td>
-
-          <!-- 7. Memori: Beban (%) [Threshold Bar] -->
-          <td data-sort-val="{{ mem_v }}" style="text-align:center">
+          <!-- 6. RAM (%) -->
+          <td data-sort-val="{{ mem_v }}" style="text-align:center;vertical-align:middle;padding:5px 8px">
             {% if srv._mem_pct is not none %}
-            <div style="display:inline-flex;align-items:center;justify-content:center;gap:5px">
-              <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="min-width:40px;text-align:right;font-size:12.5px;color:{{ mem_color }}">
-                {{ srv._mem_pct ~ '%' }}
-              </strong>
-              <div class="meter-mini-track">
-                <div class="meter-mini-bar {{ mem_cls }}" id="tbl-mem-bar-{{ srv.id }}" style="width:{{ [srv._mem_pct or 0, 100]|min }}%"></div>
+              <div style="line-height:1.2">
+                <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="font-size:12.5px;color:{{ mem_color }}">{{ srv._mem_pct ~ '%' }}</strong>
               </div>
-            </div>
+              <div class="mono" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:1px;white-space:nowrap">
+                <span id="tbl-mem-used-{{ srv.id }}">{{ srv._mem_used_str if srv._mem_used_str and srv._mem_used_str != '—' else '-' }}</span> / <span id="tbl-mem-tot-{{ srv.id }}">{{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }}</span>
+              </div>
             {% else %}
-              <span id="tbl-mem-val-{{ srv.id }}" style="color:var(--dim)">-</span>
+              <div id="tbl-mem-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2">-</div>
+              <div class="mono" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:1px">
+                <span id="tbl-mem-used-{{ srv.id }}">-</span> / <span id="tbl-mem-tot-{{ srv.id }}">-</span>
+              </div>
             {% endif %}
           </td>
 
-          <!-- 8. Memori: Tersedia -->
-          <td class="mono" id="tbl-mem-avail-{{ srv.id }}" data-sort-val="{{ srv._mem_avail_str or '' }}" style="font-size:12.5px;text-align:center">
-            {{ srv._mem_avail_str if srv._mem_avail_str and srv._mem_avail_str != '—' else '-' }}
-          </td>
-
-          <!-- 9. Penyimpanan: Total -->
-          <td class="mono" id="tbl-disk-tot-{{ srv.id }}" data-sort-val="{{ srv._disk_total_str }}" style="font-size:12.5px;text-align:center">
-            {{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}
-          </td>
-
-          <!-- 10. Penyimpanan: Beban (%) [Threshold Bar] -->
-          <td data-sort-val="{{ disk_v }}" style="text-align:center">
+          <!-- 7. STORAGE (%) -->
+          <td data-sort-val="{{ disk_v }}" style="text-align:center;vertical-align:middle;padding:5px 8px">
             {% if srv._disk_pct is not none %}
-            <div style="display:inline-flex;align-items:center;justify-content:center;gap:5px">
-              <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="min-width:40px;text-align:right;font-size:12.5px;color:{{ disk_color }}">
-                {{ srv._disk_pct ~ '%' }}
-              </strong>
-              <div class="meter-mini-track">
-                <div class="meter-mini-bar {{ disk_cls }}" id="tbl-disk-bar-{{ srv.id }}" style="width:{{ [srv._disk_pct or 0, 100]|min }}%"></div>
+              <div style="line-height:1.2">
+                <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="font-size:12.5px;color:{{ disk_color }}">{{ srv._disk_pct ~ '%' }}</strong>
               </div>
-            </div>
+              <div class="mono" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:1px;white-space:nowrap">
+                <span id="tbl-disk-tot-{{ srv.id }}">{{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}</span> (Sisa <span id="tbl-disk-avail-{{ srv.id }}">{{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }}</span>)
+              </div>
             {% else %}
-              <span id="tbl-disk-val-{{ srv.id }}" style="color:var(--dim)">-</span>
+              <div id="tbl-disk-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2">-</div>
+              <div class="mono" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:1px">
+                <span id="tbl-disk-tot-{{ srv.id }}">-</span> (Sisa <span id="tbl-disk-avail-{{ srv.id }}">-</span>)
+              </div>
             {% endif %}
           </td>
 
-          <!-- 11. Penyimpanan: Tersedia -->
-          <td class="mono" id="tbl-disk-avail-{{ srv.id }}" data-sort-val="{{ srv._disk_avail_str or '' }}" style="font-size:12.5px;text-align:center">
-            {{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }}
-          </td>
-
-          <!-- 12. Layanan: Total / UP (Default: Hijau/Hijau; Ada Insiden: Hijau/Putih) -->
-          <td class="mono" id="tbl-svc-td-{{ srv.id }}" data-sort-val="{{ up_svcs }}" style="text-align:center;font-size:13px">
+          <!-- 8. Layanan -->
+          <td class="mono" id="tbl-svc-td-{{ srv.id }}" data-sort-val="{{ up_svcs }}" style="text-align:center;vertical-align:middle;font-size:12.5px">
             {% if not srv.last_seen or tot_svcs == 0 or srv._status_label == 'Offline' %}
               <span id="tbl-svc-{{ srv.id }}" style="color:var(--dim)">-</span>
             {% else %}
@@ -1007,28 +967,30 @@ body.show-alert-banner .kiosk-toggle-btn {
             {% endif %}
           </td>
 
-          <!-- 13. Insiden (Default: Normal Hijau; Angka Berwarna Sesuai Severity: Merah Kritis, Oranye Gawat, Kuning Warn, Biru Info, Abu Diabaikan) -->
-          <td style="text-align:center" data-sort-val="{{ d_cnt * 1000000 + avg_cnt * 10000 + w_cnt * 100 + i_cnt * 10 + ign_cnt }}">
+          <!-- 9. Insiden -->
+          <td style="text-align:center;vertical-align:middle" data-sort-val="{{ 9999999 if srv._status_label == 'Offline' else (d_cnt * 1000000 + avg_cnt * 10000 + w_cnt * 100 + i_cnt * 10 + ign_cnt) }}">
             <div id="tbl-prob-{{ srv.id }}" style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">
               {% if not srv.last_seen %}
                 <span style="color:var(--dim)">-</span>
+              {% elif srv._status_label == 'Offline' %}
+                <span class="badge badge-danger" style="font-size:10px;padding:2px 7px;font-weight:700">Offline</span>
               {% elif tot_prob == 0 and ign_cnt == 0 %}
-                <span class="badge badge-up" style="font-size:10.5px;padding:2.5px 7px;font-weight:600">Normal</span>
+                <span class="badge badge-up" style="font-size:10.5px;padding:2px 7px;font-weight:600">Normal</span>
               {% else %}
                 {% if d_cnt > 0 %}
-                  <span class="badge badge-danger" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
+                  <span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
                 {% endif %}
                 {% if avg_cnt > 0 %}
-                  <span class="badge badge-orange" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
+                  <span class="badge badge-orange" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
                 {% endif %}
                 {% if w_cnt > 0 %}
-                  <span class="badge badge-warn" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
+                  <span class="badge badge-warn" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
                 {% endif %}
                 {% if i_cnt > 0 %}
-                  <span class="badge badge-info" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
+                  <span class="badge badge-info" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
                 {% endif %}
                 {% if ign_cnt > 0 %}
-                  <span class="badge badge-muted" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="{{ srv._ignored_msgs or 'Insiden diabaikan' }}">{{ ign_cnt }}</span>
+                  <span class="badge badge-muted" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._ignored_msgs or 'Insiden diabaikan' }}">{{ ign_cnt }}</span>
                 {% endif %}
               {% endif %}
             </div>
@@ -1626,7 +1588,7 @@ async function pollNocDashboard() {
 
       // Processor: CPU
       const tblCpuVal = document.getElementById('tbl-cpu-val-' + srv.id);
-      const tblCpuBar = document.getElementById('tbl-cpu-bar-' + srv.id);
+      const tblCpuCore = document.getElementById('tbl-cpu-core-' + srv.id);
       if (tblCpuVal) {
         if (srv.cpu != null) {
           const th = getThreshold(srv.cpu, 'cpu');
@@ -1637,18 +1599,14 @@ async function pollNocDashboard() {
           tblCpuVal.style.color = 'var(--dim)';
         }
       }
-      if (tblCpuBar && srv.cpu != null) {
-        const th = getThreshold(srv.cpu, 'cpu');
-        tblCpuBar.style.width = Math.min(srv.cpu, 100) + '%';
-        tblCpuBar.className = 'meter-mini-bar ' + th.cls;
+      if (tblCpuCore) {
+        tblCpuCore.textContent = (srv.cpu_cores && srv.cpu_cores !== '—') ? srv.cpu_cores : '-';
       }
 
-      // Memori: Total, Beban (%), Tersedia
+      // Memori: Total, Beban (%), Digunakan
       const tblMemTot = document.getElementById('tbl-mem-tot-' + srv.id);
-      if (tblMemTot) tblMemTot.textContent = (srv.mem_total_str && srv.mem_total_str !== '—') ? srv.mem_total_str : '-';
-
+      const tblMemUsed = document.getElementById('tbl-mem-used-' + srv.id);
       const tblMemVal = document.getElementById('tbl-mem-val-' + srv.id);
-      const tblMemBar = document.getElementById('tbl-mem-bar-' + srv.id);
       if (tblMemVal) {
         if (srv.mem_pct != null) {
           const th = getThreshold(srv.mem_pct, 'mem');
@@ -1659,23 +1617,13 @@ async function pollNocDashboard() {
           tblMemVal.style.color = 'var(--dim)';
         }
       }
-      if (tblMemBar && srv.mem_pct != null) {
-        const th = getThreshold(srv.mem_pct, 'mem');
-        tblMemBar.style.width = Math.min(srv.mem_pct, 100) + '%';
-        tblMemBar.className = 'meter-mini-bar ' + th.cls;
-      }
-
-      const tblMemAvail = document.getElementById('tbl-mem-avail-' + srv.id);
-      if (tblMemAvail) {
-        tblMemAvail.textContent = (srv.mem_avail_str && srv.mem_avail_str !== '—') ? srv.mem_avail_str : '-';
-      }
+      if (tblMemUsed) tblMemUsed.textContent = (srv.mem_used_str && srv.mem_used_str !== '—') ? srv.mem_used_str : '-';
+      if (tblMemTot) tblMemTot.textContent = (srv.mem_total_str && srv.mem_total_str !== '—') ? srv.mem_total_str : '-';
 
       // Penyimpanan: Total, Beban (%), Tersedia
       const tblDiskTot = document.getElementById('tbl-disk-tot-' + srv.id);
-      if (tblDiskTot) tblDiskTot.textContent = (srv.disk_total_str && srv.disk_total_str !== '—') ? srv.disk_total_str : '-';
-
+      const tblDiskAvail = document.getElementById('tbl-disk-avail-' + srv.id);
       const tblDiskVal = document.getElementById('tbl-disk-val-' + srv.id);
-      const tblDiskBar = document.getElementById('tbl-disk-bar-' + srv.id);
       if (tblDiskVal) {
         if (srv.disk_pct != null) {
           const th = getThreshold(srv.disk_pct, 'disk');
@@ -1686,16 +1634,8 @@ async function pollNocDashboard() {
           tblDiskVal.style.color = 'var(--dim)';
         }
       }
-      if (tblDiskBar && srv.disk_pct != null) {
-        const th = getThreshold(srv.disk_pct, 'disk');
-        tblDiskBar.style.width = Math.min(srv.disk_pct, 100) + '%';
-        tblDiskBar.className = 'meter-mini-bar ' + th.cls;
-      }
-
-      const tblDiskAvail = document.getElementById('tbl-disk-avail-' + srv.id);
-      if (tblDiskAvail) {
-        tblDiskAvail.textContent = (srv.disk_avail_str && srv.disk_avail_str !== '—') ? srv.disk_avail_str : '-';
-      }
+      if (tblDiskTot) tblDiskTot.textContent = (srv.disk_total_str && srv.disk_total_str !== '—') ? srv.disk_total_str : '-';
+      if (tblDiskAvail) tblDiskAvail.textContent = (srv.disk_avail_str && srv.disk_avail_str !== '—') ? srv.disk_avail_str : '-';
 
       // Layanan: Total / UP (Default: Hijau/Hijau; Ada Insiden: Hijau/Putih)
       const tblSvc = document.getElementById('tbl-svc-' + srv.id);
@@ -1711,22 +1651,24 @@ async function pollNocDashboard() {
         }
       }
 
-      // Insiden (Pills warna-warni untuk Gawat, Kritis, Warn, Info, Diabaikan)
+      // Insiden (Pills warna-warni untuk Gawat, Kritis, Warn, Info, Diabaikan; Offline jika offline; Normal jika aman)
       const tblProb = document.getElementById('tbl-prob-' + srv.id);
       if (tblProb) {
         if (!hasReported) {
           tblProb.innerHTML = '<span style="color:var(--dim)">-</span>';
+        } else if (srv.overall_status === 'offline') {
+          tblProb.innerHTML = '<span class="badge badge-danger" style="font-size:10px;padding:2px 7px;font-weight:700">Offline</span>';
         } else {
           const totActive = dCnt + avgCnt + wCnt + iCnt;
           if (totActive === 0 && ignCnt === 0) {
             tblProb.innerHTML = '<span class="badge badge-up" style="font-size:10.5px;padding:2px 7px;font-weight:600">Normal</span>';
           } else {
             let html = '';
-            if (dCnt > 0) html += `<span class="badge badge-danger" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="${(srv.danger_msgs || (isEn ? 'Critical' : 'Kritis')).replace(/"/g, '&quot;')}">${dCnt}</span>`;
-            if (avgCnt > 0) html += `<span class="badge badge-orange" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="${(srv.average_msgs || (isEn ? 'High' : 'Gawat')).replace(/"/g, '&quot;')}">${avgCnt}</span>`;
-            if (wCnt > 0) html += `<span class="badge badge-warn" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="${(srv.warning_msgs || (isEn ? 'Warning' : 'Peringatan')).replace(/"/g, '&quot;')}">${wCnt}</span>`;
-            if (iCnt > 0) html += `<span class="badge badge-info" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="${(srv.info_msgs || 'Info').replace(/"/g, '&quot;')}">${iCnt}</span>`;
-            if (ignCnt > 0) html += `<span class="badge badge-muted" style="min-width:22px;text-align:center;padding:2px 7px;font-size:12px;font-weight:700;border-radius:10px" title="${(srv.ignored_msgs || (isEn ? 'Ignored' : 'Diabaikan')).replace(/"/g, '&quot;')}">${ignCnt}</span>`;
+            if (dCnt > 0) html += `<span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="${(srv.danger_msgs || (isEn ? 'Critical' : 'Kritis')).replace(/"/g, '&quot;')}">${dCnt}</span>`;
+            if (avgCnt > 0) html += `<span class="badge badge-orange" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="${(srv.average_msgs || (isEn ? 'High' : 'Gawat')).replace(/"/g, '&quot;')}">${avgCnt}</span>`;
+            if (wCnt > 0) html += `<span class="badge badge-warn" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="${(srv.warning_msgs || (isEn ? 'Warning' : 'Peringatan')).replace(/"/g, '&quot;')}">${wCnt}</span>`;
+            if (iCnt > 0) html += `<span class="badge badge-info" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="${(srv.info_msgs || 'Info').replace(/"/g, '&quot;')}">${iCnt}</span>`;
+            if (ignCnt > 0) html += `<span class="badge badge-muted" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="${(srv.ignored_msgs || (isEn ? 'Ignored' : 'Diabaikan')).replace(/"/g, '&quot;')}">${ignCnt}</span>`;
             tblProb.innerHTML = html;
           }
         }
