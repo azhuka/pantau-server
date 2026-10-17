@@ -21,8 +21,11 @@
 .view-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 4px 10px;
+  padding: 4px 7px;
+  min-width: 28px;
+  height: 26px;
   font-size: 11.5px;
   border: none;
   background: transparent;
@@ -31,7 +34,7 @@
   cursor: pointer;
   font-weight: 500;
   transition: all .15s ease;
-  line-height: 1.3;
+  line-height: 1;
 }
 .view-btn:hover {
   color: var(--text);
@@ -184,6 +187,42 @@
   border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.04));
   border-right: 1px solid rgba(255, 255, 255, 0.03);
   color: var(--text);
+  transition: padding .15s ease;
+}
+/* Mode Kompak (1 Baris Ringkas per Server) */
+#dash-server-table.tbl-compact th {
+  padding: 5px 8px;
+  font-size: 11px;
+}
+#dash-server-table.tbl-compact td {
+  padding: 3.5px 8px;
+  font-size: 12px;
+}
+#dash-server-table.tbl-compact .tbl-metric-subline {
+  display: none !important;
+}
+#dash-server-table.tbl-compact .tbl-metric-box {
+  gap: 0 !important;
+}
+#dash-server-table.tbl-compact .meter-mini-track {
+  height: 4px;
+}
+#dash-server-table.tbl-compact .badge {
+  font-size: 8.5px !important;
+  padding: 1px 4px !important;
+}
+#dash-server-table.tbl-compact .copyable-ip {
+  font-size: 11px !important;
+}
+#dash-fleet-card .table-pagination-bar {
+  margin: 0;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.015);
 }
 /* Balanced 3-Column Operations Strip: Total Server (minmax 190-220px) + Insiden Aktif (1fr) + Waktu Sistem (minmax 260-290px) */
 .dash-kpi-grid {
@@ -399,11 +438,11 @@
     gap: 8px !important;
   }
   .view-switch-group {
-    width: 100% !important;
-    display: flex !important;
+    display: inline-flex !important;
+    width: auto !important;
   }
   .view-switch-group .view-btn {
-    flex: 1 1 auto !important;
+    flex: initial !important;
     justify-content: center !important;
     text-align: center !important;
   }
@@ -891,20 +930,28 @@ body.popout-fleet_table #dash-fleet-card {
 <div class="card" id="dash-fleet-card" style="padding:0;overflow:hidden">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);flex-wrap:wrap;gap:8px">
     <div>
-      <h3 style="font-size:14.5px;font-weight:600;margin:0">Kondisi &amp; Situasi Operasional Seluruh Server</h3>
+      <h3 style="font-size:14.5px;font-weight:600;margin:0">Kondisi Terkini</h3>
       <div style="font-size:12px;color:var(--dim);margin-top:2px">Tinjauan cepat situasi, level prioritas, pemakaian hardware, dan kesehatan layanan per host secara real-time.</div>
     </div>
 
     <div class="dash-controls-wrap" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <!-- Layout Switcher Toggle -->
-      <div class="view-switch-group">
-        <button type="button" id="btn-view-table" onclick="setDashboardView('table')" class="view-btn active" title="Tampilan Tabel Operasional (1 Baris per Server)">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-          <span>Tabel Operasional</span>
+      <!-- Layout Switcher Toggle (Icon-only + Tooltip) -->
+      <div class="view-switch-group" id="dash-view-switcher">
+        <button type="button" id="btn-view-table" onclick="setDashboardView('table')" class="view-btn active" title="Tabel Operasional" aria-label="Tabel Operasional">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
-        <button type="button" id="btn-view-grid" onclick="setDashboardView('grid')" class="view-btn" title="Tampilan Grid Kartu (NOC Tiles)">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-          <span>Kartu NOC</span>
+        <button type="button" id="btn-view-grid" onclick="setDashboardView('grid')" class="view-btn" title="Kartu NOC" aria-label="Kartu NOC">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        </button>
+      </div>
+
+      <!-- Kepadatan Baris Tabel (Mode Kompak vs Standar) -->
+      <div class="view-switch-group" id="dash-density-switcher" title="Kepadatan Baris Tabel">
+        <button type="button" id="btn-density-compact" onclick="setTableDensity('compact')" class="view-btn active" title="Mode Kompak (1 Baris Ringkas)" aria-label="Mode Kompak (1 Baris Ringkas)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <button type="button" id="btn-density-standard" onclick="setTableDensity('standard')" class="view-btn" title="Mode Standar (2 Baris Rinci)" aria-label="Mode Standar (2 Baris Rinci)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="5" x2="21" y2="5"></line><line x1="3" y1="9" x2="14" y2="9" stroke-width="1.8" opacity="0.65"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="3" y1="19" x2="14" y2="19" stroke-width="1.8" opacity="0.65"></line></svg>
         </button>
       </div>
 
@@ -1042,64 +1089,64 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 5. CPU (%) dengan Visual Mini Meter Bar Terbuka & Jelas -->
-          <td data-sort-val="{{ cpu_v }}" style="text-align:center;vertical-align:middle;padding:5px 8px">
+          <td id="tbl-cpu-td-{{ srv.id }}" data-sort-val="{{ cpu_v }}" style="text-align:center;vertical-align:middle;padding:5px 8px" title="CPU: {{ srv._cpu ~ '%' if srv._cpu is not none else '-' }} ({{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }})">
             {% if srv._cpu is not none %}
-              <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+              <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
                 <div style="display:inline-flex;align-items:center;gap:7px">
                   <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="font-size:12.5px;color:{{ cpu_color }};min-width:44px;text-align:right">{{ srv._cpu ~ '%' }}</strong>
                   <div class="meter-mini-track" title="CPU: {{ srv._cpu }}%">
                     <div class="meter-mini-bar {{ cpu_cls }}" id="tbl-cpu-bar-{{ srv.id }}" style="width:{{ [srv._cpu or 0, 100]|min }}%"></div>
                   </div>
                 </div>
-                <div class="mono" id="tbl-cpu-core-{{ srv.id }}" style="font-size:10px;color:var(--dim);line-height:1.15">
+                <div class="mono tbl-metric-subline" id="tbl-cpu-core-{{ srv.id }}" style="font-size:10px;color:var(--dim);line-height:1.15">
                   {{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }}
                 </div>
               </div>
             {% else %}
               <div id="tbl-cpu-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2">-</div>
-              <div class="mono" id="tbl-cpu-core-{{ srv.id }}" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:2px">-</div>
+              <div class="mono tbl-metric-subline" id="tbl-cpu-core-{{ srv.id }}" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:2px">-</div>
             {% endif %}
           </td>
 
           <!-- 6. RAM (%) dengan Visual Mini Meter Bar Terbuka & Jelas -->
-          <td data-sort-val="{{ mem_v }}" style="text-align:center;vertical-align:middle;padding:5px 8px">
+          <td id="tbl-mem-td-{{ srv.id }}" data-sort-val="{{ mem_v }}" style="text-align:center;vertical-align:middle;padding:5px 8px" title="RAM: {{ srv._mem_pct ~ '%' if srv._mem_pct is not none else '-' }} ({{ srv._mem_used_str if srv._mem_used_str and srv._mem_used_str != '—' else '-' }} / {{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }})">
             {% if srv._mem_pct is not none %}
-              <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+              <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
                 <div style="display:inline-flex;align-items:center;gap:7px">
                   <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="font-size:12.5px;color:{{ mem_color }};min-width:44px;text-align:right">{{ srv._mem_pct ~ '%' }}</strong>
                   <div class="meter-mini-track" title="RAM: {{ srv._mem_pct }}%">
                     <div class="meter-mini-bar {{ mem_cls }}" id="tbl-mem-bar-{{ srv.id }}" style="width:{{ [srv._mem_pct or 0, 100]|min }}%"></div>
                   </div>
                 </div>
-                <div class="mono" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
+                <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
                   <span id="tbl-mem-used-{{ srv.id }}">{{ srv._mem_used_str if srv._mem_used_str and srv._mem_used_str != '—' else '-' }}</span> / <span id="tbl-mem-tot-{{ srv.id }}">{{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }}</span>
                 </div>
               </div>
             {% else %}
               <div id="tbl-mem-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2">-</div>
-              <div class="mono" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:2px">
+              <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:2px">
                 <span id="tbl-mem-used-{{ srv.id }}">-</span> / <span id="tbl-mem-tot-{{ srv.id }}">-</span>
               </div>
             {% endif %}
           </td>
 
           <!-- 7. STORAGE (%) dengan Visual Mini Meter Bar Terbuka & Jelas -->
-          <td data-sort-val="{{ disk_v }}" style="text-align:center;vertical-align:middle;padding:5px 8px">
+          <td id="tbl-disk-td-{{ srv.id }}" data-sort-val="{{ disk_v }}" style="text-align:center;vertical-align:middle;padding:5px 8px" title="Storage: {{ srv._disk_pct ~ '%' if srv._disk_pct is not none else '-' }} ({{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}, Sisa: {{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }})">
             {% if srv._disk_pct is not none %}
-              <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+              <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
                 <div style="display:inline-flex;align-items:center;gap:7px">
                   <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="font-size:12.5px;color:{{ disk_color }};min-width:44px;text-align:right">{{ srv._disk_pct ~ '%' }}</strong>
                   <div class="meter-mini-track" style="width:68px" title="Storage: {{ srv._disk_pct }}%">
                     <div class="meter-mini-bar {{ disk_cls }}" id="tbl-disk-bar-{{ srv.id }}" style="width:{{ [srv._disk_pct or 0, 100]|min }}%"></div>
                   </div>
                 </div>
-                <div class="mono" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
+                <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
                   <span id="tbl-disk-tot-{{ srv.id }}">{{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}</span> (Sisa <span id="tbl-disk-avail-{{ srv.id }}">{{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }}</span>)
                 </div>
               </div>
             {% else %}
               <div id="tbl-disk-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2">-</div>
-              <div class="mono" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:2px">
+              <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:2px">
                 <span id="tbl-disk-tot-{{ srv.id }}">-</span> (Sisa <span id="tbl-disk-avail-{{ srv.id }}">-</span>)
               </div>
             {% endif %}
@@ -1151,6 +1198,8 @@ body.popout-fleet_table #dash-fleet-card {
       </tbody>
     </table>
   </div>
+
+  <div id="dash-table-pagination" class="table-pagination-bar" data-for-table="dash-server-table" style="display:none"></div>
 
   <!-- VIEW 2: GRID KARTU (NOC TILES) -->
   <div id="dash-grid-container" style="display:none;padding:12px">
@@ -1545,9 +1594,13 @@ function setDashboardView(view) {
   const gridCont = document.getElementById('dash-grid-container');
   const btnTbl = document.getElementById('btn-view-table');
   const btnGrid = document.getElementById('btn-view-grid');
+  const densitySwitcher = document.getElementById('dash-density-switcher');
+  const pgBar = document.getElementById('dash-table-pagination') || document.querySelector('.table-pagination-bar[data-for-table="dash-server-table"]');
 
   if (tblCont) tblCont.style.display = isTable ? '' : 'none';
   if (gridCont) gridCont.style.display = isTable ? 'none' : '';
+  if (densitySwitcher) densitySwitcher.style.display = isTable ? 'inline-flex' : 'none';
+  if (pgBar) pgBar.style.display = isTable ? 'flex' : 'none';
 
   if (btnTbl) btnTbl.classList.toggle('active', isTable);
   if (btnGrid) btnGrid.classList.toggle('active', !isTable);
@@ -1555,11 +1608,54 @@ function setDashboardView(view) {
   localStorage.setItem('dashboard_layout_view', view);
 }
 
+// 2b. Table Density Switching (Default: 'compact', Alternative: 'standard')
+function setTableDensity(density) {
+  const isCompact = density === 'compact';
+  const tbl = document.getElementById('dash-server-table');
+  const btnCompact = document.getElementById('btn-density-compact');
+  const btnStandard = document.getElementById('btn-density-standard');
+
+  if (tbl) tbl.classList.toggle('tbl-compact', isCompact);
+  if (btnCompact) btnCompact.classList.toggle('active', isCompact);
+  if (btnStandard) btnStandard.classList.toggle('active', !isCompact);
+
+  try { localStorage.setItem('dash_table_density', density); } catch(e){}
+}
+
+// Restore saved table density on load
+(function initTableDensity() {
+  try {
+    const saved = localStorage.getItem('dash_table_density') || 'compact';
+    setTableDensity(saved);
+  } catch(e){}
+})();
+
 // Restore saved layout view on load
 (function initLayoutView() {
   const saved = localStorage.getItem('dashboard_layout_view') || 'table';
   setDashboardView(saved);
 })();
+
+// Table Pagination Initialization
+let dashServerPagination = null;
+function initDashServerPagination() {
+  const tbl = document.getElementById('dash-server-table');
+  if (!tbl || typeof attachTablePagination !== 'function') return;
+
+  const pgContainer = document.getElementById('dash-table-pagination');
+  dashServerPagination = attachTablePagination(tbl, {
+    container: pgContainer,
+    unitLabel: 'server',
+    defaultLimit: 10,
+    pageSizeOptions: [10, 25, 50, 'all'],
+    filterFn: (tr) => {
+      return tr.dataset.filterHidden !== '1';
+    }
+  });
+
+  const isTable = (localStorage.getItem('dashboard_layout_view') || 'table') === 'table';
+  if (pgContainer) pgContainer.style.display = isTable ? 'flex' : 'none';
+}
 
 // 3. Multi-View Filter (Synchronized search & group filtering)
 function dashFilterAll() {
@@ -1578,9 +1674,17 @@ function dashFilterAll() {
     else if (grp) matchGrp = rowGrp === grp;
 
     const show = matchQ && matchGrp;
-    r.style.display = show ? '' : 'none';
+    r.dataset.filterHidden = show ? '0' : '1';
     if (show) visibleRows++;
   });
+
+  if (dashServerPagination && typeof dashServerPagination.update === 'function') {
+    dashServerPagination.update();
+  } else {
+    rows.forEach(r => {
+      r.style.display = r.dataset.filterHidden === '1' ? 'none' : '';
+    });
+  }
 
   // Filter Grid Cards
   const cards = document.querySelectorAll('#dash-server-grid .server-card');
@@ -1641,6 +1745,9 @@ document.querySelectorAll('#dash-server-table th.sortable').forEach(th => {
       return dashSortAsc ? cmp : -cmp;
     });
     rows.forEach(r => tbody.appendChild(r));
+    if (dashServerPagination && typeof dashServerPagination.update === 'function') {
+      dashServerPagination.update();
+    }
   });
 });
 
@@ -1737,6 +1844,7 @@ async function pollNocDashboard() {
       const tblCpuVal = document.getElementById('tbl-cpu-val-' + srv.id);
       const tblCpuBar = document.getElementById('tbl-cpu-bar-' + srv.id);
       const tblCpuCore = document.getElementById('tbl-cpu-core-' + srv.id);
+      const tblCpuTd = document.getElementById('tbl-cpu-td-' + srv.id);
       if (tblCpuVal) {
         if (srv.cpu != null) {
           const th = getThreshold(srv.cpu, 'cpu');
@@ -1752,8 +1860,12 @@ async function pollNocDashboard() {
         tblCpuBar.style.width = Math.min(srv.cpu, 100) + '%';
         tblCpuBar.className = 'meter-mini-bar ' + th.cls;
       }
+      const coreStr = (srv.cpu_cores && srv.cpu_cores !== '—') ? srv.cpu_cores : '-';
       if (tblCpuCore) {
-        tblCpuCore.textContent = (srv.cpu_cores && srv.cpu_cores !== '—') ? srv.cpu_cores : '-';
+        tblCpuCore.textContent = coreStr;
+      }
+      if (tblCpuTd) {
+        tblCpuTd.title = `CPU: ${srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '-'} (${coreStr})`;
       }
 
       // Memori: Total, Beban (%), Digunakan
@@ -1761,6 +1873,7 @@ async function pollNocDashboard() {
       const tblMemUsed = document.getElementById('tbl-mem-used-' + srv.id);
       const tblMemVal = document.getElementById('tbl-mem-val-' + srv.id);
       const tblMemBar = document.getElementById('tbl-mem-bar-' + srv.id);
+      const tblMemTd = document.getElementById('tbl-mem-td-' + srv.id);
       if (tblMemVal) {
         if (srv.mem_pct != null) {
           const th = getThreshold(srv.mem_pct, 'mem');
@@ -1776,14 +1889,20 @@ async function pollNocDashboard() {
         tblMemBar.style.width = Math.min(srv.mem_pct, 100) + '%';
         tblMemBar.className = 'meter-mini-bar ' + th.cls;
       }
-      if (tblMemUsed) tblMemUsed.textContent = (srv.mem_used_str && srv.mem_used_str !== '—') ? srv.mem_used_str : '-';
-      if (tblMemTot) tblMemTot.textContent = (srv.mem_total_str && srv.mem_total_str !== '—') ? srv.mem_total_str : '-';
+      const memUsedStr = (srv.mem_used_str && srv.mem_used_str !== '—') ? srv.mem_used_str : '-';
+      const memTotStr = (srv.mem_total_str && srv.mem_total_str !== '—') ? srv.mem_total_str : '-';
+      if (tblMemUsed) tblMemUsed.textContent = memUsedStr;
+      if (tblMemTot) tblMemTot.textContent = memTotStr;
+      if (tblMemTd) {
+        tblMemTd.title = `RAM: ${srv.mem_pct != null ? srv.mem_pct.toFixed(1) + '%' : '-'} (${memUsedStr} / ${memTotStr})`;
+      }
 
       // Penyimpanan: Total, Beban (%), Tersedia
       const tblDiskTot = document.getElementById('tbl-disk-tot-' + srv.id);
       const tblDiskAvail = document.getElementById('tbl-disk-avail-' + srv.id);
       const tblDiskVal = document.getElementById('tbl-disk-val-' + srv.id);
       const tblDiskBar = document.getElementById('tbl-disk-bar-' + srv.id);
+      const tblDiskTd = document.getElementById('tbl-disk-td-' + srv.id);
       if (tblDiskVal) {
         if (srv.disk_pct != null) {
           const th = getThreshold(srv.disk_pct, 'disk');
@@ -1799,8 +1918,13 @@ async function pollNocDashboard() {
         tblDiskBar.style.width = Math.min(srv.disk_pct, 100) + '%';
         tblDiskBar.className = 'meter-mini-bar ' + th.cls;
       }
-      if (tblDiskTot) tblDiskTot.textContent = (srv.disk_total_str && srv.disk_total_str !== '—') ? srv.disk_total_str : '-';
-      if (tblDiskAvail) tblDiskAvail.textContent = (srv.disk_avail_str && srv.disk_avail_str !== '—') ? srv.disk_avail_str : '-';
+      const diskTotStr = (srv.disk_total_str && srv.disk_total_str !== '—') ? srv.disk_total_str : '-';
+      const diskAvailStr = (srv.disk_avail_str && srv.disk_avail_str !== '—') ? srv.disk_avail_str : '-';
+      if (tblDiskTot) tblDiskTot.textContent = diskTotStr;
+      if (tblDiskAvail) tblDiskAvail.textContent = diskAvailStr;
+      if (tblDiskTd) {
+        tblDiskTd.title = `Storage: ${srv.disk_pct != null ? srv.disk_pct.toFixed(1) + '%' : '-'} (${diskTotStr}, Sisa: ${diskAvailStr})`;
+      }
 
       // Layanan: Total / UP (Default: Hijau/Hijau; Ada Insiden: Hijau/Putih)
       const tblSvc = document.getElementById('tbl-svc-' + srv.id);
@@ -2375,12 +2499,18 @@ function popoutWidget(widgetName, ev, extra) {
     else if (widget === 'total_servers') label = 'Total Server';
     else if (widget === 'problems_strip') label = 'Insiden Aktif';
     else if (widget === 'recent_incidents') label = 'Insiden Terkini';
-    else if (widget === 'fleet_table') label = 'Operasional Seluruh Server';
+    else if (widget === 'fleet_table') label = 'Kondisi Terkini';
 
     document.title = `${label} - Pantau Server`;
   } catch(e) {
     console.error('Error init popout mode:', e);
   }
 })();
+
+// Inisialisasi Paginasi Tabel Dasbor
+document.addEventListener('DOMContentLoaded', initDashServerPagination);
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  initDashServerPagination();
+}
 </script>
 {% endblock %}
