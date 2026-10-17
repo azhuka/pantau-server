@@ -5762,6 +5762,28 @@ def _resource_problem_instances(db, srv) -> list:
     return inst
 
 
+def _is_admin_service(name: str, port: int | None = None, proc: str | None = None) -> bool:
+    """Mendeteksi apakah suatu service adalah layanan administratif/remote/pelengkap
+    (seperti sshd, ntp, agent, syslog) yang jika down tidak melumpuhkan operasional aplikasi web/bisnis klien."""
+    n = (name or "").lower().strip()
+    p = (proc or "").lower().strip()
+    admin_keywords = (
+        "ssh", "sshd", "chrony", "chronyd", "ntp", "ntpd", "timesyncd",
+        "rsyslog", "syslog", "journald", "fail2ban", "pantau-agent",
+        "snmp", "snmpd", "zabbix", "node_exporter", "promtail", "vector", "filebeat"
+    )
+    if any(n == kw or n.startswith(kw + "-") or n.startswith(kw + "_") or n.endswith("-" + kw) or n.endswith("_" + kw) for kw in admin_keywords):
+        return True
+    if any(p == kw or p.startswith(kw + "-") or p.startswith(kw + "_") for kw in admin_keywords):
+        return True
+    try:
+        if port is not None and int(port) == 22:
+            return True
+    except (ValueError, TypeError):
+        pass
+    return False
+
+
 def _problem_instances(srv, extras, svc_data, db=None) -> list:
     """Masalah yang sedang terjadi -> [{key,severity,message,tip,context}] (Zabbix-like)."""
     inst: list = []
@@ -5934,7 +5956,9 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
     for d in svc_data or []:
         name = d.get("name", "?")
         st = d.get("status")
-        is_core = bool(d.get("is_core", 1))
+        port = d.get("port")
+        proc = d.get("proc") or d.get("process")
+        is_admin = _is_admin_service(name, port, proc)
 
         # Cek apakah layanan dimatikan oleh operator
         is_op_stop = False
@@ -5955,31 +5979,23 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                 svc_tip = "Layanan sengaja dihentikan melalui panel kontrol oleh operator."
             elif tier == 1:
                 # Tier 1 Server:
-                # - Layanan Inti (Core) down: DANGER (Kritis)
-                # - Layanan Pendukung (Non-core) down: WARNING (Peringatan)
-                if is_core:
+                # - Layanan Inti Aplikasi/Infrastruktur (Web, DB, Docker, App) down: DANGER (Kritis)
+                # - Layanan Administratif/Remote (sshd, ntp, agent) down: WARNING (Peringatan)
+                if not is_admin:
                     svc_sev = "danger"
-                    svc_msg = f"Layanan utama {name} down (KRITIS)"
+                    svc_msg = f"Layanan {name} down (KRITIS)"
                     svc_tip = SVC_DOWN_TIP.format(name=name)
                 else:
                     svc_sev = "warning"
-                    svc_msg = f"Layanan pendukung {name} down"
-                    svc_tip = SVC_DOWN_TIP.format(name=name)
-            elif tier == 2:
-                # Tier 2 Server:
-                # - Layanan Inti down: AVERAGE (Gawat)
-                # - Layanan Pendukung down: WARNING (Peringatan)
-                if is_core:
-                    svc_sev = "average"
                     svc_msg = f"Layanan {name} down"
                     svc_tip = SVC_DOWN_TIP.format(name=name)
-                else:
-                    svc_sev = "warning"
-                    svc_msg = f"Layanan pendukung {name} down"
-                    svc_tip = SVC_DOWN_TIP.format(name=name)
+            elif tier == 2:
+                # Tier 2 Server (Server Sekunder):
+                svc_sev = "average" if not is_admin else "warning"
+                svc_msg = f"Layanan {name} down"
+                svc_tip = SVC_DOWN_TIP.format(name=name)
             else:
                 # Tier 3 Server:
-                # Semua layanan down: WARNING (Peringatan)
                 svc_sev = "warning"
                 svc_msg = f"Layanan {name} down"
                 svc_tip = SVC_DOWN_TIP.format(name=name)
@@ -5988,7 +6004,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                 "key": f"service_down:{name}", "severity": svc_sev,
                 "message": svc_msg,
                 "tip": svc_tip,
-                "context": _build_problem_context("service_down:", srv, service_name=name, port=d.get("port"), proc=d.get("proc"), health_msg=d.get("health_msg"), conflict_ips=active_ips if len(active_ips) > 1 else None),
+                "context": _build_problem_context("service_down:", srv, service_name=name, port=port, proc=proc, health_msg=d.get("health_msg"), conflict_ips=active_ips if len(active_ips) > 1 else None),
             })
         elif st == "unknown":
             inst.append({"key": f"svc_no_data:{name}", "severity": "info",

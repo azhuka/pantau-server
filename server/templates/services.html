@@ -1660,14 +1660,7 @@
     {% for svc in services %}
     <tr>
       <td>
-        <div style="display:inline-flex;align-items:center;gap:6px">
-          <strong>{{ svc.service_name }}</strong>
-          {% if svc.is_core %}
-            <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="Layanan Utama (Core) — Down berpotensi memicu status Kritis/Gawat">UTAMA</span>
-          {% else %}
-            <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="Layanan Pendukung (Secondary) — Down hanya memicu status Peringatan">SEKUNDER</span>
-          {% endif %}
-        </div>
+        <strong>{{ svc.service_name }}</strong>
       </td>
       <td class="mono">{{ svc.port }}</td>
       <td class="mono">{{ svc.process_name }}</td>
@@ -1745,16 +1738,6 @@
           </span>
 
           {% if not user.is_viewer() and user.has_perm('can_services') %}
-          <form method="post" action="/servers/{{ server.id }}/services/{{ svc.id }}/toggle-core" style="display:inline-flex;margin:0">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button type="submit" class="btn btn-ghost btn-sm" title="Ubah peran layanan (Saat ini: {{ 'Layanan Utama' if svc.is_core else 'Layanan Sekunder' }})">
-              {% if svc.is_core %}
-                <span style="font-size:11px;color:var(--dim)">Jadikan Sekunder</span>
-              {% else %}
-                <span style="font-size:11px;color:var(--blue)">Jadikan Utama</span>
-              {% endif %}
-            </button>
-          </form>
           <button type="button" class="btn btn-danger btn-sm" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus konfigurasi pemantauan layanan {{ svc.service_name }}"{% endif %} onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             <span>Hapus</span>
@@ -1792,19 +1775,31 @@
         <input type="text" name="process_name" required placeholder="nginx, mysqld, sshd…"
                style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
       </div>
-      <div style="margin-bottom:18px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Peran Layanan</label>
-        <select name="is_core" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
-          <option value="1" selected>Layanan Utama / Core (Down berpotensi memicu Kritis/Gawat)</option>
-          <option value="0">Layanan Pendukung / Secondary (Down hanya memicu Peringatan)</option>
-        </select>
-        <span style="font-size:11px;color:var(--dim);display:block;margin-top:3px">Layanan utama adalah proses inti aplikasi yang wajib hidup 24/7.</span>
-      </div>
+      <input type="hidden" name="is_core" value="1">
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button type="button" class="btn btn-ghost" onclick="closeAddSvcModal()">Batal</button>
         <button type="submit" class="btn btn-primary">Tambah</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal Konfirmasi Tindakan Layanan (Restart, Stop, Hapus) -->
+<div id="svc-confirm-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.72);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeSvcConfirmModal(false)">
+  <div class="card" style="width:min(460px,96vw);background:#161b22;border:1px solid #30363d;border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,0.85);color:var(--text);padding:18px 20px;overflow:hidden" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px">
+      <div id="svc-confirm-icon-wrap" style="width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(239,68,68,0.15);color:#ef4444">
+        <svg id="svc-confirm-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      </div>
+      <div style="flex:1">
+        <h3 id="svc-confirm-title" style="margin:0 0 6px;font-size:15px;font-weight:600;color:var(--text-bright)">Konfirmasi Tindakan</h3>
+        <p id="svc-confirm-msg" style="margin:0;font-size:12.5px;line-height:1.55;color:var(--text)"></p>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeSvcConfirmModal(false)">Batal</button>
+      <button type="button" id="svc-confirm-btn-yes" class="btn btn-danger btn-sm" onclick="closeSvcConfirmModal(true)">Ya, Lanjutkan</button>
+    </div>
   </div>
 </div>
 </div>
@@ -3658,13 +3653,62 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
     + pendingBadge;
 }
 
+let _svcConfirmResolver = null;
+function showSvcConfirmModal({ title, message, btnText, btnClass, iconType }) {
+  return new Promise((resolve) => {
+    _svcConfirmResolver = resolve;
+    const modal = document.getElementById('svc-confirm-modal');
+    const titleEl = document.getElementById('svc-confirm-title');
+    const msgEl = document.getElementById('svc-confirm-msg');
+    const btnYes = document.getElementById('svc-confirm-btn-yes');
+    const iconWrap = document.getElementById('svc-confirm-icon-wrap');
+
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.innerHTML = message;
+    if (btnYes) {
+      btnYes.textContent = btnText;
+      btnYes.className = 'btn btn-sm ' + (btnClass || 'btn-danger');
+    }
+    if (iconWrap) {
+      if (iconType === 'primary') {
+        iconWrap.style.background = 'rgba(59,130,246,0.15)';
+        iconWrap.style.color = '#3b82f6';
+      } else {
+        iconWrap.style.background = 'rgba(239,68,68,0.15)';
+        iconWrap.style.color = '#ef4444';
+      }
+    }
+    if (modal) {
+      modal.style.display = 'flex';
+    }
+  });
+}
+
+function closeSvcConfirmModal(result) {
+  const modal = document.getElementById('svc-confirm-modal');
+  if (modal) modal.style.display = 'none';
+  if (_svcConfirmResolver) {
+    _svcConfirmResolver(Boolean(result));
+    _svcConfirmResolver = null;
+  }
+}
+
 async function restartService(sid, svcId, svcName, btn) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
     showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
     return;
   }
-  if (!confirm(isEn ? ('Restart service ' + svcName + ' on server ' + SERVER_NAME + '?') : ('Restart service ' + svcName + ' di server ' + SERVER_NAME + '?'))) return;
+  const ok = await showSvcConfirmModal({
+    title: isEn ? 'Confirm Restart Service' : 'Konfirmasi Restart Layanan',
+    message: isEn
+      ? ('Are you sure you want to restart service <strong>' + escHtml(svcName) + '</strong>?<br><br>The service will be temporarily interrupted and may affect server/application operations.')
+      : ('Apakah Anda yakin ingin me-restart layanan <strong>' + escHtml(svcName) + '</strong>?<br><br>Layanan akan terhenti sejenak dan dapat mempengaruhi operasional server/aplikasi.'),
+    btnText: isEn ? 'Yes, Restart' : 'Ya, Restart',
+    btnClass: 'btn-primary',
+    iconType: 'primary'
+  });
+  if (!ok) return;
 
   _pendingServiceOps[svcId] = { action: 'restart', expires: Date.now() + 15000 };
   const act = document.getElementById('act-' + svcId);
@@ -3714,10 +3758,20 @@ async function svcAction(action, sid, svcId, svcName, btn) {
   }
   const labels = isEn ? {start: 'start', stop: 'stop'} : {start: 'mulai', stop: 'hentikan'};
   const label = labels[action] || action;
-  const confirmPrompt = isEn
-    ? ((action === 'stop' ? 'STOP' : 'Start') + ' service ' + svcName + ' on ' + SERVER_NAME + '?')
-    : ((action === 'stop' ? 'HENTIKAN' : 'Mulai') + ' service ' + svcName + ' di ' + SERVER_NAME + '?');
-  if (!confirm(confirmPrompt)) return;
+
+  if (action === 'stop') {
+    const ok = await showSvcConfirmModal({
+      title: isEn ? 'Confirm Stop Service' : 'Konfirmasi Hentikan Layanan',
+      message: isEn
+        ? ('Are you sure you want to stop service <strong>' + escHtml(svcName) + '</strong>?<br><br>Ensure this service is safe to stop and will not disrupt server and critical application operations.')
+        : ('Apakah Anda yakin ingin menghentikan layanan <strong>' + escHtml(svcName) + '</strong>?<br><br>Pastikan layanan ini aman dihentikan dan tidak mengganggu operasional server dan aplikasi penting.'),
+      btnText: isEn ? 'Yes, Stop' : 'Ya, Hentikan',
+      btnClass: 'btn-danger',
+      iconType: 'danger'
+    });
+    if (!ok) return;
+  }
+  // Tidak ada popup konfirmasi saat action === 'start' (langsung dijalankan)
 
   _pendingServiceOps[svcId] = { action: action, expires: Date.now() + 15000 };
   const act = document.getElementById('act-' + svcId);
@@ -4189,7 +4243,17 @@ async function deleteService(sid, svcId, svcName, btn) {
     showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
     return;
   }
-  if (!confirm(isEn ? ('Delete service ' + svcName + '?') : ('Hapus service ' + svcName + '?'))) return;
+  const ok = await showSvcConfirmModal({
+    title: isEn ? 'Confirm Delete Service' : 'Konfirmasi Hapus Layanan',
+    message: isEn
+      ? ('Are you sure you want to delete service <strong>' + escHtml(svcName) + '</strong>?<br><br>Metric history and monitoring status for this service will be removed from the system. Ensure it is safe to delete and will not disrupt server or critical application availability.')
+      : ('Apakah Anda yakin ingin menghapus layanan <strong>' + escHtml(svcName) + '</strong>?<br><br>Riwayat metrik dan pengawasan status layanan ini akan dihapus dari sistem. Pastikan tindakan ini aman dihapus dan tidak mengganggu ketersediaan operasional server maupun aplikasi penting.'),
+    btnText: isEn ? 'Yes, Delete' : 'Ya, Hapus',
+    btnClass: 'btn-danger',
+    iconType: 'danger'
+  });
+  if (!ok) return;
+
   const tr = btn.closest('tr');
   const originalHtml = btn.innerHTML;
   btn.disabled = true;
@@ -5476,6 +5540,7 @@ function triggerInteractiveUpgrade() {
 // Listener Escape untuk keluar dari Full Screen Terminal dan menutup modal
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    closeSvcConfirmModal(false);
     closeTerminalUnlockModal(true);
     closeTerminalCloseConfirmModal();
     closeTerminalLockConfirmModal();
