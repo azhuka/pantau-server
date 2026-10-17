@@ -527,6 +527,101 @@ body.popout-window .widget-popout-btn {
   display: none !important;
 }
 
+/* Kontrol Jendela Standalone Pop-out (Minimize, Maximize, Close - Abu-abu Netral) */
+.popout-window-controls {
+  position: fixed;
+  top: 8px;
+  right: 10px;
+  z-index: 99999;
+  display: none;
+  align-items: center;
+  gap: 3px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 2px 4px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  user-select: none;
+}
+body.popout-window .popout-window-controls {
+  display: inline-flex !important;
+}
+.win-drag-handle {
+  font-size: 11px;
+  color: #64748b;
+  cursor: move;
+  padding: 0 4px;
+  letter-spacing: -1px;
+  user-select: none;
+  line-height: 1;
+}
+.win-drag-handle:hover {
+  color: #94a3b8;
+}
+.win-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0;
+  transition: all .15s ease;
+  line-height: 1;
+}
+.win-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+}
+.win-ctrl-btn.btn-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+.win-ctrl-btn:active {
+  transform: scale(0.92);
+}
+
+/* Margin kanan untuk mencegah bentrok posisi kontrol pop-out */
+body.popout-window .dash-controls-wrap {
+  margin-right: 85px !important;
+}
+body.popout-window .dash-clock-tz {
+  margin-right: 85px !important;
+}
+body.popout-window #kpi-card-total > div:first-child > div:last-child,
+body.popout-window #kpi-card-prob > div:first-child > div:last-child {
+  margin-right: 85px !important;
+}
+
+/* Mode Minimize / Roll-up */
+body.popout-minimized {
+  overflow: hidden !important;
+  min-height: auto !important;
+}
+body.popout-minimized .card {
+  margin: 0 !important;
+  padding: 6px 10px !important;
+}
+body.popout-minimized #dash-table-container,
+body.popout-minimized #dash-grid-container,
+body.popout-minimized #dash-problems-table-wrap,
+body.popout-minimized .dash-controls-wrap,
+body.popout-minimized .dash-clock-cal,
+body.popout-minimized .dash-clock-divider {
+  display: none !important;
+}
+body.popout-minimized .dash-clock-digits {
+  font-size: 16px !important;
+}
+
 /* Isolasi Tampilan Widget Spesifik pada Jendela Pop-out */
 body.popout-clock .dash-kpi-grid { display: block !important; margin-bottom: 0 !important; }
 body.popout-clock #kpi-card-total,
@@ -705,6 +800,21 @@ body.popout-server_card .server-card.is-popout-target {
   line-height: 1;
 }
 </style>
+
+<!-- Kontrol Jendela Standalone Pop-out (Minimize, Maximize, Close - Abu-abu Netral) -->
+<div class="popout-window-controls" id="popoutWindowControls">
+  <span class="win-drag-handle" id="popoutDragHandle" title="Klik dan seret untuk memindahkan jendela">⋮⋮</span>
+  <button type="button" class="win-ctrl-btn btn-min" onclick="popoutMinimize()" title="Perkecil / Roll-up" aria-label="Minimize">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+  </button>
+  <button type="button" class="win-ctrl-btn btn-max" id="btnPopoutMax" onclick="popoutMaximize()" title="Perbesar / Layar Penuh" aria-label="Maximize">
+    <svg id="iconMax" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+    <svg id="iconRestore" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:none"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+  </button>
+  <button type="button" class="win-ctrl-btn btn-close" onclick="popoutClose()" title="Tutup Jendela" aria-label="Tutup">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+  </button>
+</div>
 
 <div class="topbar">
   <div>
@@ -2351,12 +2461,12 @@ function popoutWidget(widgetName, ev, extra) {
 
   // Dimensi jendela ideal berdasarkan jenis widget
   const winSizes = {
-    'clock': { width: 440, height: 210 },
-    'total_servers': { width: 420, height: 230 },
-    'problems_strip': { width: 780, height: 250 },
-    'recent_incidents': { width: 980, height: 500 },
+    'clock': { width: 440, height: 180 },
+    'total_servers': { width: 420, height: 200 },
+    'problems_strip': { width: 780, height: 220 },
+    'recent_incidents': { width: 980, height: 480 },
     'fleet_table': { width: 1300, height: 720 },
-    'server_card': { width: 440, height: 360 }
+    'server_card': { width: 440, height: 340 }
   };
 
   const targetSize = winSizes[widgetName] || { width: 800, height: 500 };
@@ -2369,7 +2479,8 @@ function popoutWidget(widgetName, ev, extra) {
   }
 
   const winName = `pantau_popout_${widgetName}_${extra || ''}`;
-  const features = `width=${targetSize.width},height=${targetSize.height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
+  // Gunakan 'popup=yes,popup=1' agar browser Chrome/Edge/Firefox membuka jendela aplikasi mandiri tanpa URL bar, search box, bookmark & tab strip!
+  const features = `popup=yes,popup=1,width=${targetSize.width},height=${targetSize.height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no`;
 
   const newWin = window.open(url, winName, features);
   if (newWin) {
@@ -2377,6 +2488,139 @@ function popoutWidget(widgetName, ev, extra) {
   } else {
     window.open(url, '_blank');
   }
+}
+
+// ===================================================================
+// KONTROL JENDELA POPOUT (Minimize, Maximize/Restore, Close & Drag)
+// ===================================================================
+function popoutClose() {
+  window.close();
+}
+
+function popoutMaximize() {
+  const iconMax = document.getElementById('iconMax');
+  const iconRestore = document.getElementById('iconRestore');
+  const btn = document.getElementById('btnPopoutMax');
+
+  if (!document.fullscreenElement) {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().then(() => {
+        if (iconMax) iconMax.style.display = 'none';
+        if (iconRestore) iconRestore.style.display = 'inline-block';
+        if (btn) btn.title = 'Pulihkan Ukuran / Restore';
+      }).catch(() => {
+        try {
+          window.moveTo(0, 0);
+          window.resizeTo(screen.availWidth, screen.availHeight);
+        } catch(e) {}
+      });
+    } else {
+      try {
+        window.moveTo(0, 0);
+        window.resizeTo(screen.availWidth, screen.availHeight);
+      } catch(e) {}
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().then(() => {
+        if (iconMax) iconMax.style.display = 'inline-block';
+        if (iconRestore) iconRestore.style.display = 'none';
+        if (btn) btn.title = 'Perbesar / Maximize (Layar Penuh)';
+      }).catch(() => {});
+    }
+  }
+}
+
+document.addEventListener('fullscreenchange', () => {
+  const iconMax = document.getElementById('iconMax');
+  const iconRestore = document.getElementById('iconRestore');
+  const btn = document.getElementById('btnPopoutMax');
+  if (document.fullscreenElement) {
+    if (iconMax) iconMax.style.display = 'none';
+    if (iconRestore) iconRestore.style.display = 'inline-block';
+    if (btn) btn.title = 'Pulihkan Ukuran / Restore';
+  } else {
+    if (iconMax) iconMax.style.display = 'inline-block';
+    if (iconRestore) iconRestore.style.display = 'none';
+    if (btn) btn.title = 'Perbesar / Maximize (Layar Penuh)';
+  }
+});
+
+let isPopoutMinimized = false;
+let preMinSize = null;
+
+function popoutMinimize() {
+  const body = document.body;
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
+  isPopoutMinimized = !isPopoutMinimized;
+  body.classList.toggle('popout-minimized', isPopoutMinimized);
+
+  if (isPopoutMinimized) {
+    preMinSize = { width: window.outerWidth, height: window.outerHeight };
+    try {
+      window.resizeTo(320, 110);
+    } catch(e) {}
+  } else {
+    try {
+      if (preMinSize) {
+        window.resizeTo(preMinSize.width, preMinSize.height);
+      } else {
+        const urlParams = new URLSearchParams(window.location.search);
+        const wName = urlParams.get('widget');
+        const winSizes = {
+          'clock': { width: 440, height: 180 },
+          'total_servers': { width: 420, height: 200 },
+          'problems_strip': { width: 780, height: 220 },
+          'recent_incidents': { width: 980, height: 480 },
+          'fleet_table': { width: 1300, height: 720 },
+          'server_card': { width: 440, height: 340 }
+        };
+        const def = winSizes[wName] || { width: 800, height: 500 };
+        window.resizeTo(def.width, def.height);
+      }
+    } catch(e) {}
+  }
+}
+
+// Seret jendela popout menggunakan ikon pegangan titik (Drag Handle)
+function setupPopoutDrag() {
+  const handle = document.getElementById('popoutDragHandle');
+  if (!handle) return;
+
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+
+  handle.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    isDragging = true;
+    startX = e.screenX;
+    startY = e.screenY;
+    document.body.style.userSelect = 'none';
+
+    const onMove = (ev) => {
+      if (!isDragging) return;
+      const dx = ev.screenX - startX;
+      const dy = ev.screenY - startY;
+      startX = ev.screenX;
+      startY = ev.screenY;
+      try {
+        window.moveBy(dx, dy);
+      } catch (err) {}
+    };
+
+    const onUp = () => {
+      isDragging = false;
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  });
 }
 
 // Inisialisasi Mode Pop-out jika URL memuat ?popout=1
@@ -2393,6 +2637,8 @@ function popoutWidget(widgetName, ev, extra) {
     if (widget) {
       body.classList.add('popout-' + widget);
     }
+
+    setupPopoutDrag();
 
     let label = 'Widget';
     if (widget === 'clock') label = 'Waktu Sistem';
