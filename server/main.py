@@ -5880,11 +5880,12 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
         s_ips = dict(_agent_ip_tracker.get(srv.id, {}))
     now_ep = time.time()
     active_ips = [ip for ip, ts in s_ips.items() if (now_ep - ts) <= 120]
+    tier = getattr(srv, "tier", 2) or 2
     if len(active_ips) > 1:
         active_ips_sorted = sorted(active_ips)
         inst.append({
             "key": "agent_conflict",
-            "severity": "danger",
+            "severity": "danger" if tier == 1 else "average",
             "message": f"Konflik Agen Terdeteksi: API key aktif di beberapa host ({', '.join(active_ips_sorted)})",
             "tip": "Dua mesin berbeda melapor dengan API key yang sama (kemungkinan VM dikloning atau duplikat instalasi agen). "
                    "Hentikan agent_pantau di mesin kloningan atau daftarkan sebagai server baru.",
@@ -5935,28 +5936,25 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             stale_tip = "Server sengaja dimatikan melalui perintah poweroff oleh operator."
         elif tier == 1:
             # Tier 1: Server Kritis / Produksi Utama (Layanan Vital 24/7)
-            # - Detik awal (> 15s) s/d menit 2 (< 120s): Warning
-            # - Menit 2 s/d menit 5 (120s s/d 299s): Average (Gawat)
-            # - >= 300s (5 menit): Danger (KRITIS — Memicu sirene darurat & banner merah)
-            if sec_silent >= 300:
+            # - Detik awal (> 15s) s/d 1 menit (< 60s): Average (GAWAT)
+            # - >= 60s (1 menit): Danger (KRITIS — Memicu sirene darurat, badge & banner merah)
+            if sec_silent >= 60:
                 stale_sev = "danger"
-                stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt) — SERVER OFFLINE"
+                dur_txt = f"{int(sec_silent // 60)} mnt" if sec_silent >= 60 else f"{int(sec_silent)} dtk"
+                stale_msg = f"Agen tidak melapor (> {dur_txt}) — SERVER OFFLINE"
                 stale_tip = "SEGERA lakukan inspeksi fisik atau virtual mesin server Tier 1, periksa suplai daya, dan verifikasi konektivitas jaringan."
-            elif sec_silent >= 120:
-                stale_sev = "average"
-                stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt)"
-                stale_tip = "Periksa suplai daya server, koneksi jaringan, atau status service agent_pantau."
             else:
-                stale_sev = "warning"
+                stale_sev = "average"
                 stale_msg = f"Agen tidak melapor (> {int(sec_silent)} dtk)"
-                stale_tip = "Periksa latensi konektivitas jaringan atau pastikan service agent_pantau berjalan aktif."
+                stale_tip = "Periksa suplai daya server, koneksi jaringan, atau status service agent_pantau."
         elif tier == 2:
             # Tier 2: Server Pendukung Operasional
-            # - < 120s: Warning
-            # - >= 120s: Average (GAWAT). Maksimal GAWAT, tidak memicu banner merah darurat.
-            if sec_silent >= 120:
+            # - Detik awal (> 15s) s/d 1 menit (< 60s): Warning (Peringatan)
+            # - >= 60s (1 menit): Average (GAWAT). Maksimal GAWAT, tidak memicu banner/alarm merah.
+            if sec_silent >= 60:
                 stale_sev = "average"
-                stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt)"
+                dur_txt = f"{int(sec_silent // 60)} mnt" if sec_silent >= 60 else f"{int(sec_silent)} dtk"
+                stale_msg = f"Agen tidak melapor (> {dur_txt})"
                 stale_tip = "Periksa suplai daya server, koneksi jaringan, atau status service agent_pantau."
             else:
                 stale_sev = "warning"
@@ -5964,9 +5962,10 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                 stale_tip = "Periksa latensi konektivitas jaringan atau pastikan service agent_pantau berjalan aktif."
         else:
             # Tier 3: Server Lab / Clone / Eksperimen
-            # - Offline mendadak hanya masuk Warning (Peringatan). Tenang tanpa sirene/banner merah.
+            # - Selalu masuk Warning (Peringatan). Tenang tanpa sirene/banner merah.
             stale_sev = "warning"
-            stale_msg = f"Agen tidak melapor (> {int(sec_silent // 60)} mnt)" if sec_silent >= 60 else f"Agen tidak melapor (> {int(sec_silent)} dtk)"
+            dur_txt = f"{int(sec_silent // 60)} mnt" if sec_silent >= 60 else f"{int(sec_silent)} dtk"
+            stale_msg = f"Agen tidak melapor (> {dur_txt})"
             stale_tip = "Server pengujian/clone sedang tidak aktif atau agent_pantau belum berjalan."
 
         inst.append({
@@ -6066,28 +6065,69 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                 svc_sev = "warning"
                 svc_msg = f"Layanan {name} dimatikan oleh operator ({op_by})"
                 svc_tip = "Layanan sengaja dihentikan melalui panel kontrol oleh operator."
-            elif tier == 1:
-                # Tier 1 Server (Down/crash tidak disengaja):
-                # - Layanan Inti Aplikasi/Infrastruktur (Web, DB, Docker, App) down: DANGER (Kritis)
-                # - Layanan Administratif/Remote (sshd, ntp, agent, cron) down: WARNING (Peringatan)
-                if not is_admin:
-                    svc_sev = "danger"
-                    svc_msg = f"Layanan {name} Down (KRITIS)"
-                    svc_tip = SVC_DOWN_TIP.format(name=name)
+            else:
+                # Hitung durasi layanan telah down dari rekaman ServerProblem terbuka
+                down_secs = 0.0
+                if db is not None:
+                    try:
+                        open_svc_prob = db.query(ServerProblem).filter(
+                            ServerProblem.server_id == srv.id,
+                            ServerProblem.key == f"service_down:{name}",
+                            ServerProblem.resolved_at.is_(None),
+                        ).first()
+                        if open_svc_prob and open_svc_prob.started_at:
+                            now_utc = datetime.utcnow()
+                            st_dt = open_svc_prob.started_at
+                            if st_dt.tzinfo:
+                                st_dt = st_dt.replace(tzinfo=None)
+                            down_secs = max(0.0, (now_utc - st_dt).total_seconds())
+                    except Exception:
+                        pass
+
+                if tier == 1:
+                    # Tier 1 Server (Down/crash tidak disengaja):
+                    # - Layanan Inti Aplikasi/Infrastruktur (Web, DB, Docker, App):
+                    #   * 1 menit pertama (< 60s): GAWAT (average)
+                    #   * >= 60s: DANGER (KRITIS — Memicu alarm, badge & banner merah)
+                    # - Layanan Administratif/Remote (sshd, ntp, agent, cron) down: WARNING (Peringatan)
+                    if not is_admin:
+                        if down_secs >= 60:
+                            svc_sev = "danger"
+                            svc_msg = f"Layanan {name} Down (KRITIS)"
+                            svc_tip = SVC_DOWN_TIP.format(name=name)
+                        else:
+                            svc_sev = "average"
+                            svc_msg = f"Layanan {name} Down"
+                            svc_tip = SVC_DOWN_TIP.format(name=name)
+                    else:
+                        svc_sev = "warning"
+                        svc_msg = f"Layanan {name} Down"
+                        svc_tip = SVC_DOWN_TIP.format(name=name)
+                elif tier == 2:
+                    # Tier 2 Server (Server Pendukung Operasional):
+                    # - Layanan Inti Aplikasi/Infrastruktur:
+                    #   * 1 menit pertama (< 60s): PERINGATAN (warning)
+                    #   * >= 60s: GAWAT (average). Maksimal GAWAT, tidak memicu alarm/banner.
+                    # - Layanan Administratif: WARNING (Peringatan)
+                    if not is_admin:
+                        if down_secs >= 60:
+                            svc_sev = "average"
+                            svc_msg = f"Layanan {name} Down"
+                            svc_tip = SVC_DOWN_TIP.format(name=name)
+                        else:
+                            svc_sev = "warning"
+                            svc_msg = f"Layanan {name} Down"
+                            svc_tip = SVC_DOWN_TIP.format(name=name)
+                    else:
+                        svc_sev = "warning"
+                        svc_msg = f"Layanan {name} Down"
+                        svc_tip = SVC_DOWN_TIP.format(name=name)
                 else:
+                    # Tier 3 Server:
+                    # - Selalu masuk Warning (Peringatan). Tenang tanpa sirene/banner merah.
                     svc_sev = "warning"
                     svc_msg = f"Layanan {name} Down"
                     svc_tip = SVC_DOWN_TIP.format(name=name)
-            elif tier == 2:
-                # Tier 2 Server (Server Sekunder):
-                svc_sev = "average" if not is_admin else "warning"
-                svc_msg = f"Layanan {name} Down"
-                svc_tip = SVC_DOWN_TIP.format(name=name)
-            else:
-                # Tier 3 Server:
-                svc_sev = "warning"
-                svc_msg = f"Layanan {name} Down"
-                svc_tip = SVC_DOWN_TIP.format(name=name)
 
             inst.append({
                 "key": f"service_down:{name}", "severity": svc_sev,
@@ -7138,7 +7178,9 @@ def api_alerts(
         except Exception:
             pass
 
-    host = {s.id: s.hostname for s in db.query(Server).all()}
+    servers_list = db.query(Server).all()
+    host = {s.id: s.hostname for s in servers_list}
+    tier_map = {s.id: (getattr(s, "tier", 2) or 2) for s in servers_list}
     open_problems = (
         db.query(ServerProblem)
         .filter(
@@ -7148,7 +7190,7 @@ def api_alerts(
         .order_by(desc(ServerProblem.started_at)).all()
     )
 
-    open_danger = [r for r in open_problems if r.severity == "danger"]
+    open_danger = [r for r in open_problems if r.severity == "danger" and tier_map.get(r.server_id, 2) == 1]
     open_average = [r for r in open_problems if r.severity == "average"]
     open_warning = [r for r in open_problems if r.severity == "warning"]
     open_info = [r for r in open_problems if r.severity == "info"]
@@ -7163,6 +7205,9 @@ def api_alerts(
 
     def _is_alert_banner_firing(r, now_dt):
         if getattr(r, "is_ignored", 0):
+            return False
+        # Banner, alarm suara, dan badge kritis HANYA untuk server Tier-1
+        if tier_map.get(r.server_id, 2) != 1:
             return False
         # Tindakan yang sengaja dilakukan oleh operator tidak memicu banner darurat atau modal gawat darurat
         reason = getattr(r, "ignored_reason", None) or ""
