@@ -468,7 +468,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.4.1"
+AGENT_VERSION = "4.4.2"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1277,12 +1277,31 @@ def report_command_result(cfg: dict, command_id: int, result: dict):
     )
 
 
-def poll_and_execute_commands(cfg: dict):
-    """Cek command pending lalu eksekusi satu per satu."""
+def poll_and_execute_commands(cfg: dict) -> bool:
+    """Cek command pending lalu eksekusi satu per satu. Return True bila ada aksi yang dieksekusi."""
     commands = check_pending_commands(cfg)
+    executed = False
     for cmd in commands:
         result = execute_command(cfg, cmd)
         report_command_result(cfg, cmd["id"], result)
+        executed = True
+    return executed
+
+
+def _command_worker_loop(cfg: dict) -> None:
+    """Worker background untuk merespons dan mengeksekusi perintah kontrol layanan seketika (1.5 dtk)."""
+    while True:
+        try:
+            had_cmd = poll_and_execute_commands(cfg)
+            if had_cmd:
+                try:
+                    # Segera perbarui status layanan setelah eksekusi perintah tanpa menunggu interval 15 dtk
+                    _run_once(cfg)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        time.sleep(1.5)
 
 
 # ---------------------------------------------------------------------------
@@ -3764,9 +3783,10 @@ def main():
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
 
-    # Jalankan worker file manager & terminal di background thread
+    # Jalankan worker file manager, terminal & command executor di background thread
     threading.Thread(target=_file_worker_loop, args=(cfg,), daemon=True).start()
     threading.Thread(target=_terminal_worker_loop, args=(cfg,), daemon=True).start()
+    threading.Thread(target=_command_worker_loop, args=(cfg,), daemon=True).start()
 
     run_once(cfg)
 
@@ -3788,6 +3808,12 @@ def run_once(cfg: dict):
 def _run_once(cfg: dict):
     global prev_services, last_apt, _tick
     _tick += 1
+
+    # Eksekusi command yang mungkin pending sebelum pemindaian services
+    try:
+        poll_and_execute_commands(cfg)
+    except Exception as e:
+        print(f"[WARN] Polling command error: {e}")
 
     # 1. Deteksi services + snapshot kinerja
     services = detect_all_services()

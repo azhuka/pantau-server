@@ -3576,10 +3576,11 @@ function badgeHtml(status) {
 const _pendingServiceOps = {}; // svcId -> { action: 'stop'|'start'|'restart', expires: timestamp }
 
 function triggerFastPoll() {
-  setTimeout(poll, 400);
-  setTimeout(poll, 1200);
-  setTimeout(poll, 2500);
-  setTimeout(poll, 4500);
+  setTimeout(poll, 250);
+  setTimeout(poll, 750);
+  setTimeout(poll, 1500);
+  setTimeout(poll, 3000);
+  setTimeout(poll, 5000);
 }
 
 function renderServiceActions(sid, svcId, name, status, isPending, problem, isServiceIgnored, pendingAction) {
@@ -3594,9 +3595,14 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
   const effectivelyPending = isPending || Boolean(op && Date.now() < op.expires);
   const effAction = pendingAction || (op ? op.action : null);
 
-  const startDis = effectivelyPending || isUp || !online;
-  const stopDis = effectivelyPending || !isUp || !online;
-  const rstDis = effectivelyPending || !online;
+  // Status & kontrol:
+  // - Saat proses 'stop' berjalan atau status layanan sudah 'down': tombol Stop dinonaktifkan, tombol Start siap dipakai
+  // - Saat proses 'start' berjalan atau status layanan sudah 'up': tombol Start dinonaktifkan, tombol Stop siap dipakai
+  const isStopping = effAction === 'stop' || status === 'down';
+  const isStarting = effAction === 'start' || (status === 'up' && effAction !== 'stop');
+  const startDis = !online || isStarting || (status === 'up' && !effectivelyPending);
+  const stopDis = !online || isStopping || (!isUp && !effectivelyPending);
+  const rstDis = !online || effectivelyPending;
 
   const isIgnored = Boolean(isServiceIgnored || (problem && problem.is_ignored));
   const probId = (problem && problem.id) ? problem.id : '';
@@ -3710,7 +3716,7 @@ async function restartService(sid, svcId, svcName, btn) {
   });
   if (!ok) return;
 
-  _pendingServiceOps[svcId] = { action: 'restart', expires: Date.now() + 15000 };
+  _pendingServiceOps[svcId] = { action: 'restart', expires: Date.now() + 30000 };
   const act = document.getElementById('act-' + svcId);
   const sts = document.getElementById('sts-' + svcId);
   if (act) {
@@ -3773,24 +3779,36 @@ async function svcAction(action, sid, svcId, svcName, btn) {
   }
   // Tidak ada popup konfirmasi saat action === 'start' (langsung dijalankan)
 
-  _pendingServiceOps[svcId] = { action: action, expires: Date.now() + 15000 };
+  _pendingServiceOps[svcId] = { action: action, expires: Date.now() + 30000 };
   const act = document.getElementById('act-' + svcId);
   const sts = document.getElementById('sts-' + svcId);
   const transLabel = isEn
     ? (action === 'stop' ? 'stopping…' : 'starting…')
     : (action === 'stop' ? 'menghentikan…' : 'memulai…');
 
+  // Optimistic immediate UI update agar respons seketika tanpa jeda
+  if (sts) {
+    const targetBadge = action === 'stop' ? 'down' : 'up';
+    sts.innerHTML = '<span class="badge badge-' + targetBadge + '">' + targetBadge + '</span> <span class="badge badge-warn" style="font-size:10px">' + escHtml(transLabel) + '</span>';
+  }
   if (act) {
-    act.querySelectorAll('button').forEach(b => b.disabled = true);
+    const bStart = act.querySelector('.btn-svc-start');
+    const bStop = act.querySelector('.btn-svc-stop');
+    const bRst = act.querySelector('.btn-svc-restart');
+    if (bRst) { bRst.disabled = true; bRst.style.opacity = '0.35'; }
+    if (action === 'stop') {
+      if (bStop) { bStop.disabled = true; bStop.style.opacity = '0.35'; bStop.style.cursor = 'not-allowed'; }
+      if (bStart) { bStart.disabled = false; bStart.style.opacity = ''; bStart.style.cursor = ''; }
+    } else if (action === 'start') {
+      if (bStart) { bStart.disabled = true; bStart.style.opacity = '0.35'; bStart.style.cursor = 'not-allowed'; }
+      if (bStop) { bStop.disabled = false; bStop.style.opacity = ''; bStop.style.cursor = ''; }
+    }
     act.querySelectorAll('.badge').forEach(b => b.remove());
     const sp = document.createElement('span');
     sp.className = 'badge badge-warn';
     sp.style.cssText = 'margin-left:4px;font-size:10px';
     sp.textContent = transLabel;
     act.appendChild(sp);
-  }
-  if (sts) {
-    sts.innerHTML = '<span class="badge badge-warn">' + escHtml(transLabel) + '</span>';
   }
 
   try {
@@ -6712,7 +6730,8 @@ function patch(data) {
     const sts = document.getElementById('sts-' + s.id);
     if (sts) {
       if (effOp && effStatus !== s.status) {
-        sts.innerHTML = '<span class="badge badge-warn">' + escHtml(effStatus) + '</span>';
+        const transBadge = effOp.action === 'stop' ? 'down' : (effOp.action === 'start' ? 'up' : 'warn');
+        sts.innerHTML = '<span class="badge badge-' + transBadge + '">' + escHtml(s.status) + '</span> <span class="badge badge-warn" style="font-size:10px">' + escHtml(effStatus) + '</span>';
       } else if (s.status === 'down' && s.ignored) {
         sts.innerHTML = '<span class="badge badge-muted" title="' + (isEnPatch ? 'Service stopped (monitoring ignored)' : 'Layanan berhenti (diabaikan)') + '">down 🔕</span>';
       } else if (s.status === 'up' && s.ignored) {
@@ -7577,6 +7596,12 @@ async function poll() {
     if (r.ok) patch(await r.json());
   } catch (e) { /* polling lanjut */ }
 }
+
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) {
+    poll();
+  }
+});
 
 setInterval(poll, POLL_MS);
 setTimeout(poll, 500);

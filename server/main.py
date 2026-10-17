@@ -994,6 +994,20 @@ def agent_report(
             service.process_name = process_name
 
         reported_service_ids.add(service.id)
+
+        # Cek apakah ada perintah stop yang sedang pending/executing atau layanan sengaja dimatikan operator
+        has_stop_in_flight = db.query(Command).filter(
+            Command.server_id == server.id,
+            Command.service_id == service.id,
+            Command.action.in_(["stop", "service_stop"]),
+            Command.status.in_(["pending", "executing"]),
+        ).first() is not None
+        is_op_stopped = bool(service.ignored_reason and "DIMATIKAN OLEH OPERATOR" in service.ignored_reason)
+
+        if (has_stop_in_flight or is_op_stopped) and status == "up":
+            status = "down"
+            health_message = service.ignored_reason or "Layanan dihentikan oleh operator"
+
         # Ambil status metrik terakhir sebelum menambahkan metrik baru
         last_m = (
             db.query(Metric).filter(Metric.service_id == service.id)
@@ -1004,8 +1018,8 @@ def agent_report(
         db.add(Metric(
             service_id=service.id,
             status=status,
-            active_connections=active_connections,
-            response_time_ms=response_time_ms,
+            active_connections=active_connections if status == "up" else 0,
+            response_time_ms=response_time_ms if status == "up" else None,
             health_message=health_message or None,
         ))
 
@@ -1074,14 +1088,15 @@ def agent_report(
             # 1. Bila terjadi konflik agen (multi-IP), tahan status DOWN jika host lain baru saja melapor UP
             if has_agent_conflict and last and last.status == "up":
                 continue
-            # 2. Toleransi jeda 45 detik untuk transisi status agar tidak flapping seketika
-            if last and last.status == "up" and last.timestamp and (datetime.utcnow() - last.timestamp).total_seconds() < 45:
+            # 2. Toleransi jeda 45 detik untuk transisi status agar tidak flapping seketika (KECUALI jika sengaja dihentikan operator)
+            is_op_shutdown = bool(svc.ignored_reason and "DIMATIKAN OLEH OPERATOR" in svc.ignored_reason)
+            if not is_op_shutdown and last and last.status == "up" and last.timestamp and (datetime.utcnow() - last.timestamp).total_seconds() < 45:
                 continue
             db.add(Metric(
                 service_id=svc.id,
                 status="down",
                 active_connections=0,
-                health_message="Layanan tidak terdeteksi listening pada port atau proses tidak berjalan",
+                health_message="Layanan tidak terdeteksi listening pada port atau proses tidak berjalan" if not is_op_shutdown else svc.ignored_reason,
             ))
 
     db.commit()
@@ -2004,17 +2019,31 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         ).all()
     }
     svc_list = []
+    resolved_status_map = {}
     for svc in services:
         latest = latest_map.get(svc.id)
         st = latest.status if latest else "unknown"
 
-        # Terapkan override status jika ada command yang baru selesai sebelum agen mengirim metrik baru
+        # 1. Terapkan override dari perintah pending/executing
+        p_act = pending_actions.get(svc.id)
+        if p_act in ("stop", "service_stop"):
+            st = "down"
+        elif p_act in ("start", "service_start") and st != "up":
+            st = "up"
+
+        # 2. Terapkan override status jika ada command yang baru selesai sebelum agen mengirim metrik baru
         recent_cmd = recent_svc_cmds.get(svc.id)
         if recent_cmd:
             if recent_cmd.action in ("stop", "service_stop"):
                 st = "down"
             elif recent_cmd.action in ("start", "service_start") and st != "up":
                 st = "up"
+
+        # 3. Jika layanan tercatat sengaja dimatikan oleh operator, pastikan status tetap down
+        if svc.ignored_reason and "DIMATIKAN OLEH OPERATOR" in svc.ignored_reason:
+            st = "down"
+
+        resolved_status_map[svc.id] = st
 
         p_row = open_prob_map.get(f"service_down:{svc.service_name}")
         is_ign = bool(getattr(p_row, "is_ignored", 0)) if p_row else bool(getattr(svc, "is_ignored", 0))
@@ -2109,7 +2138,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             shell_run.result = (shell_run.result or "").strip() + "\n[sesi shell kedaluwarsa]"
             db.commit()
             shell_run = None
-    svc_data = [{"name": s.service_name, "status": latest_map.get(s.id).status if latest_map.get(s.id) else "unknown", "is_core": bool(getattr(s, "is_core", 1))}
+    svc_data = [{"name": s.service_name, "status": resolved_status_map.get(s.id, "unknown"), "is_core": bool(getattr(s, "is_core", 1))}
                 for s in services]
     problem_level, open_problems, problem_history = sync_server_problems(
         db, server, _problem_instances(server, extras, svc_data, db))
@@ -3403,11 +3432,6 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
                 svc._status = "down"
             elif recent_cmd.action in ("start", "service_start") and svc._status != "up":
                 svc._status = "up"
-        svc._conns = latest.active_connections if latest else 0
-        svc._response_time = latest.response_time_ms if latest else None
-        svc._health_msg = latest.health_message if latest else None
-        svc._last_check = latest.timestamp if latest else None
-        svc._uptime = get_uptime_stats(db, svc.id, hours=24)
 
         # Cek apakah ada command pending/sedang berjalan
         svc._pending_cmd = (
@@ -3416,8 +3440,22 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
                 Command.service_id == svc.id,
                 Command.status.in_(["pending", "executing"]),
             )
+            .order_by(Command.created_at.desc())
             .first()
         )
+        if svc._pending_cmd and svc._pending_cmd.action in ("stop", "service_stop"):
+            svc._status = "down"
+        elif svc._pending_cmd and svc._pending_cmd.action in ("start", "service_start") and svc._status != "up":
+            svc._status = "up"
+
+        if svc.ignored_reason and "DIMATIKAN OLEH OPERATOR" in svc.ignored_reason:
+            svc._status = "down"
+
+        svc._conns = latest.active_connections if latest and svc._status == "up" else 0
+        svc._response_time = latest.response_time_ms if latest and svc._status == "up" else None
+        svc._health_msg = latest.health_message if latest else None
+        svc._last_check = latest.timestamp if latest else None
+        svc._uptime = get_uptime_stats(db, svc.id, hours=24)
 
     commands = (
         db.query(Command)
@@ -3698,6 +3736,7 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
     server = db.query(Server).filter(Server.id == sid).first()
     _audit(db, user.username, f"service_{action}",
            f"{server.hostname if server else sid}:{svc.service_name}", "dikirim ke agen", server_id=sid)
+    now_ts = datetime.utcnow()
     if action == "stop":
         # Tindakan sengaja oleh operator: catat alasan penghentian namun BUKAN DIABAIKAN (is_ignored = 0)
         # Insiden tetap berstatus GAWAT aktif, namun tidak memicu alarm banner atau overlay darurat
@@ -3708,6 +3747,18 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
         svc.ignored_by = user.username
         svc.ignored_reason = reason_txt
         svc.ignore_mode = None
+
+        # 1. Segera sisipkan metrik down agar database dan seluruh API live sinkron seketika dari akar
+        db.add(Metric(
+            service_id=svc_id,
+            status="down",
+            response_time_ms=None,
+            active_connections=0,
+            timestamp=now_ts,
+            health_message=f"Layanan dihentikan oleh operator ({op_name})",
+        ))
+
+        # 2. Buka atau perbarui ServerProblem seketika
         prob = db.query(ServerProblem).filter(
             ServerProblem.server_id == sid,
             ServerProblem.key == f"service_down:{svc.service_name}",
@@ -3719,13 +3770,39 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
             prob.ignored_by = user.username
             prob.ignored_reason = reason_txt
             prob.ignore_mode = None
-            prob.updated_at = datetime.utcnow()
+            prob.updated_at = now_ts
+        else:
+            db.add(ServerProblem(
+                server_id=sid,
+                key=f"service_down:{svc.service_name}",
+                severity="warning",
+                message=f"Layanan {svc.service_name} dimatikan oleh operator ({op_name})",
+                tip="Layanan sengaja dihentikan melalui panel kontrol oleh operator.",
+                is_ignored=0,
+                ignored_reason=reason_txt,
+                ignored_by=user.username,
+                started_at=now_ts,
+                created_at=now_ts,
+                updated_at=now_ts,
+            ))
     elif action == "start":
         # Otomatis pulihkan pemantauan saat admin memulai/menyalakan layanan
         svc.is_ignored = 0
         svc.ignored_until = None
         svc.ignored_reason = None
         svc.ignore_mode = None
+
+        # 1. Segera sisipkan metrik up seketika
+        db.add(Metric(
+            service_id=svc_id,
+            status="up",
+            response_time_ms=0,
+            active_connections=0,
+            timestamp=now_ts,
+            health_message=f"Layanan dimulai oleh operator ({user.username})",
+        ))
+
+        # 2. Tutup masalah service_down seketika
         prob = db.query(ServerProblem).filter(
             ServerProblem.server_id == sid,
             ServerProblem.key == f"service_down:{svc.service_name}",
@@ -3736,7 +3813,9 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
             prob.ignored_until = None
             prob.ignored_reason = None
             prob.ignore_mode = None
-            prob.updated_at = datetime.utcnow()
+            prob.resolved_at = now_ts
+            prob.updated_at = now_ts
+            prob.resolved_note = "operator_start"
     db.commit()
     if is_json:
         return Response(json.dumps({"ok": True, "detail": f"Perintah {label_id} {svc.service_name} telah dikirim ke Agen Pantau."}), media_type="application/json")
