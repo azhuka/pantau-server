@@ -311,6 +311,30 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.5.26
+
+- **Tipe Rilis:** Penyempurnaan Tampilan & Standarisasi Terminologi Antarmuka (*UI Refinement & Terminology Standardization*)
+- **Fokus Utama:** Penyempurnaan layout header dashboard (tengah, tanpa kartu, tanpa tombol kelola), standarisasi 1 baris teks organisasi pada halaman login, pengecilan ikon overview/logo, konsistensi istilah "Setel Organisasi" dan "Pengumuman", pengikatan toggle tampilan khusus untuk pengumuman, serta simplifikasi tombol simpan.
+
+### Rangkuman Pembaruan:
+1. **Standarisasi Tata Letak Halaman Login (1 Baris Nama Organisasi):**
+   - Menyesuaikan lebar kontainer `.login-box` (hingga 720px) dengan kartu login tetap proporsional (390px centered).
+   - Menetapkan aturan `white-space: nowrap; overflow: hidden; text-overflow: ellipsis;` agar nama organisasi panjang selalu tersaji rapi dalam 1 baris di halaman login dan pratinjau.
+2. **Rekonfigurasi Header Dashboard Terpusat (Centered Overview Header):**
+   - Menggantikan teks default (*"Dashboard & Ringkasan kondisi terkini..."*) dengan header identitas terpusat saat nama organisasi diatur.
+   - Menghilangkan container kartu banner dan tombol "Kelola" untuk tampilan yang lebih bersih, elegan, dan profesional.
+   - Menyusun hierarki vertikal terpusat: Baris 1: Nama Organisasi (dengan ikon live & logo ringkas maks 22px), Baris 2: Unit Kerja, Baris 3: Pengumuman berformat `("...")`.
+3. **Penyempurnaan Ikon Overview / Logo Dashboard:**
+   - Mengecilkan ukuran logo pada header dashboard (`max-height: 22px; max-width: 70px; object-fit: contain`) agar proporsional dan tidak mendominasi layar.
+4. **Konsistensi Terminologi & Pengaturan (Strict Naming Standards):**
+   - Mengganti seluruh frasa tab, heading, audit trail, dan pesan flash menjadi **"Setel Organisasi"**.
+   - Menghapus penggunaan kata ambigu seperti "lembaga", "pesan operasional", dan "MOTD", digantikan secara konsisten dengan istilah **"organisasi"** dan **"pengumuman"**.
+   - Menyederhanakan tombol aksi simpan menjadi **"SIMPAN"**.
+5. **Cakupan Khusus Toggle Tampilan:**
+   - Memastikan toggle tampilan hanya mengatur visibilitas baris pengumuman `("...")`, sedangkan nama organisasi, unit kerja, dan logo tetap ditampilkan.
+
+---
+
 ## Versi 4.5.25
 
 - **Tipe Rilis:** Rilis Fitur & Personalisasi Antarmuka (*Feature & Branding Logo Upload*)

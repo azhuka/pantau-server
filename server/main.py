@@ -6919,8 +6919,8 @@ AUDIT_ACTION_LABELS = {
     "masalah_warning": "Peringatan Masalah",
     "masalah_danger": "Bahaya Masalah",
     "masalah_info": "Informasi Masalah",
-    # Identitas & Pengumuman
-    "branding_update": "Pembaruan Identitas & MOTD",
+    # Setel Organisasi
+    "branding_update": "Setel Organisasi",
 }
 
 AUDIT_CATEGORIES = [
@@ -6938,7 +6938,7 @@ AUDIT_CATEGORIES = [
             ("user_unlock", "Buka Kunci Akun", "Unlock User Account"),
             ("user_delete", "Hapus Pengguna", "Delete User"),
             ("user_add", "Tambah Akun Web", "Add Web User"),
-            ("branding_update", "Pembaruan Identitas & MOTD", "Update Identity & MOTD"),
+            ("branding_update", "Setel Organisasi", "Set Organization"),
         ]
     },
     {
@@ -9983,14 +9983,14 @@ async def profile_update_branding(
         db,
         user.username,
         "branding_update",
-        target="Identitas & Pesan Organisasi",
-        result=f"Disimpan (Org: {clean_org_name or '-'}, Unit: {clean_org_unit or '-'}, Logo: {'Ada' if logo_url else 'Bawaan'}, Tampilkan: {'Ya' if is_show else 'Tidak'})"
+        target="Setel Organisasi",
+        result=f"Disimpan (Organisasi: {clean_org_name or '-'}, Unit: {clean_org_unit or '-'}, Pengumuman: {'Aktif' if (is_show and clean_dash_motd) else 'Nonaktif'}, Logo: {'Ada' if logo_url else 'Bawaan'})"
     )
     db.commit()
     invalidate_branding_cache()
 
     return RedirectResponse(
-        _flash_profile_branding(True, "Pengaturan identitas, logo, dan pesan operasional berhasil disimpan."),
+        _flash_profile_branding(True, "Pengaturan organisasi berhasil disimpan."),
         status_code=303
     )
 

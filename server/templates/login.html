@@ -30,12 +30,14 @@ body{
   min-height:100vh;
   -webkit-font-smoothing:antialiased;
 }
-.login-box{width:100%;max-width:390px;padding:20px}
+.login-box{width:100%;max-width:720px;padding:20px}
 .login-header{text-align:center;margin-bottom:28px}
 .login-header .logo{margin-bottom:12px;display:inline-flex;color:var(--blue)}
-.login-header h1{font-size:22px;font-weight:700;letter-spacing:-0.02em;color:#fff}
+.login-header h1{font-size:22px;font-weight:800;letter-spacing:1.5px;color:#fff;text-transform:uppercase;margin-bottom:12px}
+.login-header .org-name{font-size:14.5px;font-weight:700;color:var(--text);letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.login-header .org-unit{font-size:12.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .login-header p{color:var(--dim);font-size:13px;margin-top:5px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:30px;box-shadow:0 12px 30px rgba(0,0,0,0.4)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:30px;box-shadow:0 12px 30px rgba(0,0,0,0.4);max-width:390px;margin:0 auto}
 .form-group{margin-bottom:18px}
 .form-group label{display:block;font-size:11px;font-weight:600;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px}
 .form-group input{width:100%;padding:10px 14px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s}
@@ -50,8 +52,8 @@ body{
 <body>
 <div class="login-box">
   <div class="login-header">
-    <h1 style="font-size:22px;font-weight:800;letter-spacing:1.5px;color:#fff;text-transform:uppercase;margin-bottom:12px">PANTAU SERVER</h1>
-    <div class="logo" style="margin-bottom:12px;display:inline-flex;align-items:center;justify-content:center;color:var(--blue)">
+    <h1>PANTAU SERVER</h1>
+    <div class="logo">
       {% if brand and brand.logo_url %}
       <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name or 'Organisasi' }}" style="max-height:56px;max-width:160px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4))">
       {% else %}
@@ -63,12 +65,12 @@ body{
       {% endif %}
     </div>
     {% if brand and brand.org_name %}
-    <div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:0.2px">{{ brand.org_name }}</div>
+    <div class="org-name" title="{{ brand.org_name }}">{{ brand.org_name }}</div>
     {% if brand.org_unit %}
-    <div style="font-size:12.5px;color:var(--dim);margin-top:3px">{{ brand.org_unit }}</div>
+    <div class="org-unit" title="{{ brand.org_unit }}">{{ brand.org_unit }}</div>
     {% endif %}
     {% else %}
-    <p style="color:var(--dim);font-size:13px;margin-top:2px">Masuk ke panel monitoring</p>
+    <p>Masuk ke panel monitoring</p>
     {% endif %}
   </div>
   <div class="card">
