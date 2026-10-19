@@ -1819,7 +1819,7 @@ div[style*="position: fixed"] .card {
       <th>Kejadian</th>
       <th class="col-durasi" style="width:120px;min-width:110px">Durasi</th>
       <th class="col-act" style="width:160px;min-width:150px">Aksi</th>
-      <th class="col-tips" style="width:250px;min-width:200px">Tips</th>
+      <th class="col-tips" style="width:250px;min-width:200px">Saran</th>
     </tr></thead>
     <tbody>
     {% for p in rows %}
@@ -1982,7 +1982,7 @@ div[style*="position: fixed"] .card {
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <div>
       <h3 style="margin:0">Riwayat Tindakan</h3>
-      <span style="font-size:12px;color:var(--dim)">Rekam jejak seluruh tindakan dan perintah pada server ini</span>
+      <span style="font-size:12px;color:var(--dim)">Rekam jejak seluruh tindakan dan perintah</span>
     </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <span style="font-size:12px;color:var(--dim)" id="action-history-count">{{ actions|length if actions else 0 }} tindakan terakhir</span>
@@ -2279,7 +2279,7 @@ div[style*="position: fixed"] .card {
         <span>Manajer Tugas</span>
         <span class="badge badge-info" id="proc-total-badge" style="font-size:11px">10 proses</span>
       </h3>
-      <span style="font-size:12px;color:var(--dim)">Pantau dan kelola proses server secara interaktif (CPU, Memori, Status, Pause, Lanjut, Kill)</span>
+      <span style="font-size:12px;color:var(--dim)">Pantau dan kelola proses server</span>
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <span id="top-procs-time" style="font-size:12px;color:var(--dim)">Diperbarui tiap siklus agen</span>
@@ -2619,7 +2619,7 @@ div[style*="position: fixed"] .card {
     <div class="card-header" style="align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
         <h3 style="margin:0">Daftar Hitam IP Terblokir (iptables DROP)</h3>
-        <span style="font-size:12px;color:var(--dim)">Alamat IP sumber penyerang yang di-drop seketika pada level kernel</span>
+        <span style="font-size:12px;color:var(--dim)">Alamat IP sumber yang di tutup</span>
       </div>
       {% if user.has_perm('can_firewall') %}
       <div>
@@ -2680,7 +2680,7 @@ div[style*="position: fixed"] .card {
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
     <h3 id="block-ip-title" style="margin:0 0 8px;color:var(--red)">Blokir Alamat IP (DROP)</h3>
     <p id="block-ip-desc" style="font-size:12px;color:var(--dim);margin:0 0 16px;line-height:1.5">
-      Masukkan alamat IPv4 publik penyerang. Perintah <code class="mono">iptables -I INPUT 1 -s &lt;ip&gt; -j DROP</code> akan dikirimkan ke agen.
+      Masukkan alamat IP yang ingin diblok.
     </p>
     <form method="post" action="/servers/{{ server.id }}/firewall/block" id="block-ip-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -2706,7 +2706,7 @@ div[style*="position: fixed"] .card {
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(480px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
     <h3 id="create-user-title" style="margin:0 0 4px;color:var(--neon)">Buat Pengguna Sistem Baru</h3>
     <p id="create-user-desc" style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
-      Membuat akun login Linux baru pada server ini. Akun akan dibuat menggunakan perintah standar sistem melalui agen.
+      Membuat akun baru pada server ini.
     </p>
     <form id="create-user-form" onsubmit="submitCreateUser(event)">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -2756,7 +2756,7 @@ div[style*="position: fixed"] .card {
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(560px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
     <h3 style="margin:0 0 4px;color:var(--neon)">Tambah Tugas Terjadwal (Cron Job)</h3>
     <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
-      Tugas cron akan disimpan di <code class="mono">/etc/cron.d/pantau-&lt;nama&gt;</code> dan dikelola sepenuhnya oleh Pantau Server.
+      Tugas cron akan disimpan di <code class="mono">/etc/cron.d/pantau-&lt;nama&gt;</code>.
     </p>
     <form method="post" action="/servers/{{ server.id }}/cron/add">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -2811,7 +2811,7 @@ div[style*="position: fixed"] .card {
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(500px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
     <h3 style="margin:0 0 4px;color:var(--neon)">Tambah Lokasi Sertifikat SSL Kustom</h3>
     <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
-      Path berkas sertifikat akan disimpan di <code class="mono">/etc/pantau/custom_ssl.conf</code> dan dipantau secara berkala oleh agen.
+      Path berkas sertifikat akan disimpan di <code class="mono">/etc/pantau/custom_ssl.conf</code>.
     </p>
     <form method="post" action="/servers/{{ server.id }}/ssl/add-path">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -2961,7 +2961,7 @@ div[style*="position: fixed"] .card {
     <div class="card-header" style="align-items:center">
       <div>
         <h3 style="margin:0">Audit Port Terbuka (Listening Sockets)</h3>
-        <span style="font-size:12px;color:var(--dim)">Daftar seluruh port TCP/UDP yang sedang dibuka oleh proses sistem (ss -tulpn)</span>
+        <span style="font-size:12px;color:var(--dim)">Daftar seluruh port TCP/UDP yang terbuka</span>
       </div>
       <span class="badge badge-info">{{ (listening_ports|length) if listening_ports else 0 }} socket aktif</span>
     </div>
@@ -4321,8 +4321,8 @@ function openBlockIpModal() {
     const desc = document.getElementById('block-ip-desc');
     if (desc) {
       desc.innerHTML = isEn
-        ? "Enter the attacker's public IPv4 address. The command <code class=\"mono\">iptables -I INPUT 1 -s &lt;ip&gt; -j DROP</code> will be sent to the agent."
-        : "Masukkan alamat IPv4 publik penyerang. Perintah <code class=\"mono\">iptables -I INPUT 1 -s &lt;ip&gt; -j DROP</code> akan dikirimkan ke agen.";
+        ? "Enter the IP address you want to block."
+        : "Masukkan alamat IP yang ingin diblok.";
     }
     const label = document.getElementById('block-ip-target-label');
     if (label) label.textContent = isEn ? 'Target IP Address (IPv4) *' : 'Alamat IP Target (IPv4) *';
@@ -4486,8 +4486,8 @@ function openCreateUserModal() {
     const desc = document.getElementById('create-user-desc');
     if (desc) {
       desc.textContent = isEn
-        ? 'Create a new Linux login account on this server. The account will be created using standard system commands via the agent.'
-        : 'Membuat akun login Linux baru pada server ini. Akun akan dibuat menggunakan perintah standar sistem melalui agen.';
+        ? 'Create a new account on this server.'
+        : 'Membuat akun baru pada server ini.';
     }
     const uname = document.getElementById('create-user-uname-label');
     if (uname) uname.textContent = isEn ? 'Username *' : 'Nama Pengguna *';
@@ -6299,7 +6299,7 @@ function renderProblemsTab(level, openList, histList) {
       <th>${isEn ? 'Event' : 'Kejadian'}</th>
       <th class="col-durasi" style="width:120px;min-width:110px">${isEn ? 'Duration' : 'Durasi'}</th>
       <th class="col-act" style="width:160px;min-width:150px">${isEn ? 'Action' : 'Aksi'}</th>
-      <th class="col-tips" style="width:250px;min-width:200px">${isEn ? 'Advice' : 'Tips'}</th>
+      <th class="col-tips" style="width:250px;min-width:200px">${isEn ? 'Advice' : 'Saran'}</th>
     </tr></thead>
     <tbody>`;
 
