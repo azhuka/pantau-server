@@ -31,12 +31,16 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 .login-box{width:100%;max-width:720px;padding:20px}
-.login-header{text-align:center;margin-bottom:28px}
-.login-header .logo{margin-bottom:12px;display:inline-flex;color:var(--blue)}
-.login-header h1{font-size:22px;font-weight:800;letter-spacing:1.5px;color:#fff;text-transform:uppercase;margin-bottom:12px}
-.login-header .org-name{font-size:14.5px;font-weight:700;color:var(--text);letter-spacing:0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.login-header .org-unit{font-size:12.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.login-header p{color:var(--dim);font-size:13px;margin-top:5px}
+.login-header{text-align:center;margin-bottom:28px;display:flex;justify-content:center}
+.brand-row{display:inline-flex;align-items:stretch;justify-content:center;gap:16px;max-width:100%}
+.brand-logo-box{display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-logo-box img{height:100%;max-height:64px;max-width:85px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4))}
+.brand-logo-box svg{height:100%;max-height:56px;max-width:56px;width:auto;color:var(--blue);filter:drop-shadow(0 0 10px rgba(56,189,248,0.4))}
+.brand-text-col{display:flex;flex-direction:column;justify-content:center;gap:4px;text-align:center;min-width:0}
+.brand-text-col h1{font-size:20px;font-weight:800;letter-spacing:1.5px;color:#fff;text-transform:uppercase;line-height:1.15;margin:0}
+.brand-text-col .org-name{font-size:14.5px;font-weight:700;color:var(--text);letter-spacing:0.2px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.brand-text-col .org-unit{font-size:12.5px;color:var(--dim);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.brand-text-col p{color:var(--dim);font-size:13px;margin:0}
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:30px;box-shadow:0 12px 30px rgba(0,0,0,0.4);max-width:390px;margin:0 auto}
 .form-group{margin-bottom:18px}
 .form-group label{display:block;font-size:11px;font-weight:600;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px}
@@ -52,26 +56,30 @@ body{
 <body>
 <div class="login-box">
   <div class="login-header">
-    <h1>PANTAU SERVER</h1>
-    <div class="logo">
-      {% if brand and brand.logo_url %}
-      <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name or 'Organisasi' }}" style="max-height:56px;max-width:160px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4))">
-      {% else %}
-      <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 10px rgba(56,189,248,0.4))">
-        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-        <path d="M2 17l10 5 10-5"></path>
-        <path d="M2 12l10 5 10-5"></path>
-      </svg>
-      {% endif %}
+    <div class="brand-row">
+      <div class="brand-logo-box">
+        {% if brand and brand.logo_url %}
+        <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name or 'Organisasi' }}">
+        {% else %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+          <path d="M2 17l10 5 10-5"></path>
+          <path d="M2 12l10 5 10-5"></path>
+        </svg>
+        {% endif %}
+      </div>
+      <div class="brand-text-col">
+        <h1>PANTAU SERVER</h1>
+        {% if brand and brand.org_name %}
+        <div class="org-name" title="{{ brand.org_name }}">{{ brand.org_name }}</div>
+        {% if brand.org_unit %}
+        <div class="org-unit" title="{{ brand.org_unit }}">{{ brand.org_unit }}</div>
+        {% endif %}
+        {% else %}
+        <p>Masuk ke panel monitoring</p>
+        {% endif %}
+      </div>
     </div>
-    {% if brand and brand.org_name %}
-    <div class="org-name" title="{{ brand.org_name }}">{{ brand.org_name }}</div>
-    {% if brand.org_unit %}
-    <div class="org-unit" title="{{ brand.org_unit }}">{{ brand.org_unit }}</div>
-    {% endif %}
-    {% else %}
-    <p>Masuk ke panel monitoring</p>
-    {% endif %}
   </div>
   <div class="card">
     {% if error %}

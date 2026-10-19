@@ -311,6 +311,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.5.28
+
+- **Tipe Rilis:** Penyempurnaan Tata Letak Header Login (*Login Header Layout Enhancement*)
+- **Fokus Utama:** Penataan logo organisasi di sisi kiri blok teks header login dengan ketinggian yang selaras dari batas atas judul (*PANTAU SERVER*) hingga batas bawah unit kerja (*Bidang Aplikasi dan Informatika*), serta penyelarasan pratinjau profil.
+
+### Rangkuman Pembaruan:
+1. **Penataan Logo di Sisi Kiri Header Login:**
+   - Menyusun kontainer baris fleksibel (`.brand-row`) pada header halaman login dengan logo organisasi berada di sebelah kiri.
+   - Sisi atas logo sejajar secara vertikal dengan judul utama `PANTAU SERVER`.
+   - Sisi tengah logo sejajar dengan `Nama Organisasi`.
+   - Sisi bawah logo sejajar dengan `Nama Unit Kerja`.
+   - Logo otomatis menyesuaikan tinggi kolom teks secara proporsional (`height: 100%; max-height: 64px; max-width: 85px; object-fit: contain;`).
+2. **Penyelarasan Pratinjau Interaktif Menu Profil:**
+   - Memperbarui simulasi `Pratinjau Halaman Login` di tab *Setel Organisasi* agar mengadopsi struktur logo di sisi kiri sejajar dengan blok teks.
+
+---
+
 ## Versi 4.5.27
 
 - **Tipe Rilis:** Pembersihan Visual Antarmuka (*UI Visual Cleanup*)
