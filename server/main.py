@@ -7145,9 +7145,13 @@ def audit_page(
         if user_clean in master_admin_names:
             rows = []
 
-        available_users = [u.username for u in db.query(User).filter(User.role == "operator").order_by(User.username).all()]
+        available_users = [u.username for u in db.query(User).filter(~User.role.in_(["master_admin", "admin"])).order_by(User.username).all()]
     else:
-        available_users = [u.username for u in db.query(User).filter(User.role.in_(["master_admin", "operator"])).order_by(User.username).all()]
+        available_users = [u.username for u in db.query(User).order_by(User.username).all()]
+
+    if user_clean and user_clean not in available_users and (user_actor.is_master_admin() or user_clean not in master_admin_names):
+        available_users.append(user_clean)
+        available_users.sort()
 
     return tpl(request, "audit.html", {
         "user": user_actor,
