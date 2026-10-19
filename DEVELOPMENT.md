@@ -311,6 +311,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.5.32
+
+- **Tipe Rilis:** Penyelarasan Posisi Tengah Layar Header Dashboard & Logo Utuh (*Dashboard Header Centering & Uncropped Logo*)
+- **Fokus Utama:** Memposisikan tiga baris judul dan identitas organisasi (`PANTAU SERVER`, `Nama Organisasi`, `Nama Unit Kerja`) tepat di tengah layar (*absolute horizontal center*), menempatkan logo organisasi di sebelah kiri tanpa memotong gambar (*object-fit: contain*), serta menyelaraskan struktur serupa pada halaman login dan menu pratinjau profil.
+
+### Rangkuman Pembaruan:
+1. **Posisi Tengah Layar Penuh pada Header Dashboard:**
+   - Menyusun kontainer teks identitas (`.dash-brand-wrap`) tepat di sumbu tengah halaman, dengan logo diletakkan di sisi kiri secara presisi (`position: absolute; right: calc(100% + 18px)`).
+   - Menjamin seluruh teks identitas dan pengumuman operasional berada tepat di garis tengah layar tanpa tergeser oleh lebar logo.
+2. **Pencegahan Logo Terpotong pada Halaman Login & Dashboard:**
+   - Memastikan logo menggunakan `object-fit: contain` dengan lebar dinamis proporsional (`max-width: 130px; height: 100%`) sehingga logo tidak terpotong pada format gambar apa pun (16:9, persegi, maupun vertikal).
+   - Batas atas dan bawah logo tetap menyentuh batas judul dan unit kerja secara presisi.
+3. **Penyelarasan Pratinjau pada Menu Setel Organisasi:**
+   - Memperbarui komponen simulasi pratinjau login dan dashboard di menu Profil agar menggunakan struktur tengah dan penanganan logo utuh yang sama.
+
+---
+
 ## Versi 4.5.31
 
 - **Tipe Rilis:** Pembaruan Posisi & Teks Hak Cipta (*Copyright Positioning & Text Standardization*)

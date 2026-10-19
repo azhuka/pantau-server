@@ -32,14 +32,11 @@ body{
 }
 .login-box{width:100%;max-width:850px;padding:20px;margin:auto 0;display:flex;flex-direction:column;align-items:center}
 .login-header{text-align:center;margin-bottom:28px;width:100%;display:flex;justify-content:center}
-.brand-row{display:inline-flex;align-items:stretch;justify-content:center;gap:16px;max-width:100%}
-.brand-logo-box, .brand-spacer{width:64px;height:64px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.brand-logo-box img{width:100%;height:100%;object-fit:cover;border-radius:6px;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4))}
-.brand-logo-box svg{width:56px;height:56px;color:var(--blue);filter:drop-shadow(0 0 10px rgba(56,189,248,0.4))}
-.brand-spacer{visibility:hidden}
-.brand-text-col{display:flex;flex-direction:column;justify-content:space-between;text-align:center;height:64px;min-width:0}
+.brand-text-col{position:relative;display:inline-flex;flex-direction:column;justify-content:space-between;text-align:center;height:64px;max-width:calc(100% - 160px)}
 .brand-text-col.no-unit{height:44px;justify-content:center;gap:6px}
-.brand-row.no-unit .brand-logo-box, .brand-row.no-unit .brand-spacer{width:44px;height:44px}
+.brand-logo-box{position:absolute;right:calc(100% + 18px);top:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;flex-shrink:0}
+.brand-logo-box img{height:100%;max-height:64px;max-width:130px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4))}
+.brand-logo-box svg{height:54px;width:54px;color:var(--blue);filter:drop-shadow(0 0 10px rgba(56,189,248,0.4))}
 .brand-text-col h1{font-size:19px;font-weight:800;letter-spacing:1.2px;color:#fff;text-transform:uppercase;line-height:1;margin:0}
 .brand-text-col .org-name{font-size:14px;font-weight:700;color:var(--text);letter-spacing:0.2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .brand-text-col .org-unit{font-size:12px;color:var(--dim);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
@@ -48,10 +45,9 @@ body{
 .login-brand-default p{color:var(--dim);font-size:13px;margin:0}
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:30px;box-shadow:0 12px 30px rgba(0,0,0,0.4);width:390px;max-width:100%;margin:0 auto}
 @media (max-width:640px){
-  .brand-row{flex-direction:column;align-items:center;gap:10px}
-  .brand-spacer{display:none}
-  .brand-text-col{height:auto;gap:4px}
-  .brand-text-col.no-unit{height:auto}
+  .brand-text-col{max-width:100%;height:auto;gap:4px;padding-top:52px}
+  .brand-text-col.no-unit{height:auto;padding-top:52px}
+  .brand-logo-box{position:absolute;right:0;left:0;top:0;bottom:auto;height:46px;justify-content:center}
   .brand-text-col .org-name, .brand-text-col .org-unit{white-space:normal}
 }
 .form-group{margin-bottom:18px}
@@ -69,7 +65,7 @@ body{
 <div class="login-box">
   <div class="login-header">
     {% if brand and brand.org_name %}
-    <div class="brand-row {% if not brand.org_unit %}no-unit{% endif %}">
+    <div class="brand-text-col {% if not brand.org_unit %}no-unit{% endif %}">
       <div class="brand-logo-box">
         {% if brand.logo_url %}
         <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name }}">
@@ -81,14 +77,11 @@ body{
         </svg>
         {% endif %}
       </div>
-      <div class="brand-text-col {% if not brand.org_unit %}no-unit{% endif %}">
-        <h1>PANTAU SERVER</h1>
-        <div class="org-name" title="{{ brand.org_name }}">{{ brand.org_name }}</div>
-        {% if brand.org_unit %}
-        <div class="org-unit" title="{{ brand.org_unit }}">{{ brand.org_unit }}</div>
-        {% endif %}
-      </div>
-      <div class="brand-spacer" aria-hidden="true"></div>
+      <h1>PANTAU SERVER</h1>
+      <div class="org-name" title="{{ brand.org_name }}">{{ brand.org_name }}</div>
+      {% if brand.org_unit %}
+      <div class="org-unit" title="{{ brand.org_unit }}">{{ brand.org_unit }}</div>
+      {% endif %}
     </div>
     {% else %}
     <div class="login-brand-default">
