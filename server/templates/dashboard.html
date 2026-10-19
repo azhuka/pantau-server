@@ -796,9 +796,8 @@ body.popout-fleet_table #dash-fleet-card {
     <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name }}" style="max-height:22px;max-width:70px;object-fit:contain">
   </div>
   {% endif %}
-  <div style="font-size:16px;font-weight:700;color:var(--text-bright);letter-spacing:0.2px;display:flex;align-items:center;justify-content:center;gap:6px">
-    <span>{{ brand.org_name }}</span>
-    <span id="dash-live-indicator" class="badge badge-up" style="font-size:9px;padding:1px 5px;font-weight:500;line-height:1.2;vertical-align:middle" title="Metrik diperbarui otomatis setiap 10 detik">● live</span>
+  <div style="font-size:16px;font-weight:700;color:var(--text-bright);letter-spacing:0.2px">
+    {{ brand.org_name }}
   </div>
   {% if brand.org_unit %}
   <div style="font-size:12.5px;color:var(--dim);font-weight:500;margin-top:1px">{{ brand.org_unit }}</div>
@@ -810,10 +809,7 @@ body.popout-fleet_table #dash-fleet-card {
 {% else %}
 <div class="topbar">
   <div>
-    <h2 style="display:flex;align-items:center;gap:8px;font-size:18px">
-      Dashboard
-      <span id="dash-live-indicator" class="badge badge-up" style="font-size:9px;padding:1px 5px;font-weight:500;line-height:1.2;vertical-align:middle" title="Metrik diperbarui otomatis setiap 10 detik">● live</span>
-    </h2>
+    <h2 style="font-size:18px">Dashboard</h2>
     <div style="font-size:13px;color:var(--dim);margin-top:2px">Ringkasan kondisi terkini seluruh server klien &amp; metrik operasional terpusat.</div>
   </div>
 </div>

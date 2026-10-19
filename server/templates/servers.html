@@ -84,7 +84,6 @@
              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:7px 12px 7px 30px;font-size:12px;width:240px;outline:none;transition:border-color .15s">
     </div>
     {% endif %}
-    <span id="servers-live" class="badge badge-up" style="opacity:.6;transition:opacity .3s;font-size:10px;padding:2px 7px" title="Diperbarui otomatis setiap 10 detik">● live</span>
     {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
     <a href="/servers/add" class="btn btn-primary btn-sm" style="gap:6px">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>

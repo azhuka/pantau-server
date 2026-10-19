@@ -311,6 +311,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.5.27
+
+- **Tipe Rilis:** Pembersihan Visual Antarmuka (*UI Visual Cleanup*)
+- **Fokus Utama:** Penghapusan indikator badge `● live` pada header dashboard (baik saat identitas organisasi aktif maupun saat teks default), pratinjau profil dashboard, serta header halaman daftar server, menghasilkan tampilan atas yang lebih bersih, fokus, dan rapi tanpa elemen kedip yang mendistraksi.
+
+### Rangkuman Pembaruan:
+1. **Penghapusan Indikator `● live` pada Dashboard:**
+   - Menghilangkan badge `● live` dari baris Nama Organisasi pada header dashboard utama terpusat.
+   - Menghilangkan badge `● live` dari judul default `Dashboard`.
+2. **Penyelarasan Pratinjau Profil (Live Preview):**
+   - Menghapus badge `● live` pada pratinjau header dashboard di menu Setel Organisasi.
+3. **Pembersihan pada Halaman Daftar Server:**
+   - Menghapus badge `● live` pada toolbar daftar server (`servers.html`).
+
+---
+
 ## Versi 4.5.26
 
 - **Tipe Rilis:** Penyempurnaan Tampilan & Standarisasi Terminologi Antarmuka (*UI Refinement & Terminology Standardization*)
