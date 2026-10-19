@@ -311,6 +311,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.5.29
+
+- **Tipe Rilis:** Penyelarasan Tata Letak Header Dashboard (*Dashboard Header Layout Alignment*)
+- **Fokus Utama:** Penerapan tata letak identitas organisasi yang seragam pada dashboard utama, menempatkan logo organisasi di sisi kiri blok teks (`PANTAU SERVER`, `Nama Organisasi`, dan `Nama Unit Kerja`) dengan ketinggian vertikal sejajar, serta penyelarasan pratinjau dashboard di menu Setel Organisasi.
+
+### Rangkuman Pembaruan:
+1. **Penerapan Header Identitas Seragam pada Dashboard Utama:**
+   - Menyusun kontainer baris fleksibel (`.dash-brand-row`) pada header dashboard saat identitas organisasi aktif.
+   - Logo organisasi ditempatkan di sisi kiri dengan skala proporsional yang membentang dari batas atas judul `PANTAU SERVER` hingga batas bawah `Nama Unit Kerja`.
+   - Menjaga tampilan pengumuman operasional `("...")` tetap terpusat di bawah blok identitas saat toggle tampilan aktif.
+2. **Penyelarasan Pratinjau Dashboard di Menu Profil:**
+   - Memperbarui komponen `Pratinjau Dashboard` pada tab *Setel Organisasi* agar mengadopsi struktur logo kiri dan judul `PANTAU SERVER` yang selaras dengan tampilan dashboard produksi.
+
+---
+
 ## Versi 4.5.28
 
 - **Tipe Rilis:** Penyempurnaan Tata Letak Header Login (*Login Header Layout Enhancement*)
