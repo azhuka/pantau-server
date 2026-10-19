@@ -2187,6 +2187,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "problem_level": problem_level,
         "open_problems": open_prob_serialized,
         "problem_history": hist_prob_serialized,
+        "notes": server.notes or "",
     }
 
 
@@ -2263,6 +2264,33 @@ async def api_server_maintenance(
         "maintenance_reason": server.maintenance_reason,
         "message": detail_msg,
     }
+
+
+@app.post("/api/servers/{sid}/notes")
+async def api_server_notes(
+    sid: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    if not user or not (user.is_master_admin() or user.has_perm("can_manage_servers")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Hanya admin atau operator berizin yang dapat mengedit catatan server")
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    raw_notes = body.get("notes")
+    if raw_notes is not None:
+        notes_str = str(raw_notes).strip()
+        server.notes = notes_str if notes_str else None
+    else:
+        server.notes = None
+    _audit(db, user.username, "server_notes_update", f"id={server.id} {server.hostname}", "berhasil")
+    db.commit()
+    return {"ok": True, "notes": server.notes or ""}
 
 
 # ---------------------------------------------------------------------------
@@ -3152,6 +3180,7 @@ def server_add_submit(
     ip_address: str = Form(...),
     group_name: str = Form(default=""),
     tags: str = Form(default=""),
+    notes: str = Form(default=""),
     tier: int = Form(2),
     platform_override: str = Form(default="auto"),
     is_proxmox_ha: int = Form(0),
@@ -3180,6 +3209,7 @@ def server_add_submit(
     group_name = group_name_clean if group_name_clean and group_name_clean.lower() != "default" else None
     tags_clean = _clean_str(tags, "", 255).strip()
     tags = tags_clean if tags_clean else None
+    notes_clean = (notes or "").strip() or None
     tier_val = 1 if tier == 1 else (3 if tier == 3 else 2)
     if ip_address and not _validate_ip(ip_address):
         existing_groups, existing_tags = get_existing_groups_and_tags(db)
@@ -3218,7 +3248,7 @@ def server_add_submit(
     raw = secrets.token_hex(32)
     srv = Server(
         hostname=hostname, ip_address=ip_address,
-        group_name=group_name, tags=tags, tier=tier_val,
+        group_name=group_name, tags=tags, notes=notes_clean, tier=tier_val,
         is_proxmox_ha=1 if (is_proxmox_ha and plat_override_clean != "baremetal") else 0,
         platform_override=plat_override_clean,
         is_isolated_net=1 if is_isolated_net else 0,
@@ -3267,6 +3297,7 @@ def server_edit_submit(
     ip_address: str = Form(...),
     group_name: str = Form(default=""),
     tags: str = Form(default=""),
+    notes: str = Form(default=""),
     tier: int = Form(2),
     is_active: int = Form(1),
     platform_override: str = Form(default="auto"),
@@ -3338,6 +3369,7 @@ def server_edit_submit(
         server.ip_address = ip_address
         server.group_name = group_name
         server.tags = tags
+        server.notes = (notes or "").strip() or None
         server.tier = tier_val
         server.custom_thresholds = custom_th_json
         server.is_active = 1 if is_active else 0

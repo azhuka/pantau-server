@@ -611,6 +611,163 @@
   height: 150px;
   position: relative;
 }
+/* --- Layout Kompak Performa & Catatan Server --- */
+.perf-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1.15fr);
+  gap: 14px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+@media (max-width: 1024px) {
+  .perf-top-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.perf-header-compact {
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.perf-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+@media (max-width: 640px) {
+  .perf-chips-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.perf-chip {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.perf-chip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.perf-chip-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--dim);
+  font-weight: 600;
+}
+.perf-chip-val {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+.perf-chip-meter {
+  height: 3px;
+  margin-top: 5px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.perf-spark-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.perf-spark-box {
+  background: rgba(0,0,0,0.15);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+.perf-spark-label {
+  font-size: 10px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 3px;
+  display: flex;
+  justify-content: space-between;
+}
+.perf-spark-container {
+  height: 32px;
+  overflow: hidden;
+}
+.live-pulse-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34,197,94,0.6);
+}
+.perf-notes-text {
+  white-space: pre-wrap;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text);
+  word-break: break-word;
+  max-height: 140px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.perf-notes-empty {
+  padding: 12px 4px;
+  text-align: left;
+}
+.perf-notes-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  resize: vertical;
+  min-height: 90px;
+  max-height: 180px;
+  font-family: inherit;
+}
+.perf-notes-textarea:focus {
+  outline: none;
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 2px rgba(167,139,250,0.2);
+}
+.hero-notes-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(167,139,250,0.12);
+  color: #c4b5fd;
+  border: 1px solid rgba(167,139,250,0.28);
+  border-radius: 12px;
+  padding: 1.5px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all .15s ease;
+  max-width: 280px;
+}
+.hero-notes-chip:hover {
+  background: rgba(167,139,250,0.22);
+  border-color: #a78bfa;
+  color: #fff;
+}
+.hero-notes-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 </style>
 {% endblock %}
 {% block content %}
@@ -772,6 +929,12 @@
               </span>
             {% endif %}
           {% endfor %}
+        {% endif %}
+        {% if server.notes %}
+        <span id="hero-notes-preview" class="hero-notes-chip" onclick="showTab('perf'); focusServerNotes();" title="{{ server.notes }}">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          <span id="hero-notes-text">{{ (server.notes | replace('\n', ' '))[:40] }}{% if (server.notes|length) > 40 %}…{% endif %}</span>
+        </span>
         {% endif %}
       </div>
     </div>
@@ -951,61 +1114,162 @@
 
 <div class="tab-body" id="tab-perf">
 
-  <!-- 1. Performa Sekarang — Beban & Utilisasi Mesin (Live) -->
-  <div class="card">
-    <div class="card-header" style="align-items:center;justify-content:space-between">
-      <div>
-        <h3 style="margin:0">Performa Sekarang — Beban &amp; Utilisasi Mesin</h3>
-        <span style="font-size:12px;color:var(--dim)">Metrik vital sistem real-time diperbarui otomatis setiap beberapa detik</span>
-      </div>
-      <span id="sys-ts" style="font-size:12px;color:var(--dim)"></span>
-    </div>
-    <div id="sys-empty" class="empty-msg" style="display:none">
-      Belum ada data kinerja dari server ini.
-    </div>
-    <div id="sys-body">
-      <div class="stats-grid" style="margin-bottom:16px">
-        <div class="stat-card">
-          <div class="label">CPU</div>
-          <div class="value" id="sys-cpu">-</div>
-          <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-cpu-bar" style="width:0%"></div></div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Beban (1/5/15 menit)</div>
-          <div class="value" style="font-size:18px" id="sys-load">-</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Memori</div>
-          <div class="value" id="sys-mem">-</div>
-          <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-mem-bar" style="width:0%"></div></div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Swap</div>
-          <div class="value" id="sys-swap">-</div>
-          <div class="meter" style="margin-top:8px"><div class="meter-bar" id="sys-swap-bar" style="width:0%"></div></div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Proses</div>
-          <div class="value" id="sys-procs">-</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Uptime</div>
-          <div class="value" style="font-size:16px" id="sys-uptime">-</div>
-          <div style="font-size:11px;color:var(--dim);margin-top:4px" id="sys-kernel">-</div>
-        </div>
-      </div>
+  <!-- Grid Atas: Performa Real-Time Kompak & Kolom Catatan/Deskripsi Server -->
+  <div class="perf-top-grid">
 
-      <div class="grid-2">
-        <div>
-          <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">CPU (riwayat ±10 mnt)</div>
-          <div id="spark-cpu"></div>
+    <!-- 1. Performa Sekarang — Beban & Utilisasi Mesin (Padat & Rapi) -->
+    <div class="card perf-overview-card" style="margin:0">
+      <div class="card-header perf-header-compact">
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <h3 style="margin:0;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
+            Performa Sekarang — Beban &amp; Utilisasi
+          </h3>
         </div>
-        <div>
-          <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Memori Terpakai (riwayat ±10 mnt)</div>
-          <div id="spark-mem"></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="live-pulse-dot" title="Live stream metrik aktif"></span>
+          <span id="sys-ts" style="font-size:11px;color:var(--dim)"></span>
+        </div>
+      </div>
+      <div id="sys-empty" class="empty-msg" style="display:none;padding:24px 16px">
+        Belum ada data kinerja dari server ini.
+      </div>
+      <div id="sys-body" style="padding:12px 14px">
+        <div class="perf-chips-grid">
+          <!-- CPU -->
+          <div class="perf-chip">
+            <div class="perf-chip-row">
+              <span class="perf-chip-label">CPU</span>
+              <span class="perf-chip-val mono" id="sys-cpu">-</span>
+            </div>
+            <div class="meter perf-chip-meter"><div class="meter-bar" id="sys-cpu-bar" style="width:0%"></div></div>
+          </div>
+
+          <!-- Beban (Load) -->
+          <div class="perf-chip">
+            <div class="perf-chip-row">
+              <span class="perf-chip-label">Beban (1/5/15m)</span>
+            </div>
+            <div class="perf-chip-val mono" id="sys-load" style="font-size:11.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">-</div>
+          </div>
+
+          <!-- Memori -->
+          <div class="perf-chip">
+            <div class="perf-chip-row">
+              <span class="perf-chip-label">Memori</span>
+              <span class="perf-chip-val mono" id="sys-mem" style="font-size:11px">-</span>
+            </div>
+            <div class="meter perf-chip-meter"><div class="meter-bar" id="sys-mem-bar" style="width:0%"></div></div>
+          </div>
+
+          <!-- Swap -->
+          <div class="perf-chip">
+            <div class="perf-chip-row">
+              <span class="perf-chip-label">Swap</span>
+              <span class="perf-chip-val mono" id="sys-swap" style="font-size:11px">-</span>
+            </div>
+            <div class="meter perf-chip-meter"><div class="meter-bar" id="sys-swap-bar" style="width:0%"></div></div>
+          </div>
+
+          <!-- Proses -->
+          <div class="perf-chip">
+            <div class="perf-chip-row">
+              <span class="perf-chip-label">Proses</span>
+            </div>
+            <div class="perf-chip-val mono" id="sys-procs" style="font-size:13px;margin-top:3px">-</div>
+          </div>
+
+          <!-- Uptime & Kernel -->
+          <div class="perf-chip">
+            <div class="perf-chip-row">
+              <span class="perf-chip-label">Uptime</span>
+              <span id="sys-kernel" style="font-size:10px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px" title="Kernel">-</span>
+            </div>
+            <div class="perf-chip-val mono" id="sys-uptime" style="font-size:11.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">-</div>
+          </div>
+        </div>
+
+        <!-- Sparklines Mini (CPU & Memori riwayat 10 mnt) -->
+        <div class="perf-spark-row">
+          <div class="perf-spark-box">
+            <div class="perf-spark-label">
+              <span>Tren CPU (10 mnt)</span>
+            </div>
+            <div id="spark-cpu" class="perf-spark-container"></div>
+          </div>
+          <div class="perf-spark-box">
+            <div class="perf-spark-label">
+              <span>Tren RAM (10 mnt)</span>
+            </div>
+            <div id="spark-mem" class="perf-spark-container"></div>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- 2. Deskripsi & Catatan Server (Notes) -->
+    <div class="card perf-notes-card" id="server-notes-card" style="margin:0;display:flex;flex-direction:column">
+      <div class="card-header perf-header-compact">
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <h3 style="margin:0;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
+            Deskripsi &amp; Catatan Server
+          </h3>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span id="server-notes-save-badge" class="badge badge-success" style="display:none;font-size:10.5px;padding:2px 7px">Tersimpan</span>
+          {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
+          <button type="button" class="btn btn-ghost btn-xs" id="btn-edit-server-notes" onclick="toggleServerNotesEdit(true)" style="padding:3px 9px;font-size:11px;border:1px solid rgba(255,255,255,0.12);border-radius:5px;display:inline-flex;align-items:center;gap:4px" title="Edit catatan operasional server">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <span id="btn-edit-notes-lbl">Ubah</span>
+          </button>
+          {% endif %}
+        </div>
+      </div>
+      <div class="perf-notes-body" style="padding:12px 14px;display:flex;flex-direction:column;justify-content:space-between;flex:1;box-sizing:border-box">
+        
+        <!-- View Mode -->
+        <div id="server-notes-view" style="flex:1;display:flex;flex-direction:column;justify-content:space-between">
+          <div id="server-notes-content" style="flex:1">
+            <div id="server-notes-text" class="perf-notes-text" style="{{ '' if server.notes else 'display:none;' }}">{{ server.notes or '' }}</div>
+            <div id="server-notes-empty" class="perf-notes-empty" style="{{ 'display:none;' if server.notes else '' }}">
+              <div style="color:var(--dim);font-size:12px;line-height:1.5;margin-bottom:8px">
+                Belum ada deskripsi atau catatan operasional untuk server ini.
+              </div>
+              {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
+              <button type="button" class="btn btn-ghost btn-xs" onclick="toggleServerNotesEdit(true)" style="font-size:11.5px;padding:3px 10px;border-color:rgba(167,139,250,0.4);color:#c4b5fd;background:rgba(167,139,250,0.08)">
+                + Tambah Catatan
+              </button>
+              {% else %}
+              <span style="font-size:11px;color:var(--dim)">(Hubungi administrator untuk menambahkan catatan)</span>
+              {% endif %}
+            </div>
+          </div>
+          <div style="margin-top:10px;padding-top:8px;border-top:1px dashed rgba(255,255,255,0.06);font-size:11px;color:var(--dim);display:flex;align-items:center;justify-content:space-between">
+            <span style="display:inline-flex;align-items:center;gap:4px">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              Catatan operasional, fungsi, PIC &amp; arsitektur
+            </span>
+          </div>
+        </div>
+
+        <!-- Edit Mode -->
+        <div id="server-notes-editor" style="display:none;flex-direction:column;flex:1;height:100%">
+          <textarea id="server-notes-input" class="perf-notes-textarea" placeholder="Contoh: Server database produksi cabang Jakarta. Backup harian pukul 02.00 WIB. PIC: tim-infra@perusahaan.com." rows="5">{{ server.notes or '' }}</textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:8px">
+            <span style="font-size:11px;color:var(--dim)">
+              <kbd style="background:rgba(255,255,255,0.08);padding:1px 4px;border-radius:3px;font-size:10px;font-family:inherit">Ctrl</kbd>+<kbd style="background:rgba(255,255,255,0.08);padding:1px 4px;border-radius:3px;font-size:10px;font-family:inherit">Enter</kbd> simpan
+            </span>
+            <div style="display:flex;align-items:center;gap:6px">
+              <button type="button" class="btn btn-ghost btn-xs" onclick="toggleServerNotesEdit(false)" style="padding:3px 9px;font-size:11px">Batal</button>
+              <button type="button" class="btn btn-primary btn-xs" id="btn-save-server-notes" onclick="saveServerNotes()" style="padding:3px 12px;font-size:11px;font-weight:600">Simpan</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 
   <!-- 2. Spesifikasi Perangkat Keras & Platform -->
@@ -6851,18 +7115,18 @@ function sparkline(elId, values, color, maxVal) {
   const svg = document.getElementById(elId);
   if (!svg) return;
   if (!values || values.length < 2) {
-    svg.innerHTML = '<span style="font-size:12px;color:var(--dim)">belum ada data</span>';
+    svg.innerHTML = '<span style="font-size:11px;color:var(--dim);display:flex;align-items:center;height:32px">belum ada data</span>';
     return;
   }
-  const w = 300, h = 48;
+  const w = 300, h = 32;
   const max = maxVal || Math.max(...values, 1);
   const pts = values.map((v, i) => {
     const x = (i / (values.length - 1)) * w;
     const y = h - (v / max) * (h - 4) - 2;
     return x.toFixed(1) + ',' + y.toFixed(1);
   }).join(' ');
-  svg.innerHTML = '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" style="width:100%;height:48px;display:block">'
-    + '<rect width="' + w + '" height="' + h + '" rx="6" fill="var(--bg)"/>'
+  svg.innerHTML = '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" style="width:100%;height:32px;display:block">'
+    + '<rect width="' + w + '" height="' + h + '" rx="4" fill="transparent"/>'
     + '<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linejoin="round"/>'
     + '</svg>';
 }
@@ -7653,5 +7917,131 @@ setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
   initServicesTabPagination();
 })();
 
+// --- Server Notes Functions ---
+function toggleServerNotesEdit(show) {
+  const viewEl = document.getElementById('server-notes-view');
+  const editEl = document.getElementById('server-notes-editor');
+  const btnEdit = document.getElementById('btn-edit-server-notes');
+  const input = document.getElementById('server-notes-input');
+  if (show) {
+    if (viewEl) viewEl.style.display = 'none';
+    if (editEl) editEl.style.display = 'flex';
+    if (btnEdit) btnEdit.style.display = 'none';
+    if (input) {
+      input.focus();
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    }
+  } else {
+    if (viewEl) viewEl.style.display = 'flex';
+    if (editEl) editEl.style.display = 'none';
+    if (btnEdit) btnEdit.style.display = 'inline-flex';
+  }
+}
+
+function focusServerNotes() {
+  const card = document.getElementById('server-notes-card');
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.style.transition = 'box-shadow .3s ease';
+    card.style.boxShadow = '0 0 0 2px rgba(167,139,250,0.5)';
+    setTimeout(() => { card.style.boxShadow = ''; }, 1500);
+  }
+}
+
+function updateHeroNotes(notes) {
+  let heroChip = document.getElementById('hero-notes-preview');
+  const heroBar = document.querySelector('.hero-meta-bar');
+  if (notes && notes.trim()) {
+    const cleanOneLine = notes.replace(/\n+/g, ' ').trim();
+    const shortText = cleanOneLine.length > 40 ? cleanOneLine.slice(0, 40) + '…' : cleanOneLine;
+    if (!heroChip && heroBar) {
+      heroChip = document.createElement('span');
+      heroChip.id = 'hero-notes-preview';
+      heroChip.className = 'hero-notes-chip';
+      heroChip.onclick = () => { showTab('perf'); focusServerNotes(); };
+      heroChip.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg><span id="hero-notes-text"></span>';
+      heroBar.appendChild(heroChip);
+    }
+    if (heroChip) {
+      heroChip.title = notes;
+      const t = document.getElementById('hero-notes-text');
+      if (t) t.textContent = shortText;
+      heroChip.style.display = 'inline-flex';
+    }
+  } else {
+    if (heroChip) {
+      heroChip.style.display = 'none';
+    }
+  }
+}
+
+function saveServerNotes() {
+  const input = document.getElementById('server-notes-input');
+  const saveBtn = document.getElementById('btn-save-server-notes');
+  const badge = document.getElementById('server-notes-save-badge');
+  const textEl = document.getElementById('server-notes-text');
+  const emptyEl = document.getElementById('server-notes-empty');
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  const newNotes = input ? input.value : '';
+
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Menyimpan…';
+  }
+
+  fetch('/api/servers/' + SID + '/notes', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': csrf
+    },
+    body: JSON.stringify({ notes: newNotes })
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Simpan';
+    }
+    if (res.ok) {
+      const savedText = res.notes || '';
+      if (textEl) {
+        textEl.textContent = savedText;
+        textEl.style.display = savedText ? 'block' : 'none';
+      }
+      if (emptyEl) {
+        emptyEl.style.display = savedText ? 'none' : 'block';
+      }
+      toggleServerNotesEdit(false);
+      updateHeroNotes(savedText);
+      if (badge) {
+        badge.style.display = 'inline-block';
+        setTimeout(() => { badge.style.display = 'none'; }, 2500);
+      }
+    } else {
+      alert('Gagal menyimpan catatan: ' + (res.detail || 'Terjadi kesalahan sistem'));
+    }
+  })
+  .catch(() => {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Simpan';
+    }
+    alert('Terjadi kesalahan jaringan saat menyimpan catatan.');
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('server-notes-input');
+  if (ta) {
+    ta.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        saveServerNotes();
+      }
+    });
+  }
+});
 </script>
 {% endblock %}

@@ -114,6 +114,7 @@ class Server(Base):
     platform_override = Column(String(20), nullable=True, default=None)  # 'baremetal', 'vm', 'lxc', atau None/auto
     is_isolated_net = Column(SmallInteger, nullable=False, default=0)    # 1=jaringan lokal/terisolasi, 0=standar
     allow_web_terminal = Column(SmallInteger, nullable=False, default=0) # 1=izinkan terminal root web, 0=blokir
+    notes = Column(Text, nullable=True)                                  # Deskripsi/catatan operasional server
 
     services = relationship("Service", back_populates="server", cascade="all, delete-orphan")
     commands = relationship("Command", back_populates="server", cascade="all, delete-orphan")
