@@ -311,6 +311,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.5.24
+
+- **Tipe Rilis:** Rilis Fitur & Personalisasi Antarmuka (*Feature & Branding Personalization*)
+- **Fokus Utama:** Kustomisasi interaktif identitas organisasi (Nama Lembaga, Unit Kerja), pesan operasional harian (MOTD), toggle tampilan pengumuman, perapian tata letak halaman login minimalis, dan penambahan copyright universal seluruh halaman sistem.
+
+### Rangkuman Pembaruan:
+1. **Pengaturan Identitas & Pengumuman Organisasi (Branding & MOTD):**
+   - Penambahan tab interaktif baru *Identitas & Pengumuman* pada menu Profil untuk Master Admin dan Operator.
+   - Manajemen 4 parameter: Nama Organisasi, Unit Kerja, Pesan Operasional (MOTD), dan Toggle Tampilan (Checkbox).
+   - Fitur pratinjau interaktif langsung (*Live Interactive Preview*) untuk mensimulasikan header login dan bilah MOTD dashboard secara instan saat operator mengetik.
+   - Penyimpanan persisten ke tabel `system_settings` dengan pencatatan audit log `branding_update`.
+2. **Standardisasi Halaman Login Bersih & Rapi:**
+   - Menata ulang header login terpusat: `PANTAU SERVER` &rarr; `<Logo Organisasi>` &rarr; `<Nama Organisasi / Unit Kerja>`.
+   - Menjaga kartu otentikasi tetap minimalis, bersih, dan elegan tanpa elemen visual yang berlebihan.
+3. **Bilah Operasional Dashboard (MOTD Banner):**
+   - Menampilkan bilah status operasional di bawah topbar dashboard ketika opsi toggle tampilan aktif.
+   - Dilengkapi tautan kelola cepat bagi pengguna dengan hak akses operator.
+4. **Hak Cipta Terpusat Universal (Universal Copyright Footer):**
+   - Menambahkan footer hak cipta `© 2026 Azhuka Praja Muda Karana` pada bagian bawah tengah di seluruh halaman aplikasi (`base.html`, `login.html`, `login_2fa.html`).
+
+---
+
 ## Versi 4.5.23
 
 - **Tipe Rilis:** Rilis Pemeliharaan & Standardisasi Bahasa (*Maintenance & Documentation Standards*)

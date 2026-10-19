@@ -69,16 +69,27 @@
 {% endif %}
 
 <!-- Navigasi Tab Terpadu -->
+<!-- Navigasi Tab Terpadu -->
 <div class="tabbar" role="tablist">
-  <button type="button" id="tab-btn-me" class="tab is-on" onclick="switchProfileTab('me')">
+  <button type="button" id="tab-btn-me" class="tab {% if active_tab == 'me' or not active_tab %}is-on{% endif %}" onclick="switchProfileTab('me')">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
     Akun Saya
   </button>
   {% if can_manage_any %}
-  <button type="button" id="tab-btn-users" class="tab" onclick="switchProfileTab('users')">
+  <button type="button" id="tab-btn-users" class="tab {% if active_tab == 'users' %}is-on{% endif %}" onclick="switchProfileTab('users')">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
     Manajemen Pengguna &amp; Hak Akses
     <span class="badge" style="background:rgba(56,189,248,0.15);color:var(--blue);border:1px solid rgba(56,189,248,0.3);font-size:10px;padding:1px 6px">{{ users|length }}</span>
+  </button>
+  {% endif %}
+  {% if can_manage_branding %}
+  <button type="button" id="tab-btn-branding" class="tab {% if active_tab == 'branding' %}is-on{% endif %}" onclick="switchProfileTab('branding')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+      <path d="M2 17l10 5 10-5"></path>
+      <path d="M2 12l10 5 10-5"></path>
+    </svg>
+    Identitas &amp; Pengumuman
   </button>
   {% endif %}
 </div>
@@ -86,7 +97,7 @@
 <!-- ======================================================================= -->
 <!-- TAB 1: PROFIL & KEAMANAN SAYA                                            -->
 <!-- ======================================================================= -->
-<div id="tab-content-me">
+<div id="tab-content-me" style="display:{% if active_tab == 'me' or not active_tab %}block{% else %}none{% endif %}">
   <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:20px;align-items:start">
 
     <!-- Panel 1: Rincian Akun & Metadata -->
@@ -338,7 +349,7 @@
 <!-- TAB 2: MANAJEMEN PENGGUNA & HAK AKSES                                    -->
 <!-- ======================================================================= -->
 {% if can_manage_any %}
-<div id="tab-content-users" style="display:none">
+<div id="tab-content-users" style="display:{% if active_tab == 'users' %}block{% else %}none{% endif %}">
   <!-- Ringkasan Statistik Akun -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;margin-bottom:20px">
     {% set ns_cnt = namespace(master=0, op=0, vw=0) %}
@@ -687,6 +698,152 @@
 {% endif %}
 
 <!-- ======================================================================= -->
+<!-- TAB 3: IDENTITAS & PENGUMUMAN ORGANISASI                                 -->
+<!-- ======================================================================= -->
+{% if can_manage_branding %}
+<div id="tab-content-branding" style="display:{% if active_tab == 'branding' %}block{% else %}none{% endif %}">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:20px;align-items:start">
+
+    <!-- Kolom 1: Formulir Kustomisasi Identitas & Pesan -->
+    <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+          <path d="M2 17l10 5 10-5"></path>
+          <path d="M2 12l10 5 10-5"></path>
+        </svg>
+        Pengaturan Identitas &amp; Pengumuman
+      </h2>
+      <p style="font-size:12.5px;color:var(--dim);margin-bottom:20px;line-height:1.5">
+        Sesuaikan identitas lembaga, unit kerja, serta pesan operasional (MOTD) yang ditampilkan pada halaman login dan dashboard utama.
+      </p>
+
+      <form method="POST" action="/profile/branding" id="branding-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <!-- 1. Nama Organisasi -->
+        <div class="form-group" style="margin-bottom:16px">
+          <label for="brand-org-name" style="display:block;font-size:11.5px;font-weight:700;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">
+            1. Nama Organisasi
+          </label>
+          <input type="text" id="brand-org-name" name="org_name" value="{{ brand.org_name if brand else '' }}" placeholder="Contoh: Dinas Kominfo Kab. A" maxlength="100" style="width:100%;padding:10px 14px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13.5px;outline:none" autocomplete="off">
+          <span style="font-size:11px;color:var(--dim);display:block;margin-top:4px">Ditampilkan di bawah logo pada halaman login dan pada bilah dashboard.</span>
+        </div>
+
+        <!-- 2. Unit Kerja -->
+        <div class="form-group" style="margin-bottom:16px">
+          <label for="brand-org-unit" style="display:block;font-size:11.5px;font-weight:700;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">
+            2. Unit Kerja
+          </label>
+          <input type="text" id="brand-org-unit" name="org_unit" value="{{ brand.org_unit if brand else '' }}" placeholder="Contoh: Bidang Aplikasi dan Informatika" maxlength="100" style="width:100%;padding:10px 14px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13.5px;outline:none" autocomplete="off">
+          <span style="font-size:11px;color:var(--dim);display:block;margin-top:4px">Sub-bagian atau bidang pelaksana tugas operasional.</span>
+        </div>
+
+        <!-- 3. Pesan Operasional (MOTD) -->
+        <div class="form-group" style="margin-bottom:18px">
+          <label for="brand-dash-motd" style="display:block;font-size:11.5px;font-weight:700;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">
+            5. Pesan Operasional (MOTD)
+          </label>
+          <textarea id="brand-dash-motd" name="dash_motd" rows="3" placeholder="Contoh: Seluruh server produksi beroperasi optimal. Jadwal backup otomatis aktif." maxlength="500" style="width:100%;padding:10px 14px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;line-height:1.5;outline:none;resize:vertical;font-family:inherit">{{ brand.dash_motd if brand else '' }}</textarea>
+          <span style="font-size:11px;color:var(--dim);display:block;margin-top:4px">Pesan status kondisi atau pengumuman operasional pada dashboard.</span>
+        </div>
+
+        <!-- 4. Toggle Tampilan (Checkbox) -->
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <div>
+            <label for="brand-show-motd" style="font-size:13px;font-weight:700;color:var(--text);cursor:pointer;display:block">
+              7. Toggle Tampilan
+            </label>
+            <span style="font-size:11.5px;color:var(--dim);display:block;margin-top:2px">
+              Tampilkan atau sembunyikan pesan sambutan dan MOTD pada dashboard utama.
+            </span>
+          </div>
+          <label style="position:relative;display:inline-flex;align-items:center;cursor:pointer;gap:8px">
+            <input type="checkbox" id="brand-show-motd" name="show_motd" value="1" {% if brand and brand.show_motd %}checked{% endif %} style="width:18px;height:18px;accent-color:var(--blue);cursor:pointer">
+            <span style="font-size:12px;color:var(--text);font-weight:600">Aktifkan</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="font-weight:700;padding:10px 18px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          Simpan Identitas &amp; Pengumuman
+        </button>
+      </form>
+    </div>
+
+    <!-- Kolom 2: Pratinjau Interaktif (Live Preview) -->
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <!-- Pratinjau Tampilan Login -->
+      <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          Pratinjau Halaman Login
+        </h3>
+        <p style="font-size:11.5px;color:var(--dim);margin-bottom:14px">Simulasi susunan header login sesuai tata letak yang dipilih.</p>
+        
+        <div style="background:rgba(9,13,22,0.92);border:1px solid var(--border);border-radius:8px;padding:22px 16px;text-align:center">
+          <div style="font-size:16px;font-weight:800;letter-spacing:1.2px;color:#fff;text-transform:uppercase;margin-bottom:8px">PANTAU SERVER</div>
+          <div style="display:inline-flex;color:var(--blue);margin-bottom:8px">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 8px rgba(56,189,248,0.4))">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
+            </svg>
+          </div>
+          <div id="prev-login-org" style="font-size:13.5px;font-weight:700;color:var(--text);letter-spacing:0.2px">
+            {{ brand.org_name if brand and brand.org_name else '(Nama Organisasi)' }}
+          </div>
+          <div id="prev-login-unit" style="font-size:11.5px;color:var(--dim);margin-top:2px;{% if not brand or not brand.org_unit %}display:none{% endif %}">
+            {{ brand.org_unit if brand and brand.org_unit else '' }}
+          </div>
+
+          <div style="margin-top:16px;padding:12px;background:rgba(19,26,41,0.8);border:1px dashed rgba(255,255,255,0.12);border-radius:6px;font-size:11.5px;color:var(--dim)">
+            [ Kartu Login ]
+          </div>
+          <div style="margin-top:12px;font-size:10.5px;color:var(--dim);opacity:0.8">
+            &copy; 2026 Azhuka Praja Muda Karana
+          </div>
+        </div>
+      </div>
+
+      <!-- Pratinjau Tampilan Dashboard (MOTD Banner) -->
+      <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          Pratinjau Bilah Dashboard (MOTD)
+        </h3>
+        <p style="font-size:11.5px;color:var(--dim);margin-bottom:14px">Simulasi bilah pesan operasional pada dashboard.</p>
+
+        <div id="prev-motd-container" style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.22);border-radius:8px;padding:12px 14px;display:{% if brand and brand.show_motd %}flex{% else %}none{% endif %};align-items:center;gap:12px">
+          <div style="width:30px;height:30px;border-radius:6px;background:rgba(56,189,248,0.14);display:flex;align-items:center;justify-content:center;color:var(--blue);flex-shrink:0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div id="prev-dash-org" style="font-size:12.5px;font-weight:700;color:#fff">
+              {{ brand.org_name if brand and brand.org_name else '(Nama Organisasi)' }}{% if brand and brand.org_unit %} <span style="font-weight:400;color:var(--dim);font-size:11px">&bull; {{ brand.org_unit }}</span>{% endif %}
+            </div>
+            <div id="prev-dash-motd" style="font-size:11.5px;color:var(--text);opacity:0.9;margin-top:2px;line-height:1.4">
+              {{ brand.dash_motd if brand and brand.dash_motd else '(Pesan Operasional MOTD)' }}
+            </div>
+          </div>
+        </div>
+
+        <div id="prev-motd-hidden-notice" style="display:{% if brand and not brand.show_motd %}block{% else %}none{% endif %};background:rgba(255,255,255,0.03);border:1px dashed var(--border);border-radius:8px;padding:14px;text-align:center;font-size:12px;color:var(--dim)">
+          <em>Bilah pesan operasional disembunyikan (Toggle Tampilan nonaktif).</em>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endif %}
+
+
+<!-- ======================================================================= -->
 <!-- MODAL 1: LIHAT DETAIL HAK AKSES PENGGUNA                                 -->
 <!-- ======================================================================= -->
 <div id="viewUserModal" class="modal-backdrop" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center">
@@ -948,31 +1105,112 @@ const ALL_SYSTEM_PERMS = {{ all_perms|tojson }};
 function switchProfileTab(tabName) {
   const meTab = document.getElementById('tab-content-me');
   const usersTab = document.getElementById('tab-content-users');
+  const brandingTab = document.getElementById('tab-content-branding');
   const meBtn = document.getElementById('tab-btn-me');
   const usersBtn = document.getElementById('tab-btn-users');
+  const brandingBtn = document.getElementById('tab-btn-branding');
 
   if (tabName === 'users' && usersTab) {
     if (meTab) meTab.style.display = 'none';
+    if (brandingTab) brandingTab.style.display = 'none';
     usersTab.style.display = 'block';
     if (meBtn) meBtn.classList.remove('is-on');
+    if (brandingBtn) brandingBtn.classList.remove('is-on');
     if (usersBtn) usersBtn.classList.add('is-on');
     window.location.hash = 'users';
+  } else if (tabName === 'branding' && brandingTab) {
+    if (meTab) meTab.style.display = 'none';
+    if (usersTab) usersTab.style.display = 'none';
+    brandingTab.style.display = 'block';
+    if (meBtn) meBtn.classList.remove('is-on');
+    if (usersBtn) usersBtn.classList.remove('is-on');
+    if (brandingBtn) brandingBtn.classList.add('is-on');
+    window.location.hash = 'branding';
+    updateBrandingPreview();
   } else {
     if (meTab) meTab.style.display = 'block';
     if (usersTab) usersTab.style.display = 'none';
+    if (brandingTab) brandingTab.style.display = 'none';
     if (meBtn) meBtn.classList.add('is-on');
     if (usersBtn) usersBtn.classList.remove('is-on');
+    if (brandingBtn) brandingBtn.classList.remove('is-on');
     window.location.hash = 'me';
   }
 }
 
-// Inisialisasi tab saat load
+function updateBrandingPreview() {
+  const orgInput = document.getElementById('brand-org-name');
+  const unitInput = document.getElementById('brand-org-unit');
+  const motdInput = document.getElementById('brand-dash-motd');
+  const showToggle = document.getElementById('brand-show-motd');
+
+  const orgVal = orgInput ? orgInput.value.trim() : '';
+  const unitVal = unitInput ? unitInput.value.trim() : '';
+  const motdVal = motdInput ? motdInput.value.trim() : '';
+  const isShow = showToggle ? showToggle.checked : true;
+
+  // Update Login Preview
+  const prevLoginOrg = document.getElementById('prev-login-org');
+  const prevLoginUnit = document.getElementById('prev-login-unit');
+  if (prevLoginOrg) {
+    prevLoginOrg.textContent = orgVal || '(Nama Organisasi)';
+  }
+  if (prevLoginUnit) {
+    if (unitVal) {
+      prevLoginUnit.textContent = unitVal;
+      prevLoginUnit.style.display = 'block';
+    } else {
+      prevLoginUnit.style.display = 'none';
+    }
+  }
+
+  // Update Dashboard Preview
+  const prevDashOrg = document.getElementById('prev-dash-org');
+  const prevDashMotd = document.getElementById('prev-dash-motd');
+  const motdContainer = document.getElementById('prev-motd-container');
+  const motdHiddenNotice = document.getElementById('prev-motd-hidden-notice');
+
+  if (prevDashOrg) {
+    let orgText = orgVal || '(Nama Organisasi)';
+    if (unitVal) {
+      prevDashOrg.innerHTML = `${orgText} <span style="font-weight:400;color:var(--dim);font-size:11px">&bull; ${unitVal}</span>`;
+    } else {
+      prevDashOrg.textContent = orgText;
+    }
+  }
+  if (prevDashMotd) {
+    prevDashMotd.textContent = motdVal || '(Pesan Operasional MOTD)';
+  }
+
+  if (motdContainer && motdHiddenNotice) {
+    if (isShow) {
+      motdContainer.style.display = 'flex';
+      motdHiddenNotice.style.display = 'none';
+    } else {
+      motdContainer.style.display = 'none';
+      motdHiddenNotice.style.display = 'block';
+    }
+  }
+}
+
+// Inisialisasi tab dan preview saat load
 document.addEventListener('DOMContentLoaded', function() {
   const params = new URLSearchParams(window.location.search);
   const hash = window.location.hash;
-  if (params.get('tab') === 'users' || hash === '#users') {
+  if (params.get('tab') === 'branding' || hash === '#branding') {
+    switchProfileTab('branding');
+  } else if (params.get('tab') === 'users' || hash === '#users') {
     switchProfileTab('users');
   }
+
+  // Pasang event listener interaktif pada form input branding
+  ['brand-org-name', 'brand-org-unit', 'brand-dash-motd', 'brand-show-motd'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', updateBrandingPreview);
+      el.addEventListener('change', updateBrandingPreview);
+    }
+  });
 });
 
 // --- MODAL 1: LIHAT HAK AKSES ---

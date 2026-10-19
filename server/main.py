@@ -326,6 +326,11 @@ def _flash_profile_users(ok: bool, text: str) -> str:
     return f"/profile{_flash_qs(ok, text)}&tab=users"
 
 
+def _flash_profile_branding(ok: bool, text: str) -> str:
+    """Redirect URL ke tab branding dengan parameter pesan/error."""
+    return f"/profile{_flash_qs(ok, text)}&tab=branding"
+
+
 def _validate_ip(value: str) -> bool:
     """Cek apakah string adalah IPv4 atau IPv6 yang valid."""
     try:
@@ -688,12 +693,62 @@ async def security_headers(request: Request, call_next):
     return resp
 
 
+# ---------------------------------------------------------------------------
+# Pengaturan Identitas & Pengumuman Organisasi (Branding & MOTD)
+# ---------------------------------------------------------------------------
+_BRANDING_CACHE = {
+    "data": None,
+    "expires_at": 0.0,
+}
+
+
+def get_branding_settings(db: Session | None = None) -> dict:
+    """Ambil pengaturan identitas organisasi dan pesan operasional (branding & MOTD)."""
+    now = time.time()
+    if _BRANDING_CACHE["data"] is not None and now < _BRANDING_CACHE["expires_at"] and db is None:
+        return dict(_BRANDING_CACHE["data"])
+
+    close_db = False
+    if db is None:
+        db = SessionLocal()
+        close_db = True
+    defaults = {
+        "org_name": "",
+        "org_unit": "",
+        "dash_motd": "",
+        "show_motd": True,
+    }
+    try:
+        row = db.query(SystemSetting).filter(SystemSetting.key == "branding").first()
+        if row and row.value:
+            data = json.loads(row.value)
+            defaults["org_name"] = str(data.get("org_name", "") or "").strip()
+            defaults["org_unit"] = str(data.get("org_unit", "") or "").strip()
+            defaults["dash_motd"] = str(data.get("dash_motd", "") or "").strip()
+            defaults["show_motd"] = bool(data.get("show_motd", True))
+        _BRANDING_CACHE["data"] = dict(defaults)
+        _BRANDING_CACHE["expires_at"] = now + 15.0  # cache memori 15 detik
+        return defaults
+    except Exception as e:
+        logger.warning("[branding] Gagal membaca branding settings: %s", e)
+        return defaults
+    finally:
+        if close_db:
+            db.close()
+
+
+def invalidate_branding_cache() -> None:
+    _BRANDING_CACHE["data"] = None
+    _BRANDING_CACHE["expires_at"] = 0.0
+
+
 def tpl(request: Request, name: str, context: dict, status_code: int = 200) -> HTMLResponse:
     ctx = dict(context) if context else {}
-    # Injeksi CSRF token otomatis dan app_version ke semua template
+    # Injeksi CSRF token otomatis, app_version, dan identitas organisasi ke semua template
     sid = request.cookies.get(SESSION_COOKIE, "")
     ctx.setdefault("csrf_token", _csrf_token(sid) if sid else "")
     ctx.setdefault("app_version", settings.APP_VERSION)
+    ctx.setdefault("brand", get_branding_settings())
     return templates.TemplateResponse(request, name, ctx, status_code=status_code)
 
 
@@ -6862,6 +6917,8 @@ AUDIT_ACTION_LABELS = {
     "masalah_warning": "Peringatan Masalah",
     "masalah_danger": "Bahaya Masalah",
     "masalah_info": "Informasi Masalah",
+    # Identitas & Pengumuman
+    "branding_update": "Pembaruan Identitas & MOTD",
 }
 
 AUDIT_CATEGORIES = [
@@ -6869,7 +6926,7 @@ AUDIT_CATEGORIES = [
         "id": "cat:auth",
         "name": "Autentikasi & Akun",
         "name_en": "Auth & User Accounts",
-        "keys": ["login", "login_2fa", "logout", "user_create", "cmd:user_create", "user_lock", "cmd:user_lock", "user_unlock", "cmd:user_unlock", "user_delete", "cmd:user_delete", "user_add"],
+        "keys": ["login", "login_2fa", "logout", "user_create", "cmd:user_create", "user_lock", "cmd:user_lock", "user_unlock", "cmd:user_unlock", "user_delete", "cmd:user_delete", "user_add", "branding_update"],
         "actions": [
             ("login", "Login", "Login"),
             ("login_2fa", "Login 2FA", "2FA Login"),
@@ -6879,6 +6936,7 @@ AUDIT_CATEGORIES = [
             ("user_unlock", "Buka Kunci Akun", "Unlock User Account"),
             ("user_delete", "Hapus Pengguna", "Delete User"),
             ("user_add", "Tambah Akun Web", "Add Web User"),
+            ("branding_update", "Pembaruan Identitas & MOTD", "Update Identity & MOTD"),
         ]
     },
     {
@@ -9644,6 +9702,7 @@ def _render_profile_page(
 
     can_manage_users = user.is_master_admin() or user.has_perm("can_manage_users")
     can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
+    can_manage_branding = user.is_master_admin() or user.role == "operator"
 
     users_list = []
     if user.is_master_admin():
@@ -9660,6 +9719,8 @@ def _render_profile_page(
         "can_manage_users": can_manage_users,
         "can_manage_viewers": can_manage_viewers,
         "can_manage_any": can_manage_viewers,
+        "can_manage_branding": can_manage_branding,
+        "brand": get_branding_settings(db),
         "all_perms": security_auth.OPERATOR_PERMISSIONS,
         "raw_secret": raw_secret,
         "secret_formatted": formatted_secret,
@@ -9826,6 +9887,58 @@ def profile_regenerate_recovery(
         newly_generated_codes=plain_codes,
         flash_ok=True,
         flash_msg="Kode cadangan darurat baru berhasil dibuat. Kode lama sudah tidak berlaku.",
+    )
+
+
+@app.post("/profile/branding")
+def profile_update_branding(
+    request: Request,
+    csrf_token: str = Form(default=""),
+    org_name: str = Form(default=""),
+    org_unit: str = Form(default=""),
+    dash_motd: str = Form(default=""),
+    show_motd: str = Form(default=""),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Simpan identitas organisasi, unit kerja, pesan operasional (MOTD), dan preferensi tampilan."""
+    _verify_csrf_form(request, csrf_token)
+    if not (user.is_master_admin() or user.role == "operator"):
+        raise HTTPException(status_code=403, detail="Hanya Master Admin atau Operator yang dapat mengubah identitas sistem.")
+
+    clean_org_name = (org_name or "").strip()[:100]
+    clean_org_unit = (org_unit or "").strip()[:100]
+    clean_dash_motd = (dash_motd or "").strip()[:500]
+    is_show = True if show_motd in ("on", "1", "true", "True") else False
+
+    new_brand = {
+        "org_name": clean_org_name,
+        "org_unit": clean_org_unit,
+        "dash_motd": clean_dash_motd,
+        "show_motd": is_show,
+    }
+
+    row = db.query(SystemSetting).filter(SystemSetting.key == "branding").first()
+    if not row:
+        row = SystemSetting(key="branding", value=json.dumps(new_brand), updated_at=datetime.utcnow())
+        db.add(row)
+    else:
+        row.value = json.dumps(new_brand)
+        row.updated_at = datetime.utcnow()
+
+    _audit(
+        db,
+        user.username,
+        "branding_update",
+        target="Identitas & Pesan Organisasi",
+        result=f"Disimpan (Org: {clean_org_name or '-'}, Unit: {clean_org_unit or '-'}, Tampilkan: {'Ya' if is_show else 'Tidak'})"
+    )
+    db.commit()
+    invalidate_branding_cache()
+
+    return RedirectResponse(
+        _flash_profile_branding(True, "Pengaturan identitas dan pesan operasional berhasil disimpan."),
+        status_code=303
     )
 
 
