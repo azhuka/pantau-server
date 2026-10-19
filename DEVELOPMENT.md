@@ -311,6 +311,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.5.31
+
+- **Tipe Rilis:** Pembaruan Posisi & Teks Hak Cipta (*Copyright Positioning & Text Standardization*)
+- **Fokus Utama:** Menempatkan baris hak cipta selalu di posisi paling bawah layar/halaman (termasuk halaman login dan verifikasi 2FA) dan membakukan teks hak cipta menjadi `© 2026 Pantau-Server`.
+
+### Rangkuman Pembaruan:
+1. **Penataan Posisi Hak Cipta Paling Bawah Layar:**
+   - Menyusun kontainer halaman login (`login.html`) dan verifikasi 2FA (`login_2fa.html`) menggunakan flexbox vertikal berjarak fleksibel (`margin: auto 0` pada kartu form login dan `margin-top: auto` pada footer), sehingga elemen hak cipta selalu berada di dasar layar/halaman (*bottom of screen*).
+2. **Standardisasi Teks Hak Cipta:**
+   - Mengubah redaksi hak cipta di seluruh aplikasi (`base.html`, `login.html`, `login_2fa.html`, serta pratinjau login pada `profile.html`) menjadi:
+     `&copy; 2026 Pantau-Server`.
+
+---
+
 ## Versi 4.5.30
 
 - **Tipe Rilis:** Presisi dan Keseimbangan Tata Letak Header Login (*Login Header Precision & Balanced Layout*)

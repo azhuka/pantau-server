@@ -25,12 +25,12 @@ body{
   background-attachment:fixed;
   color:var(--text);
   display:flex;
-  justify-content:center;
+  flex-direction:column;
   align-items:center;
   min-height:100vh;
   -webkit-font-smoothing:antialiased;
 }
-.login-box{width:100%;max-width:400px;padding:20px}
+.login-box{width:100%;max-width:400px;padding:20px;margin:auto 0}
 .login-header{text-align:center;margin-bottom:24px}
 .login-header .shield-icon{
   width:54px;height:54px;border-radius:50%;background:rgba(56,189,248,0.12);
@@ -89,9 +89,9 @@ body{
   <div class="back-link">
     <a href="/login">&#8592; Batalkan dan kembali ke login</a>
   </div>
-  <footer style="text-align:center;margin-top:26px;font-size:12px;color:var(--dim);opacity:0.8;user-select:none">
-    &copy; 2026 Azhuka Praja Muda Karana
-  </footer>
 </div>
+<footer style="margin-top:auto;text-align:center;padding:16px 20px;font-size:12px;color:var(--dim);opacity:0.85;user-select:none;width:100%">
+  &copy; 2026 Pantau-Server
+</footer>
 </body>
 </html>
