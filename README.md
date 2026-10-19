@@ -1,57 +1,63 @@
-# Pantau Server (v4.4.1)
+# Pantau Server
 
-Dashboard monitoring & management multi-server berbasis web (FastAPI + MariaDB) dengan agent daemon Python ringan untuk mengelola multi server Linux dari satu layar.
+Dashboard pemantauan dan pengelolaan multi-server Linux berbasis web (FastAPI + MariaDB) dengan daemon agen Python ringan tanpa dependensi eksternal. Dirancang untuk memudahkan sysadmin dan tim operasional mengawasi metrik performa, mengelola layanan, dan menangani insiden secara terpusat.
 
 ---
 
 ## Fitur Utama
 
-- **Live Resource Monitoring:** CPU, RAM, Swap, Disk per mount point, Load Average, dan bandwidth network realtime (auto-polling tanpa refresh browser).
-- **Deep Hardware & Platform Telemetry:** Deteksi model prosesor & clock speed, hypervisor/virtualisasi platform (DMI & systemd-detect-virt), jenis block storage (SSD/HDD), default gateway, DNS, interface network MAC & link speed, serta waktu boot sistem.
-- **Klasifikasi Kepentingan Layanan (Level Operasional) (v4.4.1):** Pengelompokan server ke dalam 3 level (Tier 1 Layanan Utama/Prioritas, Tier 2 Layanan Pendukung/Sekunder, Tier 3 Layanan Sementara/Non-Kritis). Keparahan KRITIS (`danger`) dan banner darurat/sirene hanya terpicu jika server Tier 1 mengalami bencana fatal. Gangguan server pendukung berstatus GAWAT (`average`), dan server sementara berstatus PERINGATAN (`warning`). Pemadaman sadar oleh operator di seluruh tier tercatat aktif sebagai PERINGATAN tanpa memicu alarm darurat.
-- **Fleet-Wide OTA Agent Self-Update:** Pembaruan versi armada agen otomatis (*self-update*) secara mandiri via polling heartbeat berkala tanpa perlu menekan tombol satu per satu, dengan verifikasi kriptografis SHA-256 dan auto-restart systemd.
-- **Service & Process Control:** Start, Stop, Restart service systemd, penentuan peran layanan Utama (*Core*) vs Sekunder, dan kill process pemakan resource langsung dari web dengan guardrail proteksi sistem kritis.
-- **Web Terminal (xterm.js):** Akses shell root interaktif langsung di browser. Mendukung ANSI color, shortcut bash, nano, htop, dan full screen.
-- **Web File Manager:** Browse folder, edit config (auto-backup `.bak`), upload/download file, serta chmod/chown dengan proteksi path sistem kritis.
-- **Emergency Critical Incident & Alert Tracking:** Sistem banner peringatan darurat global untuk insiden kritis (server tidak melapor / offline), eskalasi severity bertahap (Warning → Average → Critical), panduan mitigasi fisik/VM, serta alur penanganan (*acknowledge/resolve*).
-- **Security & RBAC 3-Tier:** Pembagian role (Master Admin, Operator dengan wewenang sudo terdelegasi, Viewer), 2FA TOTP (Google/Microsoft Authenticator), recovery backup code, dan user activity audit trail.
-- **Host Management Suite:** Kelola user Linux host (add, lock, unlock), cron job, port listening (kill/block via UFW), dan inspeksi masa aktif SSL.
-- **One-Click & Automatic OTA Agent Update:** Push update agent manual per-server atau otomatis menyeluruh ke seluruh client langsung dari dashboard.
+- **Pemantauan Performa Real-Time:** Monitoring utilisasi CPU, RAM, Swap, Disk per partisi, Load Average, dan bandwidth jaringan secara real-time via polling background tanpa reload halaman.
+- **Telemetri Perangkat Keras & Virtualisasi:** Deteksi otomatis model prosesor, jumlah core, clock speed, platform hypervisor (KVM, Proxmox LXC/VM, VMware, Baremetal), tipe media penyimpanan (SSD/HDD), default gateway, DNS, interface jaringan, MAC address, serta waktu aktif sistem (*uptime*).
+- **Klasifikasi Level Operasional Server (3-Tier):**
+  - **Tier 1 (Layanan Utama):** Server dengan prioritas tinggi. Gangguan memulai tahap keparahan Gawat selama 1 menit untuk tindakan mitigasi awal, kemudian bereskalasi ke Kritis serta mengaktifkan banner merah dan alarm audio jika belum pulih.
+  - **Tier 2 (Layanan Pendukung):** Server operasional sekunder. Gangguan memulai tahap Peringatan selama 1 menit sebelum bereskalasi ke Gawat (tidak memicu banner atau alarm).
+  - **Tier 3 (Layanan Non-Kritis / Pengujian):** Server tahap uji coba atau sementara. Gangguan dibatasi pada tingkat Peringatan.
+  - **Tindakan Pemeliharaan Operator:** Penghentian layanan (*Stop Service*) atau pemadaman server (*Power Off*) yang dilakukan oleh operator dicatat sebagai Peringatan tanpa memicu alarm darurat.
+- **Pembaruan Agen Otomatis (Fleet-Wide OTA Self-Update):** Pembaruan agen klien secara otomatis saat server pusat diperbarui. Dilengkapi verifikasi integritas hash SHA-256 dan restart otomatis via systemd watchdog.
+- **Manajemen Layanan Systemd & Proses:** Memulai (*start*), menghentikan (*stop*), memulai ulang (*restart*), memantau log service, serta menghentikan proses sistem (*kill* via SIGTERM/SIGKILL) langsung dari antarmuka web dengan pengaman sistem (*guardrail*).
+- **Terminal Web Terintegrasi (xterm.js):** Sesi shell Linux interaktif langsung di browser dengan dukungan warna ANSI, tombol shortcut Bash, nano/vim, htop, dan mode layar penuh.
+- **File Manager Web:** Eksplorasi direktori remote, penyuntingan berkas konfigurasi dengan cadangan otomatis (`.bak`), upload, download, serta pengaturan izin (*chmod/chown*) dengan proteksi path sistem kritis.
+- **Kontrol Hak Akses 3-Tier (RBAC):**
+  - **Master Admin:** Otoritas penuh sistem (pengaturan pengguna, audit log, konfigurasi global). Akun terlindungi dari penghapusan atau penonaktifan.
+  - **Operator:** Hak operasional harian yang dapat didelegasikan secara granular (layanan, terminal, file manager, firewall) dengan wewenang setara sudo.
+  - **Viewer:** Hak observasi baca-saja (*read-only*) tanpa tombol aksi eksekusi.
+- **Autentikasi Dua Langkah (2FA TOTP):** Dukungan Google Authenticator, Microsoft Authenticator, dan kode pemulihan cadangan (*recovery codes*).
+- **Audit Trail Terpusat:** Pencatatan log seluruh aktivitas pengguna (siapa, kapan, perintah/tindakan, target, dan hasil eksekusi).
 
 ---
 
-## 1. Install Dashboard (Server Pusat)
+## 1. Pemasangan Dashboard (Server Pusat)
 
-Jalankan di server Ubuntu/Debian:
+Dukungan sistem operasi: Ubuntu 20.04/22.04/24.04 LTS atau Debian 11/12.
 
 ```bash
-# 1. Update paket & pasang dependensi
+# 1. Perbarui paket dan pasang dependensi dasar
 sudo apt update && sudo apt install -y git python3 python3-venv python3-pip mariadb-server rsync
 sudo systemctl enable --now mariadb
 
-# 2. Clone repo & jalankan installer
+# 2. Clone repositori dan jalankan installer
 git clone https://github.com/azhuka/pantau-server.git
 cd pantau-server
 sudo bash install-server.sh
 ```
 
-Script installer akan otomatis:
-- Membuat user sistem `pantau`
+Skrip installer otomatis melakukan konfigurasi:
+- Membuat pengguna sistem `pantau`
 - Menyiapkan database MariaDB
-- Memasang service `pantau-server.service`
-- Meminta password admin saat instalasi
+- Memasang dan mengaktifkan service systemd `pantau-server.service`
+- Meminta kata sandi awal untuk akun administrator
 
-Selesai install, akses dashboard via browser:
-- **URL:** `http://<IP-SERVER>:8400`
+Setelah instalasi selesai, akses dashboard melalui browser:
+- **Alamat:** `http://<IP-SERVER>:8400`
 - **Username:** `admin`
-- **Password:** password yang dibuat saat instalasi
+- **Password:** kata sandi yang ditentukan saat instalasi
 
-**Cek status service dashboard:**
+**Memeriksa Status Service Dashboard:**
 ```bash
 sudo systemctl status pantau-server.service
 ```
 
-**Lupa password admin? Reset langsung via CLI:**
+**Reset Kata Sandi Admin via CLI:**
 ```bash
 sudo /opt/pantau/server/env/bin/python /opt/pantau/server/seed_admin.py \
   --username admin --role admin --password 'password-baru'
@@ -59,12 +65,12 @@ sudo /opt/pantau/server/env/bin/python /opt/pantau/server/seed_admin.py \
 
 ---
 
-## 2. Install Agent di Server Client
+## 2. Pemasangan Agen pada Server Klien
 
-Agent tidak butuh port inbound (tidak perlu buka port SSH ke arah client). Agent aktif melapor keluar (*outbound pull*) ke dashboard setiap 5–10 detik via HTTP POST, sehingga aman di balik NAT, firewall ketat, atau jaringan private LAN/VPN.
+Agen Pantau beroperasi dengan metode **Outbound Pull** (koneksi keluar dari klien ke server pusat setiap 5–10 detik via HTTP/HTTPS POST). Klien tidak memerlukan port inbound terbuka dan dapat berjalan di balik NAT, firewall, atau jaringan privat (LAN/VPN).
 
-1. Buka dashboard: Masuk ke menu **Servers → Tambah Server**, lalu salin **API Key** (64 hex).
-2. Di server client yang ingin dimonitor, unduh dan jalankan script installer:
+1. Buka dashboard: Masuk ke menu **Daftar Server → Tambah Server**, kemudian salin **API Key** (64 karakter hex).
+2. Di server klien yang akan dipantau, unduh dan jalankan installer agen:
 
 ```bash
 sudo curl -fsSL -o /tmp/pantau-install.sh \
@@ -72,20 +78,20 @@ sudo curl -fsSL -o /tmp/pantau-install.sh \
 sudo bash /tmp/pantau-install.sh
 ```
 
-Installer akan meminta konfigurasi secara interaktif dan fleksibel:
-- **URL Dashboard**: Masukkan alamat server Dashboard (misal via LAN/VPN: `http://172.30.1.40:8400` atau via reverse proxy `https://pantau.domain.com`).
-- **API Key**: Masukkan 64 karakter hex API Key yang telah disalin.
+Installer akan meminta konfigurasi interaktif:
+- **URL Dashboard:** Masukkan URL server pusat (contoh LAN/VPN: `http://172.30.1.40:8400` atau domain `https://pantau.domainanda.com`).
+- **API Key:** Masukkan API Key yang telah disalin dari dashboard.
 
-Script secara otomatis:
-- Memvalidasi keterjangkauan dan keabsahan API Key ke Dashboard sebelum menyimpan data.
-- Menulis konfigurasi aman di `/etc/pantau/config.json` (permission `0640`, owner `root:pantau`).
-- Mendaftarkan dan mengaktifkan service systemd `agent_pantau.service` di bawah user `pantau`.
+Skrip installer klien otomatis melakukan:
+- Validasi konektivitas dan autentikasi token ke Dashboard.
+- Menulis konfigurasi aman pada `/etc/pantau/config.json` (izin `0640`, owner `root:pantau`).
+- Memasang dan mengaktifkan service systemd `agent_pantau.service` di bawah pengguna `pantau`.
 
-*(Opsi non-interaktif untuk script otomasi/Ansible tetap didukung: `sudo bash /tmp/pantau-install.sh "http://<IP-DASHBOARD>:8400" "<API_KEY>"`)*
+*(Mode non-interaktif untuk skrip automasi/Ansible: `sudo bash /tmp/pantau-install.sh "http://<IP-DASHBOARD>:8400" "<API_KEY>"`)*
 
-Dalam ±10 detik, server client otomatis muncul dengan status online di dashboard.
+Server klien akan terdeteksi dan berstatus online di dashboard dalam ±10 detik.
 
-**Cek service dan log agent di client:**
+**Pemeriksaan Service dan Log Agen Klien:**
 ```bash
 sudo systemctl status agent_pantau.service
 sudo journalctl -u agent_pantau -f
@@ -93,154 +99,125 @@ sudo journalctl -u agent_pantau -f
 
 ---
 
-## Panduan Fitur & Tab
+## Panduan Antarmuka & Navigasi
 
 ### Dashboard Utama
-- Overview armada server: status Online / Offline, service down, dan rata-rata load.
-- Tabel server live dengan tombol copy IP, search instan, dan sorting kolom.
+- **Ringkasan Armada:** Jumlah server aktif, server offline, layanan bermasalah, dan beban rata-rata sistem.
+- **Tabel Status & Kinerja:** Tampilan ringkas status koneksi, CPU, RAM, Storage, dan layanan per server, dilengkapi pencarian dan filter grup.
+- **Insiden Terkini:** Daftar insiden aktif terpusat yang diurutkan berdasarkan tingkat keparahan (*Kritis*, *Gawat*, *Peringatan*).
 
-### Detail Server
-- **Tab Riwayat:** Grafik utilisasi CPU, RAM, Swap, Disk I/O, Load Average, dan Disk per mount point (1 jam s/d 30 hari).
-- **Tab Service:** Kontrol service systemd (Start, Stop, Restart, Add Service). Status tombol responsif instan (*Optimistic UI*) dan sinkron cepat via *fast-polling*.
-- **Tab Masalah:** Daftar alert & insiden realtime, tombol mitigasi cepat, opsi Mute/Silence (2 jam, 24 jam, permanen), dan konfirmasi penanganan (ack/resolve).
-- **Tab ⚡ Top Process:** Snapshot 20 proses pemakan CPU & RAM tertinggi, lengkap dengan opsi kill process (*SIGTERM* / *SIGKILL*).
-- **Tab Jaringan:** Interface network, IP address (IPv4/IPv6), link status, dan data throughput (KB/s / MB/s).
-- **Tab User Host:** Daftar user lokal Linux, status lock/unlock, riwayat login SSH, dan log aktivitas sudo.
-- **Tab Port & Firewall:** Daftar listening port (TCP/UDP), process owner, serta tombol block port/IP instan via UFW.
-- **Tab SSL:** Masa aktif sertifikat SSL/TLS domain lokal dan alert sebelum expired.
-- **Tab Cron Job:** Kelola crontab sistem (tambah, enable/disable, run now, delete).
-- **Tab Log:** Log viewer terpadu (system log & journald) dengan filter teks dan download file log.
-- **Web Terminal (`>_ Terminal`):** Buka terminal shell root interaktif langsung di browser.
-- **File Manager (`📁 File Manager`):** Remote file explorer untuk edit file konfigurasi, upload, dan download.
-- **Maintenance (`🔧 Pemeliharaan`):** Mute seluruh alert sementara saat server sedang maintenance/reboot.
-
-### Profil & Keamanan (User Management)
-- **Akun Pribadi:** Ganti password, aktifkan 2FA TOTP (Google/Microsoft Authenticator), simpan recovery code, dan regenerate backup code.
-- **Manajemen User:** Tambah akun operator/viewer, atur checklist izin sudo granular, reset password user lain, lock/unlock user, dan review user activity audit trail.
+### Rincian Server
+- **Tab Kinerja & Spesifikasi:** Utilisasi CPU, memori, swap, partisi storage, throughput interface jaringan, serta grafik riwayat beban sistem (1 jam hingga 30 hari).
+- **Tab Riwayat & Masalah:** Riwayat insiden pada server, rekomendasi penanganan teknis, opsi abaikan sementara (*mute/silence*), dan konfirmasi penanganan (*acknowledge*).
+- **Tab Layanan:** Kontrol unit systemd (Mulai, Hentikan, Restart, Tambah Layanan), penandaan layanan utama (*core*) vs sekunder, serta akses log service.
+- **Tab Manajer Tugas:** Daftar proses sistem teratas berdasarkan pemakaian CPU dan RAM, dilengkapi opsi terminasi proses (*SIGTERM* atau *SIGKILL*).
+- **Tab Akun Pengguna:** Daftar akun lokal Linux, status kunci (*lock/unlock*), dan pembuatan akun baru.
+- **Tab Port Listening:** Audit socket jaringan TCP dan UDP yang sedang terbuka beserta proses pemiliknya.
+- **Tab Firewall:** Status UFW, aturan firewall, daftar alamat IP yang diblokir pada tingkat kernel via iptables, serta tombol blokir/buka blokir IP.
+- **Tab Sertifikat SSL:** Pemantauan tanggal kedaluwarsa berkas sertifikat SSL lokal dan sertifikat web server.
+- **Tab Tugas Terjadwal:** Manajemen entri cron sistem pada `/etc/cron.d/`.
+- **Tab Logging:** Log viewer terpadu untuk berkas log sistem dan journald.
+- **Terminal Web (`>_ Terminal`):** Akses shell root interaktif langsung di browser.
+- **File Manager (`📁 File Manager`):** Remote file explorer untuk membaca, mengunggah, mengunduh, dan menyunting berkas konfigurasi.
 
 ---
 
-## Role & Hak Akses (RBAC 3-Tier)
+## Model Kontrol Akses (RBAC 3-Tier)
 
-Sistem hak akses 3-tier dengan model delegasi seperti perintah `sudo` di Linux:
-
-1. **Master Admin**: Otoritas tertinggi setara *root*. Akun kebal (tidak bisa dihapus, di-lock, atau diturunkan haknya). Memegang kendali penuh atas server, terminal, file manager, dan pengaturan izin operator.
-2. **Operator (Wewenang Sudo)**: Akun operasional harian. Master Admin dapat mendelegasikan wewenang spesifik (misal: hanya boleh kelola service dan buka terminal, tapi dilarang menghapus server).
-   - **Zero-Knowledge**: Operator sama sekali tidak bisa melihat keberadaan akun Master Admin (data dan counter Master Admin disembunyikan total).
-3. **Viewer**: Akun pengawas baca-saja (*read-only*). Hanya bisa melihat metrik dan grafik tanpa tombol aksi apapun. Terisolasi total dari info akun admin dan tidak memiliki akses ke menu Profil.
-
-| Fitur / Aksi | Master Admin | Operator (Sudo) | Viewer |
-|---|:---:|:---:|:---:|
-| View Dashboard, Metrik & Log | Ya | Ya | Ya |
-| Kelola Server & Service (Start/Stop/Restart) | Ya | Sesuai Izin | Tidak |
-| Buka Web Terminal & File Manager | Ya | Sesuai Izin | Tidak |
-| Reboot, Power Off & Update OS (APT) | Ya | Sesuai Izin | Tidak |
-| Firewall (UFW) & Block/Unblock IP | Ya | Sesuai Izin | Tidak |
-| User Management (Tambah, Edit, Lock User) | Ya | Sesuai Izin | Tidak |
-| Hapus / Edit Akun Master Admin | Ya (Personal) | Ditolak Mutlak | Tidak |
-| Akses Profil Pribadi & Setup 2FA | Ya | Ya | Tidak |
+| Fitur / Tindakan | Master Admin | Operator (Sudo) | Viewer |
+|:---|:---:|:---:|:---:|
+| Melihat Dashboard, Metrik & Log | Ya | Ya | Ya |
+| Kelola Server & Layanan (Start/Stop/Restart) | Ya | Sesuai Izin | Tidak |
+| Akses Terminal Web & File Manager | Ya | Sesuai Izin | Tidak |
+| Restart Sistem (Reboot) & Update OS | Ya | Sesuai Izin | Tidak |
+| Kelola Firewall (UFW) & Blokir IP | Ya | Sesuai Izin | Tidak |
+| Manajemen Pengguna (Tambah, Edit, Kunci) | Ya | Sesuai Izin | Tidak |
+| Audit Trail Aktivitas Pengguna | Ya | Sesuai Izin | Tidak |
+| Menghapus / Mengubah Akun Master Admin | Ya (Pribadi) | Ditolak | Tidak |
+| Profil Akun Pribadi & Konfigurasi 2FA | Ya | Ya | Tidak |
 
 ---
 
-## Klasifikasi Kepentingan Layanan (Level Operasional) & Keparahan Insiden (v4.4.1)
+## Klasifikasi Level Operasional & Keparahan Insiden
 
-Pantau Server menerapkan standar hierarki keparahan insiden berbasis level operasional layanan (*operational criticality-driven incident severity*):
+Pantau Server menerapkan hierarki evaluasi insiden berdasarkan tingkat kepentingan operasional server:
 
-### 1. Klasifikasi Level Operasional Server
-- **Tier 1 — Layanan Utama / Prioritas:**
-  Server dengan fungsi dan peran vital yang tidak boleh terhenti. Gangguan fatal pada tier ini memicu eskalasi **🔴 KRITIS (`danger`)**, **Banner Merah Global (`#alertBanner`)**, dan **Sirene Darurat Audio NOC**.
-- **Tier 2 — Layanan Pendukung / Sekunder:**
-  Server yang mendukung kelancaran sistem kerja operasional namun memiliki toleransi pemulihan. Gangguan fatal maksimal berstatus **🟠 GAWAT (`average`)**, dan secara ketat tidak memicu banner darurat atau sirene.
-- **Tier 3 — Layanan Sementara / Non-Kritis:**
-  Server uji coba, mesin staging, atau sementara yang tidak berdampak langsung terhadap operasional sistem. Gangguan server maksimal berstatus **🟡 PERINGATAN (`warning`)**.
+### 1. Klasifikasi Level Operasional
+- **Tier 1 (Layanan Utama):** Server dengan beban kerja vital yang memerlukan ketersediaan tinggi. Gangguan sistem bereskalasi hingga tingkat **KRITIS**, memicu banner merah global dan alarm audio.
+- **Tier 2 (Layanan Pendukung):** Server pendukung operasional yang memiliki toleransi pemulihan. Gangguan sistem bereskalasi maksimal hingga tingkat **GAWAT**, tanpa memicu banner global atau alarm audio.
+- **Tier 3 (Layanan Sementara / Uji Coba):** Server pengembangan, staging, atau pengujian. Gangguan sistem dibatasi pada tingkat **PERINGATAN**.
 
-### 2. Matriks Keparahan Insiden Terhadap Level Operasional
+### 2. Matriks Keparahan Insiden
 
 | Kondisi / Insiden Sistem | Tier 1 (Utama) | Tier 2 (Pendukung) | Tier 3 (Sementara) | Catatan Operasional |
-| :--- | :---: | :---: | :---: | :--- |
-| **Host Offline Mendadak ($\ge 300\text{s}$)** | 🔴 **KRITIS** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Banner merah & sirene **hanya** untuk Tier 1 |
-| **Partisi Disk Read-Only (Hardware Block Error)** | 🔴 **KRITIS** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Risiko kehilangan data storage |
-| **Disk Penuh 100% pada Root/DB Partition** | 🔴 **KRITIS** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Penulisan data terhenti total |
-| **Layanan Utama (*Core Service*) Crash / Down** | 🔴 **KRITIS** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Layanan yang ditandai badge `UTAMA` |
-| **Layanan Sekunder (*Secondary*) Down** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | Layanan pendukung (mis. cache/worker) |
-| **Tindakan Sadar Operator (Poweroff/Stop Service)** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | Tetap insiden aktif (`is_ignored = 0`), tanpa banner |
-| **Kapasitas Disk $\ge 90\%$, RAM/CPU $\ge 90\%$** | 🟠 **GAWAT** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Indikasi beban tinggi sistem |
-| **Pembaruan Paket Sistem (APT Updates Available)** | 🔵 **INFO** | 🔵 **INFO** | 🔵 **INFO** | Tugas pemeliharaan rutin administratif |
-
-> [!IMPORTANT]
-> **Tindakan Sadar Operator**: Apabila operator sengaja mematikan server via dashboard (*Power Off Host*) atau menghentikan service (*Stop Service*), insiden **TIDAK langsung diabaikan secara otomatis**, melainkan tetap tercatat aktif di kartu *Insiden Terkini* dengan status **🟡 PERINGATAN** dan label transparan `DIMATIKAN OLEH OPERATOR (Nama Operator)` tanpa memicu banner merah atau sirene. Jika operator kemudian memilih tombol **Abaikan**, insiden berpindah ke daftar *Diabaikan* dan keluar dari status *Peringatan* aktif hingga operator membatalkannya (*Pantau Kembali*).
+|:---|:---:|:---:|:---:|:---|
+| **Server Klien Offline (Tidak Melapor)** | 🔴 **KRITIS** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Banner merah & alarm audio hanya aktif untuk Tier 1 |
+| **Partisi Disk Read-Only** | 🔴 **KRITIS** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Menandakan proteksi kernel akibat kegagalan I/O |
+| **Penyimpanan Disk Penuh (100%)** | 🔴 **KRITIS** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Menghambat penulisan data dan transaksi database |
+| **Layanan Utama (*Core Service*) Down** | 🔴 **KRITIS** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Berlaku untuk layanan berstatus Utama |
+| **Layanan Sekunder Down** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | Layanan pendukung (misal cache/worker) |
+| **Tindakan Pemeliharaan Operator** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | 🟡 **PERINGATAN** | Server shutdown atau service stop yang disengaja |
+| **Penggunaan RAM / CPU $\ge 90\%$** | 🟠 **GAWAT** | 🟠 **GAWAT** | 🟡 **PERINGATAN** | Utilisasi sumber daya mendekati batas kapasitas |
+| **Pembaruan Paket Sistem Tersedia** | 🔵 **INFO** | 🔵 **INFO** | 🔵 **INFO** | Pembaruan paket keamanan atau rilis distro Linux |
 
 ---
 
-## Cara Update Dashboard & Agent
+## Pembaruan Sistem (Update)
 
-### 1. Update Dashboard
+### 1. Pembaruan Server Pusat
 Jalankan di server dashboard:
 ```bash
-cd /opt/pantau/server/pantau-server   # sesuaikan direktori clone Anda
+cd /opt/pantau/server/pantau-server   # sesuaikan path repositori lokal
 git pull
 sudo bash install-server.sh
 ```
-*Script aman dijalankan ulang: file `.env` dan database tidak akan tertimpa.*
+*Berkas konfigurasi `.env` dan database MariaDB tidak akan terhapus saat pembaruan dijalankan.*
 
-### 2. Update Agent Otomatis (Fleet-Wide Self-Update OTA) [Bawaan & Otomatis ⭐]
-Saat Dashboard diperbarui, seluruh armada agen di server client yang masih menjalankan versi lebih lama akan **otomatis melakukan self-update mandiri** pada siklus polling berikutnya (dalam ~10 detik) tanpa perlu campur tangan manual:
-1. Server mendeteksi versi agen client lebih lama dari versi dashboard saat polling `/api/commands`.
-2. Server secara otomatis mengantrekan instruksi pembaruan dengan URL binary dan hash SHA-256 resmi.
-3. Agen client mengunduh pembaruan, memverifikasi integritas SHA-256, menguji sintaks via `py_compile`, memperbarui berkas `/opt/pantau/agent/agent_pantau.py` secara atomik (`chmod 0755`), dan me-restart dirinya sendiri via systemd watchdog.
-4. Versi agen langsung sinkron ke versi dashboard terbaru.
+### 2. Pembaruan Otomatis Armada Agen (Fleet-Wide OTA)
+Saat server pusat diperbarui ke versi baru, seluruh agen klien secara otomatis mengunduh pembaruan pada siklus pelaporan berikutnya (dalam ~10 detik):
+1. Server mendeteksi versi agen klien lebih lama daripada versi dashboard.
+2. Server mengirimkan instruksi pembaruan beserta URL berkas agen dan hash SHA-256 resmi.
+3. Agen klien mengunduh berkas pembaruan, memeriksa validitas hash SHA-256, menguji sintaks via `py_compile`, memperbarui berkas `/opt/pantau/agent/agent_pantau.py`, lalu me-restart service secara mandiri.
 
-### 3. Update Agent Manual (Opsional)
-- **Via Dashboard**: Klik tombol **`⚡ Push Update (OTA)`** pada halaman detail server jika ingin memicu update manual seketika.
-- **Via Terminal Client (One-Liner)**:
+### 3. Pembaruan Agen Manual
+- **Melalui Dashboard:** Klik tombol **`⚡ Push Update (OTA)`** pada halaman rincian server.
+- **Melalui Terminal Klien:**
   ```bash
-  sudo curl -fsSL -o /opt/pantau-update.sh https://raw.githubusercontent.com/azhuka/pantau-server/master/package/install.sh && sudo bash /opt/pantau-update.sh
+  sudo curl -fsSL -o /tmp/pantau-install.sh https://raw.githubusercontent.com/azhuka/pantau-server/master/package/install.sh && sudo bash /tmp/pantau-install.sh
   ```
 
 ---
 
-## Web Terminal & Remote Command
+## Konfigurasi Reverse Proxy Nginx & SSL (Produksi)
 
-Web Terminal menghubungkan browser langsung ke sesi Pseudo-Terminal (PTY) Linux `/bin/bash` di server client via WebSocket bridge.
-
-- **Karakteristik Shell:** Mendukung pipeline (`|`), redirection (`>`), auto-completion tombol `Tab`, navigasi kursor, signal `Ctrl+C` asli, editor teks (`nano`/`vim`), serta viewer interaktif (`htop`).
-- **Keamanan:** Berjalan sebagai user `root` melalui wrapper ketat `sudo /usr/local/sbin/pantau-shell` (dikonfigurasi via `/etc/sudoers.d/pantau-agent`).
-- **Privasi:** Riwayat perintah tidak disimpan ke disk (`HISTFILE=/dev/null`). Sesi idle otomatis ditutup setelah 8 jam.
-- **Audit Trail:** Pembukaan dan penutupan terminal dicatat lengkap dengan timestamp, username, dan IP di Audit Trail.
-- **Update OS (APT):** Tombol *Update OS* di dashboard menjalankan `apt update` & `apt upgrade -y` dengan output yang dialirkan realtime ke jendela terminal.
-
----
-
-## Setup Nginx & SSL (Production)
-
-Secara default, dashboard berjalan di HTTP port 8400. Untuk production, gunakan reverse proxy Nginx dengan sertifikat SSL (HTTPS). File template konfigurasi tersedia di folder `deploy/`.
+Secara bawaan dashboard berjalan pada port HTTP 8400. Untuk lingkungan produksi, disarankan menggunakan reverse proxy Nginx dengan enkripsi HTTPS (SSL/TLS). Berkas template konfigurasi tersedia di direktori `deploy/`.
 
 ```bash
 # 1. Pasang konfigurasi Nginx
 sudo cp deploy/nginx/pantau-server.conf /etc/nginx/sites-available/pantau-server
-sudo nano /etc/nginx/sites-available/pantau-server   # Ganti server_name dengan domain Anda
+sudo nano /etc/nginx/sites-available/pantau-server   # Sesuaikan server_name dengan domain Anda
 
-# 2. Aktifkan virtual host
+# 2. Aktifkan konfigurasi
 sudo ln -s /etc/nginx/sites-available/pantau-server /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 
 # 3. Pasang sertifikat SSL Let's Encrypt
 sudo certbot --nginx -d pantau.domainanda.com
 
-# 4. Aktifkan secure session cookie di /opt/pantau/server/.env
+# 4. Aktifkan flag cookie aman pada /opt/pantau/server/.env
 # Ubah: SESSION_COOKIE_SECURE=True
 sudo systemctl restart pantau-server.service
 ```
 
 ---
 
-## Backup, Restore & Data Retention
+## Pencadangan, Pemulihan & Retensi Data
 
-### Backup & Restore Database
-Data metrik dan konfigurasi tersimpan di MariaDB (`pantau_db`) dan file `/opt/pantau/server/.env`.
+### Cadangan dan Pemulihan Database
+Data metrik dan konfigurasi tersimpan di MariaDB (`pantau_db`) dan berkas `/opt/pantau/server/.env`.
 
 ```bash
-# Backup manual database & konfigurasi
+# Backup database & environment
 sudo mysqldump -u root pantau_db | gzip > pantau_db_$(date +%F).sql.gz
 sudo cp /opt/pantau/server/.env .env_$(date +%F)
 
@@ -249,24 +226,23 @@ gunzip -c pantau_db_YYYY-MM-DD.sql.gz | sudo mysql -u root pantau_db
 sudo systemctl restart pantau-server.service
 ```
 
-### Policy Retensi Data Otomatis
-Daemon background dashboard secara berkala membersihkan data log lama setiap jam agar storage disk tidak membengkak:
-- **Raw Metric Snapshot:** 2 hari (agregasi hourly rollups disimpan 90 hari).
-- **Log Request Selesai:** 30 hari.
-- **Tiket Masalah Selesai (Resolved):** 90 hari.
+### Kebijakan Retensi Data Otomatis
+Sistem secara berkala membersihkan data lama setiap jam agar kapasitas penyimpanan tetap terjaga:
+- **Snapshot Metrik Mentah (5-10 detik):** 24 jam (agregasi rata-rata per jam disimpan selama 90 hari).
+- **Log Permintaan Selesai:** 30 hari.
+- **Insiden yang Terselesaikan (*Resolved*):** 90 hari.
 - **Riwayat Perintah Remote:** 180 hari.
-- **Audit Trail User:** 1 tahun (365 hari).
+- **Audit Trail Pengguna:** 365 hari (1 tahun).
 
 ---
 
-## Troubleshooting & FAQ
+## Panduan Penyelesaian Masalah (Troubleshooting)
 
-| Kendala | Penyebab & Solusi |
-|---|---|
-| Server client berstatus `Offline` | Cek service agent di client: `sudo systemctl status agent_pantau.service`. Pastikan client bisa reach alamat IP server dashboard pada port 8400. |
-| Terminal error `403 Forbidden` | Akun Anda tidak memiliki izin terminal (`can_terminal`). Hubungi Master Admin untuk mengaktifkan izin terminal. |
-| Terminal error `409 Conflict` | Ada sesi terminal lain yang sedang aktif di server tersebut (hanya 1 sesi aktif per server demi keamanan). |
-| Update OS via web macet / lock error | Lock file APT sedang dipakai proses lain di client. Buka Web Terminal dan jalankan `sudo dpkg --configure -a`. |
-| Tombol Push OTA tidak muncul | Versi agent di server client sudah sama atau lebih baru dari versi dashboard. |
-| Validasi installer gagal / HTTP 403 | Jika server client dan dashboard berada di subnet lokal (LAN/VPN) yang sama, gunakan alamat IP LAN langsung (misal `http://172.30.1.40:8400`) saat installer meminta URL agar koneksi langsung dan bebas hambatan firewall/WAF. |
-| Lupa kode 2FA / Handphone hilang | Buka terminal server dashboard dan jalankan perintah: `sudo /opt/pantau/server/env/bin/python /opt/pantau/server/seed_admin.py --username <user> --reset-2fa`. |
+| Gejala Masalah | Kemungkinan Penyebab & Solusi |
+|:---|:---|
+| Server klien berstatus `Offline` | Periksa service agen: `sudo systemctl status agent_pantau.service`. Pastikan klien dapat menjangkau port 8400 server pusat (uji via `curl -Iv http://<IP-SERVER>:8400`). |
+| Akses terminal ditolak (`403 Forbidden`) | Akun pengguna belum memiliki izin terminal (`can_terminal`). Hubungi Master Admin untuk memperbarui hak akses. |
+| Terminal menampilkan error `409 Conflict` | Terdapat sesi terminal lain yang sedang aktif pada server tersebut (dibatasi 1 sesi aktif per server demi keamanan). |
+| Pembaruan OS (APT) terkunci | Terdapat proses APT/dpkg lain yang sedang berjalan di klien. Buka terminal web dan jalankan `sudo dpkg --configure -a`. |
+| Tombol Push OTA tidak muncul | Versi agen pada klien sudah mutakhir atau identik dengan versi dashboard server. |
+| Gagal autentikasi 2FA / Kehilangan perangkat | Buka terminal server pusat dan jalankan: `sudo /opt/pantau/server/env/bin/python /opt/pantau/server/seed_admin.py --username <user> --reset-2fa`. |

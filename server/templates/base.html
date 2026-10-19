@@ -984,7 +984,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.2.14' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.5.23' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -1015,7 +1015,7 @@ body.show-alert-banner .main{padding-top:72px}
   <div class="alert-banner-inner">
     <div class="alert-banner-left">
       <span class="alert-tag-emergency" id="alertBannerTag">
-        <span class="pulse">🚨</span> GAWAT DARURAT
+        <span class="pulse">🚨</span> INSIDEN KRITIS
       </span>
       <span id="alertBannerText"><b id="alertBannerCount">0</b> Server: Memuat data insiden…</span>
     </div>
@@ -1030,9 +1030,9 @@ body.show-alert-banner .main{padding-top:72px}
 <div id="alertOverlay" class="alert-overlay">
   <div class="alert-panel">
     <div class="alert-panel-head">
-      <span class="pulse"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg></span> PERINGATAN GAWAT DARURAT — DIPERLUKAN TINDAKAN SEGERA
+      <span class="pulse"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg></span> PERINGATAN INSIDEN KRITIS — TINDAKAN DIPERLUKAN
     </div>
-    <div class="alert-panel-sub">Terdeteksi insiden berstatus gawat darurat yang memerlukan penanganan langsung oleh operator sistem.</div>
+    <div class="alert-panel-sub">Terdeteksi insiden kritis yang memerlukan penanganan langsung oleh operator sistem.</div>
     <div class="alert-list"></div>
     <div class="alert-panel-foot">
       <a class="btn btn-ghost btn-sm" href="/problems">Buka halaman Insiden</a>
@@ -1416,12 +1416,12 @@ function getAlertGroupTitle(key, firstMsg) {
   if (firstMsg) {
     return firstMsg.split('(')[0].replace(/^Insiden Kritis:\s*/i, '').trim();
   }
-  return key || 'Insiden Gawat Darurat';
+  return key || 'Insiden Kritis';
 }
 
 function getAlertGroupDesc(key, firstMsg) {
   if (key === 'agent_stale') {
-    return 'Agen pantau pada server klien tidak merespons telemetri (server kemungkinan offline/mati, koneksi jaringan terputus, atau agen mengalami kerusakan).';
+    return 'Agen pantau pada server klien tidak merespons telemetri (server offline, koneksi jaringan terputus, atau daemon agen tidak berjalan).';
   }
   if (key === 'agent_conflict') {
     return 'Terdeteksi lebih dari satu host aktif melapor menggunakan API key yang sama (kemungkinan duplikasi VM atau kloning OS).';
@@ -1444,7 +1444,7 @@ function getAlertGroupDesc(key, firstMsg) {
   if (key && key.startsWith('disk_critical:')) {
     return 'Ruang penyimpanan disk pada partisi ' + (key.split(':')[1] || '') + ' hampir habis.';
   }
-  return firstMsg || 'Terdeteksi insiden gawat darurat yang memerlukan penanganan operator.';
+  return firstMsg || 'Terdeteksi insiden kritis yang memerlukan penanganan operator.';
 }
 
 function getCleanGlobalTip(key, firstTip) {
@@ -1558,7 +1558,7 @@ function renderAlerts(d){
 
   // Perbarui judul tab browser hanya saat ada insiden kritis
   if (firingDangerN > 0) {
-    if (document.title.indexOf('🚨') !== 0) document.title = '🚨 ' + firingDangerN + ' GAWAT DARURAT · ' + ORIG_TITLE;
+    if (document.title.indexOf('🚨') !== 0) document.title = '🚨 ' + firingDangerN + ' INSIDEN KRITIS · ' + ORIG_TITLE;
   } else {
     document.title = ORIG_TITLE;
   }
@@ -1596,14 +1596,14 @@ function renderAlerts(d){
 
       if (dangerN > 0 && dangerList.length > 0) {
         banner.className = 'alert-banner banner-danger';
-        if (bannerTag) bannerTag.innerHTML = '<span class="pulse">🚨</span> GAWAT DARURAT';
+        if (bannerTag) bannerTag.innerHTML = '<span class="pulse">🚨</span> INSIDEN KRITIS';
         const hosts = d.firing_danger_hosts || d.danger_hosts || [];
         const hCount = hosts.length || dangerN;
         const sampleMsg = (dangerList[0] && dangerList[0].message) ? dangerList[0].message : 'Insiden kritis aktif';
         if (hCount === 1) {
           bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(hosts[0] || 'Klien')}</span>: ${escHtml(sampleMsg)}`;
         } else {
-          bannerText.innerHTML = `<strong>${hCount} Server</strong> dalam status Gawat Darurat (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
+          bannerText.innerHTML = `<strong>${hCount} Server</strong> dalam status Kritis (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
         }
         if (actionBtn) actionBtn.innerHTML = `Buka Halaman Insiden (${dangerN}) &rarr;`;
         banner.style.display = 'flex';
@@ -1653,8 +1653,8 @@ async function alertAckAll(){
   const btns = Array.from(document.querySelectorAll('#alertOverlay .ack-btn'));
   if (!btns.length) return false;
   const n = btns.length;
-  if (!confirm('Tandai ' + n + ' insiden GAWAT DARURAT sebagai sudah ditangani?\n\n'
-    + 'Ini hanya menandai sudah ditangani, bukan menyelesaikan masalahnya.')) return false;
+  if (!confirm('Tandai ' + n + ' insiden KRITIS sebagai sudah ditangani?\n\n'
+    + 'Tindakan ini mencatat konfirmasi penanganan (acknowledge) tanpa menutup insiden.')) return false;
   for (const b of btns) await alertAck(b, b.dataset.id);
   return false;
 }
@@ -2050,16 +2050,16 @@ function renderProblemDetailModal(p) {
         ? `Detected unusual volume of failed SSH login attempts (${_esc(pMsg)}).`
         : `Terdeteksi percobaan login SSH gagal dalam jumlah tidak biasa (${_esc(p.message)}).`;
       impactText = isEn
-        ? 'Security risk of unauthorized account access via SSH brute-force attack.'
-        : 'Potensi pembobolan kredensial akun server via serangan brute-force.';
+        ? 'Security risk of unauthorized account access via SSH brute-force activity.'
+        : 'Indikasi percobaan login berulang (SSH brute-force) pada akun server.';
       recoList = isEn
-        ? ['Use "Block IP" button to drop attacker IP via iptables', 'Install and enable fail2ban: sudo apt install fail2ban', 'Enforce SSH Key authentication and disable password login']
-        : ['Gunakan tombol "Blokir IP" untuk memblokir IP penyerang', 'Pasang fail2ban: sudo apt install fail2ban', 'Nonaktifkan autentikasi password di /etc/ssh/sshd_config'];
+        ? ['Use "Block IP" button to drop source IP via iptables', 'Install and enable fail2ban: sudo apt install fail2ban', 'Enforce SSH Key authentication and disable password login']
+        : ['Gunakan tombol "Blokir IP" untuk memblokir alamat IP sumber', 'Pasang fail2ban: sudo apt install fail2ban', 'Nonaktifkan autentikasi password di /etc/ssh/sshd_config'];
       cmdList = ['sudo journalctl -u ssh -n 50 --no-pager', 'sudo iptables -L INPUT -v -n --line-numbers', 'sudo fail2ban-client status sshd'];
     } else if (p.key === 'agent_stale') {
       causeText = isEn
-        ? 'Monitoring Agent on this server stopped transmitting telemetry to central server. Possible causes include host offline/powered down, severed network connection, halted agent service, or firewall/security blocking.'
-        : 'Agen Pantau pada server ini tidak mengirimkan telemetri metrik ke server pusat. Faktor penyebab mencakup server fisik/virtual mati atau dimatikan, koneksi jaringan terputus, service agent_pantau terhenti, atau terjadi pemblokiran firewall dan kendala keamanan.';
+        ? 'Monitoring Agent on this server stopped transmitting telemetry to central server. Possible causes include host offline/powered down, severed network connection, halted agent service, or firewall blocking.'
+        : 'Agen Pantau pada server ini tidak mengirimkan telemetri ke server pusat. Kemungkinan penyebab mencakup server offline, shutdown, koneksi jaringan terputus, service agent_pantau terhenti, atau pemblokiran firewall.';
       impactText = isEn
         ? 'Hardware performance metrics, service health indicators, and security telemetry are no longer live on the dashboard.'
         : 'Metrik kinerja hardware (CPU, RAM, Disk), status layanan, dan telemetri keamanan server tidak dapat diperbarui secara live di dashboard.';
@@ -2141,7 +2141,7 @@ function renderProblemDetailModal(p) {
     }
     if (tech.health_message) techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Diagnostic Message' : 'Pesan Diagnosa'}</td><td style="color:#f87171">${_esc(tech.health_message)}</td></tr>`);
     if (tech.top_attacker_ips && tech.top_attacker_ips.length) {
-      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Attacker IPs' : 'IP Penyerang'}</td><td><span class="mono" style="font-size:12px">${_esc(tech.top_attacker_ips.join(', '))}</span></td></tr>`);
+      techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'Source IPs' : 'Alamat IP Sumber'}</td><td><span class="mono" style="font-size:12px">${_esc(tech.top_attacker_ips.join(', '))}</span></td></tr>`);
     }
     if (tech.mem_percent !== undefined) {
       techRows.push(`<tr><td style="color:var(--dim);padding:4px 0">${isEn ? 'RAM Usage' : 'Konsumsi RAM'}</td><td><strong>${_esc(tech.mem_percent)}%</strong></td></tr>`);

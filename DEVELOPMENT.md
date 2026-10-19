@@ -12,7 +12,7 @@ Dokumen ini merupakan panduan teknis resmi bagi developer dan system administrat
 Dalam merancang sistem monitoring dan kontrol terdistribusi multi-server, keputusan arsitektur paling mendasar adalah arah inisiasi koneksi. Sistem monitoring lawas atau berbasis script ad-hoc umumnya mengandalkan server monitoring pusat yang membuka sesi SSH masuk (*inbound SSH*) ke setiap server client. Pendekatan tersebut memiliki kelemahan kritis:
 1. **Eksposur Port & Attack Surface Luas**: Mengharuskan port SSH atau port agent terbuka ke internet/jaringan publik pada setiap mesin client.
 2. **Kerapuhan NAT & Topologi Jaringan**: Memerlukan VPN rumit, port forwarding, atau IP publik statis untuk server-server di balik NAT, firewall korporat, atau VPC cloud yang terisolasi.
-3. **Penyimpanan Kredensial Terpusat Berisiko Tinggi**: Server monitoring harus menyimpan private key SSH atau password root untuk seluruh server target. Jika server monitoring terkompromi, seluruh armada server client ikut jatuh ke tangan attacker.
+3. **Penyimpanan Kredensial Terpusat Berisiko Tinggi**: Server monitoring harus menyimpan private key SSH atau password root untuk seluruh server target. Jika server monitoring terkompromi, seluruh server klien menjadi rentan terhadap akses tidak sah.
 
 **Prinsip Desain Pantau Server:**
 Pantau Server mengadopsi model **Pull-Based Inverted Heartbeat** yang sepenuhnya terbalik (*inversion of control*):
@@ -38,8 +38,8 @@ flowchart TD
     API -->|"2. Simpan Telemetri & Return Pending Command"| A
     API <-->|"Baca / Tulis Metrik & Antrean"| DB
     UI -->|"Trigger Admin Action (Pending)"| API
-    A -->|"3. Eksekusi Mandat (shell=False)"| W
-    W -->|"4. Akses Hak Akses Terukur"| OS
+    A -->|"3. Eksekusi Perintah Terbatas (shell=False)"| W
+    W -->|"4. Akses Hak Akses Minimal (Least Privilege)"| OS
     A -->|"5. Lapor Balik Hasil pada Heartbeat Berikutnya"| API
 ```
 
@@ -76,7 +76,7 @@ Agent client ([`agent/agent_pantau.py`](file:///home/bos/rj45/agent/agent_pantau
   # DILARANG KERAS (Rentan Command Injection):
   # subprocess.run(f"/usr/local/sbin/pantau-user lock {username}", shell=True)
   ```
-- Pendekatan ini mengeliminasi sepenuhnya celah eksekusi perintah liar melalui metakarakter shell (seperti `;`, `&&`, `|`, `` ` ``, `$()`, `\n`).
+- Pendekatan ini mengeliminasi celah eksekusi perintah arbitrari (*arbitrary command execution*) melalui metakarakter shell (seperti `;`, `&&`, `|`, `` ` ``, `$()`, `\n`).
 
 ### Granularitas Sudo Wrapper Khusus (`/usr/local/sbin/pantau-*`)
 Untuk menjalankan tindakan administratif sistem tanpa memberikan hak sudo root penuh (`ALL=(ALL) ALL`), Agent Pantau menggunakan script wrapper terisolasi di `/usr/local/sbin/`. Konfigurasi sudoers di [`/etc/sudoers.d/pantau-agent`](file:///home/bos/rj45/package/etc/sudoers.d/pantau-agent) hanya mengizinkan eksekusi tanpa password untuk file-file ini:
@@ -128,13 +128,13 @@ flowchart TD
 ```
 
 1. **Master Administrator (`master_admin`)**:
-   - **Kedudukan**: Satu-satunya akun dengan hak istimewa mutlak setara *root* sistem.
+   - **Kedudukan**: Akun dengan hak akses administratif penuh.
    - **Hak Khusus**:
      - Satu-satunya role yang memiliki visibilitas atas kartu counter dan data akun Master Admin di tabel user.
      - Akses penuh catatan audit trail ([`/audit`](file:///home/bos/rj45/server/templates/audit.html)).
      - Hak membuat, mengedit izin granular/sudo, dan me-lock akun Operator serta Viewer.
      - Kontrol tak terbatas atas seluruh armada server, terminal, file manager, dan eksekusi command.
-   - **Proteksi Kekebalan & Zero-Knowledge**: Akun Master Admin tidak dapat dihapus, di-demote, atau dinonaktifkan via web UI. Keberadaan akun Master Admin sepenuhnya disembunyikan dari UI akun Operator dan Viewer.
+   - **Proteksi Akun Administrator & Isolasi Informasi**: Akun Master Admin tidak dapat dihapus atau dinonaktifkan via antarmuka web. Keberadaan akun Master Admin disembunyikan dari antarmuka pengguna Operator dan Viewer.
 
 2. **Operator (`operator`)**:
    - **Kedudukan**: Akun harian tim operasional/SRE. Akun dibuat dan dikonfigurasi langsung oleh Master Admin atau Operator dengan wewenang sudo.
@@ -269,15 +269,15 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 ## 5. Manajemen Siklus Hidup Insiden, Klasifikasi Aset 3-Tier & Anti-Flapping
 
-- **3-Tier Asset Criticality Architecture**:
-  - **Tier 1 (Server Kritis / 24/7)**: Host offline $\ge 300\text{s}$, Disk Read-Only, Disk Penuh 100%, Core Service down memicu keparahan **KRITIS (`danger`)**. Merupakan satu-satunya tier yang mengaktifkan Banner Merah `#alertBanner` dan Sirene Audio Darurat NOC.
-  - **Tier 2 (Server Pendukung Operasional)**: Host offline $\ge 120\text{s}$ atau Core Service down dibatasi pada keparahan **GAWAT (`average`)**, tidak pernah memicu banner merah atau sirene.
-  - **Tier 3 (Server Lab / Clone / Eksperimen)**: Host offline atau service down maksimal berstatus **PERINGATAN (`warning`)**.
-- **Klasifikasi Tindakan Sadar Operator**:
-  - Pemadaman server (*poweroff_host*) atau service (*service stop*) oleh operator melalui dashboard otomatis diklasifikasikan sebagai **PERINGATAN (`warning`)**, dengan `is_ignored = 0` (tetap berstatus aktif dalam pelaporan dan kartu insiden terkini) dan catatan pengabaian/alasan yang mencantumkan nama operator. Tidak memicu banner merah maupun sirene.
-- **Toleransi Anti-Flapping**: Alert service tidak langsung membunyikan alarm pada kegagalan transien tunggal. Ada quiet window (30–45 detik) sebelum berstatus `danger`.
-- **Auto-Resolve saat Hapus Service**: Menghapus service bermasalah dari monitoring langsung menutup insiden secara sinkron dengan note `Dihapus dari konfigurasi` tanpa klaim palsu service pulih.
-- **Maintenance Mode & Service Mute**: Support server-wide maintenance mode untuk mematikan alert saat maintenance OS, serta opsi Mute service individual (2h, 24h, 7d, 30d, atau permanen).
+- **Arsitektur Klasifikasi Level Operasional (3-Tier)**:
+  - **Tier 1 (Layanan Utama / Kritis)**: Server dengan prioritas operasional tertinggi. Insiden server offline atau core service down memulai tahap **GAWAT (`average`)** selama 1 menit sebagai waktu mitigasi awal operator, kemudian bereskalasi ke **KRITIS (`danger`)** jika belum pulih. Tahap Kritis ini merupakan satu-satunya level yang mengaktifkan Banner Merah `#alertBanner` dan alarm audio. Kerusakan sistem fatal seperti Disk Read-Only atau Disk 100% langsung berstatus KRITIS.
+  - **Tier 2 (Layanan Pendukung)**: Server operasional pendukung. Insiden memulai tahap **PERINGATAN (`warning`)** selama 1 menit sebelum bereskalasi ke **GAWAT (`average`)**. Tingkat keparahan maksimal dibatasi pada Gawat (tidak memicu banner merah atau alarm audio).
+  - **Tier 3 (Layanan Non-Kritis / Pengujian)**: Server staging atau uji coba. Insiden dibatasi pada tingkat **PERINGATAN (`warning`)**.
+- **Tindakan Pemeliharaan oleh Operator**:
+  - Pemadaman server (*Power Off Host*) atau penghentian layanan (*Stop Service*) yang dilakukan secara sengaja oleh operator melalui dashboard diklasifikasikan sebagai **PERINGATAN (`warning`)**, dengan `is_ignored = 0` (tetap aktif tercatat pada kartu insiden terkini bersama nama operator yang bertindak) tanpa memicu banner merah atau alarm audio.
+- **Toleransi Anti-Flapping**: Layanan tidak langsung memicu alarm pada kegagalan transien sesaat. Sistem menerapkan jendela evaluasi (30–45 detik) sebelum status dikonfirmasi.
+- **Resolusi Otomatis saat Penghapusan Layanan**: Menghapus layanan dari konfigurasi monitoring secara otomatis menutup tiket insiden terkait dengan catatan `Dihapus dari konfigurasi`.
+- **Mode Pemeliharaan (Maintenance Mode) & Silence**: Mendukung mode pemeliharaan tingkat server untuk menonaktifkan alert sementara saat maintenance OS, serta opsi heningkan (*silence/mute*) alert layanan tertentu (2 jam, 24 jam, 7 hari, 30 hari, atau permanen).
 
 ---
 
@@ -310,6 +310,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 ---
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
+
+## Versi 4.5.23
+
+- **Tipe Rilis:** Rilis Pemeliharaan & Standardisasi Bahasa (*Maintenance & Documentation Standards*)
+- **Fokus Utama:** Penyederhanaan redaksi kalimat antarmuka (UI/UX), standarisasi terminologi teknis sysadmin pada seluruh dokumentasi (`README.md`, `DEVELOPMENT.md`), serta perapian informasi catatan rilis GitHub.
+
+### Rangkuman Pembaruan:
+1. **Penyempurnaan Bahasa & Nomenklatur Aplikasi:**
+   - Mengubah istilah non-standar atau hiperbolis (seperti *gawat darurat*, *penyerang*, *kebal*, *mati*) menjadi istilah teknis yang baku (*Insiden Kritis*, *Alamat IP Sumber*, *Akun Terlindungi*, *Shutdown*).
+   - Menyederhanakan 12 label dan subtitle antarmuka agar lebih ringkas, informatif, dan tidak memakan ruang visual berlebih.
+   - Menyelaraskan teks banner insiden global, modal peringatan, dan diagnosa teknis agar menggunakan bahasa Indonesia yang lugas dan profesional.
+2. **Restrukturisasi Dokumentasi Proyek:**
+   - Menulis ulang `README.md` dengan struktur yang lebih bersih, mudah dipahami oleh sysadmin, dan mencerminkan kapabilitas sistem terkini (termasuk eskalasi 1 menit Tier-1).
+   - Memperbarui panduan arsitektur pada `DEVELOPMENT.md` agar bebas dari analogi yang membingungkan serta menggunakan istilah teknis yang tepat.
+3. **Penyelarasan Catatan Rilis GitHub:**
+   - Merapikan judul dan ringkasan catatan rilis pada repositori GitHub agar terstruktur dan mudah dipelajari oleh publik maupun tim internal.
+
+---
 
 ## Versi 4.4.1
 

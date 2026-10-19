@@ -5121,7 +5121,7 @@ CPU_TIP = ("Cek proses pemakan CPU: sudo ps aux --sort=-%cpu | head -20 | restar
            "pertimbangkan menaikkan kuota CPU bila rutin melonjak.")
 DISK_TIP = ("Bersihkan: sudo du -xh --max-depth=2 / | sort -rh | head -20 | hapus log lama: "
             "sudo journalctl --vacuum-size=200M. Disk penuh bisa mematikan database & aplikasi.")
-SWAP_TIP = ("RAM menipis sedang dibuang ke swap — dampak kinerja besar. Cek RAM & proses (lihat tips RAM).")
+SWAP_TIP = ("Penggunaan swap meningkat karena alokasi RAM tinggi — dapat menurunkan performa. Periksa konsumsi RAM dan proses sistem.")
 
 # Jendela tenang: masalah danger ditutup otomatis bila tidak ada deteksi/kejadian
 # baru selama rentang ini (mencegah banner macet karena sisa data auth.log).
@@ -5422,8 +5422,8 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
             ip_list = [f"{ip} ({cnt}x)" for ip, cnt in top_ips]
             is_crit = (key == "security_danger") or (kwargs.get("severity") == "danger") or (failed >= kwargs.get("threshold", 12)) or (invalid >= 4)
             return json.dumps({
-                "diagnosa": "Indikasi Serangan SSH Brute-Force" if is_crit else "Percobaan Login SSH Gagal Repetitif",
-                "diagnosa_en": "Suspected SSH Brute-Force Attack" if is_crit else "Repetitive Failed SSH Login Attempts",
+                "diagnosa": "Indikasi Aktivitas SSH Brute-Force" if is_crit else "Percobaan Login SSH Gagal Berulang",
+                "diagnosa_en": "Suspected SSH Brute-Force Activity" if is_crit else "Repetitive Failed SSH Login Attempts",
                 "penyebab": f"Terdeteksi {failed} percobaan login SSH gagal dan {invalid} percobaan user tidak valid dari {len(source_ips)} alamat IP sumber.",
                 "penyebab_en": f"Detected {failed} failed SSH logins and {invalid} invalid username attempts originating from {len(source_ips)} source IPs.",
                 "dampak": "Potensi pembobolan kredensial akun server bila password lemah, serta beban koneksi SSH yang tinggi.",
@@ -5436,13 +5436,13 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                     "waktu_kejadian": now_str,
                 },
                 "rekomendasi": [
-                    "Gunakan tombol 'Blokir IP' pada kolom tindakan untuk memblokir IP penyerang via iptables.",
+                    "Gunakan tombol 'Blokir IP' pada kolom tindakan untuk memblokir alamat IP sumber via iptables.",
                     "Pasang dan aktifkan fail2ban: sudo apt install fail2ban && sudo systemctl enable --now fail2ban",
                     "Perketat konfigurasi SSH (/etc/ssh/sshd_config): PasswordAuthentication no, gunakan SSH Key.",
                     "Ganti port default SSH dari port 22 ke port khusus non-standar."
                 ],
                 "rekomendasi_en": [
-                    "Use the 'Block IPs' button in action column to immediately drop attacker IPs via iptables.",
+                    "Use the 'Block IP' button in the action column to drop source IPs via iptables.",
                     "Install and enable fail2ban: sudo apt install fail2ban && sudo systemctl enable --now fail2ban",
                     "Harden SSH daemon (/etc/ssh/sshd_config): set PasswordAuthentication no, enforce SSH Keys.",
                     "Change default SSH listening port from 22 to a custom high port."
@@ -5459,8 +5459,8 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
             return json.dumps({
                 "diagnosa": "Agen Tidak Melapor",
                 "diagnosa_en": "Agent Not Reporting",
-                "penyebab": f"Agen Pantau pada server {srv.hostname} tidak mengirimkan telemetri metrik ke server pusat. Faktor penyebab mencakup server fisik/virtual mati atau dimatikan, koneksi jaringan terputus, service agent_pantau terhenti, atau terjadi pemblokiran firewall dan kendala keamanan.",
-                "penyebab_en": f"Monitoring agent on server {srv.hostname} stopped transmitting telemetry to central server. Causes include powered-off / offline host, network disconnection, halted agent service, or firewall / security rule blocking.",
+                "penyebab": f"Agen Pantau pada server {srv.hostname} tidak mengirimkan telemetri ke server pusat. Kemungkinan penyebab mencakup server offline, shutdown, koneksi jaringan terputus, service agent_pantau terhenti, atau pemblokiran firewall.",
+                "penyebab_en": f"Monitoring agent on server {srv.hostname} stopped transmitting telemetry to central server. Causes include offline host, shutdown, network disconnection, halted agent service, or firewall blocking.",
                 "dampak": "Metrik kinerja hardware (CPU, RAM, Disk), status layanan, dan telemetri keamanan server tidak dapat diperbarui secara live di dashboard.",
                 "dampak_en": "Hardware performance metrics (CPU, RAM, Disk), service states, and security telemetry are no longer live on the dashboard.",
                 "data_teknis": {
@@ -5658,7 +5658,7 @@ def _rollup_sys_hours(db, server_id):
 
 
 SECURITY_TIPS = {
-    "danger": ("Kemungkinan serangan SSH — blokir IP sumber "
+    "danger": ("Indikasi brute-force SSH — blokir alamat IP sumber "
                "(sudo iptables -A INPUT -s <ip> -j DROP), pasang fail2ban "
                "(sudo apt install fail2ban), ganti password akun, perketat sshd "
                "(PasswordAuthentication no + PubkeyAuthentication yes)."),
@@ -6053,7 +6053,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             if invalid >= SECURITY_DANGER_INVALID or failed >= th["ssh_fail_danger"]:
                 ssh_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
                 inst.append({"key": "failed_logins", "severity": ssh_sev,
-                             "message": f"Kemungkinan serangan SSH: {failed} login gagal (ambang >={th['ssh_fail_danger']}), "
+                             "message": f"Indikasi brute-force SSH: {failed} login gagal (ambang batas >={th['ssh_fail_danger']}), "
                                          f"{invalid} user invalid, dari {nips} IP"
                                          + (f" · terakhir {_rel_dt(event_at)}" if event_at else ""),
                              "tip": SECURITY_TIPS.get(ssh_sev, SECURITY_TIPS["warning"]), "event_at": event_at,

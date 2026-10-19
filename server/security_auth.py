@@ -41,7 +41,7 @@ OPERATOR_PERMISSIONS: Dict[str, Dict[str, str]] = {
     },
     "can_firewall": {
         "label": "Kontrol Firewall (UFW)",
-        "desc": "Aktifkan/nonaktifkan UFW, blokir IP penyerang, dan buka blokir IP.",
+        "desc": "Aktifkan atau nonaktifkan UFW serta kelola blokir alamat IP.",
     },
     "can_users_sys": {
         "label": "Manajemen User Sistem Host",

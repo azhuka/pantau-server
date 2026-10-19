@@ -1103,7 +1103,7 @@ div[style*="position: fixed"] .card {
     <span style="font-size:13px;color:var(--dim)"> Server akan restart; status di bawah ini diperbarui otomatis.</span>
   {% elif act == 'poweroff' %}
     <span style="color:var(--red);font-weight:600">Perintah POWER OFF dikirim ke server klien.</span>
-    <span style="font-size:13px;color:var(--dim)"> Server akan mati; hidupkan kembali manual (fisik/IPMI/host). Status di bawah ini diperbarui otomatis.</span>
+    <span style="font-size:13px;color:var(--dim)"> Server akan shutdown; hidupkan kembali secara manual (fisik/IPMI/hypervisor). Status diperbarui otomatis.</span>
   {% elif act == 'poweroff_ha_blocked' %}
     <span style="color:var(--yellow);font-weight:600">Perintah Power OFF Ditolak: Server Terproteksi Proxmox HA</span>
     <span style="font-size:13px;color:var(--dim)"> Server terproteksi Proxmox HA.</span>
@@ -2363,7 +2363,7 @@ div[style*="position: fixed"] .card {
             <input type="radio" name="sig" value="KILL" id="sig-radio-kill" style="margin-top:2px">
             <div>
               <strong style="color:var(--red)">SIGKILL (9) — Paksa Hentikan Seketika</strong>
-              <div style="font-size:11px;color:var(--dim)">Gunakan bila proses membeku/hang. Kernel mematikan proses tanpa konfirmasi.</div>
+              <div style="font-size:11px;color:var(--dim)">Gunakan jika proses tidak responsif. Sistem akan menghentikan proses langsung tanpa konfirmasi (SIGKILL).</div>
             </div>
           </label>
           <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
@@ -2635,7 +2635,7 @@ div[style*="position: fixed"] .card {
         <thead>
           <tr>
             <th>Baris</th>
-            <th>IP Penyerang (Sumber)</th>
+            <th>Alamat IP Sumber</th>
             <th>Paket Terblokir</th>
             <th>Total Byte</th>
             {% if user.has_perm('can_firewall') %}
@@ -7263,11 +7263,11 @@ function ackLive(mode, recent) {
     if (recent) {
       b.textContent = 'online';
       b.className = 'badge badge-up';
-      t.textContent = 'Server klien online — jika tadi mati, sudah dihidupkan kembali.';
+      t.textContent = 'Server online dan kembali merespons telemetri.';
     } else {
       b.textContent = 'offline';
       b.className = 'badge badge-danger';
-      t.textContent = 'Server klien tidak melapor — kemungkinan mati (Power Off berjalan).';
+      t.textContent = 'Server tidak melapor (proses Power Off berhasil).';
     }
   } else {
     if (recent) {
