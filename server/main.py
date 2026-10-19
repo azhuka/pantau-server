@@ -717,6 +717,7 @@ def get_branding_settings(db: Session | None = None) -> dict:
         "org_unit": "",
         "dash_motd": "",
         "show_motd": True,
+        "logo_url": "",
     }
     try:
         row = db.query(SystemSetting).filter(SystemSetting.key == "branding").first()
@@ -726,6 +727,7 @@ def get_branding_settings(db: Session | None = None) -> dict:
             defaults["org_unit"] = str(data.get("org_unit", "") or "").strip()
             defaults["dash_motd"] = str(data.get("dash_motd", "") or "").strip()
             defaults["show_motd"] = bool(data.get("show_motd", True))
+            defaults["logo_url"] = str(data.get("logo_url", "") or "").strip()
         _BRANDING_CACHE["data"] = dict(defaults)
         _BRANDING_CACHE["expires_at"] = now + 15.0  # cache memori 15 detik
         return defaults
@@ -9891,17 +9893,19 @@ def profile_regenerate_recovery(
 
 
 @app.post("/profile/branding")
-def profile_update_branding(
+async def profile_update_branding(
     request: Request,
     csrf_token: str = Form(default=""),
     org_name: str = Form(default=""),
     org_unit: str = Form(default=""),
     dash_motd: str = Form(default=""),
     show_motd: str = Form(default=""),
+    remove_logo: str = Form(default=""),
+    logo_file: UploadFile | None = File(default=None),
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Simpan identitas organisasi, unit kerja, pesan operasional (MOTD), dan preferensi tampilan."""
+    """Simpan identitas organisasi, logo, unit kerja, pesan operasional (MOTD), dan preferensi tampilan."""
     _verify_csrf_form(request, csrf_token)
     if not (user.is_master_admin() or user.role == "operator"):
         raise HTTPException(status_code=403, detail="Hanya Master Admin atau Operator yang dapat mengubah identitas sistem.")
@@ -9911,11 +9915,60 @@ def profile_update_branding(
     clean_dash_motd = (dash_motd or "").strip()[:500]
     is_show = True if show_motd in ("on", "1", "true", "True") else False
 
+    current_brand = get_branding_settings(db)
+    logo_url = current_brand.get("logo_url", "")
+
+    upload_dir = Path(__file__).resolve().parent / "static" / "uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    # Proses penghapusan logo bila dicentang
+    if remove_logo in ("1", "true", "on"):
+        for old_f in upload_dir.glob("org_logo_*"):
+            try:
+                old_f.unlink()
+            except Exception:
+                pass
+        logo_url = ""
+
+    # Proses unggah berkas logo baru
+    if logo_file and logo_file.filename:
+        filename = logo_file.filename.strip()
+        if filename:
+            ext = Path(filename).suffix.lower()
+            ALLOWED_LOGO_EXTS = {".png", ".jpg", ".jpeg", ".svg", ".webp", ".ico"}
+            if ext not in ALLOWED_LOGO_EXTS:
+                return RedirectResponse(
+                    _flash_profile_branding(False, "Format logo harus berupa berkas gambar (.png, .jpg, .jpeg, .svg, .webp, .ico)"),
+                    status_code=303,
+                )
+
+            content = await logo_file.read()
+            if len(content) > 2 * 1024 * 1024:
+                return RedirectResponse(
+                    _flash_profile_branding(False, "Ukuran berkas logo maksimal 2 MB"),
+                    status_code=303,
+                )
+
+            if len(content) > 0:
+                # Hapus berkas logo lama
+                for old_f in upload_dir.glob("org_logo_*"):
+                    try:
+                        old_f.unlink()
+                    except Exception:
+                        pass
+
+                ts = int(time.time())
+                new_fname = f"org_logo_{ts}{ext}"
+                target_path = upload_dir / new_fname
+                target_path.write_bytes(content)
+                logo_url = f"/static/uploads/{new_fname}?v={ts}"
+
     new_brand = {
         "org_name": clean_org_name,
         "org_unit": clean_org_unit,
         "dash_motd": clean_dash_motd,
         "show_motd": is_show,
+        "logo_url": logo_url,
     }
 
     row = db.query(SystemSetting).filter(SystemSetting.key == "branding").first()
@@ -9931,13 +9984,13 @@ def profile_update_branding(
         user.username,
         "branding_update",
         target="Identitas & Pesan Organisasi",
-        result=f"Disimpan (Org: {clean_org_name or '-'}, Unit: {clean_org_unit or '-'}, Tampilkan: {'Ya' if is_show else 'Tidak'})"
+        result=f"Disimpan (Org: {clean_org_name or '-'}, Unit: {clean_org_unit or '-'}, Logo: {'Ada' if logo_url else 'Bawaan'}, Tampilkan: {'Ya' if is_show else 'Tidak'})"
     )
     db.commit()
     invalidate_branding_cache()
 
     return RedirectResponse(
-        _flash_profile_branding(True, "Pengaturan identitas dan pesan operasional berhasil disimpan."),
+        _flash_profile_branding(True, "Pengaturan identitas, logo, dan pesan operasional berhasil disimpan."),
         status_code=303
     )
 

@@ -26,3 +26,5 @@ env/
 /templates/
 /uploads/
 scratch/
+/server/static/uploads/*
+!/server/static/uploads/.gitkeep

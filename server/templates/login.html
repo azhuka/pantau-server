@@ -51,12 +51,16 @@ body{
 <div class="login-box">
   <div class="login-header">
     <h1 style="font-size:22px;font-weight:800;letter-spacing:1.5px;color:#fff;text-transform:uppercase;margin-bottom:12px">PANTAU SERVER</h1>
-    <div class="logo" style="margin-bottom:12px;display:inline-flex;color:var(--blue)">
+    <div class="logo" style="margin-bottom:12px;display:inline-flex;align-items:center;justify-content:center;color:var(--blue)">
+      {% if brand and brand.logo_url %}
+      <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name or 'Organisasi' }}" style="max-height:56px;max-width:160px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4))">
+      {% else %}
       <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 10px rgba(56,189,248,0.4))">
         <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
         <path d="M2 17l10 5 10-5"></path>
         <path d="M2 12l10 5 10-5"></path>
       </svg>
+      {% endif %}
     </div>
     {% if brand and brand.org_name %}
     <div style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:0.2px">{{ brand.org_name }}</div>

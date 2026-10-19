@@ -718,7 +718,7 @@
         Sesuaikan identitas lembaga, unit kerja, serta pesan operasional (MOTD) yang ditampilkan pada halaman login dan dashboard utama.
       </p>
 
-      <form method="POST" action="/profile/branding" id="branding-form">
+      <form method="POST" action="/profile/branding" id="branding-form" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
         <!-- 1. Nama Organisasi -->
@@ -739,20 +739,47 @@
           <span style="font-size:11px;color:var(--dim);display:block;margin-top:4px">Sub-bagian atau bidang pelaksana tugas operasional.</span>
         </div>
 
-        <!-- 3. Pesan Operasional (MOTD) -->
+        <!-- 3. Logo Organisasi -->
+        <div class="form-group" style="margin-bottom:18px">
+          <label style="display:block;font-size:11.5px;font-weight:700;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">
+            3. Logo Organisasi (Opsional)
+          </label>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            {% if brand and brand.logo_url %}
+            <div id="current-logo-badge" style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px">
+              <img src="{{ brand.logo_url }}" alt="Logo Saat Ini" style="max-height:34px;max-width:80px;object-fit:contain">
+              <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--red);cursor:pointer;margin:0">
+                <input type="checkbox" name="remove_logo" value="1" id="remove-logo-checkbox" onchange="toggleRemoveLogo(this)" style="accent-color:var(--red);cursor:pointer">
+                Hapus Logo
+              </label>
+            </div>
+            {% endif %}
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <input type="file" id="brand-logo-file" name="logo_file" accept=".png,.jpg,.jpeg,.svg,.webp,.ico" style="display:none" onchange="previewLogoFile(this)">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('brand-logo-file').click()" style="padding:8px 14px;font-size:12px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Unggah Logo Baru
+              </button>
+              <span id="logo-file-name" style="font-size:12px;color:var(--blue);font-weight:500"></span>
+            </div>
+          </div>
+          <span style="font-size:11px;color:var(--dim);display:block;margin-top:6px">Format: PNG, SVG, JPG, WebP. Disarankan berkas dengan latar belakang transparan, maks 2 MB.</span>
+        </div>
+
+        <!-- 4. Pesan Operasional (MOTD) -->
         <div class="form-group" style="margin-bottom:18px">
           <label for="brand-dash-motd" style="display:block;font-size:11.5px;font-weight:700;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">
-            5. Pesan Operasional (MOTD)
+            4. Pesan Operasional (MOTD)
           </label>
           <textarea id="brand-dash-motd" name="dash_motd" rows="3" placeholder="Contoh: Seluruh server produksi beroperasi optimal. Jadwal backup otomatis aktif." maxlength="500" style="width:100%;padding:10px 14px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;line-height:1.5;outline:none;resize:vertical;font-family:inherit">{{ brand.dash_motd if brand else '' }}</textarea>
           <span style="font-size:11px;color:var(--dim);display:block;margin-top:4px">Pesan status kondisi atau pengumuman operasional pada dashboard.</span>
         </div>
 
-        <!-- 4. Toggle Tampilan (Checkbox) -->
+        <!-- 5. Toggle Tampilan (Checkbox) -->
         <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
           <div>
             <label for="brand-show-motd" style="font-size:13px;font-weight:700;color:var(--text);cursor:pointer;display:block">
-              7. Toggle Tampilan
+              5. Toggle Tampilan
             </label>
             <span style="font-size:11.5px;color:var(--dim);display:block;margin-top:2px">
               Tampilkan atau sembunyikan pesan sambutan dan MOTD pada dashboard utama.
@@ -787,12 +814,16 @@
         
         <div style="background:rgba(9,13,22,0.92);border:1px solid var(--border);border-radius:8px;padding:22px 16px;text-align:center">
           <div style="font-size:16px;font-weight:800;letter-spacing:1.2px;color:#fff;text-transform:uppercase;margin-bottom:8px">PANTAU SERVER</div>
-          <div style="display:inline-flex;color:var(--blue);margin-bottom:8px">
+          <div id="prev-login-logo" style="margin-bottom:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--blue);min-height:36px">
+            {% if brand and brand.logo_url %}
+            <img src="{{ brand.logo_url }}" alt="Logo" style="max-height:48px;max-width:120px;object-fit:contain">
+            {% else %}
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 8px rgba(56,189,248,0.4))">
               <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
               <path d="M2 17l10 5 10-5"></path>
               <path d="M2 12l10 5 10-5"></path>
             </svg>
+            {% endif %}
           </div>
           <div id="prev-login-org" style="font-size:13.5px;font-weight:700;color:var(--text);letter-spacing:0.2px">
             {{ brand.org_name if brand and brand.org_name else '(Nama Organisasi)' }}
@@ -819,8 +850,12 @@
         <p style="font-size:11.5px;color:var(--dim);margin-bottom:14px">Simulasi bilah pesan operasional pada dashboard.</p>
 
         <div id="prev-motd-container" style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.22);border-radius:8px;padding:12px 14px;display:{% if brand and brand.show_motd %}flex{% else %}none{% endif %};align-items:center;gap:12px">
-          <div style="width:30px;height:30px;border-radius:6px;background:rgba(56,189,248,0.14);display:flex;align-items:center;justify-content:center;color:var(--blue);flex-shrink:0">
+          <div id="prev-dash-icon-box" style="width:34px;height:34px;border-radius:8px;background:rgba(56,189,248,0.14);border:1px solid rgba(56,189,248,0.3);display:flex;align-items:center;justify-content:center;color:var(--blue);flex-shrink:0;padding:2px">
+            {% if brand and brand.logo_url %}
+            <img src="{{ brand.logo_url }}" alt="Logo" style="max-width:100%;max-height:100%;object-fit:contain">
+            {% else %}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            {% endif %}
           </div>
           <div style="flex:1;min-width:0">
             <div id="prev-dash-org" style="font-size:12.5px;font-weight:700;color:#fff">
@@ -1138,6 +1173,67 @@ function switchProfileTab(tabName) {
   }
 }
 
+let currentCustomLogoUrl = {{ (brand.logo_url if brand and brand.logo_url else '')|tojson }};
+let activeLogoDataUrl = currentCustomLogoUrl;
+
+function previewLogoFile(input) {
+  const fileNameSpan = document.getElementById('logo-file-name');
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Ukuran berkas logo melebihi batas 2 MB.');
+      input.value = '';
+      if (fileNameSpan) fileNameSpan.textContent = '';
+      return;
+    }
+    if (fileNameSpan) fileNameSpan.textContent = '✔ ' + file.name;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      activeLogoDataUrl = e.target.result;
+      applyLogoPreview(activeLogoDataUrl);
+    };
+    reader.readAsDataURL(file);
+
+    const remCheck = document.getElementById('remove-logo-checkbox');
+    if (remCheck) remCheck.checked = false;
+  }
+}
+
+function toggleRemoveLogo(checkbox) {
+  const fileInput = document.getElementById('brand-logo-file');
+  const fileNameSpan = document.getElementById('logo-file-name');
+  if (checkbox.checked) {
+    if (fileInput) fileInput.value = '';
+    if (fileNameSpan) fileNameSpan.textContent = '';
+    activeLogoDataUrl = '';
+    applyLogoPreview('');
+  } else {
+    activeLogoDataUrl = currentCustomLogoUrl;
+    applyLogoPreview(activeLogoDataUrl);
+  }
+}
+
+function applyLogoPreview(logoSrc) {
+  const loginLogoDiv = document.getElementById('prev-login-logo');
+  const dashIconBox = document.getElementById('prev-dash-icon-box');
+
+  if (loginLogoDiv) {
+    if (logoSrc) {
+      loginLogoDiv.innerHTML = `<img src="${logoSrc}" alt="Logo" style="max-height:48px;max-width:120px;object-fit:contain">`;
+    } else {
+      loginLogoDiv.innerHTML = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 8px rgba(56,189,248,0.4))"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>`;
+    }
+  }
+
+  if (dashIconBox) {
+    if (logoSrc) {
+      dashIconBox.innerHTML = `<img src="${logoSrc}" alt="Logo" style="max-width:100%;max-height:100%;object-fit:contain">`;
+    } else {
+      dashIconBox.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
+    }
+  }
+}
+
 function updateBrandingPreview() {
   const orgInput = document.getElementById('brand-org-name');
   const unitInput = document.getElementById('brand-org-unit');
@@ -1148,6 +1244,9 @@ function updateBrandingPreview() {
   const unitVal = unitInput ? unitInput.value.trim() : '';
   const motdVal = motdInput ? motdInput.value.trim() : '';
   const isShow = showToggle ? showToggle.checked : true;
+
+  // Update Logo Preview
+  applyLogoPreview(activeLogoDataUrl);
 
   // Update Login Preview
   const prevLoginOrg = document.getElementById('prev-login-org');

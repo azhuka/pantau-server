@@ -311,6 +311,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.5.25
+
+- **Tipe Rilis:** Rilis Fitur & Personalisasi Antarmuka (*Feature & Branding Logo Upload*)
+- **Fokus Utama:** Fitur unggah logo organisasi kustom (PNG, SVG, JPG, WebP), pratinjau instan sebelum simpan, opsi hapus logo kustom kembali ke lambang bawaan, serta integrasi visual logo pada halaman login dan bilah dashboard.
+
+### Rangkuman Pembaruan:
+1. **Fitur Unggah Logo Organisasi (Custom Logo Upload):**
+   - Menambahkan input berkas logo pada form pengaturan identitas di menu Profil.
+   - Mendukung format gambar standar (`.png`, `.svg`, `.jpg`, `.jpeg`, `.webp`, `.ico`) dengan batas ukuran hingga 2 MB.
+   - Manajemen berkas aman tersimpan di direktori `server/static/uploads/` dengan pencegahan duplikasi file lama.
+   - Opsi *Hapus Logo* untuk mengembalikan tampilan ke lambang SVG minimalis standar.
+2. **Pratinjau Logo Interaktif (Live Client-Side Preview):**
+   - Menggunakan FileReader HTML5 untuk menampilkan pratinjau logo secara instan pada simulasi halaman login dan bilah dashboard seketika saat berkas dipilih oleh operator.
+3. **Penyajian Logo Responsif pada Antarmuka:**
+   - Menampilkan logo kustom pada header halaman login di antara judul `PANTAU SERVER` dan nama instansi/organisasi.
+   - Menampilkan logo kustom pada bilah pengumuman operasional (MOTD banner) di dashboard utama.
+
+---
+
 ## Versi 4.5.24
 
 - **Tipe Rilis:** Rilis Fitur & Personalisasi Antarmuka (*Feature & Branding Personalization*)
