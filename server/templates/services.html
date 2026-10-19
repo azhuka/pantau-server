@@ -775,6 +775,244 @@
   white-space: nowrap;
 }
 
+/* ==========================================================================
+   Standarisasi Bingkai Seluruh Kartu (Sesuai Kartu Performa Sekarang)
+   - Border halus: 1px solid rgba(255, 255, 255, 0.08)
+   - Radius kompak: 6px
+   - Background: Linear gradient gelap
+   - Spasi antar-kartu sangat tipis & rapat: 6px
+   - Header ramping: min-height 28px, border-bottom 1px solid rgba(255, 255, 255, 0.06)
+   - Padding kartu: 0 (edge-to-edge untuk tabel, 6px 8px untuk konten grid)
+   ========================================================================== */
+.hero-card.card {
+  padding: 8px 12px !important;
+  margin-bottom: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 6px !important;
+  background: linear-gradient(180deg, rgba(26, 35, 54, 0.95) 0%, rgba(20, 27, 43, 0.98) 100%) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+#flash-act.card {
+  border-radius: 6px !important;
+  margin-bottom: 6px !important;
+  padding: 8px 12px !important;
+}
+.tabbar {
+  margin: 0 0 6px !important;
+  border-radius: 6px !important;
+  padding: 3px 4px !important;
+}
+.tab {
+  padding: 5px 12px 6px !important;
+  font-size: 12px !important;
+  border-radius: 5px !important;
+}
+
+/* Seluruh kartu dalam tab konten */
+.tab-body .card {
+  padding: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 6px !important;
+  background: linear-gradient(180deg, rgba(26, 35, 54, 0.95) 0%, rgba(20, 27, 43, 0.98) 100%) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.tab-body .card:hover {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* Header kartu yang ramping dan proporsional */
+.tab-body .card > .card-header,
+.tab-body .card-header:not(.perf-card-header) {
+  padding: 5px 10px !important;
+  margin-bottom: 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  min-height: 28px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: rgba(255, 255, 255, 0.015);
+}
+.tab-body .card > .card-header h3,
+.tab-body .card-header:not(.perf-card-header) h3,
+.tab-body .card > .card-header .card-title,
+.tab-body .card-header:not(.perf-card-header) .card-title {
+  margin: 0 !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #f8fafc !important;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.tab-body .card > .card-header span:not(.badge):not(.tab-warn-dot),
+.tab-body .card-header:not(.perf-card-header) span:not(.badge):not(.tab-warn-dot) {
+  font-size: 11px !important;
+}
+
+/* Standarisasi grid spesifikasi perangkat keras & platform */
+.tab-body .specs-grid-4 {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  gap: 6px !important;
+  padding: 6px 8px 0 8px !important;
+  margin-bottom: 6px !important;
+  box-sizing: border-box;
+}
+.tab-body .specs-grid-2 {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+  gap: 6px !important;
+  padding: 0 8px 6px 8px !important;
+  box-sizing: border-box;
+}
+.tab-body .specs-grid-4 > div,
+.tab-body .specs-grid-2 > div {
+  background: rgba(0, 0, 0, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 5px !important;
+  padding: 6px 8px !important;
+  box-sizing: border-box;
+}
+.tab-body .specs-grid-4 > div > div:first-child,
+.tab-body .specs-grid-2 > div > div:first-child {
+  margin-bottom: 4px !important;
+}
+.tab-body .specs-grid-4 > div strong,
+.tab-body .specs-grid-2 > div strong {
+  font-size: 11.5px !important;
+}
+.tab-body .table-compact td {
+  padding: 2.5px 5px !important;
+  font-size: 11px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Standarisasi grid grafik riwayat kinerja */
+.tab-body .perf-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 6px !important;
+  padding: 6px 8px !important;
+  margin-top: 0 !important;
+  box-sizing: border-box;
+}
+@media (max-width: 960px) {
+  .tab-body .perf-grid { grid-template-columns: 1fr !important; }
+}
+.tab-body .perf-metric-card {
+  background: rgba(0, 0, 0, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 5px !important;
+  padding: 6px 8px !important;
+  box-sizing: border-box;
+}
+.tab-body .perf-card-header {
+  margin-bottom: 6px !important;
+}
+.tab-body .perf-card-title {
+  font-size: 12px !important;
+  gap: 6px !important;
+}
+.tab-body .perf-chart-box {
+  height: 135px !important;
+}
+.tab-body #disk-charts-wrap {
+  padding: 0 8px 6px 8px !important;
+  margin-top: 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Standarisasi tabel dalam kartu agar pas dari tepi ke tepi (edge-to-edge) */
+.tab-body .card table th {
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: rgba(0, 0, 0, 0.18) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .4px !important;
+  color: var(--dim) !important;
+}
+.tab-body .card table td {
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+}
+.tab-body .card table tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* Toolbar dan filter dalam kartu */
+.tab-body .card > #prob-wrapper > div:first-child,
+.tab-body #tab-proses .card > div:nth-child(2),
+.tab-body #tab-layanan .card:first-child > div:nth-of-type(2) {
+  margin: 6px 8px !important;
+  padding: 5px 8px !important;
+  border-radius: 5px !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background: rgba(0, 0, 0, 0.14) !important;
+}
+.tab-body #tab-layanan .card:first-child {
+  padding: 0 0 6px 0 !important;
+}
+.tab-body #tab-layanan .card:first-child .grid-2 {
+  padding: 0 8px !important;
+  gap: 6px !important;
+}
+.tab-body #tab-firewall .card:first-child > div[style*="display:grid"] {
+  gap: 6px !important;
+  margin: 6px 8px !important;
+}
+.tab-body #tab-firewall .card:first-child .stat-card {
+  padding: 8px 10px !important;
+  border-radius: 5px !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background: rgba(0, 0, 0, 0.16) !important;
+}
+.tab-body #tab-firewall .card:first-child .stat-card .label {
+  font-size: 10px !important;
+  margin-bottom: 2px !important;
+}
+.tab-body #tab-firewall .card:first-child .stat-card .value {
+  font-size: 16px !important;
+}
+.tab-body #tab-firewall .card:first-child h4 {
+  margin: 6px 8px 4px 8px !important;
+  font-size: 11.5px !important;
+}
+.tab-body .table-pagination-bar {
+  padding: 4px 10px !important;
+  margin: 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: rgba(0, 0, 0, 0.12) !important;
+}
+.tab-body .empty-msg {
+  padding: 14px 12px !important;
+  font-size: 12px !important;
+}
+
+/* Safeguard: Jangan ubah modal */
+#svc-confirm-modal .card,
+#maint-modal .card,
+#term-unlock-modal .card,
+#term-close-confirm-modal .card,
+#term-lock-confirm-modal .card,
+#add-svc-modal .card,
+[id$="-modal"] .card,
+.modal-dialog .card,
+div[style*="position:fixed"] .card,
+div[style*="position: fixed"] .card {
+  padding: 18px 20px !important;
+  border-radius: 10px !important;
+  overflow: visible !important;
+  margin: 0 !important;
+}
+
 </style>
 {% endblock %}
 {% block content %}
@@ -1236,7 +1474,7 @@
   </div>
 
   <!-- 2. Spesifikasi Perangkat Keras & Platform -->
-  <div class="card" style="margin-top:6px">
+  <div class="card">
 
     <div class="card-header" style="align-items:center;justify-content:space-between">
       <div>
@@ -1413,7 +1651,7 @@
   </div>
 
   <!-- 3. Partisi Penyimpanan & Laju I/O Disk (Live) -->
-  <div class="card" id="disks-wrap" style="display:none;margin-top:16px">
+  <div class="card" id="disks-wrap" style="display:none">
     <div class="card-header" style="align-items:center;justify-content:space-between">
       <div>
         <h3 style="margin:0">Partisi Penyimpanan &amp; Laju I/O Disk</h3>
@@ -1438,7 +1676,7 @@
   </div>
 
   <!-- 4. Statistik Antarmuka Jaringan (Live) -->
-  <div class="card" style="margin-top:16px">
+  <div class="card">
     <div class="card-header" style="align-items:center;justify-content:space-between">
       <div>
         <h3 style="margin:0">Statistik Lalu Lintas Jaringan</h3>
@@ -1465,7 +1703,7 @@
   </div>
 
   <!-- 5. Riwayat Kinerja (Historical Performance Charts) -->
-  <div class="card" style="margin-top:16px">
+  <div class="card">
     <div class="card-header" style="align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <h3 style="margin:0">Riwayat Kinerja</h3>
@@ -1740,7 +1978,7 @@
   </div>
 </div>
 
-<div class="card" id="card-action-history" style="margin-top:20px">
+<div class="card" id="card-action-history">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <div>
       <h3 style="margin:0">Riwayat Tindakan</h3>
@@ -2671,7 +2909,7 @@
   </div>
 
   <!-- Card Riwayat Tindakan Akun Pengguna -->
-  <div class="card" id="card-acc-action-history" style="margin-top:20px">
+  <div class="card" id="card-acc-action-history">
     {% set acc_acts = [] %}
     {% if actions %}
       {% for act in actions %}
