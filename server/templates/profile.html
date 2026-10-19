@@ -809,29 +809,30 @@
         
         <div style="background:rgba(9,13,22,0.92);border:1px solid var(--border);border-radius:8px;padding:22px 16px;text-align:center">
           <div style="display:inline-flex;align-items:stretch;justify-content:center;gap:14px;max-width:100%">
-            <div id="prev-login-logo" style="display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <div id="prev-login-logo" style="width:56px;height:56px;flex-shrink:0;display:flex;align-items:center;justify-content:center">
               {% if brand and brand.logo_url %}
-              <img src="{{ brand.logo_url }}" alt="Logo" style="height:100%;max-height:64px;max-width:85px;width:auto;object-fit:contain">
+              <img src="{{ brand.logo_url }}" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:5px">
               {% else %}
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);filter:drop-shadow(0 0 8px rgba(56,189,248,0.4))">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);filter:drop-shadow(0 0 8px rgba(56,189,248,0.4))">
                 <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
                 <path d="M2 17l10 5 10-5"></path>
                 <path d="M2 12l10 5 10-5"></path>
               </svg>
               {% endif %}
             </div>
-            <div style="display:flex;flex-direction:column;justify-content:center;gap:4px;text-align:center;min-width:0">
-              <div style="font-size:16px;font-weight:800;letter-spacing:1.2px;color:#fff;text-transform:uppercase;line-height:1.15;margin:0">PANTAU SERVER</div>
-              <div id="prev-login-org" style="font-size:13.5px;font-weight:700;color:var(--text);letter-spacing:0.2px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">
+            <div style="display:flex;flex-direction:column;justify-content:space-between;text-align:center;height:56px;min-width:0">
+              <div style="font-size:16px;font-weight:800;letter-spacing:1.2px;color:#fff;text-transform:uppercase;line-height:1;margin:0">PANTAU SERVER</div>
+              <div id="prev-login-org" style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:0.2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">
                 {{ brand.org_name if brand and brand.org_name else '(Nama Organisasi)' }}
               </div>
-              <div id="prev-login-unit" style="font-size:11.5px;color:var(--dim);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;{% if not brand or not brand.org_unit %}display:none{% endif %}">
+              <div id="prev-login-unit" style="font-size:11px;color:var(--dim);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;{% if not brand or not brand.org_unit %}display:none{% endif %}">
                 {{ brand.org_unit if brand and brand.org_unit else '' }}
               </div>
             </div>
+            <div id="prev-login-spacer" style="width:56px;height:56px;flex-shrink:0;visibility:hidden" aria-hidden="true"></div>
           </div>
 
-          <div style="margin-top:16px;padding:12px;background:rgba(19,26,41,0.8);border:1px dashed rgba(255,255,255,0.12);border-radius:6px;font-size:11.5px;color:var(--dim)">
+          <div style="margin-top:16px;padding:12px;background:rgba(19,26,41,0.8);border:1px dashed rgba(255,255,255,0.12);border-radius:6px;font-size:11.5px;color:var(--dim);max-width:320px;margin-left:auto;margin-right:auto">
             [ Kartu Login ]
           </div>
           <div style="margin-top:12px;font-size:10.5px;color:var(--dim);opacity:0.8">
@@ -1227,9 +1228,9 @@ function applyLogoPreview(logoSrc) {
 
   if (loginLogoDiv) {
     if (logoSrc) {
-      loginLogoDiv.innerHTML = `<img src="${logoSrc}" alt="Logo" style="height:100%;max-height:64px;max-width:85px;width:auto;object-fit:contain">`;
+      loginLogoDiv.innerHTML = `<img src="${logoSrc}" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:5px">`;
     } else {
-      loginLogoDiv.innerHTML = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);filter:drop-shadow(0 0 8px rgba(56,189,248,0.4))"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>`;
+      loginLogoDiv.innerHTML = `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);filter:drop-shadow(0 0 8px rgba(56,189,248,0.4))"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>`;
     }
   }
 

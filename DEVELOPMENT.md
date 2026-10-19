@@ -311,6 +311,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.5.30
+
+- **Tipe Rilis:** Presisi dan Keseimbangan Tata Letak Header Login (*Login Header Precision & Balanced Layout*)
+- **Fokus Utama:** Penyelarasan presisi pada halaman login sehingga kartu form login berada tepat di tengah bawah nama unit kerja dan judul `PANTAU SERVER`, dengan logo organisasi di sisi kiri yang membentang rata dari sisi atas judul hingga sisi bawah nama unit kerja.
+
+### Rangkuman Pembaruan:
+1. **Presisi Sumbu Tengah Kartu Login:**
+   - Menyeimbangkan kontainer baris identitas (`.brand-row`) menggunakan elemen penyeimbang simetris (`.brand-spacer`), sehingga sumbu tengah teks (`PANTAU SERVER`, `Nama Organisasi`, `Nama Unit Kerja`) dan kartu form login berada tepat pada satu garis tengah vertikal (*centerDelta = 0*).
+   - Memastikan kartu login berada tepat di tengah bawah unit kerja.
+2. **Kesejajaran Vertikal Logo Organisasi:**
+   - Logo organisasi di sisi kiri membentang dengan skala proporsional penuh (*64px*) dari batas atas judul `PANTAU SERVER` hingga batas bawah `Nama Unit Kerja` (*topDelta = 0, bottomDelta = 0*).
+   - Menambahkan penyesuaian adaptif ketinggian otomatis (*44px*) jika unit kerja tidak diisi.
+3. **Penyelarasan Pratinjau Login di Menu Setel Organisasi:**
+   - Memperbarui simulasi pratinjau login di menu Profil agar menggunakan struktur seimbang yang identik dengan halaman login produksi.
+
+---
+
 ## Versi 4.5.29
 
 - **Tipe Rilis:** Penyelarasan Tata Letak Header Dashboard (*Dashboard Header Layout Alignment*)
