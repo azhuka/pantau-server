@@ -1,0 +1,1554 @@
+{% extends "base.html" %}
+
+{% block title %}Pemantauan Endpoint &amp; Jaringan - Pantau Server{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Kontrol Header & Filter */
+.probe-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.probe-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.search-input-wrap {
+  position: relative;
+  min-width: 240px;
+}
+.search-input-wrap input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px 7px 32px;
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  transition: all 0.15s ease;
+}
+.search-input-wrap input:focus {
+  border-color: var(--blue);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--dim);
+  pointer-events: none;
+}
+.filter-select {
+  background: #0d1527;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  color-scheme: dark;
+}
+.filter-select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+.filter-select option,
+.filter-select optgroup {
+  background-color: #111a2e !important;
+  color: #f8fafc !important;
+  padding: 8px 12px;
+}
+.filter-select option:checked,
+.filter-select option:hover {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* KPI Strip Ringkasan */
+.probe-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.probe-kpi-card {
+  background: linear-gradient(180deg, rgba(26, 35, 54, 0.9) 0%, rgba(18, 25, 40, 0.95) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.probe-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.probe-kpi-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.probe-kpi-val {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Tabel Pemantauan Proporsional Standar Pantau */
+.probe-table-card {
+  background: linear-gradient(180deg, rgba(26, 35, 54, 0.95) 0%, rgba(20, 27, 43, 0.98) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.probe-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.probe-table th {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 9px 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  user-select: none;
+}
+.probe-table td {
+  padding: 7px 12px;
+  font-size: 11.5px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+.probe-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.025);
+}
+.probe-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Kolom Proporsional */
+.th-status, .td-status {
+  width: 85px !important;
+  min-width: 80px !important;
+  text-align: center !important;
+}
+.th-target, .td-target {
+  width: auto !important;
+  min-width: 220px !important;
+}
+.th-server, .td-server {
+  width: 140px !important;
+  min-width: 120px !important;
+}
+.th-latency, .td-latency {
+  width: 150px !important;
+  min-width: 130px !important;
+}
+.th-uptime, .td-uptime {
+  width: 135px !important;
+  min-width: 120px !important;
+}
+.th-freq, .td-freq {
+  width: 125px !important;
+  min-width: 110px !important;
+}
+.th-actions, .td-actions {
+  width: 1% !important;
+  min-width: 160px !important;
+  white-space: nowrap !important;
+  text-align: left !important;
+}
+
+/* Status Pills */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2.5px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+.status-pill-up {
+  background: rgba(52, 211, 153, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.15);
+}
+.status-pill-down {
+  background: rgba(248, 113, 113, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.2);
+  animation: pulseGlow 1.8s infinite;
+}
+.status-pill-degraded {
+  background: rgba(251, 191, 36, 0.16);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.15);
+}
+.status-pill-paused {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+.status-pill-unknown {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--dim);
+  border: 1px dashed var(--border);
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(248, 113, 113, 0.2); }
+  50% { box-shadow: 0 0 16px rgba(248, 113, 113, 0.5); }
+}
+
+/* Badge Tipe Target */
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+}
+.type-badge-http { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+.type-badge-https { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+.type-badge-ping { background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+.type-badge-tcp { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+
+/* Warna Latensi */
+.lat-good { color: #34d399; font-weight: 600; }
+.lat-medium { color: #fbbf24; font-weight: 600; }
+.lat-bad { color: #f87171; font-weight: 600; }
+
+/* Modals Responsif Penuh Terhadap Zoom & Viewport */
+.probe-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+.probe-modal-panel {
+  background: linear-gradient(180deg, #151f33 0%, #0f172a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 680px;
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+  animation: modalScaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  margin: auto;
+}
+.probe-modal-panel form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+@keyframes modalScaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.probe-modal-head {
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+.probe-modal-head h3 {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.probe-modal-close {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+.probe-modal-close:hover { color: #fff; background: var(--hover); }
+.probe-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+.probe-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+.probe-modal-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+.probe-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+.probe-modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+.probe-modal-foot {
+  padding: 14px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+/* Formulir Bersih & Terstruktur Khusus Modal Pemantauan */
+.probe-form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+.probe-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+.probe-field-help {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin-top: 3px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.probe-form-grid-2 .probe-form-group {
+  margin-bottom: 0;
+}
+.probe-form-group label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.probe-form-group input,
+.probe-form-group select,
+.probe-form-group textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0d1527;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  padding: 9px 13px;
+  font-size: 13px;
+  color: #f8fafc;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  color-scheme: dark;
+}
+.probe-form-group input:focus,
+.probe-form-group select:focus,
+.probe-form-group textarea:focus {
+  border-color: var(--blue);
+  background: #111c33;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+}
+.probe-form-group select option,
+.probe-form-group select optgroup {
+  background-color: #111a2e !important;
+  color: #f8fafc !important;
+  padding: 8px 12px;
+}
+.probe-form-group select option:checked,
+.probe-form-group select option:hover {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.type-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+.type-tab-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--dim);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.type-tab-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+.type-tab-btn.active {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+.adhoc-test-box {
+  margin-top: 14px;
+  padding: 11px 15px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  display: none;
+  line-height: 1.4;
+}
+.adhoc-test-box.success {
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #6ee7b7;
+}
+.adhoc-test-box.error {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fca5a5;
+}
+
+/* Grafik Riwayat SVG */
+.chart-container {
+  width: 100%;
+  height: 180px;
+  position: relative;
+  margin: 14px 0 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  padding: 10px;
+  box-sizing: border-box;
+}
+.chart-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="probe-header">
+  <div>
+    <h2>Pemantauan Endpoint &amp; Jaringan</h2>
+    <div style="font-size:12.5px;color:var(--dim);margin-top:4px">
+      Pantau kondisi layanan endpoint (aplikasi, jaringan, port) dari luar
+    </div>
+  </div>
+  <div class="probe-controls">
+    <div class="search-input-wrap">
+      <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" id="probeSearchInput" placeholder="Cari nama atau target endpoint..." oninput="handleSearchFilter()">
+    </div>
+    <select id="probeTypeFilter" class="filter-select" onchange="handleSearchFilter()" aria-label="Filter Protokol">
+      <option value="all">Semua Protokol</option>
+      <option value="http">Web (HTTP / HTTPS)</option>
+      <option value="ping">Ping Jaringan (ICMP)</option>
+      <option value="tcp">Port Layanan (TCP)</option>
+    </select>
+    <select id="probeStatusFilter" class="filter-select" onchange="handleSearchFilter()" aria-label="Filter Status">
+      <option value="all">Semua Status</option>
+      <option value="up">Normal (UP)</option>
+      <option value="down">Terputus (DOWN)</option>
+      <option value="degraded">Terganggu (Degraded)</option>
+      <option value="paused">Dijeda</option>
+    </select>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="fetchProbes(true)" title="Muat Ulang Data">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/></svg>
+    </button>
+    {% if can_probing or user.is_master_admin() %}
+    <button type="button" class="btn btn-primary btn-sm" onclick="openAddProbeModal()" style="gap:6px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>Tambah Endpoint</span>
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- KPI Strip Ringkasan -->
+<div class="probe-kpi-grid">
+  <div class="probe-kpi-card" style="border-left: 3px solid var(--blue)">
+    <div class="probe-kpi-label">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      Total Endpoint
+    </div>
+    <div class="probe-kpi-val" id="kpi-total">0</div>
+  </div>
+  <div class="probe-kpi-card" style="border-left: 3px solid var(--green)">
+    <div class="probe-kpi-label">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      Endpoint Normal (UP)
+    </div>
+    <div class="probe-kpi-val" id="kpi-up" style="color:var(--green)">0</div>
+  </div>
+  <div class="probe-kpi-card" style="border-left: 3px solid var(--red)">
+    <div class="probe-kpi-label">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+      Bermasalah (DOWN)
+    </div>
+    <div class="probe-kpi-val" id="kpi-down" style="color:var(--red)">0</div>
+  </div>
+  <div class="probe-kpi-card" style="border-left: 3px solid var(--yellow)">
+    <div class="probe-kpi-label">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 22 22 22"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      Terganggu (Degraded)
+    </div>
+    <div class="probe-kpi-val" id="kpi-degraded" style="color:var(--yellow)">0</div>
+  </div>
+  <div class="probe-kpi-card" style="border-left: 3px solid var(--purple)">
+    <div class="probe-kpi-label">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      Rata-rata Latensi
+    </div>
+    <div class="probe-kpi-val" id="kpi-lat">0<span style="font-size:14px;color:var(--dim);font-weight:600;margin-left:2px">ms</span></div>
+  </div>
+  <div class="probe-kpi-card" style="border-left: 3px solid #38bdf8">
+    <div class="probe-kpi-label">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+      Ketersediaan (24 Jam)
+    </div>
+    <div class="probe-kpi-val" id="kpi-uptime" style="color:#38bdf8">100<span style="font-size:14px;color:var(--dim);font-weight:600;margin-left:2px">%</span></div>
+  </div>
+</div>
+
+<!-- Kartu Tabel Endpoint Terpantau -->
+<div class="probe-table-card">
+  <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.015)">
+    <div style="display:flex;align-items:center;gap:8px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>
+      <span style="font-size:13px;font-weight:700;color:var(--text)">Daftar Endpoint Terpantau</span>
+    </div>
+    <span style="font-size:11px;color:var(--dim)" id="probeCountLabel">Memuat…</span>
+  </div>
+
+  <div style="overflow-x:auto">
+    <table class="probe-table" id="probesTable">
+      <thead>
+        <tr>
+          <th class="th-status">Status</th>
+          <th class="th-target">Nama &amp; Target</th>
+          <th class="th-server">Server Terkait</th>
+          <th class="th-latency">Latensi &amp; Respons</th>
+          <th class="th-uptime">Ketersediaan (24j / 30h)</th>
+          <th class="th-freq">Pemeriksaan</th>
+          <th class="th-actions">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="probesTbody">
+        <tr>
+          <td colspan="7" style="text-align:center;padding:36px;color:var(--dim)">
+            Memuat data pemantauan endpoint…
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Tambah / Sunting Endpoint Pantau -->
+<div class="probe-modal-backdrop" id="probeModalBackdrop" onclick="closeModalOnBackdrop(event, 'probeModalBackdrop')">
+  <div class="probe-modal-panel">
+    <div class="probe-modal-head">
+      <h3 id="probeModalTitle">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--blue)"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>
+        <span id="probeModalTitleText">Tambah Endpoint Baru</span>
+      </h3>
+      <button type="button" class="probe-modal-close" onclick="closeProbeModal()" aria-label="Tutup Jendela">&times;</button>
+    </div>
+
+    <form id="probeForm" onsubmit="handleProbeFormSubmit(event)">
+      <input type="hidden" id="formProbeId" value="">
+      <div class="probe-modal-body">
+        <!-- Pilihan Protokol Pemantauan -->
+        <div class="type-tabs">
+          <button type="button" class="type-tab-btn active" id="tab-btn-http" onclick="setProbeTypeTab('http')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            Web (HTTP / HTTPS)
+          </button>
+          <button type="button" class="type-tab-btn" id="tab-btn-ping" onclick="setProbeTypeTab('ping')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+            Ping Jaringan (ICMP)
+          </button>
+          <button type="button" class="type-tab-btn" id="tab-btn-tcp" onclick="setProbeTypeTab('tcp')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+            Port Layanan (TCP)
+          </button>
+        </div>
+        <input type="hidden" id="formProbeType" value="http">
+
+        <div class="probe-form-grid-2">
+          <div class="probe-form-group">
+            <label for="formName">Nama Endpoint *</label>
+            <input type="text" id="formName" placeholder="Contoh: Website Toko, API Login, Router Kantor" required maxlength="100">
+            <span class="probe-field-help">Nama bebas yang mudah Anda kenali.</span>
+          </div>
+          <div class="probe-form-group">
+            <label for="formTier">Prioritas (Tier)</label>
+            <select id="formTier">
+              <option value="1">Tier 1 (Prioritas)</option>
+              <option value="2" selected>Tier 2 (Standar)</option>
+              <option value="3">Tier 3 (Non-Kritis)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="probe-form-grid-2">
+          <div class="probe-form-group">
+            <label id="formTargetLabel" for="formTarget">URL Target Web *</label>
+            <input type="text" id="formTarget" placeholder="https://contoh.com atau http://192.168.1.10:8080" required>
+            <span class="probe-field-help" id="formTargetHelp">url aplikasi yang ingin dicek. (https://... atau http://IP:Port).</span>
+          </div>
+          <div class="probe-form-group">
+            <label for="formServerId">Tautkan ke Server (Opsional)</label>
+            <select id="formServerId">
+              <option value="">-- Kosong --</option>
+              {% for s in servers %}
+              <option value="{{ s.id }}">{{ s.hostname }} ({{ s.ip_address }})</option>
+              {% endfor %}
+            </select>
+            <span class="probe-field-help">Aplikasi di server klien. Kosongkan jika memantau router/AP atau web luar.</span>
+          </div>
+        </div>
+
+        <!-- Field Port (Khusus TCP) -->
+        <div class="probe-form-group" id="rowTcpPort" style="display:none">
+          <label for="formPort">Port Target TCP *</label>
+          <input type="number" id="formPort" placeholder="Contoh: 3306, 5432, 22" min="1" max="65535">
+        </div>
+
+        <!-- Pengaturan Lanjutan (Opsional) -->
+        <details style="margin-top:14px;border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px 12px;background:rgba(255,255,255,0.015)">
+          <summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--blue);user-select:none;display:inline-flex;align-items:center;gap:6px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            ⚙️ Pengaturan Lanjutan (Opsional)
+          </summary>
+          <div style="margin-top:12px">
+            <!-- Opsi Khusus Web HTTP/HTTPS -->
+            <div id="sectionHttpOptions">
+              <div class="probe-form-grid-2">
+                <div class="probe-form-group">
+                  <label for="formHttpMethod">Metode HTTP</label>
+                  <select id="formHttpMethod">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="HEAD">HEAD</option>
+                  </select>
+                </div>
+                <div class="probe-form-group">
+                  <label for="formExpectedStatus">Kode Status Diharapkan</label>
+                  <select id="formExpectedStatus">
+                    <option value="200" selected>200 (OK)</option>
+                    <option value="2xx">2xx (Semua Kode Sukses)</option>
+                    <option value="201">201 (Created)</option>
+                    <option value="204">204 (No Content)</option>
+                    <option value="301">301 (Moved Permanently)</option>
+                    <option value="302">302 (Redirect)</option>
+                    <option value="3xx">3xx (Semua Pengalihan)</option>
+                    <option value="401">401 (Unauthorized)</option>
+                    <option value="403">403 (Forbidden)</option>
+                  </select>
+                  <span class="probe-field-help">Pilihan default adalah 200.</span>
+                </div>
+              </div>
+
+              <div class="probe-form-group">
+                <label for="formKeywordMatch">Pencocokan Kata Kunci (Opsional)</label>
+                <input type="text" id="formKeywordMatch" placeholder="Contoh: Selamat Datang (kosongkan jika tidak perlu)">
+                <span class="probe-field-help">Boleh dikosongkan. Jika diisi teks, sistem mewajibkan teks tersebut ada di halaman web agar dianggap sehat (UP).</span>
+              </div>
+
+              <div class="probe-form-grid-2">
+                <div class="probe-form-group">
+                  <label for="formSslVerify">Validasi Sertifikat SSL</label>
+                  <select id="formSslVerify">
+                    <option value="1">Sertifikat Resmi</option>
+                    <option value="0">Self-Signed</option>
+                  </select>
+                </div>
+                <div class="probe-form-group">
+                  <label for="formSslDays">Peringatan SSL Kedaluwarsa</label>
+                  <select id="formSslDays">
+                    <option value="14">Kurang dari 14 Hari</option>
+                    <option value="30">Kurang dari 30 Hari</option>
+                    <option value="7">Kurang dari 7 Hari</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pengaturan Jadwal & Ambang Batas -->
+            <div class="probe-form-grid-2">
+              <div class="probe-form-group">
+                <label for="formInterval">Interval Pengecekan</label>
+                <select id="formInterval">
+                  <option value="15">Setiap 15 Detik (Frekuensi Tinggi)</option>
+                  <option value="30">Setiap 30 Detik</option>
+                  <option value="60" selected>Setiap 1 Menit (Standar)</option>
+                  <option value="120">Setiap 2 Menit</option>
+                  <option value="300">Setiap 5 Menit</option>
+                </select>
+              </div>
+              <div class="probe-form-group">
+                <label for="formTimeout">Batas Waktu Tunggu (Timeout)</label>
+                <select id="formTimeout">
+                  <option value="3">3 Detik</option>
+                  <option value="5" selected>5 Detik (Direkomendasikan)</option>
+                  <option value="10">10 Detik</option>
+                  <option value="15">15 Detik</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="probe-form-grid-2">
+              <div class="probe-form-group">
+                <label for="formLatThresh">Batas Latensi Lambat (ms)</label>
+                <input type="number" id="formLatThresh" value="2000" placeholder="2000">
+              </div>
+              <div class="probe-form-group">
+                <label for="formConsecThresh">Pencegah Peringatan Palsu (Anti-Spike)</label>
+                <select id="formConsecThresh">
+                  <option value="1">1x Gagal Langsung Picu Alarm</option>
+                  <option value="2" selected>2x Gagal Berturut-turut (Direkomendasikan)</option>
+                  <option value="3">3x Gagal Berturut-turut</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Kotak Hasil Uji Sambungan Langsung -->
+        <div class="adhoc-test-box" id="adhocTestResult"></div>
+      </div>
+
+      <div class="probe-modal-foot">
+        <button type="button" class="btn btn-ghost btn-sm" id="btnTestAdhoc" onclick="testProbeConnectionAdhoc()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          ⚡ Uji Sambungan
+        </button>
+        <div style="display:flex;gap:8px">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="closeProbeModal()">Batal</button>
+          <button type="submit" class="btn btn-primary btn-sm" id="btnSubmitProbe">Simpan Endpoint</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Riwayat & Analitik Endpoint -->
+<div class="probe-modal-backdrop" id="historyModalBackdrop" onclick="closeModalOnBackdrop(event, 'historyModalBackdrop')">
+  <div class="probe-modal-panel" style="max-width:760px">
+    <div class="probe-modal-head">
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--green)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+        <span id="historyModalTitle">Riwayat &amp; Analitik Endpoint</span>
+      </h3>
+      <button type="button" class="probe-modal-close" onclick="closeHistoryModal()" aria-label="Tutup Jendela">&times;</button>
+    </div>
+    <div class="probe-modal-body">
+      <!-- Mini KPI Riwayat -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;text-align:center">
+          <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Status Terkini</div>
+          <div id="hist-cur-status" style="margin-top:4px">—</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;text-align:center">
+          <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Rata-rata Latensi</div>
+          <div id="hist-avg-lat" style="font-size:16px;font-weight:700;color:#fff;margin-top:2px;font-family:ui-monospace,monospace">—</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;text-align:center">
+          <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Ketersediaan 24 Jam</div>
+          <div id="hist-up-24" style="font-size:16px;font-weight:700;color:var(--green);margin-top:2px;font-family:ui-monospace,monospace">—</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;text-align:center">
+          <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Ketersediaan 30 Hari</div>
+          <div id="hist-up-30" style="font-size:16px;font-weight:700;color:#38bdf8;margin-top:2px;font-family:ui-monospace,monospace">—</div>
+        </div>
+      </div>
+
+      <!-- Grafik Latensi Interaktif -->
+      <div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">
+        Grafik Tren Latensi (Waktu Nyata)
+      </div>
+      <div class="chart-container">
+        <svg class="chart-svg" id="historySvgChart" viewBox="0 0 680 160" preserveAspectRatio="none">
+          <text x="340" y="80" text-anchor="middle" fill="#64748b" font-size="12">Memuat grafik…</text>
+        </svg>
+      </div>
+
+      <!-- Log Kejadian Terakhir -->
+      <div style="font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">
+        Log Riwayat Pemeriksaan Terkini
+      </div>
+      <div style="max-height:220px;overflow-y:auto;border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">
+        <table class="probe-table" style="font-size:11px">
+          <thead>
+            <tr>
+              <th style="width:130px">Waktu</th>
+              <th style="width:75px;text-align:center">Status</th>
+              <th style="width:90px">Latensi</th>
+              <th>Respons / Keterangan</th>
+            </tr>
+          </thead>
+          <tbody id="histLogsTbody">
+            <tr><td colspan="4" style="text-align:center;padding:16px;color:var(--dim)">Memuat log…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="probe-modal-foot" style="justify-content:flex-end">
+      <button type="button" class="btn btn-primary btn-sm" onclick="closeHistoryModal()">Tutup</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+const CAN_MANAGE_PROBING = {{ 'true' if (can_probing or user.is_master_admin()) else 'false' }};
+
+let probeDataList = [];
+let pollTimer = null;
+
+// Inisialisasi awal
+document.addEventListener('DOMContentLoaded', () => {
+  fetchProbes(true);
+  // Polling otomatis setiap 10 detik
+  pollTimer = setInterval(() => {
+    fetchProbes(false);
+  }, 10000);
+});
+
+// Ambil Data Endpoint dari API
+async function fetchProbes(showLoading = false) {
+  if (showLoading && probeDataList.length === 0) {
+    const tbody = document.getElementById('probesTbody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--dim)">Memuat data pemantauan endpoint…</td></tr>`;
+  }
+
+  try {
+    const res = await fetch('/api/probes', {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.ok) {
+      probeDataList = data.probes || [];
+      renderKpi(data.summary || {});
+      renderTable();
+      updateNavProbeBadge(data.summary?.down || 0);
+    }
+  } catch (err) {
+    console.error('Gagal mengambil data pemantauan endpoint:', err);
+  }
+}
+
+// Update Badge di Sidebar Navigasi
+function updateNavProbeBadge(downCount) {
+  const badge = document.getElementById('nav-probe-badge');
+  if (badge) {
+    if (downCount > 0) {
+      badge.style.display = 'inline-flex';
+      badge.textContent = downCount + ' DOWN';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
+// Tampilkan Ringkasan KPI
+function renderKpi(sum) {
+  document.getElementById('kpi-total').textContent = sum.total || 0;
+  document.getElementById('kpi-up').textContent = sum.up || 0;
+  document.getElementById('kpi-down').textContent = sum.down || 0;
+  document.getElementById('kpi-degraded').textContent = sum.degraded || 0;
+  document.getElementById('kpi-lat').innerHTML = (sum.avg_latency_ms || 0) + '<span style="font-size:14px;color:var(--dim);font-weight:600;margin-left:2px">ms</span>';
+  document.getElementById('kpi-uptime').innerHTML = (sum.avg_uptime_24h || 100) + '<span style="font-size:14px;color:var(--dim);font-weight:600;margin-left:2px">%</span>';
+  document.getElementById('probeCountLabel').textContent = `Total: ${sum.total || 0} endpoint`;
+}
+
+// Filter dan Pencarian
+function handleSearchFilter() {
+  renderTable();
+}
+
+// Dapatkan List yang Sudah Difilter
+function getFilteredProbes() {
+  const q = (document.getElementById('probeSearchInput')?.value || '').toLowerCase().trim();
+  const typeF = document.getElementById('probeTypeFilter')?.value || 'all';
+  const statusF = document.getElementById('probeStatusFilter')?.value || 'all';
+
+  return probeDataList.filter(p => {
+    if (typeF !== 'all') {
+      if (typeF === 'http' && !(p.probe_type === 'http' || p.probe_type === 'https')) return false;
+      if (typeF !== 'http' && p.probe_type !== typeF) return false;
+    }
+    if (statusF !== 'all') {
+      const curStatus = p.is_active ? p.status : 'paused';
+      if (curStatus !== statusF) return false;
+    }
+    if (q) {
+      const matchName = (p.name || '').toLowerCase().includes(q);
+      const matchTarget = (p.target || '').toLowerCase().includes(q);
+      const matchServer = (p.server_hostname || '').toLowerCase().includes(q);
+      if (!matchName && !matchTarget && !matchServer) return false;
+    }
+    return true;
+  });
+}
+
+// Render Tabel
+function renderTable() {
+  const tbody = document.getElementById('probesTbody');
+  if (!tbody) return;
+
+  const list = getFilteredProbes();
+  if (list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center;padding:40px;color:var(--dim)">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Tidak ada endpoint yang cocok</div>
+          <div style="font-size:12px">Ubah kata kunci pencarian atau tambahkan endpoint baru.</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  let html = '';
+  list.forEach(p => {
+    const isPaused = !p.is_active;
+    const statusVal = isPaused ? 'paused' : (p.status || 'unknown');
+    let pillClass = 'status-pill-unknown';
+    let pillLabel = statusVal.toUpperCase();
+
+    if (statusVal === 'up') {
+      pillClass = 'status-pill-up';
+      pillLabel = 'NORMAL';
+    } else if (statusVal === 'down') {
+      pillClass = 'status-pill-down';
+      pillLabel = 'DOWN';
+    } else if (statusVal === 'degraded') {
+      pillClass = 'status-pill-degraded';
+      pillLabel = 'TERGANGGU';
+    } else if (statusVal === 'paused') {
+      pillClass = 'status-pill-paused';
+      pillLabel = 'DIJEDA';
+    }
+
+    // Badge Tipe
+    let typeClass = 'type-badge-http';
+    let typeLabel = (p.probe_type || 'HTTP').toUpperCase();
+    if (p.probe_type === 'https') { typeClass = 'type-badge-https'; }
+    else if (p.probe_type === 'ping') { typeClass = 'type-badge-ping'; typeLabel = 'PING'; }
+    else if (p.probe_type === 'tcp') { typeClass = 'type-badge-tcp'; typeLabel = `TCP :${p.port || 80}`; }
+
+    // Warna Latensi
+    let latHtml = '—';
+    if (p.last_latency_ms !== null && p.last_latency_ms !== undefined) {
+      const lat = p.last_latency_ms;
+      const latClass = lat < 300 ? 'lat-good' : (lat < 1000 ? 'lat-medium' : 'lat-bad');
+      latHtml = `<span class="${latClass}">${lat.toFixed(1)} ms</span>`;
+      if (p.last_status_code) {
+        latHtml += ` <span class="badge badge-muted" style="font-size:9.5px;padding:1px 4px">${p.last_status_code}</span>`;
+      }
+    } else if (p.last_error) {
+      latHtml = `<span style="color:var(--red);font-size:11px" title="${escapeHtml(p.last_error)}">${escapeHtml(p.last_error.substring(0, 24))}…</span>`;
+    }
+
+    // Badge Sisa Hari SSL
+    let sslBadge = '';
+    if (p.ssl_days_remaining !== null && p.ssl_days_remaining !== undefined) {
+      const days = p.ssl_days_remaining;
+      const sslCol = days <= 7 ? 'var(--red)' : (days <= 14 ? 'var(--yellow)' : 'var(--dim)');
+      sslBadge = `<div style="font-size:9.5px;color:${sslCol};margin-top:2px">SSL: sisa ${days} hari</div>`;
+    }
+
+    // Waktu Pemeriksaan Terakhir
+    const lastCheckStr = p.last_checked_at ? formatRelativeTime(p.last_checked_at) : 'Belum dicek';
+
+    // Server Hostname
+    const serverHtml = p.server_hostname 
+      ? `<a href="/servers/${p.server_id}/services" style="color:var(--blue);text-decoration:none;font-weight:600">${escapeHtml(p.server_hostname)}</a>`
+      : `<span style="color:var(--dim)">-</span>`;
+
+    // Uptime Pill
+    const up24 = p.uptime_24h !== undefined ? p.uptime_24h.toFixed(1) : '100.0';
+    const up30 = p.uptime_30d !== undefined ? p.uptime_30d.toFixed(1) : '100.0';
+
+    const pTier = p.tier || 2;
+    let tierBadge = '';
+    if (pTier === 1) {
+      tierBadge = `<span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="Tier-1 (Prioritas / Vital)">tier-1</span>`;
+    } else if (pTier === 3) {
+      tierBadge = `<span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="Tier-3 (Sementara / Non-Kritis)">tier-3</span>`;
+    } else {
+      tierBadge = `<span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="Tier-2 (Standar)">tier-2</span>`;
+    }
+
+    html += `
+      <tr id="probe-row-${p.id}">
+        <td class="td-status">
+          <span class="status-pill ${pillClass}">${pillLabel}</span>
+        </td>
+        <td class="td-target">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="type-badge ${typeClass}">${typeLabel}</span>
+            <strong style="color:#fff;font-size:12px">${escapeHtml(p.name)}</strong>
+            ${tierBadge}
+          </div>
+          <div style="margin-top:2px;font-family:ui-monospace,monospace;font-size:11px;color:var(--dim);word-break:break-all">
+            ${escapeHtml(p.target)}
+          </div>
+          ${sslBadge}
+        </td>
+        <td class="td-server">
+          ${serverHtml}
+        </td>
+        <td class="td-latency">
+          ${latHtml}
+        </td>
+        <td class="td-uptime">
+          <div style="font-family:ui-monospace,monospace;font-size:11.5px">
+            <span style="color:${up24 >= 99 ? 'var(--green)' : 'var(--yellow)'}">${up24}%</span>
+            <span style="color:var(--dim);margin:0 2px">/</span>
+            <span style="color:var(--dim)">${up30}%</span>
+          </div>
+        </td>
+        <td class="td-freq">
+          <div style="font-size:11px;color:var(--text)">${lastCheckStr}</div>
+          <div style="font-size:10px;color:var(--dim)">tiap ${p.interval_seconds}d</div>
+        </td>
+        <td class="td-actions">
+          <div style="display:inline-flex;gap:4px;align-items:center">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="testProbeNow(${p.id}, this)" title="Uji Sambungan" aria-label="Uji Sambungan">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--blue)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="openHistoryModal(${p.id})" title="Grafik &amp; Riwayat" aria-label="Grafik &amp; Riwayat">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--green)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            </button>
+            ${CAN_MANAGE_PROBING ? `
+            <button type="button" class="btn btn-ghost btn-sm" onclick="toggleProbeActive(${p.id})" title="${isPaused ? 'Lanjutkan Pemantauan' : 'Jeda Pemantauan'}" aria-label="Jeda/Lanjutkan">
+              ${isPaused 
+                ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--green)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>' 
+                : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--yellow)"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'
+              }
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="openEditProbeModal(${p.id})" title="Sunting Endpoint" aria-label="Sunting">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="deleteProbe(${p.id})" title="Hapus Endpoint" aria-label="Hapus">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--red)"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+// Format Waktu Relatif
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z');
+  const diffSec = Math.floor((new Date() - d) / 1000);
+  if (diffSec < 5) return 'Baru saja';
+  if (diffSec < 60) return `${diffSec} detik lalu`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} mnt lalu`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} jam lalu`;
+  return `${Math.floor(diffHr / 24)} hari lalu`;
+}
+
+// Escape HTML
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[m]);
+}
+
+// Peralihan Tab Protokol pada Modal
+function setProbeTypeTab(type) {
+  document.getElementById('formProbeType').value = type;
+  document.getElementById('tab-btn-http').classList.toggle('active', type === 'http' || type === 'https');
+  document.getElementById('tab-btn-ping').classList.toggle('active', type === 'ping');
+  document.getElementById('tab-btn-tcp').classList.toggle('active', type === 'tcp');
+
+  const httpSection = document.getElementById('sectionHttpOptions');
+  const rowPort = document.getElementById('rowTcpPort');
+  const targetLabel = document.getElementById('formTargetLabel');
+  const targetInput = document.getElementById('formTarget');
+  const targetHelp = document.getElementById('formTargetHelp');
+
+  if (type === 'http' || type === 'https') {
+    httpSection.style.display = 'block';
+    rowPort.style.display = 'none';
+    targetLabel.textContent = 'URL Target Web *';
+    targetInput.placeholder = 'https://contoh.com atau http://192.168.1.10:8080';
+    if (targetHelp) targetHelp.textContent = 'url aplikasi yang ingin dicek. (https://... atau http://IP:Port).';
+  } else if (type === 'ping') {
+    httpSection.style.display = 'none';
+    rowPort.style.display = 'none';
+    targetLabel.textContent = 'Alamat Host / IP Target *';
+    targetInput.placeholder = '192.168.1.1 atau gateway.domain.id';
+    if (targetHelp) targetHelp.textContent = 'Alamat IP atau nama domain yang ingin diuji koneksi ping jaringannya.';
+  } else if (type === 'tcp') {
+    httpSection.style.display = 'none';
+    rowPort.style.display = 'block';
+    targetLabel.textContent = 'Alamat Host / IP Server *';
+    targetInput.placeholder = '10.0.0.5 atau db.internal.lan';
+    if (targetHelp) targetHelp.textContent = 'Alamat IP atau host server tujuan yang memiliki port layanan aktif.';
+  }
+}
+
+// Buka Modal Tambah Endpoint
+function openAddProbeModal() {
+  document.getElementById('probeForm').reset();
+  document.getElementById('formProbeId').value = '';
+  document.getElementById('formTier').value = '2';
+  document.getElementById('probeModalTitleText').textContent = 'Tambah Endpoint Baru';
+  document.getElementById('adhocTestResult').style.display = 'none';
+  setProbeTypeTab('http');
+  document.getElementById('probeModalBackdrop').style.display = 'flex';
+}
+
+// Buka Modal Sunting Endpoint
+function openEditProbeModal(id) {
+  const p = probeDataList.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('probeForm').reset();
+  document.getElementById('formProbeId').value = p.id;
+  document.getElementById('probeModalTitleText').textContent = `Sunting Endpoint: ${p.name}`;
+  document.getElementById('adhocTestResult').style.display = 'none';
+
+  document.getElementById('formName').value = p.name || '';
+  document.getElementById('formTier').value = String(p.tier || 2);
+  document.getElementById('formServerId').value = p.server_id || '';
+  document.getElementById('formTarget').value = p.target || '';
+  document.getElementById('formPort').value = p.port || '';
+  document.getElementById('formHttpMethod').value = p.http_method || 'GET';
+  
+  const statusSel = document.getElementById('formExpectedStatus');
+  const expVal = p.expected_status || '200';
+  let found = false;
+  for (let i = 0; i < statusSel.options.length; i++) {
+    if (statusSel.options[i].value === expVal) {
+      statusSel.selectedIndex = i;
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    statusSel.add(new Option(expVal, expVal, true, true));
+  }
+
+  const kw = p.keyword_match || '';
+  document.getElementById('formKeywordMatch').value = (kw && kw !== 'None' && kw.toLowerCase() !== 'none') ? kw : '';
+  document.getElementById('formSslVerify').value = p.ssl_verify ? '1' : '0';
+  document.getElementById('formSslDays').value = p.ssl_expiry_threshold_days || '14';
+  document.getElementById('formInterval').value = p.interval_seconds || '60';
+  document.getElementById('formTimeout').value = p.timeout_seconds || '5';
+  document.getElementById('formLatThresh').value = p.latency_threshold_ms || '2000';
+  document.getElementById('formConsecThresh').value = p.consecutive_threshold || '2';
+
+  const ptype = (p.probe_type === 'https' || p.probe_type === 'http') ? 'http' : p.probe_type;
+  setProbeTypeTab(ptype);
+
+  document.getElementById('probeModalBackdrop').style.display = 'flex';
+}
+
+function closeProbeModal() {
+  document.getElementById('probeModalBackdrop').style.display = 'none';
+}
+
+function closeModalOnBackdrop(e, backdropId) {
+  if (e.target.id === backdropId) {
+    document.getElementById(backdropId).style.display = 'none';
+  }
+}
+
+// Kumpulkan Payload Formulir
+function getFormDataPayload() {
+  let ptype = document.getElementById('formProbeType').value;
+  const target = document.getElementById('formTarget').value.trim();
+  if (ptype === 'http' && target.startsWith('https://')) {
+    ptype = 'https';
+  }
+
+  const kwInput = (document.getElementById('formKeywordMatch').value || '').trim();
+  const cleanKw = (kwInput && kwInput.toLowerCase() !== 'none') ? kwInput : null;
+
+  return {
+    name: document.getElementById('formName').value.trim(),
+    probe_type: ptype,
+    target: target,
+    port: document.getElementById('formPort').value || null,
+    server_id: document.getElementById('formServerId').value || null,
+    tier: parseInt(document.getElementById('formTier').value) || 2,
+    http_method: document.getElementById('formHttpMethod').value,
+    expected_status: document.getElementById('formExpectedStatus').value.trim() || '200',
+    keyword_match: cleanKw,
+    ssl_verify: document.getElementById('formSslVerify').value === '1',
+    ssl_expiry_threshold_days: parseInt(document.getElementById('formSslDays').value) || 14,
+    interval_seconds: parseInt(document.getElementById('formInterval').value) || 60,
+    timeout_seconds: parseInt(document.getElementById('formTimeout').value) || 5,
+    latency_threshold_ms: parseInt(document.getElementById('formLatThresh').value) || 2000,
+    consecutive_threshold: parseInt(document.getElementById('formConsecThresh').value) || 2,
+  };
+}
+
+// Kirimkan Formulir (Tambah atau Simpan Suntingan)
+async function handleProbeFormSubmit(e) {
+  e.preventDefault();
+  const probeId = document.getElementById('formProbeId').value;
+  const payload = getFormDataPayload();
+  const btnSubmit = document.getElementById('btnSubmitProbe');
+
+  btnSubmit.disabled = true;
+  btnSubmit.textContent = 'Menyimpan…';
+
+  try {
+    const url = probeId ? `/api/probes/${probeId}` : '/api/probes';
+    const method = probeId ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': CSRF_TOKEN,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      throw new Error(data.detail || data.message || 'Gagal menyimpan endpoint');
+    }
+
+    closeProbeModal();
+    await fetchProbes(false);
+  } catch (err) {
+    alert('Gagal: ' + err.message);
+  } finally {
+    btnSubmit.disabled = false;
+    btnSubmit.textContent = 'Simpan Endpoint';
+  }
+}
+
+// Uji Sambungan Adhoc Sebelum Simpan
+async function testProbeConnectionAdhoc() {
+  const payload = getFormDataPayload();
+  if (!payload.target) {
+    alert('Harap isi URL atau Host target terlebih dahulu.');
+    return;
+  }
+
+  const btn = document.getElementById('btnTestAdhoc');
+  const box = document.getElementById('adhocTestResult');
+  btn.disabled = true;
+  btn.textContent = 'Menguji…';
+  box.style.display = 'block';
+  box.className = 'adhoc-test-box';
+  box.textContent = 'Sedang mengirimkan permintaan uji ke endpoint sasaran…';
+
+  try {
+    const res = await fetch('/api/probes/test-adhoc', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': CSRF_TOKEN,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || 'Pengujian gagal');
+
+    const r = data.result;
+    if (r.status === 'up') {
+      box.className = 'adhoc-test-box success';
+      let msg = `✓ SAMBUNGAN BERHASIL (UP) — Latensi: ${r.latency_ms} ms`;
+      if (r.status_code) msg += ` | HTTP ${r.status_code}`;
+      if (r.ssl_days_remaining !== null) msg += ` | SSL sisa ${r.ssl_days_remaining} hari`;
+      box.textContent = msg;
+    } else {
+      box.className = 'adhoc-test-box error';
+      box.textContent = `✗ SAMBUNGAN GAGAL (${r.status.toUpperCase()}) — ${r.error_message || 'Tidak ada respons'}`;
+    }
+  } catch (err) {
+    box.className = 'adhoc-test-box error';
+    box.textContent = 'Galat pengujian: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> ⚡ Uji Sambungan`;
+  }
+}
+
+// Uji Sambungan Manual Langsung dari Tabel
+async function testProbeNow(id, btn) {
+  if (!btn) return;
+  const origHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '…';
+
+  try {
+    const res = await fetch(`/api/probes/${id}/test`, {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': CSRF_TOKEN }
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || 'Gagal menjalankan pengujian');
+    await fetchProbes(false);
+  } catch (err) {
+    alert('Galat: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origHtml;
+  }
+}
+
+// Jeda / Lanjutkan Pemantauan
+async function toggleProbeActive(id) {
+  try {
+    const res = await fetch(`/api/probes/${id}/toggle`, {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': CSRF_TOKEN }
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || 'Gagal mengubah status pemantauan');
+    await fetchProbes(false);
+  } catch (err) {
+    alert('Galat: ' + err.message);
+  }
+}
+
+// Hapus Endpoint
+async function deleteProbe(id) {
+  const p = probeDataList.find(x => x.id === id);
+  const name = p ? p.name : `#${id}`;
+  if (!confirm(`Yakin ingin menghapus endpoint '${name}'? Seluruh riwayat dan log pemeriksaan akan dihapus permanen.`)) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/probes/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-CSRF-Token': CSRF_TOKEN }
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || 'Gagal menghapus endpoint');
+    await fetchProbes(false);
+  } catch (err) {
+    alert('Galat: ' + err.message);
+  }
+}
+
+// Buka Modal Riwayat & Grafik
+async function openHistoryModal(id) {
+  const p = probeDataList.find(x => x.id === id);
+  document.getElementById('historyModalTitle').textContent = `Riwayat & Analitik: ${p ? p.name : ('Endpoint #' + id)}`;
+  document.getElementById('historyModalBackdrop').style.display = 'flex';
+
+  try {
+    const res = await fetch(`/api/probes/${id}/history?limit=60`);
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || 'Gagal mengambil riwayat');
+
+    // Statistik
+    const stats = data.stats || {};
+    const prb = data.probe || {};
+    document.getElementById('hist-cur-status').innerHTML = `<span class="status-pill status-pill-${prb.status || 'unknown'}">${(prb.status || '—').toUpperCase()}</span>`;
+    document.getElementById('hist-avg-lat').textContent = stats.avg_latency_ms !== null ? `${stats.avg_latency_ms} ms` : '—';
+    document.getElementById('hist-up-24').textContent = `${(prb.uptime_24h || 100).toFixed(1)}%`;
+    document.getElementById('hist-up-30').textContent = `${(prb.uptime_30d || 100).toFixed(1)}%`;
+
+    // Render Grafik SVG
+    renderLatencySvgChart(data.chart || []);
+
+    // Render Tabel Log
+    renderHistoryLogsTable(data.logs || []);
+  } catch (err) {
+    console.error('History fetch error:', err);
+  }
+}
+
+function closeHistoryModal() {
+  document.getElementById('historyModalBackdrop').style.display = 'none';
+}
+
+// Render Grafik SVG Latensi
+function renderLatencySvgChart(chartData) {
+  const svg = document.getElementById('historySvgChart');
+  if (!svg) return;
+
+  if (chartData.length < 2) {
+    svg.innerHTML = `<text x="340" y="80" text-anchor="middle" fill="#64748b" font-size="12">Belum cukup data riwayat untuk menampilkan grafik latensi</text>`;
+    return;
+  }
+
+  const W = 680;
+  const H = 150;
+  const padL = 35;
+  const padR = 15;
+  const padT = 15;
+  const padB = 25;
+
+  const validPoints = chartData.map(d => ({
+    lat: d.lat !== null && d.lat !== undefined ? d.lat : 0,
+    status: d.status,
+    t: d.t,
+  }));
+
+  const maxLat = Math.max(...validPoints.map(p => p.lat), 10);
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+
+  // Garis Grid
+  let gridSvg = `
+    <line x1="${padL}" y1="${padT}" x2="${W - padR}" y2="${padT}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2" />
+    <line x1="${padL}" y1="${padT + chartH / 2}" x2="${W - padR}" y2="${padT + chartH / 2}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2" />
+    <line x1="${padL}" y1="${padT + chartH}" x2="${W - padR}" y2="${padT + chartH}" stroke="rgba(255,255,255,0.12)" />
+    <text x="${padL - 6}" y="${padT + 4}" text-anchor="end" fill="#64748b" font-size="9">${Math.round(maxLat)}ms</text>
+    <text x="${padL - 6}" y="${padT + chartH / 2 + 3}" text-anchor="end" fill="#64748b" font-size="9">${Math.round(maxLat / 2)}ms</text>
+    <text x="${padL - 6}" y="${padT + chartH + 3}" text-anchor="end" fill="#64748b" font-size="9">0ms</text>
+  `;
+
+  // Plot Titik Data
+  const coords = validPoints.map((p, idx) => {
+    const x = padL + (idx / (validPoints.length - 1)) * chartW;
+    const y = padT + chartH - (p.lat / maxLat) * chartH;
+    return { x, y, lat: p.lat, status: p.status, t: p.t };
+  });
+
+  const pathD = coords.map((c, i) => (i === 0 ? `M ${c.x} ${c.y}` : `L ${c.x} ${c.y}`)).join(' ');
+  const areaD = `${pathD} L ${coords[coords.length - 1].x} ${padT + chartH} L ${coords[0].x} ${padT + chartH} Z`;
+
+  let dotsSvg = '';
+  coords.forEach(c => {
+    const dotCol = c.status === 'down' ? '#f87171' : (c.status === 'degraded' ? '#fbbf24' : '#38bdf8');
+    dotsSvg += `<circle cx="${c.x}" cy="${c.y}" r="3" fill="${dotCol}"><title>${c.lat.toFixed(1)} ms (${c.status.toUpperCase()})</title></circle>`;
+  });
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0"/>
+      </linearGradient>
+    </defs>
+    ${gridSvg}
+    <path d="${areaD}" fill="url(#chartGrad)" />
+    <path d="${pathD}" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" />
+    ${dotsSvg}
+  `;
+}
+
+// Render Tabel Riwayat Log
+function renderHistoryLogsTable(logs) {
+  const tbody = document.getElementById('histLogsTbody');
+  if (!tbody) return;
+
+  if (logs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--dim)">Belum ada catatan log pemeriksaan</td></tr>`;
+    return;
+  }
+
+  let html = '';
+  logs.forEach(l => {
+    const timeStr = l.checked_at ? new Date(l.checked_at.endsWith('Z') ? l.checked_at : l.checked_at + 'Z').toLocaleString('id-ID', { hour12: false }) : '—';
+    const pillCol = l.status === 'up' ? 'status-pill-up' : (l.status === 'down' ? 'status-pill-down' : 'status-pill-degraded');
+    const latStr = l.latency_ms !== null ? `${l.latency_ms} ms` : '—';
+    let detailStr = l.error_message || (l.status_code ? `HTTP ${l.status_code} OK` : 'Normal');
+
+    html += `
+      <tr>
+        <td style="font-family:ui-monospace,monospace;color:var(--dim)">${timeStr}</td>
+        <td style="text-align:center"><span class="status-pill ${pillCol}" style="font-size:8.5px;padding:1px 5px">${l.status.toUpperCase()}</span></td>
+        <td style="font-family:ui-monospace,monospace">${latStr}</td>
+        <td style="color:${l.status === 'down' ? 'var(--red)' : 'var(--text)'};max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(detailStr)}</td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+</script>
+{% endblock %}

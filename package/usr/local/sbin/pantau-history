@@ -23,25 +23,32 @@ USER_="${1:-}"
 [ -n "$USER_" ] || { echo "nama user kosong" >&2; exit 2; }
 [ "${#USER_}" -le 32 ] || { echo "nama user terlalu panjang" >&2; exit 2; }
 case "$USER_" in
-    *[!a-zA-Z0-9_.-]*) echo "nama user tidak valid: '$USER_'" >&2; exit 2 ;;
+    root) ;;
+    *[!a-z0-9_-]*) echo "nama user tidak valid: '$USER_'" >&2; exit 2 ;;
 esac
 
-# --- Petakan user -> direktori home (hanya dua lokasi yang sah) ---
-case "$USER_" in
-    root) HOME_DIR="/root" ;;
-    *)    HOME_DIR="/home/$USER_" ;;
-esac
+# --- Validasi user dan direktori home dari database sistem ---
+USER_ENTRY="$(getent passwd "$USER_" 2>/dev/null || true)"
+[ -n "$USER_ENTRY" ] || { echo "user '$USER_' tidak ditemukan di sistem" >&2; exit 3; }
+HOME_DIR="$(echo "$USER_ENTRY" | cut -d: -f6)"
+TARGET_UID="$(echo "$USER_ENTRY" | cut -d: -f3)"
 [ -d "$HOME_DIR" ] || { echo "home tidak ditemukan" >&2; exit 3; }
 
-# --- Cari file history pertama yang ada & berisi (urutan tetap) ---
+# --- Cari file history pertama yang ada & berisi (tolak symlink demi keamanan) ---
 SRC=""
 for p in \
     "$HOME_DIR/.bash_history" \
     "$HOME_DIR/.zsh_history" \
     "$HOME_DIR/.local/share/fish/fish_history"; do
-    if [ -s "$p" ] && [ -r "$p" ]; then SRC="$p"; break; fi
+    if [ -f "$p" ] && [ ! -L "$p" ] && [ -s "$p" ] && [ -r "$p" ]; then
+        F_UID="$(stat -c "%u" "$p" 2>/dev/null || echo -1)"
+        if [ "$F_UID" -eq "$TARGET_UID" ] || [ "$F_UID" -eq 0 ]; then
+            SRC="$p"
+            break
+        fi
+    fi
 done
-[ -n "$SRC" ] || { echo "history tidak ditemukan" >&2; exit 3; }
+[ -n "$SRC" ] || { echo "history tidak ditemukan atau tidak aman (symlink ditolak)" >&2; exit 3; }
 
 # Batasi ukuran agar agen tidak kewalahan memori (maks 512 KB).
 head -c 524288 "$SRC"

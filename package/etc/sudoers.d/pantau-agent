@@ -37,3 +37,5 @@ pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-file
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-user
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-cron
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-ssl
+pantau ALL=(root) NOPASSWD:/usr/sbin/smartctl, /usr/bin/smartctl
+pantau ALL=(root) NOPASSWD:/usr/sbin/nvme, /usr/bin/nvme

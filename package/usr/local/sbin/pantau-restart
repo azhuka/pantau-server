@@ -40,8 +40,8 @@ fail() {
 
 # --- Validasi aksi ---
 case "$ACTION" in
-    restart|start|stop|kill) ;;
-    *) fail "Aksi tidak dikenal: '${ACTION}' (harus restart/start/stop/kill)" ;;
+    restart|start|stop|reload|enable|disable|kill) ;;
+    *) fail "Aksi tidak dikenal: '${ACTION}' (harus restart/start/stop/reload/enable/disable/kill)" ;;
 esac
 
 # --- Jika aksi adalah 'kill', argumen kedua adalah PID dan ketiga adalah SIGNAL ---
@@ -68,14 +68,17 @@ if [ "$ACTION" = "kill" ]; then
 
     # Cek nama proses / komando untuk perlindungan deny-list proses kritis
     PNAME="$(ps -p "$PID" -o comm= 2>/dev/null || true)"
+    PARGS="$(ps -p "$PID" -o args= 2>/dev/null || true)"
+
     case "$PNAME" in
-        systemd*|init*|sshd|agent_pantau*|python3|bash|sh|login|udevd|journald)
-            # Jika proses adalah agent pantau atau init/sshd, tolak mutlak
-            if [ "$PNAME" = "systemd" ] || [ "$PNAME" = "sshd" ] || [[ "$PNAME" == *"agent_pantau"* ]]; then
-                fail "Proses kritis '$PNAME' (PID $PID) dilindungi oleh sistem keamanan!"
-            fi
+        systemd*|init*|sshd|agent_pantau*|udevd|*journald|login)
+            fail "Proses kritis '$PNAME' (PID $PID) dilindungi oleh sistem keamanan!"
             ;;
     esac
+
+    if [[ "$PARGS" == *"agent_pantau"* ]]; then
+        fail "Proses agen pemantau (PID $PID) dilindungi oleh sistem keamanan!"
+    fi
 
     out="$(kill -s "$SIG" "$PID" 2>&1)" || fail "Gagal mengirim sinyal $SIG ke PID $PID: $out"
     echo "OK: Sinyal SIG$SIG berhasil dikirim ke proses $PNAME (PID: $PID)"
@@ -88,6 +91,13 @@ fi
 case "$UNIT" in
     *[!a-zA-Z0-9@._-]*) fail "Nama unit mengandung karakter tidak valid: '$UNIT'" ;;
 esac
+
+# Cegah mematikan agen pemantau itu sendiri
+if [ "$ACTION" = "stop" ]; then
+    case "$UNIT" in
+        agent_pantau*|agent-pantau*) fail "Unit '$UNIT' adalah agen pemantau itu sendiri dan tidak boleh dihentikan!" ;;
+    esac
+fi
 
 # --- Deny-list (prefix match) ---
 [ -r "$DENY_FILE" ] || fail "File deny-list tidak terbaca: $DENY_FILE"
@@ -177,15 +187,20 @@ fi
 
 # --- Jika aksi adalah 'stop' dan systemctl service gagal, coba hentikan scope atau proses mandiri ---
 if [ "$ACTION" = "stop" ]; then
-    # 1. Coba cari systemd scope (mis. app-com.google.Chrome-*.scope)
-    SCOPES="$(/usr/bin/systemctl list-units --type=scope --state=running --no-legend "*${UNIT}*" 2>/dev/null | awk '{print $1}' || true)"
-    if [ -n "$SCOPES" ]; then
-        for sc in $SCOPES; do
-            /usr/bin/systemctl stop "$sc" 2>/dev/null || true
-        done
-        echo "OK: systemctl stop scope $SCOPES"
-        exit 0
-    fi
+    # 1. Coba cari systemd scope spesifik (hindari mencocokkan session atau user scopes)
+    case "$UNIT" in
+        session*|user*|system*|init*|login*) ;;
+        *)
+            SCOPES="$(/usr/bin/systemctl list-units --type=scope --state=running --no-legend "${UNIT}*.scope" 2>/dev/null | awk '{print $1}' || true)"
+            if [ -n "$SCOPES" ]; then
+                for sc in $SCOPES; do
+                    /usr/bin/systemctl stop "$sc" 2>/dev/null || true
+                done
+                echo "OK: systemctl stop scope $SCOPES"
+                exit 0
+            fi
+            ;;
+    esac
 
     # 2. Coba cari PID proses langsung yang cocok dengan nama unit
     PIDS="$(pgrep -x "$UNIT" 2>/dev/null || true)"

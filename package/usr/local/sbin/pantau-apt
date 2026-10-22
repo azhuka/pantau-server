@@ -18,7 +18,7 @@
 set -e
 
 DPKG_KEEP_LOCAL="-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
-DPKG_COMMON="-o Dpkg::Use-Pty=0 -o Dpkg::Lock::Timeout=600"
+DPKG_COMMON="-o Dpkg::Use-Pty=0 -o Dpkg::Lock::Timeout=600 -o APT::Get::Always-Include-Phased-Updates=true"
 
 # Tolak jalan bila proses apt/dpkg lain sedang memegang lock, alih-alih
 # menunggu lalu gagal setengah jalan. Lock depan = dpkg sedang mengubah paket.
@@ -50,14 +50,14 @@ case "${1:-}" in
         unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 upgrade" /dev/null
+        exec /usr/bin/script -qfc "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true upgrade" /dev/null
         ;;
     dist-upgrade)
         # Dist-upgrade interaktif: upgrade penuh termasuk resolusi dependensi kompleks.
         unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 dist-upgrade" /dev/null
+        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true dist-upgrade" /dev/null
         ;;
     fix)
         # Reparasi dpkg terputus & pemulihan dependensi rusak tanpa pesan banner
@@ -65,11 +65,34 @@ case "${1:-}" in
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
         /usr/bin/script -qfc "/usr/bin/dpkg --configure -a" /dev/null || true
-        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -f -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 install" /dev/null
+        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -f -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true install" /dev/null
+        ;;
+    clean)
+        # Bersihkan cache repositori & berkas .deb unduhan
+        exec /usr/bin/apt-get clean
+        ;;
+    upgrade-pkg)
+        # Upgrade paket tunggal tertentu
+        pkg="${2:-}"
+        if [ -z "$pkg" ]; then
+            echo "pantau-apt: nama paket target tidak boleh kosong" >&2
+            exit 2
+        fi
+        # Validasi ketat nama paket Debian/Ubuntu (hanya huruf kecil, angka, +, ., -)
+        case "$pkg" in
+            *[!a-z0-9+.-]* | "" | -* | .* | +* )
+                echo "pantau-apt: nama paket tidak valid: '$pkg'" >&2
+                exit 2
+                ;;
+        esac
+        export DEBIAN_FRONTEND=noninteractive
+        export NEEDRESTART_MODE=a
+        export APT_LISTCHANGES_FRONTEND=none
+        exec /usr/bin/script -qfc "/usr/bin/apt-get --only-upgrade -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON install '$pkg'" /dev/null
         ;;
     *)
         echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2
-        echo "            (hanya: update | upgrade | upgrade-interact | dist-upgrade | fix)" >&2
+        echo "            (hanya: update | upgrade | upgrade-interact | dist-upgrade | fix | clean | upgrade-pkg)" >&2
         exit 2
         ;;
 esac

@@ -63,23 +63,23 @@
     <tbody id="audit-tbody">
       {% for r in rows %}
       <tr>
-        <td class="mono" style="white-space:nowrap">{{ r.t.strftime('%d %b %Y %H:%M:%S') }}</td>
-        <td><a href="/audit?user={{ r.user }}" class="mono" style="color:var(--blue);text-decoration:none;font-weight:600" title="Saring hanya aktivitas pengguna {{ r.user }}">{{ r.user }}</a></td>
-        <td style="font-size:13px;font-weight:600"><span class="audit-srv-cell">{{ r.server or '-' }}</span></td>
+        <td class="mono" style="white-space:nowrap;font-size:11px;letter-spacing:-0.025em">{{ r.t.strftime('%d %b %Y %H:%M:%S') }}</td>
+        <td><a href="/audit?user={{ r.user }}" class="mono" style="color:var(--blue);text-decoration:none;font-weight:600;font-size:11.5px" title="Saring hanya aktivitas pengguna {{ r.user }}">{{ r.user }}</a></td>
+        <td style="font-size:11.5px;font-weight:600"><span class="audit-srv-cell">{{ r.server or '-' }}</span></td>
         <td>
           {% if r.kind == 'cmd' %}
-            <span class="badge badge-muted audit-act-cell" data-label="{{ r.label }}">{{ r.label }}</span>
+            <span class="badge badge-muted audit-act-cell" style="font-size:8.5px;padding:1px 5px" data-label="{{ r.label }}">{{ r.label }}</span>
           {% else %}
-            <span class="audit-act-cell" data-label="{{ r.label }}">{{ r.label }}</span>
+            <span class="audit-act-cell" style="font-size:11px" data-label="{{ r.label }}">{{ r.label }}</span>
           {% endif %}
         </td>
-        <td style="font-size:13px" class="audit-tgt-cell" data-raw="{{ r.target }}">{{ r.target }}</td>
+        <td style="font-size:11.5px" class="audit-tgt-cell" data-raw="{{ r.target }}">{{ r.target }}</td>
         <td>
           {% if r.status %}
-            <span class="badge badge-{{ st_cls.get(r.status, 'inactive') }} audit-st-cell" data-st="{{ r.status }}">{{ st_label.get(r.status, r.status) }}</span>
-          {% else %}<span style="color:var(--dim)">—</span>{% endif %}
+            <span class="badge badge-{{ st_cls.get(r.status, 'inactive') }} audit-st-cell" style="font-size:8.5px;padding:1px 5px" data-st="{{ r.status }}">{{ st_label.get(r.status, r.status) }}</span>
+          {% else %}<span style="color:var(--dim);font-size:11px">—</span>{% endif %}
         </td>
-        <td style="font-size:12px;color:var(--dim)" class="audit-res-cell" data-raw="{{ r.result }}">{{ r.result }}</td>
+        <td style="font-size:11px;color:var(--dim)" class="audit-res-cell" data-raw="{{ r.result }}">{{ r.result }}</td>
       </tr>
       {% else %}
       <tr><td colspan="7" class="empty-msg" data-i18n="audit_empty">Belum ada riwayat tindakan pengguna.</td></tr>
@@ -153,7 +153,7 @@ setTimeout(auditRefresh, 400);
 document.addEventListener('DOMContentLoaded', () => {
   auditPagination = attachTablePagination('#audit-tbody', {
     unitLabel: 'tindakan',
-    defaultLimit: 25,
+    defaultLimit: 10,
     pageSizeOptions: [10, 25, 50, 100, 'all']
   });
   renderAuditI18n();

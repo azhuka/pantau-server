@@ -27,15 +27,17 @@
 }
 #servers-table th {
   white-space: nowrap;
-  padding: 9px 12px;
-  font-size: 12.5px;
+  padding: 6px 10px;
+  font-size: 10.5px;
   font-weight: 600;
-  color: var(--dim-bright, #cbd5e1);
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .5px;
 }
 #servers-table td {
   white-space: nowrap;
-  padding: 8px 12px;
-  font-size: 13px;
+  padding: 6px 10px;
+  font-size: 11.5px;
 }
 @media (max-width: 640px) {
   .servers-controls-wrap {
@@ -99,17 +101,17 @@
   <table id="servers-table" style="width:100%;margin:0">
     <thead>
       <tr>
-        <th class="sortable" data-col="0" style="cursor:pointer;width:180px;min-width:160px;max-width:210px;white-space:nowrap" title="Urutkan berdasarkan nama host server">Hostname ↕</th>
-        <th class="sortable" data-col="1" style="cursor:pointer;width:120px;min-width:110px" title="Urutkan berdasarkan alamat IP — klik IP pada baris untuk menyalin">Alamat IP ↕</th>
-        <th class="sortable" data-col="2" style="cursor:pointer;width:90px;min-width:80px" title="Urutkan berdasarkan tag">Tag / Label ↕</th>
-        <th style="width:85px;min-width:80px;text-align:center" title="Kondisi koneksi mesin saat ini (Online, Pemeliharaan, atau Offline)">Status</th>
-        <th class="sortable" data-col="4" style="cursor:pointer;width:75px;min-width:70px;text-align:center" title="Persentase pemakaian CPU">CPU ↕</th>
-        <th class="sortable" data-col="5" style="cursor:pointer;width:75px;min-width:70px;text-align:center" title="Persentase pemakaian RAM">RAM ↕</th>
-        <th style="width:85px;min-width:80px;text-align:center" title="Ringkasan jumlah layanan: total, aktif, berhenti, atau diabaikan">Layanan</th>
-        <th style="width:95px;min-width:85px;text-align:center" title="Tingkat keparahan anomali atau insiden yang terdeteksi">Insiden</th>
-        <th style="width:105px;min-width:95px;text-align:center" title="Jumlah pembaruan paket sistem operasi (APT) yang tersedia">Pembaruan OS</th>
-        <th class="sortable" data-col="9" style="cursor:pointer;width:125px;min-width:115px;text-align:center" title="Waktu terakhir kali server mengirimkan data ke panel">Terakhir Lapor ↕</th>
-        <th style="width:145px;min-width:135px;text-align:center" title="Menu aksi cepat: Rincian, Edit, atau Hapus server">Aksi</th>
+        <th class="sortable" data-col="0" style="cursor:pointer;width:180px;min-width:140px;white-space:nowrap" title="Urutkan berdasarkan nama host server">Hostname ↕</th>
+        <th class="sortable" data-col="1" style="cursor:pointer;width:115px;min-width:100px" title="Urutkan berdasarkan alamat IP — klik IP pada baris untuk menyalin">Alamat IP ↕</th>
+        <th class="sortable" data-col="2" style="cursor:pointer;width:85px;min-width:75px" title="Urutkan berdasarkan tag">Tag / Label ↕</th>
+        <th style="width:75px;min-width:65px;text-align:center" title="Kondisi koneksi mesin saat ini (Online, Pemeliharaan, atau Offline)">Status</th>
+        <th class="sortable" data-col="4" style="cursor:pointer;width:60px;min-width:55px;text-align:center" title="Persentase pemakaian CPU">CPU ↕</th>
+        <th class="sortable" data-col="5" style="cursor:pointer;width:60px;min-width:55px;text-align:center" title="Persentase pemakaian RAM">RAM ↕</th>
+        <th style="width:75px;min-width:65px;text-align:center" title="Ringkasan jumlah layanan: total, aktif, berhenti, atau diabaikan">Layanan</th>
+        <th style="width:80px;min-width:70px;text-align:center" title="Tingkat keparahan anomali atau insiden yang terdeteksi">Insiden</th>
+        <th style="width:95px;min-width:85px;text-align:center" title="Jumlah pembaruan paket sistem operasi (APT) yang tersedia">Pembaruan OS</th>
+        <th class="sortable" data-col="9" style="cursor:pointer;width:105px;min-width:95px;text-align:center" title="Waktu terakhir kali server mengirimkan data ke panel">Terakhir Lapor ↕</th>
+        <th class="col-act" style="width:125px;min-width:115px;text-align:left" title="Menu aksi cepat: Rincian, Edit, atau Hapus server">Aksi</th>
       </tr>
     </thead>
     <tbody>
@@ -163,11 +165,11 @@
           <strong style="font-size:13.5px">{{ srv.hostname }}</strong>
           {% set s_tier = srv.tier|default(2) %}
           {% if s_tier == 1 %}
-            <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="Tier 1: Layanan Utama / Prioritas">TIER 1</span>
+            <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>
           {% elif s_tier == 3 %}
-            <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="Tier 3: Layanan Sementara / Non-Kritis">TIER 3</span>
+            <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>
           {% else %}
-            <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="Tier 2: Layanan Pendukung / Sekunder">TIER 2</span>
+            <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>
           {% endif %}
           {% if srv._platform %}
             <span class="badge" style="font-size:10px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: {{ srv._platform.label }}">
@@ -182,22 +184,22 @@
             </span>
           {% endif %}
           {% if srv.is_proxmox_ha %}
-            <span class="badge" style="font-size:10.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server terproteksi Proxmox HA">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span class="badge" style="font-size:8px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 4px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server terproteksi Proxmox HA">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
               HA
             </span>
           {% endif %}
           {% if srv.is_isolated_net %}
-            <span class="badge" style="font-size:10px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Jaringan Terisolasi">
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+            <span class="badge" style="font-size:8px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:1px 4px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Jaringan Terisolasi">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
               Lokal
             </span>
           {% endif %}
           {% if srv._agent_version %}
             {% if srv._agent_outdated %}
-              <span style="font-size:11.5px;color:#d97706;font-family:var(--font-mono);font-weight:500" title="Perlu pembaruan agen (v{{ srv._agent_version }})">v{{ srv._agent_version }} (update)</span>
+              <span style="font-size:9.5px;color:#d97706;font-family:var(--font-mono);font-weight:500" title="Perlu pembaruan agen (v{{ srv._agent_version }})">v{{ srv._agent_version }} (update)</span>
             {% else %}
-              <span style="font-size:11.5px;color:var(--blue,#3b82f6);font-family:var(--font-mono)" title="Versi agen mutakhir">v{{ srv._agent_version }}</span>
+              <span style="font-size:9.5px;color:var(--blue,#3b82f6);font-family:var(--font-mono)" title="Versi agen mutakhir">v{{ srv._agent_version }}</span>
             {% endif %}
           {% endif %}
         </div>
@@ -210,8 +212,8 @@
         <div style="display:inline-flex;align-items:center;gap:4px">
           {% for tag in (srv.tags or '').split(',') %}
             {% if tag.strip() %}
-            <span class="badge" style="font-size:11px;padding:2px 6px;background:rgba(255,255,255,0.06);color:var(--dim);display:inline-flex;align-items:center;gap:3px">
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+            <span class="badge" style="font-size:8px;padding:1px 4px;background:rgba(255,255,255,0.06);color:var(--dim);display:inline-flex;align-items:center;gap:3px">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
               {{ tag.strip() }}
             </span>
             {% endif %}
@@ -253,22 +255,22 @@
           {% set tot_active = d_cnt + avg_cnt + w_cnt + i_cnt %}
           <div style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">
             {% if tot_active == 0 and ign_count == 0 %}
-              <span class="badge badge-up" style="font-size:10.5px;padding:2px 7px;font-weight:600">Normal</span>
+              <span class="badge badge-up" style="font-size:8px;padding:1px 5px;font-weight:600">Normal</span>
             {% else %}
               {% if d_cnt > 0 %}
-                <span class="badge badge-danger" style="min-width:20px;text-align:center;padding:2px 6px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
+                <span class="badge badge-danger" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
               {% endif %}
               {% if avg_cnt > 0 %}
-                <span class="badge badge-orange" style="min-width:20px;text-align:center;padding:2px 6px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
+                <span class="badge badge-orange" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
               {% endif %}
               {% if w_cnt > 0 %}
-                <span class="badge badge-warn" style="min-width:20px;text-align:center;padding:2px 6px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
+                <span class="badge badge-warn" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
               {% endif %}
               {% if i_cnt > 0 %}
-                <span class="badge badge-info" style="min-width:20px;text-align:center;padding:2px 6px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
+                <span class="badge badge-info" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
               {% endif %}
               {% if ign_count > 0 %}
-                <span class="badge badge-muted" style="min-width:20px;text-align:center;padding:2px 6px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._ignored_msgs or 'Diabaikan' }}">{{ ign_count }}</span>
+                <span class="badge badge-muted" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="{{ srv._ignored_msgs or 'Diabaikan' }}">{{ ign_count }}</span>
               {% endif %}
             {% endif %}
           </div>
@@ -277,22 +279,22 @@
       <td style="text-align:center">
         {% if srv._apt_upgradable is not none %}
           {% if srv._apt_upgradable > 0 %}
-            <span class="badge badge-warn" style="font-size:10.5px;padding:2px 6px" title="{{ srv._apt_upgradable }} paket tersedia">{{ srv._apt_upgradable }} paket</span>
+            <span class="badge badge-warn" style="font-size:8px;padding:1px 5px" title="{{ srv._apt_upgradable }} paket tersedia">{{ srv._apt_upgradable }} paket</span>
           {% else %}
-            <span class="badge badge-up" style="font-size:10.5px;padding:2px 6px">mutakhir</span>
+            <span class="badge badge-up" style="font-size:8px;padding:1px 5px">mutakhir</span>
           {% endif %}
         {% else %}
-          <span style="color:var(--dim);font-size:12.5px">—</span>
+          <span style="color:var(--dim);font-size:11px">—</span>
         {% endif %}
       </td>
-      <td class="mono" style="font-size:12.5px;text-align:center;white-space:nowrap" id="srv-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
+      <td class="mono" style="font-size:11px;letter-spacing:-0.025em;text-align:center;white-space:nowrap" id="srv-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
         {{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}
       </td>
-      <td style="text-align:center;white-space:nowrap">
-        <div style="display:inline-flex;gap:4px;align-items:center">
-          <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm" style="font-size:12px;padding:3px 9px" data-i18n="details">Rincian</a>
+      <td class="col-act" style="text-align:left;white-space:nowrap">
+        <div style="display:inline-flex;gap:3px;align-items:center;justify-content:flex-start">
+          <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 7px" data-i18n="details">Rincian</a>
           {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-          <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm" style="font-size:12px;padding:3px 9px" data-i18n="edit">Edit</a>
+          <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 7px" data-i18n="edit">Edit</a>
           <form method="POST" action="/servers/{{ srv.id }}/delete" style="display:inline;margin:0"
                 data-guardrail
                 data-guardrail-title="Hapus Server dari Pantau"
@@ -302,7 +304,7 @@
                 data-guardrail-btn="Hapus Server Sekarang"
                 data-guardrail-color="danger">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button class="btn btn-danger btn-sm" style="font-size:12px;padding:3px 9px" type="submit" data-i18n="delete">Hapus</button>
+            <button class="btn btn-danger btn-sm" style="font-size:11px;padding:2px 7px" type="submit" data-i18n="delete">Hapus</button>
           </form>
           {% endif %}
         </div>
@@ -480,13 +482,13 @@ async function srvPoll() {
           const _esc = s => (s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
           let html = '<div style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">';
           if (totActive === 0 && ignCnt === 0) {
-            html += '<span class="badge badge-up" style="font-size:10.5px;padding:2px 7px;font-weight:600">Normal</span>';
+            html += '<span class="badge badge-up" style="font-size:8px;padding:1px 5px;font-weight:600">Normal</span>';
           } else {
-            if (dCnt > 0) html += `<span class="badge badge-danger" style="min-width:20px;text-align:center;padding:2px 6px;font-size:11px;font-weight:700;border-radius:10px" title="${_esc(srv.danger_msgs || (isEn ? 'Danger' : 'Bahaya'))}">${dCnt}</span>`;
-            if (avgCnt > 0) html += `<span class="badge badge-orange" style="min-width:20px;text-align:center;padding:2px 6px;font-size:11px;font-weight:700;border-radius:10px" title="${_esc(srv.average_msgs || (isEn ? 'High' : 'Gawat'))}">${avgCnt}</span>`;
-            if (wCnt > 0) html += `<span class="badge badge-warn" style="min-width:20px;text-align:center;padding:2px 6px;font-size:11px;font-weight:700;border-radius:10px" title="${_esc(srv.warning_msgs || (isEn ? 'Warning' : 'Peringatan'))}">${wCnt}</span>`;
-            if (iCnt > 0) html += `<span class="badge badge-info" style="min-width:20px;text-align:center;padding:2px 6px;font-size:11px;font-weight:700;border-radius:10px" title="${_esc(srv.info_msgs || 'Info')}">${iCnt}</span>`;
-            if (ignCnt > 0) html += `<span class="badge badge-muted" style="min-width:20px;text-align:center;padding:2px 6px;font-size:11px;font-weight:700;border-radius:10px" title="${_esc(srv.ignored_msgs || (isEn ? 'Ignored' : 'Diabaikan'))}">${ignCnt}</span>`;
+            if (dCnt > 0) html += `<span class="badge badge-danger" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="${_esc(srv.danger_msgs || (isEn ? 'Danger' : 'Bahaya'))}">${dCnt}</span>`;
+            if (avgCnt > 0) html += `<span class="badge badge-orange" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="${_esc(srv.average_msgs || (isEn ? 'High' : 'Gawat'))}">${avgCnt}</span>`;
+            if (wCnt > 0) html += `<span class="badge badge-warn" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="${_esc(srv.warning_msgs || (isEn ? 'Warning' : 'Peringatan'))}">${wCnt}</span>`;
+            if (iCnt > 0) html += `<span class="badge badge-info" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="${_esc(srv.info_msgs || 'Info')}">${iCnt}</span>`;
+            if (ignCnt > 0) html += `<span class="badge badge-muted" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="${_esc(srv.ignored_msgs || (isEn ? 'Ignored' : 'Diabaikan'))}">${ignCnt}</span>`;
           }
           html += '</div>';
           probEl.innerHTML = html;
@@ -566,16 +568,9 @@ function updateServerGroupHeaders() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (document.getElementById('servers-table') && typeof attachTablePagination === 'function') {
-    serversPagination = attachTablePagination('#servers-table', {
-      unitLabel: 'server',
-      defaultLimit: 25,
-      pageSizeOptions: [10, 25, 50, 100, 'all'],
-      onUpdate: () => {
-        updateServerGroupHeaders();
-      }
-    });
-  }
+  // Paginasi dinonaktifkan sesuai permintaan pengguna (seluruh server ditampilkan)
+  serversPagination = null;
+  updateServerGroupHeaders();
 });
 </script>
 {% endblock %}

@@ -953,15 +953,15 @@ body.popout-fleet_table #dash-fleet-card {
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.01)">
           <th style="padding:4px 10px;font-size:10px;width:115px;min-width:105px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.5px">WAKTU</th>
           <th style="padding:4px 10px;font-size:10px;width:140px;min-width:125px;max-width:180px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.5px">SERVER</th>
-          <th style="padding:4px 10px;font-size:10px;width:95px;min-width:85px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.5px">KEPARAHAN</th>
+          <th style="padding:4px 10px;font-size:10px;width:95px;min-width:85px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.5px">KEPARAHAN</th>
           <th style="padding:4px 10px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.5px">DESKRIPSI MASALAH</th>
           <th style="padding:4px 10px;font-size:10px;width:110px;min-width:100px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.5px">DURASI</th>
         </tr>
       </thead>
-      <tbody id="dash-problems-tbody" data-sig="{% for p in all_open_problems %}{{ p.server_id }}:{{ p.key }}:{{ p.severity }}:{{ 1 if p.is_ignored else 0 }}:{{ p.started_at_str }}{% if not loop.last %}|{% endif %}{% endfor %}">
-        {% for p in all_open_problems %}
-        <tr onclick="window.location.href='/servers/{{ p.server_id }}/services'"
-            title="Klik untuk buka rincian server {{ p.hostname }}"
+      <tbody id="dash-problems-tbody" data-sig="{% for p in all_open_problems if not (p.is_ignored and p.severity == 'info') %}{{ p.server_id or p.probe_id or '' }}:{{ p.key }}:{{ p.severity }}:{{ 1 if p.is_ignored else 0 }}:{{ p.acknowledged_by or '' }}:{{ p.started_at_str }}{% if not loop.last %}|{% endif %}{% endfor %}">
+        {% for p in all_open_problems if not (p.is_ignored and p.severity == 'info') %}
+        <tr onclick="window.location.href='{{ '/probes' if (p.probe_id or not p.server_id) else '/servers/' ~ p.server_id ~ '/services' }}'"
+            title="Klik untuk buka {{ 'menu Endpoint' if (p.probe_id or not p.server_id) else 'rincian server ' ~ p.hostname }}"
             style="border-bottom:1px solid rgba(255,255,255,0.03);{{ 'opacity:0.8;background:rgba(255,255,255,0.015);' if p.is_ignored else '' }}transition:background .12s ease;cursor:pointer">
           <td style="padding:3.5px 10px;white-space:nowrap;width:115px;min-width:105px">
             <span class="mono" style="font-size:11px;font-weight:600;color:var(--text)">{{ p.started_at_str }}</span>
@@ -969,12 +969,34 @@ body.popout-fleet_table #dash-fleet-card {
           <td style="padding:3.5px 10px;white-space:nowrap;width:140px;min-width:125px;max-width:180px;overflow:hidden;text-overflow:ellipsis">
             <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</span>
             {% if p.group_name %}
-            <span style="font-size:10px;color:var(--dim);margin-left:4px">({{ p.group_name }})</span>
+            <span style="font-size:8px;color:var(--dim);margin-left:4px">({{ p.group_name }})</span>
             {% endif %}
           </td>
-          <td style="padding:3.5px 10px;white-space:nowrap;width:95px;min-width:85px;text-align:center">
-            {% if p.is_ignored %}
-              <span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 5px">DIABAIKAN 🔕</span>
+          <td style="padding:3.5px 10px;white-space:nowrap;width:1%;text-align:left">
+            {% set op_name = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
+            {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
+            {% if p.is_ignored and p.acknowledged_by %}
+              <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px">
+                <span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 5px">DIABAIKAN 🔕</span>
+                <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ DITANGANI</span>
+                <span style="font-size:8px;color:var(--dim)">(oleh {{ ack_op }})</span>
+              </div>
+            {% elif p.is_ignored %}
+              <span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 6px">DIABAIKAN 🔕 (oleh {{ op_name }})</span>
+            {% elif p.acknowledged_by %}
+              <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px">
+                {% if p.severity == 'danger' %}
+                  <span class="badge badge-danger" style="font-size:8.5px;padding:0.5px 5px">KRITIS</span>
+                {% elif p.severity == 'average' %}
+                  <span class="badge badge-orange" style="font-size:8.5px;padding:0.5px 5px">GAWAT</span>
+                {% elif p.severity == 'warning' %}
+                  <span class="badge badge-warn" style="font-size:8.5px;padding:0.5px 5px">PERINGATAN</span>
+                {% else %}
+                  <span class="badge badge-info" style="font-size:8.5px;padding:0.5px 5px">{{ p.severity | upper }}</span>
+                {% endif %}
+                <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ DITANGANI</span>
+                <span style="font-size:8px;color:var(--dim)">(oleh {{ ack_op }})</span>
+              </div>
             {% elif p.severity == 'danger' %}
               <span class="badge badge-danger" style="font-size:8.5px;padding:0.5px 5px">KRITIS</span>
             {% elif p.severity == 'average' %}
@@ -988,9 +1010,7 @@ body.popout-fleet_table #dash-fleet-card {
           <td style="padding:3.5px 10px;font-size:11.5px;color:var(--text);line-height:1.25">
             <span>{{ p.message }}</span>
             {% if p.ignored_reason %}
-            <span class="badge badge-muted" style="font-size:9.5px;padding:0.5px 5px;margin-left:4px;font-weight:500" title="{{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
-            {% elif p.is_ignored and p.ignored_by %}
-            <span class="badge badge-muted" style="font-size:9.5px;padding:0.5px 5px;margin-left:4px;font-weight:500" title="oleh {{ p.ignored_by }}">oleh {{ p.ignored_by }}</span>
+            <span class="badge badge-muted" style="font-size:9.5px;padding:0.5px 5px;margin-left:6px;font-weight:500" title="{{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
             {% endif %}
           </td>
           <td class="mono col-durasi" style="padding:3.5px 10px;white-space:nowrap;width:110px;min-width:100px;text-align:right;font-size:11px" data-start="{{ p.started_at }}{{ 'Z' if p.started_at and not p.started_at.endswith('Z') else '' }}">
@@ -1138,11 +1158,11 @@ body.popout-fleet_table #dash-fleet-card {
           <!-- 2. Prioritas (Tier) -->
           <td data-sort-val="{{ s_tier }}" style="text-align:center;vertical-align:middle">
             {% if s_tier == 1 %}
-              <span class="badge" style="font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:2px 7px;font-weight:700" title="Tier 1 — Layanan Utama / Prioritas (Layanan vital & Prioritas)">Tier-1</span>
+              <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>
             {% elif s_tier == 3 %}
-              <span class="badge" style="font-size:10px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:2px 7px;font-weight:600" title="Tier 3 — Layanan Sementara / Non-Kritis (Layanan bersifat sementara/uji coba)">Tier-3</span>
+              <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>
             {% else %}
-              <span class="badge" style="font-size:10px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:2px 7px;font-weight:600" title="Tier 2 — Layanan Pendukung / Sekunder (Layanan Pendukung operasional)">Tier-2</span>
+              <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>
             {% endif %}
           </td>
 
@@ -1283,7 +1303,7 @@ body.popout-fleet_table #dash-fleet-card {
     </table>
   </div>
 
-  <div id="dash-table-pagination" class="table-pagination-bar" data-for-table="dash-server-table" style="display:none"></div>
+  <div id="dash-table-pagination" class="table-pagination-bar" data-for-table="dash-server-table" style="display:none !important"></div>
 
   <!-- VIEW 2: GRID KARTU (NOC TILES) -->
   <div id="dash-grid-container" style="display:none;padding:12px">
@@ -1315,11 +1335,11 @@ body.popout-fleet_table #dash-fleet-card {
               <strong style="font-size:13.5px;color:var(--text-bright)">{{ srv.hostname }}</strong>
               {% set s_tier = srv.tier|default(2) %}
               {% if s_tier == 1 %}
-                <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="Tier 1: Layanan Utama / Prioritas">TIER 1</span>
+                <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>
               {% elif s_tier == 3 %}
-                <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="Tier 3: Layanan Sementara / Non-Kritis">TIER 3</span>
+                <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>
               {% else %}
-                <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="Tier 2: Layanan Pendukung / Sekunder">TIER 2</span>
+                <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>
               {% endif %}
               {% if srv._platform %}
                 <span class="badge" style="font-size:9.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: {{ srv._platform.label }}">
@@ -1336,7 +1356,7 @@ body.popout-fleet_table #dash-fleet-card {
             </div>
             {% if srv.group_name %}
             <div style="margin-top:3px">
-              <span class="badge badge-muted" style="font-size:9.5px;padding:1px 5px">{{ srv.group_name }}</span>
+              <span class="badge badge-muted" style="font-size:8px;padding:1px 4px">{{ srv.group_name }}</span>
             </div>
             {% endif %}
           </div>
@@ -1634,14 +1654,14 @@ function renderSevDetailModal(sev) {
     if (!window._sdmPagination && typeof attachTablePagination === 'function' && document.getElementById('sdm-table')) {
       window._sdmPagination = attachTablePagination('#sdm-table', {
         unitLabel: 'masalah',
-        defaultLimit: 10,
+        defaultLimit: 5,
         pageSizeOptions: [5, 10, 25, 'all']
       });
     } else if (window._sdmPagination) {
       window._sdmPagination.update();
     }
     const pgBar = document.querySelector('.table-pagination-bar[data-for-table="sdm-table"]');
-    if (pgBar) pgBar.style.display = 'flex';
+    if (pgBar) pgBar.style.display = (list.length > 10) ? 'flex' : 'none';
   }
 }
 
@@ -1684,7 +1704,7 @@ function setDashboardView(view) {
   if (tblCont) tblCont.style.display = isTable ? '' : 'none';
   if (gridCont) gridCont.style.display = isTable ? 'none' : '';
   if (densitySwitcher) densitySwitcher.style.display = isTable ? 'inline-flex' : 'none';
-  if (pgBar) pgBar.style.display = isTable ? 'flex' : 'none';
+  if (pgBar) pgBar.style.display = 'none';
 
   if (btnTbl) btnTbl.classList.toggle('active', isTable);
   if (btnGrid) btnGrid.classList.toggle('active', !isTable);
@@ -1720,25 +1740,10 @@ function setTableDensity(density) {
   setDashboardView(saved);
 })();
 
-// Table Pagination Initialization
+// Table Pagination Initialization (dinonaktifkan sesuai permintaan pengguna)
 let dashServerPagination = null;
 function initDashServerPagination() {
-  const tbl = document.getElementById('dash-server-table');
-  if (!tbl || typeof attachTablePagination !== 'function') return;
-
-  const pgContainer = document.getElementById('dash-table-pagination');
-  dashServerPagination = attachTablePagination(tbl, {
-    container: pgContainer,
-    unitLabel: 'server',
-    defaultLimit: 10,
-    pageSizeOptions: [10, 25, 50, 'all'],
-    filterFn: (tr) => {
-      return tr.dataset.filterHidden !== '1';
-    }
-  });
-
-  const isTable = (localStorage.getItem('dashboard_layout_view') || 'table') === 'table';
-  if (pgContainer) pgContainer.style.display = isTable ? 'flex' : 'none';
+  return;
 }
 
 // 3. Multi-View Filter (Synchronized search & group filtering)
@@ -1861,9 +1866,16 @@ async function pollNocDashboard() {
   if (document.hidden) return;
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    const r = await fetch('/api/servers', {credentials: 'same-origin'});
+    const [r, rProbes] = await Promise.all([
+      fetch('/api/servers', {credentials: 'same-origin'}),
+      fetch('/api/probes/open-problems', {credentials: 'same-origin'}).catch(() => null)
+    ]);
     if (!r.ok) return;
     const list = await r.json();
+    let probeProblems = [];
+    if (rProbes && rProbes.ok) {
+      try { probeProblems = await rProbes.json(); } catch(e) {}
+    }
     let upCnt = 0, dnCnt = 0, dangerTot = 0, avgTot = 0, warnTot = 0, infoTot = 0, ignTot = 0;
 
     list.forEach(srv => {
@@ -1881,6 +1893,26 @@ async function pollNocDashboard() {
       warnTot += wCnt;
       infoTot += iCnt;
       ignTot += ignCnt;
+    });
+
+    if (Array.isArray(probeProblems)) {
+      probeProblems.forEach(sp => {
+        const isIgn = Boolean(sp.is_ignored);
+        if (isIgn) {
+          ignTot++;
+        } else {
+          const sev = sp.severity || 'warning';
+          if (sev === 'danger') dangerTot++;
+          else if (sev === 'average') avgTot++;
+          else if (sev === 'warning') warnTot++;
+          else if (sev === 'info') infoTot++;
+        }
+      });
+    }
+
+    list.forEach(srv => {
+      const hasReported = Boolean(srv.last_seen);
+      const isOnline = srv.overall_status !== 'offline';
 
       // Status text & class
       let statusLabel = 'Online', statusCls = 'badge-up', dotCls = 'up';
@@ -2192,6 +2224,36 @@ async function pollNocDashboard() {
         });
       }
     });
+    if (Array.isArray(probeProblems)) {
+      probeProblems.forEach(p => {
+        const isIgn = Boolean(p.is_ignored);
+        const pStarted = p.started_at;
+        const durStr = pStarted ? relTime(pStarted).replace(' lalu', '').replace(' ago', '') : '—';
+        const item = {
+          server_id: null,
+          probe_id: p.probe_id,
+          hostname: p.hostname || ('🌐 ' + (p.probe_name || 'Endpoint')),
+          group_name: p.group_name || 'Endpoint',
+          severity: p.severity || 'warning',
+          message: p.message || '',
+          key: p.key || '',
+          is_ignored: isIgn,
+          started_at: pStarted || '',
+          started_at_str: p.started_at_str || (pStarted ? relTime(pStarted) : '—'),
+          durasi: durStr,
+        };
+        if (isIgn) {
+          newProblemsBySev.ignored.push(item);
+        } else {
+          const s = item.severity;
+          if (newProblemsBySev[s]) {
+            newProblemsBySev[s].push(item);
+          } else {
+            newProblemsBySev.warning.push(item);
+          }
+        }
+      });
+    }
     currentProblemsBySev = newProblemsBySev;
 
     if (activeModalSev) {
@@ -2226,6 +2288,12 @@ async function pollNocDashboard() {
     list.forEach(srv => {
       if (Array.isArray(srv.problems)) {
         srv.problems.forEach(p => {
+          const isIgn = Boolean(p.is_ignored);
+          const pSev = (p.severity || 'info').toLowerCase();
+          // Insiden info yang diabaikan tidak lagi tampil pada kartu Insiden Terkini halaman dashboard
+          if (isIgn && pSev === 'info') {
+            return;
+          }
           allProblems.push({
             ...p,
             server_id: srv.id,
@@ -2235,6 +2303,21 @@ async function pollNocDashboard() {
         });
       }
     });
+
+    if (Array.isArray(probeProblems)) {
+      probeProblems.forEach(p => {
+        const isIgn = Boolean(p.is_ignored);
+        const pSev = (p.severity || 'info').toLowerCase();
+        if (isIgn && pSev === 'info') return;
+        allProblems.push({
+          ...p,
+          server_id: null,
+          probe_id: p.probe_id,
+          hostname: p.hostname || ('🌐 ' + (p.probe_name || 'Endpoint')),
+          group_name: p.group_name || 'Endpoint'
+        });
+      });
+    }
 
     const sevOrder = { danger: 0, average: 1, warning: 2, info: 3 };
     allProblems.sort((a, b) => {
@@ -2292,34 +2375,44 @@ async function pollNocDashboard() {
       if (emptyState) emptyState.style.display = 'none';
       if (tbody) {
         // Anti-jitter: Bandingkan signature masalah agar tidak membongkar/memasang ulang DOM bila data tetap sama
-        const newSig = allProblems.map(p => `${p.server_id}:${p.key}:${p.severity}:${p.is_ignored ? 1 : 0}:${p.started_at_str || ''}`).join('|');
+        const newSig = allProblems.map(p => `${p.server_id || p.probe_id || ''}:${p.key}:${p.severity}:${p.is_ignored ? 1 : 0}:${p.acknowledged_by || ''}:${p.started_at_str || ''}`).join('|');
         if (tbody.dataset.sig !== newSig) {
           tbody.dataset.sig = newSig;
           let tHtml = '';
           allProblems.forEach(p => {
             const isIgn = Boolean(p.is_ignored);
-            let sevBadge = '';
-            if (isIgn) {
-              sevBadge = '<span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 5px">DIABAIKAN 🔕</span>';
-            } else if (p.severity === 'danger') {
-              sevBadge = '<span class="badge badge-danger" style="font-size:8.5px;padding:0.5px 5px">KRITIS</span>';
+            const opName = (p.ignored_by === 'admin' ? 'master-admin' : (p.ignored_by || (isEn ? 'operator' : 'operator')));
+            const ackOp = (p.acknowledged_by === 'admin' ? 'master-admin' : (p.acknowledged_by || (isEn ? 'operator' : 'operator')));
+            let rawSev = '';
+            if (p.severity === 'danger') {
+              rawSev = '<span class="badge badge-danger" style="font-size:8.5px;padding:0.5px 5px">KRITIS</span>';
             } else if (p.severity === 'average') {
-              sevBadge = '<span class="badge badge-orange" style="font-size:8.5px;padding:0.5px 5px">GAWAT</span>';
+              rawSev = '<span class="badge badge-orange" style="font-size:8.5px;padding:0.5px 5px">GAWAT</span>';
             } else if (p.severity === 'warning') {
-              sevBadge = '<span class="badge badge-warn" style="font-size:8.5px;padding:0.5px 5px">PERINGATAN</span>';
+              rawSev = '<span class="badge badge-warn" style="font-size:8.5px;padding:0.5px 5px">PERINGATAN</span>';
             } else {
-              sevBadge = `<span class="badge badge-info" style="font-size:8.5px;padding:0.5px 5px">${(p.severity || 'INFO').toUpperCase()}</span>`;
+              rawSev = `<span class="badge badge-info" style="font-size:8.5px;padding:0.5px 5px">${(p.severity || 'INFO').toUpperCase()}</span>`;
+            }
+
+            let sevBadge = '';
+            if (isIgn && p.acknowledged_by) {
+              sevBadge = `<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px"><span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 5px">${isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕'}</span> <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span> <span style="font-size:8px;color:var(--dim)">(${isEn ? 'by ' : 'oleh '}${_esc(ackOp)})</span></div>`;
+            } else if (isIgn) {
+              sevBadge = `<span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 6px">${isEn ? 'IGNORED 🔕 (by ' : 'DIABAIKAN 🔕 (oleh '}${_esc(opName)})</span>`;
+            } else if (p.acknowledged_by) {
+              sevBadge = `<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px">${rawSev} <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span> <span style="font-size:8px;color:var(--dim)">(${isEn ? 'by ' : 'oleh '}${_esc(ackOp)})</span></div>`;
+            } else {
+              sevBadge = rawSev;
             }
 
             const escMsg = (p.message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const escHost = (p.hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             let noteBadge = '';
-            const reasonTxt = p.ignored_reason || (isIgn && p.ignored_by ? 'oleh ' + p.ignored_by : '');
-            if (reasonTxt) {
-              const escReason = reasonTxt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-              noteBadge = `<span class="badge badge-muted" style="font-size:9.5px;padding:0.5px 5px;margin-left:4px;font-weight:500" title="${escReason}">${escReason}</span>`;
+            if (p.ignored_reason) {
+              const escReason = p.ignored_reason.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+              noteBadge = `<span class="badge badge-muted" style="font-size:9.5px;padding:0.5px 5px;margin-left:6px;font-weight:500" title="${escReason}">${escReason}</span>`;
             }
-            const grpHtml = p.group_name ? `<span style="font-size:10px;color:var(--dim);margin-left:4px">(${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')})</span>` : '';
+            const grpHtml = p.group_name ? `<span style="font-size:8px;color:var(--dim);margin-left:4px">(${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')})</span>` : '';
             const startedStr = p.started_at_str || '—';
             let durStr = '—';
             let isoStart = '';
@@ -2338,9 +2431,13 @@ async function pollNocDashboard() {
               ? 'border-bottom:1px solid rgba(255,255,255,0.03);opacity:0.8;background:rgba(255,255,255,0.015);transition:background .12s ease;'
               : 'border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;';
 
+            const rowHref = (p.probe_id || !p.server_id) ? '/probes' : `/servers/${p.server_id}/services`;
+            const rowTitle = (p.probe_id || !p.server_id)
+              ? (isEn ? `Click to open Endpoint Probing` : `Klik untuk buka menu Endpoint`)
+              : (isEn ? `Click to open details of server ${escHost}` : `Klik untuk buka rincian server ${escHost}`);
             tHtml += `
-            <tr onclick="window.location.href='/servers/${p.server_id}/services'"
-                title="Klik untuk buka rincian server ${(p.hostname || '').replace(/"/g, '&quot;')}"
+            <tr onclick="window.location.href='${rowHref}'"
+                title="${rowTitle.replace(/"/g, '&quot;')}"
                 style="cursor:pointer;${trStyle}">
               <td style="padding:3.5px 10px;white-space:nowrap;width:115px;min-width:105px">
                 <span class="mono" style="font-size:11px;font-weight:600;color:var(--text)">${startedStr}</span>
@@ -2348,7 +2445,7 @@ async function pollNocDashboard() {
               <td style="padding:3.5px 10px;white-space:nowrap;width:140px;min-width:125px;max-width:180px;overflow:hidden;text-overflow:ellipsis">
                 <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${escHost}</span>${grpHtml}
               </td>
-              <td style="padding:3.5px 10px;white-space:nowrap;width:95px;min-width:85px;text-align:center">${sevBadge}</td>
+              <td style="padding:3.5px 10px;white-space:nowrap;width:1%;text-align:left">${sevBadge}</td>
               <td style="padding:3.5px 10px;font-size:11.5px;color:var(--text);line-height:1.25"><span>${escMsg}</span>${noteBadge}</td>
               <td class="mono col-durasi" style="padding:3.5px 10px;white-space:nowrap;width:110px;min-width:100px;text-align:right;font-size:11px" data-start="${isoStart}">${durStr}</td>
             </tr>`;

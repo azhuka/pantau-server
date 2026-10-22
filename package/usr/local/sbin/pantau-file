@@ -26,12 +26,24 @@ import pwd
 import grp
 from pathlib import Path
 
-# Direktori kritis yang mutlak dilarang dihapus
+# Direktori dan berkas kritis yang mutlak dilarang dimanipulasi/dihapus
 PROTECTED_PATHS = {
     "/", "/bin", "/boot", "/dev", "/etc", "/lib", "/lib32", "/lib64",
     "/proc", "/sys", "/usr", "/var", "/home", "/root", "/opt", "/run",
     "/tmp", "/srv", "/mnt", "/media", "/sbin", "/vmlinuz", "/initrd.img"
 }
+
+SYSTEM_PROTECTED_FILES = {
+    "/etc/shadow", "/etc/shadow-", "/etc/gshadow", "/etc/gshadow-",
+    "/etc/passwd", "/etc/passwd-", "/etc/group", "/etc/group-",
+    "/etc/sudoers", "/etc/ld.so.preload", "/etc/securetty"
+}
+
+SYSTEM_PROTECTED_PREFIXES = (
+    "/etc/sudoers.d", "/etc/pam.d", "/etc/security",
+    "/boot", "/bin", "/sbin", "/usr/bin", "/usr/sbin", "/lib", "/lib32", "/lib64",
+    "/proc", "/sys", "/dev"
+)
 
 MAX_TEXT_SIZE = 3 * 1024 * 1024       # 3 MB batas baca text editor
 MAX_DOWNLOAD_SIZE = 100 * 1024 * 1024 # 100 MB batas download lewat web
@@ -42,7 +54,30 @@ def err_exit(msg: str, extra: dict | None = None) -> None:
     if extra:
         res.update(extra)
     print(json.dumps(res, ensure_ascii=False))
-    sys.exit(0)
+    sys.exit(1)
+
+
+def check_path_protection(path: str, for_write: bool = False) -> None:
+    if not path:
+        return
+    abs_p = os.path.abspath(path)
+    real_p = os.path.realpath(abs_p)
+
+    # Izinkan pembaruan wrapper pantau dan konfigurasi /etc/pantau
+    if for_write:
+        if abs_p.startswith("/etc/pantau") or real_p.startswith("/etc/pantau"):
+            return
+        if abs_p.startswith("/usr/local/sbin/pantau-") or real_p.startswith("/usr/local/sbin/pantau-"):
+            return
+
+    for p in (abs_p, real_p):
+        if p in PROTECTED_PATHS:
+            err_exit(f"Aksi ditolak: '{path}' adalah direktori sistem kritis yang dilindungi.")
+        if p in SYSTEM_PROTECTED_FILES:
+            err_exit(f"Aksi ditolak: '{path}' adalah berkas otentikasi sistem penting yang dilindungi.")
+        for pref in SYSTEM_PROTECTED_PREFIXES:
+            if p == pref or p.startswith(pref + "/"):
+                err_exit(f"Aksi ditolak: '{path}' berada di direktori sistem terlindungi ({pref}).")
 
 
 def ok_exit(data: dict) -> None:
@@ -224,6 +259,7 @@ def action_cat(path: str, max_bytes: int = MAX_TEXT_SIZE) -> None:
 
 def action_write(path: str, content: str, make_backup: bool = True) -> None:
     path = os.path.abspath(path)
+    check_path_protection(path, for_write=True)
     parent_dir = os.path.dirname(path)
 
     if not os.path.exists(parent_dir):
@@ -244,11 +280,15 @@ def action_write(path: str, content: str, make_backup: bool = True) -> None:
     if make_backup and st_orig:
         try:
             backup_file = path + ".bak"
-            shutil.copy2(path, backup_file)
+            if os.path.islink(backup_file):
+                os.unlink(backup_file)
+            shutil.copy2(path, backup_file, follow_symlinks=False)
             # Simpan juga timestamp backup
             ts_backup = f"{path}.bak.{int(time.time())}"
-            shutil.copy2(path, ts_backup)
-        except OSError as e:
+            if os.path.islink(ts_backup):
+                os.unlink(ts_backup)
+            shutil.copy2(path, ts_backup, follow_symlinks=False)
+        except OSError:
             # Tetap lanjut tulis tapi beri peringatan di log jika backup gagal
             pass
 
@@ -290,6 +330,7 @@ def action_write(path: str, content: str, make_backup: bool = True) -> None:
 
 def action_mkdir(path: str, mode: str = "0755") -> None:
     path = os.path.abspath(path)
+    check_path_protection(path, for_write=True)
     if os.path.exists(path):
         err_exit(f"Path sudah ada: {path}")
 
@@ -310,6 +351,7 @@ def action_mkdir(path: str, mode: str = "0755") -> None:
 
 def action_touch(path: str) -> None:
     path = os.path.abspath(path)
+    check_path_protection(path, for_write=True)
     if os.path.exists(path):
         err_exit(f"File sudah ada: {path}")
 
@@ -327,6 +369,7 @@ def action_touch(path: str) -> None:
 
 def action_rm(path: str) -> None:
     path = os.path.abspath(path)
+    check_path_protection(path, for_write=False)
     real_path = os.path.realpath(path)
 
     # GUARDRAIL KEAMANAN KRITIS
@@ -359,6 +402,8 @@ def action_rm(path: str) -> None:
 def action_rename(old_path: str, new_path: str) -> None:
     old_path = os.path.abspath(old_path)
     new_path = os.path.abspath(new_path)
+    check_path_protection(old_path, for_write=False)
+    check_path_protection(new_path, for_write=True)
     real_old = os.path.realpath(old_path)
 
     if real_old in PROTECTED_PATHS or old_path in PROTECTED_PATHS:
@@ -383,6 +428,7 @@ def action_rename(old_path: str, new_path: str) -> None:
 
 def action_chmod(path: str, mode: str) -> None:
     path = os.path.abspath(path)
+    check_path_protection(path, for_write=False)
     if not os.path.exists(path):
         err_exit(f"Path tidak ditemukan: {path}")
 
@@ -403,6 +449,7 @@ def action_chmod(path: str, mode: str) -> None:
 
 def action_chown(path: str, owner: str, group: str | None = None) -> None:
     path = os.path.abspath(path)
+    check_path_protection(path, for_write=False)
     if not os.path.exists(path):
         err_exit(f"Path tidak ditemukan: {path}")
 
@@ -445,6 +492,7 @@ def action_read_binary(path: str, max_bytes: int = MAX_DOWNLOAD_SIZE) -> None:
 
 def action_write_binary(path: str, data_b64: str) -> None:
     path = os.path.abspath(path)
+    check_path_protection(path, for_write=True)
     parent_dir = os.path.dirname(path)
 
     if not os.path.exists(parent_dir):
@@ -508,6 +556,7 @@ def action_copy(sources: list[str], destination: str) -> None:
 
         src_name = os.path.basename(src_path.rstrip("/"))
         target_path = os.path.join(dest_dir, src_name)
+        check_path_protection(target_path, for_write=True)
 
         if os.path.dirname(src_path) == dest_dir:
             base, ext = os.path.splitext(src_name)
@@ -569,6 +618,7 @@ def action_move(sources: list[str], destination: str) -> None:
 
         src_name = os.path.basename(src_path.rstrip("/"))
         target_path = os.path.join(dest_dir, src_name)
+        check_path_protection(target_path, for_write=True)
 
         if src_path == target_path:
             continue
@@ -596,6 +646,7 @@ def action_batch_rm(paths: list[str]) -> None:
     deleted = []
     for path in paths:
         p = os.path.abspath(path)
+        check_path_protection(p, for_write=False)
         real_p = os.path.realpath(p)
         if real_p in PROTECTED_PATHS or p in PROTECTED_PATHS:
             err_exit(f"Aksi ditolak: '{p}' adalah direktori sistem kritis yang dilindungi.")
@@ -630,6 +681,7 @@ def action_batch_chmod(paths: list[str], mode: str) -> None:
     updated = []
     for path in paths:
         p = os.path.abspath(path)
+        check_path_protection(p, for_write=False)
         if not os.path.exists(p):
             continue
         try:

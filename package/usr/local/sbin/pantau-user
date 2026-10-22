@@ -20,11 +20,11 @@ is_protected_user() {
             return 0
             ;;
     esac
-    # Cek UID jika user ada
+    # Cek UID jika user ada (seluruh akun sistem UID < 1000 termasuk UID 0 dilindungi)
     if id -u "$u" >/dev/null 2>&1; then
         local uid
         uid="$(id -u "$u")"
-        if [ "$uid" -lt 1000 ] && [ "$uid" -ne 0 ]; then
+        if [ "$uid" -lt 1000 ]; then
             return 0
         fi
     fi
@@ -58,9 +58,17 @@ case "$ACTION" in
             SHELL_PATH="/bin/bash"
         fi
 
+        # Sanitasi komentar GECOS: hapus colon dan newline agar tidak merusak format /etc/passwd
+        COMMENT="${COMMENT//:/ }"
+        COMMENT="${COMMENT//$'\n'/ }"
+        COMMENT="${COMMENT//$'\r'/ }"
+
         useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
 
         if [ -n "$PASSWORD" ]; then
+            if [[ "$PASSWORD" == *$'\n'* ]] || [[ "$PASSWORD" == *$'\r'* ]]; then
+                fail "Karakter newline pada password tidak diizinkan"
+            fi
             echo "${USERNAME}:${PASSWORD}" | chpasswd 2>/dev/null || fail "Gagal mengatur password awal pengguna '$USERNAME'"
         else
             # Best practice POSIX/Linux untuk akun SSH key / tanpa password lokal:

@@ -111,6 +111,161 @@
     box-sizing: border-box !important;
   }
 }
+
+/* ---------- Tata Letak & Proporsi Kolom Tabel Insiden (Enterprise Best Practice) ---------- */
+#probtable {
+  width: 100%;
+  border-collapse: collapse;
+}
+#probtable th.col-time,
+#probtable td.col-time {
+  width: 110px;
+  min-width: 100px;
+  max-width: 120px;
+  white-space: nowrap;
+  font-size: 11px;
+  padding: 6px 8px;
+}
+#probtable th.col-server,
+#probtable td.col-server {
+  width: 115px;
+  min-width: 100px;
+  max-width: 135px;
+  white-space: nowrap;
+  font-size: 11.5px;
+  padding: 6px 8px;
+}
+#probtable th.col-sev,
+#probtable td.col-sev {
+  width: 80px;
+  min-width: 74px;
+  max-width: 88px;
+  text-align: center;
+  padding: 6px 6px;
+}
+#probtable th.col-sev .badge,
+#probtable td.col-sev .badge {
+  font-size: 8px;
+  padding: 1px 4.5px;
+  border-radius: 3px;
+  line-height: 1.2;
+  letter-spacing: 0.2px;
+}
+#probtable th.col-event,
+#probtable td.col-event {
+  /* Kolom Kejadian: Hero content dengan ruang fleksibel terluas & keterbacaan optimal */
+  width: auto;
+  min-width: 280px;
+  font-size: 11px;
+  line-height: 1.35;
+  padding: 6px 10px;
+}
+#probtable td.col-event .badge {
+  font-size: 7.5px;
+  padding: 0.5px 3.5px;
+}
+#probtable th.col-durasi,
+#probtable td.col-durasi {
+  width: 85px;
+  min-width: 78px;
+  max-width: 95px;
+  white-space: nowrap;
+  font-size: 11px;
+  letter-spacing: -0.025em;
+  word-spacing: -1px;
+  padding: 6px 8px;
+}
+#probtable th.col-act,
+#probtable td.col-act {
+  width: 1%;
+  min-width: 80px;
+  white-space: nowrap;
+  text-align: left;
+  padding: 6px 8px;
+}
+#probtable th.col-tips,
+#probtable td.col-tips {
+  width: 190px;
+  min-width: 160px;
+  max-width: 220px;
+  font-size: 10.5px;
+  color: var(--dim);
+  line-height: 1.3;
+  vertical-align: middle;
+  padding: 6px 8px;
+}
+
+/* Riwayat Insiden Teratasi Proportions */
+#prob-resolved-table-wrap th.col-time-detailed,
+#prob-resolved-table-wrap td.col-time-detailed {
+  width: 155px;
+  min-width: 145px;
+  white-space: nowrap;
+  font-size: 11px;
+  padding: 6px 8px;
+}
+#prob-resolved-table-wrap th.col-server,
+#prob-resolved-table-wrap td.col-server {
+  width: 115px;
+  min-width: 100px;
+  max-width: 135px;
+  font-size: 11.5px;
+  padding: 6px 8px;
+}
+#prob-resolved-table-wrap th.col-sev,
+#prob-resolved-table-wrap td.col-sev {
+  width: 80px;
+  min-width: 74px;
+  max-width: 88px;
+  text-align: center;
+  padding: 6px 6px;
+}
+#prob-resolved-table-wrap th.col-sev .badge,
+#prob-resolved-table-wrap td.col-sev .badge {
+  font-size: 8px;
+  padding: 1px 4.5px;
+  border-radius: 3px;
+}
+#prob-resolved-table-wrap th.col-component,
+#prob-resolved-table-wrap td.col-component {
+  width: 95px;
+  min-width: 85px;
+  white-space: nowrap;
+  font-size: 11px;
+  padding: 6px 8px;
+}
+#prob-resolved-table-wrap th.col-desc,
+#prob-resolved-table-wrap td.col-desc {
+  min-width: 260px;
+  font-size: 11px;
+  line-height: 1.35;
+  padding: 6px 10px;
+}
+#prob-resolved-table-wrap th.col-durasi,
+#prob-resolved-table-wrap td.col-durasi {
+  width: 85px;
+  min-width: 80px;
+  white-space: nowrap;
+  font-size: 11px;
+  letter-spacing: -0.025em;
+  word-spacing: -1px;
+  padding: 6px 8px;
+}
+#prob-resolved-table-wrap th.col-res,
+#prob-resolved-table-wrap td.col-res {
+  width: 150px;
+  min-width: 140px;
+  white-space: nowrap;
+  font-size: 11px;
+  padding: 6px 8px;
+}
+#prob-resolved-table-wrap th.col-act,
+#prob-resolved-table-wrap td.col-act {
+  width: 45px;
+  min-width: 45px;
+  text-align: left;
+  padding: 6px 8px;
+}
 </style>
 
 <div class="card">
@@ -181,13 +336,13 @@
     {% if open_problems %}
     <table id="probtable">
       <thead><tr>
-        <th class="col-time" style="width:130px;min-width:125px" title="Waktu saat insiden atau masalah mulai terdeteksi">Waktu Mulai</th>
+        <th class="col-time" title="Waktu saat insiden atau masalah mulai terdeteksi">Waktu Mulai</th>
         <th class="col-server" title="Mesin server tempat anomali atau gangguan terjadi">Server</th>
-        <th class="col-sev" style="width:100px;min-width:95px;text-align:center" title="Tingkat keparahan: Critical (kritis), Warning (waspada), atau Info (informasi)">Keparahan</th>
-        <th title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
-        <th class="col-durasi" style="width:120px;min-width:110px" title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
-        <th class="col-act" style="width:160px;min-width:150px" title="Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan">Aksi</th>
-        <th class="col-tips" style="width:250px;min-width:200px" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Panduan Solusi</th>
+        <th class="col-sev" title="Tingkat keparahan: Critical (kritis), Warning (waspada), atau Info (informasi)">Keparahan</th>
+        <th class="col-event" title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
+        <th class="col-durasi" title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
+        <th class="col-act" title="Aksi penanganan: Rincian, Tangani Insiden, atau Abaikan Masalah">Aksi</th>
+        <th class="col-tips" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Panduan Solusi</th>
       </tr></thead>
       <tbody>
       {% for p in open_problems %}
@@ -208,75 +363,94 @@
           data-prob-host="{{ p.hostname }}"
           data-prob-sid="{{ p.server_id }}"
           data-prob-context='{{ p.context or "" }}'>
-        <td style="white-space:nowrap;width:130px" class="mono col-time">{{ p.started_at.strftime('%d %b %H:%M') }}</td>
+        <td class="mono col-time">{{ p.started_at.strftime('%d %b %H:%M') }}</td>
         <td class="col-server">
           <strong>{{ p.hostname }}</strong>
           {% if p.group_name %}
           <div style="margin-top:2px">
-            <span class="badge badge-muted" style="font-size:10px;display:inline-flex;align-items:center;gap:3px">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            <span class="badge badge-muted" style="font-size:8px;padding:1px 4px;display:inline-flex;align-items:center;gap:3px">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
               {{ p.group_name }}
             </span>
           </div>
           {% endif %}
         </td>
-        <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DIABAIKAN 🔕' if p.is_ignored else ('GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper)) }}</span></td>
-        <td>
-          <span>{{ p.message }}</span>
-          {% if p.is_ignored %}
-            <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ p.ignored_by if p.ignored_by else '') }}">🔕 diabaikan{{ (' s/d ' ~ p.ignored_until.strftime('%d %b %H:%M')) if p.ignored_until else ' permanen' }}</span>
+        <td class="col-sev">
+          {% set op_name = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
+          {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
+          {% if p.is_ignored and p.acknowledged_by %}
+            <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
+              <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">DIABAIKAN 🔕</span>
+              <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+            </div>
+          {% elif p.is_ignored %}
+            <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
+              <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN 🔕</span>
+              <span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
+            </div>
+          {% elif p.acknowledged_by %}
+            <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
+              <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
+              <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+            </div>
+          {% else %}
+            <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
           {% endif %}
-          {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
         </td>
-        <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">{{ p.durasi }}</td>
-        <td class="prob-act-cell">
+        <td class="col-event">
+          <span style="font-size:11px;font-weight:500;line-height:1.35;color:var(--text)">{{ p.message }}</span>
+          {% if p.is_ignored and p.ignored_reason %}
+            <span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
+          {% endif %}
+          {% if p.is_ignored and p.ignored_until %}
+            <span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="Batas waktu pengabaian">s/d {{ p.ignored_until.strftime('%d %b %H:%M') }}</span>
+          {% endif %}
+          {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
+        </td>
+        <td class="mono col-durasi" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">{{ p.durasi }}</td>
+        <td class="prob-act-cell col-act">
           <div class="prob-act-wrap">
             <div class="prob-act-row prob-act-tools">
-              <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm" title="Buka halaman rincian server">
+              <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm" title="Rincian" aria-label="Rincian">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                <span>Rincian</span>
               </a>
             </div>
             {% if p.is_open or p.acknowledged_by %}
               <div class="prob-act-row prob-act-ops">
                 {% if not user.is_viewer() and p.is_open %}
                   {% if p.acknowledged_by %}
-                    <span class="btn btn-success btn-sm prob-status-ack" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      <span>Ditangani</span>
+                    <span class="btn btn-ghost btn-sm prob-status-ack" title="Insiden Ditangani{% if p.acknowledged_by %} (oleh {{ p.acknowledged_by }}){% endif %}" aria-label="Insiden Ditangani">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </span>
                   {% else %}
-                    <button type="button" class="btn btn-success btn-sm" onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')" title="Tandai masalah ini sudah ditangani">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                      <span>Ditangani</span>
+                    <button type="button" class="btn btn-ghost btn-sm prob-status-unack" onclick="ackProblem({{ p.id }}, this, '{{ p.severity }}')" title="Tangani Insiden" aria-label="Tangani Insiden">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red)"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     </button>
                   {% endif %}
                   {% if p.is_ignored %}
-                    <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">
+                    <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau Kembali" aria-label="Pantau Kembali">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                      <span>Pantau Kembali</span>
                     </button>
                   {% else %}
-                    <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">
+                    <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan Masalah" aria-label="Abaikan Masalah">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                      <span>Abaikan</span>
                     </button>
                   {% endif %}
                 {% elif p.acknowledged_by %}
-                  <span class="btn btn-success btn-sm prob-status-ack" title="Ditangani {{ p.acknowledged_by }} pada {{ p.acknowledged_at.strftime('%d %b %H:%M') }}">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    <span>Ditangani</span>
+                  <span class="btn btn-ghost btn-sm prob-status-ack" title="Insiden Ditangani{% if p.acknowledged_by %} (oleh {{ p.acknowledged_by }}){% endif %}" aria-label="Insiden Ditangani">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   </span>
                 {% endif %}
               </div>
             {% endif %}
           </div>
         </td>
-        <td style="font-size:12px;color:var(--dim);max-width:360px">
-          {% if p.acknowledged_by %}
-            <span style="color:var(--green)">Ditangani oleh {{ p.acknowledged_by }}</span><br>
+        <td class="col-tips">
+          {% if p.tip %}
+            <div class="prob-tip-text" title="{{ p.tip }}">{{ p.tip }}</div>
+          {% else %}
+            —
           {% endif %}
-          {{ p.tip or '—' }}
         </td>
       </tr>
       {% endfor %}
@@ -316,14 +490,14 @@
     <table style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border)">
-          <th class="col-time-detailed" style="width:200px;min-width:190px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
+          <th class="col-time-detailed" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
           <th class="col-server" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Nama host dan grup server">Server</th>
-          <th class="col-sev" style="width:100px;min-width:95px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:center;white-space:nowrap" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
-          <th style="width:105px;min-width:95px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
-          <th style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
-          <th class="col-durasi" style="width:120px;min-width:110px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Total durasi downtime hingga sistem pulih kembali">Durasi Gangguan</th>
-          <th style="width:130px;min-width:120px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Catatan status penanganan atau pemulihan">Resolusi</th>
-          <th style="width:85px;min-width:80px;padding:8px 10px;font-size:12px;color:var(--dim);text-align:center;white-space:nowrap" title="Aksi ke rincian server">Aksi</th>
+          <th class="col-sev" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:center;white-space:nowrap" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
+          <th class="col-component" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
+          <th class="col-desc" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
+          <th class="col-durasi" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
+          <th class="col-res" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Catatan status penanganan atau pemulihan">Resolusi</th>
+          <th class="col-act" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Aksi ke rincian server">Aksi</th>
         </tr>
       </thead>
       <tbody id="prob-resolved-tbody">
@@ -342,63 +516,66 @@
           data-prob-sid="{{ p.server_id }}">
         <!-- 1. Waktu -->
         <td style="padding:8px 10px;white-space:nowrap" class="col-time-detailed">
-          <div class="mono" style="font-size:11.5px;color:var(--text);font-weight:600">
-            <span style="color:var(--dim);font-size:10px;text-transform:uppercase;margin-right:4px">Mulai</span>{{ _fmt_dt(p.started_at) if p.started_at else '—' }}
+          <div class="mono" style="font-size:11px;color:var(--text);font-weight:600">
+            <span style="color:var(--dim);font-size:9.5px;text-transform:uppercase;margin-right:4px">Mulai</span>{{ _fmt_dt(p.started_at) if p.started_at else '—' }}
           </div>
-          <div class="mono" style="font-size:11.5px;color:var(--dim);margin-top:3px">
-            <span style="font-size:10px;text-transform:uppercase;margin-right:4px">Selesai</span>{{ _fmt_dt(p.resolved_at) if p.resolved_at else '—' }}
+          {% if p.resolved_at %}
+          <div class="mono" style="font-size:11px;color:var(--dim);margin-top:2px">
+            <span style="font-size:9.5px;text-transform:uppercase;margin-right:4px">Selesai</span>{{ _fmt_dt(p.resolved_at) if p.resolved_at else '—' }}
           </div>
+          {% endif %}
         </td>
         <!-- 2. Server & Grup -->
-        <td style="padding:8px 10px;white-space:nowrap">
-          <div style="font-size:13px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
+        <td style="padding:8px 10px;white-space:nowrap" class="col-server">
+          <div style="font-size:11.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
           {% if p.group_name %}
           <div style="margin-top:2px">
-            <span class="badge badge-muted" style="font-size:10px;padding:1px 6px">{{ p.group_name }}</span>
+            <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px">{{ p.group_name }}</span>
           </div>
           {% endif %}
         </td>
         <!-- 3. Tingkat / Keparahan -->
-        <td style="padding:8px 10px;white-space:nowrap">
-          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:11px;padding:2px 7px">
+        <td style="padding:8px 10px;white-space:nowrap" class="col-sev">
+          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px;border-radius:3px">
             {{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}
           </span>
         </td>
         <!-- 4. Komponen -->
-        <td style="padding:8px 10px;white-space:nowrap">
-          <span style="font-size:12px;color:var(--text);font-weight:500">
+        <td style="padding:8px 10px;white-space:nowrap" class="col-component">
+          <span style="font-size:11px;color:var(--text);font-weight:500">
             {{ p.component or 'Sistem' }}
           </span>
         </td>
         <!-- 5. Deskripsi Insiden -->
-        <td style="padding:8px 10px;font-size:12.5px;color:var(--text)">
+        <td style="padding:8px 10px;font-size:11px;line-height:1.35;color:var(--text)" class="col-desc">
           <span style="color:var(--dim);text-decoration:line-through">{{ p.message }}</span>
         </td>
         <!-- 6. Durasi Gangguan (Downtime) -->
-        <td style="padding:8px 10px;white-space:nowrap" class="mono">
-          <span class="badge badge-muted" style="font-size:11px;padding:2px 7px;font-weight:600" title="Total waktu insiden berlangsung hingga teratasi">{{ p.durasi }}</span>
+        <td style="padding:8px 10px;white-space:nowrap" class="mono col-durasi">
+          <span class="badge badge-muted" style="font-size:10px;padding:1px 5px;font-weight:600;letter-spacing:-0.025em;word-spacing:-1px" title="Total waktu insiden berlangsung hingga teratasi">{{ p.durasi }}</span>
         </td>
         <!-- 7. Resolusi -->
-        <td style="padding:8px 10px;white-space:nowrap">
+        <td style="padding:8px 10px;white-space:nowrap" class="col-res">
           {% if p.resolved_note == 'server_offline' %}
-            <span class="badge badge-muted" style="font-size:11px;padding:2px 7px" title="Ditutup karena host/server offline">Host Offline</span>
+            <span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="Ditutup karena host/server offline">Host Offline</span>
           {% elif p.resolved_note == 'server_online' or p.key == 'agent_stale' %}
-            <span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="Server dinyalakan kembali dan aktif melapor">✓ Server Kembali Online</span>
+            <span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="Server dinyalakan kembali dan aktif melapor">✓ Server Kembali Online</span>
           {% elif p.resolved_note == 'service_up' %}
-            <span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="Layanan aktif kembali">✓ Layanan Aktif Kembali</span>
+            <span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="Layanan aktif kembali">✓ Layanan Aktif Kembali</span>
           {% elif p.acknowledged_by %}
-            <span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="Ditangani oleh {{ p.acknowledged_by }}">✓ {{ p.acknowledged_by }}</span>
+            <span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="Ditangani oleh {{ p.acknowledged_by }}">✓ {{ p.acknowledged_by }}</span>
           {% elif p.resolved_note == 'auto' %}
-            <span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="Kondisi kembali normal dan tenang">✓ Normal Kembali</span>
+            <span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="Kondisi kembali normal dan tenang">✓ Normal Kembali</span>
           {% elif p.resolved_note %}
-            <span class="badge badge-muted" style="font-size:11px;padding:2px 7px">{{ p.resolved_note }}</span>
+            <span class="badge badge-muted" style="font-size:10px;padding:1px 5px">{{ p.resolved_note }}</span>
           {% else %}
-            <span class="badge badge-up" style="font-size:11px;padding:2px 7px">✓ Selesai</span>
+            <span class="badge badge-up" style="font-size:10px;padding:1px 5px">✓ Selesai</span>
           {% endif %}
         </td>
-        <!-- 8. Aksi (DIAGNOSA DIHAPUS, HANYA RINCIAN) -->
-        <td style="padding:8px 10px;white-space:nowrap;text-align:center">
-          <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px" title="Buka rincian server {{ p.hostname }}">Rincian &rarr;</a>
+        <td style="padding:8px 10px;white-space:nowrap;text-align:left;width:50px" class="col-act">
+          <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm" title="Rincian" aria-label="Rincian">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </a>
         </td>
       </tr>
       {% endfor %}
@@ -606,16 +783,16 @@ function initProbPagination() {
   if (document.getElementById('probtable') && !probOpenPagination) {
     probOpenPagination = attachTablePagination('#probtable', {
       unitLabel: 'masalah',
-      defaultLimit: 25,
-      pageSizeOptions: [10, 25, 50, 100, 'all']
+      defaultLimit: 5,
+      pageSizeOptions: [5, 10, 25, 50, 100, 'all']
     });
   }
   const resTable = document.querySelector('#prob-resolved-card table');
   if (resTable && !probResolvedPagination) {
     probResolvedPagination = attachTablePagination(resTable, {
       unitLabel: 'masalah',
-      defaultLimit: 25,
-      pageSizeOptions: [10, 25, 50, 100, 'all']
+      defaultLimit: 10,
+      pageSizeOptions: [5, 10, 25, 50, 100, 'all']
     });
   }
 }
@@ -673,11 +850,11 @@ async function ackProblem(id, btn, sev) {
     showToast(isEn ? 'Viewer accounts do not have permission to acknowledge incidents.' : 'Akun Viewer tidak memiliki izin melakukan tindakan pada insiden.', false);
     return;
   }
-  const label = sev === 'danger' ? (isEn ? 'DANGER incident' : 'masalah DANGER') : (isEn ? 'this incident' : 'masalah ini');
-  const confirmMsg = isEn ? `Mark ${label} as acknowledged?` : `Tandai ${label} sudah ditangani?`;
+  const label = sev === 'danger' ? (isEn ? 'DANGER incident' : 'insiden DANGER') : (isEn ? 'this incident' : 'insiden ini');
+  const confirmMsg = isEn ? `Mark ${label} as handled?` : `Tandai insiden telah ditangani?`;
   if (!confirm(confirmMsg)) return;
-  const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = isEn ? 'Saving…' : 'Menyimpan…';
+  const orig = btn.innerHTML;
+  btn.disabled = true;
   try {
     const r = await fetch('/api/alerts/' + id + '/ack', {
       method: 'POST',
@@ -685,19 +862,14 @@ async function ackProblem(id, btn, sev) {
       credentials: 'same-origin'
     });
     if (r.ok) {
-      showToast(isEn ? 'Incident marked as acknowledged.' : 'Masalah ditandai sebagai ditangani.', true);
-      const span = document.createElement('span');
-      span.className = 'btn btn-success btn-sm prob-status-ack';
-      span.title = isEn ? 'Acknowledged' : 'Ditangani';
-      span.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
-      btn.replaceWith(span);
-      if (typeof window.poll === 'function') window.poll();
+      showToast(isEn ? 'Incident marked as handled.' : 'Insiden ditandai telah ditangani.', true);
+      location.reload();
       return;
     }
-    btn.disabled = false; btn.textContent = orig;
+    btn.disabled = false; btn.innerHTML = orig;
     showToast(isEn ? `Failed to save (HTTP ${r.status}). Try again.` : `Gagal menyimpan (HTTP ${r.status}). Coba lagi.`, false);
   } catch (e) {
-    btn.disabled = false; btn.textContent = orig;
+    btn.disabled = false; btn.innerHTML = orig;
     showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + e.message, false);
   }
 }
@@ -778,13 +950,13 @@ window.poll = async function() {
         if (!table) {
           wrapper.innerHTML = `<table id="probtable">
             <thead><tr>
-              <th class="col-time" style="width:130px;min-width:125px" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden atau masalah mulai terdeteksi'}">${isEn ? 'Start Time' : 'Waktu Mulai'}</th>
+              <th class="col-time" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden atau masalah mulai terdeteksi'}">${isEn ? 'Start Time' : 'Waktu Mulai'}</th>
               <th class="col-server" title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">Server</th>
-              <th class="col-sev" style="width:100px;min-width:95px;text-align:center" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'Severity' : 'Keparahan'}</th>
-              <th title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'Event' : 'Kejadian'}</th>
-              <th class="col-durasi" style="width:120px;min-width:110px" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'Duration' : 'Durasi'}</th>
-              <th class="col-act" style="width:160px;min-width:150px" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan'}">${isEn ? 'Actions' : 'Aksi'}</th>
-              <th class="col-tips" style="width:250px;min-width:200px" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'Solution Guide' : 'Panduan Solusi'}</th>
+              <th class="col-sev" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'Severity' : 'Keparahan'}</th>
+              <th class="col-event" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'Event' : 'Kejadian'}</th>
+              <th class="col-durasi" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'Duration' : 'Durasi'}</th>
+              <th class="col-act" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan'}">${isEn ? 'Actions' : 'Aksi'}</th>
+              <th class="col-tips" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'Solution Guide' : 'Panduan Solusi'}</th>
             </tr></thead>
             <tbody></tbody>
           </table>`;
@@ -795,34 +967,49 @@ window.poll = async function() {
           tbody.innerHTML = openList.map(p => {
             const isIgn = !!p.is_ignored;
             const rowStyle = isIgn ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '';
-            const sevBadge = isIgn ? 'badge badge-muted' : ('badge badge-' + ({danger:'danger',average:'orange',warning:'warn',info:'info'}[p.severity] || 'info'));
             let pMsg = p.message || '';
             let pTip = p.tip || '—';
             const grp = p.group_name || 'Default';
             const textSearch = _esc((p.hostname + ' ' + grp + ' ' + pMsg + ' ' + (p.key || '')).toLowerCase());
             const ctxStr = p.context ? _esc(typeof p.context === 'object' ? JSON.stringify(p.context) : p.context) : '';
-            const count24 = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
-            const ignBadge = isIgn ? `<span class="badge badge-muted">${isEn ? '🔕 ignored' : '🔕 diabaikan'}${p.ignored_until_str ? (isEn ? ' until ' : ' s/d ') + _esc(p.ignored_until_str) : (isEn ? ' permanent' : ' permanen')}</span>` : '';
+            const opName = (p.ignored_by === 'admin' ? 'master-admin' : (p.ignored_by || (isEn ? 'operator' : 'operator')));
+            const ackOp = (p.acknowledged_by === 'admin' ? 'master-admin' : (p.acknowledged_by || (isEn ? 'operator' : 'operator')));
+            const ignReasonBadge = (isIgn && p.ignored_reason) ? `<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="${_esc(p.ignored_reason)}">${_esc(p.ignored_reason)}</span>` : '';
+            const ignUntilBadge = (isIgn && p.ignored_until_str) ? `<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px">${(isEn ? 'until ' : 's/d ') + _esc(p.ignored_until_str)}</span>` : '';
+            const count24 = (p.count_24h && p.count_24h > 1) ? ` <span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
 
-            const svgDiag = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`;
-            const svgLink = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
-            const svgCheck = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-            const svgCheckBadge = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-            const svgBellOff = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
-            const svgBell = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
+            const rawSevBadge = 'badge badge-' + ({danger:'danger',average:'orange',warning:'warn',info:'info'}[p.severity] || 'info');
+            const rawSevLabel = _esc(p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'danger' ? 'CRITICAL' : (p.severity || '').toUpperCase()));
+
+            let sevCellHtml = '';
+            if (isIgn && p.acknowledged_by) {
+              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">${isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕'}</span> <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+            } else if (isIgn) {
+              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="${(isEn ? 'Reason: ' : 'Alasan: ') + _esc(p.ignored_reason || '')}">${isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕'}</span> <span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(isEn ? 'by ' : 'oleh ') + _esc(opName)}">(${isEn ? 'by ' : 'oleh '}${_esc(opName)})</span></div>`;
+            } else if (p.acknowledged_by) {
+              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevLabel}</span> <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+            } else {
+              sevCellHtml = `<span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevLabel}</span>`;
+            }
+
+            const svgLink = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
+            const svgCheck = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red)"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            const svgCheckBadge = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            const svgBellOff = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+            const svgBell = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
 
             let ackBtn = '';
             if (p.acknowledged_by) {
-              ackBtn = `<span class="btn btn-success btn-sm prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${_esc(p.acknowledged_by)}${p.acknowledged_at_str ? (isEn ? ' on ' : ' pada ') + _esc(p.acknowledged_at_str) : ''}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
+              ackBtn = `<span class="btn btn-ghost btn-sm prob-status-ack" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}${p.acknowledged_by ? (isEn ? ' (by ' : ' (oleh ') + _esc(p.acknowledged_by) + ')' : ''}" aria-label="Insiden Ditangani">${svgCheckBadge}</span>`;
             } else if (p.is_open && !IS_VIEWER) {
-              ackBtn = `<button type="button" class="btn btn-success btn-sm" onclick="ackProblem(${p.id}, this, '${p.severity}')" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${svgCheck}<span>${isEn ? 'Acknowledge' : 'Ditangani'}</span></button>`;
+              ackBtn = `<button type="button" class="btn btn-ghost btn-sm prob-status-unack" onclick="ackProblem(${p.id}, this, '${p.severity}')" title="${isEn ? 'Mark Incident as Handled' : 'Tangani Insiden'}" aria-label="Tangani Insiden">${svgCheck}</button>`;
             }
 
             const ignBtn = IS_VIEWER
               ? ''
               : (isIgn
-                ? `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">${svgBell}<span>${isEn ? 'Monitor' : 'Pantau Kembali'}</span></button>`
-                : `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">${svgBellOff}<span>${isEn ? 'Ignore' : 'Abaikan'}</span></button>`);
+                ? `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel Ignore' : 'Pantau Kembali'}" aria-label="Pantau Kembali">${svgBell}</button>`
+                : `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" data-msg="${_esc(p.message)}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore Incident' : 'Abaikan Masalah'}" aria-label="Abaikan Masalah">${svgBellOff}</button>`);
 
             return `<tr${rowStyle}
               data-sev="${_esc(p.severity)}"
@@ -841,29 +1028,29 @@ window.poll = async function() {
               data-prob-host="${_esc(p.hostname)}"
               data-prob-sid="${p.server_id}"
               data-prob-context="${ctxStr}">
-              <td style="white-space:nowrap;width:130px" class="mono col-time">${_esc(p.started_at_str || '')}</td>
+              <td class="mono col-time">${_esc(p.started_at_str || '')}</td>
               <td class="col-server">
                 <strong>${_esc(p.hostname)}</strong>
-                ${p.group_name ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:10px;display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> ${_esc(p.group_name)}</span></div>` : ''}
+                ${p.group_name ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4px;display:inline-flex;align-items:center;gap:3px"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="20 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> ${_esc(p.group_name)}</span></div>` : ''}
               </td>
-              <td style="width:100px;text-align:center" class="col-sev"><span class="${sevBadge}">${isIgn ? (isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕') : _esc(p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}</span></td>
-              <td>
-                <span>${_esc(pMsg)}</span>
-                ${ignBadge}
+              <td class="col-sev">${sevCellHtml}</td>
+              <td class="col-event">
+                <span style="font-size:11px;font-weight:500;line-height:1.35;color:var(--text)">${_esc(pMsg)}</span>
+                ${ignReasonBadge}
+                ${ignUntilBadge}
                 ${count24}
               </td>
-              <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap" data-start="${_esc(p.started_at_iso || '')}">${_esc(p.durasi || '')}</td>
-              <td class="prob-act-cell col-act" style="width:160px">
+              <td class="mono col-durasi" data-start="${_esc(p.started_at_iso || '')}">${_esc(p.durasi || '')}</td>
+              <td class="prob-act-cell col-act">
                 <div class="prob-act-wrap">
                   <div class="prob-act-row prob-act-tools">
-                    <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm" title="${isEn ? 'Open server details' : 'Buka halaman rincian server'}">${svgLink}<span>${isEn ? 'Details' : 'Rincian'}</span></a>
+                    <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm" title="${isEn ? 'Details' : 'Rincian'}" aria-label="Rincian">${svgLink}</a>
                   </div>
                   ${(ignBtn || ackBtn) ? `<div class="prob-act-row prob-act-ops">${ackBtn}${ignBtn}</div>` : ''}
                 </div>
               </td>
-              <td style="font-size:12px;color:var(--dim);max-width:360px">
-                ${p.acknowledged_by ? '<span style="color:var(--green)">' + (isEn ? 'Acknowledged by ' : 'Ditangani oleh ') + _esc(p.acknowledged_by) + '</span><br>' : ''}
-                ${_esc(pTip)}
+              <td class="col-tips">
+                ${pTip && pTip !== '—' ? `<div class="prob-tip-text" title="${_esc(pTip)}">${_esc(pTip)}</div>` : '—'}
               </td>
             </tr>`;
           }).join('');
@@ -907,35 +1094,37 @@ window.poll = async function() {
             data-prob-open="0"
             data-prob-host="${_esc(p.hostname)}"
             data-prob-sid="${p.server_id}">
-          <td style="padding:8px 10px;white-space:nowrap;width:200px" class="col-time-detailed">
-            <div class="mono" style="font-size:11.5px;color:var(--text);font-weight:600">
-              <span style="color:var(--dim);font-size:10px;text-transform:uppercase;margin-right:4px">${isEn ? 'START' : 'MULAI'}</span>${_esc(p.started_at || p.started_at_str || '—')}
+          <td style="padding:8px 10px;white-space:nowrap" class="col-time-detailed">
+            <div class="mono" style="font-size:11px;color:var(--text);font-weight:600">
+              <span style="color:var(--dim);font-size:9.5px;text-transform:uppercase;margin-right:4px">${isEn ? 'START' : 'MULAI'}</span>${_esc(p.started_at || p.started_at_str || '—')}
             </div>
-            <div class="mono" style="font-size:11.5px;color:var(--dim);margin-top:3px">
-              <span style="font-size:10px;text-transform:uppercase;margin-right:4px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>${_esc(p.resolved_at || p.resolved_at_str || '—')}
+            <div class="mono" style="font-size:11px;color:var(--dim);margin-top:2px">
+              <span style="font-size:9.5px;text-transform:uppercase;margin-right:4px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>${_esc(p.resolved_at || p.resolved_at_str || '—')}
             </div>
           </td>
-          <td style="padding:8px 10px;white-space:nowrap;width:160px" class="col-server">
-            <div style="font-size:13px;font-weight:600;color:var(--text-bright)">${_esc(p.hostname)}</div>
-            ${grp ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:10px;padding:1px 6px">${_esc(grp)}</span></div>` : ''}
+          <td style="padding:8px 10px;white-space:nowrap" class="col-server">
+            <div style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${_esc(p.hostname)}</div>
+            ${grp ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px">${_esc(grp)}</span></div>` : ''}
           </td>
-          <td style="padding:8px 10px;white-space:nowrap;width:105px;text-align:center" class="col-sev">
-            <span class="${sevBadge}" style="font-size:11px;padding:2px 7px">
+          <td style="padding:8px 10px;white-space:nowrap" class="col-sev">
+            <span class="${sevBadge}" style="font-size:8px;padding:1px 4.5px;border-radius:3px">
               ${_esc(p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}
             </span>
           </td>
-          <td style="padding:8px 10px;white-space:nowrap;width:110px">
-            <span style="font-size:12px;color:var(--text);font-weight:500">${_esc(p.component || 'Sistem')}</span>
+          <td style="padding:8px 10px;white-space:nowrap" class="col-component">
+            <span style="font-size:11px;color:var(--text);font-weight:500">${_esc(p.component || 'Sistem')}</span>
           </td>
-          <td style="padding:8px 10px;font-size:12.5px;color:var(--text)">
+          <td style="padding:8px 10px;font-size:11px;line-height:1.35;color:var(--text)" class="col-desc">
             <span style="color:var(--dim);text-decoration:line-through">${_esc(p.message || '')}</span>
           </td>
-          <td style="padding:8px 10px;white-space:nowrap;width:130px;min-width:130px" class="mono col-durasi">
-            <span class="badge badge-muted" style="font-size:11px;padding:2px 7px;font-weight:600">${_esc(p.durasi || '')}</span>
+          <td style="padding:8px 10px;white-space:nowrap" class="mono col-durasi">
+            <span class="badge badge-muted" style="font-size:10px;padding:1px 5px;font-weight:600;letter-spacing:-0.025em;word-spacing:-1px">${_esc(p.durasi || '')}</span>
           </td>
-          <td style="padding:8px 10px;white-space:nowrap;width:140px">${resBadge}</td>
-          <td style="padding:8px 10px;white-space:nowrap;text-align:center;width:90px">
-            <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px">${isEn ? 'Details →' : 'Rincian →'}</a>
+          <td style="padding:8px 10px;white-space:nowrap" class="col-res">${resBadge}</td>
+          <td style="padding:8px 10px;white-space:nowrap;text-align:left" class="col-act">
+            <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm" title="${isEn ? 'Details' : 'Rincian'}" aria-label="Rincian">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </a>
           </td>
         </tr>`;
       }).join('');

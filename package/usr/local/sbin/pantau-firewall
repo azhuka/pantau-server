@@ -61,6 +61,11 @@ case "$ACTION" in
         PROTO="${PORT_SPEC##*/}"
         [ "$PROTO" = "$PORT_NUM" ] && PROTO="tcp"
 
+        case "$PROTO" in
+            tcp|udp) ;;
+            *) fail "Protokol tidak valid: '$PROTO' (hanya tcp atau udp)" ;;
+        esac
+
         if [ "$PORT_NUM" = "22" ] || [ "$PORT_NUM" = "8400" ]; then
             fail "Port $PORT_NUM (SSH / Pantau Dashboard) dilindungi dan dilarang diblokir!"
         fi
@@ -86,12 +91,24 @@ case "$ACTION" in
         PROTO="${PORT_SPEC##*/}"
         [ "$PROTO" = "$PORT_NUM" ] && PROTO="tcp"
 
+        if ! [[ "$PORT_NUM" =~ ^[0-9]+$ ]] || [ "$PORT_NUM" -lt 1 ] || [ "$PORT_NUM" -gt 65535 ]; then
+            fail "Nomor port tidak valid: '$PORT_NUM'"
+        fi
+        case "$PROTO" in
+            tcp|udp) ;;
+            *) fail "Protokol tidak valid: '$PROTO' (hanya tcp atau udp)" ;;
+        esac
+
         if command -v ufw >/dev/null 2>&1; then
             out="$(ufw delete deny "$PORT_NUM/$PROTO" 2>&1)" || ufw allow "$PORT_NUM/$PROTO" 2>&1 || true
             echo "OK: Aturan blokir untuk port $PORT_NUM/$PROTO berhasil dibuka pada UFW"
             exit 0
+        elif [ -x "$IPT" ]; then
+            "$IPT" -D INPUT -p "$PROTO" --dport "$PORT_NUM" -j DROP 2>/dev/null || true
+            echo "OK: Aturan blokir untuk port $PORT_NUM/$PROTO berhasil dibuka pada iptables"
+            exit 0
         fi
-        exit 0
+        fail "Tidak ada firewall aktif (ufw / iptables) di sistem"
         ;;
     *) fail "Aksi tidak dikenal: '${ACTION:-}' (harus 'block', 'unblock', 'enable', 'disable', 'reload', 'deny-port', 'allow-port', atau 'status')" ;;
 esac

@@ -39,6 +39,7 @@ import pwd
 import random
 import re
 import select
+import shutil
 import signal
 import socket
 import struct
@@ -56,7 +57,7 @@ from pathlib import Path
 
 IS_ROOT = os.geteuid() == 0
 
-ALLOWED_SYSTEMCTL_ACTIONS = frozenset({"restart", "start", "stop"})
+ALLOWED_SYSTEMCTL_ACTIONS = frozenset({"restart", "start", "stop", "reload", "enable", "disable"})
 VALID_PROCESS_NAME_RE = re.compile(r'^[a-zA-Z0-9@._:\-]{1,64}$')
 
 PANTUAN_RESTART = "/usr/local/sbin/pantau-restart"
@@ -152,22 +153,27 @@ def get_process_path(pid: int) -> str:
     return ""
 
 
-DEV_TOOL_NAME_HINTS = ("mainthread", "code-", "vscode", "electron", "jupyter")
+DEV_TOOL_NAME_HINTS = (
+    "mainthread", "code-", "vscode", "electron", "jupyter",
+    "chrome", "chromedriver", "google-chrome", "chromium", "selenium", "playwright", "pytest",
+)
 
 
 def is_dev_tool(proc_name: str | None, pid: int | None) -> bool:
-    """Filter tools dev (VS Code, Jupyter, dll) supaya tidak jadi service palsu."""
+    """Filter tools dev (VS Code, Jupyter, test runners, dll) supaya tidak jadi service palsu."""
     if not proc_name:
         return False
     low = proc_name.lower()
     # Deteksi by nama — andal walau /proc milik user lain tidak bisa dibaca
-    if low.startswith(DEV_TOOL_NAME_HINTS):
+    if any(hint in low for hint in DEV_TOOL_NAME_HINTS):
         return True
     if pid:
         path = get_process_path(pid)
         if ".vscode" in path or "vscode-server" in path:
             return True
         if "node" in path and "/usr/bin" not in path:
+            return True
+        if any(hint in path.lower() for hint in ("chrome", "chromedriver", "selenium", "playwright")):
             return True
     return False
 
@@ -468,7 +474,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.5.32"
+AGENT_VERSION = "4.6.0"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -558,11 +564,13 @@ def http_json_request(cfg: dict, path: str, method: str = "GET", data: dict | No
             return code, resp_data
     except urllib.error.HTTPError as e:
         try:
-            resp_data = json.loads(e.read().decode() or "{}")
+            resp_data = json.loads(e.read().decode("utf-8", errors="replace") or "{}")
         except Exception:
             resp_data = {}
         return e.code, resp_data
-    except (urllib.error.URLError, OSError) as e:
+    except (urllib.error.URLError, OSError, http.client.HTTPException):
+        return 0, {}
+    except Exception:
         return 0, {}
 
 
@@ -1072,18 +1080,23 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
             "output": f"Gagal mengunduh berkas agen terbaru: {'; '.join(fetch_err)}"
         }
 
-    # Verifikasi Kriptografis SHA-256
+    # Verifikasi Kriptografis SHA-256 wajib dan mutlak
+    if not expected_sha256 or len(expected_sha256) != 64 or not re.fullmatch(r"[0-9a-f]{64}", expected_sha256.lower()):
+        return {
+            "ok": False,
+            "output": "Pembaruan ditolak: Hash SHA-256 target wajib disertakan oleh dashboard (64 karakter hex)."
+        }
+
     actual_sha256 = hashlib.sha256(code_bytes).hexdigest().lower()
-    if expected_sha256:
-        if actual_sha256 != expected_sha256:
-            msg = (
-                f"Verifikasi integritas SHA-256 GAGAL! Hash unduhan ({actual_sha256}) "
-                f"tidak cocok dengan instruksi dashboard ({expected_sha256}). "
-                "Pembaruan dibatalkan demi mencegah eksekusi berkas tidak terverifikasi."
-            )
-            print(f"[SECURITY ALERT] {msg}")
-            return {"ok": False, "output": msg}
-        print(f"[OTA] Integritas SHA-256 terverifikasi: {actual_sha256}")
+    if actual_sha256 != expected_sha256.lower():
+        msg = (
+            f"Verifikasi integritas SHA-256 GAGAL! Hash unduhan ({actual_sha256}) "
+            f"tidak cocok dengan instruksi dashboard ({expected_sha256}). "
+            "Pembaruan dibatalkan demi mencegah eksekusi berkas tidak terverifikasi."
+        )
+        print(f"[SECURITY ALERT] {msg}")
+        return {"ok": False, "output": msg}
+    print(f"[OTA] Integritas SHA-256 terverifikasi: {actual_sha256}")
 
     import tempfile
     import py_compile
@@ -1255,9 +1268,21 @@ def _exec_service_action(action: str, command: dict) -> dict:
 def _run_native(cmd: list[str], label: str) -> dict:
     """Jalankan command dan kembalikan {'ok': bool, 'output': str}."""
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+        )
         ok = proc.returncode == 0
-        output = (proc.stdout or proc.stderr).strip()
+        stdout_clean = (proc.stdout or "").strip()
+        stderr_clean = (proc.stderr or "").strip()
+        if not ok and stderr_clean:
+            output = f"{stderr_clean}\n{stdout_clean}".strip() if stdout_clean else stderr_clean
+        else:
+            output = stdout_clean or stderr_clean
         return {
             "ok": ok,
             "output": output or f"{label} rc={proc.returncode}",
@@ -1266,6 +1291,8 @@ def _run_native(cmd: list[str], label: str) -> dict:
         return {"ok": False, "output": f"Timeout eksekusi: {label}"}
     except FileNotFoundError as e:
         return {"ok": False, "output": f"Perintah tidak tersedia: {e}"}
+    except Exception as e:
+        return {"ok": False, "output": f"Gagal mengeksekusi {label}: {e}"}
 
 
 def report_command_result(cfg: dict, command_id: int, result: dict):
@@ -1405,6 +1432,276 @@ def _read_meminfo() -> dict:
     except OSError:
         pass
     return mem
+
+
+def _find_storage_bin(name: str) -> str | None:
+    p = shutil.which(name)
+    if p and os.path.isfile(p):
+        return p
+    for candidate in (f"/usr/sbin/{name}", f"/usr/bin/{name}", f"/sbin/{name}", f"/bin/{name}", f"/usr/local/sbin/{name}"):
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+
+def collect_disk_smart_health(disk_name: str, disk_model: str = "", platform_type: str = "") -> dict:
+    """Kumpulkan status kesehatan S.M.A.R.T. / NVMe, suhu, dan sisa umur drive."""
+    res = {
+        "is_virtual": False,
+        "health": "healthy",
+        "status_label": "PASSED",
+        "temp_c": None,
+        "wearout_pct": None,
+        "wearout_remaining": None,
+        "reallocated_sectors": None,
+        "power_on_hours": None,
+        "device_type": "disk",
+        "serial": "",
+        "firmware": "",
+        "detail": "Normal",
+    }
+
+    # 1. Cek disk virtual (LXC rootfs, QEMU, VirtIO, VMWare, dsb.)
+    name_clean = disk_name.lower().strip()
+    model_clean = (disk_model or "").upper()
+    is_virt = False
+
+    if name_clean == "rootfs" or platform_type in ("lxc", "docker", "podman", "container"):
+        is_virt = True
+    elif any(vk in model_clean for vk in ("QEMU", "VBOX", "VMWARE", "VIRTIO", "XEN", "KVM", "BOCHS", "BHYVE", "CONTAINER", "VIRTUAL")):
+        is_virt = True
+    elif platform_type == "vm" and model_clean in ("HARDDISK", "DISK", "VIRTUAL DISK", ""):
+        is_virt = True
+    else:
+        sys_path = f"/sys/block/{disk_name}"
+        if os.path.islink(sys_path):
+            try:
+                target = os.readlink(sys_path)
+                if "virtio" in target or "/virtual/" in target:
+                    is_virt = True
+            except Exception:
+                pass
+
+    if is_virt:
+        res["is_virtual"] = True
+        res["health"] = "healthy"
+        res["status_label"] = "Virtual (Host)"
+        res["device_type"] = "virtual"
+        res["detail"] = "Virtual (Host Managed)"
+        return res
+
+    dev_path = f"/dev/{disk_name}" if not disk_name.startswith("/dev/") else disk_name
+    raw_json = None
+
+    # 2. Cek perangkat NVMe via nvme-cli
+    nvme_bin = _find_storage_bin("nvme")
+    if "nvme" in disk_name and nvme_bin:
+        for cmd_prefix in ([["sudo", "-n", nvme_bin], [nvme_bin]] if os.geteuid() != 0 else [[nvme_bin]]):
+            try:
+                p = subprocess.run(
+                    cmd_prefix + ["smart-log", dev_path, "-o", "json"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    timeout=3,
+                )
+                if p.returncode == 0 and p.stdout.strip().startswith("{"):
+                    raw_nvme = json.loads(p.stdout)
+                    res["device_type"] = "nvme"
+                    crit_warn = raw_nvme.get("critical_warning", 0)
+                    pct_used = raw_nvme.get("percent_used")
+                    avail_sp = raw_nvme.get("avail_spare")
+                    sp_thresh = raw_nvme.get("spare_thresh", 10)
+                    media_errs = raw_nvme.get("media_errors", 0)
+                    temp_k = raw_nvme.get("temperature")
+                    if temp_k and temp_k > 200:
+                        res["temp_c"] = temp_k - 273
+                    poh = raw_nvme.get("power_on_hours")
+                    if poh is not None:
+                        res["power_on_hours"] = poh
+
+                    if pct_used is not None:
+                        res["wearout_pct"] = int(pct_used)
+                        res["wearout_remaining"] = max(0, 100 - int(pct_used))
+
+                    # Evaluasi kesehatan NVMe
+                    if crit_warn != 0 or (media_errs and media_errs > 10):
+                        res["health"] = "critical"
+                        res["status_label"] = "CRITICAL"
+                        res["detail"] = f"NVMe Critical Warning: {crit_warn}, Media Errors: {media_errs}"
+                    elif (res["temp_c"] and res["temp_c"] >= 65) or (pct_used is not None and pct_used >= 90) or (avail_sp is not None and avail_sp <= sp_thresh):
+                        res["health"] = "warning"
+                        res["status_label"] = "WARNING"
+                        if res["temp_c"] and res["temp_c"] >= 65:
+                            res["detail"] = f"Suhu tinggi: {res['temp_c']}°C"
+                        elif pct_used is not None and pct_used >= 90:
+                            res["detail"] = f"Sisa umur tipis: {res['wearout_remaining']}%"
+                        else:
+                            res["detail"] = f"Spare blocks menipis: {avail_sp}%"
+                    else:
+                        res["health"] = "healthy"
+                        res["status_label"] = "PASSED"
+                        res["detail"] = "Normal (NVMe)"
+                    return res
+            except Exception:
+                pass
+
+    # 3. Query via smartctl (-i -H -A -j)
+    smartctl_bin = _find_storage_bin("smartctl")
+    if smartctl_bin:
+        for cmd_prefix in ([["sudo", "-n", smartctl_bin], [smartctl_bin]] if os.geteuid() != 0 else [[smartctl_bin]]):
+            try:
+                p = subprocess.run(
+                    cmd_prefix + ["-i", "-H", "-A", "-j", dev_path],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    timeout=4,
+                )
+                if p.stdout.strip().startswith("{"):
+                    raw_json = json.loads(p.stdout)
+                    break
+            except Exception:
+                pass
+
+    if raw_json:
+        # Cek apakah smartctl mengindikasikan drive lacks SMART capability
+        smart_sup = raw_json.get("smart_support") or {}
+        if smart_sup.get("available") is False:
+            res["is_virtual"] = True
+            res["health"] = "healthy"
+            res["status_label"] = "Virtual (Host)"
+            res["device_type"] = "virtual"
+            res["detail"] = "Virtual (Host Managed)"
+            return res
+
+        res["serial"] = raw_json.get("serial_number") or ""
+        res["firmware"] = raw_json.get("firmware_version") or raw_json.get("scsi_revision") or ""
+        res["device_type"] = raw_json.get("device", {}).get("type") or raw_json.get("device_type") or "disk"
+
+        # NVMe info via smartctl
+        nvme_info = raw_json.get("nvme_smart_health_information_log")
+        if nvme_info:
+            res["device_type"] = "nvme"
+            crit_warn = nvme_info.get("critical_warning", 0)
+            pct_used = nvme_info.get("percentage_used")
+            avail_sp = nvme_info.get("available_spare")
+            sp_thresh = nvme_info.get("available_spare_threshold", 10)
+            media_errs = nvme_info.get("media_errors", 0)
+            temp = nvme_info.get("temperature")
+            if temp and 0 < temp < 150:
+                res["temp_c"] = temp
+            if pct_used is not None:
+                res["wearout_pct"] = int(pct_used)
+                res["wearout_remaining"] = max(0, 100 - int(pct_used))
+
+            if crit_warn != 0 or (media_errs and media_errs > 10):
+                res["health"] = "critical"
+                res["status_label"] = "CRITICAL"
+                res["detail"] = f"NVMe Critical Warning: {crit_warn}, Media Errors: {media_errs}"
+            elif (res["temp_c"] and res["temp_c"] >= 65) or (pct_used is not None and pct_used >= 90) or (avail_sp is not None and avail_sp <= sp_thresh):
+                res["health"] = "warning"
+                res["status_label"] = "WARNING"
+                if res["temp_c"] and res["temp_c"] >= 65:
+                    res["detail"] = f"Suhu tinggi: {res['temp_c']}°C"
+                elif pct_used is not None and pct_used >= 90:
+                    res["detail"] = f"Sisa umur tipis: {res['wearout_remaining']}%"
+                else:
+                    res["detail"] = f"Spare blocks menipis: {avail_sp}%"
+            else:
+                res["health"] = "healthy"
+                res["status_label"] = "PASSED"
+                res["detail"] = "Normal (NVMe)"
+            return res
+
+        # ATA / SCSI / SATA SMART info
+        temp_data = raw_json.get("temperature") or {}
+        cur_temp = temp_data.get("current")
+        if cur_temp and 0 < cur_temp < 150:
+            res["temp_c"] = cur_temp
+
+        poh = raw_json.get("power_on_time", {}).get("hours")
+        if poh is not None:
+            res["power_on_hours"] = poh
+
+        # Parse ATA Attributes Table
+        ata_attrs = raw_json.get("ata_smart_attributes", {}).get("table", [])
+        reallocated = 0
+        pending = 0
+        ssd_life_val = None
+
+        for attr in ata_attrs:
+            aid = attr.get("id")
+            name_attr = attr.get("name", "").lower()
+            raw_v = attr.get("raw", {}).get("value", 0)
+            val = attr.get("value", 100)
+
+            if aid == 5 or "reallocated" in name_attr:
+                reallocated = raw_v
+                res["reallocated_sectors"] = reallocated
+            elif aid in (197, 198) or "pending" in name_attr or "uncorrectable" in name_attr:
+                pending = max(pending, raw_v)
+            elif aid in (194, 190) or "temp" in name_attr:
+                if not res["temp_c"] and 0 < raw_v < 150:
+                    res["temp_c"] = raw_v
+            elif aid in (177, 231, 232, 233, 169, 202) or "life" in name_attr or "wear" in name_attr:
+                if ssd_life_val is None:
+                    ssd_life_val = val
+
+        if ssd_life_val is not None:
+            res["wearout_remaining"] = ssd_life_val
+            res["wearout_pct"] = max(0, 100 - ssd_life_val)
+
+        smart_status = raw_json.get("smart_status") or {}
+        passed = smart_status.get("passed")
+
+        if passed is False:
+            res["health"] = "critical"
+            res["status_label"] = "CRITICAL"
+            res["detail"] = "S.M.A.R.T. Melaporkan Kerusakan Hardware"
+        elif (res["temp_c"] and res["temp_c"] >= 65) or reallocated > 10 or pending > 0 or (res["wearout_remaining"] is not None and res["wearout_remaining"] <= 10):
+            res["health"] = "warning"
+            res["status_label"] = "WARNING"
+            reasons = []
+            if res["temp_c"] and res["temp_c"] >= 65:
+                reasons.append(f"Suhu {res['temp_c']}°C")
+            if reallocated > 10:
+                reasons.append(f"{reallocated} Sektor Rusak")
+            if pending > 0:
+                reasons.append(f"{pending} Pending Sektor")
+            if res["wearout_remaining"] is not None and res["wearout_remaining"] <= 10:
+                reasons.append(f"Sisa Umur {res['wearout_remaining']}%")
+            res["detail"] = ", ".join(reasons) or "Degraded"
+        elif passed is True:
+            res["health"] = "healthy"
+            res["status_label"] = "PASSED"
+            res["detail"] = "Normal"
+        else:
+            res["health"] = "healthy"
+            res["status_label"] = "PASSED"
+            res["detail"] = "Normal"
+        return res
+
+    # 4. Fallback jika smartctl tidak tersedia / gagal eksekusi
+    # Cek sensor suhu via sysfs /sys/class/hwmon
+    try:
+        hwmon_path = f"/sys/block/{disk_name}/device/hwmon"
+        if os.path.exists(hwmon_path):
+            for hdir in os.listdir(hwmon_path):
+                tfile = os.path.join(hwmon_path, hdir, "temp1_input")
+                if os.path.exists(tfile):
+                    with open(tfile, "r") as f:
+                        mc = int(f.read().strip())
+                        if mc > 0:
+                            res["temp_c"] = round(mc / 1000)
+                            break
+    except Exception:
+        pass
+
+    res["health"] = "unknown"
+    res["status_label"] = "N/A"
+    res["detail"] = "SMART tidak tersedia"
+    return res
 
 
 _hw_specs_cache = {"at": 0.0, "data": {}}
@@ -1557,6 +1854,7 @@ def collect_hardware_specs() -> dict:
                     "size": sz_str,
                     "type": "Virtual (LXC)",
                     "model": "Container Allocation",
+                    "smart": collect_disk_smart_health("rootfs", "Container Allocation", "lxc"),
                 })
         except Exception:
             pass
@@ -1578,7 +1876,13 @@ def collect_hardware_specs() -> dict:
                         rota = parts[3] if len(parts) > 3 else "1"
                         dtype = "SSD" if rota == "0" else "HDD"
                         model = " ".join(parts[5:]) if len(parts) > 5 else ""
-                        specs["disks"].append({"name": name, "size": size, "type": dtype, "model": model})
+                        specs["disks"].append({
+                            "name": name,
+                            "size": size,
+                            "type": dtype,
+                            "model": model,
+                            "smart": collect_disk_smart_health(name, model, specs["platform"].get("platform_type", "")),
+                        })
         except Exception:
             pass
 
@@ -1595,6 +1899,7 @@ def collect_hardware_specs() -> dict:
                     "size": sz_str,
                     "type": "Virtual (LXC)" if is_container_ct else "Disk",
                     "model": "Root Partition",
+                    "smart": collect_disk_smart_health("rootfs", "Root Partition", specs["platform"].get("platform_type", "")),
                 })
         except Exception:
             pass
@@ -2001,7 +2306,7 @@ def collect_accounts() -> list[dict]:
         entries = list(pwd.getpwall())
     except Exception:
         entries = []
-    for pw in sorted(entries, key=lambda e: e.pw_uid):
+    for pw in sorted(entries, key=lambda e: (0 if e.pw_name in sessions_by_user else 1, e.pw_uid)):
         sessions = sessions_by_user.get(pw.pw_name, [])
         # Fokus akun manusia: uid >= 1000, root, atau yang sedang logged-in
         if (pw.pw_uid >= 1000 or pw.pw_uid == 0 or sessions) and pw.pw_uid != 65534:
@@ -2017,6 +2322,19 @@ def collect_accounts() -> list[dict]:
             })
         if len(accounts) >= 60:
             break
+
+    seen_users = {a["user"] for a in accounts}
+    for u, u_sessions in sessions_by_user.items():
+        if u not in seen_users:
+            accounts.append({
+                "user": u,
+                "uid": 9999,
+                "shell": "/bin/sh",
+                "last_login": "",
+                "sessions": u_sessions[:5],
+                "is_protected": False,
+                "is_locked": False,
+            })
     return accounts
 
 
@@ -2034,6 +2352,129 @@ def collect_units() -> list[str]:
         if parts and parts[0].endswith(".service"):
             units.append(parts[0][:-8])
     return sorted(set(units))
+
+
+def collect_systemd_units(limit: int = 2000) -> list[dict]:
+    """Mengumpulkan inventaris seluruh unit service systemd (runtime state + boot enablement + telemetri PID & RAM)."""
+    boot_map = {}
+    p_files = _run_cmd(
+        ["/usr/bin/systemctl", "list-unit-files", "--type=service", "--no-pager", "--no-legend"],
+        timeout=10,
+    )
+    if p_files and p_files.stdout:
+        for line in p_files.stdout.splitlines():
+            parts = line.split()
+            if len(parts) >= 2:
+                u_name = parts[0].strip()
+                boot_state = parts[1].strip().lower()
+                boot_map[u_name] = boot_state
+                base = u_name[:-8] if u_name.endswith(".service") else u_name
+                boot_map[base] = boot_state
+
+    p_units = _run_cmd(
+        ["/usr/bin/systemctl", "list-units", "--type=service", "--all", "--no-pager", "--no-legend"],
+        timeout=15,
+    )
+    units = []
+    seen = set()
+    running_names = []
+
+    if p_units and p_units.stdout:
+        for line in p_units.stdout.splitlines()[:limit]:
+            line = line.strip().lstrip("●").strip()
+            if not line:
+                continue
+            parts = line.split(None, 4)
+            if len(parts) >= 4:
+                u_name = parts[0].strip()
+                load = parts[1].strip().lower()
+                active = parts[2].strip().lower()
+                sub = parts[3].strip().lower()
+                desc = parts[4].strip() if len(parts) > 4 else ""
+
+                if active == "active" and sub == "running":
+                    status = "running"
+                    running_names.append(u_name)
+                elif active == "active" and sub == "exited":
+                    status = "exited"
+                elif active == "failed" or sub == "failed":
+                    status = "failed"
+                elif active == "inactive":
+                    status = "inactive"
+                else:
+                    status = active or "unknown"
+
+                boot = (
+                    boot_map.get(u_name)
+                    or boot_map.get(u_name[:-8] if u_name.endswith(".service") else u_name)
+                    or "unknown"
+                )
+
+                units.append({
+                    "name": u_name,
+                    "load": load,
+                    "active": active,
+                    "sub": sub,
+                    "status": status,
+                    "boot": boot,
+                    "description": desc,
+                    "pid": None,
+                    "memory": None,
+                    "tasks": None,
+                })
+                seen.add(u_name)
+
+    # Unit yang ada di disk tapi belum dimuat di runtime
+    for u_name, boot_state in boot_map.items():
+        if not u_name.endswith(".service"):
+            continue
+        if u_name not in seen and "@" not in u_name and len(units) < limit:
+            units.append({
+                "name": u_name,
+                "load": "unloaded",
+                "active": "inactive",
+                "sub": "dead",
+                "status": "inactive",
+                "boot": boot_state,
+                "description": "",
+                "pid": None,
+                "memory": None,
+                "tasks": None,
+            })
+            seen.add(u_name)
+
+    # Kumpulkan telemetri PID, RAM, & Thread untuk unit yang aktif running
+    if running_names:
+        p_show = _run_cmd(
+            ["/usr/bin/systemctl", "show", "-p", "Id,MainPID,MemoryCurrent,TasksCurrent", *running_names[:200]],
+            timeout=10,
+        )
+        if p_show and p_show.stdout:
+            props = {}
+            for block in p_show.stdout.strip().split("\n\n"):
+                cur = {}
+                for line in block.splitlines():
+                    if "=" in line:
+                        k, v = line.split("=", 1)
+                        cur[k.strip()] = v.strip()
+                uid = cur.get("Id")
+                if uid:
+                    props[uid] = cur
+
+            for u in units:
+                pr = props.get(u["name"])
+                if pr:
+                    pid = pr.get("MainPID")
+                    if pid and pid.isdigit() and int(pid) > 0:
+                        u["pid"] = int(pid)
+                    mem = pr.get("MemoryCurrent")
+                    if mem and mem.isdigit() and int(mem) < 18446744073709551615:
+                        u["memory"] = int(mem)
+                    tasks = pr.get("TasksCurrent")
+                    if tasks and tasks.isdigit() and int(tasks) > 0:
+                        u["tasks"] = int(tasks)
+
+    return units
 
 
 def _last_apt_update_iso() -> str | None:
@@ -2093,8 +2534,154 @@ def collect_apt() -> dict | None:
     return apt
 
 
-def _apt_cmd(kind: str):
+PANTAU_APT_SCRIPT_BODY = """#!/bin/sh
+# pantau-apt — Cangkang sempit utk tombol Update/Upgrade paket OS.
+# Dipanggil agen 'pantau' via sudo NOPASSWD (lihat /etc/sudoers.d/pantau-agent).
+set -e
+
+DPKG_KEEP_LOCAL="-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
+DPKG_COMMON="-o Dpkg::Use-Pty=0 -o Dpkg::Lock::Timeout=600 -o APT::Get::Always-Include-Phased-Updates=true"
+
+if [ -e /var/lib/dpkg/lock-frontend ] && fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
+    echo "pantau-apt: proses apt/dpkg lain sedang berjalan (lock /var/lib/dpkg/lock-frontend dipegang)." >&2
+    echo "           Tunggu proses itu selesai, lalu ulangi. Tidak ada yang dirusak." >&2
+    exit 3
+fi
+
+case "${1:-}" in
+    update)
+        export DEBIAN_FRONTEND=noninteractive
+        export NEEDRESTART_MODE=l
+        export APT_LISTCHANGES_FRONTEND=none
+        exec /usr/bin/script -qfc "/usr/bin/apt-get update -o Dpkg::Lock::Timeout=600" /dev/null
+        ;;
+    upgrade)
+        export DEBIAN_FRONTEND=noninteractive
+        export NEEDRESTART_MODE=a
+        export APT_LISTCHANGES_FRONTEND=none
+        exec /usr/bin/script -qfc "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON upgrade" /dev/null
+        ;;
+    upgrade-interact)
+        unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
+        export NEEDRESTART_MODE=a
+        export APT_LISTCHANGES_FRONTEND=none
+        exec /usr/bin/script -qfc "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true upgrade" /dev/null
+        ;;
+    dist-upgrade)
+        unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
+        export NEEDRESTART_MODE=a
+        export APT_LISTCHANGES_FRONTEND=none
+        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true dist-upgrade" /dev/null
+        ;;
+    fix)
+        unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
+        export NEEDRESTART_MODE=a
+        export APT_LISTCHANGES_FRONTEND=none
+        /usr/bin/script -qfc "/usr/bin/dpkg --configure -a" /dev/null || true
+        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -f -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true install" /dev/null
+        ;;
+    clean)
+        exec /usr/bin/apt-get clean
+        ;;
+    upgrade-pkg)
+        pkg="${2:-}"
+        if [ -z "$pkg" ]; then
+            echo "pantau-apt: nama paket target tidak boleh kosong" >&2
+            exit 2
+        fi
+        case "$pkg" in
+            *[!a-z0-9+.-]* | "" | -* | .* | +* )
+                echo "pantau-apt: nama paket tidak valid: '$pkg'" >&2
+                exit 2
+                ;;
+        esac
+        export DEBIAN_FRONTEND=noninteractive
+        export NEEDRESTART_MODE=a
+        export APT_LISTCHANGES_FRONTEND=none
+        exec /usr/bin/script -qfc "/usr/bin/apt-get --only-upgrade -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON install '$pkg'" /dev/null
+        ;;
+    *)
+        echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2
+        echo "            (hanya: update | upgrade | upgrade-interact | dist-upgrade | fix | clean | upgrade-pkg)" >&2
+        exit 2
+        ;;
+esac
+"""
+
+
+def ensure_pantau_apt_updated() -> bool:
+    """Memastikan wrapper /usr/local/sbin/pantau-apt mendukung upgrade-pkg, clean, dan Always-Include-Phased-Updates.
+    Jika masih versi lama, otomatis perbarui via root langsung atau sudo pantau-file.
+    """
+    try:
+        # Konfigurasi APT tingkat sistem agar semua operasi apt mengikutsertakan Phased Updates
+        apt_conf_dir = "/etc/apt/apt.conf.d"
+        apt_conf_file = os.path.join(apt_conf_dir, "99pantau-phased-updates")
+        if os.path.isdir(apt_conf_dir) and not os.path.isfile(apt_conf_file):
+            phased_content = 'APT::Get::Always-Include-Phased-Updates "true";\n'
+            if IS_ROOT:
+                try:
+                    with open(apt_conf_file, "w", encoding="utf-8") as f:
+                        f.write(phased_content)
+                except Exception:
+                    pass
+            else:
+                pantau_file = "/usr/local/sbin/pantau-file"
+                if os.path.isfile(pantau_file):
+                    try:
+                        payload = json.dumps({
+                            "action": "write",
+                            "params": {"path": apt_conf_file, "content": phased_content, "make_backup": False}
+                        })
+                        subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload, text=True, capture_output=True, timeout=5)
+                    except Exception:
+                        pass
+
+        cur_content = ""
+        if os.path.isfile(PANTUAN_APT_CMD):
+            try:
+                with open(PANTUAN_APT_CMD, "r", encoding="utf-8", errors="replace") as f:
+                    cur_content = f.read()
+            except Exception:
+                pass
+        if "Always-Include-Phased-Updates" in cur_content and "upgrade-pkg" in cur_content and "clean" in cur_content:
+            return True
+
+        if IS_ROOT:
+            with open(PANTUAN_APT_CMD, "w", encoding="utf-8") as f:
+                f.write(PANTAU_APT_SCRIPT_BODY)
+            os.chmod(PANTUAN_APT_CMD, 0o755)
+            print("[APT] Wrapper /usr/local/sbin/pantau-apt berhasil diperbarui (root)")
+            return True
+
+        # Jika user 'pantau', gunakan sudo pantau-file jika tersedia
+        pantau_file = "/usr/local/sbin/pantau-file"
+        if os.path.isfile(pantau_file):
+            payload_write = json.dumps({
+                "action": "write",
+                "params": {"path": PANTUAN_APT_CMD, "content": PANTAU_APT_SCRIPT_BODY, "make_backup": False}
+            })
+            pw = subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_write, text=True, capture_output=True, timeout=10)
+            try:
+                out_data = json.loads(pw.stdout or "{}")
+            except Exception:
+                out_data = {}
+            if pw.returncode == 0 and out_data.get("ok"):
+                payload_chmod = json.dumps({
+                    "action": "chmod",
+                    "params": {"path": PANTUAN_APT_CMD, "mode": "0755"}
+                })
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_chmod, text=True, capture_output=True, timeout=10)
+                print("[APT] Wrapper /usr/local/sbin/pantau-apt berhasil diperbarui via pantau-file")
+                return True
+    except Exception as e:
+        print(f"[APT WARN] Gagal memperbarui {PANTUAN_APT_CMD}: {e}")
+    return False
+
+
+def _apt_cmd(kind: str, detail: str = ""):
     """Command apt (lewat wrapper sempit) + timeout per jenis aksi."""
+    ensure_pantau_apt_updated()
     prefix = [] if IS_ROOT else ["/usr/bin/sudo", "-n"]
     if kind == "APT_UPDATE":
         return prefix + [PANTUAN_APT_CMD, "update"], 300
@@ -2109,7 +2696,179 @@ def _apt_cmd(kind: str):
     if kind == "APT_FIX":
         # Reparasi dpkg & pemulihan paket rusak
         return prefix + [PANTUAN_APT_CMD, "fix"], 1800
+    if kind == "PKG_UPGRADE":
+        pkg = (detail or "").strip()
+        if not re.fullmatch(r"[a-z0-9][a-z0-9+.-]+", pkg):
+            raise ValueError(f"nama paket tidak valid untuk upgrade: '{pkg}'")
+        return prefix + [PANTUAN_APT_CMD, "upgrade-pkg", pkg], 600
+    if kind == "PKG_CLEAN":
+        return prefix + [PANTUAN_APT_CMD, "clean"], 120
     raise ValueError(f"unit apt tidak dikenal: {kind}")
+
+
+def collect_installed_packages(limit: int = 5000) -> list[dict]:
+    """Mengumpulkan inventaris seluruh paket OS yang terpasang via dpkg-query,
+    beserta deteksi paket pengguna vs sistem (apt-mark showmanual) dan
+    status layanan aktif runtime systemd (running, exited, inactive, installed).
+    """
+    pkgs = []
+    if not os.path.exists("/usr/bin/dpkg-query"):
+        return pkgs
+
+    # 1. Ambil daftar paket manual/pengguna via apt-mark showmanual
+    manual_set = set()
+    res_manual = _run_cmd(["/usr/bin/apt-mark", "showmanual"], timeout=8)
+    if res_manual and res_manual.stdout:
+        for line in res_manual.stdout.splitlines():
+            line = line.strip()
+            if line:
+                manual_set.add(line)
+                if ":" in line:
+                    manual_set.add(line.split(":")[0])
+
+    # 2. Ambil status layanan systemd terkini
+    svc_map = {}
+    res_svc = _run_cmd([
+        "/usr/bin/systemctl", "list-units", "--type=service", "--all", "--no-pager", "--no-legend"
+    ], timeout=8)
+    if res_svc and res_svc.stdout:
+        for line in res_svc.stdout.splitlines():
+            parts = line.split(None, 4)
+            if len(parts) >= 4:
+                unit = parts[0].strip()
+                active = parts[2].strip()
+                sub = parts[3].strip()
+                base_name = unit.replace(".service", "")
+                if active == "active" and sub == "running":
+                    st = "running"
+                elif active == "active" and sub == "exited":
+                    st = "exited (active)"
+                elif active == "failed" or sub == "failed":
+                    st = "failed"
+                elif active == "inactive":
+                    st = "inactive"
+                else:
+                    st = "inactive"
+                svc_map[base_name] = st
+
+    # Alias / pemetaan umum nama paket ke nama unit systemd
+    alias_map = {
+        "openssh-server": "ssh",
+        "mariadb-server": "mariadb",
+        "mysql-server": "mysql",
+        "apache2": "apache2",
+        "nginx": "nginx",
+        "cron": "cron",
+        "systemd": "systemd-journald",
+        "ufw": "ufw",
+        "bind9": "named",
+        "docker.io": "docker",
+        "docker-ce": "docker",
+        "redis-server": "redis",
+    }
+
+    # 3. Kueri dpkg-query untuk paket
+    res = _run_cmd([
+        "/usr/bin/dpkg-query", "-W", "-f",
+        "${binary:Package}\t${Version}\t${Architecture}\t${Installed-Size}\t${Priority}\t${Section}\t${binary:Summary}\n"
+    ], timeout=15)
+    if not res or not res.stdout or "\t" not in res.stdout:
+        res = _run_cmd([
+            "/usr/bin/dpkg-query", "-W",
+            "-f=${binary:Package}\t${Version}\t${Architecture}\t${Installed-Size}\t${Priority}\t${Section}\t${binary:Summary}\n"
+        ], timeout=15)
+
+    if res and res.stdout:
+        for line in res.stdout.splitlines()[:limit]:
+            parts = line.split("\t")
+            if len(parts) >= 2:
+                name = parts[0].strip()
+                ver = parts[1].strip()
+                arch = parts[2].strip() if len(parts) > 2 else ""
+                size_kb = 0
+                if len(parts) > 3:
+                    try:
+                        size_kb = int(parts[3].strip())
+                    except ValueError:
+                        size_kb = 0
+                prio = parts[4].strip().lower() if len(parts) > 4 else ""
+                sec = parts[5].strip().lower() if len(parts) > 5 else ""
+                summary = parts[6].strip() if len(parts) > 6 else ""
+
+                base_name = name.split(":")[0]
+
+                # Klasifikasi Paket Pengguna vs Sistem
+                is_user = False
+                if (name in manual_set or base_name in manual_set) and prio not in ("required", "important"):
+                    is_user = True
+
+                # Klasifikasi Runtime Status dari unit systemd
+                unit_candidate = alias_map.get(base_name) or alias_map.get(name) or base_name
+                status = svc_map.get(unit_candidate)
+                if not status:
+                    stripped = base_name.replace("-server", "").replace("server-", "")
+                    status = svc_map.get(stripped)
+                if not status:
+                    status = "installed"
+
+                pkgs.append({
+                    "name": name,
+                    "version": ver,
+                    "arch": arch,
+                    "size_kb": size_kb,
+                    "summary": summary,
+                    "is_user": is_user,
+                    "status": status,
+                })
+    return pkgs
+
+
+def clear_package_cache(pkg: str = "") -> str:
+    """Membersihkan cache berkas .deb unduhan untuk paket tertentu atau seluruh apt cache."""
+    cleaned = 0
+    bytes_freed = 0
+    pkg = (pkg or "").strip()
+    if pkg and re.fullmatch(r"[a-z0-9][a-z0-9+.-]+", pkg):
+        cache_dir = "/var/cache/apt/archives"
+        if os.path.isdir(cache_dir):
+            for fname in os.listdir(cache_dir):
+                if fname.startswith(f"{pkg}_") and fname.endswith(".deb"):
+                    fpath = os.path.join(cache_dir, fname)
+                    try:
+                        sz = os.path.getsize(fpath)
+                        os.unlink(fpath)
+                        cleaned += 1
+                        bytes_freed += sz
+                    except OSError:
+                        pass
+        mb_freed = bytes_freed / (1024 * 1024)
+        return f"Cache untuk paket '{pkg}' berhasil dibersihkan: {cleaned} berkas deb ({mb_freed:.2f} MB)."
+    prefix = [] if IS_ROOT else ["/usr/bin/sudo", "-n"]
+    res = _run_cmd(prefix + [PANTUAN_APT_CMD, "clean"], timeout=30)
+    if res and res.returncode == 0:
+        return "Seluruh cache paket sistem operasi (/var/cache/apt/archives) berhasil dibersihkan."
+    return "Cache paket sistem dibersihkan."
+
+
+def get_package_logs(pkg: str, lines: int = 100) -> str:
+    """Membaca riwayat aktivitas dpkg untuk paket spesifik dari /var/log/dpkg.log."""
+    pkg = (pkg or "").strip()
+    if not pkg or not re.fullmatch(r"[a-z0-9][a-z0-9+.-]+", pkg):
+        return "Nama paket tidak valid."
+    matched_lines = []
+    for path in ("/var/log/dpkg.log.1", "/var/log/dpkg.log"):
+        if not os.path.exists(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if f" {pkg}:" in line or f" {pkg} " in line:
+                        matched_lines.append(line.strip())
+        except OSError as e:
+            matched_lines.append(f"[Gagal membaca {path}: {e}]")
+    if not matched_lines:
+        return f"Belum ada riwayat aktivitas log untuk paket '{pkg}' pada berkas /var/log/dpkg.log."
+    return "\n".join(matched_lines[-lines:])
 
 
 def _apt_sudo_denied_hint(err: str) -> str:
@@ -2409,7 +3168,7 @@ _APT_RUN_LOCK = threading.Lock()
 _APT_RUNNING = False
 
 
-def _run_apt_in_thread(cfg: dict, rid: int, kind: str):
+def _run_apt_in_thread(cfg: dict, rid: int, kind: str, detail: str = ""):
     """Rekan thread utk _run_apt_inner dengan jaminan TIDAK tumpang-tindih dua apt."""
     global _APT_RUNNING
     with _APT_RUN_LOCK:
@@ -2421,13 +3180,13 @@ def _run_apt_in_thread(cfg: dict, rid: int, kind: str):
             return
         _APT_RUNNING = True
     try:
-        _run_apt_inner(cfg, rid, kind)
+        _run_apt_inner(cfg, rid, kind, detail)
     finally:
         with _APT_RUN_LOCK:
             _APT_RUNNING = False
 
 
-def _run_apt_inner(cfg: dict, rid: int, kind: str):
+def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
     """Jalankan apt update/upgrade DENGAN STREAMING live ke Dashboard.
 
     Proses dijalankan lewat wrapper pantau-apt -> script (pty), jadi outputnya
@@ -2437,7 +3196,7 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
     (kuota APT_AGENT_OUTPUT_MAX = 4MB, praktis selengkap SSH).
     """
     try:
-        cmd, timeout = _apt_cmd(kind)
+        cmd, timeout = _apt_cmd(kind, detail)
     except ValueError as e:
         print(f"[APT] {kind} (rid={rid}) -> invalid: {e}")
         http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
@@ -2582,7 +3341,11 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str):
         msg = (errmsg + ("\n\n[output sebagian]\n" + partial)) if partial else errmsg
     elif proc is not None and proc.returncode != 0:
         result_ok = False
-        msg = _apt_sudo_denied_hint(full or f"rc={proc.returncode}")
+        low_full = (full or "").lower()
+        if "no new privileges" in low_full or "permission denied" in low_full or "a password is required" in low_full or proc.returncode in (126, 127):
+            msg = _apt_sudo_denied_hint(full or f"rc={proc.returncode}")
+        else:
+            msg = full or f"Proses apt selesai dengan kode kegagalan (rc={proc.returncode})"
     else:
         result_ok = True
         msg = json.dumps({
@@ -2763,17 +3526,19 @@ def _run_shell_inner(cfg: dict, rid: int) -> None:
         http_json_request(cfg, f"/api/logs/{rid}/progress", "POST",
                           {"chunk": live, "replace": True})
 
+    is_ok = True
     if closed:
         msg = (full + "\n\n[catatan: sesi shell ditutup otomatis karena "
                       "melewati batas waktu 8 jam]").strip("\n")
     elif proc.returncode not in (0, None):
+        is_ok = False
         msg = _shell_sudo_denied_hint(full or f"shell berhenti rc={proc.returncode}")
     else:
         msg = full or "[shell ditutup tanpa output]"
 
     print(f"[SHELL] rid={rid} selesai rc={proc.returncode} ({len(msg)} byte)")
     http_json_request(cfg, f"/api/logs/{rid}/result", "POST",
-                      {"status": "success", "result": msg})
+                      {"status": "success" if is_ok else "failed", "result": msg})
 
 
 def _run_shell_in_thread(cfg: dict, rid: int) -> None:
@@ -3422,11 +4187,38 @@ def poll_log_requests(cfg: dict):
 
         if not re.fullmatch(r"[A-Za-z0-9@_.:+-]{1,100}", unit):
             result = {"status": "failed", "result": "Nama unit tidak valid"}
-        elif unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX"):
+        elif unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX", "PKG_UPGRADE", "PKG_CLEAN"):
+            detail_val = str(req.get("detail", "") or "")
             threading.Thread(
-                target=_run_apt_in_thread, args=(cfg, rid, unit), daemon=True
+                target=_run_apt_in_thread, args=(cfg, rid, unit, detail_val), daemon=True
             ).start()
             continue
+        elif unit == "PKG_LIST":
+            try:
+                pkgs = collect_installed_packages()
+                result = {"status": "success", "result": json.dumps(pkgs)}
+            except Exception as e:
+                result = {"status": "failed", "result": f"Gagal membaca daftar paket: {e}"}
+        elif unit == "SYSTEMD_LIST":
+            try:
+                units = collect_systemd_units()
+                result = {"status": "success", "result": json.dumps(units)}
+            except Exception as e:
+                result = {"status": "failed", "result": f"Gagal membaca unit systemd: {e}"}
+        elif unit == "PKG_CLEAR_CACHE":
+            try:
+                pkg_name = str(req.get("detail", "") or "").strip()
+                res_msg = clear_package_cache(pkg_name)
+                result = {"status": "success", "result": res_msg}
+            except Exception as e:
+                result = {"status": "failed", "result": f"Gagal membersihkan cache paket: {e}"}
+        elif unit == "PKG_LOGS":
+            try:
+                pkg_name = str(req.get("detail", "") or "").strip()
+                log_out = get_package_logs(pkg_name, lines)
+                result = {"status": "success", "result": log_out}
+            except Exception as e:
+                result = {"status": "failed", "result": f"Gagal membaca log paket: {e}"}
         elif unit == "SHELL":
             # Terminal Bawaan: shell root interaktif milik admin dashboard.
             threading.Thread(
@@ -3771,6 +4563,7 @@ def main():
     print(f"[INFO] Hostname    : {get_hostname()}")
     print(f"[INFO] IP Address  : {get_local_ip()}")
     print(f"[INFO] Mode        : {'root' if IS_ROOT else 'user pantau (sudo ss/wrapper)'}")
+    ensure_pantau_apt_updated()
     print()
 
     running = True

@@ -1013,27 +1013,42 @@ div[style*="position: fixed"] .card {
   margin: 0 !important;
 }
 
+#agent-ver, .topbar h2 .badge {
+  font-size: 9.5px !important;
+  padding: 1px 6px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  line-height: 1.25 !important;
+  font-weight: 500 !important;
+  vertical-align: middle !important;
+}
+.topbar h2 .badge[title^="tier-"] {
+  font-weight: 700 !important;
+  text-transform: lowercase !important;
+}
+
 </style>
 {% endblock %}
 {% block content %}
 <div class="topbar">
-  <h2>Rincian — {{ server.hostname }}
+  <h2 style="display:inline-flex;align-items:center;gap:8px;margin:0">
+    <span>Rincian — {{ server.hostname }}</span>
     {% set s_tier = server.tier|default(2) %}
     {% if s_tier == 1 %}
-      <span class="badge" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);font-size:11px;font-weight:700" title="Tier 1: Layanan Utama / Prioritas">TIER 1 (UTAMA)</span>
+      <span class="badge" style="font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:2px 6px;font-weight:700;vertical-align:middle" title="tier-1">tier-1</span>
     {% elif s_tier == 3 %}
-      <span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);font-size:11px" title="Tier 3: Layanan Sementara / Non-Kritis">TIER 3 (SEMENTARA)</span>
+      <span class="badge" style="font-size:10px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:2px 6px;vertical-align:middle" title="tier-3">tier-3</span>
     {% else %}
-      <span class="badge" style="background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);font-size:11px;font-weight:600" title="Tier 2: Layanan Pendukung / Sekunder">TIER 2 (PENDUKUNG)</span>
+      <span class="badge" style="font-size:10px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:2px 6px;font-weight:600;vertical-align:middle" title="tier-2">tier-2</span>
     {% endif %}
     {% if agent_version %}
       {% if is_agent_outdated %}
-        <span id="agent-ver" class="badge badge-warn" title="Versi agen di server klien (v{{ agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Silakan perbarui agen.">agen v{{ agent_version }} (perlu update)</span>
+        <span id="agent-ver" class="badge badge-warn" style="font-size:10px;font-weight:500;vertical-align:middle" title="Versi agen di server klien (v{{ agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Silakan perbarui agen.">agen v{{ agent_version }} (perlu update)</span>
       {% else %}
-        <span id="agent-ver" class="badge badge-info" title="Versi agen mutakhir">agen v{{ agent_version }}</span>
+        <span id="agent-ver" class="badge badge-info" style="font-size:10px;font-weight:500;vertical-align:middle" title="Versi agen mutakhir">agen v{{ agent_version }}</span>
       {% endif %}
     {% else %}
-      <span id="agent-ver" class="badge badge-muted" title="Agen belum melaporkan versi">agen tidak dikenal</span>
+      <span id="agent-ver" class="badge badge-muted" style="font-size:10px;font-weight:500;vertical-align:middle" title="Agen belum melaporkan versi">agen tidak dikenal</span>
     {% endif %}
   </h2>
   <div style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -1193,12 +1208,12 @@ div[style*="position: fixed"] .card {
         </button>
         <span class="toolbar-divider"></span>
         {% if is_online %}
-        <a href="/servers/{{ server.id }}/files" data-href="/servers/{{ server.id }}/files" target="_blank" rel="noopener" class="btn btn-ghost btn-sm btn-fm" id="hero-fm-btn" title="Jelajahi dan kelola berkas server" data-i18n-title="fm_tooltip">
+        <button type="button" class="btn btn-ghost btn-sm btn-fm" id="hero-fm-btn" onclick="openFileManagerWithAuth({{ server.id }})" title="Jelajahi dan kelola berkas server lewat antarmuka File Manager di tab baru" data-i18n-title="fm_tooltip">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
           File Manager
-        </a>
+        </button>
         {% else %}
-        <button type="button" class="btn btn-ghost btn-sm btn-fm" id="hero-fm-btn" data-href="/servers/{{ server.id }}/files" disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_file_manager_disabled">
+        <button type="button" class="btn btn-ghost btn-sm btn-fm" id="hero-fm-btn" disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — File Manager dinonaktifkan" data-i18n-title="server_offline_file_manager_disabled">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
           File Manager
         </button>
@@ -1284,8 +1299,16 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
   {% endif %}
-  <div class="apt-state" id="apt-state">
-    <span id="apt-state-text">Memeriksa pembaruan…</span>
+  <div class="apt-state {% if apt_upgradable and apt_upgradable > 0 %}apt-state-pending{% elif apt_upgradable == 0 %}apt-state-ok{% endif %}" id="apt-state">
+    <span id="apt-state-text">
+      {%- if apt_upgradable and apt_upgradable > 0 -%}
+        <b>{{ apt_upgradable }} paket</b> dapat di-upgrade{% if upgradable_packages %}: <span class="mono dim">{% for p in upgradable_packages[:8] %}{{ p.name if p is mapping else p }}{% if not loop.last %}, {% endif %}{% endfor %}{% if upgradable_packages|length > 8 %}…{% endif %}</span>{% endif %}
+      {%- elif apt_upgradable == 0 -%}
+        Semua paket OS sudah mutakhir.{% if apt_last_update %} <span class="dim">Terakhir diperiksa {{ apt_last_update[:16].replace('T', ' ') }}.</span>{% endif %}
+      {%- else -%}
+        Belum ada info paket — klik <b>Update OS</b> untuk menyegarkan.
+      {%- endif -%}
+    </span>
   </div>
   <!-- Banner Notifikasi Tugas Latar Belakang APT (Update/Upgrade OS) -->
   <div id="apt-task-active-banner" style="display:none;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:6px;padding:8px 14px;margin-top:10px;font-size:12px;color:var(--text);align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
@@ -1585,21 +1608,54 @@ div[style*="position: fixed"] .card {
                 <th>Perangkat</th>
                 <th>Kapasitas</th>
                 <th>Tipe Media</th>
-                <th>Model / Partisi</th>
+                <th>S.M.A.R.T.</th>
+                <th>Suhu</th>
+                <th>Sisa Umur</th>
+                <th>Model / Detail</th>
               </tr>
             </thead>
             <tbody>
               {% if hardware_specs and hardware_specs.disks %}
                 {% for d in hardware_specs.disks %}
+                {% set sm = d.smart if d.smart else {} %}
                 <tr>
                   <td class="mono"><strong>{{ d.name if (d.name == 'rootfs' or d.name.startswith('/')) else ('/dev/' ~ d.name) }}</strong></td>
-                  <td class="mono">{{ d.size }}</td>
+                  <td class="mono">{{ d.size or '—' }}</td>
                   <td><span class="badge {{ 'badge-success' if d.type == 'SSD' else ('badge-info' if 'LXC' in d.type else 'badge-muted') }}" style="font-size:10px">{{ d.type }}</span></td>
-                  <td style="color:var(--dim);font-size:11px">{{ d.model or 'Disk Volume' }}</td>
+                  <td>
+                    {% if sm.is_virtual %}
+                      <span class="badge badge-muted" style="font-size:10px;letter-spacing:0.2px">Virtual (Host)</span>
+                    {% elif sm.health == 'healthy' %}
+                      <span class="badge badge-success" style="font-size:10px;font-weight:600">✓ Sehat</span>
+                    {% elif sm.health == 'warning' %}
+                      <span class="badge badge-warning" style="font-size:10px;font-weight:600">⚠️ Peringatan</span>
+                    {% elif sm.health == 'critical' %}
+                      <span class="badge badge-danger" style="font-size:10px;font-weight:600">🚨 Rusak</span>
+                    {% else %}
+                      <span class="badge badge-muted" style="font-size:10px">—</span>
+                    {% endif %}
+                  </td>
+                  <td class="mono">
+                    {% if sm.temp_c %}
+                      <span style="{{ 'color:var(--danger,#ef4444);font-weight:bold' if sm.temp_c >= 65 else ('color:var(--warning,#f59e0b)' if sm.temp_c >= 55 else '') }}">{{ sm.temp_c }}°C</span>
+                    {% else %}
+                      <span style="color:var(--dim)">—</span>
+                    {% endif %}
+                  </td>
+                  <td class="mono">
+                    {% if sm.wearout_remaining is not none %}
+                      <span style="{{ 'color:var(--danger,#ef4444);font-weight:bold' if sm.wearout_remaining <= 10 else ('color:var(--warning,#f59e0b)' if sm.wearout_remaining <= 25 else '') }}">{{ sm.wearout_remaining }}%</span>
+                    {% else %}
+                      <span style="color:var(--dim)">—</span>
+                    {% endif %}
+                  </td>
+                  <td style="color:var(--dim);font-size:11px">
+                    {{ d.model or 'Disk Volume' }}{% if sm.detail and not sm.is_virtual %} <span style="font-size:10px;color:var(--dim)">({{ sm.detail }})</span>{% endif %}
+                  </td>
                 </tr>
                 {% endfor %}
               {% else %}
-                <tr><td colspan="4" class="empty-msg" style="padding:12px">Tidak ada data perangkat penyimpanan.</td></tr>
+                <tr><td colspan="7" class="empty-msg" style="padding:12px">Tidak ada data perangkat penyimpanan.</td></tr>
               {% endif %}
             </tbody>
           </table>
@@ -3316,6 +3372,59 @@ div[style*="position: fixed"] .card {
         <button type="submit" class="btn btn-primary btn-sm" id="term-unlock-submit-btn" style="display:inline-flex;align-items:center;gap:6px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
           <span id="term-unlock-btn-label">Buka</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Verifikasi Akses File Manager Root (Step-Up Auth) -->
+<div id="fm-unlock-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+  <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>Otentikasi Akses File Manager</span>
+      </h3>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeFileManagerUnlockModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+    </div>
+    
+    <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
+      Akses File Manager memberikan wewenang <strong>root penuh</strong> untuk melihat dan memanipulasi berkas sistem klien. Masukkan kata sandi akun Anda untuk membuka sesi.
+    </p>
+
+    <div id="fm-unlock-error" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 12px;margin-bottom:14px;color:var(--red);font-size:12px;line-height:1.4"></div>
+
+    <form id="fm-unlock-form" data-no-loading onsubmit="submitFileManagerUnlock(event)">
+      <div style="margin-bottom:14px">
+        <label for="fm-unlock-pwd" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Kata Sandi Akun Pengguna:</label>
+        <input type="password" id="fm-unlock-pwd" required autocomplete="current-password" placeholder="Masukkan kata sandi login Anda" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+
+      <div id="fm-unlock-totp-grp" style="display:none;margin-bottom:14px">
+        <label for="fm-unlock-totp" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Kode Otentikator 2FA (TOTP):</label>
+        <input type="text" id="fm-unlock-totp" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="6-digit kode authenticator" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;letter-spacing:2px;font-family:monospace;box-sizing:border-box">
+      </div>
+
+      <div style="margin-bottom:14px">
+        <label for="fm-unlock-duration" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Durasi Izin Sesi:</label>
+        <select id="fm-unlock-duration" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+          <option value="15" selected>15 Menit</option>
+          <option value="30">30 Menit</option>
+          <option value="60">60 Menit (1 Jam)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:18px">
+        <label for="fm-unlock-reason" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Tujuan / Alasan Akses (Opsional, untuk audit log):</label>
+        <input type="text" id="fm-unlock-reason" placeholder="Contoh: Pemeliharaan berkas konfigurasi" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeFileManagerUnlockModal()">Batal</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="fm-unlock-submit-btn" style="display:inline-flex;align-items:center;gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
+          <span id="fm-unlock-btn-label">Buka File Manager</span>
         </button>
       </div>
     </form>
@@ -5879,6 +5988,112 @@ async function submitTerminalUnlock(e) {
 }
 
 // ===================================================================
+// OTENTIKASI & KONTROL AKSES FILE MANAGER (Step-Up Auth)
+// ===================================================================
+let pendingFmSid = null;
+
+async function openFileManagerWithAuth(sid) {
+  pendingFmSid = sid;
+  try {
+    const res = await fetch(`/api/servers/${sid}/files/status`, { credentials: 'same-origin' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Gagal memeriksa status File Manager');
+
+    if (data.is_unlocked && data.remaining_seconds > 0) {
+      window.open(`/servers/${sid}/files`, '_blank');
+    } else {
+      openFileManagerUnlockModal(Boolean(data.user_has_totp));
+    }
+  } catch (err) {
+    alert('Gagal memeriksa otentikasi File Manager: ' + err.message);
+  }
+}
+
+function openFileManagerUnlockModal(userHasTotp) {
+  const modal = document.getElementById('fm-unlock-modal');
+  const errBox = document.getElementById('fm-unlock-error');
+  const pwdInput = document.getElementById('fm-unlock-pwd');
+  const totpGrp = document.getElementById('fm-unlock-totp-grp');
+  const totpInput = document.getElementById('fm-unlock-totp');
+  const reasonInput = document.getElementById('fm-unlock-reason');
+  const submitBtn = document.getElementById('fm-unlock-submit-btn');
+  const btnLabel = document.getElementById('fm-unlock-btn-label');
+
+  if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
+  if (pwdInput) pwdInput.value = '';
+  if (reasonInput) reasonInput.value = '';
+  if (totpGrp) totpGrp.style.display = userHasTotp ? 'block' : 'none';
+  if (totpInput) {
+    totpInput.value = '';
+    if (userHasTotp) totpInput.setAttribute('required', 'required');
+    else totpInput.removeAttribute('required');
+  }
+  if (submitBtn) submitBtn.disabled = false;
+  if (btnLabel) btnLabel.textContent = 'Buka File Manager';
+
+  if (modal) {
+    modal.style.display = 'flex';
+    setTimeout(() => { if (pwdInput) pwdInput.focus(); }, 50);
+  }
+}
+
+function closeFileManagerUnlockModal() {
+  const modal = document.getElementById('fm-unlock-modal');
+  if (modal) modal.style.display = 'none';
+  pendingFmSid = null;
+}
+
+async function submitFileManagerUnlock(e) {
+  if (e) e.preventDefault();
+  const sid = pendingFmSid || (typeof SID !== 'undefined' ? SID : null);
+  if (!sid) return;
+
+  const btn = document.getElementById('fm-unlock-submit-btn');
+  const btnLabel = document.getElementById('fm-unlock-btn-label');
+  const errBox = document.getElementById('fm-unlock-error');
+  const pwd = (document.getElementById('fm-unlock-pwd') || {}).value || '';
+  const totp = (document.getElementById('fm-unlock-totp') || {}).value || '';
+  const dur = parseInt((document.getElementById('fm-unlock-duration') || {}).value || '15', 10);
+  const reason = (document.getElementById('fm-unlock-reason') || {}).value || '';
+
+  if (btn) btn.disabled = true;
+  if (btnLabel) btnLabel.textContent = 'Memverifikasi…';
+  if (errBox) errBox.style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/servers/${sid}/files/unlock`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf(),
+      },
+      body: JSON.stringify({
+        password: pwd,
+        totp: totp,
+        duration_minutes: dur,
+        reason: reason,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || ('HTTP ' + res.status));
+    }
+
+    closeFileManagerUnlockModal();
+    window.open(`/servers/${sid}/files`, '_blank');
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = err.message || 'Gagal memverifikasi kata sandi';
+      errBox.style.display = 'block';
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+    if (btnLabel) btnLabel.textContent = 'Buka File Manager';
+  }
+}
+
+// ===================================================================
 // KONTROL TERMINAL BAWAAN (Root Shell Interaktif Saja)
 // ===================================================================
 async function openTerminalWithCommand(commandToRun = null, customReason = '') {
@@ -7447,6 +7662,65 @@ function renderSys(data) {
       if (elGw && hs.network.gateway) elGw.textContent = hs.network.gateway;
       const elDns = document.getElementById('spec-net-dns');
       if (elDns && hs.network.dns) elDns.textContent = hs.network.dns.join(', ');
+    }
+    if (hs.disks && Array.isArray(hs.disks)) {
+      const elDiskCount = document.getElementById('spec-disk-count');
+      if (elDiskCount) elDiskCount.textContent = hs.disks.length + ' Disks';
+      const tblDisks = document.getElementById('spec-disks-table');
+      if (tblDisks) {
+        const tbody = tblDisks.querySelector('tbody');
+        if (tbody) {
+          if (hs.disks.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-msg" style="padding:12px">Tidak ada data perangkat penyimpanan.</td></tr>';
+          } else {
+            tbody.innerHTML = hs.disks.map(d => {
+              const sm = d.smart || {};
+              const devName = (d.name === 'rootfs' || (d.name && d.name.startsWith('/'))) ? d.name : ('/dev/' + d.name);
+              let smartBadge = '<span class="badge badge-muted" style="font-size:10px">—</span>';
+              if (sm.is_virtual) {
+                smartBadge = '<span class="badge badge-muted" style="font-size:10px;letter-spacing:0.2px">Virtual (Host)</span>';
+              } else if (sm.health === 'healthy') {
+                smartBadge = '<span class="badge badge-success" style="font-size:10px;font-weight:600">✓ Sehat</span>';
+              } else if (sm.health === 'warning') {
+                smartBadge = '<span class="badge badge-warning" style="font-size:10px;font-weight:600">⚠️ Peringatan</span>';
+              } else if (sm.health === 'critical') {
+                smartBadge = '<span class="badge badge-danger" style="font-size:10px;font-weight:600">🚨 Rusak</span>';
+              }
+
+              let tempHtml = '<span style="color:var(--dim)">—</span>';
+              if (sm.temp_c !== null && sm.temp_c !== undefined) {
+                const tempColor = sm.temp_c >= 65 ? 'color:var(--danger,#ef4444);font-weight:bold' : (sm.temp_c >= 55 ? 'color:var(--warning,#f59e0b)' : '');
+                tempHtml = `<span style="${tempColor}">${sm.temp_c}°C</span>`;
+              }
+
+              let wearHtml = '<span style="color:var(--dim)">—</span>';
+              if (sm.wearout_remaining !== null && sm.wearout_remaining !== undefined) {
+                const wearColor = sm.wearout_remaining <= 10 ? 'color:var(--danger,#ef4444);font-weight:bold' : (sm.wearout_remaining <= 25 ? 'color:var(--warning,#f59e0b)' : '');
+                wearHtml = `<span style="${wearColor}">${sm.wearout_remaining}%</span>`;
+              }
+
+              const typeBadgeCls = d.type === 'SSD' ? 'badge-success' : (d.type && d.type.includes('LXC') ? 'badge-info' : 'badge-muted');
+              const detailText = (!sm.is_virtual && sm.detail) ? ` <span style="font-size:10px;color:var(--dim)">(${escapeHtml(sm.detail)})</span>` : '';
+              return `<tr>
+                <td class="mono"><strong>${escapeHtml(devName)}</strong></td>
+                <td class="mono">${escapeHtml(d.size || '—')}</td>
+                <td><span class="badge ${typeBadgeCls}" style="font-size:10px">${escapeHtml(d.type || 'Disk')}</span></td>
+                <td>${smartBadge}</td>
+                <td class="mono">${tempHtml}</td>
+                <td class="mono">${wearHtml}</td>
+                <td style="color:var(--dim);font-size:11px">${escapeHtml(d.model || 'Disk Volume')}${detailText}</td>
+              </tr>`;
+            }).join('');
+          }
+          try {
+            if (typeof _servicesTabPagination !== 'undefined' && _servicesTabPagination['spec-disks']) {
+              if (typeof _servicesTabPagination['spec-disks'].update === 'function') {
+                _servicesTabPagination['spec-disks'].update();
+              }
+            }
+          } catch (e) { /* ignore pagination update */ }
+        }
+      }
     }
   }
 

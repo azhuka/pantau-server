@@ -23,6 +23,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Optional, List, Dict, Tuple, Any
 from urllib.parse import quote
 
 from fastapi import (
@@ -41,8 +42,12 @@ from config import settings
 import security_auth
 from models import (
     AppSession, AuditLog, Base, Command, LogRequest, LoginAttempt, Metric,
-    Server, ServerExtras, ServerProblem, Service, SysSnapshotHour,
-    SystemSetting, SystemSnapshot, User,
+    ProbeLog, ProbeTarget, Server, ServerExtras, ServerProblem, Service,
+    SysSnapshotHour, SystemSetting, SystemSnapshot, User,
+)
+from prober import (
+    ProbeScheduler, execute_probe, record_probe_execution,
+    calculate_rolling_uptime, ProbeResult,
 )
 
 # ---------------------------------------------------------------------------
@@ -57,6 +62,7 @@ logger = logging.getLogger("pantau")
 
 # Secret key (resolusi saat startup)
 _SECRET_KEY: str = ""  # diisi saat startup
+_probe_scheduler: Optional[ProbeScheduler] = None
 
 # ---------------------------------------------------------------------------
 # Database
@@ -129,6 +135,44 @@ def revoke_terminal_unlock(user_id: int, server_id: int):
         _terminal_unlocks.pop((user_id, server_id), None)
 
 
+# Sesi unlock file manager berbasis step-up password / TOTP (ephemeral lease per operator per server)
+_file_manager_unlocks: dict[tuple[int, int], datetime] = {}
+_file_manager_unlocks_lock = threading.Lock()
+
+
+def is_file_manager_unlocked(user_id: int, server_id: int) -> bool:
+    with _file_manager_unlocks_lock:
+        exp = _file_manager_unlocks.get((user_id, server_id))
+        if not exp:
+            return False
+        if datetime.utcnow() > exp:
+            _file_manager_unlocks.pop((user_id, server_id), None)
+            return False
+        return True
+
+
+def get_file_manager_lease_remaining(user_id: int, server_id: int) -> int:
+    with _file_manager_unlocks_lock:
+        exp = _file_manager_unlocks.get((user_id, server_id))
+        if not exp:
+            return 0
+        rem = int((exp - datetime.utcnow()).total_seconds())
+        if rem <= 0:
+            _file_manager_unlocks.pop((user_id, server_id), None)
+            return 0
+        return rem
+
+
+def set_file_manager_unlock(user_id: int, server_id: int, duration_minutes: int):
+    with _file_manager_unlocks_lock:
+        _file_manager_unlocks[(user_id, server_id)] = datetime.utcnow() + timedelta(minutes=duration_minutes)
+
+
+def revoke_file_manager_unlock(user_id: int, server_id: int):
+    with _file_manager_unlocks_lock:
+        _file_manager_unlocks.pop((user_id, server_id), None)
+
+
 
 def _prune_expired_sessions(db: Session) -> None:
     """Hapus sesi kedaluwarsa (dipanggil ringan saat login/startup/maintanen)."""
@@ -193,12 +237,25 @@ def require_master_admin(request: Request, db: Session = Depends(get_db)) -> Use
 
 
 def require_file_manager(request: Request, db: Session = Depends(get_db)) -> User:
-    """Dependency FastAPI: khusus pengguna dengan izin File Manager."""
+    """Dependency FastAPI: khusus pengguna dengan izin File Manager dan sesi aktif terotentikasi."""
     user = get_current_user(request, db)
     if not user:
         raise HTTPException(status_code=401, detail="Silakan login terlebih dahulu")
     if not user.has_perm("can_file_manager"):
         raise HTTPException(status_code=403, detail="Akses ditolak: izin File Manager diperlukan")
+
+    sid = request.path_params.get("sid")
+    if sid:
+        try:
+            sid_int = int(sid)
+            rem = get_file_manager_lease_remaining(user.id, sid_int)
+            if rem <= 0:
+                raise HTTPException(
+                    status_code=423,
+                    detail="Sesi File Manager terkunci. Diperlukan otentikasi kata sandi untuk mengakses berkas server klien."
+                )
+        except ValueError:
+            pass
     return user
 
 
@@ -536,6 +593,8 @@ def migrate_server_extras_specs():
     existing = {c["name"] for c in inspector.get_columns("server_extras")}
     wanted = {
         "hardware_specs": "TEXT NULL",
+        "installed_packages": "MEDIUMTEXT NULL",
+        "systemd_units": "MEDIUMTEXT NULL",
     }
     missing = {k: v for k, v in wanted.items() if k not in existing}
     if not missing:
@@ -587,6 +646,55 @@ def migrate_server_groups_and_thresholds():
         db.close()
 
 
+def migrate_probing_system():
+    """Migrasi tabel probe_targets & probe_logs serta perbarui kolom server_problems untuk synthetic probing."""
+    from sqlalchemy import inspect, text
+
+    Base.metadata.create_all(bind=engine, tables=[ProbeTarget.__table__, ProbeLog.__table__])
+
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+
+    if "server_problems" in existing_tables:
+        cols = {c["name"]: c for c in inspector.get_columns("server_problems")}
+        db = SessionLocal()
+        try:
+            if "server_id" in cols and not cols["server_id"].get("nullable", True):
+                try:
+                    db.execute(text("ALTER TABLE server_problems MODIFY COLUMN server_id INT UNSIGNED NULL"))
+                    db.commit()
+                    logger.info("[startup] Kolom server_problems.server_id diubah menjadi NULLABLE")
+                except Exception as e:
+                    db.rollback()
+                    logger.warning("[startup] Gagal ubah server_problems.server_id: %s", e)
+
+            if "probe_id" not in cols:
+                try:
+                    db.execute(text("ALTER TABLE server_problems ADD COLUMN probe_id INT UNSIGNED NULL DEFAULT NULL AFTER server_id"))
+                    db.execute(text("ALTER TABLE server_problems ADD CONSTRAINT fk_problems_probe FOREIGN KEY (probe_id) REFERENCES probe_targets(id) ON DELETE CASCADE"))
+                    db.commit()
+                    logger.info("[startup] Kolom server_problems.probe_id berhasil ditambahkan")
+                except Exception as e:
+                    db.rollback()
+                    logger.warning("[startup] Gagal tambah probe_id: %s", e)
+        finally:
+            db.close()
+
+    if "probe_targets" in existing_tables:
+        cols_pt = {c["name"]: c for c in inspector.get_columns("probe_targets")}
+        if "tier" not in cols_pt:
+            db = SessionLocal()
+            try:
+                db.execute(text("ALTER TABLE probe_targets ADD COLUMN tier SMALLINT NOT NULL DEFAULT 2 AFTER server_id"))
+                db.commit()
+                logger.info("[startup] Kolom probe_targets.tier berhasil ditambahkan")
+            except Exception as e:
+                db.rollback()
+                logger.warning("[startup] Gagal tambah probe_targets.tier: %s", e)
+            finally:
+                db.close()
+
+
 def get_existing_groups_and_tags(db: Session) -> tuple[list[str], list[str]]:
     """Ambil daftar grup dan tag unik dari semua server untuk auto-complete / chips."""
     servers = db.query(Server).all()
@@ -605,7 +713,7 @@ def get_existing_groups_and_tags(db: Session) -> tuple[list[str], list[str]]:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _SECRET_KEY
+    global _SECRET_KEY, _probe_scheduler
     _SECRET_KEY = settings.resolve_secret_key()
     Base.metadata.create_all(bind=engine)
     migrate_server_groups_and_thresholds()
@@ -614,6 +722,7 @@ async def lifespan(app: FastAPI):
     migrate_service_ignored()
     migrate_log_request_input()
     migrate_api_keys()
+    migrate_probing_system()
     try:
         with SessionLocal() as sess:
             _prune_expired_sessions(sess)
@@ -626,8 +735,13 @@ async def lifespan(app: FastAPI):
         threading.Thread(target=_retention_loop, name="retention", daemon=True).start()
         logger.info("[bg-problems] evaluator aktif (tiap %ds)", BG_PROBLEM_EVAL_SECS)
 
+        _probe_scheduler = ProbeScheduler(SessionLocal)
+        _probe_scheduler.start()
+
     logger.info("[startup] Pantau Server siap")
     yield
+    if _probe_scheduler:
+        _probe_scheduler.stop()
     logger.info("[shutdown] Pantau Server berhenti")
 
 
@@ -732,6 +846,11 @@ def get_branding_settings(db: Session | None = None) -> dict:
         _BRANDING_CACHE["expires_at"] = now + 15.0  # cache memori 15 detik
         return defaults
     except Exception as e:
+        if not close_db:
+            try:
+                db.rollback()
+            except Exception:
+                pass
         logger.warning("[branding] Gagal membaca branding settings: %s", e)
         return defaults
     finally:
@@ -1020,6 +1139,10 @@ def agent_report(
         if not service_name or not (1 <= port <= 65535):
             continue
         process_name = _clean_str(svc.get("process_name"), "", 100)
+        low_svc = service_name.lower()
+        low_proc = process_name.lower() if process_name else ""
+        if any(ign in low_svc or ign in low_proc for ign in ("chrome", "chromedriver", "chromium", "selenium", "playwright", "pytest")):
+            continue
         status = svc.get("status", "down")
         if status not in ("up", "down"):
             status = "down"
@@ -1282,6 +1405,7 @@ def agent_report(
                             clean_sessions.append({
                                 "tty": _clean_str(s.get("tty"), "", 32),
                                 "from": _clean_str(s.get("from"), "", 64),
+                                "time": _clean_str(s.get("time"), "", 32),
                             })
                 clean_accounts.append({
                     "user": _clean_str(acc.get("user"), "", 64),
@@ -1471,6 +1595,10 @@ def agent_report(
         ]
         sync_server_problems(db, server, _problem_instances(server, extras, svc_data, db))
     except Exception as exc:
+        try:
+            db.rollback()
+        except Exception:
+            pass
         logger.warning("[api_report] Error rekonsiliasi insiden untuk %s: %s", server.hostname, exc)
 
     return {"ok": True}
@@ -1633,7 +1761,57 @@ def _get_hardware_specs_dict(server: Server, extra: ServerExtras | None, latest:
                                 "size": sz_str,
                                 "type": "Virtual (LXC)",
                                 "model": "Container Allocation",
+                                "smart": {
+                                    "is_virtual": True,
+                                    "health": "healthy",
+                                    "status_label": "Virtual (Host)",
+                                    "temp_c": None,
+                                    "wearout_pct": None,
+                                    "wearout_remaining": None,
+                                    "reallocated_sectors": None,
+                                    "power_on_hours": None,
+                                    "device_type": "virtual",
+                                    "serial": "",
+                                    "firmware": "",
+                                    "detail": "Virtual (Host Managed)",
+                                },
                             }]
+                plat_virt = str(plat.get("virt", "")).upper()
+                plat_type = str(plat.get("platform_type", "")).lower()
+                plat_vendor = str(plat.get("vendor", "")).upper()
+                plat_prod = str(plat.get("product", "")).upper()
+                is_node_virt = (
+                    plat_type in ("vm", "lxc")
+                    or plat_virt in ("KVM", "QEMU", "VMWARE", "XEN", "VIRTUALBOX", "LXC", "CONTAINER")
+                    or any(vk in plat_vendor for vk in ("QEMU", "VMWARE", "ORACLE", "XEN"))
+                    or any(vk in plat_prod for vk in ("QEMU", "VMWARE", "VIRTUAL"))
+                )
+
+                for d in parsed.get("disks", []):
+                    if isinstance(d, dict) and "smart" not in d:
+                        model_u = str(d.get("model", "")).upper()
+                        dtype_u = str(d.get("type", "")).upper()
+                        name_u = str(d.get("name", "")).lower()
+                        is_disk_virt = (
+                            is_node_virt
+                            or "LXC" in dtype_u
+                            or name_u == "rootfs"
+                            or any(vk in model_u for vk in ("QEMU", "VBOX", "VMWARE", "VIRTIO", "XEN", "KVM", "HARDDISK", "VIRTUAL"))
+                        )
+                        d["smart"] = {
+                            "is_virtual": is_disk_virt,
+                            "health": "healthy",
+                            "status_label": "Virtual (Host)" if is_disk_virt else "PASSED",
+                            "temp_c": None,
+                            "wearout_pct": None,
+                            "wearout_remaining": None,
+                            "reallocated_sectors": None,
+                            "power_on_hours": None,
+                            "device_type": "virtual" if is_disk_virt else "disk",
+                            "serial": "",
+                            "firmware": "",
+                            "detail": "Virtual (Host Managed)" if is_disk_virt else "Normal",
+                        }
                 return parsed
         except Exception:
             pass
@@ -1651,7 +1829,21 @@ def _get_hardware_specs_dict(server: Server, extra: ServerExtras | None, latest:
                     "name": d.get("mount", "/"),
                     "size": sz_str,
                     "type": d.get("type", "Disk"),
-                    "model": "Storage Partition"
+                    "model": "Storage Partition",
+                    "smart": {
+                        "is_virtual": True,
+                        "health": "healthy",
+                        "status_label": "Virtual (Host)",
+                        "temp_c": None,
+                        "wearout_pct": None,
+                        "wearout_remaining": None,
+                        "reallocated_sectors": None,
+                        "power_on_hours": None,
+                        "device_type": "virtual",
+                        "serial": "",
+                        "firmware": "",
+                        "detail": "Virtual (Host Managed)",
+                    },
                 })
         except Exception:
             pass
@@ -2007,12 +2199,16 @@ def _get_server_actions(db, sid: int, limit: int = 50) -> list[dict]:
             "file_chown": "Ubah Pemilik Berkas",
         }.get(a.action, a.action.replace("_", " ").capitalize())
 
-        status_cls = "up"
-        status_label = "berhasil"
         res_lower = (a.result or "").lower()
-        if "gagal" in res_lower or "failed" in res_lower or "error" in res_lower:
+        if "gagal" in res_lower or "failed" in res_lower or "error" in res_lower or "ditolak" in res_lower or "rusak" in res_lower:
             status_cls = "danger"
             status_label = "gagal"
+        elif "dikirim" in res_lower or "menunggu" in res_lower or "proses" in res_lower:
+            status_cls = "warn"
+            status_label = "diproses…"
+        else:
+            status_cls = "up"
+            status_label = "berhasil"
 
         target_str = a.target or "—"
         if ":" in target_str:
@@ -2279,6 +2475,7 @@ async def api_server_maintenance(
     user = get_current_user(request, db)
     if not user or not user.has_perm("can_manage_servers"):
         raise HTTPException(status_code=403, detail="Akses ditolak: Hanya admin atau operator berizin yang dapat mengatur mode pemeliharaan")
+    _verify_csrf_header(request)
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         raise HTTPException(status_code=404, detail="Server tidak ditemukan")
@@ -2332,6 +2529,7 @@ async def api_server_notes(
     user = get_current_user(request, db)
     if not user or not (user.is_master_admin() or user.has_perm("can_manage_servers")):
         raise HTTPException(status_code=403, detail="Akses ditolak: Hanya admin atau operator berizin yang dapat mengedit catatan server")
+    _verify_csrf_header(request)
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         raise HTTPException(status_code=404, detail="Server tidak ditemukan")
@@ -2350,9 +2548,100 @@ async def api_server_notes(
     return {"ok": True, "notes": server.notes or ""}
 
 
+@app.post("/api/servers/{sid}/systemd/{action}")
+async def api_systemd_action(
+    sid: int,
+    action: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    if not user or not user.has_perm("can_services"):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Anda tidak memiliki wewenang Layanan")
+
+    _verify_csrf_header(request)
+
+    if action not in ("restart", "start", "stop", "reload", "enable", "disable"):
+        raise HTTPException(status_code=400, detail="Aksi systemd tidak dikenal")
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    unit = str(body.get("unit") or "").strip()
+    if not unit or not re.fullmatch(r"^[a-zA-Z0-9@._:\-]{1,64}$", unit):
+        raise HTTPException(status_code=400, detail="Nama unit tidak valid")
+
+    if action == "stop" and unit.startswith(("agent_pantau", "agent-pantau")):
+        raise HTTPException(
+            status_code=400,
+            detail="Unit agen pemantau (agent_pantau) dilindungi oleh sistem keamanan dan tidak boleh dihentikan."
+        )
+
+    server, err_resp = _check_server_online(db, sid, is_json=True)
+    if err_resp:
+        return err_resp
+
+    # Cek apakah sudah ada perintah serupa yang sedang diproses
+    existing = (
+        db.query(Command)
+        .filter(
+            Command.server_id == sid,
+            Command.action == action,
+            Command.status.in_(["pending", "executing"]),
+        )
+        .all()
+    )
+    for c in existing:
+        p = json.loads(c.params) if c.params else {}
+        if p.get("service_name") == unit or p.get("process_name") == unit:
+            return {"ok": True, "detail": f"Perintah {action} unit {unit} sedang diproses oleh agen."}
+
+    cmd = Command(
+        server_id=sid,
+        action=action,
+        params=json.dumps({"service_name": unit, "process_name": unit}),
+        issued_by=user.username,
+        status="pending",
+    )
+    db.add(cmd)
+    _audit(db, user.username, "systemd_" + action, f"id={server.id} {server.hostname} unit={unit}", "berhasil")
+    db.commit()
+
+    labels = {
+        "restart": "restart",
+        "start": "menyalakan",
+        "stop": "menghentikan",
+        "reload": "reload",
+        "enable": "mengaktifkan boot",
+        "disable": "menonaktifkan boot",
+    }
+    return {"ok": True, "detail": f"Perintah {labels.get(action, action)} unit {unit} telah dikirim ke agen."}
+
+
 # ---------------------------------------------------------------------------
 # Command queue (agent polling + result)
 # ---------------------------------------------------------------------------
+def _safe_json_get(raw: str | None, key: str, default=None):
+    if not raw:
+        return default
+    try:
+        data = json.loads(raw) if isinstance(raw, str) else raw
+        return data.get(key, default) if isinstance(data, dict) else default
+    except Exception:
+        return default
+
+
+def _safe_json_loads(raw: str | None, default=None):
+    if not raw:
+        return default
+    try:
+        return json.loads(raw)
+    except Exception:
+        return default
+
+
 def _normalize_unit_for_systemctl(name: str | None) -> str | None:
     if not name:
         return name
@@ -2384,9 +2673,16 @@ def api_commands_pending(
         .all()
     )
 
-    # Self-update OTA otomatis armada agen jika versi agen lebih lama dari dashboard
+    # Self-update OTA otomatis armada agen jika versi agen lebih lama dari berkas agen dashboard
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == server.id).first()
-    if extras and extras.agent_version and _is_agent_outdated(extras.agent_version, settings.APP_VERSION):
+    target_ver = getattr(settings, "APP_VERSION", "4.5.36")
+    try:
+        _, _, latest_agent_ver = _get_agent_code_and_sha256()
+        if latest_agent_ver:
+            target_ver = latest_agent_ver
+    except Exception:
+        pass
+    if extras and extras.agent_version and _is_agent_outdated(extras.agent_version, target_ver):
         has_ota = any(c.action == "update_agent" for c in pending)
         if not has_ota:
             in_flight = (
@@ -2428,6 +2724,10 @@ def api_commands_pending(
                             pending.append(auto_cmd)
                             logger.info("[AUTO-OTA] Otomatis mendispatch self-update agen v%s ke %s (ID %s)", file_ver, server.hostname, server.id)
                     except Exception as ota_err:
+                        try:
+                            db.rollback()
+                        except Exception:
+                            pass
                         logger.warning("[AUTO-OTA] Gagal memproses auto-OTA untuk %s: %s", server.hostname, ota_err)
 
     return {
@@ -2435,10 +2735,10 @@ def api_commands_pending(
             {
                 "id": c.id,
                 "action": c.action,
-                "service_name": c.service.service_name if c.service else None,
-                "process_name": _normalize_unit_for_systemctl(c.service.process_name if c.service else (c.service.service_name if c.service else None)),
+                "service_name": c.service.service_name if c.service else (_safe_json_get(c.params, "service_name")),
+                "process_name": _normalize_unit_for_systemctl(c.service.process_name if c.service else (c.service.service_name if c.service else (_safe_json_get(c.params, "process_name")))),
                 "port": c.service.port if c.service else None,
-                "params": json.loads(c.params) if c.params else None,
+                "params": _safe_json_loads(c.params),
             }
             for c in pending
         ]
@@ -2511,6 +2811,10 @@ def api_command_result(
             )
             db.add(m)
         except Exception as e:
+            try:
+                db.rollback()
+            except Exception:
+                pass
             logger.warning("[cmd_result] Gagal menambah metrik down seketika: %s", e)
 
     # Jika aksi service start / restart sukses, segera sisipkan metrik up & tutup masalah seketika
@@ -2541,7 +2845,37 @@ def api_command_result(
                     svc_obj.ignored_reason = None
                     svc_obj.ignore_mode = None
         except Exception as e:
+            try:
+                db.rollback()
+            except Exception:
+                pass
             logger.warning("[cmd_result] Gagal update metrik/problem up seketika: %s", e)
+
+    # Sinkronkan status tindakan ke AuditLog agar rekam jejak mencatat status riil (berhasil / gagal)
+    try:
+        recent_audit = (
+            db.query(AuditLog)
+            .filter(
+                AuditLog.server_id == server.id,
+                AuditLog.created_at >= cmd.created_at - timedelta(seconds=30),
+            )
+            .order_by(AuditLog.id.desc())
+            .first()
+        )
+        if recent_audit and recent_audit.result in ("dikirim ke agen", "diproses…"):
+            if status == "success":
+                recent_audit.result = "berhasil"
+            else:
+                err_line = cmd.result.splitlines()[0].strip() if cmd.result else "eksekusi gagal"
+                if len(err_line) > 120:
+                    err_line = err_line[:117] + "…"
+                recent_audit.result = f"gagal: {err_line}"
+    except Exception as exc:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        logger.warning("[cmd_audit_sync] Gagal sinkronkan AuditLog: %s", exc)
 
     db.commit()
     return {"ok": True}
@@ -2573,9 +2907,6 @@ def compute_uptime(metrics: list[Metric]) -> dict:
         else:
             down_sec += dur
 
-    if total_sec == 0:
-        return {"uptime_pct": None, "downtime_seconds": 0, "samples": len(metrics)}
-
     # Sampel terakhir sampai sekarang
     last = metrics[-1]
     dur = (datetime.utcnow() - last.timestamp).total_seconds()
@@ -2585,6 +2916,10 @@ def compute_uptime(metrics: list[Metric]) -> dict:
             up_sec += dur
         else:
             down_sec += dur
+
+    if total_sec <= 0:
+        pct = 100.0 if last.status == "up" else 0.0
+        return {"uptime_pct": pct, "downtime_seconds": int(down_sec), "samples": len(metrics)}
 
     return {
         "uptime_pct": round((up_sec / total_sec) * 100, 2),
@@ -3053,10 +3388,12 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 "key": p.get("key", ""),
                 "is_ignored": is_ign,
                 "ignored_reason": p.get("ignored_reason"),
-                "ignored_by": p.get("ignored_by"),
+                "ignored_by": ("master-admin" if p.get("ignored_by") == "admin" else p.get("ignored_by")),
                 "started_at": p_started.isoformat() if p_started else "",
                 "started_at_str": _fmt_short_dt(p_started),
                 "durasi": dur_str,
+                "acknowledged_by": ("master-admin" if p.get("acknowledged_by") == "admin" else p.get("acknowledged_by")),
+                "acknowledged_at": p.get("acknowledged_at").isoformat() if isinstance(p.get("acknowledged_at"), datetime) else (p.get("acknowledged_at") or ""),
             }
             if is_ign:
                 problems_by_sev["ignored"].append(item)
@@ -3066,6 +3403,78 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                     problems_by_sev[sev].append(item)
                 else:
                     problems_by_sev["warning"].append(item)
+
+            # Insiden info yang diabaikan tidak lagi tampil pada kartu Insiden Terkini halaman dashboard
+            p_sev = (p.get("severity") or "info").lower()
+            if is_ign and p_sev == "info":
+                continue
+
+            all_open_problems.append(item)
+
+    # Tambahkan insiden dari Synthetic Probing mandiri (tanpa server_id)
+    standalone_probs = db.query(ServerProblem).filter(
+        ServerProblem.server_id.is_(None),
+        ServerProblem.probe_id.isnot(None),
+        ServerProblem.resolved_at.is_(None),
+    ).all()
+    if standalone_probs:
+        probes_map = {p.id: p for p in db.query(ProbeTarget).all()}
+        for sp in standalone_probs:
+            prb = probes_map.get(sp.probe_id)
+            prb_name = prb.name if prb else f"Endpoint #{sp.probe_id}"
+            is_ign = bool(sp.is_ignored)
+            p_started = sp.started_at
+            dur_str = "—"
+            if p_started:
+                diff_s = max(0, int((datetime.utcnow() - p_started).total_seconds()))
+                d = diff_s // 86400
+                h = (diff_s % 86400) // 3600
+                m = (diff_s % 3600) // 60
+                s = diff_s % 60
+                if d: dur_str = f"{d} h {h} j"
+                elif h: dur_str = f"{h} j {m} mnt"
+                elif m: dur_str = f"{m} mnt {s} dtk"
+                else: dur_str = f"{s} dtk"
+            item = {
+                "server_id": None,
+                "probe_id": sp.probe_id,
+                "hostname": f"🌐 {prb_name}",
+                "group_name": "Endpoint",
+                "tier": getattr(prb, "tier", 2) or 2 if prb else 2,
+                "severity": sp.severity or "warning",
+                "message": sp.message or "",
+                "key": sp.key or "",
+                "is_ignored": is_ign,
+                "ignored_reason": sp.ignored_reason,
+                "ignored_by": ("master-admin" if sp.ignored_by == "admin" else sp.ignored_by),
+                "started_at": p_started.isoformat() if p_started else "",
+                "started_at_str": _fmt_short_dt(p_started),
+                "durasi": dur_str,
+                "acknowledged_by": ("master-admin" if sp.acknowledged_by == "admin" else sp.acknowledged_by),
+                "acknowledged_at": sp.acknowledged_at.isoformat() if isinstance(sp.acknowledged_at, datetime) else (sp.acknowledged_at or ""),
+            }
+            if is_ign:
+                problems_by_sev["ignored"].append(item)
+                ignored_total += 1
+            else:
+                sev = item["severity"]
+                if sev == "danger":
+                    danger_total += 1
+                elif sev == "average":
+                    average_total += 1
+                elif sev == "warning":
+                    warning_total += 1
+                elif sev == "info":
+                    info_total += 1
+                if sev in problems_by_sev:
+                    problems_by_sev[sev].append(item)
+                else:
+                    problems_by_sev["warning"].append(item)
+
+            p_sev = (sp.severity or "info").lower()
+            if is_ign and p_sev == "info":
+                continue
+
             all_open_problems.append(item)
 
     sev_order = {"danger": 0, "average": 1, "warning": 2, "info": 3}
@@ -3622,13 +4031,98 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     hw_specs = _get_hardware_specs_dict(server, extra, latest_sn)
     platform_info = _classify_platform(hw_specs.get("platform", {}), getattr(server, "platform_override", None))
 
+    installed_pkgs = []
+    if extra and getattr(extra, "installed_packages", None):
+        try:
+            installed_pkgs = json.loads(extra.installed_packages) if isinstance(extra.installed_packages, str) else extra.installed_packages
+        except Exception:
+            installed_pkgs = []
+
+    upgradable_pkgs = []
+    if extra and getattr(extra, "apt_packages", None):
+        try:
+            upgradable_pkgs = json.loads(extra.apt_packages) if isinstance(extra.apt_packages, str) else extra.apt_packages
+        except Exception:
+            upgradable_pkgs = []
+
+    effective_apt_upgradable = extra.apt_upgradable if extra else 0
+    if isinstance(upgradable_pkgs, list):
+        if len(upgradable_pkgs) == 0:
+            effective_apt_upgradable = 0
+        elif not effective_apt_upgradable or effective_apt_upgradable < len(upgradable_pkgs):
+            effective_apt_upgradable = len(upgradable_pkgs)
+
+    # Jika installed_pkgs masih kosong tetapi ada paket upgradable,
+    # tampilkan paket upgradable tersebut agar tabel Packages tidak kosong
+    if not installed_pkgs and upgradable_pkgs:
+        for u in upgradable_pkgs:
+            u_name = u.get("name") if isinstance(u, dict) else str(u)
+            u_ver = u.get("version", "") if isinstance(u, dict) else ""
+            if u_name:
+                installed_pkgs.append({
+                    "name": u_name,
+                    "version": u_ver or "-",
+                    "arch": "",
+                    "size_kb": 0,
+                    "summary": "Pembaruan paket tersedia",
+                    "is_user": True,
+                    "status": "installed",
+                })
+
+    # Otomatis jadwalkan PKG_LIST jika data paket belum pernah ada
+    if extra and not extra.installed_packages:
+        recent_pkg_req = (
+            db.query(LogRequest)
+            .filter(
+                LogRequest.server_id == server.id,
+                LogRequest.unit == "PKG_LIST",
+                LogRequest.created_at > datetime.utcnow() - timedelta(minutes=5)
+            )
+            .first()
+        )
+        if not recent_pkg_req:
+            try:
+                db.add(LogRequest(server_id=server.id, unit="PKG_LIST", status="pending"))
+                db.commit()
+            except Exception:
+                db.rollback()
+
+    systemd_units_list = []
+    if extra and getattr(extra, "systemd_units", None):
+        try:
+            systemd_units_list = json.loads(extra.systemd_units) if isinstance(extra.systemd_units, str) else extra.systemd_units
+        except Exception:
+            systemd_units_list = []
+
+    # Otomatis jadwalkan SYSTEMD_LIST jika belum pernah ada data unit
+    if extra and not extra.systemd_units:
+        recent_sysd_req = (
+            db.query(LogRequest)
+            .filter(
+                LogRequest.server_id == server.id,
+                LogRequest.unit == "SYSTEMD_LIST",
+                LogRequest.created_at > datetime.utcnow() - timedelta(minutes=5)
+            )
+            .first()
+        )
+        if not recent_sysd_req:
+            try:
+                db.add(LogRequest(server_id=server.id, unit="SYSTEMD_LIST", status="pending"))
+                db.commit()
+            except Exception:
+                db.rollback()
+
     return tpl(request, "services.html", {
         "user": user, "server": server, "services": services, "commands": commands, "actions": actions,
         "agent_version": extra.agent_version if extra else None,
         "is_agent_outdated": _is_agent_outdated(extra.agent_version if extra else None, settings.APP_VERSION),
         "os_label": extra.os_label if extra else None,
         "kernel": extra.kernel if extra else None,
-        "apt_upgradable": extra.apt_upgradable if extra else None,
+        "apt_upgradable": effective_apt_upgradable,
+        "apt_last_update": extra.apt_last_update.isoformat() if (extra and extra.apt_last_update) else None,
+        "installed_packages": installed_pkgs,
+        "upgradable_packages": upgradable_pkgs,
+        "systemd_units": systemd_units_list,
         "is_online": not _server_stale(server),
         "problem_level": problem_level, "open_problems": open_problems,
         "problem_history": problem_history,
@@ -4838,6 +5332,677 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
 
 
 # ---------------------------------------------------------------------------
+# SYNTHETIC PROBING (HTTP, ICMP Ping, TCP Port)
+# ---------------------------------------------------------------------------
+async def _run_initial_probe_background(probe_id: int, p_data: dict):
+    try:
+        res = await execute_probe(p_data)
+        with SessionLocal() as sess:
+            record_probe_execution(sess, probe_id, res, datetime.utcnow())
+    except Exception as exc:
+        logger.warning("[prober] Initial probe check failed: %s", exc)
+
+
+@app.get("/probing", response_class=HTMLResponse)
+def probing_page(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+
+    servers_list = db.query(Server).order_by(Server.hostname).all()
+    servers_data = [{"id": s.id, "hostname": s.hostname, "ip_address": s.ip_address} for s in servers_list]
+
+    return tpl(request, "probing.html", {
+        "user": user,
+        "servers": servers_data,
+        "can_probing": user.has_perm("can_probing"),
+    })
+
+
+@app.get("/api/probes")
+def api_probes_list(
+    request: Request,
+    type: Optional[str] = None,
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Harap login terlebih dahulu")
+
+    query = db.query(ProbeTarget).order_by(ProbeTarget.name)
+
+    if type and type != "all":
+        query = query.filter(ProbeTarget.probe_type == type)
+    if status and status != "all":
+        if status == "paused":
+            query = query.filter(ProbeTarget.is_active == 0)
+        else:
+            query = query.filter(ProbeTarget.status == status, ProbeTarget.is_active == 1)
+    if search and search.strip():
+        s = f"%{search.strip()}%"
+        query = query.filter(or_(ProbeTarget.name.like(s), ProbeTarget.target.like(s)))
+
+    all_probes = db.query(ProbeTarget).all()
+    filtered_probes = query.all()
+
+    total = len(all_probes)
+    up_cnt = sum(1 for p in all_probes if p.status == "up" and p.is_active)
+    down_cnt = sum(1 for p in all_probes if p.status == "down" and p.is_active)
+    degraded_cnt = sum(1 for p in all_probes if p.status == "degraded" and p.is_active)
+    paused_cnt = sum(1 for p in all_probes if not p.is_active)
+
+    active_up_lats = [p.last_latency_ms for p in all_probes if p.status in ("up", "degraded") and p.last_latency_ms is not None]
+    avg_lat = round(sum(active_up_lats) / len(active_up_lats), 1) if active_up_lats else 0.0
+
+    uptimes_24 = [p.uptime_24h for p in all_probes if p.uptime_24h is not None and p.is_active]
+    avg_uptime_24h = round(sum(uptimes_24) / len(uptimes_24), 2) if uptimes_24 else 100.0
+
+    uptimes_30 = [p.uptime_30d for p in all_probes if p.uptime_30d is not None and p.is_active]
+    avg_uptime_30d = round(sum(uptimes_30) / len(uptimes_30), 2) if uptimes_30 else 100.0
+
+    servers_map = {s.id: s.hostname for s in db.query(Server).all()}
+
+    probes_out = []
+    for p in filtered_probes:
+        probes_out.append({
+            "id": p.id,
+            "name": p.name,
+            "probe_type": p.probe_type,
+            "target": p.target,
+            "port": p.port,
+            "server_id": p.server_id,
+            "server_hostname": servers_map.get(p.server_id) if p.server_id else None,
+            "tier": getattr(p, "tier", 2) or 2,
+            "interval_seconds": p.interval_seconds,
+            "timeout_seconds": p.timeout_seconds,
+            "http_method": p.http_method,
+            "http_headers": p.http_headers,
+            "http_body": p.http_body,
+            "expected_status": p.expected_status,
+            "keyword_match": p.keyword_match,
+            "ssl_verify": bool(p.ssl_verify),
+            "ssl_expiry_threshold_days": p.ssl_expiry_threshold_days,
+            "latency_threshold_ms": p.latency_threshold_ms,
+            "consecutive_threshold": p.consecutive_threshold,
+            "is_active": bool(p.is_active),
+            "status": p.status if p.is_active else "paused",
+            "last_checked_at": p.last_checked_at.isoformat() if p.last_checked_at else None,
+            "last_latency_ms": round(p.last_latency_ms, 1) if p.last_latency_ms is not None else None,
+            "last_status_code": p.last_status_code,
+            "last_error": p.last_error,
+            "ssl_expires_at": p.ssl_expires_at.isoformat() if p.ssl_expires_at else None,
+            "ssl_days_remaining": p.ssl_days_remaining,
+            "uptime_24h": round(p.uptime_24h or 100.0, 1),
+            "uptime_30d": round(p.uptime_30d or 100.0, 1),
+            "consecutive_failures": p.consecutive_failures,
+            "consecutive_successes": p.consecutive_successes,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+            "created_by": p.created_by,
+        })
+
+    return {
+        "ok": True,
+        "summary": {
+            "total": total,
+            "up": up_cnt,
+            "down": down_cnt,
+            "degraded": degraded_cnt,
+            "paused": paused_cnt,
+            "avg_latency_ms": avg_lat,
+            "avg_uptime_24h": avg_uptime_24h,
+            "avg_uptime_30d": avg_uptime_30d,
+        },
+        "probes": probes_out,
+    }
+
+
+@app.post("/api/probes")
+async def api_probe_create(
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    if user.is_viewer() or not (user.is_master_admin() or user.has_perm("can_probing")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Izin 'can_probing' diperlukan")
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Format JSON tidak valid")
+
+    name = str(body.get("name", "")).strip()
+    probe_type = str(body.get("probe_type", "")).strip().lower()
+    target = str(body.get("target", "")).strip()
+
+    if not name or len(name) < 2 or len(name) > 100:
+        raise HTTPException(status_code=400, detail="Nama probe wajib diisi (2-100 karakter)")
+    if probe_type not in ("http", "https", "ping", "tcp"):
+        raise HTTPException(status_code=400, detail="Tipe probe harus: http, https, ping, atau tcp")
+    if not target:
+        raise HTTPException(status_code=400, detail="Target URL atau Host wajib diisi")
+
+    port = body.get("port")
+    if probe_type == "tcp":
+        try:
+            port = int(port)
+            if port < 1 or port > 65535:
+                raise ValueError()
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Port TCP harus berupa angka valid (1-65535)")
+    else:
+        port = int(port) if port and str(port).isdigit() else None
+
+    server_id = body.get("server_id")
+    server_id = int(server_id) if server_id and str(server_id).isdigit() else None
+
+    interval = int(body.get("interval_seconds", 60) or 60)
+    interval = max(10, min(86400, interval))
+
+    timeout = int(body.get("timeout_seconds", 5) or 5)
+    timeout = max(1, min(60, timeout))
+
+    http_method = str(body.get("http_method", "GET")).strip().upper()
+    if http_method not in ("GET", "POST", "HEAD", "PUT"):
+        http_method = "GET"
+
+    http_headers = body.get("http_headers")
+    if isinstance(http_headers, dict):
+        http_headers = json.dumps(http_headers)
+    elif isinstance(http_headers, str) and http_headers.strip():
+        try:
+            json.loads(http_headers)
+            http_headers = http_headers.strip()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Header kustom harus berformat JSON valid")
+    else:
+        http_headers = None
+
+    http_body = body.get("http_body") or None
+    expected_status = str(body.get("expected_status", "200")).strip() or "200"
+    raw_kw = body.get("keyword_match")
+    keyword_match = str(raw_kw).strip() if (raw_kw is not None and str(raw_kw).strip() and str(raw_kw).strip().lower() != "none") else None
+    ssl_verify = 1 if body.get("ssl_verify", True) else 0
+    ssl_expiry_days = int(body.get("ssl_expiry_threshold_days", 14) or 14)
+
+    latency_threshold = int(body.get("latency_threshold_ms", 2000) or 2000)
+    consec_threshold = int(body.get("consecutive_threshold", 2) or 2)
+    tier_raw = int(body.get("tier", 2) or 2)
+    tier_val = 1 if tier_raw == 1 else (3 if tier_raw == 3 else 2)
+
+    new_probe = ProbeTarget(
+        name=name,
+        probe_type=probe_type,
+        target=target,
+        port=port,
+        server_id=server_id,
+        tier=tier_val,
+        interval_seconds=interval,
+        timeout_seconds=timeout,
+        http_method=http_method,
+        http_headers=http_headers,
+        http_body=http_body,
+        expected_status=expected_status,
+        keyword_match=keyword_match,
+        ssl_verify=ssl_verify,
+        ssl_expiry_threshold_days=ssl_expiry_days,
+        latency_threshold_ms=latency_threshold,
+        consecutive_threshold=consec_threshold,
+        is_active=1,
+        status="unknown",
+        created_at=datetime.utcnow(),
+        created_by=user.username,
+    )
+    db.add(new_probe)
+    db.commit()
+    db.refresh(new_probe)
+
+    _audit(db, user.username, "probe_add", f"Tambah endpoint pantau {probe_type.upper()}: '{name}' -> {target}", "berhasil", server_id=server_id)
+
+    # Jalankan pengecekan perdana secara asinkron
+    p_dict = {
+        "id": new_probe.id,
+        "probe_type": new_probe.probe_type,
+        "target": new_probe.target,
+        "port": new_probe.port,
+        "timeout_seconds": new_probe.timeout_seconds,
+        "latency_threshold_ms": new_probe.latency_threshold_ms,
+        "http_method": new_probe.http_method,
+        "http_headers": new_probe.http_headers,
+        "http_body": new_probe.http_body,
+        "expected_status": new_probe.expected_status,
+        "keyword_match": new_probe.keyword_match,
+        "ssl_verify": new_probe.ssl_verify,
+        "ssl_expiry_threshold_days": new_probe.ssl_expiry_threshold_days,
+    }
+    asyncio.create_task(_run_initial_probe_background(new_probe.id, p_dict))
+
+    return {
+        "ok": True,
+        "message": f"Endpoint pantau '{name}' berhasil dibuat",
+        "probe_id": new_probe.id,
+    }
+
+
+@app.get("/api/probes/open-problems")
+def api_probes_open_problems(
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Kembalikan daftar masalah aktif dari Synthetic Probing mandiri (server_id is None)."""
+    standalone_probs = (
+        db.query(ServerProblem)
+        .filter(
+            ServerProblem.server_id.is_(None),
+            ServerProblem.probe_id.isnot(None),
+            ServerProblem.resolved_at.is_(None),
+        )
+        .all()
+    )
+    if not standalone_probs:
+        return []
+    probes_map = {p.id: p for p in db.query(ProbeTarget).all()}
+    res = []
+    for sp in standalone_probs:
+        prb = probes_map.get(sp.probe_id)
+        prb_name = prb.name if prb else f"Endpoint #{sp.probe_id}"
+        p_started = sp.started_at
+        dur_str = "—"
+        if p_started:
+            diff_s = max(0, int((datetime.utcnow() - p_started).total_seconds()))
+            d = diff_s // 86400
+            h = (diff_s % 86400) // 3600
+            m = (diff_s % 3600) // 60
+            s = diff_s % 60
+            if d: dur_str = f"{d} h {h} j"
+            elif h: dur_str = f"{h} j {m} mnt"
+            elif m: dur_str = f"{m} mnt {s} dtk"
+            else: dur_str = f"{s} dtk"
+        res.append({
+            "id": sp.id,
+            "server_id": None,
+            "probe_id": sp.probe_id,
+            "probe_name": prb_name,
+            "hostname": f"🌐 {prb_name}",
+            "group_name": "Endpoint",
+            "tier": getattr(prb, "tier", 2) or 2 if prb else 2,
+            "severity": sp.severity or "warning",
+            "message": sp.message or "",
+            "key": sp.key or "",
+            "is_ignored": bool(sp.is_ignored),
+            "ignored_reason": sp.ignored_reason,
+            "ignored_by": ("master-admin" if sp.ignored_by == "admin" else sp.ignored_by),
+            "started_at": p_started.isoformat() if p_started else "",
+            "started_at_str": _fmt_short_dt(p_started),
+            "durasi": dur_str,
+            "acknowledged_by": ("master-admin" if sp.acknowledged_by == "admin" else sp.acknowledged_by),
+            "acknowledged_at": sp.acknowledged_at.isoformat() if isinstance(sp.acknowledged_at, datetime) else (sp.acknowledged_at or ""),
+        })
+    return res
+
+
+@app.get("/api/probes/{pid}")
+def api_probe_get(
+    pid: int,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    probe = db.query(ProbeTarget).filter(ProbeTarget.id == pid).first()
+    if not probe:
+        raise HTTPException(status_code=404, detail="Endpoint pantau tidak ditemukan")
+
+    servers_map = {s.id: s.hostname for s in db.query(Server).all()}
+    recent_logs = (
+        db.query(ProbeLog)
+        .filter(ProbeLog.probe_id == pid)
+        .order_by(desc(ProbeLog.checked_at))
+        .limit(50)
+        .all()
+    )
+
+    return {
+        "ok": True,
+        "probe": {
+            "id": probe.id,
+            "name": probe.name,
+            "probe_type": probe.probe_type,
+            "target": probe.target,
+            "port": probe.port,
+            "server_id": probe.server_id,
+            "server_hostname": servers_map.get(probe.server_id) if probe.server_id else None,
+            "tier": getattr(probe, "tier", 2) or 2,
+            "interval_seconds": probe.interval_seconds,
+            "timeout_seconds": probe.timeout_seconds,
+            "http_method": probe.http_method,
+            "http_headers": probe.http_headers,
+            "http_body": probe.http_body,
+            "expected_status": probe.expected_status,
+            "keyword_match": probe.keyword_match,
+            "ssl_verify": bool(probe.ssl_verify),
+            "ssl_expiry_threshold_days": probe.ssl_expiry_threshold_days,
+            "latency_threshold_ms": probe.latency_threshold_ms,
+            "consecutive_threshold": probe.consecutive_threshold,
+            "is_active": bool(probe.is_active),
+            "status": probe.status if probe.is_active else "paused",
+            "last_checked_at": probe.last_checked_at.isoformat() if probe.last_checked_at else None,
+            "last_latency_ms": round(probe.last_latency_ms, 1) if probe.last_latency_ms is not None else None,
+            "last_status_code": probe.last_status_code,
+            "last_error": probe.last_error,
+            "ssl_expires_at": probe.ssl_expires_at.isoformat() if probe.ssl_expires_at else None,
+            "ssl_days_remaining": probe.ssl_days_remaining,
+            "uptime_24h": round(probe.uptime_24h or 100.0, 1),
+            "uptime_30d": round(probe.uptime_30d or 100.0, 1),
+            "consecutive_failures": probe.consecutive_failures,
+            "consecutive_successes": probe.consecutive_successes,
+            "created_at": probe.created_at.isoformat() if probe.created_at else None,
+            "created_by": probe.created_by,
+        },
+        "recent_logs": [
+            {
+                "id": l.id,
+                "checked_at": l.checked_at.isoformat(),
+                "status": l.status,
+                "latency_ms": round(l.latency_ms, 1) if l.latency_ms is not None else None,
+                "status_code": l.status_code,
+                "error_message": l.error_message,
+            }
+            for l in recent_logs
+        ],
+    }
+
+
+@app.put("/api/probes/{pid}")
+async def api_probe_update(
+    pid: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    if user.is_viewer() or not (user.is_master_admin() or user.has_perm("can_probing")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Izin 'can_probing' diperlukan")
+
+    probe = db.query(ProbeTarget).filter(ProbeTarget.id == pid).first()
+    if not probe:
+        raise HTTPException(status_code=404, detail="Endpoint pantau tidak ditemukan")
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Format JSON tidak valid")
+
+    name = str(body.get("name", probe.name)).strip()
+    probe_type = str(body.get("probe_type", probe.probe_type)).strip().lower()
+    target = str(body.get("target", probe.target)).strip()
+
+    if not name or len(name) < 2 or len(name) > 100:
+        raise HTTPException(status_code=400, detail="Nama endpoint pantau wajib diisi (2-100 karakter)")
+    if probe_type not in ("http", "https", "ping", "tcp"):
+        raise HTTPException(status_code=400, detail="Tipe protokol harus: http, https, ping, atau tcp")
+    if not target:
+        raise HTTPException(status_code=400, detail="Target URL atau Host wajib diisi")
+
+    port = body.get("port")
+    if probe_type == "tcp":
+        try:
+            port = int(port)
+            if port < 1 or port > 65535:
+                raise ValueError()
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Port TCP harus berupa angka valid (1-65535)")
+    else:
+        port = int(port) if port and str(port).isdigit() else None
+
+    server_id = body.get("server_id")
+    server_id = int(server_id) if server_id and str(server_id).isdigit() else None
+
+    probe.name = name
+    probe.probe_type = probe_type
+    probe.target = target
+    probe.port = port
+    probe.server_id = server_id
+    probe.interval_seconds = max(10, min(86400, int(body.get("interval_seconds", probe.interval_seconds) or 60)))
+    probe.timeout_seconds = max(1, min(60, int(body.get("timeout_seconds", probe.timeout_seconds) or 5)))
+    probe.http_method = str(body.get("http_method", probe.http_method or "GET")).strip().upper()
+
+    raw_headers = body.get("http_headers")
+    if isinstance(raw_headers, dict):
+        probe.http_headers = json.dumps(raw_headers)
+    elif isinstance(raw_headers, str) and raw_headers.strip():
+        try:
+            json.loads(raw_headers)
+            probe.http_headers = raw_headers.strip()
+        except Exception:
+            raise HTTPException(status_code=400, detail="Header kustom harus berformat JSON valid")
+    else:
+        probe.http_headers = None
+
+    probe.http_body = body.get("http_body") or None
+    probe.expected_status = str(body.get("expected_status", probe.expected_status or "200")).strip() or "200"
+    raw_kw = body.get("keyword_match")
+    probe.keyword_match = str(raw_kw).strip() if (raw_kw is not None and str(raw_kw).strip() and str(raw_kw).strip().lower() != "none") else None
+    probe.ssl_verify = 1 if body.get("ssl_verify", probe.ssl_verify) else 0
+    probe.ssl_expiry_threshold_days = int(body.get("ssl_expiry_threshold_days", probe.ssl_expiry_threshold_days or 14) or 14)
+    probe.latency_threshold_ms = int(body.get("latency_threshold_ms", probe.latency_threshold_ms or 2000) or 2000)
+    probe.consecutive_threshold = int(body.get("consecutive_threshold", probe.consecutive_threshold or 2) or 2)
+    if "tier" in body:
+        tier_raw = int(body.get("tier", getattr(probe, "tier", 2) or 2) or 2)
+        probe.tier = 1 if tier_raw == 1 else (3 if tier_raw == 3 else 2)
+
+    db.commit()
+    _audit(db, user.username, "probe_edit", f"Ubah endpoint pantau #{pid} '{probe.name}' -> {probe.target}", "berhasil", server_id=probe.server_id)
+
+    return {"ok": True, "message": f"Endpoint pantau '{probe.name}' berhasil diperbarui"}
+
+
+@app.delete("/api/probes/{pid}")
+def api_probe_delete(
+    pid: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    if user.is_viewer() or not (user.is_master_admin() or user.has_perm("can_probing")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Izin 'can_probing' diperlukan")
+
+    probe = db.query(ProbeTarget).filter(ProbeTarget.id == pid).first()
+    if not probe:
+        raise HTTPException(status_code=404, detail="Endpoint pantau tidak ditemukan")
+
+    name = probe.name
+    sid = probe.server_id
+    db.delete(probe)
+    db.commit()
+    _audit(db, user.username, "probe_delete", f"Hapus endpoint pantau #{pid} '{name}'", "berhasil", server_id=sid)
+
+    return {"ok": True, "message": f"Endpoint pantau '{name}' berhasil dihapus"}
+
+
+@app.post("/api/probes/{pid}/toggle")
+def api_probe_toggle(
+    pid: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    if user.is_viewer() or not (user.is_master_admin() or user.has_perm("can_probing")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Izin 'can_probing' diperlukan")
+
+    probe = db.query(ProbeTarget).filter(ProbeTarget.id == pid).first()
+    if not probe:
+        raise HTTPException(status_code=404, detail="Endpoint pantau tidak ditemukan")
+
+    new_active = 0 if probe.is_active else 1
+    probe.is_active = new_active
+    probe.status = "unknown" if new_active else "paused"
+    if not new_active:
+        open_prob = db.query(ServerProblem).filter(
+            ServerProblem.probe_id == probe.id,
+            ServerProblem.resolved_at.is_(None),
+        ).first()
+        if open_prob:
+            open_prob.resolved_at = datetime.utcnow()
+            open_prob.resolved_note = "paused"
+
+    db.commit()
+    action_str = "diaktifkan" if new_active else "dijeda"
+    _audit(db, user.username, "probe_toggle", f"Endpoint pantau #{pid} '{probe.name}' {action_str}", "berhasil", server_id=probe.server_id)
+
+    return {"ok": True, "is_active": bool(new_active), "message": f"Endpoint pantau '{probe.name}' {action_str}"}
+
+
+@app.post("/api/probes/{pid}/test")
+async def api_probe_test_now(
+    pid: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    _verify_csrf_header(request)
+    if user.is_viewer():
+        raise HTTPException(status_code=403, detail="Akses ditolak")
+
+    probe = db.query(ProbeTarget).filter(ProbeTarget.id == pid).first()
+    if not probe:
+        raise HTTPException(status_code=404, detail="Endpoint pantau tidak ditemukan")
+
+    p_data = {
+        "id": probe.id,
+        "probe_type": probe.probe_type,
+        "target": probe.target,
+        "port": probe.port,
+        "timeout_seconds": probe.timeout_seconds,
+        "latency_threshold_ms": probe.latency_threshold_ms,
+        "http_method": probe.http_method,
+        "http_headers": probe.http_headers,
+        "http_body": probe.http_body,
+        "expected_status": probe.expected_status,
+        "keyword_match": probe.keyword_match,
+        "ssl_verify": probe.ssl_verify,
+        "ssl_expiry_threshold_days": probe.ssl_expiry_threshold_days,
+    }
+
+    res = await execute_probe(p_data)
+    now = datetime.utcnow()
+    record_probe_execution(db, probe.id, res, now)
+    _audit(db, user.username, "probe_test", f"Uji langsung probe #{pid} '{probe.name}' -> {res.status.upper()}", "berhasil", server_id=probe.server_id)
+
+    return {
+        "ok": True,
+        "result": res.to_dict(),
+        "probe": {
+            "status": probe.status,
+            "last_latency_ms": probe.last_latency_ms,
+            "last_status_code": probe.last_status_code,
+            "last_error": probe.last_error,
+            "uptime_24h": probe.uptime_24h,
+            "uptime_30d": probe.uptime_30d,
+        },
+    }
+
+
+@app.post("/api/probes/test-adhoc")
+async def api_probe_test_adhoc(
+    request: Request,
+    user: User = Depends(require_user),
+):
+    _verify_csrf_header(request)
+    if user.is_viewer():
+        raise HTTPException(status_code=403, detail="Akses ditolak")
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Format JSON tidak valid")
+
+    target = str(body.get("target", "")).strip()
+    if not target:
+        raise HTTPException(status_code=400, detail="Target URL atau Host wajib diisi")
+
+    res = await execute_probe(body)
+    return {
+        "ok": True,
+        "result": res.to_dict(),
+    }
+
+
+@app.get("/api/probes/{pid}/history")
+def api_probe_history(
+    pid: int,
+    limit: int = 100,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    probe = db.query(ProbeTarget).filter(ProbeTarget.id == pid).first()
+    if not probe:
+        raise HTTPException(status_code=404, detail="Probe target tidak ditemukan")
+
+    limit = max(10, min(500, limit))
+    logs = (
+        db.query(ProbeLog)
+        .filter(ProbeLog.probe_id == pid)
+        .order_by(desc(ProbeLog.checked_at))
+        .limit(limit)
+        .all()
+    )
+
+    log_list = []
+    latencies = []
+    for l in logs:
+        if l.latency_ms is not None:
+            latencies.append(l.latency_ms)
+        log_list.append({
+            "id": l.id,
+            "checked_at": l.checked_at.isoformat(),
+            "status": l.status,
+            "latency_ms": round(l.latency_ms, 1) if l.latency_ms is not None else None,
+            "status_code": l.status_code,
+            "error_message": l.error_message,
+        })
+
+    avg_lat = round(sum(latencies) / len(latencies), 1) if latencies else None
+    min_lat = round(min(latencies), 1) if latencies else None
+    max_lat = round(max(latencies), 1) if latencies else None
+
+    chart_points = [
+        {
+            "t": l["checked_at"],
+            "lat": l["latency_ms"],
+            "status": l["status"],
+            "code": l["status_code"],
+        }
+        for l in reversed(log_list)
+    ]
+
+    return {
+        "ok": True,
+        "probe": {
+            "id": probe.id,
+            "name": probe.name,
+            "probe_type": probe.probe_type,
+            "target": probe.target,
+            "port": probe.port,
+            "status": probe.status,
+            "uptime_24h": probe.uptime_24h,
+            "uptime_30d": probe.uptime_30d,
+        },
+        "stats": {
+            "avg_latency_ms": avg_lat,
+            "min_latency_ms": min_lat,
+            "max_latency_ms": max_lat,
+            "total_samples": len(log_list),
+        },
+        "chart": chart_points,
+        "logs": log_list,
+    }
+
+
+
+# ---------------------------------------------------------------------------
 # METRICS
 # ---------------------------------------------------------------------------
 # Halaman Metrik tidak lagi terpisah: seluruh data metrik per-layanan sudah
@@ -5069,7 +6234,7 @@ def api_system_status(user: User = Depends(require_user), db: Session = Depends(
 VALID_UNIT_RE = re.compile(r"^[A-Za-z0-9@_.:+-]{1,100}$")
 # Unit log khusus OS: bisa butuh jawaban admin saat berjalan (mode interaktif),
 # jadi tidak boleh dianggap "stale" seperti permintaan log biasa.
-APT_UNITS = ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX")
+APT_UNITS = ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX", "PKG_UPGRADE", "PKG_CLEAN")
 # Terminal Bawaan: shell root interaktif di pty. Bukan "unit log" - lives
 # sampai admin menutupnya, dan input dialirkan terus-menerus.
 SHELL_UNIT = "SHELL"
@@ -5144,6 +6309,11 @@ def get_global_thresholds(db: Session | None = None) -> dict:
                         pass
             return res
     except Exception as e:
+        if not close_db:
+            try:
+                db.rollback()
+            except Exception:
+                pass
         logger.warning("[thresholds] Gagal membaca global thresholds: %s", e)
     finally:
         if close_db:
@@ -5196,6 +6366,8 @@ def _quiet_secs_for(key: str) -> int:
         return 0   # Pemulihan layanan langsung seketika tanpa jeda penahanan
     if key == "agent_conflict":
         return 120  # Pertahankan peringatan konflik setidaknya 2 menit setelah stabil
+    if key.startswith("ssh_active_session:"):
+        return 0   # Sesi SSH remote ditutup seketika saat user logout
     return 0
 
 
@@ -5615,6 +6787,202 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                     "python3 /opt/pantau/agent/agent_pantau.py --version"
                 ]
             }, ensure_ascii=False)
+
+        # 12. Sesi Remote SSH Aktif (INFO)
+        if key.startswith("ssh_active_session"):
+            user = kwargs.get("user") or "unknown"
+            from_ip = kwargs.get("from_ip") or kwargs.get("source") or "unknown"
+            tty = kwargs.get("tty") or "-"
+            login_time = kwargs.get("login_time") or "-"
+            penyebab = f"Pengguna '{user}' sedang aktif terhubung ke server {srv.hostname} via remote SSH dari IP {from_ip} pada terminal {tty}"
+            penyebab_en = f"User '{user}' is actively connected to server {srv.hostname} via remote SSH from IP {from_ip} on terminal {tty}"
+            if login_time and login_time != "-":
+                penyebab += f" sejak {login_time}."
+                penyebab_en += f" since {login_time}."
+            else:
+                penyebab += "."
+                penyebab_en += "."
+
+            clean_tty_sub = tty.replace("pts/", "").replace("/dev/", "") if tty and tty != "-" else ""
+            return json.dumps({
+                "diagnosa": f"Sesi Remote SSH Aktif ({user}@{from_ip})",
+                "diagnosa_en": f"Active Remote SSH Session ({user}@{from_ip})",
+                "penyebab": penyebab,
+                "penyebab_en": penyebab_en,
+                "dampak": "Informasi keamanan dan telemetri aktivitas remote server. Tidak ada gangguan layanan jika akses ini sah.",
+                "dampak_en": "Security telemetry and remote access tracking. No service disruption if access is authorized.",
+                "data_teknis": {
+                    "user": user,
+                    "client_ip": from_ip,
+                    "tty": tty,
+                    "login_time": login_time,
+                    "server_hostname": srv.hostname,
+                    "server_ip": srv.ip_address,
+                    "waktu_deteksi": now_str,
+                },
+                "rekomendasi": [
+                    f"Pastikan login remote oleh pengguna '{user}' dari {from_ip} merupakan aktivitas administratif sah.",
+                    "Periksa aktivitas proses sesi melalui perintah: who atau w",
+                    f"Bila sesi mencurigakan atau tidak diizinkan, putuskan segera: sudo pkill -u {user}" + (f" atau sudo pkill -t {clean_tty_sub}" if clean_tty_sub else ""),
+                    "Periksa riwayat log login SSH di tab Logs atau via: sudo journalctl -u ssh -n 50 --no-pager"
+                ],
+                "rekomendasi_en": [
+                    f"Ensure remote login by user '{user}' from {from_ip} is an authorized administrative activity.",
+                    "Inspect active processes of this session using: who or w",
+                    f"If the session is unauthorized, terminate it immediately: sudo pkill -u {user}" + (f" or sudo pkill -t {clean_tty_sub}" if clean_tty_sub else ""),
+                    "Inspect SSH authentication log in the Logs tab or via: sudo journalctl -u ssh -n 50 --no-pager"
+                ],
+                "perintah_diagnosa": [
+                    "who",
+                    f"w {user}",
+                    "sudo journalctl -u ssh -n 30 --no-pager",
+                    f"sudo pkill -t {clean_tty_sub}" if clean_tty_sub else f"sudo pkill -u {user}"
+                ]
+            }, ensure_ascii=False)
+
+        # 11. S.M.A.R.T. / NVMe Kerusakan Kritis (Drive Failing)
+        if key.startswith("disk_smart_failing"):
+            disk = kwargs.get("disk") or (key.split(":", 1)[1] if ":" in key else "drive")
+            smart = kwargs.get("smart") or {}
+            detail = smart.get("detail") or "Kerusakan integritas hardware"
+            return json.dumps({
+                "diagnosa": f"Kerusakan Kritis S.M.A.R.T. Drive {disk}",
+                "diagnosa_en": f"Critical S.M.A.R.T. Failure on Drive {disk}",
+                "penyebab": f"Drive {disk} melaporkan status kegagalan (FAILING/CRITICAL): {detail}. Kerusakan fisik atau sektor bad sektoral melampaui toleransi batas pabrikan.",
+                "penyebab_en": f"Drive {disk} reports failing/critical health status: {detail}. Physical damage or bad sector count exceeds manufacturer threshold.",
+                "dampak": "Risiko kehilangan data permanen (data loss), silent corruption, dan kernel I/O crash.",
+                "dampak_en": "High risk of catastrophic data loss, silent corruption, and kernel I/O panic.",
+                "data_teknis": {
+                    "disk": disk,
+                    "smart_health": smart.get("health"),
+                    "smart_detail": detail,
+                    "serial": smart.get("serial"),
+                    "temp_c": smart.get("temp_c"),
+                    "reallocated_sectors": smart.get("reallocated_sectors"),
+                    "server_hostname": srv.hostname,
+                    "server_ip": srv.ip_address,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    f"Segera lakukan pencadangan data (backup) dari drive {disk} ke penyimpanan eksternal/remote.",
+                    f"Jalankan uji diagnostik: sudo smartctl -H -A /dev/{disk}",
+                    f"Cek riwayat galat drive: sudo smartctl -l error /dev/{disk}",
+                    f"Segera ganti fisik drive {disk} dengan unit baru."
+                ],
+                "rekomendasi_en": [
+                    f"Immediately back up all data from drive {disk} to an external or remote target.",
+                    f"Run diagnostic test: sudo smartctl -H -A /dev/{disk}",
+                    f"Inspect drive error log: sudo smartctl -l error /dev/{disk}",
+                    f"Replace physical drive {disk} immediately."
+                ],
+                "perintah_diagnosa": [
+                    f"sudo smartctl -H -A /dev/{disk}",
+                    f"sudo smartctl -l error /dev/{disk}",
+                    f"sudo dmesg -T | grep -E 'I/O error|ata[0-9]|nvme[0-9]|sd[a-z]'"
+                ]
+            }, ensure_ascii=False)
+
+        # 12. S.M.A.R.T. / NVMe Suhu Terlalu Panas (Drive Overheating)
+        if key.startswith("disk_smart_temp"):
+            disk = kwargs.get("disk") or (key.split(":", 1)[1] if ":" in key else "drive")
+            temp_c = kwargs.get("temp_c")
+            return json.dumps({
+                "diagnosa": f"Suhu Drive {disk} Terlalu Tinggi ({temp_c}°C)",
+                "diagnosa_en": f"Overheating Temperature on Drive {disk} ({temp_c}°C)",
+                "penyebab": f"Sensor suhu drive {disk} mendeteksi panas {temp_c}°C, melampaui batas aman operasional (< 60°C).",
+                "penyebab_en": f"Drive {disk} temperature sensor measured {temp_c}°C, exceeding standard operational limits (< 60°C).",
+                "dampak": "Thermal throttling memperlambat kecepatan baca/tulis dan mempercepat keausan memori flash atau motor cakram magnetik.",
+                "dampak_en": "Thermal throttling degrades read/write throughput and accelerates permanent component wear.",
+                "data_teknis": {
+                    "disk": disk,
+                    "temp_c": temp_c,
+                    "server_hostname": srv.hostname,
+                    "server_ip": srv.ip_address,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    "Periksa sirkulasi udara (airflow) dan kebersihan pendingin chassis server.",
+                    "Pastikan kipas pendingin casing dan server berjalan pada RPM normal.",
+                    f"Periksa sensor temperatur sistem: sensors atau sudo smartctl -A /dev/{disk}"
+                ],
+                "rekomendasi_en": [
+                    "Check chassis airflow, fan dust filters, and heat sinks.",
+                    "Verify server cooling fans are spinning at nominal RPM.",
+                    f"Check temperature sensors: sensors or sudo smartctl -A /dev/{disk}"
+                ],
+                "perintah_diagnosa": [
+                    f"sudo smartctl -A /dev/{disk} | grep -i temp",
+                    "sensors",
+                    "sudo ipmitool sdr type Temperature 2>/dev/null || true"
+                ]
+            }, ensure_ascii=False)
+
+        # 13. S.M.A.R.T. / NVMe Sisa Umur Flash Menipis (Drive Wearout)
+        if key.startswith("disk_smart_wear"):
+            disk = kwargs.get("disk") or (key.split(":", 1)[1] if ":" in key else "drive")
+            rem = kwargs.get("remaining", 0)
+            return json.dumps({
+                "diagnosa": f"Sisa Umur Drive SSD/NVMe {disk} Menipis ({rem}%)",
+                "diagnosa_en": f"Low Wearout Endurance Life on Drive {disk} ({rem}% Remaining)",
+                "penyebab": f"Ketahanan sel flash NAND pada drive {disk} hampir habis (sisa umur {rem}%). Beban penulisan TBW telah mendekati kapasitas desain pabrikan.",
+                "penyebab_en": f"NAND flash endurance on drive {disk} is nearly exhausted ({rem}% remaining). Write endurance has approached manufacturer TBW rating.",
+                "dampak": "Saat sisa umur mencapai 0%, SSD akan mengunci ke mode read-only atau mengalami kegagalan penulisan permanen.",
+                "dampak_en": "Once endurance hits 0%, SSD may lock into read-only mode or suffer write block exhaustion.",
+                "data_teknis": {
+                    "disk": disk,
+                    "remaining_pct": rem,
+                    "server_hostname": srv.hostname,
+                    "server_ip": srv.ip_address,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    f"Jadwalkan penggantian drive {disk} dengan unit SSD/NVMe baru.",
+                    "Pastikan backup berkala berjalan dengan baik.",
+                    f"Cek total byte penulisan: sudo nvme smart-log /dev/{disk} 2>/dev/null || sudo smartctl -A /dev/{disk}"
+                ],
+                "rekomendasi_en": [
+                    f"Schedule proactive replacement of drive {disk} with a new SSD/NVMe unit.",
+                    "Verify regular backup routines are operational.",
+                    f"Inspect total bytes written: sudo nvme smart-log /dev/{disk} 2>/dev/null || sudo smartctl -A /dev/{disk}"
+                ],
+                "perintah_diagnosa": [
+                    f"sudo nvme smart-log /dev/{disk} -o json 2>/dev/null || sudo smartctl -A /dev/{disk}",
+                ]
+            }, ensure_ascii=False)
+
+        # 14. S.M.A.R.T. Sektor Rusak (Reallocated Sectors)
+        if key.startswith("disk_smart_sectors"):
+            disk = kwargs.get("disk") or (key.split(":", 1)[1] if ":" in key else "drive")
+            realloc = kwargs.get("reallocated", 0)
+            return json.dumps({
+                "diagnosa": f"Drive {disk} Mendeteksi Sektor Rusak ({realloc} Sektor)",
+                "diagnosa_en": f"Drive {disk} Detected Bad Sectors ({realloc} Reallocated)",
+                "penyebab": f"Drive {disk} telah memetakan ulang {realloc} sektor fisik yang rusak ke blok cadangan (Reallocated Sector Count).",
+                "penyebab_en": f"Drive {disk} reallocated {realloc} corrupted physical sectors to spare blocks.",
+                "dampak": "Bila jumlah sektor rusak terus bertambah, drive berada di ambang kegagalan mekanik/permukaan piringan atau blok memori.",
+                "dampak_en": "If reallocated sectors continue to increment, the drive is nearing complete mechanical or media failure.",
+                "data_teknis": {
+                    "disk": disk,
+                    "reallocated_sectors": realloc,
+                    "server_hostname": srv.hostname,
+                    "server_ip": srv.ip_address,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    f"Amati apakah nilai sektor rusak bertambah setiap hari.",
+                    f"Siapkan unit pengganti drive {disk} sebelum terjadi kegagalan total.",
+                    f"Periksa status SMART: sudo smartctl -A /dev/{disk}"
+                ],
+                "rekomendasi_en": [
+                    "Observe whether bad sector count continues to grow day-by-day.",
+                    f"Prepare a replacement drive {disk} before catastrophic failure.",
+                    f"Check SMART status: sudo smartctl -A /dev/{disk}"
+                ],
+                "perintah_diagnosa": [
+                    f"sudo smartctl -A /dev/{disk} | grep -E 'Reallocated|Pending|Uncorrectable'",
+                ]
+            }, ensure_ascii=False)
+
 
     except Exception as e:
         logger.warning("[CONTEXT] Gagal menyusun konteks masalah %s: %s", key, e)
@@ -6091,6 +7459,114 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                          "message": f"{extras.apt_upgradable} paket menunggu upgrade",
                          "tip": APT_TIP,
                          "context": _build_problem_context("apt_updates", srv, upgradable=extras.apt_upgradable)})
+
+        # Evaluasi Kesehatan Drive S.M.A.R.T. / NVMe
+        if getattr(extras, "hardware_specs", None):
+            try:
+                hw = json.loads(extras.hardware_specs) if isinstance(extras.hardware_specs, str) else extras.hardware_specs
+                for disk in (hw.get("disks") or []):
+                    if not isinstance(disk, dict):
+                        continue
+                    dname = str(disk.get("name") or "").strip()
+                    if not dname or disk.get("is_virtual"):
+                        continue
+                    smart = disk.get("smart")
+                    if not smart or not isinstance(smart, dict) or smart.get("is_virtual"):
+                        continue
+
+                    health = smart.get("health")
+                    temp_c = smart.get("temp_c")
+                    wear_pct = smart.get("wearout_pct")
+                    wear_rem = smart.get("wearout_remaining")
+                    realloc = smart.get("reallocated_sectors") or 0
+
+                    # 1. Drive Failing / Kerusakan S.M.A.R.T.
+                    if health == "critical" or smart.get("status_label") == "CRITICAL":
+                        crit_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                        inst.append({
+                            "key": f"disk_smart_failing:{dname}",
+                            "severity": crit_sev,
+                            "message": f"Kesehatan Drive {dname} KRITIS: {smart.get('detail') or 'S.M.A.R.T. Melaporkan Kerusakan Hardware'}",
+                            "tip": f"Segera amankan/cadangkan data server dan siapkan unit pengganti untuk drive {dname}. S.M.A.R.T. mendeteksi kegagalan fatal integritas drive.",
+                            "context": _build_problem_context("disk_smart_failing", srv, disk=dname, smart=smart, severity=crit_sev),
+                        })
+
+                    # 2. Overheating Drive (Suhu Tinggi >= 65°C)
+                    elif temp_c and temp_c >= 65:
+                        temp_sev = "danger" if (tier == 1 and temp_c >= 75) else "warning"
+                        inst.append({
+                            "key": f"disk_smart_temp:{dname}",
+                            "severity": temp_sev,
+                            "message": f"Suhu Drive {dname} Terlalu Tinggi: {temp_c}°C (Batas Aman < 60°C)",
+                            "tip": f"Periksa aliran ventilasi udara dan kinerja kipas pendingin chassis server klien. Suhu berlebih mempercepat degradasi drive {dname}.",
+                            "context": _build_problem_context("disk_smart_temp", srv, disk=dname, temp_c=temp_c, smart=smart, severity=temp_sev),
+                        })
+
+                    # 3. Sisa Umur SSD / NVMe Menipis (Wearout >= 90% atau Sisa Umur <= 10%)
+                    elif (wear_pct is not None and wear_pct >= 90) or (wear_rem is not None and wear_rem <= 10):
+                        rem_val = wear_rem if wear_rem is not None else (100 - wear_pct)
+                        wear_sev = "danger" if (tier == 1 and rem_val <= 3) else "warning"
+                        inst.append({
+                            "key": f"disk_smart_wear:{dname}",
+                            "severity": wear_sev,
+                            "message": f"Sisa Umur Drive SSD/NVMe {dname} Menipis: {rem_val}% tersisa",
+                            "tip": f"Memori flash drive {dname} mendekati batas total daya tahan tulis TBW (Terabytes Written). Jadwalkan penggantian drive.",
+                            "context": _build_problem_context("disk_smart_wear", srv, disk=dname, remaining=rem_val, smart=smart, severity=wear_sev),
+                        })
+
+                    # 4. Sektor Rusak / Reallocated Sectors Tinggi (> 50 sektor)
+                    elif realloc > 50:
+                        inst.append({
+                            "key": f"disk_smart_sectors:{dname}",
+                            "severity": "warning",
+                            "message": f"Drive {dname} Mendeteksi {realloc} Sektor Rusak (Reallocated Sectors)",
+                            "tip": f"Terdapat sektor fisik yang rusak dan telah dialihkan ke blok cadangan pada drive {dname}. Pantau stabilitas I/O disk.",
+                            "context": _build_problem_context("disk_smart_sectors", srv, disk=dname, reallocated=realloc, smart=smart, severity="warning"),
+                        })
+            except Exception as e:
+                logger.debug("Gagal evaluasi disk SMART untuk server %s: %s", srv.id, e)
+
+        # Deteksi sesi remote SSH aktif dari telemetri akun/who (INFO)
+        if getattr(extras, "accounts", None):
+            try:
+                acc_list = json.loads(extras.accounts) if isinstance(extras.accounts, str) else extras.accounts
+                if isinstance(acc_list, list):
+                    for acc in acc_list:
+                        u_name = str(acc.get("user") or "unknown").strip()
+                        for s in (acc.get("sessions") or []):
+                            if not isinstance(s, dict):
+                                continue
+                            raw_from = str(s.get("from") or "").strip()
+                            r_from = raw_from.strip("()")
+                            r_tty = str(s.get("tty") or "").strip()
+                            r_time = str(s.get("time") or "").strip()
+
+                            # Deteksi koneksi remote SSH:
+                            # Sesi remote memiliki IP klien atau hostname remote di bagian 'from'.
+                            # Filter sesi lokal: string kosong, ":0", ":1" (display X11 lokal), atau "local"
+                            if r_from and not r_from.startswith(":") and not r_from.lower().startswith("local"):
+                                clean_tty_key = r_tty.replace("/", "_") if r_tty else "ssh"
+                                clean_from_key = re.sub(r"[^a-zA-Z0-9_\.:-]", "_", r_from)
+                                sess_key = f"ssh_active_session:{u_name}:{clean_tty_key}:{clean_from_key}"[:150]
+
+                                tty_disp = f" ({r_tty})" if r_tty else ""
+                                time_disp = f" sejak {r_time}" if r_time else ""
+                                inst.append({
+                                    "key": sess_key,
+                                    "severity": "info",
+                                    "message": f"Sesi remote SSH aktif: user '{u_name}' dari {r_from}{tty_disp}",
+                                    "tip": f"Pengguna '{u_name}' sedang aktif terhubung ke server klien via remote SSH dari {r_from}{tty_disp}{time_disp}. Periksa aktivitas sesi melalui tab Akun atau log autentikasi.",
+                                    "context": _build_problem_context(
+                                        "ssh_active_session",
+                                        srv,
+                                        user=u_name,
+                                        from_ip=r_from,
+                                        tty=r_tty,
+                                        login_time=r_time,
+                                    ),
+                                })
+            except Exception as e:
+                logger.debug("Gagal evaluasi ssh_active_session untuk server %s: %s", srv.id, e)
         sec = _parse_extras_security(extras)
         if sec:
             failed = int(sec.get("failed") or 0)
@@ -6279,12 +7755,17 @@ def _problem_component(key: str) -> str:
     if key.startswith("disk_usage:") or key.startswith("disk_high:") or key.startswith("disk_critical:") or key.startswith("disk_ro:"):
         mount = key.split(":", 1)[1] if ":" in key else ""
         return f"Penyimpanan ({mount})" if mount else "Penyimpanan (Disk)"
+    if key.startswith("disk_smart_"):
+        dev = key.split(":", 1)[1] if ":" in key else ""
+        return f"Drive ({dev})" if dev else "Penyimpanan (SMART)"
     if key in ("security_danger", "failed_logins"):
         return "Keamanan (SSH)"
     if key == "apt_updates":
         return "Paket OS (APT)"
     if key == "agent_conflict":
         return "Jaringan / IP Agen"
+    if key.startswith("ssh_active_session:"):
+        return "Sesi Remote (SSH)"
     return "Sistem"
 
 
@@ -6302,7 +7783,7 @@ def _problem_row2dict(row) -> dict:
         "durasi": _fmt_duration(row.started_at, end if end else datetime.utcnow()),
         "is_ignored": bool(getattr(row, "is_ignored", 0)),
         "ignored_until": getattr(row, "ignored_until", None),
-        "ignored_by": getattr(row, "ignored_by", None),
+        "ignored_by": ("master-admin" if getattr(row, "ignored_by", None) == "admin" else getattr(row, "ignored_by", None)),
         "ignored_reason": getattr(row, "ignored_reason", None),
         "ignore_mode": getattr(row, "ignore_mode", None),
         "context": getattr(row, "context", None),
@@ -6345,6 +7826,9 @@ def _enrich_problems_for_ui(open_problems, services, extra, user_or_role="viewer
             r["action"] = "agent_update_cmd"
         elif r["key"] == "apt_updates":
             r["action"] = "apt_update" if can_apt else None
+        elif r["key"].startswith("ssh_active_session:"):
+            r["action"] = "inspect_sessions"
+            r["log_unit"] = "AUTH"
         else:
             r["action"] = None
 
@@ -6440,7 +7924,10 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 s.ignore_mode = None
             svc_map[s.service_name] = s
     except Exception:
-        pass
+        try:
+            db.rollback()
+        except Exception:
+            pass
 
     for p in instances:
         quiet = _quiet_secs_for(p["key"])
@@ -6643,7 +8130,7 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             ServerProblem.resolved_at.is_(None),
         ).all()
     ):
-        if row.key in current_keys:
+        if row.key in current_keys or row.key.startswith("probe_failed:") or row.probe_id is not None:
             continue
 
         # Jika masalah terkait layanan yang sudah dihapus/tidak ada lagi di daftar pantau server
@@ -6666,9 +8153,16 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 row.resolved_note = "server_online"
             elif row.key.startswith("service_down:"):
                 row.resolved_note = "service_up"
+            elif row.key.startswith("ssh_active_session:"):
+                row.resolved_note = "session_closed"
             else:
                 row.resolved_note = "auto" if quiet > 0 else "resolved"
-            audit_msg = f"{srv.hostname}: server kembali online dan aktif melapor" if row.key == "agent_stale" else f"{srv.hostname}: masalah '{row.message}' telah selesai"
+            if row.key == "agent_stale":
+                audit_msg = f"{srv.hostname}: server kembali online dan aktif melapor"
+            elif row.key.startswith("ssh_active_session:"):
+                audit_msg = f"{srv.hostname}: sesi remote SSH telah ditutup ({row.message})"
+            else:
+                audit_msg = f"{srv.hostname}: masalah '{row.message}' telah selesai"
             try:
                 _audit(db, "sistem", "masalah_selesai", audit_msg, "selesai", server_id=srv.id)
             except Exception:
@@ -6797,6 +8291,31 @@ def problems_aggregate(db):
             ServerProblem.resolved_at >= cutoff_24,
         ).all():
             resolved_list.append(_agg_row(srv, r, counts))
+
+    # Masukkan masalah dari Synthetic Probing mandiri (tanpa server_id)
+    standalone_probs = db.query(ServerProblem).filter(
+        ServerProblem.server_id.is_(None),
+        ServerProblem.probe_id.isnot(None),
+    ).all()
+    if standalone_probs:
+        probes_map = {p.id: p for p in db.query(ProbeTarget).all()}
+        for r in standalone_probs:
+            prb = probes_map.get(r.probe_id)
+            prb_name = prb.name if prb else f"Probe #{r.probe_id}"
+            d = _problem_row2dict(r)
+            d.update({
+                "server_id": None,
+                "hostname": f"🌐 {prb_name}",
+                "group_name": "Probing",
+                "tier": getattr(prb, "tier", 2) or 2 if prb else 2,
+                "tags": prb.probe_type if prb else "probe",
+                "count_24h": 1,
+            })
+            if r.resolved_at is None:
+                open_list.append(d)
+            elif r.resolved_at >= cutoff_24:
+                resolved_list.append(d)
+
     rank = {"danger": 4, "average": 3, "warning": 2, "info": 1}
     open_list.sort(key=lambda r: (rank.get(r["severity"], 0), r["started_at"]),
                    reverse=True)
@@ -6876,6 +8395,12 @@ AUDIT_ACTION_LABELS = {
     "terminal_shell_open": "Buka Terminal Root",
     "terminal_open": "Buka Terminal",
     "terminal_close": "Tutup Terminal",
+    "terminal_unlock": "Buka Kunci Terminal",
+    "terminal_unlock_fail": "Gagal Buka Kunci Terminal",
+    "terminal_lock": "Kunci Terminal",
+    "file_manager_unlock": "Buka Kunci File Manager",
+    "file_manager_unlock_fail": "Gagal Buka Kunci File Manager",
+    "file_manager_lock": "Kunci File Manager",
     "file_save": "Simpan / Edit Berkas",
     "file_upload": "Unggah Berkas",
     "file_rm": "Hapus Berkas / Folder",
@@ -6921,6 +8446,12 @@ AUDIT_ACTION_LABELS = {
     "masalah_info": "Informasi Masalah",
     # Setel Organisasi
     "branding_update": "Setel Organisasi",
+    # Pemantauan Endpoint
+    "probe_add": "Tambah Endpoint Pantau",
+    "probe_edit": "Ubah Endpoint Pantau",
+    "probe_delete": "Hapus Endpoint Pantau",
+    "probe_toggle": "Jeda / Lanjutkan Pemantauan",
+    "probe_test": "Uji Endpoint Manual",
 }
 
 AUDIT_CATEGORIES = [
@@ -6973,8 +8504,10 @@ AUDIT_CATEGORIES = [
         "id": "cat:files",
         "name": "Berkas & File Manager",
         "name_en": "Files & File Manager",
-        "keys": ["file_save", "file_upload", "file_rm", "file_mkdir", "file_rename", "file_chmod", "file_chown"],
+        "keys": ["file_manager_unlock", "file_manager_lock", "file_save", "file_upload", "file_rm", "file_mkdir", "file_rename", "file_chmod", "file_chown"],
         "actions": [
+            ("file_manager_unlock", "Buka Kunci File Manager", "Unlock File Manager"),
+            ("file_manager_lock", "Kunci File Manager", "Lock File Manager"),
             ("file_save", "Simpan / Edit Berkas", "Save / Edit File"),
             ("file_upload", "Unggah Berkas", "Upload File"),
             ("file_rm", "Hapus Berkas / Folder", "Delete File / Folder"),
@@ -7036,6 +8569,19 @@ AUDIT_CATEGORIES = [
             ("problem_ignore", "Abaikan Masalah", "Ignore Incident"),
             ("problem_unignore", "Pantau Kembali Masalah", "Cancel Ignore Incident"),
         ]
+    },
+    {
+        "id": "cat:probing",
+        "name": "Pemantauan Endpoint",
+        "name_en": "Endpoint Monitoring",
+        "keys": ["probe_add", "probe_edit", "probe_delete", "probe_toggle", "probe_test"],
+        "actions": [
+            ("probe_add", "Tambah Endpoint Pantau", "Add Endpoint Monitor"),
+            ("probe_edit", "Ubah Endpoint Pantau", "Edit Endpoint Monitor"),
+            ("probe_delete", "Hapus Endpoint Pantau", "Delete Endpoint Monitor"),
+            ("probe_toggle", "Jeda / Lanjutkan", "Pause / Resume"),
+            ("probe_test", "Uji Endpoint Manual", "Manual Test Endpoint"),
+        ]
     }
 ]
 
@@ -7081,12 +8627,22 @@ def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter
         if not tgt:
             tgt = "-"
 
+        log_res = (a.result or "").lower()
+        if "gagal" in log_res or "failed" in log_res or "error" in log_res or "ditolak" in log_res:
+            log_st = "FAILED"
+        elif "dikirim" in log_res or "menunggu" in log_res or "proses" in log_res:
+            log_st = "PENDING"
+        elif a.result:
+            log_st = "SUCCESS"
+        else:
+            log_st = None
+
         rows.append({
             "t": a.created_at, "user": a.username, "kind": "log",
             "label": AUDIT_ACTION_LABELS.get(a.action, a.action),
             "key": a.action,
             "server": srv_name or "-",
-            "target": tgt, "status": None, "result": a.result or "",
+            "target": tgt, "status": log_st, "result": a.result or "",
         })
 
     cmds = (
@@ -7213,6 +8769,19 @@ def audit_page(
         available_users.append(user_clean)
         available_users.sort()
 
+    st_cls = {
+        "SUCCESS": "up",
+        "FAILED": "danger",
+        "PENDING": "muted",
+        "EXECUTING": "warn",
+    }
+    st_label = {
+        "SUCCESS": "BERHASIL",
+        "FAILED": "GAGAL",
+        "PENDING": "MENUNGGU",
+        "EXECUTING": "PROSES",
+    }
+
     return tpl(request, "audit.html", {
         "user": user_actor,
         "rows": rows,
@@ -7222,6 +8791,8 @@ def audit_page(
         "available_users": available_users,
         "categories": AUDIT_CATEGORIES,
         "actions": sorted(AUDIT_ACTION_LABELS.items()),
+        "st_cls": st_cls,
+        "st_label": st_label,
     })
 
 
@@ -7254,7 +8825,7 @@ def _alert_dict(row, hostname: str, now: datetime) -> dict:
         "is_ignored": bool(getattr(row, "is_ignored", 0)),
         "ignore_mode": getattr(row, "ignore_mode", None),
         "ignored_until": row.ignored_until.isoformat() if getattr(row, "ignored_until", None) else None,
-        "ignored_by": getattr(row, "ignored_by", None),
+        "ignored_by": ("master-admin" if getattr(row, "ignored_by", None) == "admin" else getattr(row, "ignored_by", None)),
         "ignored_reason": getattr(row, "ignored_reason", None),
     }
 
@@ -7266,17 +8837,39 @@ def api_alerts(
 ):
     """Insiden terbuka lintas semua tingkat keparahan (danger, average, warning, info)."""
     now = datetime.utcnow()
+    servers_list = db.query(Server).all()
     # Pastikan server offline/stale langsung tersinkronisasi tanpa jeda background loop
-    stale_servers = [s for s in db.query(Server).filter(Server.is_active == 1, Server.last_seen.isnot(None)).all() if _server_stale(s)]
+    stale_servers = [s for s in servers_list if getattr(s, "is_active", 1) and s.last_seen is not None and _server_stale(s)]
     for st in stale_servers:
         try:
             sync_server_problems(db, st, _problem_instances(st, None, None, db))
         except Exception:
-            pass
+            try:
+                db.rollback()
+            except Exception:
+                pass
 
-    servers_list = db.query(Server).all()
     host = {s.id: s.hostname for s in servers_list}
+    probes_list = db.query(ProbeTarget).all()
+    probes_map = {p.id: p.name for p in probes_list}
+    probes_obj_map = {p.id: p for p in probes_list}
+    probes_tier_map = {p.id: (getattr(p, "tier", 2) or 2) for p in probes_list}
     tier_map = {s.id: (getattr(s, "tier", 2) or 2) for s in servers_list}
+
+    def get_effective_tier(r):
+        if r.server_id and r.server_id in tier_map:
+            return tier_map[r.server_id]
+        if r.probe_id and r.probe_id in probes_tier_map:
+            return probes_tier_map[r.probe_id]
+        return 2
+
+    def get_host_label(sid, pid=None):
+        if sid and sid in host:
+            return host[sid]
+        if pid and pid in probes_map:
+            return f"🌐 {probes_map[pid]}"
+        return f"Server #{sid}" if sid else "Eksternal"
+
     open_problems = (
         db.query(ServerProblem)
         .filter(
@@ -7286,7 +8879,7 @@ def api_alerts(
         .order_by(desc(ServerProblem.started_at)).all()
     )
 
-    open_danger = [r for r in open_problems if r.severity == "danger" and tier_map.get(r.server_id, 2) == 1]
+    open_danger = [r for r in open_problems if r.severity == "danger" and get_effective_tier(r) == 1]
     open_average = [r for r in open_problems if r.severity == "average"]
     open_warning = [r for r in open_problems if r.severity == "warning"]
     open_info = [r for r in open_problems if r.severity == "info"]
@@ -7302,9 +8895,15 @@ def api_alerts(
     def _is_alert_banner_firing(r, now_dt):
         if getattr(r, "is_ignored", 0):
             return False
-        # Banner, alarm suara, dan badge kritis HANYA untuk server Tier-1
-        if tier_map.get(r.server_id, 2) != 1:
+        # Banner, alarm suara, dan badge kritis HANYA untuk layanan Tier-1 (Server Tier-1 atau Endpoint/Router/AP Tier-1)
+        if get_effective_tier(r) != 1:
             return False
+        # Jika insiden berasal dari endpoint yang baru didaftarkan dan belum pernah terverifikasi normal (UP),
+        # tahan alarm darurat/banner kritis agar tidak membuat panik operator saat baru menguji/konfigurasi target
+        if r.probe_id:
+            prb_obj = probes_obj_map.get(r.probe_id)
+            if prb_obj and (getattr(prb_obj, "uptime_24h", 0) == 0 and (prb_obj.consecutive_successes or 0) == 0):
+                return False
         # Tindakan yang sengaja dilakukan oleh operator tidak memicu banner darurat atau modal gawat darurat
         reason = getattr(r, "ignored_reason", None) or ""
         if "DIMATIKAN OLEH OPERATOR" in reason or "DIHENTIKAN OLEH OPERATOR" in reason:
@@ -7336,35 +8935,36 @@ def api_alerts(
         reverse=True,
     )
 
-    danger_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_danger]
-    average_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_average]
-    warning_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_warning]
-    firing_danger_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in firing_danger]
-    firing_average_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in firing_average]
-    firing_warning_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in firing_warning]
-    all_unack_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in unack_operational]
-    firing_alerts = [_alert_dict(r, host.get(r.server_id, "?"), now) for r in firing_operational]
+    danger_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in unack_danger]
+    average_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in unack_average]
+    warning_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in unack_warning]
+    info_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in open_info]
+    firing_danger_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in firing_danger]
+    firing_average_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in firing_average]
+    firing_warning_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in firing_warning]
+    all_unack_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in unack_operational]
+    firing_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in firing_operational]
 
-    danger_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in open_danger if r.server_id}))
-    average_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in open_average if r.server_id}))
-    warning_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in open_warning if r.server_id}))
-    firing_danger_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in firing_danger if r.server_id}))
-    firing_average_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in firing_average if r.server_id}))
-    firing_warning_hosts = sorted(list({host.get(r.server_id, f"Server #{r.server_id}") for r in firing_warning if r.server_id}))
+    danger_hosts = sorted(list({get_host_label(r.server_id, r.probe_id) for r in open_danger}))
+    average_hosts = sorted(list({get_host_label(r.server_id, r.probe_id) for r in open_average}))
+    warning_hosts = sorted(list({get_host_label(r.server_id, r.probe_id) for r in open_warning}))
+    firing_danger_hosts = sorted(list({get_host_label(r.server_id, r.probe_id) for r in firing_danger}))
+    firing_average_hosts = sorted(list({get_host_label(r.server_id, r.probe_id) for r in firing_average}))
+    firing_warning_hosts = sorted(list({get_host_label(r.server_id, r.probe_id) for r in firing_warning}))
 
     host_danger_counts = {}
     for r in open_danger:
-        hname = host.get(r.server_id) or f"Server #{r.server_id}"
+        hname = get_host_label(r.server_id, r.probe_id)
         host_danger_counts[hname] = host_danger_counts.get(hname, 0) + 1
 
     host_average_counts = {}
     for r in open_average:
-        hname = host.get(r.server_id) or f"Server #{r.server_id}"
+        hname = get_host_label(r.server_id, r.probe_id)
         host_average_counts[hname] = host_average_counts.get(hname, 0) + 1
 
     host_warning_counts = {}
     for r in open_warning:
-        hname = host.get(r.server_id) or f"Server #{r.server_id}"
+        hname = get_host_label(r.server_id, r.probe_id)
         host_warning_counts[hname] = host_warning_counts.get(hname, 0) + 1
 
     if open_danger:
@@ -7386,6 +8986,7 @@ def api_alerts(
         "average_alerts": average_alerts,
         "firing_average_alerts": firing_average_alerts,
         "warning_alerts": warning_alerts,
+        "info_alerts": info_alerts,
         "firing_alerts": firing_alerts,
         "unack_count": len(firing_danger),
         "unack_danger_count": len(firing_danger),
@@ -7516,7 +9117,7 @@ def api_alert_ack(
     row.acknowledged_by = user.username
     _audit(
         db, user.username, "alert_ack",
-        target=row.message[:100], result="diakui", server_id=row.server_id
+        target=row.message[:100], result="ditangani", server_id=row.server_id
     )
     db.commit()
     return {"ok": True, "id": pid, "acknowledged_by": user.username}
@@ -7529,7 +9130,7 @@ def api_alert_resolve(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    """Tandai masalah selesai/teratasi secara manual oleh admin/user."""
+    """Tandai insiden selesai/teratasi secara manual oleh admin/user."""
     _verify_csrf_header(request)
     if user.is_viewer():
         raise HTTPException(status_code=403, detail="Akses ditolak: Viewer tidak memiliki izin menyelesaikan insiden")
@@ -8231,9 +9832,51 @@ def api_logs_result(
         raise HTTPException(status_code=404, detail="Log request not found")
 
     req.status = status
-    clean = _clean_terminal if req.unit in INTERACTIVE_UNITS else _clean_result
-    req.result = clean(body.get("result"), APT_STREAM_MAXCHARS, APT_STREAM_MAXLINES)
+    if req.unit in ("PKG_LIST", "SYSTEMD_LIST"):
+        raw_res = str(body.get("result") or "").strip()
+        if raw_res.startswith("[") and raw_res.endswith("]"):
+            req.result = raw_res
+        else:
+            if raw_res.startswith("-- No entries"):
+                req.status = "failed"
+                req.result = "Agen pada server belum mendukung pemindaian ini (perlu update agen)."
+            else:
+                req.result = raw_res or "[]"
+    else:
+        clean = _clean_terminal if req.unit in INTERACTIVE_UNITS else _clean_result
+        req.result = clean(body.get("result"), APT_STREAM_MAXCHARS, APT_STREAM_MAXLINES)
     req.updated_at = datetime.utcnow()
+
+    if req.unit == "PKG_LIST" and req.status == "success":
+        try:
+            if req.result and req.result.startswith("[") and req.result.endswith("]"):
+                extras = db.query(ServerExtras).filter(ServerExtras.server_id == server.id).first()
+                if not extras:
+                    extras = ServerExtras(server_id=server.id)
+                    db.add(extras)
+                extras.installed_packages = req.result
+        except Exception as e:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            logger.warning("[PKG_LIST] Gagal simpan extras.installed_packages: %s", e)
+
+    if req.unit == "SYSTEMD_LIST" and req.status == "success":
+        try:
+            if req.result and req.result.startswith("[") and req.result.endswith("]"):
+                extras = db.query(ServerExtras).filter(ServerExtras.server_id == server.id).first()
+                if not extras:
+                    extras = ServerExtras(server_id=server.id)
+                    db.add(extras)
+                extras.systemd_units = req.result
+                db.commit()
+        except Exception as e:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+            logger.warning("[SYSTEMD_LIST] Gagal simpan extras.systemd_units: %s", e)
 
     # Sesi shell ditutup: jangan simpan sisa input tak terpakai.
     if req.unit == SHELL_UNIT and (req.input_data or req.input_queue):
@@ -8242,7 +9885,7 @@ def api_logs_result(
         req.input_at = None
 
     # Segera sinkronkan status apt ke ServerExtras agar dashboard & tombol upgrade langsung aktif tanpa jeda
-    if req.unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX") and status == "success":
+    if req.unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX", "PKG_UPGRADE") and status == "success":
         try:
             raw_res = body.get("result", "")
             parsed = None
@@ -8262,11 +9905,25 @@ def api_logs_result(
                     if "upgradable" in apt_info:
                         extras.apt_upgradable = _clamp_int(apt_info.get("upgradable"), 0)
                     if "packages" in apt_info and isinstance(apt_info["packages"], list):
-                        extras.apt_packages_json = json.dumps(apt_info["packages"][:200])
+                        extras.apt_packages = json.dumps(apt_info["packages"][:200])
                     extras.apt_last_update = datetime.utcnow()
             elif req.unit in ("APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE"):
                 extras.apt_upgradable = 0
-                extras.apt_packages_json = "[]"
+                extras.apt_packages = "[]"
+                extras.apt_last_update = datetime.utcnow()
+            elif req.unit == "PKG_UPGRADE":
+                # Upgrade paket tunggal berhasil
+                if extras.apt_upgradable and extras.apt_upgradable > 0:
+                    extras.apt_upgradable = max(0, extras.apt_upgradable - 1)
+                if req.detail and extras.apt_packages:
+                    try:
+                        pkgs = json.loads(extras.apt_packages)
+                        if isinstance(pkgs, list):
+                            pkgs = [p for p in pkgs if (p if isinstance(p, str) else p.get("name")) != req.detail]
+                            extras.apt_packages = json.dumps(pkgs)
+                            extras.apt_upgradable = len(pkgs)
+                    except Exception:
+                        pass
                 extras.apt_last_update = datetime.utcnow()
 
             # Sinkronkan masalah apt_updates bila upgradable 0
@@ -8280,7 +9937,40 @@ def api_logs_result(
                     prob.resolved_at = datetime.utcnow()
                     prob.resolved_note = "auto (upgrade selesai)"
         except Exception as exc:
+            try:
+                db.rollback()
+            except Exception:
+                pass
             logger.warning("[apt_result_sync] Gagal sinkronkan ServerExtras: %s", exc)
+
+    # Sinkronkan status akhir tindakan ke AuditLog agar rekam jejak mencatat status riil (berhasil / gagal)
+    try:
+        audit_act = f"apt_{req.unit.removeprefix('APT_').lower()}"
+        recent_audit = (
+            db.query(AuditLog)
+            .filter(
+                AuditLog.server_id == server.id,
+                AuditLog.action == audit_act,
+                AuditLog.created_at >= req.created_at - timedelta(seconds=15)
+            )
+            .order_by(AuditLog.id.desc())
+            .first()
+        )
+        if recent_audit:
+            if status == "success":
+                recent_audit.result = f"berhasil ({req.detail})" if req.detail else "berhasil"
+            else:
+                err_snip = [line.strip() for line in (req.result or "").splitlines() if line.strip() and not line.strip().startswith("────")]
+                err_line = err_snip[0] if err_snip else "eksekusi gagal"
+                if len(err_line) > 120:
+                    err_line = err_line[:117] + "…"
+                recent_audit.result = f"gagal: {err_line}"
+    except Exception as exc:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        logger.warning("[audit_sync] Gagal sinkronkan AuditLog: %s", exc)
 
     db.commit()
     return {"ok": True}
@@ -8512,14 +10202,16 @@ def api_server_system(
         return obj if isinstance(obj, list) else []
     net_list = parse_list(latest.net) if latest else []
     if net_list and server.ip_address:
-        has_any_ip = any(n.get("ip_addrs") for n in net_list)
+        has_any_ip = any(isinstance(n, dict) and n.get("ip_addrs") for n in net_list)
         if not has_any_ip:
             # Utamakan interface fisik yang aktif (bukan docker/veth/bridge)
-            target_n = next((n for n in net_list if n.get("is_up") and not any(n.get("iface", "").startswith(p) for p in ("docker", "br-", "veth", "virbr", "lo"))), None)
+            target_n = next((n for n in net_list if isinstance(n, dict) and n.get("is_up") and not any(str(n.get("iface", "")).startswith(p) for p in ("docker", "br-", "veth", "virbr", "lo"))), None)
             if not target_n:
-                target_n = next((n for n in net_list if n.get("is_up")), None)
-            if target_n:
+                target_n = next((n for n in net_list if isinstance(n, dict) and n.get("is_up")), None)
+            if target_n and isinstance(target_n, dict):
                 target_n["ip_addrs"] = [server.ip_address]
+
+    hw_specs = _get_hardware_specs_dict(server, extra, latest)
 
     return {
         "server_id": sid,
@@ -8553,12 +10245,16 @@ def api_server_system(
         "os_label": (extra.os_label if extra else None),
         "units": parse_list(extra.units if extra else None),
         "accounts": parse_list(extra.accounts if extra else None),
-        "apt_upgradable": (extra.apt_upgradable if extra else None),
+        "apt_upgradable": (
+            len(parse_list(extra.apt_packages))
+            if (extra and extra.apt_packages is not None)
+            else (extra.apt_upgradable if extra else 0)
+        ),
         "apt_last_update": (extra.apt_last_update.isoformat()
                             if extra and extra.apt_last_update else None),
         "apt_packages": parse_list(extra.apt_packages if extra else None),
-        "hardware_specs": _get_hardware_specs_dict(server, extra, latest),
-        "platform": _classify_platform(_get_hardware_specs_dict(server, extra, latest).get("platform", {}), getattr(server, "platform_override", None)),
+        "hardware_specs": hw_specs,
+        "platform": _classify_platform(hw_specs.get("platform", {}), getattr(server, "platform_override", None)),
         "extras": ["SYSLOG", "AUTH"],
     }
 
@@ -8587,7 +10283,7 @@ def api_logs_request(
     if not VALID_UNIT_RE.match(unit):
         raise HTTPException(status_code=400, detail="Invalid unit name")
 
-    is_apt = unit in APT_UNITS
+    is_apt = unit in APT_UNITS or unit in ("PKG_CLEAR_CACHE",)
     is_shell = unit == SHELL_UNIT
     if is_apt and not user.has_perm("can_apt"):
         raise HTTPException(
@@ -9047,6 +10743,8 @@ async def api_terminal_lock(
 ):
     """Kunci kembali akses terminal dan putus sesi aktif jika ada."""
     _verify_csrf_header(request)
+    if not (user.is_master_admin() or user.has_perm("can_terminal")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Anda tidak memiliki wewenang Terminal Shell Web")
 
     server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
     hostname = server.hostname if server else f"sid={sid}"
@@ -9203,6 +10901,8 @@ async def api_agent_terminal_stdin(
     bridge = term_dispatcher.get_session(session_id)
     if not bridge or bridge.closed:
         raise HTTPException(status_code=410, detail="Sesi terminal sudah ditutup")
+    if bridge.server_id != server.id:
+        raise HTTPException(status_code=403, detail="Akses ditolak: Sesi terminal bukan milik server ini")
 
     try:
         while True:
@@ -9234,6 +10934,8 @@ async def api_agent_terminal_stdout(
     bridge = term_dispatcher.get_session(session_id)
     if not bridge or bridge.closed:
         raise HTTPException(status_code=410, detail="Sesi terminal sudah ditutup")
+    if bridge.server_id != server.id:
+        raise HTTPException(status_code=403, detail="Akses ditolak: Sesi terminal bukan milik server ini")
 
     chunk = body.get("chunk", "")
     if chunk:
@@ -9265,6 +10967,8 @@ async def api_agent_terminal_close(
 
     bridge = term_dispatcher.get_session(session_id)
     if bridge:
+        if bridge.server_id != server.id:
+            raise HTTPException(status_code=403, detail="Akses ditolak: Sesi terminal bukan milik server ini")
         if bridge.browser_ws:
             try:
                 await bridge.browser_ws.send_text(json.dumps({
@@ -9301,11 +11005,110 @@ def page_server_files(request: Request, sid: int, db: Session = Depends(get_db))
     server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
     if not server:
         raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    remaining = get_file_manager_lease_remaining(user.id, sid)
     return tpl(request, "file_manager.html", {
         "server": server,
         "user": user,
         "is_online": not _server_stale(server),
+        "is_unlocked": remaining > 0,
+        "remaining_seconds": remaining,
+        "user_has_totp": bool(user.totp_enabled and user.totp_secret),
     })
+
+
+@app.get("/api/servers/{sid}/files/status")
+def api_server_files_status(
+    sid: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Cek status izin dan sisa durasi sewa (lease) otentikasi File Manager untuk server ini."""
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    user_can = user.has_perm("can_file_manager")
+    remaining = get_file_manager_lease_remaining(user.id, sid)
+    unlocked = remaining > 0
+
+    return {
+        "server_id": sid,
+        "can_file_manager": user_can,
+        "is_unlocked": unlocked,
+        "remaining_seconds": remaining,
+        "user_has_totp": bool(user.totp_enabled and user.totp_secret),
+    }
+
+
+@app.post("/api/servers/{sid}/files/unlock")
+def api_server_files_unlock(
+    sid: int,
+    request: Request,
+    body: dict = Body(...),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Buka kunci akses File Manager dengan tantangan kata sandi (sudo step-up auth) + TOTP."""
+    _verify_csrf_header(request)
+
+    if not user.has_perm("can_file_manager"):
+        raise HTTPException(status_code=403, detail="Akses ditolak: Anda tidak memiliki wewenang File Manager")
+
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    password = _clean_str(body.get("password"), "", 256)
+    totp_code = _clean_str(body.get("totp"), "", 10)
+    duration_minutes = _clamp_int(body.get("duration_minutes"), 15, 5, 120)
+    reason = _clean_str(body.get("reason"), "", 255)
+
+    if not password:
+        raise HTTPException(status_code=400, detail="Kata sandi akun pengguna diperlukan")
+
+    # Verifikasi kata sandi operator login
+    if not pwd_ctx.verify(password, user.password_hash):
+        _audit(db, user.username, "file_manager_unlock_fail", f"{server.hostname} (kata sandi salah)", "gagal", server_id=sid)
+        db.commit()
+        raise HTTPException(status_code=401, detail="Kata sandi akun salah. Akses File Manager ditolak.")
+
+    # Verifikasi TOTP 2FA jika akun mengaktifkannya
+    if user.totp_enabled and user.totp_secret:
+        if not totp_code or not security_auth.verify_totp(user.totp_secret, totp_code):
+            _audit(db, user.username, "file_manager_unlock_fail", f"{server.hostname} (kode 2FA salah)", "gagal", server_id=sid)
+            db.commit()
+            raise HTTPException(status_code=401, detail="Kode 2FA / TOTP tidak valid atau telah kedaluwarsa")
+
+    # Berikan lease otentikasi File Manager
+    set_file_manager_unlock(user.id, sid, duration_minutes)
+    audit_detail = f"{server.hostname} [durasi: {duration_minutes}m" + (f", alasan: {reason}]" if reason else "]")
+    _audit(db, user.username, "file_manager_unlock", audit_detail, "berhasil", server_id=sid)
+    db.commit()
+
+    return {
+        "ok": True,
+        "remaining_seconds": duration_minutes * 60,
+        "message": f"Kunci File Manager berhasil dibuka ({duration_minutes} menit)"
+    }
+
+
+@app.post("/api/servers/{sid}/files/lock")
+def api_server_files_lock(
+    sid: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Kunci kembali sesi File Manager untuk server ini."""
+    _verify_csrf_header(request)
+    revoke_file_manager_unlock(user.id, sid)
+    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
+    hostname = server.hostname if server else f"sid={sid}"
+    _audit(db, user.username, "file_manager_lock", hostname, "berhasil", server_id=sid)
+    db.commit()
+    return {"ok": True, "message": "Sesi File Manager telah dikunci"}
 
 
 @app.get("/api/servers/{sid}/files/ls")
@@ -9935,10 +11738,10 @@ async def profile_update_branding(
         filename = logo_file.filename.strip()
         if filename:
             ext = Path(filename).suffix.lower()
-            ALLOWED_LOGO_EXTS = {".png", ".jpg", ".jpeg", ".svg", ".webp", ".ico"}
+            ALLOWED_LOGO_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".ico"}
             if ext not in ALLOWED_LOGO_EXTS:
                 return RedirectResponse(
-                    _flash_profile_branding(False, "Format logo harus berupa berkas gambar (.png, .jpg, .jpeg, .svg, .webp, .ico)"),
+                    _flash_profile_branding(False, "Format logo harus berupa berkas gambar raster/aman (.png, .jpg, .jpeg, .webp, .ico)"),
                     status_code=303,
                 )
 
@@ -10259,9 +12062,11 @@ async def user_edit_permissions(
     user = get_current_user(request, db)
     if not user or user.is_viewer():
         return RedirectResponse("/", status_code=303)
-    can_manage_users = user.is_master_admin() or user.has_perm("can_manage_users")
-    if not can_manage_users:
-        return RedirectResponse("/profile?tab=users", status_code=303)
+    # Hanya Master Admin yang berhak mengatur wewenang operator demi mencegah eskalasi hak akses
+    if not user.is_master_admin():
+        return RedirectResponse(_flash_profile_users(False, "Hanya Master Admin yang berhak mengelola wewenang operator"), status_code=303)
+    if uid == user.id:
+        return RedirectResponse(_flash_profile_users(False, "Anda tidak dapat mengubah wewenang akun Anda sendiri"), status_code=303)
     _verify_csrf_form(request, csrf_token)
 
     target_u = db.query(User).filter(User.id == uid).first()
@@ -10467,9 +12272,9 @@ def _retention_prune(db: Session) -> None:
         LogRequest.status.in_(["success", "failed"]),
         LogRequest.updated_at < now - timedelta(days=_RETENTION_LIMITS["log_requests_days"]),
     ).delete(synchronize_session=False)
-    db.query(Problem).filter(
-        Problem.status == "resolved",
-        Problem.resolved_at < now - timedelta(days=_RETENTION_LIMITS["resolved_problems_days"]),
+    db.query(ServerProblem).filter(
+        ServerProblem.resolved_at.isnot(None),
+        ServerProblem.resolved_at < now - timedelta(days=_RETENTION_LIMITS["resolved_problems_days"]),
     ).delete(synchronize_session=False)
     db.commit()
 

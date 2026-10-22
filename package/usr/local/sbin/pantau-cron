@@ -37,7 +37,24 @@ case "$ACTION" in
         [ -n "$CMD" ] || fail "Perintah cron tidak boleh kosong"
 
         # Validasi user target ada di sistem
+        case "$TARGET_USER" in
+            root) ;;
+            *[!a-z0-9_-]*) fail "User target tidak valid: '$TARGET_USER'" ;;
+        esac
         id "$TARGET_USER" >/dev/null 2>&1 || fail "User target '$TARGET_USER' tidak ditemukan di sistem"
+
+        for fld in "$M" "$H" "$DOM" "$MON" "$DOW"; do
+            if [[ "$fld" == *$'\n'* ]] || [[ "$fld" == *$'\r'* ]]; then
+                fail "Karakter newline pada jadwal cron tidak diizinkan"
+            fi
+            if [[ ! "$fld" =~ ^[0-9*\/,-]+$ ]]; then
+                fail "Format jadwal cron tidak valid: '$fld' (hanya angka, *, /, ,, -)"
+            fi
+        done
+
+        if [[ "$CMD" == *$'\n'* ]] || [[ "$CMD" == *$'\r'* ]]; then
+            fail "Karakter newline pada perintah cron tidak diizinkan"
+        fi
 
         FILE="/etc/cron.d/pantau-$IDENT"
         # Buat entri cron standar format /etc/cron.d (schedule user command)
@@ -95,7 +112,27 @@ CRON_EOF
         CMD="$*"
 
         [ -n "$CMD" ] || fail "Perintah tidak boleh kosong"
+        if [[ "$CMD" == *$'\n'* ]] || [[ "$CMD" == *$'\r'* ]]; then
+            fail "Karakter newline pada perintah tidak diizinkan"
+        fi
+        case "$TARGET_USER" in
+            root) ;;
+            *[!a-z0-9_-]*) fail "User target tidak valid: '$TARGET_USER'" ;;
+        esac
         id "$TARGET_USER" >/dev/null 2>&1 || fail "User target '$TARGET_USER' tidak valid"
+
+        # Guardrail keamanan untuk eksekusi sebagai root:
+        # Hanya izinkan jika perintah adalah reload internal ATAU perintah tersebut memang terdaftar
+        # dalam konfigurasi cron sistem (/etc/cron*, /var/spool/cron*).
+        if [ "$TARGET_USER" = "root" ] && [ "$CMD" != "systemctl daemon-reload" ]; then
+            is_registered=0
+            if grep -Fqs -- "$CMD" /etc/crontab /etc/cron.d/* /var/spool/cron/crontabs/* 2>/dev/null; then
+                is_registered=1
+            fi
+            if [ "$is_registered" -eq 0 ]; then
+                fail "Aksi ditolak: Perintah root tidak terdaftar dalam konfigurasi cron sistem yang sah."
+            fi
+        fi
 
         echo "Menjalankan perintah sebagai user '$TARGET_USER': $CMD"
         # Jalankan via su/runuser

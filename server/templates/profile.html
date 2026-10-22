@@ -432,19 +432,19 @@
               <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Pengguna</th>
               <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Peran</th>
               <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Status &amp; 2FA</th>
-              <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Login Terakhir</th>
-              <th style="padding:8px 8px;text-align:right;font-weight:600;white-space:nowrap">Aksi</th>
+              <th style="padding:6px 8px;font-weight:600;white-space:nowrap">Login Terakhir</th>
+              <th class="col-act" style="padding:6px 8px;text-align:left;font-weight:600;white-space:nowrap">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {% for u in users %}
             {% set uperms = u.get_permissions() %}
             <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-              <td style="padding:10px 8px;white-space:nowrap">
+              <td style="padding:6px 8px;white-space:nowrap">
                 <div style="display:flex;align-items:center;gap:6px">
-                  <span style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:13px">{{ u.username }}</span>
+                  <span style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ u.username }}</span>
                   {% if u.id == user.id %}
-                  <span style="font-size:10px;color:var(--blue);font-weight:600;background:rgba(56,189,248,0.1);padding:1px 5px;border-radius:4px">(Anda)</span>
+                  <span style="font-size:9.5px;color:var(--blue);font-weight:600;background:rgba(56,189,248,0.1);padding:0.5px 4px;border-radius:3px">(Anda)</span>
                   {% endif %}
                 </div>
                 {% if u.role == 'operator' %}
@@ -453,22 +453,22 @@
                     {% for pk, pv in uperms.items() %}
                       {% if pv %}{% set ns_p.count = ns_p.count + 1 %}{% endif %}
                     {% endfor %}
-                    <span class="badge" style="background:rgba(56,189,248,0.08);color:#38bdf8;font-size:10px;padding:1px 5px;border:1px solid rgba(56,189,248,0.2)">
+                    <span class="badge" style="background:rgba(56,189,248,0.08);color:#38bdf8;font-size:8.5px;padding:1px 5px;border:1px solid rgba(56,189,248,0.2)">
                       {{ ns_p.count }} Izin Aktif
                     </span>
                   </div>
                 {% endif %}
               </td>
-              <td style="padding:10px 8px;white-space:nowrap">
+              <td style="padding:6px 8px;white-space:nowrap">
                 {% if u.is_master_admin() %}
-                <span class="badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:10.5px;padding:2px 7px;font-weight:700">Master Admin</span>
+                <span class="badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:8.5px;padding:1px 5px;font-weight:700">Master Admin</span>
                 {% elif u.is_operator() %}
-                <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);font-size:10.5px;padding:2px 7px;font-weight:700">Operator</span>
+                <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);font-size:8.5px;padding:1px 5px;font-weight:700">Operator</span>
                 {% else %}
-                <span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3);font-size:10.5px;padding:2px 7px">Viewer</span>
+                <span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3);font-size:8.5px;padding:1px 5px">Viewer</span>
                 {% endif %}
               </td>
-              <td style="padding:10px 8px;white-space:nowrap">
+              <td style="padding:6px 8px;white-space:nowrap">
                 <div style="display:inline-flex;align-items:center;gap:5px">
                   {% if u.is_active %}
                   <span style="color:#4ade80;font-size:11px;font-weight:600" title="Akun aktif">● Aktif</span>
@@ -477,21 +477,21 @@
                   {% endif %}
                   <span style="color:var(--dim);font-size:10px">·</span>
                   {% if u.totp_enabled %}
-                  <span class="badge" style="background:rgba(34,197,94,0.12);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:10px;padding:1px 5px" title="2FA TOTP Aktif">2FA Aktif</span>
+                  <span class="badge" style="background:rgba(34,197,94,0.12);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:8.5px;padding:1px 5px" title="2FA TOTP Aktif">2FA Aktif</span>
                   {% else %}
-                  <span class="badge" style="background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);font-size:10px;padding:1px 5px" title="2FA Belum Diaktifkan">2FA Nonaktif</span>
+                  <span class="badge" style="background:rgba(245,158,11,0.12);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);font-size:8.5px;padding:1px 5px" title="2FA Belum Diaktifkan">2FA Nonaktif</span>
                   {% endif %}
                 </div>
               </td>
-              <td style="padding:10px 8px;font-size:11px;color:var(--dim);white-space:nowrap">
+              <td style="padding:6px 8px;font-size:11px;letter-spacing:-0.025em;color:var(--dim);white-space:nowrap" class="mono">
                 {% if u.last_login_at %}
                 <span title="{{ u.last_login_at.strftime('%d %b %Y %H:%M:%S UTC') }}">{{ u.last_login_at.strftime('%d %b %Y %H:%M') }}</span>
                 {% else %}
                 <span style="color:var(--dim);opacity:0.6">-</span>
                 {% endif %}
               </td>
-              <td style="padding:10px 8px;text-align:right;white-space:nowrap">
-                <div style="display:inline-flex;gap:4px;align-items:center;flex-wrap:nowrap">
+              <td class="col-act" style="padding:6px 8px;text-align:left;white-space:nowrap">
+                <div style="display:inline-flex;gap:3px;align-items:center;justify-content:flex-start;flex-wrap:nowrap">
                   <!-- Tombol 1: LIHAT Detail Hak Akses -->
                   <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openViewUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ u.totp_enabled }}, {{ (u.last_login_at.strftime("%d %b %Y %H:%M UTC") if u.last_login_at else "-")|tojson }}, {{ (u.last_login_ip or "-")|tojson }}, {{ uperms|tojson }})' title="Lihat detail hak akses {{ u.username }}">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1884,8 +1884,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('users-table') && typeof attachTablePagination === 'function') {
     usersPagination = attachTablePagination('#users-table', {
       unitLabel: 'pengguna',
-      defaultLimit: 25,
-      pageSizeOptions: [10, 25, 50, 100, 'all']
+      defaultLimit: 5,
+      pageSizeOptions: [5, 10, 25, 50, 100, 'all']
     });
   }
 });

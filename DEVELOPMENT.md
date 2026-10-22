@@ -311,6 +311,32 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.0
+
+- **Tipe Rilis:** Fitur Mayor Pemantauan S.M.A.R.T. & NVMe, Engine Probing Jaringan, Step-Up Auth File Manager, dan Optimalisasi Antarmuka NOC
+- **Fokus Utama:** Implementasi telemetri kesehatan fisik drive penyimpanan (S.M.A.R.T. dan NVMe) dengan deteksi virtual host, perbaikan proses diagnostik pembaruan APT yang macet, standardisasi ukuran badge server klien menjadi ringkas dan proporsional, serta integrasi aturan baku pengembangan (*Antigravity Skill & Rule SOP*).
+
+### Rangkuman Pembaruan:
+1. **Telemetri Kesehatan Drive S.M.A.R.T. & NVMe:**
+   - **Kolektor Telemetri Agen:** Agen mengumpulkan telemetri status kesehatan hard drive dan solid state drive menggunakan utilitas `smartctl` dan `nvme-cli`.
+   - **Deteksi Drive Virtual & Pencegahan Alarm Palsu:** Mengidentifikasi disk virtual pada lingkungan Proxmox VM/QEMU, KVM, VirtIO, dan LXC container dengan label `Virtual (Host)` sehingga tidak memicu kesalahan diagnostik atau alarm palsu.
+   - **Evaluasi Masalah Penyimpanan Otomatis:** Sistem mengevaluasi drive failing (`disk_smart_failing`), suhu kritis di atas 60°C (`disk_smart_temp`), keausan media penyimpanan dengan sisa usia di bawah 10% (`disk_smart_wear`), dan sektor rusak bertambah (`disk_smart_sectors`) lengkap dengan rincian diagnosa akar masalah dan saran mitigasi sysadmin.
+   - **Tabel Penyimpanan Terpadu:** Antarmuka rincian server menampilkan tabel partisi mount point berdampingan dengan kolom Model Drive, Status S.M.A.R.T., Suhu, Sisa Usia, dan Jam Kerja (*Power-on Hours*).
+2. **Perbaikan Pemeriksaan Paket Pembaruan APT:**
+   - **Pra-render Sisi Server:** Mengeliminasi tampilan teks menggantung *"Memeriksa pembaruan…"* saat memuat halaman dengan melakukan pra-render status paket dari database cache.
+   - **Perbaikan Pemanggilan Pagination:** Memperbaiki kesalahan fatal JavaScript `TypeError: pag.refresh is not a function` menjadi `pag.update()` pada modul `renderApt()` yang sebelumnya menyebabkan eksekusi antarmuka terhenti.
+3. **Penyelarasan & Kepadatan Badge Header Server:**
+   - Mengubah ukuran badge prioritas server klien menjadi 9.5px, dengan penulisan huruf kecil natural (`tier-1`, `tier-2`, `tier-3`) dan padding rapat (1px 6px) agar hemat ruang vertikal dan tidak mengalihkan perhatian operator.
+   - Menyelaraskan badge versi agen klien (`agen v4.6.0`) dengan ukuran font 9.5px yang serasi dan konsisten.
+4. **Mesin Probing Endpoint Jaringan Terjadwal:**
+   - Modul pengujian berkala endpoint HTTP/HTTPS, port TCP, resolusi DNS, dan ICMP Ping dengan riwayat latensi terperinci, grafik tren, serta pencatatan audit log otomatis.
+5. **Otentikasi Bertingkat (Step-Up Auth) File Manager:**
+   - Perlindungan sesi penjelajahan berkas dengan kata sandi akun untuk akses file sensitif dan tombol kunci/buka sesi yang terintegrasi.
+6. **Integrasi SOP Baku & Kustomisasi Antigravity:**
+   - Pembuatan skill resmi `.agents/skills/sop-pantau/SKILL.md` dan aturan *always-on* `GEMINI.md` untuk mengunci prosedur wajib kenaikan SemVer, verifikasi sintaksis, serta siklus otomatis commit, tag, dan GitHub Release.
+
+---
+
 ## Versi 4.5.32
 
 - **Tipe Rilis:** Penyelarasan Posisi Tengah Layar Header Dashboard & Logo Utuh (*Dashboard Header Centering & Uncropped Logo*)

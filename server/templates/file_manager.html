@@ -12,6 +12,11 @@
     </div>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
+    <div id="fm-lease-badge" style="display:none;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);font-size:12px;font-family:monospace;color:var(--blue)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>Sisa Sesi:</span> <strong id="fm-lease-timer">--:--</strong>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="lockFileManagerSession()" style="padding:1px 6px;font-size:11px;margin-left:4px;color:var(--red)" title="Kunci sesi File Manager sekarang">Kunci</button>
+    </div>
     <a href="/servers/{{ server.id }}/services" class="btn btn-ghost">&larr; Kembali</a>
   </div>
 </div>
@@ -58,8 +63,8 @@
   .fm-item-name { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; color: var(--text); text-decoration: none; word-break: break-all; }
   .fm-item-name:hover { color: var(--blue); }
   .fm-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; user-select: none; }
-  .fm-actions-cell { text-align: right; white-space: nowrap; }
-  .fm-act-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: 4px; background: transparent; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+  .fm-actions-cell { text-align: left; white-space: nowrap; }
+  .fm-act-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 1px solid transparent; border-radius: 4px; background: transparent; cursor: pointer; font-size: 11.5px; transition: all 0.15s; }
   .fm-act-btn:hover { background: var(--hover); border-color: var(--border); }
 
   .fm-modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(3px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; transition: padding 0.2s ease; }
@@ -197,7 +202,7 @@
           <th class="sortable" style="width:12%" onclick="fmSortBy('mode')">Izin <span id="fm-sort-mode"></span></th>
           <th class="sortable" style="width:14%" onclick="fmSortBy('owner')">Pemilik : Grup <span id="fm-sort-owner"></span></th>
           <th class="sortable" style="width:14%" onclick="fmSortBy('mtime')">Waktu Diubah <span id="fm-sort-mtime"></span></th>
-          <th style="width:12%;text-align:right">Aksi</th>
+          <th class="col-act" style="width:12%;text-align:left">Aksi</th>
         </tr>
       </thead>
       <tbody id="fm-tbody">
@@ -455,6 +460,58 @@
     </form>
   </div>
 </div>
+
+<!-- MODAL: Kunci Otentikasi Akses File Manager (In-Page Step-Up Auth) -->
+<div id="fm-page-unlock-modal" class="fm-modal-backdrop" style="display:none;z-index:9999">
+  <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text);box-sizing:border-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>Otentikasi Akses File Manager</span>
+      </h3>
+    </div>
+    
+    <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
+      Sesi File Manager membutuhkan izin otentikasi (sudo step-up) untuk wewenang <strong>root penuh</strong>. Masukkan kata sandi akun Anda untuk membuka sesi.
+    </p>
+
+    <div id="fm-page-unlock-error" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 12px;margin-bottom:14px;color:var(--red);font-size:12px;line-height:1.4"></div>
+
+    <form id="fm-page-unlock-form" data-no-loading onsubmit="submitFmPageUnlock(event)">
+      <div style="margin-bottom:14px">
+        <label for="fm-page-unlock-pwd" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Kata Sandi Akun Pengguna:</label>
+        <input type="password" id="fm-page-unlock-pwd" required autocomplete="current-password" placeholder="Masukkan kata sandi login Anda" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+
+      <div id="fm-page-unlock-totp-grp" style="display:{% if user_has_totp %}block{% else %}none{% endif %};margin-bottom:14px">
+        <label for="fm-page-unlock-totp" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Kode Otentikator 2FA (TOTP):</label>
+        <input type="text" id="fm-page-unlock-totp" {% if user_has_totp %}required{% endif %} maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="6-digit kode authenticator" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;letter-spacing:2px;font-family:monospace;box-sizing:border-box">
+      </div>
+
+      <div style="margin-bottom:14px">
+        <label for="fm-page-unlock-duration" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Durasi Izin Sesi:</label>
+        <select id="fm-page-unlock-duration" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+          <option value="15" selected>15 Menit</option>
+          <option value="30">30 Menit</option>
+          <option value="60">60 Menit (1 Jam)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom:18px">
+        <label for="fm-page-unlock-reason" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Tujuan / Alasan Akses (Opsional, untuk audit log):</label>
+        <input type="text" id="fm-page-unlock-reason" placeholder="Contoh: Pemeliharaan berkas konfigurasi" style="width:100%;padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+      </div>
+
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+        <a href="/servers/{{ server.id }}/services" class="btn btn-ghost btn-sm">&larr; Kembali ke Server</a>
+        <button type="submit" class="btn btn-primary btn-sm" id="fm-page-unlock-submit-btn" style="display:inline-flex;align-items:center;gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
+          <span id="fm-page-unlock-btn-label">Buka Kunci File Manager</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -505,6 +562,191 @@ function formatDate(isoStr) {
   } catch (e) {
     return isoStr;
   }
+}
+
+// ===========================================================================
+// OTENTIKASI & SEWA (SUDO STEP-UP LEASE) FILE MANAGER
+// ===========================================================================
+let fmIsUnlocked = {{ 1 if is_unlocked else 0 }};
+let fmRemainingSeconds = {{ remaining_seconds }};
+const fmUserHasTotp = {{ 1 if user_has_totp else 0 }};
+let fmLeaseTimerId = null;
+let fmLeaseSecondsLeft = 0;
+
+function formatLeaseTime(secs) {
+  if (secs <= 0) return '00:00';
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function startFmLeaseCountdown(seconds) {
+  stopFmLeaseCountdown();
+  fmLeaseSecondsLeft = seconds;
+  const badge = document.getElementById('fm-lease-badge');
+  const timer = document.getElementById('fm-lease-timer');
+  if (badge) badge.style.display = 'inline-flex';
+  if (timer) timer.textContent = formatLeaseTime(fmLeaseSecondsLeft);
+
+  fmLeaseTimerId = setInterval(() => {
+    fmLeaseSecondsLeft -= 1;
+    if (fmLeaseSecondsLeft <= 0) {
+      stopFmLeaseCountdown();
+      fmIsUnlocked = 0;
+      showFmPageUnlockModal('Sesi File Manager telah kedaluwarsa. Masukkan kata sandi akun Anda kembali untuk melanjutkan.');
+      return;
+    }
+    if (timer) timer.textContent = formatLeaseTime(fmLeaseSecondsLeft);
+  }, 1000);
+}
+
+function stopFmLeaseCountdown() {
+  if (fmLeaseTimerId) {
+    clearInterval(fmLeaseTimerId);
+    fmLeaseTimerId = null;
+  }
+  const badge = document.getElementById('fm-lease-badge');
+  if (badge) badge.style.display = 'none';
+}
+
+function showFmPageUnlockModal(message = '') {
+  const modal = document.getElementById('fm-page-unlock-modal');
+  const errBox = document.getElementById('fm-page-unlock-error');
+  const pwdInput = document.getElementById('fm-page-unlock-pwd');
+  const totpInput = document.getElementById('fm-page-unlock-totp');
+  const submitBtn = document.getElementById('fm-page-unlock-submit-btn');
+  const btnLabel = document.getElementById('fm-page-unlock-btn-label');
+
+  if (errBox) {
+    if (message) {
+      errBox.style.display = 'block';
+      errBox.textContent = message;
+    } else {
+      errBox.style.display = 'none';
+      errBox.textContent = '';
+    }
+  }
+  if (pwdInput) pwdInput.value = '';
+  if (totpInput) totpInput.value = '';
+  if (submitBtn) submitBtn.disabled = false;
+  if (btnLabel) btnLabel.textContent = 'Buka Kunci File Manager';
+
+  if (modal) {
+    modal.style.display = 'flex';
+    setTimeout(() => { if (pwdInput) pwdInput.focus(); }, 60);
+  }
+}
+
+function hideFmPageUnlockModal() {
+  const modal = document.getElementById('fm-page-unlock-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function submitFmPageUnlock(e) {
+  e.preventDefault();
+  const pwdInput = document.getElementById('fm-page-unlock-pwd');
+  const totpInput = document.getElementById('fm-page-unlock-totp');
+  const durSelect = document.getElementById('fm-page-unlock-duration');
+  const reasonInput = document.getElementById('fm-page-unlock-reason');
+  const errBox = document.getElementById('fm-page-unlock-error');
+  const submitBtn = document.getElementById('fm-page-unlock-submit-btn');
+  const btnLabel = document.getElementById('fm-page-unlock-btn-label');
+
+  const password = pwdInput ? pwdInput.value : '';
+  const totp = totpInput ? totpInput.value.trim() : '';
+  const duration = durSelect ? parseInt(durSelect.value, 10) : 15;
+  const reason = reasonInput ? reasonInput.value.trim() : '';
+
+  if (!password) {
+    if (errBox) {
+      errBox.textContent = 'Kata sandi akun wajib diisi.';
+      errBox.style.display = 'block';
+    }
+    return;
+  }
+
+  if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
+  if (submitBtn) submitBtn.disabled = true;
+  if (btnLabel) btnLabel.textContent = 'Memverifikasi...';
+
+  try {
+    const res = await fetch(`/api/servers/${SID}/files/unlock`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf()
+      },
+      body: JSON.stringify({
+        password: password,
+        totp: totp,
+        duration_minutes: duration,
+        reason: reason
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || 'Otentikasi gagal. Periksa kembali kredensial Anda.');
+    }
+
+    fmIsUnlocked = 1;
+    hideFmPageUnlockModal();
+    startFmLeaseCountdown(data.remaining_seconds || (duration * 60));
+    fmLoadDir(fmCurrentPath);
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+    }
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+    if (btnLabel) btnLabel.textContent = 'Buka Kunci File Manager';
+  }
+}
+
+async function lockFileManagerSession() {
+  if (!confirm('Apakah Anda yakin ingin mengunci sesi File Manager ini sekarang?')) return;
+  try {
+    const res = await fetch(`/api/servers/${SID}/files/lock`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf()
+      }
+    });
+    const data = await res.json();
+    fmIsUnlocked = 0;
+    stopFmLeaseCountdown();
+    showFmPageUnlockModal('Sesi File Manager telah berhasil dikunci.');
+    const tbody = document.getElementById('fm-tbody');
+    const statsInfo = document.getElementById('fm-stats-info');
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--dim)">
+        🔒 Sesi File Manager terkunci. Masukkan kredensial untuk membuka kunci.
+      </td></tr>`;
+    }
+    if (statsInfo) {
+      statsInfo.innerHTML = `<span style="color:var(--yellow)">Sesi Terkunci</span>`;
+    }
+  } catch (err) {
+    alert('Gagal mengunci sesi File Manager: ' + err.message);
+  }
+}
+
+// Wrapper fetch untuk mendeteksi HTTP 423 Locked secara sentral
+async function fmFetch(url, options = {}) {
+  const res = await fetch(url, options);
+  if (res.status === 423) {
+    stopFmLeaseCountdown();
+    fmIsUnlocked = 0;
+    showFmPageUnlockModal('Sesi otentikasi File Manager terkunci atau telah kedaluwarsa. Masukkan kata sandi akun untuk membuka sesi.');
+    const err = new Error('Sesi File Manager terkunci (HTTP 423)');
+    err.isLocked = true;
+    throw err;
+  }
+  return res;
 }
 
 // ===========================================================================
@@ -802,7 +1044,7 @@ async function fmPasteClipboard() {
   if (btnPaste) btnPaste.disabled = true;
 
   try {
-    const res = await fetch(endpoint, {
+    const res = await fmFetch(endpoint, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
@@ -852,7 +1094,7 @@ async function fmLoadDir(path, pushHistory = true) {
   </td></tr>`;
 
   try {
-    const res = await fetch(`/api/servers/${SID}/files/ls?path=` + encodeURIComponent(path), {
+    const res = await fmFetch(`/api/servers/${SID}/files/ls?path=` + encodeURIComponent(path), {
       credentials: 'same-origin'
     });
     const data = await res.json();
@@ -916,6 +1158,14 @@ async function fmLoadDir(path, pushHistory = true) {
     }
 
   } catch (err) {
+    if (err.isLocked) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--dim)">
+        🔒 ` + (isEn ? 'File Manager session locked. Please enter credentials to unlock.' : 'Sesi File Manager terkunci. Masukkan kredensial untuk membuka kunci.') + `
+      </td></tr>`;
+      statsInfo.innerHTML = `<span style="color:var(--yellow)">` + (isEn ? 'Session Locked' : 'Sesi Terkunci') + `</span>`;
+      fmUpdateNavButtons();
+      return;
+    }
     errBanner.textContent = (isEn ? 'Failed to open directory: ' : 'Gagal membuka direktori: ') + err.message;
     errBanner.style.display = 'block';
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--red)">
@@ -1096,7 +1346,7 @@ async function fmOpenFile(filePath) {
   modal.style.display = 'flex';
 
   try {
-    const res = await fetch(`/api/servers/${SID}/files/cat?path=` + encodeURIComponent(filePath), {
+    const res = await fmFetch(`/api/servers/${SID}/files/cat?path=` + encodeURIComponent(filePath), {
       credentials: 'same-origin'
     });
     const data = await res.json();
@@ -1127,6 +1377,10 @@ async function fmOpenFile(filePath) {
     setTimeout(() => textarea.focus(), 50);
 
   } catch (err) {
+    if (err.isLocked) {
+      modal.style.display = 'none';
+      return;
+    }
     textarea.value = (isEn ? '[Failed to open file: ' : '[Gagal membuka berkas: ') + err.message + ']';
     textarea.disabled = true;
     saveBtn.disabled = true;
@@ -1178,7 +1432,7 @@ async function fmSaveFile() {
   statusEl.innerHTML = '<span style="color:var(--blue)">' + (isEn ? 'Saving...' : 'Menyimpan...') + '</span>';
 
   try {
-    const res = await fetch(`/api/servers/${SID}/files/write`, {
+    const res = await fmFetch(`/api/servers/${SID}/files/write`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -1215,7 +1469,7 @@ async function fmRestoreBak() {
 
   const bakPath = fmEditingPath + '.bak';
   try {
-    const res = await fetch(`/api/servers/${SID}/files/cat?path=` + encodeURIComponent(bakPath), {
+    const res = await fmFetch(`/api/servers/${SID}/files/cat?path=` + encodeURIComponent(bakPath), {
       credentials: 'same-origin'
     });
     const data = await res.json();
@@ -1303,7 +1557,7 @@ async function fmSubmitUpload(e) {
   formData.append('destination', fmCurrentPath);
 
   try {
-    const res = await fetch(`/api/servers/${SID}/files/upload`, {
+    const res = await fmFetch(`/api/servers/${SID}/files/upload`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -1368,7 +1622,7 @@ async function fmSubmitChmod(e) {
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     if (mode) {
-      const res = await fetch(`/api/servers/${SID}/files/chmod`, {
+      const res = await fmFetch(`/api/servers/${SID}/files/chmod`, {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
@@ -1379,7 +1633,7 @@ async function fmSubmitChmod(e) {
     }
 
     if (owner || group) {
-      const res = await fetch(`/api/servers/${SID}/files/chown`, {
+      const res = await fmFetch(`/api/servers/${SID}/files/chown`, {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
@@ -1436,7 +1690,7 @@ async function fmSubmitRename(e) {
 
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    const res = await fetch(`/api/servers/${SID}/files/rename`, {
+    const res = await fmFetch(`/api/servers/${SID}/files/rename`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
@@ -1483,7 +1737,7 @@ async function fmSubmitDelete() {
   errorBox.style.display = 'none';
 
   try {
-    const res = await fetch(`/api/servers/${SID}/files/rm`, {
+    const res = await fmFetch(`/api/servers/${SID}/files/rm`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
@@ -1524,7 +1778,7 @@ function fmOpenNewFolder() {
 
   fmPromptCallback = async (name) => {
     const fullPath = fmCurrentPath.replace(/\/+$/, '') + '/' + name.trim();
-    const res = await fetch(`/api/servers/${SID}/files/mkdir`, {
+    const res = await fmFetch(`/api/servers/${SID}/files/mkdir`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
@@ -1559,7 +1813,7 @@ function fmOpenNewFile() {
 
   fmPromptCallback = async (name) => {
     const fullPath = fmCurrentPath.replace(/\/+$/, '') + '/' + name.trim();
-    const res = await fetch(`/api/servers/${SID}/files/touch`, {
+    const res = await fmFetch(`/api/servers/${SID}/files/touch`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
@@ -1637,7 +1891,7 @@ async function fmSubmitBulkDelete() {
 
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    const res = await fetch(`/api/servers/${SID}/files/batch-rm`, {
+    const res = await fmFetch(`/api/servers/${SID}/files/batch-rm`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
@@ -1683,7 +1937,7 @@ async function fmSubmitBulkChmod(e) {
 
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    const res = await fetch(`/api/servers/${SID}/files/batch-chmod`, {
+    const res = await fmFetch(`/api/servers/${SID}/files/batch-chmod`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
@@ -1715,6 +1969,9 @@ document.addEventListener('keydown', (e) => {
     const openModals = document.querySelectorAll('.fm-modal-backdrop');
     let anyOpen = false;
     openModals.forEach(m => {
+      if (m.id === 'fm-page-unlock-modal' && (!fmIsUnlocked || fmLeaseSecondsLeft <= 0)) {
+        return;
+      }
       if (m.style.display === 'flex') {
         m.style.display = 'none';
         anyOpen = true;
@@ -1839,7 +2096,23 @@ window.onAppLangChanged = function(lang) {
 document.addEventListener('DOMContentLoaded', () => {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   updateFmTooltips(isEn);
-  fmLoadDir(fmCurrentPath);
+  if (fmIsUnlocked && fmRemainingSeconds > 0) {
+    startFmLeaseCountdown(fmRemainingSeconds);
+    fmLoadDir(fmCurrentPath);
+  } else {
+    showFmPageUnlockModal();
+    const tbody = document.getElementById('fm-tbody');
+    const statsInfo = document.getElementById('fm-stats-info');
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--dim)">
+        🔒 ` + (isEn ? 'File Manager session locked. Please authenticate to access.' : 'Sesi File Manager terkunci. Silakan lakukan otentikasi untuk mengakses berkas.') + `
+      </td></tr>`;
+    }
+    if (statsInfo) {
+      statsInfo.innerHTML = `<span style="color:var(--yellow)">` + (isEn ? 'Session Locked' : 'Sesi Terkunci') + `</span>`;
+    }
+    fmUpdateNavButtons();
+  }
 });
 </script>
 {% endblock %}

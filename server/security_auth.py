@@ -83,6 +83,10 @@ OPERATOR_PERMISSIONS: Dict[str, Dict[str, str]] = {
         "label": "Kelola Akun Viewer",
         "desc": "Tambah dan hapus akun pengguna berkategori Viewer (tamu pemantau).",
     },
+    "can_probing": {
+        "label": "Kelola Synthetic Probing",
+        "desc": "Tambah, ubah, jeda, dan uji probe HTTP/ICMP/TCP endpoint.",
+    },
 }
 
 

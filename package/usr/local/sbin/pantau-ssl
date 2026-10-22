@@ -40,8 +40,10 @@ case "$ACTION" in
         CERT_PATH="${1:-}"
         [ -n "$CERT_PATH" ] || fail "Path sertifikat wajib diisi"
         if [ -f "$CONF_FILE" ]; then
-            # Hapus baris yang cocok persis
-            sed -i "\|${CERT_PATH}|d" "$CONF_FILE"
+            # Hapus baris yang cocok persis tanpa risiko karakter pemisah sed
+            grep -Fxv "$CERT_PATH" "$CONF_FILE" > "$CONF_FILE.tmp" || true
+            mv -f "$CONF_FILE.tmp" "$CONF_FILE"
+            chmod 0644 "$CONF_FILE"
             echo "OK: Path sertifikat '$CERT_PATH' berhasil dihapus dari pengawasan"
         else
             echo "OK: Berkas konfigurasi kosong"
