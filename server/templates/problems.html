@@ -863,7 +863,11 @@ async function ackProblem(id, btn, sev) {
     });
     if (r.ok) {
       showToast(isEn ? 'Incident marked as handled.' : 'Insiden ditandai telah ditangani.', true);
-      location.reload();
+      if (typeof window.poll === 'function') {
+        window.poll();
+      } else {
+        location.reload();
+      }
       return;
     }
     btn.disabled = false; btn.innerHTML = orig;
@@ -1144,10 +1148,16 @@ window.onAppLangChanged = function(lang) {
   if (typeof probFilter === 'function') probFilter();
 };
 
-// Polling otomatis setiap 5 detik di latar belakang
+// Polling otomatis setiap 3 detik di latar belakang
 setInterval(() => {
   if (typeof window.poll === 'function') window.poll();
-}, 5000);
+}, 3000);
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && typeof window.poll === 'function') {
+    window.poll();
+  }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');

@@ -25,7 +25,7 @@ Dashboard pemantauan dan pengelolaan multi-server Linux berbasis web (FastAPI + 
   - **Viewer:** Hak observasi baca-saja (*read-only*) tanpa tombol aksi eksekusi.
 - **Autentikasi Dua Langkah (2FA TOTP):** Dukungan Google Authenticator, Microsoft Authenticator, dan kode pemulihan cadangan (*recovery codes*).
 - **Audit Trail Terpusat:** Pencatatan log seluruh aktivitas pengguna (siapa, kapan, perintah/tindakan, target, dan hasil eksekusi).
-- **Sinkronisasi Antarmuka Otomatis (Live Version Watcher & Anti-Stale Cache):** Pengawas versi otomatis di browser yang mendeteksi pembaruan rilis atau restart backend tanpa mengharuskan operator menekan tombol reload secara manual, disertai proteksi sesi aktif dan pembaruan live badge Tier & APT.
+- **Sinkronisasi Antarmuka & Penanganan Insiden Tanpa Reload (Reactive Zero-Reload NOC UI):** Pengawas versi otomatis di browser dan modul reaktif yang memperbarui insiden, layanan, serta telemetri secara seketika tanpa mengharuskan operator menekan tombol reload secara manual, disertai proteksi sesi aktif dan pembaruan live badge Tier & APT.
 
 ---
 

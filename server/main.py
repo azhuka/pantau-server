@@ -7948,13 +7948,18 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
     for p in instances:
         quiet = _quiet_secs_for(p["key"])
         ev = p.get("event_at")
-        row = (
+        existing_rows = (
             db.query(ServerProblem).filter(
                 ServerProblem.server_id == srv.id,
                 ServerProblem.key == p["key"],
                 ServerProblem.resolved_at.is_(None),
-            ).first()
+            ).order_by(ServerProblem.id.asc()).all()
         )
+        row = existing_rows[0] if existing_rows else None
+        if len(existing_rows) > 1:
+            for extra in existing_rows[1:]:
+                extra.resolved_at = now
+                extra.resolved_note = "duplicate_cleanup"
         if quiet > 0 and ev is not None and (now - ev).total_seconds() >= quiet:
             # Sudah tenang melebihi jendela -> tutup otomatis (jangan buka baru).
             if row is not None:
@@ -8296,10 +8301,14 @@ def problems_aggregate(db):
             ServerProblem.started_at >= cutoff_24,
         ).all():
             counts[r.key] = counts.get(r.key, 0) + 1
+        seen_open_keys = set()
         for r in db.query(ServerProblem).filter(
             ServerProblem.server_id == srv.id,
             ServerProblem.resolved_at.is_(None),
-        ).all():
+        ).order_by(ServerProblem.id.desc()).all():
+            if r.key in seen_open_keys:
+                continue
+            seen_open_keys.add(r.key)
             open_list.append(_agg_row(srv, r, counts))
         for r in db.query(ServerProblem).filter(
             ServerProblem.server_id == srv.id,

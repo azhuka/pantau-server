@@ -311,6 +311,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.3
+
+- **Tipe Rilis:** Penghapusan Reload Paksa Antarmuka, Penyelarasan Reaktif & Deduplikasi Masalah (*Zero-Reload Incident Handling, Reactive Polling & Incident Deduplication*)
+- **Fokus Utama:** Mengeliminasi seluruh pemanggilan reload paksa (`location.reload()`) pada aksi penanganan insiden dan pengabaian pemantauan, menerapkan pembaruan reaktif tanpa reload pada seluruh tabel insiden dan dashboard, mempercepat sinkronisasi saat tab peramban aktif (`visibilitychange`), serta membasmi duplikasi rekaman masalah di basis data.
+
+### Rangkuman Pembaruan:
+1. **Penghapusan Reload Paksa pada Tindakan Operator (*Zero-Reload Incident Handling*):**
+   - Menghapus pemanggilan `location.reload()` pada fungsi `unignoreProblem()` dan `submitIgnoreProblem()` di `base.html`, serta `ackProblem()` di `problems.html`.
+   - Menggantikannya dengan pola *reactive polling* instan (`window.poll()` / `pollNocDashboard()`), sehingga operator mendapatkan konfirmasi toast dan pembaruan baris seketika tanpa kehilangan fokus, posisi scroll, atau filter aktif.
+2. **Pencegahan & Pembersihan Duplikasi Rekaman Insiden (*Incident Deduplication*):**
+   - Menerapkan penguncian dan deduplikasi pada `sync_server_problems` di `server/main.py` sehingga jika terjadi eksekusi bersamaan, baris terbuka lama untuk key yang sama tidak diduplikasi, dan rekaman berlebih langsung ditutup otomatis (`duplicate_cleanup`).
+   - Menerapkan filter `seen_open_keys` pada `problems_aggregate` agar daftar masalah terbuka dijamin unik per server dan per key anomali.
+   - Membersihkan catatan duplikat yang ada pada basis data.
+3. **Peningkatan Responsivitas Halaman Insiden (*Instant Tab Resync & Fast Polling*):**
+   - Menambahkan event listener `visibilitychange` pada `problems.html` agar seketika melakukan sinkronisasi data saat tab kembali difokuskan oleh operator, mengatasi pembatasan throttling 60 detik bawaan peramban modern.
+   - Mempercepat siklus polling latar belakang halaman masalah dari 5 detik menjadi 3 detik.
+
+---
+
 ## Versi 4.6.2
 
 - **Tipe Rilis:** Optimalisasi Responsivitas Real-Time & Eliminasi Jeda Status (*Zero-Delay Command Dispatch, Instant Telemetry & Real-Time Event Sync*)
