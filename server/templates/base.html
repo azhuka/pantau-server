@@ -1066,7 +1066,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.6.3' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.6.4' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -1676,21 +1676,55 @@ function renderAlerts(d){
       document.body.classList.remove('show-alert-banner');
     } else {
       const dangerN = d.firing_danger_count !== undefined ? d.firing_danger_count : (d.open_danger_count || 0);
+      const avgN = d.firing_average_count !== undefined ? d.firing_average_count : (d.open_average_count || 0);
+      const warnN = d.firing_warning_count !== undefined ? d.firing_warning_count : (d.open_warning_count || 0);
+
       const bannerTag = document.getElementById('alertBannerTag');
       const actionBtn = document.getElementById('alertBannerActionBtn') || banner.querySelector('.alert-banner-btn');
 
-      if (dangerN > 0 && dangerList.length > 0) {
+      if (dangerN > 0 && (d.firing_danger_alerts || d.danger_alerts || []).length > 0) {
+        const list = d.firing_danger_alerts || d.danger_alerts || [];
         banner.className = 'alert-banner banner-danger';
         if (bannerTag) bannerTag.innerHTML = '<span class="pulse">🚨</span> INSIDEN KRITIS';
         const hosts = d.firing_danger_hosts || d.danger_hosts || [];
         const hCount = hosts.length || dangerN;
-        const sampleMsg = (dangerList[0] && dangerList[0].message) ? dangerList[0].message : 'Insiden kritis aktif';
+        const sampleMsg = (list[0] && list[0].message) ? list[0].message : 'Insiden kritis aktif';
         if (hCount === 1) {
           bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(hosts[0] || 'Klien')}</span>: ${escHtml(sampleMsg)}`;
         } else {
           bannerText.innerHTML = `<strong>${hCount} Server</strong> dalam status Kritis (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
         }
         if (actionBtn) actionBtn.innerHTML = `Buka Halaman Insiden (${dangerN}) &rarr;`;
+        banner.style.display = 'flex';
+        document.body.classList.add('show-alert-banner');
+      } else if (avgN > 0 && (d.firing_average_alerts || d.average_alerts || []).length > 0) {
+        const list = d.firing_average_alerts || d.average_alerts || [];
+        banner.className = 'alert-banner banner-average';
+        if (bannerTag) bannerTag.innerHTML = '<span class="pulse">⚠️</span> INSIDEN GAWAT';
+        const hosts = d.firing_average_hosts || d.average_hosts || [];
+        const hCount = hosts.length || avgN;
+        const sampleMsg = (list[0] && list[0].message) ? list[0].message : 'Insiden gawat aktif';
+        if (hCount === 1) {
+          bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(hosts[0] || 'Klien')}</span>: ${escHtml(sampleMsg)}`;
+        } else {
+          bannerText.innerHTML = `<strong>${hCount} Server</strong> dalam status Gawat (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
+        }
+        if (actionBtn) actionBtn.innerHTML = `Buka Halaman Insiden (${avgN}) &rarr;`;
+        banner.style.display = 'flex';
+        document.body.classList.add('show-alert-banner');
+      } else if (warnN > 0 && (d.firing_warning_alerts || d.warning_alerts || []).length > 0) {
+        const list = d.firing_warning_alerts || d.warning_alerts || [];
+        banner.className = 'alert-banner banner-warning';
+        if (bannerTag) bannerTag.innerHTML = '<span class="pulse">🟡</span> PERINGATAN OPERASIONAL';
+        const hosts = d.firing_warning_hosts || d.warning_hosts || [];
+        const hCount = hosts.length || warnN;
+        const sampleMsg = (list[0] && list[0].message) ? list[0].message : 'Peringatan aktif';
+        if (hCount === 1) {
+          bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(hosts[0] || 'Klien')}</span>: ${escHtml(sampleMsg)}`;
+        } else {
+          bannerText.innerHTML = `<strong>${hCount} Server</strong> dalam status Peringatan (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
+        }
+        if (actionBtn) actionBtn.innerHTML = `Buka Halaman Insiden (${warnN}) &rarr;`;
         banner.style.display = 'flex';
         document.body.classList.add('show-alert-banner');
       } else {

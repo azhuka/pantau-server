@@ -2335,7 +2335,7 @@ async function pollNocDashboard() {
     // Update Insiden Terkini Header Icon (menggunakan state cache agar tidak berkedip)
     const incIcon = document.getElementById('dash-inc-icon');
     if (incIcon) {
-      const curIconState = dangerTot > 0 ? 'danger' : (avgTot > 0 ? 'avg' : (warnTot > 0 ? 'warn' : 'ok'));
+      const curIconState = dangerTot > 0 ? 'danger' : (avgTot > 0 ? 'avg' : (warnTot > 0 ? 'warn' : (infoTot > 0 ? 'info' : 'ok')));
       if (incIcon.dataset.state !== curIconState) {
         incIcon.dataset.state = curIconState;
         if (curIconState === 'danger') {
@@ -2350,6 +2350,10 @@ async function pollNocDashboard() {
           incIcon.style.background = 'rgba(245,158,11,0.15)';
           incIcon.style.color = 'var(--yellow)';
           incIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+        } else if (curIconState === 'info') {
+          incIcon.style.background = 'rgba(59,130,246,0.15)';
+          incIcon.style.color = 'var(--blue)';
+          incIcon.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
         } else {
           incIcon.style.background = 'rgba(16,185,129,0.12)';
           incIcon.style.color = 'var(--green)';

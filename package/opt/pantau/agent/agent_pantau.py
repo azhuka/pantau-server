@@ -474,7 +474,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.6.3"
+AGENT_VERSION = "4.6.4"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4634,9 +4634,9 @@ def _run_once(cfg: dict):
             f"{s['active_connections']:>5d} {s['response_time_ms']:>9d}"
         )
 
-    # Sesi pengguna dan akun (SSH login/logout) dilaporkan di setiap siklus demi respons real-time
+    # Sesi pengguna, akun (SSH login/logout), dan unit layanan dilaporkan di setiap siklus
     accounts = collect_accounts()
-    units = collect_units() if _tick % 3 == 1 else None
+    units = collect_units()
     if _tick % 6 == 2:
         last_apt = collect_apt()
     apt = last_apt

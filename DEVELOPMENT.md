@@ -311,6 +311,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.4
+
+- **Tipe Rilis:** Transparansi Telemetri Menyeluruh, Eliminasi Pembatasan Pelaporan & Banner Peringatan Multi-Level (*Full Telemetry Transparency, Zero Suppression & Fleet-Wide Multi-Level Alerting*)
+- **Fokus Utama:** Memastikan seluruh kejadian dan anomali server klien (perubahan status unit systemd, sesi login/logout SSH, peningkatan beban, kegagalan layanan) terdeteksi dan tersaji secara seketika tanpa peredaman atau pembatasan siklus, memperluas Alert Banner ke tingkat Gawat (Average) dan Peringatan (Warning) untuk seluruh server, serta menyinkronkan urutan kronologis insiden antara backend dan antarmuka.
+
+### Rangkuman Pembaruan:
+1. **Banner Peringatan Multi-Level Seluruh Armada (*Fleet-Wide Multi-Level Alert Banner*):**
+   - Memperluas cakupan Alert Banner di `base.html` dan `/api/alerts` agar tidak hanya terpaku pada insiden Kritis Tier-1, melainkan juga menampilkan insiden Gawat (`banner-average` oranye) dan Peringatan (`banner-warning` kuning) pada seluruh tingkatan server (Tier 1, Tier 2, Tier 3).
+   - Menjamin kewaspadaan operator NOC terhadap kejadian server klien secara langsung dari satu halaman tanpa ada kejadian yang teredam.
+2. **Penghapusan Pembatasan Deteksi Layanan (*Unsuppressed Service Event Reporting*):**
+   - Menghapus peredaman waktu `< 3` detik pada `agent_report` di `server/main.py` sehingga kejadian layanan eksternal yang berhenti atau crash langsung dicatat seketika pada detak pelaporan pertama.
+   - Mengeliminasi pembatasan modulo siklus (`_tick % 3 == 1`) pada pengumpulan unit layanan di daemon `agent_pantau.py`, sehingga unit systemd dilaporkan di setiap siklus bersama dengan telemetri akun dan sesi pengguna.
+3. **Penyelarasan Pengurutan Kronologis & Transparansi Status Armada (*Synchronized Sorting & Truthful Status*):**
+   - Menyelaraskan pengurutan daftar `all_open_problems` pada backend Python (`dashboard()`) dengan antarmuka JavaScript agar mengurutkan insiden terbaru di urutan paling atas (waktu mulai *descending*), menghilangkan efek lompatan baris (*jitter*) pada saat render awal.
+   - Memperbaiki kalkulasi status tabel server agar memperhitungkan seluruh kategori kejadian (Danger, Average, Warning, Info) sehingga baris server tidak pernah menampilkan status hijau "Normal" secara keliru saat ada sesi SSH aktif atau pembaruan paket yang belum diproses.
+   - Memperbarui indikator status icon insiden header (`dash-inc-icon`) untuk mengenali kondisi informasi aktif (`info`) dengan warna biru yang proporsional.
+
+---
+
 ## Versi 4.6.3
 
 - **Tipe Rilis:** Penghapusan Reload Paksa Antarmuka, Penyelarasan Reaktif & Deduplikasi Masalah (*Zero-Reload Incident Handling, Reactive Polling & Incident Deduplication*)

@@ -1275,10 +1275,8 @@ def agent_report(
             # 1. Bila terjadi konflik agen (multi-IP), tahan status DOWN jika host lain baru saja melapor UP
             if has_agent_conflict and last and last.status == "up":
                 continue
-            # 2. Transisi status seketika tanpa jeda 45 detik agar kejadian eksternal (service crash / dimatikan) langsung terdeteksi
+            # 2. Transisi status seketika tanpa jeda agar kejadian eksternal (service crash / dimatikan) langsung terdeteksi
             is_op_shutdown = bool(svc.ignored_reason and "DIMATIKAN OLEH OPERATOR" in svc.ignored_reason)
-            if not is_op_shutdown and last and last.status == "up" and last.timestamp and (datetime.utcnow() - last.timestamp).total_seconds() < 3:
-                continue
             db.add(Metric(
                 service_id=svc.id,
                 status="down",
@@ -3485,7 +3483,20 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             all_open_problems.append(item)
 
     sev_order = {"danger": 0, "average": 1, "warning": 2, "info": 3}
-    all_open_problems.sort(key=lambda p: (1 if p["is_ignored"] else 0, sev_order.get(p["severity"], 4), p["started_at"] or ""), reverse=False)
+    def _prob_sort_key(p):
+        is_ign = 1 if p.get("is_ignored") else 0
+        sev = sev_order.get((p.get("severity") or "info").lower(), 4)
+        iso = p.get("started_at") or ""
+        ts = 0.0
+        if iso:
+            try:
+                clean_iso = iso.replace("Z", "")
+                ts = datetime.fromisoformat(clean_iso).timestamp()
+            except Exception:
+                ts = 0.0
+        return (is_ign, sev, -ts)
+
+    all_open_problems.sort(key=_prob_sort_key)
 
     top_cpu = sorted([s for s in servers if s._cpu is not None], key=lambda s: s._cpu, reverse=True)[:5]
     top_mem = sorted([s for s in servers if s._mem_pct is not None], key=lambda s: s._mem_pct, reverse=True)[:5]
@@ -8904,7 +8915,7 @@ def api_alerts(
         .order_by(desc(ServerProblem.started_at)).all()
     )
 
-    open_danger = [r for r in open_problems if r.severity == "danger" and get_effective_tier(r) == 1]
+    open_danger = [r for r in open_problems if r.severity == "danger"]
     open_average = [r for r in open_problems if r.severity == "average"]
     open_warning = [r for r in open_problems if r.severity == "warning"]
     open_info = [r for r in open_problems if r.severity == "info"]
@@ -8920,8 +8931,8 @@ def api_alerts(
     def _is_alert_banner_firing(r, now_dt):
         if getattr(r, "is_ignored", 0):
             return False
-        # Banner, alarm suara, dan badge kritis HANYA untuk layanan Tier-1 (Server Tier-1 atau Endpoint/Router/AP Tier-1)
-        if get_effective_tier(r) != 1:
+        # Untuk keparahan danger (kritis), hanya layanan Tier-1 yang memicu status Kritis Merah
+        if r.severity == "danger" and get_effective_tier(r) != 1:
             return False
         # Jika insiden berasal dari endpoint yang baru didaftarkan dan belum pernah terverifikasi normal (UP),
         # tahan alarm darurat/banner kritis agar tidak membuat panik operator saat baru menguji/konfigurasi target
