@@ -1133,15 +1133,17 @@ body.popout-fleet_table #dash-fleet-card {
         {% set tot_prob = d_cnt + avg_cnt + w_cnt + i_cnt %}
         {% set s_tier = srv.tier|default(2) %}
 
-        <tr data-srv-id="{{ srv.id }}"
+        <tr id="dash-tr-{{ srv.id }}"
+            data-srv-id="{{ srv.id }}"
             data-row-group="{{ srv.group_name or '' }}"
             data-row-text="{{ (srv.hostname ~ ' ' ~ (srv.ip_address or '') ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' tier-' ~ s_tier) | lower }}"
             onclick="window.location.href='/servers/{{ srv.id }}/services'"
-            title="Klik untuk buka rincian server {{ srv.hostname }}">
+            title="Klik untuk buka rincian server {{ srv.hostname }}"
+            style="{{ 'background:rgba(239,68,68,0.08);' if srv._status_cls == 'badge-danger' or srv._status_label == 'offline' else ('background:rgba(249,115,22,0.08);' if srv._status_cls == 'badge-orange' else ('background:rgba(245,158,11,0.06);' if srv._status_cls == 'badge-warn' else ('background:rgba(56,189,248,0.05);' if srv._status_cls == 'badge-info' else ''))) }}">
           <!-- 0. Server -->
           <td data-sort-val="{{ srv.hostname | lower }}" style="white-space:nowrap;vertical-align:middle">
             <div style="display:inline-flex;align-items:center;gap:7px">
-              <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else ('down' if srv._status_label == 'offline' else 'muted')) }}" id="tbl-dot-{{ srv.id }}"></span>
+              <span class="dot {{ 'warn' if srv.is_maintenance else ('down' if srv._status_cls == 'badge-danger' or srv._status_label == 'offline' else ('orange' if srv._status_cls == 'badge-orange' else ('warn' if srv._status_cls == 'badge-warn' else ('info' if srv._status_cls == 'badge-info' else ('up' if srv._status_cls == 'badge-up' else 'muted'))))) }}" id="tbl-dot-{{ srv.id }}"></span>
               <strong style="color:var(--text-bright);font-size:13px">{{ srv.hostname }}</strong>
             </div>
           </td>
@@ -1863,7 +1865,6 @@ setInterval(updateRelTimes, 10000);
 
 // 6. Live Polling (Syncs both Table View and Grid Card View every 10s)
 async function pollNocDashboard() {
-  if (document.hidden) return;
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const [r, rProbes] = await Promise.all([
@@ -1914,8 +1915,8 @@ async function pollNocDashboard() {
       const hasReported = Boolean(srv.last_seen);
       const isOnline = srv.overall_status !== 'offline';
 
-      // Status text & class
-      let statusLabel = 'Online', statusCls = 'badge-up', dotCls = 'up';
+      // Status text & class mencerminkan kondisi operasional riil server
+      let statusLabel = 'Normal', statusCls = 'badge-up', dotCls = 'up';
       if (srv.is_maintenance) {
         statusLabel = isEn ? 'Maintenance' : 'Pemeliharaan';
         statusCls = 'badge-warn';
@@ -1928,13 +1929,44 @@ async function pollNocDashboard() {
         statusLabel = 'Offline';
         statusCls = 'badge-down';
         dotCls = 'down';
+      } else if (dCnt > 0) {
+        statusLabel = isEn ? 'Critical' : 'Kritis';
+        statusCls = 'badge-danger';
+        dotCls = 'down';
+      } else if (avgCnt > 0) {
+        statusLabel = isEn ? 'High' : 'Gawat';
+        statusCls = 'badge-orange';
+        dotCls = 'orange';
+      } else if (wCnt > 0) {
+        statusLabel = isEn ? 'Warning' : 'Peringatan';
+        statusCls = 'badge-warn';
+        dotCls = 'warn';
+      } else if (iCnt > 0) {
+        statusLabel = isEn ? 'Info' : 'Info';
+        statusCls = 'badge-info';
+        dotCls = 'info';
       } else {
-        statusLabel = 'Online';
+        statusLabel = isEn ? 'Normal' : 'Normal';
         statusCls = 'badge-up';
         dotCls = 'up';
       }
 
       // --- A. Update Table View Elements ---
+      const tblTr = document.getElementById('dash-tr-' + srv.id);
+      if (tblTr) {
+        if (srv.overall_status === 'offline' || dCnt > 0) {
+          tblTr.style.background = 'rgba(239, 68, 68, 0.08)';
+        } else if (avgCnt > 0) {
+          tblTr.style.background = 'rgba(249, 115, 22, 0.08)';
+        } else if (wCnt > 0) {
+          tblTr.style.background = 'rgba(245, 158, 11, 0.06)';
+        } else if (iCnt > 0) {
+          tblTr.style.background = 'rgba(56, 189, 248, 0.05)';
+        } else {
+          tblTr.style.background = '';
+        }
+      }
+
       const tblDot = document.getElementById('tbl-dot-' + srv.id);
       const tblSts = document.getElementById('tbl-sts-' + srv.id);
       if (tblDot) tblDot.className = 'dot ' + dotCls;
@@ -2331,6 +2363,51 @@ async function pollNocDashboard() {
       const bTime = b.started_at ? new Date(b.started_at).getTime() : 0;
       return bTime - aTime;
     });
+
+    // Live Event Detection: Periksa insiden baru atau pulih secara seketika tanpa reload
+    if (window._prevKnownProblemsMap !== undefined) {
+      const currentMap = new Map();
+      allProblems.forEach(p => {
+        const uniqKey = `${p.server_id || p.probe_id || ''}:${p.key}`;
+        currentMap.set(uniqKey, p);
+      });
+
+      // Deteksi kejadian baru secara seketika di layar
+      currentMap.forEach((p, uniqKey) => {
+        if (!window._prevKnownProblemsMap.has(uniqKey)) {
+          const sLabel = (p.severity || 'info').toUpperCase();
+          const icon = (p.severity === 'danger') ? '🚨' : ((p.severity === 'average') ? '⚠️' : ((p.severity === 'warning') ? '🟡' : 'ℹ️'));
+          const toastMsg = `${icon} [${sLabel}] ${p.hostname}: ${p.message}`;
+          if (typeof showToast === 'function') {
+            showToast(toastMsg, p.severity !== 'danger' && p.severity !== 'average');
+          }
+          if (typeof playNocChime === 'function') {
+            playNocChime(p.severity || 'info');
+          }
+        }
+      });
+
+      // Deteksi kejadian pulih secara seketika di layar
+      window._prevKnownProblemsMap.forEach((oldP, uniqKey) => {
+        if (!currentMap.has(uniqKey)) {
+          const toastMsg = `✅ [PULIH] ${oldP.hostname}: Masalah '${oldP.message}' telah selesai / pulih.`;
+          if (typeof showToast === 'function') {
+            showToast(toastMsg, true);
+          }
+          if (typeof playNocChime === 'function') {
+            playNocChime('ok');
+          }
+        }
+      });
+
+      window._prevKnownProblemsMap = currentMap;
+    } else {
+      window._prevKnownProblemsMap = new Map();
+      allProblems.forEach(p => {
+        const uniqKey = `${p.server_id || p.probe_id || ''}:${p.key}`;
+        window._prevKnownProblemsMap.set(uniqKey, p);
+      });
+    }
 
     // Update Insiden Terkini Header Icon (menggunakan state cache agar tidak berkedip)
     const incIcon = document.getElementById('dash-inc-icon');

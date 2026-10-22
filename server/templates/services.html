@@ -7481,7 +7481,7 @@ function patch(data) {
 
 let _sysFetching = false;
 async function pollSystem() {
-  if (document.hidden || _sysFetching) return;
+  if (_sysFetching) return;
   _sysFetching = true;
   try {
     const r = await fetch('/api/servers/' + SID + '/system', {credentials: 'same-origin'});
@@ -8354,7 +8354,6 @@ function renderDiskCharts(pts) {
 }
 
 async function poll() {
-  if (document.hidden) return;
   try {
     const r = await fetch('/api/servers/' + SID + '/overview', {credentials: 'same-origin'});
     if (r.ok) patch(await r.json());

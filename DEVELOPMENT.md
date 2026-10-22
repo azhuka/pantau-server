@@ -311,6 +311,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.6
+
+- **Tipe Rilis:** Transformasi Reaktivitas Visual NOC, Refleksi Status Riil Armada & Audio-Visual Alerting Tanpa Reload (*True Operational Health Reflection, Real-Time Event Ticker & Autonomous NOC UX*)
+- **Fokus Utama:** Mengeliminasi tampilan status palsu "Normal/Online" saat ada insiden operasional/keamanan aktif, merefleksikan status kesehatan riil server pada tabel armada (Kritis, Gawat, Peringatan, Info, Normal), memperluas Alert Banner ke level Info Keamanan (sesi remote SSH), menambahkan deteksi diferensial kejadian seketika dengan notifikasi melayang (Toast) dan lonceng audio sintetis (Web Audio API), serta menghapus seluruh sisa reload paksa saat pembaruan sistem.
+
+### Rangkuman Pembaruan:
+1. **Refleksi Status Kesehatan Riil Server pada Tabel Armada (*Truthful Operational Status*):**
+   - Memperbarui `_server_status` di `server/main.py` dan `pollNocDashboard` di `dashboard.html` agar status server dan warna indikator dot tidak lagi terkunci pada "Online" hijau bila terdapat masalah aktif.
+   - Status server kini secara otomatis berubah warna dan label: Kritis (merah), Gawat (oranye), Peringatan (kuning), Info (biru), Normal (hijau), dan baris tabel diarsir halus sesuai keparahan kejadian.
+2. **Banner Alert Multi-Level untuk Aktivitas Keamanan & Sesi Remote (`banner-info`):**
+   - Memperluas Alert Banner di `base.html` dengan styling `.banner-info` (biru cyan) yang aktif menampilkan kejadian keamanan penting (seperti sesi remote SSH aktif) ketika tidak ada alarm darurat kritis yang sedang berjalan.
+3. **Deteksi Diferensial Kejadian Seketika & Notifikasi Audio-Visual (*Live Event Ticker & Web Audio Chime*):**
+   - Mengimplementasikan pelacakan diferensial kejadian per siklus polling (3 detik) pada `dashboard.html`. Saat ada insiden baru muncul atau terselesaikan, sistem secara mandiri menampilkan notifikasi mengambang (Toast) dan membunyikan nada lonceng distingtif tanpa reload.
+4. **Eliminasi Total Reload Otomatis pada Pembaruan Sistem (*Zero Auto-Reload Guarantee*):**
+   - Menghapus pemanggilan `window.location.reload()` pada fungsi `promptReload` di `base.html`, menggantikannya dengan sinkronisasi reaktif badge versi pada DOM agar layar operator tidak pernah terganggu atau ter-reload saat backend diperbarui.
+
+---
+
 ## Versi 4.6.5
 
 - **Tipe Rilis:** Eliminasi Total Caching Browser, Penghapusan Sisa Reload Paksa & Reaktivitas Penuh Antarmuka (*Zero-Reload Reactive Telemetry, Anti-Cache Middleware & Full Dynamic UX*)

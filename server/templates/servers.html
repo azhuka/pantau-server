@@ -161,7 +161,7 @@
         data-last-seen="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
       <td style="white-space:nowrap">
         <div style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap">
-          <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
+          <span class="dot {{ 'warn' if srv.is_maintenance else ('down' if srv._status_cls == 'badge-danger' or srv._status_label == 'offline' else ('orange' if srv._status_cls == 'badge-orange' else ('warn' if srv._status_cls == 'badge-warn' else ('info' if srv._status_cls == 'badge-info' else ('up' if srv._status_cls == 'badge-up' else 'muted'))))) }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
           <strong style="font-size:13.5px">{{ srv.hostname }}</strong>
           {% set s_tier = srv.tier|default(2) %}
           {% if s_tier == 1 %}
@@ -431,7 +431,6 @@ updateRelTimes();
 setInterval(updateRelTimes, 10000);
 
 async function srvPoll() {
-  if (document.hidden) return;
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const r = await fetch('/api/servers', {credentials: 'same-origin'});
@@ -442,7 +441,11 @@ async function srvPoll() {
       if (sts) {
         if (srv.is_maintenance) { sts.textContent = isEn ? 'Maintenance' : 'Pemeliharaan'; sts.className = 'badge badge-warn'; }
         else if (srv.overall_status === 'offline') { sts.textContent = 'Offline'; sts.className = 'badge badge-down'; }
-        else { sts.textContent = 'Online'; sts.className = 'badge badge-up'; }
+        else if (srv.danger_count > 0) { sts.textContent = isEn ? 'Critical' : 'Kritis'; sts.className = 'badge badge-danger'; }
+        else if (srv.average_count > 0) { sts.textContent = isEn ? 'High' : 'Gawat'; sts.className = 'badge badge-orange'; }
+        else if (srv.warning_count > 0) { sts.textContent = isEn ? 'Warning' : 'Peringatan'; sts.className = 'badge badge-warn'; }
+        else if (srv.info_count > 0) { sts.textContent = isEn ? 'Info' : 'Info'; sts.className = 'badge badge-info'; }
+        else { sts.textContent = isEn ? 'Normal' : 'Normal'; sts.className = 'badge badge-up'; }
       }
       const cpu = document.getElementById('srv-cpu-' + srv.id);
       if (cpu) cpu.textContent = srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '—';
