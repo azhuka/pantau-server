@@ -1035,11 +1035,11 @@ div[style*="position: fixed"] .card {
     <span>Rincian — {{ server.hostname }}</span>
     {% set s_tier = server.tier|default(2) %}
     {% if s_tier == 1 %}
-      <span class="badge" style="font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:2px 6px;font-weight:700;vertical-align:middle" title="tier-1">tier-1</span>
+      <span id="hero-tier-badge" class="badge" style="font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:2px 6px;font-weight:700;vertical-align:middle" title="tier-1">tier-1</span>
     {% elif s_tier == 3 %}
-      <span class="badge" style="font-size:10px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:2px 6px;vertical-align:middle" title="tier-3">tier-3</span>
+      <span id="hero-tier-badge" class="badge" style="font-size:10px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:2px 6px;vertical-align:middle" title="tier-3">tier-3</span>
     {% else %}
-      <span class="badge" style="font-size:10px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:2px 6px;font-weight:600;vertical-align:middle" title="tier-2">tier-2</span>
+      <span id="hero-tier-badge" class="badge" style="font-size:10px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:2px 6px;font-weight:600;vertical-align:middle" title="tier-2">tier-2</span>
     {% endif %}
     {% if agent_version %}
       {% if is_agent_outdated %}
@@ -7135,6 +7135,23 @@ function patch(data) {
   // Terminal Bawaan: kalau shell masih hidup di server ini, sambungkan ke
   // sesi yang sama (bukan membuka shell baru).
   if (data.shell_exec && typeof getTerm().attach === 'function') getTerm().attach(data.shell_exec.id);
+
+  // Sinkronisasi badge Tier server secara live
+  if (data.tier !== undefined) {
+    const tb = document.getElementById('hero-tier-badge');
+    if (tb) {
+      const curTier = parseInt(data.tier, 10);
+      const isTier1 = curTier === 1;
+      const isTier3 = curTier === 3;
+      tb.textContent = isTier1 ? 'tier-1' : (isTier3 ? 'tier-3' : 'tier-2');
+      tb.title = tb.textContent;
+      tb.style.background = isTier1 ? 'rgba(239,68,68,0.15)' : (isTier3 ? 'rgba(148,163,184,0.15)' : 'rgba(59,130,246,0.12)');
+      tb.style.color = isTier1 ? '#ef4444' : (isTier3 ? '#94a3b8' : '#60a5fa');
+      tb.style.borderColor = isTier1 ? 'rgba(239,68,68,0.3)' : (isTier3 ? 'rgba(148,163,184,0.25)' : 'rgba(59,130,246,0.25)');
+      tb.style.fontWeight = isTier1 ? '700' : (isTier3 ? '500' : '600');
+    }
+  }
+
   const aver = document.getElementById('agent-ver');
   if (aver) {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
@@ -7463,6 +7480,9 @@ async function pollSystem() {
       const data = await r.json();
       startAutoLog(data.units, data.extras);
       renderSys(data);
+      if (!aptRunning && typeof renderApt === 'function') {
+        renderApt(data);
+      }
     }
   } catch (e) { /* polling lanjut */ }
   finally { _sysFetching = false; }

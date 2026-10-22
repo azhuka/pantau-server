@@ -311,6 +311,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.1
+
+- **Tipe Rilis:** Sinkronisasi Antarmuka Otomatis (*Live Version Watcher, Anti-Stale Caching & Real-Time Badge Updating*)
+- **Fokus Utama:** Mengeliminasi kebutuhan reload manual (F5) oleh operator dengan menyematkan pengawas versi live latar belakang di browser, proteksi form aktif, header anti-stale cache, serta penyegaran dinamis badge Tier dan paket APT.
+
+### Rangkuman Pembaruan:
+1. **Mesin Sinkronisasi Otomatis (*Live Version Watcher*):**
+   - **Endpoint Versi & Waktu Boot Backend (`/api/system/version`):** Menyediakan metadata versi aktif dan waktu boot server pusat untuk pemantauan latar belakang oleh browser klien.
+   - **Penyegaran Mulus di Browser (`base.html`):** Setiap tab browser memantau versi dan waktu hidup server. Ketika terjadi pembaruan rilis atau restart layanan backend, antarmuka otomatis menyinkronkan diri dan memuat ulang halaman secara mulus disertai notifikasi toast informatif.
+   - **Proteksi Pengguna Sedang Berinteraksi (*Interaction Guard*):** Jika pengguna sedang mengetik dalam formulir input, membuka modal dialog, atau menjalankan terminal aktif, auto-reload otomatis ditangguhkan dan digantikan dengan banner mengambang yang tidak mengganggu alur kerja.
+2. **Penghapusan Cache Usang Browser (*Anti-Stale Caching*):**
+   - Menambahkan header `Cache-Control: no-cache, no-store, must-revalidate`, `Pragma: no-cache`, dan `Expires: 0` pada seluruh respons render template Jinja (`tpl()`) untuk memastikan browser tidak menahan salinan HTML usang.
+3. **Penyelarasan Dinamis Badge Tier & Status APT Tanpa Reload:**
+   - Menghubungkan badge prioritas server klien (`#hero-tier-badge`) ke dalam siklus polling `patch(data)` di halaman rincian server, sehingga perubahan Tier langsung diperbarui seketika tanpa perlu reload.
+   - Menjalankan pembaruan dinamis status dan tombol paket APT secara periodik di dalam `pollSystem()`.
+
+---
+
 ## Versi 4.6.0
 
 - **Tipe Rilis:** Fitur Mayor Pemantauan S.M.A.R.T. & NVMe, Engine Probing Jaringan, Step-Up Auth File Manager, dan Optimalisasi Antarmuka NOC

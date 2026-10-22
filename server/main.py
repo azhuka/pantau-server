@@ -101,6 +101,9 @@ _agent_tracker_lock = threading.Lock()
 _terminal_unlocks: dict[tuple[int, int], datetime] = {}
 _terminal_unlocks_lock = threading.Lock()
 
+# Waktu boot server untuk mendeteksi restart backend di browser (Live Version Watcher)
+_SERVER_BOOT_TIME: int = int(time.time())
+
 
 def is_terminal_unlocked(user_id: int, server_id: int) -> bool:
     with _terminal_unlocks_lock:
@@ -870,7 +873,11 @@ def tpl(request: Request, name: str, context: dict, status_code: int = 200) -> H
     ctx.setdefault("csrf_token", _csrf_token(sid) if sid else "")
     ctx.setdefault("app_version", settings.APP_VERSION)
     ctx.setdefault("brand", get_branding_settings())
-    return templates.TemplateResponse(request, name, ctx, status_code=status_code)
+    resp = templates.TemplateResponse(request, name, ctx, status_code=status_code)
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -6216,6 +6223,15 @@ def _proc_top(n: int = 8) -> list:
     PROC_CACHE["procs"] = cur
     rows.sort(key=lambda x: x["cpu"], reverse=True)
     return rows[:n]
+
+
+@app.get("/api/system/version")
+def api_system_version():
+    """Endpoint publik ringan untuk sinkronisasi otomatis antarmuka browser (Live Version Watcher)."""
+    return {
+        "version": settings.APP_VERSION,
+        "boot_time": _SERVER_BOOT_TIME,
+    }
 
 
 @app.get("/api/system/status")
