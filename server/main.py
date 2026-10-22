@@ -1275,9 +1275,9 @@ def agent_report(
             # 1. Bila terjadi konflik agen (multi-IP), tahan status DOWN jika host lain baru saja melapor UP
             if has_agent_conflict and last and last.status == "up":
                 continue
-            # 2. Toleransi jeda 45 detik untuk transisi status agar tidak flapping seketika (KECUALI jika sengaja dihentikan operator)
+            # 2. Transisi status seketika tanpa jeda 45 detik agar kejadian eksternal (service crash / dimatikan) langsung terdeteksi
             is_op_shutdown = bool(svc.ignored_reason and "DIMATIKAN OLEH OPERATOR" in svc.ignored_reason)
-            if not is_op_shutdown and last and last.status == "up" and last.timestamp and (datetime.utcnow() - last.timestamp).total_seconds() < 45:
+            if not is_op_shutdown and last and last.status == "up" and last.timestamp and (datetime.utcnow() - last.timestamp).total_seconds() < 3:
                 continue
             db.add(Metric(
                 service_id=svc.id,
@@ -2296,7 +2296,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         if recent_cmd:
             if recent_cmd.action in ("stop", "service_stop"):
                 st = "down"
-            elif recent_cmd.action in ("start", "service_start") and st != "up":
+            elif recent_cmd.action in ("start", "service_start", "restart", "service_restart") and st != "up":
                 st = "up"
 
         # 3. Jika layanan tercatat sengaja dimatikan oleh operator, pastikan status tetap down

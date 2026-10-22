@@ -6,7 +6,7 @@ Dashboard pemantauan dan pengelolaan multi-server Linux berbasis web (FastAPI + 
 
 ## Fitur Utama
 
-- **Pemantauan Performa Real-Time:** Monitoring utilisasi CPU, RAM, Swap, Disk per partisi, Load Average, dan bandwidth jaringan secara real-time via polling background tanpa reload halaman.
+- **Pemantauan Performa & Alur Kerja Real-Time:** Monitoring utilisasi CPU, RAM, Swap, Disk per partisi, Load Average, bandwidth, status layanan sistem, dan sesi login SSH secara seketika (detak 5 detik, pelaporan instan pasca-tindakan zero-delay, deteksi kejadian eksternal langsung) via polling background tanpa reload halaman.
 - **Telemetri Perangkat Keras & Virtualisasi:** Deteksi otomatis model prosesor, jumlah core, clock speed, platform hypervisor (KVM, Proxmox LXC/VM, VMware, Baremetal), tipe media penyimpanan (SSD/HDD), default gateway, DNS, interface jaringan, MAC address, serta waktu aktif sistem (*uptime*).
 - **Kesehatan Media Penyimpanan (S.M.A.R.T. & NVMe):** Pemantauan kesehatan drive fisik secara komprehensif via `smartctl` dan `nvme-cli` (status PASSED/FAILED, suhu operasional, persentase keausan SSD/NVMe, *reallocated sectors*, jam terbang kerja), disertai deteksi drive virtual pada hypervisor/cloud agar tidak memicu alarm palsu.
 - **Pengujian Endpoint & Jaringan Terjadwal (Probing Engine):** Pengujian konektivitas HTTP/HTTPS, TCP Port, DNS, dan ICMP Ping dengan riwayat latensi, pencatatan kegagalan, dan audit trail otomatis.
@@ -177,7 +177,7 @@ sudo bash install-server.sh
 *Berkas konfigurasi `.env` dan database MariaDB tidak akan terhapus saat pembaruan dijalankan.*
 
 ### 2. Pembaruan Otomatis Armada Agen (Fleet-Wide OTA)
-Saat server pusat diperbarui ke versi baru, seluruh agen klien secara otomatis mengunduh pembaruan pada siklus pelaporan berikutnya (dalam ~10 detik):
+Saat server pusat diperbarui ke versi baru, seluruh agen klien secara otomatis mengunduh pembaruan pada siklus pelaporan berikutnya (dalam ~5 detik):
 1. Server mendeteksi versi agen klien lebih lama daripada versi dashboard.
 2. Server mengirimkan instruksi pembaruan beserta URL berkas agen dan hash SHA-256 resmi.
 3. Agen klien mengunduh berkas pembaruan, memeriksa validitas hash SHA-256, menguji sintaks via `py_compile`, memperbarui berkas `/opt/pantau/agent/agent_pantau.py`, lalu me-restart service secara mandiri.

@@ -311,6 +311,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.2
+
+- **Tipe Rilis:** Optimalisasi Responsivitas Real-Time & Eliminasi Jeda Status (*Zero-Delay Command Dispatch, Instant Telemetry & Real-Time Event Sync*)
+- **Fokus Utama:** Mengeliminasi seluruh jeda buatan (*artificial delays*) dan pembatasan siklus pelaporan telemetri, sehingga seluruh aksi operator (dari dalam dashboard) maupun kejadian eksternal pada server klien (dari luar dashboard seperti SSH/CLI atau service crash) tercermin seketika secara real-time tanpa perlu reload halaman.
+
+### Rangkuman Pembaruan:
+1. **Responsivitas Eksekusi Perintah Seketika (*Zero-Delay Command Dispatch*):**
+   - **Pelaporan Telemetri Instan Pasca-Eksekusi:** Pada loop worker perintah agen (`_command_worker_loop`), setelah perintah (seperti restart, stop, start, reboot, kill) selesai dieksekusi, agen langsung mengirimkan laporan telemetri terbaru (`run_once(cfg)`) dengan jeda transisi systemd hanya 300ms, tanpa menunggu jadwal interval siklus utama.
+   - **Peningkatan Frekuensi Polling Perintah:** Interval polling perintah pada daemon agen ditingkatkan dari 1.5 detik menjadi 1.0 detik untuk eksekusi yang lebih cepat dan responsif.
+2. **Eliminasi Kunci Antarmuka Operasi Layanan (*UI Pending Lock Clearance*):**
+   - **Penanganan Status Restart pada UI:** Memperbaiki logika `patch(data)` pada `services.html` yang sebelumnya tidak menghapus kunci operasi pending untuk aksi `restart` saat status layanan kembali `up`. Hal ini sebelumnya menyebabkan baris layanan terkunci dalam status *"me-restart..."* selama 30 detik kecuali pengguna me-reload halaman.
+   - **Pemangkasan Batas Waktu Kunci Pending:** Mengurangi batas waktu penguncian tombol operasi restart dari 30 detik menjadi 10 detik sebagai proteksi gagal (*fail-safe*).
+   - **Sinkronisasi Status Overview:** Menambahkan pengenalan perintah `restart` dan `service_restart` pada `api_server_overview` agar badge metrik ringkasan langsung mencerminkan status aktif pasca-tindakan.
+3. **Pendeteksian Seketika Kejadian Eksternal (*External Event Detection*):**
+   - **Penghapusan Jeda Buatan Transisi Down:** Menghapus penahanan status metrik 45 detik pada server pusat saat layanan mati/berhenti dari luar (misal dimatikan via SSH/CLI atau crash). Waktu toleransi dipangkas menjadi 3 detik, sehingga server pusat langsung mendeteksi dan mencatat status `down` saat agen melaporkannya.
+   - **Telemetri Sesi Pengguna & SSH Real-Time:** Menghapus pembatasan siklus (`_tick % 3 == 1`) pada pengumpulan akun dan sesi login pengguna (`collect_accounts()`). Agen kini memeriksa dan melaporkan sesi aktif di setiap siklus detak, mendeteksi login/logout SSH secara seketika.
+4. **Peningkatan Frekuensi Telemetri & Polling Dashboard:**
+   - **Interval Detak Agen 5 Detik:** Menurunkan interval telemetri default agen dari 10 detik menjadi 5 detik pada seluruh konfigurasi baru (`package/install.sh`, `agent_pantau.py`, `/etc/pantau/config.json`).
+   - **Polling Cepat Dashboard:** Mengurangi interval polling background dashboard dari 5.0 detik menjadi 3.0 detik, serta menambahkan event listener `visibilitychange` agar dashboard seketika melakukan polling saat operator kembali fokus ke tab peramban.
+
+---
+
 ## Versi 4.6.1
 
 - **Tipe Rilis:** Sinkronisasi Antarmuka Otomatis (*Live Version Watcher, Anti-Stale Caching & Real-Time Badge Updating*)

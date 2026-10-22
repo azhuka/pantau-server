@@ -81,7 +81,7 @@ def load_config():
     base = {
         "server_url": "http://127.0.0.1:8400",
         "api_key": "",
-        "interval_seconds": 10,
+        "interval_seconds": 5,
         "exclude_ports": [],
     }
 
@@ -474,7 +474,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.6.1"
+AGENT_VERSION = "4.6.2"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1316,19 +1316,21 @@ def poll_and_execute_commands(cfg: dict) -> bool:
 
 
 def _command_worker_loop(cfg: dict) -> None:
-    """Worker background untuk merespons dan mengeksekusi perintah kontrol layanan seketika (1.5 dtk)."""
+    """Worker background untuk merespons dan mengeksekusi perintah kontrol layanan seketika (1.0 dtk)."""
     while True:
         try:
             had_cmd = poll_and_execute_commands(cfg)
             if had_cmd:
                 try:
-                    # Segera perbarui status layanan setelah eksekusi perintah tanpa menunggu interval 15 dtk
-                    _run_once(cfg)
-                except Exception:
-                    pass
+                    # Beri jeda sangat singkat (300ms) agar systemd merampungkan transisi status,
+                    # lalu segera kirim laporan telemetri terbaru ke server tanpa menunggu interval siklus utama
+                    time.sleep(0.3)
+                    run_once(cfg)
+                except Exception as e:
+                    print(f"[WARN] Gagal kirim laporan instan pasca-command: {e}")
         except Exception:
             pass
-        time.sleep(1.5)
+        time.sleep(1.0)
 
 
 # ---------------------------------------------------------------------------
@@ -4632,11 +4634,9 @@ def _run_once(cfg: dict):
             f"{s['active_connections']:>5d} {s['response_time_ms']:>9d}"
         )
 
-    # Akun, unit layanan, dan info apt cukup dilaporkan beberapa siklus sekali
-    accounts = units = apt = None
-    if _tick % 3 == 1:
-        accounts = collect_accounts()
-        units = collect_units()
+    # Sesi pengguna dan akun (SSH login/logout) dilaporkan di setiap siklus demi respons real-time
+    accounts = collect_accounts()
+    units = collect_units() if _tick % 3 == 1 else None
     if _tick % 6 == 2:
         last_apt = collect_apt()
     apt = last_apt

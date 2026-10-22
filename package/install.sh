@@ -217,7 +217,7 @@ except Exception as e:
     print("UNREACHABLE:%s" % e); raise SystemExit
 try:
     req = urllib.request.Request(url + "/api/commands")
-    req.add_header("User-Agent", "AgentPantau-Installer/4.6.1")
+    req.add_header("User-Agent", "AgentPantau-Installer/4.6.2")
     req.add_header("X-Api-Key", key)
     with urllib.request.urlopen(req, timeout=8) as r:
         print("OK" if r.status == 200 else "HTTP%d" % r.status)
@@ -237,7 +237,7 @@ esac
 TMP="$(mktemp)"
 python3 - "$URL" "$KEY" "$TMP" <<'PY' || { rm -f "$TMP"; exit 1; }
 import json, sys
-doc = {"server_url": sys.argv[1], "api_key": sys.argv[2], "interval_seconds": 10, "exclude_ports": []}
+doc = {"server_url": sys.argv[1], "api_key": sys.argv[2], "interval_seconds": 5, "exclude_ports": []}
 open(sys.argv[3], "w").write(json.dumps(doc, indent=2) + "\n")
 PY
 install -o root -g pantau -m 640 "$TMP" /etc/pantau/config.json \

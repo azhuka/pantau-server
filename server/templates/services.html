@@ -4286,7 +4286,7 @@ async function restartService(sid, svcId, svcName, btn) {
   });
   if (!ok) return;
 
-  _pendingServiceOps[svcId] = { action: 'restart', expires: Date.now() + 30000 };
+  _pendingServiceOps[svcId] = { action: 'restart', expires: Date.now() + 10000 };
   const act = document.getElementById('act-' + svcId);
   const sts = document.getElementById('sts-' + svcId);
   if (act) {
@@ -7405,6 +7405,8 @@ function patch(data) {
       } else if (op.action === 'stop' && s.status === 'down') {
         delete _pendingServiceOps[s.id];
       } else if (op.action === 'start' && s.status === 'up') {
+        delete _pendingServiceOps[s.id];
+      } else if (op.action === 'restart' && s.status === 'up') {
         delete _pendingServiceOps[s.id];
       }
     }

@@ -2467,8 +2467,14 @@ async function pollNocDashboard() {
     }
   } catch(e) {}
 }
-setInterval(pollNocDashboard, 5000);
+setInterval(pollNocDashboard, 3000);
 setTimeout(pollNocDashboard, 500);
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    pollNocDashboard();
+  }
+});
 
 // ===================================================================
 // REAL-TIME DASHBOARD CLOCK & DATE WIDGET (Hari, Tanggal, Jam, Menit, Detik)
