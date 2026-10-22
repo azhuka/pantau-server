@@ -311,6 +311,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.5
+
+- **Tipe Rilis:** Eliminasi Total Caching Browser, Penghapusan Sisa Reload Paksa & Reaktivitas Penuh Antarmuka (*Zero-Reload Reactive Telemetry, Anti-Cache Middleware & Full Dynamic UX*)
+- **Fokus Utama:** Mengeliminasi seluruh keharusan me-reload halaman untuk melihat perubahan status/kejadian pada antarmuka web, menerapkan middleware anti-cache global pada seluruh endpoint API agar browser tidak menyajikan data usang (*stale HTTP cache*), menghapus sisa pemanggilan `location.reload()` pada aksi penanganan peringatan, serta menambahkan polling latar belakang otomatis pada tab Manajer Tugas (Proses).
+
+### Rangkuman Pembaruan:
+1. **Middleware Anti-Cache Global pada Seluruh REST API (*No-Store HTTP Headers*):**
+   - Menambahkan header `Cache-Control: no-store, no-cache, must-revalidate, max-age=0`, `Pragma: no-cache`, dan `Expires: 0` secara global untuk setiap respons pada path `/api/*` di `server/main.py`.
+   - Mengatasi akar masalah heuristik browser caching yang selama ini membuat browser menyajikan cache memori lokal sehingga operator tidak melihat pembaruan data sebelum menekan tombol reload secara manual.
+2. **Penghapusan Sisa `location.reload()` pada Aksi Operator (*Zero-Reload Action Confirmation*):**
+   - Mengganti `location.reload()` pada fungsi `alertAck()` di `base.html` dengan pembaruan DOM reaktif seketika (`showToast`, `window.poll()`, `poll()`, `pollNocDashboard()`, `alertFetch()`).
+3. **Reaktivitas Latar Belakang Tab Manajer Tugas (*Auto-Refreshing Process Manager*):**
+   - Menambahkan interval polling otomatis (setiap 4 detik) untuk fungsi `fetchTopProcs()` saat tab Manajer Tugas (`tab-proses`) sedang aktif ditampilkan di layar operator, sehingga proses baru, pemakaian CPU/RAM proses, dan terminasi proses terbarui secara mandiri tanpa intervensi reload.
+
+---
+
 ## Versi 4.6.4
 
 - **Tipe Rilis:** Transparansi Telemetri Menyeluruh, Eliminasi Pembatasan Pelaporan & Banner Peringatan Multi-Level (*Full Telemetry Transparency, Zero Suppression & Fleet-Wide Multi-Level Alerting*)

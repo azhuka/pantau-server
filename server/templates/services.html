@@ -4001,6 +4001,13 @@ function fetchTopProcs() {
 if (INITIAL_TOP_PROCS) {
   renderTopProcs({top_procs: INITIAL_TOP_PROCS});
 }
+setInterval(() => {
+  if (document.hidden) return;
+  const pTab = document.getElementById('tab-proses');
+  if (pTab && !pTab.hidden) {
+    fetchTopProcs();
+  }
+}, 4000);
 
 // ---------- Mode Pemeliharaan ----------
 function openMaintenanceModal() {

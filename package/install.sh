@@ -217,7 +217,7 @@ except Exception as e:
     print("UNREACHABLE:%s" % e); raise SystemExit
 try:
     req = urllib.request.Request(url + "/api/commands")
-    req.add_header("User-Agent", "AgentPantau-Installer/4.6.4")
+    req.add_header("User-Agent", "AgentPantau-Installer/4.6.5")
     req.add_header("X-Api-Key", key)
     with urllib.request.urlopen(req, timeout=8) as r:
         print("OK" if r.status == 200 else "HTTP%d" % r.status)

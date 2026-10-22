@@ -807,6 +807,10 @@ async def security_headers(request: Request, call_next):
     for k, v in _SECURITY_HEADERS.items():
         if k not in resp.headers:
             resp.headers[k] = v
+    if request.url.path.startswith("/api/"):
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
     return resp
 
 
