@@ -591,7 +591,7 @@
 
 {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
 <!-- Modal Ambang Batas Masalah Global -->
-<div id="threshold-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)">
+<div id="threshold-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)" onclick="if(event.target===this)closeThresholdModal()">
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
       <h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:8px">

@@ -2030,6 +2030,17 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Backdrop click dismissal untuk modal File Manager
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.classList && e.target.classList.contains('fm-modal-backdrop')) {
+    if (e.target.id === 'fm-page-unlock-modal' && (!fmIsUnlocked || fmLeaseSecondsLeft <= 0)) {
+      return;
+    }
+    e.target.style.display = 'none';
+    if (e.target.id === 'fm-editor-modal') fmCloseEditor();
+  }
+});
+
 function updateFmTooltips(isEn) {
   const map = {
     'fm-btn-back': { id: 'Kembali', en: 'Back' },

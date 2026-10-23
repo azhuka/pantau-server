@@ -1060,7 +1060,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.6.16' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.6.17' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -1901,59 +1901,89 @@ async function unignoreProblem(target, onDone) {
   }
 }
 
+// Universal Modal Dismissal Controller (Escape key & backdrop click)
+function dismissActiveModal(targetModal) {
+  const modalClosers = [
+    { id: 'guardrail-modal', fn: () => typeof closeGuardrailModal === 'function' && (closeGuardrailModal(), true) },
+    { id: 'ignore-problem-modal', fn: () => typeof closeIgnoreModal === 'function' && (closeIgnoreModal(), true) },
+    { id: 'problem-detail-modal', fn: () => typeof closeProblemDetailModal === 'function' && (closeProblemDetailModal(), true) },
+    { id: 'threshold-modal', fn: () => typeof closeThresholdModal === 'function' && (closeThresholdModal(), true) },
+    { id: 'sev-detail-modal', fn: () => typeof closeSevDetailModal === 'function' && (closeSevDetailModal(), true) },
+    { id: 'probeModalBackdrop', fn: () => typeof closeProbeModal === 'function' && (closeProbeModal(), true) },
+    { id: 'historyModalBackdrop', fn: () => typeof closeHistoryModal === 'function' && (closeHistoryModal(), true) },
+    { id: 'apt-task-modal', fn: () => typeof closeAptTaskModal === 'function' && (closeAptTaskModal(), true) },
+    { id: 'term-unlock-modal', fn: () => typeof closeTerminalUnlockModal === 'function' && (closeTerminalUnlockModal(), true) },
+    { id: 'fm-unlock-modal', fn: () => typeof closeFmUnlockModal === 'function' && (closeFmUnlockModal(), true) },
+    { id: 'term-close-confirm-modal', fn: () => typeof closeTerminalCloseConfirmModal === 'function' && (closeTerminalCloseConfirmModal(), true) },
+    { id: 'term-lock-confirm-modal', fn: () => typeof closeTerminalLockConfirmModal === 'function' && (closeTerminalLockConfirmModal(), true) },
+    { id: 'maint-modal', fn: () => typeof closeMaintenanceModal === 'function' && (closeMaintenanceModal(), true) },
+    { id: 'svc-confirm-modal', fn: () => typeof closeSvcConfirmModal === 'function' && (closeSvcConfirmModal(false), true) },
+    { id: 'kill-proc-modal', fn: () => typeof closeKillProcModal === 'function' && (closeKillProcModal(), true) },
+    { id: 'block-ip-modal', fn: () => typeof closeBlockIpModal === 'function' && (closeBlockIpModal(), true) },
+    { id: 'create-user-modal', fn: () => typeof closeCreateUserModal === 'function' && (closeCreateUserModal(), true) },
+    { id: 'add-cron-modal', fn: () => typeof closeAddCronModal === 'function' && (closeAddCronModal(), true) },
+    { id: 'add-ssl-path-modal', fn: () => typeof closeAddSslPathModal === 'function' && (closeAddSslPathModal(), true) },
+    { id: 'add-svc-modal', fn: () => typeof closeAddSvcModal === 'function' && (closeAddSvcModal(), true) },
+    { id: 'editPermsModal', fn: () => typeof closeEditPermsModal === 'function' && (closeEditPermsModal(), true) },
+    { id: 'viewUserModal', fn: () => typeof closeViewUserModal === 'function' && (closeViewUserModal(), true) },
+    { id: 'editUserModal', fn: () => typeof closeEditUserModal === 'function' && (closeEditUserModal(), true) },
+    { id: 'admin2faModal', fn: () => typeof closeAdmin2faModal === 'function' && (closeAdmin2faModal(), true) },
+  ];
+
+  if (targetModal) {
+    const entry = modalClosers.find(c => c.id === targetModal.id);
+    if (entry && entry.fn()) return true;
+    const closeBtn = targetModal.querySelector('.modal-close, .probe-modal-close, button[onclick*="close"], button[onclick*="Close"], .btn-ghost');
+    if (closeBtn) { closeBtn.click(); return true; }
+    targetModal.style.display = 'none';
+    return true;
+  }
+
+  // Cari modal terbuka dengan prioritas
+  for (const item of modalClosers) {
+    const el = document.getElementById(item.id);
+    if (el && el.style.display !== 'none' && el.style.display !== '') {
+      if (item.fn()) return true;
+      el.style.display = 'none';
+      return true;
+    }
+  }
+
+  // Fallback generik untuk elemen fixed/modal lain
+  const openModals = Array.from(document.querySelectorAll('.modal-backdrop, .modal, .probe-modal-backdrop, .fm-modal-backdrop, [id*="modal"], [id*="Modal"], [id*="Backdrop"]'))
+    .filter(m => {
+      if (!m || m.tagName === 'BUTTON' || m.tagName === 'INPUT' || m.tagName === 'A' || m.tagName === 'SPAN') return false;
+      const s = window.getComputedStyle(m);
+      return s.display !== 'none' && s.visibility !== 'hidden' && (s.position === 'fixed' || s.position === 'absolute');
+    });
+
+  if (openModals.length > 0) {
+    const topModal = openModals[openModals.length - 1];
+    const closeBtn = topModal.querySelector('.modal-close, .probe-modal-close, button[onclick*="close"], button[onclick*="Close"], .btn-ghost');
+    if (closeBtn) closeBtn.click();
+    else topModal.style.display = 'none';
+    return true;
+  }
+  return false;
+}
+
 document.addEventListener('click', e => {
-  const m = document.getElementById('ignore-problem-modal');
-  if (m && e.target === m) closeIgnoreModal();
-  const md = document.getElementById('problem-detail-modal');
-  if (md && e.target === md) closeProblemDetailModal();
+  const t = e.target;
+  if (!t || !t.id) return;
+  if (t.classList.contains('modal-backdrop') || t.classList.contains('probe-modal-backdrop') || t.classList.contains('fm-modal-backdrop') || t.id.includes('modal') || t.id.includes('Modal') || t.id.includes('Backdrop')) {
+    const s = window.getComputedStyle(t);
+    if (s.position === 'fixed' && s.display !== 'none') {
+      dismissActiveModal(t);
+    }
+  }
 });
 
-// Universal Keyboard Shortcut: Tutup semua jendela modal yang sedang aktif saat tombol Escape ditekan
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    // 1. Modal Diagnosa & Rincian Masalah
-    const md = document.getElementById('problem-detail-modal');
-    if (md && md.style.display !== 'none' && md.style.display !== '') {
-      if (typeof closeProblemDetailModal === 'function') closeProblemDetailModal();
-      return;
+    if (dismissActiveModal()) {
+      e.preventDefault();
+      e.stopPropagation();
     }
-    // 2. Modal Pengabaian Masalah
-    const mi = document.getElementById('ignore-problem-modal');
-    if (mi && mi.style.display !== 'none' && mi.style.display !== '') {
-      if (typeof closeIgnoreModal === 'function') closeIgnoreModal();
-      return;
-    }
-    // 3. Modal Ambang Batas Insiden
-    const mt = document.getElementById('threshold-modal');
-    if (mt && mt.style.display !== 'none' && mt.style.display !== '') {
-      if (typeof closeThresholdModal === 'function') closeThresholdModal();
-      return;
-    }
-    // 4. Modal Rincian Masalah Severity Strip
-    const ms = document.getElementById('sev-detail-modal');
-    if (ms && ms.style.display !== 'none' && ms.style.display !== '') {
-      if (typeof closeSevDetailModal === 'function') closeSevDetailModal();
-      return;
-    }
-    // 5. Modal Endpoint Probing
-    const mp = document.getElementById('probeModalBackdrop');
-    if (mp && mp.style.display !== 'none' && mp.style.display !== '') {
-      if (typeof closeProbeModal === 'function') closeProbeModal();
-      return;
-    }
-    const mh = document.getElementById('historyModalBackdrop');
-    if (mh && mh.style.display !== 'none' && mh.style.display !== '') {
-      if (typeof closeHistoryModal === 'function') closeHistoryModal();
-      return;
-    }
-    // 6. Modal generik lainnya
-    document.querySelectorAll('.modal, .modal-backdrop, .probe-modal-backdrop').forEach(m => {
-      if (m.style.display !== 'none' && m.style.display !== '') {
-        const closeBtn = m.querySelector('.modal-close, .probe-modal-close, button[onclick*="close"]');
-        if (closeBtn) closeBtn.click();
-        else m.style.display = 'none';
-      }
-    });
   }
 });
 
@@ -2376,14 +2406,17 @@ setInterval(alertFetch, 5000);
 </script>
 
 <!-- Modal Guardrail Dialog untuk Tindakan Berdampak Tinggi / Produksi SLA -->
-<div id="guardrail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+<div id="guardrail-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeGuardrailModal()">
   <div class="card" style="width:100%;max-width:480px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,0.8);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:8px">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#f59e0b;flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <h3 id="guardrail-modal-title" style="margin:0;font-size:15px;font-weight:600;color:var(--text)">Konfirmasi Tindakan Berdampak Tinggi</h3>
       </div>
-      <span id="guardrail-modal-badge" class="badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:10px;font-weight:600">SLA PRODUKSI</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="guardrail-modal-badge" class="badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:10px;font-weight:600">SLA PRODUKSI</span>
+        <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeGuardrailModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      </div>
     </div>
 
     <div id="guardrail-modal-target-row" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;margin-bottom:12px">
@@ -2408,14 +2441,14 @@ setInterval(alertFetch, 5000);
 </div>
 
 <!-- Modal Abaikan Masalah -->
-<div id="ignore-problem-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
+<div id="ignore-problem-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px);padding:16px" onclick="if(event.target===this)closeIgnoreModal()">
   <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;box-shadow:0 16px 40px rgba(0,0,0,0.7);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h3 style="margin:0;font-size:15px;display:flex;align-items:center;gap:8px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
         Abaikan Pemantauan
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeIgnoreModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeIgnoreModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
     </div>
     <div id="ignore-modal-msg" style="font-size:13px;color:var(--text);margin:0 0 14px 0;padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;word-break:break-word"></div>
     <div style="margin-bottom:14px">
@@ -2441,7 +2474,7 @@ setInterval(alertFetch, 5000);
 </div>
 
 <!-- Modal Diagnosa & Rincian Akar Masalah -->
-<div id="problem-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+<div id="problem-detail-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeProblemDetailModal()">
   <div class="card" style="width:min(660px,94vw);max-height:88vh;display:flex;flex-direction:column;background:#161b22;border:1px solid #30363d;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,0.8);color:var(--text);padding:0;overflow:hidden">
     <!-- Header -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px;border-bottom:1px solid #30363d;background:rgba(255,255,255,0.02)">
@@ -2452,7 +2485,7 @@ setInterval(alertFetch, 5000);
           <span id="pdm-badge" class="badge badge-danger">DANGER</span>
         </div>
       </div>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeProblemDetailModal()" style="font-size:20px;line-height:1;padding:2px 8px;cursor:pointer;margin-left:10px">&times;</button>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeProblemDetailModal()" style="font-size:20px;line-height:1;padding:2px 8px;cursor:pointer;margin-left:10px" aria-label="Tutup">&times;</button>
     </div>
 
     <!-- Body Scrollable -->

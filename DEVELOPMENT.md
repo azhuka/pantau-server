@@ -311,6 +311,31 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.17
+
+- **Tipe Rilis:** Standarisasi Universal Modal Dismissal, Tombol Close 'X', Pintasan ESC Global, dan Pencegahan Kebocoran Resource Streaming Log (*Universal Modal Dismissal Standardization, Close 'X' Controls, Global ESC Shortcuts, & Log Streaming Resource Leak Prevention*)
+- **Fokus Utama:** Menyelesaikan permasalahan inkonsistensi interaksi modal dialog di seluruh halaman Pantau Server (memastikan setiap modal dialog dapat ditutup melalui 3 metode standar: tombol Close 'X' yang konsisten, penekanan tombol Escape keyboard global, dan klik di luar area dialog/backdrop), merestrukturisasi penempatan DOM modal dialog yang sebelumnya terjebak di dalam kontainer tab tersembunyi (*hidden tab scoping bug*), serta menghentikan kebocoran resource polling background pada streaming log saat operator beralih tab atau meminimalkan browser.
+
+### Rangkuman Pembaruan:
+1. **Standarisasi Kontrol Universal Modal Dismissal (`base.html`):**
+   - Mengimplementasikan pengendali global `dismissActiveModal(target)` yang mendukung penutupan lebih dari 24 ragam modal dialog di seluruh aplikasi secara seragam.
+   - Mengintegrasikan event listener tombol `Escape` keyboard global yang secara otomatis mengenali dan menutup modal dialog teratas yang sedang aktif.
+   - Mengintegrasikan deteksi klik pada area latar belakang modal (`modal-backdrop` / `modal`) sehingga klik di luar kotak dialog akan menutup modal secara halus.
+2. **Penyempurnaan Tombol Close 'X' pada Seluruh Modal Dialog:**
+   - Memastikan setiap header modal dialog pada seluruh antarmuka (`services.html`, `problems.html`, `users.html`, `profile.html`, `file_manager.html`) memiliki tombol Close berikon '×' yang terhubung langsung ke pengendali penutup modal.
+3. **Restrukturisasi DOM Modal Dialog Rincian Server (`services.html`):**
+   - Memindahkan 7 modal operasional (`add-svc-modal`, `svc-confirm-modal`, `kill-proc-modal`, `block-ip-modal`, `create-user-modal`, `add-cron-modal`, `add-ssl-path-modal`) dari dalam kontainer sub-tab individual yang berstatus `hidden` ke level root global dokumen HTML.
+   - Menghilangkan bug di mana modal tidak dapat dirender atau interaksi terblokir saat operator memanggil aksi dari luar tab asal.
+4. **Eliminasi Kebocoran Resource Polling Streaming Log (`services.html`):**
+   - Memperbaiki bug kritis pada fungsi `pollSystem` (interval 5 detik) yang sebelumnya selalu memicu pemanggilan `startAutoLog()` tanpa memverifikasi visibilitas tab Logging, mengakibatkan spam request `POST /api/logs/request` ke MariaDB setiap 4 detik meskipun tab Logging tidak aktif.
+   - Menambahkan mekanisme `pauseAutoLog()` saat operator berpindah dari tab Logging ke tab lain, dan `resumeAutoLog()` saat tab Logging kembali dibuka.
+   - Menambahkan listener `visibilitychange` dokumen untuk menghentikan interval streaming log saat browser diminimalkan atau tab browser tidak aktif.
+5. **Verifikasi Komprehensif Melalui Selenium Headless Automated Test:**
+   - Pengujian otomatis pada seluruh modal di `/dashboard`, `/problems`, `/servers/1/services`, dan `/probes` memastikan keberhasilan 100%: verifikasi 0 severe console error, seluruh 10 tab beralih mulus, tombol Close 'X' merespons, tombol ESC menutup modal, dan klik backdrop menutup modal.
+   - Sinkronisasi versi 4.6.17 di seluruh 7 berkas inti ekosistem Pantau Server.
+
+---
+
 ## Versi 4.6.16
 
 - **Tipe Rilis:** Manajemen Siklus Hidup Armada Dinamis (Tambah/Hapus Server) & Reaktivitas Multi-Layar NOC Tanpa Reload (*Dynamic Fleet Lifecycle Management & Multi-Screen Zero-Reload NOC Reactivity*)

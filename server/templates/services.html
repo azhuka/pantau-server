@@ -2269,55 +2269,6 @@ div[style*="position: fixed"] .card {
   <div class="empty-msg">Belum ada service terdeteksi. Jalankan Agen Pantau di server ini.</div>
   {% endif %}
 </div>
-
-<!-- Modal Tambah Layanan -->
-<div id="add-svc-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
-    <h3 style="margin:0 0 16px">Tambah Layanan</h3>
-    <form method="post" action="/servers/{{ server.id }}/services/add" id="add-svc-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div style="margin-bottom:12px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Layanan *</label>
-        <input type="text" name="service_name" required placeholder="nginx, mariadb, sshd…"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
-      </div>
-      <div style="margin-bottom:12px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Port *</label>
-        <input type="number" name="port" required min="1" max="65535" placeholder="80, 3306, 22…"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
-      </div>
-      <div style="margin-bottom:14px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Proses *</label>
-        <input type="text" name="process_name" required placeholder="nginx, mysqld, sshd…"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
-      </div>
-      <input type="hidden" name="is_core" value="1">
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" class="btn btn-ghost" onclick="closeAddSvcModal()">Batal</button>
-        <button type="submit" class="btn btn-primary">Tambah</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Modal Konfirmasi Tindakan Layanan (Restart, Stop, Hapus) -->
-<div id="svc-confirm-modal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.72);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeSvcConfirmModal(false)">
-  <div class="card" style="width:min(460px,96vw);background:#161b22;border:1px solid #30363d;border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,0.85);color:var(--text);padding:18px 20px;overflow:hidden" onclick="event.stopPropagation()">
-    <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:14px">
-      <div id="svc-confirm-icon-wrap" style="width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(239,68,68,0.15);color:#ef4444">
-        <svg id="svc-confirm-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-      </div>
-      <div style="flex:1">
-        <h3 id="svc-confirm-title" style="margin:0 0 6px;font-size:15px;font-weight:600;color:var(--text-bright)">Konfirmasi Tindakan</h3>
-        <p id="svc-confirm-msg" style="margin:0;font-size:12.5px;line-height:1.55;color:var(--text)"></p>
-      </div>
-    </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px">
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeSvcConfirmModal(false)">Batal</button>
-      <button type="button" id="svc-confirm-btn-yes" class="btn btn-danger btn-sm" onclick="closeSvcConfirmModal(true)">Ya, Lanjutkan</button>
-    </div>
-  </div>
-</div>
 </div>
 
 
@@ -2382,63 +2333,6 @@ div[style*="position: fixed"] .card {
     </table>
   </div>
 </div>
-</div>
-
-<!-- Modal Hentikan / Kelola Sinyal Proses -->
-<div id="kill-proc-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(470px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
-    <h3 style="margin:0 0 8px;color:var(--red);display:flex;align-items:center;gap:6px">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red)"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-      <span>Kelola Sinyal Proses</span>
-    </h3>
-    <p style="font-size:12px;color:var(--dim);margin:0 0 16px;line-height:1.5">
-      Kirimkan sinyal kendali ke proses <strong id="kill-proc-name" style="color:var(--text)"></strong> (PID: <span id="kill-proc-pid-label" class="mono" style="color:var(--blue);font-weight:700"></span>).
-    </p>
-    <form method="post" action="/servers/{{ server.id }}/processes/kill" id="kill-proc-form" onsubmit="submitKillProc(event)">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <input type="hidden" name="pid" id="kill-proc-pid">
-      <input type="hidden" name="pname" id="kill-proc-pname">
-      
-      <div style="margin-bottom:16px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:8px">Pilih Jenis Sinyal / Aksi *</label>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
-            <input type="radio" name="sig" value="TERM" id="sig-radio-term" checked style="margin-top:2px">
-            <div>
-              <strong style="color:var(--yellow)">SIGTERM (15) — Hentikan Secara Normal</strong>
-              <div style="font-size:11px;color:var(--dim)">Direkomendasikan. Meminta proses menutup koneksi &amp; simpan data dengan bersih.</div>
-            </div>
-          </label>
-          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
-            <input type="radio" name="sig" value="KILL" id="sig-radio-kill" style="margin-top:2px">
-            <div>
-              <strong style="color:var(--red)">SIGKILL (9) — Paksa Hentikan Seketika</strong>
-              <div style="font-size:11px;color:var(--dim)">Gunakan jika proses tidak responsif. Sistem akan menghentikan proses langsung tanpa konfirmasi (SIGKILL).</div>
-            </div>
-          </label>
-          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
-            <input type="radio" name="sig" value="STOP" id="sig-radio-stop" style="margin-top:2px">
-            <div>
-              <strong style="color:var(--blue)">SIGSTOP (19) — Tangguhkan / Pause Proses</strong>
-              <div style="font-size:11px;color:var(--dim)">Menghentikan sementara alokasi CPU proses hingga dilanjutkan kembali (SIGCONT).</div>
-            </div>
-          </label>
-          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
-            <input type="radio" name="sig" value="CONT" id="sig-radio-cont" style="margin-top:2px">
-            <div>
-              <strong style="color:var(--green)">SIGCONT (18) — Lanjutkan / Resume Proses</strong>
-              <div style="font-size:11px;color:var(--dim)">Melanjutkan kembali eksekusi proses yang sebelumnya ditangguhkan (paused).</div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" class="btn btn-ghost" onclick="closeKillProcModal()">Batal</button>
-        <button type="submit" class="btn btn-danger" id="kill-proc-submit-btn">Kirim Sinyal</button>
-      </div>
-    </form>
-  </div>
 </div>
 
 <!-- Tab: Tugas Terjadwal (Cron Jobs & Timers) -->
@@ -2679,160 +2573,6 @@ div[style*="position: fixed"] .card {
       </table>
     </div>
     <div class="empty-msg" id="fw-blocked-empty" style="padding:16px;display:{{ 'none' if (firewall and firewall.blocked_ips) else 'block' }}">Belum ada IP yang diblokir pada rantai iptables INPUT.</div>
-  </div>
-</div>
-
-<!-- Modal Blokir IP Manual -->
-<div id="block-ip-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
-    <h3 id="block-ip-title" style="margin:0 0 8px;color:var(--red)">Blokir Alamat IP (DROP)</h3>
-    <p id="block-ip-desc" style="font-size:12px;color:var(--dim);margin:0 0 16px;line-height:1.5">
-      Masukkan alamat IP yang ingin diblok.
-    </p>
-    <form method="post" action="/servers/{{ server.id }}/firewall/block" id="block-ip-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div style="margin-bottom:16px">
-        <label id="block-ip-target-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Alamat IP Target (IPv4) *</label>
-        <input type="text" name="ip" id="block-ip-input" required placeholder="Contoh: 198.51.100.25"
-               pattern="^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
-        <span id="block-ip-priv-warning" style="font-size:11px;color:var(--dim);margin-top:4px;display:block">
-          IP privat (10.*, 192.168.*, 172.16-31.*), loopback (127.*), atau IP server sendiri tidak dapat diblokir.
-        </span>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" class="btn btn-ghost" onclick="closeBlockIpModal()">Batal</button>
-        <button type="submit" id="block-ip-submit-btn" class="btn btn-danger">Blokir Sekarang</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Modal: Buat Pengguna Sistem Baru -->
-<div id="create-user-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(480px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
-    <h3 id="create-user-title" style="margin:0 0 4px;color:var(--neon)">Buat Pengguna Sistem Baru</h3>
-    <p id="create-user-desc" style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
-      Membuat akun baru pada server ini.
-    </p>
-    <form id="create-user-form" onsubmit="submitCreateUser(event)">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div style="margin-bottom:14px">
-        <label id="create-user-uname-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Pengguna *</label>
-        <input type="text" name="username" id="create-user-uname-inp" required placeholder="Contoh: user1"
-               pattern="^[a-z_][a-z0-9_-]{1,31}$"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
-        <span id="create-user-uname-help" style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Diawali huruf kecil/underscore, maks 32 karakter</span>
-      </div>
-      <div style="margin-bottom:14px">
-        <label id="create-user-pwd-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Password Akun (Opsional)</label>
-        <input type="password" name="password" id="create-user-pwd-inp" placeholder="Kosongkan jika hanya menggunakan SSH Key"
-               autocomplete="new-password"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
-        <span id="create-user-pwd-help" style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Jika diisi, akun langsung aktif dengan autentikasi password. Jika dikosongkan, akun siap untuk login via SSH Key.</span>
-      </div>
-      <div style="margin-bottom:14px">
-        <label id="create-user-shell-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Shell Login</label>
-        <select name="shell" id="create-user-shell-sel" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
-          <option value="/bin/bash">/bin/bash (default)</option>
-          <option value="/bin/sh">/bin/sh</option>
-          <option value="/usr/bin/zsh">/usr/bin/zsh</option>
-          <option value="/usr/sbin/nologin">/usr/sbin/nologin (tanpa shell)</option>
-          <option value="/bin/false">/bin/false (diblokir)</option>
-        </select>
-      </div>
-      <div style="margin-bottom:14px">
-        <label id="create-user-comment-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Keterangan (Comment)</label>
-        <input type="text" name="comment" id="create-user-comment-inp" placeholder="Dibuat via Pantau Server" value="Dibuat via Pantau Server"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
-      </div>
-      <div style="margin-bottom:18px;display:flex;align-items:center;gap:8px">
-        <input type="checkbox" name="is_sudo" value="1" id="new-user-sudo" style="width:16px;height:16px">
-        <label for="new-user-sudo" id="create-user-sudo-label" style="font-size:13px;cursor:pointer">Tambahkan ke grup <code class="mono">sudo</code> (hak superuser)</label>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" class="btn btn-ghost" onclick="closeCreateUserModal()">Batal</button>
-        <button type="submit" class="btn btn-primary" id="btn-submit-create-user">Buat Pengguna</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Modal: Tambah Tugas Terjadwal (Cron Job) -->
-<div id="add-cron-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(560px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
-    <h3 style="margin:0 0 4px;color:var(--neon)">Tambah Tugas Terjadwal (Cron Job)</h3>
-    <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
-      Tugas cron akan disimpan di <code class="mono">/etc/cron.d/pantau-&lt;nama&gt;</code>.
-    </p>
-    <form method="post" action="/servers/{{ server.id }}/cron/add" id="add-cron-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div style="margin-bottom:14px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Identifikasi (Ident) *</label>
-        <input type="text" name="ident" required placeholder="Contoh: backup-db atau kirim-laporan"
-               pattern="^[a-zA-Z0-9_-]{2,40}$"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
-        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Nama unik, alfanumerik, digunakan sebagai sufiks nama berkas cron</span>
-      </div>
-      <div style="margin-bottom:14px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Jadwal Eksekusi (Cron Expression)</label>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
-          <div><label style="font-size:10px;color:var(--dim)">Menit</label>
-            <input type="text" name="minute" value="0" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
-          </div>
-          <div><label style="font-size:10px;color:var(--dim)">Jam</label>
-            <input type="text" name="hour" value="*" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
-          </div>
-          <div><label style="font-size:10px;color:var(--dim)">Tgl (DOM)</label>
-            <input type="text" name="dom" value="*" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
-          </div>
-          <div><label style="font-size:10px;color:var(--dim)">Bulan</label>
-            <input type="text" name="month" value="*" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
-          </div>
-          <div><label style="font-size:10px;color:var(--dim)">Hari (DOW)</label>
-            <input type="text" name="dow" value="*" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
-          </div>
-        </div>
-        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Format standar cron. Contoh: <code class="mono">0 3 * * *</code> = setiap hari pukul 03:00</span>
-      </div>
-      <div style="margin-bottom:14px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Pengguna yang Menjalankan</label>
-        <input type="text" name="user_target" value="root" placeholder="root"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
-      </div>
-      <div style="margin-bottom:18px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Perintah yang Dieksekusi *</label>
-        <input type="text" name="command" required placeholder="Contoh: /opt/backup.sh >> /var/log/backup.log 2>&1"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" class="btn btn-ghost" onclick="closeAddCronModal()">Batal</button>
-        <button type="submit" class="btn btn-primary">Tambah Tugas Cron</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Modal: Tambah Lokasi Sertifikat SSL Kustom -->
-<div id="add-ssl-path-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(500px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
-    <h3 style="margin:0 0 4px;color:var(--neon)">Tambah Lokasi Sertifikat SSL Kustom</h3>
-    <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
-      Path berkas sertifikat akan disimpan di <code class="mono">/etc/pantau/custom_ssl.conf</code>.
-    </p>
-    <form method="post" action="/servers/{{ server.id }}/ssl/add-path" id="add-ssl-path-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <div style="margin-bottom:18px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Path Berkas Sertifikat (.pem / .crt) *</label>
-        <input type="text" name="path" required placeholder="Contoh: /etc/nginx/ssl/example.com.crt"
-               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
-        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Gunakan path absolut. Berkas harus sudah ada di filesystem server.</span>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end">
-        <button type="button" class="btn btn-ghost" onclick="closeAddSslPathModal()">Batal</button>
-        <button type="submit" class="btn btn-primary">Tambah ke Pengawasan</button>
-      </div>
-    </form>
   </div>
 </div>
 
@@ -3208,15 +2948,300 @@ div[style*="position: fixed"] .card {
 </div>
 </div>
 
+<!-- ======================================================================= -->
+<!-- MODAL-MODAL GLOBAL OPERASIONAL DETAIL SERVER                            -->
+<!-- ======================================================================= -->
+
+<!-- Modal Tambah Layanan -->
+<div id="add-svc-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeAddSvcModal()">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0">Tambah Layanan</h3>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeAddSvcModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+    </div>
+    <form method="post" action="/servers/{{ server.id }}/services/add" id="add-svc-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Layanan *</label>
+        <input type="text" name="service_name" required placeholder="nginx, mariadb, sshd…"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+      </div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Port *</label>
+        <input type="number" name="port" required min="1" max="65535" placeholder="80, 3306, 22…"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Proses *</label>
+        <input type="text" name="process_name" required placeholder="nginx, mysqld, sshd…"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+      </div>
+      <input type="hidden" name="is_core" value="1">
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeAddSvcModal()">Batal</button>
+        <button type="submit" class="btn btn-primary">Tambah</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Konfirmasi Tindakan Layanan (Restart, Stop, Hapus) -->
+<div id="svc-confirm-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.72);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeSvcConfirmModal(false)">
+  <div class="card" style="width:min(460px,96vw);background:#161b22;border:1px solid #30363d;border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,0.85);color:var(--text);padding:18px 20px;overflow:hidden" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div id="svc-confirm-icon-wrap" style="width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(239,68,68,0.15);color:#ef4444">
+          <svg id="svc-confirm-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </div>
+        <div>
+          <h3 id="svc-confirm-title" style="margin:0 0 6px;font-size:15px;font-weight:600;color:var(--text-bright)">Konfirmasi Tindakan</h3>
+          <p id="svc-confirm-msg" style="margin:0;font-size:12.5px;line-height:1.55;color:var(--text)"></p>
+        </div>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeSvcConfirmModal(false)" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeSvcConfirmModal(false)">Batal</button>
+      <button type="button" id="svc-confirm-btn-yes" class="btn btn-danger btn-sm" onclick="closeSvcConfirmModal(true)">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Hentikan / Kelola Sinyal Proses -->
+<div id="kill-proc-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeKillProcModal()">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(470px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <h3 style="margin:0;color:var(--red);display:flex;align-items:center;gap:6px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red)"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>Kelola Sinyal Proses</span>
+      </h3>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeKillProcModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+    </div>
+    <p style="font-size:12px;color:var(--dim);margin:0 0 16px;line-height:1.5">
+      Kirimkan sinyal kendali ke proses <strong id="kill-proc-name" style="color:var(--text)"></strong> (PID: <span id="kill-proc-pid-label" class="mono" style="color:var(--blue);font-weight:700"></span>).
+    </p>
+    <form method="post" action="/servers/{{ server.id }}/processes/kill" id="kill-proc-form" onsubmit="submitKillProc(event)">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="pid" id="kill-proc-pid">
+      <input type="hidden" name="pname" id="kill-proc-pname">
+      
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:8px">Pilih Jenis Sinyal / Aksi *</label>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
+            <input type="radio" name="sig" value="TERM" id="sig-radio-term" checked style="margin-top:2px">
+            <div>
+              <strong style="color:var(--yellow)">SIGTERM (15) — Hentikan Secara Normal</strong>
+              <div style="font-size:11px;color:var(--dim)">Direkomendasikan. Meminta proses menutup koneksi &amp; simpan data dengan bersih.</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
+            <input type="radio" name="sig" value="KILL" id="sig-radio-kill" style="margin-top:2px">
+            <div>
+              <strong style="color:var(--red)">SIGKILL (9) — Paksa Hentikan Seketika</strong>
+              <div style="font-size:11px;color:var(--dim)">Gunakan jika proses tidak responsif. Sistem akan menghentikan proses langsung tanpa konfirmasi (SIGKILL).</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
+            <input type="radio" name="sig" value="STOP" id="sig-radio-stop" style="margin-top:2px">
+            <div>
+              <strong style="color:var(--blue)">SIGSTOP (19) — Tangguhkan / Pause Proses</strong>
+              <div style="font-size:11px;color:var(--dim)">Menghentikan sementara alokasi CPU proses hingga dilanjutkan kembali (SIGCONT).</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
+            <input type="radio" name="sig" value="CONT" id="sig-radio-cont" style="margin-top:2px">
+            <div>
+              <strong style="color:var(--green)">SIGCONT (18) — Lanjutkan / Resume Proses</strong>
+              <div style="font-size:11px;color:var(--dim)">Melanjutkan kembali eksekusi proses yang sebelumnya ditangguhkan (paused).</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeKillProcModal()">Batal</button>
+        <button type="submit" class="btn btn-danger" id="kill-proc-submit-btn">Kirim Sinyal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Blokir IP Manual -->
+<div id="block-ip-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeBlockIpModal()">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <h3 id="block-ip-title" style="margin:0;color:var(--red)">Blokir Alamat IP (DROP)</h3>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeBlockIpModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+    </div>
+    <p id="block-ip-desc" style="font-size:12px;color:var(--dim);margin:0 0 16px;line-height:1.5">
+      Masukkan alamat IP yang ingin diblok.
+    </p>
+    <form method="post" action="/servers/{{ server.id }}/firewall/block" id="block-ip-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div style="margin-bottom:16px">
+        <label id="block-ip-target-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Alamat IP Target (IPv4) *</label>
+        <input type="text" name="ip" id="block-ip-input" required placeholder="Contoh: 198.51.100.25"
+               pattern="^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
+        <span id="block-ip-priv-warning" style="font-size:11px;color:var(--dim);margin-top:4px;display:block">
+          IP privat (10.*, 192.168.*, 172.16-31.*), loopback (127.*), atau IP server sendiri tidak dapat diblokir.
+        </span>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeBlockIpModal()">Batal</button>
+        <button type="submit" id="block-ip-submit-btn" class="btn btn-danger">Blokir Sekarang</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Buat Pengguna Sistem Baru -->
+<div id="create-user-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeCreateUserModal()">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(480px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <h3 id="create-user-title" style="margin:0;color:var(--neon)">Buat Pengguna Sistem Baru</h3>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeCreateUserModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+    </div>
+    <p id="create-user-desc" style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
+      Membuat akun baru pada server ini.
+    </p>
+    <form id="create-user-form" onsubmit="submitCreateUser(event)">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div style="margin-bottom:14px">
+        <label id="create-user-uname-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Pengguna *</label>
+        <input type="text" name="username" id="create-user-uname-inp" required placeholder="Contoh: user1"
+               pattern="^[a-z_][a-z0-9_-]{1,31}$"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
+        <span id="create-user-uname-help" style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Diawali huruf kecil/underscore, maks 32 karakter</span>
+      </div>
+      <div style="margin-bottom:14px">
+        <label id="create-user-pwd-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Password Akun (Opsional)</label>
+        <input type="password" name="password" id="create-user-pwd-inp" placeholder="Kosongkan jika hanya menggunakan SSH Key"
+               autocomplete="new-password"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+        <span id="create-user-pwd-help" style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Jika diisi, akun langsung aktif dengan autentikasi password. Jika dikosongkan, akun siap untuk login via SSH Key.</span>
+      </div>
+      <div style="margin-bottom:14px">
+        <label id="create-user-shell-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Shell Login</label>
+        <select name="shell" id="create-user-shell-sel" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+          <option value="/bin/bash">/bin/bash (default)</option>
+          <option value="/bin/sh">/bin/sh</option>
+          <option value="/usr/bin/zsh">/usr/bin/zsh</option>
+          <option value="/usr/sbin/nologin">/usr/sbin/nologin (tanpa shell)</option>
+          <option value="/bin/false">/bin/false (diblokir)</option>
+        </select>
+      </div>
+      <div style="margin-bottom:14px">
+        <label id="create-user-comment-label" style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Keterangan (Comment)</label>
+        <input type="text" name="comment" id="create-user-comment-inp" placeholder="Dibuat via Pantau Server" value="Dibuat via Pantau Server"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px">
+      </div>
+      <div style="margin-bottom:18px;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" name="is_sudo" value="1" id="new-user-sudo" style="width:16px;height:16px">
+        <label for="new-user-sudo" id="create-user-sudo-label" style="font-size:13px;cursor:pointer">Tambahkan ke grup <code class="mono">sudo</code> (hak superuser)</label>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeCreateUserModal()">Batal</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit-create-user">Buat Pengguna</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Tambah Tugas Terjadwal (Cron Job) -->
+<div id="add-cron-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeAddCronModal()">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(560px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <h3 style="margin:0;color:var(--neon)">Tambah Tugas Terjadwal (Cron Job)</h3>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeAddCronModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+    </div>
+    <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
+      Tugas cron akan disimpan di <code class="mono">/etc/cron.d/pantau-&lt;nama&gt;</code>.
+    </p>
+    <form method="post" action="/servers/{{ server.id }}/cron/add" id="add-cron-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Identifikasi (Ident) *</label>
+        <input type="text" name="ident" required placeholder="Contoh: backup-db atau kirim-laporan"
+               pattern="^[a-zA-Z0-9_-]{2,40}$"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
+        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Nama unik, alfanumerik, digunakan sebagai sufiks nama berkas cron</span>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:6px">Jadwal Eksekusi (Cron Expression)</label>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+          <div><label style="font-size:10px;color:var(--dim)">Menit</label>
+            <input type="text" name="minute" value="0" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
+          </div>
+          <div><label style="font-size:10px;color:var(--dim)">Jam</label>
+            <input type="text" name="hour" value="*" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
+          </div>
+          <div><label style="font-size:10px;color:var(--dim)">Tgl (DOM)</label>
+            <input type="text" name="dom" value="*" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
+          </div>
+          <div><label style="font-size:10px;color:var(--dim)">Bulan</label>
+            <input type="text" name="month" value="*" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
+          </div>
+          <div><label style="font-size:10px;color:var(--dim)">Hari (DOW)</label>
+            <input type="text" name="dow" value="*" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:7px 8px;font-size:13px;font-family:monospace">
+          </div>
+        </div>
+        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Format standar cron. Contoh: <code class="mono">0 3 * * *</code> = setiap hari pukul 03:00</span>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Pengguna yang Menjalankan</label>
+        <input type="text" name="user_target" value="root" placeholder="root"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
+      </div>
+      <div style="margin-bottom:18px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Perintah yang Dieksekusi *</label>
+        <input type="text" name="command" required placeholder="Contoh: /opt/backup.sh >> /var/log/backup.log 2>&1"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeAddCronModal()">Batal</button>
+        <button type="submit" class="btn btn-primary">Tambah Tugas Cron</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Tambah Lokasi Sertifikat SSL Kustom -->
+<div id="add-ssl-path-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeAddSslPathModal()">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(500px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <h3 style="margin:0;color:var(--neon)">Tambah Lokasi Sertifikat SSL Kustom</h3>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeAddSslPathModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+    </div>
+    <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
+      Path berkas sertifikat akan disimpan di <code class="mono">/etc/pantau/custom_ssl.conf</code>.
+    </p>
+    <form method="post" action="/servers/{{ server.id }}/ssl/add-path" id="add-ssl-path-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div style="margin-bottom:18px">
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Path Berkas Sertifikat (.pem / .crt) *</label>
+        <input type="text" name="path" required placeholder="Contoh: /etc/nginx/ssl/example.com.crt"
+               style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
+        <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Gunakan path absolut. Berkas harus sudah ada di filesystem server.</span>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" class="btn btn-ghost" onclick="closeAddSslPathModal()">Batal</button>
+        <button type="submit" class="btn btn-primary">Tambah ke Pengawasan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Modal Mode Pemeliharaan -->
-<div id="maint-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
+<div id="maint-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px);padding:16px" onclick="if(event.target===this)closeMaintenanceModal()">
   <div class="card" style="width:100%;max-width:480px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 16px 40px rgba(0,0,0,0.7);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:8px">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--yellow)"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
         <span>Mode Pemeliharaan</span>
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeMaintenanceModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeMaintenanceModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
     </div>
     
     <p style="font-size:13px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
@@ -3258,14 +3283,14 @@ div[style*="position: fixed"] .card {
 </div>
 
 <!-- Modal Verifikasi Akses Web Terminal Root (Step-Up Auth) -->
-<div id="term-unlock-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+<div id="term-unlock-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeTerminalUnlockModal()">
   <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         <span>Otentikasi Akses Terminal Root</span>
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeTerminalUnlockModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeTerminalUnlockModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
     </div>
     
     <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
@@ -3311,14 +3336,14 @@ div[style*="position: fixed"] .card {
 </div>
 
 <!-- Modal Verifikasi Akses File Manager Root (Step-Up Auth) -->
-<div id="fm-unlock-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+<div id="fm-unlock-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeFileManagerUnlockModal()">
   <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         <span>Otentikasi Akses File Manager</span>
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeFileManagerUnlockModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeFileManagerUnlockModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
     </div>
     
     <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
@@ -3364,14 +3389,14 @@ div[style*="position: fixed"] .card {
 </div>
 
 <!-- Modal Konfirmasi Penutupan Terminal -->
-<div id="term-close-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+<div id="term-close-confirm-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeTerminalCloseConfirmModal()">
   <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--yellow)"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
         <span>Konfirmasi Penutupan Terminal</span>
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeTerminalCloseConfirmModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeTerminalCloseConfirmModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
     </div>
     
     <p style="font-size:13px;color:var(--text);margin:0 0 10px 0;line-height:1.5">
@@ -3391,14 +3416,14 @@ div[style*="position: fixed"] .card {
 </div>
 
 <!-- Modal Konfirmasi Kunci Terminal & Putus Sesi -->
-<div id="term-lock-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
+<div id="term-lock-confirm-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeTerminalLockConfirmModal()">
   <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;color:#f87171">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <span>Kunci Terminal &amp; Putus Sesi?</span>
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeTerminalLockConfirmModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeTerminalLockConfirmModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
     </div>
     
     <p style="font-size:13px;color:var(--text);margin:0 0 10px 0;line-height:1.5">
@@ -3525,6 +3550,11 @@ function showTab(name) {
   }
   if (name === 'berkas' && typeof initFileManager === 'function') {
     initFileManager();
+  }
+  if (name === 'log') {
+    if (typeof resumeAutoLog === 'function') resumeAutoLog();
+  } else {
+    if (typeof pauseAutoLog === 'function') pauseAutoLog();
   }
   initServicesTabPagination();
 }
@@ -8019,7 +8049,12 @@ async function pollSystem() {
     const r = await fetch('/api/servers/' + SID + '/system?_=' + Date.now(), {credentials: 'same-origin', cache: 'no-store'});
     if (r.ok) {
       const data = await r.json();
-      startAutoLog(data.units, data.extras);
+      if (data.units) _cachedLogUnits = data.units;
+      if (data.extras) _cachedLogExtras = data.extras;
+      const tabLog = document.getElementById('tab-log');
+      if (tabLog && !tabLog.hidden) {
+        startAutoLog(data.units, data.extras);
+      }
       renderSys(data);
       if (typeof renderPorts === 'function') renderPorts(data.listening_ports);
       if (typeof renderFirewall === 'function') renderFirewall(data.firewall);
@@ -8775,22 +8810,67 @@ async function chainNext(version) {
   }
 }
 
+let _cachedLogUnits = [];
+let _cachedLogExtras = [];
+
 function scheduleNext(version) {
   setTimeout(() => {
+    const tabLog = document.getElementById('tab-log');
+    if (tabLog && tabLog.hidden) {
+      logRunning = false;
+      return;
+    }
+    if (document.hidden) {
+      logRunning = false;
+      return;
+    }
     if (version === logVersion) chainNext(version);
   }, 4000);
 }
 
 function startAutoLog(units, extras) {
+  if (units) _cachedLogUnits = units;
+  if (extras) _cachedLogExtras = extras;
+  const tabLog = document.getElementById('tab-log');
+  if (tabLog && tabLog.hidden) {
+    logRunning = false;
+    return;
+  }
   if (logRunning) return;
   const sel = document.getElementById('log-unit');
-  if (!sel.options.length || !units.length) return;
-  sel.value = pickDefaultUnit(units, extras);
+  if (!sel || !sel.options.length) return;
+  if (!sel.value && _cachedLogUnits.length) {
+    sel.value = pickDefaultUnit(_cachedLogUnits, _cachedLogExtras);
+  }
   if (!sel.value) return;
   logRunning = true;
   logVersion++;
   chainNext(logVersion);
 }
+
+function pauseAutoLog() {
+  logRunning = false;
+  logVersion++;
+}
+
+function resumeAutoLog() {
+  const tabLog = document.getElementById('tab-log');
+  if (!tabLog || tabLog.hidden) return;
+  if (!logRunning) {
+    startAutoLog(_cachedLogUnits, _cachedLogExtras);
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    const tabLog = document.getElementById('tab-log');
+    if (tabLog && !tabLog.hidden) {
+      resumeAutoLog();
+    }
+  } else {
+    pauseAutoLog();
+  }
+});
 
 // ---------- log filter + highlight ----------
 let _rawLogBuf = '';
