@@ -200,11 +200,24 @@ def get_current_user(request: Request, db: Session) -> User | None:
     row = db.query(AppSession).filter(AppSession.sid == sid).first()
     if not row:
         return None
-    if datetime.utcnow() > row.expires_at:
-        # Jangan commit di jalur baca berulang; buang sekali lalu abaikan.
-        db.delete(row)
-        db.commit()
+    now = datetime.utcnow()
+    if now > row.expires_at:
+        try:
+            db.delete(row)
+            db.commit()
+        except Exception:
+            db.rollback()
         return None
+
+    # Sliding session window: perpanjang masa aktif sesi bila sisa waktu < 6 jam
+    # Menjamin pemantauan layar lebar NOC 24/7 tidak pernah logout atau membeku sepihak.
+    if row.expires_at - now < (SESSION_TTL / 2):
+        try:
+            row.expires_at = now + SESSION_TTL
+            db.commit()
+        except Exception:
+            db.rollback()
+
     user = db.query(User).filter(User.id == row.user_id).first()
     if not user or not user.is_active:
         return None

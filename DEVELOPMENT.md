@@ -311,6 +311,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.12
+
+- **Tipe Rilis:** Implementasi Sliding Session Window 24/7 dan Audit Total Runtime Engine Pengawas Tanpa Reload (*24/7 NOC Sliding Session Window & Comprehensive Runtime Engine Audit*)
+- **Fokus Utama:** Memastikan workstation dan layar display NOC yang berjalan 24/7 tidak pernah mengalami pemutusan sesi (*session timeout*) atau pembekuan antarmuka secara sepihak setelah 12 jam, memperbaiki penanganan error runtime pada live version watcher (`let _CLIENT_APP_VER`), serta menghilangkan catch block senyap pada alur polling alerts agar stabilitas operasional pemantauan layar lebar terjamin penuh tanpa reload.
+
+### Rangkuman Pembaruan:
+1. **Sliding Session Window 24/7 pada Backend (`server/main.py`):**
+   - Sesi aktif operator NOC yang melakukan request berulang diperpanjang secara otomatis jika sisa masa aktif kurang dari separuh masa berlakunya (`SESSION_TTL / 2` = 6 jam), mencegah layar display 24/7 ter-logout atau membeku setelah 12 jam pemantauan terus-menerus.
+   - Penambahan `try-except` dan rollback pengaman saat pembersihan sesi kedaluwarsa maupun perpanjangan sesi sliding window di database.
+2. **Resolusi Eksepsi Runtime Variabel Konstan pada Version Watcher (`base.html`):**
+   - Mengubah deklarasi `const _CLIENT_APP_VER` menjadi `let _CLIENT_APP_VER` pada live version watcher engine. Hal ini mencegah timbulnya `TypeError: Assignment to constant variable` saat antarmuka menyinkronkan status versi server baru secara reaktif di latar belakang tanpa reload.
+3. **Penghapusan Penelanan Error Senyap (*Silent Catch Elimination*):**
+   - Mengganti catch block senyap pada fungsi `alertFetch()` dan `checkServerVersion()` dengan pencatatan `console.error` dan `console.warn` terstruktur agar jika terjadi kendala jaringan atau kegagalan parsing, teknisi dapat langsung menganalisisnya dari konsol browser.
+4. **Sinkronisasi Versi SemVer dan Kepatuhan SOP Pantau:**
+   - Sinkronisasi versi 4.6.12 di seluruh 7 berkas inti ekosistem Pantau Server sesuai standar operasional baku NOC.
+
+---
+
 ## Versi 4.6.11
 
 - **Tipe Rilis:** Peniadaan Polusi Visual Warna Baris Tabel & Penjagaan Desain Bersih Standar NOC (*Elimination of Table Row Background Tinting & Restoration of Clean NOC Ergonomics*)
