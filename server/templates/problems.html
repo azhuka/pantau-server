@@ -742,7 +742,7 @@ async function submitThresholds(e) {
     if (res.ok) {
       showToast('Ambang batas masalah berhasil disimpan.', true);
       closeThresholdModal();
-      setTimeout(() => location.reload(), 600);
+      if (typeof window.poll === 'function') window.poll();
     } else {
       showToast('Gagal: ' + (data.detail || 'Terjadi kesalahan'), false);
     }
@@ -766,7 +766,7 @@ async function resetThresholds() {
     if (res.ok) {
       showToast('Ambang batas berhasil direset ke bawaan.', true);
       closeThresholdModal();
-      setTimeout(() => location.reload(), 600);
+      if (typeof window.poll === 'function') window.poll();
     } else {
       const data = await res.json();
       showToast('Gagal: ' + (data.detail || 'Terjadi kesalahan'), false);

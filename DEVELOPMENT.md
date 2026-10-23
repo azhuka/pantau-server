@@ -311,6 +311,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.13
+
+- **Tipe Rilis:** Peniadaan Pemuatan Ulang Paksa Halaman pada Modal Ambang Batas Insiden (*Elimination of Forced Page Reload on Incident Thresholds Modal & Zero-Reload Completion*)
+- **Fokus Utama:** Menyempurnakan prinsip *zero manual reload* pada antarmuka operator dengan mengganti pemanggilan `location.reload()` pada saat menyimpan atau mereset ambang batas insiden (`problems.html`) dengan eksekusi polling asinkron reaktif `window.poll()`, memastikan seluruh tindakan operator di semua halaman berjalan instan tanpa interupsi layar.
+
+### Rangkuman Pembaruan:
+1. **Reaktivitas Tanpa Reload pada Modal Ambang Batas (`problems.html`):**
+   - Mengganti `setTimeout(() => location.reload(), 600)` pada fungsi `submitThresholds` dan `resetThresholds` dengan pemanggilan asinkron reaktif `if (typeof window.poll === 'function') window.poll()`.
+   - Data insiden, badge keparahan, dan tabel diperbarui secara mulus di latar belakang tanpa me-refresh jendela browser.
+2. **Sinkronisasi Versi SemVer dan Kepatuhan SOP Pantau:**
+   - Sinkronisasi versi 4.6.13 di seluruh 7 berkas ekosistem Pantau Server sesuai standar operasional baku.
+
+---
+
 ## Versi 4.6.12
 
 - **Tipe Rilis:** Implementasi Sliding Session Window 24/7 dan Audit Total Runtime Engine Pengawas Tanpa Reload (*24/7 NOC Sliding Session Window & Comprehensive Runtime Engine Audit*)
