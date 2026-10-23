@@ -8919,7 +8919,7 @@ def api_alerts(
         .order_by(desc(ServerProblem.started_at)).all()
     )
 
-    open_danger = [r for r in open_problems if r.severity == "danger"]
+    open_danger = [r for r in open_problems if r.severity == "danger" and get_effective_tier(r) == 1]
     open_average = [r for r in open_problems if r.severity == "average"]
     open_warning = [r for r in open_problems if r.severity == "warning"]
     open_info = [r for r in open_problems if r.severity == "info"]
@@ -8935,8 +8935,8 @@ def api_alerts(
     def _is_alert_banner_firing(r, now_dt):
         if getattr(r, "is_ignored", 0):
             return False
-        # Untuk keparahan danger (kritis), hanya layanan Tier-1 yang memicu status Kritis Merah
-        if r.severity == "danger" and get_effective_tier(r) != 1:
+        # Banner, alarm suara, dan badge kritis HANYA untuk layanan Tier-1 (Server Tier-1 atau Endpoint/Router/AP Tier-1)
+        if get_effective_tier(r) != 1:
             return False
         # Jika insiden berasal dari endpoint yang baru didaftarkan dan belum pernah terverifikasi normal (UP),
         # tahan alarm darurat/banner kritis agar tidak membuat panik operator saat baru menguji/konfigurasi target

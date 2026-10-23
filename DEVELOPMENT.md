@@ -311,6 +311,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.8
+
+- **Tipe Rilis:** Pemulihan Total Desain Asli Banner Darurat Kritis Tier-1 (*Restoration of Canonical Tier-1 Critical Red Banner Architecture*)
+- **Fokus Utama:** Mengembalikan fungsi Alert Banner atas (`#alertBanner`) persis 100% ke spesifikasi arsitektur asli Pantau Server: Banner hanya memicu warna Merah Darurat (`banner-danger`) khusus untuk insiden Kritis (`danger`) pada layanan Tier-1 (atau bencana fatal), menghapus seluruh pemicuan banner untuk tingkat Gawat (`average`) dan Peringatan (`warning`), serta menghapus kelas CSS varian non-kritis.
+
+### Rangkuman Pembaruan:
+1. **Pemulihan Murni Banner Merah Kritis Tier-1 (*Canonical Tier-1 Red Emergency Banner*):**
+   - Mengembalikan fungsi `renderAlerts` pada `base.html` agar secara ketat hanya mengaktifkan banner bila `dangerN > 0 && dangerList.length > 0`.
+   - Menghapus percabangan `average` dan `warning` pada pemicuan banner atas. Layanan Tier-2 (Gawat) dan Tier-3 (Peringatan) secara ketat tidak pernah memicu banner atas, mengeliminasi alarm palsu (*alert fatigue*).
+   - Menghapus class CSS `.alert-banner.banner-average` dan `.alert-banner.banner-warning`.
+2. **Penyelarasan Backend Alerting (*Backend Tier-1 Danger Enforcement*):**
+   - Menyelaraskan filter `open_danger` dan `_is_alert_banner_firing` pada `server/main.py` agar secara ketat hanya meloloskan insiden keparahan `danger` pada layanan berstatus Tier-1.
+
+---
+
 ## Versi 4.6.7
 
 - **Tipe Rilis:** Pemurnian Standar Arsitektur NOC Enterprise, Eliminasi Banner Info & Pemulihan Integritas Status Armada (*Enterprise NOC Banner Hygiene, Clean Host Status Restoration & Noise Elimination*)

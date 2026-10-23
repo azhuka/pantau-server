@@ -826,14 +826,6 @@ body.kiosk-mode .main {
 .alert-banner.banner-danger:hover{background:linear-gradient(90deg,#881337 0%,#b91c1c 30%,#dc2626 70%,#881337 100%)}
 .alert-banner.banner-danger .alert-banner-btn{color:#991b1b}
 
-.alert-banner.banner-average{background:linear-gradient(90deg,#9a3412 0%,#c2410c 30%,#ea580c 70%,#9a3412 100%);border-bottom:1px solid rgba(254,215,170,.4);color:#fff;box-shadow:0 6px 20px rgba(234,88,12,.35)}
-.alert-banner.banner-average:hover{background:linear-gradient(90deg,#7c2d12 0%,#ea580c 30%,#f97316 70%,#7c2d12 100%)}
-.alert-banner.banner-average .alert-banner-btn{color:#c2410c}
-
-.alert-banner.banner-warning{background:linear-gradient(90deg,#854d0e 0%,#a16207 30%,#ca8a04 70%,#854d0e 100%);border-bottom:1px solid rgba(254,240,138,.4);color:#fff;box-shadow:0 6px 20px rgba(202,138,4,.35)}
-.alert-banner.banner-warning:hover{background:linear-gradient(90deg,#713f12 0%,#ca8a04 30%,#eab308 70%,#713f12 100%)}
-.alert-banner.banner-warning .alert-banner-btn{color:#a16207}
-
 .alert-banner-inner{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
 .alert-banner-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13.5px;line-height:1.4}
 .alert-tag-emergency{background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.3);color:#fecaca;font-size:11px;font-weight:800;padding:3px 8px;border-radius:5px;letter-spacing:0.5px;display:inline-flex;align-items:center;gap:5px;text-transform:uppercase;flex-shrink:0}
@@ -1068,7 +1060,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.6.7' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.6.8' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -1684,49 +1676,18 @@ function renderAlerts(d){
       const bannerTag = document.getElementById('alertBannerTag');
       const actionBtn = document.getElementById('alertBannerActionBtn') || banner.querySelector('.alert-banner-btn');
 
-      if (dangerN > 0 && (d.firing_danger_alerts || d.danger_alerts || []).length > 0) {
-        const list = d.firing_danger_alerts || d.danger_alerts || [];
+      if (dangerN > 0 && dangerList.length > 0) {
         banner.className = 'alert-banner banner-danger';
         if (bannerTag) bannerTag.innerHTML = '<span class="pulse">🚨</span> INSIDEN KRITIS';
         const hosts = d.firing_danger_hosts || d.danger_hosts || [];
         const hCount = hosts.length || dangerN;
-        const sampleMsg = (list[0] && list[0].message) ? list[0].message : 'Insiden kritis aktif';
+        const sampleMsg = (dangerList[0] && dangerList[0].message) ? dangerList[0].message : 'Insiden kritis aktif';
         if (hCount === 1) {
           bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(hosts[0] || 'Klien')}</span>: ${escHtml(sampleMsg)}`;
         } else {
           bannerText.innerHTML = `<strong>${hCount} Server</strong> dalam status Kritis (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
         }
         if (actionBtn) actionBtn.innerHTML = `Buka Halaman Insiden (${dangerN}) &rarr;`;
-        banner.style.display = 'flex';
-        document.body.classList.add('show-alert-banner');
-      } else if (avgN > 0 && (d.firing_average_alerts || d.average_alerts || []).length > 0) {
-        const list = d.firing_average_alerts || d.average_alerts || [];
-        banner.className = 'alert-banner banner-average';
-        if (bannerTag) bannerTag.innerHTML = '<span class="pulse">⚠️</span> INSIDEN GAWAT';
-        const hosts = d.firing_average_hosts || d.average_hosts || [];
-        const hCount = hosts.length || avgN;
-        const sampleMsg = (list[0] && list[0].message) ? list[0].message : 'Insiden gawat aktif';
-        if (hCount === 1) {
-          bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(hosts[0] || 'Klien')}</span>: ${escHtml(sampleMsg)}`;
-        } else {
-          bannerText.innerHTML = `<strong>${hCount} Server</strong> dalam status Gawat (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
-        }
-        if (actionBtn) actionBtn.innerHTML = `Buka Halaman Insiden (${avgN}) &rarr;`;
-        banner.style.display = 'flex';
-        document.body.classList.add('show-alert-banner');
-      } else if (warnN > 0 && (d.firing_warning_alerts || d.warning_alerts || []).length > 0) {
-        const list = d.firing_warning_alerts || d.warning_alerts || [];
-        banner.className = 'alert-banner banner-warning';
-        if (bannerTag) bannerTag.innerHTML = '<span class="pulse">🟡</span> PERINGATAN OPERASIONAL';
-        const hosts = d.firing_warning_hosts || d.warning_hosts || [];
-        const hCount = hosts.length || warnN;
-        const sampleMsg = (list[0] && list[0].message) ? list[0].message : 'Peringatan aktif';
-        if (hCount === 1) {
-          bannerText.innerHTML = `Server <span class="alert-host-chip">${escHtml(hosts[0] || 'Klien')}</span>: ${escHtml(sampleMsg)}`;
-        } else {
-          bannerText.innerHTML = `<strong>${hCount} Server</strong> dalam status Peringatan (${escHtml(hosts.slice(0, 3).join(', '))}${hCount > 3 ? '…' : ''}).`;
-        }
-        if (actionBtn) actionBtn.innerHTML = `Buka Halaman Insiden (${warnN}) &rarr;`;
         banner.style.display = 'flex';
         document.body.classList.add('show-alert-banner');
       } else {
