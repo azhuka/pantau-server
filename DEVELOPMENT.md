@@ -311,6 +311,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.15
+
+- **Tipe Rilis:** Sinkronisasi Dinamis Signature Pesan Insiden Tanpa Reload & Pembaruan Seketika Masalah APT (*Dynamic Incident Message Signature for Zero-Reload & Instant APT Problems Sync*)
+- **Fokus Utama:** Menyelesaikan permasalahan multi-layar NOC di mana pembaruan teks/kuantitas insiden aktif (seperti penambahan paket upgrade OS dari 1 menjadi 2 pasca `apt update`) tidak langsung tercermin di Layar 1 (Dashboard monitor utama) tanpa reload karena hashing anti-jitter signature mengabaikan perubahan teks `message`, serta memastikan backend meng-commit pembaruan status `ServerProblem` seketika saat agen melaporkan hasil eksekusi tindakan operasional.
+
+### Rangkuman Pembaruan:
+1. **Penyertaan Dinamis `message` pada Signature Anti-Jitter Tabel Insiden (`dashboard.html`):**
+   - Menambahkan `${p.message || ''}` ke dalam generator `newSig` dan atribut Jinja2 `data-sig` pada elemen `#dash-problems-tbody`.
+   - Mengubah kuantitas atau pesan insiden seketika (seperti "1 paket menunggu upgrade" menjadi "2 paket menunggu upgrade") langsung memperbarui baris tabel insiden terkini di layar utama dalam siklus detak 3 detik tanpa mengharuskan operator me-reload halaman.
+2. **Sinkronisasi Langsung Masalah APT ke Database Pasca-Eksekusi Tindakan (`server/main.py`):**
+   - Pada penanganan callback hasil perintah `APT_UPDATE` dan `APT_UPGRADE`, status baris `ServerProblem` dengan kunci `apt_updates` langsung diperbarui (pesan, konteks, dan timestamp) atau ditandai selesai jika 0 paket, lalu di-commit ke database secara seketika.
+3. **Persistensi Transaksi Polling API Servers (`server/main.py`):**
+   - Menambahkan `db.commit()` pada akhir endpoint `/api/servers` dan `problems_aggregate` untuk menjamin hasil rekonsiliasi `sync_server_problems` tersimpan permanen dan tidak ter-rollback pada request GET berikutnya.
+4. **Validasi Simulasi Nyata Multi-Layar Headless Browser:**
+   - Telah diuji melalui simulasi 2 layar otomatis via Selenium Headless Chrome: Layar 1 terbuka tanpa disentuh/tanpa reload, Layar 2 memicu pembaruan paket dari 1 menjadi 2, dan Layar 1 terbukti sukses memperbarui teks dan menghapusnya saat upgrade selesai dalam hitungan detik.
+   - Sinkronisasi versi 4.6.15 di seluruh 7 berkas inti ekosistem Pantau Server.
+
+---
+
 ## Versi 4.6.14
 
 - **Tipe Rilis:** Standardisasi Universal Penutupan Modal (ESC & Backdrop), Resolusi Route Alias Endpoint Probing, dan Handler Favicon (*Universal Modal ESC/Backdrop Handlers, Endpoint Probing Route Alias & Favicon 204*)

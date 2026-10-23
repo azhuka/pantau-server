@@ -958,7 +958,7 @@ body.popout-fleet_table #dash-fleet-card {
           <th style="padding:4px 10px;font-size:10px;width:110px;min-width:100px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.5px">DURASI</th>
         </tr>
       </thead>
-      <tbody id="dash-problems-tbody" data-sig="{% for p in all_open_problems if not (p.is_ignored and p.severity == 'info') %}{{ p.server_id or p.probe_id or '' }}:{{ p.key }}:{{ p.severity }}:{{ 1 if p.is_ignored else 0 }}:{{ p.acknowledged_by or '' }}:{{ p.started_at_str }}{% if not loop.last %}|{% endif %}{% endfor %}">
+      <tbody id="dash-problems-tbody" data-sig="{% for p in all_open_problems if not (p.is_ignored and p.severity == 'info') %}{{ p.server_id or p.probe_id or '' }}:{{ p.key }}:{{ p.severity }}:{{ 1 if p.is_ignored else 0 }}:{{ p.acknowledged_by or '' }}:{{ p.message or '' }}:{{ p.started_at_str }}{% if not loop.last %}|{% endif %}{% endfor %}">
         {% for p in all_open_problems if not (p.is_ignored and p.severity == 'info') %}
         <tr onclick="window.location.href='{{ '/probing' if (p.probe_id or not p.server_id) else '/servers/' ~ p.server_id ~ '/services' }}'"
             title="Klik untuk buka {{ 'menu Endpoint' if (p.probe_id or not p.server_id) else 'rincian server ' ~ p.hostname }}"
@@ -2390,7 +2390,7 @@ async function pollNocDashboard() {
       if (emptyState) emptyState.style.display = 'none';
       if (tbody) {
         // Anti-jitter: Bandingkan signature masalah agar tidak membongkar/memasang ulang DOM bila data tetap sama
-        const newSig = allProblems.map(p => `${p.server_id || p.probe_id || ''}:${p.key || ''}:${p.severity || ''}:${p.is_ignored ? 1 : 0}:${p.acknowledged_by || ''}:${p.started_at_str || ''}`).join('|');
+        const newSig = allProblems.map(p => `${p.server_id || p.probe_id || ''}:${p.key || ''}:${p.severity || ''}:${p.is_ignored ? 1 : 0}:${p.acknowledged_by || ''}:${p.message || ''}:${p.started_at_str || ''}`).join('|');
         if (tbody.dataset.sig !== newSig) {
           tbody.dataset.sig = newSig;
           let tHtml = '';

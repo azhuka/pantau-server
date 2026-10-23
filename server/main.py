@@ -2075,6 +2075,13 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             "info_msgs": info_msgs,
             "ignored_msgs": ignored_msgs,
         })
+    try:
+        db.commit()
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
     return result
 
 
@@ -8426,6 +8433,13 @@ def problems_aggregate(db):
     open_list.sort(key=lambda r: (rank.get(r["severity"], 0), r["started_at"]),
                    reverse=True)
     resolved_list.sort(key=lambda r: r["resolved_at"], reverse=True)
+    try:
+        db.commit()
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
     return open_list, resolved_list
 
 
@@ -10034,16 +10048,36 @@ def api_logs_result(
                         pass
                 extras.apt_last_update = datetime.utcnow()
 
-            # Sinkronkan masalah apt_updates bila upgradable 0
+            # Sinkronkan masalah apt_updates secara riil seketika ke database
+            prob = db.query(ServerProblem).filter(
+                ServerProblem.server_id == server.id,
+                ServerProblem.key == "apt_updates",
+                ServerProblem.resolved_at.is_(None)
+            ).first()
             if (extras.apt_upgradable or 0) == 0:
-                prob = db.query(ServerProblem).filter(
-                    ServerProblem.server_id == server.id,
-                    ServerProblem.key == "apt_updates",
-                    ServerProblem.resolved_at.is_(None)
-                ).first()
                 if prob:
                     prob.resolved_at = datetime.utcnow()
                     prob.resolved_note = "auto (upgrade selesai)"
+            else:
+                upg_cnt = int(extras.apt_upgradable)
+                new_msg = f"{upg_cnt} paket menunggu upgrade"
+                new_ctx = _build_problem_context("apt_updates", server, upgradable=upg_cnt)
+                if prob:
+                    prob.message = new_msg
+                    prob.context = new_ctx
+                    prob.updated_at = datetime.utcnow()
+                else:
+                    prob = ServerProblem(
+                        server_id=server.id,
+                        key="apt_updates",
+                        severity="info",
+                        message=new_msg,
+                        tip=APT_TIP,
+                        started_at=datetime.utcnow(),
+                        last_active_at=datetime.utcnow(),
+                        context=new_ctx
+                    )
+                    db.add(prob)
         except Exception as exc:
             try:
                 db.rollback()
