@@ -8364,12 +8364,12 @@ def problems_aggregate(db):
 
 
 
-def _server_status(srv, stale: bool, has_services: bool, any_up: bool, has_unignored_down: bool = True, is_ignored_stale: bool = False,
-                   danger_count: int = 0, average_count: int = 0, warning_count: int = 0, info_count: int = 0):
+def _server_status(srv, stale: bool, has_services: bool, any_up: bool, has_unignored_down: bool = True, is_ignored_stale: bool = False):
     """Status server dalam satu kosakata untuk semua halaman.
 
     Kembalikan (label, kelas_badge) supaya Dashboard, Servers, dan Rincian
-    mencerminkan kondisi operasional riil server (kritis, gawat, peringatan, info, normal, offline).
+    tidak lagi berbeda-beda menampilkan server yang sama.
+    Nilai status murni: online (Hijau) atau offline (Merah).
     """
     if not srv.is_active:
         return "nonaktif", "badge-muted"
@@ -8377,21 +8377,7 @@ def _server_status(srv, stale: bool, has_services: bool, any_up: bool, has_unign
         return "pemeliharaan", "badge-warn"
     if stale:
         return ("offline", "badge-down") if srv.last_seen else ("-", "badge-muted")
-
-    d_cnt = danger_count if danger_count else (getattr(srv, "_danger_count", 0) or 0)
-    avg_cnt = average_count if average_count else (getattr(srv, "_average_count", 0) or 0)
-    w_cnt = warning_count if warning_count else (getattr(srv, "_warning_count", 0) or 0)
-    i_cnt = info_count if info_count else (getattr(srv, "_info_count", 0) or 0)
-
-    if d_cnt > 0:
-        return "kritis", "badge-danger"
-    if avg_cnt > 0:
-        return "gawat", "badge-orange"
-    if w_cnt > 0:
-        return "peringatan", "badge-warn"
-    if i_cnt > 0:
-        return "info", "badge-info"
-    return "normal", "badge-up"
+    return "online", "badge-up"
 
 
 # ---------------------------------------------------------------------------
@@ -8994,9 +8980,6 @@ def api_alerts(
     warning_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in unack_warning]
     info_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in open_info]
     info_hosts = sorted(list({get_host_label(r.server_id, r.probe_id) for r in open_info}))
-    firing_info = [r for r in open_info if (r.key.startswith("ssh_active_session:") or r.key in ("failed_logins", "security_danger")) and not getattr(r, "is_ignored", 0)]
-    firing_info_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in firing_info]
-    firing_info_hosts = sorted(list({get_host_label(r.server_id, r.probe_id) for r in firing_info}))
     firing_danger_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in firing_danger]
     firing_average_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in firing_average]
     firing_warning_alerts = [_alert_dict(r, get_host_label(r.server_id, r.probe_id), now) for r in firing_warning]
@@ -9046,9 +9029,6 @@ def api_alerts(
         "warning_alerts": warning_alerts,
         "info_alerts": info_alerts,
         "info_hosts": info_hosts,
-        "firing_info_alerts": firing_info_alerts,
-        "firing_info_hosts": firing_info_hosts,
-        "firing_info_count": len(firing_info),
         "firing_alerts": firing_alerts,
         "unack_count": len(firing_danger),
         "unack_danger_count": len(firing_danger),

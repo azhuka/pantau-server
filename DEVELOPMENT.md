@@ -311,6 +311,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.7
+
+- **Tipe Rilis:** Pemurnian Standar Arsitektur NOC Enterprise, Eliminasi Banner Info & Pemulihan Integritas Status Armada (*Enterprise NOC Banner Hygiene, Clean Host Status Restoration & Noise Elimination*)
+- **Fokus Utama:** Menghapus implementasi banner untuk tingkat keparahan Info (seperti sesi remote SSH) yang tidak sesuai standar best practice enterprise monitoring dan menyebabkan banner menempel permanen, mengembalikan status armada pada tabel pengawasan ke status murni konektivitas dan daemon (Online / Offline / Pemeliharaan), memulihkan integritas warna badge dan dot standar, serta menghapus lonceng audio sintetis dan popup berlebih agar layar pemantauan tetap bersih, akurat, dan profesional.
+
+### Rangkuman Pembaruan:
+1. **Pembersihan Total Banner Peringatan Info (*Elimination of Info Severity Banner*):**
+   - Menghapus varian banner info (`banner-info`) dari `base.html`, `server/main.py`, dan CSS global. Banner darurat atas dikembalikan khusus untuk insiden operasional nyata: Kritis (`banner-danger` merah), Gawat (`banner-average` oranye), dan Peringatan (`banner-warning` kuning).
+   - Menghilangkan anomali banner persisten yang menempel terus-menerus di bagian atas antarmuka saat terdeteksi aktivitas sesi SSH atau telemetri informasi.
+2. **Pemulihan Status Murni Armada (*Clean Host Status & Badge Integrity*):**
+   - Mengembalikan `_server_status` pada `server/main.py`, `dashboard.html`, dan `servers.html` ke nilai status murni (Online / Offline / Pemeliharaan / Nonaktif) tanpa menimpa (*override*) label status server dengan tingkat keparahan insiden ("Info", "Kritis", dsb.).
+   - Menghapus arsiran warna latar belakang baris tabel yang mengganggu estetika dan keterbacaan data ringkas (*NOC-density*).
+3. **Penghapusan Polusi Suara & Notifikasi Liar (*Audio & Toast Noise Elimination*):**
+   - Menghapus nada dering sintetis (`playNocChime`) dan kemunculan toast otomatis pada siklus polling latar belakang, menjaga ketenangan lingkungan operasional NOC.
+   - Kejadian operasional dan anomali tetap terpantau secara mandiri dan reaktif pada tabel Insiden Terkini tanpa reload halaman.
+
+---
+
 ## Versi 4.6.6
 
 - **Tipe Rilis:** Transformasi Reaktivitas Visual NOC, Refleksi Status Riil Armada & Audio-Visual Alerting Tanpa Reload (*True Operational Health Reflection, Real-Time Event Ticker & Autonomous NOC UX*)
