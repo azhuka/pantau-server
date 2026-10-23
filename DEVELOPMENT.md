@@ -311,6 +311,29 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.16
+
+- **Tipe Rilis:** Manajemen Siklus Hidup Armada Dinamis (Tambah/Hapus Server) & Reaktivitas Multi-Layar NOC Tanpa Reload (*Dynamic Fleet Lifecycle Management & Multi-Screen Zero-Reload NOC Reactivity*)
+- **Fokus Utama:** Menjamin layar monitor utama NOC (Layar 1) yang beroperasi 24/7 tanpa reload selalu sinkron secara seketika terhadap seluruh mutasi armada server yang dilakukan operator pada Layar 2 (penambahan host baru, penghapusan host, perubahan hostname/IP/tier/grup/platform), serta eliminasi sisa fallback `location.reload()` pada alur aksi insiden.
+
+### Rangkuman Pembaruan:
+1. **Manajemen Siklus Hidup Armada Dinamis Tanpa Reload (`dashboard.html` & `servers.html`):**
+   - Mengimplementasikan deteksi otomatis penambahan dan penghapusan server pada polling background AJAX.
+   - Server yang dihapus dari database seketika dipangkas dari DOM tabel armada dan kartu grid NOC tanpa reload.
+   - Server baru yang didaftarkan langsung dikonstruksi secara dinamis ke dalam tabel armada dan kartu grid NOC beserta seluruh indikator metrik, platform, dan badge status.
+   - Pembaruan live atribut pencarian, penyaringan grup, serta sinkronisasi nilai counter KPI Total Host secara otomatis.
+2. **Sinkronisasi Reaktif Metadata Host (`dashboard.html`):**
+   - Hostname, IP address, tier prioritas, platform hypervisor, dan nama grup diperbarui seketika pada baris tabel dan kartu grid bila terjadi perubahan konfigurasi di server detail/edit.
+3. **Penyempurnaan Signature Anti-Jitter Insiden (`dashboard.html`):**
+   - Menambahkan identitas unik `p.id` dan `p.ignored_reason` ke dalam signature anti-jitter tabel insiden terkini untuk menjamin perubahan status penanganan (*acknowledged*) atau catatan pengabaian (*ignored reason*) langsung memicu re-render baris tanpa reload.
+4. **Eliminasi Total Sisa Fallback `location.reload()` (`base.html` & `problems.html`):**
+   - Menggantikan fallback hard reload pada aksi *acknowledge*, *ignore*, dan *unignore* dengan pemanggilan asinkron `window.poll()` dan `pollNocDashboard()`, mematuhi aturan baku zero-reload NOC.
+5. **Verifikasi Simulasi Nyata Multi-Layar Headless Browser:**
+   - Diuji dan diverifikasi 100% lulus melalui simulasi multi-layar Selenium Headless: Layar 1 terbuka tanpa reload, Layar 2 menambah host baru dan Layar 1 langsung menampilkan host baru dalam 2 detik, kemudian Layar 2 menghapus host dan Layar 1 memangkas elemen dalam 3 detik tanpa reload.
+   - Sinkronisasi versi 4.6.16 di seluruh 7 berkas inti ekosistem Pantau Server.
+
+---
+
 ## Versi 4.6.15
 
 - **Tipe Rilis:** Sinkronisasi Dinamis Signature Pesan Insiden Tanpa Reload & Pembaruan Seketika Masalah APT (*Dynamic Incident Message Signature for Zero-Reload & Instant APT Problems Sync*)

@@ -849,7 +849,7 @@ body.popout-fleet_table #dash-fleet-card {
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div style="display:flex;align-items:baseline;gap:4px">
-        <span style="font-size:18px;font-weight:800;line-height:1;color:var(--text-bright);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace">{{ total }}</span>
+        <span style="font-size:18px;font-weight:800;line-height:1;color:var(--text-bright);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace" id="dash-tot-cnt">{{ total }}</span>
         <span style="font-size:10.5px;color:var(--dim);font-weight:500">host</span>
       </div>
       <div style="display:flex;gap:4px;align-items:center">
@@ -1100,7 +1100,7 @@ body.popout-fleet_table #dash-fleet-card {
           <th class="sortable" data-col="9" style="vertical-align:middle;cursor:pointer;width:80px;min-width:75px;text-align:center" title="Insiden dan anomali aktif pada server">Insiden <span class="sort-arrow">↕</span></th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="dash-servers-tbody">
         {% for srv in servers %}
         {% set g_th = global_thresholds or {} %}
         {% set cpu_w = g_th.cpu_warn if g_th.cpu_warn is defined else 85.0 %}
@@ -1143,7 +1143,7 @@ body.popout-fleet_table #dash-fleet-card {
           <td data-sort-val="{{ srv.hostname | lower }}" style="white-space:nowrap;vertical-align:middle">
             <div style="display:inline-flex;align-items:center;gap:7px">
               <span class="dot {{ 'warn' if srv.is_maintenance else ('down' if srv._status_cls == 'badge-danger' or srv._status_label == 'offline' else ('orange' if srv._status_cls == 'badge-orange' else ('warn' if srv._status_cls == 'badge-warn' else ('info' if srv._status_cls == 'badge-info' else ('up' if srv._status_cls == 'badge-up' else 'muted'))))) }}" id="tbl-dot-{{ srv.id }}"></span>
-              <strong style="color:var(--text-bright);font-size:13px">{{ srv.hostname }}</strong>
+              <strong style="color:var(--text-bright);font-size:13px" id="tbl-host-{{ srv.id }}">{{ srv.hostname }}</strong>
             </div>
           </td>
 
@@ -1157,7 +1157,7 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 2. Prioritas (Tier) -->
-          <td data-sort-val="{{ s_tier }}" style="text-align:center;vertical-align:middle">
+          <td data-sort-val="{{ s_tier }}" id="tbl-tier-{{ srv.id }}" style="text-align:center;vertical-align:middle">
             {% if s_tier == 1 %}
               <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>
             {% elif s_tier == 3 %}
@@ -1170,6 +1170,7 @@ body.popout-fleet_table #dash-fleet-card {
           <!-- 3. IP & Platform (Ramping & Efisien) -->
           <td data-sort-val="{{ srv.ip_address }}" style="white-space:nowrap;vertical-align:middle">
             <div style="display:inline-flex;align-items:center;gap:5px">
+              <span id="tbl-plat-{{ srv.id }}">
               {% if srv._platform %}
                 {% set p_label = srv._platform.short_label|upper %}
                 {% if p_label == 'FISIK' %}{% set p_label = 'BAREMETAL' %}{% endif %}
@@ -1184,7 +1185,8 @@ body.popout-fleet_table #dash-fleet-card {
                   {{ p_label }}
                 </span>
               {% endif %}
-              <span class="copyable-ip mono" style="font-size:11.5px;color:var(--text)" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
+              </span>
+              <span class="copyable-ip mono" id="tbl-ip-{{ srv.id }}" style="font-size:11.5px;color:var(--text)" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
             </div>
           </td>
 
@@ -1322,6 +1324,7 @@ body.popout-fleet_table #dash-fleet-card {
       {% set ign_cnt = srv._ignored_count if srv._ignored_count is defined else 0 %}
       {% set tot_prob = d_cnt + avg_cnt + w_cnt + i_cnt %}
       <div class="server-card {{ 'is-danger' if is_crit else ('is-average' if avg_cnt > 0 else ('is-warn' if is_warn else ('is-offline' if srv.overall_status == 'offline' else 'is-healthy'))) }}"
+           id="card-srv-{{ srv.id }}"
            data-srv-id="{{ srv.id }}"
            data-card-group="{{ srv.group_name or '' }}"
            data-card-text="{{ (srv.hostname ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '')) | lower }}"
@@ -1333,8 +1336,9 @@ body.popout-fleet_table #dash-fleet-card {
           <div>
             <div style="display:flex;align-items:center;gap:6px">
               <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else ('down' if srv._status_label == 'offline' else 'muted')) }}" style="flex-shrink:0" id="card-dot-{{ srv.id }}"></span>
-              <strong style="font-size:13.5px;color:var(--text-bright)">{{ srv.hostname }}</strong>
+              <strong style="font-size:13.5px;color:var(--text-bright)" id="card-host-{{ srv.id }}">{{ srv.hostname }}</strong>
               {% set s_tier = srv.tier|default(2) %}
+              <span id="card-tier-{{ srv.id }}">
               {% if s_tier == 1 %}
                 <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>
               {% elif s_tier == 3 %}
@@ -1342,6 +1346,8 @@ body.popout-fleet_table #dash-fleet-card {
               {% else %}
                 <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>
               {% endif %}
+              </span>
+              <span id="card-plat-{{ srv.id }}">
               {% if srv._platform %}
                 <span class="badge" style="font-size:9.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: {{ srv._platform.label }}">
                   {% if srv._platform.type == 'lxc' %}
@@ -1354,12 +1360,13 @@ body.popout-fleet_table #dash-fleet-card {
                   {{ srv._platform.short_label }}
                 </span>
               {% endif %}
+              </span>
             </div>
-            {% if srv.group_name %}
-            <div style="margin-top:3px">
+            <div style="margin-top:3px" id="card-grp-{{ srv.id }}">
+              {% if srv.group_name %}
               <span class="badge badge-muted" style="font-size:8px;padding:1px 4px">{{ srv.group_name }}</span>
+              {% endif %}
             </div>
-            {% endif %}
           </div>
           <div style="display:flex;align-items:center;gap:6px">
             {% if not srv.last_seen or srv._status_label == '-' %}
@@ -1432,9 +1439,12 @@ body.popout-fleet_table #dash-fleet-card {
 
         <!-- Footer Kartu -->
         <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.05);padding-top:7px;font-size:11px;color:var(--dim)">
-          <span id="card-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
-            {{ srv.last_seen.strftime('%H:%M') if srv.last_seen else '-' }}
-          </span>
+          <div style="display:inline-flex;align-items:center;gap:6px">
+            <span class="mono" id="card-ip-{{ srv.id }}">{{ srv.ip_address }}</span>
+            <span id="card-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}" style="color:var(--dim)">
+              {{ srv.last_seen.strftime('%H:%M') if srv.last_seen else '-' }}
+            </span>
+          </div>
           <span style="font-size:11px;color:var(--dim);display:inline-flex;align-items:center;gap:3px">
             <span>Rincian</span> &rarr;
           </span>
@@ -1867,6 +1877,179 @@ function _dashEsc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function getTierBadgeHtml(tier) {
+  const t = parseInt(tier, 10) || 2;
+  if (t === 1) {
+    return '<span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>';
+  } else if (t === 3) {
+    return '<span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>';
+  }
+  return '<span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>';
+}
+
+function getPlatformBadgeHtml(plat) {
+  if (!plat) return '';
+  let label = (plat.short_label || plat.label || '').toUpperCase();
+  if (label === 'FISIK') label = 'BAREMETAL';
+  const bg = plat.badge_bg || 'rgba(100,116,139,0.15)';
+  const col = plat.badge_color || '#94a3b8';
+  const bor = plat.badge_border || 'rgba(100,116,139,0.25)';
+  const pType = plat.type || '';
+  let iconSvg = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>';
+  if (pType === 'lxc') {
+    iconSvg = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>';
+  } else if (pType === 'vm') {
+    iconSvg = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>';
+  }
+  return `<span class="badge" style="font-size:9px;background:${bg};color:${col};border:1px solid ${bor};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:700" title="Platform: ${_dashEsc(plat.label || label)}">${iconSvg} ${_dashEsc(label)}</span>`;
+}
+
+function createAndAppendDashTableRow(srv, tbody) {
+  const tr = document.createElement('tr');
+  tr.id = 'dash-tr-' + srv.id;
+  tr.dataset.srvId = srv.id;
+  tr.dataset.rowGroup = srv.group_name || '';
+  tr.dataset.rowText = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.group_name || '') + ' tier-' + (srv.tier || 2)).toLowerCase();
+  tr.onclick = () => { window.location.href = '/servers/' + srv.id + '/services'; };
+  tr.title = 'Klik untuk buka rincian server ' + (srv.hostname || '');
+
+  tr.innerHTML = `
+    <td style="white-space:nowrap;vertical-align:middle">
+      <div style="display:inline-flex;align-items:center;gap:7px">
+        <span class="dot unknown" id="tbl-dot-${srv.id}"></span>
+        <strong style="color:var(--text-bright);font-size:13px" id="tbl-host-${srv.id}">${_dashEsc(srv.hostname || '')}</strong>
+      </div>
+    </td>
+    <td style="text-align:center;vertical-align:middle">
+      <span id="tbl-sts-${srv.id}" style="color:var(--dim)">-</span>
+    </td>
+    <td style="text-align:center;vertical-align:middle" id="tbl-tier-${srv.id}">
+      ${getTierBadgeHtml(srv.tier)}
+    </td>
+    <td style="white-space:nowrap;vertical-align:middle">
+      <div style="display:inline-flex;align-items:center;gap:5px">
+        <span id="tbl-plat-${srv.id}">${getPlatformBadgeHtml(srv.platform)}</span>
+        <span class="copyable-ip mono" id="tbl-ip-${srv.id}" style="font-size:11.5px;color:var(--text)" onclick="copyIp('${_dashEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_dashEsc(srv.ip_address || '-')}</span>
+      </div>
+    </td>
+    <td class="mono" id="tbl-uptime-${srv.id}" style="font-size:12px;text-align:center;vertical-align:middle;color:var(--text)">-</td>
+    <td id="tbl-cpu-td-${srv.id}" style="text-align:center;vertical-align:middle">
+      <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
+        <div style="display:inline-flex;align-items:center;gap:7px">
+          <strong class="mono" id="tbl-cpu-val-${srv.id}" style="font-size:12.5px;min-width:44px;text-align:right">-</strong>
+          <div class="meter-mini-track">
+            <div class="meter-mini-bar green" id="tbl-cpu-bar-${srv.id}" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="mono tbl-metric-subline" id="tbl-cpu-core-${srv.id}" style="font-size:10px;color:var(--dim);line-height:1.15">-</div>
+      </div>
+    </td>
+    <td id="tbl-mem-td-${srv.id}" style="text-align:center;vertical-align:middle">
+      <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
+        <div style="display:inline-flex;align-items:center;gap:7px">
+          <strong class="mono" id="tbl-mem-val-${srv.id}" style="font-size:12.5px;min-width:44px;text-align:right">-</strong>
+          <div class="meter-mini-track">
+            <div class="meter-mini-bar green" id="tbl-mem-bar-${srv.id}" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
+          <span id="tbl-mem-used-${srv.id}">-</span> / <span id="tbl-mem-tot-${srv.id}">-</span>
+        </div>
+      </div>
+    </td>
+    <td id="tbl-disk-td-${srv.id}" style="text-align:center;vertical-align:middle">
+      <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
+        <div style="display:inline-flex;align-items:center;gap:7px">
+          <strong class="mono" id="tbl-disk-val-${srv.id}" style="font-size:12.5px;min-width:44px;text-align:right">-</strong>
+          <div class="meter-mini-track" style="width:68px">
+            <div class="meter-mini-bar green" id="tbl-disk-bar-${srv.id}" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
+          <span id="tbl-disk-tot-${srv.id}">-</span> (Sisa <span id="tbl-disk-avail-${srv.id}">-</span>)
+        </div>
+      </div>
+    </td>
+    <td class="mono" id="tbl-svc-td-${srv.id}" style="text-align:center;vertical-align:middle;font-size:12.5px">
+      <span id="tbl-svc-${srv.id}" style="color:var(--dim)">-</span>
+    </td>
+    <td style="text-align:center;vertical-align:middle">
+      <div id="tbl-prob-${srv.id}" style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">
+        <span style="color:var(--dim)">-</span>
+      </div>
+    </td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function createAndAppendDashGridCard(srv, gridEl) {
+  const card = document.createElement('div');
+  card.className = 'server-card is-healthy';
+  card.id = 'card-srv-' + srv.id;
+  card.dataset.srvId = srv.id;
+  card.dataset.cardGroup = srv.group_name || '';
+  card.dataset.cardText = ((srv.hostname || '') + ' ' + (srv.group_name || '') + ' ' + (srv.tags || '')).toLowerCase();
+  card.onclick = () => { window.location.href = '/servers/' + srv.id + '/services'; };
+  card.title = 'Klik untuk buka rincian server ' + (srv.hostname || '');
+
+  card.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+      <div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="dot unknown" style="flex-shrink:0" id="card-dot-${srv.id}"></span>
+          <strong style="font-size:13.5px;color:var(--text-bright)" id="card-host-${srv.id}">${_dashEsc(srv.hostname || '')}</strong>
+          <span id="card-tier-${srv.id}">${getTierBadgeHtml(srv.tier)}</span>
+          <span id="card-plat-${srv.id}">${getPlatformBadgeHtml(srv.platform)}</span>
+        </div>
+        <div style="margin-top:3px" id="card-grp-${srv.id}">
+          ${srv.group_name ? `<span class="badge badge-muted" style="font-size:8px;padding:1px 4px">${_dashEsc(srv.group_name)}</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="badge badge-muted" id="card-sts-${srv.id}" style="font-size:10px;padding:2px 6px">-</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:6px;margin:8px 0">
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:11.5px">
+          <span style="color:var(--dim)">CPU (${(srv.cpu_cores && srv.cpu_cores !== '—') ? srv.cpu_cores : '-'})</span>
+          <strong class="mono" id="card-cpu-val-${srv.id}" style="font-size:12px">-</strong>
+        </div>
+        <div class="meter-track">
+          <div class="meter-bar green" id="card-cpu-bar-${srv.id}" style="width:0%"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:11.5px">
+          <span style="color:var(--dim)">RAM (${(srv.mem_total_str && srv.mem_total_str !== '—') ? srv.mem_total_str : '-'})</span>
+          <strong class="mono" id="card-ram-val-${srv.id}" style="font-size:12px">-</strong>
+        </div>
+        <div class="meter-track">
+          <div class="meter-bar green" id="card-ram-bar-${srv.id}" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;font-size:11.5px">
+      <div id="card-svc-${srv.id}">
+        <span style="color:var(--dim)">Layanan:</span> -
+      </div>
+      <div id="card-prob-${srv.id}" style="display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap">
+        <span class="badge badge-up" style="font-size:10.5px">Normal</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.05);padding-top:7px;font-size:11px;color:var(--dim);margin-top:6px">
+      <div style="display:inline-flex;align-items:center;gap:6px">
+        <span class="mono" id="card-ip-${srv.id}">${_dashEsc(srv.ip_address || '-')}</span>
+        <span id="card-seen-${srv.id}" data-ts="${srv.last_seen || ''}" style="color:var(--dim)">-</span>
+      </div>
+      <span style="font-size:11px;color:var(--dim);display:inline-flex;align-items:center;gap:3px">
+        <span>Rincian</span> &rarr;
+      </span>
+    </div>
+  `;
+  gridEl.appendChild(card);
+}
+
 // 6. Live Polling (Syncs both Table View and Grid Card View every 3s)
 async function pollNocDashboard() {
   try {
@@ -1915,6 +2098,44 @@ async function pollNocDashboard() {
       });
     }
 
+    // Fleet Lifecycle Management (Dynamic server additions & removals)
+    const incomingIds = new Set(list.map(s => String(s.id)));
+    const serversTbody = document.getElementById('dash-servers-tbody');
+    let fleetChanged = false;
+
+    if (serversTbody) {
+      serversTbody.querySelectorAll('tr[data-srv-id]').forEach(tr => {
+        if (!incomingIds.has(String(tr.dataset.srvId))) {
+          tr.remove();
+          fleetChanged = true;
+        }
+      });
+    }
+    const gridEl = document.getElementById('dash-server-grid');
+    if (gridEl) {
+      gridEl.querySelectorAll('.server-card[data-srv-id]').forEach(c => {
+        if (!incomingIds.has(String(c.dataset.srvId))) {
+          c.remove();
+          fleetChanged = true;
+        }
+      });
+    }
+
+    list.forEach(srv => {
+      if (serversTbody && !document.getElementById('dash-tr-' + srv.id)) {
+        createAndAppendDashTableRow(srv, serversTbody);
+        fleetChanged = true;
+      }
+      if (gridEl && !document.getElementById('card-srv-' + srv.id)) {
+        createAndAppendDashGridCard(srv, gridEl);
+        fleetChanged = true;
+      }
+    });
+
+    if (fleetChanged && typeof dashFilterAll === 'function') {
+      dashFilterAll();
+    }
+
     list.forEach(srv => {
       const hasReported = Boolean(srv.last_seen);
       const isOnline = srv.overall_status !== 'offline';
@@ -1942,6 +2163,22 @@ async function pollNocDashboard() {
         statusLabel = 'Online';
         statusCls = 'badge-up';
         dotCls = 'up';
+      }
+
+      // Dynamic Hostname, IP, Platform, Tier & Row search attributes sync
+      const tblHost = document.getElementById('tbl-host-' + srv.id);
+      if (tblHost && srv.hostname) tblHost.textContent = srv.hostname;
+      const tblIp = document.getElementById('tbl-ip-' + srv.id);
+      if (tblIp && srv.ip_address) tblIp.textContent = srv.ip_address;
+      const tblTier = document.getElementById('tbl-tier-' + srv.id);
+      if (tblTier) tblTier.innerHTML = getTierBadgeHtml(srv.tier);
+      const tblPlat = document.getElementById('tbl-plat-' + srv.id);
+      if (tblPlat) tblPlat.innerHTML = getPlatformBadgeHtml(srv.platform);
+
+      const dTr = document.getElementById('dash-tr-' + srv.id);
+      if (dTr) {
+        dTr.dataset.rowGroup = srv.group_name || '';
+        dTr.dataset.rowText = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.group_name || '') + ' tier-' + (srv.tier || 2)).toLowerCase();
       }
 
       // --- A. Update Table View Elements ---
@@ -2106,6 +2343,29 @@ async function pollNocDashboard() {
         }
       }
 
+      // Dynamic Grid Card Header & Metadata sync
+      const cardHost = document.getElementById('card-host-' + srv.id);
+      if (cardHost && srv.hostname) cardHost.textContent = srv.hostname;
+      const cardIp = document.getElementById('card-ip-' + srv.id);
+      if (cardIp && srv.ip_address) cardIp.textContent = srv.ip_address;
+      const cardTier = document.getElementById('card-tier-' + srv.id);
+      if (cardTier) cardTier.innerHTML = getTierBadgeHtml(srv.tier);
+      const cardPlat = document.getElementById('card-plat-' + srv.id);
+      if (cardPlat) cardPlat.innerHTML = getPlatformBadgeHtml(srv.platform);
+      const cardGrp = document.getElementById('card-grp-' + srv.id);
+      if (cardGrp) {
+        cardGrp.innerHTML = srv.group_name ? `<span class="badge badge-muted" style="font-size:8px;padding:1px 4px">${_dashEsc(srv.group_name)}</span>` : '';
+      }
+      const dCard = document.getElementById('card-srv-' + srv.id);
+      if (dCard) {
+        dCard.dataset.cardGroup = srv.group_name || '';
+        dCard.dataset.cardText = ((srv.hostname || '') + ' ' + (srv.group_name || '')).toLowerCase();
+        const isCrit = dCnt > 0 || (srv.overall_status === 'offline' && !srv.is_ignored_stale);
+        const isWarn = wCnt > 0 || srv.is_maintenance;
+        const cardCls = isCrit ? 'is-danger' : (avgCnt > 0 ? 'is-average' : (isWarn ? 'is-warn' : (srv.overall_status === 'offline' ? 'is-offline' : 'is-healthy')));
+        dCard.className = 'server-card ' + cardCls;
+      }
+
       const cardCpuVal = document.getElementById('card-cpu-val-' + srv.id);
       const cardCpuBar = document.getElementById('card-cpu-bar-' + srv.id);
       if (cardCpuVal) cardCpuVal.textContent = srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '-';
@@ -2167,9 +2427,14 @@ async function pollNocDashboard() {
     // Update Global KPI counters
     const upEl = document.getElementById('dash-up-cnt');
     const dnEl = document.getElementById('dash-down-cnt');
+    const totHostEl = document.getElementById('dash-tot-cnt');
     const totPrbEl = document.getElementById('dash-total-prob');
+    if (totHostEl) totHostEl.textContent = list.length;
     if (upEl) upEl.textContent = upCnt + ' up';
-    if (dnEl) dnEl.textContent = dnCnt + ' down';
+    if (dnEl) {
+      dnEl.textContent = dnCnt + ' down';
+      dnEl.className = 'badge badge-' + (dnCnt > 0 ? 'danger' : 'muted');
+    }
     const activeTot = dangerTot + avgTot + warnTot + infoTot;
     const totalAll = activeTot + ignTot;
     if (totPrbEl) totPrbEl.textContent = totalAll;
@@ -2376,23 +2641,23 @@ async function pollNocDashboard() {
     // Toggle Table Wrap vs Empty State & Re-render rows
     const tableWrap = document.getElementById('dash-problems-table-wrap');
     const emptyState = document.getElementById('dash-problems-empty');
-    const tbody = document.getElementById('dash-problems-tbody');
+    const probTbody = document.getElementById('dash-problems-tbody');
 
     if (allProblems.length === 0) {
       if (tableWrap) tableWrap.style.display = 'none';
       if (emptyState) emptyState.style.display = 'flex';
-      if (tbody) {
-        tbody.innerHTML = '';
-        tbody.dataset.sig = '';
+      if (probTbody) {
+        probTbody.innerHTML = '';
+        probTbody.dataset.sig = '';
       }
     } else {
       if (tableWrap) tableWrap.style.display = '';
       if (emptyState) emptyState.style.display = 'none';
-      if (tbody) {
+      if (probTbody) {
         // Anti-jitter: Bandingkan signature masalah agar tidak membongkar/memasang ulang DOM bila data tetap sama
-        const newSig = allProblems.map(p => `${p.server_id || p.probe_id || ''}:${p.key || ''}:${p.severity || ''}:${p.is_ignored ? 1 : 0}:${p.acknowledged_by || ''}:${p.message || ''}:${p.started_at_str || ''}`).join('|');
-        if (tbody.dataset.sig !== newSig) {
-          tbody.dataset.sig = newSig;
+        const newSig = allProblems.map(p => `${p.id || ''}:${p.server_id || p.probe_id || ''}:${p.key || ''}:${p.severity || ''}:${p.is_ignored ? 1 : 0}:${p.acknowledged_by || ''}:${p.ignored_reason || ''}:${p.message || ''}:${p.started_at_str || ''}`).join('|');
+        if (probTbody.dataset.sig !== newSig) {
+          probTbody.dataset.sig = newSig;
           let tHtml = '';
           allProblems.forEach(p => {
             const isIgn = Boolean(p.is_ignored);
@@ -2465,7 +2730,7 @@ async function pollNocDashboard() {
               <td class="mono col-durasi" style="padding:3.5px 10px;white-space:nowrap;width:110px;min-width:100px;text-align:right;font-size:11px" data-start="${isoStart}">${durStr}</td>
             </tr>`;
           });
-          tbody.innerHTML = tHtml;
+          probTbody.innerHTML = tHtml;
         }
       }
     }

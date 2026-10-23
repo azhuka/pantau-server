@@ -865,8 +865,6 @@ async function ackProblem(id, btn, sev) {
       showToast(isEn ? 'Incident marked as handled.' : 'Insiden ditandai telah ditangani.', true);
       if (typeof window.poll === 'function') {
         window.poll();
-      } else {
-        location.reload();
       }
       return;
     }

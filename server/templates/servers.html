@@ -153,7 +153,9 @@
         </tr>
       {% endif %}
 
-    <tr data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' ' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '') ~ (' proxmox ha' if srv.is_proxmox_ha else '') ~ ((' ' ~ srv._platform.short_label ~ ' ' ~ srv._platform.type) if srv._platform else '')) | lower }}"
+    <tr id="srv-tr-{{ srv.id }}"
+        data-srv-id="{{ srv.id }}"
+        data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' ' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '') ~ (' proxmox ha' if srv.is_proxmox_ha else '') ~ ((' ' ~ srv._platform.short_label ~ ' ' ~ srv._platform.type) if srv._platform else '')) | lower }}"
         data-group="{{ srv.group_name or '' }}"
         data-group-membership="{{ srv_grp }}"
         data-id="{{ srv.id }}"
@@ -162,7 +164,7 @@
       <td style="white-space:nowrap">
         <div style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap">
           <span id="srv-dot-{{ srv.id }}" class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
-          <strong style="font-size:13.5px">{{ srv.hostname }}</strong>
+          <strong style="font-size:13.5px" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</strong>
           {% set s_tier = srv.tier|default(2) %}
           {% if s_tier == 1 %}
             <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>
@@ -205,7 +207,7 @@
         </div>
       </td>
       <td class="mono">
-        <span class="copyable-ip" style="font-size:12.5px" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
+        <span class="copyable-ip" id="srv-ip-{{ srv.id }}" style="font-size:12.5px" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
       </td>
       <td>
         {% if srv.tags %}
@@ -430,12 +432,108 @@ function updateRelTimes() {
 updateRelTimes();
 setInterval(updateRelTimes, 10000);
 
+function _srvEsc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function getTierBadgeHtml(tier) {
+  const t = parseInt(tier, 10) || 2;
+  if (t === 1) {
+    return '<span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>';
+  } else if (t === 3) {
+    return '<span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>';
+  }
+  return '<span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>';
+}
+
+function getPlatformBadgeHtml(plat) {
+  if (!plat) return '';
+  let label = (plat.short_label || plat.label || '').toUpperCase();
+  if (label === 'FISIK') label = 'BAREMETAL';
+  const bg = plat.badge_bg || 'rgba(100,116,139,0.15)';
+  const col = plat.badge_color || '#94a3b8';
+  const bor = plat.badge_border || 'rgba(100,116,139,0.25)';
+  const pType = plat.type || '';
+  let iconSvg = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>';
+  if (pType === 'lxc') {
+    iconSvg = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>';
+  } else if (pType === 'vm') {
+    iconSvg = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>';
+  }
+  return `<span class="badge" style="font-size:10px;background:${bg};color:${col};border:1px solid ${bor};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: ${_srvEsc(plat.label || label)}">${iconSvg} ${_srvEsc(label)}</span>`;
+}
+
+function createAndAppendServersRow(srv, tbody) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const tr = document.createElement('tr');
+  tr.id = 'srv-tr-' + srv.id;
+  tr.dataset.srvId = srv.id;
+  tr.dataset.id = srv.id;
+  tr.dataset.group = srv.group_name || '';
+  tr.dataset.groupMembership = srv.group_name || '__none__';
+  tr.dataset.srvFilter = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.group_name || '')).toLowerCase();
+
+  tr.innerHTML = `
+    <td style="white-space:nowrap">
+      <div style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap">
+        <span id="srv-dot-${srv.id}" class="dot unknown" style="flex-shrink:0" title="-"></span>
+        <strong style="font-size:13.5px" id="srv-host-${srv.id}">${_srvEsc(srv.hostname || '')}</strong>
+        ${getTierBadgeHtml(srv.tier)}
+        ${getPlatformBadgeHtml(srv.platform)}
+      </div>
+    </td>
+    <td class="mono">
+      <span class="copyable-ip" id="srv-ip-${srv.id}" style="font-size:12.5px" onclick="copyIp('${_srvEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_srvEsc(srv.ip_address || '-')}</span>
+    </td>
+    <td>-</td>
+    <td><span class="badge badge-muted" style="font-size:8px;padding:1px 5px">${_srvEsc(srv.group_name || 'Tanpa Grup')}</span></td>
+    <td style="text-align:center"><span id="srv-sts-${srv.id}" class="badge badge-muted">-</span></td>
+    <td class="mono" style="font-size:12px;text-align:right" id="srv-cpu-${srv.id}">-</td>
+    <td class="mono" style="font-size:12px;text-align:right" id="srv-ram-${srv.id}">-</td>
+    <td class="mono" style="font-size:12.5px;text-align:center" id="srv-svc-${srv.id}">-</td>
+    <td style="text-align:center" id="srv-prob-${srv.id}">-</td>
+    <td class="mono" style="font-size:11px;letter-spacing:-0.025em;text-align:center;white-space:nowrap" id="srv-seen-${srv.id}">-</td>
+    <td class="col-act" style="text-align:left;white-space:nowrap">
+      <div style="display:inline-flex;gap:3px;align-items:center;justify-content:flex-start">
+        <a href="/servers/${srv.id}/services" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 7px">${isEn ? 'Details' : 'Rincian'}</a>
+      </div>
+    </td>
+  `;
+  tbody.appendChild(tr);
+}
+
 async function srvPoll() {
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const r = await fetch('/api/servers?_=' + Date.now(), {credentials: 'same-origin', cache: 'no-store'});
     if (!r.ok) return;
     const list = await r.json();
+
+    const incomingIds = new Set(list.map(s => String(s.id)));
+    const tbody = document.querySelector('#servers-table tbody');
+    let fleetChanged = false;
+
+    if (tbody) {
+      tbody.querySelectorAll('tr[data-srv-id]').forEach(tr => {
+        if (!incomingIds.has(String(tr.dataset.srvId))) {
+          tr.remove();
+          fleetChanged = true;
+        }
+      });
+    }
+
+    list.forEach(srv => {
+      if (tbody && !document.getElementById('srv-tr-' + srv.id)) {
+        createAndAppendServersRow(srv, tbody);
+        fleetChanged = true;
+      }
+    });
+
+    if (fleetChanged && typeof serversFilter === 'function') {
+      serversFilter();
+    }
+
     list.forEach(srv => {
       const dot = document.getElementById('srv-dot-' + srv.id);
       const sts = document.getElementById('srv-sts-' + srv.id);
@@ -449,6 +547,18 @@ async function srvPoll() {
         if (dot) { dot.className = 'dot up'; dot.title = 'Online'; }
         if (sts) { sts.textContent = 'Online'; sts.className = 'badge badge-up'; }
       }
+
+      const sHost = document.getElementById('srv-host-' + srv.id);
+      if (sHost && srv.hostname) sHost.textContent = srv.hostname;
+      const sIp = document.getElementById('srv-ip-' + srv.id);
+      if (sIp && srv.ip_address) sIp.textContent = srv.ip_address;
+      const sTr = document.getElementById('srv-tr-' + srv.id);
+      if (sTr) {
+        sTr.dataset.group = srv.group_name || '';
+        sTr.dataset.groupMembership = srv.group_name || '__none__';
+        sTr.dataset.srvFilter = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.group_name || '')).toLowerCase();
+      }
+
       const cpu = document.getElementById('srv-cpu-' + srv.id);
       if (cpu) cpu.textContent = srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '—';
 
