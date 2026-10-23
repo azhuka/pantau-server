@@ -311,6 +311,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.14
+
+- **Tipe Rilis:** Standardisasi Universal Penutupan Modal (ESC & Backdrop), Resolusi Route Alias Endpoint Probing, dan Handler Favicon (*Universal Modal ESC/Backdrop Handlers, Endpoint Probing Route Alias & Favicon 204*)
+- **Fokus Utama:** Hasil pengujian simulasi interaktif headless browser menyeluruh: memastikan seluruh jendela modal (Diagnosa & Rincian Masalah, Ambang Batas, Pengabaian, Severity Strip, dan Probing) dapat ditutup secara andal via tombol [X], tombol Escape (ESC), maupun klik backdrop latar belakang, menambahkan route alias `/probes` & perbaikan tautan dashboard ke `/probing` untuk mencegah HTTP 404, serta menangani rute `/favicon.ico` dengan status 204 No Content untuk menghilangkan galat konsol browser.
+
+### Rangkuman Pembaruan:
+1. **Universal Keyboard Shortcut Penutupan Modal (ESC & Backdrop) (`base.html`):**
+   - Menambahkan *event listener* Escape terpadu pada `base.html` yang secara berurutan dan aman menutup modal Diagnosa (`#problem-detail-modal`), Ambang Batas (`#threshold-modal`), Pengabaian (`#ignore-problem-modal`), Severity Strip (`#sev-detail-modal`), serta Probing (`#probeModalBackdrop` & `#historyModalBackdrop`).
+2. **Resolusi Route Alias Endpoint Probing (`server/main.py` & `dashboard.html`):**
+   - Menambahkan route decorator ganda `@app.get("/probes")` di samping `@app.get("/probing")` dan memperbarui tautan tabel insiden dashboard ke `/probing` sehingga operator tidak pernah mengalami galat 404 saat bernavigasi dari insiden endpoint probe.
+3. **Penyediaan Rute Favicon Tanpa Galat (`server/main.py`):**
+   - Menambahkan endpoint `@app.get("/favicon.ico")` dengan respon 204 No Content untuk mencegah pencatatan galat 404 otomatis pada konsol browser.
+4. **Verifikasi Simulasi Interaktif & Kepatuhan SOP Pantau:**
+   - Seluruh 19 uji simulasi interaktif browser berbasis Selenium lulus 100% tanpa error JavaScript runtime.
+   - Sinkronisasi versi 4.6.14 di seluruh 7 berkas inti ekosistem Pantau Server.
+
+---
+
 ## Versi 4.6.13
 
 - **Tipe Rilis:** Peniadaan Pemuatan Ulang Paksa Halaman pada Modal Ambang Batas Insiden (*Elimination of Forced Page Reload on Incident Thresholds Modal & Zero-Reload Completion*)

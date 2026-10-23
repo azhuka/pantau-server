@@ -767,6 +767,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Pantau Server", docs_url=None, redoc_url=None, lifespan=lifespan)
 templates = Jinja2Templates(directory=settings.templates_dir)
 
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon_route():
+    return Response(status_code=204)
+
+
 MONTHS_ID = ("Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
 
 
@@ -5425,6 +5431,7 @@ async def _run_initial_probe_background(probe_id: int, p_data: dict):
 
 
 @app.get("/probing", response_class=HTMLResponse)
+@app.get("/probes", response_class=HTMLResponse)
 def probing_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:

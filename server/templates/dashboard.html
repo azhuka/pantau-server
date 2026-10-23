@@ -960,7 +960,7 @@ body.popout-fleet_table #dash-fleet-card {
       </thead>
       <tbody id="dash-problems-tbody" data-sig="{% for p in all_open_problems if not (p.is_ignored and p.severity == 'info') %}{{ p.server_id or p.probe_id or '' }}:{{ p.key }}:{{ p.severity }}:{{ 1 if p.is_ignored else 0 }}:{{ p.acknowledged_by or '' }}:{{ p.started_at_str }}{% if not loop.last %}|{% endif %}{% endfor %}">
         {% for p in all_open_problems if not (p.is_ignored and p.severity == 'info') %}
-        <tr onclick="window.location.href='{{ '/probes' if (p.probe_id or not p.server_id) else '/servers/' ~ p.server_id ~ '/services' }}'"
+        <tr onclick="window.location.href='{{ '/probing' if (p.probe_id or not p.server_id) else '/servers/' ~ p.server_id ~ '/services' }}'"
             title="Klik untuk buka {{ 'menu Endpoint' if (p.probe_id or not p.server_id) else 'rincian server ' ~ p.hostname }}"
             style="border-bottom:1px solid rgba(255,255,255,0.03);{{ 'opacity:0.8;background:rgba(255,255,255,0.015);' if p.is_ignored else '' }}transition:background .12s ease;cursor:pointer">
           <td style="padding:3.5px 10px;white-space:nowrap;width:115px;min-width:105px">
@@ -2446,7 +2446,7 @@ async function pollNocDashboard() {
               ? 'border-bottom:1px solid rgba(255,255,255,0.03);opacity:0.8;background:rgba(255,255,255,0.015);transition:background .12s ease;'
               : 'border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;';
 
-            const rowHref = (p.probe_id || !p.server_id) ? '/probes' : `/servers/${p.server_id}/services`;
+            const rowHref = (p.probe_id || !p.server_id) ? '/probing' : `/servers/${p.server_id}/services`;
             const rowTitle = (p.probe_id || !p.server_id)
               ? (isEn ? `Click to open Endpoint Probing` : `Klik untuk buka menu Endpoint`)
               : (isEn ? `Click to open details of server ${escHost}` : `Klik untuk buka rincian server ${escHost}`);
