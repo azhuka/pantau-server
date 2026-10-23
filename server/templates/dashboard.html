@@ -1138,8 +1138,7 @@ body.popout-fleet_table #dash-fleet-card {
             data-row-group="{{ srv.group_name or '' }}"
             data-row-text="{{ (srv.hostname ~ ' ' ~ (srv.ip_address or '') ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' tier-' ~ s_tier) | lower }}"
             onclick="window.location.href='/servers/{{ srv.id }}/services'"
-            title="Klik untuk buka rincian server {{ srv.hostname }}"
-            style="{{ 'background:rgba(239,68,68,0.08);' if srv._status_cls == 'badge-danger' or srv._status_label == 'offline' else ('background:rgba(249,115,22,0.08);' if srv._status_cls == 'badge-orange' else ('background:rgba(245,158,11,0.06);' if srv._status_cls == 'badge-warn' else ('background:rgba(56,189,248,0.05);' if srv._status_cls == 'badge-info' else ''))) }}">
+            title="Klik untuk buka rincian server {{ srv.hostname }}">
           <!-- 0. Server -->
           <td data-sort-val="{{ srv.hostname | lower }}" style="white-space:nowrap;vertical-align:middle">
             <div style="display:inline-flex;align-items:center;gap:7px">
@@ -1323,7 +1322,6 @@ body.popout-fleet_table #dash-fleet-card {
       {% set ign_cnt = srv._ignored_count if srv._ignored_count is defined else 0 %}
       {% set tot_prob = d_cnt + avg_cnt + w_cnt + i_cnt %}
       <div class="server-card {{ 'is-danger' if is_crit else ('is-average' if avg_cnt > 0 else ('is-warn' if is_warn else ('is-offline' if srv.overall_status == 'offline' else 'is-healthy'))) }}"
-           id="card-srv-{{ srv.id }}"
            data-srv-id="{{ srv.id }}"
            data-card-group="{{ srv.group_name or '' }}"
            data-card-text="{{ (srv.hostname ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '')) | lower }}"
@@ -2163,41 +2161,6 @@ async function pollNocDashboard() {
       if (cardSeen && srv.last_seen) {
         cardSeen.dataset.ts = srv.last_seen;
         cardSeen.textContent = relTime(srv.last_seen);
-      }
-
-      // Update background warna baris tabel & kartu grid secara real-time
-      const trEl = document.getElementById('dash-tr-' + srv.id);
-      if (trEl) {
-        if (!isOnline || statusCls === 'badge-down') {
-          trEl.style.background = 'rgba(239,68,68,0.08)';
-        } else if (dCnt > 0) {
-          trEl.style.background = 'rgba(239,68,68,0.08)';
-        } else if (avgCnt > 0) {
-          trEl.style.background = 'rgba(249,115,22,0.08)';
-        } else if (wCnt > 0) {
-          trEl.style.background = 'rgba(245,158,11,0.06)';
-        } else if (iCnt > 0) {
-          trEl.style.background = 'rgba(56,189,248,0.05)';
-        } else {
-          trEl.style.background = '';
-        }
-      }
-
-      const cardSrv = document.getElementById('card-srv-' + srv.id);
-      if (cardSrv) {
-        let cardCls = 'server-card ';
-        if (!isOnline || statusCls === 'badge-down') {
-          cardCls += 'is-offline';
-        } else if (dCnt > 0) {
-          cardCls += 'is-danger';
-        } else if (avgCnt > 0) {
-          cardCls += 'is-average';
-        } else if (wCnt > 0 || srv.is_maintenance) {
-          cardCls += 'is-warn';
-        } else {
-          cardCls += 'is-healthy';
-        }
-        cardSrv.className = cardCls;
       }
     });
 

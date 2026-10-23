@@ -311,6 +311,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.11
+
+- **Tipe Rilis:** Peniadaan Polusi Visual Warna Baris Tabel & Penjagaan Desain Bersih Standar NOC (*Elimination of Table Row Background Tinting & Restoration of Clean NOC Ergonomics*)
+- **Fokus Utama:** Menghapus pewarnaan latar belakang baris tabel armada server (`<tr>`) dan pemutasian kelas kartu grid NOC yang berlebihan. Mengembalikan tata visual tabel armada ke standar ergonomi NOC enterprise yang bersih, tenang, seragam, dan kontras tinggi tanpa polusi warna-warni (*no rainbow striping*), dengan tetap mempertahankan indikator status pada kolom Status dan kolom Insiden serta pembaruan data real-time tanpa reload.
+
+### Rangkuman Pembaruan:
+1. **Peniadaan Polusi Warna Latar Belakang Baris Tabel (`dash-tr-`):**
+   - Menghapus manipulasi `style.background` dinamis pada baris tabel di dalam fungsi `pollNocDashboard` dan menghapus inline style background bersyarat pada template Jinja2. Seluruh baris tabel kembali menggunakan warna gelap seragam standar NOC yang bersih dan nyaman dipandang mata.
+2. **Peniadaan Mutasi Kelas Berlebih pada Kartu Grid NOC:**
+   - Menghapus manipulasi kelas warna-warni pada kartu grid NOC (`card-srv-`) agar tata visual kartu tetap tenang dan tidak memicu kelelahan visual (*visual fatigue*).
+3. **Fokus Indikator Presisi pada Tempatnya:**
+   - Indikator masalah dan status operasional tetap terpantau akurat melalui lencana keparahan di kolom **Insiden**, status dot di kolom **Status**, dan daftar insiden di kartu **Insiden Terkini** tanpa memerlukan pewarnaan seluruh area baris.
+
+---
+
 ## Versi 4.6.10
 
 - **Tipe Rilis:** Perbaikan Kritis Pipeline Polling Real-Time Dashboard NOC Layar Lebar (*Critical Live Polling Pipeline & DOM Reactivity Fix for NOC Display*)
