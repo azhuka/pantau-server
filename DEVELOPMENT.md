@@ -311,6 +311,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.9
+
+- **Tipe Rilis:** Reaktivitas Penuh Seluruh Halaman Tanpa Reload & Asinkronisasi Menyeluruh Aksi Operator (*Universal Zero-Reload Autonomous Monitoring & Asynchronous Action Architecture*)
+- **Fokus Utama:** Mewujudkan prinsip fundamental pemantauan NOC: Operator tidak perlu me-reload halaman manapun di bawah kondisi apapun. Seluruh kejadian eksternal (sesi login SSH remote, service stop/crash, perubahan port/firewall) dan seluruh aksi dari dalam aplikasi (Reboot OS, Power Off, mitigasi IP, manajemen firewall, penambahan layanan, tugas cron, sertifikat SSL) dilaporkan dan direfleksikan secara seketika (*real-time zero-reload*).
+
+### Rangkuman Pembaruan:
+1. **Pembaruan Reaktif Tab Rincian Server (`services.html`):**
+   - Menambahkan fungsi perender dinamis `renderPorts`, `renderFirewall`, `renderCron`, dan `renderSsl` yang diperbarui secara otomatis setiap siklus polling `/api/servers/{sid}/system` tanpa reload.
+   - Tab "Akun Pengguna" kini secara instan memperbarui lencana jumlah sesi aktif (SSH) serta mengaktifkan dot peringatan tab (`tab-dot-akun`) secara seketika saat ada sesi login remote baru.
+   - Tab "Firewall", "Sertifikat SSL", dan "Tugas Terjadwal" mengaktifkan dot peringatan tab jika terdeteksi anomali/status nonaktif.
+2. **Asinkronisasi Penuh Aksi Operator (Zero Page Reload on Action):**
+   - Mengubah seluruh aksi form berbasis `<form method="post">` (Reboot OS, Matikan Daya/Power Off, Blokir IP, Buka Blokir, Tambah Layanan, Tambah Tugas Cron, Jeda/Aktifkan Cron, Tambah Lokasi SSL, Aturan Port, Restart Layanan) menjadi eksekusi AJAX asinkron dengan respon instan, notifikasi toast, dan pemicuan fast-polling latar belakang.
+3. **Penyelarasan Backend API (`server/main.py`):**
+   - Memperkaya endpoint `/api/servers/{sid}/system` dengan telemetri `listening_ports`, `firewall`, `cron_jobs`, `ssl_certs`, `accounts`, dan `active_sessions_count`.
+   - Menambahkan dukungan respons JSON (`is_json`) pada seluruh endpoint mutasi: `service_add_submit`, `_host_control` (reboot & poweroff), `problem_block_ip`, `firewall_block_ip`, `firewall_unblock_ip`, `firewall_enable`, `firewall_disable`, dan `firewall_reload`.
+4. **Percepatan Polling & Anti-Cache Global pada Daftar Armada (`servers.html`, `dashboard.html`, `user_activity.html`):**
+   - Mempercepat polling `servers.html` dari 10 detik menjadi 3 detik, menambahkan `id="srv-dot-{{ srv.id }}"` untuk update status dot online/offline/maintenance secara langsung tanpa refresh.
+   - Menambahkan parameter anti-cache `?_=${Date.now()}` dan `cache: 'no-store'` pada seluruh polling `fetch` dashboard dan daftar server.
+   - Mempercepat pembaruan riwayat aktivitas pengguna (`user_activity.html`) dari 60 detik menjadi 5 detik.
+
+---
+
 ## Versi 4.6.8
 
 - **Tipe Rilis:** Pemulihan Total Desain Asli Banner Darurat Kritis Tier-1 (*Restoration of Canonical Tier-1 Critical Red Banner Architecture*)

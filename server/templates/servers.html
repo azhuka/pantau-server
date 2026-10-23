@@ -161,7 +161,7 @@
         data-last-seen="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
       <td style="white-space:nowrap">
         <div style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap">
-          <span class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
+          <span id="srv-dot-{{ srv.id }}" class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
           <strong style="font-size:13.5px">{{ srv.hostname }}</strong>
           {% set s_tier = srv.tier|default(2) %}
           {% if s_tier == 1 %}
@@ -433,15 +433,21 @@ setInterval(updateRelTimes, 10000);
 async function srvPoll() {
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    const r = await fetch('/api/servers', {credentials: 'same-origin'});
+    const r = await fetch('/api/servers?_=' + Date.now(), {credentials: 'same-origin', cache: 'no-store'});
     if (!r.ok) return;
     const list = await r.json();
     list.forEach(srv => {
+      const dot = document.getElementById('srv-dot-' + srv.id);
       const sts = document.getElementById('srv-sts-' + srv.id);
-      if (sts) {
-        if (srv.is_maintenance) { sts.textContent = isEn ? 'Maintenance' : 'Pemeliharaan'; sts.className = 'badge badge-warn'; }
-        else if (srv.overall_status === 'offline') { sts.textContent = 'Offline'; sts.className = 'badge badge-down'; }
-        else { sts.textContent = 'Online'; sts.className = 'badge badge-up'; }
+      if (srv.is_maintenance) {
+        if (dot) { dot.className = 'dot warn'; dot.title = isEn ? 'Maintenance' : 'Pemeliharaan'; }
+        if (sts) { sts.textContent = isEn ? 'Maintenance' : 'Pemeliharaan'; sts.className = 'badge badge-warn'; }
+      } else if (srv.overall_status === 'offline') {
+        if (dot) { dot.className = 'dot down'; dot.title = 'Offline'; }
+        if (sts) { sts.textContent = 'Offline'; sts.className = 'badge badge-down'; }
+      } else {
+        if (dot) { dot.className = 'dot up'; dot.title = 'Online'; }
+        if (sts) { sts.textContent = 'Online'; sts.className = 'badge badge-up'; }
       }
       const cpu = document.getElementById('srv-cpu-' + srv.id);
       if (cpu) cpu.textContent = srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '—';
@@ -508,7 +514,7 @@ async function srvPoll() {
     }
   } catch (e) {}
 }
-setInterval(srvPoll, 10000);
+setInterval(srvPoll, 3000);
 
 let sortCol = -1, sortAsc = true;
 document.querySelectorAll('#servers-table th.sortable').forEach(th => {

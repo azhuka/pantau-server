@@ -1237,7 +1237,7 @@ div[style*="position: fixed"] .card {
           <span id="apt-upgrade-label">{% if apt_upgradable and apt_upgradable > 0 %}Upgrade ({{ apt_upgradable }}){% else %}Upgrade{% endif %}</span>
         </button>
         <span class="toolbar-divider"></span>
-        <form method="post" action="/servers/{{ server.id }}/host/reboot" style="display:inline;margin:0"
+        <form method="post" action="/servers/{{ server.id }}/host/reboot" id="form-host-reboot" style="display:inline;margin:0"
               data-guardrail
               data-guardrail-title="Reboot Sistem Operasi Host"
               data-guardrail-target="{{ server.hostname }}"
@@ -1260,7 +1260,7 @@ div[style*="position: fixed"] .card {
           </button>
         </span>
         {% else %}
-        <form method="post" action="/servers/{{ server.id }}/host/poweroff" style="display:inline;margin:0"
+        <form method="post" action="/servers/{{ server.id }}/host/poweroff" id="form-host-poweroff" style="display:inline;margin:0"
               data-guardrail
               data-guardrail-title="Matikan Daya Host (Power Off)"
               data-guardrail-target="{{ server.hostname }}"
@@ -1936,21 +1936,15 @@ div[style*="position: fixed"] .card {
             {% endif %}
             {% if not user.is_viewer() and p.is_open %}
               {% if p.action == 'restart' and p.svc_id %}
-                <form method="post" action="/servers/{{ server.id }}/services/{{ p.svc_id }}/restart" style="display:inline-flex;margin:0" data-confirm data-msg="Restart service ini di {{ server.hostname }}?">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <button class="btn btn-primary btn-sm" title="Restart layanan">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                    <span>Restart</span>
-                  </button>
-                </form>
+                <button type="button" class="btn btn-primary btn-sm" onclick="restartService({{ server.id }}, {{ p.svc_id }}, '{{ p.log_unit or p.key }}', this)" title="Restart layanan">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                  <span>Restart</span>
+                </button>
               {% elif p.action == 'mitigate' and user.has_perm('can_firewall') and p.ip_count and p.ip_count > 0 %}
-                <form method="post" action="/servers/{{ server.id }}/problems/block" style="display:inline-flex;margin:0" data-confirm data-msg="Blokir {{ p.ip_count }} IP sumber (iptables) di {{ server.hostname }}?">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <button class="btn btn-danger btn-sm" title="Blokir {{ p.ip_count }} IP sumber via iptables">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                    <span>Blokir IP ({{ p.ip_count }})</span>
-                  </button>
-                </form>
+                <button type="button" class="btn btn-danger btn-sm" onclick="submitProblemBlockAttackerIps(this, {{ p.ip_count }})" title="Blokir {{ p.ip_count }} IP sumber via iptables">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  <span>Blokir IP ({{ p.ip_count }})</span>
+                </button>
               {% elif p.action == 'apt_update' %}
                 <button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="Perbarui paket sistem">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>
@@ -2464,8 +2458,7 @@ div[style*="position: fixed"] .card {
         {% endif %}
       </div>
     </div>
-    {% if cron_jobs and cron_jobs.jobs %}
-    <div style="overflow-x:auto">
+    <div style="overflow-x:auto" id="cron-table-wrap" style="display:{{ 'block' if (cron_jobs and cron_jobs.jobs) else 'none' }}">
       <table id="cron-table">
         <thead>
           <tr>
@@ -2478,7 +2471,7 @@ div[style*="position: fixed"] .card {
           </tr>
         </thead>
         <tbody>
-          {% for c in cron_jobs.jobs %}
+          {% for c in ((cron_jobs.jobs if cron_jobs and cron_jobs.jobs else [])) %}
           <tr style="{{ 'opacity:0.5' if not c.get('is_enabled', True) else '' }}">
             <td>
               {% if c.get('is_enabled', True) %}
@@ -2498,37 +2491,23 @@ div[style*="position: fixed"] .card {
               <div style="display:flex;gap:4px;flex-wrap:wrap">
                 {% if user.has_perm('can_cron') and c.get('is_managed') %}
                   {% set cron_ident = c.get('ident', '') %}
-                  <!-- Toggle aktif/nonaktif -->
-                  <form method="post" action="/servers/{{ server.id }}/cron/toggle" style="display:inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="ident" value="{{ cron_ident }}">
-                    <input type="hidden" name="mode" value="{{ 'disable' if c.get('is_enabled', True) else 'enable' }}">
-                    <button type="submit" class="btn btn-sm {{ 'btn-warn' if c.get('is_enabled', True) else 'btn-primary' }}"
-                            {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="{{ 'Nonaktifkan tugas cron ini' if c.get('is_enabled', True) else 'Aktifkan kembali tugas cron ini' }}"{% endif %}>
-                      {{ '⏸ Jeda' if c.get('is_enabled', True) else '▶ Aktifkan' }}
-                    </button>
-                  </form>
-                  <!-- Uji jalankan -->
-                  <form method="post" action="/servers/{{ server.id }}/cron/run" style="display:inline"
-                        onsubmit="return confirm('Uji jalankan perintah cron ini sekarang?')">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="user_target" value="{{ c.user }}">
-                    <input type="hidden" name="command" value="{{ c.command }}">
-                    <button type="submit" class="btn btn-sm btn-ghost" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Jalankan sekarang (uji coba)"{% endif %}>
-                      ▷ Jalankan
-                    </button>
-                  </form>
-                  <!-- Hapus -->
-                  <form method="post" action="/servers/{{ server.id }}/cron/delete" style="display:inline"
-                        onsubmit="return confirm('Hapus tugas cron \\'{{ cron_ident }}\\' secara permanen?')">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="ident" value="{{ cron_ident }}">
-                    <button type="submit" class="btn btn-sm btn-danger" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus tugas cron ini"{% endif %}>
-                      🗑 Hapus
-                    </button>
-                  </form>
+                  <button type="button" class="btn btn-sm {{ 'btn-warn' if c.get('is_enabled', True) else 'btn-primary' }}"
+                          onclick="submitCronToggle('{{ cron_ident }}', '{{ 'disable' if c.get('is_enabled', True) else 'enable' }}', this)"
+                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="{{ 'Nonaktifkan tugas cron ini' if c.get('is_enabled', True) else 'Aktifkan kembali tugas cron ini' }}"{% endif %}>
+                    {{ '⏸ Jeda' if c.get('is_enabled', True) else '▶ Aktifkan' }}
+                  </button>
+                  <button type="button" class="btn btn-sm btn-ghost"
+                          onclick="submitCronRun('{{ c.user }}', '{{ c.command | replace('\\', '\\\\') | replace('\'', '\\\'') }}', this)"
+                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Jalankan sekarang (uji coba)"{% endif %}>
+                    ▷ Jalankan
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger"
+                          onclick="submitCronDelete('{{ cron_ident }}', this)"
+                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus tugas cron ini"{% endif %}>
+                    🗑 Hapus
+                  </button>
                 {% else %}
-                  <span style="font-size:11px;color:var(--dim)">{{ 'Sistem' if c.get('is_managed') else 'Sistem' }}</span>
+                  <span style="font-size:11px;color:var(--dim)">Sistem</span>
                 {% endif %}
               </div>
             </td>
@@ -2537,9 +2516,7 @@ div[style*="position: fixed"] .card {
         </tbody>
       </table>
     </div>
-    {% else %}
-    <div class="empty-msg">Belum ada tugas cron sistem terdeteksi pada server ini.</div>
-    {% endif %}
+    <div class="empty-msg" id="cron-empty" style="display:{{ 'none' if (cron_jobs and cron_jobs.jobs) else 'block' }}">Belum ada tugas cron sistem terdeteksi pada server ini.</div>
   </div>
 
   <div class="card">
@@ -2548,10 +2525,9 @@ div[style*="position: fixed"] .card {
         <h3 style="margin:0">Systemd Timers</h3>
         <span style="font-size:12px;color:var(--dim)">Pengatur waktu modern berbasis unit systemd</span>
       </div>
-      <span class="badge badge-muted">{{ (cron_jobs.timers|length) if cron_jobs and cron_jobs.timers else 0 }} timer aktif</span>
+      <span class="badge badge-muted" id="timers-count-badge">{{ (cron_jobs.timers|length) if cron_jobs and cron_jobs.timers else 0 }} timer aktif</span>
     </div>
-    {% if cron_jobs and cron_jobs.timers %}
-    <div style="overflow-x:auto">
+    <div style="overflow-x:auto" id="timers-table-wrap" style="display:{{ 'block' if (cron_jobs and cron_jobs.timers) else 'none' }}">
       <table id="systemd-timers-table">
         <thead>
           <tr>
@@ -2561,7 +2537,7 @@ div[style*="position: fixed"] .card {
           </tr>
         </thead>
         <tbody>
-          {% for t in cron_jobs.timers %}
+          {% for t in ((cron_jobs.timers if cron_jobs and cron_jobs.timers else [])) %}
           <tr>
             <td class="mono" style="font-weight:600;color:var(--text);white-space:nowrap">{{ t.timer }}</td>
             <td class="mono" style="color:var(--green)">{{ t.activates }}</td>
@@ -2571,9 +2547,7 @@ div[style*="position: fixed"] .card {
         </tbody>
       </table>
     </div>
-    {% else %}
-    <div class="empty-msg">Tidak ada systemd timer aktif.</div>
-    {% endif %}
+    <div class="empty-msg" id="timers-empty" style="display:{{ 'none' if (cron_jobs and cron_jobs.timers) else 'block' }}">Tidak ada systemd timer aktif.</div>
   </div>
 </div>
 
@@ -2586,36 +2560,24 @@ div[style*="position: fixed"] .card {
         <h3 style="margin:0">Status &amp; Kebijakan Firewall</h3>
         <span style="font-size:12px;color:var(--dim)">Pengawasan perlindungan jaringan dan port masuk/keluar</span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span class="badge {{ 'badge-up' if firewall.status == 'active' else 'badge-warn' }}">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="fw-header-actions">
+        <span class="badge {{ 'badge-up' if firewall.status == 'active' else 'badge-warn' }}" id="fw-status-badge">
           {{ 'Aktif (Melindungi)' if firewall.status == 'active' else 'Nonaktif (Terbuka)' }}
         </span>
-        <span class="badge badge-info">{{ firewall.backend | upper }}</span>
+        <span class="badge badge-info" id="fw-backend-badge">{{ firewall.backend | upper }}</span>
 
         {% if user.has_perm('can_firewall') %}
           {% if firewall.status == 'active' %}
-            <form method="post" action="/servers/{{ server.id }}/firewall/reload" style="display:inline"
-                  data-msg="Muat ulang (reload) konfigurasi firewall?">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <button type="submit" class="btn btn-ghost btn-sm" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Muat ulang aturan UFW tanpa memutus koneksi"{% endif %}>
-                &#8635;&nbsp;Reload Aturan
-              </button>
-            </form>
-            <form method="post" action="/servers/{{ server.id }}/firewall/disable" style="display:inline"
-                  data-msg="PERINGATAN: Nonaktifkan firewall (UFW)? Seluruh port server akan terbuka tanpa filter penyaringan.">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Nonaktifkan UFW"{% endif %}>
-                Nonaktifkan Firewall
-              </button>
-            </form>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Muat ulang aturan UFW tanpa memutus koneksi"{% endif %}>
+              &#8635;&nbsp;Reload Aturan
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" style="color:var(--yellow);border-color:rgba(234,179,8,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Nonaktifkan UFW"{% endif %}>
+              Nonaktifkan Firewall
+            </button>
           {% else %}
-            <form method="post" action="/servers/{{ server.id }}/firewall/enable" style="display:inline"
-                  data-msg="Aktifkan firewall (UFW) sekarang? Agen akan otomatis memastikan port SSH dilindungi/diizinkan terlebih dahulu.">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-              <button type="submit" class="btn btn-primary btn-sm" style="background:#16a34a;border-color:#22c55e{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan UFW (otomatis allow SSH)"{% endif %}>
-                &#9654;&nbsp;Aktifkan Firewall
-              </button>
-            </form>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" style="background:#16a34a;border-color:#22c55e{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan UFW (otomatis allow SSH)"{% endif %}>
+              &#9654;&nbsp;Aktifkan Firewall
+            </button>
           {% endif %}
         {% endif %}
       </div>
@@ -2624,25 +2586,24 @@ div[style*="position: fixed"] .card {
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px">
       <div class="stat-card" style="border-left:3px solid {{ 'var(--green)' if firewall.status == 'active' else 'var(--yellow)' }}">
         <div class="label">Status Firewall</div>
-        <div class="value" style="font-size:20px;color:{{ 'var(--green)' if firewall.status == 'active' else 'var(--yellow)' }}">
+        <div class="value" id="fw-stat-status" style="font-size:20px;color:{{ 'var(--green)' if firewall.status == 'active' else 'var(--yellow)' }}">
           {{ firewall.status | upper }}
         </div>
       </div>
       <div class="stat-card" style="border-left:3px solid var(--blue)">
         <div class="label">Backend Firewall</div>
-        <div class="value" style="font-size:20px">{{ firewall.backend | upper }}</div>
+        <div class="value" id="fw-stat-backend" style="font-size:20px">{{ firewall.backend | upper }}</div>
       </div>
       <div class="stat-card" style="border-left:3px solid var(--red)">
         <div class="label">IP Diblokir (DROP)</div>
-        <div class="value" style="font-size:20px;color:var(--red)">
+        <div class="value" id="fw-stat-blocked" style="font-size:20px;color:var(--red)">
           {{ (firewall.blocked_ips|length) if firewall and firewall.blocked_ips else 0 }} IP
         </div>
       </div>
     </div>
 
     <h4 style="margin:16px 0 10px;font-size:13px;color:var(--text);letter-spacing:.3px">Aturan Port &amp; Kebijakan Akses (Rules)</h4>
-    {% if firewall and firewall.rules %}
-    <div style="overflow-x:auto">
+    <div style="overflow-x:auto" id="fw-rules-wrap" style="display:{{ 'block' if (firewall and firewall.rules) else 'none' }}">
       <table id="fw-rules-table">
         <thead>
           <tr>
@@ -2651,7 +2612,7 @@ div[style*="position: fixed"] .card {
           </tr>
         </thead>
         <tbody>
-          {% for r in firewall.rules %}
+          {% for r in (firewall.rules if firewall and firewall.rules else []) %}
           <tr>
             <td class="mono" style="color:var(--dim)">{{ loop.index }}</td>
             <td class="mono" style="font-size:12px;color:var(--text)">{{ r }}</td>
@@ -2660,15 +2621,13 @@ div[style*="position: fixed"] .card {
         </tbody>
       </table>
     </div>
-    {% else %}
-    <div class="empty-msg" style="padding:16px">
+    <div class="empty-msg" id="fw-rules-empty" style="padding:16px;display:{{ 'none' if (firewall and firewall.rules) else 'block' }}">
       {% if firewall.status == 'active' %}
         Tidak ada aturan khusus (menggunakan kebijakan default backend).
       {% else %}
         Firewall saat ini nonaktif. Port terbuka sepenuhnya tanpa penyaringan UFW.
       {% endif %}
     </div>
-    {% endif %}
   </div>
 
   <div class="card">
@@ -2685,8 +2644,7 @@ div[style*="position: fixed"] .card {
       </div>
       {% endif %}
     </div>
-    {% if firewall and firewall.blocked_ips %}
-    <div style="overflow-x:auto">
+    <div style="overflow-x:auto" id="fw-blocked-wrap" style="display:{{ 'block' if (firewall and firewall.blocked_ips) else 'none' }}">
       <table id="fw-blocked-table">
         <thead>
           <tr>
@@ -2700,7 +2658,7 @@ div[style*="position: fixed"] .card {
           </tr>
         </thead>
         <tbody>
-          {% for b in firewall.blocked_ips %}
+          {% for b in (firewall.blocked_ips if firewall and firewall.blocked_ips else []) %}
           <tr>
             <td class="mono">{{ b.num }}</td>
             <td class="mono" style="color:var(--red);font-weight:700">
@@ -2710,14 +2668,9 @@ div[style*="position: fixed"] .card {
             <td class="mono">{{ b.bytes }}</td>
             {% if user.has_perm('can_firewall') %}
             <td style="text-align:right">
-              <form method="post" action="/servers/{{ server.id }}/firewall/unblock" style="display:inline"
-                    data-msg="Buka blokir IP {{ b.source }}? Aturan DROP pada iptables akan dihapus.">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <input type="hidden" name="ip" value="{{ b.source }}">
-                <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus aturan DROP untuk IP ini"{% endif %}>
-                  Buka Blokir
-                </button>
-              </form>
+              <button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus aturan DROP untuk IP ini"{% endif %} onclick="submitFirewallUnblock('{{ b.source }}', this)">
+                Buka Blokir
+              </button>
             </td>
             {% endif %}
           </tr>
@@ -2725,9 +2678,7 @@ div[style*="position: fixed"] .card {
         </tbody>
       </table>
     </div>
-    {% else %}
-    <div class="empty-msg" style="padding:16px">Belum ada IP yang diblokir pada rantai iptables INPUT.</div>
-    {% endif %}
+    <div class="empty-msg" id="fw-blocked-empty" style="padding:16px;display:{{ 'none' if (firewall and firewall.blocked_ips) else 'block' }}">Belum ada IP yang diblokir pada rantai iptables INPUT.</div>
   </div>
 </div>
 
@@ -2814,7 +2765,7 @@ div[style*="position: fixed"] .card {
     <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
       Tugas cron akan disimpan di <code class="mono">/etc/cron.d/pantau-&lt;nama&gt;</code>.
     </p>
-    <form method="post" action="/servers/{{ server.id }}/cron/add">
+    <form method="post" action="/servers/{{ server.id }}/cron/add" id="add-cron-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div style="margin-bottom:14px">
         <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Nama Identifikasi (Ident) *</label>
@@ -2869,7 +2820,7 @@ div[style*="position: fixed"] .card {
     <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
       Path berkas sertifikat akan disimpan di <code class="mono">/etc/pantau/custom_ssl.conf</code>.
     </p>
-    <form method="post" action="/servers/{{ server.id }}/ssl/add-path">
+    <form method="post" action="/servers/{{ server.id }}/ssl/add-path" id="add-ssl-path-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div style="margin-bottom:18px">
         <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Path Berkas Sertifikat (.pem / .crt) *</label>
@@ -3019,10 +2970,9 @@ div[style*="position: fixed"] .card {
         <h3 style="margin:0">Audit Port Terbuka (Listening Sockets)</h3>
         <span style="font-size:12px;color:var(--dim)">Daftar seluruh port TCP/UDP yang terbuka</span>
       </div>
-      <span class="badge badge-info">{{ (listening_ports|length) if listening_ports else 0 }} socket aktif</span>
+      <span class="badge badge-info" id="ports-count-badge">{{ (listening_ports|length) if listening_ports else 0 }} socket aktif</span>
     </div>
-    {% if listening_ports %}
-    <div style="overflow-x:auto">
+    <div style="overflow-x:auto" id="ports-wrap" style="display:{{ 'block' if listening_ports else 'none' }}">
       <table id="ports-table">
         <thead>
           <tr>
@@ -3035,7 +2985,7 @@ div[style*="position: fixed"] .card {
           </tr>
         </thead>
         <tbody>
-          {% for p in listening_ports %}
+          {% for p in (listening_ports if listening_ports else []) %}
           <tr>
             <td><span class="badge {{ 'badge-info' if p.proto == 'tcp' else 'badge-warn' }}">{{ p.proto | upper }}</span></td>
             <td class="mono" style="font-weight:700;font-size:13px;color:var(--text)">{{ p.port }}</td>
@@ -3059,25 +3009,17 @@ div[style*="position: fixed"] .card {
                 {% endif %}
                 {% if user.has_perm('can_firewall') %}
                 {% if p.is_public and p.port not in (22, 8400) %}
-                <form method="post" action="/servers/{{ server.id }}/ports/rule" style="display:inline"
-                      onsubmit="return confirm('Blokir port {{ p.port }}/{{ p.proto }} melalui firewall?')">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <input type="hidden" name="port" value="{{ p.port }}/{{ p.proto }}">
-                  <input type="hidden" name="rule" value="deny">
-                  <button type="submit" class="btn btn-sm btn-warn" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir port ini via UFW/iptables"{% endif %}>
-                    🚫 Blokir Port
-                  </button>
-                </form>
+                <button type="button" class="btn btn-sm btn-warn"
+                        onclick="submitPortRule('{{ p.port }}/{{ p.proto }}', 'deny', this)"
+                        {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir port ini via UFW/iptables"{% endif %}>
+                  🚫 Blokir Port
+                </button>
                 {% elif not p.is_public and p.port not in (22, 8400) %}
-                <form method="post" action="/servers/{{ server.id }}/ports/rule" style="display:inline"
-                      onsubmit="return confirm('Izinkan/buka port {{ p.port }}/{{ p.proto }} melalui firewall?')">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                  <input type="hidden" name="port" value="{{ p.port }}/{{ p.proto }}">
-                  <input type="hidden" name="rule" value="allow">
-                  <button type="submit" class="btn btn-sm btn-primary" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Buka port ini (izinkan koneksi)"{% endif %}>
-                    🔓 Buka Port
-                  </button>
-                </form>
+                <button type="button" class="btn btn-sm btn-primary"
+                        onclick="submitPortRule('{{ p.port }}/{{ p.proto }}', 'allow', this)"
+                        {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Buka port ini (izinkan koneksi)"{% endif %}>
+                  🔓 Buka Port
+                </button>
                 {% endif %}
                 {% endif %}
                 {% if p.port in (22, 8400) %}
@@ -3090,9 +3032,7 @@ div[style*="position: fixed"] .card {
         </tbody>
       </table>
     </div>
-    {% else %}
-    <div class="empty-msg">Belum ada data port listening dari server ini.</div>
-    {% endif %}
+    <div class="empty-msg" id="ports-empty" style="display:{{ 'none' if listening_ports else 'block' }}">Belum ada data port listening dari server ini.</div>
   </div>
 </div>
 
@@ -3106,7 +3046,7 @@ div[style*="position: fixed"] .card {
         <span style="font-size:12px;color:var(--dim)">Pengawasan masa berlaku sertifikat HTTPS (Let's Encrypt / Kustom)</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <span class="badge badge-info">{{ (ssl_certs|length) if ssl_certs else 0 }} sertifikat terdeteksi</span>
+        <span class="badge badge-info" id="ssl-count-badge">{{ (ssl_certs|length) if ssl_certs else 0 }} sertifikat terdeteksi</span>
         {% if user.has_perm('can_ssl') %}
         <button class="btn btn-primary btn-sm" id="btn-add-ssl-path-modal" onclick="openAddSslPathModal()" style="display:flex;align-items:center;gap:4px" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% endif %}>
           <span>＋</span> Tambah Lokasi Sertifikat
@@ -3114,8 +3054,7 @@ div[style*="position: fixed"] .card {
         {% endif %}
       </div>
     </div>
-    {% if ssl_certs %}
-    <div style="overflow-x:auto">
+    <div style="overflow-x:auto" id="ssl-wrap" style="display:{{ 'block' if ssl_certs else 'none' }}">
       <table id="ssl-table">
         <thead>
           <tr>
@@ -3129,7 +3068,7 @@ div[style*="position: fixed"] .card {
           </tr>
         </thead>
         <tbody>
-          {% for c in ssl_certs %}
+          {% for c in (ssl_certs if ssl_certs else []) %}
           <tr>
             <td>
               <strong>{{ c.domains | join(', ') if c.domains else c.subject }}</strong>
@@ -3158,14 +3097,9 @@ div[style*="position: fixed"] .card {
             <td class="mono" style="font-size:11px;color:var(--dim)">{{ c.path }}</td>
             <td>
               {% if user.has_perm('can_ssl') and c.is_custom %}
-              <form method="post" action="/servers/{{ server.id }}/ssl/remove-path" style="display:inline"
-                    onsubmit="return confirm('Hapus lokasi sertifikat \\'{{ c.path }}\\' dari pengawasan?')">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <input type="hidden" name="path" value="{{ c.path }}">
-                <button type="submit" class="btn btn-sm btn-danger" title="Hapus dari pengawasan SSL kustom">
-                  🗑 Hapus
-                </button>
-              </form>
+              <button type="button" class="btn btn-sm btn-danger" title="Hapus dari pengawasan SSL kustom" onclick="submitSslRemovePath('{{ c.path | replace('\\', '\\\\') | replace('\'', '\\\'') }}', this)">
+                🗑 Hapus
+              </button>
               {% else %}
               <span style="font-size:11px;color:var(--dim)">—</span>
               {% endif %}
@@ -3175,12 +3109,10 @@ div[style*="position: fixed"] .card {
         </tbody>
       </table>
     </div>
-    {% else %}
-    <div class="empty-msg" style="padding:24px 0">
+    <div class="empty-msg" id="ssl-empty" style="padding:24px 0;display:{{ 'none' if ssl_certs else 'block' }}">
       Tidak ada berkas sertifikat SSL lokal ditemukan pada direktori standar (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).<br>
       <span style="font-size:12px;color:var(--dim)">Gunakan tombol <strong>Tambah Lokasi Sertifikat</strong> untuk mendaftarkan path sertifikat kustom.</span>
     </div>
-    {% endif %}
   </div>
 </div>
 
@@ -3576,6 +3508,9 @@ function showTab(name) {
     if (typeof probFilter === 'function') probFilter();
     if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
   }
+  if (['akun', 'ports', 'firewall', 'ssl', 'cron', 'perf'].includes(name)) {
+    if (typeof pollSystem === 'function') pollSystem();
+  }
   if (name === 'proses') {
     fetchTopProcs();
   }
@@ -3777,6 +3712,16 @@ function updateTabAlertDots(options) {
       d.title = 'Log sistem mencatat error atau status kritis baru';
     }
   }
+
+  // 9. Akun Pengguna (Sesi remote SSH aktif)
+  if (options.akun !== undefined) {
+    const d = document.getElementById('tab-dot-akun');
+    if (d) {
+      const hasSessions = !!options.akun;
+      d.style.display = hasSessions ? 'inline-block' : 'none';
+      d.title = hasSessions ? ((options.sessions_count || 1) + ' sesi remote SSH aktif') : '';
+    }
+  }
 }
 
 // Inisialisasi awal indikator
@@ -3786,6 +3731,9 @@ setTimeout(() => {
     cron: INITIAL_CRON_HAS_FAIL,
     logging: INITIAL_LOG_HAS_ERR,
     problems: {{ active_open|length }},
+    firewall: {{ 'true' if (firewall and firewall.status != 'active') else 'false' }},
+    akun: {{ 'true' if (active_sessions_count if active_sessions_count is defined else 0) > 0 else 'false' }},
+    sessions_count: {{ active_sessions_count if active_sessions_count is defined else 0 }},
   });
 }, 200);
 
@@ -4153,11 +4101,15 @@ function badgeHtml(status) {
 const _pendingServiceOps = {}; // svcId -> { action: 'stop'|'start'|'restart', expires: timestamp }
 
 function triggerFastPoll() {
-  setTimeout(poll, 250);
-  setTimeout(poll, 750);
-  setTimeout(poll, 1500);
-  setTimeout(poll, 3000);
-  setTimeout(poll, 5000);
+  const runPolls = () => {
+    if (typeof poll === 'function') poll();
+    if (typeof pollSystem === 'function') pollSystem();
+  };
+  setTimeout(runPolls, 250);
+  setTimeout(runPolls, 750);
+  setTimeout(runPolls, 1500);
+  setTimeout(runPolls, 3000);
+  setTimeout(runPolls, 5000);
 }
 
 function renderServiceActions(sid, svcId, name, status, isPending, problem, isServiceIgnored, pendingAction) {
@@ -4877,6 +4829,308 @@ async function deleteService(sid, svcId, svcName, btn) {
     showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + e.message, false);
     btn.disabled = false;
     btn.innerHTML = originalHtml;
+  }
+}
+
+// ---------- Async Action Handlers untuk Port, Firewall, Cron, SSL, dan Masalah ----------
+async function submitPortRule(portProto, rule, btn) {
+  const isEn = isEnPage();
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  const promptText = rule === 'deny'
+    ? (isEn ? `Block port ${portProto} via firewall?` : `Blokir port ${portProto} melalui firewall?`)
+    : (isEn ? `Allow/open port ${portProto} via firewall?` : `Izinkan/buka port ${portProto} melalui firewall?`);
+  if (!confirm(promptText)) return;
+
+  const origText = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+    fd.append('port', portProto);
+    fd.append('rule', rule);
+
+    const r = await fetch('/servers/' + SID + '/ports/rule', {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      showToast(res.detail || (isEn ? `Port rule for ${portProto} sent.` : `Aturan port ${portProto} dikirim ke agen.`), true);
+      triggerFastPoll();
+      if (typeof pollSystem === 'function') pollSystem();
+    } else {
+      showToast(res.detail || (isEn ? 'Failed to apply port rule.' : 'Gagal menerapkan aturan port.'), false);
+    }
+  } catch(err) {
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+  }
+}
+
+async function submitFirewallAction(action, btn) {
+  const isEn = isEnPage();
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  let promptText = '';
+  if (action === 'reload') {
+    promptText = isEn ? 'Reload firewall configuration?' : 'Muat ulang (reload) konfigurasi firewall?';
+  } else if (action === 'disable') {
+    promptText = isEn ? 'WARNING: Disable firewall (UFW)? All ports will be open without filtering.' : 'PERINGATAN: Nonaktifkan firewall (UFW)? Seluruh port server akan terbuka tanpa filter penyaringan.';
+  } else if (action === 'enable') {
+    promptText = isEn ? 'Enable firewall (UFW) now? Agent will ensure SSH port is allowed first.' : 'Aktifkan firewall (UFW) sekarang? Agen akan otomatis memastikan port SSH dilindungi/diizinkan terlebih dahulu.';
+  }
+  if (promptText && !confirm(promptText)) return;
+
+  const origText = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+
+    const r = await fetch('/servers/' + SID + '/firewall/' + action, {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      showToast(res.detail || (isEn ? `Firewall ${action} command sent.` : `Perintah firewall ${action} dikirim ke agen.`), true);
+      triggerFastPoll();
+      if (typeof pollSystem === 'function') pollSystem();
+    } else {
+      showToast(res.detail || (isEn ? `Failed to ${action} firewall.` : `Gagal memproses ${action} firewall.`), false);
+    }
+  } catch(err) {
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+  }
+}
+
+async function submitFirewallUnblock(ip, btn) {
+  const isEn = isEnPage();
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  const promptText = isEn ? `Unblock IP ${ip}? DROP rule on iptables will be removed.` : `Buka blokir IP ${ip}? Aturan DROP pada iptables akan dihapus.`;
+  if (!confirm(promptText)) return;
+
+  const origText = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+    fd.append('ip', ip);
+
+    const r = await fetch('/servers/' + SID + '/firewall/unblock', {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      showToast(res.detail || (isEn ? `Unblock IP ${ip} command sent.` : `Perintah buka blokir IP ${ip} dikirim ke agen.`), true);
+      triggerFastPoll();
+      if (typeof pollSystem === 'function') pollSystem();
+    } else {
+      showToast(res.detail || (isEn ? `Failed to unblock IP ${ip}.` : `Gagal membuka blokir IP ${ip}.`), false);
+    }
+  } catch(err) {
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+  }
+}
+
+async function submitCronToggle(ident, mode, btn) {
+  const isEn = isEnPage();
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  const origText = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+    fd.append('ident', ident);
+    fd.append('mode', mode);
+
+    const r = await fetch('/servers/' + SID + '/cron/toggle', {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      showToast(res.detail || (isEn ? `Cron task status updated.` : `Status tugas cron diperbarui.`), true);
+      triggerFastPoll();
+      if (typeof pollSystem === 'function') pollSystem();
+    } else {
+      showToast(res.detail || (isEn ? 'Failed to toggle cron task.' : 'Gagal mengubah status tugas cron.'), false);
+    }
+  } catch(err) {
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+  }
+}
+
+async function submitCronRun(user, command, btn) {
+  const isEn = isEnPage();
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  if (!confirm(isEn ? 'Run this cron command now as a test?' : 'Uji jalankan perintah cron ini sekarang?')) return;
+
+  const origText = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+    fd.append('user_target', user);
+    fd.append('command', command);
+
+    const r = await fetch('/servers/' + SID + '/cron/run', {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      showToast(res.detail || (isEn ? 'Cron test run command sent.' : 'Perintah uji jalankan tugas cron dikirim ke agen.'), true);
+      triggerFastPoll();
+    } else {
+      showToast(res.detail || (isEn ? 'Failed to trigger cron test.' : 'Gagal memicu uji coba cron.'), false);
+    }
+  } catch(err) {
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+  }
+}
+
+async function submitCronDelete(ident, btn) {
+  const isEn = isEnPage();
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  if (!confirm(isEn ? `Permanently delete cron task '${ident}'?` : `Hapus tugas cron '${ident}' secara permanen?`)) return;
+
+  const origText = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+    fd.append('ident', ident);
+
+    const r = await fetch('/servers/' + SID + '/cron/delete', {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      showToast(res.detail || (isEn ? `Cron task '${ident}' deleted.` : `Tugas cron '${ident}' dihapus.`), true);
+      triggerFastPoll();
+      if (typeof pollSystem === 'function') pollSystem();
+    } else {
+      showToast(res.detail || (isEn ? 'Failed to delete cron task.' : 'Gagal menghapus tugas cron.'), false);
+    }
+  } catch(err) {
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+  }
+}
+
+async function submitSslRemovePath(path, btn) {
+  const isEn = isEnPage();
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  if (!confirm(isEn ? `Remove certificate location '${path}' from monitoring?` : `Hapus lokasi sertifikat '${path}' dari pengawasan?`)) return;
+
+  const origText = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+    fd.append('path', path);
+
+    const r = await fetch('/servers/' + SID + '/ssl/remove-path', {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      showToast(res.detail || (isEn ? `Certificate path removed.` : `Lokasi sertifikat dihapus dari pengawasan.`), true);
+      triggerFastPoll();
+      if (typeof pollSystem === 'function') pollSystem();
+    } else {
+      showToast(res.detail || (isEn ? 'Failed to remove SSL path.' : 'Gagal menghapus lokasi sertifikat.'), false);
+    }
+  } catch(err) {
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+  }
+}
+
+async function submitProblemBlockAttackerIps(btn, ipCount) {
+  const isEn = isEnPage();
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  const promptText = isEn
+    ? `Block ${ipCount || ''} source attacker IPs (iptables) on ${SERVER_NAME}?`
+    : `Blokir ${ipCount || ''} IP sumber penyerang (iptables) di ${SERVER_NAME}?`;
+  if (!confirm(promptText)) return;
+
+  const origText = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  try {
+    const fd = new FormData();
+    fd.append('csrf_token', getCsrf());
+
+    const r = await fetch('/servers/' + SID + '/problems/block', {
+      method: 'POST',
+      body: fd,
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      showToast(res.detail || (isEn ? 'IP mitigation command sent to agent.' : 'Perintah mitigasi blokir IP dikirim ke agen.'), true);
+      triggerFastPoll();
+      if (typeof pollSystem === 'function') pollSystem();
+    } else {
+      showToast(res.detail || (isEn ? 'Failed to block attacker IPs.' : 'Gagal memblokir IP penyerang.'), false);
+    }
+  } catch(err) {
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
   }
 }
 
@@ -6568,15 +6822,9 @@ function renderProblemsTab(level, openList, histList) {
     if (isOpen) {
       if (!IS_VIEWER) {
         if (p.action === 'restart' && p.svc_id && CAN_SERVICES) {
-          toolsHtml += `<form method="post" action="/servers/${SID}/services/${p.svc_id}/restart" style="display:inline-flex;margin:0" data-confirm data-msg="${isEn ? 'Restart this service on ' : 'Restart service ini di '}${escapeHtml(SERVER_NAME)}?">
-            <input type="hidden" name="csrf_token" value="${getCsrf()}">
-            <button class="btn btn-primary btn-sm" title="${isEn ? 'Restart service' : 'Restart layanan'}">${svgRestart}<span>Restart</span></button>
-          </form>`;
+          toolsHtml += `<button type="button" class="btn btn-primary btn-sm" onclick="restartService(${SID}, ${p.svc_id}, '${escapeHtml(p.log_unit || p.key || 'service')}', this)" title="${isEn ? 'Restart service' : 'Restart layanan'}">${svgRestart}<span>Restart</span></button>`;
         } else if (p.action === 'mitigate' && CAN_FIREWALL && p.ip_count && p.ip_count > 0) {
-          toolsHtml += `<form method="post" action="/servers/${SID}/problems/block" style="display:inline-flex;margin:0" data-confirm data-msg="${isEn ? `Block ${p.ip_count} source IPs (iptables) on ` : `Blokir ${p.ip_count} IP sumber (iptables) di `}${escapeHtml(SERVER_NAME)}?">
-            <input type="hidden" name="csrf_token" value="${getCsrf()}">
-            <button class="btn btn-danger btn-sm" title="${isEn ? 'Block source IPs via iptables' : 'Blokir IP sumber via iptables'}">${svgShield}<span>${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</span></button>
-          </form>`;
+          toolsHtml += `<button type="button" class="btn btn-danger btn-sm" onclick="submitProblemBlockAttackerIps(this, ${p.ip_count})" title="${isEn ? `Block ${p.ip_count} source IPs (iptables)` : `Blokir ${p.ip_count} IP sumber (iptables)`}">${svgShield}<span>${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</span></button>`;
         } else if (p.action === 'apt_update' && CAN_APT) {
           toolsHtml += `<button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="${isEn ? 'Update OS packages' : 'Perbarui paket sistem'}">${svgDownload}<span>Update OS</span></button>`;
         } else if (p.action === 'agent_update_cmd' && CAN_OTA) {
@@ -7479,16 +7727,304 @@ function patch(data) {
   });
 }
 
+function renderPorts(ports) {
+  const pList = Array.isArray(ports) ? ports : [];
+  const wrap = document.getElementById('ports-wrap');
+  const empty = document.getElementById('ports-empty');
+  const table = document.getElementById('ports-table');
+  const badge = document.getElementById('ports-count-badge');
+  const isEn = isEnPage();
+
+  if (badge) {
+    badge.textContent = pList.length + (isEn ? ' active sockets' : ' socket aktif');
+  }
+
+  if (pList.length === 0) {
+    if (wrap) wrap.style.display = 'none';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+
+  if (wrap) wrap.style.display = 'block';
+  if (empty) empty.style.display = 'none';
+  if (!table) return;
+
+  const tbody = table.querySelector('tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = pList.map(p => {
+    const isTcp = (p.proto || '').toLowerCase() === 'tcp';
+    const protoBadge = `<span class="badge ${isTcp ? 'badge-info' : 'badge-warn'}">${escHtml((p.proto || '').toUpperCase())}</span>`;
+    const portNum = escHtml(String(p.port || ''));
+    const ipStr = escHtml(String(p.ip || ''));
+    const isPublic = Boolean(p.is_public);
+    const accessBadge = isPublic
+      ? `<span class="badge badge-danger" title="${isEn ? 'Open to external/public connections' : 'Port terbuka untuk koneksi publik/luar'}">${isEn ? 'Public (0.0.0.0 / ::)' : 'Publik (0.0.0.0 / ::)'}</span>`
+      : `<span class="badge badge-up" title="${isEn ? 'Locally accessible only' : 'Hanya dapat diakses secara lokal dari dalam server'}">${isEn ? 'Local (Loopback)' : 'Lokal (Loopback)'}</span>`;
+    const procStr = escHtml(p.proc || '—');
+
+    let actions = '';
+    const portInt = parseInt(p.port, 10);
+    const isProtected = (portInt === 22 || portInt === 8400);
+
+    if (CAN_PROCESSES && p.pid && !isProtected) {
+      actions += `<button class="btn btn-sm btn-danger" onclick="openKillProcModal('${escHtml(String(p.pid))}','${escHtml(p.pname || p.proc || 'proses')}','TERM')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Send signal to process' : 'Kirim sinyal ke proses yang mengelola port ini'}">⚡ Kill PID</button> `;
+    }
+    if (CAN_FIREWALL) {
+      const pProto = portInt + '/' + (p.proto || 'tcp').toLowerCase();
+      if (isPublic && !isProtected) {
+        actions += `<button type="button" class="btn btn-sm btn-warn" onclick="submitPortRule('${escHtml(pProto)}', 'deny', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Block this port via UFW/iptables' : 'Blokir port ini via UFW/iptables'}">🚫 ${isEn ? 'Block Port' : 'Blokir Port'}</button> `;
+      } else if (!isPublic && !isProtected) {
+        actions += `<button type="button" class="btn btn-sm btn-primary" onclick="submitPortRule('${escHtml(pProto)}', 'allow', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Allow this port via UFW/iptables' : 'Buka port ini (izinkan koneksi)'}">🔓 ${isEn ? 'Open Port' : 'Buka Port'}</button> `;
+      }
+    }
+    if (isProtected) {
+      actions += `<span style="font-size:11px;color:var(--dim);white-space:nowrap">⛨ ${isEn ? 'Protected' : 'Dilindungi'}</span>`;
+    }
+
+    return `<tr>
+      <td>${protoBadge}</td>
+      <td class="mono" style="font-weight:700;font-size:13px;color:var(--text)">${portNum}</td>
+      <td class="mono" style="color:var(--dim)">${ipStr}</td>
+      <td>${accessBadge}</td>
+      <td class="mono" style="font-size:12px;color:var(--text)">${procStr}</td>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap">${actions}</div></td>
+    </tr>`;
+  }).join('');
+
+  if (_servicesTabPagination['ports']) {
+    _servicesTabPagination['ports'].update();
+  }
+}
+
+function renderFirewall(fw) {
+  const f = fw || { status: 'inactive', backend: 'unknown', rules: [], blocked_ips: [] };
+  const isEn = isEnPage();
+  const isActive = f.status === 'active';
+
+  const statusBadge = document.getElementById('fw-status-badge');
+  if (statusBadge) {
+    statusBadge.className = 'badge ' + (isActive ? 'badge-up' : 'badge-warn');
+    statusBadge.textContent = isActive ? (isEn ? 'Active (Protecting)' : 'Aktif (Melindungi)') : (isEn ? 'Inactive (Open)' : 'Nonaktif (Terbuka)');
+  }
+
+  const backendBadge = document.getElementById('fw-backend-badge');
+  if (backendBadge) {
+    backendBadge.textContent = (f.backend || 'unknown').toUpperCase();
+  }
+
+  const actWrap = document.getElementById('fw-header-actions');
+  if (actWrap && CAN_FIREWALL) {
+    let btns = '';
+    if (isActive) {
+      btns = `<button type="button" class="btn btn-ghost btn-sm" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Reload UFW rules' : 'Muat ulang aturan UFW tanpa memutus koneksi'}">&#8635;&nbsp;${isEn ? 'Reload Rules' : 'Reload Aturan'}</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)${!IS_ONLINE ? ';opacity:0.35;cursor:not-allowed' : ''}" ${!IS_ONLINE ? 'disabled' : ''} title="${isEn ? 'Disable UFW' : 'Nonaktifkan UFW'}">${isEn ? 'Disable Firewall' : 'Nonaktifkan Firewall'}</button>`;
+    } else {
+      btns = `<button type="button" class="btn btn-primary btn-sm" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" style="background:#16a34a;border-color:#22c55e${!IS_ONLINE ? ';opacity:0.35;cursor:not-allowed' : ''}" ${!IS_ONLINE ? 'disabled' : ''} title="${isEn ? 'Enable UFW (auto allows SSH)' : 'Aktifkan UFW (otomatis allow SSH)'}">&#9654;&nbsp;${isEn ? 'Enable Firewall' : 'Aktifkan Firewall'}</button>`;
+    }
+    const badgesHtml = `<span class="badge ${isActive ? 'badge-up' : 'badge-warn'}" id="fw-status-badge">${isActive ? (isEn ? 'Active (Protecting)' : 'Aktif (Melindungi)') : (isEn ? 'Inactive (Open)' : 'Nonaktif (Terbuka)')}</span> <span class="badge badge-info" id="fw-backend-badge">${(f.backend || 'unknown').toUpperCase()}</span> `;
+    actWrap.innerHTML = badgesHtml + btns;
+  }
+
+  const statStatus = document.getElementById('fw-stat-status');
+  if (statStatus) {
+    statStatus.textContent = (f.status || 'inactive').toUpperCase();
+    statStatus.style.color = isActive ? 'var(--green)' : 'var(--yellow)';
+  }
+
+  const statBackend = document.getElementById('fw-stat-backend');
+  if (statBackend) statBackend.textContent = (f.backend || 'unknown').toUpperCase();
+
+  const statBlocked = document.getElementById('fw-stat-blocked');
+  const bList = Array.isArray(f.blocked_ips) ? f.blocked_ips : [];
+  if (statBlocked) statBlocked.textContent = bList.length + ' IP';
+
+  const rList = Array.isArray(f.rules) ? f.rules : [];
+  const rulesWrap = document.getElementById('fw-rules-wrap');
+  const rulesEmpty = document.getElementById('fw-rules-empty');
+  const rulesTable = document.getElementById('fw-rules-table');
+  if (rulesWrap) rulesWrap.style.display = rList.length ? 'block' : 'none';
+  if (rulesEmpty) rulesEmpty.style.display = rList.length ? 'none' : 'block';
+  if (rulesTable && rList.length) {
+    const tbody = rulesTable.querySelector('tbody');
+    if (tbody) {
+      tbody.innerHTML = rList.map((r, i) => `<tr><td class="mono" style="color:var(--dim)">${i + 1}</td><td class="mono" style="font-size:12px;color:var(--text)">${escHtml(r)}</td></tr>`).join('');
+      if (_servicesTabPagination['fw-rules']) _servicesTabPagination['fw-rules'].update();
+    }
+  }
+
+  const blockedWrap = document.getElementById('fw-blocked-wrap');
+  const blockedEmpty = document.getElementById('fw-blocked-empty');
+  const blockedTable = document.getElementById('fw-blocked-table');
+  if (blockedWrap) blockedWrap.style.display = bList.length ? 'block' : 'none';
+  if (blockedEmpty) blockedEmpty.style.display = bList.length ? 'none' : 'block';
+  if (blockedTable && bList.length) {
+    const tbody = blockedTable.querySelector('tbody');
+    if (tbody) {
+      tbody.innerHTML = bList.map(b => {
+        const unblockBtn = CAN_FIREWALL
+          ? `<button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3)${!IS_ONLINE ? ';opacity:0.35;cursor:not-allowed' : ''}" ${!IS_ONLINE ? 'disabled' : ''} onclick="submitFirewallUnblock('${escHtml(b.source)}', this)">${isEn ? 'Unblock' : 'Buka Blokir'}</button>`
+          : '';
+        return `<tr>
+          <td class="mono">${escHtml(String(b.num || ''))}</td>
+          <td class="mono" style="color:var(--red);font-weight:700">
+            <span class="copyable-ip" style="cursor:pointer" onclick="copyIp('${escHtml(b.source)}', event)" title="${isEn ? 'Click to copy IP' : 'Klik untuk salin IP'}">${escHtml(b.source)}</span>
+          </td>
+          <td class="mono">${escHtml(String(b.pkts || 0))}</td>
+          <td class="mono">${escHtml(String(b.bytes || 0))}</td>
+          ${CAN_FIREWALL ? `<td style="text-align:right">${unblockBtn}</td>` : ''}
+        </tr>`;
+      }).join('');
+      if (_servicesTabPagination['fw-blocked']) _servicesTabPagination['fw-blocked'].update();
+    }
+  }
+
+  updateTabAlertDots({
+    firewall: !isActive,
+  });
+}
+
+function renderCron(cron_jobs) {
+  const data = cron_jobs || { jobs: [], timers: [] };
+  const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+  const timers = Array.isArray(data.timers) ? data.timers : [];
+  const isEn = isEnPage();
+
+  const countEl = document.getElementById('cron-jobs-count');
+  if (countEl) countEl.textContent = jobs.length + (isEn ? ' active tasks' : ' tugas aktif');
+
+  const cronWrap = document.getElementById('cron-table-wrap');
+  const cronEmpty = document.getElementById('cron-empty');
+  const cronTable = document.getElementById('cron-table');
+  if (cronWrap) cronWrap.style.display = jobs.length ? 'block' : 'none';
+  if (cronEmpty) cronEmpty.style.display = jobs.length ? 'none' : 'block';
+  if (cronTable && jobs.length) {
+    const tbody = cronTable.querySelector('tbody');
+    if (tbody) {
+      tbody.innerHTML = jobs.map(c => {
+        const isEnabled = c.is_enabled !== false;
+        const isManaged = Boolean(c.is_managed);
+        const ident = escHtml(c.ident || '');
+        const cmdClean = escHtml(c.command || '');
+        const cmdArg = (c.command || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const userClean = escHtml(c.user || 'root');
+        let actHtml = '';
+        if (CAN_CRON && isManaged) {
+          actHtml = `<button type="button" class="btn btn-sm ${isEnabled ? 'btn-warn' : 'btn-primary'}" onclick="submitCronToggle('${ident}', '${isEnabled ? 'disable' : 'enable'}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEnabled ? (isEn ? 'Pause this cron job' : 'Nonaktifkan tugas cron ini') : (isEn ? 'Enable this cron job' : 'Aktifkan kembali tugas cron ini')}">${isEnabled ? (isEn ? '⏸ Pause' : '⏸ Jeda') : (isEn ? '▶ Enable' : '▶ Aktifkan')}</button>
+          <button type="button" class="btn btn-sm btn-ghost" onclick="submitCronRun('${userClean}', '${cmdArg}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Run now (test)' : 'Jalankan sekarang (uji coba)'}">▷ ${isEn ? 'Run' : 'Jalankan'}</button>
+          <button type="button" class="btn btn-sm btn-danger" onclick="submitCronDelete('${ident}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Delete this cron job' : 'Hapus tugas cron ini'}">🗑 ${isEn ? 'Delete' : 'Hapus'}</button>`;
+        } else {
+          actHtml = `<span style="font-size:11px;color:var(--dim)">${isEn ? 'System' : 'Sistem'}</span>`;
+        }
+
+        return `<tr style="${!isEnabled ? 'opacity:0.5' : ''}">
+          <td><span class="badge ${isEnabled ? 'badge-up' : 'badge-muted'}" title="${isEnabled ? (isEn ? 'Active' : 'Aktif') : (isEn ? 'Disabled' : 'Dinonaktifkan')}">${isEnabled ? '●' : '○'}</span></td>
+          <td class="mono" style="font-weight:700;color:${isEnabled ? 'var(--blue)' : 'var(--dim)'};white-space:nowrap">${escHtml(c.schedule || '')}</td>
+          <td><span class="mono">${userClean}</span></td>
+          <td class="mono" style="font-size:12px;color:var(--text);word-break:break-all">${cmdClean}</td>
+          <td class="mono" style="font-size:11px;color:var(--dim)">${escHtml(c.source || '')}${c.line ? ':' + c.line : ''}${isManaged ? ` <span class="badge badge-info" style="font-size:10px;margin-left:4px">${isEn ? 'Managed' : 'Dikelola'}</span>` : ''}</td>
+          <td><div style="display:flex;gap:4px;flex-wrap:wrap">${actHtml}</div></td>
+        </tr>`;
+      }).join('');
+      if (_servicesTabPagination['cron']) _servicesTabPagination['cron'].update();
+    }
+  }
+
+  const timerBadge = document.getElementById('timers-count-badge');
+  if (timerBadge) timerBadge.textContent = timers.length + (isEn ? ' active timers' : ' timer aktif');
+
+  const timersWrap = document.getElementById('timers-table-wrap');
+  const timersEmpty = document.getElementById('timers-empty');
+  const timersTable = document.getElementById('systemd-timers-table');
+  if (timersWrap) timersWrap.style.display = timers.length ? 'block' : 'none';
+  if (timersEmpty) timersEmpty.style.display = timers.length ? 'none' : 'block';
+  if (timersTable && timers.length) {
+    const tbody = timersTable.querySelector('tbody');
+    if (tbody) {
+      tbody.innerHTML = timers.map(t => `<tr>
+        <td class="mono" style="font-weight:600;color:var(--text);white-space:nowrap">${escHtml(t.timer || '')}</td>
+        <td class="mono" style="color:var(--green)">${escHtml(t.activates || '')}</td>
+        <td class="mono" style="font-size:11px;color:var(--dim)">${escHtml(t.raw || '')}</td>
+      </tr>`).join('');
+      if (_servicesTabPagination['timers']) _servicesTabPagination['timers'].update();
+    }
+  }
+}
+
+function renderSsl(sslList) {
+  const certs = Array.isArray(sslList) ? sslList : [];
+  const isEn = isEnPage();
+
+  const badge = document.getElementById('ssl-count-badge');
+  if (badge) badge.textContent = certs.length + (isEn ? ' detected certs' : ' sertifikat terdeteksi');
+
+  const wrap = document.getElementById('ssl-wrap');
+  const empty = document.getElementById('ssl-empty');
+  const table = document.getElementById('ssl-table');
+  if (wrap) wrap.style.display = certs.length ? 'block' : 'none';
+  if (empty) empty.style.display = certs.length ? 'none' : 'block';
+  if (!table || !certs.length) return;
+
+  const tbody = table.querySelector('tbody');
+  if (!tbody) return;
+
+  let hasWarn = false;
+  tbody.innerHTML = certs.map(c => {
+    if (c.is_expired || c.is_critical || c.is_warning) hasWarn = true;
+    const domStr = escHtml(c.domains && c.domains.length ? c.domains.join(', ') : (c.subject || ''));
+    const isCustom = Boolean(c.is_custom);
+    const customBadge = isCustom ? `<span class="badge badge-muted" title="${isEn ? 'Custom path added via Pantau' : 'Ditambahkan secara manual via Pantau'}" style="font-size:10px;margin-left:4px">${isEn ? 'Custom' : 'Kustom'}</span>` : '';
+    const issuerStr = escHtml(c.issuer || '—');
+    const notAfterStr = escHtml(c.not_after || '—');
+    const daysColor = (c.is_expired || c.is_critical) ? 'var(--red)' : (c.is_warning ? 'var(--yellow)' : 'var(--green)');
+    const daysStr = c.is_expired ? (isEn ? 'Expired' : 'Kedaluwarsa') : `${c.days_left} ${isEn ? 'days left' : 'hari lagi'}`;
+
+    let statusBadge = '<span class="badge badge-up">' + (isEn ? 'Normal Active' : 'Aktif Normal') + '</span>';
+    if (c.is_expired) statusBadge = '<span class="badge badge-danger">Expired</span>';
+    else if (c.is_critical) statusBadge = `<span class="badge badge-danger">${isEn ? 'Expiring soon (<14 d)' : 'Segera Expired (<14 hr)'}</span>`;
+    else if (c.is_warning) statusBadge = `<span class="badge badge-warn">${isEn ? 'Needs Renewal (<30 d)' : 'Perlu Diperbarui (<30 hr)'}</span>`;
+
+    const pathClean = escHtml(c.path || '');
+    const pathArg = (c.path || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    let actHtml = '<span style="font-size:11px;color:var(--dim)">—</span>';
+    if (CAN_SSL && isCustom) {
+      actHtml = `<button type="button" class="btn btn-sm btn-danger" title="${isEn ? 'Remove from SSL monitoring' : 'Hapus dari pengawasan SSL kustom'}" onclick="submitSslRemovePath('${pathArg}', this)">🗑 ${isEn ? 'Delete' : 'Hapus'}</button>`;
+    }
+
+    return `<tr>
+      <td><strong>${domStr}</strong>${customBadge}</td>
+      <td style="font-size:12px;color:var(--dim)">${issuerStr}</td>
+      <td class="mono" style="font-size:12px">${notAfterStr}</td>
+      <td class="mono" style="font-weight:700;color:${daysColor}">${daysStr}</td>
+      <td>${statusBadge}</td>
+      <td class="mono" style="font-size:11px;color:var(--dim)">${pathClean}</td>
+      <td>${actHtml}</td>
+    </tr>`;
+  }).join('');
+
+  if (_servicesTabPagination['ssl']) {
+    _servicesTabPagination['ssl'].update();
+  }
+
+  updateTabAlertDots({
+    ssl: hasWarn,
+  });
+}
+
 let _sysFetching = false;
 async function pollSystem() {
   if (_sysFetching) return;
   _sysFetching = true;
   try {
-    const r = await fetch('/api/servers/' + SID + '/system', {credentials: 'same-origin'});
+    const r = await fetch('/api/servers/' + SID + '/system?_=' + Date.now(), {credentials: 'same-origin', cache: 'no-store'});
     if (r.ok) {
       const data = await r.json();
       startAutoLog(data.units, data.extras);
       renderSys(data);
+      if (typeof renderPorts === 'function') renderPorts(data.listening_ports);
+      if (typeof renderFirewall === 'function') renderFirewall(data.firewall);
+      if (typeof renderCron === 'function') renderCron(data.cron_jobs);
+      if (typeof renderSsl === 'function') renderSsl(data.ssl_certs);
       if (!aptRunning && typeof renderApt === 'function') {
         renderApt(data);
       }
@@ -7858,7 +8394,14 @@ function renderSys(data) {
   }
 
   const accBadge = document.getElementById('acc-count-badge');
-  if (accBadge) accBadge.textContent = acc.length + (isEn ? (acc.length === 1 ? ' Account' : ' Accounts') : ' Akun');
+  const sessCount = data.active_sessions_count || 0;
+  if (accBadge) {
+    let bText = acc.length + (isEn ? (acc.length === 1 ? ' Account' : ' Accounts') : ' Akun');
+    if (sessCount > 0) {
+      bText += isEn ? (' · ' + sessCount + ' Active Sessions (SSH)') : (' · ' + sessCount + ' Sesi Aktif (SSH)');
+    }
+    accBadge.textContent = bText;
+  }
 
   // Periksa apakah performa server overload untuk tab-dot-perf
   const isHighCpu = (cpu > 85);
@@ -7868,6 +8411,8 @@ function renderSys(data) {
   updateTabAlertDots({
     perf: (isHighCpu || isHighMem || isHighSwap || isHighLoad),
     perf_yellow: (!isHighCpu && (memPct > 80 || load1 > 5)),
+    akun: (sessCount > 0),
+    sessions_count: sessCount,
   });
 
   syncUnits(data.units, data.extras);
@@ -8526,5 +9071,220 @@ function saveServerNotesAuto() {
     }
   });
 }
+
+// --- Asynchronous Form Interceptors (Zero Page Reload for All Actions) ---
+document.addEventListener('DOMContentLoaded', function() {
+  const isEn = isEnPage();
+
+  // 1. Host Reboot
+  const formReboot = document.getElementById('form-host-reboot');
+  if (formReboot) {
+    formReboot.addEventListener('submit', async function(ev) {
+      if (!this.dataset.guardrailConfirmed) return;
+      ev.preventDefault();
+      this.dataset.guardrailConfirmed = '';
+      const btn = document.getElementById('hero-reboot-btn');
+      if (btn) btn.disabled = true;
+      try {
+        const fd = new FormData(this);
+        const r = await fetch(this.action, {
+          method: 'POST',
+          body: fd,
+          headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+        });
+        const res = await r.json().catch(() => ({}));
+        if (r.ok && res.ok !== false) {
+          showToast(res.detail || (isEn ? 'Host reboot command sent to agent.' : 'Perintah Reboot OS server klien telah dikirim ke agen.'), true);
+          const ackEl = document.getElementById('host-ack');
+          if (ackEl) {
+            ackEl.dataset.mode = 'reboot';
+            ackEl.style.display = 'flex';
+            ackLive('reboot', false);
+          }
+          triggerFastPoll();
+        } else {
+          showToast(res.detail || (isEn ? 'Failed to send reboot command.' : 'Gagal mengirim perintah reboot host.'), false);
+        }
+      } catch(err) {
+        showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+  }
+
+  // 2. Host Poweroff
+  const formPoweroff = document.getElementById('form-host-poweroff');
+  if (formPoweroff) {
+    formPoweroff.addEventListener('submit', async function(ev) {
+      if (!this.dataset.guardrailConfirmed) return;
+      ev.preventDefault();
+      this.dataset.guardrailConfirmed = '';
+      const btn = document.getElementById('hero-poweroff-btn');
+      if (btn) btn.disabled = true;
+      try {
+        const fd = new FormData(this);
+        const r = await fetch(this.action, {
+          method: 'POST',
+          body: fd,
+          headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+        });
+        const res = await r.json().catch(() => ({}));
+        if (r.ok && res.ok !== false) {
+          showToast(res.detail || (isEn ? 'Host poweroff command sent to agent.' : 'Perintah Matikan Daya (Power Off) server klien telah dikirim ke agen.'), true);
+          const ackEl = document.getElementById('host-ack');
+          if (ackEl) {
+            ackEl.dataset.mode = 'poweroff';
+            ackEl.style.display = 'flex';
+            ackLive('poweroff', false);
+          }
+          triggerFastPoll();
+        } else {
+          showToast(res.detail || (isEn ? 'Failed to send poweroff command.' : 'Gagal mengirim perintah poweroff host.'), false);
+        }
+      } catch(err) {
+        showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+  }
+
+  // 3. Block IP Form
+  const formBlockIp = document.getElementById('block-ip-form');
+  if (formBlockIp) {
+    formBlockIp.addEventListener('submit', async function(ev) {
+      ev.preventDefault();
+      const ipIn = document.getElementById('block-ip-input');
+      const ipVal = ipIn ? ipIn.value.trim() : '';
+      if (!ipVal) return;
+      const sbtn = document.getElementById('block-ip-submit-btn');
+      const origText = sbtn ? sbtn.textContent : '';
+      if (sbtn) { sbtn.disabled = true; sbtn.textContent = '…'; }
+      try {
+        const fd = new FormData(this);
+        const r = await fetch(this.action, {
+          method: 'POST',
+          body: fd,
+          headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+        });
+        const res = await r.json().catch(() => ({}));
+        if (r.ok && res.ok !== false) {
+          showToast(res.detail || (isEn ? `IP ${ipVal} blocked.` : `Alamat IP ${ipVal} berhasil diblokir.`), true);
+          const modal = document.getElementById('block-ip-modal');
+          if (modal) modal.style.display = 'none';
+          this.reset();
+          triggerFastPoll();
+          if (typeof pollSystem === 'function') pollSystem();
+        } else {
+          showToast(res.detail || (isEn ? 'Failed to block IP.' : 'Gagal memblokir alamat IP.'), false);
+        }
+      } catch(err) {
+        showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+      } finally {
+        if (sbtn) { sbtn.disabled = false; sbtn.textContent = origText; }
+      }
+    });
+  }
+
+  // 4. Add Cron Form
+  const formAddCron = document.getElementById('add-cron-form');
+  if (formAddCron) {
+    formAddCron.addEventListener('submit', async function(ev) {
+      ev.preventDefault();
+      const sbtn = this.querySelector('button[type="submit"]');
+      const origText = sbtn ? sbtn.textContent : '';
+      if (sbtn) { sbtn.disabled = true; sbtn.textContent = '…'; }
+      try {
+        const fd = new FormData(this);
+        const r = await fetch(this.action, {
+          method: 'POST',
+          body: fd,
+          headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+        });
+        const res = await r.json().catch(() => ({}));
+        if (r.ok && res.ok !== false) {
+          showToast(res.detail || (isEn ? 'Cron job added.' : 'Tugas cron berhasil ditambahkan.'), true);
+          if (typeof closeAddCronModal === 'function') closeAddCronModal();
+          this.reset();
+          triggerFastPoll();
+          if (typeof pollSystem === 'function') pollSystem();
+        } else {
+          showToast(res.detail || (isEn ? 'Failed to add cron job.' : 'Gagal menambahkan tugas cron.'), false);
+        }
+      } catch(err) {
+        showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+      } finally {
+        if (sbtn) { sbtn.disabled = false; sbtn.textContent = origText; }
+      }
+    });
+  }
+
+  // 5. Add SSL Path Form
+  const formAddSsl = document.getElementById('add-ssl-path-form');
+  if (formAddSsl) {
+    formAddSsl.addEventListener('submit', async function(ev) {
+      ev.preventDefault();
+      const sbtn = this.querySelector('button[type="submit"]');
+      const origText = sbtn ? sbtn.textContent : '';
+      if (sbtn) { sbtn.disabled = true; sbtn.textContent = '…'; }
+      try {
+        const fd = new FormData(this);
+        const r = await fetch(this.action, {
+          method: 'POST',
+          body: fd,
+          headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+        });
+        const res = await r.json().catch(() => ({}));
+        if (r.ok && res.ok !== false) {
+          showToast(res.detail || (isEn ? 'Certificate path added.' : 'Lokasi sertifikat berhasil ditambahkan.'), true);
+          if (typeof closeAddSslPathModal === 'function') closeAddSslPathModal();
+          this.reset();
+          triggerFastPoll();
+          if (typeof pollSystem === 'function') pollSystem();
+        } else {
+          showToast(res.detail || (isEn ? 'Failed to add certificate path.' : 'Gagal menambahkan path sertifikat.'), false);
+        }
+      } catch(err) {
+        showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+      } finally {
+        if (sbtn) { sbtn.disabled = false; sbtn.textContent = origText; }
+      }
+    });
+  }
+
+  // 6. Add Service Form
+  const formAddSvc = document.getElementById('add-svc-form');
+  if (formAddSvc) {
+    formAddSvc.addEventListener('submit', async function(ev) {
+      ev.preventDefault();
+      const sbtn = this.querySelector('button[type="submit"]');
+      const origText = sbtn ? sbtn.textContent : '';
+      if (sbtn) { sbtn.disabled = true; sbtn.textContent = '…'; }
+      try {
+        const fd = new FormData(this);
+        const r = await fetch(this.action, {
+          method: 'POST',
+          body: fd,
+          headers: { 'Accept': 'application/json', 'X-CSRF-Token': getCsrf() }
+        });
+        const res = await r.json().catch(() => ({}));
+        if (r.ok && res.ok !== false) {
+          showToast(res.detail || (isEn ? 'Service added.' : 'Layanan berhasil ditambahkan.'), true);
+          if (typeof closeAddSvcModal === 'function') closeAddSvcModal();
+          this.reset();
+          triggerFastPoll();
+          if (typeof poll === 'function') poll();
+        } else {
+          showToast(res.detail || (isEn ? 'Failed to add service.' : 'Gagal menambahkan layanan.'), false);
+        }
+      } catch(err) {
+        showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+      } finally {
+        if (sbtn) { sbtn.disabled = false; sbtn.textContent = origText; }
+      }
+    });
+  }
+});
 </script>
 {% endblock %}

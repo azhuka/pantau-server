@@ -1868,8 +1868,8 @@ async function pollNocDashboard() {
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const [r, rProbes] = await Promise.all([
-      fetch('/api/servers', {credentials: 'same-origin'}),
-      fetch('/api/probes/open-problems', {credentials: 'same-origin'}).catch(() => null)
+      fetch('/api/servers?_=' + Date.now(), {credentials: 'same-origin', cache: 'no-store'}),
+      fetch('/api/probes/open-problems?_=' + Date.now(), {credentials: 'same-origin', cache: 'no-store'}).catch(() => null)
     ]);
     if (!r.ok) return;
     const list = await r.json();

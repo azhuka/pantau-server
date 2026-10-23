@@ -4198,7 +4198,10 @@ def service_add_submit(
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "") or request.headers.get("x-requested-with") == "xmlhttprequest"
     if not user or not user.has_perm("can_services"):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Akses ditolak: Izin kontrol layanan diperlukan"}, status_code=403)
         return RedirectResponse("/", status_code=303)
     token = csrf_token or request.headers.get("X-CSRF-Token", "")
     _verify_csrf_form(request, token)
@@ -4210,6 +4213,8 @@ def service_add_submit(
         is_core=1 if is_core else 0,
     )
     if not svc.service_name or not (1 <= svc.port <= 65535):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Data service tidak lengkap: nama wajib & port 1-65535"}, status_code=400)
         return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(False, "Service tidak lengkap: nama wajib & port 1-65535"), status_code=303)
     existing = (
         db.query(Service).filter(
@@ -4217,11 +4222,15 @@ def service_add_submit(
         ).first()
     )
     if existing:
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Nama service sudah terdaftar di server ini"}, status_code=400)
         return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(False, "Nama service sudah ada"), status_code=303)
     db.add(svc)
     server = db.query(Server).filter(Server.id == sid).first()
     _audit(db, user.username, "service_add", f"{server.hostname if server else sid}:{svc.service_name}", f"port {svc.port}", server_id=sid)
     db.commit()
+    if is_json:
+        return JSONResponse({"ok": True, "detail": f"Service '{svc.service_name}' berhasil ditambahkan ke pemantauan."})
     return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(True, "Service ditambahkan"), status_code=303)
 
 
@@ -4502,11 +4511,16 @@ def problem_block_ip(
             return False
         return s != server.ip_address
 
+    is_json = "application/json" in request.headers.get("accept", "") or request.headers.get("x-requested-with") == "xmlhttprequest"
     all_ips = list((sec.get("source_ips") or {}).keys())
     ips = [s for s in all_ips[:40] if _safe_block_ip(s)][:10]
     if not ips:
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Tidak ada IP valid yang dapat diblokir"}, status_code=400)
         return RedirectResponse(f"/servers/{sid}/services?action=noips", status_code=303)
     _enqueue_mitigation(db, sid, "block_ip", {"ips": ips}, issued_by=user.username)
+    if is_json:
+        return JSONResponse({"ok": True, "detail": f"Perintah mitigasi blokir {len(ips)} IP penyerang dikirim ke agen."})
     return RedirectResponse(f"/servers/{sid}/services?action=block", status_code=303)
 
 
@@ -4519,23 +4533,32 @@ def firewall_block_ip(
 ):
     """Blokir manual sebuah IP dari tab Firewall."""
     user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "") or request.headers.get("x-requested-with") == "xmlhttprequest"
     if not user or not user.has_perm("can_firewall"):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
     _verify_csrf_form(request, csrf_token)
-    server, err_resp = _check_server_online(db, sid, is_json=False, redirect_tab="firewall")
+    server, err_resp = _check_server_online(db, sid, is_json=is_json, redirect_tab="firewall")
     if err_resp:
         return err_resp
     ip_clean = ip.strip()
     try:
         a = ipaddress.ip_address(ip_clean)
         if a.is_loopback or a.is_link_local or a.is_multicast or a.is_unspecified or a.is_reserved or ip_clean == server.ip_address:
+            if is_json:
+                return JSONResponse({"ok": False, "detail": f"Alamat IP {ip_clean} tidak diizinkan untuk diblokir"}, status_code=400)
             return RedirectResponse(f"/servers/{sid}/services?action=invalid_ip", status_code=303)
     except ValueError:
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Format IP tidak valid"}, status_code=400)
         return RedirectResponse(f"/servers/{sid}/services?action=invalid_ip", status_code=303)
 
     _enqueue_mitigation(db, sid, "block_ip", {"ips": [ip_clean]}, issued_by=user.username)
     _audit(db, user.username, "firewall_block", f"{server.hostname}: blokir {ip_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
+    if is_json:
+        return JSONResponse({"ok": True, "detail": f"Perintah blokir IP '{ip_clean}' dikirim ke agen."})
     return RedirectResponse(f"/servers/{sid}/services?action=block", status_code=303)
 
 
@@ -4548,16 +4571,21 @@ def firewall_unblock_ip(
 ):
     """Buka blokir sebuah IP dari tab Firewall."""
     user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "") or request.headers.get("x-requested-with") == "xmlhttprequest"
     if not user or not user.has_perm("can_firewall"):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
     _verify_csrf_form(request, csrf_token)
-    server, err_resp = _check_server_online(db, sid, is_json=False, redirect_tab="firewall")
+    server, err_resp = _check_server_online(db, sid, is_json=is_json, redirect_tab="firewall")
     if err_resp:
         return err_resp
     ip_clean = ip.strip()
     _enqueue_mitigation(db, sid, "unblock_ip", {"ips": [ip_clean]}, issued_by=user.username)
     _audit(db, user.username, "firewall_unblock", f"{server.hostname}: buka blokir {ip_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
+    if is_json:
+        return JSONResponse({"ok": True, "detail": f"Perintah buka blokir IP '{ip_clean}' dikirim ke agen."})
     return RedirectResponse(f"/servers/{sid}/services?action=unblock", status_code=303)
 
 
@@ -4569,15 +4597,20 @@ def firewall_enable(
 ):
     """Aktifkan firewall (UFW) via agen."""
     user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "") or request.headers.get("x-requested-with") == "xmlhttprequest"
     if not user or not user.has_perm("can_firewall"):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
     _verify_csrf_form(request, csrf_token)
-    server, err_resp = _check_server_online(db, sid, is_json=False, redirect_tab="firewall")
+    server, err_resp = _check_server_online(db, sid, is_json=is_json, redirect_tab="firewall")
     if err_resp:
         return err_resp
     _enqueue_mitigation(db, sid, "firewall_enable", issued_by=user.username)
     _audit(db, user.username, "firewall_enable", f"{server.hostname}: aktifkan firewall (UFW)", "dikirim ke agen", server_id=sid)
     db.commit()
+    if is_json:
+        return JSONResponse({"ok": True, "detail": "Perintah aktifkan firewall (UFW) dikirim ke agen."})
     return RedirectResponse(f"/servers/{sid}/services?action=fw_enabled", status_code=303)
 
 
@@ -4589,15 +4622,20 @@ def firewall_disable(
 ):
     """Nonaktifkan firewall (UFW) via agen."""
     user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "") or request.headers.get("x-requested-with") == "xmlhttprequest"
     if not user or not user.has_perm("can_firewall"):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
     _verify_csrf_form(request, csrf_token)
-    server, err_resp = _check_server_online(db, sid, is_json=False, redirect_tab="firewall")
+    server, err_resp = _check_server_online(db, sid, is_json=is_json, redirect_tab="firewall")
     if err_resp:
         return err_resp
     _enqueue_mitigation(db, sid, "firewall_disable", issued_by=user.username)
     _audit(db, user.username, "firewall_disable", f"{server.hostname}: nonaktifkan firewall (UFW)", "dikirim ke agen", server_id=sid)
     db.commit()
+    if is_json:
+        return JSONResponse({"ok": True, "detail": "Perintah nonaktifkan firewall (UFW) dikirim ke agen."})
     return RedirectResponse(f"/servers/{sid}/services?action=fw_disabled", status_code=303)
 
 
@@ -4609,15 +4647,20 @@ def firewall_reload(
 ):
     """Muat ulang (reload) aturan firewall via agen."""
     user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "") or request.headers.get("x-requested-with") == "xmlhttprequest"
     if not user or not user.has_perm("can_firewall"):
+        if is_json:
+            return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
     _verify_csrf_form(request, csrf_token)
-    server, err_resp = _check_server_online(db, sid, is_json=False, redirect_tab="firewall")
+    server, err_resp = _check_server_online(db, sid, is_json=is_json, redirect_tab="firewall")
     if err_resp:
         return err_resp
     _enqueue_mitigation(db, sid, "firewall_reload", issued_by=user.username)
     _audit(db, user.username, "firewall_reload", f"{server.hostname}: reload firewall", "dikirim ke agen", server_id=sid)
     db.commit()
+    if is_json:
+        return JSONResponse({"ok": True, "detail": "Perintah reload aturan firewall dikirim ke agen."})
     return RedirectResponse(f"/servers/{sid}/services?action=fw_reloaded", status_code=303)
 
 
@@ -4834,6 +4877,9 @@ def _host_control(request: Request, sid: int, db: Session, action: str, csrf_tok
     db.commit()
     flag = "reboot" if action == "reboot_host" else "poweroff"
     at_epoch = int(datetime.now(timezone.utc).timestamp())
+    if is_json:
+        label = "Mulai ulang (reboot)" if action == "reboot_host" else "Matikan daya (power off)"
+        return JSONResponse({"ok": True, "action": flag, "at": at_epoch, "detail": f"Perintah {label} server klien telah dikirim ke agen."})
     return RedirectResponse(f"/servers/{sid}/services?action={flag}&at={at_epoch}", status_code=303)
 
 
@@ -10242,6 +10288,16 @@ def api_server_system(
         except (TypeError, ValueError):
             obj = None
         return obj if isinstance(obj, list) else []
+
+    def parse_json_obj(raw, default):
+        try:
+            obj = json.loads(raw) if raw else default
+            return obj if obj is not None else default
+        except Exception:
+            return default
+
+    acc_list = parse_list(extra.accounts if extra else None)
+    active_sessions_count = sum(len(a.get("sessions") or []) for a in acc_list if isinstance(a, dict))
     net_list = parse_list(latest.net) if latest else []
     if net_list and server.ip_address:
         has_any_ip = any(isinstance(n, dict) and n.get("ip_addrs") for n in net_list)
@@ -10286,7 +10342,13 @@ def api_server_system(
         "kernel": (extra.kernel if extra else None),
         "os_label": (extra.os_label if extra else None),
         "units": parse_list(extra.units if extra else None),
-        "accounts": parse_list(extra.accounts if extra else None),
+        "accounts": acc_list,
+        "active_sessions_count": active_sessions_count,
+        "listening_ports": parse_list(extra.listening_ports if extra else None),
+        "firewall": parse_json_obj(extra.firewall if extra else None, {"status": "inactive", "backend": "unknown", "rules": [], "blocked_ips": []}),
+        "cron_jobs": parse_json_obj(extra.cron_jobs if extra else None, {"jobs": [], "timers": []}),
+        "ssl_certs": parse_list(extra.ssl_certs if extra else None),
+        "system_logs": parse_list(extra.system_logs if extra else None),
         "apt_upgradable": (
             len(parse_list(extra.apt_packages))
             if (extra and extra.apt_packages is not None)

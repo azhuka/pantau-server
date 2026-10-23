@@ -888,9 +888,10 @@ window.poll = async function() {
     const params = new URLSearchParams();
     if (FILTER_SID) params.set('server', FILTER_SID);
     if (FILTER_GROUP) params.set('group', FILTER_GROUP);
+    params.set('_', Date.now());
     const qs = params.toString();
     const url = '/api/problems' + (qs ? '?' + qs : '');
-    const r = await fetch(url, { credentials: 'same-origin' });
+    const r = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
     if (!r.ok) return;
     const data = await r.json();
 
