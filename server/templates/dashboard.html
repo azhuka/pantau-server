@@ -1323,6 +1323,7 @@ body.popout-fleet_table #dash-fleet-card {
       {% set ign_cnt = srv._ignored_count if srv._ignored_count is defined else 0 %}
       {% set tot_prob = d_cnt + avg_cnt + w_cnt + i_cnt %}
       <div class="server-card {{ 'is-danger' if is_crit else ('is-average' if avg_cnt > 0 else ('is-warn' if is_warn else ('is-offline' if srv.overall_status == 'offline' else 'is-healthy'))) }}"
+           id="card-srv-{{ srv.id }}"
            data-srv-id="{{ srv.id }}"
            data-card-group="{{ srv.group_name or '' }}"
            data-card-text="{{ (srv.hostname ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '')) | lower }}"
@@ -1863,7 +1864,12 @@ function updateRelTimes() {
 updateRelTimes();
 setInterval(updateRelTimes, 10000);
 
-// 6. Live Polling (Syncs both Table View and Grid Card View every 10s)
+function _dashEsc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// 6. Live Polling (Syncs both Table View and Grid Card View every 3s)
 async function pollNocDashboard() {
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
@@ -1914,6 +1920,11 @@ async function pollNocDashboard() {
     list.forEach(srv => {
       const hasReported = Boolean(srv.last_seen);
       const isOnline = srv.overall_status !== 'offline';
+      const dCnt = srv.danger_count || 0;
+      const avgCnt = srv.average_count || 0;
+      const wCnt = srv.warning_count || 0;
+      const iCnt = srv.info_count || 0;
+      const ignCnt = srv.ignored_problem_count || 0;
 
       // Status text & class
       let statusLabel = 'Online', statusCls = 'badge-up', dotCls = 'up';
@@ -2153,6 +2164,41 @@ async function pollNocDashboard() {
         cardSeen.dataset.ts = srv.last_seen;
         cardSeen.textContent = relTime(srv.last_seen);
       }
+
+      // Update background warna baris tabel & kartu grid secara real-time
+      const trEl = document.getElementById('dash-tr-' + srv.id);
+      if (trEl) {
+        if (!isOnline || statusCls === 'badge-down') {
+          trEl.style.background = 'rgba(239,68,68,0.08)';
+        } else if (dCnt > 0) {
+          trEl.style.background = 'rgba(239,68,68,0.08)';
+        } else if (avgCnt > 0) {
+          trEl.style.background = 'rgba(249,115,22,0.08)';
+        } else if (wCnt > 0) {
+          trEl.style.background = 'rgba(245,158,11,0.06)';
+        } else if (iCnt > 0) {
+          trEl.style.background = 'rgba(56,189,248,0.05)';
+        } else {
+          trEl.style.background = '';
+        }
+      }
+
+      const cardSrv = document.getElementById('card-srv-' + srv.id);
+      if (cardSrv) {
+        let cardCls = 'server-card ';
+        if (!isOnline || statusCls === 'badge-down') {
+          cardCls += 'is-offline';
+        } else if (dCnt > 0) {
+          cardCls += 'is-danger';
+        } else if (avgCnt > 0) {
+          cardCls += 'is-average';
+        } else if (wCnt > 0 || srv.is_maintenance) {
+          cardCls += 'is-warn';
+        } else {
+          cardCls += 'is-healthy';
+        }
+        cardSrv.className = cardCls;
+      }
     });
 
     // Update Global KPI counters
@@ -2381,7 +2427,7 @@ async function pollNocDashboard() {
       if (emptyState) emptyState.style.display = 'none';
       if (tbody) {
         // Anti-jitter: Bandingkan signature masalah agar tidak membongkar/memasang ulang DOM bila data tetap sama
-        const newSig = allProblems.map(p => `${p.server_id || p.probe_id || ''}:${p.key}:${p.severity}:${p.is_ignored ? 1 : 0}:${p.acknowledged_by || ''}:${p.started_at_str || ''}`).join('|');
+        const newSig = allProblems.map(p => `${p.server_id || p.probe_id || ''}:${p.key || ''}:${p.severity || ''}:${p.is_ignored ? 1 : 0}:${p.acknowledged_by || ''}:${p.started_at_str || ''}`).join('|');
         if (tbody.dataset.sig !== newSig) {
           tbody.dataset.sig = newSig;
           let tHtml = '';
@@ -2402,11 +2448,11 @@ async function pollNocDashboard() {
 
             let sevBadge = '';
             if (isIgn && p.acknowledged_by) {
-              sevBadge = `<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px"><span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 5px">${isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕'}</span> <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span> <span style="font-size:8px;color:var(--dim)">(${isEn ? 'by ' : 'oleh '}${_esc(ackOp)})</span></div>`;
+              sevBadge = `<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px"><span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 5px">${isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕'}</span> <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span> <span style="font-size:8px;color:var(--dim)">(${isEn ? 'by ' : 'oleh '}${_dashEsc(ackOp)})</span></div>`;
             } else if (isIgn) {
-              sevBadge = `<span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 6px">${isEn ? 'IGNORED 🔕 (by ' : 'DIABAIKAN 🔕 (oleh '}${_esc(opName)})</span>`;
+              sevBadge = `<span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 6px">${isEn ? 'IGNORED 🔕 (by ' : 'DIABAIKAN 🔕 (oleh '}${_dashEsc(opName)})</span>`;
             } else if (p.acknowledged_by) {
-              sevBadge = `<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px">${rawSev} <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span> <span style="font-size:8px;color:var(--dim)">(${isEn ? 'by ' : 'oleh '}${_esc(ackOp)})</span></div>`;
+              sevBadge = `<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px">${rawSev} <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span> <span style="font-size:8px;color:var(--dim)">(${isEn ? 'by ' : 'oleh '}${_dashEsc(ackOp)})</span></div>`;
             } else {
               sevBadge = rawSev;
             }
@@ -2471,7 +2517,9 @@ async function pollNocDashboard() {
     if (typeof alertFetch === 'function') {
       alertFetch();
     }
-  } catch(e) {}
+  } catch(e) {
+    console.error('[NOC Polling Error]:', e);
+  }
 }
 setInterval(pollNocDashboard, 3000);
 setTimeout(pollNocDashboard, 500);

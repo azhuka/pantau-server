@@ -512,7 +512,9 @@ async function srvPoll() {
       badge.style.opacity = 1;
       setTimeout(() => { badge.style.opacity = .4; }, 1200);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('[Servers Polling Error]:', e);
+  }
 }
 setInterval(srvPoll, 3000);
 

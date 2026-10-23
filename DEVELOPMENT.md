@@ -311,6 +311,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.10
+
+- **Tipe Rilis:** Perbaikan Kritis Pipeline Polling Real-Time Dashboard NOC Layar Lebar (*Critical Live Polling Pipeline & DOM Reactivity Fix for NOC Display*)
+- **Fokus Utama:** Menyelesaikan akar masalah fatal pada fungsi `pollNocDashboard` di mana variabel penghitung keparahan per-server (`dCnt`, `avgCnt`, `wCnt`, `iCnt`, `ignCnt`) tidak terdefinisi pada loop pemrosesan DOM sehingga memicu unhandled `ReferenceError: dCnt is not defined`. Kesalahan ini secara senyap membatalkan seluruh siklus pembaruan DOM real-time pada kartu KPI, Zabbix Severity Strip, Tabel Insiden Terkini, dan Tabel/Grid armada server pada layar pantauan NOC tanpa reload.
+
+### Rangkuman Pembaruan:
+1. **Resolusi Fatal `ReferenceError: dCnt is not defined` pada `pollNocDashboard` (`dashboard.html`):**
+   - Menginsersi inisialisasi variabel keparahan `dCnt`, `avgCnt`, `wCnt`, `iCnt`, dan `ignCnt` pada siklus iterasi DOM per-server (`list.forEach`) sehingga evaluasi status `hasIncident`, agregasi `totActive`, serta pembuatan lencana keparahan berjalan mulus tanpa eksepsi runtime.
+2. **Pembaruan Reaktif Visual Background Baris & Kartu Grid (`dashboard.html`):**
+   - Menambahkan pembaruan dinamis `dash-tr-${srv.id}.style.background` untuk mengubah rona warna baris tabel armada secara langsung saat insiden terdeteksi (merah untuk bahaya/offline, oranye untuk gawat, kuning untuk peringatan, biru langit untuk info) dan mengembalikan ke normal saat pulih.
+   - Menambahkan atribut `id="card-srv-{{ srv.id }}"` pada kartu grid dan menyinkronkan status kelas (`is-danger`, `is-average`, `is-warn`, `is-offline`, `is-healthy`) secara seketika.
+3. **Pengerasan Penanganan Error & Fungsi Escape Mandiri (`_dashEsc`):**
+   - Mengganti catch block senyap `catch(e) {}` dengan `console.error('[NOC Polling Error]:', e)` agar kesalahan eksekusi di browser terpantau jelas di console pengembang.
+   - Menambahkan fungsi sanitasi string `_dashEsc` mandiri di dalam blok skrip dashboard untuk mencegah dependensi siklik atau kegagalan fungsi escape eksternal.
+4. **Penyelarasan Anti-Jitter Signature Masalah:**
+   - Menjamin nilai default string kosong `(p.key || '')` dan `(p.severity || '')` pada pemetaan signature anti-jitter tabel insiden terkini agar tidak menghasilkan nilai `undefined`.
+
+---
+
 ## Versi 4.6.9
 
 - **Tipe Rilis:** Reaktivitas Penuh Seluruh Halaman Tanpa Reload & Asinkronisasi Menyeluruh Aksi Operator (*Universal Zero-Reload Autonomous Monitoring & Asynchronous Action Architecture*)
