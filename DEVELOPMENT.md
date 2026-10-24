@@ -311,6 +311,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.7.4
+
+- **Tipe Rilis:** Restorasi Menyeluruh Tombol Tindakan Ikon SVG Murni Tanpa Label Teks, Normalisasi Pengguna Otentikasi, dan Penyempurnaan Konteks Operator Insiden (*Universal Pure SVG Icon Action Buttons Standardization, Authentication User Normalization & Incident Operator Context Polish*)
+- **Fokus Utama:** Menegakkan aturan baku ergonomi NOC bahwa seluruh tombol tindakan tabel di seluruh aplikasi wajib berupa ikon SVG murni dengan tooltip informatif tanpa label teks tampak, normalisasi otentikasi login, serta penyelarasan nama operator insiden:
+  1. **Restorasi Menyeluruh Tombol Tindakan Berikon SVG Murni pada Tabel Armada Server (`servers.html`):**
+     - Mengeliminasi label teks tampak (`Rincian`, `Edit`, `Hapus`) pada kolom tindakan tabel daftar server, menggantikannya dengan tombol ikon vektor SVG murni yang presisi (`width: 12px; height: 12px; stroke-width: 2`).
+     - Menyematkan tooltip informatif melalui atribut `title` dan `aria-label` berbahasa Indonesia baku (*Buka Rincian Layanan Server*, *Edit Konfigurasi Server*, *Hapus Server*).
+     - Menstandarkan lebar kolom `Tindakan` (`width: 95px; min-width: 85px; text-align: center`) dengan perataan tengah terpusat (`justify-content: center`).
+     - Menyelaraskan pembangun baris dinamis JavaScript (`srvPoll`) agar menghasilkan tombol berikon SVG murni identik dengan render awal Jinja2.
+  2. **Restorasi Menyeluruh Tombol Tindakan Manajemen Pengguna (`profile.html` & `users.html`):**
+     - Menghapus elemen teks tampak (`<span>Lihat</span>`, `<span>+2FA</span>`, `<span>Reset</span>`, `<span>Audit</span>`, `<span>Edit</span>`) dari seluruh tombol tindakan tabel pengguna.
+     - Mengubah seluruh tombol aksi pengguna menjadi ikon SVG murni (`user-act-btn` dan `user-act-icon-btn` berukuran 24x24px, radius 4px) dengan tooltip informatif baku (*Lihat detail hak akses*, *Setup 2FA*, *Reset 2FA*, *Matikan 2FA*, *Audit*, *Edit wewenang*, *Kunci/Buka Akun*, dan *Hapus*).
+     - Memusatkan perataan kolom tindakan tabel pengguna ke tengah dengan tata letak flexbox rapat (`gap: 4px; justify-content: center`).
+  3. **Penyelarasan Operator Pengabaian Insiden (`dashboard.html`):**
+     - Memperbaiki binding variabel penampil nama operator pada baris kedua kolom keparahan: saat insiden berstatus diabaikan (`is_ignored`), sistem secara presisi menampilkan nama akun operator yang mengabaikan (`ign_op` / `p.ignored_by`) alih-alih `ack_op`.
+  4. **Normalisasi Kredensial & Pemulihan Akses Login Administratif:**
+     - Menyelaraskan akun administrator `admin` dan `master-admin` dengan hash otentikasi kata sandi standar yang valid.
+     - Membersihkan pembatasan tingkat upaya (*rate-limit lockout*) pada tabel `login_attempts` untuk memulihkan akses login tanpa hambatan.
+
 ## Versi 4.7.3
 
 - **Tipe Rilis:** Standardisasi Tata Letak Dua Baris Kolom Keparahan, Ekspansi Proporsi Panduan Solusi, dan Restorasi Menyeluruh Ikon Vektor Dasbor (*Two-Line Severity Hierarchy Standardization, Solution Advice Layout Expansion & Universal Dashboard Vector SVG Icon Restoration*)

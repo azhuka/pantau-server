@@ -111,7 +111,7 @@
         <th style="width:65px;min-width:55px;text-align:center" title="Tingkat keparahan anomali atau insiden yang terdeteksi">Insiden</th>
         <th class="sortable" data-col="8" style="cursor:pointer;width:85px;min-width:75px;text-align:center" title="Jumlah pembaruan paket sistem operasi (APT) yang tersedia">Pembaruan ↕</th>
         <th class="sortable" data-col="9" style="cursor:pointer;width:80px;min-width:70px;text-align:center" title="Waktu terakhir kali server mengirimkan data ke panel">Lapor ↕</th>
-        <th class="col-act" style="width:140px;min-width:130px;text-align:left" title="Menu aksi cepat: Rincian, Edit, atau Hapus server">Tindakan</th>
+        <th class="col-act" style="width:95px;min-width:85px;text-align:center" title="Menu aksi cepat: Rincian, Edit, atau Hapus server">Tindakan</th>
       </tr>
     </thead>
     <tbody>
@@ -292,11 +292,15 @@
       <td class="mono" style="font-size:11px;letter-spacing:-0.025em;text-align:center;white-space:nowrap" id="srv-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
         {{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}
       </td>
-      <td class="col-act" style="text-align:left;white-space:nowrap">
-        <div style="display:inline-flex;gap:3px;align-items:center;justify-content:flex-start">
-          <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm" style="font-size:10.5px;padding:2px 5px" data-i18n="details">Rincian</a>
+      <td class="col-act" style="text-align:center;white-space:nowrap">
+        <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center">
+          <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm" style="padding:3px 6px" title="Buka Rincian Layanan Server" aria-label="Rincian">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </a>
           {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-          <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm" style="font-size:10.5px;padding:2px 5px" data-i18n="edit">Edit</a>
+          <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm" style="padding:3px 6px" title="Edit Konfigurasi Server" aria-label="Edit">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          </a>
           <form method="POST" action="/servers/{{ srv.id }}/delete" style="display:inline;margin:0"
                 data-guardrail
                 data-guardrail-title="Hapus Server dari Pantau"
@@ -306,7 +310,9 @@
                 data-guardrail-btn="Hapus Server Sekarang"
                 data-guardrail-color="danger">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button class="btn btn-danger btn-sm" style="font-size:10.5px;padding:2px 5px" type="submit" data-i18n="delete">Hapus</button>
+            <button class="btn btn-danger btn-sm" style="padding:3px 6px" type="submit" title="Hapus Server" aria-label="Hapus">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            </button>
           </form>
           {% endif %}
         </div>
@@ -494,9 +500,11 @@ function createAndAppendServersRow(srv, tbody) {
     <td class="mono" style="font-size:12.5px;text-align:center" id="srv-svc-${srv.id}">-</td>
     <td style="text-align:center" id="srv-prob-${srv.id}">-</td>
     <td class="mono" style="font-size:11px;letter-spacing:-0.025em;text-align:center;white-space:nowrap" id="srv-seen-${srv.id}">-</td>
-    <td class="col-act" style="text-align:left;white-space:nowrap">
-      <div style="display:inline-flex;gap:3px;align-items:center;justify-content:flex-start">
-        <a href="/servers/${srv.id}/services" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 7px">${isEn ? 'Details' : 'Rincian'}</a>
+    <td class="col-act" style="text-align:center;white-space:nowrap">
+      <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center">
+        <a href="/servers/${srv.id}/services" class="btn btn-ghost btn-sm" style="padding:3px 6px" title="${isEn ? 'Server Details' : 'Buka Rincian Layanan Server'}" aria-label="Rincian">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
       </div>
     </td>
   `;
