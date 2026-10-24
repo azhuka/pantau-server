@@ -2086,10 +2086,14 @@ async function pollNocDashboard() {
     if (Array.isArray(probeProblems)) {
       probeProblems.forEach(sp => {
         const isIgn = Boolean(sp.is_ignored);
+        const sev = (sp.severity || 'warning').toLowerCase();
         if (isIgn) {
-          ignTot++;
+          if (sev === 'info') {
+            infoTot++;
+          } else {
+            ignTot++;
+          }
         } else {
-          const sev = sp.severity || 'warning';
           if (sev === 'danger') dangerTot++;
           else if (sev === 'average') avgTot++;
           else if (sev === 'warning') warnTot++;
@@ -2489,6 +2493,10 @@ async function pollNocDashboard() {
           };
           if (isIgn) {
             newProblemsBySev.ignored.push(item);
+            // Khusus severity INFO: tetap ada dalam daftar Info kartu Insiden Aktif
+            if ((item.severity || '').toLowerCase() === 'info') {
+              newProblemsBySev.info.push(item);
+            }
           } else {
             const s = item.severity;
             if (newProblemsBySev[s]) {
@@ -2520,6 +2528,10 @@ async function pollNocDashboard() {
         };
         if (isIgn) {
           newProblemsBySev.ignored.push(item);
+          // Khusus severity INFO: tetap ada dalam daftar Info kartu Insiden Aktif
+          if ((item.severity || '').toLowerCase() === 'info') {
+            newProblemsBySev.info.push(item);
+          }
         } else {
           const s = item.severity;
           if (newProblemsBySev[s]) {

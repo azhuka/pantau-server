@@ -1996,19 +1996,23 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
         danger_p = [p for p in active_p if p.get("severity") == "danger"]
         average_p = [p for p in active_p if p.get("severity") == "average"]
         warning_p = [p for p in active_p if p.get("severity") == "warning"]
-        info_p = [p for p in active_p if p.get("severity") == "info"]
-        ignored_p = [p for p in open_prob if p.get("is_ignored")]
+        # Khusus severity INFO: tetap dicatat pada daftar dan badge Info aktif meskipun diabaikan
+        info_p = [p for p in open_prob if p.get("severity") == "info"]
+        ignored_p = [p for p in open_prob if p.get("is_ignored") and p.get("severity") != "info"]
 
         danger_count = len(danger_p)
         average_count = len(average_p)
         warning_count = len(warning_p)
         info_count = len(info_p)
-        active_prob_count = len(active_p)
+        active_prob_count = len(danger_p) + len(average_p) + len(warning_p) + len(info_p)
         ignored_prob_count = len(ignored_p)
         danger_msgs = " • ".join(p.get("message", "") for p in danger_p)
         average_msgs = " • ".join(p.get("message", "") for p in average_p)
         warning_msgs = " • ".join(p.get("message", "") for p in warning_p)
-        info_msgs = " • ".join(p.get("message", "") for p in info_p)
+        info_msgs = " • ".join(
+            (p.get("message", "") + (" (diabaikan 🔕)" if p.get("is_ignored") else ""))
+            for p in info_p
+        )
         ignored_msgs = " • ".join(p.get("message", "") for p in ignored_p)
 
         hw = _get_hardware_specs_dict(srv, ex, latest_sys)
@@ -3287,8 +3291,9 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         danger_probs = [p for p in active_probs if p.get("severity") == "danger"]
         average_probs = [p for p in active_probs if p.get("severity") == "average"]
         warning_probs = [p for p in active_probs if p.get("severity") == "warning"]
-        info_probs = [p for p in active_probs if p.get("severity") == "info"]
-        ignored_probs = [p for p in srv._problems if p.get("is_ignored")]
+        # Khusus severity INFO: tetap dicatat sebagai info pada kartu Insiden Aktif meskipun diabaikan
+        info_probs = [p for p in srv._problems if p.get("severity") == "info"]
+        ignored_probs = [p for p in srv._problems if p.get("is_ignored") and p.get("severity") != "info"]
 
         srv._danger_count = len(danger_probs)
         srv._average_count = len(average_probs)
@@ -3298,7 +3303,10 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         srv._danger_msgs = " • ".join(p.get("message", "") for p in danger_probs)
         srv._average_msgs = " • ".join(p.get("message", "") for p in average_probs)
         srv._warning_msgs = " • ".join(p.get("message", "") for p in warning_probs)
-        srv._info_msgs = " • ".join(p.get("message", "") for p in info_probs)
+        srv._info_msgs = " • ".join(
+            (p.get("message", "") + (" (diabaikan 🔕)" if p.get("is_ignored") else ""))
+            for p in info_probs
+        )
         srv._ignored_msgs = " • ".join(p.get("message", "") for p in ignored_probs)
 
         ignored_keys = {p.get("key") for p in srv._problems if p.get("is_ignored")}
@@ -3432,6 +3440,9 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             }
             if is_ign:
                 problems_by_sev["ignored"].append(item)
+                # Khusus severity INFO: tetap ada dalam daftar Info kartu Insiden Aktif
+                if (item.get("severity") or "").lower() == "info":
+                    problems_by_sev["info"].append(item)
             else:
                 sev = item["severity"]
                 if sev in problems_by_sev:
@@ -3490,7 +3501,11 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             }
             if is_ign:
                 problems_by_sev["ignored"].append(item)
-                ignored_total += 1
+                if (item.get("severity") or "").lower() == "info":
+                    problems_by_sev["info"].append(item)
+                    info_total += 1
+                else:
+                    ignored_total += 1
             else:
                 sev = item["severity"]
                 if sev == "danger":
@@ -5411,8 +5426,8 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
         "danger_open": sum(1 for p in open_problems if p["severity"] == "danger" and not p.get("is_ignored")),
         "average_open": sum(1 for p in open_problems if p["severity"] == "average" and not p.get("is_ignored")),
         "warning_open": sum(1 for p in open_problems if p["severity"] == "warning" and not p.get("is_ignored")),
-        "info_open": sum(1 for p in open_problems if p["severity"] == "info" and not p.get("is_ignored")),
-        "ignored_open": sum(1 for p in open_problems if p.get("is_ignored")),
+        "info_open": sum(1 for p in open_problems if p["severity"] == "info"),
+        "ignored_open": sum(1 for p in open_problems if p.get("is_ignored") and p.get("severity") != "info"),
         "ok_count": servers_total - len(active_open_servers),
         "all_servers": all_servers,
         "filter_sid": filter_sid,
@@ -9206,8 +9221,8 @@ def api_problems(
             "danger_open": sum(1 for p in open_problems if p.get("severity") == "danger" and not p.get("is_ignored")),
             "average_open": sum(1 for p in open_problems if p.get("severity") == "average" and not p.get("is_ignored")),
             "warning_open": sum(1 for p in open_problems if p.get("severity") == "warning" and not p.get("is_ignored")),
-            "info_open": sum(1 for p in open_problems if p.get("severity") == "info" and not p.get("is_ignored")),
-            "ignored_open": sum(1 for p in open_problems if p.get("is_ignored")),
+            "info_open": sum(1 for p in open_problems if p.get("severity") == "info"),
+            "ignored_open": sum(1 for p in open_problems if p.get("is_ignored") and p.get("severity") != "info"),
             "ok_count": servers_total - len(active_open_servers),
             "total_open": len(open_problems),
             "total_resolved": len(recent_resolved),

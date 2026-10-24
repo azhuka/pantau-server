@@ -311,6 +311,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.18
+
+- **Tipe Rilis:** Penyelarasan Alur Kerja Pengabaian Insiden Severity INFO (*Workflow Alignment for Ignored Severity INFO Incidents*)
+- **Fokus Utama:** Menyempurnakan logika bisnis dan perilaku antarmuka saat operator sengaja mengabaikan insiden dengan severity `INFO` (seperti notifikasi ketersediaan paket pembaruan APT atau sesi login remote SSH aktif). Insiden INFO yang diabaikan secara otomatis disingkirkan dari tabel *Insiden Terkini* pada dashboard utama agar tidak mengaburkan fokus pemantauan NOC, namun tetap dipertahankan dan terhitung secara akurat pada kartu *Insiden Aktif* (termasuk badge jumlah Info dan modal rincian Info dengan indikator status `Diabaikan 🔕`).
+
+### Rangkuman Pembaruan:
+1. **Penyelarasan Logika Pengabaian Severity INFO di Backend (`server/main.py`):**
+   - Mengubah komputasi `info_p`, `info_probs`, dan `info_open` agar tetap mencatat seluruh insiden berkategori `INFO` terlepas dari status pengabaian (`is_ignored`).
+   - Memastikan koleksi `all_open_problems` (sumber data tabel Insiden Terkini) secara ketat memfilter insiden INFO yang berstatus `is_ignored = 1` sehingga tabel tetap bersih dan berfokus pada gangguan operasional aktual.
+   - Memasukkan insiden INFO yang diabaikan ke dalam daftar `problems_by_sev["info"]` sekaligus `problems_by_sev["ignored"]`, memastikan data tersedia secara utuh baik saat operator memeriksa kartu Info maupun kartu Diabaikan.
+2. **Sinkronisasi Reaktif di Frontend Dashboard (`server/templates/dashboard.html`):**
+   - Menyesuaikan fungsi `pollNocDashboard()` agar insiden INFO yang diabaikan tetap menginkrementasi counter `infoTot` (bukan dipindahkan secara sepihak ke `ignTot`), mempertahankan badge Info biru pada kartu *Insiden Aktif*.
+   - Menyinkronkan struktur `newProblemsBySev.info` dengan menyertakan insiden INFO yang diabaikan sehingga modal rincian keparahan menampilkan baris kejadian dengan badge `Diabaikan 🔕`.
+   - Mempertahankan filter pencegah pada agregasi `allProblems` (`if (isIgn && pSev === 'info') return;`) agar polling background tidak memasukkan kembali insiden INFO yang telah diabaikan ke tabel *Insiden Terkini*.
+3. **Penyempurnaan Halaman Masalah & Filter Keparahan (`server/templates/problems.html`, `base.html`, `services.html`):**
+   - Menyelaraskan filter keparahan `probFilter()` pada pill triage: pemilihan filter `info` kini menampilkan seluruh insiden informatif (termasuk yang diabaikan), sementara pemilihan filter `ignored` tetap menampilkan seluruh insiden non-aktif yang diabaikan.
+   - Menyesuaikan perhitungan jumlah aktif pada header halaman masalah (`open_problems|length - ignored_open`).
+4. **Verifikasi Otomatis End-to-End Melalui Selenium Headless:**
+   - Melakukan pengujian simulasi skenario operator: verifikasi kemunculan awal insiden INFO pada kedua tempat, eksekusi tombol 'Abaikan', validasi hilangnya insiden dari tabel *Insiden Terkini*, validasi bertahannya counter pada kartu *Insiden Aktif*, validasi keberadaan item beserta badge `DIABAIKAN 🔕` di dalam modal Info, serta pemulihan reaktif saat di-unignore. Seluruh pengujian lulus 100%.
+
+---
+
 ## Versi 4.6.17
 
 - **Tipe Rilis:** Standarisasi Universal Modal Dismissal, Tombol Close 'X', Pintasan ESC Global, dan Pencegahan Kebocoran Resource Streaming Log (*Universal Modal Dismissal Standardization, Close 'X' Controls, Global ESC Shortcuts, & Log Streaming Resource Leak Prevention*)

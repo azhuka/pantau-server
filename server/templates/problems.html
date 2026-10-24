@@ -271,8 +271,8 @@
 <div class="card">
   <div class="card-header">
     <h3>Insiden Terbuka</h3>
-    {% set active_open = open_problems | rejectattr('is_ignored') | list %}
-    <span id="prob-active-badge" class="badge badge-muted">{{ active_open|length }} aktif{% if ignored_open %} · {{ ignored_open }} diabaikan{% endif %}</span>
+    {% set active_open_cnt = open_problems|length - ignored_open %}
+    <span id="prob-active-badge" class="badge badge-muted">{{ active_open_cnt }} aktif{% if ignored_open %} · {{ ignored_open }} diabaikan{% endif %}</span>
   </div>
   {% if open_problems or all_servers %}
   <div class="prob-triage-pills">
@@ -827,6 +827,8 @@ function probFilter() {
       matchSev = true;
     } else if (sev === 'ignored') {
       matchSev = tr.dataset.ignored === '1';
+    } else if (sev === 'info') {
+      matchSev = tr.dataset.sev === 'info';
     } else {
       matchSev = (tr.dataset.sev === sev) && (tr.dataset.ignored !== '1');
     }
