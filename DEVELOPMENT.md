@@ -311,6 +311,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.7.6
+
+- **Tipe Rilis:** Sinkronisasi Universal Kolom Keparahan Dua Baris pada Seluruh Kartu Insiden, Proporsionalitas Kolom Kartu Status Masalah, dan Eliminasi Ikon Tidak Diminta pada Label Pengabaian (*Universal Two-Line Severity Column Synchronization Across All Incident Cards, Status Masalah Card Proportion Standardization & Unprompted Ignored Icon Removal*)
+- **Fokus Utama:** Menyempurnakan dan menyelaraskan seluruh tampilan kartu insiden di seluruh aplikasi agar konsisten 100% dengan prinsip proporsionalitas antarmuka NOC:
+  1. **Standardisasi Menyeluruh Kolom Keparahan Dua Baris pada Kartu Status Masalah (`services.html`):**
+     - Menerapkan format hierarki visual dua baris terstruktur pada kolom Keparahan tabel `#probtable` di kartu Status Masalah rincian server: Baris 1 menampilkan badge status utama (`DIABAIKAN` / `KRITIS` / `GAWAT` / `PERINGATAN` / `INFO`) berukuran font proporsional 9.5px tebal, dan Baris 2 menampilkan informasi sekunder (`(oleh <operator>)` atau badge `✓ DITANGANI`) berukuran 8px teredam (`var(--dim)`).
+     - Menyelaraskan logika Jinja2 awal dan fungsi perender dinamis JavaScript (`renderProblemsTab`) sehingga seluruh pembaruan live mempertahankan format dua baris yang presisi dan identik.
+  2. **Standardisasi Proporsi Kolom dan Tata Letak Tabel Kartu Status Masalah (`services.html`):**
+     - Mengoptimalkan proporsi lebar kolom `#probtable`: Kolom Waktu (145px), Kolom Keparahan (96px, rata tengah), Kolom Kejadian (auto, fleksibel), Kolom Durasi (90px), Kolom Tindakan (90px), dan Kolom Saran (260px).
+     - Mencegah tumpang tindih (*overlap*) antara kolom saran dan kolom tindakan dengan menyelaraskan kelas `.col-tips` serta padding sel yang seimbang dan proporsional.
+  3. **Penghapusan Ikon Tidak Diminta pada Label Pengabaian Dasbor (`dashboard.html`):**
+     - Menghapus glif/ikon lonceng hening SVG yang tidak diminta dari kartu ringkasan KPI insiden Diabaikan (`zbx-tile-ignored`), label Jinja2 baris insiden terbuka, dan perender dinamis JavaScript `pollNocDashboard`.
+     - Mengembalikan label menjadi teks bersih `Diabaikan` / `DIABAIKAN` murni sesuai desain ergonomis baku yang telah disetujui.
+  4. **Pemberlakuan CSS Universal Dua Baris Keparahan (`base.html`):**
+     - Menetapkan aturan styling global untuk `th.col-sev`, `td.col-sev`, `.col-sev-sub-text`, dan `.badge-sub` di berkas template dasar agar seluruh modul antarmuka mematuhi standar hierarki yang sama secara konsisten.
+
 ## Versi 4.7.5
 
 - **Tipe Rilis:** Restorasi Menyeluruh Kepadatan Antarmuka NOC, Pengalih Mode Dasbor Empat Kontrol, Eliminasi Teks Coret Riwayat Insiden, dan Penyelarasan Tombol Aksi Berbasis Ikon (*Comprehensive NOC Interface Density Restoration, 4-Control Dashboard Switcher, Clean Incident History Rendering & Universal Icon Action Button Polish*)

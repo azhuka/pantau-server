@@ -1867,12 +1867,12 @@ div[style*="position: fixed"] .card {
   </div>
   <table id="probtable">
     <thead><tr>
-      <th class="col-time-detailed" style="width:200px;min-width:190px">Waktu</th>
-      <th class="col-sev" style="width:100px;min-width:95px;text-align:center">Keparahan</th>
-      <th>Kejadian</th>
-      <th class="col-durasi" style="width:120px;min-width:110px">Durasi</th>
-      <th class="col-act" style="width:160px;min-width:150px">Tindakan</th>
-      <th class="col-tips" style="width:250px;min-width:200px">Saran</th>
+      <th class="col-time-detailed" style="width:145px;min-width:135px">Waktu</th>
+      <th class="col-sev" style="width:96px;min-width:90px;text-align:center">Keparahan</th>
+      <th class="col-event">Kejadian</th>
+      <th class="col-durasi" style="width:90px;min-width:80px">Durasi</th>
+      <th class="col-act" style="width:90px;min-width:85px;text-align:left">Tindakan</th>
+      <th class="col-tips" style="width:260px;min-width:200px">Saran</th>
     </tr></thead>
     <tbody>
     {% for p in rows %}
@@ -1902,29 +1902,29 @@ div[style*="position: fixed"] .card {
         </div>
         {% endif %}
       </td>
-      <td style="width:100px;text-align:center" class="col-sev">
+      <td class="col-sev">
         {% set op_name = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
         {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
         {% if p.is_ignored and p.acknowledged_by %}
           <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">DIABAIKAN</span>
-            <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+            <span class="badge badge-muted">DIABAIKAN</span>
+            <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
           </div>
         {% elif p.is_ignored %}
           <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
-            <span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
+            <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
+            <span class="col-sev-sub-text" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
           </div>
         {% elif p.acknowledged_by %}
           <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
-            <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+            <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
+            <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
           </div>
         {% else %}
-          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
+          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
         {% endif %}
       </td>
-      <td>
+      <td class="col-event">
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="color:var(--dim)"{% endif %}>{{ p.message }}</span>
         {% if p.is_ignored and p.ignored_reason %}
@@ -1935,8 +1935,8 @@ div[style*="position: fixed"] .card {
         {% endif %}
         {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
-      <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
-      <td class="prob-act-cell">
+      <td class="mono col-durasi" style="white-space:nowrap"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
+      <td class="col-act prob-act-cell">
         <div class="prob-act-wrap">
           <div class="prob-act-row prob-act-tools">
             <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" aria-label="Diagnosa">
@@ -2001,7 +2001,7 @@ div[style*="position: fixed"] .card {
           {% endif %}
         </div>
       </td>
-      <td style="font-size:12px;line-height:1.55;max-width:360px">{{ p.tip or '—' }}</td>
+      <td class="col-tips" style="font-size:11px;line-height:1.35;color:var(--dim)">{{ p.tip or '—' }}</td>
     </tr>
     {% endfor %}
     </tbody>
@@ -7131,12 +7131,12 @@ function renderProblemsTab(level, openList, histList) {
   </div>
   <table id="probtable">
     <thead><tr>
-      <th class="col-time-detailed" style="width:200px;min-width:190px">${isEn ? 'Time' : 'Waktu'}</th>
-      <th class="col-sev" style="width:100px;min-width:95px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
-      <th>${isEn ? 'Event' : 'Kejadian'}</th>
-      <th class="col-durasi" style="width:120px;min-width:110px">${isEn ? 'Duration' : 'Durasi'}</th>
-      <th class="col-act" style="width:160px;min-width:150px">${isEn ? 'Action' : 'Tindakan'}</th>
-      <th class="col-tips" style="width:250px;min-width:200px">${isEn ? 'Advice' : 'Saran'}</th>
+      <th class="col-time-detailed" style="width:145px;min-width:135px">${isEn ? 'Time' : 'Waktu'}</th>
+      <th class="col-sev" style="width:96px;min-width:90px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
+      <th class="col-event">${isEn ? 'Event' : 'Kejadian'}</th>
+      <th class="col-durasi" style="width:90px;min-width:80px">${isEn ? 'Duration' : 'Durasi'}</th>
+      <th class="col-act" style="width:90px;min-width:85px;text-align:left">${isEn ? 'Action' : 'Tindakan'}</th>
+      <th class="col-tips" style="width:260px;min-width:200px">${isEn ? 'Advice' : 'Saran'}</th>
     </tr></thead>
     <tbody>`;
 
@@ -7151,13 +7151,13 @@ function renderProblemsTab(level, openList, histList) {
     
     let sevCellHtml = '';
     if (isIgnored && p.acknowledged_by) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span class="badge badge-up badge-sub" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
     } else if (isIgnored) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)}">(${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)})</span></div>`;
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span class="col-sev-sub-text" title="${(isEn ? 'by ' : 'oleh ') + escapeHtml(opName)}">(${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)})</span></div>`;
     } else if (p.acknowledged_by) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevText}</span><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}">${rawSevText}</span><span class="badge badge-up badge-sub" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
     } else {
-      sevCellHtml = `<span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevText}</span>`;
+      sevCellHtml = `<span class="${rawSevBadge}">${rawSevText}</span>`;
     }
 
     const pMsg = isEn ? getServicesI18nText(p.message || '', true) : (p.message || '');
@@ -7245,11 +7245,11 @@ function renderProblemsTab(level, openList, histList) {
       data-prob-sid="${SID}"
       data-prob-context="${escapeHtml(ctxAttr)}">
       <td style="white-space:nowrap" class="mono col-time-detailed">${startStr}${resStr}</td>
-      <td style="width:100px;text-align:center" class="col-sev">${sevCellHtml}</td>
-      <td>${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${kambuhBadge}</td>
-      <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
-      <td class="prob-act-cell col-act" style="width:160px">${actHtml}</td>
-      <td style="font-size:12px;line-height:1.55;max-width:360px">${escapeHtml(pTip || '—')}</td>
+      <td class="col-sev">${sevCellHtml}</td>
+      <td class="col-event">${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${kambuhBadge}</td>
+      <td class="mono col-durasi" style="white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
+      <td class="col-act prob-act-cell">${actHtml}</td>
+      <td class="col-tips" style="font-size:11px;line-height:1.35;color:var(--dim)">${escapeHtml(pTip || '—')}</td>
     </tr>`;
   }
 
