@@ -168,7 +168,7 @@
 }
 #dash-server-table th {
   white-space: nowrap;
-  padding: 8px 10px;
+  padding: 7px 8px;
   font-size: 11.5px;
   line-height: 1.35;
   font-weight: 600;
@@ -181,26 +181,24 @@
 }
 #dash-server-table td {
   white-space: nowrap;
-  padding: 6px 10px;
-  font-size: 12.5px;
+  padding: 5px 8px;
+  font-size: 12px;
   vertical-align: middle;
   border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.04));
   border-right: 1px solid rgba(255, 255, 255, 0.03);
   color: var(--text);
   transition: padding .15s ease;
 }
-/* Mode Kompak (Ultra-Slim 1 Baris per Server) */
+/* Mode Kompak (Ultra-Slim 1 Baris per Server) - Keseragaman Total Tipografi */
 #dash-server-table.tbl-compact {
   border-spacing: 0;
 }
 #dash-server-table.tbl-compact th {
-  padding: 4px 6px !important;
-  font-size: 11.5px !important;
+  padding: 3px 6px !important;
   line-height: 1.25 !important;
 }
 #dash-server-table.tbl-compact td {
   padding: 2px 6px !important;
-  font-size: 12px !important;
   line-height: 1.2 !important;
   height: 25px !important;
 }
@@ -217,7 +215,6 @@
   line-height: 1 !important;
 }
 #dash-server-table.tbl-compact td strong.mono {
-  font-size: 12px !important;
   line-height: 1 !important;
   min-width: 36px !important;
 }
@@ -227,7 +224,6 @@
   border-width: 0.5px !important;
 }
 #dash-server-table.tbl-compact td:first-child strong {
-  font-size: 12.5px !important;
   line-height: 1.2 !important;
 }
 #dash-server-table.tbl-compact .dot {
@@ -235,13 +231,11 @@
   height: 6px !important;
 }
 #dash-server-table.tbl-compact .badge {
-  font-size: 9px !important;
   padding: 0 4px !important;
   line-height: 15px !important;
   height: 16px !important;
 }
 #dash-server-table.tbl-compact .copyable-ip {
-  font-size: 11.5px !important;
   line-height: 1 !important;
 }
 #dash-server-table.tbl-compact td:nth-child(4) div {
@@ -249,7 +243,6 @@
   line-height: 1 !important;
 }
 #dash-server-table.tbl-compact td:nth-child(4) .badge {
-  font-size: 8.5px !important;
   padding: 0 4px !important;
   line-height: 14px !important;
   height: 15px !important;
@@ -262,7 +255,6 @@
   gap: 2px !important;
 }
 #dash-server-table.tbl-compact td:nth-child(10) .badge {
-  font-size: 9px !important;
   padding: 0 4px !important;
   min-width: 16px !important;
   height: 16px !important;
@@ -1149,11 +1141,11 @@ body.popout-fleet_table #dash-fleet-card {
           <td data-sort-val="{{ srv.hostname | lower }}" style="white-space:nowrap;vertical-align:middle">
             <div style="display:inline-flex;align-items:center;gap:7px">
               <span class="dot {{ 'warn' if srv.is_maintenance else ('down' if srv._status_cls == 'badge-danger' or srv._status_label == 'offline' else ('orange' if srv._status_cls == 'badge-orange' else ('warn' if srv._status_cls == 'badge-warn' else ('info' if srv._status_cls == 'badge-info' else ('up' if srv._status_cls == 'badge-up' else 'muted'))))) }}" id="tbl-dot-{{ srv.id }}"></span>
-              <strong style="color:var(--text-bright);font-size:13px" id="tbl-host-{{ srv.id }}">{{ srv.hostname }}</strong>
+              <strong style="color:var(--text-bright);font-size:12.5px" id="tbl-host-{{ srv.id }}">{{ srv.hostname }}</strong>
             </div>
           </td>
 
-          <!-- 1. Status (Ukuran 1 Tingkat Lebih Kecil) -->
+          <!-- 1. Status -->
           <td data-sort-val="{{ srv._status_label }}" style="text-align:center;vertical-align:middle">
             {% if not srv.last_seen or srv._status_label == '-' %}
               <span id="tbl-sts-{{ srv.id }}" style="color:var(--dim)">-</span>
@@ -1165,11 +1157,11 @@ body.popout-fleet_table #dash-fleet-card {
           <!-- 2. Prioritas (Tier) -->
           <td data-sort-val="{{ s_tier }}" id="tbl-tier-{{ srv.id }}" style="text-align:center;vertical-align:middle">
             {% if s_tier == 1 %}
-              <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>
+              <span class="badge" style="font-size:9px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>
             {% elif s_tier == 3 %}
-              <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>
+              <span class="badge" style="font-size:9px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>
             {% else %}
-              <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>
+              <span class="badge" style="font-size:9px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>
             {% endif %}
           </td>
 
@@ -1180,7 +1172,7 @@ body.popout-fleet_table #dash-fleet-card {
               {% if srv._platform %}
                 {% set p_label = srv._platform.short_label|upper %}
                 {% if p_label == 'FISIK' %}{% set p_label = 'BAREMETAL' %}{% endif %}
-                <span class="badge" style="font-size:9px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:700" title="Platform: {{ srv._platform.label }}">
+                <span class="badge" style="font-size:8.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:700" title="Platform: {{ srv._platform.label }}">
                   {% if srv._platform.type == 'lxc' %}
                     <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                   {% elif srv._platform.type == 'vm' %}
@@ -1197,7 +1189,7 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 4. Uptime -->
-          <td class="mono" id="tbl-uptime-{{ srv.id }}" data-sort-val="{{ srv._uptime_secs or 0 }}" style="font-size:12px;text-align:center;vertical-align:middle;color:var(--text)">
+          <td class="mono" id="tbl-uptime-{{ srv.id }}" data-sort-val="{{ srv._uptime_secs or 0 }}" style="font-size:11.5px;text-align:center;vertical-align:middle;color:var(--text)">
             {{ srv._uptime_str if srv._uptime_str and srv._uptime_str != '—' else '-' }}
           </td>
 
@@ -1206,7 +1198,7 @@ body.popout-fleet_table #dash-fleet-card {
             {% if srv._cpu is not none %}
               <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
                 <div style="display:inline-flex;align-items:center;gap:7px">
-                  <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="font-size:12.5px;color:{{ cpu_color }};min-width:44px;text-align:right">{{ srv._cpu ~ '%' }}</strong>
+                  <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="font-size:12px;color:{{ cpu_color }};min-width:44px;text-align:right">{{ srv._cpu ~ '%' }}</strong>
                   <div class="meter-mini-track" title="CPU: {{ srv._cpu }}%">
                     <div class="meter-mini-bar {{ cpu_cls }}" id="tbl-cpu-bar-{{ srv.id }}" style="width:{{ [srv._cpu or 0, 100]|min }}%"></div>
                   </div>
@@ -1216,7 +1208,7 @@ body.popout-fleet_table #dash-fleet-card {
                 </div>
               </div>
             {% else %}
-              <div id="tbl-cpu-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2">-</div>
+              <div id="tbl-cpu-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2;font-size:12px">-</div>
               <div class="mono tbl-metric-subline" id="tbl-cpu-core-{{ srv.id }}" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:2px">-</div>
             {% endif %}
           </td>
@@ -1226,7 +1218,7 @@ body.popout-fleet_table #dash-fleet-card {
             {% if srv._mem_pct is not none %}
               <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
                 <div style="display:inline-flex;align-items:center;gap:7px">
-                  <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="font-size:12.5px;color:{{ mem_color }};min-width:44px;text-align:right">{{ srv._mem_pct ~ '%' }}</strong>
+                  <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="font-size:12px;color:{{ mem_color }};min-width:44px;text-align:right">{{ srv._mem_pct ~ '%' }}</strong>
                   <div class="meter-mini-track" title="RAM: {{ srv._mem_pct }}%">
                     <div class="meter-mini-bar {{ mem_cls }}" id="tbl-mem-bar-{{ srv.id }}" style="width:{{ [srv._mem_pct or 0, 100]|min }}%"></div>
                   </div>
@@ -1236,7 +1228,7 @@ body.popout-fleet_table #dash-fleet-card {
                 </div>
               </div>
             {% else %}
-              <div id="tbl-mem-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2">-</div>
+              <div id="tbl-mem-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2;font-size:12px">-</div>
               <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:2px">
                 <span id="tbl-mem-used-{{ srv.id }}">-</span> / <span id="tbl-mem-tot-{{ srv.id }}">-</span>
               </div>
@@ -1248,7 +1240,7 @@ body.popout-fleet_table #dash-fleet-card {
             {% if srv._disk_pct is not none %}
               <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
                 <div style="display:inline-flex;align-items:center;gap:7px">
-                  <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="font-size:12.5px;color:{{ disk_color }};min-width:44px;text-align:right">{{ srv._disk_pct ~ '%' }}</strong>
+                  <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="font-size:12px;color:{{ disk_color }};min-width:44px;text-align:right">{{ srv._disk_pct ~ '%' }}</strong>
                   <div class="meter-mini-track" style="width:68px" title="Storage: {{ srv._disk_pct }}%">
                     <div class="meter-mini-bar {{ disk_cls }}" id="tbl-disk-bar-{{ srv.id }}" style="width:{{ [srv._disk_pct or 0, 100]|min }}%"></div>
                   </div>
@@ -1258,7 +1250,7 @@ body.popout-fleet_table #dash-fleet-card {
                 </div>
               </div>
             {% else %}
-              <div id="tbl-disk-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2">-</div>
+              <div id="tbl-disk-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2;font-size:12px">-</div>
               <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:2px">
                 <span id="tbl-disk-tot-{{ srv.id }}">-</span> (Sisa <span id="tbl-disk-avail-{{ srv.id }}">-</span>)
               </div>
@@ -1266,7 +1258,7 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 8. Layanan -->
-          <td class="mono" id="tbl-svc-td-{{ srv.id }}" data-sort-val="{{ up_svcs }}" style="text-align:center;vertical-align:middle;font-size:12.5px">
+          <td class="mono" id="tbl-svc-td-{{ srv.id }}" data-sort-val="{{ up_svcs }}" style="text-align:center;vertical-align:middle;font-size:12px">
             {% if not srv.last_seen or tot_svcs == 0 or srv._status_label == 'Offline' %}
               <span id="tbl-svc-{{ srv.id }}" style="color:var(--dim)">-</span>
             {% else %}
@@ -1283,24 +1275,24 @@ body.popout-fleet_table #dash-fleet-card {
               {% if not srv.last_seen %}
                 <span style="color:var(--dim)">-</span>
               {% elif srv._status_label == 'Offline' %}
-                <span class="badge badge-danger" style="font-size:10px;padding:2px 7px;font-weight:700">Offline</span>
+                <span class="badge badge-danger" style="font-size:9.5px;padding:1px 5px;font-weight:700">Offline</span>
               {% elif tot_prob == 0 and ign_cnt == 0 %}
-                <span class="badge badge-up" style="font-size:10.5px;padding:2px 7px;font-weight:600">Nihil</span>
+                <span class="badge badge-up" style="font-size:9.5px;padding:1px 5px;font-weight:600">Nihil</span>
               {% else %}
                 {% if d_cnt > 0 %}
-                  <span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
+                  <span class="badge badge-danger" style="min-width:18px;text-align:center;padding:1px 5px;font-size:9.5px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
                 {% endif %}
                 {% if avg_cnt > 0 %}
-                  <span class="badge badge-orange" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
+                  <span class="badge badge-orange" style="min-width:18px;text-align:center;padding:1px 5px;font-size:9.5px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
                 {% endif %}
                 {% if w_cnt > 0 %}
-                  <span class="badge badge-warn" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
+                  <span class="badge badge-warn" style="min-width:18px;text-align:center;padding:1px 5px;font-size:9.5px;font-weight:700;border-radius:10px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
                 {% endif %}
                 {% if i_cnt > 0 %}
-                  <span class="badge badge-info" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
+                  <span class="badge badge-info" style="min-width:18px;text-align:center;padding:1px 5px;font-size:9.5px;font-weight:700;border-radius:10px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
                 {% endif %}
                 {% if ign_cnt > 0 %}
-                  <span class="badge badge-muted" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._ignored_msgs or 'Insiden diabaikan' }}">{{ ign_cnt }}</span>
+                  <span class="badge badge-muted" style="min-width:18px;text-align:center;padding:1px 5px;font-size:9.5px;font-weight:700;border-radius:10px" title="{{ srv._ignored_msgs or 'Insiden diabaikan' }}">{{ ign_cnt }}</span>
                 {% endif %}
               {% endif %}
             </div>
@@ -1906,11 +1898,11 @@ function _dashEsc(s) {
 function getTierBadgeHtml(tier) {
   const t = parseInt(tier, 10) || 2;
   if (t === 1) {
-    return '<span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>';
+    return '<span class="badge" style="font-size:9px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>';
   } else if (t === 3) {
-    return '<span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>';
+    return '<span class="badge" style="font-size:9px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>';
   }
-  return '<span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>';
+  return '<span class="badge" style="font-size:9px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>';
 }
 
 function getPlatformBadgeHtml(plat) {
@@ -1927,7 +1919,7 @@ function getPlatformBadgeHtml(plat) {
   } else if (pType === 'vm') {
     iconSvg = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>';
   }
-  return `<span class="badge" style="font-size:9px;background:${bg};color:${col};border:1px solid ${bor};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:700" title="Platform: ${_dashEsc(plat.label || label)}">${iconSvg} ${_dashEsc(label)}</span>`;
+  return `<span class="badge" style="font-size:8.5px;background:${bg};color:${col};border:1px solid ${bor};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:700" title="Platform: ${_dashEsc(plat.label || label)}">${iconSvg} ${_dashEsc(label)}</span>`;
 }
 
 function createAndAppendDashTableRow(srv, tbody) {
@@ -1943,7 +1935,7 @@ function createAndAppendDashTableRow(srv, tbody) {
     <td style="white-space:nowrap;vertical-align:middle">
       <div style="display:inline-flex;align-items:center;gap:7px">
         <span class="dot unknown" id="tbl-dot-${srv.id}"></span>
-        <strong style="color:var(--text-bright);font-size:13px" id="tbl-host-${srv.id}">${_dashEsc(srv.hostname || '')}</strong>
+        <strong style="color:var(--text-bright);font-size:12.5px" id="tbl-host-${srv.id}">${_dashEsc(srv.hostname || '')}</strong>
       </div>
     </td>
     <td style="text-align:center;vertical-align:middle">
@@ -1958,11 +1950,11 @@ function createAndAppendDashTableRow(srv, tbody) {
         <span class="copyable-ip mono" id="tbl-ip-${srv.id}" style="font-size:11.5px;color:var(--text)" onclick="copyIp('${_dashEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_dashEsc(srv.ip_address || '-')}</span>
       </div>
     </td>
-    <td class="mono" id="tbl-uptime-${srv.id}" style="font-size:12px;text-align:center;vertical-align:middle;color:var(--text)">-</td>
+    <td class="mono" id="tbl-uptime-${srv.id}" style="font-size:11.5px;text-align:center;vertical-align:middle;color:var(--text)">-</td>
     <td id="tbl-cpu-td-${srv.id}" style="text-align:center;vertical-align:middle">
       <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
         <div style="display:inline-flex;align-items:center;gap:7px">
-          <strong class="mono" id="tbl-cpu-val-${srv.id}" style="font-size:12.5px;min-width:44px;text-align:right">-</strong>
+          <strong class="mono" id="tbl-cpu-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:right">-</strong>
           <div class="meter-mini-track">
             <div class="meter-mini-bar green" id="tbl-cpu-bar-${srv.id}" style="width:0%"></div>
           </div>
@@ -1973,7 +1965,7 @@ function createAndAppendDashTableRow(srv, tbody) {
     <td id="tbl-mem-td-${srv.id}" style="text-align:center;vertical-align:middle">
       <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
         <div style="display:inline-flex;align-items:center;gap:7px">
-          <strong class="mono" id="tbl-mem-val-${srv.id}" style="font-size:12.5px;min-width:44px;text-align:right">-</strong>
+          <strong class="mono" id="tbl-mem-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:right">-</strong>
           <div class="meter-mini-track">
             <div class="meter-mini-bar green" id="tbl-mem-bar-${srv.id}" style="width:0%"></div>
           </div>
@@ -1986,7 +1978,7 @@ function createAndAppendDashTableRow(srv, tbody) {
     <td id="tbl-disk-td-${srv.id}" style="text-align:center;vertical-align:middle">
       <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
         <div style="display:inline-flex;align-items:center;gap:7px">
-          <strong class="mono" id="tbl-disk-val-${srv.id}" style="font-size:12.5px;min-width:44px;text-align:right">-</strong>
+          <strong class="mono" id="tbl-disk-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:right">-</strong>
           <div class="meter-mini-track" style="width:68px">
             <div class="meter-mini-bar green" id="tbl-disk-bar-${srv.id}" style="width:0%"></div>
           </div>
@@ -1996,7 +1988,7 @@ function createAndAppendDashTableRow(srv, tbody) {
         </div>
       </div>
     </td>
-    <td class="mono" id="tbl-svc-td-${srv.id}" style="text-align:center;vertical-align:middle;font-size:12.5px">
+    <td class="mono" id="tbl-svc-td-${srv.id}" style="text-align:center;vertical-align:middle;font-size:12px">
       <span id="tbl-svc-${srv.id}" style="color:var(--dim)">-</span>
     </td>
     <td style="text-align:center;vertical-align:middle">

@@ -1522,7 +1522,7 @@ div[style*="position: fixed"] .card {
           </div>
           <span class="badge badge-info mono" id="spec-cpu-cores" style="font-size:10px">{{ (hardware_specs.cpu.cores ~ ' Cores') if (server.last_seen and hardware_specs and hardware_specs.cpu and hardware_specs.cpu.cores) else '-' }}</span>
         </div>
-        <table class="table-compact" style="width:100%;font-size:12px">
+        <table class="table-compact" style="width:100%;font-size:10px">
           <tbody>
             <tr><td style="color:var(--dim);width:40%">Model</td><td><strong id="spec-cpu-model">{{ hardware_specs.cpu.model if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.model else '—' }}</strong></td></tr>
             <tr><td style="color:var(--dim)">Arsitektur</td><td class="mono" id="spec-cpu-arch">{{ hardware_specs.cpu.arch if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.arch else 'x86_64' }}</td></tr>
@@ -1539,13 +1539,13 @@ div[style*="position: fixed"] .card {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
             <strong style="font-size:13px">Kapasitas Memori</strong>
           </div>
-          <span class="badge badge-success mono" style="font-size:10px">RAM</span>
+          <span class="badge badge-success mono" style="font-size:8.5px">RAM</span>
         </div>
-        <table class="table-compact" style="width:100%;font-size:12px">
+        <table class="table-compact" style="width:100%;font-size:10px">
           <tbody>
             <tr><td style="color:var(--dim);width:40%">Total RAM</td><td><strong id="spec-ram-total">{{ ((hardware_specs.memory.ram_total / (1024**3))|round(2)) ~ ' GB' if hardware_specs and hardware_specs.memory and hardware_specs.memory.ram_total else '0 GB' }}</strong></td></tr>
             <tr><td style="color:var(--dim)">Total Swap</td><td class="mono" id="spec-swap-total">{{ ((hardware_specs.memory.swap_total / (1024**3))|round(2)) ~ ' GB' if hardware_specs and hardware_specs.memory and hardware_specs.memory.swap_total else '0 GB' }}</td></tr>
-            <tr><td style="color:var(--dim)">Alokasi</td><td><span class="badge badge-muted" style="font-size:10px">Dinamis (Kernel)</span></td></tr>
+            <tr><td style="color:var(--dim)">Alokasi</td><td><span class="badge badge-muted" style="font-size:8.5px">Dinamis (Kernel)</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -1558,12 +1558,12 @@ div[style*="position: fixed"] .card {
             <strong style="font-size:13px">Platform &amp; Mesin</strong>
           </div>
         </div>
-        <table class="table-compact" style="width:100%;font-size:12px">
+        <table class="table-compact" style="width:100%;font-size:10px">
           <tbody>
             <tr><td style="color:var(--dim);width:40%">Platform / Tipe</td><td><strong id="spec-virt-type">{{ platform_info.label if platform_info else (hardware_specs.platform.virt if hardware_specs and hardware_specs.platform and hardware_specs.platform.virt else 'Bare Metal / Physical') }}</strong></td></tr>
             <tr><td style="color:var(--dim)">Vendor</td><td class="mono" id="spec-board-vendor">{{ hardware_specs.platform.vendor if hardware_specs and hardware_specs.platform and hardware_specs.platform.vendor else '—' }}</td></tr>
             <tr><td style="color:var(--dim)">Model</td><td class="mono" id="spec-board-product">{{ hardware_specs.platform.product if hardware_specs and hardware_specs.platform and hardware_specs.platform.product else '—' }}</td></tr>
-            <tr><td style="color:var(--dim)">BIOS</td><td class="mono" id="spec-bios-ver" style="font-size:11px">{{ hardware_specs.platform.bios_version if hardware_specs and hardware_specs.platform and hardware_specs.platform.bios_version else '—' }}</td></tr>
+            <tr><td style="color:var(--dim)">BIOS</td><td class="mono" id="spec-bios-ver" style="font-size:9.5px">{{ hardware_specs.platform.bios_version if hardware_specs and hardware_specs.platform and hardware_specs.platform.bios_version else '—' }}</td></tr>
           </tbody>
         </table>
       </div>
@@ -1576,12 +1576,12 @@ div[style*="position: fixed"] .card {
             <strong style="font-size:13px">Sistem Operasi</strong>
           </div>
         </div>
-        <table class="table-compact" style="width:100%;font-size:12px">
+        <table class="table-compact" style="width:100%;font-size:10px">
           <tbody>
             <tr><td style="color:var(--dim);width:40%">Distro</td><td><strong id="spec-os-name">{{ hardware_specs.os.os_name if hardware_specs and hardware_specs.os and hardware_specs.os.os_name else (os_label or 'Linux') }}</strong></td></tr>
             <tr><td style="color:var(--dim)">Kernel</td><td class="mono" id="spec-kernel-ver">{{ hardware_specs.os.kernel if hardware_specs and hardware_specs.os and hardware_specs.os.kernel else (kernel or '—') }}</td></tr>
             <tr><td style="color:var(--dim)">Hostname</td><td class="mono" id="spec-hostname">{{ hardware_specs.os.hostname if hardware_specs and hardware_specs.os and hardware_specs.os.hostname else server.hostname }}</td></tr>
-            <tr><td style="color:var(--dim)">Boot Time</td><td class="mono" id="spec-boot-time" style="font-size:11px">{{ hardware_specs.os.boot_time if hardware_specs and hardware_specs.os and hardware_specs.os.boot_time else '—' }}</td></tr>
+            <tr><td style="color:var(--dim)">Boot Time</td><td class="mono" id="spec-boot-time" style="font-size:9.5px">{{ hardware_specs.os.boot_time if hardware_specs and hardware_specs.os and hardware_specs.os.boot_time else '—' }}</td></tr>
           </tbody>
         </table>
       </div>
@@ -1598,10 +1598,10 @@ div[style*="position: fixed"] .card {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
             <strong style="font-size:13px">Perangkat Penyimpanan ({% if platform_info and platform_info.type == 'lxc' %}Alokasi Kontainer{% else %}Block Devices{% endif %})</strong>
           </div>
-          <span class="badge badge-info" id="spec-disk-count" style="font-size:10px">{{ hardware_specs.disks|length if hardware_specs and hardware_specs.disks else 0 }} Disks</span>
+          <span class="badge badge-info" id="spec-disk-count" style="font-size:8.5px">{{ hardware_specs.disks|length if hardware_specs and hardware_specs.disks else 0 }} Disks</span>
         </div>
         <div style="overflow-x:auto">
-          <table style="width:100%;font-size:12px" id="spec-disks-table">
+          <table style="width:100%;font-size:10px" id="spec-disks-table">
             <thead>
               <tr>
                 <th>Perangkat</th>
@@ -1620,18 +1620,18 @@ div[style*="position: fixed"] .card {
                 <tr>
                   <td class="mono"><strong>{{ d.name if (d.name == 'rootfs' or d.name.startswith('/')) else ('/dev/' ~ d.name) }}</strong></td>
                   <td class="mono">{{ d.size or '—' }}</td>
-                  <td><span class="badge {{ 'badge-success' if d.type == 'SSD' else ('badge-info' if 'LXC' in d.type else 'badge-muted') }}" style="font-size:10px">{{ d.type }}</span></td>
+                  <td><span class="badge {{ 'badge-success' if d.type == 'SSD' else ('badge-info' if 'LXC' in d.type else 'badge-muted') }}" style="font-size:8.5px">{{ d.type }}</span></td>
                   <td>
                     {% if sm.is_virtual %}
-                      <span class="badge badge-muted" style="font-size:10px;letter-spacing:0.2px">Virtual (Host)</span>
+                      <span class="badge badge-muted" style="font-size:8.5px;letter-spacing:0.2px">Virtual (Host)</span>
                     {% elif sm.health == 'healthy' %}
-                      <span class="badge badge-success" style="font-size:10px;font-weight:600">✓ Sehat</span>
+                      <span class="badge badge-success" style="font-size:8.5px;font-weight:600">✓ Sehat</span>
                     {% elif sm.health == 'warning' %}
-                      <span class="badge badge-warning" style="font-size:10px;font-weight:600">Peringatan</span>
+                      <span class="badge badge-warning" style="font-size:8.5px;font-weight:600">Peringatan</span>
                     {% elif sm.health == 'critical' %}
-                      <span class="badge badge-danger" style="font-size:10px;font-weight:600">Rusak</span>
+                      <span class="badge badge-danger" style="font-size:8.5px;font-weight:600">Rusak</span>
                     {% else %}
-                      <span class="badge badge-muted" style="font-size:10px">—</span>
+                      <span class="badge badge-muted" style="font-size:8.5px">—</span>
                     {% endif %}
                   </td>
                   <td class="mono">
@@ -1648,8 +1648,8 @@ div[style*="position: fixed"] .card {
                       <span style="color:var(--dim)">—</span>
                     {% endif %}
                   </td>
-                  <td style="color:var(--dim);font-size:11px">
-                    {{ d.model or 'Disk Volume' }}{% if sm.detail and not sm.is_virtual %} <span style="font-size:10px;color:var(--dim)">({{ sm.detail }})</span>{% endif %}
+                  <td style="color:var(--dim);font-size:9.5px">
+                    {{ d.model or 'Disk Volume' }}{% if sm.detail and not sm.is_virtual %} <span style="font-size:9px;color:var(--dim)">({{ sm.detail }})</span>{% endif %}
                   </td>
                 </tr>
                 {% endfor %}
@@ -1668,16 +1668,16 @@ div[style*="position: fixed"] .card {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
             <strong style="font-size:13px">Konfigurasi Gateway &amp; Resolver DNS</strong>
           </div>
-          <span class="badge badge-info mono" style="font-size:10px">{{ server.ip_address }}</span>
+          <span class="badge badge-info mono" style="font-size:8.5px">{{ server.ip_address }}</span>
         </div>
-        <table class="table-compact" style="width:100%;font-size:12px;margin-bottom:10px">
+        <table class="table-compact" style="width:100%;font-size:10px;margin-bottom:10px">
           <tbody>
             <tr><td style="color:var(--dim);width:36%">Gateway</td><td class="mono" id="spec-net-gw">{{ hardware_specs.network.gateway if hardware_specs and hardware_specs.network and hardware_specs.network.gateway else '—' }}</td></tr>
             <tr><td style="color:var(--dim)">DNS Server</td><td class="mono" id="spec-net-dns">{{ hardware_specs.network.dns|join(', ') if hardware_specs and hardware_specs.network and hardware_specs.network.dns else '—' }}</td></tr>
           </tbody>
         </table>
         <div style="overflow-x:auto">
-          <table style="width:100%;font-size:12px" id="spec-ifaces-table">
+          <table style="width:100%;font-size:10px" id="spec-ifaces-table">
             <thead>
               <tr>
                 <th>Antarmuka</th>
@@ -1868,12 +1868,12 @@ div[style*="position: fixed"] .card {
   </div>
   <table id="probtable" style="width:100%">
     <thead><tr>
-      <th class="col-time-detailed" style="width:150px;min-width:140px">Waktu</th>
-      <th class="col-sev" style="width:96px;min-width:90px;text-align:center">Keparahan</th>
+      <th class="col-time-detailed" style="width:145px;min-width:135px">Waktu</th>
+      <th class="col-sev" style="width:92px;min-width:86px;text-align:center">Keparahan</th>
       <th class="col-event" style="min-width:240px;max-width:500px">Kejadian</th>
-      <th class="col-durasi" style="width:85px;min-width:80px;text-align:center">Durasi</th>
+      <th class="col-durasi" style="width:85px;min-width:78px;text-align:center">Durasi</th>
       <th class="col-act" style="width:125px;min-width:120px;text-align:left">Tindakan</th>
-      <th class="col-tips" style="width:320px;min-width:260px">Saran</th>
+      <th class="col-tips" style="min-width:220px">Saran</th>
     </tr></thead>
     <tbody>
     {% for p in rows %}
@@ -1894,12 +1894,12 @@ div[style*="position: fixed"] .card {
         data-prob-sid="{{ server.id }}"
         data-prob-context='{{ p.context or "" }}'>
       <td style="white-space:nowrap" class="mono col-time-detailed">
-        <div style="font-size:11.5px;color:var(--text);font-weight:600">
-          <span style="color:var(--dim);font-size:10px;text-transform:uppercase;margin-right:4px">Mulai</span>{{ _fmt_dt(p.started_at) if p.started_at else '—' }}
+        <div style="font-size:9.5px;color:var(--text);font-weight:600">
+          <span style="color:var(--dim);font-size:8px;text-transform:uppercase;margin-right:4px">Mulai</span>{{ _fmt_dt(p.started_at) if p.started_at else '—' }}
         </div>
         {% if p.resolved_at %}
-        <div style="font-size:11.5px;color:var(--dim);margin-top:3px">
-          <span style="font-size:10px;text-transform:uppercase;margin-right:4px">Selesai</span>{{ _fmt_dt(p.resolved_at) }}
+        <div style="font-size:9.5px;color:var(--dim);margin-top:2px">
+          <span style="font-size:8px;text-transform:uppercase;margin-right:4px">Selesai</span>{{ _fmt_dt(p.resolved_at) }}
         </div>
         {% endif %}
       </td>
@@ -2536,7 +2536,7 @@ div[style*="position: fixed"] .card {
 
   <!-- Tabel Utama Manajer Tugas dengan Kolom Urut Interaktif -->
   <div style="overflow-x:auto">
-    <table id="tbl-task-manager" style="width:100%;font-size:12.5px">
+    <table id="tbl-task-manager" style="width:100%;font-size:10px">
       <thead>
         <tr>
           <th style="width:80px;cursor:pointer;user-select:none" onclick="toggleProcSort('pid')" title="Klik untuk mengurutkan PID">
@@ -4253,9 +4253,9 @@ function renderTopProcs(data) {
     return `
     <tr style="${isPaused ? 'background:rgba(234,179,8,0.04);' : ''}">
       <td class="mono" style="color:var(--blue);font-weight:600">${p.pid}</td>
-      <td><span class="badge badge-info" style="font-size:11px">${escapeHtml(p.user || '-')}</span></td>
+      <td><span class="badge badge-info" style="font-size:8.5px;padding:1px 5px">${escapeHtml(p.user || '-')}</span></td>
       <td>
-        <strong class="mono" style="color:var(--text);font-size:12.5px">${escapeHtml(p.comm || '-')}</strong>
+        <strong class="mono" style="color:var(--text);font-size:10.5px">${escapeHtml(p.comm || '-')}</strong>
       </td>
       <td style="text-align:center">${stateBadge}</td>
       <td style="text-align:right" class="mono">
@@ -7130,12 +7130,12 @@ function renderProblemsTab(level, openList, histList) {
   </div>
   <table id="probtable" style="width:100%">
     <thead><tr>
-      <th class="col-time-detailed" style="width:150px;min-width:140px">${isEn ? 'Time' : 'Waktu'}</th>
-      <th class="col-sev" style="width:96px;min-width:90px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
+      <th class="col-time-detailed" style="width:145px;min-width:135px">${isEn ? 'Time' : 'Waktu'}</th>
+      <th class="col-sev" style="width:92px;min-width:86px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
       <th class="col-event" style="min-width:240px;max-width:500px">${isEn ? 'Event' : 'Kejadian'}</th>
-      <th class="col-durasi" style="width:85px;min-width:80px;text-align:center">${isEn ? 'Duration' : 'Durasi'}</th>
+      <th class="col-durasi" style="width:85px;min-width:78px;text-align:center">${isEn ? 'Duration' : 'Durasi'}</th>
       <th class="col-act" style="width:125px;min-width:120px;text-align:left">${isEn ? 'Action' : 'Tindakan'}</th>
-      <th class="col-tips" style="width:320px;min-width:260px">${isEn ? 'Advice' : 'Saran'}</th>
+      <th class="col-tips" style="min-width:220px">${isEn ? 'Advice' : 'Saran'}</th>
     </tr></thead>
     <tbody>`;
 
@@ -7163,8 +7163,8 @@ function renderProblemsTab(level, openList, histList) {
     const pTip = isEn ? getServicesI18nText(p.tip || '—', true) : (p.tip || '—');
     const searchTxt = ((pMsg || '') + ' ' + (p.key || '')).toLowerCase();
     const rowStyle = !isOpen ? ' style="opacity:.65"' : (isIgnored ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '');
-    const startStr = `<div style="font-size:11.5px;color:var(--text);font-weight:600"><span style="color:var(--dim);font-size:10px;text-transform:uppercase;margin-right:4px">${isEn ? 'START' : 'MULAI'}</span>${fmtProbDate(p.started_at)}</div>`;
-    const resStr = p.resolved_at ? `<div style="font-size:11.5px;color:var(--dim);margin-top:3px"><span style="font-size:10px;text-transform:uppercase;margin-right:4px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>${fmtProbDate(p.resolved_at)}</div>` : '';
+    const startStr = `<div style="font-size:9.5px;color:var(--text);font-weight:600"><span style="color:var(--dim);font-size:8px;text-transform:uppercase;margin-right:4px">${isEn ? 'START' : 'MULAI'}</span>${fmtProbDate(p.started_at)}</div>`;
+    const resStr = p.resolved_at ? `<div style="font-size:9.5px;color:var(--dim);margin-top:2px"><span style="font-size:8px;text-transform:uppercase;margin-right:4px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>${fmtProbDate(p.resolved_at)}</div>` : '';
     const checkMark = isOpen ? '' : '<span style="color:var(--green)">✓</span> ';
     const msgStyle = isOpen ? '' : ' style="color:var(--dim)"';
     const ignoredBadge = isIgnored
@@ -8161,10 +8161,10 @@ function renderPorts(ports) {
 
     return `<tr>
       <td>${protoBadge}</td>
-      <td class="mono" style="font-weight:700;font-size:13px;color:var(--text)">${portNum}</td>
+      <td class="mono" style="font-weight:700;font-size:10.5px;color:var(--text)">${portNum}</td>
       <td class="mono" style="color:var(--dim)">${ipStr}</td>
       <td>${accessBadge}</td>
-      <td class="mono" style="font-size:12px;color:var(--text)">${procStr}</td>
+      <td class="mono" style="font-size:10px;color:var(--text)">${procStr}</td>
       <td><div style="display:flex;gap:4px;flex-wrap:wrap">${actions}</div></td>
     </tr>`;
   }).join('');
@@ -8228,7 +8228,7 @@ function renderFirewall(fw) {
   if (rulesTable && rList.length) {
     const tbody = rulesTable.querySelector('tbody');
     if (tbody) {
-      tbody.innerHTML = rList.map((r, i) => `<tr><td class="mono" style="color:var(--dim)">${i + 1}</td><td class="mono" style="font-size:12px;color:var(--text)">${escHtml(r)}</td></tr>`).join('');
+      tbody.innerHTML = rList.map((r, i) => `<tr><td class="mono" style="color:var(--dim)">${i + 1}</td><td class="mono" style="font-size:10px;color:var(--text)">${escHtml(r)}</td></tr>`).join('');
       if (_servicesTabPagination['fw-rules']) _servicesTabPagination['fw-rules'].update();
     }
   }
@@ -8307,8 +8307,8 @@ function renderCron(cron_jobs) {
           <td><span class="badge ${isEnabled ? 'badge-up' : 'badge-muted'}" title="${isEnabled ? (isEn ? 'Active' : 'Aktif') : (isEn ? 'Disabled' : 'Dinonaktifkan')}">${isEnabled ? '●' : '○'}</span></td>
           <td class="mono" style="font-weight:700;color:${isEnabled ? 'var(--blue)' : 'var(--dim)'};white-space:nowrap">${escHtml(c.schedule || '')}</td>
           <td><span class="mono">${userClean}</span></td>
-          <td class="mono" style="font-size:12px;color:var(--text);word-break:break-all">${cmdClean}</td>
-          <td class="mono" style="font-size:11px;color:var(--dim)">${escHtml(c.source || '')}${c.line ? ':' + c.line : ''}${isManaged ? ` <span class="badge badge-info" style="font-size:10px;margin-left:4px">${isEn ? 'Managed' : 'Dikelola'}</span>` : ''}</td>
+          <td class="mono" style="font-size:10px;color:var(--text);word-break:break-all">${cmdClean}</td>
+          <td class="mono" style="font-size:9.5px;color:var(--dim)">${escHtml(c.source || '')}${c.line ? ':' + c.line : ''}${isManaged ? ` <span class="badge badge-info" style="font-size:8.5px;margin-left:4px">${isEn ? 'Managed' : 'Dikelola'}</span>` : ''}</td>
           <td style="white-space:nowrap"><div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">${actHtml}</div></td>
         </tr>`;
       }).join('');
@@ -8380,11 +8380,11 @@ function renderSsl(sslList) {
 
     return `<tr>
       <td><strong>${domStr}</strong>${customBadge}</td>
-      <td style="font-size:12px;color:var(--dim)">${issuerStr}</td>
-      <td class="mono" style="font-size:12px">${notAfterStr}</td>
+      <td style="font-size:10px;color:var(--dim)">${issuerStr}</td>
+      <td class="mono" style="font-size:10px">${notAfterStr}</td>
       <td class="mono" style="font-weight:700;color:${daysColor}">${daysStr}</td>
       <td>${statusBadge}</td>
-      <td class="mono" style="font-size:11px;color:var(--dim)">${pathClean}</td>
+      <td class="mono" style="font-size:9.5px;color:var(--dim)">${pathClean}</td>
       <td>${actHtml}</td>
     </tr>`;
   }).join('');
@@ -8708,9 +8708,9 @@ function renderSys(data) {
       + '<td>' + fmtBytes(d.used) + ' / ' + fmtBytes(d.total) + '</td>'
       + '<td><div class="meter"><div class="meter-bar" style="width:' + Math.min(100, d.pct) + '%;'
       + (d.pct >= 90 ? 'background:var(--red)' : '') + '"></div></div>'
-      + '<span style="font-size:11px;color:var(--dim)">' + d.pct + '%</span></td>'
-      + '<td class="mono" style="font-size:12px">' + ioText + '</td>'
-      + '<td class="mono" style="font-size:12px">' + utilText + '</td></tr>';
+      + '<span style="font-size:9.5px;color:var(--dim)">' + d.pct + '%</span></td>'
+      + '<td class="mono" style="font-size:10px">' + ioText + '</td>'
+      + '<td class="mono" style="font-size:10px">' + utilText + '</td></tr>';
   }).join('');
   if (_servicesTabPagination['disks']) {
     _servicesTabPagination['disks'].update();
@@ -8724,7 +8724,7 @@ function renderSys(data) {
   ne.style.display = net.length ? 'none' : 'block';
   nt.querySelector('tbody').innerHTML = net.map(n => {
     const ips = (n.ip_addrs && n.ip_addrs.length)
-      ? n.ip_addrs.map(ip => '<span class="mono copyable-ip" style="font-size:12px;cursor:pointer" onclick="copyIp(\'' + escHtml(ip) + '\', event)" title="Klik untuk salin">' + escHtml(ip) + '</span>').join('<br>')
+      ? n.ip_addrs.map(ip => '<span class="mono copyable-ip" style="font-size:10px;cursor:pointer" onclick="copyIp(\'' + escHtml(ip) + '\', event)" title="Klik untuk salin">' + escHtml(ip) + '</span>').join('<br>')
       : '<span style="color:var(--dim)">—</span>';
     const rxRateStr = (n.rx_rate > 0)
       ? '<span style="color:#38bdf8;font-weight:600">↓ ' + fmtBytes(n.rx_rate) + '/s</span>'
@@ -8733,15 +8733,15 @@ function renderSys(data) {
       ? '<span style="color:#34d399;font-weight:600">↑ ' + fmtBytes(n.tx_rate) + '/s</span>'
       : '<span style="color:var(--dim)">0 B/s</span>';
     const stateBadge = n.is_up
-      ? '<span class="badge badge-up" style="font-size:10.5px;padding:2px 7px"><span class="dot up" style="margin-right:3px"></span>UP</span>'
-      : '<span class="badge badge-down" style="font-size:10.5px;padding:2px 7px"><span class="dot down" style="margin-right:3px"></span>DOWN</span>';
+      ? '<span class="badge badge-up" style="font-size:8.5px;padding:1px 5px"><span class="dot up" style="margin-right:3px"></span>UP</span>'
+      : '<span class="badge badge-down" style="font-size:8.5px;padding:1px 5px"><span class="dot down" style="margin-right:3px"></span>DOWN</span>';
     return '<tr><td class="mono"><strong>' + escHtml(n.iface) + '</strong></td>'
       + '<td>' + ips + '</td>'
       + '<td>' + stateBadge + '</td>'
       + '<td class="mono">' + fmtBytes(n.rx) + '</td>'
       + '<td class="mono">' + fmtBytes(n.tx) + '</td>'
-      + '<td class="mono" style="font-size:12px">' + rxRateStr + '</td>'
-      + '<td class="mono" style="font-size:12px">' + txRateStr + '</td></tr>';
+      + '<td class="mono" style="font-size:10px">' + rxRateStr + '</td>'
+      + '<td class="mono" style="font-size:10px">' + txRateStr + '</td></tr>';
   }).join('');
   if (_servicesTabPagination['net']) {
     _servicesTabPagination['net'].update();
@@ -8779,8 +8779,8 @@ function renderSys(data) {
       + (isLocked ? ' <span class="badge badge-warn" style="font-size:10px" title="' + (isEn ? 'Account is currently locked' : 'Akun saat ini terkunci') + '">' + (isEn ? 'Locked' : 'Terkunci') + '</span>' : '') + '</td>'
       + '<td class="mono">' + escHtml(String(a.uid)) + '</td>'
       + '<td class="mono">' + escHtml(a.shell || '-') + '</td>'
-      + '<td style="font-size:12px;color:var(--dim)">' + escHtml(a.last_login || '-') + '</td>'
-      + '<td style="font-size:12px;color:var(--dim)">'
+      + '<td style="font-size:10px;color:var(--dim)">' + escHtml(a.last_login || '-') + '</td>'
+      + '<td style="font-size:10px;color:var(--dim)">'
       + (a.sessions && a.sessions.length ? a.sessions.map(s =>
           escHtml((s.tty || '') + (s.from ? ' @ ' + s.from : ''))).join('<br>') : '-')
       + '</td>'
@@ -9977,14 +9977,14 @@ function renderPackagesTable() {
 
     // Badge Tipe Paket (Pengguna vs Sistem)
     const typeBadge = pkg.is_user
-      ? '<span class="badge badge-primary" style="font-size:10.5px">Pengguna</span>'
-      : '<span class="badge badge-muted" style="font-size:10.5px">Sistem</span>';
+      ? '<span class="badge badge-primary" style="font-size:8.5px;padding:1px 5px">Pengguna</span>'
+      : '<span class="badge badge-muted" style="font-size:8.5px;padding:1px 5px">Sistem</span>';
 
     // Kolom Versi tunggal
     const upgIndicator = isUpg
-      ? ` <span class="badge badge-warn" style="font-size:10px;font-weight:700" title="Pembaruan tersedia: ${escapeHtml(upgVer)}">↑ ${escapeHtml(upgVer)}</span>`
+      ? ` <span class="badge badge-warn" style="font-size:8.5px;font-weight:700" title="Pembaruan tersedia: ${escapeHtml(upgVer)}">↑ ${escapeHtml(upgVer)}</span>`
       : '';
-    const verHtml = `<span class="mono" style="font-size:12px">${safeVer}</span>${upgIndicator}`;
+    const verHtml = `<span class="mono" style="font-size:10px">${safeVer}</span>${upgIndicator}`;
 
     // Tombol upgrade: aktif jika ada update, disabled jika mutakhir
     const upgradeBtn = isUpg
@@ -10011,8 +10011,8 @@ function renderPackagesTable() {
       <td><strong>${safeName}</strong>${safeArch}</td>
       <td style="text-align:center">${typeBadge}</td>
       <td>${verHtml}</td>
-      <td class="mono" style="font-size:12px;text-align:right">${sizeStr}</td>
-      <td style="font-size:12px;color:var(--text);line-height:1.4">${summaryStr}</td>
+      <td class="mono" style="font-size:10px;text-align:right">${sizeStr}</td>
+      <td style="font-size:10px;color:var(--text);line-height:1.4">${summaryStr}</td>
       <td style="width:95px;white-space:nowrap;text-align:center">
         <div style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-wrap:nowrap">
           ${clearCacheBtn}
@@ -10545,13 +10545,13 @@ function renderSystemdTable() {
 
     return `<tr style="${isFailed ? 'background:rgba(239,68,68,0.06);' : ''}">
       <td style="text-align:center;padding:5px 8px;white-space:nowrap">${statusBadge}</td>
-      <td style="padding:5px 10px;white-space:nowrap">
-        <span class="mono" style="font-size:12px;font-weight:600;color:var(--text-bright)">${nameEsc}</span>${portBadge}
+      <td style="padding:4px 8px;white-space:nowrap">
+        <span class="mono" style="font-size:10px;font-weight:600;color:var(--text-bright)">${nameEsc}</span>${portBadge}
       </td>
-      <td style="text-align:center;padding:5px 8px;white-space:nowrap">${bootBadge}</td>
-      <td style="text-align:center;padding:5px 8px;white-space:nowrap;font-size:11px;color:var(--dim)" class="mono">${subEsc}</td>
-      <td style="text-align:right;padding:5px 10px;white-space:nowrap">${memHtml}</td>
-      <td style="padding:5px 10px;font-size:12px;color:var(--dim);line-height:1.3">${descEsc}</td>
+      <td style="text-align:center;padding:4px 6px;white-space:nowrap">${bootBadge}</td>
+      <td style="text-align:center;padding:4px 6px;white-space:nowrap;font-size:9.5px;color:var(--dim)" class="mono">${subEsc}</td>
+      <td style="text-align:right;padding:4px 8px;white-space:nowrap">${memHtml}</td>
+      <td style="padding:4px 8px;font-size:10px;color:var(--dim);line-height:1.3">${descEsc}</td>
       <td style="text-align:center;padding:5px 8px;white-space:nowrap">
         <div style="display:inline-flex;align-items:center;gap:3px">
           ${restartBtn}

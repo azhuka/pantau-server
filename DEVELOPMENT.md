@@ -311,6 +311,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.7.8
+
+- **Tipe Rilis:** Reduksi Tipografi Tabel Non-Dasbor 2 Tingkat, Keseragaman Mutlak Tipografi Mode Dasbor (Standar vs Kompak), dan Optimalisasi Ruang Tabel NOC Dinamis (*Non-Dashboard Table 2-Step Typography Reduction, Strict Dashboard Typography Mode Parity, and Dynamic High-Density NOC Table Spacing*)
+- **Fokus Utama:** Menyelesaikan kebutuhan efisiensi ruang dan keterbacaan data operasional pada seluruh tabel sistem tanpa membuang ruang horizontal maupun vertikal:
+  1. **Reduksi 2 Tingkat Ukuran Font Tabel Non-Dasbor:**
+     - Menurunkan ukuran font dasar seluruh tabel selain tabel dasbor armada (`servers.html`, `problems.html`, `services.html`, `users.html`, `user_activity.html`, `logs.html`, `audit.html`, `probing.html`, `file_manager.html`, dan `profile.html`) sebesar 2 level (dari 12px/12.5px ke 9.5px–10.5px untuk body dan 9.5px untuk header).
+     - Menyesuaikan padding sel tabel menjadi lebih kompak (padding 3.5px–5px) sehingga data dapat ditampilkan lebih padat, rapi, dan efisien tanpa adanya kolom yang saling menimpa (*zero overlapping*).
+  2. **Keseragaman Mutlak 100% Tipografi Mode Standar & Mode Kompak Dasbor (`dashboard.html`):**
+     - Menghapus seluruh override ukuran font pada `.tbl-compact` (`th`, `td`, `strong.mono`, `.badge`, `.copyable-ip`) sehingga ukuran font antara Mode Standar dan Mode Kompak sepenuhnya identik matematis (11.5px untuk header, 12px untuk cell, 12.5px untuk hostname, 12px untuk nilai metrik, 9px untuk badge, 11.5px untuk IP dan uptime).
+     - Mode Kompak kini hanya memodifikasi padding baris (`padding: 2px 6px` vs `5px 8px`), tinggi baris tetap (`height: 25px`), dan menyembunyikan subline metrik (`.tbl-metric-subline`), memastikan tidak ada lonjakan ukuran font saat operator berpindah mode.
+  3. **Efisiensi Ruang Tabel Dinamis & Responsif:**
+     - Memastikan seluruh kontainer tabel dibungkus dengan scroll horizontal dinamis (`overflow-x: auto`) agar tidak merusak tata letak dasbor pada resolusi viewport terbatas.
+     - Kolom konten utama (deskripsi insiden, perintah, panduan solusi) menggunakan alokasi proporsional fleksibel dengan `min-width` dan `word-break: break-word`.
+     - Standardisasi paginasi tabel sekunder dengan default limit 10 baris dan penonaktifan paginasi otomatis apabila data kurang dari 5 baris.
+
 ## Versi 4.7.7
 
 - **Tipe Rilis:** Penyempurnaan Visual Universal Antarmuka NOC, Koreksi Proporsi Kolom & Tipografi Tabel, Eliminasi Indikator Ganda pada Tab Bar, Standardisasi Paginasi 10 Baris, dan Pemisahan Semantik Ikon Tindakan (*Universal NOC Density Refinement, Table Typography & Proportion Optimization, Tab Double-Indicator Elimination, Universal 10-Row Pagination Threshold & Distinct Action Icon Semantics*)

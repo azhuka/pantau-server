@@ -139,10 +139,11 @@ pre{white-space:pre;overflow-x:auto;max-width:100%}
 .chip-warn{background:var(--yellow-bg);color:var(--yellow);border:1px solid rgba(251,191,36,0.3)}
 
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:8px 10px;font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;font-weight:600;border-bottom:1px solid var(--border)}
-td{padding:6px 10px;font-size:11.5px;border-bottom:1px solid var(--border-subtle);vertical-align:middle}
+th{text-align:left;padding:5px 8px;font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;font-weight:600;border-bottom:1px solid var(--border)}
+td{padding:4px 8px;font-size:10px;border-bottom:1px solid var(--border-subtle);vertical-align:middle}
 tr:last-child td{border-bottom:none}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:10.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+table .mono{font-size:9.5px}
 
 /* Stabilisasi Lebar Kolom Tabel & Eliminasi Pergeseran Tata Letak (Enterprise Best Practice) */
 .col-durasi, th.col-durasi, td.col-durasi, td[data-start] {
@@ -150,25 +151,25 @@ tr:last-child td{border-bottom:none}
   min-width: 78px !important;
   max-width: 95px !important;
   white-space: nowrap !important;
-  font-size: 11px !important;
+  font-size: 9.5px !important;
   letter-spacing: -0.025em !important;
   word-spacing: -1px !important;
   font-variant-numeric: tabular-nums !important;
   box-sizing: border-box !important;
 }
 .col-time, th.col-time, td.col-time {
-  width: 110px !important;
-  min-width: 100px !important;
-  max-width: 120px !important;
+  width: 105px !important;
+  min-width: 95px !important;
+  max-width: 115px !important;
   white-space: nowrap !important;
-  font-size: 11px !important;
+  font-size: 9.5px !important;
   font-variant-numeric: tabular-nums !important;
 }
 .col-time-detailed, th.col-time-detailed, td.col-time-detailed {
-  width: 155px !important;
-  min-width: 145px !important;
+  width: 145px !important;
+  min-width: 135px !important;
   white-space: nowrap !important;
-  font-size: 11px !important;
+  font-size: 9.5px !important;
   font-variant-numeric: tabular-nums !important;
 }
 .col-server, th.col-server, td.col-server {
@@ -176,28 +177,46 @@ tr:last-child td{border-bottom:none}
   min-width: 100px !important;
   max-width: 135px !important;
   white-space: nowrap !important;
-  font-size: 11.5px !important;
+  font-size: 10px !important;
 }
 .col-sev, th.col-sev, td.col-sev {
-  width: 80px !important;
-  min-width: 74px !important;
-  max-width: 88px !important;
+  width: 92px !important;
+  min-width: 86px !important;
+  max-width: 100px !important;
   white-space: nowrap !important;
   text-align: center !important;
+  padding: 4px 5px !important;
 }
-.col-sev .badge {
+.col-sev .badge, th.col-sev .badge, td.col-sev .badge {
   font-size: 8px !important;
   padding: 1px 4.5px !important;
   border-radius: 3px !important;
   line-height: 1.2 !important;
   letter-spacing: 0.2px !important;
+  font-weight: 700 !important;
+}
+.col-sev .badge-sub, th.col-sev .badge-sub, td.col-sev .badge-sub {
+  font-size: 7.5px !important;
+  padding: 0.5px 3.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.1px !important;
+}
+td.col-sev .col-sev-sub-text {
+  font-size: 7.5px !important;
+  color: var(--dim) !important;
+  margin-top: 1.5px !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
+  display: block !important;
+  text-align: center !important;
 }
 .col-event, th.col-event, td.col-event,
 .col-desc, th.col-desc, td.col-desc {
   /* Hero Content Column: Flexibel terluas, proporsional, ukuran kompak & nyaman dibaca */
   width: auto;
   min-width: 240px !important;
-  font-size: 11px !important;
+  font-size: 10px !important;
   line-height: 1.35 !important;
   word-break: break-word;
 }
@@ -216,7 +235,7 @@ th.th-act, td.td-act, td.cell-act, .fm-actions-cell {
 .col-tips, th.col-tips, td.col-tips {
   width: auto;
   min-width: 240px !important;
-  font-size: 10.5px !important;
+  font-size: 9.5px !important;
   color: var(--dim) !important;
   line-height: 1.35 !important;
   vertical-align: middle !important;
@@ -230,40 +249,7 @@ th.th-act, td.td-act, td.cell-act, .fm-actions-cell {
   text-overflow: ellipsis;
   line-height: 1.3;
   max-height: 2.6em;
-  font-size: 10.5px !important;
-}
-
-/* Standardisasi Hierarki Dua Baris Kolom Keparahan NOC */
-th.col-sev, td.col-sev {
-  width: 96px !important;
-  min-width: 90px !important;
-  max-width: 105px !important;
-  text-align: center !important;
-  padding: 5px 6px !important;
-}
-th.col-sev .badge, td.col-sev .badge {
   font-size: 9.5px !important;
-  padding: 1.5px 5.5px !important;
-  border-radius: 3px !important;
-  line-height: 1.25 !important;
-  letter-spacing: 0.3px !important;
-  font-weight: 700 !important;
-}
-th.col-sev .badge-sub, td.col-sev .badge-sub {
-  font-size: 8px !important;
-  padding: 0.5px 4px !important;
-  font-weight: 600 !important;
-  line-height: 1.2 !important;
-  letter-spacing: 0.1px !important;
-}
-td.col-sev .col-sev-sub-text {
-  font-size: 8px !important;
-  color: var(--dim) !important;
-  margin-top: 1.5px !important;
-  white-space: nowrap !important;
-  line-height: 1.2 !important;
-  display: block !important;
-  text-align: center !important;
 }
 
 /* Tombol Modern dengan sentuhan Neon Halus */
@@ -284,7 +270,7 @@ td.col-sev .col-sev-sub-text {
 .btn svg{width:12px;height:12px;flex-shrink:0;stroke-width:2;vertical-align:middle;pointer-events:none}
 
 /* ---------- Tata Letak Kolom Aksi Tabel Masalah / Insiden (Harmonis & Terstruktur) ---------- */
-.prob-act-cell{white-space:nowrap !important;vertical-align:middle !important;padding:5px 8px !important;text-align:left !important}
+.prob-act-cell{white-space:nowrap !important;vertical-align:middle !important;padding:4px 6px !important;text-align:left !important}
 .prob-act-wrap{display:inline-flex !important;flex-direction:row !important;gap:3px !important;align-items:center !important;justify-content:flex-start !important;white-space:nowrap !important;flex-wrap:nowrap !important}
 .prob-act-row{display:inline-flex !important;align-items:center !important;gap:3px !important;flex-wrap:nowrap !important;white-space:nowrap !important}
 .prob-act-row + .prob-act-row {
@@ -294,15 +280,15 @@ td.col-sev .col-sev-sub-text {
 }
 .prob-act-cell .btn,
 .prob-act-cell .prob-btn {
-  padding: 3px 6px !important;
-  font-size: 11px !important;
-  min-height: 22px !important;
-  height: 22px !important;
+  padding: 2.5px 5.5px !important;
+  font-size: 10px !important;
+  min-height: 20px !important;
+  height: 20px !important;
   line-height: 1 !important;
 }
 .prob-act-cell svg {
-  width: 11px !important;
-  height: 11px !important;
+  width: 10px !important;
+  height: 10px !important;
 }
 
 /* Standardisasi tombol prob-btn agar identik 100% dengan .btn .btn-sm */
@@ -1095,7 +1081,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.7.7' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.7.8' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>

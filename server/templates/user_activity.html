@@ -197,8 +197,8 @@ async function loadActivity() {
         if (!window._llPagination && typeof attachTablePagination === 'function') {
           window._llPagination = attachTablePagination('#ll-table', {
             unitLabel: 'aktivitas',
-            defaultLimit: 5,
-            pageSizeOptions: [5, 10, 25, 50, 100, 'all']
+            defaultLimit: 10,
+            pageSizeOptions: [10, 25, 50, 100, 'all']
           });
         } else if (window._llPagination) {
           window._llPagination.update();

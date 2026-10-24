@@ -27,8 +27,8 @@
 }
 #servers-table th {
   white-space: nowrap;
-  padding: 6px 8px;
-  font-size: 11px;
+  padding: 5px 6px;
+  font-size: 9.5px;
   font-weight: 600;
   color: var(--dim);
   text-transform: uppercase;
@@ -36,8 +36,8 @@
 }
 #servers-table td {
   white-space: nowrap;
-  padding: 5px 8px;
-  font-size: 12px;
+  padding: 3.5px 6px;
+  font-size: 10px;
 }
 @media (max-width: 640px) {
   .servers-controls-wrap {
@@ -135,17 +135,17 @@
                     <polyline points="2 12 12 17 22 12"></polyline>
                   </svg>
                 </span>
-                <strong style="font-size:12.5px;color:var(--text)">Grup: <span style="color:var(--blue)">{{ srv_grp }}</span></strong>
-                <span class="badge badge-info" style="font-size:9.5px;padding:1px 6px">{{ group_counts.get(srv_grp, 0) }} Server</span>
+                <strong style="font-size:11px;color:var(--text)">Grup: <span style="color:var(--blue)">{{ srv_grp }}</span></strong>
+                <span class="badge badge-info" style="font-size:8.5px;padding:1px 5px">{{ group_counts.get(srv_grp, 0) }} Server</span>
                 {% else %}
                 <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--dim)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
                 </span>
-                <strong style="font-size:12.5px;color:var(--dim)">Server Tanpa Grup</strong>
-                <span class="badge badge-muted" style="font-size:9.5px;padding:1px 6px">{{ ungrouped_count }} Server</span>
+                <strong style="font-size:11px;color:var(--dim)">Server Tanpa Grup</strong>
+                <span class="badge badge-muted" style="font-size:8.5px;padding:1px 5px">{{ ungrouped_count }} Server</span>
                 {% endif %}
               </div>
-              <div style="font-size:11px;color:var(--dim)">
+              <div style="font-size:10px;color:var(--dim)">
                 <span id="collapse-hint-{{ srv_grp }}" style="opacity:.65">Klik untuk ciutkan</span>
               </div>
             </div>
@@ -164,76 +164,76 @@
       <td style="white-space:nowrap">
         <div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
           <span id="srv-dot-{{ srv.id }}" class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
-          <strong style="font-size:13px" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</strong>
+          <strong style="font-size:11px" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</strong>
           {% set s_tier = srv.tier|default(2) %}
           {% if s_tier == 1 %}
-            <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>
+            <span class="badge" style="font-size:8.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 4.5px;font-weight:700" title="tier-1">tier-1</span>
           {% elif s_tier == 3 %}
-            <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>
+            <span class="badge" style="font-size:8.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 4.5px" title="tier-3">tier-3</span>
           {% else %}
-            <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>
+            <span class="badge" style="font-size:8.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 4.5px;font-weight:600" title="tier-2">tier-2</span>
           {% endif %}
           {% if srv._platform %}
-            <span class="badge" style="font-size:10px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: {{ srv._platform.label }}">
+            <span class="badge" style="font-size:8.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:600" title="Platform: {{ srv._platform.label }}">
               {% if srv._platform.type == 'lxc' %}
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
               {% elif srv._platform.type == 'vm' %}
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
               {% else %}
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
               {% endif %}
               {{ srv._platform.short_label }}
             </span>
           {% endif %}
           {% if srv.is_proxmox_ha %}
-            <span class="badge" style="font-size:8px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 4px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Server terproteksi Proxmox HA">
+            <span class="badge" style="font-size:7.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 3.5px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Server terproteksi Proxmox HA">
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
               HA
             </span>
           {% endif %}
           {% if srv.is_isolated_net %}
-            <span class="badge" style="font-size:8px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:1px 4px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Jaringan Terisolasi">
+            <span class="badge" style="font-size:7.5px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:1px 3.5px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Jaringan Terisolasi">
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
               Lokal
             </span>
           {% endif %}
           {% if srv._agent_version %}
             {% if srv._agent_outdated %}
-              <span style="font-size:9.5px;color:#d97706;font-family:var(--font-mono);font-weight:500" title="Perlu pembaruan agen (v{{ srv._agent_version }})">v{{ srv._agent_version }} (update)</span>
+              <span style="font-size:8.5px;color:#d97706;font-family:var(--font-mono);font-weight:500" title="Perlu pembaruan agen (v{{ srv._agent_version }})">v{{ srv._agent_version }} (update)</span>
             {% else %}
-              <span style="font-size:9.5px;color:var(--blue,#3b82f6);font-family:var(--font-mono)" title="Versi agen mutakhir">v{{ srv._agent_version }}</span>
+              <span style="font-size:8.5px;color:var(--blue,#3b82f6);font-family:var(--font-mono)" title="Versi agen mutakhir">v{{ srv._agent_version }}</span>
             {% endif %}
           {% endif %}
         </div>
       </td>
       <td class="mono">
-        <span class="copyable-ip" id="srv-ip-{{ srv.id }}" style="font-size:12.5px" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
+        <span class="copyable-ip" id="srv-ip-{{ srv.id }}" style="font-size:10.5px" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
       </td>
       <td>
         {% if srv.tags %}
         <div style="display:inline-flex;align-items:center;gap:4px">
           {% for tag in (srv.tags or '').split(',') %}
             {% if tag.strip() %}
-            <span class="badge" style="font-size:8px;padding:1px 4px;background:rgba(255,255,255,0.06);color:var(--dim);display:inline-flex;align-items:center;gap:3px">
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+            <span class="badge" style="font-size:7.5px;padding:0.5px 3.5px;background:rgba(255,255,255,0.06);color:var(--dim);display:inline-flex;align-items:center;gap:2.5px">
+              <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
               {{ tag.strip() }}
             </span>
             {% endif %}
           {% endfor %}
         </div>
         {% else %}
-        <span style="color:var(--dim-subtle);font-size:12px">—</span>
+        <span style="color:var(--dim-subtle);font-size:10px">—</span>
         {% endif %}
       </td>
       <td style="text-align:center">
-        <span class="badge {{ srv._status_cls }}" id="srv-sts-{{ srv.id }}" style="font-size:10.5px;padding:2px 7px">{{ srv._status_label }}</span>
+        <span class="badge {{ srv._status_cls }}" id="srv-sts-{{ srv.id }}" style="font-size:8.5px;padding:1px 5px">{{ srv._status_label }}</span>
         {% if srv.is_maintenance and srv.maintenance_reason %}
         <span style="display:inline-flex;align-items:center;vertical-align:middle;color:var(--yellow);margin-left:4px" title="{{ srv.maintenance_reason }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
         {% endif %}
       </td>
-      <td id="srv-cpu-{{ srv.id }}" class="mono" style="font-size:13px;text-align:center">{{ srv._cpu ~ '%' if srv._cpu is not none else '—' }}</td>
-      <td id="srv-ram-{{ srv.id }}" class="mono" style="font-size:13px;text-align:center">{{ srv._mem_pct ~ '%' if srv._mem_pct is not none else '—' }}</td>
-      <td id="srv-svc-{{ srv.id }}" style="text-align:center;font-size:12px;font-family:ui-monospace,monospace">
+      <td id="srv-cpu-{{ srv.id }}" class="mono" style="font-size:10.5px;text-align:center">{{ srv._cpu ~ '%' if srv._cpu is not none else '—' }}</td>
+      <td id="srv-ram-{{ srv.id }}" class="mono" style="font-size:10.5px;text-align:center">{{ srv._mem_pct ~ '%' if srv._mem_pct is not none else '—' }}</td>
+      <td id="srv-svc-{{ srv.id }}" style="text-align:center;font-size:10px;font-family:ui-monospace,monospace">
         {% set total_svc_count = (srv._svc_data or [])|length %}
         {% if not srv.last_seen or total_svc_count == 0 %}
           <span style="color:var(--dim)">-</span>
@@ -257,22 +257,22 @@
           {% set tot_active = d_cnt + avg_cnt + w_cnt + i_cnt %}
           <div style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">
             {% if tot_active == 0 and ign_count == 0 %}
-              <span class="badge badge-up" style="font-size:8px;padding:1px 5px;font-weight:600">Nihil</span>
+              <span class="badge badge-up" style="font-size:8px;padding:1px 4.5px;font-weight:600">Nihil</span>
             {% else %}
               {% if d_cnt > 0 %}
-                <span class="badge badge-danger" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
+                <span class="badge badge-danger" style="min-width:17px;text-align:center;padding:1px 4px;font-size:8px;font-weight:700;border-radius:3px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
               {% endif %}
               {% if avg_cnt > 0 %}
-                <span class="badge badge-orange" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
+                <span class="badge badge-orange" style="min-width:17px;text-align:center;padding:1px 4px;font-size:8px;font-weight:700;border-radius:3px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
               {% endif %}
               {% if w_cnt > 0 %}
-                <span class="badge badge-warn" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
+                <span class="badge badge-warn" style="min-width:17px;text-align:center;padding:1px 4px;font-size:8px;font-weight:700;border-radius:3px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
               {% endif %}
               {% if i_cnt > 0 %}
-                <span class="badge badge-info" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
+                <span class="badge badge-info" style="min-width:17px;text-align:center;padding:1px 4px;font-size:8px;font-weight:700;border-radius:3px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
               {% endif %}
               {% if ign_count > 0 %}
-                <span class="badge badge-muted" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="{{ srv._ignored_msgs or 'Diabaikan' }}">{{ ign_count }}</span>
+                <span class="badge badge-muted" style="min-width:17px;text-align:center;padding:1px 4px;font-size:8px;font-weight:700;border-radius:3px" title="{{ srv._ignored_msgs or 'Diabaikan' }}">{{ ign_count }}</span>
               {% endif %}
             {% endif %}
           </div>
@@ -281,15 +281,15 @@
       <td style="text-align:center">
         {% if srv._apt_upgradable is not none %}
           {% if srv._apt_upgradable > 0 %}
-            <span class="badge badge-warn" style="font-size:8px;padding:1px 5px" title="{{ srv._apt_upgradable }} paket tersedia">{{ srv._apt_upgradable }} paket</span>
+            <span class="badge badge-warn" style="font-size:7.5px;padding:1px 4px" title="{{ srv._apt_upgradable }} paket tersedia">{{ srv._apt_upgradable }} paket</span>
           {% else %}
-            <span class="badge badge-up" style="font-size:8px;padding:1px 5px">mutakhir</span>
+            <span class="badge badge-up" style="font-size:7.5px;padding:1px 4px">mutakhir</span>
           {% endif %}
         {% else %}
-          <span style="color:var(--dim);font-size:11px">—</span>
+          <span style="color:var(--dim);font-size:10px">—</span>
         {% endif %}
       </td>
-      <td class="mono" style="font-size:11px;letter-spacing:-0.025em;text-align:center;white-space:nowrap" id="srv-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
+      <td class="mono" style="font-size:9.5px;letter-spacing:-0.025em;text-align:center;white-space:nowrap" id="srv-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
         {{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}
       </td>
       <td class="col-act" style="text-align:center;white-space:nowrap">
@@ -482,28 +482,28 @@ function createAndAppendServersRow(srv, tbody) {
 
   tr.innerHTML = `
     <td style="white-space:nowrap">
-      <div style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap">
+      <div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
         <span id="srv-dot-${srv.id}" class="dot unknown" style="flex-shrink:0" title="-"></span>
-        <strong style="font-size:13.5px" id="srv-host-${srv.id}">${_srvEsc(srv.hostname || '')}</strong>
+        <strong style="font-size:11px" id="srv-host-${srv.id}">${_srvEsc(srv.hostname || '')}</strong>
         ${getTierBadgeHtml(srv.tier)}
         ${getPlatformBadgeHtml(srv.platform)}
       </div>
     </td>
     <td class="mono">
-      <span class="copyable-ip" id="srv-ip-${srv.id}" style="font-size:12.5px" onclick="copyIp('${_srvEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_srvEsc(srv.ip_address || '-')}</span>
+      <span class="copyable-ip" id="srv-ip-${srv.id}" style="font-size:10.5px" onclick="copyIp('${_srvEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_srvEsc(srv.ip_address || '-')}</span>
     </td>
     <td>-</td>
-    <td><span class="badge badge-muted" style="font-size:8px;padding:1px 5px">${_srvEsc(srv.group_name || 'Tanpa Grup')}</span></td>
-    <td style="text-align:center"><span id="srv-sts-${srv.id}" class="badge badge-muted">-</span></td>
-    <td class="mono" style="font-size:12px;text-align:right" id="srv-cpu-${srv.id}">-</td>
-    <td class="mono" style="font-size:12px;text-align:right" id="srv-ram-${srv.id}">-</td>
-    <td class="mono" style="font-size:12.5px;text-align:center" id="srv-svc-${srv.id}">-</td>
+    <td><span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 4px">${_srvEsc(srv.group_name || 'Tanpa Grup')}</span></td>
+    <td style="text-align:center"><span id="srv-sts-${srv.id}" class="badge badge-muted" style="font-size:8.5px;padding:1px 5px">-</span></td>
+    <td class="mono" style="font-size:10.5px;text-align:right" id="srv-cpu-${srv.id}">-</td>
+    <td class="mono" style="font-size:10.5px;text-align:right" id="srv-ram-${srv.id}">-</td>
+    <td class="mono" style="font-size:10px;text-align:center" id="srv-svc-${srv.id}">-</td>
     <td style="text-align:center" id="srv-prob-${srv.id}">-</td>
-    <td class="mono" style="font-size:11px;letter-spacing:-0.025em;text-align:center;white-space:nowrap" id="srv-seen-${srv.id}">-</td>
+    <td class="mono" style="font-size:9.5px;letter-spacing:-0.025em;text-align:center;white-space:nowrap" id="srv-seen-${srv.id}">-</td>
     <td class="col-act" style="text-align:center;white-space:nowrap">
       <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center">
-        <a href="/servers/${srv.id}/services" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="${isEn ? 'Server Details' : 'Buka Rincian Layanan Server'}" aria-label="Rincian">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        <a href="/servers/${srv.id}/services" class="btn btn-ghost btn-sm" style="padding:3px 6px" title="${isEn ? 'Server Details' : 'Buka Rincian Layanan Server'}" aria-label="Rincian">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
         </a>
       </div>
     </td>
