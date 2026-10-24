@@ -311,6 +311,29 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.7.1
+
+- **Tipe Rilis:** Eliminasi Total Glif Rusak Tofu `copyable-ip`, Duplikasi Label UTC, dan Restorasi Estetika Antarmuka (*Complete Elimination of copyable-ip Tofu Glyphs, UTC Redundancy Elimination & Action Button Aesthetics Restoration*)
+- **Fokus Utama:** Menyelesaikan pembersihan visual menyeluruh dari seluruh anomali visual yang tampak pada antarmuka web, menghilangkan glif rusak (*tofu box*), redundansi teks jam, dan menyelaraskan estetika tombol tindakan sesuai prinsip kepadatan tinggi NOC:
+  1. **Eliminasi Total Glif Rusak Tofu pada Seluruh Alamat IP (`base.html`):**
+     - Menghapus aturan pseudo-elemen `.copyable-ip::after { content: '\2398'; }` yang merender kotak rusak hampa (`□`) pada seluruh alamat IP di Dashboard, Daftar Server, dan Rincian Server bagi pengguna Linux dan sistem tanpa font simbol khusus.
+     - Mempertahankan fungsionalitas salin cepat IP dengan efek interaksi latar hover yang bersih dan rapi.
+  2. **Eliminasi Redundansi Label UTC pada Footer Sidebar (`base.html`):**
+     - Memperbaiki duplikasi teks `UTC` pada footer sidebar (`v4.7.0 · UTC 07:34 UTC`) menjadi format ringkas dan elegan: `v4.7.1 · 07:34 UTC`.
+  3. **Restorasi Estetika Tombol Header & Nomenklatur Navigasi (`services.html`):**
+     - Mengubah tombol `Edit` dan `Hapus` pada header rincian server menjadi ikon SVG murni yang presisi dengan tooltip deskriptif dan atribut `aria-label`, harmonis dengan bilah alat hero server.
+     - Mengubah tautan kembali navigasi `&larr; Servers` dari Bahasa Inggris menjadi Bahasa Indonesia baku `&larr; Daftar Server`.
+  4. **Pencegahan Alarm Palsu Titik Peringatan Tab Pengguna (`services.html` & `base.html`):**
+     - Menambahkan kelas penanda status informatif `.tab .tab-warn-dot.info-blue` (biru tenang) untuk sesi login remote SSH sysadmin (`#tab-dot-akun`), mengeliminasi titik merah menyala (*danger red*) yang sebelumnya memicu salah persepsi kegawatan sistem.
+  5. **Pembersihan Glif dan Emoji Sisa pada Seluruh Template:**
+     - Mengganti simbol unicode `⛨` pada port dilindungi di `services.html` dengan ikon SVG shield vektor murni.
+     - Mengganti emoji direktori `📁` pada panel direktori cadangan di `services.html` dengan ikon SVG folder murni.
+     - Mengganti emoji `ℹ️` pada alasan pemeliharaan di `servers.html` dengan SVG info circle.
+     - Mengganti glif `⛶`, `⚙`, dan `⚠️` di `file_manager.html` dengan SVG standar beresolusi tinggi.
+     - Mengganti emoji petir `⚡` dan gerigi `⚙️` di `probing.html` serta banner pembaruan di `base.html` dengan SVG zap dan cog vektor bersih.
+
+---
+
 ## Versi 4.7.0
 
 - **Tipe Rilis:** Fitur Baru: Pemantauan Status Cadangan Otomatis Terpusat (*Central Automated Backup Monitoring, Database Dump & Archive Integrity Verification*)

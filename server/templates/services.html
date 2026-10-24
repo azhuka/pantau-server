@@ -1056,9 +1056,8 @@ div[style*="position: fixed"] .card {
   </h2>
   <div style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap">
     {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-    <a href="/servers/{{ server.id }}/edit" class="btn btn-ghost btn-sm" style="font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" title="Edit konfigurasi server" data-i18n-title="edit">
+    <a href="/servers/{{ server.id }}/edit" class="btn btn-ghost btn-sm" style="padding:6px 9px;display:inline-flex;align-items:center" title="Edit konfigurasi server" aria-label="Edit" data-i18n-title="edit">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-      <span data-i18n="edit">Edit</span>
     </a>
     <form method="POST" action="/servers/{{ server.id }}/delete" style="display:inline;margin:0"
           data-guardrail
@@ -1069,13 +1068,12 @@ div[style*="position: fixed"] .card {
           data-guardrail-btn="Hapus Server Sekarang"
           data-guardrail-color="danger">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button class="btn btn-danger btn-sm" style="font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" type="submit" title="Hapus server ini" data-i18n-title="delete">
+      <button class="btn btn-danger btn-sm" style="padding:6px 9px;display:inline-flex;align-items:center" type="submit" title="Hapus server ini" aria-label="Hapus" data-i18n-title="delete">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-        <span data-i18n="delete">Hapus</span>
       </button>
     </form>
     {% endif %}
-    <a href="/servers" class="btn btn-ghost btn-sm" style="font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px">&larr; Servers</a>
+    <a href="/servers" class="btn btn-ghost btn-sm" style="font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" title="Kembali ke Daftar Server">&larr; Daftar Server</a>
   </div>
 </div>
 
@@ -2870,10 +2868,10 @@ div[style*="position: fixed"] .card {
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="bk-scanned-paths">
           {% if backup_status and backup_status.get('scanned_paths') %}
             {% for sp in backup_status.get('scanned_paths') %}
-              <span class="mono" style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px">📁 {{ sp }}</span>
+              <span class="mono" style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> {{ sp }}</span>
             {% endfor %}
           {% else %}
-            <span class="mono" style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px">📁 /var/backups</span>
+            <span class="mono" style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> /var/backups</span>
           {% endif %}
         </div>
         <div style="font-size:11px;color:var(--dim);line-height:1.5">
@@ -3213,7 +3211,7 @@ div[style*="position: fixed"] .card {
                 {% endif %}
                 {% endif %}
                 {% if p.port in (22, 8400) %}
-                <span style="font-size:11px;color:var(--dim);white-space:nowrap">⛨ Dilindungi</span>
+                <span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--dim);white-space:nowrap"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Dilindungi</span>
                 {% endif %}
               </div>
             </td>
@@ -4257,6 +4255,7 @@ function updateTabAlertDots(options) {
     if (d) {
       const hasSessions = !!options.akun;
       d.style.display = hasSessions ? 'inline-block' : 'none';
+      d.classList.add('info-blue');
       d.title = hasSessions ? ((options.sessions_count || 1) + ' sesi remote SSH aktif') : '';
     }
   }
@@ -8354,7 +8353,7 @@ function renderPorts(ports) {
       }
     }
     if (isProtected) {
-      actions += `<span style="font-size:11px;color:var(--dim);white-space:nowrap">⛨ ${isEn ? 'Protected' : 'Dilindungi'}</span>`;
+      actions += `<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--dim);white-space:nowrap"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> ${isEn ? 'Protected' : 'Dilindungi'}</span>`;
     }
 
     return `<tr>

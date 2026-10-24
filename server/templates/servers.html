@@ -228,7 +228,7 @@
       <td style="text-align:center">
         <span class="badge {{ srv._status_cls }}" id="srv-sts-{{ srv.id }}" style="font-size:10.5px;padding:2px 7px">{{ srv._status_label }}</span>
         {% if srv.is_maintenance and srv.maintenance_reason %}
-        <span style="font-size:11px;color:var(--yellow);margin-left:4px" title="{{ srv.maintenance_reason }}">ℹ️</span>
+        <span style="display:inline-flex;align-items:center;vertical-align:middle;color:var(--yellow);margin-left:4px" title="{{ srv.maintenance_reason }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
         {% endif %}
       </td>
       <td id="srv-cpu-{{ srv.id }}" class="mono" style="font-size:13px;text-align:center">{{ srv._cpu ~ '%' if srv._cpu is not none else '—' }}</td>
