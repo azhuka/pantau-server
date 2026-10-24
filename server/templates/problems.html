@@ -516,12 +516,14 @@
           data-prob-sid="{{ p.server_id }}">
         <!-- 1. Waktu -->
         <td style="padding:5px 6px;white-space:nowrap" class="col-time-detailed">
-          <div class="mono" style="font-size:11px;color:var(--text);font-weight:600">
-            <span style="color:var(--dim);font-size:9.5px;text-transform:uppercase;margin-right:4px">Mulai</span>{{ p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—' }}
+          <div class="mono" style="display:flex;align-items:center;gap:5px;line-height:1.4">
+            <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">MULAI</span>
+            <span style="font-size:11px;color:var(--text);font-weight:600">{{ p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—' }}</span>
           </div>
           {% if p.resolved_at %}
-          <div class="mono" style="font-size:11px;color:var(--dim);margin-top:2px">
-            <span style="font-size:9.5px;text-transform:uppercase;margin-right:4px">Selesai</span>{{ p.resolved_at.strftime('%d %b %H:%M:%S') if p.resolved_at else '—' }}
+          <div class="mono" style="display:flex;align-items:center;gap:5px;line-height:1.4;margin-top:2px">
+            <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">SELESAI</span>
+            <span style="font-size:11px;color:var(--dim)">{{ p.resolved_at.strftime('%d %b %H:%M:%S') if p.resolved_at else '—' }}</span>
           </div>
           {% endif %}
         </td>
@@ -1098,11 +1100,13 @@ window.poll = async function() {
             data-prob-host="${_esc(p.hostname)}"
             data-prob-sid="${p.server_id}">
           <td style="padding:5px 6px;white-space:nowrap" class="col-time-detailed">
-            <div class="mono" style="font-size:11px;color:var(--text);font-weight:600">
-              <span style="color:var(--dim);font-size:9.5px;text-transform:uppercase;margin-right:4px">${isEn ? 'START' : 'MULAI'}</span>${_esc((p.started_at || p.started_at_str || '—').replace(/\s*\d{4}\s*/, ' '))}
+            <div class="mono" style="display:flex;align-items:center;gap:5px;line-height:1.4">
+              <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">${isEn ? 'START' : 'MULAI'}</span>
+              <span style="font-size:11px;color:var(--text);font-weight:600">${_esc((p.started_at || p.started_at_str || '—').replace(/\s*\d{4}\s*/, ' '))}</span>
             </div>
-            <div class="mono" style="font-size:11px;color:var(--dim);margin-top:2px">
-              <span style="font-size:9.5px;text-transform:uppercase;margin-right:4px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>${_esc((p.resolved_at || p.resolved_at_str || '—').replace(/\s*\d{4}\s*/, ' '))}
+            <div class="mono" style="display:flex;align-items:center;gap:5px;line-height:1.4;margin-top:2px">
+              <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>
+              <span style="font-size:11px;color:var(--dim)">${_esc((p.resolved_at || p.resolved_at_str || '—').replace(/\s*\d{4}\s*/, ' '))}</span>
             </div>
           </td>
           <td style="padding:5px 6px;white-space:nowrap" class="col-server">

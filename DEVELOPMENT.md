@@ -311,6 +311,27 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.7.2
+
+- **Tipe Rilis:** Restorasi Pengalih Kepadatan Dasbor, Glif Salin Vektor SVG, Proporsionalitas Tabel Insiden, dan Eliminasi Anomali Cadangan (*Restoration of Dashboard Density Switcher, SVG Vector Copy Glyph, Incident Table Proportionality & Automated Backup Telemetry Anomaly Elimination*)
+- **Fokus Utama:** Menyelesaikan pemulihan kontrol ergonomi dasbor, standardisasi ikon interaktif tanpa font tofu, penyempurnaan proporsionalitas kolom tabel dan tipografi, serta eliminasi total alarm palsu pemantauan cadangan di seluruh modul:
+  1. **Restorasi Pengalih Kepadatan Baris Dasbor (`#dash-density-switcher` di `dashboard.html`):**
+     - Mengembalikan 2 tombol pengalih kepadatan baris tabel (*Mode Kompak 1-Baris Ringkas* dan *Mode Standar 2-Baris Rinci*) berdampingan dengan pengalih tata letak dasbor (`#dash-view-switcher`), sehingga bilah kontrol dasbor kembali lengkap dengan 4 tombol kontrol operasional NOC.
+     - Menyinkronkan preferensi kerapatan tabel dengan penyimpanan lokal peramban (`localStorage: 'dash_table_density'`).
+  2. **Restorasi Ikon Salin Vektor SVG Terpadu (`base.html`):**
+     - Menggantikan glif rusak tofu yang sebelumnya dihapus dengan ikon salin vektor SVG murni berbasis CSS `-webkit-mask` / `mask` pada pseudo-elemen `.copyable-ip::after`.
+     - Menyediakan indikator visual yang jelas, elegan, dan lintas platform tanpa ketergantungan pada font sistem, lengkap dengan animasi transisi hover dan perbesaran proporsional.
+  3. **Penyempurnaan Proporsionalitas Kolom Tabel & Tipografi Badge Insiden (`services.html` & `problems.html`):**
+     - Menata ulang proporsi kolom tabel `#probtable`: menghilangkan lebar inline statis yang berlebihan pada kolom Waktu (200px), Durasi (120px), dan Tindakan (160px).
+     - Menetapkan kolom Kejadian (`.col-event`) sebagai kolom elastis utama dengan ruang keterbacaan terluas, memadatkan kolom Tindakan (`.col-act`) menjadi 80px ringkas untuk tombol aksi berikon SVG tanpa celah kosong, serta merapikan kolom Panduan Solusi (`.col-tips`) menjadi 190px dengan pembatasan baris teks rapi (`.prob-tip-text`).
+     - Mengganti teks polos `Mulai`/`Selesai` menjadi badge terstruktur `<span class="badge badge-muted">MULAI</span>` dan `<span class="badge badge-up">SELESAI</span>` dengan pemisahan jarak flexbox (`gap: 5px`) dan font monospace, mencegah penggumpalan teks (*smushed text*) seperti `MULAI24 Okt 2026`.
+  4. **Eliminasi Alarm Palsu Pemantauan Cadangan Sistem (`agent_pantau.py` & `main.py`):**
+     - Menambahkan filter pengecualian berkas administratif dan rotasi internal sistem operasi Debian/Ubuntu (`alternatives.*`, `apt.extended_states*`, `dpkg.*`, `gshadow*`, `passwd*`, `shadow*`, `group*`, `subgid*`, `subuid*`, `debconf*`, `infodir*`) pada fungsi `collect_backup_status` di agen klien.
+     - Menghapus pembuatan insiden otomatis palsu (`backup_stale`, `backup_corrupted`, `backup_missing`) dari mesin kalkulasi insiden server pusat, mempertahankan data cadangan sebagai telemetri informatif murni pada tab Cadangan.
+     - Membersihkan seluruh catatan insiden cadangan usang yang tersisa pada basis data `server_problems`.
+
+---
+
 ## Versi 4.7.1
 
 - **Tipe Rilis:** Eliminasi Total Glif Rusak Tofu `copyable-ip`, Duplikasi Label UTC, dan Restorasi Estetika Antarmuka (*Complete Elimination of copyable-ip Tofu Glyphs, UTC Redundancy Elimination & Action Button Aesthetics Restoration*)

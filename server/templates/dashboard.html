@@ -1040,6 +1040,16 @@ body.popout-fleet_table #dash-fleet-card {
         </button>
       </div>
 
+      <!-- Kepadatan Baris Tabel (Mode Kompak vs Standar) -->
+      <div class="view-switch-group" id="dash-density-switcher" title="Kepadatan Baris Tabel">
+        <button type="button" id="btn-density-compact" onclick="setTableDensity('compact')" class="view-btn active" title="Mode Kompak (1 Baris Ringkas)" aria-label="Mode Kompak (1 Baris Ringkas)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <button type="button" id="btn-density-standard" onclick="setTableDensity('standard')" class="view-btn" title="Mode Standar (2 Baris Rinci)" aria-label="Mode Standar (2 Baris Rinci)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="5" x2="21" y2="5"></line><line x1="3" y1="9" x2="14" y2="9" stroke-width="1.8" opacity="0.65"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="3" y1="19" x2="14" y2="19" stroke-width="1.8" opacity="0.65"></line></svg>
+        </button>
+      </div>
+
       <!-- Grup filter -->
       {% if all_groups and all_groups|length > 0 %}
       <select id="dash-group-filter" onchange="dashFilterAll()"

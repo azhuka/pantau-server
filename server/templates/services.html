@@ -1868,12 +1868,12 @@ div[style*="position: fixed"] .card {
   </div>
   <table id="probtable">
     <thead><tr>
-      <th class="col-time-detailed" style="width:200px;min-width:190px">Waktu</th>
-      <th class="col-sev" style="width:100px;min-width:95px;text-align:center">Keparahan</th>
-      <th>Kejadian</th>
-      <th class="col-durasi" style="width:120px;min-width:110px">Durasi</th>
-      <th class="col-act" style="width:160px;min-width:150px">Tindakan</th>
-      <th class="col-tips" style="width:250px;min-width:200px">Saran</th>
+      <th class="col-time-detailed">Waktu</th>
+      <th class="col-sev">Keparahan</th>
+      <th class="col-event">Kejadian</th>
+      <th class="col-durasi">Durasi</th>
+      <th class="col-act">Tindakan</th>
+      <th class="col-tips">Saran</th>
     </tr></thead>
     <tbody>
     {% for p in rows %}
@@ -1894,16 +1894,18 @@ div[style*="position: fixed"] .card {
         data-prob-sid="{{ server.id }}"
         data-prob-context='{{ p.context or "" }}'>
       <td style="white-space:nowrap" class="mono col-time-detailed">
-        <div style="font-size:11.5px;color:var(--text);font-weight:600">
-          <span style="color:var(--dim);font-size:10px;text-transform:uppercase;margin-right:4px">Mulai</span>{{ _fmt_dt(p.started_at) if p.started_at else '—' }}
+        <div style="display:flex;align-items:center;gap:5px;line-height:1.4">
+          <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">MULAI</span>
+          <span style="color:var(--text);font-weight:600">{{ _fmt_dt(p.started_at) if p.started_at else '—' }}</span>
         </div>
         {% if p.resolved_at %}
-        <div style="font-size:11.5px;color:var(--dim);margin-top:3px">
-          <span style="font-size:10px;text-transform:uppercase;margin-right:4px">Selesai</span>{{ _fmt_dt(p.resolved_at) }}
+        <div style="display:flex;align-items:center;gap:5px;line-height:1.4;margin-top:2px">
+          <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">SELESAI</span>
+          <span style="color:var(--dim)">{{ _fmt_dt(p.resolved_at) }}</span>
         </div>
         {% endif %}
       </td>
-      <td style="width:100px;text-align:center" class="col-sev">
+      <td class="col-sev">
         {% set op_name = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
         {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
         {% if p.is_ignored and p.acknowledged_by %}
@@ -1925,7 +1927,7 @@ div[style*="position: fixed"] .card {
           <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
         {% endif %}
       </td>
-      <td>
+      <td class="col-event">
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
         {% if p.is_ignored and p.ignored_reason %}
@@ -1936,8 +1938,8 @@ div[style*="position: fixed"] .card {
         {% endif %}
         {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
-      <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
-      <td class="prob-act-cell">
+      <td class="mono col-durasi"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
+      <td class="prob-act-cell col-act">
         <div class="prob-act-wrap">
           <div class="prob-act-row prob-act-tools">
             <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" aria-label="Diagnosa">
@@ -2002,7 +2004,7 @@ div[style*="position: fixed"] .card {
           {% endif %}
         </div>
       </td>
-      <td style="font-size:12px;line-height:1.55;max-width:360px">{{ p.tip or '—' }}</td>
+      <td class="col-tips"><div class="prob-tip-text" title="{{ p.tip or '—' }}">{{ p.tip or '—' }}</div></td>
     </tr>
     {% endfor %}
     </tbody>
@@ -7331,12 +7333,12 @@ function renderProblemsTab(level, openList, histList) {
   </div>
   <table id="probtable">
     <thead><tr>
-      <th class="col-time-detailed" style="width:200px;min-width:190px">${isEn ? 'Time' : 'Waktu'}</th>
-      <th class="col-sev" style="width:100px;min-width:95px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
-      <th>${isEn ? 'Event' : 'Kejadian'}</th>
-      <th class="col-durasi" style="width:120px;min-width:110px">${isEn ? 'Duration' : 'Durasi'}</th>
-      <th class="col-act" style="width:160px;min-width:150px">${isEn ? 'Action' : 'Tindakan'}</th>
-      <th class="col-tips" style="width:250px;min-width:200px">${isEn ? 'Advice' : 'Saran'}</th>
+      <th class="col-time-detailed">${isEn ? 'Time' : 'Waktu'}</th>
+      <th class="col-sev">${isEn ? 'Severity' : 'Keparahan'}</th>
+      <th class="col-event">${isEn ? 'Event' : 'Kejadian'}</th>
+      <th class="col-durasi">${isEn ? 'Duration' : 'Durasi'}</th>
+      <th class="col-act">${isEn ? 'Action' : 'Tindakan'}</th>
+      <th class="col-tips">${isEn ? 'Advice' : 'Saran'}</th>
     </tr></thead>
     <tbody>`;
 
@@ -7364,8 +7366,8 @@ function renderProblemsTab(level, openList, histList) {
     const pTip = isEn ? getServicesI18nText(p.tip || '—', true) : (p.tip || '—');
     const searchTxt = ((pMsg || '') + ' ' + (p.key || '')).toLowerCase();
     const rowStyle = !isOpen ? ' style="opacity:.65"' : (isIgnored ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '');
-    const startStr = `<div style="font-size:11.5px;color:var(--text);font-weight:600"><span style="color:var(--dim);font-size:10px;text-transform:uppercase;margin-right:4px">${isEn ? 'START' : 'MULAI'}</span>${fmtProbDate(p.started_at)}</div>`;
-    const resStr = p.resolved_at ? `<div style="font-size:11.5px;color:var(--dim);margin-top:3px"><span style="font-size:10px;text-transform:uppercase;margin-right:4px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>${fmtProbDate(p.resolved_at)}</div>` : '';
+    const startStr = `<div style="display:flex;align-items:center;gap:5px;line-height:1.4"><span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">${isEn ? 'START' : 'MULAI'}</span><span style="color:var(--text);font-weight:600">${fmtProbDate(p.started_at)}</span></div>`;
+    const resStr = p.resolved_at ? `<div style="display:flex;align-items:center;gap:5px;line-height:1.4;margin-top:2px"><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">${isEn ? 'RESOLVED' : 'SELESAI'}</span><span style="color:var(--dim)">${fmtProbDate(p.resolved_at)}</span></div>` : '';
     const checkMark = isOpen ? '' : '<span style="color:var(--green)">✓</span> ';
     const msgStyle = isOpen ? '' : ' style="text-decoration:line-through"';
     const ignoredBadge = isIgnored
@@ -7445,11 +7447,11 @@ function renderProblemsTab(level, openList, histList) {
       data-prob-sid="${SID}"
       data-prob-context="${escapeHtml(ctxAttr)}">
       <td style="white-space:nowrap" class="mono col-time-detailed">${startStr}${resStr}</td>
-      <td style="width:100px;text-align:center" class="col-sev">${sevCellHtml}</td>
-      <td>${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${kambuhBadge}</td>
-      <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
-      <td class="prob-act-cell col-act" style="width:160px">${actHtml}</td>
-      <td style="font-size:12px;line-height:1.55;max-width:360px">${escapeHtml(pTip || '—')}</td>
+      <td class="col-sev">${sevCellHtml}</td>
+      <td class="col-event">${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${kambuhBadge}</td>
+      <td class="mono col-durasi" style="white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
+      <td class="prob-act-cell col-act">${actHtml}</td>
+      <td class="col-tips"><div class="prob-tip-text" title="${escapeHtml(pTip || '—')}">${escapeHtml(pTip || '—')}</div></td>
     </tr>`;
   }
 

@@ -474,7 +474,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.7.1"
+AGENT_VERSION = "4.7.2"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4133,6 +4133,21 @@ def collect_backup_status(cfg: dict | None = None) -> dict:
         ".zip", ".vma.zst", ".qcow2.bak"
     )
 
+    # Abaikan berkas rotasi internal sistem/OS Debian/Ubuntu yang berada di /var/backups
+    os_backup_ignore_prefixes = (
+        "alternatives.",
+        "apt.extended_states",
+        "dpkg.",
+        "gshadow",
+        "passwd",
+        "shadow",
+        "group",
+        "subgid",
+        "subuid",
+        "debconf",
+        "infodir",
+    )
+
     found_files: list[dict] = []
     scanned_dirs: list[str] = []
     now_epoch = time.time()
@@ -4181,6 +4196,8 @@ def collect_backup_status(cfg: dict | None = None) -> dict:
                         for entry in it:
                             if entry.is_file(follow_symlinks=False):
                                 name = entry.name
+                                if name.lower().startswith(os_backup_ignore_prefixes):
+                                    continue
                                 if any(name.endswith(ext) or ext in name for ext in extensions):
                                     try:
                                         st = entry.stat()

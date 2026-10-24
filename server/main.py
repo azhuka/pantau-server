@@ -7759,44 +7759,6 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             except Exception as e:
                 logger.debug("Gagal evaluasi disk SMART untuk server %s: %s", srv.id, e)
 
-        # Deteksi Masalah Integritas & Usia Cadangan Otomatis (Central Automated Backup Monitoring)
-        if getattr(extras, "backup_status", None):
-            try:
-                bks = json.loads(extras.backup_status) if isinstance(extras.backup_status, str) else extras.backup_status
-                if isinstance(bks, dict):
-                    bk_st = bks.get("status")
-                    latest_bk = bks.get("latest_backup") or {}
-                    # 1. Cadangan Gagal / Berkas 0 Byte (Danger)
-                    if bk_st == "critical" or latest_bk.get("status") == "critical":
-                        inst.append({
-                            "key": "backup_corrupted",
-                            "severity": "danger",
-                            "message": f"Berkas Cadangan Gagal/Kosong (0 Byte): {latest_bk.get('filename') or 'Berkas cadangan'}",
-                            "tip": f"Pemeriksaan berkas di {latest_bk.get('path')} mendapati ukuran 0 byte. Periksa script dump database atau ruang partisi penyimpanan.",
-                            "context": _build_problem_context("backup_corrupted", srv, backup=latest_bk),
-                        })
-                    # 2. Cadangan Usang > 24 Jam (Warning)
-                    elif bk_st == "warning" or latest_bk.get("status") == "warning":
-                        age_val = latest_bk.get("age_hours", 0.0)
-                        inst.append({
-                            "key": "backup_stale",
-                            "severity": "warning",
-                            "message": f"Cadangan Sistem Usang: Berkas terakhir dibuat {age_val:.1f} jam lalu ({latest_bk.get('filename')})",
-                            "tip": "Cadangan otomatis tidak diperbarui dalam kurun waktu 24 jam terakhir. Periksa apakah cron job atau timer cadangan berjalan normal.",
-                            "context": _build_problem_context("backup_stale", srv, backup=latest_bk),
-                        })
-                    # 3. Database aktif tapi tidak ada berkas cadangan (Info)
-                    elif bk_st == "none" and bks.get("database_detected") and bks.get("total_files", 0) == 0:
-                        inst.append({
-                            "key": "backup_missing",
-                            "severity": "info",
-                            "message": "Peringatan Cadangan: Layanan database aktif terdeteksi namun belum ada berkas cadangan",
-                            "tip": "Server menjalankan layanan basis data aktif (MySQL/MariaDB/PostgreSQL), namun tidak ditemukan berkas dump di /var/backups atau direktori standar.",
-                            "context": _build_problem_context("backup_missing", srv),
-                        })
-            except Exception as e:
-                logger.debug("Gagal evaluasi backup status untuk server %s: %s", srv.id, e)
-
         # Deteksi sesi remote SSH aktif dari telemetri akun/who (INFO)
         if getattr(extras, "accounts", None):
             try:
