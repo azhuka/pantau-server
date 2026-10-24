@@ -311,6 +311,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.7.5
+
+- **Tipe Rilis:** Restorasi Menyeluruh Kepadatan Antarmuka NOC, Pengalih Mode Dasbor Empat Kontrol, Eliminasi Teks Coret Riwayat Insiden, dan Penyelarasan Tombol Aksi Berbasis Ikon (*Comprehensive NOC Interface Density Restoration, 4-Control Dashboard Switcher, Clean Incident History Rendering & Universal Icon Action Button Polish*)
+- **Fokus Utama:** Menyempurnakan dan menegakkan konsistensi visual di seluruh modul aplikasi sesuai standar baku pemantauan NOC:
+  1. **Pemulihan Penuh Pengalih Mode & Kepadatan Dasbor (`dashboard.html`):**
+     - Memulihkan kontrol pengalih kepadatan baris tabel (`dash-density-switcher`) dengan 4 tombol terpadu: Tabel Operasional, Kartu NOC, Mode Kompak (1 Baris Ringkas), dan Mode Standar (2 Baris Rinci).
+     - Menjamin status switcher tersimpan persisten di `localStorage` dan reaktif seketika tanpa memicu pemuatan ulang halaman.
+  2. **Standardisasi Hierarki Kolom Keparahan Dua Baris Proporsional (`problems.html` & `dashboard.html`):**
+     - Menerapkan hierarki visual 2 baris terstruktur pada kolom Keparahan tabel insiden terbuka: Baris 1 menampilkan status utama (`DIABAIKAN` / Keparahan Insiden) dengan badge proporsional dan tebal, dan Baris 2 menampilkan informasi sekunder opsional (`(oleh <operator>)` atau status penanganan) dengan ukuran teks lebih kecil dan warna teredam (`var(--dim)`).
+  3. **Pembersihan Teks Coret pada Riwayat Insiden Teratasi (`problems.html` & `services.html`):**
+     - Menghapus efek dekorasi coret (`text-decoration: line-through`) pada deskripsi masalah yang telah selesai, menyajikan riwayat insiden secara bersih, jelas terbaca, dan elegan menggunakan peredaman warna (`color: var(--dim)`).
+  4. **Penyelarasan Universal Tombol Tindakan Berikon SVG Murni (`servers.html` & `services.html`):**
+     - Memastikan seluruh tabel utama menggunakan tombol tindakan berbasis ikon vektor SVG murni dengan tooltip informatif baku (*Buka Rincian Layanan Server*, *Edit Konfigurasi Server*, *Hapus Server dari Pantau*).
+     - Menyelaraskan tombol aksi di bilah judul rincian server (`services.html`) menjadi tombol ikon ringkas dengan tooltip dan tautan kembali `← Daftar Server`.
+  5. **Integritas Arsitektur & Peniadaan Fitur Tanpa Permintaan:**
+     - Menjaga repositori dan berkas agen tetap murni pada arsitektur telemetri yang telah teruji tanpa injeksi modul cadangan yang tidak diminta.
+
 ## Versi 4.7.4
 
 - **Tipe Rilis:** Restorasi Menyeluruh Tombol Tindakan Ikon SVG Murni Tanpa Label Teks, Normalisasi Pengguna Otentikasi, dan Penyempurnaan Konteks Operator Insiden (*Universal Pure SVG Icon Action Buttons Standardization, Authentication User Normalization & Incident Operator Context Polish*)

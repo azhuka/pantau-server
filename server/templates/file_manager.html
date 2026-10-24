@@ -226,7 +226,7 @@
         <span id="fm-editor-status" style="font-size:12px;margin-left:8px"></span>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
-        <button type="button" id="fm-editor-fs-btn" class="btn btn-ghost btn-sm" onclick="fmToggleEditorFullscreen()" title="Layar Penuh (Toggle Fullscreen)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg></button>
+        <button type="button" id="fm-editor-fs-btn" class="btn btn-ghost btn-sm" onclick="fmToggleEditorFullscreen()" title="Layar Penuh (Toggle Fullscreen)">⛶</button>
         <button type="button" class="btn btn-ghost btn-sm" onclick="fmCloseEditor()" title="Tutup">&times;</button>
       </div>
     </div>
@@ -433,7 +433,7 @@
 <div id="fm-bulk-chmod-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card">
     <div class="fm-modal-header">
-      <span style="display:inline-flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Ubah Hak Akses Massal</span>
+      <span>⚙ Ubah Hak Akses Massal</span>
       <button type="button" class="btn btn-ghost" onclick="fmCloseBulkChmod()">&times;</button>
     </div>
     <form id="fm-bulk-chmod-form" onsubmit="fmSubmitBulkChmod(event)">
@@ -1083,7 +1083,7 @@ async function fmLoadDir(path, pushHistory = true) {
       : 'Server sedang offline. Operasi berkas dinonaktifkan sampai server dan agen aktif.';
     errBanner.style.display = 'block';
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--dim)">
-      <span style="display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--yellow)"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> ` + (isEn ? 'Server is offline. Ensure agent_pantau service is running.' : 'Server sedang offline. Pastikan service agent_pantau aktif.') + `</span>
+      ⚠️ ` + (isEn ? 'Server is offline. Ensure agent_pantau service is running.' : 'Server sedang offline. Pastikan service agent_pantau aktif.') + `
     </td></tr>`;
     statsInfo.innerHTML = `<span style="color:var(--yellow)">` + (isEn ? 'Server Offline' : 'Server Offline') + `</span>`;
     fmUpdateNavButtons();
@@ -1171,7 +1171,7 @@ async function fmLoadDir(path, pushHistory = true) {
     errBanner.textContent = (isEn ? 'Failed to open directory: ' : 'Gagal membuka direktori: ') + err.message;
     errBanner.style.display = 'block';
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--red)">
-      <span style="display:inline-flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red)"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> ${escapeHtml(err.message)}</span>
+      ⚠️ ${escapeHtml(err.message)}
     </td></tr>`;
     fmUpdateNavButtons();
   }
@@ -1399,7 +1399,7 @@ function fmCloseEditor() {
   modal.classList.remove('has-fullscreen');
   card.classList.remove('is-fullscreen');
   if (btn) {
-    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>';
+    btn.textContent = '⛶';
     btn.title = isEn ? 'Fullscreen' : 'Layar Penuh';
   }
   fmEditingPath = null;

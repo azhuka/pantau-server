@@ -693,7 +693,7 @@
         <details style="margin-top:14px;border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px 12px;background:rgba(255,255,255,0.015)">
           <summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--blue);user-select:none;display:inline-flex;align-items:center;gap:6px">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            Pengaturan Lanjutan (Opsional)
+            ⚙️ Pengaturan Lanjutan (Opsional)
           </summary>
           <div style="margin-top:12px">
             <!-- Opsi Khusus Web HTTP/HTTPS -->
@@ -796,7 +796,7 @@
       <div class="probe-modal-foot">
         <button type="button" class="btn btn-ghost btn-sm" id="btnTestAdhoc" onclick="testProbeConnectionAdhoc()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-          <span>Uji Sambungan</span>
+          ⚡ Uji Sambungan
         </button>
         <div style="display:flex;gap:8px">
           <button type="button" class="btn btn-ghost btn-sm" onclick="closeProbeModal()">Batal</button>
@@ -1358,7 +1358,7 @@ async function testProbeConnectionAdhoc() {
     box.textContent = 'Galat pengujian: ' + err.message;
   } finally {
     btn.disabled = false;
-    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> <span>Uji Sambungan</span>`;
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> ⚡ Uji Sambungan`;
   }
 }
 

@@ -179,80 +179,56 @@ tr:last-child td{border-bottom:none}
   font-size: 11.5px !important;
 }
 .col-sev, th.col-sev, td.col-sev {
-  width: 96px !important;
-  min-width: 90px !important;
-  max-width: 105px !important;
+  width: 80px !important;
+  min-width: 74px !important;
+  max-width: 88px !important;
   white-space: nowrap !important;
   text-align: center !important;
 }
 .col-sev .badge {
-  font-size: 9.5px !important;
-  padding: 1.5px 5.5px !important;
+  font-size: 8px !important;
+  padding: 1px 4.5px !important;
   border-radius: 3px !important;
-  line-height: 1.25 !important;
-  letter-spacing: 0.3px !important;
-  font-weight: 700 !important;
-}
-.col-sev .badge-sub,
-.col-sev .badge-handled,
-.col-sev .col-sev-sub {
-  font-size: 8px !important;
-  padding: 0.5px 4px !important;
-  font-weight: 600 !important;
   line-height: 1.2 !important;
-  letter-spacing: 0.1px !important;
-}
-.col-sev .col-sev-sub-text {
-  font-size: 8px !important;
-  color: var(--dim) !important;
-  margin-top: 1.5px !important;
-  white-space: nowrap !important;
-  line-height: 1.2 !important;
-  display: block !important;
-  text-align: center !important;
+  letter-spacing: 0.2px !important;
 }
 .col-event, th.col-event, td.col-event,
 .col-desc, th.col-desc, td.col-desc {
   /* Hero Content Column: Flexibel terluas, proporsional, ukuran kompak & nyaman dibaca */
   width: auto !important;
-  min-width: 260px !important;
+  min-width: 280px !important;
   font-size: 11px !important;
   line-height: 1.35 !important;
 }
 .col-event .badge, .col-desc .badge {
-  font-size: 8px !important;
-  padding: 1px 4.5px !important;
+  font-size: 7.5px !important;
+  padding: 0.5px 3.5px !important;
 }
 .col-act, th.col-act, td.col-act, .prob-act-cell,
 th.th-act, td.td-act, td.cell-act, .fm-actions-cell {
-  width: 90px !important;
-  min-width: 85px !important;
+  width: 1% !important;
+  min-width: 80px !important;
   white-space: nowrap !important;
-  text-align: center !important;
-}
-.prob-act-wrap {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 4px !important;
+  text-align: left !important;
 }
 .col-tips, th.col-tips, td.col-tips {
-  width: 260px !important;
-  min-width: 200px !important;
-  max-width: 320px !important;
-  font-size: 11px !important;
+  width: 190px !important;
+  min-width: 160px !important;
+  max-width: 220px !important;
+  font-size: 10.5px !important;
   color: var(--dim) !important;
-  line-height: 1.35 !important;
+  line-height: 1.3 !important;
   vertical-align: middle !important;
 }
 .prob-tip-text {
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.35;
-  font-size: 11px !important;
+  line-height: 1.3;
+  max-height: 2.6em;
+  font-size: 10.5px !important;
 }
 
 /* Tombol Modern dengan sentuhan Neon Halus */
@@ -390,19 +366,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
 /* ---------- Salin Cepat IP & Indikator Proses ---------- */
 .copyable-ip{display:inline-flex;align-items:center;gap:5px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s;user-select:all}
 .copyable-ip:hover{background:var(--blue-bg);color:var(--blue)}
-.copyable-ip::after{
-  content:'';
-  display:inline-block;
-  width:11px;
-  height:11px;
-  background-color:currentColor;
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='13' height='13' rx='2' ry='2'%3E%3C/rect%3E%3Cpath d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'%3E%3C/path%3E%3C/svg%3E") no-repeat center/contain;
-  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='13' height='13' rx='2' ry='2'%3E%3C/rect%3E%3Cpath d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'%3E%3C/path%3E%3C/svg%3E") no-repeat center/contain;
-  opacity:0.45;
-  transition:opacity .15s, transform .15s;
-  flex-shrink:0;
-}
-.copyable-ip:hover::after{opacity:1;transform:scale(1.08)}
+.copyable-ip::after{content:'\2398';font-size:11px;opacity:.5}
+.copyable-ip:hover::after{opacity:1}
 @keyframes spin{100%{transform:rotate(360deg)}}
 
 /* ---------- Toast notifikasi (feedback aksi dari redirect) ---------- */
@@ -541,10 +506,6 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
 .tab .tab-warn-dot.warn-yellow{
   background:#eab308;
   box-shadow:0 0 6px #eab308;
-}
-.tab .tab-warn-dot.info-blue{
-  background:var(--blue);
-  box-shadow:0 0 6px var(--blue);
 }
 
 .tab:active{
@@ -1099,7 +1060,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.7.4' }} · <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.7.5' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -2980,7 +2941,7 @@ if (document.readyState === 'loading') {
       const banner = document.createElement('div');
       banner.id = 'pantau-update-toast-banner';
       banner.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:999999;background:var(--card,#1e293b);border:1px solid var(--accent,#3b82f6);color:var(--text,#f8fafc);padding:10px 16px;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,0.5);display:flex;align-items:center;gap:12px;font-size:12px;animation:fadeIn 0.3s ease;';
-      banner.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--yellow)"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> ' + (isEn ? 'System update detected (' + newVer + ')' : 'Pembaruan server terdeteksi (' + newVer + ')') + '</span>'
+      banner.innerHTML = '<span>⚡ ' + (isEn ? 'System update detected (' + newVer + ')' : 'Pembaruan server terdeteksi (' + newVer + ')') + '</span>'
         + '<button class="btn btn-primary btn-sm" style="padding:3px 10px;font-size:11px">' + (isEn ? 'Reload Now' : 'Muat Ulang') + '</button>';
       banner.querySelector('button').onclick = () => {
         try { sessionStorage.setItem('pantau_auto_synced_ver', 'v' + newVer); } catch(e){}

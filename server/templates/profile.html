@@ -393,18 +393,24 @@
         gap: 16px;
       }
     }
-    .user-act-btn, .user-act-icon-btn {
+    .user-act-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 3.5px;
+      font-size: 11px;
+      padding: 3px 6px;
+      border-radius: 5px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .user-act-icon-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 24px;
-      height: 24px;
-      padding: 0;
-      border-radius: 4px;
-      font-size: 11px;
-      line-height: 1;
+      padding: 3px 6px;
+      border-radius: 5px;
+      line-height: 1.2;
       white-space: nowrap;
-      flex-shrink: 0;
     }
   </style>
 
@@ -427,7 +433,7 @@
               <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Peran</th>
               <th style="padding:8px 8px;font-weight:600;white-space:nowrap">Status &amp; 2FA</th>
               <th style="padding:6px 8px;font-weight:600;white-space:nowrap">Login Terakhir</th>
-              <th class="col-act" style="padding:6px 8px;text-align:center;font-weight:600;white-space:nowrap;width:150px">Tindakan</th>
+              <th class="col-act" style="padding:6px 8px;text-align:left;font-weight:600;white-space:nowrap">Tindakan</th>
             </tr>
           </thead>
           <tbody>
@@ -484,32 +490,35 @@
                 <span style="color:var(--dim);opacity:0.6">-</span>
                 {% endif %}
               </td>
-              <td class="col-act" style="padding:6px 8px;text-align:center;white-space:nowrap">
-                <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center;flex-wrap:nowrap">
+              <td class="col-act" style="padding:6px 8px;text-align:left;white-space:nowrap">
+                <div style="display:inline-flex;gap:3px;align-items:center;justify-content:flex-start;flex-wrap:nowrap">
                   <!-- Tombol 1: LIHAT Detail Hak Akses -->
-                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openViewUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ u.totp_enabled }}, {{ (u.last_login_at.strftime("%d %b %Y %H:%M UTC") if u.last_login_at else "-")|tojson }}, {{ (u.last_login_ip or "-")|tojson }}, {{ uperms|tojson }})' title="Lihat detail hak akses {{ u.username }}" aria-label="Lihat">
+                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openViewUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ u.totp_enabled }}, {{ (u.last_login_at.strftime("%d %b %Y %H:%M UTC") if u.last_login_at else "-")|tojson }}, {{ (u.last_login_ip or "-")|tojson }}, {{ uperms|tojson }})' title="Lihat detail hak akses {{ u.username }}">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="3" r="3"></circle>
+                      <circle cx="12" cy="12" r="3"></circle>
                     </svg>
+                    <span>Lihat</span>
                   </button>
 
                   <!-- Tombol 2FA (Khusus Master Admin & Pengelola Akun) -->
                   {% if (can_manage_users or (can_manage_viewers and u.role == 'viewer')) and (not u.is_master_admin() or user.is_master_admin()) %}
                     {% if not u.totp_enabled %}
-                    <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' style="color:#fbbf24;border-color:rgba(251,191,36,0.35)" title="Setup &amp; Aktifkan 2FA untuk {{ u.username }}" aria-label="Setup 2FA">
+                    <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' style="color:#fbbf24;border-color:rgba(251,191,36,0.35)" title="Setup &amp; Aktifkan 2FA untuk {{ u.username }}">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                       </svg>
+                      <span>+2FA</span>
                     </button>
                     {% else %}
-                    <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' style="color:#38bdf8;border-color:rgba(56,189,248,0.35)" title="Reset konfigurasi 2FA {{ u.username }}" aria-label="Reset 2FA">
+                    <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openAdmin2faModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role_display()|tojson }})' style="color:#38bdf8;border-color:rgba(56,189,248,0.35)" title="Reset konfigurasi 2FA {{ u.username }}">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
                       </svg>
+                      <span>Reset</span>
                     </button>
-                    <button type="button" class="btn btn-ghost btn-sm user-act-icon-btn" onclick='disableAdmin2fa({{ u.id }}, {{ u.username|tojson }})' style="color:#f87171" title="Matikan 2FA {{ u.username }}" aria-label="Matikan 2FA">
+                    <button type="button" class="btn btn-ghost btn-sm user-act-icon-btn" onclick='disableAdmin2fa({{ u.id }}, {{ u.username|tojson }})' style="color:#f87171" title="Matikan 2FA {{ u.username }}">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
@@ -520,7 +529,7 @@
 
                   <!-- Tombol Audit Jejak Aktivitas Pengguna -->
                   {% if user.is_master_admin() or user.has_perm('can_audit') %}
-                  <a href="/audit?user={{ u.username }}" class="btn btn-ghost btn-sm user-act-btn" style="color:#38bdf8;text-decoration:none" title="Riwayat tindakan pengguna {{ u.username }}" aria-label="Audit">
+                  <a href="/audit?user={{ u.username }}" class="btn btn-ghost btn-sm user-act-btn" style="color:#38bdf8;text-decoration:none" title="Riwayat tindakan pengguna {{ u.username }}">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                       <polyline points="14 2 14 8 20 8"></polyline>
@@ -528,16 +537,18 @@
                       <line x1="16" y1="17" x2="8" y2="17"></line>
                       <polyline points="10 9 9 9 8 9"></polyline>
                     </svg>
+                    <span>Audit</span>
                   </a>
                   {% endif %}
 
                   <!-- Tombol 2: EDIT Akun Pengguna -->
                   {% if can_manage_users and (not u.is_master_admin() or user.is_master_admin()) %}
-                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openEditUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ uperms|tojson }}, {{ u.is_master_admin()|tojson }})' title="Edit akun &amp; wewenang {{ u.username }}" aria-label="Edit">
+                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openEditUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ uperms|tojson }}, {{ u.is_master_admin()|tojson }})' title="Edit akun &amp; wewenang {{ u.username }}">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </svg>
+                    <span>Edit</span>
                   </button>
                   {% endif %}
 
@@ -546,14 +557,14 @@
                   <form method="POST" action="/users/{{ u.id }}/toggle-active" style="display:inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     {% if u.is_active %}
-                    <button type="submit" class="btn btn-ghost btn-sm user-act-icon-btn" style="color:#f87171" title="Kunci akun {{ u.username }} agar tidak bisa login" aria-label="Kunci Akun" onclick="return confirm('Kunci akun {{ u.username }}? Pengguna tidak akan bisa login.');">
+                    <button type="submit" class="btn btn-ghost btn-sm user-act-icon-btn" style="color:#f87171" title="Kunci akun {{ u.username }} agar tidak bisa login" onclick="return confirm('Kunci akun {{ u.username }}? Pengguna tidak akan bisa login.');">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                       </svg>
                     </button>
                     {% else %}
-                    <button type="submit" class="btn btn-ghost btn-sm user-act-icon-btn" style="color:#4ade80" title="Buka kunci akun {{ u.username }}" aria-label="Buka Kunci Akun" onclick="return confirm('Buka kunci akun {{ u.username }}?');">
+                    <button type="submit" class="btn btn-ghost btn-sm user-act-icon-btn" style="color:#4ade80" title="Buka kunci akun {{ u.username }}" onclick="return confirm('Buka kunci akun {{ u.username }}?');">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
@@ -575,7 +586,7 @@
                         data-guardrail-color="danger"
                         onsubmit="handleDeleteUserForm(event, '{{ u.username }}')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <button type="submit" class="btn btn-danger btn-sm user-act-icon-btn" title="Hapus akun {{ u.username }} secara permanen" aria-label="Hapus">
+                    <button type="submit" class="btn btn-danger btn-sm user-act-icon-btn" title="Hapus akun {{ u.username }} secara permanen">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -1366,7 +1377,7 @@ function openViewUserModal(id, username, role, isActive, totpEnabled, lastLogin,
           <div>
             ${isGranted 
               ? '<span class="badge" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:10px">✔ Diizinkan</span>'
-              : '<span class="badge" style="background:rgba(255,255,255,0.04);color:var(--dim);border:1px solid var(--border);font-size:10px">Tidak</span>'}
+              : '<span class="badge" style="background:rgba(255,255,255,0.04);color:var(--dim);border:1px solid var(--border);font-size:10px">✖ Tidak</span>'}
           </div>
         </div>
       `;

@@ -1374,7 +1374,6 @@ div[style*="position: fixed"] .card {
   <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn" data-i18n="tab_firewall"><span class="tab-text">Firewall</span><span id="tab-dot-firewall" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn" data-i18n="tab_ssl"><span class="tab-text">SSL/TLS</span><span id="tab-dot-ssl" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn" data-i18n="tab_cron"><span class="tab-text">Cron Jobs</span><span id="tab-dot-cron" class="tab-warn-dot" style="display:none"></span></button>
-  <button class="tab" data-tab="cadangan" role="tab" id="tab-cadangan-btn"><span class="tab-text">Cadangan</span><span id="tab-dot-cadangan" class="tab-warn-dot" style="display:{{ 'inline-block' if (backup_status and backup_status.get('status') in ['warning', 'critical']) else 'none' }}"></span></button>
   <button class="tab" data-tab="log" role="tab" id="tab-log-btn" data-i18n="tab_logging"><span class="tab-text">Logs</span><span id="tab-dot-log" class="tab-warn-dot" style="display:none"></span></button>
 </div>
 
@@ -1868,12 +1867,12 @@ div[style*="position: fixed"] .card {
   </div>
   <table id="probtable">
     <thead><tr>
-      <th class="col-time-detailed">Waktu</th>
-      <th class="col-sev">Keparahan</th>
-      <th class="col-event">Kejadian</th>
-      <th class="col-durasi">Durasi</th>
-      <th class="col-act">Tindakan</th>
-      <th class="col-tips">Saran</th>
+      <th class="col-time-detailed" style="width:200px;min-width:190px">Waktu</th>
+      <th class="col-sev" style="width:100px;min-width:95px;text-align:center">Keparahan</th>
+      <th>Kejadian</th>
+      <th class="col-durasi" style="width:120px;min-width:110px">Durasi</th>
+      <th class="col-act" style="width:160px;min-width:150px">Tindakan</th>
+      <th class="col-tips" style="width:250px;min-width:200px">Saran</th>
     </tr></thead>
     <tbody>
     {% for p in rows %}
@@ -1894,42 +1893,40 @@ div[style*="position: fixed"] .card {
         data-prob-sid="{{ server.id }}"
         data-prob-context='{{ p.context or "" }}'>
       <td style="white-space:nowrap" class="mono col-time-detailed">
-        <div style="display:flex;align-items:center;gap:5px;line-height:1.4">
-          <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">MULAI</span>
-          <span style="color:var(--text);font-weight:600">{{ _fmt_dt(p.started_at) if p.started_at else '—' }}</span>
+        <div style="font-size:11.5px;color:var(--text);font-weight:600">
+          <span style="color:var(--dim);font-size:10px;text-transform:uppercase;margin-right:4px">Mulai</span>{{ _fmt_dt(p.started_at) if p.started_at else '—' }}
         </div>
         {% if p.resolved_at %}
-        <div style="display:flex;align-items:center;gap:5px;line-height:1.4;margin-top:2px">
-          <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">SELESAI</span>
-          <span style="color:var(--dim)">{{ _fmt_dt(p.resolved_at) }}</span>
+        <div style="font-size:11.5px;color:var(--dim);margin-top:3px">
+          <span style="font-size:10px;text-transform:uppercase;margin-right:4px">Selesai</span>{{ _fmt_dt(p.resolved_at) }}
         </div>
         {% endif %}
       </td>
-      <td class="col-sev">
+      <td style="width:100px;text-align:center" class="col-sev">
         {% set op_name = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
         {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
         {% if p.is_ignored and p.acknowledged_by %}
           <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-muted">DIABAIKAN</span>
-            <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+            <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">DIABAIKAN</span>
+            <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
           </div>
         {% elif p.is_ignored %}
           <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
-            <span class="col-sev-sub-text" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
+            <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
+            <span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
           </div>
         {% elif p.acknowledged_by %}
           <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
-            <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+            <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
+            <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
           </div>
         {% else %}
-          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
+          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
         {% endif %}
       </td>
-      <td class="col-event">
+      <td>
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
-        <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
+        <span{% if not p.is_open %} style="color:var(--dim)"{% endif %}>{{ p.message }}</span>
         {% if p.is_ignored and p.ignored_reason %}
           <span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
         {% endif %}
@@ -1938,8 +1935,8 @@ div[style*="position: fixed"] .card {
         {% endif %}
         {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
-      <td class="mono col-durasi"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
-      <td class="prob-act-cell col-act">
+      <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
+      <td class="prob-act-cell">
         <div class="prob-act-wrap">
           <div class="prob-act-row prob-act-tools">
             <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" aria-label="Diagnosa">
@@ -2004,7 +2001,7 @@ div[style*="position: fixed"] .card {
           {% endif %}
         </div>
       </td>
-      <td class="col-tips"><div class="prob-tip-text" title="{{ p.tip or '—' }}">{{ p.tip or '—' }}</div></td>
+      <td style="font-size:12px;line-height:1.55;max-width:360px">{{ p.tip or '—' }}</td>
     </tr>
     {% endfor %}
     </tbody>
@@ -2690,200 +2687,6 @@ div[style*="position: fixed"] .card {
   </div>
 </div>
 
-<!-- Tab: Pemantauan Cadangan Otomatis (Central Automated Backup Monitoring) -->
-<div class="tab-body" id="tab-cadangan" hidden>
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-header" style="align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div>
-        <h3 style="margin:0">Pemantauan Cadangan Otomatis (Backup Monitoring)</h3>
-        <span style="font-size:12px;color:var(--dim)">Pengawasan keandalan, integritas ukuran, dan usia berkas cadangan database &amp; sistem</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        {% set bk_st = backup_status.get('status', 'none') if backup_status else 'none' %}
-        {% if bk_st == 'ok' %}
-          <span class="badge badge-up" id="bk-header-badge">● Mutakhir</span>
-        {% elif bk_st == 'warning' %}
-          <span class="badge badge-warn" id="bk-header-badge">● Usang (&gt;24j)</span>
-        {% elif bk_st == 'critical' %}
-          <span class="badge badge-danger" id="bk-header-badge">● Gagal (0 B)</span>
-        {% else %}
-          <span class="badge badge-muted" id="bk-header-badge">○ Nihil</span>
-        {% endif %}
-        <span class="badge badge-info" id="bk-count-badge">{{ backup_status.get('total_files', 0) if backup_status else 0 }} berkas</span>
-      </div>
-    </div>
-
-    <!-- Ringkasan KPI Cadangan (High Density NOC Cards) -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:8px;padding:12px">
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
-        <div style="font-size:11px;color:var(--dim);margin-bottom:3px">Status Cadangan</div>
-        <div style="font-size:13px;font-weight:700" id="bk-kpi-status">
-          {% if bk_st == 'ok' %}
-            <span style="color:var(--green)">Tercadangkan Normal</span>
-          {% elif bk_st == 'warning' %}
-            <span style="color:var(--yellow)">Cadangan Usang (&gt;24 Jam)</span>
-          {% elif bk_st == 'critical' %}
-            <span style="color:var(--red)">Gagal / Berkas 0 Byte</span>
-          {% else %}
-            <span style="color:var(--dim)">Belum Ada Cadangan</span>
-          {% endif %}
-        </div>
-        <div style="font-size:10.5px;color:var(--dim);margin-top:2px" id="bk-kpi-summary">
-          {{ backup_status.get('summary', 'Tidak ada data cadangan.') if backup_status else 'Belum ada telemetri cadangan.' }}
-        </div>
-      </div>
-
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
-        <div style="font-size:11px;color:var(--dim);margin-bottom:3px">Berkas Cadangan Terbaru</div>
-        {% set latest_f = backup_status.get('latest_backup') if backup_status else None %}
-        <div class="mono" style="font-size:12px;font-weight:700;word-break:break-all" id="bk-kpi-latest-name">
-          {{ latest_f.get('filename', '—') if latest_f else '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--dim);margin-top:2px" id="bk-kpi-latest-size">
-          Ukuran: <strong style="color:var(--text)">{{ latest_f.get('size_human', '—') if latest_f else '—' }}</strong>
-        </div>
-      </div>
-
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
-        <div style="font-size:11px;color:var(--dim);margin-bottom:3px">Waktu Pembuatan Terakhir</div>
-        <div class="mono" style="font-size:12px;font-weight:700" id="bk-kpi-latest-time">
-          {{ latest_f.get('modified_at', '—') if latest_f else '—' }}
-        </div>
-        <div style="font-size:11px;color:var(--dim);margin-top:2px" id="bk-kpi-latest-age">
-          {% if latest_f %}
-            Usia: <strong style="color:{{ 'var(--green)' if latest_f.get('age_hours', 0) <= 24 else 'var(--yellow)' }}">{{ latest_f.get('age_hours') }} jam yang lalu</strong>
-          {% else %}
-            Usia: —
-          {% endif %}
-        </div>
-      </div>
-
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
-        <div style="font-size:11px;color:var(--dim);margin-bottom:3px">Kapasitas &amp; Basis Data</div>
-        <div style="font-size:12px;font-weight:700" id="bk-kpi-total">
-          Total: <span class="mono">{{ backup_status.get('total_size_human', '0 B') if backup_status else '0 B' }}</span>
-        </div>
-        <div style="font-size:11px;color:var(--dim);margin-top:2px" id="bk-kpi-db">
-          {% if backup_status and backup_status.get('database_detected') %}
-            Basis data aktif: <span class="badge badge-info mono" style="font-size:9.5px">{{ backup_status.get('database_types')|join(', ') }}</span>
-          {% else %}
-            Tidak ada database terdeteksi
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tabel Berkas Cadangan Terkini -->
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-header" style="align-items:center;justify-content:space-between">
-      <div>
-        <h3 style="margin:0">Berkas Cadangan Terdeteksi</h3>
-        <span style="font-size:12px;color:var(--dim)">Daftar berkas dump database (.sql, .sql.gz) dan arsip cadangan sistem di direktori pemantauan</span>
-      </div>
-      <div style="font-size:11px;color:var(--dim)" id="bk-files-count">
-        {{ (backup_status.get('recent_files', [])|length) if backup_status else 0 }} berkas ditampilkan
-      </div>
-    </div>
-    <div style="overflow-x:auto" id="cadangan-table-wrap">
-      <table id="tbl-cadangan" style="width:100%">
-        <thead>
-          <tr>
-            <th style="width:75px">Status</th>
-            <th>Nama Berkas</th>
-            <th>Direktori / Jalur</th>
-            <th style="width:90px">Ukuran</th>
-            <th style="width:145px">Waktu Dibuat</th>
-            <th style="width:95px">Usia</th>
-          </tr>
-        </thead>
-        <tbody id="tbl-cadangan-tbody">
-          {% if backup_status and backup_status.get('recent_files') %}
-            {% for f in backup_status.get('recent_files') %}
-            <tr>
-              <td>
-                {% if f.get('status') == 'ok' %}
-                  <span class="badge badge-up" style="font-size:9.5px">Mutakhir</span>
-                {% elif f.get('status') == 'warning' %}
-                  <span class="badge badge-warn" style="font-size:9.5px">Usang</span>
-                {% elif f.get('status') == 'critical' %}
-                  <span class="badge badge-danger" style="font-size:9.5px">Kosong (0B)</span>
-                {% else %}
-                  <span class="badge badge-muted" style="font-size:9.5px">Nihil</span>
-                {% endif %}
-              </td>
-              <td class="mono" style="font-weight:600;font-size:12px;color:var(--text);word-break:break-all">{{ f.get('filename') }}</td>
-              <td class="mono" style="font-size:11px;color:var(--dim);word-break:break-all">{{ f.get('directory') }}</td>
-              <td class="mono" style="font-size:11px;font-weight:600;white-space:nowrap">{{ f.get('size_human') }}</td>
-              <td class="mono" style="font-size:11px;color:var(--dim);white-space:nowrap">{{ f.get('modified_at') }}</td>
-              <td style="font-size:11px;white-space:nowrap">
-                <span style="color:{{ 'var(--green)' if f.get('age_hours', 0) <= 24 else 'var(--yellow)' }}">{{ f.get('age_hours') }}j lalu</span>
-              </td>
-            </tr>
-            {% endfor %}
-          {% else %}
-            <tr><td colspan="6" class="empty-msg" style="padding:14px">Tidak ditemukan berkas cadangan (.sql, .sql.gz, .tar.gz, dll.) di direktori standar.</td></tr>
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Tugas Cadangan Terjadwal (Backup Jobs) & Direktori Pantauan -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:12px">
-    <div class="card" style="margin:0">
-      <div class="card-header">
-        <h3 style="margin:0">Tugas Cadangan Terjadwal (Cron &amp; Timer)</h3>
-      </div>
-      <div style="overflow-x:auto">
-        <table id="tbl-cadangan-jobs" style="width:100%">
-          <thead>
-            <tr>
-              <th style="width:65px">Tipe</th>
-              <th style="width:110px">Jadwal</th>
-              <th>Perintah / Unit</th>
-            </tr>
-          </thead>
-          <tbody id="tbl-cadangan-jobs-tbody">
-            {% if backup_status and backup_status.get('backup_jobs') %}
-              {% for j in backup_status.get('backup_jobs') %}
-              <tr>
-                <td><span class="badge badge-info" style="font-size:9.5px">{{ j.get('type')|upper }}</span></td>
-                <td class="mono" style="font-size:11px;font-weight:600;color:var(--blue)">{{ j.get('schedule') }}</td>
-                <td class="mono" style="font-size:11.5px;word-break:break-all">{{ j.get('command') }}</td>
-              </tr>
-              {% endfor %}
-            {% else %}
-              <tr><td colspan="3" class="empty-msg" style="padding:12px">Tidak ada tugas cron atau systemd timer cadangan otomatis terdeteksi.</td></tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card" style="margin:0">
-      <div class="card-header">
-        <h3 style="margin:0">Direktori Pemantauan Cadangan</h3>
-      </div>
-      <div style="padding:12px;font-size:12px">
-        <div style="color:var(--dim);margin-bottom:8px">Agen Pantau secara otomatis memindai lokasi penyimpanan standar berikut:</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="bk-scanned-paths">
-          {% if backup_status and backup_status.get('scanned_paths') %}
-            {% for sp in backup_status.get('scanned_paths') %}
-              <span class="mono" style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> {{ sp }}</span>
-            {% endfor %}
-          {% else %}
-            <span class="mono" style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> /var/backups</span>
-          {% endif %}
-        </div>
-        <div style="font-size:11px;color:var(--dim);line-height:1.5">
-          <strong>Ekstensi didukung:</strong> <code>.sql</code>, <code>.sql.gz</code>, <code>.dump</code>, <code>.tar.gz</code>, <code>.tgz</code>, <code>.tar.zst</code>, <code>.zip</code>. Jika cadangan Anda disimpan di direktori lain, tambahkan <code>"backup_paths": ["/jalur/kustom"]</code> pada <code>/etc/pantau/config.json</code> server klien.
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 
 <!-- Tab: Firewall (UFW & iptables) -->
 <div class="tab-body" id="tab-firewall" hidden>
@@ -3213,7 +3016,7 @@ div[style*="position: fixed"] .card {
                 {% endif %}
                 {% endif %}
                 {% if p.port in (22, 8400) %}
-                <span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--dim);white-space:nowrap"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Dilindungi</span>
+                <span style="font-size:11px;color:var(--dim);white-space:nowrap">⛨ Dilindungi</span>
                 {% endif %}
               </div>
             </td>
@@ -4029,7 +3832,7 @@ function showTab(name) {
     if (typeof probFilter === 'function') probFilter();
     if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
   }
-  if (['akun', 'ports', 'firewall', 'ssl', 'cron', 'cadangan', 'perf'].includes(name)) {
+  if (['akun', 'ports', 'firewall', 'ssl', 'cron', 'perf'].includes(name)) {
     if (typeof pollSystem === 'function') pollSystem();
   }
   if (name === 'proses') {
@@ -4113,10 +3916,6 @@ function initServicesTabPagination() {
   // 11. Tab Logging (System Journal Errors)
   if (document.getElementById('tbl-system-logs') && !_servicesTabPagination['syslog']) {
     _servicesTabPagination['syslog'] = attachTablePagination('#tbl-system-logs', { unitLabel: 'log', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 100, 'all'] });
-  }
-  // 12. Tab Cadangan (Backup Files)
-  if (document.getElementById('tbl-cadangan') && !_servicesTabPagination['cadangan']) {
-    _servicesTabPagination['cadangan'] = attachTablePagination('#tbl-cadangan', { unitLabel: 'berkas', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 'all'] });
   }
   // 12. Tab Kinerja (Partisi Disks)
   if (document.getElementById('disks-table') && !_servicesTabPagination['disks']) {
@@ -4257,7 +4056,6 @@ function updateTabAlertDots(options) {
     if (d) {
       const hasSessions = !!options.akun;
       d.style.display = hasSessions ? 'inline-block' : 'none';
-      d.classList.add('info-blue');
       d.title = hasSessions ? ((options.sessions_count || 1) + ' sesi remote SSH aktif') : '';
     }
   }
@@ -7333,12 +7131,12 @@ function renderProblemsTab(level, openList, histList) {
   </div>
   <table id="probtable">
     <thead><tr>
-      <th class="col-time-detailed">${isEn ? 'Time' : 'Waktu'}</th>
-      <th class="col-sev">${isEn ? 'Severity' : 'Keparahan'}</th>
-      <th class="col-event">${isEn ? 'Event' : 'Kejadian'}</th>
-      <th class="col-durasi">${isEn ? 'Duration' : 'Durasi'}</th>
-      <th class="col-act">${isEn ? 'Action' : 'Tindakan'}</th>
-      <th class="col-tips">${isEn ? 'Advice' : 'Saran'}</th>
+      <th class="col-time-detailed" style="width:200px;min-width:190px">${isEn ? 'Time' : 'Waktu'}</th>
+      <th class="col-sev" style="width:100px;min-width:95px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
+      <th>${isEn ? 'Event' : 'Kejadian'}</th>
+      <th class="col-durasi" style="width:120px;min-width:110px">${isEn ? 'Duration' : 'Durasi'}</th>
+      <th class="col-act" style="width:160px;min-width:150px">${isEn ? 'Action' : 'Tindakan'}</th>
+      <th class="col-tips" style="width:250px;min-width:200px">${isEn ? 'Advice' : 'Saran'}</th>
     </tr></thead>
     <tbody>`;
 
@@ -7353,23 +7151,23 @@ function renderProblemsTab(level, openList, histList) {
     
     let sevCellHtml = '';
     if (isIgnored && p.acknowledged_by) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span class="badge badge-up badge-sub" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
     } else if (isIgnored) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span class="col-sev-sub-text" title="${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)}">(${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)})</span></div>`;
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)}">(${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)})</span></div>`;
     } else if (p.acknowledged_by) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}">${rawSevText}</span><span class="badge badge-up badge-sub" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevText}</span><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
     } else {
-      sevCellHtml = `<span class="${rawSevBadge}">${rawSevText}</span>`;
+      sevCellHtml = `<span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevText}</span>`;
     }
 
     const pMsg = isEn ? getServicesI18nText(p.message || '', true) : (p.message || '');
     const pTip = isEn ? getServicesI18nText(p.tip || '—', true) : (p.tip || '—');
     const searchTxt = ((pMsg || '') + ' ' + (p.key || '')).toLowerCase();
     const rowStyle = !isOpen ? ' style="opacity:.65"' : (isIgnored ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '');
-    const startStr = `<div style="display:flex;align-items:center;gap:5px;line-height:1.4"><span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">${isEn ? 'START' : 'MULAI'}</span><span style="color:var(--text);font-weight:600">${fmtProbDate(p.started_at)}</span></div>`;
-    const resStr = p.resolved_at ? `<div style="display:flex;align-items:center;gap:5px;line-height:1.4;margin-top:2px"><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">${isEn ? 'RESOLVED' : 'SELESAI'}</span><span style="color:var(--dim)">${fmtProbDate(p.resolved_at)}</span></div>` : '';
+    const startStr = `<div style="font-size:11.5px;color:var(--text);font-weight:600"><span style="color:var(--dim);font-size:10px;text-transform:uppercase;margin-right:4px">${isEn ? 'START' : 'MULAI'}</span>${fmtProbDate(p.started_at)}</div>`;
+    const resStr = p.resolved_at ? `<div style="font-size:11.5px;color:var(--dim);margin-top:3px"><span style="font-size:10px;text-transform:uppercase;margin-right:4px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>${fmtProbDate(p.resolved_at)}</div>` : '';
     const checkMark = isOpen ? '' : '<span style="color:var(--green)">✓</span> ';
-    const msgStyle = isOpen ? '' : ' style="text-decoration:line-through"';
+    const msgStyle = isOpen ? '' : ' style="color:var(--dim)"';
     const ignoredBadge = isIgnored
       ? `<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (p.ignored_by ? (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(p.ignored_by) : '')}">${isEn ? 'ignored' : 'diabaikan'}${p.ignored_until ? (isEn ? ' until ' : ' s/d ') + fmtProbDate(p.ignored_until) : (isEn ? ' permanent' : ' permanen')}</span>`
       : '';
@@ -7447,11 +7245,11 @@ function renderProblemsTab(level, openList, histList) {
       data-prob-sid="${SID}"
       data-prob-context="${escapeHtml(ctxAttr)}">
       <td style="white-space:nowrap" class="mono col-time-detailed">${startStr}${resStr}</td>
-      <td class="col-sev">${sevCellHtml}</td>
-      <td class="col-event">${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${kambuhBadge}</td>
-      <td class="mono col-durasi" style="white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
-      <td class="prob-act-cell col-act">${actHtml}</td>
-      <td class="col-tips"><div class="prob-tip-text" title="${escapeHtml(pTip || '—')}">${escapeHtml(pTip || '—')}</div></td>
+      <td style="width:100px;text-align:center" class="col-sev">${sevCellHtml}</td>
+      <td>${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${kambuhBadge}</td>
+      <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
+      <td class="prob-act-cell col-act" style="width:160px">${actHtml}</td>
+      <td style="font-size:12px;line-height:1.55;max-width:360px">${escapeHtml(pTip || '—')}</td>
     </tr>`;
   }
 
@@ -8355,7 +8153,7 @@ function renderPorts(ports) {
       }
     }
     if (isProtected) {
-      actions += `<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--dim);white-space:nowrap"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> ${isEn ? 'Protected' : 'Dilindungi'}</span>`;
+      actions += `<span style="font-size:11px;color:var(--dim);white-space:nowrap">⛨ ${isEn ? 'Protected' : 'Dilindungi'}</span>`;
     }
 
     return `<tr>
@@ -8597,92 +8395,6 @@ function renderSsl(sslList) {
   });
 }
 
-function renderBackupStatus(bks) {
-  if (!bks || typeof bks !== 'object') return;
-  const isEn = isEnPage();
-  const st = bks.status || 'none';
-  const dot = document.getElementById('tab-dot-cadangan');
-  if (dot) dot.style.display = (st === 'warning' || st === 'critical') ? 'inline-block' : 'none';
-
-  const hBadge = document.getElementById('bk-header-badge');
-  if (hBadge) {
-    if (st === 'ok') {
-      hBadge.className = 'badge badge-up';
-      hBadge.textContent = isEn ? '● Current' : '● Mutakhir';
-    } else if (st === 'warning') {
-      hBadge.className = 'badge badge-warn';
-      hBadge.textContent = isEn ? '● Stale (>24h)' : '● Usang (>24j)';
-    } else if (st === 'critical') {
-      hBadge.className = 'badge badge-danger';
-      hBadge.textContent = isEn ? '● Failed (0 B)' : '● Gagal (0 B)';
-    } else {
-      hBadge.className = 'badge badge-muted';
-      hBadge.textContent = isEn ? '○ None' : '○ Nihil';
-    }
-  }
-
-  const cBadge = document.getElementById('bk-count-badge');
-  if (cBadge) cBadge.textContent = (bks.total_files || 0) + (isEn ? ' files' : ' berkas');
-
-  const fCount = document.getElementById('bk-files-count');
-  if (fCount) fCount.textContent = ((bks.recent_files || []).length) + (isEn ? ' files displayed' : ' berkas ditampilkan');
-
-  const kpiSt = document.getElementById('bk-kpi-status');
-  if (kpiSt) {
-    if (st === 'ok') kpiSt.innerHTML = `<span style="color:var(--green)">${isEn ? 'Normal Backed Up' : 'Tercadangkan Normal'}</span>`;
-    else if (st === 'warning') kpiSt.innerHTML = `<span style="color:var(--yellow)">${isEn ? 'Stale Backup (>24 Hours)' : 'Cadangan Usang (>24 Jam)'}</span>`;
-    else if (st === 'critical') kpiSt.innerHTML = `<span style="color:var(--red)">${isEn ? 'Failed / 0 Byte File' : 'Gagal / Berkas 0 Byte'}</span>`;
-    else kpiSt.innerHTML = `<span style="color:var(--dim)">${isEn ? 'No Backups Detected' : 'Belum Ada Cadangan'}</span>`;
-  }
-
-  const kpiSum = document.getElementById('bk-kpi-summary');
-  if (kpiSum) kpiSum.textContent = bks.summary || (isEn ? 'No backup summary.' : 'Belum ada ringkasan cadangan.');
-
-  const latest = bks.latest_backup;
-  const kpiLatestName = document.getElementById('bk-kpi-latest-name');
-  if (kpiLatestName) kpiLatestName.textContent = latest ? (latest.filename || '—') : '—';
-
-  const kpiLatestSize = document.getElementById('bk-kpi-latest-size');
-  if (kpiLatestSize) kpiLatestSize.innerHTML = (isEn ? 'Size: ' : 'Ukuran: ') + `<strong style="color:var(--text)">${latest ? (latest.size_human || '—') : '—'}</strong>`;
-
-  const kpiLatestTime = document.getElementById('bk-kpi-latest-time');
-  if (kpiLatestTime) kpiLatestTime.textContent = latest ? (latest.modified_at || '—') : '—';
-
-  const kpiLatestAge = document.getElementById('bk-kpi-latest-age');
-  if (kpiLatestAge) {
-    if (latest) {
-      const ageColor = (latest.age_hours <= 24) ? 'var(--green)' : 'var(--yellow)';
-      kpiLatestAge.innerHTML = (isEn ? 'Age: ' : 'Usia: ') + `<strong style="color:${ageColor}">${latest.age_hours} ${isEn ? 'hours ago' : 'jam yang lalu'}</strong>`;
-    } else {
-      kpiLatestAge.textContent = isEn ? 'Age: —' : 'Usia: —';
-    }
-  }
-
-  const kpiTotal = document.getElementById('bk-kpi-total');
-  if (kpiTotal) kpiTotal.innerHTML = `Total: <span class="mono">${bks.total_size_human || '0 B'}</span>`;
-
-  const tbody = document.getElementById('tbl-cadangan-tbody');
-  if (tbody && Array.isArray(bks.recent_files) && bks.recent_files.length) {
-    tbody.innerHTML = bks.recent_files.map(f => {
-      let bCls = 'badge-up', bTxt = isEn ? 'Current' : 'Mutakhir';
-      if (f.status === 'warning') { bCls = 'badge-warn'; bTxt = isEn ? 'Stale' : 'Usang'; }
-      else if (f.status === 'critical') { bCls = 'badge-danger'; bTxt = isEn ? 'Empty (0B)' : 'Kosong (0B)'; }
-      const ageCol = (f.age_hours <= 24) ? 'var(--green)' : 'var(--yellow)';
-      return `<tr>
-        <td><span class="badge ${bCls}" style="font-size:9.5px">${bTxt}</span></td>
-        <td class="mono" style="font-weight:600;font-size:12px;color:var(--text);word-break:break-all">${escHtml(f.filename)}</td>
-        <td class="mono" style="font-size:11px;color:var(--dim);word-break:break-all">${escHtml(f.directory || '')}</td>
-        <td class="mono" style="font-size:11px;font-weight:600;white-space:nowrap">${escHtml(f.size_human || '')}</td>
-        <td class="mono" style="font-size:11px;color:var(--dim);white-space:nowrap">${escHtml(f.modified_at || '')}</td>
-        <td style="font-size:11px;white-space:nowrap"><span style="color:${ageCol}">${f.age_hours}${isEn ? 'h ago' : 'j lalu'}</span></td>
-      </tr>`;
-    }).join('');
-    if (_servicesTabPagination['cadangan'] && typeof _servicesTabPagination['cadangan'].refresh === 'function') {
-      _servicesTabPagination['cadangan'].refresh();
-    }
-  }
-}
-
 let _sysFetching = false;
 async function pollSystem() {
   if (_sysFetching) return;
@@ -8702,7 +8414,6 @@ async function pollSystem() {
       if (typeof renderFirewall === 'function') renderFirewall(data.firewall);
       if (typeof renderCron === 'function') renderCron(data.cron_jobs);
       if (typeof renderSsl === 'function') renderSsl(data.ssl_certs);
-      if (typeof renderBackupStatus === 'function') renderBackupStatus(data.backup_status);
       if (!aptRunning && typeof renderApt === 'function') {
         renderApt(data);
       }
