@@ -311,6 +311,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.19
+
+- **Tipe Rilis:** Standarisasi Pengabaian Insiden Universal & Dekomisioning Insiden Dikenal dari Kartu Insiden Terkini (*Universal Incident Silencing Standardization & Decommissioning Recognized Incidents from Recent Incidents Card*)
+- **Fokus Utama:** Menerapkan prinsip operasional NOC sejati di mana operator yang memantau layar utama tidak boleh dibebani oleh tampilan insiden yang sudah dikenali atau disengaja (seperti layanan *on-demand* yang sengaja dihentikan hingga dipanggil manual oleh pengguna server klien, sesi remote SSH resmi, atau proses terjadwal). Seluruh insiden dari tingkat keparahan apapun (*kritis, gawat, peringatan, info*) yang diabaikan oleh operator (`is_ignored = 1`) secara otomatis dan mutlak disembunyikan dari tabel *Insiden Terkini*, sementara kartu *Insiden Aktif* mencatatnya secara terpusat pada indikator *"Diabaikan 🔕"* yang dapat ditinjau melalui modal rincian *Diabaikan (Silenced / Ignored 🔕)*.
+
+### Rangkuman Pembaruan:
+1. **Penyembunyian Mutlak Insiden Diabaikan dari Kartu Insiden Terkini (`server/main.py` & `server/templates/dashboard.html`):**
+   - Agregasi `all_open_problems` (sisi server) dan `allProblems` (sisi polling live client) kini secara tegas memfilter keluar seluruh insiden yang memiliki status `is_ignored = 1` tanpa memandang tingkat keparahannya.
+   - Mengeliminasi sisa baris redup (*opacity: 0.8*) ber-badge `DIABAIKAN 🔕` yang sebelumnya masih mencemari tabel *Insiden Terkini*. Tabel *Insiden Terkini* kini 100% murni hanya menyajikan anomali aktif yang memerlukan perhatian atau intervensi operator.
+   - Bila seluruh anomali telah terselesaikan atau diabaikan secara sadar, tabel *Insiden Terkini* secara otomatis menampilkan panel hijau `Seluruh server beroperasi prima. Tidak ada gangguan atau insiden aktif saat ini. 100% NORMAL`.
+2. **Pencatatan Terpusat pada Indikator "Diabaikan 🔕" Kartu Insiden Aktif:**
+   - Seluruh insiden yang diabaikan (layanan down, SSH remote, APT, metrik hardware, dan probe target) secara otomatis tercatat pada counter `ignored_total` / `ignTot` pada kartu *Insiden Aktif*.
+   - Tile *Diabaikan 🔕* pada Zabbix severity strip aktif menyala (`is-active`) saat terdapat insiden diabaikan, dan total insiden global (`dash-total-prob`) menjumlahkan seluruh insiden aktif ditambah insiden diabaikan secara matematis akurat.
+   - Modal rincian *Diabaikan (Silenced / Ignored 🔕)* menyajikan seluruh daftar kejadian diabaikan secara komprehensif, dilengkapi pill keparahan asal (KRITIS/GAWAT/PERINGATAN/INFO), alasan pengabaian (*ignored_reason*), durasi berlangsung, serta tombol pintas diagnosa dan periksa layanan.
+3. **Penyelarasan Server Fleet & Halaman Masalah (`server/main.py`, `problems.html`):**
+   - Indikator baris dan kartu grid armada server kini secara akurat menampilkan badge abu-abu berisi jumlah insiden diabaikan pada server terkait.
+   - Halaman `/problems` memisahkan secara bersih antara insiden aktif per tingkat keparahan dengan insiden non-aktif pada pill triage `Diabaikan`.
+4. **Verifikasi Otomatis End-to-End dengan Selenium Headless:**
+   - Pengujian live otomatis memvalidasi alur kerja pengabaian insiden multi-level: pengabaian insiden SSH (info) dan layanan down (warning), validasi hilangnya baris dari tabel *Insiden Terkini*, kenaikan counter *Diabaikan 🔕* ke angka 1 lalu 2, validasi modal *Diabaikan (Silenced / Ignored 🔕)*, validasi status *100% NORMAL* saat seluruh insiden diabaikan, serta pemulihan seketika saat di-unignore.
+
+---
+
 ## Versi 4.6.18
 
 - **Tipe Rilis:** Penyelarasan Alur Kerja Pengabaian Insiden Severity INFO (*Workflow Alignment for Ignored Severity INFO Incidents*)

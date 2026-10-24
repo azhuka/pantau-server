@@ -6968,7 +6968,6 @@ function probFilter() {
     let matchSev = false;
     if (!sev) matchSev = true;
     else if (sev === 'ignored') matchSev = (tr.dataset.ignored === '1');
-    else if (sev === 'info') matchSev = (tr.dataset.sev === 'info');
     else matchSev = (tr.dataset.sev === sev) && (tr.dataset.ignored !== '1');
 
     const matchQ = !q || (tr.dataset.text || '').includes(q);

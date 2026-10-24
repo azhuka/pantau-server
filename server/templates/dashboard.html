@@ -958,11 +958,11 @@ body.popout-fleet_table #dash-fleet-card {
           <th style="padding:4px 10px;font-size:10px;width:110px;min-width:100px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.5px">DURASI</th>
         </tr>
       </thead>
-      <tbody id="dash-problems-tbody" data-sig="{% for p in all_open_problems if not (p.is_ignored and p.severity == 'info') %}{{ p.server_id or p.probe_id or '' }}:{{ p.key }}:{{ p.severity }}:{{ 1 if p.is_ignored else 0 }}:{{ p.acknowledged_by or '' }}:{{ p.message or '' }}:{{ p.started_at_str }}{% if not loop.last %}|{% endif %}{% endfor %}">
-        {% for p in all_open_problems if not (p.is_ignored and p.severity == 'info') %}
+      <tbody id="dash-problems-tbody" data-sig="{% for p in all_open_problems %}{{ p.server_id or p.probe_id or '' }}:{{ p.key }}:{{ p.severity }}:{{ p.acknowledged_by or '' }}:{{ p.message or '' }}:{{ p.started_at_str }}{% if not loop.last %}|{% endif %}{% endfor %}">
+        {% for p in all_open_problems %}
         <tr onclick="window.location.href='{{ '/probing' if (p.probe_id or not p.server_id) else '/servers/' ~ p.server_id ~ '/services' }}'"
             title="Klik untuk buka {{ 'menu Endpoint' if (p.probe_id or not p.server_id) else 'rincian server ' ~ p.hostname }}"
-            style="border-bottom:1px solid rgba(255,255,255,0.03);{{ 'opacity:0.8;background:rgba(255,255,255,0.015);' if p.is_ignored else '' }}transition:background .12s ease;cursor:pointer">
+            style="border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;cursor:pointer">
           <td style="padding:3.5px 10px;white-space:nowrap;width:115px;min-width:105px">
             <span class="mono" style="font-size:11px;font-weight:600;color:var(--text)">{{ p.started_at_str }}</span>
           </td>
@@ -973,17 +973,8 @@ body.popout-fleet_table #dash-fleet-card {
             {% endif %}
           </td>
           <td style="padding:3.5px 10px;white-space:nowrap;width:1%;text-align:left">
-            {% set op_name = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
             {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
-            {% if p.is_ignored and p.acknowledged_by %}
-              <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px">
-                <span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 5px">DIABAIKAN 🔕</span>
-                <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ DITANGANI</span>
-                <span style="font-size:8px;color:var(--dim)">(oleh {{ ack_op }})</span>
-              </div>
-            {% elif p.is_ignored %}
-              <span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 6px">DIABAIKAN 🔕 (oleh {{ op_name }})</span>
-            {% elif p.acknowledged_by %}
+            {% if p.acknowledged_by %}
               <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px">
                 {% if p.severity == 'danger' %}
                   <span class="badge badge-danger" style="font-size:8.5px;padding:0.5px 5px">KRITIS</span>
@@ -1627,21 +1618,39 @@ function renderSevDetailModal(sev) {
         ignBadge = '<span class="badge badge-muted" style="font-size:10.5px;padding:1px 5px;margin-left:6px">Diabaikan 🔕</span>';
       }
 
+      let sevPill = '';
+      if (sev === 'ignored') {
+        const s = (p.severity || '').toLowerCase();
+        if (s === 'danger') sevPill = '<span class="badge badge-danger" style="font-size:9.5px;padding:1px 5px;margin-right:6px">KRITIS</span>';
+        else if (s === 'average') sevPill = '<span class="badge badge-orange" style="font-size:9.5px;padding:1px 5px;margin-right:6px">GAWAT</span>';
+        else if (s === 'warning') sevPill = '<span class="badge badge-warn" style="font-size:9.5px;padding:1px 5px;margin-right:6px">PERINGATAN</span>';
+        else if (s === 'info') sevPill = '<span class="badge badge-info" style="font-size:9.5px;padding:1px 5px;margin-right:6px">INFO</span>';
+      }
+
+      let reasonBadge = '';
+      if (p.ignored_reason) {
+        const escReason = (p.ignored_reason || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        reasonBadge = `<span class="badge badge-muted" style="font-size:9.5px;padding:1px 5px;margin-left:6px" title="Alasan: ${escReason}">Alasan: ${escReason}</span>`;
+      }
+
+      const rowHref = p.server_id ? `/servers/${p.server_id}/services` : '/probing';
       html += `
         <tr style="border-bottom:1px solid #30363d;transition:background .12s ease">
           <td style="padding:10px 12px;white-space:nowrap;vertical-align:middle;width:115px">
             <span class="mono" style="font-size:12px;font-weight:600;color:var(--text)">${startedStr}</span>
           </td>
           <td style="padding:10px 12px;white-space:nowrap;vertical-align:middle;width:150px;max-width:180px;overflow:hidden;text-overflow:ellipsis">
-            <a href="/servers/${p.server_id}/services" style="font-size:13px;font-weight:600;color:var(--blue);text-decoration:none" title="Buka Detail Server">
+            <a href="${rowHref}" style="font-size:13px;font-weight:600;color:var(--blue);text-decoration:none" title="Buka Detail">
               ${escHost}
             </a>
             ${grpHtml}
           </td>
           <td style="padding:10px 12px;font-size:12.5px;color:var(--text);vertical-align:middle">
             <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+              ${sevPill}
               <span>${escMsg}</span>
               ${ignBadge}
+              ${reasonBadge}
             </div>
           </td>
           <td class="mono" style="padding:10px 12px;white-space:nowrap;text-align:right;vertical-align:middle;width:120px;font-size:12px;color:var(--dim)">
@@ -1649,10 +1658,10 @@ function renderSevDetailModal(sev) {
           </td>
           <td style="padding:10px 12px;text-align:center;vertical-align:middle;white-space:nowrap;width:140px">
             <div style="display:flex;align-items:center;justify-content:center;gap:6px">
-              <button type="button" class="btn btn-ghost btn-sm" onclick='try{openProblemDetailModal(${JSON.stringify(p).replace(/'/g, "&#39;")});}catch(e){window.location.href="/servers/${p.server_id}/services";}' style="font-size:11px;padding:3px 7px" title="Buka Diagnosa & Solusi">
+              <button type="button" class="btn btn-ghost btn-sm" onclick='try{openProblemDetailModal(${JSON.stringify(p).replace(/'/g, "&#39;")});}catch(e){window.location.href="${rowHref}";}' style="font-size:11px;padding:3px 7px" title="Buka Diagnosa & Solusi">
                 Diagnosa
               </button>
-              <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 7px;text-decoration:none" title="Buka Halaman Layanan Server">
+              <a href="${rowHref}" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 7px;text-decoration:none" title="Buka Halaman Layanan Server">
                 Periksa &rarr;
               </a>
             </div>
@@ -2086,14 +2095,10 @@ async function pollNocDashboard() {
     if (Array.isArray(probeProblems)) {
       probeProblems.forEach(sp => {
         const isIgn = Boolean(sp.is_ignored);
-        const sev = (sp.severity || 'warning').toLowerCase();
         if (isIgn) {
-          if (sev === 'info') {
-            infoTot++;
-          } else {
-            ignTot++;
-          }
+          ignTot++;
         } else {
+          const sev = (sp.severity || 'warning').toLowerCase();
           if (sev === 'danger') dangerTot++;
           else if (sev === 'average') avgTot++;
           else if (sev === 'warning') warnTot++;
@@ -2493,10 +2498,6 @@ async function pollNocDashboard() {
           };
           if (isIgn) {
             newProblemsBySev.ignored.push(item);
-            // Khusus severity INFO: tetap ada dalam daftar Info kartu Insiden Aktif
-            if ((item.severity || '').toLowerCase() === 'info') {
-              newProblemsBySev.info.push(item);
-            }
           } else {
             const s = item.severity;
             if (newProblemsBySev[s]) {
@@ -2522,16 +2523,16 @@ async function pollNocDashboard() {
           message: p.message || '',
           key: p.key || '',
           is_ignored: isIgn,
+          ignored_reason: p.ignored_reason,
+          ignored_by: (p.ignored_by === 'admin' ? 'master-admin' : p.ignored_by),
           started_at: pStarted || '',
           started_at_str: p.started_at_str || (pStarted ? relTime(pStarted) : '—'),
           durasi: durStr,
+          acknowledged_by: (p.acknowledged_by === 'admin' ? 'master-admin' : p.acknowledged_by),
+          acknowledged_at: p.acknowledged_at || ''
         };
         if (isIgn) {
           newProblemsBySev.ignored.push(item);
-          // Khusus severity INFO: tetap ada dalam daftar Info kartu Insiden Aktif
-          if ((item.severity || '').toLowerCase() === 'info') {
-            newProblemsBySev.info.push(item);
-          }
         } else {
           const s = item.severity;
           if (newProblemsBySev[s]) {
@@ -2571,15 +2572,14 @@ async function pollNocDashboard() {
     if (kpiCardProb) kpiCardProb.style.borderLeftColor = kpiColor;
     if (totPrbEl) totPrbEl.style.color = kpiTextColor;
 
-    // Aggregate all active operational problems (termasuk yang diabaikan agar tetap tercatat di sistem)
+    // Aggregate all active operational problems (insiden yang diabaikan sepenuhnya disaring keluar dari kartu Insiden Terkini)
     const allProblems = [];
     list.forEach(srv => {
       if (Array.isArray(srv.problems)) {
         srv.problems.forEach(p => {
           const isIgn = Boolean(p.is_ignored);
-          const pSev = (p.severity || 'info').toLowerCase();
-          // Insiden info yang diabaikan tidak lagi tampil pada kartu Insiden Terkini halaman dashboard
-          if (isIgn && pSev === 'info') {
+          // Seluruh insiden yang diabaikan (level apapun) disembunyikan dari kartu Insiden Terkini
+          if (isIgn) {
             return;
           }
           allProblems.push({
@@ -2595,8 +2595,7 @@ async function pollNocDashboard() {
     if (Array.isArray(probeProblems)) {
       probeProblems.forEach(p => {
         const isIgn = Boolean(p.is_ignored);
-        const pSev = (p.severity || 'info').toLowerCase();
-        if (isIgn && pSev === 'info') return;
+        if (isIgn) return;
         allProblems.push({
           ...p,
           server_id: null,
@@ -2667,13 +2666,11 @@ async function pollNocDashboard() {
       if (emptyState) emptyState.style.display = 'none';
       if (probTbody) {
         // Anti-jitter: Bandingkan signature masalah agar tidak membongkar/memasang ulang DOM bila data tetap sama
-        const newSig = allProblems.map(p => `${p.id || ''}:${p.server_id || p.probe_id || ''}:${p.key || ''}:${p.severity || ''}:${p.is_ignored ? 1 : 0}:${p.acknowledged_by || ''}:${p.ignored_reason || ''}:${p.message || ''}:${p.started_at_str || ''}`).join('|');
+        const newSig = allProblems.map(p => `${p.id || ''}:${p.server_id || p.probe_id || ''}:${p.key || ''}:${p.severity || ''}:${p.acknowledged_by || ''}:${p.message || ''}:${p.started_at_str || ''}`).join('|');
         if (probTbody.dataset.sig !== newSig) {
           probTbody.dataset.sig = newSig;
           let tHtml = '';
           allProblems.forEach(p => {
-            const isIgn = Boolean(p.is_ignored);
-            const opName = (p.ignored_by === 'admin' ? 'master-admin' : (p.ignored_by || (isEn ? 'operator' : 'operator')));
             const ackOp = (p.acknowledged_by === 'admin' ? 'master-admin' : (p.acknowledged_by || (isEn ? 'operator' : 'operator')));
             let rawSev = '';
             if (p.severity === 'danger') {
@@ -2687,11 +2684,7 @@ async function pollNocDashboard() {
             }
 
             let sevBadge = '';
-            if (isIgn && p.acknowledged_by) {
-              sevBadge = `<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px"><span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 5px">${isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕'}</span> <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span> <span style="font-size:8px;color:var(--dim)">(${isEn ? 'by ' : 'oleh '}${_dashEsc(ackOp)})</span></div>`;
-            } else if (isIgn) {
-              sevBadge = `<span class="badge badge-muted" style="font-size:8.5px;padding:0.5px 6px">${isEn ? 'IGNORED 🔕 (by ' : 'DIABAIKAN 🔕 (oleh '}${_dashEsc(opName)})</span>`;
-            } else if (p.acknowledged_by) {
+            if (p.acknowledged_by) {
               sevBadge = `<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px">${rawSev} <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span> <span style="font-size:8px;color:var(--dim)">(${isEn ? 'by ' : 'oleh '}${_dashEsc(ackOp)})</span></div>`;
             } else {
               sevBadge = rawSev;
@@ -2699,11 +2692,6 @@ async function pollNocDashboard() {
 
             const escMsg = (p.message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const escHost = (p.hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            let noteBadge = '';
-            if (p.ignored_reason) {
-              const escReason = p.ignored_reason.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-              noteBadge = `<span class="badge badge-muted" style="font-size:9.5px;padding:0.5px 5px;margin-left:6px;font-weight:500" title="${escReason}">${escReason}</span>`;
-            }
             const grpHtml = p.group_name ? `<span style="font-size:8px;color:var(--dim);margin-left:4px">(${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')})</span>` : '';
             const startedStr = p.started_at_str || '—';
             let durStr = '—';
@@ -2719,9 +2707,7 @@ async function pollNocDashboard() {
                 durStr = relTime(p.started_at);
               }
             }
-            const trStyle = isIgn
-              ? 'border-bottom:1px solid rgba(255,255,255,0.03);opacity:0.8;background:rgba(255,255,255,0.015);transition:background .12s ease;'
-              : 'border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;';
+            const trStyle = 'border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;cursor:pointer;';
 
             const rowHref = (p.probe_id || !p.server_id) ? '/probing' : `/servers/${p.server_id}/services`;
             const rowTitle = (p.probe_id || !p.server_id)
@@ -2738,7 +2724,7 @@ async function pollNocDashboard() {
                 <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${escHost}</span>${grpHtml}
               </td>
               <td style="padding:3.5px 10px;white-space:nowrap;width:1%;text-align:left">${sevBadge}</td>
-              <td style="padding:3.5px 10px;font-size:11.5px;color:var(--text);line-height:1.25"><span>${escMsg}</span>${noteBadge}</td>
+              <td style="padding:3.5px 10px;font-size:11.5px;color:var(--text);line-height:1.25"><span>${escMsg}</span></td>
               <td class="mono col-durasi" style="padding:3.5px 10px;white-space:nowrap;width:110px;min-width:100px;text-align:right;font-size:11px" data-start="${isoStart}">${durStr}</td>
             </tr>`;
           });
@@ -2761,6 +2747,7 @@ async function pollNocDashboard() {
     console.error('[NOC Polling Error]:', e);
   }
 }
+window.pollNocDashboard = pollNocDashboard;
 setInterval(pollNocDashboard, 3000);
 setTimeout(pollNocDashboard, 500);
 
