@@ -311,6 +311,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.23
+
+- **Tipe Rilis:** Restorasi Menyeluruh Tombol Antarmuka Menjadi Ikon SVG Murni Tanpa Teks & Pengayaan Tooltip Informatif (*Comprehensive Restoration of All UI Action Buttons to Pure SVG Icons with Informative Tooltips*)
+- **Fokus Utama:** Mengeliminasi seluruh teks label tombol yang memadati visual antarmuka dan memulihkan desain mapan kepadatan tinggi NOC (*high-density NOC UI*) menjadi tombol berikon SVG murni dengan tooltip standar Bahasa Indonesia baku:
+  1. **Restorasi Bilah Alat Hero Server (`services.html`):** Mengembalikan seluruh tombol pada bilah alat atas server (`#apt-term-toggle-btn`, `#hero-fm-btn`, `#btn-maint`, `#apt-update-btn`, `#apt-upgrade-btn`, `#hero-reboot-btn`, `#hero-poweroff-btn`) menjadi ikon SVG murni tanpa teks bertumpuk, dengan padding rapat 5px 8px serta tooltip informatif dan atribut `aria-label` yang jelas.
+  2. **Restorasi Bilah Alat Terminal Web (`services.html`):** Mengeliminasi teks label tombol header terminal (`#term-lock-btn`, tombol bersihkan layar, `#term-fullscreen-btn`, dan tombol tutup terminal), menggantinya dengan ikon SVG murni dan tooltip terstruktur (`Bersihkan Layar Konsol`, `Layar Penuh`, `Tutup Jendela Terminal`).
+  3. **Restorasi Tombol Tambah Modal & Aksi Unduh Log:** Mengubah tombol pemicu modal (`#btn-add-svc-modal`, `#btn-create-user-modal`, `#btn-fw-block-modal`, `#btn-add-ssl-path-modal`, `#btn-add-cron-modal`) dan tombol unduh log (`#log-dl-btn`) menjadi ikon SVG murni `+` dan unduh dengan tooltip deskriptif.
+  4. **Restorasi Tombol Tindakan Seluruh Tabel Layanan & Sistem:** Menghapus seluruh teks span pada tombol tindakan baris tabel: Layanan (`#tbl-services`: Restart, Start, Stop, Log, Abaikan/Pantau, Hapus), Tasks/Proses (`#tbl-task-manager`: Pause, Lanjut, Kill), Akun Pengguna (`#acc-table`: Rincian, Buka Kunci, Kunci, Hapus), Port (`#ports-table`: Kill PID, Blokir Port, Buka Port), Firewall (`#fw-blocked-table`: Buka Blokir), SSL (`#ssl-table`: Hapus), dan Tugas Terjadwal (`#cron-table`: Jeda/Aktifkan, Jalankan, Hapus).
+  5. **Restorasi Tombol Modal Diagnosa Dashboard (`dashboard.html`):** Mengubah tombol teks `Diagnosa` dan `Periksa →` pada tabel modal keparahan insiden dashboard (`#sdm-table`) menjadi tombol berikon SVG kaca pembesar dan panah rincian dengan tooltip presisi.
+  6. **Restorasi Tombol Kunci Sesi File Manager (`file_manager.html`):** Menyelaraskan tombol kunci sesi file manager menjadi ikon SVG gembok murni dengan penanda visual status sesi yang elegan.
+
+---
+
 ## Versi 4.6.22
 
 - **Tipe Rilis:** Pemulihan Baku Tata Letak Baris Tunggal Tabel, Eliminasi Total Istilah "Dibisukan", Standardisasi Paginasi Default 5 & Ikon Tindakan Murni (*Restoration of Single-Row Table Layouts, Zero-Tolerance Elimination of "Dibisukan", Default 5 Pagination Standardization & Pure SVG Action Icons*)

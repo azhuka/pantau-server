@@ -309,12 +309,15 @@
   color: var(--dim) !important;
   font-size: 11.5px !important;
   font-weight: 500 !important;
-  padding: 5px 10px !important;
+  padding: 5px 8px !important;
   border-radius: 6px !important;
   line-height: 1.4 !important;
   box-shadow: none !important;
   transition: all .15s ease !important;
   white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 .toolbar-group .btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08) !important;
@@ -445,9 +448,9 @@
     justify-content: center !important;
   }
   .toolbar-group .btn svg {
-    margin-right: 3px !important;
-    width: 12px !important;
-    height: 12px !important;
+    margin-right: 0 !important;
+    width: 13px !important;
+    height: 13px !important;
   }
   .toolbar-divider {
     height: 14px !important;
@@ -1202,39 +1205,33 @@ div[style*="position: fixed"] .card {
       {% if user.is_master_admin() or user.is_operator() %}
       <!-- Grup 1: Akses & Pemeliharaan Server -->
       <div class="toolbar-group">
-        <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" {% if not server.allow_web_terminal %}disabled style="opacity:0.35;cursor:not-allowed" title="Akses Web Terminal dinonaktifkan" data-i18n-title="web_terminal_disabled"{% elif not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_terminal_disabled"{% else %}title="Buka Web Terminal" data-i18n-title="open_term_tooltip"{% endif %}>
+        <button class="btn btn-ghost btn-sm" id="apt-term-toggle-btn" onclick="toggleTerminalView()" {% if not server.allow_web_terminal %}disabled style="opacity:0.35;cursor:not-allowed" title="Akses Web Terminal dinonaktifkan" data-i18n-title="web_terminal_disabled"{% elif not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_terminal_disabled"{% else %}title="Buka Web Terminal" data-i18n-title="open_term_tooltip"{% endif %} aria-label="Terminal">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-          Terminal
         </button>
         <span class="toolbar-divider"></span>
         {% if is_online %}
-        <button type="button" class="btn btn-ghost btn-sm btn-fm" id="hero-fm-btn" onclick="openFileManagerWithAuth({{ server.id }})" title="Jelajahi dan kelola berkas server lewat antarmuka File Manager di tab baru" data-i18n-title="fm_tooltip">
+        <button type="button" class="btn btn-ghost btn-sm btn-fm" id="hero-fm-btn" onclick="openFileManagerWithAuth({{ server.id }})" title="File Manager" aria-label="File Manager" data-i18n-title="fm_tooltip">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-          File Manager
         </button>
         {% else %}
-        <button type="button" class="btn btn-ghost btn-sm btn-fm" id="hero-fm-btn" disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — File Manager dinonaktifkan" data-i18n-title="server_offline_file_manager_disabled">
+        <button type="button" class="btn btn-ghost btn-sm btn-fm" id="hero-fm-btn" disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — File Manager dinonaktifkan" aria-label="File Manager" data-i18n-title="server_offline_file_manager_disabled">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-          File Manager
         </button>
         {% endif %}
         <span class="toolbar-divider"></span>
-        <button class="btn btn-ghost btn-sm {{ 'btn-maint-active-state' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi insiden diabaikan sementara" data-i18n-title="enable_maint_tooltip">
+        <button class="btn btn-ghost btn-sm {{ 'btn-maint-active-state' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi insiden diabaikan sementara" aria-label="Mode Pemeliharaan" data-i18n-title="enable_maint_tooltip">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-          <span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span>
         </button>
       </div>
 
       <!-- Grup 2: Pembaruan & Kontrol Daya Sistem -->
       <div class="toolbar-group">
-        <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="triggerUpdateOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Perbarui repositori paket sistem operasi" data-i18n-title="apt_update_tooltip"{% endif %}>
+        <button class="btn btn-success btn-sm" id="apt-update-btn" onclick="triggerUpdateOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Perbarui daftar paket sistem operasi" aria-label="Update OS" data-i18n-title="apt_update_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-          Update OS
         </button>
         <span class="toolbar-divider"></span>
-        <button class="btn btn-danger btn-sm {% if apt_upgradable and apt_upgradable > 0 and is_online %}has-updates{% endif %}" id="apt-upgrade-btn" onclick="triggerUpgradeOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% elif not apt_upgradable or apt_upgradable == 0 %}disabled style="opacity:0.35;cursor:not-allowed" title="Semua paket OS sudah mutakhir" data-i18n-title="all_packages_up_to_date"{% else %}title="Perbarui paket sistem operasi" data-i18n-title="apt_upgrade_tooltip"{% endif %}>
+        <button class="btn btn-danger btn-sm {% if apt_upgradable and apt_upgradable > 0 and is_online %}has-updates{% endif %}" id="apt-upgrade-btn" onclick="triggerUpgradeOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% elif not apt_upgradable or apt_upgradable == 0 %}disabled style="opacity:0.35;cursor:not-allowed" title="Semua paket OS sudah mutakhir" data-i18n-title="all_packages_up_to_date"{% else %}title="Perbarui paket sistem operasi{% if apt_upgradable and apt_upgradable > 0 %} ({{ apt_upgradable }} pembaruan){% endif %}" aria-label="Upgrade Paket" data-i18n-title="apt_upgrade_tooltip"{% endif %}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-          <span id="apt-upgrade-label">{% if apt_upgradable and apt_upgradable > 0 %}Upgrade ({{ apt_upgradable }}){% else %}Upgrade{% endif %}</span>
         </button>
         <span class="toolbar-divider"></span>
         <form method="post" action="/servers/{{ server.id }}/host/reboot" id="form-host-reboot" style="display:inline;margin:0"
@@ -1246,17 +1243,15 @@ div[style*="position: fixed"] .card {
               data-guardrail-btn="Lanjutkan Reboot Host"
               data-guardrail-color="warning">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button class="btn btn-ghost btn-sm" id="hero-reboot-btn" type="submit" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Reboot OS" data-i18n-title="reboot_tooltip"{% endif %}>
+          <button class="btn btn-ghost btn-sm" id="hero-reboot-btn" type="submit" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Reboot OS" aria-label="Reboot OS" data-i18n-title="reboot_tooltip"{% endif %}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-            Reboot OS
           </button>
         </form>
         <span class="toolbar-divider"></span>
         {% if server.is_proxmox_ha %}
         <span class="ha-protected-wrapper" style="display:inline-flex;align-items:center;gap:6px" title="Server terproteksi Proxmox HA">
-          <button class="btn btn-danger btn-sm" id="hero-poweroff-btn" type="button" disabled style="opacity:0.4;cursor:not-allowed;background:rgba(239,68,68,0.12);color:var(--dim);border:1px dashed rgba(239,68,68,0.35)" title="Server terproteksi Proxmox HA">
+          <button class="btn btn-danger btn-sm" id="hero-poweroff-btn" type="button" disabled style="opacity:0.4;cursor:not-allowed;background:rgba(239,68,68,0.12);color:var(--dim);border:1px dashed rgba(239,68,68,0.35)" title="Server terproteksi Proxmox HA" aria-label="Power Off">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
-            Power Off
           </button>
         </span>
         {% else %}
@@ -1269,9 +1264,8 @@ div[style*="position: fixed"] .card {
               data-guardrail-btn="Matikan Daya Server"
               data-guardrail-color="danger">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button class="btn btn-danger btn-sm" id="hero-poweroff-btn" type="submit" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Matikan Daya (Power Off)" data-i18n-title="poweroff_tooltip"{% endif %}>
+          <button class="btn btn-danger btn-sm" id="hero-poweroff-btn" type="submit" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Matikan Daya (Power Off)" aria-label="Power Off" data-i18n-title="poweroff_tooltip"{% endif %}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
-            Power Off
           </button>
         </form>
         {% endif %}
@@ -1344,15 +1338,19 @@ div[style*="position: fixed"] .card {
         <span id="term-lease-badge" class="terminal-status-badge" style="display:none;color:var(--yellow);border:1px solid rgba(234,179,8,0.3);background:rgba(234,179,8,0.08);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:11px" title="Sisa durasi otentikasi terminal">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="term-lease-timer">--:--</span>
         </span>
-        <button type="button" class="terminal-btn-icon" id="term-lock-btn" onclick="openTerminalLockConfirmModal()" style="display:none;color:var(--red)" title="Kunci terminal dan putus sesi koneksi aktif">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>&nbsp;Kunci
+        <button type="button" class="terminal-btn-icon" id="term-lock-btn" onclick="openTerminalLockConfirmModal()" style="display:none;color:var(--red)" title="Kunci terminal dan putus sesi koneksi aktif" aria-label="Kunci">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </button>
         <span id="apt-status" class="terminal-status-badge"></span>
-        <button type="button" class="terminal-btn-icon" onclick="getTerm().clearScreen()" title="Bersihkan Layar Konsol">&#10005;&nbsp;Clear</button>
-        <button type="button" class="terminal-btn-icon" id="term-fullscreen-btn" onclick="getTerm().toggleFullscreen()" title="Layar Penuh (Full Screen)">
-          <svg id="term-fullscreen-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>&nbsp;<span id="term-fullscreen-text">Full Screen</span>
+        <button type="button" class="terminal-btn-icon" onclick="getTerm().clearScreen()" title="Bersihkan Layar Konsol" aria-label="Bersihkan Layar">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
         </button>
-        <button type="button" class="terminal-btn-icon" onclick="openTerminalCloseConfirmModal()" title="Tutup Jendela Terminal">&#x2715;&nbsp;Tutup</button>
+        <button type="button" class="terminal-btn-icon" id="term-fullscreen-btn" onclick="getTerm().toggleFullscreen()" title="Layar Penuh (Full Screen)" aria-label="Layar Penuh">
+          <svg id="term-fullscreen-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span id="term-fullscreen-text" style="display:none"></span>
+        </button>
+        <button type="button" class="terminal-btn-icon" onclick="openTerminalCloseConfirmModal()" title="Tutup Jendela Terminal" aria-label="Tutup Terminal">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
       </div>
     </div>
     <div class="real-terminal-screen" id="real-term" tabindex="0" aria-label="Terminal Bawaan Linux">
@@ -2168,7 +2166,9 @@ div[style*="position: fixed"] .card {
 <div class="card">
   <div class="card-header"><h3>Daftar Layanan</h3>
     {% if user.has_perm('can_services') %}
-    <button type="button" class="btn btn-primary btn-sm" id="btn-add-svc-modal" onclick="openAddSvcModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% endif %}>+ Tambah Layanan</button>
+    <button type="button" class="btn btn-primary btn-sm" id="btn-add-svc-modal" onclick="openAddSvcModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah layanan baru" aria-label="Tambah Layanan"{% endif %}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
     {% endif %}
   </div>
   {% if services %}
@@ -2218,9 +2218,8 @@ div[style*="position: fixed"] .card {
         <div style="display:inline-flex;align-items:center;gap:4px">
           <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}" style="display:inline-flex;align-items:center;gap:4px">
             {% if user.is_viewer() or not user.has_perm('can_services') %}
-              <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}">
+              <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}" aria-label="Log">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                <span>Log</span>
               </button>
             {% else %}
               {% set is_up = (svc._status == 'up') %}
@@ -2228,35 +2227,34 @@ div[style*="position: fixed"] .card {
               <button type="button" class="btn btn-primary btn-sm btn-svc-restart"
                       {% if is_pending or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
                       title="{% if not is_online %}Server offline — aksi dinonaktifkan{% else %}Mulai ulang (restart) layanan {{ svc.service_name }}{% endif %}"
+                      aria-label="Restart"
                       onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                <span>Restart</span>
               </button>
               <button type="button" class="btn btn-ghost btn-sm btn-svc-start"
                       {% if is_pending or is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
                       onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_up %}Layanan sudah dalam kondisi aktif{% else %}Nyalakan / jalankan layanan {{ svc.service_name }}{% endif %}">
+                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_up %}Layanan sudah dalam kondisi aktif{% else %}Nyalakan / jalankan layanan {{ svc.service_name }}{% endif %}"
+                      aria-label="Start">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
               </button>
               <button type="button" class="btn btn-ghost btn-sm btn-svc-stop"
                       {% if is_pending or not is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
                       onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
-                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif not is_up %}Layanan sudah dalam kondisi berhenti{% else %}Hentikan layanan {{ svc.service_name }}{% endif %}">
+                      title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif not is_up %}Layanan sudah dalam kondisi berhenti{% else %}Hentikan layanan {{ svc.service_name }}{% endif %}"
+                      aria-label="Stop">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
               </button>
-              <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}">
+              <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}" aria-label="Log">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                <span>Log</span>
               </button>
               {% if svc._is_ignored %}
-                <button type="button" class="btn btn-ghost btn-sm" title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)">
+                <button type="button" class="btn btn-ghost btn-sm" title="Aktifkan kembali pemantauan dan peringatan untuk layanan {{ svc.service_name }}" aria-label="Pantau" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" onclick="unignoreProblem(this)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                  <span>Pantau</span>
                 </button>
               {% else %}
-                <button type="button" class="btn btn-ghost btn-sm" {% if is_up %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} {% if is_up %}title="Layanan aktif normal — opsi abaikan hanya untuk layanan bermasalah/berhenti"{% else %}title="Bisukan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan"{% endif %} data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)">
+                <button type="button" class="btn btn-ghost btn-sm" {% if is_up %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} {% if is_up %}title="Layanan aktif normal — opsi abaikan hanya untuk layanan bermasalah/berhenti"{% else %}title="Abaikan peringatan jika layanan {{ svc.service_name }} memang sengaja dihentikan"{% endif %} aria-label="Abaikan" data-id="{{ svc._problem.id if svc._problem else '' }}" data-svcid="{{ svc.id }}" data-sid="{{ server.id }}" data-msg="Abaikan pemantauan layanan {{ svc.service_name }}" onclick="openIgnoreModal(this)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                  <span>Abaikan</span>
                 </button>
               {% endif %}
               {% if is_pending %}
@@ -2266,9 +2264,8 @@ div[style*="position: fixed"] .card {
           </span>
 
           {% if not user.is_viewer() and user.has_perm('can_services') %}
-          <button type="button" class="btn btn-danger btn-sm" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus konfigurasi pemantauan layanan {{ svc.service_name }}"{% endif %} onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
+          <button type="button" class="btn btn-danger btn-sm" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus konfigurasi pemantauan layanan {{ svc.service_name }}"{% endif %} aria-label="Hapus" onclick="deleteService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-            <span>Hapus</span>
           </button>
           {% endif %}
         </div>
@@ -2584,8 +2581,8 @@ div[style*="position: fixed"] .card {
       <div style="display:flex;gap:8px;align-items:center">
         <span class="badge badge-info" id="cron-jobs-count">{{ (cron_jobs.jobs|length) if cron_jobs and cron_jobs.jobs else 0 }} tugas aktif</span>
         {% if user.has_perm('can_cron') %}
-        <button class="btn btn-primary btn-sm" onclick="openAddCronModal()" style="display:flex;align-items:center;gap:4px" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% endif %}>
-          <span>＋</span> Tambah Tugas
+        <button class="btn btn-primary btn-sm" id="btn-add-cron-modal" onclick="openAddCronModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah tugas cron baru" aria-label="Tambah Tugas"{% endif %}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
         {% endif %}
       </div>
@@ -2625,18 +2622,25 @@ div[style*="position: fixed"] .card {
                   {% set cron_ident = c.get('ident', '') %}
                   <button type="button" class="btn btn-sm {{ 'btn-warn' if c.get('is_enabled', True) else 'btn-primary' }}"
                           onclick="submitCronToggle('{{ cron_ident }}', '{{ 'disable' if c.get('is_enabled', True) else 'enable' }}', this)"
-                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="{{ 'Nonaktifkan tugas cron ini' if c.get('is_enabled', True) else 'Aktifkan kembali tugas cron ini' }}"{% endif %}>
-                    {{ '⏸ Jeda' if c.get('is_enabled', True) else '▶ Aktifkan' }}
+                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="{{ 'Nonaktifkan tugas cron ini' if c.get('is_enabled', True) else 'Aktifkan kembali tugas cron ini' }}"{% endif %}
+                          aria-label="{{ 'Jeda' if c.get('is_enabled', True) else 'Aktifkan' }}">
+                    {% if c.get('is_enabled', True) %}
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                    {% else %}
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                    {% endif %}
                   </button>
                   <button type="button" class="btn btn-sm btn-ghost"
                           onclick="submitCronRun('{{ c.user }}', '{{ c.command | replace('\\', '\\\\') | replace('\'', '\\\'') }}', this)"
-                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Jalankan sekarang (uji coba)"{% endif %}>
-                    ▷ Jalankan
+                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Jalankan sekarang (uji coba)"{% endif %}
+                          aria-label="Jalankan">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                   </button>
                   <button type="button" class="btn btn-sm btn-danger"
                           onclick="submitCronDelete('{{ cron_ident }}', this)"
-                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus tugas cron ini"{% endif %}>
-                    🗑 Hapus
+                          {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus tugas cron ini"{% endif %}
+                          aria-label="Hapus">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                   </button>
                 {% else %}
                   <span style="font-size:11px;color:var(--dim)">Sistem</span>
@@ -2700,15 +2704,15 @@ div[style*="position: fixed"] .card {
 
         {% if user.has_perm('can_firewall') %}
           {% if firewall.status == 'active' %}
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Muat ulang aturan UFW tanpa memutus koneksi"{% endif %}>
-              &#8635;&nbsp;Reload Aturan
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Muat ulang aturan UFW tanpa memutus koneksi"{% endif %} aria-label="Reload Aturan">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
             </button>
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" style="color:var(--yellow);border-color:rgba(234,179,8,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Nonaktifkan UFW"{% endif %}>
-              Nonaktifkan Firewall
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" style="color:var(--yellow);border-color:rgba(234,179,8,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Nonaktifkan UFW"{% endif %} aria-label="Nonaktifkan Firewall">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
             </button>
           {% else %}
-            <button type="button" class="btn btn-primary btn-sm" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" style="background:#16a34a;border-color:#22c55e{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan UFW (otomatis allow SSH)"{% endif %}>
-              &#9654;&nbsp;Aktifkan Firewall
+            <button type="button" class="btn btn-primary btn-sm" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" style="background:#16a34a;border-color:#22c55e{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan UFW (otomatis allow SSH)"{% endif %} aria-label="Aktifkan Firewall">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
             </button>
           {% endif %}
         {% endif %}
@@ -2770,8 +2774,8 @@ div[style*="position: fixed"] .card {
       </div>
       {% if user.has_perm('can_firewall') %}
       <div>
-        <button type="button" class="btn btn-danger btn-sm" onclick="openBlockIpModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir sebuah alamat IP secara manual"{% endif %}>
-          + Blokir IP Baru
+        <button type="button" class="btn btn-danger btn-sm" id="btn-fw-block-modal" onclick="openBlockIpModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir sebuah alamat IP secara manual" aria-label="Blokir IP Baru"{% endif %}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
       </div>
       {% endif %}
@@ -2800,8 +2804,8 @@ div[style*="position: fixed"] .card {
             <td class="mono">{{ b.bytes }}</td>
             {% if user.has_perm('can_firewall') %}
             <td style="text-align:right">
-              <button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus aturan DROP untuk IP ini"{% endif %} onclick="submitFirewallUnblock('{{ b.source }}', this)">
-                Buka Blokir
+              <button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus aturan DROP untuk IP ini"{% endif %} aria-label="Buka Blokir" onclick="submitFirewallUnblock('{{ b.source }}', this)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
               </button>
             </td>
             {% endif %}
@@ -2826,8 +2830,8 @@ div[style*="position: fixed"] .card {
       <div style="display:flex;gap:8px;align-items:center">
         <span class="badge badge-info" id="acc-count-badge">{{ accounts|length if accounts else 0 }} Akun Sistem</span>
         {% if user.has_perm('can_users_sys') %}
-        <button class="btn btn-primary btn-sm" onclick="openCreateUserModal()" style="display:flex;align-items:center;gap:4px" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% endif %}>
-          <span>＋</span> Buat Pengguna
+        <button class="btn btn-primary btn-sm" id="btn-create-user-modal" onclick="openCreateUserModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah pengguna baru" aria-label="Tambah Pengguna"{% endif %}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
         {% endif %}
       </div>
@@ -2870,14 +2874,22 @@ div[style*="position: fixed"] .card {
             </td>
             <td style="white-space:nowrap">
               <div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">
-                <a href="/servers/{{ server.id }}/user/{{ a.user }}" class="btn btn-ghost btn-sm">Rincian</a>
+                <a href="/servers/{{ server.id }}/user/{{ a.user }}" class="btn btn-ghost btn-sm" title="Rincian" aria-label="Rincian">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                </a>
                 {% if user.has_perm('can_users_sys') and not a.is_protected %}
                   {% if a.is_locked %}
-                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Buka kunci akun (aktifkan login)"{% endif %} onclick="submitUserAction('unlock', '{{ a.user }}', this)">Buka Kunci</button>
+                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Buka kunci akun (aktifkan login)"{% endif %} aria-label="Buka Kunci" onclick="submitUserAction('unlock', '{{ a.user }}', this)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
+                  </button>
                   {% else %}
-                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Kunci akun (disable login)"{% endif %} onclick="submitUserAction('lock', '{{ a.user }}', this)">Kunci</button>
+                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Kunci akun (disable login)"{% endif %} aria-label="Kunci" onclick="submitUserAction('lock', '{{ a.user }}', this)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </button>
                   {% endif %}
-                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus akun ini"{% endif %} onclick="submitUserAction('delete', '{{ a.user }}', this)">Hapus</button>
+                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus akun ini"{% endif %} aria-label="Hapus" onclick="submitUserAction('delete', '{{ a.user }}', this)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </button>
                 {% endif %}
               </div>
             </td>
@@ -2981,22 +2993,25 @@ div[style*="position: fixed"] .card {
                 {% if user.has_perm('can_processes') and p.pid and p.port not in (22, 8400) %}
                 <button class="btn btn-sm btn-danger"
                         onclick="openKillProcModal('{{ p.pid }}','{{ p.pname or p.proc or 'proses' }}','TERM')"
-                        {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Kirim sinyal ke proses yang mengelola port ini"{% endif %}>
-                  ⚡ Kill PID
+                        {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Kirim sinyal ke proses yang mengelola port ini"{% endif %}
+                        aria-label="Kill PID">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
                 {% endif %}
                 {% if user.has_perm('can_firewall') %}
                 {% if p.is_public and p.port not in (22, 8400) %}
                 <button type="button" class="btn btn-sm btn-warn"
                         onclick="submitPortRule('{{ p.port }}/{{ p.proto }}', 'deny', this)"
-                        {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir port ini via UFW/iptables"{% endif %}>
-                  🚫 Blokir Port
+                        {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir port ini via UFW/iptables"{% endif %}
+                        aria-label="Blokir Port">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
                 </button>
                 {% elif not p.is_public and p.port not in (22, 8400) %}
                 <button type="button" class="btn btn-sm btn-primary"
                         onclick="submitPortRule('{{ p.port }}/{{ p.proto }}', 'allow', this)"
-                        {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Buka port ini (izinkan koneksi)"{% endif %}>
-                  🔓 Buka Port
+                        {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Buka port ini (izinkan koneksi)"{% endif %}
+                        aria-label="Buka Port">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
                 </button>
                 {% endif %}
                 {% endif %}
@@ -3026,8 +3041,8 @@ div[style*="position: fixed"] .card {
       <div style="display:flex;gap:8px;align-items:center">
         <span class="badge badge-info" id="ssl-count-badge">{{ (ssl_certs|length) if ssl_certs else 0 }} sertifikat terdeteksi</span>
         {% if user.has_perm('can_ssl') %}
-        <button class="btn btn-primary btn-sm" id="btn-add-ssl-path-modal" onclick="openAddSslPathModal()" style="display:flex;align-items:center;gap:4px" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% endif %}>
-          <span>＋</span> Tambah Lokasi Sertifikat
+        <button class="btn btn-primary btn-sm" id="btn-add-ssl-path-modal" onclick="openAddSslPathModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tentukan folder sertifikat" aria-label="Tentukan folder sertifikat"{% endif %}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
         {% endif %}
       </div>
@@ -3075,8 +3090,8 @@ div[style*="position: fixed"] .card {
             <td class="mono" style="font-size:11px;color:var(--dim)">{{ c.path }}</td>
             <td>
               {% if user.has_perm('can_ssl') and c.is_custom %}
-              <button type="button" class="btn btn-sm btn-danger" title="Hapus dari pengawasan SSL kustom" onclick="submitSslRemovePath('{{ c.path | replace('\\', '\\\\') | replace('\'', '\\\'') }}', this)">
-                🗑 Hapus
+              <button type="button" class="btn btn-sm btn-danger" title="Hapus dari pengawasan SSL kustom" aria-label="Hapus" onclick="submitSslRemovePath('{{ c.path | replace('\\', '\\\\') | replace('\'', '\\\'') }}', this)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
               </button>
               {% else %}
               <span style="font-size:11px;color:var(--dim)">—</span>
@@ -3117,7 +3132,9 @@ div[style*="position: fixed"] .card {
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span id="log-state" style="font-size:12px;color:var(--dim)"></span>
-      <button type="button" class="btn btn-ghost btn-sm" id="log-dl-btn" onclick="downloadLog()" title="Unduh log sebagai file .txt" style="display:none">⬇ Unduh</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="log-dl-btn" onclick="downloadLog()" title="Unduh log sebagai file .txt" aria-label="Unduh Log" style="display:none">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      </button>
     </div>
   </div>
 
@@ -4214,19 +4231,19 @@ function renderTopProcs(data) {
         actionBtns = `<span style="font-size:11px;color:var(--dim)" title="${isEn ? 'Protected system process' : 'Proses sistem terlindungi'}">🛡️ ${isEn ? 'System' : 'Sistem'}</span>`;
       } else {
         const pauseBtn = isPaused ? `
-          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3);padding:2px 6px;font-size:11px"
-                  onclick="sendProcDirectSignal(${p.pid}, '${escapeHtml(p.comm)}', 'CONT', this)" title="${isEn ? 'Resume this process (SIGCONT)' : 'Lanjutkan kembali proses ini (SIGCONT)'}">
-            ▶ ${isEn ? 'Resume' : 'Lanjut'}
+          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3);padding:2px 6px"
+                  onclick="sendProcDirectSignal(${p.pid}, '${escapeHtml(p.comm)}', 'CONT', this)" title="${isEn ? 'Resume this process (SIGCONT)' : 'Lanjutkan kembali proses ini (SIGCONT)'}" aria-label="Lanjut">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
           </button>` : `
-          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3);padding:2px 6px;font-size:11px"
-                  onclick="sendProcDirectSignal(${p.pid}, '${escapeHtml(p.comm)}', 'STOP', this)" title="${isEn ? 'Suspend/Pause this process temporarily (SIGSTOP)' : 'Tangguhkan/Pause proses ini sementara (SIGSTOP)'}">
-            ⏸ Pause
+          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3);padding:2px 6px"
+                  onclick="sendProcDirectSignal(${p.pid}, '${escapeHtml(p.comm)}', 'STOP', this)" title="${isEn ? 'Suspend/Pause this process temporarily (SIGSTOP)' : 'Tangguhkan/Pause proses ini sementara (SIGSTOP)'}" aria-label="Pause">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
           </button>`;
 
         const killBtn = `
-          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.25);padding:2px 6px;font-size:11px"
-                  onclick="openKillProcModal(${p.pid}, '${escapeHtml(p.comm)}', '${isPaused ? 'CONT' : 'TERM'}')" title="${isEn ? 'Stop Options or Select Signal' : 'Opsi Hentikan atau Pilih Sinyal'}">
-            ✕ Kill
+          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.25);padding:2px 6px"
+                  onclick="openKillProcModal(${p.pid}, '${escapeHtml(p.comm)}', '${isPaused ? 'CONT' : 'TERM'}')" title="${isEn ? 'Stop Options or Select Signal' : 'Opsi Hentikan atau Pilih Sinyal'}" aria-label="Hentikan">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>`;
 
         actionBtns = `<div style="display:inline-flex;gap:4px;align-items:center">${pauseBtn}${killBtn}</div>`;
@@ -4435,7 +4452,7 @@ function triggerFastPoll() {
 function renderServiceActions(sid, svcId, name, status, isPending, problem, isServiceIgnored, pendingAction) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const svgLog = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>';
-  const logBtn = '<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog(\'' + escHtml(name) + '\')" title="' + (isEn ? 'View logs for ' + name : 'Lihat log layanan ' + name) + '">' + svgLog + '<span>Log</span></button>';
+  const logBtn = '<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog(\'' + escHtml(name) + '\')" title="' + (isEn ? 'View logs for ' + name : 'Lihat log layanan ' + name) + '" aria-label="Log">' + svgLog + '</button>';
   if (IS_VIEWER || !CAN_SERVICES) return logBtn;
   const online = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
   const isUp = status === 'up';
@@ -4465,11 +4482,11 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
 
   if (isIgnored) {
     const ignTitle = isEn ? 'Cancel ignore for this service' : 'Pantau kembali layanan ini';
-    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + ignTitle + '">' + svgBell + '<span>' + (isEn ? 'Monitor' : 'Pantau') + '</span></button>';
+    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" onclick="unignoreProblem(this)" title="' + ignTitle + '" aria-label="Pantau">' + svgBell + '</button>';
   } else {
     const abkDis = isUp ? 'disabled style="opacity:0.35;cursor:not-allowed" ' : '';
     const abkTitle = isUp ? (isEn ? 'Service is running normally — ignore is only for stopped services' : 'Layanan aktif normal — opsi abaikan hanya untuk layanan bermasalah/berhenti') : (isEn ? 'Ignore monitoring for this service' : 'Abaikan pemantauan layanan ini');
-    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" ' + abkDis + 'data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="' + abkTitle + '">' + svgBellOff + '<span>' + (isEn ? 'Ignore' : 'Abaikan') + '</span></button>';
+    ignoreBtn = '<button type="button" class="btn btn-ghost btn-sm" ' + abkDis + 'data-id="' + probId + '" data-svcid="' + svcId + '" data-sid="' + sid + '" data-msg="' + escHtml(probMsg) + '" onclick="openIgnoreModal(this)" title="' + abkTitle + '" aria-label="Abaikan">' + svgBellOff + '</button>';
   }
 
   const rstTitle = !online ? offlineTitle : (isEn ? 'Restart service ' + name : 'Mulai ulang (restart) layanan ' + name);
@@ -4494,14 +4511,17 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
     + disStyle
     + (rstDis ? 'disabled ' : '')
     + 'title="' + rstTitle + '" '
-    + 'onclick="restartService(' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)">' + svgRst + '<span>Restart</span></button>'
+    + 'aria-label="Restart" '
+    + 'onclick="restartService(' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)">' + svgRst + '</button>'
     + '<button type="button" class="btn btn-ghost btn-sm btn-svc-start" style="' + (startDis ? 'opacity:0.35;cursor:not-allowed;' : '') + '" '
     + (startDis ? 'disabled ' : '')
     + 'onclick="svcAction(\'start\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
+    + 'aria-label="Start" '
     + 'title="' + startTitle + '">' + svgStart + '</button>'
     + '<button type="button" class="btn btn-ghost btn-sm btn-svc-stop" style="' + (stopDis ? 'opacity:0.35;cursor:not-allowed;' : '') + '" '
     + (stopDis ? 'disabled ' : '')
     + 'onclick="svcAction(\'stop\', ' + sid + ', ' + svcId + ', \'' + escHtml(name) + '\', this)" '
+    + 'aria-label="Stop" '
     + 'title="' + stopTitle + '">' + svgStop + '</button>'
     + logBtn
     + ignoreBtn
@@ -5593,10 +5613,13 @@ function renderApt(data) {
       tipText = isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan';
     } else if (!canUpgrade) {
       tipText = isEn ? 'All OS packages are up to date' : 'Semua paket OS sudah mutakhir';
+    } else {
+      tipText = (isEn ? 'Upgrade OS packages' : 'Perbarui paket sistem operasi') + ` (${aptN} ${isEn ? 'updates' : 'pembaruan'})`;
     }
     upBtn.setAttribute('data-tooltip', tipText);
     upBtn.setAttribute('data-tooltip-orig', tipText);
     upBtn.title = tipText;
+    upBtn.setAttribute('aria-label', tipText);
   }
   if (typeof updateAptTaskModalUpgradeBtn === 'function') updateAptTaskModalUpgradeBtn(aptTaskKind);
 }
@@ -6122,10 +6145,11 @@ class WebTerminal {
       this.windowEl.classList.add('is-fullscreen');
       document.body.style.overflow = 'hidden';
 
-      if (fsText) fsText.textContent = 'Kecilkan';
+      if (fsText) fsText.textContent = '';
       if (fsIcon) fsIcon.innerHTML = '<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>';
       if (fsBtn) {
         fsBtn.title = 'Keluar dari Layar Penuh (Esc)';
+        fsBtn.setAttribute('aria-label', 'Keluar Layar Penuh');
         fsBtn.classList.add('is-active');
       }
     } else {
@@ -6138,8 +6162,13 @@ class WebTerminal {
       }
       document.body.style.overflow = '';
 
-      if (fsText) fsText.textContent = 'Full Screen';
+      if (fsText) fsText.textContent = '';
       if (fsIcon) fsIcon.innerHTML = '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>';
+      if (fsBtn) {
+        fsBtn.title = 'Layar Penuh (Full Screen)';
+        fsBtn.setAttribute('aria-label', 'Layar Penuh');
+        fsBtn.classList.remove('is-active');
+      }
       if (fsBtn) {
         fsBtn.title = 'Layar Penuh (Full Screen)';
         fsBtn.classList.remove('is-active');
@@ -7822,10 +7851,14 @@ function patch(data) {
     bm.disabled = false;
     bm.style.opacity = '';
     bm.style.cursor = '';
-    bm.title = isEnHero ? 'Enable or schedule maintenance mode to temporarily suppress alert notifications' : 'Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi insiden diabaikan sementara';
+    const isMaintActive = !!data.is_maintenance;
+    const maintTitle = isMaintActive
+      ? (isEnHero ? 'Maintenance mode active — click to manage' : 'Mode pemeliharaan sedang aktif — klik untuk kelola')
+      : (isEnHero ? 'Enable or schedule maintenance mode to temporarily suppress alert notifications' : 'Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi insiden diabaikan sementara');
+    bm.title = maintTitle;
+    bm.setAttribute('aria-label', maintTitle);
     bm.dataset.i18nTitle = 'enable_maint_tooltip';
 
-    const isMaintActive = !!data.is_maintenance;
     const maintStateStr = String(isMaintActive);
     if (bm.dataset.maintActive !== maintStateStr) {
       bm.dataset.maintActive = maintStateStr;
@@ -7834,13 +7867,6 @@ function patch(data) {
       } else {
         bm.classList.remove('btn-maint-active-state');
       }
-    }
-
-    const expectedLabel = isMaintActive
-      ? (isEnHero ? 'Maintenance (Active)' : 'Pemeliharaan (Aktif)')
-      : (isEnHero ? 'Maintenance' : 'Pemeliharaan');
-    if (ml && ml.textContent !== expectedLabel) {
-      ml.textContent = expectedLabel;
     }
   }
 
@@ -8111,15 +8137,19 @@ function renderPorts(ports) {
     const portInt = parseInt(p.port, 10);
     const isProtected = (portInt === 22 || portInt === 8400);
 
+    const svgKillPort = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+    const svgBlockPort = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>';
+    const svgAllowPort = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
+
     if (CAN_PROCESSES && p.pid && !isProtected) {
-      actions += `<button class="btn btn-sm btn-danger" onclick="openKillProcModal('${escHtml(String(p.pid))}','${escHtml(p.pname || p.proc || 'proses')}','TERM')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Send signal to process' : 'Kirim sinyal ke proses yang mengelola port ini'}">⚡ Kill PID</button> `;
+      actions += `<button class="btn btn-sm btn-danger" onclick="openKillProcModal('${escHtml(String(p.pid))}','${escHtml(p.pname || p.proc || 'proses')}','TERM')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Send signal to process' : 'Kirim sinyal ke proses yang mengelola port ini'}" aria-label="Kill PID">${svgKillPort}</button> `;
     }
     if (CAN_FIREWALL) {
       const pProto = portInt + '/' + (p.proto || 'tcp').toLowerCase();
       if (isPublic && !isProtected) {
-        actions += `<button type="button" class="btn btn-sm btn-warn" onclick="submitPortRule('${escHtml(pProto)}', 'deny', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Block this port via UFW/iptables' : 'Blokir port ini via UFW/iptables'}">🚫 ${isEn ? 'Block Port' : 'Blokir Port'}</button> `;
+        actions += `<button type="button" class="btn btn-sm btn-warn" onclick="submitPortRule('${escHtml(pProto)}', 'deny', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Block this port via UFW/iptables' : 'Blokir port ini via UFW/iptables'}" aria-label="Blokir Port">${svgBlockPort}</button> `;
       } else if (!isPublic && !isProtected) {
-        actions += `<button type="button" class="btn btn-sm btn-primary" onclick="submitPortRule('${escHtml(pProto)}', 'allow', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Allow this port via UFW/iptables' : 'Buka port ini (izinkan koneksi)'}">🔓 ${isEn ? 'Open Port' : 'Buka Port'}</button> `;
+        actions += `<button type="button" class="btn btn-sm btn-primary" onclick="submitPortRule('${escHtml(pProto)}', 'allow', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Allow this port via UFW/iptables' : 'Buka port ini (izinkan koneksi)'}" aria-label="Buka Port">${svgAllowPort}</button> `;
       }
     }
     if (isProtected) {
@@ -8160,11 +8190,14 @@ function renderFirewall(fw) {
   const actWrap = document.getElementById('fw-header-actions');
   if (actWrap && CAN_FIREWALL) {
     let btns = '';
+    const svgFwReload = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>';
+    const svgFwDisable = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
+    const svgFwEnable = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>';
     if (isActive) {
-      btns = `<button type="button" class="btn btn-ghost btn-sm" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Reload UFW rules' : 'Muat ulang aturan UFW tanpa memutus koneksi'}">&#8635;&nbsp;${isEn ? 'Reload Rules' : 'Reload Aturan'}</button>
-      <button type="button" class="btn btn-ghost btn-sm" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)${!IS_ONLINE ? ';opacity:0.35;cursor:not-allowed' : ''}" ${!IS_ONLINE ? 'disabled' : ''} title="${isEn ? 'Disable UFW' : 'Nonaktifkan UFW'}">${isEn ? 'Disable Firewall' : 'Nonaktifkan Firewall'}</button>`;
+      btns = `<button type="button" class="btn btn-ghost btn-sm" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Reload UFW rules' : 'Muat ulang aturan UFW tanpa memutus koneksi'}" aria-label="Reload Aturan">${svgFwReload}</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)${!IS_ONLINE ? ';opacity:0.35;cursor:not-allowed' : ''}" ${!IS_ONLINE ? 'disabled' : ''} title="${isEn ? 'Disable UFW' : 'Nonaktifkan UFW'}" aria-label="Nonaktifkan Firewall">${svgFwDisable}</button>`;
     } else {
-      btns = `<button type="button" class="btn btn-primary btn-sm" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" style="background:#16a34a;border-color:#22c55e${!IS_ONLINE ? ';opacity:0.35;cursor:not-allowed' : ''}" ${!IS_ONLINE ? 'disabled' : ''} title="${isEn ? 'Enable UFW (auto allows SSH)' : 'Aktifkan UFW (otomatis allow SSH)'}">&#9654;&nbsp;${isEn ? 'Enable Firewall' : 'Aktifkan Firewall'}</button>`;
+      btns = `<button type="button" class="btn btn-primary btn-sm" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" style="background:#16a34a;border-color:#22c55e${!IS_ONLINE ? ';opacity:0.35;cursor:not-allowed' : ''}" ${!IS_ONLINE ? 'disabled' : ''} title="${isEn ? 'Enable UFW (auto allows SSH)' : 'Aktifkan UFW (otomatis allow SSH)'}" aria-label="Aktifkan Firewall">${svgFwEnable}</button>`;
     }
     const badgesHtml = `<span class="badge ${isActive ? 'badge-up' : 'badge-warn'}" id="fw-status-badge">${isActive ? (isEn ? 'Active (Protecting)' : 'Aktif (Melindungi)') : (isEn ? 'Inactive (Open)' : 'Nonaktif (Terbuka)')}</span> <span class="badge badge-info" id="fw-backend-badge">${(f.backend || 'unknown').toUpperCase()}</span> `;
     actWrap.innerHTML = badgesHtml + btns;
@@ -8206,8 +8239,9 @@ function renderFirewall(fw) {
     const tbody = blockedTable.querySelector('tbody');
     if (tbody) {
       tbody.innerHTML = bList.map(b => {
+        const svgFwUnblock = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
         const unblockBtn = CAN_FIREWALL
-          ? `<button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3)${!IS_ONLINE ? ';opacity:0.35;cursor:not-allowed' : ''}" ${!IS_ONLINE ? 'disabled' : ''} onclick="submitFirewallUnblock('${escHtml(b.source)}', this)">${isEn ? 'Unblock' : 'Buka Blokir'}</button>`
+          ? `<button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3)${!IS_ONLINE ? ';opacity:0.35;cursor:not-allowed' : ''}" ${!IS_ONLINE ? 'disabled' : ''} onclick="submitFirewallUnblock('${escHtml(b.source)}', this)" title="${isEn ? 'Unblock IP' : 'Hapus aturan DROP untuk IP ini'}" aria-label="Buka Blokir">${svgFwUnblock}</button>`
           : '';
         return `<tr>
           <td class="mono">${escHtml(String(b.num || ''))}</td>
@@ -8253,10 +8287,15 @@ function renderCron(cron_jobs) {
         const cmdArg = (c.command || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const userClean = escHtml(c.user || 'root');
         let actHtml = '';
+        const svgCronPause = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+        const svgCronPlay = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>';
+        const svgCronRun = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+        const svgCronDel = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+
         if (CAN_CRON && isManaged) {
-          actHtml = `<button type="button" class="btn btn-sm ${isEnabled ? 'btn-warn' : 'btn-primary'}" onclick="submitCronToggle('${ident}', '${isEnabled ? 'disable' : 'enable'}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEnabled ? (isEn ? 'Pause this cron job' : 'Nonaktifkan tugas cron ini') : (isEn ? 'Enable this cron job' : 'Aktifkan kembali tugas cron ini')}">${isEnabled ? (isEn ? '⏸ Pause' : '⏸ Jeda') : (isEn ? '▶ Enable' : '▶ Aktifkan')}</button>
-          <button type="button" class="btn btn-sm btn-ghost" onclick="submitCronRun('${userClean}', '${cmdArg}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Run now (test)' : 'Jalankan sekarang (uji coba)'}">▷ ${isEn ? 'Run' : 'Jalankan'}</button>
-          <button type="button" class="btn btn-sm btn-danger" onclick="submitCronDelete('${ident}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Delete this cron job' : 'Hapus tugas cron ini'}">🗑 ${isEn ? 'Delete' : 'Hapus'}</button>`;
+          actHtml = `<button type="button" class="btn btn-sm ${isEnabled ? 'btn-warn' : 'btn-primary'}" onclick="submitCronToggle('${ident}', '${isEnabled ? 'disable' : 'enable'}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEnabled ? (isEn ? 'Pause this cron job' : 'Nonaktifkan tugas cron ini') : (isEn ? 'Enable this cron job' : 'Aktifkan kembali tugas cron ini')}" aria-label="${isEnabled ? (isEn ? 'Pause' : 'Jeda') : (isEn ? 'Enable' : 'Aktifkan')}">${isEnabled ? svgCronPause : svgCronPlay}</button>
+          <button type="button" class="btn btn-sm btn-ghost" onclick="submitCronRun('${userClean}', '${cmdArg}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Run now (test)' : 'Jalankan sekarang (uji coba)'}" aria-label="${isEn ? 'Run' : 'Jalankan'}">${svgCronRun}</button>
+          <button type="button" class="btn btn-sm btn-danger" onclick="submitCronDelete('${ident}', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Delete this cron job' : 'Hapus tugas cron ini'}" aria-label="${isEn ? 'Delete' : 'Hapus'}">${svgCronDel}</button>`;
         } else {
           actHtml = `<span style="font-size:11px;color:var(--dim)">${isEn ? 'System' : 'Sistem'}</span>`;
         }
@@ -8330,9 +8369,10 @@ function renderSsl(sslList) {
 
     const pathClean = escHtml(c.path || '');
     const pathArg = (c.path || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const svgDelSsl = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
     let actHtml = '<span style="font-size:11px;color:var(--dim)">—</span>';
     if (CAN_SSL && isCustom) {
-      actHtml = `<button type="button" class="btn btn-sm btn-danger" title="${isEn ? 'Remove from SSL monitoring' : 'Hapus dari pengawasan SSL kustom'}" onclick="submitSslRemovePath('${pathArg}', this)">🗑 ${isEn ? 'Delete' : 'Hapus'}</button>`;
+      actHtml = `<button type="button" class="btn btn-sm btn-danger" title="${isEn ? 'Remove from SSL monitoring' : 'Hapus dari pengawasan SSL kustom'}" aria-label="${isEn ? 'Delete' : 'Hapus'}" onclick="submitSslRemovePath('${pathArg}', this)">${svgDelSsl}</button>`;
     }
 
     return `<tr>
@@ -8716,14 +8756,19 @@ function renderSys(data) {
     const isLocked = a.is_locked === true;
     const userEnc = encodeURIComponent(a.user);
     const userEsc = escHtml(a.user);
-    let actions = '<a href="/servers/' + SID + '/user/' + userEnc + '" class="btn btn-ghost btn-sm">' + (isEn ? 'Details' : 'Rincian') + '</a>';
+    const svgRincian = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>';
+    const svgUnlock = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
+    const svgLock = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
+    const svgDel = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+
+    let actions = '<a href="/servers/' + SID + '/user/' + userEnc + '" class="btn btn-ghost btn-sm" title="' + (isEn ? 'Details' : 'Rincian') + '" aria-label="' + (isEn ? 'Details' : 'Rincian') + '">' + svgRincian + '</a>';
     if (CAN_USERS_SYS && !isProtected) {
       if (isLocked) {
-        actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="' + (isEn ? 'Unlock account (enable login)' : 'Buka kunci akun (aktifkan login)') + '" onclick="submitUserAction(\'unlock\', \'' + userEsc + '\', this)">' + (isEn ? 'Unlock' : 'Buka Kunci') + '</button>';
+        actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="' + (isEn ? 'Unlock account (enable login)' : 'Buka kunci akun (aktifkan login)') + '" aria-label="Buka Kunci" onclick="submitUserAction(\'unlock\', \'' + userEsc + '\', this)">' + svgUnlock + '</button>';
       } else {
-        actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="' + (isEn ? 'Lock account (disable login)' : 'Kunci akun (disable login)') + '" onclick="submitUserAction(\'lock\', \'' + userEsc + '\', this)">' + (isEn ? 'Lock' : 'Kunci') + '</button>';
+        actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)" title="' + (isEn ? 'Lock account (disable login)' : 'Kunci akun (disable login)') + '" aria-label="Kunci" onclick="submitUserAction(\'lock\', \'' + userEsc + '\', this)">' + svgLock + '</button>';
       }
-      actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="' + (isEn ? 'Delete this account' : 'Hapus akun ini') + '" onclick="submitUserAction(\'delete\', \'' + userEsc + '\', this)">' + (isEn ? 'Delete' : 'Hapus') + '</button>';
+      actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="' + (isEn ? 'Delete this account' : 'Hapus akun ini') + '" aria-label="Hapus" onclick="submitUserAction(\'delete\', \'' + userEsc + '\', this)">' + svgDel + '</button>';
     }
     return '<tr>'
       + '<td><strong>' + userEsc + '</strong>'
