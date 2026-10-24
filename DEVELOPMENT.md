@@ -311,6 +311,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.22
+
+- **Tipe Rilis:** Pemulihan Baku Tata Letak Baris Tunggal Tabel, Eliminasi Total Istilah "Dibisukan", Standardisasi Paginasi Default 5 & Ikon Tindakan Murni (*Restoration of Single-Row Table Layouts, Zero-Tolerance Elimination of "Dibisukan", Default 5 Pagination Standardization & Pure SVG Action Icons*)
+- **Fokus Utama:** Menyempurnakan pemulihan menyeluruh atas seluruh keputusan desain ergonomis dan aturan baku operasional NOC yang telah ditetapkan:
+  1. **Eliminasi Total Istilah "Dibisukan":** Mengganti seluruh sisa teks tooltip mode pemeliharaan menjadi `'Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi insiden diabaikan sementara'` selaras dengan aturan mutlak operasional NOC.
+  2. **Restorasi Tata Letak Baris Tunggal Tabel Akun Pengguna & Cron:** Mencegah pembungkusan baris tabel Akun Pengguna (`#acc-table`) dan Tugas Cron (`#cron-table`) menjadi 2 baris (`white-space: nowrap`), memisahkan sesi multi-login dengan koma horizontal (bukan tag baris baru `<br>`), serta menata tombol aksi kontrol secara rapat mendatar (`display: inline-flex; flex-wrap: nowrap; gap: 4px; align-items: center`).
+  3. **Standardisasi Batas Paginasi Default 5 (dan Default 10 untuk Riwayat):** Memperbaiki nilai paginasi bawaan di seluruh tab detail server (`#tbl-services`, `#tbl-task-manager`, `#acc-table`, `#ports-table`, `#cron-table`, `#systemd-timers-table`, `#ssl-table`, `#fw-rules-table`, `#fw-blocked-table`, `#tbl-system-logs`, `#disks-table`, `#net-table`, `#spec-disks-table`, `#spec-ifaces-table`, dan `#tab-packages`) menjadi `defaultLimit: 5` dengan opsi `[5, 10, 25, 50, ...]`, serta mempertahankan `defaultLimit: 10` khusus untuk Riwayat Tindakan (`#acc-action-table`) dan Riwayat Insiden.
+  4. **Harmonisasi Tombol Aksi Tabel Status Masalah (Ikon SVG Murni Tanpa Text Span):** Menghapus seluruh teks span pembungkus (`<span>Diagnosa</span>`, `<span>Log</span>`, `<span>Restart</span>`, `<span>Blokir IP</span>`, `<span>Update OS</span>`, `<span>Update Agen</span>`, `<span>Abaikan</span>`, `<span>Pantau Kembali</span>`) pada tabel Status Masalah di `services.html` (baik Jinja2 pra-render maupun perender JS live), menyelaraskan ke standar ikon SVG murni dengan tooltip informatif dan rata kiri rapi.
+  5. **Standardisasi Mikro-Tipografi Badge Header Server:** Menyelaraskan ukuran badge tier (`tier-1`, `tier-2`, `tier-3`) dan versi agen klien pada 8.5px dengan padding rapat 1px 5px.
+  6. **Pemurnian Nomenklatur Header Tabel:** Memastikan seluruh judul kolom tabel kontrol antarmuka menggunakan istilah baku **`Tindakan`** (zero `Aksi`).
+
+---
+
 ## Versi 4.6.21
 
 - **Tipe Rilis:** Pemulihan Menyeluruh Tab Packages, Kartu Unit Layanan Systemd, Nomenklatur Insiden Baku & Ergonomi NOC (*Full Restoration of Packages Tab, Systemd Units Card, Standard Incident Nomenclature & NOC Micro-Typography*)

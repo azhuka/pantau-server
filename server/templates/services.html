@@ -1035,20 +1035,20 @@ div[style*="position: fixed"] .card {
     <span>Rincian — {{ server.hostname }}</span>
     {% set s_tier = server.tier|default(2) %}
     {% if s_tier == 1 %}
-      <span id="hero-tier-badge" class="badge" style="font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:2px 6px;font-weight:700;vertical-align:middle" title="tier-1">tier-1</span>
+      <span id="hero-tier-badge" class="badge" style="font-size:8.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700;vertical-align:middle" title="tier-1">tier-1</span>
     {% elif s_tier == 3 %}
-      <span id="hero-tier-badge" class="badge" style="font-size:10px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:2px 6px;vertical-align:middle" title="tier-3">tier-3</span>
+      <span id="hero-tier-badge" class="badge" style="font-size:8.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px;vertical-align:middle" title="tier-3">tier-3</span>
     {% else %}
-      <span id="hero-tier-badge" class="badge" style="font-size:10px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:2px 6px;font-weight:600;vertical-align:middle" title="tier-2">tier-2</span>
+      <span id="hero-tier-badge" class="badge" style="font-size:8.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600;vertical-align:middle" title="tier-2">tier-2</span>
     {% endif %}
     {% if agent_version %}
       {% if is_agent_outdated %}
-        <span id="agent-ver" class="badge badge-warn" style="font-size:10px;font-weight:500;vertical-align:middle" title="Versi agen di server klien (v{{ agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Silakan perbarui agen.">agen v{{ agent_version }} (perlu update)</span>
+        <span id="agent-ver" class="badge badge-warn" style="font-size:8.5px;padding:1px 5px;font-weight:500;vertical-align:middle" title="Versi agen di server klien (v{{ agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Silakan perbarui agen.">agen v{{ agent_version }} (perlu update)</span>
       {% else %}
-        <span id="agent-ver" class="badge badge-info" style="font-size:10px;font-weight:500;vertical-align:middle" title="Versi agen mutakhir">agen v{{ agent_version }}</span>
+        <span id="agent-ver" class="badge badge-info" style="font-size:8.5px;padding:1px 5px;font-weight:500;vertical-align:middle" title="Versi agen mutakhir">agen v{{ agent_version }}</span>
       {% endif %}
     {% else %}
-      <span id="agent-ver" class="badge badge-muted" style="font-size:10px;font-weight:500;vertical-align:middle" title="Agen belum melaporkan versi">agen tidak dikenal</span>
+      <span id="agent-ver" class="badge badge-muted" style="font-size:8.5px;padding:1px 5px;font-weight:500;vertical-align:middle" title="Agen belum melaporkan versi">agen tidak dikenal</span>
     {% endif %}
   </h2>
   <div style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -1219,7 +1219,7 @@ div[style*="position: fixed"] .card {
         </button>
         {% endif %}
         <span class="toolbar-divider"></span>
-        <button class="btn btn-ghost btn-sm {{ 'btn-maint-active-state' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Mode Pemeliharaan" data-i18n-title="enable_maint_tooltip">
+        <button class="btn btn-ghost btn-sm {{ 'btn-maint-active-state' if server.is_maintenance else '' }}" id="btn-maint" onclick="openMaintenanceModal()" title="Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi insiden diabaikan sementara" data-i18n-title="enable_maint_tooltip">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
           <span id="maint-btn-label">{% if server.is_maintenance %}Pemeliharaan (Aktif){% else %}Pemeliharaan{% endif %}</span>
         </button>
@@ -1277,7 +1277,7 @@ div[style*="position: fixed"] .card {
         {% endif %}
       </div>
       {% else %}
-      <span class="badge badge-muted">Aksi sistem aktif untuk Admin</span>
+      <span class="badge badge-muted">Tindakan sistem aktif untuk Admin</span>
       {% endif %}
     </div>
   </div>
@@ -1943,41 +1943,34 @@ div[style*="position: fixed"] .card {
       <td class="prob-act-cell">
         <div class="prob-act-wrap">
           <div class="prob-act-row prob-act-tools">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" aria-label="Diagnosa">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <span>Diagnosa</span>
             </button>
             {% if p.log_unit %}
-              <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ p.log_unit|tojson }})' title="Lihat log unit {{ p.log_unit }}">
+              <button type="button" class="btn btn-ghost btn-sm" onclick='jumpToLog({{ p.log_unit|tojson }})' title="Lihat log unit {{ p.log_unit }}" aria-label="Log unit">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                <span>Log</span>
               </button>
             {% elif p.action == 'mitigate' %}
-              <button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" title="Lihat log autentikasi SSH">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" title="Lihat log autentikasi SSH" aria-label="Log auth">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                <span>Log auth</span>
               </button>
             {% endif %}
             {% if not user.is_viewer() and p.is_open %}
               {% if p.action == 'restart' and p.svc_id %}
-                <button type="button" class="btn btn-primary btn-sm" onclick="restartService({{ server.id }}, {{ p.svc_id }}, '{{ p.log_unit or p.key }}', this)" title="Restart layanan">
+                <button type="button" class="btn btn-primary btn-sm" onclick="restartService({{ server.id }}, {{ p.svc_id }}, '{{ p.log_unit or p.key }}', this)" title="Restart layanan" aria-label="Restart layanan">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                  <span>Restart</span>
                 </button>
               {% elif p.action == 'mitigate' and user.has_perm('can_firewall') and p.ip_count and p.ip_count > 0 %}
-                <button type="button" class="btn btn-danger btn-sm" onclick="submitProblemBlockAttackerIps(this, {{ p.ip_count }})" title="Blokir {{ p.ip_count }} IP sumber via iptables">
+                <button type="button" class="btn btn-danger btn-sm" onclick="submitProblemBlockAttackerIps(this, {{ p.ip_count }})" title="Blokir {{ p.ip_count }} IP sumber via iptables" aria-label="Blokir IP">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                  <span>Blokir IP ({{ p.ip_count }})</span>
                 </button>
               {% elif p.action == 'apt_update' %}
-                <button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="Perbarui paket sistem">
+                <button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="Perbarui paket sistem" aria-label="Perbarui paket sistem">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>
-                  <span>Update OS</span>
                 </button>
               {% elif p.action == 'agent_update_cmd' %}
-                <button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard" aria-label="Update Agen">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-                  <span>Update Agen</span>
                 </button>
               {% endif %}
             {% endif %}
@@ -2495,8 +2488,9 @@ div[style*="position: fixed"] .card {
         <label style="display:inline-flex;align-items:center;gap:4px;margin-left:6px;font-size:11.5px">
           Tampilkan:
           <select id="pkg-page-size-select" style="padding:2px 6px;font-size:11.5px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)" onchange="setPkgPageSize(this.value)">
+            <option value="5" selected>5</option>
             <option value="10">10</option>
-            <option value="25" selected>25</option>
+            <option value="25">25</option>
             <option value="50">50</option>
             <option value="100">100</option>
             <option value="250">250</option>
@@ -2625,8 +2619,8 @@ div[style*="position: fixed"] .card {
               {{ c.source }}{% if c.line %}:{{ c.line }}{% endif %}
               {% if c.get('is_managed') %}<span class="badge badge-info" style="font-size:10px;margin-left:4px">Dikelola</span>{% endif %}
             </td>
-            <td>
-              <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <td style="white-space:nowrap">
+              <div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">
                 {% if user.has_perm('can_cron') and c.get('is_managed') %}
                   {% set cron_ident = c.get('ident', '') %}
                   <button type="button" class="btn btn-sm {{ 'btn-warn' if c.get('is_enabled', True) else 'btn-primary' }}"
@@ -2854,7 +2848,7 @@ div[style*="position: fixed"] .card {
         <tbody>
           {% for a in accounts %}
           <tr>
-            <td>
+            <td style="white-space:nowrap">
               <strong>{{ a.user }}</strong>
               {% if a.is_protected %}
                 <span class="badge badge-muted" style="font-size:10px" title="Akun sistem terlindungi">Sistem</span>
@@ -2862,20 +2856,20 @@ div[style*="position: fixed"] .card {
                 <span class="badge badge-warn" style="font-size:10px" title="Akun saat ini terkunci">Terkunci</span>
               {% endif %}
             </td>
-            <td class="mono">{{ a.uid }}</td>
-            <td class="mono">{{ a.shell or '-' }}</td>
-            <td style="font-size:12px;color:var(--dim)">{{ a.last_login or '-' }}</td>
-            <td style="font-size:12px;color:var(--dim)">
+            <td class="mono" style="white-space:nowrap">{{ a.uid }}</td>
+            <td class="mono" style="white-space:nowrap">{{ a.shell or '-' }}</td>
+            <td style="font-size:12px;color:var(--dim);white-space:nowrap">{{ a.last_login or '-' }}</td>
+            <td style="font-size:12px;color:var(--dim);white-space:nowrap">
               {% if a.sessions %}
                 {% for s in a.sessions %}
-                  {{ s.tty }}{% if s.from %} @ {{ s.from }}{% endif %}<br>
+                  {{ s.tty }}{% if s.from %} @ {{ s.from }}{% endif %}{% if not loop.last %}, {% endif %}
                 {% endfor %}
               {% else %}
                 -
               {% endif %}
             </td>
-            <td>
-              <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <td style="white-space:nowrap">
+              <div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">
                 <a href="/servers/{{ server.id }}/user/{{ a.user }}" class="btn btn-ghost btn-sm">Rincian</a>
                 {% if user.has_perm('can_users_sys') and not a.is_protected %}
                   {% if a.is_locked %}
@@ -2965,7 +2959,7 @@ div[style*="position: fixed"] .card {
             <th title="Alamat IP yang di-bind oleh socket">Bind IP</th>
             <th title="Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)">Akses</th>
             <th title="Nama proses sistem dan PID yang membuka port ini">Proses &amp; PID</th>
-            <th title="Aksi yang dapat dilakukan pada port ini">Tindakan</th>
+            <th title="Tindakan yang dapat dilakukan pada port ini">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -2982,8 +2976,8 @@ div[style*="position: fixed"] .card {
               {% endif %}
             </td>
             <td class="mono" style="font-size:12px;color:var(--text)">{{ p.proc or '—' }}</td>
-            <td>
-              <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <td style="white-space:nowrap">
+              <div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">
                 {% if user.has_perm('can_processes') and p.pid and p.port not in (22, 8400) %}
                 <button class="btn btn-sm btn-danger"
                         onclick="openKillProcModal('{{ p.pid }}','{{ p.pname or p.proc or 'proses' }}','TERM')"
@@ -3270,7 +3264,7 @@ div[style*="position: fixed"] .card {
       <input type="hidden" name="pname" id="kill-proc-pname">
       
       <div style="margin-bottom:16px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:8px">Pilih Jenis Sinyal / Aksi *</label>
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:8px">Pilih Jenis Sinyal / Tindakan *</label>
         <div style="display:flex;flex-direction:column;gap:8px">
           <label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;cursor:pointer;background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">
             <input type="radio" name="sig" value="TERM" id="sig-radio-term" checked style="margin-top:2px">
@@ -3791,7 +3785,7 @@ var _packagesList = [];
 var _pkgFilteredList = [];
 var _upgMap = new Map();
 var _pkgCurrentPage = 1;
-var _pkgPageSize = 25;
+var _pkgPageSize = 5;
 var _pkgSortCol = 'name';
 var _pkgSortDir = 'asc';
 var _pkgLoading = false;
@@ -3864,63 +3858,63 @@ function initServicesTabPagination() {
 
   // 1. Tab Layanan
   if (document.getElementById('tbl-services') && !_servicesTabPagination['services']) {
-    _servicesTabPagination['services'] = attachTablePagination('#tbl-services', { unitLabel: 'layanan', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 100, 'all'] });
+    _servicesTabPagination['services'] = attachTablePagination('#tbl-services', { unitLabel: 'layanan', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 100, 'all'] });
   }
   // 2. Tab Manajer Tugas (Proses)
   if (document.getElementById('tbl-task-manager') && !_servicesTabPagination['task-manager']) {
-    _servicesTabPagination['task-manager'] = attachTablePagination('#tbl-task-manager', { unitLabel: 'proses', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 100, 'all'] });
+    _servicesTabPagination['task-manager'] = attachTablePagination('#tbl-task-manager', { unitLabel: 'proses', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 100, 'all'] });
   }
   // 3. Tab Akun (Linux User Accounts)
   if (document.getElementById('acc-table') && !_servicesTabPagination['acc']) {
-    _servicesTabPagination['acc'] = attachTablePagination('#acc-table', { unitLabel: 'akun', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+    _servicesTabPagination['acc'] = attachTablePagination('#acc-table', { unitLabel: 'akun', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 'all'] });
   }
-  // 4. Tab Akun (Riwayat Tindakan Akun)
+  // 4. Tab Akun (Riwayat Tindakan Akun - default 10)
   if (document.getElementById('acc-action-table') && !_servicesTabPagination['acc-action']) {
-    _servicesTabPagination['acc-action'] = attachTablePagination('#acc-action-table', { unitLabel: 'tindakan', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+    _servicesTabPagination['acc-action'] = attachTablePagination('#acc-action-table', { unitLabel: 'tindakan', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 'all'] });
   }
   // 5. Tab Port (Listening Sockets)
   if (document.getElementById('ports-table') && !_servicesTabPagination['ports']) {
-    _servicesTabPagination['ports'] = attachTablePagination('#ports-table', { unitLabel: 'port', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+    _servicesTabPagination['ports'] = attachTablePagination('#ports-table', { unitLabel: 'port', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 'all'] });
   }
   // 6. Tab Cron (Crontab Jobs)
   if (document.getElementById('cron-table') && !_servicesTabPagination['cron']) {
-    _servicesTabPagination['cron'] = attachTablePagination('#cron-table', { unitLabel: 'tugas', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+    _servicesTabPagination['cron'] = attachTablePagination('#cron-table', { unitLabel: 'tugas', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 'all'] });
   }
   // 7. Tab Cron (Systemd Timers)
   if (document.getElementById('systemd-timers-table') && !_servicesTabPagination['timers']) {
-    _servicesTabPagination['timers'] = attachTablePagination('#systemd-timers-table', { unitLabel: 'timer', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+    _servicesTabPagination['timers'] = attachTablePagination('#systemd-timers-table', { unitLabel: 'timer', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 'all'] });
   }
   // 8. Tab SSL (Certificates)
   if (document.getElementById('ssl-table') && !_servicesTabPagination['ssl']) {
-    _servicesTabPagination['ssl'] = attachTablePagination('#ssl-table', { unitLabel: 'sertifikat', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+    _servicesTabPagination['ssl'] = attachTablePagination('#ssl-table', { unitLabel: 'sertifikat', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 'all'] });
   }
   // 9. Tab Firewall (Rules)
   if (document.getElementById('fw-rules-table') && !_servicesTabPagination['fw-rules']) {
-    _servicesTabPagination['fw-rules'] = attachTablePagination('#fw-rules-table', { unitLabel: 'aturan', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+    _servicesTabPagination['fw-rules'] = attachTablePagination('#fw-rules-table', { unitLabel: 'aturan', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 'all'] });
   }
   // 10. Tab Firewall (Blocked IPs)
   if (document.getElementById('fw-blocked-table') && !_servicesTabPagination['fw-blocked']) {
-    _servicesTabPagination['fw-blocked'] = attachTablePagination('#fw-blocked-table', { unitLabel: 'baris', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 'all'] });
+    _servicesTabPagination['fw-blocked'] = attachTablePagination('#fw-blocked-table', { unitLabel: 'baris', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 'all'] });
   }
   // 11. Tab Logging (System Journal Errors)
   if (document.getElementById('tbl-system-logs') && !_servicesTabPagination['syslog']) {
-    _servicesTabPagination['syslog'] = attachTablePagination('#tbl-system-logs', { unitLabel: 'log', defaultLimit: 25, pageSizeOptions: [10, 25, 50, 100, 'all'] });
+    _servicesTabPagination['syslog'] = attachTablePagination('#tbl-system-logs', { unitLabel: 'log', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 100, 'all'] });
   }
   // 12. Tab Kinerja (Partisi Disks)
   if (document.getElementById('disks-table') && !_servicesTabPagination['disks']) {
-    _servicesTabPagination['disks'] = attachTablePagination('#disks-table', { unitLabel: 'disk', defaultLimit: 10, pageSizeOptions: [5, 10, 25, 'all'] });
+    _servicesTabPagination['disks'] = attachTablePagination('#disks-table', { unitLabel: 'disk', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 'all'] });
   }
   // 13. Tab Kinerja (Antarmuka Jaringan)
   if (document.getElementById('net-table') && !_servicesTabPagination['net']) {
-    _servicesTabPagination['net'] = attachTablePagination('#net-table', { unitLabel: 'antarmuka', defaultLimit: 10, pageSizeOptions: [5, 10, 25, 'all'] });
+    _servicesTabPagination['net'] = attachTablePagination('#net-table', { unitLabel: 'antarmuka', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 'all'] });
   }
   // 14. Tab Spesifikasi (Perangkat Penyimpanan)
   if (document.getElementById('spec-disks-table') && !_servicesTabPagination['spec-disks']) {
-    _servicesTabPagination['spec-disks'] = attachTablePagination('#spec-disks-table', { unitLabel: 'disk', defaultLimit: 10, pageSizeOptions: [5, 10, 25, 'all'] });
+    _servicesTabPagination['spec-disks'] = attachTablePagination('#spec-disks-table', { unitLabel: 'disk', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 'all'] });
   }
   // 15. Tab Spesifikasi (Antarmuka Jaringan)
   if (document.getElementById('spec-ifaces-table') && !_servicesTabPagination['spec-ifaces']) {
-    _servicesTabPagination['spec-ifaces'] = attachTablePagination('#spec-ifaces-table', { unitLabel: 'antarmuka', defaultLimit: 10, pageSizeOptions: [5, 10, 25, 'all'] });
+    _servicesTabPagination['spec-ifaces'] = attachTablePagination('#spec-ifaces-table', { unitLabel: 'antarmuka', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 'all'] });
   }
 }
 
@@ -7161,24 +7155,24 @@ function renderProblemsTab(level, openList, histList) {
     const svgBellOff = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
     const svgBell = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
 
-    let toolsHtml = `<button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}">${svgDiag}<span>${isEn ? 'Diagnose' : 'Diagnosa'}</span></button>`;
+    let toolsHtml = `<button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}" aria-label="${isEn ? 'Diagnose' : 'Diagnosa'}">${svgDiag}</button>`;
     if (p.log_unit) {
-      toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" title="${isEn ? 'View unit logs' : 'Lihat log unit'}">${svgLog}<span>Log</span></button>`;
+      toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" title="${isEn ? 'View unit logs' : 'Lihat log unit'}" aria-label="Log">${svgLog}</button>`;
     } else if (p.action === 'mitigate') {
-      toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" title="${isEn ? 'View SSH auth logs' : 'Lihat log auth SSH'}">${svgLog}<span>Log auth</span></button>`;
+      toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('AUTH')" title="${isEn ? 'View SSH auth logs' : 'Lihat log auth SSH'}" aria-label="Log auth">${svgLog}</button>`;
     }
 
     let opsHtml = '';
     if (isOpen) {
       if (!IS_VIEWER) {
         if (p.action === 'restart' && p.svc_id && CAN_SERVICES) {
-          toolsHtml += `<button type="button" class="btn btn-primary btn-sm" onclick="restartService(${SID}, ${p.svc_id}, '${escapeHtml(p.log_unit || p.key || 'service')}', this)" title="${isEn ? 'Restart service' : 'Restart layanan'}">${svgRestart}<span>Restart</span></button>`;
+          toolsHtml += `<button type="button" class="btn btn-primary btn-sm" onclick="restartService(${SID}, ${p.svc_id}, '${escapeHtml(p.log_unit || p.key || 'service')}', this)" title="${isEn ? 'Restart service' : 'Restart layanan'}" aria-label="${isEn ? 'Restart' : 'Restart'}">${svgRestart}</button>`;
         } else if (p.action === 'mitigate' && CAN_FIREWALL && p.ip_count && p.ip_count > 0) {
-          toolsHtml += `<button type="button" class="btn btn-danger btn-sm" onclick="submitProblemBlockAttackerIps(this, ${p.ip_count})" title="${isEn ? `Block ${p.ip_count} source IPs (iptables)` : `Blokir ${p.ip_count} IP sumber (iptables)`}">${svgShield}<span>${isEn ? `Block IP (${p.ip_count})` : `Blokir IP (${p.ip_count})`}</span></button>`;
+          toolsHtml += `<button type="button" class="btn btn-danger btn-sm" onclick="submitProblemBlockAttackerIps(this, ${p.ip_count})" title="${isEn ? `Block ${p.ip_count} source IPs (iptables)` : `Blokir ${p.ip_count} IP sumber (iptables)`}" aria-label="Block IP">${svgShield}</button>`;
         } else if (p.action === 'apt_update' && CAN_APT) {
-          toolsHtml += `<button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="${isEn ? 'Update OS packages' : 'Perbarui paket sistem'}">${svgDownload}<span>Update OS</span></button>`;
+          toolsHtml += `<button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="${isEn ? 'Update OS packages' : 'Perbarui paket sistem'}" aria-label="Update OS">${svgDownload}</button>`;
         } else if (p.action === 'agent_update_cmd' && CAN_OTA) {
-          toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}">${svgTerm}<span>${isEn ? 'Update Agent' : 'Update Agen'}</span></button>`;
+          toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}" aria-label="Update Agent">${svgTerm}</button>`;
         }
 
         if (p.acknowledged_by) {
@@ -7188,9 +7182,9 @@ function renderProblemsTab(level, openList, histList) {
         }
 
         if (isIgnored) {
-          opsHtml += `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}">${svgBell}<span>${isEn ? 'Monitor' : 'Pantau Kembali'}</span></button>`;
+          opsHtml += `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}" aria-label="${isEn ? 'Monitor' : 'Pantau Kembali'}">${svgBell}</button>`;
         } else {
-          opsHtml += `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}">${svgBellOff}<span>${isEn ? 'Ignore' : 'Abaikan'}</span></button>`;
+          opsHtml += `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}" aria-label="${isEn ? 'Ignore' : 'Abaikan'}">${svgBellOff}</button>`;
         }
       } else {
         if (p.acknowledged_by) {
@@ -7828,7 +7822,7 @@ function patch(data) {
     bm.disabled = false;
     bm.style.opacity = '';
     bm.style.cursor = '';
-    bm.title = isEnHero ? 'Enable or schedule maintenance mode to temporarily suppress alert notifications' : 'Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi down dibisukan sementara';
+    bm.title = isEnHero ? 'Enable or schedule maintenance mode to temporarily suppress alert notifications' : 'Aktifkan atau jadwalkan mode pemeliharaan agar notifikasi insiden diabaikan sementara';
     bm.dataset.i18nTitle = 'enable_maint_tooltip';
 
     const isMaintActive = !!data.is_maintenance;
@@ -8273,7 +8267,7 @@ function renderCron(cron_jobs) {
           <td><span class="mono">${userClean}</span></td>
           <td class="mono" style="font-size:12px;color:var(--text);word-break:break-all">${cmdClean}</td>
           <td class="mono" style="font-size:11px;color:var(--dim)">${escHtml(c.source || '')}${c.line ? ':' + c.line : ''}${isManaged ? ` <span class="badge badge-info" style="font-size:10px;margin-left:4px">${isEn ? 'Managed' : 'Dikelola'}</span>` : ''}</td>
-          <td><div style="display:flex;gap:4px;flex-wrap:wrap">${actHtml}</div></td>
+          <td style="white-space:nowrap"><div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">${actHtml}</div></td>
         </tr>`;
       }).join('');
       if (_servicesTabPagination['cron']) _servicesTabPagination['cron'].update();

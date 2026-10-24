@@ -341,7 +341,7 @@
         <th class="col-sev" title="Tingkat keparahan: Critical (kritis), Warning (waspada), atau Info (informasi)">Keparahan</th>
         <th class="col-event" title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
         <th class="col-durasi" title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
-        <th class="col-act" title="Aksi penanganan: Rincian, Tangani Insiden, atau Abaikan Masalah">Tindakan</th>
+        <th class="col-act" title="Tindakan penanganan: Rincian, Tangani Insiden, atau Abaikan Masalah">Tindakan</th>
         <th class="col-tips" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Panduan Solusi</th>
       </tr></thead>
       <tbody>
@@ -497,7 +497,7 @@
           <th class="col-desc" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
           <th class="col-durasi" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
           <th class="col-res" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Catatan status penanganan atau pemulihan">Resolusi</th>
-          <th class="col-act" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Aksi ke rincian server">Tindakan</th>
+          <th class="col-act" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Tindakan ke rincian server">Tindakan</th>
         </tr>
       </thead>
       <tbody id="prob-resolved-tbody">
@@ -958,7 +958,7 @@ window.poll = async function() {
               <th class="col-sev" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'Severity' : 'Keparahan'}</th>
               <th class="col-event" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'Event' : 'Kejadian'}</th>
               <th class="col-durasi" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'Duration' : 'Durasi'}</th>
-              <th class="col-act" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Aksi penanganan: Rincian, Tandai Ditangani, atau Abaikan Peringatan'}">${isEn ? 'Actions' : 'Tindakan'}</th>
+              <th class="col-act" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Masalah'}">${isEn ? 'Actions' : 'Tindakan'}</th>
               <th class="col-tips" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'Solution Guide' : 'Panduan Solusi'}</th>
             </tr></thead>
             <tbody></tbody>
