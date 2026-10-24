@@ -9,7 +9,7 @@
       {% if average_open %}<span class="badge badge-orange">Gawat {{ average_open }}</span>{% endif %}
       {% if warning_open %}<span class="badge badge-warn">Warning {{ warning_open }}</span>{% endif %}
       {% if info_open %}<span class="badge badge-info">Info {{ info_open }}</span>{% endif %}
-      {% if ignored_open %}<span class="badge badge-muted" title="{{ ignored_open }} insiden diabaikan">🔕 {{ ignored_open }} diabaikan</span>{% endif %}
+      {% if ignored_open %}<span class="badge badge-muted" title="{{ ignored_open }} insiden diabaikan">{{ ignored_open }} diabaikan</span>{% endif %}
       <span class="badge badge-up">✓ {{ ok_count }} server normal</span>
     </span>
     {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
@@ -198,27 +198,26 @@
 /* Riwayat Insiden Teratasi Proportions */
 #prob-resolved-table-wrap th.col-time-detailed,
 #prob-resolved-table-wrap td.col-time-detailed {
-  width: 155px;
-  min-width: 145px;
+  width: 135px;
+  min-width: 125px;
   white-space: nowrap;
   font-size: 11px;
-  padding: 6px 8px;
+  padding: 5px 6px;
 }
 #prob-resolved-table-wrap th.col-server,
 #prob-resolved-table-wrap td.col-server {
-  width: 115px;
-  min-width: 100px;
-  max-width: 135px;
+  width: 100px;
+  min-width: 90px;
+  max-width: 120px;
   font-size: 11.5px;
-  padding: 6px 8px;
+  padding: 5px 6px;
 }
 #prob-resolved-table-wrap th.col-sev,
 #prob-resolved-table-wrap td.col-sev {
-  width: 80px;
-  min-width: 74px;
-  max-width: 88px;
+  width: 75px;
+  min-width: 70px;
   text-align: center;
-  padding: 6px 6px;
+  padding: 5px 6px;
 }
 #prob-resolved-table-wrap th.col-sev .badge,
 #prob-resolved-table-wrap td.col-sev .badge {
@@ -228,43 +227,44 @@
 }
 #prob-resolved-table-wrap th.col-component,
 #prob-resolved-table-wrap td.col-component {
-  width: 95px;
-  min-width: 85px;
+  width: 90px;
+  min-width: 80px;
   white-space: nowrap;
   font-size: 11px;
-  padding: 6px 8px;
+  padding: 5px 6px;
 }
 #prob-resolved-table-wrap th.col-desc,
 #prob-resolved-table-wrap td.col-desc {
-  min-width: 260px;
+  max-width: 240px;
+  word-break: break-word;
   font-size: 11px;
   line-height: 1.35;
-  padding: 6px 10px;
+  padding: 5px 8px;
 }
 #prob-resolved-table-wrap th.col-durasi,
 #prob-resolved-table-wrap td.col-durasi {
-  width: 85px;
-  min-width: 80px;
+  width: 75px;
+  min-width: 70px;
   white-space: nowrap;
   font-size: 11px;
   letter-spacing: -0.025em;
   word-spacing: -1px;
-  padding: 6px 8px;
+  padding: 5px 6px;
 }
 #prob-resolved-table-wrap th.col-res,
 #prob-resolved-table-wrap td.col-res {
-  width: 150px;
-  min-width: 140px;
+  width: 135px;
+  min-width: 125px;
   white-space: nowrap;
   font-size: 11px;
-  padding: 6px 8px;
+  padding: 5px 6px;
 }
 #prob-resolved-table-wrap th.col-act,
 #prob-resolved-table-wrap td.col-act {
-  width: 45px;
-  min-width: 45px;
+  width: 75px;
+  min-width: 70px;
   text-align: left;
-  padding: 6px 8px;
+  padding: 5px 6px;
 }
 </style>
 
@@ -280,19 +280,19 @@
       <span id="pill-label-all">Semua</span> <span class="prob-pill-count" id="pill-count-all">{{ open_problems|length }}</span>
     </button>
     <button type="button" class="prob-pill-btn pill-danger" data-sev="danger" onclick="setProbFilterPill('danger', this)">
-      <span>🚨 Critical</span> <span class="prob-pill-count" id="pill-count-danger">{{ danger_open }}</span>
+      <span id="pill-label-danger">Critical</span> <span class="prob-pill-count" id="pill-count-danger">{{ danger_open }}</span>
     </button>
     <button type="button" class="prob-pill-btn pill-average" data-sev="average" onclick="setProbFilterPill('average', this)">
-      <span id="pill-label-average">⚠️ Gawat</span> <span class="prob-pill-count" id="pill-count-average">{{ average_open }}</span>
+      <span id="pill-label-average">Gawat</span> <span class="prob-pill-count" id="pill-count-average">{{ average_open }}</span>
     </button>
     <button type="button" class="prob-pill-btn pill-warning" data-sev="warning" onclick="setProbFilterPill('warning', this)">
-      <span>⚡ Warning</span> <span class="prob-pill-count" id="pill-count-warning">{{ warning_open }}</span>
+      <span id="pill-label-warning">Warning</span> <span class="prob-pill-count" id="pill-count-warning">{{ warning_open }}</span>
     </button>
     <button type="button" class="prob-pill-btn pill-info" data-sev="info" onclick="setProbFilterPill('info', this)">
-      <span>ℹ️ Info</span> <span class="prob-pill-count" id="pill-count-info">{{ info_open }}</span>
+      <span id="pill-label-info">Info</span> <span class="prob-pill-count" id="pill-count-info">{{ info_open }}</span>
     </button>
     <button type="button" class="prob-pill-btn pill-ignored" data-sev="ignored" onclick="setProbFilterPill('ignored', this)">
-      <span id="pill-label-ignored">🔕 Diabaikan</span> <span class="prob-pill-count" id="pill-count-ignored">{{ ignored_open }}</span>
+      <span id="pill-label-ignored">Diabaikan</span> <span class="prob-pill-count" id="pill-count-ignored">{{ ignored_open }}</span>
     </button>
   </div>
   <div class="prob-filters-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
@@ -320,7 +320,7 @@
       <option value="average">Gawat</option>
       <option value="warning">Warning</option>
       <option value="info">Info</option>
-      <option value="ignored">Diabaikan (🔕)</option>
+      <option value="ignored">Diabaikan</option>
     </select>
     <div class="prob-search-box" style="position:relative;display:flex;align-items:center">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -380,12 +380,12 @@
           {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
           {% if p.is_ignored and p.acknowledged_by %}
             <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-              <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">DIABAIKAN 🔕</span>
+              <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">DIABAIKAN</span>
               <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
             </div>
           {% elif p.is_ignored %}
             <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-              <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN 🔕</span>
+              <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
               <span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
             </div>
           {% elif p.acknowledged_by %}
@@ -490,14 +490,14 @@
     <table style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border)">
-          <th class="col-time-detailed" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
-          <th class="col-server" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Nama host dan grup server">Server</th>
-          <th class="col-sev" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:center;white-space:nowrap" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
-          <th class="col-component" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
-          <th class="col-desc" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
-          <th class="col-durasi" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
-          <th class="col-res" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Catatan status penanganan atau pemulihan">Resolusi</th>
-          <th class="col-act" style="padding:8px 10px;font-size:12px;color:var(--dim);text-align:left;white-space:nowrap" title="Tindakan ke rincian server">Tindakan</th>
+          <th class="col-time-detailed" style="color:var(--dim);text-align:left;white-space:nowrap" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
+          <th class="col-server" style="color:var(--dim);text-align:left;white-space:nowrap" title="Nama host dan grup server">Server</th>
+          <th class="col-sev" style="color:var(--dim);text-align:center;white-space:nowrap" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
+          <th class="col-component" style="color:var(--dim);text-align:left;white-space:nowrap" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
+          <th class="col-desc" style="color:var(--dim);text-align:left" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
+          <th class="col-durasi" style="color:var(--dim);text-align:left;white-space:nowrap" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
+          <th class="col-res" style="color:var(--dim);text-align:left;white-space:nowrap" title="Catatan status penanganan atau pemulihan">Resolusi</th>
+          <th class="col-act" style="color:var(--dim);text-align:left;white-space:nowrap" title="Tindakan ke rincian server">Tindakan</th>
         </tr>
       </thead>
       <tbody id="prob-resolved-tbody">
@@ -515,18 +515,18 @@
           data-prob-host="{{ p.hostname }}"
           data-prob-sid="{{ p.server_id }}">
         <!-- 1. Waktu -->
-        <td style="padding:8px 10px;white-space:nowrap" class="col-time-detailed">
+        <td style="padding:5px 6px;white-space:nowrap" class="col-time-detailed">
           <div class="mono" style="font-size:11px;color:var(--text);font-weight:600">
-            <span style="color:var(--dim);font-size:9.5px;text-transform:uppercase;margin-right:4px">Mulai</span>{{ _fmt_dt(p.started_at) if p.started_at else '—' }}
+            <span style="color:var(--dim);font-size:9.5px;text-transform:uppercase;margin-right:4px">Mulai</span>{{ p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—' }}
           </div>
           {% if p.resolved_at %}
           <div class="mono" style="font-size:11px;color:var(--dim);margin-top:2px">
-            <span style="font-size:9.5px;text-transform:uppercase;margin-right:4px">Selesai</span>{{ _fmt_dt(p.resolved_at) if p.resolved_at else '—' }}
+            <span style="font-size:9.5px;text-transform:uppercase;margin-right:4px">Selesai</span>{{ p.resolved_at.strftime('%d %b %H:%M:%S') if p.resolved_at else '—' }}
           </div>
           {% endif %}
         </td>
         <!-- 2. Server & Grup -->
-        <td style="padding:8px 10px;white-space:nowrap" class="col-server">
+        <td style="padding:5px 6px;white-space:nowrap" class="col-server">
           <div style="font-size:11.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
           {% if p.group_name %}
           <div style="margin-top:2px">
@@ -535,27 +535,27 @@
           {% endif %}
         </td>
         <!-- 3. Tingkat / Keparahan -->
-        <td style="padding:8px 10px;white-space:nowrap" class="col-sev">
+        <td style="padding:5px 6px;white-space:nowrap" class="col-sev">
           <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px;border-radius:3px">
             {{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}
           </span>
         </td>
         <!-- 4. Komponen -->
-        <td style="padding:8px 10px;white-space:nowrap" class="col-component">
+        <td style="padding:5px 6px;white-space:nowrap" class="col-component">
           <span style="font-size:11px;color:var(--text);font-weight:500">
             {{ p.component or 'Sistem' }}
           </span>
         </td>
         <!-- 5. Deskripsi Insiden -->
-        <td style="padding:8px 10px;font-size:11px;line-height:1.35;color:var(--text)" class="col-desc">
+        <td style="padding:5px 6px;font-size:11px;line-height:1.35;color:var(--text)" class="col-desc">
           <span style="color:var(--dim);text-decoration:line-through">{{ p.message }}</span>
         </td>
         <!-- 6. Durasi Gangguan (Downtime) -->
-        <td style="padding:8px 10px;white-space:nowrap" class="mono col-durasi">
+        <td style="padding:5px 6px;white-space:nowrap" class="mono col-durasi">
           <span class="badge badge-muted" style="font-size:10px;padding:1px 5px;font-weight:600;letter-spacing:-0.025em;word-spacing:-1px" title="Total waktu insiden berlangsung hingga teratasi">{{ p.durasi }}</span>
         </td>
         <!-- 7. Resolusi -->
-        <td style="padding:8px 10px;white-space:nowrap" class="col-res">
+        <td style="padding:5px 6px;white-space:nowrap" class="col-res">
           {% if p.resolved_note == 'server_offline' %}
             <span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="Ditutup karena host/server offline">Host Offline</span>
           {% elif p.resolved_note == 'server_online' or p.key == 'agent_stale' %}
@@ -572,7 +572,7 @@
             <span class="badge badge-up" style="font-size:10px;padding:1px 5px">✓ Selesai</span>
           {% endif %}
         </td>
-        <td style="padding:8px 10px;white-space:nowrap;text-align:left;width:50px" class="col-act">
+        <td style="padding:5px 6px;white-space:nowrap;text-align:left;width:50px" class="col-act">
           <a href="/servers/{{ p.server_id }}/services" class="btn btn-ghost btn-sm" title="Rincian" aria-label="Rincian">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
           </a>
@@ -902,7 +902,7 @@ window.poll = async function() {
       if (s.average_open) bh += `<span class="badge badge-orange">${isEn ? 'High ' : 'Gawat '}${s.average_open}</span> `;
       if (s.warning_open) bh += `<span class="badge badge-warn">Warning ${s.warning_open}</span> `;
       if (s.info_open) bh += `<span class="badge badge-info">Info ${s.info_open}</span> `;
-      if (s.ignored_open) bh += `<span class="badge badge-muted" title="${s.ignored_open} ${isEn ? 'incidents ignored' : 'masalah diabaikan'}">🔕 ${s.ignored_open} ${isEn ? 'ignored' : 'diabaikan'}</span> `;
+      if (s.ignored_open) bh += `<span class="badge badge-muted" title="${s.ignored_open} ${isEn ? 'incidents ignored' : 'masalah diabaikan'}">${s.ignored_open} ${isEn ? 'ignored' : 'diabaikan'}</span> `;
       bh += `<span class="badge badge-up">✓ ${s.ok_count} ${isEn ? 'servers normal' : 'server normal'}</span>`;
       badgeWrap.innerHTML = bh;
     }
@@ -934,9 +934,9 @@ window.poll = async function() {
       const lblAll = document.getElementById('pill-label-all');
       if (lblAll) lblAll.textContent = isEn ? 'All' : 'Semua';
       const lblAvg = document.getElementById('pill-label-average');
-      if (lblAvg) lblAvg.textContent = isEn ? '⚠️ High' : '⚠️ Gawat';
+      if (lblAvg) lblAvg.textContent = isEn ? 'High' : 'Gawat';
       const lblIgn = document.getElementById('pill-label-ignored');
-      if (lblIgn) lblIgn.textContent = isEn ? '🔕 Ignored' : '🔕 Diabaikan';
+      if (lblIgn) lblIgn.textContent = isEn ? 'Ignored' : 'Diabaikan';
     }
 
     // 3. Perbarui Daftar Masalah Terbuka
@@ -986,9 +986,9 @@ window.poll = async function() {
 
             let sevCellHtml = '';
             if (isIgn && p.acknowledged_by) {
-              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">${isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕'}</span> <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span> <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
             } else if (isIgn) {
-              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="${(isEn ? 'Reason: ' : 'Alasan: ') + _esc(p.ignored_reason || '')}">${isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕'}</span> <span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(isEn ? 'by ' : 'oleh ') + _esc(opName)}">(${isEn ? 'by ' : 'oleh '}${_esc(opName)})</span></div>`;
+              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="${(isEn ? 'Reason: ' : 'Alasan: ') + _esc(p.ignored_reason || '')}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span> <span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(isEn ? 'by ' : 'oleh ') + _esc(opName)}">(${isEn ? 'by ' : 'oleh '}${_esc(opName)})</span></div>`;
             } else if (p.acknowledged_by) {
               sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevLabel}</span> <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
             } else {
@@ -1097,34 +1097,34 @@ window.poll = async function() {
             data-prob-open="0"
             data-prob-host="${_esc(p.hostname)}"
             data-prob-sid="${p.server_id}">
-          <td style="padding:8px 10px;white-space:nowrap" class="col-time-detailed">
+          <td style="padding:5px 6px;white-space:nowrap" class="col-time-detailed">
             <div class="mono" style="font-size:11px;color:var(--text);font-weight:600">
-              <span style="color:var(--dim);font-size:9.5px;text-transform:uppercase;margin-right:4px">${isEn ? 'START' : 'MULAI'}</span>${_esc(p.started_at || p.started_at_str || '—')}
+              <span style="color:var(--dim);font-size:9.5px;text-transform:uppercase;margin-right:4px">${isEn ? 'START' : 'MULAI'}</span>${_esc((p.started_at || p.started_at_str || '—').replace(/\s*\d{4}\s*/, ' '))}
             </div>
             <div class="mono" style="font-size:11px;color:var(--dim);margin-top:2px">
-              <span style="font-size:9.5px;text-transform:uppercase;margin-right:4px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>${_esc(p.resolved_at || p.resolved_at_str || '—')}
+              <span style="font-size:9.5px;text-transform:uppercase;margin-right:4px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>${_esc((p.resolved_at || p.resolved_at_str || '—').replace(/\s*\d{4}\s*/, ' '))}
             </div>
           </td>
-          <td style="padding:8px 10px;white-space:nowrap" class="col-server">
+          <td style="padding:5px 6px;white-space:nowrap" class="col-server">
             <div style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${_esc(p.hostname)}</div>
             ${grp ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px">${_esc(grp)}</span></div>` : ''}
           </td>
-          <td style="padding:8px 10px;white-space:nowrap" class="col-sev">
+          <td style="padding:5px 6px;white-space:nowrap" class="col-sev">
             <span class="${sevBadge}" style="font-size:8px;padding:1px 4.5px;border-radius:3px">
               ${_esc(p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'danger' ? 'CRITICAL' : p.severity.toUpperCase()))}
             </span>
           </td>
-          <td style="padding:8px 10px;white-space:nowrap" class="col-component">
+          <td style="padding:5px 6px;white-space:nowrap" class="col-component">
             <span style="font-size:11px;color:var(--text);font-weight:500">${_esc(p.component || 'Sistem')}</span>
           </td>
-          <td style="padding:8px 10px;font-size:11px;line-height:1.35;color:var(--text)" class="col-desc">
+          <td style="padding:5px 6px;font-size:11px;line-height:1.35;color:var(--text)" class="col-desc">
             <span style="color:var(--dim);text-decoration:line-through">${_esc(p.message || '')}</span>
           </td>
-          <td style="padding:8px 10px;white-space:nowrap" class="mono col-durasi">
+          <td style="padding:5px 6px;white-space:nowrap" class="mono col-durasi">
             <span class="badge badge-muted" style="font-size:10px;padding:1px 5px;font-weight:600;letter-spacing:-0.025em;word-spacing:-1px">${_esc(p.durasi || '')}</span>
           </td>
-          <td style="padding:8px 10px;white-space:nowrap" class="col-res">${resBadge}</td>
-          <td style="padding:8px 10px;white-space:nowrap;text-align:left" class="col-act">
+          <td style="padding:5px 6px;white-space:nowrap" class="col-res">${resBadge}</td>
+          <td style="padding:5px 6px;white-space:nowrap;text-align:left" class="col-act">
             <a href="/servers/${p.server_id}/services" class="btn btn-ghost btn-sm" title="${isEn ? 'Details' : 'Rincian'}" aria-label="Rincian">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>
@@ -1164,9 +1164,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const lblAll = document.getElementById('pill-label-all');
     if (lblAll) lblAll.textContent = 'All';
     const lblAvg = document.getElementById('pill-label-average');
-    if (lblAvg) lblAvg.textContent = '⚠️ High';
+    if (lblAvg) lblAvg.textContent = 'High';
     const lblIgn = document.getElementById('pill-label-ignored');
-    if (lblIgn) lblIgn.textContent = '🔕 Ignored';
+    if (lblIgn) lblIgn.textContent = 'Ignored';
   }
   initProbPagination();
   probFilter();

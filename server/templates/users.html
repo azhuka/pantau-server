@@ -101,7 +101,7 @@
               {% if u.is_active %}
               <span style="color:#4ade80;font-size:11px;font-weight:600">● Aktif</span>
               {% else %}
-              <span style="color:#f87171;font-size:11px;font-weight:600">🔒 Terkunci</span>
+              <span style="color:#f87171;font-size:11px;font-weight:600">● Terkunci</span>
               {% endif %}
               <span style="color:var(--dim);font-size:11px">/</span>
               {% if u.totp_enabled %}
@@ -120,7 +120,7 @@
             <div style="display:inline-flex;gap:3px;align-items:center;justify-content:flex-start">
               {% if user.is_master_admin() and u.is_operator() %}
               <button type="button" class="btn btn-secondary btn-sm" onclick="openEditPermsModal({{ u.id }}, '{{ u.username }}', {{ u.permissions or '{}' }})" style="font-size:11px;padding:3px 7px" title="Atur izin operator">
-                ⚙️ Izin
+                Izin
               </button>
               {% endif %}
 
@@ -129,11 +129,11 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 {% if u.is_active %}
                 <button type="submit" class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 7px;color:#f87171" title="Kunci akun agar tidak bisa login" onclick="return confirm('Kunci akun {{ u.username }}? Pengguna tidak akan bisa login.');">
-                  🔒 Kunci
+                  Kunci
                 </button>
                 {% else %}
                 <button type="submit" class="btn btn-secondary btn-sm" style="font-size:11px;padding:3px 7px;color:#4ade80" title="Buka kunci akun" onclick="return confirm('Buka kunci akun {{ u.username }}?');">
-                  🔓 Buka
+                  Buka
                 </button>
                 {% endif %}
               </form>

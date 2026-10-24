@@ -3478,7 +3478,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             item = {
                 "server_id": None,
                 "probe_id": sp.probe_id,
-                "hostname": f"🌐 {prb_name}",
+                "hostname": prb_name,
                 "group_name": "Endpoint",
                 "tier": getattr(prb, "tier", 2) or 2 if prb else 2,
                 "severity": sp.severity or "warning",
@@ -5725,7 +5725,7 @@ def api_probes_open_problems(
             "server_id": None,
             "probe_id": sp.probe_id,
             "probe_name": prb_name,
-            "hostname": f"🌐 {prb_name}",
+            "hostname": prb_name,
             "group_name": "Endpoint",
             "tier": getattr(prb, "tier", 2) or 2 if prb else 2,
             "severity": sp.severity or "warning",
@@ -8423,7 +8423,7 @@ def problems_aggregate(db):
             d = _problem_row2dict(r)
             d.update({
                 "server_id": None,
-                "hostname": f"🌐 {prb_name}",
+                "hostname": prb_name,
                 "group_name": "Probing",
                 "tier": getattr(prb, "tier", 2) or 2 if prb else 2,
                 "tags": prb.probe_type if prb else "probe",
@@ -8992,7 +8992,7 @@ def api_alerts(
         if sid and sid in host:
             return host[sid]
         if pid and pid in probes_map:
-            return f"🌐 {probes_map[pid]}"
+            return probes_map[pid]
         return f"Server #{sid}" if sid else "Eksternal"
 
     open_problems = (

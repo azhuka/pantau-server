@@ -1367,7 +1367,7 @@ div[style*="position: fixed"] .card {
   <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true" id="tab-perf-btn" data-i18n="tab_perf"><span class="tab-text">Performa</span><span id="tab-dot-perf" class="tab-warn-dot" style="display:none"></span></button>
   {% set active_open = open_problems | rejectattr('is_ignored') | list %}
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
-  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Insiden</span><span id="tab-dot-masalah" class="tab-warn-dot" style="display:none"></span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
+  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Insiden</span><span id="tab-dot-masalah" class="tab-warn-dot" style="display:none"></span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}{{ ignored_open|length }}{% else %}0{% endif %}</span></button>
   <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Services</span><span id="tab-dot-layanan" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="packages" role="tab" id="tab-packages-btn"><span class="tab-text">Packages</span><span id="tab-dot-packages" class="tab-warn-dot" style="display:none"></span>{% if apt_upgradable and apt_upgradable > 0 %} <span class="badge badge-warn" id="tab-packages-badge" style="margin-left:4px;font-size:10px;padding:1px 5px">{{ apt_upgradable }}</span>{% endif %}</button>
   <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Tasks</span><span id="tab-dot-proses" class="tab-warn-dot" style="display:none"></span></button>
@@ -1627,9 +1627,9 @@ div[style*="position: fixed"] .card {
                     {% elif sm.health == 'healthy' %}
                       <span class="badge badge-success" style="font-size:10px;font-weight:600">✓ Sehat</span>
                     {% elif sm.health == 'warning' %}
-                      <span class="badge badge-warning" style="font-size:10px;font-weight:600">⚠️ Peringatan</span>
+                      <span class="badge badge-warning" style="font-size:10px;font-weight:600">Peringatan</span>
                     {% elif sm.health == 'critical' %}
-                      <span class="badge badge-danger" style="font-size:10px;font-weight:600">🚨 Rusak</span>
+                      <span class="badge badge-danger" style="font-size:10px;font-weight:600">Rusak</span>
                     {% else %}
                       <span class="badge badge-muted" style="font-size:10px">—</span>
                     {% endif %}
@@ -1833,7 +1833,7 @@ div[style*="position: fixed"] .card {
       {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
       {% set meta_info = pmeta.get(problem_level, (problem_level|upper, 'orange')) %}
       <span class="badge badge-{{ meta_info[1] }}">{{ meta_info[0] }}</span>
-      <span style="font-size:12px;color:var(--dim)">{{ active_open|length }} masalah aktif{% if ignored_open %} · {{ ignored_open|length }} diabaikan (🔕){% endif %}</span>
+      <span style="font-size:12px;color:var(--dim)">{{ active_open|length }} masalah aktif{% if ignored_open %} · {{ ignored_open|length }} diabaikan{% endif %}</span>
     {% endif %}
     </div>
   </div>
@@ -1849,7 +1849,7 @@ div[style*="position: fixed"] .card {
         <option value="average">Gawat</option>
         <option value="warning">Warning</option>
         <option value="info">Info</option>
-        <option value="ignored">Diabaikan (🔕)</option>
+        <option value="ignored">Diabaikan</option>
       </select>
       <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari kejadian…"
              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;min-width:200px">
@@ -1909,12 +1909,12 @@ div[style*="position: fixed"] .card {
         {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
         {% if p.is_ignored and p.acknowledged_by %}
           <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">DIABAIKAN 🔕</span>
+            <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">DIABAIKAN</span>
             <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
           </div>
         {% elif p.is_ignored %}
           <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN 🔕</span>
+            <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
             <span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
           </div>
         {% elif p.acknowledged_by %}
@@ -2194,9 +2194,9 @@ div[style*="position: fixed"] .card {
       <td class="mono">{{ svc.process_name }}</td>
       <td id="sts-{{ svc.id }}">
         {% if svc._status == 'down' and svc._is_ignored %}
-          <span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down 🔕</span>
+          <span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down</span>
         {% elif svc._status == 'up' and svc._is_ignored %}
-          <span class="badge badge-up" title="Layanan aktif (pengawasan down diabaikan)">up 🔕</span>
+          <span class="badge badge-up" title="Layanan aktif (pengawasan down diabaikan)">up</span>
         {% else %}
           <span class="badge badge-{{ svc._status }}">{{ svc._status }}</span>
         {% endif %}
@@ -2296,7 +2296,7 @@ div[style*="position: fixed"] .card {
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <div style="position:relative;display:flex;align-items:center">
         <input type="text" id="sysd-search-input" placeholder="Cari unit atau fungsi…" style="padding:5px 28px 5px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);width:190px" oninput="filterSystemdTable()">
-        <span style="position:absolute;right:8px;color:var(--dim);pointer-events:none;font-size:11px">🔍</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;right:8px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
       </div>
 
       <!-- Filter Status -->
@@ -2403,7 +2403,7 @@ div[style*="position: fixed"] .card {
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <div style="position:relative;display:flex;align-items:center">
           <input type="text" id="pkg-search-input" placeholder="Cari paket, fungsi, versi..." style="padding:5px 28px 5px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);width:190px" oninput="filterPackagesTable()">
-          <span style="position:absolute;right:8px;color:var(--dim);pointer-events:none;font-size:11px">🔍</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;right:8px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </div>
         
         <!-- Filter Tipe Paket: Pengguna vs Sistem -->
@@ -2519,7 +2519,9 @@ div[style*="position: fixed"] .card {
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <span id="top-procs-time" style="font-size:12px;color:var(--dim)">Diperbarui tiap siklus agen</span>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="fetchTopProcs()" title="Segarkan data proses terkini">&#8635;&nbsp;Segarkan</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-top-procs-refresh" onclick="fetchTopProcs()" title="Segarkan data proses terkini" aria-label="Segarkan data proses terkini">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+      </button>
     </div>
   </div>
 
@@ -4228,7 +4230,7 @@ function renderTopProcs(data) {
       if (!IS_ONLINE) {
         actionBtns = `<button type="button" class="btn btn-ghost btn-sm" disabled style="opacity:0.35;cursor:not-allowed" title="${isEn ? 'Server offline — actions disabled' : 'Server offline — aksi dinonaktifkan'}">${isEn ? 'Offline' : 'Offline'}</button>`;
       } else if (isProtected) {
-        actionBtns = `<span style="font-size:11px;color:var(--dim)" title="${isEn ? 'Protected system process' : 'Proses sistem terlindungi'}">🛡️ ${isEn ? 'System' : 'Sistem'}</span>`;
+        actionBtns = `<span style="font-size:11px;color:var(--dim);display:inline-flex;align-items:center;gap:3px" title="${isEn ? 'Protected system process' : 'Proses sistem terlindungi'}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>${isEn ? 'System' : 'Sistem'}</span>`;
       } else {
         const pauseBtn = isPaused ? `
           <button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);border-color:rgba(34,197,94,0.3);padding:2px 6px"
@@ -7059,7 +7061,7 @@ function renderProblemsTab(level, openList, histList) {
       tabBadge.className = 'badge badge-' + meta[1];
       tabBadge.style.display = 'inline-block';
     } else if (ignoredCount > 0) {
-      tabBadge.textContent = '🔕 ' + ignoredCount;
+      tabBadge.textContent = ignoredCount;
       tabBadge.className = 'badge badge-muted';
       tabBadge.style.display = 'inline-block';
     } else {
@@ -7074,7 +7076,7 @@ function renderProblemsTab(level, openList, histList) {
     } else {
       let sub = isEn ? `${activeCount} active issues` : `${activeCount} masalah aktif`;
       if (ignoredCount > 0) {
-        sub += isEn ? ` · ${ignoredCount} ignored (🔕)` : ` · ${ignoredCount} diabaikan (🔕)`;
+        sub += isEn ? ` · ${ignoredCount} ignored` : ` · ${ignoredCount} diabaikan`;
       }
       headEl.innerHTML = `<span class="badge badge-${meta[1]}">${meta[0]}</span> <span style="font-size:12px;color:var(--dim)">${sub}</span>`;
     }
@@ -7111,7 +7113,7 @@ function renderProblemsTab(level, openList, histList) {
         <option value="average"${oldFilter === 'average' ? ' selected' : ''}>${isEn ? 'High' : 'Gawat'}</option>
         <option value="warning"${oldFilter === 'warning' ? ' selected' : ''}>Warning</option>
         <option value="info"${oldFilter === 'info' ? ' selected' : ''}>Info</option>
-        <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>${isEn ? 'Ignored (🔕)' : 'Diabaikan (🔕)'}</option>
+        <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>${isEn ? 'Ignored' : 'Diabaikan'}</option>
       </select>
       <input type="search" id="prob-search" oninput="probFilter()" value="${escapeHtml(oldSearch)}" placeholder="${isEn ? 'Search incident…' : 'Cari kejadian…'}"
              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;min-width:200px">
@@ -7151,9 +7153,9 @@ function renderProblemsTab(level, openList, histList) {
     
     let sevCellHtml = '';
     if (isIgnored && p.acknowledged_by) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">${isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕'}</span><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
     } else if (isIgnored) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕'}</span><span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)}">(${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)})</span></div>`;
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)}">(${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)})</span></div>`;
     } else if (p.acknowledged_by) {
       sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevText}</span><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
     } else {
@@ -7169,7 +7171,7 @@ function renderProblemsTab(level, openList, histList) {
     const checkMark = isOpen ? '' : '<span style="color:var(--green)">✓</span> ';
     const msgStyle = isOpen ? '' : ' style="text-decoration:line-through"';
     const ignoredBadge = isIgnored
-      ? `<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (p.ignored_by ? (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(p.ignored_by) : '')}">${isEn ? '🔕 ignored' : '🔕 diabaikan'}${p.ignored_until ? (isEn ? ' until ' : ' s/d ') + fmtProbDate(p.ignored_until) : (isEn ? ' permanent' : ' permanen')}</span>`
+      ? `<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (p.ignored_by ? (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(p.ignored_by) : '')}">${isEn ? 'ignored' : 'diabaikan'}${p.ignored_until ? (isEn ? ' until ' : ' s/d ') + fmtProbDate(p.ignored_until) : (isEn ? ' permanent' : ' permanen')}</span>`
       : '';
     const kambuhBadge = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
     const isoStart = isOpen && p.started_at ? (p.started_at.endsWith('Z') ? p.started_at : p.started_at + 'Z') : '';
@@ -8053,9 +8055,9 @@ function patch(data) {
         const transBadge = effOp.action === 'stop' ? 'down' : (effOp.action === 'start' ? 'up' : 'warn');
         sts.innerHTML = '<span class="badge badge-' + transBadge + '">' + escHtml(s.status) + '</span> <span class="badge badge-warn" style="font-size:10px">' + escHtml(effStatus) + '</span>';
       } else if (s.status === 'down' && s.ignored) {
-        sts.innerHTML = '<span class="badge badge-muted" title="' + (isEnPatch ? 'Service stopped (monitoring ignored)' : 'Layanan berhenti (diabaikan)') + '">down 🔕</span>';
+        sts.innerHTML = '<span class="badge badge-muted" title="' + (isEnPatch ? 'Service stopped (monitoring ignored)' : 'Layanan berhenti (diabaikan)') + '">down</span>';
       } else if (s.status === 'up' && s.ignored) {
-        sts.innerHTML = '<span class="badge badge-up" title="' + (isEnPatch ? 'Service running (down monitoring ignored)' : 'Layanan aktif (pengawasan down diabaikan)') + '">up 🔕</span>';
+        sts.innerHTML = '<span class="badge badge-up" title="' + (isEnPatch ? 'Service running (down monitoring ignored)' : 'Layanan aktif (pengawasan down diabaikan)') + '">up</span>';
       } else {
         const st = s.status === 'unknown' ? 'inactive' : s.status;
         sts.innerHTML = '<span class="badge badge-' + st + '">' + escHtml(s.status) + '</span>';
@@ -8634,11 +8636,11 @@ function renderSys(data) {
               if (sm.is_virtual) {
                 smartBadge = '<span class="badge badge-muted" style="font-size:10px;letter-spacing:0.2px">Virtual (Host)</span>';
               } else if (sm.health === 'healthy') {
-                smartBadge = '<span class="badge badge-success" style="font-size:10px;font-weight:600">✓ Sehat</span>';
+                smartBadge = `<span class="badge badge-success" style="font-size:10px;font-weight:600">✓ ${isEn ? 'Healthy' : 'Sehat'}</span>`;
               } else if (sm.health === 'warning') {
-                smartBadge = '<span class="badge badge-warning" style="font-size:10px;font-weight:600">⚠️ Peringatan</span>';
+                smartBadge = `<span class="badge badge-warning" style="font-size:10px;font-weight:600">${isEn ? 'Warning' : 'Peringatan'}</span>`;
               } else if (sm.health === 'critical') {
-                smartBadge = '<span class="badge badge-danger" style="font-size:10px;font-weight:600">🚨 Rusak</span>';
+                smartBadge = `<span class="badge badge-danger" style="font-size:10px;font-weight:600">${isEn ? 'Failing' : 'Rusak'}</span>`;
               }
 
               let tempHtml = '<span style="color:var(--dim)">—</span>';

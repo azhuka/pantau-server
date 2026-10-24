@@ -311,6 +311,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.24
+
+- **Tipe Rilis:** Eliminasi Total Glif Rusak Tofu (Emoji), Standardisasi Status Nihil, dan Penyelarasan Kepadatan Antarmuka (*Total Elimination of Broken Tofu Box Glyphs, Standardization of Zero-Incident "Nihil" Badges & Interface Density Optimization*)
+- **Fokus Utama:** Menyelesaikan pembersihan visual menyeluruh dari seluruh anomali tampilan, glif rusak (*tofu square box*), inkonsistensi terminologi, dan redundansi kontrol antarmuka di seluruh modul aplikasi:
+  1. **Eliminasi Total Glif Rusak Tofu (Raw Emoji Replacement):** Mengganti seluruh karakter emoji mentah (`🔕`, `🚨`, `⚠️`, `⚡`, `ℹ️`, `🔍`, `🔒`, `👑`, `🛡️`, dll.) yang mereduksi menjadi kotak hampa rusak (`□`) pada sistem Linux tanpa font emoji warna:
+     - Di `dashboard.html`: Mengganti `Diabaikan 🔕` pada strip keparahan insiden dan modal diagnosa dengan teks bersih dan dot warna styled CSS murni.
+     - Di `problems.html`: Menghapus emoji mentah dari badge ringkasan, pill filter triage (`Semua`, `Critical`, `Gawat`, `Warning`, `Info`, `Diabaikan`), opsi dropdown `<select>`, serta badge sel tabel Jinja2 dan perender JS live (`DIABAIKAN`).
+     - Di `services.html`: Menghapus emoji mentah dari badge tab insiden (`tab-masalah-badge`), filter status keparahan, badge sel masalah terbuka/teratasi, badge status layanan (`down` & `up` tanpa `🔕`), badge disk S.M.A.R.T. (`Rusak` tanpa `🚨`), dan ikon pencarian input (`🔍` diganti SVG murni).
+     - Di `base.html`: Mengganti emoji pulse `🚨` pada banner darurat dengan SVG alert triangle beranimasi denyut murni, membersihkan label modal diagnosa masalah PDM (`🔍`, `📌`, `📊`, `🛠️`, `💻`) menjadi ikon SVG inline terstruktur, serta menyelaraskan judul tab browser menjadi format ASCII bersih `(!)`.
+     - Di `users.html`, `profile.html`, `error.html`, dan `file_manager.html`: Mengganti emoji gembok, pencarian, dan layar penuh dengan penanda status bulat dan SVG vektor tajam.
+     - Di backend `server/main.py`: Menghapus prefix emoji `🌐` pada pelabelan hostname probe eksternal yang sebelumnya menyebabkan tampilan nama probe rusak menjadi `□`.
+  2. **Standardisasi Status Tanpa Masalah ("Nihil"):** Menyelaraskan status insiden nol pada daftar server (`servers.html`) dari teks `Normal` menjadi `Nihil` (`None` pada bahasa Inggris), konsisten 100% dengan standar operasional NOC pada dasbor utama.
+  3. **Penyempurnaan Kepadatan & Pencegahan Overflow Bilah Gulir Horizontal (`servers.html`):** Menyesuaikan lebar kolom header tabel (`th`), padding sel (`5px 8px`), ukuran font hostname (`13px`), serta tombol tindakan cepat (`Rincian`, `Edit`, `Hapus` pada `10.5px; padding: 2px 5px`) sehingga seluruh tabel server pas sempurna pada resolusi 1280px-1440px tanpa memunculkan bilah gulir horizontal (*horizontal scrollbar*) yang memotong kolom tindakan.
+  4. **Pembersihan Redundansi Bilah Kontrol Dasbor (`dashboard.html`):** Menghapus toggle pengalih kepadatan baris (`#dash-density-switcher`) yang membingungkan operator karena menampilkan ikon garis sejajar berdampingan dengan pengalih tata letak (`#dash-view-switcher`), mempertahankan tabel kompak 1 baris sebagai standar baku operasional NOC.
+  5. **Restorasi Ikon Tombol Segarkan Manajer Tugas (`services.html`):** Mengganti tombol teks `&#8635;&nbsp;Segarkan` pada Manajer Tugas (`#btn-top-procs-refresh`) menjadi tombol ikon SVG segarkan murni yang identik dan harmonis dengan bilah kontrol paket OS lainnya.
+  6. **Pelebaran Kolom Tindakan Insiden Selesai (`problems.html`):** Memperlebar kolom tindakan `#prob-resolved-table-wrap th.col-act` dari 45px menjadi 75px untuk mencegah pemotongan teks header `TINDAKAN`.
+
+---
+
 ## Versi 4.6.23
 
 - **Tipe Rilis:** Restorasi Menyeluruh Tombol Antarmuka Menjadi Ikon SVG Murni Tanpa Teks & Pengayaan Tooltip Informatif (*Comprehensive Restoration of All UI Action Buttons to Pure SVG Icons with Informative Tooltips*)

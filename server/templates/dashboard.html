@@ -893,7 +893,7 @@ body.popout-fleet_table #dash-fleet-card {
       </div>
       <div class="zbx-sev-tile zbx-tile-ignored {% if ignored_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('ignored')" title="Klik untuk rincian insiden yang Diabaikan (Netral)">
         <span class="zbx-sev-count" id="zbx-count-ignored">{{ ignored_total }}</span>
-        <span class="zbx-sev-label" title="Insiden yang diabaikan oleh operator">Diabaikan 🔕</span>
+        <span class="zbx-sev-label" title="Insiden yang diabaikan oleh operator">Diabaikan</span>
       </div>
     </div>
   </div>
@@ -1037,16 +1037,6 @@ body.popout-fleet_table #dash-fleet-card {
         </button>
         <button type="button" id="btn-view-grid" onclick="setDashboardView('grid')" class="view-btn" title="Kartu NOC" aria-label="Kartu NOC">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-        </button>
-      </div>
-
-      <!-- Kepadatan Baris Tabel (Mode Kompak vs Standar) -->
-      <div class="view-switch-group" id="dash-density-switcher" title="Kepadatan Baris Tabel">
-        <button type="button" id="btn-density-compact" onclick="setTableDensity('compact')" class="view-btn active" title="Mode Kompak (1 Baris Ringkas)" aria-label="Mode Kompak (1 Baris Ringkas)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-        </button>
-        <button type="button" id="btn-density-standard" onclick="setTableDensity('standard')" class="view-btn" title="Mode Standar (2 Baris Rinci)" aria-label="Mode Standar (2 Baris Rinci)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="5" x2="21" y2="5"></line><line x1="3" y1="9" x2="14" y2="9" stroke-width="1.8" opacity="0.65"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="3" y1="19" x2="14" y2="19" stroke-width="1.8" opacity="0.65"></line></svg>
         </button>
       </div>
 
@@ -1456,7 +1446,7 @@ body.popout-fleet_table #dash-fleet-card {
     <!-- Header -->
     <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #30363d;background:rgba(255,255,255,0.02)">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span id="sdm-icon" style="font-size:18px">⚠️</span>
+        <span id="sdm-icon" style="display:inline-flex;align-items:center"></span>
         <h3 id="sdm-title" style="margin:0;font-size:15.5px;font-weight:600;color:var(--text)">Rincian Masalah</h3>
         <span id="sdm-badge" class="badge">0 Insiden</span>
       </div>
@@ -1513,31 +1503,31 @@ const SEV_CONFIG = {
   danger: {
     label: 'Kritis (Critical / Disaster)',
     badgeCls: 'badge-danger',
-    icon: '🔴',
+    iconHtml: '<span class="dot danger" style="width:12px;height:12px"></span>',
     emptyMsg: 'Tidak ada insiden Kritis saat ini.'
   },
   average: {
     label: 'Gawat',
     badgeCls: 'badge-orange',
-    icon: '🟠',
+    iconHtml: '<span class="dot orange" style="width:12px;height:12px"></span>',
     emptyMsg: 'Tidak ada insiden Gawat saat ini.'
   },
   warning: {
     label: 'Peringatan (Warning)',
     badgeCls: 'badge-warn',
-    icon: '🟡',
+    iconHtml: '<span class="dot warn" style="width:12px;height:12px"></span>',
     emptyMsg: 'Tidak ada anomali atau ambang batas Peringatan yang terlampaui.'
   },
   info: {
     label: 'Informasi (Info)',
     badgeCls: 'badge-info',
-    icon: '🔵',
+    iconHtml: '<span class="dot info" style="width:12px;height:12px"></span>',
     emptyMsg: 'Tidak ada catatan informasi operasional saat ini.'
   },
   ignored: {
-    label: 'Diabaikan (Silenced / Ignored 🔕)',
+    label: 'Diabaikan (Silenced / Ignored)',
     badgeCls: 'badge-muted',
-    icon: '🔕',
+    iconHtml: '<span class="dot muted" style="width:12px;height:12px"></span>',
     emptyMsg: 'Tidak ada insiden yang sedang diabaikan.'
   }
 };
@@ -1563,7 +1553,7 @@ function renderSevDetailModal(sev) {
   const cfg = SEV_CONFIG[sev] || {
     label: (sev || '').toUpperCase(),
     badgeCls: 'badge-muted',
-    icon: '⚠️',
+    iconHtml: '<span class="dot muted" style="width:12px;height:12px"></span>',
     emptyMsg: 'Tidak ada data.'
   };
 
@@ -1580,7 +1570,7 @@ function renderSevDetailModal(sev) {
   const tbody = document.getElementById('sdm-tbody');
 
   if (titleEl) titleEl.textContent = cfg.label;
-  if (iconEl) iconEl.textContent = cfg.icon;
+  if (iconEl) iconEl.innerHTML = cfg.iconHtml || '';
   if (badgeEl) {
     badgeEl.className = 'badge ' + cfg.badgeCls;
     badgeEl.textContent = list.length + ' Insiden';
@@ -1615,7 +1605,7 @@ function renderSevDetailModal(sev) {
 
       let ignBadge = '';
       if (p.is_ignored) {
-        ignBadge = '<span class="badge badge-muted" style="font-size:10.5px;padding:1px 5px;margin-left:6px">Diabaikan 🔕</span>';
+        ignBadge = '<span class="badge badge-muted" style="font-size:10.5px;padding:1px 5px;margin-left:6px">Diabaikan</span>';
       }
 
       let sevPill = '';
@@ -2517,7 +2507,7 @@ async function pollNocDashboard() {
         const item = {
           server_id: null,
           probe_id: p.probe_id,
-          hostname: p.hostname || ('🌐 ' + (p.probe_name || 'Endpoint')),
+          hostname: p.hostname || (p.probe_name || 'Endpoint'),
           group_name: p.group_name || 'Endpoint',
           severity: p.severity || 'warning',
           message: p.message || '',
@@ -2600,7 +2590,7 @@ async function pollNocDashboard() {
           ...p,
           server_id: null,
           probe_id: p.probe_id,
-          hostname: p.hostname || ('🌐 ' + (p.probe_name || 'Endpoint')),
+          hostname: p.hostname || (p.probe_name || 'Endpoint'),
           group_name: p.group_name || 'Endpoint'
         });
       });

@@ -27,7 +27,7 @@
 }
 #servers-table th {
   white-space: nowrap;
-  padding: 6px 10px;
+  padding: 5px 6px;
   font-size: 10.5px;
   font-weight: 600;
   color: var(--dim);
@@ -36,7 +36,7 @@
 }
 #servers-table td {
   white-space: nowrap;
-  padding: 6px 10px;
+  padding: 4.5px 6px;
   font-size: 11.5px;
 }
 @media (max-width: 640px) {
@@ -101,17 +101,17 @@
   <table id="servers-table" style="width:100%;margin:0">
     <thead>
       <tr>
-        <th class="sortable" data-col="0" style="cursor:pointer;width:180px;min-width:140px;white-space:nowrap" title="Urutkan berdasarkan nama host server">Hostname ↕</th>
-        <th class="sortable" data-col="1" style="cursor:pointer;width:115px;min-width:100px" title="Urutkan berdasarkan alamat IP — klik IP pada baris untuk menyalin">Alamat IP ↕</th>
-        <th class="sortable" data-col="2" style="cursor:pointer;width:85px;min-width:75px" title="Urutkan berdasarkan tag">Tag / Label ↕</th>
-        <th style="width:75px;min-width:65px;text-align:center" title="Kondisi koneksi mesin saat ini (Online, Pemeliharaan, atau Offline)">Status</th>
-        <th class="sortable" data-col="4" style="cursor:pointer;width:60px;min-width:55px;text-align:center" title="Persentase pemakaian CPU">CPU ↕</th>
-        <th class="sortable" data-col="5" style="cursor:pointer;width:60px;min-width:55px;text-align:center" title="Persentase pemakaian RAM">RAM ↕</th>
-        <th style="width:75px;min-width:65px;text-align:center" title="Ringkasan jumlah layanan: total, aktif, berhenti, atau diabaikan">Layanan</th>
-        <th style="width:80px;min-width:70px;text-align:center" title="Tingkat keparahan anomali atau insiden yang terdeteksi">Insiden</th>
-        <th style="width:95px;min-width:85px;text-align:center" title="Jumlah pembaruan paket sistem operasi (APT) yang tersedia">Pembaruan OS</th>
-        <th class="sortable" data-col="9" style="cursor:pointer;width:105px;min-width:95px;text-align:center" title="Waktu terakhir kali server mengirimkan data ke panel">Terakhir Lapor ↕</th>
-        <th class="col-act" style="width:125px;min-width:115px;text-align:left" title="Menu aksi cepat: Rincian, Edit, atau Hapus server">Tindakan</th>
+        <th class="sortable" data-col="0" style="cursor:pointer;width:240px;min-width:180px;white-space:nowrap" title="Urutkan berdasarkan nama host server">Hostname ↕</th>
+        <th class="sortable" data-col="1" style="cursor:pointer;width:105px;min-width:95px" title="Urutkan berdasarkan alamat IP — klik IP pada baris untuk menyalin">Alamat IP ↕</th>
+        <th class="sortable" data-col="2" style="cursor:pointer;width:70px;min-width:60px" title="Urutkan berdasarkan tag atau label">Tag ↕</th>
+        <th style="width:65px;min-width:55px;text-align:center" title="Kondisi koneksi mesin saat ini (Online, Pemeliharaan, atau Offline)">Status</th>
+        <th class="sortable" data-col="4" style="cursor:pointer;width:50px;min-width:45px;text-align:center" title="Persentase pemakaian CPU">CPU ↕</th>
+        <th class="sortable" data-col="5" style="cursor:pointer;width:50px;min-width:45px;text-align:center" title="Persentase pemakaian RAM">RAM ↕</th>
+        <th style="width:60px;min-width:55px;text-align:center" title="Ringkasan jumlah layanan: total, aktif, berhenti, atau diabaikan">Layanan</th>
+        <th style="width:65px;min-width:55px;text-align:center" title="Tingkat keparahan anomali atau insiden yang terdeteksi">Insiden</th>
+        <th class="sortable" data-col="8" style="cursor:pointer;width:85px;min-width:75px;text-align:center" title="Jumlah pembaruan paket sistem operasi (APT) yang tersedia">Pembaruan ↕</th>
+        <th class="sortable" data-col="9" style="cursor:pointer;width:80px;min-width:70px;text-align:center" title="Waktu terakhir kali server mengirimkan data ke panel">Lapor ↕</th>
+        <th class="col-act" style="width:140px;min-width:130px;text-align:left" title="Menu aksi cepat: Rincian, Edit, atau Hapus server">Tindakan</th>
       </tr>
     </thead>
     <tbody>
@@ -162,9 +162,9 @@
         data-status="{{ srv._status_cls }}"
         data-last-seen="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
       <td style="white-space:nowrap">
-        <div style="display:inline-flex;align-items:center;gap:7px;white-space:nowrap">
+        <div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
           <span id="srv-dot-{{ srv.id }}" class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
-          <strong style="font-size:13.5px" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</strong>
+          <strong style="font-size:13px" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</strong>
           {% set s_tier = srv.tier|default(2) %}
           {% if s_tier == 1 %}
             <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>
@@ -257,7 +257,7 @@
           {% set tot_active = d_cnt + avg_cnt + w_cnt + i_cnt %}
           <div style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">
             {% if tot_active == 0 and ign_count == 0 %}
-              <span class="badge badge-up" style="font-size:8px;padding:1px 5px;font-weight:600">Normal</span>
+              <span class="badge badge-up" style="font-size:8px;padding:1px 5px;font-weight:600">Nihil</span>
             {% else %}
               {% if d_cnt > 0 %}
                 <span class="badge badge-danger" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
@@ -294,9 +294,9 @@
       </td>
       <td class="col-act" style="text-align:left;white-space:nowrap">
         <div style="display:inline-flex;gap:3px;align-items:center;justify-content:flex-start">
-          <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 7px" data-i18n="details">Rincian</a>
+          <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm" style="font-size:10.5px;padding:2px 5px" data-i18n="details">Rincian</a>
           {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-          <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 7px" data-i18n="edit">Edit</a>
+          <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm" style="font-size:10.5px;padding:2px 5px" data-i18n="edit">Edit</a>
           <form method="POST" action="/servers/{{ srv.id }}/delete" style="display:inline;margin:0"
                 data-guardrail
                 data-guardrail-title="Hapus Server dari Pantau"
@@ -306,7 +306,7 @@
                 data-guardrail-btn="Hapus Server Sekarang"
                 data-guardrail-color="danger">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button class="btn btn-danger btn-sm" style="font-size:11px;padding:2px 7px" type="submit" data-i18n="delete">Hapus</button>
+            <button class="btn btn-danger btn-sm" style="font-size:10.5px;padding:2px 5px" type="submit" data-i18n="delete">Hapus</button>
           </form>
           {% endif %}
         </div>
@@ -597,7 +597,7 @@ async function srvPoll() {
           const _esc = s => (s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
           let html = '<div style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">';
           if (totActive === 0 && ignCnt === 0) {
-            html += '<span class="badge badge-up" style="font-size:8px;padding:1px 5px;font-weight:600">Normal</span>';
+            html += `<span class="badge badge-up" style="font-size:8px;padding:1px 5px;font-weight:600">${isEn ? 'None' : 'Nihil'}</span>`;
           } else {
             if (dCnt > 0) html += `<span class="badge badge-danger" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="${_esc(srv.danger_msgs || (isEn ? 'Danger' : 'Bahaya'))}">${dCnt}</span>`;
             if (avgCnt > 0) html += `<span class="badge badge-orange" style="min-width:18px;text-align:center;padding:1px 5px;font-size:8.5px;font-weight:700;border-radius:4px" title="${_esc(srv.average_msgs || (isEn ? 'High' : 'Gawat'))}">${avgCnt}</span>`;
