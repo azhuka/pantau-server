@@ -311,6 +311,35 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.7.0
+
+- **Tipe Rilis:** Fitur Baru: Pemantauan Status Cadangan Otomatis Terpusat (*Central Automated Backup Monitoring, Database Dump & Archive Integrity Verification*)
+- **Fokus Utama:** Mengimplementasikan modul pemantauan status cadangan otomatis (*automated backup monitoring*) untuk mendeteksi ketersediaan, integritas ukuran, dan kebaruan berkas cadangan database (MySQL, MariaDB, PostgreSQL) serta arsip sistem di seluruh server klien:
+  1. **Agen Klien Mandiri Tanpa Dependensi Eksternal (`agent_pantau.py`):**
+     - Mengimplementasikan `collect_backup_status()` yang secara otomatis memindai direktori cadangan standar (`/var/backups`, `/backups`, `/backup`, `/data/backup`, `/var/lib/mysql/backup`, `/var/lib/postgresql/backup`) dan jalur kustom terkonfigurasi.
+     - Memindai berkas cadangan dengan ekstensi dump dan arsip terkompresi (`.sql`, `.sql.gz`, `.sql.bz2`, `.sql.xz`, `.sql.zst`, `.dump`, `.dmp`, `.tar.gz`, `.tgz`, `.tar.bz2`, `.tar.xz`, `.tar.zst`, `.tar`, `.zip`, `.vma.zst`, `.qcow2.bak`).
+     - Mengumpulkan metadata lengkap: nama berkas, jalur absolut, direktori, ukuran byte, ukuran ramah manusia (*human-readable*), timestamp modifikasi (*mtime*), dan usia berkas (*age in hours*).
+     - Mendeteksi proses basis data aktif (`mariadb`, `mysql`, `postgresql`, `redis`, `mongodb`) untuk korelasi audit ketersediaan cadangan.
+     - Memindai tugas cron dan systemd timer aktif yang menjalankan perintah pencadangan (`mysqldump`, `pg_dump`, `rsync`, `tar`, `borg`, `restic`).
+     - Menerapkan mekanisme cache 60 detik (*12 reporting ticks*) sehingga konsumsi I/O disk dan CPU agen tetap nol.
+  2. **Skema Basis Data & Backend FastAPI (`models.py` & `main.py`):**
+     - Menambahkan kolom `backup_status` bertipe `MEDIUMTEXT` pada tabel `server_extras` dengan migrasi otomatis saat server dihidupkan (*auto-migration on startup*).
+     - Menangani payload `backup_status` pada rute `/api/report` dan menyimpannya secara terstruktur.
+     - Mengintegrasikan evaluasi insiden cadangan pada `_problem_instances`:
+       * **Kritis / Bahaya (Danger):** Berkas cadangan berukuran 0 Byte (`backup_corrupted`) memicu tiket insiden bahaya.
+       * **Peringatan (Warning):** Berkas cadangan terakhir berusia > 24 jam (`backup_stale`) memicu tiket insiden peringatan.
+       * **Informasi (Info):** Basis data aktif terdeteksi namun belum ada berkas cadangan di direktori standar (`backup_missing`).
+     - Menyusun konteks diagnostik dwibahasa (ID/EN) pada `_build_problem_context` lengkap dengan rekomendasi dan perintah investigasi terminal (`ls -la`, `df -h`, `journalctl`).
+  3. **Antarmuka Pengguna Berprinsip Kepadatan NOC (`services.html`):**
+     - Menambahkan tab navigasi baru **Cadangan** (*Backups*) di halaman rincian server dengan indikator titik peringatan (*warn dot*) otomatis.
+     - Kartu Ringkasan KPI Cadangan: Status mutakhir/usang/gagal/nihil, nama berkas terbaru, waktu pembuatan, usia relatif, dan total kapasitas penyimpanan cadangan.
+     - Tabel Berkas Cadangan Terkini (`#tbl-cadangan`) berprinsip *NOC-density* (tinggi baris rapat ~32px, padding sel 5px 6px, badge proporsional 9.5px, format monospace).
+     - Tabel Tugas Cadangan Terjadwal (Cron & Systemd Timer) yang mendeteksi orkestrasi cadangan lokal.
+     - Panel Direktori Pemantauan Cadangan yang memandu operator mengenai lokasi pemindaian dan dukungan konfigurasi kustom.
+     - Integrasi paginasi terpadu (`attachTablePagination`) dan reaktivitas polling live (`renderBackupStatus`).
+
+---
+
 ## Versi 4.6.24
 
 - **Tipe Rilis:** Eliminasi Total Glif Rusak Tofu (Emoji), Standardisasi Status Nihil, dan Penyelarasan Kepadatan Antarmuka (*Total Elimination of Broken Tofu Box Glyphs, Standardization of Zero-Incident "Nihil" Badges & Interface Density Optimization*)

@@ -611,6 +611,7 @@ def migrate_server_extras_specs():
         "hardware_specs": "TEXT NULL",
         "installed_packages": "MEDIUMTEXT NULL",
         "systemd_units": "MEDIUMTEXT NULL",
+        "backup_status": "MEDIUMTEXT NULL",
     }
     missing = {k: v for k, v in wanted.items() if k not in existing}
     if not missing:
@@ -1602,6 +1603,13 @@ def agent_report(
         ]
         extras.system_logs = json.dumps(clean_logs)
 
+    # Validasi & Simpan Status Cadangan (Backup Monitoring)
+    if isinstance(body.get("backup_status"), dict):
+        try:
+            extras.backup_status = json.dumps(body["backup_status"])
+        except Exception:
+            pass
+
     extras.updated_at = datetime.utcnow()
 
     db.commit()
@@ -2478,6 +2486,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "problem_level": problem_level,
         "open_problems": open_prob_serialized,
         "problem_history": hist_prob_serialized,
+        "backup_status": json.loads(extras.backup_status) if (extras and extras.backup_status) else None,
         "notes": server.notes or "",
     }
 
@@ -4098,6 +4107,13 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         except Exception:
             upgradable_pkgs = []
 
+    backup_data = {}
+    if extra and getattr(extra, "backup_status", None):
+        try:
+            backup_data = json.loads(extra.backup_status) if isinstance(extra.backup_status, str) else extra.backup_status
+        except Exception:
+            backup_data = {}
+
     effective_apt_upgradable = extra.apt_upgradable if extra else 0
     if isinstance(upgradable_pkgs, list):
         if len(upgradable_pkgs) == 0:
@@ -4188,6 +4204,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         "system_logs": sys_logs_data,
         "hardware_specs": hw_specs,
         "platform_info": platform_info,
+        "backup_status": backup_data,
     })
 
 
@@ -7092,6 +7109,113 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 ]
             }, ensure_ascii=False)
 
+        # 15. Cadangan Rusak / 0 Byte (Backup Corrupted)
+        if key == "backup_corrupted":
+            bk = kwargs.get("backup") or {}
+            fname = bk.get("filename") or "berkas cadangan"
+            fpath = bk.get("path") or fname
+            return json.dumps({
+                "diagnosa": f"Berkas Cadangan Rusak / Kosong: {fname}",
+                "diagnosa_en": f"Corrupted or Empty Backup File: {fname}",
+                "penyebab": f"Berkas cadangan {fpath} ditemukan dengan ukuran 0 Byte. Hal ini mengindikasikan proses dump database (mysqldump/pg_dump) atau pengarsipan (tar/gzip) terhenti di tengah jalan karena kehabisan ruang disk, permission denied, atau crash proses.",
+                "penyebab_en": f"Backup file {fpath} was found with 0 Bytes size. Indicates database dump (mysqldump/pg_dump) or archiving (tar/gzip) aborted midway due to out of disk space, permission denied, or process crash.",
+                "dampak": "Pemulihan bencana (disaster recovery) tidak dapat dilakukan karena berkas dump tidak berisi data valid.",
+                "dampak_en": "Disaster recovery cannot be performed as the backup archive contains no valid data.",
+                "data_teknis": {
+                    "backup_path": fpath,
+                    "filename": fname,
+                    "size_bytes": 0,
+                    "server_hostname": srv.hostname,
+                    "server_ip": srv.ip_address,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    f"Periksa isi direktori cadangan: ls -lh {fpath}",
+                    "Periksa ruang penyimpanan partisi: df -h",
+                    "Periksa log kegagalan cron atau sistem: journalctl -u cron -n 50 --no-pager",
+                    "Jalankan script cadangan secara manual untuk memastikan tidak ada kesalahan query atau hak akses."
+                ],
+                "rekomendasi_en": [
+                    f"Check backup directory content: ls -lh {fpath}",
+                    "Verify partition storage space: df -h",
+                    "Check cron or system failure logs: journalctl -u cron -n 50 --no-pager",
+                    "Run backup script manually to verify query permissions and exit codes."
+                ],
+                "perintah_diagnosa": [
+                    f"ls -la {fpath}",
+                    "df -h",
+                    "tail -n 50 /var/log/syslog | grep -i backup || true"
+                ]
+            }, ensure_ascii=False)
+
+        # 16. Cadangan Usang (Backup Stale > 24 Jam)
+        if key == "backup_stale":
+            bk = kwargs.get("backup") or {}
+            fname = bk.get("filename") or "berkas cadangan"
+            age_h = bk.get("age_hours") or 0.0
+            return json.dumps({
+                "diagnosa": f"Cadangan Otomatis Usang ({age_h:.1f} Jam Lalu)",
+                "diagnosa_en": f"Outdated Automated Backup ({age_h:.1f} Hours Ago)",
+                "penyebab": f"Berkas cadangan terakhir ({fname}) dibuat {age_h:.1f} jam yang lalu (> 24 jam). Jadwal cadangan harian kemungkinan gagal dieksekusi atau crontab/systemd timer tidak berjalan.",
+                "penyebab_en": f"Latest backup archive ({fname}) was created {age_h:.1f} hours ago (> 24 hours). Scheduled daily backup job likely failed or crontab/timer did not trigger.",
+                "dampak": "Data pemulihan tertinggal lebih dari 24 jam sehingga berisiko kehilangan transaksi terkini (RPO tinggi).",
+                "dampak_en": "Recovery point is delayed by more than 24 hours, risking substantial data loss upon crash.",
+                "data_teknis": {
+                    "filename": fname,
+                    "age_hours": age_h,
+                    "modified_at": bk.get("modified_at"),
+                    "size_human": bk.get("size_human"),
+                    "server_hostname": srv.hostname,
+                    "server_ip": srv.ip_address,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    "Periksa status scheduler cron / systemd timer: systemctl status cron.service",
+                    "Periksa daftar crontab sistem: crontab -l dan cat /etc/crontab",
+                    "Eksekusi tugas cadangan sekarang melalui terminal atau tab Cron Jobs."
+                ],
+                "rekomendasi_en": [
+                    "Check scheduler status: systemctl status cron.service",
+                    "Inspect system crontab entries: crontab -l and cat /etc/crontab",
+                    "Trigger backup task now via terminal or Cron Jobs tab."
+                ],
+                "perintah_diagnosa": [
+                    "systemctl status cron.service",
+                    "systemctl list-timers",
+                    "ls -lt /var/backups | head -n 10"
+                ]
+            }, ensure_ascii=False)
+
+        # 17. Cadangan Tidak Ditemukan (Backup Missing)
+        if key == "backup_missing":
+            return json.dumps({
+                "diagnosa": "Layanan Basis Data Aktif Tanpa Berkas Cadangan",
+                "diagnosa_en": "Active Database Service Without Backup Archives",
+                "penyebab": f"Server {srv.hostname} menjalankan layanan database aktif, namun sistem pemantau tidak menemukan berkas dump (.sql/.dump/arsip) di direktori standar (/var/backups, /backups, dll.).",
+                "penyebab_en": f"Server {srv.hostname} runs active database services, but no backup archives (.sql/.dump) were detected in standard locations.",
+                "dampak": "Server tidak memiliki perlindungan cadangan terverifikasi untuk pemulihan darurat.",
+                "dampak_en": "Server lacks verified backup copies for emergency disaster recovery.",
+                "data_teknis": {
+                    "server_hostname": srv.hostname,
+                    "server_ip": srv.ip_address,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    "Konfigurasikan tugas cadangan otomatis rutin (mysqldump / pg_dump) pada crontab.",
+                    "Pastikan direktori tujuan penyimpanan cadangan diarahkan ke /var/backups atau /backups.",
+                    "Jika berkas cadangan diletakkan di direktori kustom, daftarkan direktori tersebut pada konfigurasi pemantau."
+                ],
+                "rekomendasi_en": [
+                    "Configure routine database backup jobs (mysqldump / pg_dump) in crontab.",
+                    "Ensure target backup directory outputs to /var/backups or /backups.",
+                    "If backups are saved to a custom path, configure the monitored paths."
+                ],
+                "perintah_diagnosa": [
+                    "crontab -l",
+                    "ls -la /var/backups",
+                ]
+            }, ensure_ascii=False)
+
 
     except Exception as e:
         logger.warning("[CONTEXT] Gagal menyusun konteks masalah %s: %s", key, e)
@@ -7635,6 +7759,44 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             except Exception as e:
                 logger.debug("Gagal evaluasi disk SMART untuk server %s: %s", srv.id, e)
 
+        # Deteksi Masalah Integritas & Usia Cadangan Otomatis (Central Automated Backup Monitoring)
+        if getattr(extras, "backup_status", None):
+            try:
+                bks = json.loads(extras.backup_status) if isinstance(extras.backup_status, str) else extras.backup_status
+                if isinstance(bks, dict):
+                    bk_st = bks.get("status")
+                    latest_bk = bks.get("latest_backup") or {}
+                    # 1. Cadangan Gagal / Berkas 0 Byte (Danger)
+                    if bk_st == "critical" or latest_bk.get("status") == "critical":
+                        inst.append({
+                            "key": "backup_corrupted",
+                            "severity": "danger",
+                            "message": f"Berkas Cadangan Gagal/Kosong (0 Byte): {latest_bk.get('filename') or 'Berkas cadangan'}",
+                            "tip": f"Pemeriksaan berkas di {latest_bk.get('path')} mendapati ukuran 0 byte. Periksa script dump database atau ruang partisi penyimpanan.",
+                            "context": _build_problem_context("backup_corrupted", srv, backup=latest_bk),
+                        })
+                    # 2. Cadangan Usang > 24 Jam (Warning)
+                    elif bk_st == "warning" or latest_bk.get("status") == "warning":
+                        age_val = latest_bk.get("age_hours", 0.0)
+                        inst.append({
+                            "key": "backup_stale",
+                            "severity": "warning",
+                            "message": f"Cadangan Sistem Usang: Berkas terakhir dibuat {age_val:.1f} jam lalu ({latest_bk.get('filename')})",
+                            "tip": "Cadangan otomatis tidak diperbarui dalam kurun waktu 24 jam terakhir. Periksa apakah cron job atau timer cadangan berjalan normal.",
+                            "context": _build_problem_context("backup_stale", srv, backup=latest_bk),
+                        })
+                    # 3. Database aktif tapi tidak ada berkas cadangan (Info)
+                    elif bk_st == "none" and bks.get("database_detected") and bks.get("total_files", 0) == 0:
+                        inst.append({
+                            "key": "backup_missing",
+                            "severity": "info",
+                            "message": "Peringatan Cadangan: Layanan database aktif terdeteksi namun belum ada berkas cadangan",
+                            "tip": "Server menjalankan layanan basis data aktif (MySQL/MariaDB/PostgreSQL), namun tidak ditemukan berkas dump di /var/backups atau direktori standar.",
+                            "context": _build_problem_context("backup_missing", srv),
+                        })
+            except Exception as e:
+                logger.debug("Gagal evaluasi backup status untuk server %s: %s", srv.id, e)
+
         # Deteksi sesi remote SSH aktif dari telemetri akun/who (INFO)
         if getattr(extras, "accounts", None):
             try:
@@ -7873,6 +8035,8 @@ def _problem_component(key: str) -> str:
         return "Paket OS (APT)"
     if key == "agent_conflict":
         return "Jaringan / IP Agen"
+    if key.startswith("backup_"):
+        return "Cadangan (Backup)"
     if key.startswith("ssh_active_session:"):
         return "Sesi Remote (SSH)"
     return "Sistem"
@@ -10408,6 +10572,7 @@ def api_server_system(
         "cron_jobs": parse_json_obj(extra.cron_jobs if extra else None, {"jobs": [], "timers": []}),
         "ssl_certs": parse_list(extra.ssl_certs if extra else None),
         "system_logs": parse_list(extra.system_logs if extra else None),
+        "backup_status": parse_json_obj(extra.backup_status if extra else None, {}),
         "apt_upgradable": (
             len(parse_list(extra.apt_packages))
             if (extra and extra.apt_packages is not None)

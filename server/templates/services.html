@@ -1376,6 +1376,7 @@ div[style*="position: fixed"] .card {
   <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn" data-i18n="tab_firewall"><span class="tab-text">Firewall</span><span id="tab-dot-firewall" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn" data-i18n="tab_ssl"><span class="tab-text">SSL/TLS</span><span id="tab-dot-ssl" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn" data-i18n="tab_cron"><span class="tab-text">Cron Jobs</span><span id="tab-dot-cron" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="cadangan" role="tab" id="tab-cadangan-btn"><span class="tab-text">Cadangan</span><span id="tab-dot-cadangan" class="tab-warn-dot" style="display:{{ 'inline-block' if (backup_status and backup_status.get('status') in ['warning', 'critical']) else 'none' }}"></span></button>
   <button class="tab" data-tab="log" role="tab" id="tab-log-btn" data-i18n="tab_logging"><span class="tab-text">Logs</span><span id="tab-dot-log" class="tab-warn-dot" style="display:none"></span></button>
 </div>
 
@@ -2689,6 +2690,200 @@ div[style*="position: fixed"] .card {
   </div>
 </div>
 
+<!-- Tab: Pemantauan Cadangan Otomatis (Central Automated Backup Monitoring) -->
+<div class="tab-body" id="tab-cadangan" hidden>
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-header" style="align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div>
+        <h3 style="margin:0">Pemantauan Cadangan Otomatis (Backup Monitoring)</h3>
+        <span style="font-size:12px;color:var(--dim)">Pengawasan keandalan, integritas ukuran, dan usia berkas cadangan database &amp; sistem</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        {% set bk_st = backup_status.get('status', 'none') if backup_status else 'none' %}
+        {% if bk_st == 'ok' %}
+          <span class="badge badge-up" id="bk-header-badge">● Mutakhir</span>
+        {% elif bk_st == 'warning' %}
+          <span class="badge badge-warn" id="bk-header-badge">● Usang (&gt;24j)</span>
+        {% elif bk_st == 'critical' %}
+          <span class="badge badge-danger" id="bk-header-badge">● Gagal (0 B)</span>
+        {% else %}
+          <span class="badge badge-muted" id="bk-header-badge">○ Nihil</span>
+        {% endif %}
+        <span class="badge badge-info" id="bk-count-badge">{{ backup_status.get('total_files', 0) if backup_status else 0 }} berkas</span>
+      </div>
+    </div>
+
+    <!-- Ringkasan KPI Cadangan (High Density NOC Cards) -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:8px;padding:12px">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
+        <div style="font-size:11px;color:var(--dim);margin-bottom:3px">Status Cadangan</div>
+        <div style="font-size:13px;font-weight:700" id="bk-kpi-status">
+          {% if bk_st == 'ok' %}
+            <span style="color:var(--green)">Tercadangkan Normal</span>
+          {% elif bk_st == 'warning' %}
+            <span style="color:var(--yellow)">Cadangan Usang (&gt;24 Jam)</span>
+          {% elif bk_st == 'critical' %}
+            <span style="color:var(--red)">Gagal / Berkas 0 Byte</span>
+          {% else %}
+            <span style="color:var(--dim)">Belum Ada Cadangan</span>
+          {% endif %}
+        </div>
+        <div style="font-size:10.5px;color:var(--dim);margin-top:2px" id="bk-kpi-summary">
+          {{ backup_status.get('summary', 'Tidak ada data cadangan.') if backup_status else 'Belum ada telemetri cadangan.' }}
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
+        <div style="font-size:11px;color:var(--dim);margin-bottom:3px">Berkas Cadangan Terbaru</div>
+        {% set latest_f = backup_status.get('latest_backup') if backup_status else None %}
+        <div class="mono" style="font-size:12px;font-weight:700;word-break:break-all" id="bk-kpi-latest-name">
+          {{ latest_f.get('filename', '—') if latest_f else '—' }}
+        </div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px" id="bk-kpi-latest-size">
+          Ukuran: <strong style="color:var(--text)">{{ latest_f.get('size_human', '—') if latest_f else '—' }}</strong>
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
+        <div style="font-size:11px;color:var(--dim);margin-bottom:3px">Waktu Pembuatan Terakhir</div>
+        <div class="mono" style="font-size:12px;font-weight:700" id="bk-kpi-latest-time">
+          {{ latest_f.get('modified_at', '—') if latest_f else '—' }}
+        </div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px" id="bk-kpi-latest-age">
+          {% if latest_f %}
+            Usia: <strong style="color:{{ 'var(--green)' if latest_f.get('age_hours', 0) <= 24 else 'var(--yellow)' }}">{{ latest_f.get('age_hours') }} jam yang lalu</strong>
+          {% else %}
+            Usia: —
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
+        <div style="font-size:11px;color:var(--dim);margin-bottom:3px">Kapasitas &amp; Basis Data</div>
+        <div style="font-size:12px;font-weight:700" id="bk-kpi-total">
+          Total: <span class="mono">{{ backup_status.get('total_size_human', '0 B') if backup_status else '0 B' }}</span>
+        </div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px" id="bk-kpi-db">
+          {% if backup_status and backup_status.get('database_detected') %}
+            Basis data aktif: <span class="badge badge-info mono" style="font-size:9.5px">{{ backup_status.get('database_types')|join(', ') }}</span>
+          {% else %}
+            Tidak ada database terdeteksi
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabel Berkas Cadangan Terkini -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-header" style="align-items:center;justify-content:space-between">
+      <div>
+        <h3 style="margin:0">Berkas Cadangan Terdeteksi</h3>
+        <span style="font-size:12px;color:var(--dim)">Daftar berkas dump database (.sql, .sql.gz) dan arsip cadangan sistem di direktori pemantauan</span>
+      </div>
+      <div style="font-size:11px;color:var(--dim)" id="bk-files-count">
+        {{ (backup_status.get('recent_files', [])|length) if backup_status else 0 }} berkas ditampilkan
+      </div>
+    </div>
+    <div style="overflow-x:auto" id="cadangan-table-wrap">
+      <table id="tbl-cadangan" style="width:100%">
+        <thead>
+          <tr>
+            <th style="width:75px">Status</th>
+            <th>Nama Berkas</th>
+            <th>Direktori / Jalur</th>
+            <th style="width:90px">Ukuran</th>
+            <th style="width:145px">Waktu Dibuat</th>
+            <th style="width:95px">Usia</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-cadangan-tbody">
+          {% if backup_status and backup_status.get('recent_files') %}
+            {% for f in backup_status.get('recent_files') %}
+            <tr>
+              <td>
+                {% if f.get('status') == 'ok' %}
+                  <span class="badge badge-up" style="font-size:9.5px">Mutakhir</span>
+                {% elif f.get('status') == 'warning' %}
+                  <span class="badge badge-warn" style="font-size:9.5px">Usang</span>
+                {% elif f.get('status') == 'critical' %}
+                  <span class="badge badge-danger" style="font-size:9.5px">Kosong (0B)</span>
+                {% else %}
+                  <span class="badge badge-muted" style="font-size:9.5px">Nihil</span>
+                {% endif %}
+              </td>
+              <td class="mono" style="font-weight:600;font-size:12px;color:var(--text);word-break:break-all">{{ f.get('filename') }}</td>
+              <td class="mono" style="font-size:11px;color:var(--dim);word-break:break-all">{{ f.get('directory') }}</td>
+              <td class="mono" style="font-size:11px;font-weight:600;white-space:nowrap">{{ f.get('size_human') }}</td>
+              <td class="mono" style="font-size:11px;color:var(--dim);white-space:nowrap">{{ f.get('modified_at') }}</td>
+              <td style="font-size:11px;white-space:nowrap">
+                <span style="color:{{ 'var(--green)' if f.get('age_hours', 0) <= 24 else 'var(--yellow)' }}">{{ f.get('age_hours') }}j lalu</span>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="6" class="empty-msg" style="padding:14px">Tidak ditemukan berkas cadangan (.sql, .sql.gz, .tar.gz, dll.) di direktori standar.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tugas Cadangan Terjadwal (Backup Jobs) & Direktori Pantauan -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:12px">
+    <div class="card" style="margin:0">
+      <div class="card-header">
+        <h3 style="margin:0">Tugas Cadangan Terjadwal (Cron &amp; Timer)</h3>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="tbl-cadangan-jobs" style="width:100%">
+          <thead>
+            <tr>
+              <th style="width:65px">Tipe</th>
+              <th style="width:110px">Jadwal</th>
+              <th>Perintah / Unit</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-cadangan-jobs-tbody">
+            {% if backup_status and backup_status.get('backup_jobs') %}
+              {% for j in backup_status.get('backup_jobs') %}
+              <tr>
+                <td><span class="badge badge-info" style="font-size:9.5px">{{ j.get('type')|upper }}</span></td>
+                <td class="mono" style="font-size:11px;font-weight:600;color:var(--blue)">{{ j.get('schedule') }}</td>
+                <td class="mono" style="font-size:11.5px;word-break:break-all">{{ j.get('command') }}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="3" class="empty-msg" style="padding:12px">Tidak ada tugas cron atau systemd timer cadangan otomatis terdeteksi.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin:0">
+      <div class="card-header">
+        <h3 style="margin:0">Direktori Pemantauan Cadangan</h3>
+      </div>
+      <div style="padding:12px;font-size:12px">
+        <div style="color:var(--dim);margin-bottom:8px">Agen Pantau secara otomatis memindai lokasi penyimpanan standar berikut:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="bk-scanned-paths">
+          {% if backup_status and backup_status.get('scanned_paths') %}
+            {% for sp in backup_status.get('scanned_paths') %}
+              <span class="mono" style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px">📁 {{ sp }}</span>
+            {% endfor %}
+          {% else %}
+            <span class="mono" style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:11px">📁 /var/backups</span>
+          {% endif %}
+        </div>
+        <div style="font-size:11px;color:var(--dim);line-height:1.5">
+          <strong>Ekstensi didukung:</strong> <code>.sql</code>, <code>.sql.gz</code>, <code>.dump</code>, <code>.tar.gz</code>, <code>.tgz</code>, <code>.tar.zst</code>, <code>.zip</code>. Jika cadangan Anda disimpan di direktori lain, tambahkan <code>"backup_paths": ["/jalur/kustom"]</code> pada <code>/etc/pantau/config.json</code> server klien.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- Tab: Firewall (UFW & iptables) -->
 <div class="tab-body" id="tab-firewall" hidden>
@@ -3834,7 +4029,7 @@ function showTab(name) {
     if (typeof probFilter === 'function') probFilter();
     if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
   }
-  if (['akun', 'ports', 'firewall', 'ssl', 'cron', 'perf'].includes(name)) {
+  if (['akun', 'ports', 'firewall', 'ssl', 'cron', 'cadangan', 'perf'].includes(name)) {
     if (typeof pollSystem === 'function') pollSystem();
   }
   if (name === 'proses') {
@@ -3918,6 +4113,10 @@ function initServicesTabPagination() {
   // 11. Tab Logging (System Journal Errors)
   if (document.getElementById('tbl-system-logs') && !_servicesTabPagination['syslog']) {
     _servicesTabPagination['syslog'] = attachTablePagination('#tbl-system-logs', { unitLabel: 'log', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 100, 'all'] });
+  }
+  // 12. Tab Cadangan (Backup Files)
+  if (document.getElementById('tbl-cadangan') && !_servicesTabPagination['cadangan']) {
+    _servicesTabPagination['cadangan'] = attachTablePagination('#tbl-cadangan', { unitLabel: 'berkas', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 50, 'all'] });
   }
   // 12. Tab Kinerja (Partisi Disks)
   if (document.getElementById('disks-table') && !_servicesTabPagination['disks']) {
@@ -8397,6 +8596,92 @@ function renderSsl(sslList) {
   });
 }
 
+function renderBackupStatus(bks) {
+  if (!bks || typeof bks !== 'object') return;
+  const isEn = isEnPage();
+  const st = bks.status || 'none';
+  const dot = document.getElementById('tab-dot-cadangan');
+  if (dot) dot.style.display = (st === 'warning' || st === 'critical') ? 'inline-block' : 'none';
+
+  const hBadge = document.getElementById('bk-header-badge');
+  if (hBadge) {
+    if (st === 'ok') {
+      hBadge.className = 'badge badge-up';
+      hBadge.textContent = isEn ? '● Current' : '● Mutakhir';
+    } else if (st === 'warning') {
+      hBadge.className = 'badge badge-warn';
+      hBadge.textContent = isEn ? '● Stale (>24h)' : '● Usang (>24j)';
+    } else if (st === 'critical') {
+      hBadge.className = 'badge badge-danger';
+      hBadge.textContent = isEn ? '● Failed (0 B)' : '● Gagal (0 B)';
+    } else {
+      hBadge.className = 'badge badge-muted';
+      hBadge.textContent = isEn ? '○ None' : '○ Nihil';
+    }
+  }
+
+  const cBadge = document.getElementById('bk-count-badge');
+  if (cBadge) cBadge.textContent = (bks.total_files || 0) + (isEn ? ' files' : ' berkas');
+
+  const fCount = document.getElementById('bk-files-count');
+  if (fCount) fCount.textContent = ((bks.recent_files || []).length) + (isEn ? ' files displayed' : ' berkas ditampilkan');
+
+  const kpiSt = document.getElementById('bk-kpi-status');
+  if (kpiSt) {
+    if (st === 'ok') kpiSt.innerHTML = `<span style="color:var(--green)">${isEn ? 'Normal Backed Up' : 'Tercadangkan Normal'}</span>`;
+    else if (st === 'warning') kpiSt.innerHTML = `<span style="color:var(--yellow)">${isEn ? 'Stale Backup (>24 Hours)' : 'Cadangan Usang (>24 Jam)'}</span>`;
+    else if (st === 'critical') kpiSt.innerHTML = `<span style="color:var(--red)">${isEn ? 'Failed / 0 Byte File' : 'Gagal / Berkas 0 Byte'}</span>`;
+    else kpiSt.innerHTML = `<span style="color:var(--dim)">${isEn ? 'No Backups Detected' : 'Belum Ada Cadangan'}</span>`;
+  }
+
+  const kpiSum = document.getElementById('bk-kpi-summary');
+  if (kpiSum) kpiSum.textContent = bks.summary || (isEn ? 'No backup summary.' : 'Belum ada ringkasan cadangan.');
+
+  const latest = bks.latest_backup;
+  const kpiLatestName = document.getElementById('bk-kpi-latest-name');
+  if (kpiLatestName) kpiLatestName.textContent = latest ? (latest.filename || '—') : '—';
+
+  const kpiLatestSize = document.getElementById('bk-kpi-latest-size');
+  if (kpiLatestSize) kpiLatestSize.innerHTML = (isEn ? 'Size: ' : 'Ukuran: ') + `<strong style="color:var(--text)">${latest ? (latest.size_human || '—') : '—'}</strong>`;
+
+  const kpiLatestTime = document.getElementById('bk-kpi-latest-time');
+  if (kpiLatestTime) kpiLatestTime.textContent = latest ? (latest.modified_at || '—') : '—';
+
+  const kpiLatestAge = document.getElementById('bk-kpi-latest-age');
+  if (kpiLatestAge) {
+    if (latest) {
+      const ageColor = (latest.age_hours <= 24) ? 'var(--green)' : 'var(--yellow)';
+      kpiLatestAge.innerHTML = (isEn ? 'Age: ' : 'Usia: ') + `<strong style="color:${ageColor}">${latest.age_hours} ${isEn ? 'hours ago' : 'jam yang lalu'}</strong>`;
+    } else {
+      kpiLatestAge.textContent = isEn ? 'Age: —' : 'Usia: —';
+    }
+  }
+
+  const kpiTotal = document.getElementById('bk-kpi-total');
+  if (kpiTotal) kpiTotal.innerHTML = `Total: <span class="mono">${bks.total_size_human || '0 B'}</span>`;
+
+  const tbody = document.getElementById('tbl-cadangan-tbody');
+  if (tbody && Array.isArray(bks.recent_files) && bks.recent_files.length) {
+    tbody.innerHTML = bks.recent_files.map(f => {
+      let bCls = 'badge-up', bTxt = isEn ? 'Current' : 'Mutakhir';
+      if (f.status === 'warning') { bCls = 'badge-warn'; bTxt = isEn ? 'Stale' : 'Usang'; }
+      else if (f.status === 'critical') { bCls = 'badge-danger'; bTxt = isEn ? 'Empty (0B)' : 'Kosong (0B)'; }
+      const ageCol = (f.age_hours <= 24) ? 'var(--green)' : 'var(--yellow)';
+      return `<tr>
+        <td><span class="badge ${bCls}" style="font-size:9.5px">${bTxt}</span></td>
+        <td class="mono" style="font-weight:600;font-size:12px;color:var(--text);word-break:break-all">${escHtml(f.filename)}</td>
+        <td class="mono" style="font-size:11px;color:var(--dim);word-break:break-all">${escHtml(f.directory || '')}</td>
+        <td class="mono" style="font-size:11px;font-weight:600;white-space:nowrap">${escHtml(f.size_human || '')}</td>
+        <td class="mono" style="font-size:11px;color:var(--dim);white-space:nowrap">${escHtml(f.modified_at || '')}</td>
+        <td style="font-size:11px;white-space:nowrap"><span style="color:${ageCol}">${f.age_hours}${isEn ? 'h ago' : 'j lalu'}</span></td>
+      </tr>`;
+    }).join('');
+    if (_servicesTabPagination['cadangan'] && typeof _servicesTabPagination['cadangan'].refresh === 'function') {
+      _servicesTabPagination['cadangan'].refresh();
+    }
+  }
+}
+
 let _sysFetching = false;
 async function pollSystem() {
   if (_sysFetching) return;
@@ -8416,6 +8701,7 @@ async function pollSystem() {
       if (typeof renderFirewall === 'function') renderFirewall(data.firewall);
       if (typeof renderCron === 'function') renderCron(data.cron_jobs);
       if (typeof renderSsl === 'function') renderSsl(data.ssl_certs);
+      if (typeof renderBackupStatus === 'function') renderBackupStatus(data.backup_status);
       if (!aptRunning && typeof renderApt === 'function') {
         renderApt(data);
       }

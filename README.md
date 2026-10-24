@@ -123,6 +123,7 @@ sudo journalctl -u agent_pantau -f
 - **Tab Firewall:** Status UFW, aturan firewall, daftar alamat IP yang diblokir pada tingkat kernel via iptables, serta tombol blokir/buka blokir IP.
 - **Tab Sertifikat SSL:** Pemantauan tanggal kedaluwarsa berkas sertifikat SSL lokal dan sertifikat web server.
 - **Tab Tugas Terjadwal:** Manajemen entri cron sistem pada `/etc/cron.d/`.
+- **Tab Cadangan:** Pemantauan status integritas berkas dump basis data (MySQL, MariaDB, PostgreSQL) dan arsip cadangan sistem di direktori standar/kustom, deteksi berkas 0-byte, serta verifikasi usia cadangan.
 - **Tab Logging:** Log viewer terpadu untuk berkas log sistem dan journald.
 - **Terminal Web (`>_ Terminal`):** Akses shell root interaktif langsung di browser.
 - **File Manager (`📁 File Manager`):** Remote file explorer untuk membaca, mengunggah, mengunduh, dan menyunting berkas konfigurasi.
