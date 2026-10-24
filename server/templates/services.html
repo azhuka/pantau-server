@@ -274,13 +274,13 @@
   align-items: center !important;
   gap: 8px !important;
   flex-wrap: wrap !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   color: var(--dim) !important;
   line-height: 1.5 !important;
   margin-top: 2px !important;
 }
 .hero-meta-sys {
-  font-size: 12px !important;
+  font-size: 11px !important;
   color: var(--dim) !important;
 }
 .hero-toolbar {
@@ -1163,28 +1163,28 @@ div[style*="position: fixed"] .card {
       <div class="hero-meta-bar">
         <span id="hero-meta" class="hero-meta-sys">{% if os_label %}{{ os_label }}{% endif %}{% if kernel %} · kernel {{ kernel }}{% endif %}{% if not os_label and not kernel %}memuat data sistem…{% endif %}</span>
         {% if server.group_name %}
-        <span class="badge badge-muted" style="font-size:11px;display:inline-flex;align-items:center;gap:4px" title="Grup Server">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+        <span class="badge badge-muted" style="font-size:8.5px !important;padding:1px 4.5px !important;display:inline-flex;align-items:center;gap:4px" title="Grup Server">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
           {{ server.group_name }}
         </span>
         {% endif %}
         {% if server.is_proxmox_ha %}
-        <span class="badge" style="font-size:11px;background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.3);display:inline-flex;align-items:center;gap:4px" title="Server terproteksi Proxmox HA">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <span class="badge" style="font-size:8.5px !important;padding:1px 4.5px !important;background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.3);display:inline-flex;align-items:center;gap:4px" title="Server terproteksi Proxmox HA">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
           Proxmox HA
         </span>
         {% endif %}
         {% if server.is_isolated_net %}
-        <span class="badge" style="font-size:11px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);display:inline-flex;align-items:center;gap:4px" title="Jaringan Terisolasi">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+        <span class="badge" style="font-size:8.5px !important;padding:1px 4.5px !important;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);display:inline-flex;align-items:center;gap:4px" title="Jaringan Terisolasi">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
           Jaringan Terisolasi
         </span>
         {% endif %}
         {% if server.tags %}
           {% for tag in (server.tags or '').split(',') %}
             {% if tag.strip() %}
-              <span class="badge" style="font-size:11px;background:rgba(255,255,255,0.06);color:var(--dim);display:inline-flex;align-items:center;gap:3px">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+              <span class="badge" style="font-size:8.5px !important;padding:1px 4.5px !important;background:rgba(255,255,255,0.06);color:var(--dim);display:inline-flex;align-items:center;gap:3px">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
                 {{ tag.strip() }}
               </span>
             {% endif %}
@@ -1371,6 +1371,7 @@ div[style*="position: fixed"] .card {
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
   <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Insiden</span><span id="tab-dot-masalah" class="tab-warn-dot" style="display:none"></span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
   <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Services</span><span id="tab-dot-layanan" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="packages" role="tab" id="tab-packages-btn"><span class="tab-text">Packages</span><span id="tab-dot-packages" class="tab-warn-dot" style="display:none"></span>{% if apt_upgradable and apt_upgradable > 0 %} <span class="badge badge-warn" id="tab-packages-badge" style="margin-left:4px;font-size:10px;padding:1px 5px">{{ apt_upgradable }}</span>{% endif %}</button>
   <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Tasks</span><span id="tab-dot-proses" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="akun" role="tab" id="tab-akun-btn" data-i18n="tab_akun"><span class="tab-text">Users</span><span id="tab-dot-akun" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn" data-i18n="tab_ports"><span class="tab-text">Ports</span><span id="tab-dot-ports" class="tab-warn-dot" style="display:none"></span></button>
@@ -1905,15 +1906,38 @@ div[style*="position: fixed"] .card {
         </div>
         {% endif %}
       </td>
-      <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-{{ 'muted' if p.is_ignored else ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) }}" title="{{ 'Peringatan diabaikan' if p.is_ignored else '' }}">{{ 'DIABAIKAN 🔕' if p.is_ignored else ('GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper)) }}</span></td>
+      <td style="width:100px;text-align:center" class="col-sev">
+        {% set op_name = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
+        {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
+        {% if p.is_ignored and p.acknowledged_by %}
+          <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
+            <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">DIABAIKAN 🔕</span>
+            <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+          </div>
+        {% elif p.is_ignored %}
+          <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
+            <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN 🔕</span>
+            <span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
+          </div>
+        {% elif p.acknowledged_by %}
+          <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
+            <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
+            <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+          </div>
+        {% else %}
+          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
+        {% endif %}
+      </td>
       <td>
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="text-decoration:line-through"{% endif %}>{{ p.message }}</span>
-        {% if p.is_ignored %}
-          <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ p.ignored_by if p.ignored_by else '') }}">🔕 diabaikan{{ (' s/d ' ~ p.ignored_until.strftime('%d %b %H:%M')) if p.ignored_until else ' permanen' }}</span>
+        {% if p.is_ignored and p.ignored_reason %}
+          <span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
         {% endif %}
-        {% if p.acknowledged_by %}<span class="badge badge-up" title="Diakui {{ p.acknowledged_by }}">✓ diakui</span>{% endif %}
-        {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
+        {% if p.is_ignored and p.ignored_until %}
+          <span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="Batas waktu pengabaian">s/d {{ p.ignored_until.strftime('%d %b %H:%M') }}</span>
+        {% endif %}
+        {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
       <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
       <td class="prob-act-cell">
@@ -1962,31 +1986,26 @@ div[style*="position: fixed"] .card {
             <div class="prob-act-row prob-act-ops">
               {% if not user.is_viewer() and p.is_open %}
                 {% if p.acknowledged_by %}
-                  <span class="btn btn-success btn-sm prob-status-ack" title="Ditangani {{ p.acknowledged_by }}">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    <span>Ditangani</span>
+                  <span class="btn btn-ghost btn-sm prob-status-ack" title="Insiden Ditangani{% if p.acknowledged_by %} (oleh {{ p.acknowledged_by }}){% endif %}" aria-label="Insiden Ditangani">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   </span>
                 {% else %}
-                  <button type="button" class="btn btn-success btn-sm" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tandai masalah ini sudah ditangani">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    <span>Ditangani</span>
+                  <button type="button" class="btn btn-ghost btn-sm prob-status-unack" onclick="ackProblemInDetail({{ p.id }}, this)" title="Tangani Insiden" aria-label="Tangani Insiden">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red)"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   </button>
                 {% endif %}
                 {% if p.is_ignored %}
-                  <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau kembali masalah ini">
+                  <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" onclick="unignoreProblem(this)" title="Pantau Kembali" aria-label="Pantau Kembali">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                    <span>Pantau Kembali</span>
                   </button>
                 {% else %}
-                  <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan masalah ini">
+                  <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan Masalah" aria-label="Abaikan Masalah">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                    <span>Abaikan</span>
                   </button>
                 {% endif %}
               {% elif p.acknowledged_by %}
-                <span class="btn btn-success btn-sm prob-status-ack" title="Ditangani {{ p.acknowledged_by }}">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Ditangani</span>
+                <span class="btn btn-ghost btn-sm prob-status-ack" title="Insiden Ditangani{% if p.acknowledged_by %} (oleh {{ p.acknowledged_by }}){% endif %}" aria-label="Insiden Ditangani">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </span>
               {% endif %}
             </div>
@@ -2269,6 +2288,231 @@ div[style*="position: fixed"] .card {
   <div class="empty-msg">Belum ada service terdeteksi. Jalankan Agen Pantau di server ini.</div>
   {% endif %}
 </div>
+
+<!-- Kartu 3: Seluruh Unit Layanan Systemd (OS Services) -->
+<div class="card" id="card-systemd-units" style="margin-top:16px">
+  <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <h3 style="margin:0;display:flex;align-items:center;gap:8px">
+        <span>Unit Layanan Systemd</span>
+        <span class="badge badge-info" id="sysd-total-badge" style="font-size:11px;cursor:pointer" onclick="setSysdStatusFilter('all')" title="Tampilkan semua unit">0 unit</span>
+        <span class="badge badge-up" id="sysd-running-badge" style="display:none;font-size:11px;cursor:pointer" onclick="setSysdStatusFilter('running')" title="Filter status running (klik ulang untuk reset)">0 running</span>
+        <span class="badge badge-danger" id="sysd-failed-badge" style="display:none;font-size:11px;cursor:pointer" onclick="setSysdStatusFilter('failed')" title="Filter status failed (klik ulang untuk reset)">0 failed</span>
+      </h3>
+      <span style="font-size:12px;color:var(--dim)">Daftar seluruh service sistem operasi dan daemon yang dikelola oleh systemd</span>
+    </div>
+
+    <!-- Toolbar: Search + Filter + Refresh -->
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div style="position:relative;display:flex;align-items:center">
+        <input type="text" id="sysd-search-input" placeholder="Cari unit atau fungsi…" style="padding:5px 28px 5px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);width:190px" oninput="filterSystemdTable()">
+        <span style="position:absolute;right:8px;color:var(--dim);pointer-events:none;font-size:11px">🔍</span>
+      </div>
+
+      <!-- Filter Status -->
+      <select id="sysd-status-filter" style="padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)" onchange="filterSystemdTable()">
+        <option value="all">Semua Status</option>
+        <option value="running">running (aktif)</option>
+        <option value="failed">failed (bermasalah)</option>
+        <option value="exited">exited (aktif)</option>
+        <option value="inactive">inactive (berhenti)</option>
+      </select>
+
+      <!-- Filter Boot -->
+      <select id="sysd-boot-filter" style="padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)" onchange="filterSystemdTable()">
+        <option value="all">Semua Boot</option>
+        <option value="enabled">enabled (otomatis)</option>
+        <option value="disabled">disabled (manual)</option>
+        <option value="static">static / masked</option>
+      </select>
+
+      <!-- Refresh button -->
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-sysd-refresh" onclick="refreshSystemdList(true)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} title="Refresh daftar unit systemd" aria-label="Refresh daftar unit systemd">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- State Loading & Empty -->
+  <div id="sysd-loading" style="display:none;padding:32px 16px;text-align:center;color:var(--dim)">
+    <div class="spinner" style="display:inline-block;width:24px;height:24px;border:2.5px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:8px"></div>
+    <div>Memuat daftar unit systemd dari server…</div>
+  </div>
+
+  <div id="sysd-empty" class="empty-msg" style="display:none;padding:24px 16px;text-align:center">
+    Belum ada data unit systemd. Klik tombol <strong>Refresh daftar unit systemd</strong> di atas untuk memindai.
+  </div>
+
+  <!-- Tabel Unit Systemd -->
+  <div class="table-wrap" id="sysd-table-wrap" style="overflow-x:auto">
+    <table class="table" id="tbl-systemd" style="width:100%;margin:0">
+      <thead>
+        <tr>
+          <th style="width:105px;text-align:center;cursor:pointer;user-select:none" onclick="toggleSysdSort('status')" title="Klik untuk mengurutkan Status">
+            Status <span id="sysd-sort-status" style="font-size:10px;opacity:0.6">↕</span>
+          </th>
+          <th style="min-width:200px;cursor:pointer;user-select:none" onclick="toggleSysdSort('name')" title="Klik untuk mengurutkan Nama Unit">
+            Nama Unit <span id="sysd-sort-name" style="font-size:10px;opacity:0.6">↕</span>
+          </th>
+          <th style="width:100px;text-align:center;cursor:pointer;user-select:none" onclick="toggleSysdSort('boot')" title="Klik untuk mengurutkan Status Boot">
+            Boot <span id="sysd-sort-boot" style="font-size:10px;opacity:0.6">↕</span>
+          </th>
+          <th style="width:90px;text-align:center;cursor:pointer;user-select:none" onclick="toggleSysdSort('sub')" title="Klik untuk mengurutkan Sub-State">
+            Sub-State <span id="sysd-sort-sub" style="font-size:10px;opacity:0.6">↕</span>
+          </th>
+          <th style="width:105px;text-align:right;cursor:pointer;user-select:none" onclick="toggleSysdSort('memory')" title="Klik untuk mengurutkan Penggunaan Memori">
+            Memori <span id="sysd-sort-memory" style="font-size:10px;opacity:0.6">↕</span>
+          </th>
+          <th style="min-width:240px">Deskripsi</th>
+          <th style="width:130px;text-align:center">Tindakan</th>
+        </tr>
+      </thead>
+      <tbody id="sysd-tbody">
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginasi Unit Systemd (Aturan Universal <= 10 Sembunyikan) -->
+  <div id="sysd-pagination-wrap" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:8px">
+    <div id="sysd-page-info">Menampilkan 0 - 0 dari 0 unit</div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <label for="sysd-page-size" style="margin:0;font-size:11.5px">Tampilkan:</label>
+      <select id="sysd-page-size" style="padding:3px 6px;font-size:11.5px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px" onchange="changeSysdPageSize(this.value)">
+        <option value="5" selected>5</option>
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:4px;align-items:center">
+      <button type="button" class="btn btn-ghost btn-sm" id="sysd-first-btn" onclick="goToSysdPage(1)" title="Halaman Pertama">&laquo;</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="sysd-prev-btn" onclick="goToSysdPage(_sysdCurrentPage - 1)" title="Sebelumnya">&lsaquo; Sebelumnya</button>
+      <span id="sysd-page-num" style="padding:0 8px;font-weight:600;color:var(--text)">Halaman 1 / 1</span>
+      <button type="button" class="btn btn-ghost btn-sm" id="sysd-next-btn" onclick="goToSysdPage(_sysdCurrentPage + 1)" title="Berikutnya">Berikutnya &rsaquo;</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="sysd-last-btn" onclick="goToSysdPage(999999)" title="Halaman Terakhir">&raquo;</button>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- Tab: Packages (Manajemen Paket Sistem Operasi) -->
+<div class="tab-body" id="tab-packages" hidden>
+  <div class="card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <div>
+        <h3 style="margin:0;display:flex;align-items:center;gap:8px">
+          <span>Packages</span>
+          <span class="badge badge-info" id="pkg-total-badge" style="font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('all')" title="Tampilkan semua paket">0 paket</span>
+          <span class="badge badge-warn" id="pkg-upg-badge" style="display:none;font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('upgradable')" title="Filter pembaruan tersedia (klik ulang untuk reset)">0 pembaruan</span>
+        </h3>
+        <span style="font-size:12px;color:var(--dim)">Daftar paket perangkat lunak sistem operasi dan pustaka terpasang</span>
+      </div>
+      
+      <!-- Toolbar Tombol Kontrol: Hanya Ikon + Tooltip -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div style="position:relative;display:flex;align-items:center">
+          <input type="text" id="pkg-search-input" placeholder="Cari paket, fungsi, versi..." style="padding:5px 28px 5px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);width:190px" oninput="filterPackagesTable()">
+          <span style="position:absolute;right:8px;color:var(--dim);pointer-events:none;font-size:11px">🔍</span>
+        </div>
+        
+        <!-- Filter Tipe Paket: Pengguna vs Sistem -->
+        <select id="pkg-type-filter" style="padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)" onchange="filterPackagesTable()">
+          <option value="all">Semua Tipe Paket</option>
+          <option value="user">Paket Pengguna</option>
+          <option value="system">Paket Sistem</option>
+        </select>
+
+        <!-- Filter Status: runtime status -->
+        <select id="pkg-status-filter" style="padding:5px 10px;font-size:12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)" onchange="filterPackagesTable()">
+          <option value="all">Semua Status</option>
+          <option value="running">running</option>
+          <option value="exited">exited (active)</option>
+          <option value="failed">failed</option>
+          <option value="inactive">inactive</option>
+          <option value="installed">installed</option>
+          <option value="upgradable">Pembaruan tersedia</option>
+        </select>
+
+        <span class="toolbar-divider" style="height:18px;border-left:1px solid var(--border);margin:0 4px"></span>
+
+        <!-- Refresh daftar paket (ikon + tooltip) -->
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-pkg-refresh" onclick="refreshPackagesList(true)" title="Refresh daftar paket" aria-label="Refresh daftar paket">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+        </button>
+
+        <!-- Upgrade semua paket (ikon + tooltip mengarah ke upgrade atas) -->
+        <button type="button" class="btn btn-primary btn-sm" id="btn-pkg-upgrade-all" onclick="triggerUpgradeOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} title="Upgrade semua paket" aria-label="Upgrade semua paket">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- State Loading & Empty -->
+    <div id="pkg-loading" style="display:none;padding:32px 16px;text-align:center;color:var(--dim)">
+      <div class="spinner" style="display:inline-block;width:24px;height:24px;border:2.5px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:8px"></div>
+      <div>Memuat daftar paket dari server...</div>
+    </div>
+
+    <div id="pkg-empty" class="empty-msg" style="display:none;padding:24px 16px;text-align:center">
+      Belum ada data paket sistem. Klik tombol <strong>Refresh daftar paket</strong> di atas untuk memindai paket.
+    </div>
+
+    <!-- Tabel Daftar Packages -->
+    <div class="table-wrap" id="pkg-table-wrap" style="overflow-x:auto">
+      <table class="table" id="tbl-packages" style="width:100%;margin:0">
+        <thead>
+          <tr>
+            <th style="width:125px;text-align:center;cursor:pointer;user-select:none" onclick="togglePkgSort('status')" title="Klik untuk mengurutkan Status">
+              Status <span id="pkg-sort-status" style="font-size:10px;opacity:0.6">↕</span>
+            </th>
+            <th style="min-width:180px;cursor:pointer;user-select:none" onclick="togglePkgSort('name')" title="Klik untuk mengurutkan Nama Paket">
+              Nama Paket <span id="pkg-sort-name" style="font-size:10px;opacity:0.6">↕</span>
+            </th>
+            <th style="width:105px;text-align:center;cursor:pointer;user-select:none" onclick="togglePkgSort('is_user')" title="Klik untuk mengurutkan Tipe Paket (Pengguna/Sistem)">
+              Tipe <span id="pkg-sort-is_user" style="font-size:10px;opacity:0.6">↕</span>
+            </th>
+            <th style="width:170px;cursor:pointer;user-select:none" onclick="togglePkgSort('version')" title="Klik untuk mengurutkan Versi">
+              Versi <span id="pkg-sort-version" style="font-size:10px;opacity:0.6">↕</span>
+            </th>
+            <th style="width:105px;text-align:right;cursor:pointer;user-select:none" onclick="togglePkgSort('size_kb')" title="Klik untuk mengurutkan Ukuran">
+              Ukuran <span id="pkg-sort-size_kb" style="font-size:10px;opacity:0.6">↕</span>
+            </th>
+            <th style="min-width:240px" title="Deskripsi singkat fungsi paket">Deskripsi</th>
+            <th style="width:1%;white-space:nowrap;text-align:center" title="Tindakan kontrol paket: Bersihkan cache, Lihat log, Upgrade paket">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody id="pkg-tbody">
+          <!-- Diisi via JavaScript / render -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginasi Tabel Packages Lengkap -->
+    <div id="pkg-pagination-wrap" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="pkg-page-info">Menampilkan 0 - 0 dari 0 paket</span>
+        <label style="display:inline-flex;align-items:center;gap:4px;margin-left:6px;font-size:11.5px">
+          Tampilkan:
+          <select id="pkg-page-size-select" style="padding:2px 6px;font-size:11.5px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)" onchange="setPkgPageSize(this.value)">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="250">250</option>
+            <option value="all">Semua</option>
+          </select>
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button type="button" class="btn btn-ghost btn-sm" id="pkg-first-btn" onclick="pkgGoToPage(1)" disabled style="padding:3px 8px" title="Halaman Pertama">&laquo;</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="pkg-prev-btn" onclick="pkgChangePage(-1)" disabled style="padding:3px 8px" title="Halaman Sebelumnya">&lsaquo; Sebelumnya</button>
+        <span id="pkg-page-num" style="padding:0 8px;font-weight:600;color:var(--text)">Halaman 1 / 1</span>
+        <button type="button" class="btn btn-ghost btn-sm" id="pkg-next-btn" onclick="pkgChangePage(1)" disabled style="padding:3px 8px" title="Halaman Berikutnya">Berikutnya &rsaquo;</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="pkg-last-btn" onclick="pkgGoToPage(99999)" disabled style="padding:3px 8px" title="Halaman Terakhir">&raquo;</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 
@@ -3488,6 +3732,25 @@ div[style*="position: fixed"] .card {
   </div>
 </div>
 
+<!-- Modal: Show Logs Paket -->
+<div id="pkg-log-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px" onclick="if(event.target===this)closePkgLogModal()">
+  <div class="card" style="width:100%;max-width:750px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 12px 36px rgba(0,0,0,0.6);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--bg-card)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <h3 id="pkg-log-title" style="margin:0;font-size:14px;font-weight:600">Log Riwayat Paket</h3>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closePkgLogModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+    </div>
+    <div style="flex:1;overflow:auto;background:#0d1117;padding:14px;color:#c9d1d9;font-family:monospace;font-size:12px;line-height:1.5;white-space:pre-wrap" id="pkg-log-body">
+      Memuat riwayat log paket...
+    </div>
+    <div style="display:flex;justify-content:flex-end;padding:10px 16px;background:var(--bg-card);border-top:1px solid var(--border)">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closePkgLogModal()">Tutup</button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -3521,6 +3784,31 @@ let actionLimit = 10; // default 10 riwayat tindakan
 let actionCurrentPage = 1;
 let _cachedActions = [];
 
+// State untuk tab Packages (dideklarasikan di awal untuk menghindari TDZ)
+var _packagesRawData = {{ (installed_packages or '[]') | tojson }};
+var _upgradableRawData = {{ (upgradable_packages or '[]') | tojson }};
+var _packagesList = [];
+var _pkgFilteredList = [];
+var _upgMap = new Map();
+var _pkgCurrentPage = 1;
+var _pkgPageSize = 25;
+var _pkgSortCol = 'name';
+var _pkgSortDir = 'asc';
+var _pkgLoading = false;
+var _pkgInitialized = false;
+
+// State untuk tab Systemd (dideklarasikan di awal untuk menghindari TDZ)
+var _systemdRawData = {{ (systemd_units or '[]') | tojson }};
+var _systemdList = [];
+var _sysdFilteredList = [];
+var _sysdCurrentPage = 1;
+var _sysdPageSize = 5;
+var _sysdSortCol = 'status';
+var _sysdSortDir = 'asc';
+var _sysdLoading = false;
+var _sysdInitialized = false;
+
+
 // ---------- tab ringkasan ----------
 function showTab(name) {
   if (name === 'specs' || name === 'kinerja') name = 'perf';
@@ -3539,13 +3827,19 @@ function showTab(name) {
   if (name === 'proses') {
     fetchTopProcs();
   }
-  if (name === 'layanan' && typeof primeSvcGraph === 'function') {
-    const sel = document.getElementById('svc-graph-sel');
-    if (sel && sel.options.length === 1) {
-      fetch('/api/servers/' + SID + '/overview', {credentials: 'same-origin'})
-        .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d) primeSvcGraph(d.services); })
-        .catch(() => {});
+  if (name === 'packages') {
+    if (typeof loadPackagesList === 'function') loadPackagesList();
+  }
+  if (name === 'layanan') {
+    if (typeof loadSystemdList === 'function') loadSystemdList();
+    if (typeof primeSvcGraph === 'function') {
+      const sel = document.getElementById('svc-graph-sel');
+      if (sel && sel.options.length === 1) {
+        fetch('/api/servers/' + SID + '/overview', {credentials: 'same-origin'})
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (d) primeSvcGraph(d.services); })
+          .catch(() => {});
+      }
     }
   }
   if (name === 'berkas' && typeof initFileManager === 'function') {
@@ -3556,6 +3850,8 @@ function showTab(name) {
   } else {
     if (typeof pauseAutoLog === 'function') pauseAutoLog();
   }
+  if (typeof _initPackagesData === 'function') _initPackagesData();
+  if (typeof _initSystemdData === 'function') _initSystemdData();
   initServicesTabPagination();
 }
 document.querySelectorAll('#detail-tabs .tab').forEach(b =>
@@ -4790,8 +5086,8 @@ function closeAddSslPathModal() {
 
 async function ackProblemInDetail(id, btn) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  if (!confirm(isEn ? 'Mark this problem as resolved?' : 'Tandai masalah ini sudah ditangani?')) return;
-  const orig = btn.textContent;
+  if (!confirm(isEn ? 'Mark this incident as handled?' : 'Tandai masalah ini sudah ditangani?')) return;
+  const orig = btn.innerHTML;
   btn.disabled = true; btn.textContent = '…';
   try {
     const r = await fetch('/api/alerts/' + id + '/ack', {
@@ -4800,10 +5096,22 @@ async function ackProblemInDetail(id, btn) {
       credentials: 'same-origin'
     });
     if (r.ok) {
-      showToast(isEn ? 'Problem marked as resolved.' : 'Masalah ditandai sebagai ditangani.', true);
-      btn.className = 'btn btn-success btn-sm prob-status-ack';
-      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>${isEn ? 'Acknowledged' : 'Ditangani'}</span>`;
+      showToast(isEn ? 'Incident marked as handled.' : 'Insiden ditandai sebagai ditangani.', true);
+      btn.className = 'btn btn-ghost btn-sm prob-status-ack';
+      btn.title = isEn ? 'Incident Handled' : 'Insiden Ditangani';
+      btn.setAttribute('aria-label', isEn ? 'Incident Handled' : 'Insiden Ditangani');
+      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
       btn.onclick = null;
+      const tr = btn.closest('tr');
+      if (tr) {
+        const sevCell = tr.querySelector('.col-sev');
+        if (sevCell && !sevCell.innerHTML.includes('DITANGANI')) {
+          const currentBadge = sevCell.querySelector('.badge');
+          if (currentBadge) {
+            sevCell.innerHTML = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">${currentBadge.outerHTML}<span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+          }
+        }
+      }
       if (typeof poll === 'function') poll();
       return;
     }
@@ -4811,7 +5119,7 @@ async function ackProblemInDetail(id, btn) {
   } catch (e) {
     showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + e.message, false);
   }
-  btn.disabled = false; btn.textContent = orig;
+  btn.disabled = false; btn.innerHTML = orig;
 }
 
 async function deleteService(sid, svcId, svcName, btn) {
@@ -6813,7 +7121,22 @@ function renderProblemsTab(level, openList, histList) {
     const isOpen = !!p.is_open;
     const isIgnored = !!p.is_ignored;
     const sev = p.severity || 'info';
-    const sevLabel = isIgnored ? (isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕') : escapeHtml(sev === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (isEn ? (sev === 'danger' ? 'CRITICAL' : sev) : (sev === 'danger' ? 'CRITICAL' : sev.toUpperCase())));
+    const opName = p.ignored_by === 'admin' ? 'master-admin' : (p.ignored_by || 'operator');
+    const ackOp = p.acknowledged_by === 'admin' ? 'master-admin' : (p.acknowledged_by || 'operator');
+    const rawSevBadge = `badge badge-${['danger', 'average', 'warning', 'info'].includes(sev) ? (sev === 'average' ? 'orange' : (sev === 'warning' ? 'warn' : sev)) : 'info'}`;
+    const rawSevText = sev === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (sev === 'danger' ? 'CRITICAL' : sev.toUpperCase());
+    
+    let sevCellHtml = '';
+    if (isIgnored && p.acknowledged_by) {
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">${isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕'}</span><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+    } else if (isIgnored) {
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED 🔕' : 'DIABAIKAN 🔕'}</span><span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)}">(${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)})</span></div>`;
+    } else if (p.acknowledged_by) {
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevText}</span><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+    } else {
+      sevCellHtml = `<span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevText}</span>`;
+    }
+
     const pMsg = isEn ? getServicesI18nText(p.message || '', true) : (p.message || '');
     const pTip = isEn ? getServicesI18nText(p.tip || '—', true) : (p.tip || '—');
     const searchTxt = ((pMsg || '') + ' ' + (p.key || '')).toLowerCase();
@@ -6823,10 +7146,9 @@ function renderProblemsTab(level, openList, histList) {
     const checkMark = isOpen ? '' : '<span style="color:var(--green)">✓</span> ';
     const msgStyle = isOpen ? '' : ' style="text-decoration:line-through"';
     const ignoredBadge = isIgnored
-      ? `<span class="badge badge-muted" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (p.ignored_by ? (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(p.ignored_by) : '')}">${isEn ? '🔕 ignored' : '🔕 diabaikan'}${p.ignored_until ? (isEn ? ' until ' : ' s/d ') + fmtProbDate(p.ignored_until) : (isEn ? ' permanent' : ' permanen')}</span> `
+      ? `<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (p.ignored_by ? (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(p.ignored_by) : '')}">${isEn ? '🔕 ignored' : '🔕 diabaikan'}${p.ignored_until ? (isEn ? ' until ' : ' s/d ') + fmtProbDate(p.ignored_until) : (isEn ? ' permanent' : ' permanen')}</span>`
       : '';
-    const ackBadge = p.acknowledged_by ? `<span class="badge badge-up" title="${isEn ? 'Acknowledged by ' : 'Diakui '}${escapeHtml(p.acknowledged_by)}">✓ ${isEn ? 'acknowledged' : 'diakui'}</span>` : '';
-    const kambuhBadge = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
+    const kambuhBadge = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
     const isoStart = isOpen && p.started_at ? (p.started_at.endsWith('Z') ? p.started_at : p.started_at + 'Z') : '';
     const dataStart = isoStart ? ` data-start="${isoStart}"` : '';
 
@@ -6836,8 +7158,6 @@ function renderProblemsTab(level, openList, histList) {
     const svgShield = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
     const svgDownload = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>`;
     const svgTerm = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>`;
-    const svgCheck = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-    const svgCheckBadge = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
     const svgBellOff = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
     const svgBell = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
 
@@ -6862,9 +7182,9 @@ function renderProblemsTab(level, openList, histList) {
         }
 
         if (p.acknowledged_by) {
-          opsHtml += `<span class="btn btn-success btn-sm prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
+          opsHtml += `<span class="btn btn-ghost btn-sm prob-status-ack" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}${p.acknowledged_by ? (isEn ? ' (by ' : ' (oleh ') + escapeHtml(p.acknowledged_by) + ')' : ''}" aria-label="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
         } else {
-          opsHtml += `<button type="button" class="btn btn-success btn-sm" onclick="ackProblemInDetail(${p.id}, this)" title="${isEn ? 'Mark this incident as acknowledged' : 'Tandai masalah ini sudah ditangani'}">${svgCheck}<span>${isEn ? 'Acknowledge' : 'Ditangani'}</span></button>`;
+          opsHtml += `<button type="button" class="btn btn-ghost btn-sm prob-status-unack" onclick="ackProblemInDetail(${p.id}, this)" title="${isEn ? 'Handle Incident' : 'Tangani Insiden'}" aria-label="${isEn ? 'Handle Incident' : 'Tangani Insiden'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red)"><polyline points="20 6 9 17 4 12"></polyline></svg></button>`;
         }
 
         if (isIgnored) {
@@ -6874,11 +7194,11 @@ function renderProblemsTab(level, openList, histList) {
         }
       } else {
         if (p.acknowledged_by) {
-          opsHtml += `<span class="btn btn-success btn-sm prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
+          opsHtml += `<span class="btn btn-ghost btn-sm prob-status-ack" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}${p.acknowledged_by ? (isEn ? ' (by ' : ' (oleh ') + escapeHtml(p.acknowledged_by) + ')' : ''}" aria-label="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
         }
       }
     } else if (p.acknowledged_by) {
-      opsHtml += `<span class="btn btn-success btn-sm prob-status-ack" title="${isEn ? 'Acknowledged by ' : 'Ditangani '}${escapeHtml(p.acknowledged_by)}">${svgCheckBadge}<span>${isEn ? 'Acknowledged' : 'Ditangani'}</span></span>`;
+      opsHtml += `<span class="btn btn-ghost btn-sm prob-status-ack" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}${p.acknowledged_by ? (isEn ? ' (by ' : ' (oleh ') + escapeHtml(p.acknowledged_by) + ')' : ''}" aria-label="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
     }
 
     const actHtml = `<div class="prob-act-wrap">
@@ -6902,8 +7222,8 @@ function renderProblemsTab(level, openList, histList) {
       data-prob-sid="${SID}"
       data-prob-context="${escapeHtml(ctxAttr)}">
       <td style="white-space:nowrap" class="mono col-time-detailed">${startStr}${resStr}</td>
-      <td style="width:100px;text-align:center" class="col-sev"><span class="badge badge-${sevBadge}">${sevLabel}</span></td>
-      <td>${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${ackBadge} ${kambuhBadge}</td>
+      <td style="width:100px;text-align:center" class="col-sev">${sevCellHtml}</td>
+      <td>${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${kambuhBadge}</td>
       <td class="mono col-durasi" style="width:120px;min-width:110px;white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
       <td class="prob-act-cell col-act" style="width:160px">${actHtml}</td>
       <td style="font-size:12px;line-height:1.55;max-width:360px">${escapeHtml(pTip || '—')}</td>
@@ -9038,6 +9358,8 @@ setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
     const b = document.querySelector('#detail-tabs .tab[data-tab="' + want + '"]');
     if (b) showTab(want);
   }
+  if (typeof _initPackagesData === 'function') _initPackagesData();
+  if (typeof _initSystemdData === 'function') _initSystemdData();
   initServicesTabPagination();
 })();
 
@@ -9366,5 +9688,992 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+
+// ===================================================================
+// MANAJEMEN PACKAGES (Inventaris & Kontrol Paket OS)
+// ===================================================================
+
+function _initPackagesData() {
+  try {
+    if (typeof _packagesRawData === 'string') {
+      _packagesList = JSON.parse(_packagesRawData || '[]');
+    } else if (Array.isArray(_packagesRawData)) {
+      _packagesList = _packagesRawData;
+    } else {
+      _packagesList = [];
+    }
+  } catch (e) {
+    _packagesList = [];
+  }
+
+  try {
+    let upgList = [];
+    if (typeof _upgradableRawData === 'string') {
+      upgList = JSON.parse(_upgradableRawData || '[]');
+    } else if (Array.isArray(_upgradableRawData)) {
+      upgList = _upgradableRawData;
+    }
+    _upgMap.clear();
+    if (Array.isArray(upgList)) {
+      upgList.forEach(u => {
+        if (u && u.name) {
+          const v = u.version || u.candidate || u.latest || '';
+          _upgMap.set(u.name, v);
+        }
+      });
+    }
+  } catch (e) {
+    _upgMap.clear();
+  }
+}
+
+function loadPackagesList() {
+  if (!_pkgInitialized) {
+    _initPackagesData();
+    _pkgInitialized = true;
+  }
+  if (_packagesList.length === 0) {
+    refreshPackagesList(false);
+  } else {
+    filterPackagesTable();
+  }
+}
+
+function togglePkgSort(col) {
+  if (_pkgSortCol === col) {
+    _pkgSortDir = (_pkgSortDir === 'asc') ? 'desc' : 'asc';
+  } else {
+    _pkgSortCol = col;
+    _pkgSortDir = (col === 'size_kb') ? 'desc' : 'asc';
+  }
+  _updatePkgSortIcons();
+  _applyPkgSort();
+  renderPackagesTable();
+}
+
+function _applyPkgSort() {
+  const col = _pkgSortCol;
+  const dir = _pkgSortDir === 'asc' ? 1 : -1;
+  _pkgFilteredList.sort((a, b) => {
+    let valA = a[col];
+    let valB = b[col];
+    if (col === 'size_kb') {
+      return (Number(valA || 0) - Number(valB || 0)) * dir;
+    }
+    if (col === 'is_user') {
+      return ((valA ? 1 : 0) - (valB ? 1 : 0)) * dir;
+    }
+    valA = (valA || '').toString().toLowerCase();
+    valB = (valB || '').toString().toLowerCase();
+    return valA.localeCompare(valB) * dir;
+  });
+}
+
+function _updatePkgSortIcons() {
+  ['status', 'name', 'is_user', 'version', 'size_kb'].forEach(col => {
+    const el = document.getElementById(`pkg-sort-${col}`);
+    if (el) {
+      if (_pkgSortCol === col) {
+        el.textContent = _pkgSortDir === 'asc' ? ' ▲' : ' ▼';
+        el.style.opacity = '1';
+        el.style.color = 'var(--blue)';
+      } else {
+        el.textContent = ' ↕';
+        el.style.opacity = '0.5';
+        el.style.color = 'inherit';
+      }
+    }
+  });
+}
+
+function setPkgPageSize(size) {
+  _pkgPageSize = (size === 'all') ? 999999 : parseInt(size, 10);
+  _pkgCurrentPage = 1;
+  renderPackagesTable();
+}
+
+function filterPackagesTable() {
+  if (!_pkgInitialized) {
+    _initPackagesData();
+    _pkgInitialized = true;
+  }
+  const q = (document.getElementById('pkg-search-input')?.value || '').toLowerCase().trim();
+  const filterType = document.getElementById('pkg-type-filter')?.value || 'all';
+  const filterSt = document.getElementById('pkg-status-filter')?.value || 'all';
+
+  _pkgFilteredList = _packagesList.filter(pkg => {
+    if (!pkg || !pkg.name) return false;
+
+    // Filter Tipe Paket: Pengguna vs Sistem
+    if (filterType === 'user' && !pkg.is_user) return false;
+    if (filterType === 'system' && pkg.is_user) return false;
+
+    // Filter Status Paket: runtime systemd / upgradable
+    const isUpg = _upgMap.has(pkg.name);
+    const st = (pkg.status || 'installed').toLowerCase();
+    if (filterSt === 'upgradable' && !isUpg) return false;
+    if (filterSt === 'running' && st !== 'running') return false;
+    if (filterSt === 'exited' && !st.startsWith('exited')) return false;
+    if (filterSt === 'failed' && st !== 'failed') return false;
+    if (filterSt === 'inactive' && st !== 'inactive') return false;
+    if (filterSt === 'installed' && st !== 'installed') return false;
+
+    // Pencarian teks fleksibel
+    if (q) {
+      const matchName = pkg.name.toLowerCase().includes(q);
+      const matchVer = (pkg.version || '').toLowerCase().includes(q);
+      const matchSum = (pkg.summary || '').toLowerCase().includes(q);
+      const matchArch = (pkg.arch || '').toLowerCase().includes(q);
+      const matchSt = st.includes(q);
+      if (!matchName && !matchVer && !matchSum && !matchArch && !matchSt) return false;
+    }
+    return true;
+  });
+
+  _applyPkgSort();
+  _pkgCurrentPage = 1;
+  renderPackagesTable();
+}
+
+function pkgChangePage(delta) {
+  const maxPage = Math.max(1, Math.ceil(_pkgFilteredList.length / _pkgPageSize));
+  _pkgCurrentPage = Math.max(1, Math.min(maxPage, _pkgCurrentPage + delta));
+  renderPackagesTable();
+}
+
+function pkgGoToPage(p) {
+  const maxPage = Math.max(1, Math.ceil(_pkgFilteredList.length / _pkgPageSize));
+  _pkgCurrentPage = Math.max(1, Math.min(maxPage, p));
+  renderPackagesTable();
+}
+
+function renderPackagesTable() {
+  const totalBadge = document.getElementById('pkg-total-badge');
+  const upgBadge = document.getElementById('pkg-upg-badge');
+  const emptyEl = document.getElementById('pkg-empty');
+  const tableWrap = document.getElementById('pkg-table-wrap');
+  const tbody = document.getElementById('pkg-tbody');
+  const pageInfo = document.getElementById('pkg-page-info');
+  const pageNum = document.getElementById('pkg-page-num');
+  const firstBtn = document.getElementById('pkg-first-btn');
+  const prevBtn = document.getElementById('pkg-prev-btn');
+  const nextBtn = document.getElementById('pkg-next-btn');
+  const lastBtn = document.getElementById('pkg-last-btn');
+  const paginationWrap = document.getElementById('pkg-pagination-wrap');
+
+  if (totalBadge) totalBadge.textContent = `${_packagesList.length} paket`;
+  if (upgBadge) {
+    if (_upgMap.size > 0) {
+      upgBadge.textContent = `${_upgMap.size} pembaruan`;
+      upgBadge.style.display = 'inline-block';
+    } else {
+      upgBadge.style.display = 'none';
+    }
+  }
+
+  if (!_packagesList || _packagesList.length === 0) {
+    if (tableWrap) tableWrap.style.display = 'none';
+    if (paginationWrap) paginationWrap.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (tableWrap) tableWrap.style.display = 'block';
+  if (paginationWrap) paginationWrap.style.display = 'flex';
+
+  const totalFiltered = _pkgFilteredList.length;
+  const maxPage = Math.max(1, Math.ceil(totalFiltered / _pkgPageSize));
+  _pkgCurrentPage = Math.max(1, Math.min(maxPage, _pkgCurrentPage));
+
+  const startIdx = (totalFiltered === 0) ? 0 : (_pkgCurrentPage - 1) * _pkgPageSize;
+  const endIdx = Math.min(startIdx + _pkgPageSize, totalFiltered);
+  const pageItems = _pkgFilteredList.slice(startIdx, endIdx);
+
+  if (pageInfo) {
+    pageInfo.textContent = totalFiltered === 0
+      ? 'Tidak ada paket yang sesuai kriteria filter'
+      : `Menampilkan ${startIdx + 1} - ${endIdx} dari ${totalFiltered} paket${totalFiltered !== _packagesList.length ? ' (terfilter)' : ''}`;
+  }
+  if (pageNum) pageNum.textContent = `Halaman ${_pkgCurrentPage} / ${maxPage}`;
+  if (firstBtn) firstBtn.disabled = (_pkgCurrentPage <= 1);
+  if (prevBtn) prevBtn.disabled = (_pkgCurrentPage <= 1);
+  if (nextBtn) nextBtn.disabled = (_pkgCurrentPage >= maxPage);
+  if (lastBtn) lastBtn.disabled = (_pkgCurrentPage >= maxPage);
+
+  if (!tbody) return;
+
+  if (pageItems.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--dim)">Tidak ada paket yang cocok dengan pencarian / filter.</td></tr>';
+    return;
+  }
+
+  const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
+  const rowsHtml = pageItems.map(pkg => {
+    const isUpg = _upgMap.has(pkg.name);
+    const upgVer = isUpg ? _upgMap.get(pkg.name) : '';
+    const safeName = escapeHtml(pkg.name);
+    const safeVer = escapeHtml(pkg.version || '-');
+    const safeArch = pkg.arch ? `<span class="badge badge-muted" style="font-size:10px;margin-left:4px">${escapeHtml(pkg.arch)}</span>` : '';
+    const sizeKb = Number(pkg.size_kb || 0);
+    const sizeStr = sizeKb >= 1024 ? (sizeKb / 1024).toFixed(1) + ' MB' : (sizeKb > 0 ? sizeKb + ' KB' : '-');
+    const summaryStr = escapeHtml(pkg.summary || '—');
+
+    // Badge runtime status (running, exited (active), inactive, installed, failed)
+    const stRaw = (pkg.status || 'installed').toLowerCase();
+    let statusBadge = '<span class="badge badge-muted">installed</span>';
+    if (stRaw === 'running') {
+      statusBadge = '<span class="badge badge-up" style="font-weight:600">running</span>';
+    } else if (stRaw.startsWith('exited')) {
+      statusBadge = '<span class="badge badge-info" style="font-weight:600">exited (active)</span>';
+    } else if (stRaw === 'failed') {
+      statusBadge = '<span class="badge badge-danger" style="font-weight:600">failed</span>';
+    } else if (stRaw === 'inactive') {
+      statusBadge = '<span class="badge badge-warn" style="font-weight:600">inactive</span>';
+    }
+
+    // Badge Tipe Paket (Pengguna vs Sistem)
+    const typeBadge = pkg.is_user
+      ? '<span class="badge badge-primary" style="font-size:10.5px">Pengguna</span>'
+      : '<span class="badge badge-muted" style="font-size:10.5px">Sistem</span>';
+
+    // Kolom Versi tunggal
+    const upgIndicator = isUpg
+      ? ` <span class="badge badge-warn" style="font-size:10px;font-weight:700" title="Pembaruan tersedia: ${escapeHtml(upgVer)}">↑ ${escapeHtml(upgVer)}</span>`
+      : '';
+    const verHtml = `<span class="mono" style="font-size:12px">${safeVer}</span>${upgIndicator}`;
+
+    // Tombol upgrade: aktif jika ada update, disabled jika mutakhir
+    const upgradeBtn = isUpg
+      ? `<button type="button" class="btn btn-primary btn-sm" onclick="upgradeSinglePkg('${safeName}')" ${!isOnline ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="Upgrade paket" aria-label="Upgrade paket"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg></button>`
+      : `<button type="button" class="btn btn-ghost btn-sm" disabled style="opacity:0.35;cursor:not-allowed" title="Paket sudah mutakhir" aria-label="Paket sudah mutakhir"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>`;
+
+    // Tombol Bersihkan cache: Ikon sapu + bintang (sparkles)
+    const clearCacheBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="clearPkgCache('${safeName}')" ${!isOnline ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="Bersihkan cache" aria-label="Bersihkan cache">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 5 10.5 13.5"></path>
+        <path d="M12.5 15.5 10 13l-4 4c-.7.7-1 1.7-.8 2.6.2.9.9 1.6 1.8 1.8.9.2 1.9-.1 2.6-.8l4-4-.1-.1z"></path>
+        <path d="m17 14 1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2z"></path>
+        <path d="m5 4 1 1.5 1.5 1-1.5 1-1 1.5-1-1.5-1.5-1 1.5-1 1-1.5z"></path>
+      </svg>
+    </button>`;
+
+    // Tombol Lihat log: Ikon dokumen log
+    const showLogsBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="showPkgLogs('${safeName}')" title="Lihat log" aria-label="Lihat log">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+    </button>`;
+
+    return `<tr>
+      <td style="text-align:center">${statusBadge}</td>
+      <td><strong>${safeName}</strong>${safeArch}</td>
+      <td style="text-align:center">${typeBadge}</td>
+      <td>${verHtml}</td>
+      <td class="mono" style="font-size:12px;text-align:right">${sizeStr}</td>
+      <td style="font-size:12px;color:var(--text);line-height:1.4">${summaryStr}</td>
+      <td style="width:1%;white-space:nowrap;text-align:center">
+        <div style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-wrap:nowrap">
+          ${clearCacheBtn}
+          ${showLogsBtn}
+          ${upgradeBtn}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  tbody.innerHTML = rowsHtml;
+}
+
+async function refreshPackagesList(manual = false) {
+  if (_pkgLoading) return;
+  const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
+  if (!isOnline) {
+    if (manual) showToast('Server sedang offline.', false);
+    return;
+  }
+  _pkgLoading = true;
+  const loadingEl = document.getElementById('pkg-loading');
+  const emptyEl = document.getElementById('pkg-empty');
+  const tableWrap = document.getElementById('pkg-table-wrap');
+  const paginationWrap = document.getElementById('pkg-pagination-wrap');
+  const btnRefresh = document.getElementById('btn-pkg-refresh');
+
+  if (loadingEl) loadingEl.style.display = 'block';
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (tableWrap) tableWrap.style.display = 'none';
+  if (paginationWrap) paginationWrap.style.display = 'none';
+  if (btnRefresh) {
+    btnRefresh.disabled = true;
+    btnRefresh.style.opacity = '0.6';
+  }
+
+  try {
+    const res = await fetch('/api/logs/request', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf(),
+      },
+      body: JSON.stringify({
+        server_id: SID,
+        unit: 'PKG_LIST',
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
+
+    const rid = data.id;
+    let tries = 0;
+    while (tries < 60) {
+      await new Promise(r => setTimeout(r, 600));
+      tries++;
+      const checkRes = await fetch(`/api/logs/request/${rid}`, { credentials: 'same-origin' });
+      const checkData = await checkRes.json();
+      if (checkData.status === 'success') {
+        const raw = (checkData.result || '').trim();
+        if (raw.startsWith('[') && raw.endsWith(']')) {
+          let pkgs = JSON.parse(raw);
+          if (Array.isArray(pkgs)) {
+            _packagesList = pkgs;
+            if (manual) showToast(`Daftar paket berhasil dimuat (${pkgs.length} paket).`, true);
+            filterPackagesTable();
+            return;
+          }
+        }
+        throw new Error('Respon daftar paket tidak dalam format yang valid.');
+      } else if (checkData.status === 'failed') {
+        throw new Error(checkData.result || 'Gagal memindai paket dari agen server.');
+      }
+    }
+    throw new Error('Waktu tunggu permintaan paket habis.');
+  } catch (err) {
+    if (manual) showToast('Gagal memuat paket: ' + err.message, false);
+    filterPackagesTable();
+  } finally {
+    _pkgLoading = false;
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (btnRefresh) {
+      btnRefresh.disabled = false;
+      btnRefresh.style.opacity = '1';
+    }
+  }
+}
+
+async function clearPkgCache(pkgName) {
+  const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
+  if (!isOnline) {
+    showToast('Server offline.', false);
+    return;
+  }
+  if (!CAN_APT) {
+    showToast('Akses ditolak: Anda tidak memiliki wewenang APT.', false);
+    return;
+  }
+  if (!confirm(`Bersihkan cache berkas deb untuk paket '${pkgName}'?`)) return;
+
+  showToast(`Membersihkan cache ${pkgName}...`, true);
+  try {
+    const res = await fetch('/api/logs/request', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf(),
+      },
+      body: JSON.stringify({
+        server_id: SID,
+        unit: 'PKG_CLEAR_CACHE',
+        detail: pkgName,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
+
+    const rid = data.id;
+    let tries = 0;
+    while (tries < 20) {
+      await new Promise(r => setTimeout(r, 500));
+      tries++;
+      const checkRes = await fetch(`/api/logs/request/${rid}`, { credentials: 'same-origin' });
+      const checkData = await checkRes.json();
+      if (checkData.status === 'success') {
+        showToast(checkData.result || `Cache ${pkgName} berhasil dibersihkan.`, true);
+        return;
+      } else if (checkData.status === 'failed') {
+        throw new Error(checkData.result || 'Gagal membersihkan cache.');
+      }
+    }
+  } catch (err) {
+    showToast('Gagal membersihkan cache: ' + err.message, false);
+  }
+}
+
+async function showPkgLogs(pkgName) {
+  const modal = document.getElementById('pkg-log-modal');
+  const title = document.getElementById('pkg-log-title');
+  const body = document.getElementById('pkg-log-body');
+  if (modal) modal.style.display = 'flex';
+  if (title) title.textContent = `Riwayat Log Paket: ${pkgName}`;
+  if (body) body.textContent = `Memuat log riwayat aktivitas dpkg untuk paket '${pkgName}'...`;
+
+  const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
+  if (!isOnline) {
+    if (body) body.textContent = 'Server sedang offline.';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/logs/request', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf(),
+      },
+      body: JSON.stringify({
+        server_id: SID,
+        unit: 'PKG_LOGS',
+        detail: pkgName,
+        lines: 100,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
+
+    const rid = data.id;
+    let tries = 0;
+    while (tries < 30) {
+      await new Promise(r => setTimeout(r, 500));
+      tries++;
+      const checkRes = await fetch(`/api/logs/request/${rid}`, { credentials: 'same-origin' });
+      const checkData = await checkRes.json();
+      if (checkData.status === 'success') {
+        if (body) body.textContent = checkData.result || `Tidak ada aktivitas log tercatat untuk paket ${pkgName}.`;
+        return;
+      } else if (checkData.status === 'failed') {
+        throw new Error(checkData.result || 'Gagal mengambil log.');
+      }
+    }
+    if (body) body.textContent = 'Waktu tunggu permintaan log habis.';
+  } catch (err) {
+    if (body) body.textContent = `Gagal memuat log: ${err.message}`;
+  }
+}
+
+function closePkgLogModal() {
+  const modal = document.getElementById('pkg-log-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function upgradeSinglePkg(pkgName) {
+  if (!confirm(`Jalankan peningkatan versi (upgrade) untuk paket '${pkgName}' sekarang?`)) return;
+  triggerAptTask('PKG_UPGRADE', pkgName);
+}
+
+
+// ===================================================================
+// SYSTEMD SERVICES MANAGEMENT (Unit Services OS & Daemon)
+// ===================================================================
+
+// Peta layanan jaringan yang sedang dipantau (untuk menghubungkan info port)
+const _netSvcMap = new Map();
+function _registerNetSvc(key, port) {
+  if (!key) return;
+  const k = key.toLowerCase();
+  _netSvcMap.set(k, port);
+  if (k.includes('_')) _netSvcMap.set(k.replace(/_/g, '-'), port);
+  if (k.includes('-')) _netSvcMap.set(k.replace(/-/g, '_'), port);
+  if (k === 'mysql' || k === 'mysqld') _netSvcMap.set('mariadb', port);
+  if (k === 'mariadb' || k === 'mariadbd') { _netSvcMap.set('mysql', port); _netSvcMap.set('mysqld', port); }
+  if (k === 'ssh') _netSvcMap.set('sshd', port);
+  if (k === 'sshd') _netSvcMap.set('ssh', port);
+  if (k === 'cron') _netSvcMap.set('crond', port);
+  if (k === 'crond') _netSvcMap.set('cron', port);
+}
+{% for s in services %}
+_registerNetSvc({{ s.service_name|tojson }}, {{ s.port|tojson }});
+{% if s.process_name %}
+_registerNetSvc({{ s.process_name|tojson }}, {{ s.port|tojson }});
+{% endif %}
+{% endfor %}
+
+function _initSystemdData() {
+  try {
+    if (typeof _systemdRawData === 'string') {
+      _systemdList = JSON.parse(_systemdRawData || '[]');
+    } else if (Array.isArray(_systemdRawData)) {
+      _systemdList = _systemdRawData;
+    } else {
+      _systemdList = [];
+    }
+  } catch (e) {
+    _systemdList = [];
+  }
+}
+
+function loadSystemdList() {
+  if (!_sysdInitialized) {
+    _initSystemdData();
+    _sysdInitialized = true;
+  }
+  filterSystemdTable();
+  if (_systemdList.length === 0) {
+    refreshSystemdList(false);
+  }
+}
+
+
+function setSysdStatusFilter(status) {
+  const sel = document.getElementById('sysd-status-filter');
+  if (sel) {
+    if (sel.value === status && status !== 'all') {
+      sel.value = 'all';
+    } else {
+      sel.value = status;
+    }
+    filterSystemdTable();
+  }
+}
+
+function toggleSysdSort(col) {
+  if (_sysdSortCol === col) {
+    _sysdSortDir = (_sysdSortDir === 'asc') ? 'desc' : 'asc';
+  } else {
+    _sysdSortCol = col;
+    _sysdSortDir = (col === 'memory') ? 'desc' : 'asc';
+  }
+  _updateSysdSortIcons();
+  _applySysdSort();
+  renderSystemdTable();
+}
+
+function _updateSysdSortIcons() {
+  ['status', 'name', 'boot', 'sub', 'memory'].forEach(c => {
+    const el = document.getElementById('sysd-sort-' + c);
+    if (!el) return;
+    if (_sysdSortCol === c) {
+      el.textContent = _sysdSortDir === 'asc' ? '▲' : '▼';
+      el.style.opacity = '1';
+    } else {
+      el.textContent = '↕';
+      el.style.opacity = '0.5';
+    }
+  });
+}
+
+function _applySysdSort() {
+  const col = _sysdSortCol;
+  const dir = _sysdSortDir === 'asc' ? 1 : -1;
+
+  const statusPriority = {
+    'failed': 1,
+    'running': 2,
+    'exited': 3,
+    'inactive': 4,
+    'unknown': 5
+  };
+
+  _sysdFilteredList.sort((a, b) => {
+    if (col === 'status') {
+      const pA = statusPriority[a.status] || 99;
+      const pB = statusPriority[b.status] || 99;
+      if (pA !== pB) return (pA - pB) * dir;
+      return (a.name || '').localeCompare(b.name || '') * dir;
+    }
+    if (col === 'memory') {
+      const memA = a.memory || 0;
+      const memB = b.memory || 0;
+      if (memA !== memB) return (memA - memB) * dir;
+      return (a.name || '').localeCompare(b.name || '') * dir;
+    }
+    const valA = (a[col] || '').toString().toLowerCase();
+    const valB = (b[col] || '').toString().toLowerCase();
+    return valA.localeCompare(valB) * dir;
+  });
+}
+
+function filterSystemdTable() {
+  if (!_sysdInitialized) {
+    _initSystemdData();
+    _sysdInitialized = true;
+  }
+  const q = (document.getElementById('sysd-search-input')?.value || '').trim().toLowerCase();
+  const statusFilter = document.getElementById('sysd-status-filter')?.value || 'all';
+  const bootFilter = document.getElementById('sysd-boot-filter')?.value || 'all';
+
+  _sysdFilteredList = _systemdList.filter(u => {
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'running' && u.status !== 'running') return false;
+      if (statusFilter === 'failed' && u.status !== 'failed') return false;
+      if (statusFilter === 'exited' && u.status !== 'exited') return false;
+      if (statusFilter === 'inactive' && u.status !== 'inactive') return false;
+    }
+    if (bootFilter !== 'all') {
+      if (bootFilter === 'enabled' && u.boot !== 'enabled') return false;
+      if (bootFilter === 'disabled' && u.boot !== 'disabled') return false;
+      if (bootFilter === 'static' && (u.boot !== 'static' && u.boot !== 'masked')) return false;
+    }
+    if (q) {
+      const matchName = (u.name || '').toLowerCase().includes(q);
+      const matchDesc = (u.description || '').toLowerCase().includes(q);
+      const matchPid = u.pid && String(u.pid).includes(q);
+      if (!matchName && !matchDesc && !matchPid) return false;
+    }
+    return true;
+  });
+
+  _applySysdSort();
+  _sysdCurrentPage = 1;
+  renderSystemdTable();
+}
+
+function changeSysdPageSize(size) {
+  _sysdPageSize = parseInt(size, 10) || 5;
+  _sysdCurrentPage = 1;
+  renderSystemdTable();
+}
+
+function goToSysdPage(p) {
+  const effectivePageSize = (_sysdFilteredList.length <= 10) ? _sysdFilteredList.length : _sysdPageSize;
+  const maxPage = Math.max(1, Math.ceil(_sysdFilteredList.length / (effectivePageSize || 1)));
+  _sysdCurrentPage = Math.max(1, Math.min(maxPage, p));
+  renderSystemdTable();
+}
+
+function renderSystemdTable() {
+  const totalBadge = document.getElementById('sysd-total-badge');
+  const runningBadge = document.getElementById('sysd-running-badge');
+  const failedBadge = document.getElementById('sysd-failed-badge');
+  const emptyEl = document.getElementById('sysd-empty');
+  const tableWrap = document.getElementById('sysd-table-wrap');
+  const tbody = document.getElementById('sysd-tbody');
+  const pageInfo = document.getElementById('sysd-page-info');
+  const pageNum = document.getElementById('sysd-page-num');
+  const firstBtn = document.getElementById('sysd-first-btn');
+  const prevBtn = document.getElementById('sysd-prev-btn');
+  const nextBtn = document.getElementById('sysd-next-btn');
+  const lastBtn = document.getElementById('sysd-last-btn');
+  const paginationWrap = document.getElementById('sysd-pagination-wrap');
+
+  // Update counter badges
+  const totalCount = _systemdList.length;
+  let runningCount = 0;
+  let failedCount = 0;
+  _systemdList.forEach(u => {
+    if (u.status === 'running') runningCount++;
+    if (u.status === 'failed') failedCount++;
+  });
+
+  if (totalBadge) totalBadge.textContent = `${totalCount} unit`;
+  if (runningBadge) {
+    runningBadge.textContent = `${runningCount} running`;
+    runningBadge.style.display = runningCount > 0 ? 'inline-block' : 'none';
+  }
+  if (failedBadge) {
+    failedBadge.textContent = `${failedCount} failed`;
+    failedBadge.style.display = failedCount > 0 ? 'inline-block' : 'none';
+  }
+
+  if (!_systemdList || _systemdList.length === 0) {
+    if (tableWrap) tableWrap.style.display = 'none';
+    if (paginationWrap) paginationWrap.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (tableWrap) tableWrap.style.display = 'block';
+
+  const totalFiltered = _sysdFilteredList.length;
+  if (paginationWrap) paginationWrap.style.display = (totalFiltered <= 10) ? 'none' : 'flex';
+
+  const effectivePageSize = (totalFiltered <= 10) ? totalFiltered : _sysdPageSize;
+  const maxPage = Math.max(1, Math.ceil(totalFiltered / (effectivePageSize || 1)));
+  _sysdCurrentPage = Math.max(1, Math.min(maxPage, _sysdCurrentPage));
+
+  const startIdx = (totalFiltered === 0) ? 0 : (_sysdCurrentPage - 1) * effectivePageSize;
+  const endIdx = (totalFiltered <= 10) ? totalFiltered : Math.min(startIdx + effectivePageSize, totalFiltered);
+  const pageItems = _sysdFilteredList.slice(startIdx, endIdx);
+
+  if (pageInfo) {
+    pageInfo.textContent = totalFiltered === 0
+      ? 'Tidak ada unit systemd yang cocok dengan filter'
+      : `Menampilkan ${startIdx + 1} - ${endIdx} dari ${totalFiltered} unit${totalFiltered !== _systemdList.length ? ' (terfilter)' : ''}`;
+  }
+  if (pageNum) pageNum.textContent = `Halaman ${_sysdCurrentPage} / ${maxPage}`;
+  if (firstBtn) firstBtn.disabled = (_sysdCurrentPage <= 1);
+  if (prevBtn) prevBtn.disabled = (_sysdCurrentPage <= 1);
+  if (nextBtn) nextBtn.disabled = (_sysdCurrentPage >= maxPage);
+  if (lastBtn) lastBtn.disabled = (_sysdCurrentPage >= maxPage);
+
+  if (!tbody) return;
+
+  if (pageItems.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--dim)">Tidak ada unit service yang sesuai kriteria pencarian.</td></tr>';
+    return;
+  }
+
+  const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
+  const canSvc = (typeof CAN_SERVICES !== 'undefined') ? CAN_SERVICES : true;
+  const isViewer = (typeof IS_VIEWER !== 'undefined') ? IS_VIEWER : false;
+
+  const rowsHtml = pageItems.map(u => {
+    const nameEsc = escapeHtml(u.name || '');
+    const baseName = (u.name || '').replace(/\.service$/, '');
+    const baseNameEsc = escapeHtml(baseName);
+    const descEsc = escapeHtml(u.description || '—');
+
+    // Cek apakah ada port listening
+    const matchedPort = _netSvcMap.get(baseName.toLowerCase());
+    const portBadge = matchedPort ? `<span class="badge badge-info" style="font-size:9px;margin-left:5px" title="Layanan mendengarkan di port jaringan ${matchedPort}">Port ${matchedPort}</span>` : '';
+
+    // Status badge
+    let statusBadge = '';
+    if (u.status === 'running') {
+      statusBadge = '<span class="badge badge-up" style="font-size:10px;padding:2px 6px">RUNNING</span>';
+    } else if (u.status === 'failed') {
+      statusBadge = '<span class="badge badge-danger" style="font-size:10px;padding:2px 6px;font-weight:700">FAILED</span>';
+    } else if (u.status === 'exited') {
+      statusBadge = '<span class="badge badge-muted" style="font-size:10px;padding:2px 6px">EXITED</span>';
+    } else {
+      statusBadge = '<span class="badge badge-muted" style="font-size:10px;padding:2px 6px;opacity:0.65">INACTIVE</span>';
+    }
+
+    // Boot badge
+    let bootBadge = '';
+    const bLower = (u.boot || '').toLowerCase();
+    if (bLower === 'enabled') {
+      bootBadge = '<span class="badge badge-up" style="font-size:9px;padding:1px 5px">ENABLED</span>';
+    } else if (bLower === 'disabled') {
+      bootBadge = '<span class="badge badge-muted" style="font-size:9px;padding:1px 5px">DISABLED</span>';
+    } else if (bLower === 'masked') {
+      bootBadge = '<span class="badge badge-danger" style="font-size:9px;padding:1px 5px">MASKED</span>';
+    } else {
+      bootBadge = `<span class="badge badge-muted" style="font-size:9px;padding:1px 5px;opacity:0.75">${escapeHtml(u.boot || '-')}</span>`;
+    }
+
+    // Format Memori & PID
+    let memHtml = '<span style="color:var(--dim)">—</span>';
+    if (u.memory && u.memory > 0) {
+      let memStr = '';
+      if (u.memory >= 1073741824) memStr = (u.memory / 1073741824).toFixed(1) + ' GB';
+      else if (u.memory >= 1048576) memStr = (u.memory / 1048576).toFixed(1) + ' MB';
+      else memStr = Math.round(u.memory / 1024) + ' KB';
+      memHtml = `<div class="mono" style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${memStr}</div>`;
+      if (u.pid) {
+        memHtml += `<div class="mono" style="font-size:10px;color:var(--dim)" title="Main PID ${u.pid}${u.tasks ? ', ' + u.tasks + ' thread' : ''}">PID ${u.pid}${u.tasks ? ` &bull; ${u.tasks}th` : ''}</div>`;
+      }
+    } else if (u.pid) {
+      memHtml = `<span class="mono" style="font-size:11px;color:var(--dim)">PID ${u.pid}</span>`;
+    }
+
+    const subEsc = escapeHtml(u.sub || '-');
+    const isRunning = (u.status === 'running');
+    const isFailed = (u.status === 'failed');
+    const isAgent = baseName.startsWith('agent_pantau') || baseName.startsWith('agent-pantau');
+
+    // Tombol Aksi: Ikon + Tooltip
+    const disAttr = (!isOnline || !canSvc || isViewer) ? 'disabled style="opacity:0.35;cursor:not-allowed"' : '';
+
+    const restartBtn = `<button type="button" class="btn btn-primary btn-sm" ${disAttr} onclick="systemdAction('restart', '${nameEsc}', this)" title="Restart unit service ${nameEsc}" aria-label="Restart">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+    </button>`;
+
+    const startBtn = `<button type="button" class="btn btn-ghost btn-sm" ${disAttr} ${isRunning ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('start', '${nameEsc}', this)" title="${isRunning ? 'Layanan sudah aktif' : 'Nyalakan unit service ' + nameEsc}" aria-label="Start">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+    </button>`;
+
+    const stopBtn = `<button type="button" class="btn btn-ghost btn-sm" ${disAttr} ${(!isRunning || isAgent) ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('stop', '${nameEsc}', this)" title="${isAgent ? 'Agen Pantau dilindungi dan tidak boleh dihentikan' : (!isRunning ? 'Layanan sudah berhenti' : 'Hentikan unit service ' + nameEsc)}" aria-label="Stop">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
+    </button>`;
+
+    const reloadBtn = `<button type="button" class="btn btn-ghost btn-sm" ${disAttr} ${!isRunning ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('reload', '${nameEsc}', this)" title="${!isRunning ? 'Layanan tidak aktif' : 'Reload konfigurasi ' + nameEsc}" aria-label="Reload">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+    </button>`;
+
+    const isEnabled = (bLower === 'enabled');
+    const bootToggleBtn = `<button type="button" class="btn btn-ghost btn-sm" ${disAttr} onclick="systemdAction('${isEnabled ? 'disable' : 'enable'}', '${nameEsc}', this)" title="${isEnabled ? 'Nonaktifkan auto-start saat boot (disable)' : 'Aktifkan auto-start saat boot (enable)'}" aria-label="Boot Toggle">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+    </button>`;
+
+    const logBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('${baseNameEsc}')" title="Lihat log journalctl ${nameEsc}" aria-label="Log">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+    </button>`;
+
+    return `<tr style="${isFailed ? 'background:rgba(239,68,68,0.06);' : ''}">
+      <td style="text-align:center;padding:5px 8px;white-space:nowrap">${statusBadge}</td>
+      <td style="padding:5px 10px;white-space:nowrap">
+        <span class="mono" style="font-size:12px;font-weight:600;color:var(--text-bright)">${nameEsc}</span>${portBadge}
+      </td>
+      <td style="text-align:center;padding:5px 8px;white-space:nowrap">${bootBadge}</td>
+      <td style="text-align:center;padding:5px 8px;white-space:nowrap;font-size:11px;color:var(--dim)" class="mono">${subEsc}</td>
+      <td style="text-align:right;padding:5px 10px;white-space:nowrap">${memHtml}</td>
+      <td style="padding:5px 10px;font-size:12px;color:var(--dim);line-height:1.3">${descEsc}</td>
+      <td style="text-align:center;padding:5px 8px;white-space:nowrap">
+        <div style="display:inline-flex;align-items:center;gap:3px">
+          ${restartBtn}
+          ${startBtn}
+          ${stopBtn}
+          ${reloadBtn}
+          ${bootToggleBtn}
+          ${logBtn}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  tbody.innerHTML = rowsHtml;
+}
+
+async function refreshSystemdList(manual = false) {
+  if (_sysdLoading) return;
+  const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
+  if (!isOnline) {
+    if (manual) showToast('Server sedang offline.', false);
+    return;
+  }
+  _sysdLoading = true;
+  const loadingEl = document.getElementById('sysd-loading');
+  const emptyEl = document.getElementById('sysd-empty');
+  const tableWrap = document.getElementById('sysd-table-wrap');
+  const paginationWrap = document.getElementById('sysd-pagination-wrap');
+  const btnRefresh = document.getElementById('btn-sysd-refresh');
+
+  if (loadingEl) loadingEl.style.display = 'block';
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (tableWrap) tableWrap.style.display = 'none';
+  if (paginationWrap) paginationWrap.style.display = 'none';
+  if (btnRefresh) {
+    btnRefresh.disabled = true;
+    btnRefresh.style.opacity = '0.6';
+  }
+
+  try {
+    const res = await fetch('/api/logs/request', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf(),
+      },
+      body: JSON.stringify({
+        server_id: SID,
+        unit: 'SYSTEMD_LIST',
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
+
+    const rid = data.id;
+    let tries = 0;
+    while (tries < 60) {
+      await new Promise(r => setTimeout(r, 600));
+      tries++;
+      const checkRes = await fetch(`/api/logs/request/${rid}`, { credentials: 'same-origin' });
+      const checkData = await checkRes.json();
+      if (checkData.status === 'success') {
+        const raw = (checkData.result || '').trim();
+        if (raw.startsWith('[') && raw.endsWith(']')) {
+          let units = JSON.parse(raw);
+          if (Array.isArray(units)) {
+            _systemdList = units;
+            if (manual) showToast(`Daftar unit systemd berhasil dimuat (${units.length} unit).`, true);
+            filterSystemdTable();
+            return;
+          }
+        }
+        throw new Error('Respon unit systemd tidak dalam format yang valid.');
+      } else if (checkData.status === 'failed') {
+        throw new Error(checkData.result || 'Gagal memindai unit dari agen server.');
+      }
+    }
+    throw new Error('Waktu tunggu permintaan unit systemd habis.');
+  } catch (err) {
+    if (manual) showToast('Gagal memuat unit systemd: ' + err.message, false);
+    filterSystemdTable();
+  } finally {
+    _sysdLoading = false;
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (btnRefresh) {
+      btnRefresh.disabled = false;
+      btnRefresh.style.opacity = '1';
+    }
+  }
+}
+
+async function systemdAction(action, unitName, btn) {
+  const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
+  if (!isOnline) {
+    showToast('Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+
+  if (action === 'stop') {
+    const ok = await showSvcConfirmModal({
+      title: 'Konfirmasi Hentikan Layanan Systemd',
+      message: `Apakah Anda yakin ingin <strong>menghentikan</strong> unit service <strong>${escapeHtml(unitName)}</strong>?<br><br>Pastikan layanan ini aman dihentikan dan tidak mengganggu stabilitas host.`,
+      btnText: 'Ya, Hentikan',
+      btnClass: 'btn-danger',
+      iconType: 'danger'
+    });
+    if (!ok) return;
+  } else if (action === 'disable') {
+    const ok = await showSvcConfirmModal({
+      title: 'Konfirmasi Nonaktifkan Boot Otomatis',
+      message: `Apakah Anda yakin ingin <strong>menonaktifkan auto-start saat boot (disable)</strong> untuk unit <strong>${escapeHtml(unitName)}</strong>?<br><br>Layanan tidak akan menyala otomatis saat server melakukan booting ulang.`,
+      btnText: 'Ya, Nonaktifkan',
+      btnClass: 'btn-warning',
+      iconType: 'warning'
+    });
+    if (!ok) return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+  }
+
+  try {
+    const res = await fetch(`/api/servers/${SID}/systemd/${action}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf(),
+      },
+      body: JSON.stringify({ unit: unitName }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      showToast(data.detail || `Perintah ${action} unit ${unitName} berhasil dikirim.`, true);
+      setTimeout(() => refreshSystemdList(false), 2500);
+    } else {
+      showToast(data.detail || `Gagal menjalankan ${action} unit ${unitName}.`, false);
+    }
+  } catch (e) {
+    showToast('Kendala jaringan: ' + e.message, false);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }
+  }
+}
+
+// Two-way shortcut badge filter handlers
+function setPkgStatusFilter(status) {
+  const sel = document.getElementById('pkg-status-filter');
+  if (sel) {
+    if (sel.value === status && status !== 'all') {
+      sel.value = 'all';
+    } else {
+      sel.value = status;
+    }
+    filterPackagesTable();
+  }
+}
+
+
 </script>
 {% endblock %}

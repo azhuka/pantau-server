@@ -311,6 +311,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.21
+
+- **Tipe Rilis:** Pemulihan Menyeluruh Tab Packages, Kartu Unit Layanan Systemd, Nomenklatur Insiden Baku & Ergonomi NOC (*Full Restoration of Packages Tab, Systemd Units Card, Standard Incident Nomenclature & NOC Micro-Typography*)
+- **Fokus Utama:** Melakukan pemulihan total terhadap seluruh modul, komponen antarmuka, dan kontrol interaktif yang sebelumnya terhapus akibat regresi historis `git checkout`:
+  1. **Restorasi Arsitektur 11 Tab Navigasi Baku (`services.html`):** Mengembalikan struktur 11 tab navigasi rincian server secara utuh: `[ Performa ] [ Insiden ] [ Services ] [ Packages ] [ Tasks ] [ Users ] [ Ports ] [ Firewall ] [ SSL/TLS ] [ Cron Jobs ] [ Logs ]`.
+  2. **Restorasi Tab Manajemen Paket OS (`#tab-packages`):** Mengembalikan panel inventaris paket perangkat lunak sistem operasi dan pustaka terpasang lengkap dengan pencarian real-time, filter tipe (Pengguna/Sistem), filter status (running, exited, failed, inactive, installed, upgradable), pengurutan dinamis, paginator mandiri, pintasan filter dua arah (`PAKET` & `PEMBARUAN`), serta tindakan kontrol (Bersihkan cache via sapu/sparkles, Lihat log riwayat dpkg modal, dan Upgrade paket).
+  3. **Restorasi Kartu Unit Layanan Systemd (`#card-systemd-units`):** Mengembalikan kartu manajemen unit daemon OS Systemd di dalam tab `Services` lengkap dengan filter status/boot, pengurutan memori/status/nama, paginator terpadu, pintasan filter dua arah (`UNIT`, `RUNNING`, `FAILED`), serta tindakan kontrol (Restart, Start, Stop, Reload, Enable/Disable boot, dan Log journalctl).
+  4. **Harmonisasi Status Insiden & Eliminasi Total Istilah "Diakui":** Menyelaraskan status penanganan insiden pada kolom `Keparahan` (`.col-sev`) yang menampilkan badge `✓ DITANGANI` (hijau) `(oleh master-admin)` dan `DIABAIKAN 🔕` (abu-abu), mengeliminasi badge `✓ diakui` secara permanen dari kolom `Kejadian`, memformat badge `kambuh X×` secara proporsional (font 7.5px), serta membakukan tombol tindakan insiden menjadi ikon checklist merah `Tangani Insiden` saat belum ditangani dan checklist hijau `Insiden Ditangani` saat telah ditangani.
+  5. **Standardisasi Micro-Typography & Ergonomi NOC:** Menyelaraskan font subtitle hero metadata (`.hero-meta-sys` & `.hero-meta-bar`) pada 11px, serta badge platform/HA/tags pada 8.5px dengan padding rapat 1px 4.5px.
+  6. **Klarifikasi Deskripsi Bantuan Probing Endpoint (`probing.html`):** Menyempurnakan teks bantuan tautan server: `Aplikasi yang berjalan server klien. Kosongkan jika memantau aplikasi atau perangkat jaringan yang tidak anda kendalikan.`.
+
+---
+
 ## Versi 4.6.20
 
 - **Tipe Rilis:** Pemulihan Integritas Nomenklatur Baku Antarmuka, Restorasi Status Masalah Nihil & Penguncian Aturan Tata Letak (*Restoration of Standard UI Nomenclature, Dashboard Nihil Problem Status & Layout Rules Enforcement*)
