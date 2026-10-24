@@ -27,8 +27,8 @@
 }
 #servers-table th {
   white-space: nowrap;
-  padding: 5px 6px;
-  font-size: 10.5px;
+  padding: 6px 8px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--dim);
   text-transform: uppercase;
@@ -36,8 +36,8 @@
 }
 #servers-table td {
   white-space: nowrap;
-  padding: 4.5px 6px;
-  font-size: 11.5px;
+  padding: 5px 8px;
+  font-size: 12px;
 }
 @media (max-width: 640px) {
   .servers-controls-wrap {
@@ -294,12 +294,12 @@
       </td>
       <td class="col-act" style="text-align:center;white-space:nowrap">
         <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center">
-          <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm" style="padding:3px 6px" title="Buka Rincian Layanan Server" aria-label="Rincian">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="Buka Rincian Layanan Server" aria-label="Rincian">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </a>
           {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-          <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm" style="padding:3px 6px" title="Edit Konfigurasi Server" aria-label="Edit">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          <a href="/servers/{{ srv.id }}/edit" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="Edit Konfigurasi Server" aria-label="Edit">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
           </a>
           <form method="POST" action="/servers/{{ srv.id }}/delete" style="display:inline;margin:0"
                 data-guardrail
@@ -310,8 +310,8 @@
                 data-guardrail-btn="Hapus Server Sekarang"
                 data-guardrail-color="danger">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button class="btn btn-danger btn-sm" style="padding:3px 6px" type="submit" title="Hapus Server" aria-label="Hapus">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            <button class="btn btn-danger btn-sm" style="padding:4px 7px" type="submit" title="Hapus Server" aria-label="Hapus">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             </button>
           </form>
           {% endif %}
@@ -502,8 +502,8 @@ function createAndAppendServersRow(srv, tbody) {
     <td class="mono" style="font-size:11px;letter-spacing:-0.025em;text-align:center;white-space:nowrap" id="srv-seen-${srv.id}">-</td>
     <td class="col-act" style="text-align:center;white-space:nowrap">
       <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center">
-        <a href="/servers/${srv.id}/services" class="btn btn-ghost btn-sm" style="padding:3px 6px" title="${isEn ? 'Server Details' : 'Buka Rincian Layanan Server'}" aria-label="Rincian">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        <a href="/servers/${srv.id}/services" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="${isEn ? 'Server Details' : 'Buka Rincian Layanan Server'}" aria-label="Rincian">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
         </a>
       </div>
     </td>
@@ -693,8 +693,16 @@ function updateServerGroupHeaders() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Paginasi dinonaktifkan sesuai permintaan pengguna (seluruh server ditampilkan)
-  serversPagination = null;
+  if (typeof attachTablePagination === 'function' && document.getElementById('servers-table')) {
+    serversPagination = attachTablePagination('#servers-table', {
+      unitLabel: 'server',
+      defaultLimit: 10,
+      pageSizeOptions: [10, 25, 50, 'all'],
+      onUpdate: () => {
+        updateServerGroupHeaders();
+      }
+    });
+  }
   updateServerGroupHeaders();
 });
 </script>

@@ -311,6 +311,48 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.7.7
+
+- **Tipe Rilis:** Penyempurnaan Visual Universal Antarmuka NOC, Koreksi Proporsi Kolom & Tipografi Tabel, Eliminasi Indikator Ganda pada Tab Bar, Standardisasi Paginasi 10 Baris, dan Pemisahan Semantik Ikon Tindakan (*Universal NOC Density Refinement, Table Typography & Proportion Optimization, Tab Double-Indicator Elimination, Universal 10-Row Pagination Threshold & Distinct Action Icon Semantics*)
+- **Fokus Utama:** Menyelesaikan secara tuntas 14 anomali visual, inkonsistensi tata letak, dan perubahan antarmuka yang dikeluhkan pengguna:
+  1. **Standardisasi Ukuran Jejeran Tombol Tindakan Header Rincian Server (`services.html`):**
+     - Mempertahankan susunan dan posisi tombol tindakan di bilah atas (*topbar*) halaman rincian server tanpa pergeseran tata letak.
+     - Menyeragamkan dimensi tombol Edit, Hapus, dan Kembali ke Daftar Server ke ukuran NOC kompak standar (`height: 26px; padding: 4px 8px; font-size: 11px`).
+  2. **Relokasi Indikator Identitas Server ke Baris Khusus di Bawah Spesifikasi Singkat (`services.html`):**
+     - Memisahkan elemen identitas server (badge Grup, proteksi Proxmox HA, badge Jaringan Terisolasi, badge tag, dan chip catatan ringkas) dari spesifikasi sistem operasi (`.hero-meta-sys`).
+     - Menempatkan seluruh elemen identitas pada baris tersendiri (`.hero-tags-bar`) tepat di bawah spesifikasi sistem operasi dengan penataan vertikal yang rapi.
+  3. **Penataan Proporsional Kolom Tabel Status Masalah (`services.html` & `base.html`):**
+     - Mengubah tabel `#probtable` menjadi `table-layout: fixed; width: 100%;` untuk mencegah kolom Kejadian meregang secara berlebihan pada resolusi layar lebar.
+     - Menyeimbangkan proporsi kolom secara harmonis: Waktu (135px), Keparahan (96px terpusat), Kejadian (40% fleksibel, min 250px), Durasi (85px), Tindakan (95px), dan Saran (30% fleksibel, min 200px) dengan pembungkusan kata rapi (`word-break: break-word`).
+  4. **Hierarki Tipografi Teks Sekunder pada Seluruh Tabel:**
+     - Menyelaraskan teks sekunder (sub-timestamp, keterangan tambahan, unit, dan catatan kecil) ke ukuran 10.5px–11px atau teks teredam 8px–9px agar hirarki informasi antara data utama dan pelengkap terlihat tegas bagi operator.
+  5. **Konsistensi Ukuran Teks Mode Standar & Mode Kompak pada Tabel Status & Kinerja (`dashboard.html`):**
+     - Menyeragamkan ukuran font th (11.5px), td (12px), hostname (12.5px), metrik monospaced (12px), alamat IP (11.5px), dan badge (9px) secara identik antara Mode Standar dan Mode Kompak.
+     - Mode Kompak kini murni mengendalikan tinggi baris (`25px`), padding rapat (`2px 6px`), dan penyembunyian sub-metrik tanpa pergeseran atau lonjakan ukuran teks yang mengganggu mata.
+  6. **Penyelarasan & Standarisasi Penamaan Kolom Antar-Tabel:**
+     - Mengganti seluruh istilah `User` menjadi `Pengguna` secara konsisten pada tabel riwayat tindakan (`services.html`), tabel manajer tugas (`services.html`), dan tabel aktivitas login (`user_activity.html`).
+     - Mengganti istilah `MAC Address` menjadi `Alamat MAC` dan `IP Address` menjadi `Alamat IP` pada tabel spesifikasi perangkat keras dan jaringan (`services.html`).
+  7. **Diferensiasi Ikon Tombol Tindakan pada Tabel Daftar Server (`servers.html`):**
+     - Mengubah ikon tindakan Rincian menjadi ikon Mata (*Eye* icon) yang jelas dan representatif.
+     - Mengubah ikon tindakan Edit menjadi ikon Pensil murni (*Pencil* icon tanpa kotak) sehingga sangat mudah dibedakan dari tombol rincian maupun tombol hapus (*Trash*).
+     - Menyelaraskan ikon pada render Jinja server-side dan fungsi poll AJAX client-side.
+  8. **Penyempurnaan Kerapian Visual Tabel Daftar Server (`servers.html`):**
+     - Menstandarisasi padding sel rapat (6px 8px untuk th, 5px 8px untuk td), tinggi baris efisien, serta ketepatan perataan teks numerik dan monospaced.
+  9. **Eliminasi Indikator Ganda (Titik Merah/Kuning) pada Bilah Tab Rincian Server (`services.html`):**
+     - Menghapus titik indikator peringatan (`tab-warn-dot`) dari seluruh tab rincian server (Performa, Insiden, Services, Packages, Tasks, Users, Ports, Firewall, SSL/TLS, Cron, Logs) untuk menghilangkan redundansi visual ganda karena badge angka telah mewakili status insiden dan paket secara akurat.
+  10. **Standarisasi Ambang Batas Paginasi Universal (Default 10 Baris & Sembunyikan jika < 5):**
+      - Mengatur nilai default paginasi universal pada mesin `attachTablePagination` dan tabel Status Masalah menjadi 10 item per halaman.
+      - Menerapkan aturan otomatisasi sembunyikan bilah paginasi (`display: none`) apabila jumlah baris yang tampil kurang dari 5 baris.
+  11. **Pencegahan Teks Terpotong pada Header Brand Dashboard (`dashboard.html`):**
+      - Memperbaiki kontainer `.dash-brand-wrap` dari tinggi statis kaku (`height: 64px`) menjadi `min-height: 64px; height: auto; gap: 3px;`.
+      - Memperbaiki `line-height` nama unit organisasi (`org_unit`) menjadi `1.35` sehingga teks panjang seperti "Bidang Aplikasi dan Informatika" tampil utuh tanpa terpotong (*no clipping*).
+  12. **Kepastian Semantik Ikon Interaktif:**
+      - Memverifikasi bahwa setiap ikon tombol tindakan di seluruh sistem mewakili fungsinya secara intuitif tanpa memicu keraguan operator.
+  13. **Kepatuhan Konsistensi Warna NOC:**
+      - Memastikan penegakan palet warna baku (Kritis = Merah, Gawat = Oranye, Peringatan = Kuning, Online/Normal = Hijau, Informasi = Biru, Diabaikan = Abu-abu).
+  14. **Pencegahan Tumpang Tindih Teks Kolom (*Column Overlap Prevention*):**
+      - Memastikan setiap kolom tabel memiliki batas lebar minimum, perataan yang tepat, dan pembungkusan kata yang terkontrol agar tidak saling menimpa teks kolom tetangga.
+
 ## Versi 4.7.6
 
 - **Tipe Rilis:** Sinkronisasi Universal Kolom Keparahan Dua Baris pada Seluruh Kartu Insiden, Proporsionalitas Kolom Kartu Status Masalah, dan Eliminasi Ikon Tidak Diminta pada Label Pengabaian (*Universal Two-Line Severity Column Synchronization Across All Incident Cards, Status Masalah Card Proportion Standardization & Unprompted Ignored Icon Removal*)
