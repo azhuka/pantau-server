@@ -893,7 +893,7 @@ body.popout-fleet_table #dash-fleet-card {
       </div>
       <div class="zbx-sev-tile zbx-tile-ignored {% if ignored_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('ignored')" title="Klik untuk rincian insiden yang Diabaikan (Netral)">
         <span class="zbx-sev-count" id="zbx-count-ignored">{{ ignored_total }}</span>
-        <span class="zbx-sev-label" title="Insiden yang diabaikan oleh operator">Diabaikan</span>
+        <span class="zbx-sev-label" title="Insiden yang diabaikan oleh operator" style="display:inline-flex;align-items:center;gap:4px">Diabaikan <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></span>
       </div>
     </div>
   </div>
@@ -953,7 +953,7 @@ body.popout-fleet_table #dash-fleet-card {
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.01)">
           <th style="padding:4px 10px;font-size:10px;width:115px;min-width:105px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.5px">WAKTU</th>
           <th style="padding:4px 10px;font-size:10px;width:140px;min-width:125px;max-width:180px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.5px">SERVER</th>
-          <th style="padding:4px 10px;font-size:10px;width:95px;min-width:85px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.5px">KEPARAHAN</th>
+          <th class="col-sev" style="padding:4px 10px;font-size:10px;width:96px;min-width:90px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.5px">KEPARAHAN</th>
           <th style="padding:4px 10px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.5px">DESKRIPSI MASALAH</th>
           <th style="padding:4px 10px;font-size:10px;width:110px;min-width:100px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.5px">DURASI</th>
         </tr>
@@ -972,30 +972,39 @@ body.popout-fleet_table #dash-fleet-card {
             <span style="font-size:8px;color:var(--dim);margin-left:4px">({{ p.group_name }})</span>
             {% endif %}
           </td>
-          <td style="padding:3.5px 10px;white-space:nowrap;width:1%;text-align:left">
+          <td class="col-sev" style="padding:3.5px 10px;white-space:nowrap;width:96px;min-width:90px;text-align:center">
             {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
-            {% if p.acknowledged_by %}
-              <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px">
+            {% if p.is_ignored and p.acknowledged_by %}
+              <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
+                <span class="badge badge-muted" style="display:inline-flex;align-items:center;gap:3px">DIABAIKAN <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></span>
+                <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+              </div>
+            {% elif p.is_ignored %}
+              <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
+                <span class="badge badge-muted" style="display:inline-flex;align-items:center;gap:3px">DIABAIKAN <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></span>
+                <span class="col-sev-sub-text" title="oleh {{ ack_op }}">(oleh {{ ack_op }})</span>
+              </div>
+            {% elif p.acknowledged_by %}
+              <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
                 {% if p.severity == 'danger' %}
-                  <span class="badge badge-danger" style="font-size:8.5px;padding:0.5px 5px">KRITIS</span>
+                  <span class="badge badge-danger">KRITIS</span>
                 {% elif p.severity == 'average' %}
-                  <span class="badge badge-orange" style="font-size:8.5px;padding:0.5px 5px">GAWAT</span>
+                  <span class="badge badge-orange">GAWAT</span>
                 {% elif p.severity == 'warning' %}
-                  <span class="badge badge-warn" style="font-size:8.5px;padding:0.5px 5px">PERINGATAN</span>
+                  <span class="badge badge-warn">PERINGATAN</span>
                 {% else %}
-                  <span class="badge badge-info" style="font-size:8.5px;padding:0.5px 5px">{{ p.severity | upper }}</span>
+                  <span class="badge badge-info">{{ p.severity | upper }}</span>
                 {% endif %}
-                <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ DITANGANI</span>
-                <span style="font-size:8px;color:var(--dim)">(oleh {{ ack_op }})</span>
+                <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
               </div>
             {% elif p.severity == 'danger' %}
-              <span class="badge badge-danger" style="font-size:8.5px;padding:0.5px 5px">KRITIS</span>
+              <span class="badge badge-danger">KRITIS</span>
             {% elif p.severity == 'average' %}
-              <span class="badge badge-orange" style="font-size:8.5px;padding:0.5px 5px">GAWAT</span>
+              <span class="badge badge-orange">GAWAT</span>
             {% elif p.severity == 'warning' %}
-              <span class="badge badge-warn" style="font-size:8.5px;padding:0.5px 5px">PERINGATAN</span>
+              <span class="badge badge-warn">PERINGATAN</span>
             {% else %}
-              <span class="badge badge-info" style="font-size:8.5px;padding:0.5px 5px">{{ p.severity | upper }}</span>
+              <span class="badge badge-info">{{ p.severity | upper }}</span>
             {% endif %}
           </td>
           <td style="padding:3.5px 10px;font-size:11.5px;color:var(--text);line-height:1.25">
@@ -1024,9 +1033,14 @@ body.popout-fleet_table #dash-fleet-card {
 <!-- 3. Fleet Overview (Single-Line Table Default or NOC Card Grid) -->
 <div class="card" id="dash-fleet-card" style="padding:0;overflow:hidden">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);flex-wrap:wrap;gap:6px">
-    <div>
-      <h3 style="font-size:13.5px;font-weight:600;margin:0">Status &amp; Kinerja</h3>
-      <div style="font-size:11px;color:var(--dim);margin-top:1px">Tinjauan cepat situasi, level prioritas, pemakaian hardware, dan kesehatan layanan per host secara real-time.</div>
+    <div style="display:flex;align-items:flex-start;gap:7px">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:rgba(56,189,248,0.12);color:var(--blue);margin-top:1px;flex-shrink:0">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+      </span>
+      <div>
+        <h3 style="font-size:13.5px;font-weight:600;margin:0">Status &amp; Kinerja</h3>
+        <div style="font-size:11px;color:var(--dim);margin-top:1px">Tinjauan cepat situasi, level prioritas, pemakaian hardware, dan kesehatan layanan per host secara real-time.</div>
+      </div>
     </div>
 
     <div class="dash-controls-wrap" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1513,31 +1527,31 @@ const SEV_CONFIG = {
   danger: {
     label: 'Kritis (Critical / Disaster)',
     badgeCls: 'badge-danger',
-    iconHtml: '<span class="dot danger" style="width:12px;height:12px"></span>',
+    iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>',
     emptyMsg: 'Tidak ada insiden Kritis saat ini.'
   },
   average: {
     label: 'Gawat',
     badgeCls: 'badge-orange',
-    iconHtml: '<span class="dot orange" style="width:12px;height:12px"></span>',
+    iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
     emptyMsg: 'Tidak ada insiden Gawat saat ini.'
   },
   warning: {
     label: 'Peringatan (Warning)',
     badgeCls: 'badge-warn',
-    iconHtml: '<span class="dot warn" style="width:12px;height:12px"></span>',
+    iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
     emptyMsg: 'Tidak ada anomali atau ambang batas Peringatan yang terlampaui.'
   },
   info: {
     label: 'Informasi (Info)',
     badgeCls: 'badge-info',
-    iconHtml: '<span class="dot info" style="width:12px;height:12px"></span>',
+    iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>',
     emptyMsg: 'Tidak ada catatan informasi operasional saat ini.'
   },
   ignored: {
     label: 'Diabaikan (Silenced / Ignored)',
     badgeCls: 'badge-muted',
-    iconHtml: '<span class="dot muted" style="width:12px;height:12px"></span>',
+    iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>',
     emptyMsg: 'Tidak ada insiden yang sedang diabaikan.'
   }
 };
@@ -1563,7 +1577,7 @@ function renderSevDetailModal(sev) {
   const cfg = SEV_CONFIG[sev] || {
     label: (sev || '').toUpperCase(),
     badgeCls: 'badge-muted',
-    iconHtml: '<span class="dot muted" style="width:12px;height:12px"></span>',
+    iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>',
     emptyMsg: 'Tidak ada data.'
   };
 
@@ -1609,13 +1623,15 @@ function renderSevDetailModal(sev) {
       const escMsg = (p.message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const escHost = (p.hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const escGrp = (p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const globeIcon = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
+      const hostDisplay = (p.probe_id || p.is_probe) ? `<span style="display:inline-flex;align-items:center;gap:4px">${globeIcon}<span>${escHost}</span></span>` : escHost;
       const grpHtml = escGrp ? `<span style="font-size:11px;color:var(--dim);margin-left:4px">(${escGrp})</span>` : '';
       const startedStr = p.started_at_str || (p.started_at ? relTime(p.started_at) : '—');
       const durStr = p.durasi || (p.started_at ? relTime(p.started_at).replace(' lalu', '').replace(' ago', '') : '—');
 
       let ignBadge = '';
       if (p.is_ignored) {
-        ignBadge = '<span class="badge badge-muted" style="font-size:10.5px;padding:1px 5px;margin-left:6px">Diabaikan</span>';
+        ignBadge = '<span class="badge badge-muted" style="font-size:10px;padding:1px 5px;margin-left:6px;display:inline-flex;align-items:center;gap:3px">Diabaikan <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></span>';
       }
 
       let sevPill = '';
@@ -1641,7 +1657,7 @@ function renderSevDetailModal(sev) {
           </td>
           <td style="padding:10px 12px;white-space:nowrap;vertical-align:middle;width:150px;max-width:180px;overflow:hidden;text-overflow:ellipsis">
             <a href="${rowHref}" style="font-size:13px;font-weight:600;color:var(--blue);text-decoration:none" title="Buka Detail">
-              ${escHost}
+              ${hostDisplay}
             </a>
             ${grpHtml}
           </td>
@@ -2518,6 +2534,7 @@ async function pollNocDashboard() {
           server_id: null,
           probe_id: p.probe_id,
           hostname: p.hostname || (p.probe_name || 'Endpoint'),
+          is_probe: true,
           group_name: p.group_name || 'Endpoint',
           severity: p.severity || 'warning',
           message: p.message || '',
@@ -2601,6 +2618,8 @@ async function pollNocDashboard() {
           server_id: null,
           probe_id: p.probe_id,
           hostname: p.hostname || (p.probe_name || 'Endpoint'),
+          is_probe: true,
+          is_probe: true,
           group_name: p.group_name || 'Endpoint'
         });
       });
@@ -2674,24 +2693,32 @@ async function pollNocDashboard() {
             const ackOp = (p.acknowledged_by === 'admin' ? 'master-admin' : (p.acknowledged_by || (isEn ? 'operator' : 'operator')));
             let rawSev = '';
             if (p.severity === 'danger') {
-              rawSev = '<span class="badge badge-danger" style="font-size:8.5px;padding:0.5px 5px">KRITIS</span>';
+              rawSev = `<span class="badge badge-danger">${isEn ? 'CRITICAL' : 'KRITIS'}</span>`;
             } else if (p.severity === 'average') {
-              rawSev = '<span class="badge badge-orange" style="font-size:8.5px;padding:0.5px 5px">GAWAT</span>';
+              rawSev = `<span class="badge badge-orange">${isEn ? 'HIGH' : 'GAWAT'}</span>`;
             } else if (p.severity === 'warning') {
-              rawSev = '<span class="badge badge-warn" style="font-size:8.5px;padding:0.5px 5px">PERINGATAN</span>';
+              rawSev = `<span class="badge badge-warn">${isEn ? 'WARNING' : 'PERINGATAN'}</span>`;
             } else {
-              rawSev = `<span class="badge badge-info" style="font-size:8.5px;padding:0.5px 5px">${(p.severity || 'INFO').toUpperCase()}</span>`;
+              rawSev = `<span class="badge badge-info">${(p.severity || 'INFO').toUpperCase()}</span>`;
             }
 
+            const svgBellOff = `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+
             let sevBadge = '';
-            if (p.acknowledged_by) {
-              sevBadge = `<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:4px">${rawSev} <span class="badge badge-up" style="font-size:8.5px;padding:0.5px 5px;font-weight:600">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span> <span style="font-size:8px;color:var(--dim)">(${isEn ? 'by ' : 'oleh '}${_dashEsc(ackOp)})</span></div>`;
+            if (p.is_ignored && p.acknowledged_by) {
+              sevBadge = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="display:inline-flex;align-items:center;gap:3px">${isEn ? 'IGNORED' : 'DIABAIKAN'} ${svgBellOff}</span><span class="badge badge-up badge-sub" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _dashEsc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+            } else if (p.is_ignored) {
+              sevBadge = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="display:inline-flex;align-items:center;gap:3px">${isEn ? 'IGNORED' : 'DIABAIKAN'} ${svgBellOff}</span><span class="col-sev-sub-text" title="${(isEn ? 'by ' : 'oleh ') + _dashEsc(ackOp)}">(${isEn ? 'by ' : 'oleh '}${_dashEsc(ackOp)})</span></div>`;
+            } else if (p.acknowledged_by) {
+              sevBadge = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">${rawSev}<span class="badge badge-up badge-sub" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _dashEsc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
             } else {
               sevBadge = rawSev;
             }
 
             const escMsg = (p.message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             const escHost = (p.hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const globeIcon = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
+            const hostDisplay = (p.probe_id || p.is_probe) ? `<span style="display:inline-flex;align-items:center;gap:4px">${globeIcon}<span>${escHost}</span></span>` : escHost;
             const grpHtml = p.group_name ? `<span style="font-size:8px;color:var(--dim);margin-left:4px">(${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')})</span>` : '';
             const startedStr = p.started_at_str || '—';
             let durStr = '—';
@@ -2721,9 +2748,9 @@ async function pollNocDashboard() {
                 <span class="mono" style="font-size:11px;font-weight:600;color:var(--text)">${startedStr}</span>
               </td>
               <td style="padding:3.5px 10px;white-space:nowrap;width:140px;min-width:125px;max-width:180px;overflow:hidden;text-overflow:ellipsis">
-                <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${escHost}</span>${grpHtml}
+                <span style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${hostDisplay}</span>${grpHtml}
               </td>
-              <td style="padding:3.5px 10px;white-space:nowrap;width:1%;text-align:left">${sevBadge}</td>
+              <td class="col-sev" style="padding:3.5px 10px;white-space:nowrap;width:96px;min-width:90px;text-align:center">${sevBadge}</td>
               <td style="padding:3.5px 10px;font-size:11.5px;color:var(--text);line-height:1.25"><span>${escMsg}</span></td>
               <td class="mono col-durasi" style="padding:3.5px 10px;white-space:nowrap;width:110px;min-width:100px;text-align:right;font-size:11px" data-start="${isoStart}">${durStr}</td>
             </tr>`;

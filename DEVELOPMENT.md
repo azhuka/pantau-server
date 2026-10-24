@@ -311,6 +311,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.7.3
+
+- **Tipe Rilis:** Standardisasi Tata Letak Dua Baris Kolom Keparahan, Ekspansi Proporsi Panduan Solusi, dan Restorasi Menyeluruh Ikon Vektor Dasbor (*Two-Line Severity Hierarchy Standardization, Solution Advice Layout Expansion & Universal Dashboard Vector SVG Icon Restoration*)
+- **Fokus Utama:** Memperbaiki proporsionalitas antarmuka pada seluruh tabel insiden dan dasbor NOC, menerapkan hierarki tipografi dua baris baku, serta memulihkan ikon vektor SVG murni:
+  1. **Standardisasi Hierarki Dua Baris Kolom Keparahan (`.col-sev` di `base.html`, `services.html`, `problems.html`, `dashboard.html`):**
+     - Menerapkan arsitektur dua baris terstruktur: Baris 1 memuat badge keparahan utama (`DIABAIKAN`, `KRITIS`, `GAWAT`, `PERINGATAN`, `INFO`) dengan ukuran teks proporsional (9.5px, `font-weight: 700`, padding 1.5px 5.5px, uppercase). Baris 2 memuat informasi penanganan atau operator sekunder (`(oleh master-admin)` atau `✓ DITANGANI`) dengan teks ringkas (8px, `color: var(--dim)` atau badge hijau 8px).
+     - Menetapkan lebar optimal kolom keparahan (`width: 96px; min-width: 90px; max-width: 105px; text-align: center`) agar muat rapi tanpa pembungkusan kata yang canggung atau pelebaran horizontal yang boros ruang.
+  2. **Ekspansi Keterbacaan Kolom Saran & Panduan Solusi (`.col-tips`):**
+     - Memperluas lebar kolom saran dari 190px menjadi 260px (`min-width: 200px; max-width: 320px; font-size: 11px`) dan menaikkan batas klem teks dari 2 baris menjadi 3 baris (`-webkit-line-clamp: 3`), sehingga rekomendasi teknis sysadmin dapat dibaca utuh tanpa terpotong terlalu dini.
+  3. **Penyempurnaan Penyelarasan Kolom Tindakan (`.col-act`):**
+     - Menstandarkan lebar kolom tindakan (`width: 90px; min-width: 85px`) dengan perataan tengah terpusat (`text-align: center; justify-content: center`) untuk tombol kontrol berikon SVG murni.
+  4. **Restorasi Menyeluruh Ikon Vektor SVG Dasbor (`dashboard.html`):**
+     - Memulihkan ikon lonceng hening SVG pada ubin *Diabaikan* di bilah keparahan dasbor (`zbx-tile-ignored`) dan badge insiden diabaikan.
+     - Mengganti titik polos pada modal keparahan (`SEV_CONFIG` & `openSevDetailModal`) dengan ikon vektor SVG yang tajam dan representatif untuk kategori Kritis, Gawat, Peringatan, Info, dan Diabaikan.
+     - Menyematkan ikon aktivitas armada server pada header kartu *Status & Kinerja*.
+     - Menampilkan ikon globe SVG pada nama host endpoint probing eksternal di dasbor dan modal rincian.
+
 ## Versi 4.7.2
 
 - **Tipe Rilis:** Restorasi Pengalih Kepadatan Dasbor, Glif Salin Vektor SVG, Proporsionalitas Tabel Insiden, dan Eliminasi Anomali Cadangan (*Restoration of Dashboard Density Switcher, SVG Vector Copy Glyph, Incident Table Proportionality & Automated Backup Telemetry Anomaly Elimination*)

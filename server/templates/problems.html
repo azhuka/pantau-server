@@ -137,60 +137,76 @@
 }
 #probtable th.col-sev,
 #probtable td.col-sev {
-  width: 80px;
-  min-width: 74px;
-  max-width: 88px;
+  width: 96px;
+  min-width: 90px;
+  max-width: 105px;
   text-align: center;
   padding: 6px 6px;
 }
 #probtable th.col-sev .badge,
 #probtable td.col-sev .badge {
-  font-size: 8px;
-  padding: 1px 4.5px;
+  font-size: 9.5px;
+  padding: 1.5px 5.5px;
   border-radius: 3px;
+  line-height: 1.25;
+  letter-spacing: 0.3px;
+  font-weight: 700;
+}
+#probtable th.col-sev .badge-sub,
+#probtable td.col-sev .badge-sub {
+  font-size: 8px;
+  padding: 0.5px 4px;
+  font-weight: 600;
   line-height: 1.2;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.1px;
+}
+#probtable td.col-sev .col-sev-sub-text {
+  font-size: 8px;
+  color: var(--dim);
+  margin-top: 1.5px;
+  white-space: nowrap;
+  line-height: 1.2;
+  display: block;
+  text-align: center;
 }
 #probtable th.col-event,
 #probtable td.col-event {
   /* Kolom Kejadian: Hero content dengan ruang fleksibel terluas & keterbacaan optimal */
   width: auto;
-  min-width: 280px;
+  min-width: 260px;
   font-size: 11px;
   line-height: 1.35;
   padding: 6px 10px;
 }
 #probtable td.col-event .badge {
-  font-size: 7.5px;
-  padding: 0.5px 3.5px;
+  font-size: 8px;
+  padding: 1px 4.5px;
 }
 #probtable th.col-durasi,
 #probtable td.col-durasi {
-  width: 85px;
-  min-width: 78px;
-  max-width: 95px;
+  width: 90px;
+  min-width: 80px;
+  max-width: 105px;
   white-space: nowrap;
   font-size: 11px;
-  letter-spacing: -0.025em;
-  word-spacing: -1px;
   padding: 6px 8px;
 }
 #probtable th.col-act,
 #probtable td.col-act {
-  width: 1%;
-  min-width: 80px;
+  width: 90px;
+  min-width: 85px;
   white-space: nowrap;
-  text-align: left;
+  text-align: center;
   padding: 6px 8px;
 }
 #probtable th.col-tips,
 #probtable td.col-tips {
-  width: 190px;
-  min-width: 160px;
-  max-width: 220px;
-  font-size: 10.5px;
+  width: 260px;
+  min-width: 200px;
+  max-width: 320px;
+  font-size: 11px;
   color: var(--dim);
-  line-height: 1.3;
+  line-height: 1.35;
   vertical-align: middle;
   padding: 6px 8px;
 }
@@ -198,32 +214,34 @@
 /* Riwayat Insiden Teratasi Proportions */
 #prob-resolved-table-wrap th.col-time-detailed,
 #prob-resolved-table-wrap td.col-time-detailed {
-  width: 135px;
-  min-width: 125px;
+  width: 145px;
+  min-width: 135px;
   white-space: nowrap;
   font-size: 11px;
   padding: 5px 6px;
 }
 #prob-resolved-table-wrap th.col-server,
 #prob-resolved-table-wrap td.col-server {
-  width: 100px;
-  min-width: 90px;
-  max-width: 120px;
+  width: 105px;
+  min-width: 95px;
+  max-width: 125px;
   font-size: 11.5px;
   padding: 5px 6px;
 }
 #prob-resolved-table-wrap th.col-sev,
 #prob-resolved-table-wrap td.col-sev {
-  width: 75px;
-  min-width: 70px;
+  width: 96px;
+  min-width: 90px;
+  max-width: 105px;
   text-align: center;
   padding: 5px 6px;
 }
 #prob-resolved-table-wrap th.col-sev .badge,
 #prob-resolved-table-wrap td.col-sev .badge {
-  font-size: 8px;
-  padding: 1px 4.5px;
+  font-size: 9.5px;
+  padding: 1.5px 5.5px;
   border-radius: 3px;
+  font-weight: 700;
 }
 #prob-resolved-table-wrap th.col-component,
 #prob-resolved-table-wrap td.col-component {
@@ -380,21 +398,21 @@
           {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
           {% if p.is_ignored and p.acknowledged_by %}
             <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-              <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">DIABAIKAN</span>
-              <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+              <span class="badge badge-muted">DIABAIKAN</span>
+              <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
             </div>
           {% elif p.is_ignored %}
             <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-              <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
-              <span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
+              <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
+              <span class="col-sev-sub-text" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
             </div>
           {% elif p.acknowledged_by %}
             <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-              <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
-              <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+              <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
+              <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
             </div>
           {% else %}
-            <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
+            <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
           {% endif %}
         </td>
         <td class="col-event">
@@ -988,13 +1006,13 @@ window.poll = async function() {
 
             let sevCellHtml = '';
             if (isIgn && p.acknowledged_by) {
-              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span> <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span> <span class="badge badge-up badge-sub" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
             } else if (isIgn) {
-              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="${(isEn ? 'Reason: ' : 'Alasan: ') + _esc(p.ignored_reason || '')}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span> <span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(isEn ? 'by ' : 'oleh ') + _esc(opName)}">(${isEn ? 'by ' : 'oleh '}${_esc(opName)})</span></div>`;
+              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" title="${(isEn ? 'Reason: ' : 'Alasan: ') + _esc(p.ignored_reason || '')}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span> <span class="col-sev-sub-text" title="${(isEn ? 'by ' : 'oleh ') + _esc(opName)}">(${isEn ? 'by ' : 'oleh '}${_esc(opName)})</span></div>`;
             } else if (p.acknowledged_by) {
-              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevLabel}</span> <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}">${rawSevLabel}</span> <span class="badge badge-up badge-sub" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
             } else {
-              sevCellHtml = `<span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevLabel}</span>`;
+              sevCellHtml = `<span class="${rawSevBadge}">${rawSevLabel}</span>`;
             }
 
             const svgLink = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;

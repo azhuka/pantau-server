@@ -1910,21 +1910,21 @@ div[style*="position: fixed"] .card {
         {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
         {% if p.is_ignored and p.acknowledged_by %}
           <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">DIABAIKAN</span>
-            <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+            <span class="badge badge-muted">DIABAIKAN</span>
+            <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
           </div>
         {% elif p.is_ignored %}
           <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
-            <span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
+            <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
+            <span class="col-sev-sub-text" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
           </div>
         {% elif p.acknowledged_by %}
           <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
-            <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+            <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
+            <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
           </div>
         {% else %}
-          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
+          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
         {% endif %}
       </td>
       <td class="col-event">
@@ -7353,13 +7353,13 @@ function renderProblemsTab(level, openList, histList) {
     
     let sevCellHtml = '';
     if (isIgnored && p.acknowledged_by) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span class="badge badge-up badge-sub" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
     } else if (isIgnored) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" style="font-size:8px;padding:1px 4.5px" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span style="font-size:7.5px;color:var(--dim);max-width:85px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)}">(${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)})</span></div>`;
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span class="col-sev-sub-text" title="${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)}">(${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)})</span></div>`;
     } else if (p.acknowledged_by) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevText}</span><span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}">${rawSevText}</span><span class="badge badge-up badge-sub" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
     } else {
-      sevCellHtml = `<span class="${rawSevBadge}" style="font-size:8px;padding:1px 4.5px">${rawSevText}</span>`;
+      sevCellHtml = `<span class="${rawSevBadge}">${rawSevText}</span>`;
     }
 
     const pMsg = isEn ? getServicesI18nText(p.message || '', true) : (p.message || '');
