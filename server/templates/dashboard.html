@@ -1270,7 +1270,7 @@ body.popout-fleet_table #dash-fleet-card {
               {% elif srv._status_label == 'Offline' %}
                 <span class="badge badge-danger" style="font-size:10px;padding:2px 7px;font-weight:700">Offline</span>
               {% elif tot_prob == 0 and ign_cnt == 0 %}
-                <span class="badge badge-up" style="font-size:10.5px;padding:2px 7px;font-weight:600">Normal</span>
+                <span class="badge badge-up" style="font-size:10.5px;padding:2px 7px;font-weight:600">Nihil</span>
               {% else %}
                 {% if d_cnt > 0 %}
                   <span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
@@ -1417,7 +1417,7 @@ body.popout-fleet_table #dash-fleet-card {
             {% if not srv.last_seen %}
               <span style="color:var(--dim)">-</span>
             {% elif tot_prob == 0 and ign_cnt == 0 %}
-              <span class="badge badge-up" style="font-size:10.5px">Normal</span>
+              <span class="badge badge-up" style="font-size:10.5px">Nihil</span>
             {% else %}
               {% if d_cnt > 0 %}<span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>{% endif %}
               {% if avg_cnt > 0 %}<span class="badge badge-orange" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>{% endif %}
@@ -1481,7 +1481,7 @@ body.popout-fleet_table #dash-fleet-card {
               <th style="padding:10px 12px;font-size:11px;width:150px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">SERVER</th>
               <th style="padding:10px 12px;font-size:11px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em">KEJADIAN / ANOMALI</th>
               <th style="padding:10px 12px;font-size:11px;width:120px;color:var(--dim);text-align:right;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">DURASI</th>
-              <th style="padding:10px 12px;font-size:11px;width:140px;color:var(--dim);text-align:center;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">AKSI</th>
+              <th style="padding:10px 12px;font-size:11px;width:140px;color:var(--dim);text-align:center;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">TINDAKAN</th>
             </tr>
           </thead>
           <tbody id="sdm-tbody"></tbody>
@@ -2043,7 +2043,7 @@ function createAndAppendDashGridCard(srv, gridEl) {
         <span style="color:var(--dim)">Layanan:</span> -
       </div>
       <div id="card-prob-${srv.id}" style="display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap">
-        <span class="badge badge-up" style="font-size:10.5px">Normal</span>
+        <span class="badge badge-up" style="font-size:10.5px">${(typeof isEn !== 'undefined' && isEn) ? 'None' : 'Nihil'}</span>
       </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.05);padding-top:7px;font-size:11px;color:var(--dim);margin-top:6px">
@@ -2323,7 +2323,7 @@ async function pollNocDashboard() {
         } else {
           const totActive = dCnt + avgCnt + wCnt + iCnt;
           if (totActive === 0 && ignCnt === 0) {
-            tblProb.innerHTML = '<span class="badge badge-up" style="font-size:10.5px;padding:2px 7px;font-weight:600">Normal</span>';
+            tblProb.innerHTML = `<span class="badge badge-up" style="font-size:10.5px;padding:2px 7px;font-weight:600">${isEn ? 'None' : 'Nihil'}</span>`;
           } else {
             let html = '';
             if (dCnt > 0) html += `<span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="${(srv.danger_msgs || (isEn ? 'Critical' : 'Kritis')).replace(/"/g, '&quot;')}">${dCnt}</span>`;
@@ -2413,7 +2413,7 @@ async function pollNocDashboard() {
         } else {
           const totActive = dCnt + avgCnt + wCnt + iCnt;
           if (totActive === 0 && ignCnt === 0) {
-            cardProb.innerHTML = '<span class="badge badge-up" style="font-size:10.5px">Normal</span>';
+            cardProb.innerHTML = `<span class="badge badge-up" style="font-size:10.5px">${isEn ? 'None' : 'Nihil'}</span>`;
           } else {
             let html = '';
             if (dCnt > 0) html += `<span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="${(srv.danger_msgs || (isEn ? 'Critical' : 'Kritis')).replace(/"/g, '&quot;')}">${dCnt}</span>`;

@@ -1366,18 +1366,18 @@ div[style*="position: fixed"] .card {
 </div>
 
 <div class="tabbar" id="detail-tabs" role="tablist">
-  <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true" id="tab-perf-btn" data-i18n="tab_perf"><span class="tab-text">Kinerja &amp; Spesifikasi</span><span id="tab-dot-perf" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab is-on" data-tab="perf" role="tab" aria-selected="true" id="tab-perf-btn" data-i18n="tab_perf"><span class="tab-text">Performa</span><span id="tab-dot-perf" class="tab-warn-dot" style="display:none"></span></button>
   {% set active_open = open_problems | rejectattr('is_ignored') | list %}
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
-  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Riwayat &amp; Masalah</span><span id="tab-dot-masalah" class="tab-warn-dot" style="display:none"></span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
-  <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Layanan</span><span id="tab-dot-layanan" class="tab-warn-dot" style="display:none"></span></button>
-  <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Manajer Tugas</span><span id="tab-dot-proses" class="tab-warn-dot" style="display:none"></span></button>
-  <button class="tab" data-tab="akun" role="tab" id="tab-akun-btn" data-i18n="tab_akun"><span class="tab-text">Akun Pengguna</span><span id="tab-dot-akun" class="tab-warn-dot" style="display:none"></span></button>
-  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn" data-i18n="tab_ports"><span class="tab-text">Port Listening</span><span id="tab-dot-ports" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Insiden</span><span id="tab-dot-masalah" class="tab-warn-dot" style="display:none"></span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}🔕 {{ ignored_open|length }}{% else %}0{% endif %}</span></button>
+  <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Services</span><span id="tab-dot-layanan" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Tasks</span><span id="tab-dot-proses" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="akun" role="tab" id="tab-akun-btn" data-i18n="tab_akun"><span class="tab-text">Users</span><span id="tab-dot-akun" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn" data-i18n="tab_ports"><span class="tab-text">Ports</span><span id="tab-dot-ports" class="tab-warn-dot" style="display:none"></span></button>
   <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn" data-i18n="tab_firewall"><span class="tab-text">Firewall</span><span id="tab-dot-firewall" class="tab-warn-dot" style="display:none"></span></button>
-  <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn" data-i18n="tab_ssl"><span class="tab-text">Sertifikat SSL</span><span id="tab-dot-ssl" class="tab-warn-dot" style="display:none"></span></button>
-  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn" data-i18n="tab_cron"><span class="tab-text">Tugas Terjadwal</span><span id="tab-dot-cron" class="tab-warn-dot" style="display:none"></span></button>
-  <button class="tab" data-tab="log" role="tab" id="tab-log-btn" data-i18n="tab_logging"><span class="tab-text">Logging</span><span id="tab-dot-log" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn" data-i18n="tab_ssl"><span class="tab-text">SSL/TLS</span><span id="tab-dot-ssl" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn" data-i18n="tab_cron"><span class="tab-text">Cron Jobs</span><span id="tab-dot-cron" class="tab-warn-dot" style="display:none"></span></button>
+  <button class="tab" data-tab="log" role="tab" id="tab-log-btn" data-i18n="tab_logging"><span class="tab-text">Logs</span><span id="tab-dot-log" class="tab-warn-dot" style="display:none"></span></button>
 </div>
 
 <div class="tab-body" id="tab-perf">
@@ -1874,7 +1874,7 @@ div[style*="position: fixed"] .card {
       <th class="col-sev" style="width:100px;min-width:95px;text-align:center">Keparahan</th>
       <th>Kejadian</th>
       <th class="col-durasi" style="width:120px;min-width:110px">Durasi</th>
-      <th class="col-act" style="width:160px;min-width:150px">Aksi</th>
+      <th class="col-act" style="width:160px;min-width:150px">Tindakan</th>
       <th class="col-tips" style="width:250px;min-width:200px">Saran</th>
     </tr></thead>
     <tbody>
@@ -2170,7 +2170,7 @@ div[style*="position: fixed"] .card {
       <th style="width:105px;min-width:95px;text-align:center" title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
       <th title="Keterangan atau hasil pemeriksaan status layanan">Keterangan</th>
       <th style="width:95px;min-width:90px;text-align:center" title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
-      <th style="width:300px;min-width:280px;text-align:center" title="Kontrol layanan: Restart, Mulai, Berhenti, Log, Abaikan/Pantau, atau Hapus">Aksi</th>
+      <th style="width:300px;min-width:280px;text-align:center" title="Kontrol layanan: Restart, Mulai, Berhenti, Log, Abaikan/Pantau, atau Hapus">Tindakan</th>
     </tr></thead>
     <tbody>
     {% for svc in services %}
@@ -2323,7 +2323,7 @@ div[style*="position: fixed"] .card {
             %Memori <span id="sort-icon-mem" style="font-size:11px;opacity:0.6">↕</span>
           </th>
           {% if user.has_perm('can_processes') %}
-          <th style="width:170px;text-align:center">Aksi</th>
+          <th style="width:170px;text-align:center">Tindakan</th>
           {% endif %}
         </tr>
       </thead>
@@ -2361,7 +2361,7 @@ div[style*="position: fixed"] .card {
             <th title="Pengguna Linux yang menjalankan perintah">Pengguna</th>
             <th title="Perintah atau skrip yang dieksekusi">Perintah (Command)</th>
             <th title="Lokasi berkas konfigurasi cron pada server">Sumber Berkas</th>
-            <th>Aksi</th>
+            <th>Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -2547,7 +2547,7 @@ div[style*="position: fixed"] .card {
             <th>Paket Terblokir</th>
             <th>Total Byte</th>
             {% if user.has_perm('can_firewall') %}
-            <th style="width:120px;text-align:right">Aksi</th>
+            <th style="width:120px;text-align:right">Tindakan</th>
             {% endif %}
           </tr>
         </thead>
@@ -2604,7 +2604,7 @@ div[style*="position: fixed"] .card {
             <th>Shell</th>
             <th>Login Terakhir</th>
             <th>Sesi Aktif</th>
-            <th>Aksi</th>
+            <th>Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -2721,7 +2721,7 @@ div[style*="position: fixed"] .card {
             <th title="Alamat IP yang di-bind oleh socket">Bind IP</th>
             <th title="Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)">Akses</th>
             <th title="Nama proses sistem dan PID yang membuka port ini">Proses &amp; PID</th>
-            <th title="Aksi yang dapat dilakukan pada port ini">Aksi</th>
+            <th title="Aksi yang dapat dilakukan pada port ini">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -2804,7 +2804,7 @@ div[style*="position: fixed"] .card {
             <th title="Sisa hari sebelum sertifikat habis masa berlakunya">Sisa Hari</th>
             <th title="Status kesehatan sertifikat">Status</th>
             <th title="Lokasi berkas sertifikat di filesystem server">Lokasi Berkas</th>
-            <th>Aksi</th>
+            <th>Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -6804,7 +6804,7 @@ function renderProblemsTab(level, openList, histList) {
       <th class="col-sev" style="width:100px;min-width:95px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
       <th>${isEn ? 'Event' : 'Kejadian'}</th>
       <th class="col-durasi" style="width:120px;min-width:110px">${isEn ? 'Duration' : 'Durasi'}</th>
-      <th class="col-act" style="width:160px;min-width:150px">${isEn ? 'Action' : 'Aksi'}</th>
+      <th class="col-act" style="width:160px;min-width:150px">${isEn ? 'Action' : 'Tindakan'}</th>
       <th class="col-tips" style="width:250px;min-width:200px">${isEn ? 'Advice' : 'Saran'}</th>
     </tr></thead>
     <tbody>`;

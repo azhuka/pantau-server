@@ -311,6 +311,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.6.20
+
+- **Tipe Rilis:** Pemulihan Integritas Nomenklatur Baku Antarmuka, Restorasi Status Masalah Nihil & Penguncian Aturan Tata Letak (*Restoration of Standard UI Nomenclature, Dashboard Nihil Problem Status & Layout Rules Enforcement*)
+- **Fokus Utama:** Memulihkan dan mengunci secara permanen seluruh keputusan desain baku, terminologi ergonomis, dan konvensi antarmuka yang sebelumnya telah ditetapkan oleh operator/developer namun sempat tergeser atau tertimpa selama proses refactoring:
+  1. **Restorasi Status Masalah "Nihil" di Dashboard:** Mengembalikan teks badge kolom masalah berstatus aman pada tabel armada server dan kartu grid NOC menjadi **`Nihil`** (atau `None` dalam bahasa Inggris) sesuai instruksi asli, menggantikan teks `Normal`.
+  2. **Restorasi Nama Tab Rincian Server (`services.html`):** Menyelaraskan kembali judul navigasi 10 tab rincian server sesuai nomenklatur teknis baku yang telah disepakati: `[ Performa ] [ Insiden ] [ Services ] [ Tasks ] [ Users ] [ Ports ] [ Firewall ] [ SSL/TLS ] [ Cron Jobs ] [ Logs ]`.
+  3. **Standarisasi Menyeluruh Kolom "Tindakan":** Mengganti seluruh judul kolom tabel kontrol antarmuka di seluruh berkas template (`dashboard.html`, `services.html`, `problems.html`, `servers.html`, `profile.html`, `users.html`, `file_manager.html`, `probing.html`, `base.html`) dari istilah `Aksi` menjadi istilah baku **`Tindakan`**.
+  4. **Proteksi & Larangan Mutlak Terhadap Improvisasi Liar:** Menetapkan guardrail ketat bahwa seluruh perbaikan di masa mendatang wajib menerapkan prinsip perubahan bedah minimal (*surgical patch*) tanpa merombak atau menulis ulang fungsi, tata letak, atau terminologi yang sudah mapan.
+
+---
+
 ## Versi 4.6.19
 
 - **Tipe Rilis:** Standarisasi Pengabaian Insiden Universal & Dekomisioning Insiden Dikenal dari Kartu Insiden Terkini (*Universal Incident Silencing Standardization & Decommissioning Recognized Incidents from Recent Incidents Card*)
