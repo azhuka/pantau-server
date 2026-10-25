@@ -12053,7 +12053,7 @@ async def user_edit_submit(
         return RedirectResponse("/", status_code=303)
     can_manage_users = user.is_master_admin() or user.has_perm("can_manage_users")
     can_manage_viewers = can_manage_users or user.has_perm("can_manage_viewers")
-    if not can_manage_viewers:
+    if uid != user.id and not can_manage_viewers:
         return RedirectResponse("/profile?tab=users", status_code=303)
     _verify_csrf_form(request, csrf_token)
 
@@ -12064,14 +12064,19 @@ async def user_edit_submit(
     if target_u.is_master_admin() and not user.is_master_admin():
         return RedirectResponse(_flash_profile_users(False, "Pengguna tidak ditemukan"), status_code=303)
 
-    if not can_manage_users and target_u.role != "viewer":
+    if uid != user.id and not can_manage_users and target_u.role != "viewer":
         return RedirectResponse(_flash_profile_users(False, "Pengguna tidak ditemukan"), status_code=303)
 
     # 1. Update username bila valid
     clean_user = username.strip()
     if not re.match(r"^[a-zA-Z0-9_\-\.]{3,50}$", clean_user):
         return RedirectResponse(_flash_profile_users(False, "Username harus 3-50 karakter alfanumerik (hanya huruf, angka, _, -, .)"), status_code=303)
+
     if clean_user != target_u.username:
+        if uid == user.id:
+            cur_pwd = current_password.strip()
+            if not cur_pwd or not pwd_ctx.verify(cur_pwd, user.password_hash):
+                return RedirectResponse(_flash_profile_users(False, "Kata sandi saat ini tidak cocok"), status_code=303)
         dup = db.query(User).filter(User.username == clean_user, User.id != uid).first()
         if dup:
             return RedirectResponse(_flash_profile_users(False, f"Username '{clean_user}' sudah dipakai pengguna lain"), status_code=303)
@@ -12088,7 +12093,7 @@ async def user_edit_submit(
 
         # Validasi kecocokan konfirmasi kata sandi
         conf_pwd = confirm_password.strip()
-        if conf_pwd and pwd_clean != conf_pwd:
+        if pwd_clean != conf_pwd:
             return RedirectResponse(_flash_profile_users(False, "Konfirmasi kata sandi baru tidak cocok"), status_code=303)
 
         valid, err_msg = security_auth.validate_password_strength(pwd_clean)

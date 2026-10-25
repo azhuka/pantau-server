@@ -72,7 +72,7 @@
 <div class="tabbar" role="tablist">
   <button type="button" id="tab-btn-users" class="tab {% if active_tab != 'branding' %}is-on{% endif %}" onclick="switchProfileTab('users')">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-    {% if can_manage_any %}Manajemen Pengguna &amp; Hak Akses{% else %}Profil &amp; Hak Akses Saya{% endif %}
+    {% if can_manage_any %}Manajemen Pengguna &amp; Hak Akses{% else %}Profil &amp; Hak Akses{% endif %}
     {% if can_manage_any %}
     <span class="badge" style="background:rgba(56,189,248,0.15);color:var(--blue);border:1px solid rgba(56,189,248,0.3);font-size:10px;padding:1px 6px">{{ users|length }}</span>
     {% endif %}
@@ -164,13 +164,6 @@
           </div>
           {% endif %}
         </div>
-      </div>
-
-      <div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:8px">
-        <button type="button" class="btn btn-primary btn-sm" onclick="openChangePasswordModal()" style="font-size:11.5px;padding:6px 14px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-          Ubah Kata Sandi Saya
-        </button>
       </div>
     </div>
 
@@ -430,11 +423,11 @@
 
                   <!-- Tombol 2: EDIT Akun Pengguna -->
                   {% if u.id == user.id %}
-                  <!-- Edit Akun Sendiri: Membuka Modal Ubah Kata Sandi Saya (Wajib Sandi Lama) -->
-                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick="openChangePasswordModal()" title="Ubah kata sandi akun Anda">
+                  <!-- Edit Akun Sendiri: Membuka Modal Edit Akun (Username & Kata Sandi) -->
+                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick="openEditMyAccountModal()" title="Edit kredensial akun Anda (username &amp; kata sandi)">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </svg>
                     <span>Edit</span>
                   </button>
@@ -847,48 +840,54 @@
 </div>
 
 <!-- ======================================================================= -->
-<!-- MODAL: UBAH KATA SANDI SAYA (WAJIB KATA SANDI SAAT INI)                  -->
+<!-- MODAL: EDIT AKUN SENDIRI (USERNAME & KATA SANDI)                         -->
 <!-- ======================================================================= -->
-<div id="changePasswordModal" class="modal-backdrop" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)" onclick="if(event.target===this)closeChangePasswordModal()">
+<div id="editMyAccountModal" class="modal-backdrop" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)" onclick="if(event.target===this)closeEditMyAccountModal()">
   <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:480px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.7);overflow:hidden">
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="width:32px;height:32px;border-radius:8px;background:rgba(56,189,248,0.12);display:flex;align-items:center;justify-content:center;color:var(--blue)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
           </svg>
         </div>
         <div>
-          <h3 style="font-size:15px;font-weight:700;margin:0">Ubah Kata Sandi Saya</h3>
-          <span style="font-size:11px;color:var(--dim)">Akun: <strong style="color:var(--text);font-family:ui-monospace,monospace">{{ user.username }}</strong></span>
+          <h3 style="font-size:15px;font-weight:700;margin:0">Edit Akun: {{ user.username }}</h3>
+          <span style="font-size:11px;color:var(--dim)">Perbarui kredensial akun Anda.</span>
         </div>
       </div>
-      <button type="button" onclick="closeChangePasswordModal()" class="btn btn-ghost btn-sm" style="padding:4px 8px;border-radius:6px" aria-label="Tutup">
+      <button type="button" onclick="closeEditMyAccountModal()" class="btn btn-ghost btn-sm" style="padding:4px 8px;border-radius:6px" aria-label="Tutup">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
     </div>
 
-    <form method="POST" action="/profile/password" style="padding:20px">
+    <form method="POST" action="/users/{{ user.id }}/edit" style="padding:20px">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
       <div class="form-group" style="margin-bottom:14px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Kata Sandi Saat Ini</label>
-        <input type="password" name="current_password" required autocomplete="current-password" placeholder="Masukkan kata sandi lama Anda" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Username</label>
+        <input type="text" name="username" value="{{ user.username }}" required minlength="3" maxlength="50" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:ui-monospace,monospace">
       </div>
 
       <div class="form-group" style="margin-bottom:14px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Kata Sandi Baru</label>
-        <input type="password" id="p-new" name="new_password" required autocomplete="new-password" placeholder="Minimal 12 karakter kombinasi kuat" oninput="checkStrength(this.value)" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Kata Sandi Saat Ini</label>
+        <input type="password" name="current_password" autocomplete="current-password" placeholder="Masukkan kata sandi saat ini untuk konfirmasi" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <div style="font-size:10.5px;color:var(--dim);margin-top:4px">Wajib dimasukkan jika Anda mengubah username atau mengganti kata sandi.</div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Kata Sandi Baru <span style="font-weight:normal;color:var(--dim);text-transform:none">(Opsional)</span></label>
+        <input type="password" id="p-new" name="password" autocomplete="new-password" placeholder="Kosongkan jika kata sandi tidak ingin diubah" oninput="checkStrength(this.value)" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
         <div id="strength-meter" style="height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:6px;overflow:hidden">
           <div id="strength-bar" style="width:0%;height:100%;transition:all .2s"></div>
         </div>
-        <div id="strength-label" style="font-size:11px;color:var(--dim);margin-top:4px">Minimal 12 karakter, huruf besar, huruf kecil, angka, dan simbol.</div>
+        <div id="strength-label" style="font-size:10.5px;color:var(--dim);margin-top:4px">Jika diisi, minimal 12 karakter kombinasi huruf besar, kecil, angka, dan simbol.</div>
       </div>
 
       <div class="form-group" style="margin-bottom:16px">
         <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Konfirmasi Kata Sandi Baru</label>
-        <input type="password" name="confirm_password" required autocomplete="new-password" placeholder="Ulangi kata sandi baru" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <input type="password" name="confirm_password" autocomplete="new-password" placeholder="Ulangi kata sandi baru" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
       </div>
 
       <div style="font-size:11.5px;color:var(--dim);line-height:1.4;margin-bottom:16px;background:rgba(56,189,248,0.06);padding:10px;border-radius:6px;border-left:3px solid var(--blue)">
@@ -896,12 +895,12 @@
       </div>
 
       <div style="display:flex;justify-content:flex-end;gap:10px">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="closeChangePasswordModal()" style="font-size:12px;padding:8px 14px">Batal</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="closeEditMyAccountModal()" style="font-size:12px;padding:8px 14px">Batal</button>
         <button type="submit" class="btn btn-primary btn-sm" style="font-size:12px;padding:8px 18px;font-weight:700">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          Simpan Kata Sandi Baru
+          Simpan
         </button>
       </div>
     </form>
@@ -1067,7 +1066,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          Simpan Perubahan
+          Simpan
         </button>
       </div>
     </form>
@@ -1187,15 +1186,17 @@ function switchProfileTab(tabName) {
   }
 }
 
-// Modal Ubah Kata Sandi Saya
-function openChangePasswordModal() {
-  const modal = document.getElementById('changePasswordModal');
+// Modal Edit Akun Sendiri (Username & Kata Sandi)
+function openEditMyAccountModal() {
+  const modal = document.getElementById('editMyAccountModal');
   if (modal) modal.style.display = 'flex';
 }
-function closeChangePasswordModal() {
-  const modal = document.getElementById('changePasswordModal');
+function closeEditMyAccountModal() {
+  const modal = document.getElementById('editMyAccountModal');
   if (modal) modal.style.display = 'none';
 }
+function openChangePasswordModal() { openEditMyAccountModal(); }
+function closeChangePasswordModal() { closeEditMyAccountModal(); }
 
 // Modal Pasang 2FA Akun Aktif
 function openSetupMy2faModal() {

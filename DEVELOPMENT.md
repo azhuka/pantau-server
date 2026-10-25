@@ -311,6 +311,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.0
+
+- **Tipe Rilis:** Eliminasi Tombol Ubah Sandi pada Kartu Identitas, Integrasi Edit Akun Mandiri Terpadu via Tabel Pengguna, dan Penyederhanaan Tombol Simpan (*Account Card Password Action Elimination, Unified Self-Service Edit via User Table, and Streamlined Modal Save Controls*)
+- **Fokus Utama:** Menyederhanakan dan merapikan antarmuka manajemen pengguna sesuai standar UI/UX profesional:
+  1. **Eliminasi Tombol "Ubah Kata Sandi Saya" pada Kartu Identitas (`profile.html`):**
+     - Menghapus tombol redundan "Ubah Kata Sandi Saya" dari panel kartu *Informasi Identitas & Status*. Panel kini murni menyajikan ringkasan identitas, peran, sesi aktif, dan wewenang pengguna tanpa tombol aksi yang membingungkan.
+     - Mengubah label tab personal non-pengelola dari "Profil & Hak Akses Saya" menjadi "Profil & Hak Akses" yang lebih formal dan baku.
+  2. **Integrasi Edit Akun Mandiri Terpadu (Username & Kata Sandi) via Tombol Edit Tabel (`profile.html` & `main.py`):**
+     - Tombol **Edit** pada baris akun yang sedang login di tabel pengguna (`#users-table`) menjadi satu-satunya titik kontrol (*single point of entry*) untuk pembaruan kredensial pribadi.
+     - Membuka modal dialog **Edit Akun: [username]** dengan ikon pensil standar, yang memungkinkan pengubahan username dan/atau penggantian kata sandi dengan validasi kata sandi saat ini (kata sandi lama) demi keamanan sesi.
+     - Menjadikan kolom kata sandi baru bersifat opsional bila operator hanya bermaksud mengubah username.
+     - Endpoint backend `POST /users/{uid}/edit` diperkuat untuk memvalidasi kata sandi saat ini pada akun sendiri saat mengubah username atau password, memastikan konsistensi dan integritas data.
+  3. **Penyederhanaan Label Tombol Konfirmasi Menjadi "Simpan":**
+     - Menyederhanakan label tombol submit pada modal edit akun mandiri dari *"Simpan Kata Sandi Baru"* menjadi **"Simpan"**.
+     - Menyederhanakan label tombol submit pada modal edit akun staf dari *"Simpan Perubahan"* menjadi **"Simpan"** demi konsistensi visual dan kemudahan operasional NOC.
+
 ## Versi 4.7.9
 
 - **Tipe Rilis:** Penyatuan Terpadu Manajemen Pengguna & Keamanan Kredensial, Eliminasi Tab Berlebih, Penegasan Alur Ubah Kata Sandi Pribadi vs Reset Sandi Staf, dan Penegakan Akun Tunggal Master Admin (*Unified User & Access Management UI, Tab Redundancy Elimination, Strict Self-Service vs Administrative Password Reset Segregation, and Enforced Single Master Admin Topology*)
