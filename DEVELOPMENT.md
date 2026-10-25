@@ -311,6 +311,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.1
+
+- **Tipe Rilis:** Penataan Ulang Kolom Platform / IP Vertikal Proporsional pada Mode Standar Dasbor, dan Preservasi Total Mode Kompak (*Standard Mode Dashboard Platform / IP Vertical Layout & Total Compact Mode Preservation*)
+- **Fokus Utama:** Menyempurnakan keterbacaan data armada pada kartu Status & Kinerja dasbor utama (`dashboard.html`):
+  1. **Penataan Vertikal Dua Baris Kolom Platform / IP Mode Standar:**
+     - Mengubah judul kolom dari *IP & Platform* menjadi **Platform / IP** pada Mode Standar agar selaras dengan hierarki konten sel.
+     - Menyusun isi sel menjadi dua baris vertikal rapi: Baris 1 menampilkan badge jenis platform (misal `VM (KVM)`, `LXC Container`, atau `Baremetal`), dan Baris 2 menampilkan alamat IP host (`172.30.1.40`) yang dapat disalin secara instan.
+     - Penataan dua baris ini menciptakan proporsionalitas dan keseimbangan vertikal yang harmonis dengan kolom CPU, RAM, dan Penyimpanan (Storage) yang juga berformat dua baris.
+  2. **Preservasi Total Tata Letak Mode Kompak Tanpa Perubahan:**
+     - Menjaga integritas Mode Kompak secara ketat (`jangan ubah apapun pada mode kompak`).
+     - Pada Mode Kompak, tabel tetap mempertahankan judul *IP & Platform*, tata letak satu baris horizontal rapat (`flex-direction: row; line-height: 1; height: 25px`), dan keseragaman ukuran font tanpa ada pergeseran visual.
+  3. **Integritas Tabel Lain Bebas Disrupsi:**
+     - Mempertahankan tabel-tabel satu baris lainnya (`servers.html`, `problems.html`, `services.html`, dan `profile.html`) tetap pada format aslinya yang bersih, proporsional, dan elegan tanpa pemecahan baris yang tidak perlu.
+
 ## Versi 4.8.0
 
 - **Tipe Rilis:** Eliminasi Tombol Ubah Sandi pada Kartu Identitas, Integrasi Edit Akun Mandiri Terpadu via Tabel Pengguna, dan Penyederhanaan Tombol Simpan (*Account Card Password Action Elimination, Unified Self-Service Edit via User Table, and Streamlined Modal Save Controls*)

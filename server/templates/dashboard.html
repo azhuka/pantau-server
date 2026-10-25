@@ -189,6 +189,33 @@
   color: var(--text);
   transition: padding .15s ease;
 }
+/* Mode Standar: Platform / IP ditata vertikal 2 baris (Baris 1: Platform, Baris 2: IP) */
+#dash-server-table:not(.tbl-compact) .th-plat-std {
+  display: inline !important;
+}
+#dash-server-table:not(.tbl-compact) .th-plat-cpt {
+  display: none !important;
+}
+#dash-server-table:not(.tbl-compact) .tbl-plat-ip-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2.5px;
+  line-height: 1.2;
+}
+#dash-server-table:not(.tbl-compact) .tbl-plat-wrap {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+#dash-server-table:not(.tbl-compact) .tbl-ip-wrap {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  line-height: 1.1;
+  color: var(--text);
+}
 /* Mode Kompak (Ultra-Slim 1 Baris per Server) - Keseragaman Total Tipografi */
 #dash-server-table.tbl-compact {
   border-spacing: 0;
@@ -238,7 +265,17 @@
 #dash-server-table.tbl-compact .copyable-ip {
   line-height: 1 !important;
 }
-#dash-server-table.tbl-compact td:nth-child(4) div {
+#dash-server-table.tbl-compact .th-plat-std {
+  display: none !important;
+}
+#dash-server-table.tbl-compact .th-plat-cpt {
+  display: inline !important;
+}
+#dash-server-table.tbl-compact td:nth-child(4) div,
+#dash-server-table.tbl-compact .tbl-plat-ip-box {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
   gap: 3px !important;
   line-height: 1 !important;
 }
@@ -250,6 +287,14 @@
 #dash-server-table.tbl-compact td:nth-child(4) .badge svg {
   width: 8px !important;
   height: 8px !important;
+}
+#dash-server-table.tbl-compact .tbl-plat-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+#dash-server-table.tbl-compact .tbl-ip-wrap {
+  font-size: 11.5px !important;
+  line-height: 1 !important;
 }
 #dash-server-table.tbl-compact td:nth-child(10) div {
   gap: 2px !important;
@@ -1089,7 +1134,7 @@ body.popout-fleet_table #dash-fleet-card {
           <th class="sortable" data-col="0" style="vertical-align:middle;cursor:pointer;width:115px;min-width:100px;text-align:left" title="Nama host server">Server <span class="sort-arrow">↕</span></th>
           <th class="sortable" data-col="1" style="vertical-align:middle;cursor:pointer;width:65px;min-width:60px;text-align:center" title="Status koneksi server saat ini">Status <span class="sort-arrow">↕</span></th>
           <th class="sortable" data-col="2" style="vertical-align:middle;cursor:pointer;width:70px;min-width:65px;text-align:center" title="Tingkat prioritas dan peran layanan">Prioritas <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="3" style="vertical-align:middle;cursor:pointer;width:115px;min-width:105px;text-align:left" title="Alamat IP dan jenis platform">IP &amp; Platform <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="3" style="vertical-align:middle;cursor:pointer;width:120px;min-width:110px;text-align:left" title="Platform dan alamat IP server"><span class="th-plat-std">Platform / IP</span><span class="th-plat-cpt" style="display:none">IP &amp; Platform</span> <span class="sort-arrow">↕</span></th>
           <th class="sortable" data-col="4" style="vertical-align:middle;cursor:pointer;width:70px;min-width:65px;text-align:center" title="Waktu aktif sejak reboot terakhir">Uptime <span class="sort-arrow">↕</span></th>
           <th class="sortable" data-col="5" style="vertical-align:middle;cursor:pointer;width:140px;min-width:130px;text-align:center" title="Persentase beban CPU, visual meter dan jumlah inti prosesor">CPU (%) <span class="sort-arrow">↕</span></th>
           <th class="sortable" data-col="6" style="vertical-align:middle;cursor:pointer;width:165px;min-width:150px;text-align:center" title="Persentase beban RAM, visual meter dan pemakaian memori">RAM (%) <span class="sort-arrow">↕</span></th>
@@ -1165,10 +1210,10 @@ body.popout-fleet_table #dash-fleet-card {
             {% endif %}
           </td>
 
-          <!-- 3. IP & Platform (Ramping & Efisien) -->
+          <!-- 3. Platform / IP -->
           <td data-sort-val="{{ srv.ip_address }}" style="white-space:nowrap;vertical-align:middle">
-            <div style="display:inline-flex;align-items:center;gap:5px">
-              <span id="tbl-plat-{{ srv.id }}">
+            <div class="tbl-plat-ip-box">
+              <span id="tbl-plat-{{ srv.id }}" class="tbl-plat-wrap">
               {% if srv._platform %}
                 {% set p_label = srv._platform.short_label|upper %}
                 {% if p_label == 'FISIK' %}{% set p_label = 'BAREMETAL' %}{% endif %}
@@ -1184,7 +1229,7 @@ body.popout-fleet_table #dash-fleet-card {
                 </span>
               {% endif %}
               </span>
-              <span class="copyable-ip mono" id="tbl-ip-{{ srv.id }}" style="font-size:11.5px;color:var(--text)" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
+              <span class="copyable-ip mono tbl-ip-wrap" id="tbl-ip-{{ srv.id }}" style="font-size:11.5px;color:var(--text)" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
             </div>
           </td>
 
@@ -1945,9 +1990,9 @@ function createAndAppendDashTableRow(srv, tbody) {
       ${getTierBadgeHtml(srv.tier)}
     </td>
     <td style="white-space:nowrap;vertical-align:middle">
-      <div style="display:inline-flex;align-items:center;gap:5px">
-        <span id="tbl-plat-${srv.id}">${getPlatformBadgeHtml(srv.platform)}</span>
-        <span class="copyable-ip mono" id="tbl-ip-${srv.id}" style="font-size:11.5px;color:var(--text)" onclick="copyIp('${_dashEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_dashEsc(srv.ip_address || '-')}</span>
+      <div class="tbl-plat-ip-box">
+        <span id="tbl-plat-${srv.id}" class="tbl-plat-wrap">${getPlatformBadgeHtml(srv.platform)}</span>
+        <span class="copyable-ip mono tbl-ip-wrap" id="tbl-ip-${srv.id}" style="font-size:11.5px;color:var(--text)" onclick="copyIp('${_dashEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_dashEsc(srv.ip_address || '-')}</span>
       </div>
     </td>
     <td class="mono" id="tbl-uptime-${srv.id}" style="font-size:11.5px;text-align:center;vertical-align:middle;color:var(--text)">-</td>
