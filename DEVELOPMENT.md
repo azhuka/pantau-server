@@ -311,6 +311,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.7.9
+
+- **Tipe Rilis:** Penyatuan Terpadu Manajemen Pengguna & Keamanan Kredensial, Eliminasi Tab Berlebih, Penegasan Alur Ubah Kata Sandi Pribadi vs Reset Sandi Staf, dan Penegakan Akun Tunggal Master Admin (*Unified User & Access Management UI, Tab Redundancy Elimination, Strict Self-Service vs Administrative Password Reset Segregation, and Enforced Single Master Admin Topology*)
+- **Fokus Utama:** Menyempurnakan alur operasional manajemen akun pengguna dan keamanan kredensial sesuai hierarki RBAC 3-tier:
+  1. **Penyatuan Halaman Profil Menjadi Tab Terpadu Manajemen Pengguna (`profile.html`):**
+     - Mengeliminasi tab terpisah "Akun Saya" yang membuat navigasi ganda dan tidak efisien bagi administrator.
+     - Memindahkan kartu "Informasi Identitas & Status" serta kartu "Autentikasi Dua Langkah (2FA / TOTP)" akun aktif ke bagian atas tab Manajemen Pengguna dalam format grid 2 kolom berkepadatan tinggi (*high density*).
+     - Menampilkan wewenang operasional aktif dan status 2FA secara seketika tanpa perlu berpindah tab.
+     - Bagi peran Operator tanpa izin kelola pengguna, halaman otomatis beradaptasi menampilkan profil pribadi dan pengaturan kredensial tanpa tabel pengguna lain.
+  2. **Pemisahan Tegas Alur Ubah Kata Sandi Pribadi vs Reset Kata Sandi Staf:**
+     - Tombol **Edit** pada baris akun yang sedang login (`u.id == user.id`) kini membuka modal khusus **Ubah Kata Sandi Saya** yang mewajibkan verifikasi kata sandi saat ini (kata sandi lama), kata sandi baru, dan konfirmasi kata sandi baru. Menghilangkan celah bypass kata sandi lama pada akun sendiri.
+     - Tombol **Edit** pada baris akun pengguna lain (`u.id != user.id`) membuka modal **Edit Akun & Hak Akses** yang berfokus pada pendelegasian peran, wewenang operator, status akun, serta opsi **Reset Kata Sandi Pengguna (Admin Override)** dengan konfirmasi kata sandi baru tanpa menanyakan kata sandi lama milik staf tersebut.
+  3. **Penegakan Aturan Tunggal Master Admin & Pembersihan Akun Sisa Pengujian:**
+     - Mengidentifikasi dan menghapus secara permanen akun-akun sisa pengujian sebelumnya (`test_operator` dan `admin`) dari basis data beserta seluruh sesinya.
+     - Memastikan kepatuhan total prinsip *least privilege* dengan hanya 1 akun Master Admin resmi di sistem (`master-admin`).
+
 ## Versi 4.7.8
 
 - **Tipe Rilis:** Reduksi Tipografi Tabel Non-Dasbor 2 Tingkat, Keseragaman Mutlak Tipografi Mode Dasbor (Standar vs Kompak), dan Optimalisasi Ruang Tabel NOC Dinamis (*Non-Dashboard Table 2-Step Typography Reduction, Strict Dashboard Typography Mode Parity, and Dynamic High-Density NOC Table Spacing*)

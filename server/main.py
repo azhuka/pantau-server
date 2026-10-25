@@ -11649,7 +11649,7 @@ def _render_profile_page(
     newly_generated_codes: list = None,
     flash_ok: bool = None,
     flash_msg: str = None,
-    active_tab: str = "me",
+    active_tab: str = "users",
 ):
     raw_secret = ""
     formatted_secret = ""
@@ -11720,7 +11720,9 @@ def profile_page(request: Request, db: Session = Depends(get_db)):
     elif flash_ok is not None:
         flash_ok = flash_ok == "1"
 
-    active_tab = request.query_params.get("tab", "me")
+    active_tab = request.query_params.get("tab", "users")
+    if active_tab == "me":
+        active_tab = "users"
 
     return _render_profile_page(
         request=request,
@@ -11749,14 +11751,14 @@ def profile_change_password(
     _verify_csrf_form(request, csrf_token)
 
     if not pwd_ctx.verify(current_password, user.password_hash):
-        return RedirectResponse("/profile" + _flash_qs(False, "Kata sandi saat ini tidak cocok"), status_code=303)
+        return RedirectResponse(_flash_profile_users(False, "Kata sandi saat ini tidak cocok"), status_code=303)
 
     if new_password != confirm_password:
-        return RedirectResponse("/profile" + _flash_qs(False, "Konfirmasi kata sandi baru tidak cocok"), status_code=303)
+        return RedirectResponse(_flash_profile_users(False, "Konfirmasi kata sandi baru tidak cocok"), status_code=303)
 
     valid, err_msg = security_auth.validate_password_strength(new_password)
     if not valid:
-        return RedirectResponse("/profile" + _flash_qs(False, err_msg), status_code=303)
+        return RedirectResponse(_flash_profile_users(False, err_msg), status_code=303)
 
     user.password_hash = pwd_ctx.hash(new_password)
     user.password_changed_at = datetime.utcnow()
@@ -11768,7 +11770,7 @@ def profile_change_password(
 
     _audit(db, user.username, "change_password", "profil sendiri", "berhasil (sesi lain dicabut)")
     db.commit()
-    return RedirectResponse("/profile" + _flash_qs(True, "Kata sandi berhasil diperbarui. Sesi perangkat lain telah dicabut."), status_code=303)
+    return RedirectResponse(_flash_profile_users(True, "Kata sandi berhasil diperbarui. Sesi perangkat lain telah dicabut."), status_code=303)
 
 
 @app.post("/profile/2fa/enable")
@@ -12039,6 +12041,8 @@ async def user_edit_submit(
     request: Request, uid: int,
     username: str = Form(...),
     password: str = Form(default=""),
+    confirm_password: str = Form(default=""),
+    current_password: str = Form(default=""),
     role: str = Form("viewer"),
     is_active: str = Form(default="1"),
     csrf_token: str = Form(default=""),
@@ -12076,13 +12080,28 @@ async def user_edit_submit(
     # 2. Update password baru bila diisi
     pwd_clean = password.strip()
     if pwd_clean:
+        # Jika mengedit akun sendiri, wajib validasi kata sandi saat ini
+        if uid == user.id:
+            cur_pwd = current_password.strip()
+            if not cur_pwd or not pwd_ctx.verify(cur_pwd, user.password_hash):
+                return RedirectResponse(_flash_profile_users(False, "Kata sandi saat ini tidak cocok"), status_code=303)
+
+        # Validasi kecocokan konfirmasi kata sandi
+        conf_pwd = confirm_password.strip()
+        if conf_pwd and pwd_clean != conf_pwd:
+            return RedirectResponse(_flash_profile_users(False, "Konfirmasi kata sandi baru tidak cocok"), status_code=303)
+
         valid, err_msg = security_auth.validate_password_strength(pwd_clean)
         if not valid:
             return RedirectResponse(_flash_profile_users(False, err_msg), status_code=303)
         target_u.password_hash = pwd_ctx.hash(pwd_clean)
         target_u.password_changed_at = datetime.utcnow()
-        # Cabut seluruh sesi aktif milik akun target
-        db.query(AppSession).filter(AppSession.user_id == uid).delete(synchronize_session=False)
+        # Cabut sesi aktif (kecuali sesi saat ini jika mengubah sandi sendiri)
+        if uid == user.id:
+            cur_sid = request.cookies.get(SESSION_COOKIE)
+            db.query(AppSession).filter(AppSession.user_id == uid, AppSession.sid != cur_sid).delete(synchronize_session=False)
+        else:
+            db.query(AppSession).filter(AppSession.user_id == uid).delete(synchronize_session=False)
 
     # 3. Update status aktif (kecuali Master Admin atau diri sendiri)
     if not target_u.is_master_admin() and uid != user.id:
@@ -12091,8 +12110,8 @@ async def user_edit_submit(
             db.query(AppSession).filter(AppSession.user_id == uid).delete(synchronize_session=False)
         target_u.is_active = new_act
 
-    # 4. Update peran & izin (kecuali Master Admin)
-    if not target_u.is_master_admin():
+    # 4. Update peran & izin (kecuali Master Admin atau diri sendiri)
+    if not target_u.is_master_admin() and uid != user.id:
         if role in ("operator", "viewer"):
             target_u.role = role
         if target_u.role == "operator":
