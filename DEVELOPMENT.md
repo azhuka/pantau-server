@@ -311,6 +311,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.2
+
+- **Tipe Rilis:** Reduksi Ukuran Teks IP dan Standarisasi Badge Indikator Warna Berukuran Kecil pada Seluruh Tabel (*IP Text Size Reduction & Unified Small Colored Indicator Badges Across All Fleet Tables*)
+- **Fokus Utama:** Mengoptimalkan kepadatan visual dan konsistensi representasi warna status pada seluruh tabel monitoring NOC:
+  1. **Reduksi Teks Alamat IP Menjadi Kecil (9.5px Monospace):**
+     - Mengubah ukuran tipografi teks alamat IP pada seluruh tabel armada (`.copyable-ip`, `.tbl-ip-wrap`) menjadi `9.5px` monospace.
+     - Menjadikan alamat IP terlihat rapi, bersih, dan sekunder dibandingkan nama host tanpa mengurangi fungsionalitas salin cepat satu kali klik.
+  2. **Standarisasi Seluruh Indikator Warna Menjadi Berukuran Kecil (8px):**
+     - Memperkecil seluruh teks badge berstatus warna (seperti `ONLINE` hijau, `OFFLINE` merah, `PEMELIHARAAN` kuning, `NIHIL` hijau, `TIER-1/2/3`, badge platform `VM (KVM)`, `LXC`, `BAREMETAL`, dan tingkat keparahan insiden) menjadi `8px` dengan padding `0.5px 4.5px`, font-weight `700`, dan letter-spacing proporsional.
+     - Rasional desain: Warna badge telah secara visual mengomunikasikan status dengan sangat jelas kepada operator (hijau = normal/online/nihil, merah = kritis/offline, oranye = gawat, kuning = peringatan, biru = info). Teks kecil mempertahankan kepadatan informasi tinggi dan mencegah tabel terlihat penuh/membingungkan operator.
+  3. **Penyempurnaan Badge Pill Angka Insiden (`.badge-count`):**
+     - Menstandarisasi counter angka insiden (`1`, `2`, `3`...) menjadi mini pill/lingkaran kompak (`min-width: 14px`, `height: 14px`, `font-size: 8px`, `border-radius: 7px`) yang estetis dan rapi.
+  4. **Sinkronisasi Total Jinja Template & JavaScript Live Polling Loop:**
+     - Menghilangkan anomali lompatan font (*font-size jump*) saat siklus live polling telemetri masuk pada dasbor utama (`dashboard.html`) dan daftar server (`servers.html`), mengunci konsistensi ukuran 8px secara permanen.
+
 ## Versi 4.8.1
 
 - **Tipe Rilis:** Penataan Ulang Kolom Platform / IP Vertikal Proporsional pada Mode Standar Dasbor, dan Preservasi Total Mode Kompak (*Standard Mode Dashboard Platform / IP Vertical Layout & Total Compact Mode Preservation*)

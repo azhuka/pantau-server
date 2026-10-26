@@ -122,6 +122,37 @@ pre{white-space:pre;overflow-x:auto;max-width:100%}
 .badge-muted{background:rgba(255,255,255,0.04);color:var(--dim);border:1px solid var(--border)}
 .badge-ignore{background:rgba(132,146,166,0.14);color:#94a3b8;border:1px solid rgba(132,146,166,0.35)}
 
+/* Standarisasi Indikator Warna Tabel NOC: Teks kecil proporsional, hemat ruang, tidak membingungkan operator */
+table .badge, td .badge, th .badge {
+  font-size: 8px !important;
+  padding: 0.5px 4.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0.25px !important;
+  border-radius: 3px !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+/* Badge mini-counter / pill bulat angka insiden (1, 2, ...) */
+.badge-count,
+table .badge-count,
+td .badge-count {
+  min-width: 14px !important;
+  height: 14px !important;
+  line-height: 13px !important;
+  padding: 0 3px !important;
+  font-size: 8px !important;
+  font-weight: 700 !important;
+  border-radius: 7px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+  letter-spacing: 0 !important;
+}
+
 .svc-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;line-height:1.25;cursor:default;transition:all .15s ease}
 .svc-pill.total{background:rgba(56,189,248,0.12);color:var(--blue);border:1px solid rgba(56,189,248,0.35)}
 .svc-pill.up{background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.35)}
@@ -385,10 +416,11 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible,
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 
 /* ---------- Salin Cepat IP & Indikator Proses ---------- */
-.copyable-ip{display:inline-flex;align-items:center;gap:5px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .15s;user-select:all}
+.copyable-ip{display:inline-flex;align-items:center;gap:4px;cursor:pointer;padding:1px 5px;border-radius:3px;font-size:9.5px;font-family:var(--font-mono,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace);line-height:1.2;transition:all .15s;user-select:all}
 .copyable-ip:hover{background:var(--blue-bg);color:var(--blue)}
-.copyable-ip::after{content:'\2398';font-size:11px;opacity:.5}
+.copyable-ip::after{content:'\2398';font-size:9px;opacity:.5}
 .copyable-ip:hover::after{opacity:1}
+table .copyable-ip, td .copyable-ip{font-size:9.5px !important}
 @keyframes spin{100%{transform:rotate(360deg)}}
 
 /* ---------- Toast notifikasi (feedback aksi dari redirect) ---------- */
@@ -1081,7 +1113,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.8.1' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.8.2' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>

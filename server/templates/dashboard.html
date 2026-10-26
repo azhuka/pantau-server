@@ -212,7 +212,7 @@
 #dash-server-table:not(.tbl-compact) .tbl-ip-wrap {
   display: inline-flex;
   align-items: center;
-  font-size: 11.5px;
+  font-size: 9.5px;
   line-height: 1.1;
   color: var(--text);
 }
@@ -293,7 +293,7 @@
   align-items: center !important;
 }
 #dash-server-table.tbl-compact .tbl-ip-wrap {
-  font-size: 11.5px !important;
+  font-size: 9.5px !important;
   line-height: 1 !important;
 }
 #dash-server-table.tbl-compact td:nth-child(10) div {
@@ -1195,18 +1195,18 @@ body.popout-fleet_table #dash-fleet-card {
             {% if not srv.last_seen or srv._status_label == '-' %}
               <span id="tbl-sts-{{ srv.id }}" style="color:var(--dim)">-</span>
             {% else %}
-              <span class="badge {{ srv._status_cls }}" id="tbl-sts-{{ srv.id }}" style="font-size:9px;padding:1px 5px;letter-spacing:0.2px">{{ srv._status_label }}</span>
+              <span class="badge {{ srv._status_cls }}" id="tbl-sts-{{ srv.id }}" style="font-size:8px;padding:0.5px 4.5px;letter-spacing:0.25px;font-weight:700">{{ srv._status_label }}</span>
             {% endif %}
           </td>
 
           <!-- 2. Prioritas (Tier) -->
           <td data-sort-val="{{ s_tier }}" id="tbl-tier-{{ srv.id }}" style="text-align:center;vertical-align:middle">
             {% if s_tier == 1 %}
-              <span class="badge" style="font-size:9px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>
+              <span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="tier-1">tier-1</span>
             {% elif s_tier == 3 %}
-              <span class="badge" style="font-size:9px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>
+              <span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px;font-weight:700" title="tier-3">tier-3</span>
             {% else %}
-              <span class="badge" style="font-size:9px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>
+              <span class="badge" style="font-size:8px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:0.5px 4px;font-weight:700" title="tier-2">tier-2</span>
             {% endif %}
           </td>
 
@@ -1217,7 +1217,7 @@ body.popout-fleet_table #dash-fleet-card {
               {% if srv._platform %}
                 {% set p_label = srv._platform.short_label|upper %}
                 {% if p_label == 'FISIK' %}{% set p_label = 'BAREMETAL' %}{% endif %}
-                <span class="badge" style="font-size:8.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:700" title="Platform: {{ srv._platform.label }}">
+                <span class="badge" style="font-size:8px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:700" title="Platform: {{ srv._platform.label }}">
                   {% if srv._platform.type == 'lxc' %}
                     <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                   {% elif srv._platform.type == 'vm' %}
@@ -1229,7 +1229,7 @@ body.popout-fleet_table #dash-fleet-card {
                 </span>
               {% endif %}
               </span>
-              <span class="copyable-ip mono tbl-ip-wrap" id="tbl-ip-{{ srv.id }}" style="font-size:11.5px;color:var(--text)" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
+              <span class="copyable-ip mono tbl-ip-wrap" id="tbl-ip-{{ srv.id }}" style="font-size:9.5px;color:var(--text)" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
             </div>
           </td>
 
@@ -1320,24 +1320,24 @@ body.popout-fleet_table #dash-fleet-card {
               {% if not srv.last_seen %}
                 <span style="color:var(--dim)">-</span>
               {% elif srv._status_label == 'Offline' %}
-                <span class="badge badge-danger" style="font-size:9.5px;padding:1px 5px;font-weight:700">Offline</span>
+                <span class="badge badge-danger" style="font-size:8px;padding:0.5px 4.5px;font-weight:700">Offline</span>
               {% elif tot_prob == 0 and ign_cnt == 0 %}
-                <span class="badge badge-up" style="font-size:9.5px;padding:1px 5px;font-weight:600">Nihil</span>
+                <span class="badge badge-up" style="font-size:8px;padding:0.5px 4.5px;font-weight:700">Nihil</span>
               {% else %}
                 {% if d_cnt > 0 %}
-                  <span class="badge badge-danger" style="min-width:18px;text-align:center;padding:1px 5px;font-size:9.5px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
+                  <span class="badge badge-danger badge-count" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
                 {% endif %}
                 {% if avg_cnt > 0 %}
-                  <span class="badge badge-orange" style="min-width:18px;text-align:center;padding:1px 5px;font-size:9.5px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
+                  <span class="badge badge-orange badge-count" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
                 {% endif %}
                 {% if w_cnt > 0 %}
-                  <span class="badge badge-warn" style="min-width:18px;text-align:center;padding:1px 5px;font-size:9.5px;font-weight:700;border-radius:10px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
+                  <span class="badge badge-warn badge-count" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
                 {% endif %}
                 {% if i_cnt > 0 %}
-                  <span class="badge badge-info" style="min-width:18px;text-align:center;padding:1px 5px;font-size:9.5px;font-weight:700;border-radius:10px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
+                  <span class="badge badge-info badge-count" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
                 {% endif %}
                 {% if ign_cnt > 0 %}
-                  <span class="badge badge-muted" style="min-width:18px;text-align:center;padding:1px 5px;font-size:9.5px;font-weight:700;border-radius:10px" title="{{ srv._ignored_msgs or 'Insiden diabaikan' }}">{{ ign_cnt }}</span>
+                  <span class="badge badge-muted badge-count" title="{{ srv._ignored_msgs or 'Insiden diabaikan' }}">{{ ign_cnt }}</span>
                 {% endif %}
               {% endif %}
             </div>
@@ -1943,11 +1943,11 @@ function _dashEsc(s) {
 function getTierBadgeHtml(tier) {
   const t = parseInt(tier, 10) || 2;
   if (t === 1) {
-    return '<span class="badge" style="font-size:9px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>';
+    return '<span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="tier-1">tier-1</span>';
   } else if (t === 3) {
-    return '<span class="badge" style="font-size:9px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>';
+    return '<span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px;font-weight:700" title="tier-3">tier-3</span>';
   }
-  return '<span class="badge" style="font-size:9px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>';
+  return '<span class="badge" style="font-size:8px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:0.5px 4px;font-weight:700" title="tier-2">tier-2</span>';
 }
 
 function getPlatformBadgeHtml(plat) {
@@ -1964,7 +1964,7 @@ function getPlatformBadgeHtml(plat) {
   } else if (pType === 'vm') {
     iconSvg = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>';
   }
-  return `<span class="badge" style="font-size:8.5px;background:${bg};color:${col};border:1px solid ${bor};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:700" title="Platform: ${_dashEsc(plat.label || label)}">${iconSvg} ${_dashEsc(label)}</span>`;
+  return `<span class="badge" style="font-size:8px;background:${bg};color:${col};border:1px solid ${bor};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:700" title="Platform: ${_dashEsc(plat.label || label)}">${iconSvg} ${_dashEsc(label)}</span>`;
 }
 
 function createAndAppendDashTableRow(srv, tbody) {
@@ -1992,7 +1992,7 @@ function createAndAppendDashTableRow(srv, tbody) {
     <td style="white-space:nowrap;vertical-align:middle">
       <div class="tbl-plat-ip-box">
         <span id="tbl-plat-${srv.id}" class="tbl-plat-wrap">${getPlatformBadgeHtml(srv.platform)}</span>
-        <span class="copyable-ip mono tbl-ip-wrap" id="tbl-ip-${srv.id}" style="font-size:11.5px;color:var(--text)" onclick="copyIp('${_dashEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_dashEsc(srv.ip_address || '-')}</span>
+        <span class="copyable-ip mono tbl-ip-wrap" id="tbl-ip-${srv.id}" style="font-size:9.5px;color:var(--text)" onclick="copyIp('${_dashEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_dashEsc(srv.ip_address || '-')}</span>
       </div>
     </td>
     <td class="mono" id="tbl-uptime-${srv.id}" style="font-size:11.5px;text-align:center;vertical-align:middle;color:var(--text)">-</td>
@@ -2257,9 +2257,10 @@ async function pollNocDashboard() {
         } else {
           tblSts.textContent = statusLabel;
           tblSts.className = 'badge ' + statusCls;
-          tblSts.style.fontSize = '9px';
-          tblSts.style.padding = '1px 5px';
-          tblSts.style.letterSpacing = '0.2px';
+          tblSts.style.fontSize = '8px';
+          tblSts.style.padding = '0.5px 4.5px';
+          tblSts.style.letterSpacing = '0.25px';
+          tblSts.style.fontWeight = '700';
           tblSts.style.color = '';
         }
       }
@@ -2373,18 +2374,18 @@ async function pollNocDashboard() {
         if (!hasReported) {
           tblProb.innerHTML = '<span style="color:var(--dim)">-</span>';
         } else if (srv.overall_status === 'offline') {
-          tblProb.innerHTML = '<span class="badge badge-danger" style="font-size:10px;padding:2px 7px;font-weight:700">Offline</span>';
+          tblProb.innerHTML = '<span class="badge badge-danger" style="font-size:8px;padding:0.5px 4.5px;font-weight:700">Offline</span>';
         } else {
           const totActive = dCnt + avgCnt + wCnt + iCnt;
           if (totActive === 0 && ignCnt === 0) {
-            tblProb.innerHTML = `<span class="badge badge-up" style="font-size:10.5px;padding:2px 7px;font-weight:600">${isEn ? 'None' : 'Nihil'}</span>`;
+            tblProb.innerHTML = `<span class="badge badge-up" style="font-size:8px;padding:0.5px 4.5px;font-weight:700">${isEn ? 'None' : 'Nihil'}</span>`;
           } else {
             let html = '';
-            if (dCnt > 0) html += `<span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="${(srv.danger_msgs || (isEn ? 'Critical' : 'Kritis')).replace(/"/g, '&quot;')}">${dCnt}</span>`;
-            if (avgCnt > 0) html += `<span class="badge badge-orange" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="${(srv.average_msgs || (isEn ? 'High' : 'Gawat')).replace(/"/g, '&quot;')}">${avgCnt}</span>`;
-            if (wCnt > 0) html += `<span class="badge badge-warn" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="${(srv.warning_msgs || (isEn ? 'Warning' : 'Peringatan')).replace(/"/g, '&quot;')}">${wCnt}</span>`;
-            if (iCnt > 0) html += `<span class="badge badge-info" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="${(srv.info_msgs || 'Info').replace(/"/g, '&quot;')}">${iCnt}</span>`;
-            if (ignCnt > 0) html += `<span class="badge badge-muted" style="min-width:20px;text-align:center;padding:1px 5px;font-size:11px;font-weight:700;border-radius:10px" title="${(srv.ignored_msgs || (isEn ? 'Ignored' : 'Diabaikan')).replace(/"/g, '&quot;')}">${ignCnt}</span>`;
+            if (dCnt > 0) html += `<span class="badge badge-danger badge-count" title="${(srv.danger_msgs || (isEn ? 'Critical' : 'Kritis')).replace(/"/g, '&quot;')}">${dCnt}</span>`;
+            if (avgCnt > 0) html += `<span class="badge badge-orange badge-count" title="${(srv.average_msgs || (isEn ? 'High' : 'Gawat')).replace(/"/g, '&quot;')}">${avgCnt}</span>`;
+            if (wCnt > 0) html += `<span class="badge badge-warn badge-count" title="${(srv.warning_msgs || (isEn ? 'Warning' : 'Peringatan')).replace(/"/g, '&quot;')}">${wCnt}</span>`;
+            if (iCnt > 0) html += `<span class="badge badge-info badge-count" title="${(srv.info_msgs || 'Info').replace(/"/g, '&quot;')}">${iCnt}</span>`;
+            if (ignCnt > 0) html += `<span class="badge badge-muted badge-count" title="${(srv.ignored_msgs || (isEn ? 'Ignored' : 'Diabaikan')).replace(/"/g, '&quot;')}">${ignCnt}</span>`;
             tblProb.innerHTML = html;
           }
         }
