@@ -375,7 +375,7 @@ class ServerProblem(Base):
     acknowledged_at = Column(DateTime, nullable=True)  # ditangani operator (popup DANGER)
     acknowledged_by = Column(String(100), nullable=True)
     last_active_at = Column(DateTime, nullable=True)   # deteksi/kejadian terakhir (utk jendela tenang)
-    resolved_note = Column(String(30), nullable=True)  # 'auto' = ditutup otomatis (tenang)
+    resolved_note = Column(String(100), nullable=True) # 'auto' = ditutup otomatis (tenang)
     is_ignored = Column(SmallInteger, default=0)       # 1 = masalah diabaikan (tidak memicu alarm/banner)
     ignored_until = Column(DateTime, nullable=True)    # batas waktu abaikan (None jika permanen / tidak diabaikan)
     ignored_by = Column(String(100), nullable=True)    # user yang mengabaikan

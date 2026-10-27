@@ -1459,7 +1459,7 @@ def agent_report(
                     ServerProblem.resolved_at.is_(None)
                 ).all():
                     prob.resolved_at = datetime.utcnow()
-                    prob.resolved_note = "auto (upgrade selesai di klien)"
+                    prob.resolved_note = _clean_str("auto (upgrade selesai di klien)", "auto", 100)
             else:
                 if getattr(server, "is_isolated_net", 0) != 1:
                     upg_cnt = int(extras.apt_upgradable)
@@ -4047,7 +4047,7 @@ def api_reset_platform_auto(
         ServerProblem.resolved_at.is_(None)
     ).all():
         prob.resolved_at = datetime.utcnow()
-        prob.resolved_note = _clean_str(f"auto ({user.username})", "auto (reset)", 30)
+        prob.resolved_note = _clean_str(f"auto ({user.username})", "auto (reset)", 100)
 
     db.commit()
     return {"ok": True, "message": "Konfigurasi platform berhasil disinkronkan kembali ke Auto Deteksi"}
@@ -9453,7 +9453,7 @@ def api_alert_resolve(
         raise HTTPException(status_code=404, detail="Masalah tidak ditemukan")
     now = datetime.utcnow()
     row.resolved_at = now
-    row.resolved_note = f"manual ({user.username})"
+    row.resolved_note = _clean_str(f"manual ({user.username})", "manual", 100)
     row.acknowledged_at = row.acknowledged_at or now
     row.acknowledged_by = row.acknowledged_by or user.username
     _audit(
@@ -10270,7 +10270,7 @@ def api_logs_result(
                     ServerProblem.resolved_at.is_(None)
                 ).all():
                     p.resolved_at = datetime.utcnow()
-                    p.resolved_note = "auto (upgrade selesai)"
+                    p.resolved_note = _clean_str("auto (upgrade selesai)", "auto", 100)
             else:
                 upg_cnt = int(extras.apt_upgradable)
                 new_msg = f"{upg_cnt} paket menunggu upgrade"

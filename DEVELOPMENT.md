@@ -311,6 +311,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.9
+
+- **Tipe Rilis:** Ekspansi Kapasitas Kolom Catatan Resolusi Insiden & Penuntasan Rollback Telemetri Klien (*Incident Resolution Note Capacity Expansion, Telemetry Rollback Elimination & POSIX Shell Command Hardening*)
+- **Fokus Utama:** Mengeliminasi galat fatal HTTP 500 yang menyebabkan rollback berkala pada transaksi laporan telemetri agen klien (`POST /api/report`):
+  1. **Ekspansi Skema Basis Data Kolom `resolved_note` (`server/models.py` & MariaDB DDL):**
+     - Memperluas kapasitas kolom `resolved_note` pada tabel `server_problems` dari `VARCHAR(30)` menjadi `VARCHAR(100)`.
+     - Mengeliminasi galat `pymysql.err.DataError: (1406, "Data too long for column 'resolved_note' at row 1")` saat resolusi otomatis insiden paket sistem APT menyetel nilai `"auto (upgrade selesai di klien)"` (31 karakter).
+     - Menjamin seluruh transaksi pelaporan telemetri agen klien (`/api/report`), pembaruan versi agen di dasbor (`ServerExtras.agent_version`), snapshot metrik sistem (`SystemSnapshot`), dan penyelesaian insiden berjalan sukses tanpa kendala HTTP 500.
+  2. **Sanitasi Komprehensif Catatan Resolusi Insiden (`server/main.py`):**
+     - Menerapkan helper `_clean_str` dengan batas maksimum 100 karakter pada seluruh titik penugasan `resolved_note` (resolusi APT di klien, reset platform otomatis, resolusi manual oleh operator, dan penyelesaian pembaruan paket massal).
+  3. **Penguatan Eksekusi Shell Perintah Update Agen Manual (`server/templates/services.html`):**
+     - Membungkus alternatif unduh `curl` lokal dan fallback GitHub dengan tanda kurung `(...)` sebelum operator chaining `&& sudo systemctl restart agent_pantau.service`, memastikan prioritas eksekusi shell POSIX berjalan deterministik.
+
 ## Versi 4.8.8
 
 - **Tipe Rilis:** Penyesuaian Sanitasi Panjang Catatan Resolusi Insiden Platform (*Platform Conflict Resolution Note Length Sanitization*)

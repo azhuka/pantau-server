@@ -4349,7 +4349,7 @@ function toggleMaintenanceAction(action) {
 function copyAgentUpdateCmd(ev) {
   const host = window.location.host;
   const proto = window.location.protocol;
-  const cmd = `sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py ${proto}//${host}/api/agent/latest-code || sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py && sudo systemctl restart agent_pantau.service`;
+  const cmd = `(sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py ${proto}//${host}/api/agent/latest-code || sudo curl -fsSL -o /opt/pantau/agent/agent_pantau.py https://raw.githubusercontent.com/azhuka/pantau-server/master/package/opt/pantau/agent/agent_pantau.py) && sudo systemctl restart agent_pantau.service`;
   const isEn = isEnPage();
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(cmd).then(() => {
