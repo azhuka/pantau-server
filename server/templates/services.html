@@ -1969,6 +1969,10 @@ div[style*="position: fixed"] .card {
                 <button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard" aria-label="Update Agen">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
                 </button>
+              {% elif p.action == 'reset_platform' and (user.is_master_admin() or user.has_perm('can_manage_servers')) %}
+                <button type="button" class="btn btn-primary btn-sm" onclick="resetPlatformAuto({{ server.id }}, this)" title="Sinkronkan konfigurasi platform ke Auto Deteksi" aria-label="Auto Platform">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+                </button>
               {% endif %}
             {% endif %}
           </div>
@@ -5496,6 +5500,33 @@ async function submitProblemBlockAttackerIps(btn, ipCount) {
   }
 }
 
+async function resetPlatformAuto(sid, btn) {
+  const isEn = isEnPage();
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch(`/api/servers/${sid}/reset-platform-auto`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrf(),
+      }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) {
+      showToast(data.message || (isEn ? 'Platform configuration synced to Auto Detect.' : 'Konfigurasi platform berhasil disinkronkan ke Auto Deteksi.'), true);
+      triggerFastPoll();
+      if (typeof pollProblems === 'function') pollProblems();
+      setTimeout(() => location.reload(), 600);
+    } else {
+      showToast(data.detail || (isEn ? 'Failed to sync platform configuration.' : 'Gagal menyinkronkan konfigurasi platform.'), false);
+    }
+  } catch (err) {
+    showToast((isEn ? 'Network error: ' : 'Kesalahan jaringan: ') + err.message, false);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 const resultLabel = {
   pending: 'menunggu', executing: 'dijalankan…',
   success: 'berhasil', failed: 'gagal',
@@ -7356,6 +7387,8 @@ function renderProblemsTab(level, openList, histList) {
           toolsHtml += `<button class="btn btn-primary btn-sm" onclick="triggerUpdateOS()" title="${isEn ? 'Update OS packages' : 'Perbarui paket sistem'}" aria-label="Update OS">${svgDownload}</button>`;
         } else if (p.action === 'agent_update_cmd' && CAN_OTA) {
           toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}" aria-label="Update Agent">${svgTerm}</button>`;
+        } else if (p.action === 'reset_platform' && CAN_SERVICES) {
+          toolsHtml += `<button type="button" class="btn btn-primary btn-sm" onclick="resetPlatformAuto(${SID}, this)" title="${isEn ? 'Sync platform configuration to Auto Detect' : 'Sinkronkan konfigurasi platform ke Auto Deteksi'}" aria-label="Auto Platform"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></button>`;
         }
 
         if (p.acknowledged_by) {

@@ -116,13 +116,26 @@
           Tipe Platform Lingkungan
         </label>
         <select id="f-platform-override" name="platform_override" style="width:100%" onchange="handlePlatformChange()">
-          <option value="auto" {% if not server or not server.platform_override or server.platform_override == 'auto' %}selected{% endif %}>Auto Deteksi (Laporan Agen)</option>
+          <option value="auto" {% if not server or not server.platform_override or server.platform_override == 'auto' %}selected{% endif %}>Auto Deteksi (Laporan Agen) — Direkomendasikan</option>
           <option value="baremetal" {% if server and server.platform_override == 'baremetal' %}selected{% endif %}>Fisik / Baremetal</option>
           <option value="vm" {% if server and server.platform_override == 'vm' %}selected{% endif %}>Mesin Virtual (VM - KVM / QEMU / dll)</option>
           <option value="lxc" {% if server and server.platform_override == 'lxc' %}selected{% endif %}>Kontainer (LXC / Proxmox CT)</option>
         </select>
+        {% if detected_platform and detected_platform.label %}
+        <span id="detected-platform-hint" style="font-size:11px;color:#38bdf8;margin-top:4px;display:flex;align-items:center;gap:4px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          (Server ini terdeteksi sebagai platform {{ detected_platform.label }})
+        </span>
+        <div id="platform-mismatch-warn" style="display:none;margin-top:6px;padding:6px 10px;border-radius:6px;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);color:#fbbf24;font-size:11px;line-height:1.4">
+          <strong style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            Perhatian: Potensi Ketidaksesuaian Konfigurasi
+          </strong>
+          <span>Server ini terdeteksi sebagai <strong>{{ detected_platform.label }}</strong>. Memilih platform lain secara manual dapat memicu insiden <em>"Konfigurasi Platform Server Tidak Sesuai"</em> pada dasbor. Disarankan memilih <strong>Auto Deteksi</strong>.</span>
+        </div>
+        {% endif %}
         <span style="font-size:11px;color:var(--dim);margin-top:4px;display:block">
-          Pilih jenis platform server. Jika disetel ke Auto Deteksi, sistem mengidentifikasi otomatis via agen.
+          Pilih jenis platform server. Opsi <strong>Auto Deteksi (Laporan Agen)</strong> sangat direkomendasikan agar sistem mengidentifikasi arsitektur lingkungan secara otomatis via telemetri agen.
         </span>
       </div>
 
@@ -312,15 +325,26 @@ document.getElementById('f-tags')?.addEventListener('input', updateTagHighlight)
 updateGroupHighlight();
 updateTagHighlight();
 
+const detectedPlatType = '{{ detected_platform.type if detected_platform else "" }}';
 function handlePlatformChange() {
   const plat = document.getElementById('f-platform-override')?.value;
   const rowHa = document.getElementById('row-proxmox-ha');
   const cbHa = document.getElementById('f-proxmox-ha');
+  const warnBox = document.getElementById('platform-mismatch-warn');
+
   if (plat === 'baremetal') {
     if (rowHa) rowHa.style.display = 'none';
     if (cbHa) cbHa.checked = false;
   } else {
     if (rowHa) rowHa.style.display = 'flex';
+  }
+
+  if (warnBox && detectedPlatType) {
+    if (plat && plat !== 'auto' && plat !== detectedPlatType) {
+      warnBox.style.display = 'block';
+    } else {
+      warnBox.style.display = 'none';
+    }
   }
 }
 handlePlatformChange();

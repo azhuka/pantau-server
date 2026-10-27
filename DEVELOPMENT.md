@@ -311,6 +311,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.7
+
+- **Tipe Rilis:** Benteng Proteksi Konflik Platform & Rekonsiliasi Otomatis Kesalahan Input Operator (*Platform Mismatch Conflict Triage, Fail-Safe Storage & Form Dynamic Guidance*)
+- **Fokus Utama:** Mengantisipasi kemungkinan terburuk dari kesalahan manusia (*human error*) saat operator mendaftarkan atau mengedit server dengan memilih opsi Fisik / Baremetal padahal server tersebut sebenarnya adalah Kontainer LXC atau Mesin Virtual (VM):
+  1. **Fail-Safe Alokasi Storage & Kuota Kontainer LXC (`server/main.py`):**
+     - Memperkuat logika fungsi `_get_hardware_specs_dict` agar selalu mengutamakan deteksi definitif agen (`virt == "LXC"`, `container=lxc`, atau `platform_type == "lxc"`).
+     - Menjamin kuota virtual `rootfs` kontainer tetap diterapkan secara deterministik dan mencegah kebocoran disk host fisik (misalnya harddisk host Proxmox 7.6 TB) ke dalam antarmuka kontainer LXC meskipun operator salah menyetel override `baremetal`.
+  2. **Deteksi Konflik Platform Otomatis (*Platform Mismatch Conflict Triage*):**
+     - Memperkenalkan evaluasi otomatis insiden `platform_conflict` berkategori `Peringatan` (warning) pada fungsi `_problem_instances`.
+     - Ketika operator menyetel platform manual yang bertentangan dengan hasil pemindaian riil agen (seperti menyetel Baremetal padahal agen mendeteksi VM KVM atau LXC Container), sistem secara otomatis memunculkan insiden dengan judul **"Konfigurasi Platform Server Tidak Sesuai"** pada kartu Insiden Terkini halaman utama dasbor.
+     - Melengkapi insiden dengan payload konteks diagnostik dwibahasa (ID & EN) terstruktur yang memuat rincian server, tipe konfigurasi manual, tipe deteksi aktual agen, dampak teknis, rekomendasi penanganan, dan perintah inspeksi kernel (`systemd-detect-virt`).
+  3. **Aksi Mitigasi 1-Klik Pemulihan Platform (`server/main.py` & `services.html`):**
+     - Menyediakan endpoint API `POST /api/servers/{sid}/reset-platform-auto` yang aman, terverifikasi CSRF, dan ter-audit.
+     - Menghadirkan tombol aksi langsung pada tabel rincian insiden yang memungkinkan operator menyinkronkan kembali konfigurasi platform ke "Auto Deteksi" hanya dengan satu kali klik tanpa perlu membuka form edit manual.
+  4. **Panduan Visual Dinamis pada Formulir Server (`server_form.html`):**
+     - Mempertahankan dan menegaskan opsi default dropdown sebagai `Auto Deteksi (Laporan Agen) — Direkomendasikan`.
+     - Menampilkan teks bantuan dinamis real-time tepat di bawah pilihan dropdown: `(Server ini terdeteksi sebagai platform VM (KVM))` bila agen telah pernah terhubung dan melapor.
+     - Menyematkan kotak peringatan interaktif visual berwarna kuning bila operator memilih opsi manual yang berkonflik dengan tipe platform yang dideteksi agen.
+
 ## Versi 4.8.6
 
 - **Tipe Rilis:** Penuntasan Eksepsi Rollback Log Request APT, Pemulihan Timeout Sesi Menggantung, dan Penyempurnaan Error Parsing Modal (*APT Log Request Rollback Exception Fix, Stale Session Timeout Recovery & Modal Error Parsing Refinement*)

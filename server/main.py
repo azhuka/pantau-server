@@ -1814,9 +1814,13 @@ def _get_hardware_specs_dict(server: Server, extra: ServerExtras | None, latest:
                 # Bila terdeteksi LXC dan disk masih melaporkan disk host, koreksi dengan kuota rootfs dari snapshot.
                 plat = parsed.get("platform", {})
                 plat_ovr = getattr(server, "platform_override", None)
+                # Fail-Safe Storage: Jika agen secara definitif mendeteksi kontainer (LXC/Docker),
+                # kuota virtual rootfs selalu dipaksakan agar disk host fisik tidak bocor ke tampilan kontainer,
+                # sekalipun operator keliru memilih override 'baremetal'.
                 is_lxc = (
                     plat_ovr == "lxc"
-                    or (plat_ovr not in ("baremetal", "vm") and (str(plat.get("virt", "")).upper() == "LXC" or plat.get("platform_type") == "lxc"))
+                    or str(plat.get("virt", "")).upper() in ("LXC", "LXC-LIBVIRT", "DOCKER", "PODMAN", "CONTAINER")
+                    or plat.get("platform_type") == "lxc"
                 )
                 if is_lxc:
                     has_host_disk = any(d.get("name", "").startswith("sd") or "T" in str(d.get("size", "")) for d in parsed.get("disks", []))
@@ -3750,6 +3754,7 @@ def server_add_page(request: Request, db: Session = Depends(get_db)):
         "existing_tags": existing_tags,
         "global_thresholds": global_th,
         "custom_thresholds": {},
+        "detected_platform": None,
     })
 
 
@@ -3861,12 +3866,22 @@ def server_edit_page(request: Request, sid: int, db: Session = Depends(get_db)):
             custom_th = json.loads(server.custom_thresholds)
         except Exception:
             pass
+    extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    detected_platform = None
+    if extra and extra.hardware_specs:
+        try:
+            hw = json.loads(extra.hardware_specs) if isinstance(extra.hardware_specs, str) else extra.hardware_specs
+            plat_dict = hw.get("platform", {}) if isinstance(hw, dict) else {}
+            detected_platform = _classify_platform(plat_dict, override=None)
+        except Exception:
+            pass
     return tpl(request, "server_form.html", {
         "user": user, "server": server, "mode": "edit",
         "existing_groups": existing_groups,
         "existing_tags": existing_tags,
         "global_thresholds": global_th,
         "custom_thresholds": custom_th,
+        "detected_platform": detected_platform,
     })
 
 
@@ -4004,6 +4019,38 @@ def server_delete(
         db.commit()
         return RedirectResponse("/servers" + _flash_qs(True, "Server dihapus"), status_code=303)
     return RedirectResponse("/servers" + _flash_qs(False, "Server tidak ditemukan"), status_code=303)
+
+
+@app.post("/api/servers/{sid}/reset-platform-auto")
+def api_reset_platform_auto(
+    sid: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Sinkronkan kembali konfigurasi platform server ke Auto Deteksi dan selesaikan insiden konflik."""
+    _verify_csrf_header(request)
+    if not (user.is_master_admin() or user.has_perm("can_manage_servers")):
+        raise HTTPException(status_code=403, detail="Akses ditolak")
+
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+
+    server.platform_override = "auto"
+    _audit(db, user.username, "server_platform_reset", target=server.hostname, result="Platform disetel ulang ke Auto Deteksi")
+
+    # Selesaikan masalah platform_conflict seketika
+    for prob in db.query(ServerProblem).filter(
+        ServerProblem.server_id == sid,
+        ServerProblem.key == "platform_conflict",
+        ServerProblem.resolved_at.is_(None)
+    ).all():
+        prob.resolved_at = datetime.utcnow()
+        prob.resolved_note = f"auto (disinkronkan ke auto oleh {user.username})"
+
+    db.commit()
+    return {"ok": True, "message": "Konfigurasi platform berhasil disinkronkan kembali ke Auto Deteksi"}
 
 
 
@@ -7153,6 +7200,46 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 ]
             }, ensure_ascii=False)
 
+        # 15. Konflik Konfigurasi Platform (Platform Mismatch Conflict)
+        if key == "platform_conflict":
+            ovr_label = kwargs.get("override_label") or "Fisik / Baremetal"
+            det_label = kwargs.get("detected_label") or "Mesin Virtual / Kontainer"
+            virt_name = kwargs.get("virt") or "Virtual"
+            return json.dumps({
+                "diagnosa": "Konfigurasi Platform Server Tidak Sesuai",
+                "diagnosa_en": "Server Platform Configuration Mismatch",
+                "penyebab": f"Server {srv.hostname} disetel manual sebagai '{ovr_label}' pada konfigurasi dashboard, namun agen mendeteksi sistem operasi berjalan di atas '{det_label}' ({virt_name}).",
+                "penyebab_en": f"Server {srv.hostname} is manually configured as '{ovr_label}', but the agent detects the operating system running on '{det_label}' ({virt_name}).",
+                "dampak": "Kalkulasi alokasi kapasitas penyimpanan, sensor kesehatan hardware fisik (S.M.A.R.T.), dan proteksi Proxmox HA dapat tidak bekerja secara optimal atau menampilkan data yang membingungkan operator.",
+                "dampak_en": "Storage capacity calculations, physical hardware health sensors (S.M.A.R.T.), and Proxmox HA protections may not operate optimally or may present confusing data to operators.",
+                "data_teknis": {
+                    "server_id": srv.id,
+                    "server_hostname": srv.hostname,
+                    "server_ip": srv.ip_address,
+                    "platform_override": kwargs.get("override"),
+                    "platform_override_label": ovr_label,
+                    "detected_type": kwargs.get("detected_type"),
+                    "detected_label": det_label,
+                    "hypervisor_virt": virt_name,
+                    "waktu_kejadian": now_str,
+                },
+                "rekomendasi": [
+                    "Buka formulir Edit Server melalui menu Rincian Server -> Edit atau klik tombol sinkronkan platform.",
+                    "Ubah opsi 'Tipe Platform Lingkungan' menjadi 'Auto Deteksi (Laporan Agen)' agar sistem menyelaraskan arsitektur lingkungan secara otomatis.",
+                    "Simpan perubahan konfigurasi server."
+                ],
+                "rekomendasi_en": [
+                    "Open the Edit Server form via Server Details -> Edit or click the sync platform button.",
+                    "Change 'Platform Environment Type' to 'Auto Deteksi (Laporan Agen)' so the system aligns metrics accurately.",
+                    "Save server configuration changes."
+                ],
+                "perintah_diagnosa": [
+                    "systemd-detect-virt",
+                    "cat /sys/class/dmi/id/product_name",
+                    "cat /sys/class/dmi/id/sys_vendor"
+                ]
+            }, ensure_ascii=False)
+
 
     except Exception as e:
         logger.warning("[CONTEXT] Gagal menyusun konteks masalah %s: %s", key, e)
@@ -7630,6 +7717,38 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                          "tip": APT_TIP,
                          "context": _build_problem_context("apt_updates", srv, upgradable=extras.apt_upgradable)})
 
+        # Evaluasi Konflik Konfigurasi Platform (Platform Mismatch Conflict Triage)
+        plat_ovr = getattr(srv, "platform_override", None)
+        if plat_ovr in ("baremetal", "vm", "lxc") and getattr(extras, "hardware_specs", None):
+            try:
+                hw = json.loads(extras.hardware_specs) if isinstance(extras.hardware_specs, str) else extras.hardware_specs
+                plat_dict = hw.get("platform", {}) if isinstance(hw, dict) else {}
+                detected_info = _classify_platform(plat_dict, override=None)
+                detected_type = detected_info.get("type")
+                if detected_type and detected_type != plat_ovr:
+                    ovr_names = {
+                        "baremetal": "Fisik / Baremetal",
+                        "vm": "Mesin Virtual (VM)",
+                        "lxc": "Kontainer (LXC)"
+                    }
+                    inst.append({
+                        "key": "platform_conflict",
+                        "severity": "warning",
+                        "message": "Konfigurasi Platform Server Tidak Sesuai",
+                        "tip": f"Server disetel manual sebagai '{ovr_names.get(plat_ovr, plat_ovr)}', namun agen mendeteksi sistem berjalan pada platform '{detected_info.get('label')}'. Disarankan mengubah konfigurasi ke 'Auto Deteksi'.",
+                        "context": _build_problem_context(
+                            "platform_conflict",
+                            srv,
+                            override=plat_ovr,
+                            override_label=ovr_names.get(plat_ovr, plat_ovr),
+                            detected_type=detected_type,
+                            detected_label=detected_info.get("label"),
+                            virt=detected_info.get("virt")
+                        )
+                    })
+            except Exception as e:
+                logger.debug("Gagal evaluasi platform_conflict untuk server %s: %s", srv.id, e)
+
         # Evaluasi Kesehatan Drive S.M.A.R.T. / NVMe
         if getattr(extras, "hardware_specs", None):
             try:
@@ -7934,6 +8053,8 @@ def _problem_component(key: str) -> str:
         return "Paket OS (APT)"
     if key == "agent_conflict":
         return "Jaringan / IP Agen"
+    if key == "platform_conflict":
+        return "Platform / Virtualisasi"
     if key.startswith("ssh_active_session:"):
         return "Sesi Remote (SSH)"
     return "Sistem"
@@ -7999,6 +8120,8 @@ def _enrich_problems_for_ui(open_problems, services, extra, user_or_role="viewer
         elif r["key"].startswith("ssh_active_session:"):
             r["action"] = "inspect_sessions"
             r["log_unit"] = "AUTH"
+        elif r["key"] == "platform_conflict":
+            r["action"] = "reset_platform"
         else:
             r["action"] = None
 
