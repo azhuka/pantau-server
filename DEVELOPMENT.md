@@ -311,6 +311,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.5
+
+- **Tipe Rilis:** Arsitektur Keterhubungan Relasional Menyeluruh dan Sinkronisasi Reaktif Dua Arah (*Omnidirectional Relational Integrity & Reactive Dual-Directional Synchronization Architecture*)
+- **Fokus Utama:** Membangun integritas relasional enterprise pada seluruh alur monitoring dan status sistem, menjamin kesetaraan respon ketika tindakan terjadi via Web Dashboard maupun langsung di sisi server klien (via SSH/konsol lokal):
+  1. **Deteksi Reaktif Perubahan Paket di Server Klien (*File State Watcher*):**
+     - Mengimplementasikan `_get_pkg_state_signature()` pada Agen Pantau (`agent_pantau.py`) untuk memantau stempel waktu modifikasi (*mtime*) `/var/lib/dpkg/status` dan `/var/lib/apt/lists`.
+     - Kapan pun operator menjalankan `apt install`, `apt upgrade`, atau `apt remove` langsung di terminal SSH klien, agen seketika mendeteksi perubahannya dalam waktu <5 detik tanpa menunggu siklus lambat 30–60 detik, dan menyematkan flag `packages_changed` ke server pusat.
+  2. **Data-Binding Reaktif Antarmuka Tab Packages (`services.html`):**
+     - Memperkenalkan fungsi sentral `syncPackagesTabApt(count, packages)` yang terikat langsung ke siklus live-polling `/api/servers/{id}/system`.
+     - Kapan pun paket di-upgrade (baik dari tombol dashboard maupun langsung di terminal klien), badge tab `#tab-packages-badge`, badge header `#pkg-upg-badge`, peta `_upgMap`, baris tabel paket, dan tombol hero `#apt-upgrade-btn` otomatis sinkron seketika ke status mutakhir tanpa perlu me-reload peramban (F5).
+     - Mengeliminasi jebakan logika `aptArmed` yang sebelumnya memaksa menimpa status paket 0 kembali ke angka lama.
+  3. **Penyelarasan Masalah dan Inventaris Paket Terpasang Otomatis (`server/main.py`):**
+     - Ketika laporan status paket mutakhir (0) diterima, insiden `apt_updates` di tabel `ServerProblem` otomatis diselesaikan (*resolved*).
+     - Server secara otomatis menjadwalkan tugas latar belakang `PKG_LIST` ketika mendeteksi flag `packages_changed` agar inventaris `extras.installed_packages` tetap akurat mencatat paket baru yang dipasang di host klien.
+  4. **Pembaruan Dinamis Tabel Armada (`servers.html`):**
+     - Menyematkan ID dinamis `srv-apt-{{ srv.id }}` dan fungsi pembaruan JavaScript live polling pada kolom *OS Update* di halaman `/servers` (beralih live antara badge kuning "X paket" dan badge hijau "mutakhir").
+  5. **Auto-Discovery Layanan Aktif Baru dari Socket Terbuka:**
+     - Menghubungkan soket pendengar aktif pada tab *Ports* dengan fungsi modal `openAddSvcModal()` terisi otomatis, memungkinkan penambahan daemon/port baru yang baru saja diinstal di server klien ke pemantauan layanan utama (*Services*) hanya dengan satu klik.
+
 ## Versi 4.8.4
 
 - **Tipe Rilis:** Perbaikan Fungsi Kunci Terminal dan Pemutusan Sesi Web Shell (*Web Terminal Locking Workflow & Session Severing Bugfix*)

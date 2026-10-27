@@ -474,7 +474,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.4"
+AGENT_VERSION = "4.8.5"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -576,7 +576,7 @@ def http_json_request(cfg: dict, path: str, method: str = "GET", data: dict | No
 
 def send_report(cfg: dict, services: list, system: dict,
                 accounts: list | None = None, units: list | None = None,
-                apt: dict | None = None) -> bool:
+                apt: dict | None = None, packages_changed: bool = False) -> bool:
     if len(services) > 100:
         services = services[:100]
     payload = {
@@ -595,6 +595,8 @@ def send_report(cfg: dict, services: list, system: dict,
         payload["units"] = units
     if apt is not None:
         payload["apt"] = apt
+    if packages_changed:
+        payload["packages_changed"] = True
     payload["security"] = collect_security()
     payload["cron_jobs"] = collect_cron_jobs()
     payload["firewall"] = collect_firewall()
@@ -3332,8 +3334,11 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
 
     # Hasil terminal (persis SSH): frame progress sudah "menimpa" via termify.
 
+    global last_apt, _last_pkg_signature
     try:
         apt = collect_apt()
+        last_apt = apt
+        _last_pkg_signature = _get_pkg_state_signature()
     except Exception:
         apt = None
 
@@ -4558,6 +4563,26 @@ def _terminal_worker_loop(cfg: dict) -> None:
 prev_services: dict[int, str] = {}
 last_apt: dict | None = None
 _tick = 0
+_last_pkg_signature: tuple | None = None
+
+
+def _get_pkg_state_signature() -> tuple:
+    """Mengambil signature timestamp status dpkg dan apt lists untuk deteksi reaktif instan.
+    Jika operator menjalankan apt install/upgrade/remove via SSH, mtime dpkg status akan berubah.
+    """
+    m_dpkg = 0.0
+    m_lists = 0.0
+    try:
+        if os.path.exists("/var/lib/dpkg/status"):
+            m_dpkg = os.path.getmtime("/var/lib/dpkg/status")
+    except Exception:
+        pass
+    try:
+        if os.path.exists("/var/lib/apt/lists"):
+            m_lists = os.path.getmtime("/var/lib/apt/lists")
+    except Exception:
+        pass
+    return (m_dpkg, m_lists)
 
 
 def main():
@@ -4617,7 +4642,7 @@ def run_once(cfg: dict):
 
 
 def _run_once(cfg: dict):
-    global prev_services, last_apt, _tick
+    global prev_services, last_apt, _tick, _last_pkg_signature
     _tick += 1
 
     # Eksekusi command yang mungkin pending sebelum pemindaian services
@@ -4653,11 +4678,20 @@ def _run_once(cfg: dict):
     # Sesi pengguna, akun (SSH login/logout), dan unit layanan dilaporkan di setiap siklus
     accounts = collect_accounts()
     units = collect_units()
-    if _tick % 6 == 2:
+
+    # Deteksi reaktif perubahan paket di server klien (misal operator menjalankan apt di SSH)
+    current_pkg_sig = _get_pkg_state_signature()
+    pkg_changed = False
+    if _last_pkg_signature is not None and _last_pkg_signature != current_pkg_sig:
+        pkg_changed = True
+
+    if last_apt is None or pkg_changed or (_tick % 6 == 2):
         last_apt = collect_apt()
+        _last_pkg_signature = current_pkg_sig
+
     apt = last_apt
 
-    if send_report(cfg, services, system, accounts, units, apt):
+    if send_report(cfg, services, system, accounts, units, apt, pkg_changed):
         print(f"[OK] Laporan terkirim ({len(services)} services, {total_conns} conns, "
               f"CPU {system['cpu']:.0f}%)")
     else:

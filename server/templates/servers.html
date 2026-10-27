@@ -278,7 +278,7 @@
           </div>
         {% endif %}
       </td>
-      <td style="text-align:center">
+      <td style="text-align:center" id="srv-apt-{{ srv.id }}">
         {% if srv._apt_upgradable is not none %}
           {% if srv._apt_upgradable > 0 %}
             <span class="badge badge-warn" style="font-size:7.5px;padding:1px 4px" title="{{ srv._apt_upgradable }} paket tersedia">{{ srv._apt_upgradable }} paket</span>
@@ -615,6 +615,19 @@ async function srvPoll() {
           }
           html += '</div>';
           probEl.innerHTML = html;
+        }
+      }
+
+      const aptEl = document.getElementById('srv-apt-' + srv.id);
+      if (aptEl) {
+        if (srv.apt_upgradable != null) {
+          if (srv.apt_upgradable > 0) {
+            aptEl.innerHTML = `<span class="badge badge-warn" style="font-size:7.5px;padding:1px 4px" title="${srv.apt_upgradable} ${isEn ? 'packages available' : 'paket tersedia'}">${srv.apt_upgradable} ${isEn ? 'packages' : 'paket'}</span>`;
+          } else {
+            aptEl.innerHTML = `<span class="badge badge-up" style="font-size:7.5px;padding:1px 4px">${isEn ? 'up-to-date' : 'mutakhir'}</span>`;
+          }
+        } else {
+          aptEl.innerHTML = `<span style="color:var(--dim);font-size:10px">—</span>`;
         }
       }
 

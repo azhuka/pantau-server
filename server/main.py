@@ -1450,6 +1450,16 @@ def agent_report(
         apt = body["apt"]
         if isinstance(apt.get("upgradable"), int):
             extras.apt_upgradable = max(0, apt["upgradable"])
+            if extras.apt_upgradable == 0:
+                extras.apt_packages = "[]"
+                # Selesaikan masalah apt_updates seketika jika upgrade dilakukan langsung di server klien
+                for prob in db.query(ServerProblem).filter(
+                    ServerProblem.server_id == server.id,
+                    ServerProblem.key == "apt_updates",
+                    ServerProblem.resolved_at.is_(None)
+                ).all():
+                    prob.resolved_at = datetime.utcnow()
+                    prob.resolved_note = "auto (upgrade selesai di klien)"
         if isinstance(apt.get("last_update"), str):
             last_upd = _parse_iso_dt(apt["last_update"], None)
             if last_upd is not None:
@@ -1475,7 +1485,21 @@ def agent_report(
                 cfg["services"] = _apt_pkg_services(cfg["name"], running)
                 if cfg["name"]:
                     pkgs.append(cfg)
-            extras.apt_packages = json.dumps(pkgs) if pkgs else None
+            extras.apt_packages = json.dumps(pkgs) if (pkgs and (extras.apt_upgradable or 0) > 0) else "[]"
+
+    if body.get("packages_changed"):
+        # Otomatis jadwalkan pembaruan inventaris paket terpasang jika ada perubahan paket langsung di klien
+        recent_pkg_req = (
+            db.query(LogRequest)
+            .filter(
+                LogRequest.server_id == server.id,
+                LogRequest.unit == "PKG_LIST",
+                LogRequest.status == "pending"
+            )
+            .first()
+        )
+        if not recent_pkg_req:
+            db.add(LogRequest(server_id=server.id, unit="PKG_LIST", status="pending"))
     if isinstance(body.get("security"), dict):
         sec = body["security"]
         _ls_raw = _clean_str(sec.get("last_seen"), None, 32)
@@ -10026,19 +10050,32 @@ def api_logs_result(
                 extras = ServerExtras(server_id=server.id)
                 db.add(extras)
 
-            if isinstance(parsed, dict) and "apt" in parsed:
-                apt_info = parsed.get("apt")
-                if isinstance(apt_info, dict):
-                    if "upgradable" in apt_info:
-                        extras.apt_upgradable = _clamp_int(apt_info.get("upgradable"), 0)
-                    if "packages" in apt_info and isinstance(apt_info["packages"], list):
-                        extras.apt_packages = json.dumps(apt_info["packages"][:200])
+            if req.unit in ("APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE"):
+                if isinstance(parsed, dict) and isinstance(parsed.get("apt"), dict):
+                    apt_info = parsed["apt"]
+                    extras.apt_upgradable = _clamp_int(apt_info.get("upgradable"), 0)
+                    pkgs = apt_info.get("packages") if isinstance(apt_info.get("packages"), list) else []
+                    extras.apt_packages = json.dumps(pkgs[:200]) if extras.apt_upgradable > 0 else "[]"
+                else:
+                    extras.apt_upgradable = 0
+                    extras.apt_packages = "[]"
+                extras.apt_last_update = datetime.utcnow()
+                # Jadwalkan pembaruan inventaris paket terpasang otomatis
+                recent_pkg_req = db.query(LogRequest).filter(
+                    LogRequest.server_id == server.id,
+                    LogRequest.unit == "PKG_LIST",
+                    LogRequest.status == "pending"
+                ).first()
+                if not recent_pkg_req:
+                    db.add(LogRequest(server_id=server.id, unit="PKG_LIST", status="pending"))
+            elif req.unit == "APT_UPDATE":
+                if isinstance(parsed, dict) and isinstance(parsed.get("apt"), dict):
+                    apt_info = parsed["apt"]
+                    extras.apt_upgradable = _clamp_int(apt_info.get("upgradable"), 0)
+                    pkgs = apt_info.get("packages") if isinstance(apt_info.get("packages"), list) else []
+                    extras.apt_packages = json.dumps(pkgs[:200])
                     if not parsed.get("has_fetch_err"):
                         extras.apt_last_update = datetime.utcnow()
-            elif req.unit in ("APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE"):
-                extras.apt_upgradable = 0
-                extras.apt_packages = "[]"
-                extras.apt_last_update = datetime.utcnow()
             elif req.unit == "PKG_UPGRADE":
                 # Upgrade paket tunggal berhasil
                 if extras.apt_upgradable and extras.apt_upgradable > 0:
@@ -10053,15 +10090,21 @@ def api_logs_result(
                     except Exception:
                         pass
                 extras.apt_last_update = datetime.utcnow()
+                recent_pkg_req = db.query(LogRequest).filter(
+                    LogRequest.server_id == server.id,
+                    LogRequest.unit == "PKG_LIST",
+                    LogRequest.status == "pending"
+                ).first()
+                if not recent_pkg_req:
+                    db.add(LogRequest(server_id=server.id, unit="PKG_LIST", status="pending"))
 
             # Sinkronkan masalah apt_updates secara riil seketika ke database
-            prob = db.query(ServerProblem).filter(
-                ServerProblem.server_id == server.id,
-                ServerProblem.key == "apt_updates",
-                ServerProblem.resolved_at.is_(None)
-            ).first()
             if (extras.apt_upgradable or 0) == 0:
-                if prob:
+                for prob in db.query(ServerProblem).filter(
+                    ServerProblem.server_id == server.id,
+                    ServerProblem.key == "apt_updates",
+                    ServerProblem.resolved_at.is_(None)
+                ).all():
                     prob.resolved_at = datetime.utcnow()
                     prob.resolved_note = "auto (upgrade selesai)"
             else:
@@ -10410,13 +10453,12 @@ def api_server_system(
         "ssl_certs": parse_list(extra.ssl_certs if extra else None),
         "system_logs": parse_list(extra.system_logs if extra else None),
         "apt_upgradable": (
-            len(parse_list(extra.apt_packages))
-            if (extra and extra.apt_packages is not None)
-            else (extra.apt_upgradable if extra else 0)
+            0 if (extra and (extra.apt_upgradable or 0) == 0)
+            else (len(parse_list(extra.apt_packages)) if (extra and extra.apt_packages is not None) else (extra.apt_upgradable if extra else 0))
         ),
         "apt_last_update": (extra.apt_last_update.isoformat()
                             if extra and extra.apt_last_update else None),
-        "apt_packages": parse_list(extra.apt_packages if extra else None),
+        "apt_packages": [] if (extra and (extra.apt_upgradable or 0) == 0) else parse_list(extra.apt_packages if extra else None),
         "hardware_specs": hw_specs,
         "platform": _classify_platform(hw_specs.get("platform", {}), getattr(server, "platform_override", None)),
         "extras": ["SYSLOG", "AUTH"],
