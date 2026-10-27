@@ -311,6 +311,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.4
+
+- **Tipe Rilis:** Perbaikan Fungsi Kunci Terminal dan Pemutusan Sesi Web Shell (*Web Terminal Locking Workflow & Session Severing Bugfix*)
+- **Fokus Utama:** Menyelesaikan kendala antarmuka web terminal macet (*stuck*) saat operator mengklik tombol konfirmasi "Kunci Terminal & Putus Sesi?":
+  1. **Eliminasi Galat Runtime JavaScript (`ReferenceError: finishUpgradeSession is not defined`):**
+     - Menghapus pemanggilan fungsi *legacy* `finishUpgradeSession()` yang tidak terdefinisi di dalam `proceedLockTerminalSession()` pada berkas `server/templates/services.html`.
+     - Sebelumnya, pengecualian (*unhandled exception*) ini menghentikan eksekusi kode JavaScript sebelum permintaan POST ke API `/api/servers/{sid}/terminal/lock` dikirim, menyebabkan koneksi WebSocket tidak tertutup, hitung mundur masa sewa tidak berhenti, dan jendela terminal tidak tersembunyi.
+  2. **Penguatan Penanganan Respons & Notifikasi Toast:**
+     - Menambahkan penanganan respons HTTP yang komprehensif pada pemanggilan endpoint `/api/servers/{sid}/terminal/lock` dengan notifikasi *toast* interaktif berbahasa Indonesia baku ("Terminal berhasil dikunci dan sesi koneksi diputus.") dan bahasa Inggris ("Terminal locked and session disconnected.").
+     - Menjamin penutupan WebSocket (`term.close()`), penyembunyian antarmuka terminal (`term.hideViewOnly()`), pembaruan status ke "Terminal telah dikunci", penghentian timer sewa (`stopTermLeaseCountdown()`), dan penonaktifan banner sesi aktif (`setTerminalSessionActive(false)`) tereksekusi secara deterministik.
+
 ## Versi 4.8.3
 
 - **Tipe Rilis:** Deteksi Cerdas Kegagalan Repositori APT dan Eliminasi Alarm Sukses Palsu (*APT Repository Failure Intelligent Detection & False Success Alarm Elimination*)

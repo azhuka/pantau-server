@@ -6503,17 +6503,24 @@ function closeTerminalLockConfirmModal() {
 
 async function proceedLockTerminalSession() {
   closeTerminalLockConfirmModal();
-  finishUpgradeSession();
   try {
-    await fetch(`/api/servers/${SID}/terminal/lock`, {
+    const res = await fetch(`/api/servers/${SID}/terminal/lock`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
         'X-CSRF-Token': getCsrf(),
       },
     });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      console.error('Lock error:', errData);
+      showToast(errData.detail || (isEnPage() ? 'Failed to lock terminal.' : 'Gagal mengunci terminal.'), false);
+    } else {
+      showToast(isEnPage() ? 'Terminal locked and session disconnected.' : 'Terminal berhasil dikunci dan sesi koneksi diputus.', true);
+    }
   } catch (e) {
     console.error('Lock error:', e);
+    showToast((isEnPage() ? 'Lock error: ' : 'Kesalahan mengunci terminal: ') + (e.message || e), false);
   }
   stopTermLeaseCountdown();
   const term = getTerm();
