@@ -311,6 +311,14 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.8
+
+- **Tipe Rilis:** Penyesuaian Sanitasi Panjang Catatan Resolusi Insiden Platform (*Platform Conflict Resolution Note Length Sanitization*)
+- **Fokus Utama:** Memastikan integritas transaksi basis data saat pemulihan otomatis konflik platform:
+  1. **Sanitasi String `resolved_note` (`server/main.py`):**
+     - Membatasi panjang teks `prob.resolved_note` pada endpoint `POST /api/servers/{sid}/reset-platform-auto` menggunakan helper `_clean_str` agar tidak melebihi kapasitas kolom `VARCHAR(30)` pada skema tabel `server_problems`.
+     - Mencegah timbulnya `pymysql.err.DataError: (1406, "Data too long for column 'resolved_note'")` ketika nama pengguna operator pengeksekusi reset dipetakan ke dalam riwayat penyelesaian insiden.
+
 ## Versi 4.8.7
 
 - **Tipe Rilis:** Benteng Proteksi Konflik Platform & Rekonsiliasi Otomatis Kesalahan Input Operator (*Platform Mismatch Conflict Triage, Fail-Safe Storage & Form Dynamic Guidance*)

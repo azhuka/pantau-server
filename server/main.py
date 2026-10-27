@@ -4047,7 +4047,7 @@ def api_reset_platform_auto(
         ServerProblem.resolved_at.is_(None)
     ).all():
         prob.resolved_at = datetime.utcnow()
-        prob.resolved_note = f"auto (disinkronkan ke auto oleh {user.username})"
+        prob.resolved_note = _clean_str(f"auto ({user.username})", "auto (reset)", 30)
 
     db.commit()
     return {"ok": True, "message": "Konfigurasi platform berhasil disinkronkan kembali ke Auto Deteksi"}
