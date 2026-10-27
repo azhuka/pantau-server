@@ -311,6 +311,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.3
+
+- **Tipe Rilis:** Deteksi Cerdas Kegagalan Repositori APT dan Eliminasi Alarm Sukses Palsu (*APT Repository Failure Intelligent Detection & False Success Alarm Elimination*)
+- **Fokus Utama:** Mengeliminasi anomali pelaporan sukses palsu (`✔ Selesai dengan sukses`) ketika `apt update` gagal mengunduh repositori karena kesalahan DNS (*Temporary failure resolving*) atau kegagalan jaringan:
+  1. **Penguatan Wrapper Eksekusi Terminal (`script -qfec`):**
+     - Memperbaiki wrapper `/usr/local/sbin/pantau-apt` dari `/usr/bin/script -qfc` menjadi `/usr/bin/script -qfec` (penambahan opsi `-e`), memastikan kode keluar (*exit status code*) dari sub-proses APT diteruskan secara akurat dan tidak disamarkan menjadi 0.
+  2. **Deteksi Cerdas Pola Kegagalan Unduh Repositori pada Agen Klien (`agent_pantau.py`):**
+     - Menambahkan inspeksi string kegagalan pada output APT (`W: Some index files failed to download`, `W: Failed to fetch`, `Temporary failure resolving`, `Could not resolve`, `Connection refused`).
+     - Menyematkan diagnosa spesifik (`has_fetch_err`, `fetch_err_reason`) ke dalam payload hasil eksekusi agar dasbor memahami secara persis penyebab kegagalan (misalnya resolusi DNS atau penolakan koneksi jaringan).
+  3. **Penyempurnaan Penanganan Modal & Status Antarmuka Dasbor (`services.html`):**
+     - Menghapus penambahan mutlak string hijau `✔ Selesai dengan sukses` bila ditemukan kegagalan pengunduhan indeks.
+     - Memperkenalkan status `warning` pada modal tugas APT dengan indikator visual kuning (`⚠ Selesai dengan peringatan`) yang menampilkan alasan kegagalan secara transparan.
+     - Menghindari klaim keliru "Semua paket OS sudah mutakhir" ketika pembaruan repositori gagal, serta memberikan catatan bahwa data paket yang tampil merupakan data cache lama.
+  4. **Proteksi Integritas Timestamp Terakhir Pembaruan (`main.py`):**
+     - Mencegah pembaruan `apt_last_update` menjadi waktu sekarang jika proses pembaruan repositori gagal mengunduh indeks, mempertahankan keakuratan riwayat pemeriksaan terakhir.
+
 ## Versi 4.8.2
 
 - **Tipe Rilis:** Reduksi Ukuran Teks IP dan Standarisasi Badge Indikator Warna Berukuran Kecil pada Seluruh Tabel (*IP Text Size Reduction & Unified Small Colored Indicator Badges Across All Fleet Tables*)

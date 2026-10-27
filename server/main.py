@@ -10033,7 +10033,8 @@ def api_logs_result(
                         extras.apt_upgradable = _clamp_int(apt_info.get("upgradable"), 0)
                     if "packages" in apt_info and isinstance(apt_info["packages"], list):
                         extras.apt_packages = json.dumps(apt_info["packages"][:200])
-                    extras.apt_last_update = datetime.utcnow()
+                    if not parsed.get("has_fetch_err"):
+                        extras.apt_last_update = datetime.utcnow()
             elif req.unit in ("APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE"):
                 extras.apt_upgradable = 0
                 extras.apt_packages = "[]"

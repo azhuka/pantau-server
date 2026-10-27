@@ -5874,6 +5874,20 @@ function setAptTaskModalState(state, kind, extra) {
       closeBtn.className = 'btn btn-primary btn-sm';
       closeBtn.textContent = isEn ? 'Close' : 'Tutup';
     }
+  } else if (state === 'warning') {
+    if (badge) {
+      badge.className = 'badge badge-warn';
+      badge.style.display = 'inline-flex';
+      badge.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:4px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg><span>${isEn ? 'Warning' : 'Peringatan'}</span>`;
+    }
+    if (foot) {
+      foot.textContent = extra || (isEn ? 'Completed with warnings.' : 'Selesai dengan peringatan.');
+      foot.style.color = 'var(--yellow)';
+    }
+    if (closeBtn) {
+      closeBtn.className = 'btn btn-primary btn-sm';
+      closeBtn.textContent = isEn ? 'Close' : 'Tutup';
+    }
   } else if (state === 'error' || state === 'failed') {
     if (badge) {
       badge.className = 'badge badge-danger';
@@ -6949,10 +6963,13 @@ async function aptFollow(rid, kind, startedMs) {
       setAptTaskBuffer(header + (aptTaskLastOutput || '') + '\r\n\x1b[31m[ERROR: ' + (isEn ? 'Timeout reached' : 'Batas waktu habis') + ']\x1b[0m\r\n');
       aptFollowCooldown = Date.now() + 120000;
     } else if (j) {
-      const errMsg = j.result || j.status || 'Error';
-      aptSetState('error', 'Gagal (' + escapeHtml(j.status) + ').');
-      setAptTaskModalState('error', kind, 'Gagal (' + escapeHtml(j.status) + ')');
-      setAptTaskBuffer(header + (aptTaskLastOutput || '') + '\r\n\x1b[31m[ERROR: ' + escapeHtml(errMsg) + ']\x1b[0m\r\n');
+      let failInfo = null;
+      try { failInfo = JSON.parse(j.result); } catch (e) {}
+      const failOutput = (failInfo && failInfo.output) ? failInfo.output : (j.result || '');
+      const errMsg = (failInfo && (failInfo.fetch_err_reason || failInfo.warning)) || failOutput || j.status || 'Error';
+      aptSetState('error', isEn ? 'Failed (' + escapeHtml(j.status) + ').' : 'Gagal (' + escapeHtml(j.status) + ').');
+      setAptTaskModalState('error', kind, isEn ? 'Failed: ' + escapeHtml(errMsg.slice(0, 80)) : 'Gagal: ' + escapeHtml(errMsg.slice(0, 80)));
+      setAptTaskBuffer(header + (failOutput || aptTaskLastOutput || '') + '\r\n\x1b[31m✖ [ERROR: ' + escapeHtml(errMsg.slice(0, 150)) + ']\x1b[0m\r\n');
     } else {
       aptSetState('error', 'Gagal mengambil hasil.');
       setAptTaskModalState('error', kind, 'Gagal mengambil hasil.');
@@ -6961,12 +6978,51 @@ async function aptFollow(rid, kind, startedMs) {
     let info = null;
     try { info = JSON.parse(j.result); } catch (e) { /* hasil teks biasa */ }
     const finalOutput = (info && info.output) ? info.output : (j.result || '');
-    setAptTaskBuffer(header + finalOutput + '\r\n\x1b[32m✔ ' + (isEn ? 'Completed successfully.' : 'Selesai dengan sukses.') + '\x1b[0m\r\n');
-    setAptTaskModalState('success', kind, isEn ? 'Task completed successfully.' : 'Tugas berhasil diselesaikan.');
+    const lowOut = (finalOutput || '').toLowerCase();
+    const hasFetchFail = (info && info.has_fetch_err) || (kind === 'APT_UPDATE' && (lowOut.includes('some index files failed to download') || lowOut.includes('failed to fetch')));
+
+    if (hasFetchFail) {
+      let warnText = (info && info.fetch_err_reason) || '';
+      if (!warnText) {
+        if (lowOut.includes('temporary failure resolving') || lowOut.includes('could not resolve') || lowOut.includes('no servers could be reached')) {
+          warnText = isEn ? 'Failed to fetch repository index: DNS resolution error.' : 'Gagal mengunduh indeks repositori: resolusi DNS bermasalah.';
+        } else if (lowOut.includes('connection refused') || lowOut.includes('could not connect')) {
+          warnText = isEn ? 'Failed to fetch repository index: network connection refused.' : 'Gagal mengunduh indeks repositori: koneksi jaringan ditolak.';
+        } else {
+          warnText = isEn ? 'Some or all repository indexes failed to download.' : 'Sebagian atau seluruh indeks repositori gagal diunduh.';
+        }
+      }
+      setAptTaskBuffer(header + finalOutput + '\r\n\x1b[33m⚠ ' + (isEn ? 'Completed with warnings: ' : 'Selesai dengan peringatan: ') + warnText + '\x1b[0m\r\n');
+      setAptTaskModalState('warning', kind, warnText);
+      aptSetState('warning', '<b style="color:var(--yellow)">' + (isEn ? 'Warning: ' : 'Peringatan: ') + '</b>' + warnText);
+      aptMsg('<span style="color:var(--yellow)">⚠ ' + warnText + '</span>', 'var(--yellow)');
+    } else {
+      setAptTaskBuffer(header + finalOutput + '\r\n\x1b[32m✔ ' + (isEn ? 'Completed successfully.' : 'Selesai dengan sukses.') + '\x1b[0m\r\n');
+      setAptTaskModalState('success', kind, isEn ? 'Task completed successfully.' : 'Tugas berhasil diselesaikan.');
+    }
 
     if (info && info.apt) {
       const apt = info.apt;
-      if (apt.upgradable > 0) {
+      if (hasFetchFail) {
+        const cacheNotice = isEn ? ' (cached: index update failed)' : ' (cache lama: update indeks gagal)';
+        if (apt.upgradable > 0) {
+          aptSetState('warning', '<b>' + apt.upgradable + (isEn ? ' packages</b> upgradable' : ' paket</b> dapat di-upgrade') + ' <span class="dim">' + cacheNotice + '</span>');
+          const pkgs = apt.packages || [];
+          const enriched = pkgs.map(p => {
+            const matched = matchAptByName(pkgName(p));
+            return {
+              name: pkgName(p),
+              version: pkgVersion(p),
+              services: (pkgServices(matched).length ? pkgServices(matched) : pkgServices(p)),
+            };
+          });
+          const listHtml = enriched.length
+            ? '<div style="margin-top:6px;max-height:160px;overflow:auto;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:monospace;font-size:11px">'
+              + enriched.slice(0, 60).map(pkgItemHtml).join('<br>') + '</div>'
+            : '';
+          aptMsg('<b>' + apt.upgradable + (isEn ? ' packages ready for upgrade' : ' paket siap untuk di-upgrade') + cacheNotice + '.</b>' + listHtml, 'var(--yellow)');
+        }
+      } else if (apt.upgradable > 0) {
         aptSetState('pending', '<b>' + apt.upgradable + (isEn ? ' packages</b> ready to upgrade. <span class="dim">See list below.</span>' : ' paket</b> siap di-upgrade. <span class="dim">Lihat daftar di bawah.</span>'));
         const pkgs = apt.packages || [];
         const enriched = pkgs.map(p => {

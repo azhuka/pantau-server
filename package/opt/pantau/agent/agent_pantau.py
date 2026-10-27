@@ -474,7 +474,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.2"
+AGENT_VERSION = "4.8.3"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -2555,32 +2555,32 @@ case "${1:-}" in
         export DEBIAN_FRONTEND=noninteractive
         export NEEDRESTART_MODE=l
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get update -o Dpkg::Lock::Timeout=600" /dev/null
+        exec /usr/bin/script -qfec "/usr/bin/apt-get update -o Dpkg::Lock::Timeout=600" /dev/null
         ;;
     upgrade)
         export DEBIAN_FRONTEND=noninteractive
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON upgrade" /dev/null
+        exec /usr/bin/script -qfec "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON upgrade" /dev/null
         ;;
     upgrade-interact)
         unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true upgrade" /dev/null
+        exec /usr/bin/script -qfec "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true upgrade" /dev/null
         ;;
     dist-upgrade)
         unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true dist-upgrade" /dev/null
+        exec /usr/bin/script -qfec "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true dist-upgrade" /dev/null
         ;;
     fix)
         unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        /usr/bin/script -qfc "/usr/bin/dpkg --configure -a" /dev/null || true
-        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -f -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true install" /dev/null
+        /usr/bin/script -qfec "/usr/bin/dpkg --configure -a" /dev/null || true
+        exec /usr/bin/script -qfec "/usr/bin/apt-get -y -f -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true install" /dev/null
         ;;
     clean)
         exec /usr/bin/apt-get clean
@@ -2600,7 +2600,7 @@ case "${1:-}" in
         export DEBIAN_FRONTEND=noninteractive
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get --only-upgrade -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON install '$pkg'" /dev/null
+        exec /usr/bin/script -qfec "/usr/bin/apt-get --only-upgrade -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON install '$pkg'" /dev/null
         ;;
     *)
         echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2
@@ -2646,7 +2646,7 @@ def ensure_pantau_apt_updated() -> bool:
                     cur_content = f.read()
             except Exception:
                 pass
-        if "Always-Include-Phased-Updates" in cur_content and "upgrade-pkg" in cur_content and "clean" in cur_content:
+        if "Always-Include-Phased-Updates" in cur_content and "upgrade-pkg" in cur_content and "clean" in cur_content and "-qfec" in cur_content:
             return True
 
         if IS_ROOT:
@@ -3338,12 +3338,24 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
         apt = None
 
     partial = termify(_tail_parts(output_parts, 40000)).strip("\n")
+    low_full = (full or "").lower()
+    has_fetch_err = False
+    fetch_err_reason = ""
+    if kind == "APT_UPDATE":
+        if "w: some index files failed to download" in low_full or "w: failed to fetch" in low_full or "failed to fetch" in low_full:
+            has_fetch_err = True
+            if "temporary failure resolving" in low_full or "could not resolve" in low_full or "no servers could be reached" in low_full:
+                fetch_err_reason = "Gagal mengunduh indeks repositori: resolusi DNS bermasalah."
+            elif "connection refused" in low_full or "could not connect" in low_full:
+                fetch_err_reason = "Gagal mengunduh indeks repositori: koneksi jaringan ditolak / terputus."
+            else:
+                fetch_err_reason = "Sebagian atau seluruh indeks repositori gagal diunduh (periksa URL repositori/koneksi)."
+
     if failed:
         result_ok = False
         msg = (errmsg + ("\n\n[output sebagian]\n" + partial)) if partial else errmsg
     elif proc is not None and proc.returncode != 0:
         result_ok = False
-        low_full = (full or "").lower()
         if "no new privileges" in low_full or "permission denied" in low_full or "a password is required" in low_full or proc.returncode in (126, 127):
             msg = _apt_sudo_denied_hint(full or f"rc={proc.returncode}")
         else:
@@ -3354,6 +3366,10 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
             "type": kind,
             "output": full[-APT_AGENT_OUTPUT_MAX:],
             "apt": apt,
+            "has_fetch_err": has_fetch_err,
+            "fetch_err_reason": fetch_err_reason,
+            "warning": fetch_err_reason if has_fetch_err else None,
+            "rc": proc.returncode if proc else 0,
         })
 
     result = {"status": "success" if result_ok else "failed", "result": msg}
