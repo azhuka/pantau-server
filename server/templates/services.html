@@ -7043,7 +7043,21 @@ async function aptFollow(rid, kind, startedMs) {
       let failInfo = null;
       try { failInfo = JSON.parse(j.result); } catch (e) {}
       const failOutput = (failInfo && failInfo.output) ? failInfo.output : (j.result || '');
-      const errMsg = (failInfo && (failInfo.fetch_err_reason || failInfo.warning)) || failOutput || j.status || 'Error';
+      let errMsg = (failInfo && (failInfo.error || failInfo.fetch_err_reason || failInfo.warning)) || '';
+      if (!errMsg && failOutput) {
+        if (failOutput.includes('[proses apt kedaluwarsa]')) {
+          errMsg = isEn ? 'Process timed out.' : 'Batas waktu proses terlampaui (kedaluwarsa).';
+        } else {
+          const lines = failOutput.split('\n').map(l => l.trim()).filter(Boolean);
+          const errLine = lines.slice().reverse().find(l => /^e:\s+/i.test(l) || /^error:\s+/i.test(l) || /gagal/i.test(l));
+          if (errLine) {
+            errMsg = errLine.replace(/^[Ee]:\s*/, '');
+          } else {
+            errMsg = isEn ? 'Process completed with error.' : 'Proses selesai dengan kode kegagalan.';
+          }
+        }
+      }
+      if (!errMsg) errMsg = j.status || 'Error';
       aptSetState('error', isEn ? 'Failed (' + escapeHtml(j.status) + ').' : 'Gagal (' + escapeHtml(j.status) + ').');
       setAptTaskModalState('error', kind, isEn ? 'Failed: ' + escapeHtml(errMsg.slice(0, 80)) : 'Gagal: ' + escapeHtml(errMsg.slice(0, 80)));
       setAptTaskBuffer(header + (failOutput || aptTaskLastOutput || '') + '\r\n\x1b[31m✖ [ERROR: ' + escapeHtml(errMsg.slice(0, 150)) + ']\x1b[0m\r\n');

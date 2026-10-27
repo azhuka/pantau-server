@@ -1460,6 +1460,32 @@ def agent_report(
                 ).all():
                     prob.resolved_at = datetime.utcnow()
                     prob.resolved_note = "auto (upgrade selesai di klien)"
+            else:
+                if getattr(server, "is_isolated_net", 0) != 1:
+                    upg_cnt = int(extras.apt_upgradable)
+                    new_msg = f"{upg_cnt} paket menunggu upgrade"
+                    new_ctx = _build_problem_context("apt_updates", server, upgradable=upg_cnt)
+                    prob = db.query(ServerProblem).filter(
+                        ServerProblem.server_id == server.id,
+                        ServerProblem.key == "apt_updates",
+                        ServerProblem.resolved_at.is_(None)
+                    ).first()
+                    if prob:
+                        prob.message = new_msg
+                        prob.context = new_ctx
+                        prob.updated_at = datetime.utcnow()
+                    else:
+                        prob = ServerProblem(
+                            server_id=server.id,
+                            key="apt_updates",
+                            severity="info",
+                            message=new_msg,
+                            tip=APT_TIP,
+                            started_at=datetime.utcnow(),
+                            last_active_at=datetime.utcnow(),
+                            context=new_ctx
+                        )
+                        db.add(prob)
         if isinstance(apt.get("last_update"), str):
             last_upd = _parse_iso_dt(apt["last_update"], None)
             if last_upd is not None:
@@ -2416,6 +2442,25 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "result": a["result"],
     } for a in actions_raw]
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    # Bersihkan seluruh permintaan apt yang menggantung melampaui batas waktu toleransi
+    stale_apt_runs = (
+        db.query(LogRequest)
+        .filter(
+            LogRequest.server_id == sid,
+            LogRequest.unit.in_(APT_UNITS),
+            LogRequest.status.in_(["pending", "executing"]),
+        )
+        .all()
+    )
+    for stale_req in stale_apt_runs:
+        apt_limit = timedelta(minutes=15) if "UPGRADE" in (stale_req.unit or "") else timedelta(minutes=5)
+        ref_time = stale_req.updated_at or stale_req.created_at
+        if ref_time and ref_time < (datetime.utcnow() - apt_limit):
+            stale_req.status = "failed"
+            stale_req.result = (stale_req.result or "").strip() + "\n[proses apt kedaluwarsa]"
+            db.commit()
+
+    # Ambil sesi pembaruan apt aktif TERBARU
     apt_run = (
         db.query(LogRequest)
         .filter(
@@ -2423,17 +2468,9 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             LogRequest.unit.in_(APT_UNITS),
             LogRequest.status.in_(["pending", "executing"]),
         )
-        .order_by(LogRequest.created_at)
+        .order_by(LogRequest.id.desc())
         .first()
     )
-    if apt_run:
-        apt_limit = timedelta(minutes=15) if "UPGRADE" in (apt_run.unit or "") else timedelta(minutes=4)
-        ref_time = apt_run.updated_at or apt_run.created_at
-        if ref_time and ref_time < (datetime.utcnow() - apt_limit):
-            apt_run.status = "failed"
-            apt_run.result = (apt_run.result or "").strip() + "\n[proses apt kedaluwarsa]"
-            db.commit()
-            apt_run = None
     # Sesi Terminal Bawaan yang masih hidup, supaya halaman yang di-reload
     # menyambung lagi ke shell yang sama (tidak membuka shell kedua).
     shell_run = (
@@ -9998,6 +10035,15 @@ def api_logs_result(
         req.result = clean(body.get("result"), APT_STREAM_MAXCHARS, APT_STREAM_MAXLINES)
     req.updated_at = datetime.utcnow()
 
+    # Sesi shell ditutup: jangan simpan sisa input tak terpakai.
+    if req.unit == SHELL_UNIT and (req.input_data or req.input_queue):
+        req.input_data = None
+        req.input_queue = None
+        req.input_at = None
+
+    # Simpan status akhir LogRequest terlebih dahulu agar fakta penyelesaian tugas tidak hilang bila operasi sekunder gagal
+    db.commit()
+
     if req.unit == "PKG_LIST" and req.status == "success":
         try:
             if req.result and req.result.startswith("[") and req.result.endswith("]"):
@@ -10006,6 +10052,7 @@ def api_logs_result(
                     extras = ServerExtras(server_id=server.id)
                     db.add(extras)
                 extras.installed_packages = req.result
+                db.commit()
         except Exception as e:
             try:
                 db.rollback()
@@ -10028,12 +10075,6 @@ def api_logs_result(
             except Exception:
                 pass
             logger.warning("[SYSTEMD_LIST] Gagal simpan extras.systemd_units: %s", e)
-
-    # Sesi shell ditutup: jangan simpan sisa input tak terpakai.
-    if req.unit == SHELL_UNIT and (req.input_data or req.input_queue):
-        req.input_data = None
-        req.input_queue = None
-        req.input_at = None
 
     # Segera sinkronkan status apt ke ServerExtras agar dashboard & tombol upgrade langsung aktif tanpa jeda
     if req.unit in ("APT_UPDATE", "APT_UPGRADE", "APT_UPGRADE_INTERACT", "APT_DIST_UPGRADE", "APT_FIX", "PKG_UPGRADE") and status == "success":
@@ -10100,17 +10141,22 @@ def api_logs_result(
 
             # Sinkronkan masalah apt_updates secara riil seketika ke database
             if (extras.apt_upgradable or 0) == 0:
-                for prob in db.query(ServerProblem).filter(
+                for p in db.query(ServerProblem).filter(
                     ServerProblem.server_id == server.id,
                     ServerProblem.key == "apt_updates",
                     ServerProblem.resolved_at.is_(None)
                 ).all():
-                    prob.resolved_at = datetime.utcnow()
-                    prob.resolved_note = "auto (upgrade selesai)"
+                    p.resolved_at = datetime.utcnow()
+                    p.resolved_note = "auto (upgrade selesai)"
             else:
                 upg_cnt = int(extras.apt_upgradable)
                 new_msg = f"{upg_cnt} paket menunggu upgrade"
                 new_ctx = _build_problem_context("apt_updates", server, upgradable=upg_cnt)
+                prob = db.query(ServerProblem).filter(
+                    ServerProblem.server_id == server.id,
+                    ServerProblem.key == "apt_updates",
+                    ServerProblem.resolved_at.is_(None)
+                ).first()
                 if prob:
                     prob.message = new_msg
                     prob.context = new_ctx
@@ -10127,6 +10173,7 @@ def api_logs_result(
                         context=new_ctx
                     )
                     db.add(prob)
+            db.commit()
         except Exception as exc:
             try:
                 db.rollback()

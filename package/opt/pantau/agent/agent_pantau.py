@@ -474,7 +474,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.5"
+AGENT_VERSION = "4.8.6"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -3358,13 +3358,40 @@ def _run_apt_inner(cfg: dict, rid: int, kind: str, detail: str = ""):
 
     if failed:
         result_ok = False
-        msg = (errmsg + ("\n\n[output sebagian]\n" + partial)) if partial else errmsg
+        err_desc = errmsg or "Eksekusi proses apt gagal"
+        msg = json.dumps({
+            "type": kind,
+            "output": (full or partial)[-APT_AGENT_OUTPUT_MAX:],
+            "apt": apt,
+            "error": err_desc,
+            "rc": 1,
+        })
     elif proc is not None and proc.returncode != 0:
-        result_ok = False
-        if "no new privileges" in low_full or "permission denied" in low_full or "a password is required" in low_full or proc.returncode in (126, 127):
-            msg = _apt_sudo_denied_hint(full or f"rc={proc.returncode}")
+        # Jika apt update selesai membaca daftar paket meski ada repositori yang gagal diunduh (rc=100)
+        if kind == "APT_UPDATE" and ("reading package lists" in low_full or has_fetch_err):
+            result_ok = True
+            msg = json.dumps({
+                "type": kind,
+                "output": full[-APT_AGENT_OUTPUT_MAX:],
+                "apt": apt,
+                "has_fetch_err": True,
+                "fetch_err_reason": fetch_err_reason or "Sebagian indeks repositori gagal diunduh.",
+                "warning": fetch_err_reason or "Sebagian indeks repositori gagal diunduh.",
+                "rc": proc.returncode,
+            })
         else:
-            msg = full or f"Proses apt selesai dengan kode kegagalan (rc={proc.returncode})"
+            result_ok = False
+            if "no new privileges" in low_full or "permission denied" in low_full or "a password is required" in low_full or proc.returncode in (126, 127):
+                err_desc = _apt_sudo_denied_hint(full or f"rc={proc.returncode}")
+            else:
+                err_desc = f"Proses apt selesai dengan kode kegagalan (rc={proc.returncode})"
+            msg = json.dumps({
+                "type": kind,
+                "output": full[-APT_AGENT_OUTPUT_MAX:],
+                "apt": apt,
+                "error": err_desc,
+                "rc": proc.returncode,
+            })
     else:
         result_ok = True
         msg = json.dumps({

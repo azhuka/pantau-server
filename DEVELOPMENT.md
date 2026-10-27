@@ -311,6 +311,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.6
+
+- **Tipe Rilis:** Penuntasan Eksepsi Rollback Log Request APT, Pemulihan Timeout Sesi Menggantung, dan Penyempurnaan Error Parsing Modal (*APT Log Request Rollback Exception Fix, Stale Session Timeout Recovery & Modal Error Parsing Refinement*)
+- **Fokus Utama:** Mengeliminasi bug kritis di mana tugas pembaruan repositori APT (`apt update` / `apt upgrade`) yang telah selesai dieksekusi secara sukses oleh agen malah berstatus gagal dengan pesan `[proses apt kedaluwarsa]` dan memunculkan toast potongan teks repositori mentah:
+  1. **Penanganan Eksepsi `UnboundLocalError` pada Sinkronisasi Insiden APT (`server/main.py`):**
+     - Memperbaiki bug kritis pada endpoint `POST /api/logs/{rid}/result` di mana variabel `prob` dievaluasi pada cabang `else:` (`if prob:`) sebelum di-query dari basis data, memicu `UnboundLocalError: cannot access local variable 'prob' where it is not associated with a value`.
+     - Memastikan `prob` di-query secara benar dari tabel `ServerProblem` untuk kunci `apt_updates` sebelum dilakukan modifikasi atau inisialisasi entitas baru.
+  2. **Isolasi Transaksi Database & Komit Permanen Status Tugas (`server/main.py`):**
+     - Memisahkan penyimpanan status empiris `LogRequest` dari operasi pembaruan sekunder (`ServerExtras`, `ServerProblem`, `AuditLog`).
+     - Melakukan `db.commit()` seketika pada `LogRequest` agar status tugas yang dilaporkan agen (`success` atau `failed`) tersimpan permanen dan terlindungi dari pembatalan transaksi (`db.rollback()`) bila terjadi kegagalan kalkulasi turunan.
+  3. **Penyempurnaan Pembersihan Sesi Kadaluwarsa & Pengambilan Tugas Aktif Terkini (`server/main.py`):**
+     - Mengubah pengurutan `apt_run` pada `api_server_overview` dari `.order_by(LogRequest.created_at)` (mengambil tugas tertua) menjadi `.order_by(LogRequest.id.desc())` (mengambil tugas aktif terbaru).
+     - Menambahkan loop pembersihan komprehensif (*garbage collection*) untuk seluruh permintaan APT menggantung yang melebihi batas toleransi waktu tanpa memblokir pemantauan tugas baru yang sedang berjalan.
+  4. **Sinkronisasi Reaktif Insiden `apt_updates` pada Laporan Berkala Agen (`server/main.py`):**
+     - Memperluas pembaruan entitas `ServerProblem` ("apt_updates") langsung pada endpoint `POST /api/report` ketika agen mendeteksi jumlah paket yang butuh pembaruan (`upgradable > 0`), menjamin konsistensi relasional penuh saat operator menjalankan upgrade langsung via terminal klien.
+  5. **Standardisasi Output Terstruktur JSON pada Agen Klien (`agent_pantau.py`):**
+     - Agen kini selalu mengembalikan muatan terstruktur JSON (`type`, `output`, `apt`, `error`, `rc`) baik dalam kondisi berhasil, peringatan repositori (`rc=100`), maupun kegagalan fatal.
+     - Menghindarkan pengiriman teks terminal mentah tanpa struktur yang membingungkan lapisan antarmuka.
+  6. **Penyempurnaan Ekstraksi Pesan Kesalahan pada Antarmuka Modal (`services.html`):**
+     - Mengeliminasi anomali tampilan di mana baris awal repositori (`Hit:1 http://...`) terpotong dan dijadikan judul pesan error pada modal serta notifikasi *toast*.
+     - Menyediakan parser ekstraksi cerdas: memprioritaskan properti `error` JSON, menangkap keterangan kedaluwarsa batas waktu secara presisi, serta mengekstrak baris kesalahan eksplisit (`E: ...`, `Error: ...`) dengan pesan fallback yang elegan dan komunikatif.
+
 ## Versi 4.8.5
 
 - **Tipe Rilis:** Arsitektur Keterhubungan Relasional Menyeluruh dan Sinkronisasi Reaktif Dua Arah (*Omnidirectional Relational Integrity & Reactive Dual-Directional Synchronization Architecture*)
