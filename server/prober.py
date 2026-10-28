@@ -13,6 +13,7 @@ Mendukung pemantauan proaktif dan agentless dari server pusat:
 import asyncio
 import datetime
 import json
+import ipaddress
 import logging
 import os
 import re
@@ -99,16 +100,61 @@ def is_status_code_match(code: int, expected_ranges: List[Tuple[int, int]]) -> b
     return False
 
 
+def _parse_cert_date(date_str: str) -> Optional[datetime.datetime]:
+    """Parsing tanggal sertifikat SSL dengan dukungan berbagai variasi format dan zona waktu."""
+    if not date_str:
+        return None
+    s = re.sub(r"\s+", " ", date_str.strip())
+    for fmt in (
+        "%b %d %H:%M:%S %Y %Z",
+        "%b %d %H:%M:%S %Y GMT",
+        "%b %d %H:%M:%S %Y UTC",
+        "%b %d %H:%M:%S %Y",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y%m%d%H%M%SZ",
+    ):
+        try:
+            dt = datetime.datetime.strptime(s, fmt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=datetime.timezone.utc)
+            return dt
+        except ValueError:
+            continue
+    return None
+
+
 def inspect_remote_ssl_certificate(
     host: str, port: int = 443, timeout: float = 5.0
 ) -> Tuple[Optional[datetime.datetime], Optional[int], Optional[str]]:
     """Periksa tanggal kedaluwarsa sertifikat SSL/TLS remote menggunakan ssl socket standar."""
     try:
+        clean_host = host.strip()
+        if "://" in clean_host:
+            parsed = urlparse(clean_host)
+            clean_host = parsed.hostname or clean_host
+            if parsed.port:
+                port = parsed.port
+        elif ":" in clean_host and not clean_host.count(":") > 1:
+            h_part, p_part = clean_host.split(":", 1)
+            clean_host = h_part
+            try:
+                port = int(p_part)
+            except ValueError:
+                pass
+
+        is_ip = False
+        try:
+            ipaddress.ip_address(clean_host)
+            is_ip = True
+        except ValueError:
+            is_ip = False
+
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE  # agar tetap bisa baca expire date walau cert internal/self-signed
-        with socket.create_connection((host, port), timeout=timeout) as sock:
-            with ctx.wrap_socket(sock, server_hostname=host) as ssock:
+        server_hostname = None if is_ip else clean_host
+        with socket.create_connection((clean_host, port), timeout=timeout) as sock:
+            with ctx.wrap_socket(sock, server_hostname=server_hostname) as ssock:
                 der = ssock.getpeercert(binary_form=True)
                 if not der:
                     return None, None, "Sertifikat SSL tidak ditemukan dari peer"
@@ -128,14 +174,11 @@ def inspect_remote_ssl_certificate(
                     cert = None
 
                 if cert and "notAfter" in cert:
-                    not_after_str = cert["notAfter"]
-                    # Format baku: 'May 10 12:00:00 2026 GMT'
-                    expire_dt = datetime.datetime.strptime(
-                        not_after_str, "%b %d %H:%M:%S %Y %Z"
-                    ).replace(tzinfo=datetime.timezone.utc)
-                    now_utc = datetime.datetime.now(datetime.timezone.utc)
-                    days_remaining = (expire_dt - now_utc).days
-                    return expire_dt.replace(tzinfo=None), days_remaining, None
+                    expire_dt = _parse_cert_date(cert["notAfter"])
+                    if expire_dt:
+                        now_utc = datetime.datetime.now(datetime.timezone.utc)
+                        days_remaining = (expire_dt - now_utc).days
+                        return expire_dt.replace(tzinfo=None), days_remaining, None
 
                 # Fallback: parsing lewat openssl CLI jika tersedia
                 try:
@@ -148,12 +191,11 @@ def inspect_remote_ssl_certificate(
                     )
                     if proc.returncode == 0 and "notAfter=" in proc.stdout:
                         date_str = proc.stdout.split("notAfter=", 1)[1].strip()
-                        expire_dt = datetime.datetime.strptime(
-                            date_str, "%b %d %H:%M:%S %Y %Z"
-                        ).replace(tzinfo=datetime.timezone.utc)
-                        now_utc = datetime.datetime.now(datetime.timezone.utc)
-                        days_remaining = (expire_dt - now_utc).days
-                        return expire_dt.replace(tzinfo=None), days_remaining, None
+                        expire_dt = _parse_cert_date(date_str)
+                        if expire_dt:
+                            now_utc = datetime.datetime.now(datetime.timezone.utc)
+                            days_remaining = (expire_dt - now_utc).days
+                            return expire_dt.replace(tzinfo=None), days_remaining, None
                 except Exception:
                     pass
         return None, None, None
@@ -361,6 +403,11 @@ async def probe_icmp(
         stdout_bytes, stderr_bytes = await asyncio.wait_for(
             proc.communicate(), timeout=timeout_seconds + 3.0
         )
+        if getattr(proc, "_transport", None):
+            try:
+                proc._transport.close()
+            except Exception:
+                pass
         latency_total = (time.perf_counter() - t0) * 1000.0
         out = stdout_bytes.decode("utf-8", errors="ignore")
         err = stderr_bytes.decode("utf-8", errors="ignore")
@@ -412,8 +459,15 @@ async def probe_icmp(
 
     except asyncio.TimeoutError:
         try:
-            proc.kill()
-            await proc.wait()
+            if "proc" in locals() and proc is not None:
+                if proc.returncode is None:
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+                    await proc.wait()
+                if getattr(proc, "_transport", None):
+                    proc._transport.close()
         except Exception:
             pass
         return ProbeResult(
@@ -422,9 +476,15 @@ async def probe_icmp(
         )
     except Exception as exc:
         try:
-            if "proc" in locals() and proc.returncode is None:
-                proc.kill()
-                await proc.wait()
+            if "proc" in locals() and proc is not None:
+                if proc.returncode is None:
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+                    await proc.wait()
+                if getattr(proc, "_transport", None):
+                    proc._transport.close()
         except Exception:
             pass
         return ProbeResult(

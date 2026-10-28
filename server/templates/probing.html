@@ -939,8 +939,14 @@ function renderKpi(sum) {
   document.getElementById('kpi-down').textContent = sum.down || 0;
   document.getElementById('kpi-degraded').textContent = sum.degraded || 0;
   document.getElementById('kpi-lat').innerHTML = (sum.avg_latency_ms || 0) + '<span style="font-size:14px;color:var(--dim);font-weight:600;margin-left:2px">ms</span>';
-  const avgUp = (sum.avg_uptime_24h !== undefined && sum.avg_uptime_24h !== null) ? sum.avg_uptime_24h : 100;
-  document.getElementById('kpi-uptime').innerHTML = avgUp + '<span style="font-size:14px;color:var(--dim);font-weight:600;margin-left:2px">%</span>';
+  const avgUpVal = (sum.avg_uptime_24h !== undefined && sum.avg_uptime_24h !== null) ? Number(sum.avg_uptime_24h) : 100.0;
+  const avgUpStr = avgUpVal.toFixed(1);
+  const avgUpCol = avgUpVal >= 99.0 ? '#38bdf8' : (avgUpVal >= 95.0 ? 'var(--yellow)' : 'var(--red)');
+  const kpiUpEl = document.getElementById('kpi-uptime');
+  if (kpiUpEl) {
+    kpiUpEl.style.color = avgUpCol;
+    kpiUpEl.innerHTML = avgUpStr + '<span style="font-size:14px;color:var(--dim);font-weight:600;margin-left:2px">%</span>';
+  }
   document.getElementById('probeCountLabel').textContent = `Total: ${sum.total || 0} endpoint`;
 }
 
@@ -1050,8 +1056,12 @@ function renderTable() {
       : `<span style="color:var(--dim)">-</span>`;
 
     // Uptime Pill
-    const up24 = (p.uptime_24h !== undefined && p.uptime_24h !== null) ? p.uptime_24h.toFixed(1) : '100.0';
-    const up30 = (p.uptime_30d !== undefined && p.uptime_30d !== null) ? p.uptime_30d.toFixed(1) : '100.0';
+    const up24Num = (p.uptime_24h !== undefined && p.uptime_24h !== null) ? Number(p.uptime_24h) : 100.0;
+    const up30Num = (p.uptime_30d !== undefined && p.uptime_30d !== null) ? Number(p.uptime_30d) : 100.0;
+    const up24 = up24Num.toFixed(1);
+    const up30 = up30Num.toFixed(1);
+    const up24Color = up24Num >= 99.0 ? 'var(--green)' : (up24Num >= 95.0 ? 'var(--yellow)' : 'var(--red)');
+    const up30Color = up30Num >= 99.0 ? 'var(--dim)' : (up30Num >= 95.0 ? 'var(--yellow)' : 'var(--red)');
 
     const pTier = p.tier || 2;
     let tierBadge = '';
@@ -1087,9 +1097,9 @@ function renderTable() {
         </td>
         <td class="td-uptime">
           <div style="font-family:ui-monospace,monospace;font-size:11.5px">
-            <span style="color:${up24 >= 99 ? 'var(--green)' : 'var(--yellow)'}">${up24}%</span>
+            <span style="color:${up24Color};font-weight:${up24Num < 95.0 ? '700' : 'normal'}">${up24}%</span>
             <span style="color:var(--dim);margin:0 2px">/</span>
-            <span style="color:var(--dim)">${up30}%</span>
+            <span style="color:${up30Color}">${up30}%</span>
           </div>
         </td>
         <td class="td-freq">
@@ -1441,10 +1451,20 @@ async function openHistoryModal(id) {
     const prb = data.probe || {};
     document.getElementById('hist-cur-status').innerHTML = `<span class="status-pill status-pill-${prb.status || 'unknown'}">${(prb.status || '—').toUpperCase()}</span>`;
     document.getElementById('hist-avg-lat').textContent = stats.avg_latency_ms !== null ? `${stats.avg_latency_ms} ms` : '—';
-    const histUp24 = (prb.uptime_24h !== undefined && prb.uptime_24h !== null) ? prb.uptime_24h : 100;
-    const histUp30 = (prb.uptime_30d !== undefined && prb.uptime_30d !== null) ? prb.uptime_30d : 100;
-    document.getElementById('hist-up-24').textContent = `${histUp24.toFixed(1)}%`;
-    document.getElementById('hist-up-30').textContent = `${histUp30.toFixed(1)}%`;
+    const histUp24 = (prb.uptime_24h !== undefined && prb.uptime_24h !== null) ? Number(prb.uptime_24h) : 100.0;
+    const histUp30 = (prb.uptime_30d !== undefined && prb.uptime_30d !== null) ? Number(prb.uptime_30d) : 100.0;
+    const histUp24Col = histUp24 >= 99.0 ? 'var(--green)' : (histUp24 >= 95.0 ? 'var(--yellow)' : 'var(--red)');
+    const histUp30Col = histUp30 >= 99.0 ? 'var(--text)' : (histUp30 >= 95.0 ? 'var(--yellow)' : 'var(--red)');
+    const elUp24 = document.getElementById('hist-up-24');
+    const elUp30 = document.getElementById('hist-up-30');
+    if (elUp24) {
+      elUp24.textContent = `${histUp24.toFixed(1)}%`;
+      elUp24.style.color = histUp24Col;
+    }
+    if (elUp30) {
+      elUp30.textContent = `${histUp30.toFixed(1)}%`;
+      elUp30.style.color = histUp30Col;
+    }
 
     // Render Grafik SVG
     renderLatencySvgChart(data.chart || []);

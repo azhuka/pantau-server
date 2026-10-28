@@ -271,6 +271,7 @@ class ServerExtras(Base):
     hardware_specs = Column(Text, nullable=True)         # JSON: spesifikasi hardware & platform server (CPU, RAM, Disks, Board, BIOS)
     installed_packages = Column(MEDIUMTEXT, nullable=True) # JSON: inventaris paket sistem terpasang (dpkg-query)
     systemd_units = Column(MEDIUMTEXT, nullable=True)      # JSON: inventaris unit service systemd (systemctl list-units)
+    backup_status = Column(MEDIUMTEXT, nullable=True)      # JSON: telemetri status berkas cadangan database & sistem
     updated_at = Column(DateTime, default=datetime.utcnow)
 
 

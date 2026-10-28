@@ -477,7 +477,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.19"
+AGENT_VERSION = "4.8.20"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -2856,6 +2856,20 @@ def collect_apt() -> dict | None:
 PANTAU_APT_SCRIPT_BODY = """#!/bin/sh
 # pantau-apt — Cangkang sempit utk tombol Update/Upgrade paket OS.
 # Dipanggil agen 'pantau' via sudo NOPASSWD (lihat /etc/sudoers.d/pantau-agent).
+# Dijalankan lewat pty (script -qfec) supaya output PERSIS seperti terminal SSH:
+# baris progress \\r ikut terlihat, dan dpkg bisa BERINTERAKSI lewat stdin.
+# Argumen divalidasi di sini; BUKAN shell passthrough. URL/repo tetap apa adanya.
+#
+# Pemakaian:
+#   pantau-apt update            -> sinkron, non-interaktif
+#   pantau-apt upgrade           -> upgrade NON-INTERAKTIF (aman, tak menggantung)
+#   pantau-apt upgrade-interact  -> upgrade INTERAKTIF: admin mengetik jawaban
+#                                   sendiri lewat kotak input di Dashboard
+#                                   (dpkg boleh bertanya apa pun)
+#
+# Kenapa ada dua mode? Non-interaktif cocok untuk update terjadwal/massal.
+# Interaktif dipakai admin yang ingin memutuskan sendiri tiap prompt dpkg
+# (mis. memakai konfigurasi bawaan paket, bukan miliknya).
 set -e
 
 DPKG_KEEP_LOCAL="-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
@@ -4412,6 +4426,29 @@ def collect_listening_ports() -> list[dict]:
 _ssl_cache: dict = {"at": 0.0, "data": None}
 
 
+def _parse_agent_cert_date(date_str: str) -> datetime | None:
+    """Parsing tanggal sertifikat SSL dengan dukungan berbagai format dan zona waktu."""
+    if not date_str:
+        return None
+    s = re.sub(r"\s+", " ", date_str.strip())
+    for fmt in (
+        "%b %d %H:%M:%S %Y %Z",
+        "%b %d %H:%M:%S %Y GMT",
+        "%b %d %H:%M:%S %Y UTC",
+        "%b %d %H:%M:%S %Y",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y%m%d%H%M%SZ",
+    ):
+        try:
+            dt = datetime.strptime(s, fmt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+        except ValueError:
+            continue
+    return None
+
+
 def collect_ssl_certs() -> list[dict]:
     """Inspeksi berkas sertifikat SSL/TLS untuk mendeteksi masa kedaluwarsa."""
     now = time.monotonic()
@@ -4465,6 +4502,7 @@ def collect_ssl_certs() -> list[dict]:
             subject = ""
             issuer = ""
             sans = []
+            cn = ""
             not_after = None
 
             # 1. Pustaka standar internal: ssl._ssl._test_decode_cert
@@ -4473,14 +4511,13 @@ def collect_ssl_certs() -> list[dict]:
                 if decoded:
                     if "subject" in decoded:
                         subject = ", ".join(f"{k}={v}" for rdn in decoded["subject"] for k, v in rdn)
+                        cn = next((v for rdn in decoded["subject"] for k, v in rdn if k == "commonName"), "")
                     if "issuer" in decoded:
                         issuer = ", ".join(f"{k}={v}" for rdn in decoded["issuer"] for k, v in rdn)
                     if "subjectAltName" in decoded:
                         sans = [str(v) for k, v in decoded["subjectAltName"] if k == "DNS"]
                     if "notAfter" in decoded:
-                        not_after = datetime.strptime(
-                            decoded["notAfter"], "%b %d %H:%M:%S %Y %Z"
-                        ).replace(tzinfo=timezone.utc)
+                        not_after = _parse_agent_cert_date(decoded["notAfter"])
             except Exception:
                 decoded = None
 
@@ -4498,13 +4535,14 @@ def collect_ssl_certs() -> list[dict]:
                             line_s = line.strip()
                             if line_s.startswith("subject=") and not subject:
                                 subject = line_s.split("subject=", 1)[1].strip()
+                                cn_m = re.search(r"(?:^|,\s*)CN\s*=\s*([^,]+)", subject, re.IGNORECASE)
+                                if cn_m:
+                                    cn = cn_m.group(1).strip()
                             elif line_s.startswith("issuer=") and not issuer:
                                 issuer = line_s.split("issuer=", 1)[1].strip()
                             elif line_s.startswith("notAfter="):
                                 date_str = line_s.split("notAfter=", 1)[1].strip()
-                                not_after = datetime.strptime(
-                                    date_str, "%b %d %H:%M:%S %Y %Z"
-                                ).replace(tzinfo=timezone.utc)
+                                not_after = _parse_agent_cert_date(date_str)
                             elif "DNS:" in line_s and not sans:
                                 sans = [item.strip()[4:] for item in line_s.split(",") if item.strip().startswith("DNS:")]
                 except Exception:
@@ -4521,10 +4559,12 @@ def collect_ssl_certs() -> list[dict]:
             except OSError:
                 pass
 
+            domains = sans if sans else ([cn] if cn else ([subject] if subject else []))
+
             certs.append({
                 "path": p,
                 "subject": subject,
-                "domains": sans if sans else [subject],
+                "domains": domains,
                 "issuer": issuer,
                 "not_after": not_after.isoformat(),
                 "days_left": days_left,

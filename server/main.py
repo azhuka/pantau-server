@@ -5606,6 +5606,9 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 # SYNTHETIC PROBING (HTTP, ICMP Ping, TCP Port)
 # ---------------------------------------------------------------------------
+_active_bg_tasks: set[asyncio.Task] = set()
+
+
 async def _run_initial_probe_background(probe_id: int, p_data: dict):
     try:
         res = await execute_probe(p_data)
@@ -5850,7 +5853,9 @@ async def api_probe_create(
         "ssl_verify": new_probe.ssl_verify,
         "ssl_expiry_threshold_days": new_probe.ssl_expiry_threshold_days,
     }
-    asyncio.create_task(_run_initial_probe_background(new_probe.id, p_dict))
+    _bg_t = asyncio.create_task(_run_initial_probe_background(new_probe.id, p_dict))
+    _active_bg_tasks.add(_bg_t)
+    _bg_t.add_done_callback(_active_bg_tasks.discard)
 
     return {
         "ok": True,

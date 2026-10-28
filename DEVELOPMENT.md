@@ -311,6 +311,27 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.20
+
+- **Tipe Rilis:** Penyempurnaan Penutupan Subproses Prober, Skema Basis Data, & Pemetaan CN Sertifikat SSL (*Prober Subprocess Clean-up, Database Schema Synchronization, & SSL CN Extraction*)
+- **Fokus Utama:** Menyempurnakan stabilitas operasional pada prober ICMP ping, model relasional basis data, ketahanan parser sertifikat SSL, dan hierarki visual SLA dasbor:
+  1. **Penutupan Eksplisit Subproses Transport Prober (`server/prober.py`):**
+     - Menambahkan penutupan eksplisit `proc._transport.close()` setelah `proc.communicate()` serta pada blok `asyncio.TimeoutError` dan `Exception` di `probe_icmp`.
+     - Mengeliminasi peringatan sumber daya `ResourceWarning: unclosed transport` dan galat fatal `RuntimeError: Event loop is closed` saat event loop Python ditutup atau saat subproses di-garbage collect.
+  2. **Sinkronisasi Kolom `backup_status` pada Model Basis Data (`server/models.py`):**
+     - Menambahkan definisi kolom `backup_status = Column(MEDIUMTEXT, nullable=True)` pada model `ServerExtra`.
+     - Menyelaraskan seluruh 16 tabel dan kolom secara 100% identik antara model SQLAlchemy `server/models.py`, berkas skema resmi `database/schema.sql`, dan basis data MariaDB aktif.
+  3. **Peningkatan Ketahanan Parser Tanggal SSL Remote (`server/prober.py`):**
+     - Mengimplementasikan fungsi pembantu `_parse_cert_date` dengan dukungan multi-format baku (`%b %d %H:%M:%S %Y %Z`, `%b %d %H:%M:%S %Y GMT`, `%b %d %H:%M:%S %Y UTC`, `%Y%m%d%H%M%SZ`, `%Y-%m-%d %H:%M:%S`).
+     - Menyaring alamat IP pada `inspect_remote_ssl_certificate` agar tidak mengirim header SNI (RFC 6066) saat target berupa literal IPv4/IPv6, dan membersihkan skema URL otomatis.
+  4. **Ekstraksi CommonName (CN) Sertifikat SSL & Normalisasi Tanggal Agen (`agent/agent_pantau.py` & `package/opt/pantau/agent/agent_pantau.py`):**
+     - Menambahkan ekstraksi `commonName` (CN) pada `collect_ssl_certs` saat sertifikat tidak memiliki ekstensi SAN DNS, mencegah tampilan LDAP Distinguished Name (DN) panjang yang merusak kepadatan tabel NOC.
+     - Menyediakan parser tanggal tangguh `_parse_agent_cert_date` pada agen klien untuk menangani variasi format OpenSSL antar distro.
+     - Menyinkronkan konstanta `PANTAU_APT_SCRIPT_BODY` lengkap dengan dokumentasi operasional dan komentar per-mode sesuai berkas `package/usr/local/sbin/pantau-apt`.
+  5. **Standarisasi Hirarki Visual SLA Uptime Prober (`server/templates/probing.html`):**
+     - Mengimplementasikan standar tiga warna NOC pada kolom ketersediaan uptime: Hijau (`>= 99.0%`), Kuning (`>= 95.0%`), dan Merah tebal (`< 95.0%`, termasuk `0.0%`).
+     - Menyematkan pembulatan format desimal konsisten `.toFixed(1)` dan pewarnaan dinamis adaptif pada kartu KPI rata-rata uptime (`#kpi-uptime`) serta modal riwayat analitik (`hist-up-24` dan `hist-up-30`).
+
 ## Versi 4.8.19
 
 - **Tipe Rilis:** Penyempurnaan Menyeluruh Stabilitas Prober, Keamanan Zero-Dependency Agen, & Kepadatan Dasbor (*Prober Resilience, Zero-Dependency Agent Hardening, & Dashboard NOC Density*)
