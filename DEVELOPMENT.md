@@ -311,6 +311,15 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.13
+
+- **Tipe Rilis:** Perbaikan Evaluasi Izin Pengayaan Insiden Sesi Remote (*Remote Session Incident Permission Scope Bugfix & HTTP 500 Elimination*)
+- **Fokus Utama:** Mengeliminasi galat fatal internal HTTP 500 yang terjadi saat merender halaman insiden/dasbor yang memuat sesi SSH remote:
+  1. **Perbaikan Cakupan Variabel Izin Pengguna (`server/main.py`):**
+     - Mengeliminasi galat `NameError: name 'can_services' is not defined` pada fungsi `_enrich_problems_for_ui`.
+     - Menginisialisasi variabel evaluasi izin `can_term` secara aman dari parameter `user_or_role` (memeriksa izin `can_users_sys`, `can_manage_servers`, `can_services`, atau status master admin jika bertipe User model, serta fallback ke peran string `admin`/`master_admin`).
+     - Menjamin status aksi tombol perbaikan insiden (`terminate_session` untuk operator berwenang atau `inspect_sessions` untuk viewer) terisi secara deterministik tanpa melempar eksepsi.
+
 ## Versi 4.8.12
 
 - **Tipe Rilis:** Akurasi Riwayat Login Modern & Pemutusan Sesi SSH Terpusat (*Modern Linux Login Telemetry Multi-Source Ingestion & Centralized Remote Session Termination*)

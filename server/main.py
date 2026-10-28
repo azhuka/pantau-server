@@ -8156,10 +8156,18 @@ def _enrich_problems_for_ui(open_problems, services, extra, user_or_role="viewer
         pass
     sec = _parse_extras_security(extra)
     can_apt = False
+    can_term = False
     if hasattr(user_or_role, "has_perm"):
         can_apt = user_or_role.has_perm("can_apt")
+        can_term = (
+            getattr(user_or_role, "is_master_admin", lambda: False)()
+            or user_or_role.has_perm("can_users_sys")
+            or user_or_role.has_perm("can_manage_servers")
+            or user_or_role.has_perm("can_services")
+        )
     elif isinstance(user_or_role, str):
         can_apt = user_or_role in ("admin", "master_admin")
+        can_term = user_or_role in ("admin", "master_admin")
 
     for r in open_problems:
         if r["key"].startswith("service_down:"):
@@ -8183,7 +8191,6 @@ def _enrich_problems_for_ui(open_problems, services, extra, user_or_role="viewer
         elif r["key"] == "apt_updates":
             r["action"] = "apt_update" if can_apt else None
         elif r["key"].startswith("ssh_active_session:"):
-            can_term = can_services or (user and (getattr(user, "is_master_admin", lambda: False)() or getattr(user, "has_perm", lambda p: False)("can_users_sys")))
             r["action"] = "terminate_session" if can_term else "inspect_sessions"
             r["log_unit"] = "AUTH"
             # Format key: ssh_active_session:{u_name}:{clean_tty_key}:{clean_from_key}
