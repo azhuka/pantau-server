@@ -42,6 +42,7 @@ import select
 import shutil
 import signal
 import socket
+import ssl
 import struct
 import subprocess
 import sys
@@ -330,8 +331,11 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 # ProxyHandler({}) mematikan proxies dari environment (http_proxy/https_proxy).
 # Tanpa ini probe bisa keluar lewat proxy dan mengukur koneksi proxy, bukan
 # service lokal yang sedang diukur.
+_ssl_ctx = ssl._create_unverified_context() if hasattr(ssl, "_create_unverified_context") else None
 _HTTP_OPENER = urllib.request.build_opener(
-    urllib.request.ProxyHandler({}), _NoRedirect
+    urllib.request.ProxyHandler({}),
+    urllib.request.HTTPSHandler(context=_ssl_ctx) if _ssl_ctx else urllib.request.HTTPSHandler(),
+    _NoRedirect
 )
 
 # Server membalas lalu menutup koneksi tanpa HTTP response yang valid
@@ -474,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.9"
+AGENT_VERSION = "4.8.10"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:

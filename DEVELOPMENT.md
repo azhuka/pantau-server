@@ -311,6 +311,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.10
+
+- **Tipe Rilis:** Perbaikan Impor Modul SSL & Konfigurasi Handshake TLS Agen Klien (*Client Agent SSL Import Bugfix & Permissive TLS Opener Context*)
+- **Fokus Utama:** Mengeliminasi crash fatal pada pemindaian kesehatan layanan agen klien (`run_health_check`):
+  1. **Impor Modul Standar `ssl` (`package/opt/pantau/agent/agent_pantau.py` & `agent/agent_pantau.py`):**
+     - Menambahkan impor eksplisit `import ssl` pada agen klien.
+     - Mengeliminasi galat runtime `NameError: name 'ssl' is not defined. Did you forget to import 'ssl'` yang terjadi saat blok penanganan eksepsi `except ssl.SSLError as e:` dievaluasi ketika probe HTTP menguji socket layanan HTTPS/TLS.
+  2. **Konteks SSL Handshake Permisif untuk Health-Check (`_HTTP_OPENER`):**
+     - Mengonfigurasi `urllib.request.HTTPSHandler(context=ssl._create_unverified_context())` pada `_HTTP_OPENER` probe kesehatan.
+     - Menjamin probe layanan web HTTPS pada `localhost`/IP internal (seperti port 443 atau 8443) dapat membaca kode status HTTP tanpa terhambat penolakan verifikasi sertifikat lokal/self-signed.
+
 ## Versi 4.8.9
 
 - **Tipe Rilis:** Ekspansi Kapasitas Kolom Catatan Resolusi Insiden & Penuntasan Rollback Telemetri Klien (*Incident Resolution Note Capacity Expansion, Telemetry Rollback Elimination & POSIX Shell Command Hardening*)
