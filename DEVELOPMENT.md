@@ -311,6 +311,44 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.19
+
+- **Tipe Rilis:** Penyempurnaan Menyeluruh Stabilitas Prober, Keamanan Zero-Dependency Agen, & Kepadatan Dasbor (*Prober Resilience, Zero-Dependency Agent Hardening, & Dashboard NOC Density*)
+- **Fokus Utama:** Menyelesaikan 11 area perbaikan struktural pada mesin probing sintetis, agen klien, skema basis data, dan antarmuka dasbor:
+  1. **Eliminasi Pembekuan SLA Rolling Uptime Prober (`server/prober.py`):**
+     - Mengonversi nilai `stats_24h.up_cnt`, `stats_24h.total`, `stats_30d.up_cnt`, dan `stats_30d.total` ke tipe `float` secara eksplisit pada fungsi `calculate_rolling_uptime`.
+     - Mencegah galat `TypeError` akibat percampuran tipe `Decimal` dari MariaDB `func.sum()` dengan tipe `float` Python yang sebelumnya membekukan pembaruan persentase SLA uptime prober.
+  2. **Koreksi Evaluasi Falsy Uptime 0.0% (`server/main.py` & `server/templates/probing.html`):**
+     - Mengubah evaluasi nilai falsy `or 100.0` dan `|| 100` menjadi pengecekan eksistensi nilai eksplisit (`is not None` pada backend dan `!== undefined && !== null` pada antarmuka frontend).
+     - Menjamin endpoint yang mengalami downtime total (uptime 0.0%) ditampilkan secara akurat 0.0% pada API list probe, API detail probe, kartu KPI ringkasan, dan modal riwayat inspeksi tanpa keliru melompat menjadi 100.0%.
+  3. **Penguatan Mesin Inspeksi SSL Remote pada Mode CERT_NONE (`server/prober.py`):**
+     - Menggunakan `ssock.getpeercert(binary_form=True)` dan konversi PEM via `ssl.DER_cert_to_PEM_cert` pada fungsi `inspect_remote_ssl_certificate`.
+     - Mengintegrasikan parser decoding standar `ssl._ssl._test_decode_cert` serta fallback CLI sistem `openssl x509 -enddate` untuk membaca masa berlaku sertifikat SSL remote internal, IP lokal, atau *self-signed* tanpa kegagalan verifikasi CA.
+  4. **Eliminasi Kebocoran Subproses Zombi pada Prober ICMP Ping (`server/prober.py`):**
+     - Menambahkan terminasi paksa `proc.kill()` dan penuaian asinkron `await proc.wait()` pada blok `asyncio.TimeoutError` dan `Exception` di fungsi `probe_icmp`.
+     - Mencegah akumulasi proses ping defunct/zombi di sistem operasi saat probe timeout atau host target tidak merespons.
+  5. **Penegakan Kepatuhan Zero-Dependency Agen Klien (`package/opt/pantau/agent/agent_pantau.py` & `agent/agent_pantau.py`):**
+     - Menghapus ketergantungan impor pustaka eksternal `cryptography` pada fungsi `collect_ssl_certs`.
+     - Menggantinya dengan decoding berbasis pustaka standar bawaan Python `ssl._ssl._test_decode_cert` dan fallback CLI sistem `openssl x509`, menjamin agen berjalan 100% mandiri pada instalasi Linux minimalis tanpa paket Python eksternal.
+  6. **Kelengkapan Dependensi Server (`server/requirements.txt`):**
+     - Mendaftarkan paket `httpx==0.28.1` dan `qrcode==8.2` pada berkas `requirements.txt`.
+     - Memastikan instalasi dan pembaruan lingkungan produksi via `install-server.sh` berjalan sukses tanpa kendala impor yang hilang.
+  7. **Sinkronisasi Penerusan Kode Keluar Wrapper APT (`package/usr/local/sbin/pantau-apt`):**
+     - Memperbarui seluruh pemanggilan pty cangkang dari `/usr/bin/script -qfc` menjadi `/usr/bin/script -qfec` (penambahan opsi `-e`).
+     - Menyinkronkan wrapper paket dengan konstanta agen `PANTAU_APT_SCRIPT_BODY` dan endpoint unduh wrapper pusat `/api/agent/wrapper/pantau-apt` agar kode keluar error APT diteruskan secara transparan.
+  8. **Pembersihan dan Standarisasi Konstanta Agen Klien (`package/opt/pantau/agent/agent_pantau.py` & `agent/agent_pantau.py`):**
+     - Menstandarisasi penamaan konstanta wrapper perintah dari prefiks `PANTUAN_` menjadi `PANTAU_` (`PANTAU_RESTART`, `PANTAU_FIREWALL`, `PANTAU_USER_CMD`, `PANTAU_CRON_CMD`, `PANTAU_SSL_CMD`, `PANTAU_APT_CMD`, `PANTAU_HISTORY_CMD`, `PANTAU_HOST_CMD`, `PANTAU_SHELL_CMD`).
+     - Menghapus kode mati `PANTUAN_UNAME = "agent_pantau"`.
+  9. **Sinkronisasi Izin Granular RBAC Seeder (`server/seed_admin.py`):**
+     - Menghubungkan konstanta `ALL_OPERATOR_PERMS` secara langsung ke `list(OPERATOR_PERMISSIONS.keys())` dari `security_auth.py`.
+     - Memastikan seluruh 16 izin granular operator (termasuk `can_audit`, `can_manage_users`, dan `can_probing`) terdaftar secara otomatis saat akun operator di-seed via CLI.
+  10. **Sinkronisasi Penuh Skema Basis Data & Pelacakan Git (`database/schema.sql` & `.gitignore`):**
+      - Memperbarui `database/schema.sql` dengan dump skema resmi MariaDB 16 tabel yang sinkron dengan `server/models.py` (melengkapi 3 tabel `probe_targets`, `probe_logs`, `system_settings` dan 24+ kolom yang tertinggal).
+      - Menyesuaikan `.gitignore` dengan aturan negasi `!/agent/agent_pantau.py` agar berkas agen klien di root direktori tetap terlacak oleh sistem version control git tanpa menyertakan artefak lawas.
+  11. **Penyematan Indikator Proxmox HA Dasbor & Optimasi Regex ANSI Stream (`server/templates/dashboard.html` & `server/main.py`):**
+      - Menyematkan lencana visual Proxmox HA (`badge badge-ha` kuning 7.5px) pada tampilan tabel, tampilan kartu, dan siklus pembaruan dinamis JavaScript di dasbor utama (`dashboard.html`).
+      - Mengoptimalkan fungsi sanitasi stream terminal `_clean_terminal` dari iterasi penggantian string kuadratik $O(N^2)$ menjadi ekspresi reguler linier $O(N)$ via `_TERM_STASH_RE.sub()`, melenyapkan lonjakan CPU dan beban memori saat streaming log instalasi APT besar.
+
 ## Versi 4.8.18
 
 - **Tipe Rilis:** Standarisasi Ikon Upgrade Paket OS & Eliminasi Ikon Caret Ambigu (*OS Package Upgrade Semantic Icon & Visual Cohesion*)

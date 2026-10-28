@@ -14,10 +14,12 @@ import asyncio
 import datetime
 import json
 import logging
+import os
 import re
 import socket
 import ssl
 import subprocess
+import tempfile
 import threading
 import time
 from dataclasses import dataclass, field
@@ -107,16 +109,24 @@ def inspect_remote_ssl_certificate(
         ctx.verify_mode = ssl.CERT_NONE  # agar tetap bisa baca expire date walau cert internal/self-signed
         with socket.create_connection((host, port), timeout=timeout) as sock:
             with ctx.wrap_socket(sock, server_hostname=host) as ssock:
-                cert = ssock.getpeercert()
-                if not cert:
-                    # Bila CERT_NONE mengembalikan dict kosong pada beberapa distro, coba CERT_OPTIONAL
+                der = ssock.getpeercert(binary_form=True)
+                if not der:
+                    return None, None, "Sertifikat SSL tidak ditemukan dari peer"
+                pem = ssl.DER_cert_to_PEM_cert(der)
+
+                cert = None
+                try:
+                    with tempfile.NamedTemporaryFile("w", delete=False) as tf:
+                        tf.write(pem)
+                        tmp_name = tf.name
                     try:
-                        ctx_opt = ssl.create_default_context()
-                        with socket.create_connection((host, port), timeout=timeout) as sock2:
-                            with ctx_opt.wrap_socket(sock2, server_hostname=host) as ssock2:
-                                cert = ssock2.getpeercert()
-                    except Exception:
-                        pass
+                        cert = ssl._ssl._test_decode_cert(tmp_name)
+                    finally:
+                        if os.path.exists(tmp_name):
+                            os.unlink(tmp_name)
+                except Exception:
+                    cert = None
+
                 if cert and "notAfter" in cert:
                     not_after_str = cert["notAfter"]
                     # Format baku: 'May 10 12:00:00 2026 GMT'
@@ -126,6 +136,26 @@ def inspect_remote_ssl_certificate(
                     now_utc = datetime.datetime.now(datetime.timezone.utc)
                     days_remaining = (expire_dt - now_utc).days
                     return expire_dt.replace(tzinfo=None), days_remaining, None
+
+                # Fallback: parsing lewat openssl CLI jika tersedia
+                try:
+                    proc = subprocess.run(
+                        ["openssl", "x509", "-noout", "-enddate"],
+                        input=pem,
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout,
+                    )
+                    if proc.returncode == 0 and "notAfter=" in proc.stdout:
+                        date_str = proc.stdout.split("notAfter=", 1)[1].strip()
+                        expire_dt = datetime.datetime.strptime(
+                            date_str, "%b %d %H:%M:%S %Y %Z"
+                        ).replace(tzinfo=datetime.timezone.utc)
+                        now_utc = datetime.datetime.now(datetime.timezone.utc)
+                        days_remaining = (expire_dt - now_utc).days
+                        return expire_dt.replace(tzinfo=None), days_remaining, None
+                except Exception:
+                    pass
         return None, None, None
     except Exception as exc:
         return None, None, str(exc)
@@ -381,11 +411,22 @@ async def probe_icmp(
         )
 
     except asyncio.TimeoutError:
+        try:
+            proc.kill()
+            await proc.wait()
+        except Exception:
+            pass
         return ProbeResult(
             status="down",
             error_message=f"Ping timeout setelah {timeout_seconds:.0f} detik",
         )
     except Exception as exc:
+        try:
+            if "proc" in locals() and proc.returncode is None:
+                proc.kill()
+                await proc.wait()
+        except Exception:
+            pass
         return ProbeResult(
             status="down",
             error_message=f"Galat ICMP: {str(exc)[:120]}",
@@ -616,8 +657,8 @@ def calculate_rolling_uptime(db: Session, probe_id: int) -> Tuple[float, float]:
         .filter(ProbeLog.probe_id == probe_id, ProbeLog.checked_at >= cutoff_24h)
         .first()
     )
-    tot_24 = stats_24h.total or 0
-    up_24 = stats_24h.up_cnt or 0
+    tot_24 = float(stats_24h.total or 0)
+    up_24 = float(stats_24h.up_cnt or 0)
     uptime_24h = round((up_24 / tot_24) * 100.0, 2) if tot_24 > 0 else 100.0
 
     # 30 Hari
@@ -629,8 +670,8 @@ def calculate_rolling_uptime(db: Session, probe_id: int) -> Tuple[float, float]:
         .filter(ProbeLog.probe_id == probe_id, ProbeLog.checked_at >= cutoff_30d)
         .first()
     )
-    tot_30 = stats_30d.total or 0
-    up_30 = stats_30d.up_cnt or 0
+    tot_30 = float(stats_30d.total or 0)
+    up_30 = float(stats_30d.up_cnt or 0)
     uptime_30d = round((up_30 / tot_30) * 100.0, 2) if tot_30 > 0 else 100.0
 
     return uptime_24h, uptime_30d

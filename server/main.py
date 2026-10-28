@@ -323,6 +323,7 @@ _CLEAN_CTRL_RE = re.compile(r"[\x00-\x08\x0b-\x1f]")
 # Kode warna SGR (ESC[...m) & sekuens clear screen — dipertahankan untuk render terminal
 _TERM_SGR_RE = re.compile(r"\x1b\[[0-9;]*m")
 _TERM_KEEP_RE = re.compile(r"\x1b\[(?:[0-9;]*m|2J|3J|H|1;1H|[0-2]?K|[0-9]*P|[0-9]*[A-D])")
+_TERM_STASH_RE = re.compile(r"\ue000(\d+)\ue001")
 _ANSI_ANY_RE = re.compile(r"\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|.)")
 
 
@@ -370,8 +371,7 @@ def _clean_terminal(value, maxchars: int = 200000, maxlines: int = 4000) -> str:
 
     value = _TERM_KEEP_RE.sub(_stash, value)
     value = "".join(c for c in value if c >= " " or c in "\n\r\b\t\x0c\ue000\ue001")
-    for idx, code in enumerate(kept):
-        value = value.replace(f"\ue000{idx}\ue001", code)
+    value = _TERM_STASH_RE.sub(lambda m: kept[int(m.group(1))] if int(m.group(1)) < len(kept) else "", value)
     lines = value.split("\n")
     if len(lines) > maxlines:
         lines = lines[-maxlines:]
@@ -5707,8 +5707,8 @@ def api_probes_list(
             "last_error": p.last_error,
             "ssl_expires_at": p.ssl_expires_at.isoformat() if p.ssl_expires_at else None,
             "ssl_days_remaining": p.ssl_days_remaining,
-            "uptime_24h": round(p.uptime_24h or 100.0, 1),
-            "uptime_30d": round(p.uptime_30d or 100.0, 1),
+            "uptime_24h": round(p.uptime_24h if p.uptime_24h is not None else 100.0, 1),
+            "uptime_30d": round(p.uptime_30d if p.uptime_30d is not None else 100.0, 1),
             "consecutive_failures": p.consecutive_failures,
             "consecutive_successes": p.consecutive_successes,
             "created_at": p.created_at.isoformat() if p.created_at else None,
@@ -5965,8 +5965,8 @@ def api_probe_get(
             "last_error": probe.last_error,
             "ssl_expires_at": probe.ssl_expires_at.isoformat() if probe.ssl_expires_at else None,
             "ssl_days_remaining": probe.ssl_days_remaining,
-            "uptime_24h": round(probe.uptime_24h or 100.0, 1),
-            "uptime_30d": round(probe.uptime_30d or 100.0, 1),
+            "uptime_24h": round(probe.uptime_24h if probe.uptime_24h is not None else 100.0, 1),
+            "uptime_30d": round(probe.uptime_30d if probe.uptime_30d is not None else 100.0, 1),
             "consecutive_failures": probe.consecutive_failures,
             "consecutive_successes": probe.consecutive_successes,
             "created_at": probe.created_at.isoformat() if probe.created_at else None,

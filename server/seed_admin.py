@@ -29,14 +29,11 @@ from sqlalchemy.orm import sessionmaker
 
 from config import settings
 from models import Base, User
+from security_auth import OPERATOR_PERMISSIONS
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-ALL_OPERATOR_PERMS = [
-    "can_terminal", "can_file_manager", "can_services", "can_processes",
-    "can_firewall", "can_users_sys", "can_cron", "can_ssl",
-    "can_server_control", "can_apt", "can_ota", "can_manage_servers", "can_manage_viewers"
-]
+ALL_OPERATOR_PERMS = list(OPERATOR_PERMISSIONS.keys())
 
 
 def validate_password_strength(password: str) -> tuple[bool, str]:

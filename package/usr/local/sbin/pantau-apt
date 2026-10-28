@@ -1,7 +1,7 @@
 #!/bin/sh
 # pantau-apt — Cangkang sempit utk tombol Update/Upgrade paket OS.
 # Dipanggil agen 'pantau' via sudo NOPASSWD (lihat /etc/sudoers.d/pantau-agent).
-# Dijalankan lewat pty (script -qfc) supaya output PERSIS seperti terminal SSH:
+# Dijalankan lewat pty (script -qfec) supaya output PERSIS seperti terminal SSH:
 # baris progress \r ikut terlihat, dan dpkg bisa BERINTERAKSI lewat stdin.
 # Argumen divalidasi di sini; BUKAN shell passthrough. URL/repo tetap apa adanya.
 #
@@ -34,7 +34,7 @@ case "${1:-}" in
         export DEBIAN_FRONTEND=noninteractive
         export NEEDRESTART_MODE=l
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get update -o Dpkg::Lock::Timeout=600" /dev/null
+        exec /usr/bin/script -qfec "/usr/bin/apt-get update -o Dpkg::Lock::Timeout=600" /dev/null
         ;;
     upgrade)
         # Tanpa prompt: konfigurasi lokal admin dipertahankan, konfigurasi baru
@@ -42,7 +42,7 @@ case "${1:-}" in
         export DEBIAN_FRONTEND=noninteractive
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON upgrade" /dev/null
+        exec /usr/bin/script -qfec "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON upgrade" /dev/null
         ;;
     upgrade-interact)
         # Interaktif murni: dpkg berinteraksi langsung via stdin.
@@ -50,22 +50,22 @@ case "${1:-}" in
         unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true upgrade" /dev/null
+        exec /usr/bin/script -qfec "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true upgrade" /dev/null
         ;;
     dist-upgrade)
         # Dist-upgrade interaktif: upgrade penuh termasuk resolusi dependensi kompleks.
         unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true dist-upgrade" /dev/null
+        exec /usr/bin/script -qfec "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true dist-upgrade" /dev/null
         ;;
     fix)
         # Reparasi dpkg terputus & pemulihan dependensi rusak tanpa pesan banner
         unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        /usr/bin/script -qfc "/usr/bin/dpkg --configure -a" /dev/null || true
-        exec /usr/bin/script -qfc "/usr/bin/apt-get -y -f -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true install" /dev/null
+        /usr/bin/script -qfec "/usr/bin/dpkg --configure -a" /dev/null || true
+        exec /usr/bin/script -qfec "/usr/bin/apt-get -y -f -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true install" /dev/null
         ;;
     clean)
         # Bersihkan cache repositori & berkas .deb unduhan
@@ -88,7 +88,7 @@ case "${1:-}" in
         export DEBIAN_FRONTEND=noninteractive
         export NEEDRESTART_MODE=a
         export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfc "/usr/bin/apt-get --only-upgrade -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON install '$pkg'" /dev/null
+        exec /usr/bin/script -qfec "/usr/bin/apt-get --only-upgrade -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON install '$pkg'" /dev/null
         ;;
     *)
         echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2

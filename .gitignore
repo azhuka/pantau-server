@@ -17,7 +17,8 @@ env/
 *.swp
 
 # Legacy / prototype files (tetap di disk, tidak di-commit)
-/agent/
+/agent/*
+!/agent/agent_pantau.py
 /app_ui.py
 /app_ui.py.V1
 /build.sh

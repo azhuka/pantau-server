@@ -61,13 +61,12 @@ IS_ROOT = os.geteuid() == 0
 ALLOWED_SYSTEMCTL_ACTIONS = frozenset({"restart", "start", "stop", "reload", "enable", "disable"})
 VALID_PROCESS_NAME_RE = re.compile(r'^[a-zA-Z0-9@._:\-]{1,64}$')
 
-PANTUAN_RESTART = "/usr/local/sbin/pantau-restart"
-PANTUAN_FIREWALL = "/usr/local/sbin/pantau-firewall"
+PANTAU_RESTART = "/usr/local/sbin/pantau-restart"
+PANTAU_FIREWALL = "/usr/local/sbin/pantau-firewall"
 PANTAU_FILE_CMD = "/usr/local/sbin/pantau-file"
-PANTUAN_USER_CMD = "/usr/local/sbin/pantau-user"
-PANTUAN_CRON_CMD = "/usr/local/sbin/pantau-cron"
-PANTUAN_SSL_CMD = "/usr/local/sbin/pantau-ssl"
-PANTUAN_UNAME = "agent_pantau"
+PANTAU_USER_CMD = "/usr/local/sbin/pantau-user"
+PANTAU_CRON_CMD = "/usr/local/sbin/pantau-cron"
+PANTAU_SSL_CMD = "/usr/local/sbin/pantau-ssl"
 SS_BIN = "/usr/bin/ss"
 SYSLOG_FILE = "/var/log/syslog"
 AUTH_FILE = "/var/log/auth.log"
@@ -454,10 +453,10 @@ SERVICE_DOWN_AFTER_FAILS = 3
 _svc_fail_streak: dict[int, int] = {}
 
 # Wrapper sudo sempit yang dipasang install.sh (hak minimum, idempoten).
-PANTUAN_APT_CMD = "/usr/local/sbin/pantau-apt"
-PANTUAN_HISTORY_CMD = "/usr/local/sbin/pantau-history"
-PANTUAN_HOST_CMD = "/usr/local/sbin/pantau-host"
-PANTUAN_SHELL_CMD = "/usr/local/sbin/pantau-shell"
+PANTAU_APT_CMD = "/usr/local/sbin/pantau-apt"
+PANTAU_HISTORY_CMD = "/usr/local/sbin/pantau-history"
+PANTAU_HOST_CMD = "/usr/local/sbin/pantau-host"
+PANTAU_SHELL_CMD = "/usr/local/sbin/pantau-shell"
 
 # Kuota output apt update/upgrade (praktis penuh; MEDIUMTEXT baseline 16MB,
 # streaming server punya kuota sama).
@@ -478,7 +477,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.18"
+AGENT_VERSION = "4.8.19"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -709,8 +708,8 @@ def _exec_block_ip(command: dict) -> dict:
             res = _run_native(["iptables", "-I", "INPUT", "1", "-s", ip, "-j", "DROP"],
                               f"iptables -I INPUT 1 -s {ip} -j DROP")
         else:
-            res = _run_native(["/usr/bin/sudo", "-n", PANTUAN_FIREWALL, "block", ip],
-                              f"sudo -n {PANTUAN_FIREWALL} block {ip}")
+            res = _run_native(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, "block", ip],
+                              f"sudo -n {PANTAU_FIREWALL} block {ip}")
         if not res["ok"]:
             ok_all = False
         outs.append(f"{ip}: {res['output']}")
@@ -735,8 +734,8 @@ def _exec_unblock_ip(command: dict) -> dict:
             res = _run_native(["iptables", "-D", "INPUT", "-s", ip, "-j", "DROP"],
                               f"iptables -D INPUT -s {ip} -j DROP")
         else:
-            res = _run_native(["/usr/bin/sudo", "-n", PANTUAN_FIREWALL, "unblock", ip],
-                              f"sudo -n {PANTUAN_FIREWALL} unblock {ip}")
+            res = _run_native(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, "unblock", ip],
+                              f"sudo -n {PANTAU_FIREWALL} unblock {ip}")
         if not res["ok"]:
             ok_all = False
         outs.append(f"{ip}: {res['output']}")
@@ -754,10 +753,10 @@ def _exec_firewall_toggle(action: str) -> dict:
     if not sub:
         return {"ok": False, "output": f"Aksi firewall tidak valid: {action}"}
     if IS_ROOT:
-        res = _run_native([PANTUAN_FIREWALL, sub], f"{PANTUAN_FIREWALL} {sub}")
+        res = _run_native([PANTAU_FIREWALL, sub], f"{PANTAU_FIREWALL} {sub}")
     else:
-        res = _run_native(["/usr/bin/sudo", "-n", PANTUAN_FIREWALL, sub],
-                          f"sudo -n {PANTUAN_FIREWALL} {sub}")
+        res = _run_native(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, sub],
+                          f"sudo -n {PANTAU_FIREWALL} {sub}")
     # Bersihkan cache firewall agar deteksi status langsung diperbarui pada siklus berikutnya
     _fw_cache["at"] = 0.0
     return {"ok": res["ok"], "output": res["output"][:2000]}
@@ -778,8 +777,8 @@ def _exec_kill_process(command: dict) -> dict:
     if int(pid) == os.getpid():
         return {"ok": False, "output": "Tidak dapat menghentikan proses agen monitor itu sendiri!"}
 
-    cmd = [PANTUAN_RESTART, "kill", pid, signal_name]
-    label = f"{PANTUAN_RESTART} kill {pid} {signal_name}"
+    cmd = [PANTAU_RESTART, "kill", pid, signal_name]
+    label = f"{PANTAU_RESTART} kill {pid} {signal_name}"
     if not IS_ROOT:
         cmd = ["/usr/bin/sudo", "-n", *cmd]
         label = f"sudo -n {label}"
@@ -969,9 +968,9 @@ def ensure_pantau_user_updated(force: bool = False) -> bool:
     """
     try:
         cur_content = ""
-        if not force and os.path.isfile(PANTUAN_USER_CMD):
+        if not force and os.path.isfile(PANTAU_USER_CMD):
             try:
-                with open(PANTUAN_USER_CMD, "r", encoding="utf-8", errors="replace") as f:
+                with open(PANTAU_USER_CMD, "r", encoding="utf-8", errors="replace") as f:
                     cur_content = f.read()
             except Exception:
                 pass
@@ -980,9 +979,9 @@ def ensure_pantau_user_updated(force: bool = False) -> bool:
 
         content_to_write = PANTAU_USER_SCRIPT_BODY.strip() + "\n"
         if IS_ROOT:
-            with open(PANTUAN_USER_CMD, "w", encoding="utf-8") as f:
+            with open(PANTAU_USER_CMD, "w", encoding="utf-8") as f:
                 f.write(content_to_write)
-            os.chmod(PANTUAN_USER_CMD, 0o750)
+            os.chmod(PANTAU_USER_CMD, 0o750)
             print("[USER] Wrapper /usr/local/sbin/pantau-user berhasil diperbarui (root)")
             return True
 
@@ -991,7 +990,7 @@ def ensure_pantau_user_updated(force: bool = False) -> bool:
         if os.path.isfile(pantau_file):
             payload_write = json.dumps({
                 "action": "write",
-                "params": {"path": PANTUAN_USER_CMD, "content": content_to_write, "make_backup": False}
+                "params": {"path": PANTAU_USER_CMD, "content": content_to_write, "make_backup": False}
             })
             pw = subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_write, text=True, capture_output=True, timeout=10)
             try:
@@ -1001,13 +1000,13 @@ def ensure_pantau_user_updated(force: bool = False) -> bool:
             if pw.returncode == 0 and out_data.get("ok"):
                 payload_chmod = json.dumps({
                     "action": "chmod",
-                    "params": {"path": PANTUAN_USER_CMD, "mode": "0750"}
+                    "params": {"path": PANTAU_USER_CMD, "mode": "0750"}
                 })
                 subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_chmod, text=True, capture_output=True, timeout=10)
                 print("[USER] Wrapper /usr/local/sbin/pantau-user berhasil diperbarui via pantau-file")
                 return True
     except Exception as e:
-        print(f"[USER WARN] Gagal memperbarui {PANTUAN_USER_CMD}: {e}")
+        print(f"[USER WARN] Gagal memperbarui {PANTAU_USER_CMD}: {e}")
     return False
 
 
@@ -1021,8 +1020,8 @@ def _exec_user_action(action: str, command: dict) -> dict:
             return {"ok": False, "output": "Parameter TTY terminal (misal: pts/0) wajib diisi."}
         if not re.match(r"^(pts/\d+|tty\d+)$", tty):
             return {"ok": False, "output": f"Format terminal TTY '{tty}' tidak valid (hanya pts/N atau ttyN)."}
-        cmd = [PANTUAN_USER_CMD, "terminate-session", tty]
-        label = f"{PANTUAN_USER_CMD} terminate-session {tty}"
+        cmd = [PANTAU_USER_CMD, "terminate-session", tty]
+        label = f"{PANTAU_USER_CMD} terminate-session {tty}"
         if not IS_ROOT:
             cmd = ["/usr/bin/sudo", "-n", *cmd]
             label = f"sudo -n {label}"
@@ -1038,7 +1037,7 @@ def _exec_user_action(action: str, command: dict) -> dict:
     if not username:
         return {"ok": False, "output": "Nama pengguna (username) wajib diisi."}
 
-    cmd = [PANTUAN_USER_CMD]
+    cmd = [PANTAU_USER_CMD]
     if action == "user_create":
         shell = str(params.get("shell", "/bin/bash")).strip()
         is_sudo = "1" if params.get("is_sudo") in (1, True, "1", "true") else "0"
@@ -1070,7 +1069,7 @@ def _exec_user_action(action: str, command: dict) -> dict:
 def _exec_cron_action(action: str, command: dict) -> dict:
     """Kelola tugas terjadwal (cron) via wrapper pantau-cron."""
     params = command.get("params") or {}
-    cmd = [PANTUAN_CRON_CMD]
+    cmd = [PANTAU_CRON_CMD]
 
     if action == "cron_add":
         ident = str(params.get("ident", "")).strip()
@@ -1123,8 +1122,8 @@ def _exec_firewall_port_rule(command: dict) -> dict:
         return {"ok": False, "output": "Spesifikasi port wajib diisi."}
 
     sub = "deny-port" if rule_type in ("deny", "block", "deny-port") else "allow-port"
-    cmd = [PANTUAN_FIREWALL, sub, port_spec]
-    label = f"{PANTUAN_FIREWALL} {sub} {port_spec}"
+    cmd = [PANTAU_FIREWALL, sub, port_spec]
+    label = f"{PANTAU_FIREWALL} {sub} {port_spec}"
     if not IS_ROOT:
         cmd = ["/usr/bin/sudo", "-n", *cmd]
         label = f"sudo -n {label}"
@@ -1142,8 +1141,8 @@ def _exec_ssl_action(action: str, command: dict) -> dict:
         return {"ok": False, "output": "Path berkas sertifikat SSL wajib diisi."}
 
     sub = "add-path" if action == "ssl_path_add" else "remove-path"
-    cmd = [PANTUAN_SSL_CMD, sub, cert_path]
-    label = f"{PANTUAN_SSL_CMD} {sub} {cert_path}"
+    cmd = [PANTAU_SSL_CMD, sub, cert_path]
+    label = f"{PANTAU_SSL_CMD} {sub} {cert_path}"
     if not IS_ROOT:
         cmd = ["/usr/bin/sudo", "-n", *cmd]
         label = f"sudo -n {label}"
@@ -1166,10 +1165,10 @@ def _exec_host_control(action: str) -> dict:
 
     def _run_wrapper(*args: str) -> tuple[bool, str]:
         if IS_ROOT:
-            p = subprocess.run([PANTUAN_HOST_CMD, *args],
+            p = subprocess.run([PANTAU_HOST_CMD, *args],
                                capture_output=True, text=True, timeout=30)
         else:
-            p = subprocess.run(["/usr/bin/sudo", "-n", PANTUAN_HOST_CMD, *args],
+            p = subprocess.run(["/usr/bin/sudo", "-n", PANTAU_HOST_CMD, *args],
                                capture_output=True, text=True, timeout=30)
         out = (p.stdout or "").strip() or p.stderr.strip() or ""
         return p.returncode == 0, out[:1200]
@@ -1216,15 +1215,15 @@ def _exec_host_control(action: str) -> dict:
                     '[ $rc -ne 0 ] && fail "gagal (rc=$rc): $CMD"\n'
                     'echo "OK: $ACTION dieksekusi."\n'
                 )
-                run_file_op("write", {"path": PANTUAN_HOST_CMD, "content": new_host_script})
-                run_file_op("chmod", {"path": PANTUAN_HOST_CMD, "mode": "0755"})
+                run_file_op("write", {"path": PANTAU_HOST_CMD, "content": new_host_script})
+                run_file_op("chmod", {"path": PANTAU_HOST_CMD, "mode": "0755"})
             except Exception:
                 pass
         else:
             return {"ok": False,
                     "output": f"Perintah {sub_action} DIBATALKAN: {msg_check}"}
 
-    label = f"{PANTUAN_HOST_CMD} {sub_action}"
+    label = f"{PANTAU_HOST_CMD} {sub_action}"
     if not IS_ROOT:
         label = f"/usr/bin/sudo -n {label}"
     try:
@@ -1456,10 +1455,10 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
             try:
                 if IS_ROOT:
                     subprocess.run(["systemctl", "daemon-reload"], timeout=10)
-                elif os.path.exists(PANTUAN_CRON_CMD):
-                    subprocess.run(["/usr/bin/sudo", "-n", PANTUAN_CRON_CMD, "run", "root", "systemctl daemon-reload"], timeout=10)
-                elif os.path.exists(PANTUAN_SHELL_CMD):
-                    subprocess.run(["/usr/bin/sudo", "-n", PANTUAN_SHELL_CMD], input="systemctl daemon-reload\nexit\n", text=True, timeout=10)
+                elif os.path.exists(PANTAU_CRON_CMD):
+                    subprocess.run(["/usr/bin/sudo", "-n", PANTAU_CRON_CMD, "run", "root", "systemctl daemon-reload"], timeout=10)
+                elif os.path.exists(PANTAU_SHELL_CMD):
+                    subprocess.run(["/usr/bin/sudo", "-n", PANTAU_SHELL_CMD], input="systemctl daemon-reload\nexit\n", text=True, timeout=10)
                 print("[OTA] systemctl daemon-reload berhasil dieksekusi.")
             except Exception as e:
                 print(f"[OTA] Gagal reload systemd daemon: {e}")
@@ -1505,8 +1504,8 @@ def _exec_service_action(action: str, command: dict) -> dict:
 
     last_res = None
     for cand in candidates:
-        cmd = [PANTUAN_RESTART, action, cand]
-        label = f"{PANTUAN_RESTART} {action} {cand}"
+        cmd = [PANTAU_RESTART, action, cand]
+        label = f"{PANTAU_RESTART} {action} {cand}"
         if not IS_ROOT:
             cmd = ["/usr/bin/sudo", "-n", *cmd]
             label = f"sudo -n {label}"
@@ -2598,7 +2597,7 @@ def _parse_who() -> list[dict]:
 
 def _get_locked_users() -> set[str]:
     try:
-        cmd = [PANTUAN_USER_CMD, "list-locked"] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTUAN_USER_CMD, "list-locked"]
+        cmd = [PANTAU_USER_CMD, "list-locked"] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_USER_CMD, "list-locked"]
         res = _run_cmd(cmd, timeout=3)
         if res and res.returncode == 0:
             return set(res.stdout.split())
@@ -2958,9 +2957,9 @@ def ensure_pantau_apt_updated() -> bool:
                         pass
 
         cur_content = ""
-        if os.path.isfile(PANTUAN_APT_CMD):
+        if os.path.isfile(PANTAU_APT_CMD):
             try:
-                with open(PANTUAN_APT_CMD, "r", encoding="utf-8", errors="replace") as f:
+                with open(PANTAU_APT_CMD, "r", encoding="utf-8", errors="replace") as f:
                     cur_content = f.read()
             except Exception:
                 pass
@@ -2968,9 +2967,9 @@ def ensure_pantau_apt_updated() -> bool:
             return True
 
         if IS_ROOT:
-            with open(PANTUAN_APT_CMD, "w", encoding="utf-8") as f:
+            with open(PANTAU_APT_CMD, "w", encoding="utf-8") as f:
                 f.write(PANTAU_APT_SCRIPT_BODY)
-            os.chmod(PANTUAN_APT_CMD, 0o755)
+            os.chmod(PANTAU_APT_CMD, 0o755)
             print("[APT] Wrapper /usr/local/sbin/pantau-apt berhasil diperbarui (root)")
             return True
 
@@ -2979,7 +2978,7 @@ def ensure_pantau_apt_updated() -> bool:
         if os.path.isfile(pantau_file):
             payload_write = json.dumps({
                 "action": "write",
-                "params": {"path": PANTUAN_APT_CMD, "content": PANTAU_APT_SCRIPT_BODY, "make_backup": False}
+                "params": {"path": PANTAU_APT_CMD, "content": PANTAU_APT_SCRIPT_BODY, "make_backup": False}
             })
             pw = subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_write, text=True, capture_output=True, timeout=10)
             try:
@@ -2989,13 +2988,13 @@ def ensure_pantau_apt_updated() -> bool:
             if pw.returncode == 0 and out_data.get("ok"):
                 payload_chmod = json.dumps({
                     "action": "chmod",
-                    "params": {"path": PANTUAN_APT_CMD, "mode": "0755"}
+                    "params": {"path": PANTAU_APT_CMD, "mode": "0755"}
                 })
                 subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_chmod, text=True, capture_output=True, timeout=10)
                 print("[APT] Wrapper /usr/local/sbin/pantau-apt berhasil diperbarui via pantau-file")
                 return True
     except Exception as e:
-        print(f"[APT WARN] Gagal memperbarui {PANTUAN_APT_CMD}: {e}")
+        print(f"[APT WARN] Gagal memperbarui {PANTAU_APT_CMD}: {e}")
     return False
 
 
@@ -3004,25 +3003,25 @@ def _apt_cmd(kind: str, detail: str = ""):
     ensure_pantau_apt_updated()
     prefix = [] if IS_ROOT else ["/usr/bin/sudo", "-n"]
     if kind == "APT_UPDATE":
-        return prefix + [PANTUAN_APT_CMD, "update"], 300
+        return prefix + [PANTAU_APT_CMD, "update"], 300
     if kind == "APT_UPGRADE":
-        return prefix + [PANTUAN_APT_CMD, "upgrade"], 900
+        return prefix + [PANTAU_APT_CMD, "upgrade"], 900
     if kind == "APT_UPGRADE_INTERACT":
         # Interaktif menunggu admin mengetik; timeout lebih longgar, dan HANYA
         # diakhiri bila proses benar-benar tidak bergerak (mis. admin lupa).
-        return prefix + [PANTUAN_APT_CMD, "upgrade-interact"], 3600
+        return prefix + [PANTAU_APT_CMD, "upgrade-interact"], 3600
     if kind == "APT_DIST_UPGRADE":
-        return prefix + [PANTUAN_APT_CMD, "dist-upgrade"], 3600
+        return prefix + [PANTAU_APT_CMD, "dist-upgrade"], 3600
     if kind == "APT_FIX":
         # Reparasi dpkg & pemulihan paket rusak
-        return prefix + [PANTUAN_APT_CMD, "fix"], 1800
+        return prefix + [PANTAU_APT_CMD, "fix"], 1800
     if kind == "PKG_UPGRADE":
         pkg = (detail or "").strip()
         if not re.fullmatch(r"[a-z0-9][a-z0-9+.-]+", pkg):
             raise ValueError(f"nama paket tidak valid untuk upgrade: '{pkg}'")
-        return prefix + [PANTUAN_APT_CMD, "upgrade-pkg", pkg], 600
+        return prefix + [PANTAU_APT_CMD, "upgrade-pkg", pkg], 600
     if kind == "PKG_CLEAN":
-        return prefix + [PANTUAN_APT_CMD, "clean"], 120
+        return prefix + [PANTAU_APT_CMD, "clean"], 120
     raise ValueError(f"unit apt tidak dikenal: {kind}")
 
 
@@ -3164,7 +3163,7 @@ def clear_package_cache(pkg: str = "") -> str:
         mb_freed = bytes_freed / (1024 * 1024)
         return f"Cache untuk paket '{pkg}' berhasil dibersihkan: {cleaned} berkas deb ({mb_freed:.2f} MB)."
     prefix = [] if IS_ROOT else ["/usr/bin/sudo", "-n"]
-    res = _run_cmd(prefix + [PANTUAN_APT_CMD, "clean"], timeout=30)
+    res = _run_cmd(prefix + [PANTAU_APT_CMD, "clean"], timeout=30)
     if res and res.returncode == 0:
         return "Seluruh cache paket sistem operasi (/var/cache/apt/archives) berhasil dibersihkan."
     return "Cache paket sistem dibersihkan."
@@ -3791,7 +3790,7 @@ def _run_shell_inner(cfg: dict, rid: int) -> None:
     admin mengetik "exit", dashboard menutup jendelanya, atau timeout 8 jam.
     Semua ketikan admin diteruskan apa adanya ke stdin shell lewat pty.
     """
-    cmd = [PANTUAN_SHELL_CMD] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTUAN_SHELL_CMD]
+    cmd = [PANTAU_SHELL_CMD] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_SHELL_CMD]
     output_parts: list[str] = []
     raw_len = 0
     truncated = False
@@ -4299,7 +4298,7 @@ def collect_firewall() -> dict:
     # 1. Panggil pantau-firewall status jika non-root
     raw_output = ""
     if not IS_ROOT:
-        res = _run_cmd(["/usr/bin/sudo", "-n", PANTUAN_FIREWALL, "status"], timeout=6)
+        res = _run_cmd(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, "status"], timeout=6)
         if res and res.returncode == 0:
             raw_output = res.stdout
     else:
@@ -4463,22 +4462,58 @@ def collect_ssl_certs() -> list[dict]:
     utc_now = datetime.now(timezone.utc)
     for p in found_paths[:50]:
         try:
-            # Gunakan cryptography jika tersedia
-            from cryptography import x509
-            from cryptography.hazmat.backends import default_backend
-            with open(p, "rb") as f:
-                data = f.read()
-            cert = x509.load_pem_x509_certificate(data, default_backend())
-            subject = cert.subject.rfc4514_string()
-            issuer = cert.issuer.rfc4514_string()
-            not_after = cert.not_valid_after_utc
-            days_left = (not_after - utc_now).days
+            subject = ""
+            issuer = ""
             sans = []
+            not_after = None
+
+            # 1. Pustaka standar internal: ssl._ssl._test_decode_cert
             try:
-                san_ext = cert.extensions.get_extension_for_oid(x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
-                sans = san_ext.value.get_values_for_type(x509.DNSName)
+                decoded = ssl._ssl._test_decode_cert(p)
+                if decoded:
+                    if "subject" in decoded:
+                        subject = ", ".join(f"{k}={v}" for rdn in decoded["subject"] for k, v in rdn)
+                    if "issuer" in decoded:
+                        issuer = ", ".join(f"{k}={v}" for rdn in decoded["issuer"] for k, v in rdn)
+                    if "subjectAltName" in decoded:
+                        sans = [str(v) for k, v in decoded["subjectAltName"] if k == "DNS"]
+                    if "notAfter" in decoded:
+                        not_after = datetime.strptime(
+                            decoded["notAfter"], "%b %d %H:%M:%S %Y %Z"
+                        ).replace(tzinfo=timezone.utc)
             except Exception:
-                pass
+                decoded = None
+
+            # 2. Fallback: CLI openssl x509 bawaan sistem
+            if not not_after:
+                try:
+                    res = subprocess.run(
+                        ["openssl", "x509", "-in", p, "-noout", "-subject", "-issuer", "-enddate", "-ext", "subjectAltName"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5.0,
+                    )
+                    if res.returncode == 0:
+                        for line in res.stdout.splitlines():
+                            line_s = line.strip()
+                            if line_s.startswith("subject=") and not subject:
+                                subject = line_s.split("subject=", 1)[1].strip()
+                            elif line_s.startswith("issuer=") and not issuer:
+                                issuer = line_s.split("issuer=", 1)[1].strip()
+                            elif line_s.startswith("notAfter="):
+                                date_str = line_s.split("notAfter=", 1)[1].strip()
+                                not_after = datetime.strptime(
+                                    date_str, "%b %d %H:%M:%S %Y %Z"
+                                ).replace(tzinfo=timezone.utc)
+                            elif "DNS:" in line_s and not sans:
+                                sans = [item.strip()[4:] for item in line_s.split(",") if item.strip().startswith("DNS:")]
+                except Exception:
+                    pass
+
+            if not not_after:
+                continue
+
+            days_left = (not_after - utc_now).days
 
             is_custom = False
             try:
@@ -4614,7 +4649,7 @@ def _collect_user_history(user: str, max_lines: int) -> list:
     """
     if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,32}", str(user)):
         return []
-    cmd = [PANTUAN_HISTORY_CMD, str(user)] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTUAN_HISTORY_CMD, str(user)]
+    cmd = [PANTAU_HISTORY_CMD, str(user)] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_HISTORY_CMD, str(user)]
     res = _run_cmd(cmd, timeout=15)
     if res is None or res.returncode != 0:
         return []
@@ -4820,8 +4855,8 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
     master_fd, slave_fd = pty.openpty()
     _set_terminal_winsize(master_fd, 24, 80)
 
-    if os.path.exists(PANTUAN_SHELL_CMD):
-        cmd = [PANTUAN_SHELL_CMD] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTUAN_SHELL_CMD]
+    if os.path.exists(PANTAU_SHELL_CMD):
+        cmd = [PANTAU_SHELL_CMD] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_SHELL_CMD]
     else:
         cmd = ["/bin/bash", "-i"]
 

@@ -6,6 +6,11 @@
 --   mysql -uroot -e "CREATE USER 'pantau_db'@'127.0.0.1' IDENTIFIED BY '<pass>'; GRANT ALL ON pantau_db.* TO 'pantau_db'@'127.0.0.1';"
 
 /*M!999999\- enable the sandbox mode */ 
+-- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
+--
+-- Host: 127.0.0.1    Database: pantau_db
+-- ------------------------------------------------------
+-- Server version	10.11.14-MariaDB-0ubuntu0.24.04.1
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -17,46 +22,61 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `audit_logs`
+--
+
 DROP TABLE IF EXISTS `audit_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `audit_logs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `server_id` int(10) unsigned DEFAULT NULL,
   `username` varchar(100) NOT NULL,
   `action` varchar(50) NOT NULL,
   `target` varchar(255) DEFAULT NULL,
   `result` varchar(500) DEFAULT NULL,
   `meta` text DEFAULT NULL,
   `created_at` datetime NOT NULL,
+  `server_id` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_audit_username` (`username`),
   KEY `idx_audit_created` (`created_at`),
+  KEY `idx_audit_username` (`username`),
   KEY `idx_audit_server` (`server_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `commands`
+--
+
 DROP TABLE IF EXISTS `commands`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `commands` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `server_id` int(10) unsigned NOT NULL,
-  `service_id` int(11) DEFAULT NULL,
+  `service_id` int(10) unsigned DEFAULT NULL,
   `action` varchar(20) NOT NULL,
   `params` text DEFAULT NULL,
   `issued_by` varchar(100) DEFAULT NULL,
-  `status` enum('pending','executing','success','failed') NOT NULL,
+  `status` enum('pending','executing','success','failed') NOT NULL DEFAULT 'pending',
   `result` text DEFAULT NULL,
-  `created_at` datetime DEFAULT NULL,
-  `executed_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `executed_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `server_id` (`server_id`),
-  KEY `service_id` (`service_id`),
   KEY `idx_commands_status` (`status`),
+  KEY `idx_commands_server` (`server_id`),
+  KEY `commands_ibfk_2` (`service_id`),
   CONSTRAINT `commands_ibfk_1` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE,
   CONSTRAINT `commands_ibfk_2` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `log_requests`
+--
+
 DROP TABLE IF EXISTS `log_requests`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -68,15 +88,21 @@ CREATE TABLE `log_requests` (
   `detail` varchar(128) DEFAULT NULL,
   `status` enum('pending','executing','success','failed') NOT NULL,
   `result` mediumtext DEFAULT NULL,
-  `input_data` varchar(500) DEFAULT NULL,
-  `input_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
+  `input_data` varchar(500) DEFAULT NULL,
+  `input_at` datetime DEFAULT NULL,
+  `input_queue` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_log_requests_server_status` (`server_id`,`status`,`created_at`),
   CONSTRAINT `log_requests_ibfk_1` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `login_attempts`
+--
+
 DROP TABLE IF EXISTS `login_attempts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -88,22 +114,104 @@ CREATE TABLE `login_attempts` (
   PRIMARY KEY (`ip_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `metrics`
+--
+
 DROP TABLE IF EXISTS `metrics`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `metrics` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `service_id` int(11) NOT NULL,
-  `timestamp` datetime DEFAULT NULL,
-  `status` enum('up','down') NOT NULL,
-  `active_connections` int(11) NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `service_id` int(10) unsigned NOT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` enum('up','down') NOT NULL DEFAULT 'down',
+  `active_connections` int(10) unsigned NOT NULL DEFAULT 0,
   `response_time_ms` int(11) DEFAULT NULL,
   `health_message` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_metrics_service_ts` (`service_id`,`timestamp`),
-  CONSTRAINT `metrics_ibfk_1` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE
+  KEY `idx_metrics_timestamp` (`timestamp`),
+  CONSTRAINT `metrics_ibfk_1` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `probe_logs`
+--
+
+DROP TABLE IF EXISTS `probe_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `probe_logs` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `probe_id` int(10) unsigned NOT NULL,
+  `checked_at` datetime NOT NULL,
+  `status` varchar(20) NOT NULL,
+  `latency_ms` float DEFAULT NULL,
+  `status_code` int(11) DEFAULT NULL,
+  `error_message` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ix_probe_logs_checked_at` (`checked_at`),
+  KEY `ix_probe_logs_probe_id` (`probe_id`),
+  KEY `idx_probe_logs_probe_time` (`probe_id`,`checked_at`),
+  CONSTRAINT `probe_logs_ibfk_1` FOREIGN KEY (`probe_id`) REFERENCES `probe_targets` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `probe_targets`
+--
+
+DROP TABLE IF EXISTS `probe_targets`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `probe_targets` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `probe_type` varchar(20) NOT NULL,
+  `target` varchar(255) NOT NULL,
+  `port` int(11) DEFAULT NULL,
+  `server_id` int(10) unsigned DEFAULT NULL,
+  `tier` smallint(6) NOT NULL DEFAULT 2,
+  `interval_seconds` int(11) NOT NULL,
+  `timeout_seconds` int(11) NOT NULL,
+  `http_method` varchar(10) NOT NULL,
+  `http_headers` text DEFAULT NULL,
+  `http_body` text DEFAULT NULL,
+  `expected_status` varchar(50) DEFAULT NULL,
+  `keyword_match` varchar(255) DEFAULT NULL,
+  `ssl_verify` smallint(6) NOT NULL,
+  `ssl_expiry_threshold_days` int(11) NOT NULL,
+  `latency_threshold_ms` int(11) DEFAULT NULL,
+  `consecutive_threshold` int(11) NOT NULL,
+  `is_active` smallint(6) NOT NULL,
+  `status` varchar(20) NOT NULL,
+  `last_checked_at` datetime DEFAULT NULL,
+  `last_latency_ms` float DEFAULT NULL,
+  `last_status_code` int(11) DEFAULT NULL,
+  `last_error` varchar(255) DEFAULT NULL,
+  `ssl_expires_at` datetime DEFAULT NULL,
+  `ssl_days_remaining` int(11) DEFAULT NULL,
+  `consecutive_failures` int(11) NOT NULL,
+  `consecutive_successes` int(11) NOT NULL,
+  `uptime_24h` float NOT NULL,
+  `uptime_30d` float NOT NULL,
+  `created_at` datetime NOT NULL,
+  `created_by` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_probe_active_next` (`is_active`,`last_checked_at`),
+  KEY `ix_probe_targets_server_id` (`server_id`),
+  KEY `idx_probe_type_status` (`probe_type`,`status`),
+  CONSTRAINT `probe_targets_ibfk_1` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `server_extras`
+--
+
 DROP TABLE IF EXISTS `server_extras`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -112,25 +220,40 @@ CREATE TABLE `server_extras` (
   `kernel` varchar(100) DEFAULT NULL,
   `os_label` varchar(120) DEFAULT NULL,
   `arch` varchar(24) DEFAULT NULL,
-  `agent_version` varchar(16) DEFAULT NULL,
   `units` text DEFAULT NULL,
   `accounts` text DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
   `apt_upgradable` int(11) DEFAULT NULL,
   `apt_last_update` datetime DEFAULT NULL,
   `apt_packages` text DEFAULT NULL,
   `security` text DEFAULT NULL,
   `top_procs` text DEFAULT NULL,
-  `updated_at` datetime DEFAULT NULL,
+  `agent_version` varchar(16) DEFAULT NULL,
+  `cron_jobs` mediumtext DEFAULT NULL,
+  `firewall` mediumtext DEFAULT NULL,
+  `listening_ports` mediumtext DEFAULT NULL,
+  `ssl_certs` mediumtext DEFAULT NULL,
+  `system_logs` mediumtext DEFAULT NULL,
+  `hardware_specs` text DEFAULT NULL,
+  `installed_packages` mediumtext DEFAULT NULL,
+  `systemd_units` mediumtext DEFAULT NULL,
+  `backup_status` mediumtext DEFAULT NULL,
   PRIMARY KEY (`server_id`),
   CONSTRAINT `server_extras_ibfk_1` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `server_problems`
+--
+
 DROP TABLE IF EXISTS `server_problems`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `server_problems` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `server_id` int(10) unsigned NOT NULL,
+  `server_id` int(10) unsigned DEFAULT NULL,
+  `probe_id` int(10) unsigned DEFAULT NULL,
   `key` varchar(160) NOT NULL,
   `severity` varchar(10) NOT NULL,
   `message` varchar(255) NOT NULL,
@@ -141,13 +264,26 @@ CREATE TABLE `server_problems` (
   `acknowledged_at` datetime DEFAULT NULL,
   `acknowledged_by` varchar(100) DEFAULT NULL,
   `last_active_at` datetime DEFAULT NULL,
-  `resolved_note` varchar(30) DEFAULT NULL,
+  `resolved_note` varchar(100) DEFAULT NULL,
+  `is_ignored` tinyint(1) DEFAULT 0,
+  `ignored_until` datetime DEFAULT NULL,
+  `ignored_by` varchar(100) DEFAULT NULL,
+  `ignored_reason` varchar(255) DEFAULT NULL,
+  `context` text DEFAULT NULL,
+  `ignore_mode` varchar(20) DEFAULT 'permanent',
   PRIMARY KEY (`id`),
-  KEY `ix_server_problems_server_id` (`server_id`),
   KEY `idx_problems_open` (`server_id`,`resolved_at`),
+  KEY `ix_server_problems_server_id` (`server_id`),
+  KEY `fk_problems_probe` (`probe_id`),
+  CONSTRAINT `fk_problems_probe` FOREIGN KEY (`probe_id`) REFERENCES `probe_targets` (`id`) ON DELETE CASCADE,
   CONSTRAINT `server_problems_ibfk_1` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `servers`
+--
+
 DROP TABLE IF EXISTS `servers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -156,34 +292,58 @@ CREATE TABLE `servers` (
   `hostname` varchar(255) NOT NULL,
   `ip_address` varchar(45) NOT NULL,
   `api_key` varchar(80) NOT NULL,
-  `is_active` smallint(6) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `is_maintenance` tinyint(1) NOT NULL DEFAULT 0,
   `maintenance_until` datetime DEFAULT NULL,
   `maintenance_reason` varchar(255) DEFAULT NULL,
-  `last_seen` datetime DEFAULT NULL,
-  `created_at` datetime DEFAULT NULL,
+  `last_seen` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `group_name` varchar(64) DEFAULT 'Default',
+  `tier` smallint(6) NOT NULL DEFAULT 2,
   `tags` varchar(255) DEFAULT NULL,
   `custom_thresholds` text DEFAULT NULL,
   `is_proxmox_ha` tinyint(1) NOT NULL DEFAULT 0,
+  `platform_override` varchar(20) DEFAULT NULL,
+  `is_isolated_net` tinyint(4) NOT NULL DEFAULT 0,
+  `allow_web_terminal` tinyint(4) NOT NULL DEFAULT 1,
+  `notes` text DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `api_key` (`api_key`)
+  UNIQUE KEY `api_key` (`api_key`),
+  KEY `idx_servers_api_key` (`api_key`),
+  KEY `idx_servers_hostname` (`hostname`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `services`
+--
+
 DROP TABLE IF EXISTS `services`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `services` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `server_id` int(10) unsigned NOT NULL,
   `service_name` varchar(100) NOT NULL,
-  `port` int(11) NOT NULL,
+  `port` int(10) unsigned NOT NULL,
   `process_name` varchar(100) NOT NULL,
+  `is_core` smallint(6) NOT NULL DEFAULT 1,
+  `is_ignored` tinyint(1) DEFAULT 0,
+  `ignored_until` datetime DEFAULT NULL,
+  `ignored_by` varchar(100) DEFAULT NULL,
+  `ignored_reason` varchar(255) DEFAULT NULL,
+  `ignore_mode` varchar(20) DEFAULT 'permanent',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_server_service` (`server_id`,`service_name`),
-  CONSTRAINT `services_ibfk_1` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
+  KEY `idx_services_port` (`port`),
+  CONSTRAINT `services_ibfk_1` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `sessions`
+--
+
 DROP TABLE IF EXISTS `sessions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -197,11 +357,16 @@ CREATE TABLE `sessions` (
   `created_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `sid` (`sid`),
-  KEY `ix_sessions_expires_at` (`expires_at`),
   KEY `ix_sessions_user_id` (`user_id`),
+  KEY `ix_sessions_expires_at` (`expires_at`),
   CONSTRAINT `sessions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `sys_snapshots`
+--
+
 DROP TABLE IF EXISTS `sys_snapshots`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -227,6 +392,11 @@ CREATE TABLE `sys_snapshots` (
   CONSTRAINT `sys_snapshots_ibfk_1` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `sys_snapshots_hourly`
+--
+
 DROP TABLE IF EXISTS `sys_snapshots_hourly`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -252,6 +422,26 @@ CREATE TABLE `sys_snapshots_hourly` (
   CONSTRAINT `sys_snapshots_hourly_ibfk_1` FOREIGN KEY (`server_id`) REFERENCES `servers` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `system_settings`
+--
+
+DROP TABLE IF EXISTS `system_settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `system_settings` (
+  `key` varchar(64) NOT NULL,
+  `value` text NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `users`
+--
+
 DROP TABLE IF EXISTS `users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
@@ -259,8 +449,16 @@ CREATE TABLE `users` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `username` varchar(100) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
-  `role` enum('admin','viewer') NOT NULL,
-  `created_at` datetime DEFAULT NULL,
+  `role` varchar(30) NOT NULL DEFAULT 'viewer',
+  `is_active` tinyint(4) NOT NULL DEFAULT 1,
+  `password_changed_at` datetime DEFAULT NULL,
+  `last_login_at` datetime DEFAULT NULL,
+  `last_login_ip` varchar(45) DEFAULT NULL,
+  `totp_secret` varchar(64) DEFAULT NULL,
+  `totp_enabled` tinyint(4) NOT NULL DEFAULT 0,
+  `recovery_codes` text DEFAULT NULL,
+  `permissions` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -274,4 +472,6 @@ CREATE TABLE `users` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-10-28 14:28:10
 SET FOREIGN_KEY_CHECKS=1;
