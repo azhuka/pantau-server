@@ -3265,27 +3265,7 @@ div[style*="position: fixed"] .card {
   </div>
 </div>
 
-<!-- Modal Konfirmasi Tindakan Layanan (Restart, Stop, Hapus) -->
-<div id="svc-confirm-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.72);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeSvcConfirmModal(false)">
-  <div class="card" style="width:min(460px,96vw);background:#161b22;border:1px solid #30363d;border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,0.85);color:var(--text);padding:18px 20px;overflow:hidden" onclick="event.stopPropagation()">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-      <div style="display:flex;align-items:flex-start;gap:14px">
-        <div id="svc-confirm-icon-wrap" style="width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(239,68,68,0.15);color:#ef4444">
-          <svg id="svc-confirm-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-        </div>
-        <div>
-          <h3 id="svc-confirm-title" style="margin:0 0 6px;font-size:15px;font-weight:600;color:var(--text-bright)">Konfirmasi Tindakan</h3>
-          <p id="svc-confirm-msg" style="margin:0;font-size:12.5px;line-height:1.55;color:var(--text)"></p>
-        </div>
-      </div>
-      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeSvcConfirmModal(false)" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
-    </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px">
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeSvcConfirmModal(false)">Batal</button>
-      <button type="button" id="svc-confirm-btn-yes" class="btn btn-danger btn-sm" onclick="closeSvcConfirmModal(true)">Ya, Lanjutkan</button>
-    </div>
-  </div>
-</div>
+
 
 <!-- Modal Hentikan / Kelola Sinyal Proses -->
 <div id="kill-proc-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeKillProcModal()">
@@ -4403,18 +4383,24 @@ function copyAgentUpdateCmd(ev) {
   }
 }
 
-function triggerAgentUpdate(sid) {
+async function triggerAgentUpdate(sid) {
   if (typeof window.requestDesktopNotificationPermission === 'function') {
     window.requestDesktopNotificationPermission();
   }
   const btn = document.getElementById('btn-update-agent');
   const isEn = isEnPage();
-  const confirmMsg = isEn
-    ? "Push Over-The-Air (OTA) update to Pantau Agent on this server? The agent will download the latest version and verify cryptographic SHA-256 integrity before applying."
-    : "Kirim perintah Push Update (OTA) ke Agen Pantau di server ini? Agen akan mengunduh versi terbaru dan memverifikasi integritas hash SHA-256 sebelum diterapkan.";
-  if (!confirm(confirmMsg)) {
-    return;
-  }
+  const ok = await showConfirmModal({
+    title: isEn ? 'Push OTA Agent Update' : 'Push Pembaruan OTA Agen',
+    target: typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : ('Server #' + sid),
+    message: isEn
+      ? 'Push latest agent code. SHA-256 integrity hash is verified before reload.'
+      : 'Kirim pembaruan OTA ke Agen Pantau. Integritas hash SHA-256 diverifikasi sebelum diterapkan.',
+    btnText: isEn ? 'Push Update' : 'Perbarui Agen',
+    btnClass: 'btn-primary',
+    iconType: 'primary',
+    badge: 'OTA UPDATE'
+  });
+  if (!ok) return;
   if (btn) {
     btn.disabled = true;
     btn.style.opacity = '0.7';
@@ -4586,43 +4572,13 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
     + pendingBadge;
 }
 
-let _svcConfirmResolver = null;
-function showSvcConfirmModal({ title, message, btnText, btnClass, iconType }) {
-  return new Promise((resolve) => {
-    _svcConfirmResolver = resolve;
-    const modal = document.getElementById('svc-confirm-modal');
-    const titleEl = document.getElementById('svc-confirm-title');
-    const msgEl = document.getElementById('svc-confirm-msg');
-    const btnYes = document.getElementById('svc-confirm-btn-yes');
-    const iconWrap = document.getElementById('svc-confirm-icon-wrap');
-
-    if (titleEl) titleEl.textContent = title;
-    if (msgEl) msgEl.innerHTML = message;
-    if (btnYes) {
-      btnYes.textContent = btnText;
-      btnYes.className = 'btn btn-sm ' + (btnClass || 'btn-danger');
-    }
-    if (iconWrap) {
-      if (iconType === 'primary') {
-        iconWrap.style.background = 'rgba(59,130,246,0.15)';
-        iconWrap.style.color = '#3b82f6';
-      } else {
-        iconWrap.style.background = 'rgba(239,68,68,0.15)';
-        iconWrap.style.color = '#ef4444';
-      }
-    }
-    if (modal) {
-      modal.style.display = 'flex';
-    }
-  });
+function showSvcConfirmModal(opts) {
+  return typeof window.showConfirmModal === 'function' ? window.showConfirmModal(opts) : Promise.resolve(true);
 }
 
 function closeSvcConfirmModal(result) {
-  const modal = document.getElementById('svc-confirm-modal');
-  if (modal) modal.style.display = 'none';
-  if (_svcConfirmResolver) {
-    _svcConfirmResolver(Boolean(result));
-    _svcConfirmResolver = null;
+  if (typeof window.closeAppConfirmModal === 'function') {
+    window.closeAppConfirmModal(result);
   }
 }
 
@@ -4848,7 +4804,17 @@ async function sendProcDirectSignal(pid, pname, sig, btn) {
     return;
   }
   const sigName = (sig === 'STOP') ? 'Tangguhkan/Pause' : (sig === 'CONT' ? 'Lanjutkan/Resume' : sig);
-  if (!confirm(`Kirim sinyal ${sigName} ke PID ${pid} (${pname})?`)) return;
+  const isKill = sig === 'KILL' || sig === 'TERM';
+  const ok = await showConfirmModal({
+    title: isKill ? 'Hentikan Sinyal Proses' : 'Kirim Sinyal Proses',
+    target: `PID ${pid} (${pname})`,
+    message: `Kirim sinyal ${sigName} (${sig}) ke proses sistem terpilih.`,
+    btnText: `Kirim Sinyal ${sig}`,
+    btnClass: isKill ? 'btn-danger' : (sig === 'STOP' ? 'btn-warning' : 'btn-primary'),
+    iconType: isKill ? 'danger' : (sig === 'STOP' ? 'warning' : 'primary'),
+    badge: 'PROSES ' + sig
+  });
+  if (!ok) return;
 
   const origHtml = btn ? btn.innerHTML : '';
   if (btn) {
@@ -5069,11 +5035,27 @@ async function submitUserAction(action, username, btn) {
     });
     if (!creds) return;
   } else if (action === 'lock') {
-    confirmMsg = isEn ? ('Lock account ' + username + ' (disable login)?') : ('Kunci akun pengguna ' + username + '?');
-    if (!confirm(confirmMsg)) return;
+    const ok = await showConfirmModal({
+      title: isEn ? 'Lock Linux User' : 'Kunci Akun Pengguna',
+      target: username,
+      message: isEn ? 'Disable user login via SSH and local console.' : 'Kunci akun pengguna dan nonaktifkan akses login.',
+      btnText: isEn ? 'Lock Account' : 'Kunci Akun',
+      btnClass: 'btn-danger',
+      iconType: 'danger',
+      badge: 'AKSES'
+    });
+    if (!ok) return;
   } else if (action === 'unlock') {
-    confirmMsg = isEn ? ('Unlock account ' + username + ' (enable login)?') : ('Buka kunci akun pengguna ' + username + '?');
-    if (!confirm(confirmMsg)) return;
+    const ok = await showConfirmModal({
+      title: isEn ? 'Unlock Linux User' : 'Buka Kunci Akun Pengguna',
+      target: username,
+      message: isEn ? 'Restore user login access to this system.' : 'Pulihkan kembali hak akses login pengguna ke sistem.',
+      btnText: isEn ? 'Unlock Account' : 'Buka Kunci',
+      btnClass: 'btn-primary',
+      iconType: 'primary',
+      badge: 'AKSES'
+    });
+    if (!ok) return;
   }
 
   const origText = btn ? btn.textContent : '';
@@ -5166,10 +5148,16 @@ async function terminateSession(sid, tty, username, btn) {
     return;
   }
   const promptUser = username ? (' (' + username + ')') : '';
-  const confirmMsg = isEn 
-    ? ('Force terminate active terminal session ' + tty + promptUser + '?')
-    : ('Putus paksa sesi terminal aktif ' + tty + promptUser + '?');
-  if (!confirm(confirmMsg)) return;
+  const ok = await showConfirmModal({
+    title: isEn ? 'Terminate Active Session' : 'Putus Sesi Terminal Aktif',
+    target: tty + promptUser,
+    message: isEn ? 'Force terminate this active terminal session immediately.' : 'Putus paksa sesi terminal aktif ini segera.',
+    btnText: isEn ? 'Terminate Session' : 'Putus Sesi',
+    btnClass: 'btn-danger',
+    iconType: 'danger',
+    badge: 'TERMINAL'
+  });
+  if (!ok) return;
 
   const origHtml = btn ? btn.innerHTML : '';
   if (btn) {
@@ -5251,7 +5239,16 @@ function closeAddSslPathModal() {
 
 async function ackProblemInDetail(id, btn) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  if (!confirm(isEn ? 'Mark this incident as handled?' : 'Tandai masalah ini sudah ditangani?')) return;
+  const ok = await showConfirmModal({
+    title: isEn ? 'Acknowledge Incident' : 'Tandai Penanganan Insiden',
+    target: 'Insiden #' + id,
+    message: isEn ? 'Mark this active incident as handled and acknowledged.' : 'Tandai insiden aktif ini sebagai sudah ditangani (acknowledge).',
+    btnText: isEn ? 'Acknowledge' : 'Tandai Ditangani',
+    btnClass: 'btn-warning',
+    iconType: 'warning',
+    badge: 'ACK'
+  });
+  if (!ok) return;
   const orig = btn.innerHTML;
   btn.disabled = true; btn.textContent = '…';
   try {
@@ -5342,10 +5339,19 @@ async function submitPortRule(portProto, rule, btn) {
     showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
     return;
   }
-  const promptText = rule === 'deny'
-    ? (isEn ? `Block port ${portProto} via firewall?` : `Blokir port ${portProto} melalui firewall?`)
-    : (isEn ? `Allow/open port ${portProto} via firewall?` : `Izinkan/buka port ${portProto} melalui firewall?`);
-  if (!confirm(promptText)) return;
+  const isDeny = rule === 'deny';
+  const ok = await showConfirmModal({
+    title: isDeny ? (isEn ? 'Block Port' : 'Blokir Port Firewall') : (isEn ? 'Allow Port' : 'Buka Port Firewall'),
+    target: portProto,
+    message: isDeny
+      ? (isEn ? 'Add DROP rule to firewall for this port.' : 'Terapkan aturan DROP pada firewall untuk port ini.')
+      : (isEn ? 'Add ACCEPT rule to firewall for this port.' : 'Terapkan aturan ACCEPT pada firewall untuk port ini.'),
+    btnText: isDeny ? (isEn ? 'Block Port' : 'Blokir Port') : (isEn ? 'Allow Port' : 'Izinkan Port'),
+    btnClass: isDeny ? 'btn-danger' : 'btn-primary',
+    iconType: isDeny ? 'danger' : 'primary',
+    badge: 'FIREWALL'
+  });
+  if (!ok) return;
 
   const origText = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
@@ -5382,15 +5388,36 @@ async function submitFirewallAction(action, btn) {
     showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
     return;
   }
+  let title = isEn ? 'Firewall Action' : 'Tindakan Firewall';
   let promptText = '';
+  let btnClass = 'btn-danger';
+  let iconType = 'danger';
   if (action === 'reload') {
-    promptText = isEn ? 'Reload firewall configuration?' : 'Muat ulang (reload) konfigurasi firewall?';
+    title = isEn ? 'Reload Firewall' : 'Muat Ulang Firewall';
+    promptText = isEn ? 'Reload firewall configuration?' : 'Muat ulang konfigurasi aturan firewall.';
+    btnClass = 'btn-primary';
+    iconType = 'primary';
   } else if (action === 'disable') {
-    promptText = isEn ? 'WARNING: Disable firewall (UFW)? All ports will be open without filtering.' : 'PERINGATAN: Nonaktifkan firewall (UFW)? Seluruh port server akan terbuka tanpa filter penyaringan.';
+    title = isEn ? 'Disable Firewall (UFW)' : 'Nonaktifkan Firewall (UFW)';
+    promptText = isEn ? 'Disable firewall? All ports will be open without filtering.' : 'Nonaktifkan firewall? Seluruh port server akan terbuka tanpa filter penyaringan.';
+    btnClass = 'btn-danger';
+    iconType = 'danger';
   } else if (action === 'enable') {
-    promptText = isEn ? 'Enable firewall (UFW) now? Agent will ensure SSH port is allowed first.' : 'Aktifkan firewall (UFW) sekarang? Agen akan otomatis memastikan port SSH dilindungi/diizinkan terlebih dahulu.';
+    title = isEn ? 'Enable Firewall (UFW)' : 'Aktifkan Firewall (UFW)';
+    promptText = isEn ? 'Enable firewall now? Agent will ensure SSH port is allowed first.' : 'Aktifkan firewall sekarang? Agen otomatis memastikan port SSH diizinkan terlebih dahulu.';
+    btnClass = 'btn-primary';
+    iconType = 'primary';
   }
-  if (promptText && !confirm(promptText)) return;
+  const ok = await showConfirmModal({
+    title: title,
+    target: 'UFW Firewall',
+    message: promptText,
+    btnText: action === 'disable' ? 'Nonaktifkan' : (action === 'enable' ? 'Aktifkan' : 'Muat Ulang'),
+    btnClass: btnClass,
+    iconType: iconType,
+    badge: 'FIREWALL'
+  });
+  if (!ok) return;
 
   const origText = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
@@ -5425,8 +5452,16 @@ async function submitFirewallUnblock(ip, btn) {
     showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
     return;
   }
-  const promptText = isEn ? `Unblock IP ${ip}? DROP rule on iptables will be removed.` : `Buka blokir IP ${ip}? Aturan DROP pada iptables akan dihapus.`;
-  if (!confirm(promptText)) return;
+  const ok = await showConfirmModal({
+    title: isEn ? 'Unblock Attacker IP' : 'Buka Blokir Alamat IP',
+    target: ip,
+    message: isEn ? 'Remove DROP rule on iptables for this IP address.' : 'Hapus aturan DROP pada iptables untuk alamat IP ini.',
+    btnText: isEn ? 'Unblock IP' : 'Buka Blokir',
+    btnClass: 'btn-primary',
+    iconType: 'primary',
+    badge: 'FIREWALL'
+  });
+  if (!ok) return;
 
   const origText = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
@@ -5497,7 +5532,16 @@ async function submitCronRun(user, command, btn) {
     showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
     return;
   }
-  if (!confirm(isEn ? 'Run this cron command now as a test?' : 'Uji jalankan perintah cron ini sekarang?')) return;
+  const ok = await showConfirmModal({
+    title: isEn ? 'Test Run Cron Task' : 'Uji Jalankan Tugas Cron',
+    target: user ? `${user}: ${command}` : command,
+    message: isEn ? 'Execute this cron job immediately once for testing.' : 'Eksekusi tugas cron ini satu kali sekarang untuk pengujian.',
+    btnText: isEn ? 'Run Now' : 'Jalankan Sekarang',
+    btnClass: 'btn-primary',
+    iconType: 'primary',
+    badge: 'CRON'
+  });
+  if (!ok) return;
 
   const origText = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
@@ -5533,7 +5577,16 @@ async function submitCronDelete(ident, btn) {
     showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
     return;
   }
-  if (!confirm(isEn ? `Permanently delete cron task '${ident}'?` : `Hapus tugas cron '${ident}' secara permanen?`)) return;
+  const ok = await showConfirmModal({
+    title: isEn ? 'Delete Cron Task' : 'Hapus Tugas Cron',
+    target: ident,
+    message: isEn ? 'Permanently remove this cron task entry from crontab.' : 'Hapus baris tugas cron ini secara permanen dari crontab.',
+    btnText: isEn ? 'Delete Task' : 'Hapus Tugas',
+    btnClass: 'btn-danger',
+    iconType: 'danger',
+    badge: 'CRON'
+  });
+  if (!ok) return;
 
   const origText = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
@@ -5569,7 +5622,16 @@ async function submitSslRemovePath(path, btn) {
     showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
     return;
   }
-  if (!confirm(isEn ? `Remove certificate location '${path}' from monitoring?` : `Hapus lokasi sertifikat '${path}' dari pengawasan?`)) return;
+  const ok = await showConfirmModal({
+    title: isEn ? 'Remove Certificate Path' : 'Hapus Lokasi Sertifikat',
+    target: path,
+    message: isEn ? 'Remove this certificate path from active SSL monitoring.' : 'Hapus lokasi berkas sertifikat ini dari pemantauan aktif SSL.',
+    btnText: isEn ? 'Remove Path' : 'Hapus Lokasi',
+    btnClass: 'btn-danger',
+    iconType: 'danger',
+    badge: 'SSL'
+  });
+  if (!ok) return;
 
   const origText = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
@@ -5605,10 +5667,16 @@ async function submitProblemBlockAttackerIps(btn, ipCount) {
     showToast(isEn ? 'Server is offline. Action disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
     return;
   }
-  const promptText = isEn
-    ? `Block ${ipCount || ''} source attacker IPs (iptables) on ${SERVER_NAME}?`
-    : `Blokir ${ipCount || ''} IP sumber penyerang (iptables) di ${SERVER_NAME}?`;
-  if (!confirm(promptText)) return;
+  const ok = await showConfirmModal({
+    title: isEn ? 'Block Attacker IPs' : 'Blokir IP Penyerang',
+    target: (ipCount || 'Semua') + ' Alamat IP',
+    message: isEn ? 'Apply iptables DROP rules to all detected attacker IPs.' : 'Terapkan aturan DROP pada iptables untuk seluruh IP penyerang yang terdeteksi.',
+    btnText: isEn ? 'Block IPs' : 'Blokir IP',
+    btnClass: 'btn-danger',
+    iconType: 'danger',
+    badge: 'FIREWALL'
+  });
+  if (!ok) return;
 
   const origText = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
@@ -10602,7 +10670,16 @@ async function clearPkgCache(pkgName) {
     showToast('Akses ditolak: Anda tidak memiliki wewenang APT.', false);
     return;
   }
-  if (!confirm(`Bersihkan cache berkas deb untuk paket '${pkgName}'?`)) return;
+  const ok = await showConfirmModal({
+    title: 'Bersihkan Cache Paket',
+    target: pkgName,
+    message: `Bersihkan berkas deb sementara dalam cache arsip untuk paket ${pkgName}.`,
+    btnText: 'Bersihkan Cache',
+    btnClass: 'btn-warning',
+    iconType: 'warning',
+    badge: 'APT'
+  });
+  if (!ok) return;
 
   showToast(`Membersihkan cache ${pkgName}...`, true);
   try {
@@ -10708,8 +10785,17 @@ function closePkgLogModal() {
   if (modal) modal.style.display = 'none';
 }
 
-function upgradeSinglePkg(pkgName) {
-  if (!confirm(`Jalankan peningkatan versi (upgrade) untuk paket '${pkgName}' sekarang?`)) return;
+async function upgradeSinglePkg(pkgName) {
+  const ok = await showConfirmModal({
+    title: 'Tingkatkan Versi Paket (Upgrade)',
+    target: pkgName,
+    message: `Tingkatkan versi paket perangkat lunak ${pkgName} ke versi terbaru sekarang.`,
+    btnText: 'Tingkatkan Paket',
+    btnClass: 'btn-primary',
+    iconType: 'primary',
+    badge: 'APT UPGRADE'
+  });
+  if (!ok) return;
   triggerAptTask('PKG_UPGRADE', pkgName);
 }
 

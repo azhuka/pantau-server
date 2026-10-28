@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     SERVER_HOST: str = "0.0.0.0"
     SERVER_PORT: int = 8400
-    APP_VERSION: str = "4.8.25"
+    APP_VERSION: str = "4.8.26"
 
     # Setel True bila dashboard diakses via HTTPS (reverse proxy) agar cookie
     # sesi hanya dikirim lewat koneksi terenkripsi. Default True untuk keamanan.

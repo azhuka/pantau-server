@@ -729,7 +729,16 @@ async function submitFmPageUnlock(e) {
 }
 
 async function lockFileManagerSession() {
-  if (!confirm('Apakah Anda yakin ingin mengunci sesi File Manager ini sekarang?')) return;
+  const ok = await showConfirmModal({
+    title: 'Kunci Sesi File Manager',
+    target: typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : ('Server #' + SID),
+    message: 'Kunci kembali sesi File Manager sekarang. Akses berkas akan memerlukan otentikasi ulang.',
+    btnText: 'Kunci Sesi',
+    btnClass: 'btn-warning',
+    iconType: 'warning',
+    badge: 'KEAMANAN'
+  });
+  if (!ok) return;
   try {
     const res = await fetch(`/api/servers/${SID}/files/lock`, {
       method: 'POST',
@@ -754,7 +763,7 @@ async function lockFileManagerSession() {
       statsInfo.innerHTML = `<span style="color:var(--yellow)">Sesi Terkunci</span>`;
     }
   } catch (err) {
-    alert('Gagal mengunci sesi File Manager: ' + err.message);
+    showToast('Gagal mengunci sesi File Manager: ' + err.message, false);
   }
 }
 
@@ -1086,7 +1095,7 @@ async function fmPasteClipboard() {
     fmLoadDir(fmCurrentPath, false);
   } catch (err) {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    alert((isEn ? 'Failed to paste file/folder: ' : 'Gagal menempel berkas/folder: ') + err.message);
+    showToast((isEn ? 'Failed to paste file/folder: ' : 'Gagal menempel berkas/folder: ') + err.message, false);
   } finally {
     if (btnPaste) btnPaste.disabled = false;
   }
@@ -1490,7 +1499,16 @@ async function fmSaveFile() {
 async function fmRestoreBak() {
   if (!fmEditingPath) return;
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  if (!confirm(isEn ? 'Restore file to the latest backup (.bak)?' : 'Kembalikan berkas ke salinan cadangan (.bak) terakhir?')) return;
+  const ok = await showConfirmModal({
+    title: isEn ? 'Restore Backup File (.bak)' : 'Pulihkan Cadangan Berkas (.bak)',
+    target: fmEditingPath,
+    message: isEn ? 'Restore the content of this file to its latest .bak backup copy.' : 'Kembalikan isi berkas ini ke salinan cadangan (.bak) terakhir.',
+    btnText: isEn ? 'Restore File' : 'Pulihkan Berkas',
+    btnClass: 'btn-warning',
+    iconType: 'warning',
+    badge: 'RESTORE'
+  });
+  if (!ok) return;
 
   const bakPath = fmEditingPath + '.bak';
   try {
@@ -1503,9 +1521,9 @@ async function fmRestoreBak() {
     const textarea = document.getElementById('fm-editor-text');
     textarea.value = data.content || '';
     await fmSaveFile();
-    alert(isEn ? 'File successfully restored from .bak backup!' : 'Berkas berhasil dipulihkan dari cadangan .bak!');
+    showToast(isEn ? 'File successfully restored from .bak backup!' : 'Berkas berhasil dipulihkan dari cadangan .bak!', true);
   } catch (err) {
-    alert((isEn ? 'Failed to restore: ' : 'Gagal memulihkan: ') + err.message);
+    showToast((isEn ? 'Failed to restore: ' : 'Gagal memulihkan: ') + err.message, false);
   }
 }
 
@@ -1536,7 +1554,7 @@ function fmDownloadFile(filePath) {
 function fmOpenUpload() {
   if (!IS_ONLINE) {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    alert(isEn ? 'Cannot upload file: Server is currently offline.' : 'Tidak dapat mengunggah berkas: Server sedang offline.');
+    showToast(isEn ? 'Cannot upload file: Server is currently offline.' : 'Tidak dapat mengunggah berkas: Server sedang offline.', false);
     return;
   }
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
@@ -1787,7 +1805,7 @@ async function fmSubmitDelete() {
 function fmOpenNewFolder() {
   if (!IS_ONLINE) {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    alert(isEn ? 'Cannot create folder: Server is currently offline.' : 'Tidak dapat membuat folder: Server sedang offline.');
+    showToast(isEn ? 'Cannot create folder: Server is currently offline.' : 'Tidak dapat membuat folder: Server sedang offline.', false);
     return;
   }
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
@@ -1822,7 +1840,7 @@ function fmOpenNewFolder() {
 function fmOpenNewFile() {
   if (!IS_ONLINE) {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    alert(isEn ? 'Cannot create file: Server is currently offline.' : 'Tidak dapat membuat berkas: Server sedang offline.');
+    showToast(isEn ? 'Cannot create file: Server is currently offline.' : 'Tidak dapat membuat berkas: Server sedang offline.', false);
     return;
   }
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');

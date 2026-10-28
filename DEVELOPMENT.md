@@ -311,6 +311,33 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.26
+
+- **Tipe Rilis:** Modal Konfirmasi Universal Enterprise & Eliminasi Dialog Bawaan Browser (*Enterprise Universal Confirmation Modal & Native Browser Dialog Elimination*)
+- **Fokus Utama:** Mengeliminasi 100% dialog popup bawaan browser (`window.confirm()` dan `window.alert()`) yang kaku, kuno, dan memblokir thread UI di seluruh halaman web aplikasi, serta menggantikannya dengan dialog modal konfirmasi sentral berbasis HTML5/CSS modern berstandar enterprise NOC:
+  1. **Komponen Dialog Modal Universal Sentral (`#app-confirm-modal` di `server/templates/base.html`):**
+     - Membangun komponen modal konfirmasi universal di berkas tata letak utama (`base.html`), siap dipakai di seluruh halaman web Pantau Server (`dashboard`, `services`, `probing`, `problems`, `profile`, `users`, `file_manager`, dan `user_activity`).
+     - Desain visual bertaraf enterprise NOC: latar belakang gelap `#161b22`, border rapi `#30363d`, efek *smooth backdrop-blur* (4px), bayangan halus (`0 24px 60px rgba(0,0,0,0.85)`), dan animasi kemunculan kurva *cubic-bezier* (`appModalIn`).
+     - Ikon SVG tematik adaptif: ikon Peringatan Segitiga Merah (`danger`), Perisai Amber (`warning`), dan Lingkaran Informasi/Jalankan Biru (`primary`/`info`).
+     - Lencana target monospaced eksplisit (`Target: PID / IP / Endpoint / Pengguna`) untuk memastikan operator mengetahui persis objek yang akan diproses tanpa kalimat ambigu.
+     - Pesan dampak tindakan ringkas 1 baris berorientasi teknis tanpa kata-kata berlebihan atau teks mubazir.
+     - Tombol aksi jelas: tombol batal *ghost* dan tombol konfirmasi proporsional (`btn-danger`, `btn-warning`, `btn-primary`).
+     - Aksesibilitas dan navigasi papan ketik penuh: penekanan tombol `Enter` langsung mengeksekusi konfirmasi, penekanan tombol `Esc` atau klik di luar kartu membatalkan dialog. Terintegrasi penuh dengan pengendali modal universal `dismissActiveModal()`.
+  2. **API Global Asinkron & Otomatisasi Formulir Deklaratif:**
+     - Menyediakan API berbasis Promise `window.showConfirmModal(opts)` dan `window.closeAppConfirmModal(result)` yang mengembalikan nilai boolean secara asinkron tanpa memblokir thread JavaScript browser.
+     - Mencegat secara deklaratif seluruh formulir HTML yang memiliki atribut `data-confirm`: menghentikan submit default secara transparan, memunculkan modal `#app-confirm-modal`, dan meneruskan submit (`f.requestSubmit()`) setelah dikonfirmasi oleh operator.
+  3. **Migrasi Menyeluruh di 8 Berkas Antarmuka Web:**
+     - `server/templates/base.html`: konfirmasi *Acknowledge* masal insiden kritis (`alertAckAll`), pengaktifan kembali pemantauan (`unignoreProblem`), dan pencegatan formulir `data-confirm`.
+     - `server/templates/services.html`: delegasi `showSvcConfirmModal`, penghentian proses via sinyal (`sendProcDirectSignal`), kunci/buka kunci pengguna Linux (`lockLinuxUser`), pemutusan sesi terminal (`terminateSession`), *acknowledge* insiden individual (`ackProblemInDetail`), aturan port firewall (`submitPortRule`), reload/enable/disable firewall UFW (`submitFirewallAction`), buka blokir IP (`submitFirewallUnblock`), uji coba jalankan tugas cron (`submitCronRun`), hapus tugas cron (`submitCronDelete`), hapus pengawasan sertifikat SSL (`submitSslRemovePath`), blokir masal IP penyerang (`submitProblemBlockAttackerIps`), pembersihan cache deb paket (`clearPkgCache`), dan peningkatan versi paket OS (`upgradeSinglePkg`).
+     - `server/templates/probing.html`: penghapusan endpoint pemantauan SLA (`deleteProbe`) dan konversi notifikasi galat ke sistem *toast*.
+     - `server/templates/problems.html`: reset ambang batas global ke pengaturan pabrik (`resetThresholds`) dan penanganan insiden (*acknowledge*).
+     - `server/templates/file_manager.html`: penguncian sesi File Manager (`lockFileManagerSession`), pemulihan berkas dari cadangan `.bak` (`fmRestoreBak`), dan konversi seluruh pesan alert ke toast non-blocking.
+     - `server/templates/profile.html`: pembuatan ulang kode pemulihan 2FA, penonaktifan 2FA, serta penguncian dan pembukaan akun staf via formulir `data-confirm`.
+     - `server/templates/users.html`: penguncian dan pembukaan kembali akun pengguna staf via atribut deklaratif `data-confirm`.
+     - `server/templates/user_activity.html`: pemutusan paksa sesi terminal aktif (`terminateSession`) dan penggantian alert ke toast.
+  4. **Sinkronisasi SemVer 7 Berkas & Kebijakan Zero-Dependency:**
+     - Menaikkan versi aplikasi menjadi `v4.8.26` secara sinkron dan identik di 7 berkas: `server/config.py`, `server/templates/base.html`, `package/opt/pantau/agent/agent_pantau.py`, `agent/agent_pantau.py`, `package/install.sh`, `README.md`, dan `DEVELOPMENT.md`.
+
 ## Versi 4.8.25
 
 - **Tipe Rilis:** Benteng Otentikasi Tindakan Operator Berat & Standarisasi UI/UX Enterprise (*Privileged Operator Action Step-Up Authentication & Enterprise Guardrail System*)

@@ -922,6 +922,7 @@ body.kiosk-mode .main {
   }
 
   /* Penyesuaian Modal pada Mobile */
+  #app-confirm-modal > div,
   #guardrail-modal > div,
   #ignore-problem-modal > div,
   #problem-detail-modal > div,
@@ -932,6 +933,14 @@ body.kiosk-mode .main {
     padding:16px 14px !important;
     box-sizing:border-box !important;
   }
+}
+
+@keyframes appModalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+#app-confirm-modal .card, #guardrail-modal .card {
+  animation: appModalIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .table-responsive {
@@ -1192,7 +1201,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.8.25' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.8.26' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -1697,17 +1706,95 @@ function showGuardrailPasswordModal(options) {
   });
 }
 
+// ---------- Universal Enterprise Confirmation Modal ----------
+let _appConfirmResolver = null;
+window.showConfirmModal = function(opts) {
+  opts = opts || {};
+  return new Promise((resolve) => {
+    _appConfirmResolver = resolve;
+    const modal = document.getElementById('app-confirm-modal');
+    if (!modal) {
+      resolve(true);
+      return;
+    }
+    const titleEl = document.getElementById('app-confirm-title');
+    const msgEl = document.getElementById('app-confirm-msg');
+    const targetRow = document.getElementById('app-confirm-target-row');
+    const targetEl = document.getElementById('app-confirm-target');
+    const btnYes = document.getElementById('app-confirm-btn-yes');
+    const badgeEl = document.getElementById('app-confirm-badge');
+    const iconWrap = document.getElementById('app-confirm-icon-wrap');
+    const iconSvg = document.getElementById('app-confirm-icon');
+
+    const title = opts.title || 'Konfirmasi Tindakan';
+    const message = opts.message || opts.msg || 'Lanjutkan tindakan operasional ini?';
+    const btnText = opts.btnText || opts.confirmText || 'Ya, Lanjutkan';
+    const btnClass = opts.btnClass || (opts.btnColor === 'primary' ? 'btn-primary' : opts.btnColor === 'warning' ? 'btn-warning' : (opts.color === 'primary' ? 'btn-primary' : 'btn-danger'));
+    const iconType = opts.iconType || opts.icon || (btnClass.includes('primary') ? 'primary' : btnClass.includes('warning') ? 'warning' : 'danger');
+
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.innerHTML = message;
+
+    if (badgeEl) {
+      badgeEl.textContent = opts.badge || (iconType === 'danger' ? 'BAHAYA' : iconType === 'warning' ? 'PERINGATAN' : 'TINDAKAN');
+      badgeEl.style.color = iconType === 'danger' ? '#f87171' : iconType === 'warning' ? '#fbbf24' : '#60a5fa';
+      badgeEl.style.background = iconType === 'danger' ? 'rgba(239,68,68,0.12)' : iconType === 'warning' ? 'rgba(245,158,11,0.12)' : 'rgba(59,130,246,0.12)';
+      badgeEl.style.borderColor = iconType === 'danger' ? 'rgba(239,68,68,0.3)' : iconType === 'warning' ? 'rgba(245,158,11,0.3)' : 'rgba(59,130,246,0.3)';
+    }
+
+    if (opts.target && targetRow && targetEl) {
+      targetEl.textContent = opts.target;
+      targetRow.style.display = 'flex';
+    } else if (targetRow) {
+      targetRow.style.display = 'none';
+    }
+
+    if (btnYes) {
+      btnYes.textContent = btnText;
+      btnYes.className = 'btn btn-sm ' + btnClass;
+    }
+
+    if (iconWrap && iconSvg) {
+      if (iconType === 'primary' || iconType === 'info') {
+        iconWrap.style.background = 'rgba(59,130,246,0.15)';
+        iconWrap.style.color = '#3b82f6';
+        iconSvg.innerHTML = '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>';
+      } else if (iconType === 'warning') {
+        iconWrap.style.background = 'rgba(245,158,11,0.15)';
+        iconWrap.style.color = '#f59e0b';
+        iconSvg.innerHTML = '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>';
+      } else {
+        iconWrap.style.background = 'rgba(239,68,68,0.15)';
+        iconWrap.style.color = '#ef4444';
+        iconSvg.innerHTML = '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>';
+      }
+    }
+
+    modal.style.display = 'flex';
+    setTimeout(() => {
+      if (btnYes) btnYes.focus();
+    }, 40);
+  });
+};
+
+window.closeAppConfirmModal = function(result) {
+  const modal = document.getElementById('app-confirm-modal');
+  if (modal) modal.style.display = 'none';
+  if (_appConfirmResolver) {
+    _appConfirmResolver(Boolean(result));
+    _appConfirmResolver = null;
+  }
+};
+
 function _openGuardrailModalInternal(opts) {
   _guardrailOpts = opts;
   const modal = document.getElementById('guardrail-modal');
   if (!modal) {
-    if (confirm(opts.msg ? opts.msg.replace(/<[^>]+>/g, '') : 'Konfirmasi tindakan?')) {
-      if (_guardrailPromiseResolver) {
-        _guardrailPromiseResolver({ password: '', totp: '', confirmName: '' });
-      } else if (_activeGuardrailForm) {
-        _activeGuardrailForm.dataset.guardrailConfirmed = '1';
-        _activeGuardrailForm.submit();
-      }
+    if (_guardrailPromiseResolver) {
+      _guardrailPromiseResolver({ password: '', totp: '', confirmName: '' });
+    } else if (_activeGuardrailForm) {
+      _activeGuardrailForm.dataset.guardrailConfirmed = '1';
+      _activeGuardrailForm.submit();
     }
     return;
   }
@@ -1912,12 +1999,37 @@ document.addEventListener('submit', function(ev){
     return;
   }
   if (f.hasAttribute('data-confirm')) {
-    const msg = f.getAttribute('data-msg') || 'Yakin?';
-    const extra = f.getAttribute('data-msg-extra');
-    if ((!window.confirm(msg)) || (extra && !window.confirm(extra))) {
+    if (!f.dataset.confirmApproved) {
       ev.preventDefault();
+      ev.stopImmediatePropagation();
+      const msg = f.getAttribute('data-msg') || 'Lanjutkan tindakan operasional ini?';
+      const title = f.getAttribute('data-title') || 'Konfirmasi Tindakan';
+      const target = f.getAttribute('data-target') || '';
+      const btnText = f.getAttribute('data-btn-text') || 'Konfirmasi';
+      const btnClass = f.getAttribute('data-btn-class') || 'btn-danger';
+      const iconType = f.getAttribute('data-icon') || (btnClass.includes('primary') ? 'primary' : btnClass.includes('warning') ? 'warning' : 'danger');
+      const badge = f.getAttribute('data-badge') || '';
+      window.showConfirmModal({
+        title: title,
+        target: target,
+        message: msg,
+        btnText: btnText,
+        btnClass: btnClass,
+        iconType: iconType,
+        badge: badge
+      }).then(ok => {
+        if (ok) {
+          f.dataset.confirmApproved = '1';
+          if (typeof f.requestSubmit === 'function') {
+            f.requestSubmit();
+          } else {
+            f.submit();
+          }
+        }
+      });
       return;
     }
+    delete f.dataset.confirmApproved;
   }
   // Indikator loading pada tombol untuk mencegah dobel submit & beri feedback jelas
   const btn = f.querySelector('button[type="submit"], button:not([type])');
@@ -2296,8 +2408,16 @@ async function alertAckAll(){
   const btns = Array.from(document.querySelectorAll('#alertOverlay .ack-btn'));
   if (!btns.length) return false;
   const n = btns.length;
-  if (!confirm('Tandai ' + n + ' insiden KRITIS sebagai sudah ditangani?\n\n'
-    + 'Tindakan ini mencatat konfirmasi penanganan (acknowledge) tanpa menutup insiden.')) return false;
+  const ok = await showConfirmModal({
+    title: 'Tandai Semua Insiden Kritis',
+    target: n + ' Insiden Kritis',
+    message: 'Tandai seluruh insiden kritis aktif saat ini sebagai sudah ditangani (acknowledge).',
+    btnText: 'Tandai Selesai',
+    btnClass: 'btn-warning',
+    iconType: 'warning',
+    badge: 'ACK MASAL'
+  });
+  if (!ok) return false;
   for (const b of btns) await alertAck(b, b.dataset.id);
   return false;
 }
@@ -2414,7 +2534,16 @@ async function unignoreProblem(target, onDone) {
     btn = arguments[1];
     onDone = arguments[2];
   }
-  if (!confirm(isEn ? 'Resume monitoring for this incident / service?' : 'Aktifkan kembali pemantauan untuk layanan/insiden ini?')) return;
+  const ok = await showConfirmModal({
+    title: isEn ? 'Resume Monitoring' : 'Aktifkan Kembali Pemantauan',
+    target: (id ? ('Insiden #' + id) : (svcid ? ('Layanan ' + svcid) : 'Pemantauan')),
+    message: isEn ? 'Resume active monitoring for this incident / service.' : 'Aktifkan kembali pemantauan aktif untuk layanan/insiden ini.',
+    btnText: isEn ? 'Resume' : 'Aktifkan',
+    btnClass: 'btn-primary',
+    iconType: 'primary',
+    badge: 'MONITORING'
+  });
+  if (!ok) return;
   const orig = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
   try {
@@ -2454,6 +2583,7 @@ async function unignoreProblem(target, onDone) {
 // Universal Modal Dismissal Controller (Escape key & backdrop click)
 function dismissActiveModal(targetModal) {
   const modalClosers = [
+    { id: 'app-confirm-modal', fn: () => typeof closeAppConfirmModal === 'function' && (closeAppConfirmModal(false), true) },
     { id: 'guardrail-modal', fn: () => typeof closeGuardrailModal === 'function' && (closeGuardrailModal(), true) },
     { id: 'ignore-problem-modal', fn: () => typeof closeIgnoreModal === 'function' && (closeIgnoreModal(), true) },
     { id: 'problem-detail-modal', fn: () => typeof closeProblemDetailModal === 'function' && (closeProblemDetailModal(), true) },
@@ -2529,6 +2659,21 @@ document.addEventListener('click', e => {
 });
 
 document.addEventListener('keydown', e => {
+  const confirmModal = document.getElementById('app-confirm-modal');
+  if (confirmModal && confirmModal.style.display === 'flex') {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAppConfirmModal(false);
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAppConfirmModal(true);
+      return;
+    }
+  }
   if (e.key === 'Escape') {
     if (dismissActiveModal()) {
       e.preventDefault();
@@ -2954,6 +3099,38 @@ function renderProblemDetailModal(p) {
 setTimeout(alertFetch, 1500);
 setInterval(alertFetch, 5000);
 </script>
+
+<!-- Modal Konfirmasi Operasional Universal (Enterprise Confirmation Dialog) -->
+<div id="app-confirm-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:10005;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px" onclick="if(event.target===this)closeAppConfirmModal(false)">
+  <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;box-shadow:0 24px 60px rgba(0,0,0,0.85);color:var(--text)" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div id="app-confirm-icon-wrap" style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(239,68,68,0.15);color:#ef4444">
+          <svg id="app-confirm-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <h3 id="app-confirm-title" style="margin:0;font-size:14.5px;font-weight:600;color:var(--text-bright)">Konfirmasi Tindakan</h3>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="app-confirm-badge" class="badge" style="background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:10px;font-weight:600">KONFIRMASI</span>
+        <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeAppConfirmModal(false)" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      </div>
+    </div>
+
+    <div id="app-confirm-target-row" style="display:none;align-items:center;gap:8px;padding:6px 10px;background:rgba(255,255,255,0.03);border:1px solid #30363d;border-radius:6px;margin-bottom:12px">
+      <span style="font-size:11px;color:var(--dim)">Target:</span>
+      <code id="app-confirm-target" style="font-size:12px;font-family:var(--font-mono);color:#58a6ff;word-break:break-all"></code>
+    </div>
+
+    <div id="app-confirm-msg" style="font-size:12.5px;color:var(--text);margin:0 0 16px 0;line-height:1.5;word-break:break-word"></div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;align-items:center;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeAppConfirmModal(false)">Batal</button>
+      <button type="button" class="btn btn-danger btn-sm" id="app-confirm-btn-yes" onclick="closeAppConfirmModal(true)">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Guardrail Dialog untuk Tindakan Berdampak Tinggi / Produksi SLA -->
 <div id="guardrail-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeGuardrailModal()">

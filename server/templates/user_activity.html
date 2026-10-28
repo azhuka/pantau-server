@@ -268,10 +268,16 @@ function exportCsv() {
 
 async function terminateSession(tty, btn) {
   const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
-  const confirmMsg = isEn
-    ? ('Force terminate active terminal session ' + tty + ' (' + USERNAME + ')?')
-    : ('Putus paksa sesi terminal aktif ' + tty + ' (' + USERNAME + ')?');
-  if (!confirm(confirmMsg)) return;
+  const ok = await showConfirmModal({
+    title: isEn ? 'Terminate Active Session' : 'Putus Sesi Terminal',
+    target: tty + ' (' + USERNAME + ')',
+    message: isEn ? 'Force terminate this active terminal session immediately.' : 'Putus paksa sesi terminal aktif ini segera.',
+    btnText: isEn ? 'Terminate' : 'Putus Sesi',
+    btnClass: 'btn-danger',
+    iconType: 'danger',
+    badge: 'TERMINAL'
+  });
+  if (!ok) return;
 
   const origHtml = btn ? btn.innerHTML : '';
   if (btn) {
@@ -296,11 +302,7 @@ async function terminateSession(tty, btn) {
     const res = await r.json().catch(() => ({}));
     if (r.ok && res.ok !== false) {
       const termMsg = res.detail || (isEn ? 'Session termination dispatched.' : 'Perintah pemutusan sesi berhasil dikirim.');
-      if (typeof showToast === 'function') {
-        showToast(termMsg, true);
-      } else {
-        alert(termMsg);
-      }
+      showToast(termMsg, true);
       if (typeof window.notifyBackgroundTaskComplete === 'function') {
         window.notifyBackgroundTaskComplete({
           title: isEn ? 'User Session Terminated' : 'Pemutusan Sesi Pengguna Selesai',
@@ -317,14 +319,14 @@ async function terminateSession(tty, btn) {
       }
       setTimeout(loadActivity, 1500);
     } else {
-      alert(res.detail || (isEn ? 'Failed to terminate session.' : 'Gagal memutus sesi terminal.'));
+      showToast(res.detail || (isEn ? 'Failed to terminate session.' : 'Gagal memutus sesi terminal.'), false);
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = origHtml;
       }
     }
   } catch (err) {
-    alert((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message);
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = origHtml;

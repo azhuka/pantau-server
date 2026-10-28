@@ -774,7 +774,16 @@ async function submitThresholds(e) {
   }
 }
 async function resetThresholds() {
-  if (!confirm('Kembalikan semua ambang batas global ke pengaturan bawaan pabrik?')) return;
+  const ok = await showConfirmModal({
+    title: 'Reset Ambang Batas Global',
+    target: 'Ambang Batas Peringatan',
+    message: 'Kembalikan seluruh parameter ambang batas peringatan ke nilai standar bawaan.',
+    btnText: 'Reset ke Standar',
+    btnClass: 'btn-warning',
+    iconType: 'warning',
+    badge: 'AMBANG BATAS'
+  });
+  if (!ok) return;
   try {
     const res = await fetch('/api/settings/thresholds/reset', {
       method: 'POST',
@@ -870,9 +879,17 @@ async function ackProblem(id, btn, sev) {
     showToast(isEn ? 'Viewer accounts do not have permission to acknowledge incidents.' : 'Akun Viewer tidak memiliki izin melakukan tindakan pada insiden.', false);
     return;
   }
-  const label = sev === 'danger' ? (isEn ? 'DANGER incident' : 'insiden DANGER') : (isEn ? 'this incident' : 'insiden ini');
-  const confirmMsg = isEn ? `Mark ${label} as handled?` : `Tandai insiden telah ditangani?`;
-  if (!confirm(confirmMsg)) return;
+  const label = sev === 'danger' ? (isEn ? 'DANGER Incident' : 'Insiden DANGER') : (isEn ? 'Warning Incident' : 'Insiden Warning');
+  const ok = await showConfirmModal({
+    title: isEn ? 'Acknowledge Incident' : 'Tandai Penanganan Insiden',
+    target: '#' + id + ' (' + label + ')',
+    message: isEn ? 'Mark this active incident as handled and acknowledged.' : 'Tandai insiden aktif ini sebagai sudah ditangani (acknowledge).',
+    btnText: isEn ? 'Acknowledge' : 'Tandai Ditangani',
+    btnClass: 'btn-warning',
+    iconType: 'warning',
+    badge: 'ACK'
+  });
+  if (!ok) return;
   const orig = btn.innerHTML;
   btn.disabled = true;
   try {

@@ -1320,7 +1320,7 @@ async function handleProbeFormSubmit(e) {
     closeProbeModal();
     await fetchProbes(false);
   } catch (err) {
-    alert('Gagal: ' + err.message);
+    showToast('Gagal: ' + err.message, false);
   } finally {
     btnSubmit.disabled = false;
     btnSubmit.textContent = 'Simpan Endpoint';
@@ -1331,7 +1331,7 @@ async function handleProbeFormSubmit(e) {
 async function testProbeConnectionAdhoc() {
   const payload = getFormDataPayload();
   if (!payload.target) {
-    alert('Harap isi URL atau Host target terlebih dahulu.');
+    showToast('Harap isi URL atau Host target terlebih dahulu.', false);
     return;
   }
 
@@ -1392,7 +1392,7 @@ async function testProbeNow(id, btn) {
     if (!res.ok || !data.ok) throw new Error(data.detail || 'Gagal menjalankan pengujian');
     await fetchProbes(false);
   } catch (err) {
-    alert('Galat: ' + err.message);
+    showToast('Galat: ' + err.message, false);
   } finally {
     btn.disabled = false;
     btn.innerHTML = origHtml;
@@ -1410,7 +1410,7 @@ async function toggleProbeActive(id) {
     if (!res.ok || !data.ok) throw new Error(data.detail || 'Gagal mengubah status pemantauan');
     await fetchProbes(false);
   } catch (err) {
-    alert('Galat: ' + err.message);
+    showToast('Galat: ' + err.message, false);
   }
 }
 
@@ -1418,9 +1418,16 @@ async function toggleProbeActive(id) {
 async function deleteProbe(id) {
   const p = probeDataList.find(x => x.id === id);
   const name = p ? p.name : `#${id}`;
-  if (!confirm(`Yakin ingin menghapus endpoint '${name}'? Seluruh riwayat dan log pemeriksaan akan dihapus permanen.`)) {
-    return;
-  }
+  const ok = await showConfirmModal({
+    title: 'Hapus Endpoint Pemantauan',
+    target: name,
+    message: 'Hapus endpoint pemantauan SLA ini beserta seluruh riwayat metriknya secara permanen.',
+    btnText: 'Hapus Endpoint',
+    btnClass: 'btn-danger',
+    iconType: 'danger',
+    badge: 'PROBING'
+  });
+  if (!ok) return;
 
   try {
     const res = await fetch(`/api/probes/${id}`, {
@@ -1431,7 +1438,7 @@ async function deleteProbe(id) {
     if (!res.ok || !data.ok) throw new Error(data.detail || 'Gagal menghapus endpoint');
     await fetchProbes(false);
   } catch (err) {
-    alert('Galat: ' + err.message);
+    showToast('Galat: ' + err.message, false);
   }
 }
 
