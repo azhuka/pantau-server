@@ -1355,7 +1355,7 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
         # Validasi 1: Uji kompilasi sintaks Python in-memory
         try:
             compile(code_bytes, tmp_path, "exec")
-        except SyntaxError as se:
+        except Exception as se:
             return {
                 "ok": False,
                 "output": f"Pembaruan ditolak: Validasi sintaks Python gagal: {se}"
@@ -1372,7 +1372,7 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
                 timeout=15,
             )
             if test_proc.returncode != 0:
-                err_detail = (test_proc.stderr or test_proc.stdout or "").strip()
+                err_detail = (test_proc.stderr or test_proc.stdout or f"exit code {test_proc.returncode}").strip()
                 print(f"[OTA REJECTED] Pre-flight runtime check gagal (exit {test_proc.returncode}): {err_detail}")
                 return {
                     "ok": False,
@@ -1416,15 +1416,21 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
         # -----------------------------------------------------------------
         if os.path.exists(target_path):
             backup_ok = False
+            backup_err = ""
             if IS_ROOT or (os.path.exists(target_dir) and os.access(target_dir, os.W_OK)):
                 try:
-                    import shutil
-                    shutil.copy2(target_path, backup_path)
-                    os.chmod(backup_path, 0o755)
+                    tmp_bak = f"{backup_path}.tmp.{os.getpid()}"
+                    with open(target_path, "rb") as rf, open(tmp_bak, "wb") as wf:
+                        wf.write(rf.read())
+                        wf.flush()
+                        os.fsync(wf.fileno())
+                    os.chmod(tmp_bak, 0o755)
+                    os.replace(tmp_bak, backup_path)
                     backup_ok = True
                     print(f"[OTA] Cadangan berkas aktif dibuat di {backup_path}")
                 except Exception as be:
-                    print(f"[OTA] Gagal membuat cadangan lokal: {be}")
+                    backup_err = str(be)
+                    print(f"[OTA] Gagal membuat cadangan langsung: {be}")
 
             if not backup_ok:
                 try:
@@ -1436,16 +1442,47 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
                         backup_ok = True
                         print(f"[OTA] Cadangan berkas aktif dibuat via pantau-file di {backup_path}")
                     else:
-                        print(f"[OTA] Peringatan pantau-file backup: {res_bak.get('error')}")
+                        backup_err = res_bak.get("error", "pantau-file error")
+                        print(f"[OTA] Peringatan pantau-file backup: {backup_err}")
                 except Exception as be:
+                    backup_err = str(be)
                     print(f"[OTA] Peringatan pembuatan cadangan: {be}")
+
+            # Validasi kesehatan file cadangan yang baru saja dibuat
+            if backup_ok and os.path.exists(backup_path):
+                try:
+                    chk_bak = subprocess.run(
+                        [sys.executable, backup_path, "--test-runtime"],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                    )
+                    if chk_bak.returncode != 0:
+                        backup_ok = False
+                        backup_err = f"Uji integritas berkas cadangan gagal (exit code {chk_bak.returncode})"
+                except Exception as che:
+                    backup_ok = False
+                    backup_err = f"Uji integritas berkas cadangan gagal: {che}"
+
+            if not backup_ok:
+                return {
+                    "ok": False,
+                    "output": (
+                        f"Pembaruan ditolak: Gagal membuat cadangan berkas aktif ({backup_err}). "
+                        "Berkas target aman dan tidak disentuh demi perlindungan anti-bricking."
+                    )
+                }
 
         written = False
         if IS_ROOT or (os.path.exists(target_dir) and os.access(target_dir, os.W_OK)):
             try:
-                import shutil
-                shutil.copy2(tmp_path, target_path)
-                os.chmod(target_path, 0o755)
+                tmp_target = f"{target_path}.tmp.{os.getpid()}"
+                with open(tmp_target, "wb") as wf:
+                    wf.write(code_bytes)
+                    wf.flush()
+                    os.fsync(wf.fileno())
+                os.chmod(tmp_target, 0o755)
+                os.replace(tmp_target, target_path)
                 written = True
             except OSError as e:
                 print(f"[OTA] Tulis langsung gagal ({e}), beralih ke wrapper pantau-file...")
@@ -1463,6 +1500,8 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
         # -----------------------------------------------------------------
         # Verifikasi Pasca-Tulis & Auto-Rollback:
         # -----------------------------------------------------------------
+        post_check_ok = False
+        post_err_detail = ""
         try:
             post_check = subprocess.run(
                 [sys.executable, target_path, "--test-runtime"],
@@ -1470,41 +1509,79 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
                 text=True,
                 timeout=15,
             )
-            if post_check.returncode != 0:
-                print(f"[OTA ERROR] Verifikasi pasca-tulis gagal (code {post_check.returncode}). Memulai auto-rollback...")
-                rollback_done = False
-                if os.path.exists(backup_path):
-                    if IS_ROOT or (os.path.exists(target_dir) and os.access(target_dir, os.W_OK)):
-                        try:
-                            import shutil
-                            shutil.copy2(backup_path, target_path)
-                            os.chmod(target_path, 0o755)
-                            rollback_done = True
-                        except Exception:
-                            pass
-                    if not rollback_done:
-                        try:
-                            with open(backup_path, "r", encoding="utf-8", errors="replace") as bf:
-                                bak_content = bf.read()
-                            res_rb = run_file_op("write", {"path": target_path, "content": bak_content})
-                            if res_rb.get("ok"):
-                                run_file_op("chmod", {"path": target_path, "mode": "0755"})
-                                rollback_done = True
-                        except Exception:
-                            pass
-                return {
-                    "ok": False,
-                    "output": (
-                        f"Pembaruan gagal saat verifikasi integritas target. "
-                        f"{'Rollback instan ke cadangan .bak berhasil.' if rollback_done else 'Rollback darurat gagal.'} "
-                        f"Detail: {(post_check.stderr or post_check.stdout or '')[:300]}"
-                    )
-                }
+            if post_check.returncode == 0:
+                post_check_ok = True
+            else:
+                post_err_detail = (post_check.stderr or post_check.stdout or f"exit code {post_check.returncode}").strip()
+        except subprocess.TimeoutExpired:
+            post_err_detail = "Pre-flight runtime check pasca-tulis timeout (>15 detik)"
         except Exception as pce:
-            print(f"[OTA WARN] Uji pasca-tulis terkendala: {pce}")
+            post_err_detail = f"Eksekusi uji pasca-tulis gagal: {pce}"
+
+        if not post_check_ok:
+            print(f"[OTA ERROR] Verifikasi pasca-tulis gagal ({post_err_detail}). Memulai auto-rollback...")
+            rollback_done = False
+            candidate_backups = [backup_path]
+            if os.path.exists(target_dir):
+                try:
+                    ts_baks = sorted(glob.glob(f"{target_path}.bak.*"), reverse=True)
+                    candidate_backups.extend(ts_baks)
+                except Exception:
+                    pass
+
+            for cand_bak in candidate_backups:
+                if not os.path.exists(cand_bak):
+                    continue
+                try:
+                    chk = subprocess.run(
+                        [sys.executable, cand_bak, "--test-runtime"],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                    )
+                    if chk.returncode != 0:
+                        continue
+                except Exception:
+                    continue
+
+                if IS_ROOT or (os.path.exists(target_dir) and os.access(target_dir, os.W_OK)):
+                    try:
+                        tmp_rb = f"{target_path}.rollback.{os.getpid()}"
+                        with open(cand_bak, "rb") as rf, open(tmp_rb, "wb") as wf:
+                            wf.write(rf.read())
+                            wf.flush()
+                            os.fsync(wf.fileno())
+                        os.chmod(tmp_rb, 0o755)
+                        os.replace(tmp_rb, target_path)
+                        rollback_done = True
+                        print(f"[OTA] Berhasil rollback target ke cadangan sehat {cand_bak}")
+                        break
+                    except Exception as rbe:
+                        print(f"[OTA] Gagal rollback langsung ke {cand_bak}: {rbe}")
+
+                if not rollback_done:
+                    try:
+                        with open(cand_bak, "r", encoding="utf-8", errors="replace") as bf:
+                            bak_content = bf.read()
+                        res_rb = run_file_op("write", {"path": target_path, "content": bak_content})
+                        if res_rb.get("ok"):
+                            run_file_op("chmod", {"path": target_path, "mode": "0755"})
+                            rollback_done = True
+                            print(f"[OTA] Berhasil rollback via pantau-file ke {cand_bak}")
+                            break
+                    except Exception as rbe:
+                        print(f"[OTA] Gagal rollback pantau-file: {rbe}")
+
+            return {
+                "ok": False,
+                "output": (
+                    f"Pembaruan gagal saat verifikasi integritas target ({post_err_detail[:200]}). "
+                    f"{'Rollback instan ke cadangan sehat berhasil.' if rollback_done else 'Rollback darurat gagal.'}"
+                )
+            }
 
         # Sanitasi dan perbarui unit service systemd jika masih memakai direktif sandbox usang
-        # atau belum memiliki ExecStartPre auto-recovery.
+        # atau belum memiliki ExecStartPre auto-recovery multi-layer.
         clean_service_unit = (
             "[Unit]\n"
             "Description=Pantau Monitoring Agent (agent_pantau)\n"
@@ -1515,7 +1592,7 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
             "Type=simple\n"
             "User=pantau\n"
             "Group=pantau\n"
-            "ExecStartPre=+-/bin/sh -c 'if [ ! -f /opt/pantau/agent/agent_pantau.py ] || ! /usr/bin/python3 /opt/pantau/agent/agent_pantau.py --test-runtime >/dev/null 2>&1; then if [ -f /opt/pantau/agent/agent_pantau.py.bak ] && /usr/bin/python3 /opt/pantau/agent/agent_pantau.py.bak --test-runtime >/dev/null 2>&1; then logger -t agent_pantau \"Auto-rollback: file utama rusak/hilang, memulihkan dari cadangan .bak\"; cp -f /opt/pantau/agent/agent_pantau.py.bak /opt/pantau/agent/agent_pantau.py && chmod 755 /opt/pantau/agent/agent_pantau.py; fi; fi'\n"
+            "ExecStartPre=+-/bin/sh -c 'if [ ! -f /opt/pantau/agent/agent_pantau.py ] || ! /usr/bin/python3 /opt/pantau/agent/agent_pantau.py --test-runtime >/dev/null 2>&1; then found_bak=\"\"; for b in /opt/pantau/agent/agent_pantau.py.bak $(ls -t /opt/pantau/agent/agent_pantau.py.bak.* 2>/dev/null); do if [ -f \"$b\" ] && /usr/bin/python3 \"$b\" --test-runtime >/dev/null 2>&1; then found_bak=\"$b\"; break; fi; done; if [ -n \"$found_bak\" ]; then logger -t agent_pantau \"Auto-rollback: file utama rusak/hilang, memulihkan dari cadangan $found_bak\"; cp -f \"$found_bak\" /opt/pantau/agent/agent_pantau.py && chmod 755 /opt/pantau/agent/agent_pantau.py; fi; fi'\n"
             "ExecStart=/opt/pantau/agent/agent_pantau.py\n"
             "Restart=always\n"
             "RestartSec=5\n"
@@ -1545,8 +1622,8 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
                     "ProtectKernelModules", "PrivateTmp", "ProtectKernelTunables",
                     "ProtectControlGroups", "ProtectClock", "\nEOF"
                 )
-                if any(k in curr_svc for k in sandbox_keywords) or "ExecStartPre=" not in curr_svc:
-                    print("[OTA] Konfigurasi isolasi namespace usang atau ExecStartPre belum terpasang, memperbarui...")
+                if any(k in curr_svc for k in sandbox_keywords) or "found_bak" not in curr_svc:
+                    print("[OTA] Konfigurasi isolasi namespace usang atau ExecStartPre multi-layer belum terpasang, memperbarui...")
                     if IS_ROOT:
                         with open(svc_path, "w", encoding="utf-8") as sf:
                             sf.write(clean_service_unit)
@@ -5348,12 +5425,26 @@ if __name__ == "__main__":
     if any(arg in sys.argv for arg in ("--test-runtime", "--check-syntax-only")):
         # Inisialisasi modul dan validasi interpreter Python berhasil.
         # Periksa integritas konstanta dan fungsi penting sebelum keluar 0 tanpa efek samping.
-        assert isinstance(AGENT_VERSION, str) and AGENT_VERSION, "Konstanta AGENT_VERSION tidak terdefinisi"
-        assert callable(main), "Fungsi main() tidak terdefinisi"
-        assert callable(_exec_update_agent), "Fungsi _exec_update_agent() tidak terdefinisi"
+        if not (isinstance(AGENT_VERSION, str) and AGENT_VERSION):
+            print("ERROR: Konstanta AGENT_VERSION tidak terdefinisi atau kosong", file=sys.stderr)
+            sys.exit(1)
+        if not callable(main):
+            print("ERROR: Fungsi main() tidak terdefinisi", file=sys.stderr)
+            sys.exit(1)
+        if not callable(_exec_update_agent):
+            print("ERROR: Fungsi _exec_update_agent() tidak terdefinisi", file=sys.stderr)
+            sys.exit(1)
         print(f"Pantau Agent v{AGENT_VERSION} runtime pre-flight check OK")
         sys.exit(0)
-    if "--version" in sys.argv or "-v" in sys.argv:
+    if any(arg in sys.argv for arg in ("-v", "--version")):
         print(f"AgentPantau v{AGENT_VERSION}")
+        sys.exit(0)
+    if any(arg in sys.argv for arg in ("-h", "--help")):
+        print(f"Pantau Monitoring Agent v{AGENT_VERSION}")
+        print("Penggunaan: agent_pantau.py [OPSI]")
+        print("Opsi:")
+        print("  --test-runtime, --check-syntax-only  Uji integritas sintaks & inisialisasi modul tanpa menjalankan loop")
+        print("  -v, --version                        Tampilkan versi agen")
+        print("  -h, --help                           Tampilkan bantuan ini")
         sys.exit(0)
     main()
