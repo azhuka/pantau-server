@@ -1232,8 +1232,8 @@ div[style*="position: fixed"] .card {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
         </button>
         <span class="toolbar-divider"></span>
-        <button class="btn btn-danger btn-sm {% if apt_upgradable and apt_upgradable > 0 and is_online %}has-updates{% endif %}" id="apt-upgrade-btn" onclick="triggerUpgradeOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% elif not apt_upgradable or apt_upgradable == 0 %}disabled style="opacity:0.35;cursor:not-allowed" title="Semua paket OS sudah mutakhir" data-i18n-title="all_packages_up_to_date"{% else %}title="Perbarui paket sistem operasi{% if apt_upgradable and apt_upgradable > 0 %} ({{ apt_upgradable }} pembaruan){% endif %}" aria-label="Upgrade Paket" data-i18n-title="apt_upgrade_tooltip"{% endif %}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+        <button class="btn btn-danger btn-sm {% if apt_upgradable and apt_upgradable > 0 and is_online %}has-updates{% endif %}" id="apt-upgrade-btn" onclick="triggerUpgradeOS()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% elif not apt_upgradable or apt_upgradable == 0 %}disabled style="opacity:0.35;cursor:not-allowed" title="Semua paket OS sudah mutakhir" data-i18n-title="all_packages_up_to_date"{% else %}title="Tingkatkan paket OS yang tersedia{% if apt_upgradable and apt_upgradable > 0 %} ({{ apt_upgradable }} pembaruan){% endif %}" aria-label="Upgrade Paket OS" data-i18n-title="apt_upgrade_tooltip"{% endif %}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg>
         </button>
         <span class="toolbar-divider"></span>
         <form method="post" action="/servers/{{ server.id }}/host/reboot" id="form-host-reboot" style="display:inline;margin:0"
@@ -2400,6 +2400,7 @@ div[style*="position: fixed"] .card {
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
       <div>
         <h3 style="margin:0;display:flex;align-items:center;gap:8px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><path d="M16.5 9.4 7.55 4.24"></path><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
           <span>Packages</span>
           <span class="badge badge-info" id="pkg-total-badge" style="font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('all')" title="Tampilkan semua paket">0 paket</span>
           <span class="badge badge-warn" id="pkg-upg-badge" style="display:none;font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('upgradable')" title="Filter pembaruan tersedia (klik ulang untuk reset)">0 pembaruan</span>
@@ -3770,7 +3771,7 @@ div[style*="position: fixed"] .card {
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button type="button" id="apt-task-upgrade-btn" class="btn btn-primary btn-sm" onclick="triggerUpgradeFromModal()" style="display:none;align-items:center;gap:5px" title="Tingkatkan paket OS yang tersedia">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><polyline points="18 15 12 9 6 15"></polyline></svg><span id="apt-task-upgrade-label">Upgrade</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg><span id="apt-task-upgrade-label">Upgrade</span>
         </button>
         <button type="button" id="apt-task-close-btn" class="btn btn-ghost btn-sm" onclick="closeAptTaskModal()">
           Tutup

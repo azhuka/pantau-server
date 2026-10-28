@@ -311,6 +311,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.18
+
+- **Tipe Rilis:** Standarisasi Ikon Upgrade Paket OS & Eliminasi Ikon Caret Ambigu (*OS Package Upgrade Semantic Icon & Visual Cohesion*)
+- **Fokus Utama:** Mengeliminasi seluruh penggunaan ikon caret/chevron tunggal `[ ^ ]` pada tombol aksi Upgrade Paket OS yang ambigu dan tidak mencerminkan fungsi peningkatan versi perangkat lunak:
+  1. **Penggantian Ikon Tombol Upgrade OS Header (`apt-upgrade-btn` di `services.html`):**
+     - Mengganti ikon caret garis tunggal `polyline points="18 15 12 9 6 15"` (`^`) menjadi ikon semantik `arrow-up-circle` (`<circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line>`), menghadirkan simbol panah vertikal tegas dalam lingkaran lencana yang secara universal merepresentasikan upgrade versi sistem.
+     - Memperbarui teks tooltip tombol menjadi *"Tingkatkan paket OS yang tersedia (X pembaruan)"* dan aria-label menjadi *"Upgrade Paket OS"*, membedakannya secara tegas dari tombol *Update Repositori OS* di sebelahnya.
+  2. **Harmonisasi Ikon Upgrade pada Modal & Tab Packages (`services.html`):**
+     - Mengganti ikon caret pada tombol Upgrade modal proses APT (`apt-task-upgrade-btn`) dengan ikon `arrow-up-circle` yang identik.
+     - Menyematkan ikon 3D `package` representatif pada judul kartu Tab Packages (`#tab-packages`) guna menegaskan identitas visual modul manajemen paket.
+     - Memastikan seluruh tombol upgrade di seluruh aplikasi (`apt-upgrade-btn`, `btn-pkg-upgrade-all`, dan `upgradeSinglePkg`) kini menggunakan bahasa visual yang 100% seragam dan konsisten.
+
 ## Versi 4.8.17
 
 - **Tipe Rilis:** Pemulihan Mandiri Otomatis Wrapper pantau-user & Titik Unduh Wrapper Pusat (*Self-Healing Wrapper & Central Wrapper API*)
