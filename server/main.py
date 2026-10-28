@@ -2236,6 +2236,7 @@ def _get_server_actions(db, sid: int, limit: int = 50) -> list[dict]:
             "user_lock": "Kunci Akun",
             "user_unlock": "Buka Kunci Akun",
             "user_delete": "Hapus Pengguna",
+            "session_terminate": "Putus Sesi Terminal",
             "cron_add": "Tambah Cron Job",
             "cron_toggle": "Ubah Status Cron",
             "cron_delete": "Hapus Cron Job",
@@ -2290,7 +2291,7 @@ def _get_server_actions(db, sid: int, limit: int = 50) -> list[dict]:
         if a.action in (
             "service_restart", "service_stop", "service_start", "login",
             "server_add", "server_delete", "user_add", "user_delete",
-            "user_create", "user_lock", "user_unlock", "block_ip", "unblock_ip",
+            "user_create", "user_lock", "user_unlock", "user_delete", "session_terminate", "block_ip", "unblock_ip",
             "reboot_host", "poweroff_host", "restart_agent", "agent_update", "update_agent",
         ) or a.action.startswith("masalah_"):
             continue
@@ -5212,6 +5213,42 @@ def server_user_delete(
     _audit(db, user.username, "user_delete", f"{server.hostname}: hapus user {u_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": f"Perintah hapus akun '{u_clean}' dikirim ke agen."})
+    return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
+
+
+@app.post("/servers/{sid}/system-users/terminate-session")
+@app.post("/api/servers/{sid}/sessions/terminate")
+def server_session_terminate(
+    request: Request, sid: int,
+    tty: str = Form(...),
+    username: str = Form(default=""),
+    csrf_token: str = Form(default=""),
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    is_json = "application/json" in request.headers.get("accept", "")
+    if not user or not (user.has_perm("can_users_sys") or user.has_perm("can_manage_servers") or user.is_master_admin()):
+        if is_json: return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
+        return RedirectResponse("/", status_code=303)
+    token = csrf_token or request.headers.get("X-CSRF-Token", "")
+    _verify_csrf_form(request, token)
+    server, err_resp = _check_server_online(db, sid, is_json=is_json, redirect_tab="akun")
+    if err_resp:
+        return err_resp
+    clean_tty = tty.strip().lstrip("/dev/")
+    if not re.match(r"^(pts/\d+|tty\d+)$", clean_tty):
+        if is_json: return JSONResponse({"ok": False, "detail": f"Format terminal TTY '{clean_tty}' tidak valid."}, status_code=400)
+        return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
+
+    u_clean = (username or "").strip().lower()
+    _enqueue_mitigation(db, sid, "session_terminate", {"tty": clean_tty, "username": u_clean}, issued_by=user.username)
+    audit_target = f"{server.hostname}: putus sesi terminal {clean_tty}" + (f" ({u_clean})" if u_clean else "")
+    _audit(db, user.username, "session_terminate", audit_target, "dikirim ke agen", server_id=sid)
+    db.commit()
+
+    detail_msg = f"Perintah pemutusan sesi terminal '{clean_tty}' berhasil dikirim ke agen."
+    if is_json:
+        return JSONResponse({"ok": True, "detail": detail_msg})
     return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
 
 
@@ -8146,8 +8183,14 @@ def _enrich_problems_for_ui(open_problems, services, extra, user_or_role="viewer
         elif r["key"] == "apt_updates":
             r["action"] = "apt_update" if can_apt else None
         elif r["key"].startswith("ssh_active_session:"):
-            r["action"] = "inspect_sessions"
+            can_term = can_services or (user and (getattr(user, "is_master_admin", lambda: False)() or getattr(user, "has_perm", lambda p: False)("can_users_sys")))
+            r["action"] = "terminate_session" if can_term else "inspect_sessions"
             r["log_unit"] = "AUTH"
+            # Format key: ssh_active_session:{u_name}:{clean_tty_key}:{clean_from_key}
+            kparts = r["key"].split(":")
+            if len(kparts) >= 3:
+                r["session_user"] = kparts[1]
+                r["tty"] = kparts[2].replace("_", "/")
         elif r["key"] == "platform_conflict":
             r["action"] = "reset_platform"
         else:
@@ -8751,10 +8794,12 @@ AUDIT_ACTION_LABELS = {
     "user_lock": "Kunci Akun Pengguna",
     "user_unlock": "Buka Kunci Akun",
     "user_delete": "Hapus Pengguna",
+    "session_terminate": "Putus Sesi Terminal",
     "cmd:user_create": "Buat Pengguna Sistem",
     "cmd:user_lock": "Kunci Akun Pengguna",
     "cmd:user_unlock": "Buka Kunci Akun",
     "cmd:user_delete": "Hapus Pengguna",
+    "cmd:session_terminate": "Putus Sesi Terminal",
     # v4.0.0 — Pengelolaan tugas terjadwal (cron)
     "cron_add": "Tambah Tugas Cron",
     "cron_toggle": "Ubah Status Cron",
@@ -8796,7 +8841,7 @@ AUDIT_CATEGORIES = [
         "id": "cat:auth",
         "name": "Autentikasi & Akun",
         "name_en": "Auth & User Accounts",
-        "keys": ["login", "login_2fa", "logout", "user_create", "cmd:user_create", "user_lock", "cmd:user_lock", "user_unlock", "cmd:user_unlock", "user_delete", "cmd:user_delete", "user_add", "branding_update"],
+        "keys": ["login", "login_2fa", "logout", "user_create", "cmd:user_create", "user_lock", "cmd:user_lock", "user_unlock", "cmd:user_unlock", "user_delete", "cmd:user_delete", "session_terminate", "cmd:session_terminate", "user_add", "branding_update"],
         "actions": [
             ("login", "Login", "Login"),
             ("login_2fa", "Login 2FA", "2FA Login"),
@@ -8805,6 +8850,7 @@ AUDIT_CATEGORIES = [
             ("user_lock", "Kunci Akun Pengguna", "Lock User Account"),
             ("user_unlock", "Buka Kunci Akun", "Unlock User Account"),
             ("user_delete", "Hapus Pengguna", "Delete User"),
+            ("session_terminate", "Putus Sesi Terminal", "Terminate Terminal Session"),
             ("user_add", "Tambah Akun Web", "Add Web User"),
             ("branding_update", "Setel Organisasi", "Set Organization"),
         ]
@@ -8995,6 +9041,7 @@ def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter
         "firewall_reload": "cmd:firewall_reload", "kill_process": "cmd:kill_process",
         "user_create": "cmd:user_create", "user_lock": "cmd:user_lock",
         "user_unlock": "cmd:user_unlock", "user_delete": "cmd:user_delete",
+        "session_terminate": "cmd:session_terminate",
         "cron_add": "cmd:cron_add", "cron_toggle": "cmd:cron_toggle",
         "cron_delete": "cmd:cron_delete", "cron_run_now": "cmd:cron_run_now",
         "firewall_port_rule": "cmd:firewall_port_rule",
@@ -9016,6 +9063,8 @@ def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter
                         tgt_parts.append(str(ps["ip"]))
                     elif ps.get("username"):
                         tgt_parts.append(str(ps["username"]))
+                    elif ps.get("tty"):
+                        tgt_parts.append(f"{ps['tty']}" + (f" ({ps['username']})" if ps.get("username") else ""))
                     elif ps.get("path"):
                         tgt_parts.append(str(ps["path"]))
                     elif ps.get("cron_id"):

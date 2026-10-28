@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.11"
+AGENT_VERSION = "4.8.12"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -657,7 +657,7 @@ def execute_command(cfg: dict, command: dict) -> dict:
         result = _exec_firewall_port_rule(command)
     elif action == "kill_process":
         result = _exec_kill_process(command)
-    elif action in ("user_create", "user_lock", "user_unlock", "user_delete"):
+    elif action in ("user_create", "user_lock", "user_unlock", "user_delete", "session_terminate", "terminate_session"):
         result = _exec_user_action(action, command)
     elif action in ("cron_add", "cron_toggle", "cron_delete", "cron_run_now"):
         result = _exec_cron_action(action, command)
@@ -791,8 +791,22 @@ def _exec_kill_process(command: dict) -> dict:
 
 
 def _exec_user_action(action: str, command: dict) -> dict:
-    """Kelola akun pengguna sistem via wrapper pantau-user."""
+    """Kelola akun pengguna sistem & pemutusan sesi terminal via wrapper pantau-user."""
     params = command.get("params") or {}
+    if action in ("session_terminate", "terminate_session"):
+        tty = str(params.get("tty", "")).strip().lstrip("/dev/")
+        if not tty:
+            return {"ok": False, "output": "Parameter TTY terminal (misal: pts/0) wajib diisi."}
+        if not re.match(r"^(pts/\d+|tty\d+)$", tty):
+            return {"ok": False, "output": f"Format terminal TTY '{tty}' tidak valid (hanya pts/N atau ttyN)."}
+        cmd = [PANTUAN_USER_CMD, "terminate-session", tty]
+        label = f"{PANTUAN_USER_CMD} terminate-session {tty}"
+        if not IS_ROOT:
+            cmd = ["/usr/bin/sudo", "-n", *cmd]
+            label = f"sudo -n {label}"
+        res = _run_native(cmd, label)
+        return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
+
     username = str(params.get("username", "")).strip().lower()
     if not username:
         return {"ok": False, "output": "Nama pengguna (username) wajib diisi."}
@@ -3677,11 +3691,22 @@ def _run_shell_in_thread(cfg: dict, rid: int) -> None:
 
 
 def fetch_log_lines(unit: str, lines: int) -> str:
-    """Ambil log layanan: unit journal, atau file SYSLOG/AUTH."""
+    """Ambil log layanan: unit journal, atau file SYSLOG/AUTH (dengan fallback journalctl)."""
     if unit == "SYSLOG":
-        return _tail_file(SYSLOG_FILE, lines)
+        if os.path.isfile(SYSLOG_FILE):
+            return _tail_file(SYSLOG_FILE, lines)
+        res = _run_cmd(["journalctl", "-n", str(lines), "--no-pager"], timeout=30)
+        return (res.stdout.rstrip() if res else "") or f"[file {SYSLOG_FILE} tidak ditemukan]"
     if unit == "AUTH":
-        return _tail_file(AUTH_FILE, lines)
+        for cand in (AUTH_FILE, "/var/log/secure"):
+            if os.path.isfile(cand):
+                return _tail_file(cand, lines)
+        res = _run_cmd(
+            ["journalctl", "-u", "ssh", "-u", "sshd", "-u", "sudo", "-u", "systemd-logind",
+             "-n", str(lines), "--no-pager"],
+            timeout=30,
+        )
+        return (res.stdout.rstrip() if res else "") or "[log autentikasi tidak ditemukan]"
     res = _run_cmd(
         ["journalctl", "-u", unit, "-n", str(lines), "--no-pager", "-o", "short-iso"],
         timeout=30,
@@ -3696,11 +3721,74 @@ def fetch_log_lines(unit: str, lines: int) -> str:
 
 
 def collect_user_logins(max_events: int = 50) -> list:
-    """Aktivitas login user dari /var/log/auth.log (sukses/gagal/sesi baru).
+    """Aktivitas login user dari wtmp (last), utmp (who), dan auth log / journalctl.
 
-    Baca potongan akhir file (±2 MB) agar cepat walau file besar. Cocok untuk
-    kartu "Log Aktivitas User" pada Dashboard.
+    Mendukung penuh distribusi Linux modern tanpa rsyslog (Ubuntu 24.04 LTS Noble,
+    Debian 12, RHEL 9) maupun sistem tradisional berbasis /var/log/auth.log atau secure.
     """
+    events: list[dict] = []
+    seen_keys: set[str] = set()
+
+    # 1. Prioritas Sesi Aktif Real-Time (who)
+    try:
+        active_sessions = _parse_who()
+        for s in active_sessions:
+            u = s.get("user", "")
+            if not u or u == "pantau":
+                continue
+            src = s.get("from") or "(lokal)"
+            tty = s.get("tty", "ssh")
+            t = s.get("time", "")
+            ev = {
+                "ts": t,
+                "user": u,
+                "type": "sukses",
+                "from": src,
+                "method": f"{tty} (aktif)",
+            }
+            k = f"{u}:{t}:{src}:{tty}"
+            if k not in seen_keys:
+                seen_keys.add(k)
+                events.append(ev)
+    except Exception:
+        pass
+
+    # 2. Riwayat Sesi dari Database Akuntansi Login Linux (last -F)
+    try:
+        res_last = _run_cmd(["last", "-n", "80", "-F"], timeout=5)
+        if res_last and res_last.stdout:
+            for line in res_last.stdout.splitlines():
+                parts = line.split()
+                if len(parts) >= 8 and parts[0] not in ("reboot", "wtmp"):
+                    u = parts[0]
+                    if u == "pantau":
+                        continue
+                    tty = parts[1]
+                    src = parts[2]
+                    raw_time = " ".join(parts[3:8])
+                    status = " ".join(parts[8:])
+                    try:
+                        dt = datetime.strptime(raw_time, "%a %b %d %H:%M:%S %Y")
+                        ts_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        ts_str = raw_time
+                    is_active = "still logged in" in status
+                    method_desc = f"{tty} (aktif)" if is_active else f"{tty} (selesai)"
+                    from_clean = src if (src and src != ":0" and not src.startswith(":")) else "(lokal)"
+                    k = f"{u}:{ts_str}:{from_clean}:{tty}"
+                    if k not in seen_keys:
+                        seen_keys.add(k)
+                        events.append({
+                            "ts": ts_str,
+                            "user": u,
+                            "type": "sukses",
+                            "from": from_clean,
+                            "method": method_desc,
+                        })
+    except Exception:
+        pass
+
+    # 3. Log Otentikasi Terperinci (auth.log, secure, atau systemd journalctl)
     patterns = [
         ("sukses", re.compile(
             r"Accepted (?P<method>password|publickey|keyboard-interactive|gssapi-with-mic) "
@@ -3717,39 +3805,57 @@ def collect_user_logins(max_events: int = 50) -> list:
             r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+.+?USER=\S+\s*;\s*"
             r"COMMAND=(?P<cmd>.+)$")),
     ]
-    events: list[dict] = []
-    try:
-        with open("/var/log/auth.log", "rb") as f:
-            f.seek(0, 2)
-            size = f.tell()
-            chunk = min(size, 8 * 1024 * 1024)
-            f.seek(size - chunk)
-            data = f.read().decode("utf-8", errors="replace")
-    except OSError:
-        return events
-    for line in data.splitlines():
-        ts = line[:19] if len(line) >= 19 else ""
-        for kind, regex in patterns:
-            m = regex.search(line)
-            if not m:
-                continue
-            g = m.groupdict()
-            user = g.get("user", "?")
-            if user == "pantau":          # aktivitas agen sendiri = noise
+
+    data = ""
+    for auth_path in (AUTH_FILE, "/var/log/secure"):
+        if os.path.isfile(auth_path):
+            try:
+                with open(auth_path, "rb") as f:
+                    f.seek(0, 2)
+                    size = f.tell()
+                    chunk = min(size, 8 * 1024 * 1024)
+                    f.seek(size - chunk)
+                    data = f.read().decode("utf-8", errors="replace")
+                if data:
+                    break
+            except OSError:
+                pass
+
+    if not data:
+        # Fallback journalctl untuk host tanpa file auth fisik
+        res_j = _run_cmd(
+            ["journalctl", "-u", "ssh", "-u", "sshd", "-u", "sudo", "-u", "systemd-logind",
+             "-n", "600", "--no-pager"],
+            timeout=10,
+        )
+        if res_j and res_j.stdout:
+            data = res_j.stdout
+
+    if data:
+        for line in data.splitlines():
+            ts = line[:19] if len(line) >= 19 else ""
+            for kind, regex in patterns:
+                m = regex.search(line)
+                if not m:
+                    continue
+                g = m.groupdict()
+                user = g.get("user", "?")
+                if user == "pantau":          # aktivitas agen sendiri = noise
+                    break
+                if "invalid user" in line and kind == "gagal":
+                    user = "(invalid) " + user
+                src = g.get("from") or "(lokal)"
+                if kind == "sudo":
+                    method = g.get("cmd", "")
+                else:
+                    method = g.get("method") or ("ssh" if kind != "sesi" else "console")
+                k = f"{user}:{ts}:{src}:{kind}:{method[:40]}"
+                if k not in seen_keys:
+                    seen_keys.add(k)
+                    events.append({"ts": ts, "user": user, "type": kind, "from": src, "method": method})
                 break
-            if "invalid user" in line and kind == "gagal":
-                user = "(invalid) " + user
-            src = g.get("from") or "(lokal)"
-            if kind == "sudo":
-                method = g.get("cmd", "")
-            else:
-                method = g.get("method") or ("ssh" if kind != "sesi" else "console")
-            ev = {"ts": ts, "user": user, "type": kind, "from": src, "method": method}
-            if events and events[-1] == ev:
-                continue
-            events.append(ev)
-            break
-    events.sort(key=lambda e: e["ts"], reverse=True)
+
+    events.sort(key=lambda e: str(e.get("ts", "")), reverse=True)
     return events[: max(0, max_events)]
 
 
@@ -3757,7 +3863,7 @@ _security_cache: dict = {"at": 0.0, "data": None}
 
 
 def collect_security() -> dict:
-    """Ringkasan keamanan dari /var/log/auth.log (window ±4 MB terakhir).
+    """Ringkasan keamanan dari auth log / journalctl (window ±4 MB terakhir).
 
     Dipakai indikator 'status masalah' pada Dashboard (serangan/brute force).
     Dihitung maksimal sekali per 60 detik karena auth.log sering ditulis.
@@ -3769,19 +3875,31 @@ def collect_security() -> dict:
         return _security_cache["data"]
 
     out: dict = {"failed": 0, "invalid_users": 0, "source_ips": {}, "window": []}
-    try:
-        with open(AUTH_FILE, "rb") as f:
-            f.seek(0, 2)
-            size = f.tell()
-            chunk = min(size, 4 * 1024 * 1024)
-            f.seek(size - chunk)
-            data = f.read().decode("utf-8", errors="replace")
-    except OSError:
-        _security_cache["data"] = out
-        _security_cache["at"] = now
-        return out
+    data = ""
+    for cand in (AUTH_FILE, "/var/log/secure"):
+        if os.path.isfile(cand):
+            try:
+                with open(cand, "rb") as f:
+                    f.seek(0, 2)
+                    size = f.tell()
+                    chunk = min(size, 4 * 1024 * 1024)
+                    f.seek(size - chunk)
+                    data = f.read().decode("utf-8", errors="replace")
+                if data:
+                    break
+            except OSError:
+                pass
 
-    lines = data.splitlines()
+    if not data:
+        # Fallback journalctl untuk host tanpa file auth fisik
+        res_j = _run_cmd(
+            ["journalctl", "-u", "ssh", "-u", "sshd", "-n", "300", "--no-pager"],
+            timeout=8,
+        )
+        if res_j and res_j.stdout:
+            data = res_j.stdout
+
+    lines = data.splitlines() if data else []
     if lines:
         out["window"] = [lines[0][:19], lines[-1][:19]]
     last_ts = None

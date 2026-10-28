@@ -1975,6 +1975,10 @@ div[style*="position: fixed"] .card {
                 <button type="button" class="btn btn-primary btn-sm" onclick="resetPlatformAuto({{ server.id }}, this)" title="Sinkronkan konfigurasi platform ke Auto Deteksi" aria-label="Auto Platform">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
                 </button>
+              {% elif p.action == 'terminate_session' and p.tty and (user.is_master_admin() or user.has_perm('can_manage_servers') or user.has_perm('can_users_sys')) %}
+                <button type="button" class="btn btn-danger btn-sm" onclick="terminateSession({{ server.id }}, '{{ p.tty }}', '{{ p.session_user }}', this)" title="Putus paksa sesi terminal remote {{ p.tty }}" aria-label="Putus Sesi">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                </button>
               {% endif %}
             {% endif %}
           </div>
@@ -2871,9 +2875,18 @@ div[style*="position: fixed"] .card {
             <td style="font-size:12px;color:var(--dim);white-space:nowrap">{{ a.last_login or '-' }}</td>
             <td style="font-size:12px;color:var(--dim);white-space:nowrap">
               {% if a.sessions %}
+                <div style="display:inline-flex;gap:4px;flex-wrap:wrap;align-items:center">
                 {% for s in a.sessions %}
-                  {{ s.tty }}{% if s.from %} @ {{ s.from }}{% endif %}{% if not loop.last %}, {% endif %}
+                  <span class="badge badge-muted" style="font-size:11px;font-family:monospace;display:inline-flex;align-items:center;gap:4px;padding:2px 6px">
+                    <span>{{ s.tty }}{% if s.from %} @ {{ s.from }}{% endif %}</span>
+                    {% if user.has_perm('can_users_sys') or user.has_perm('can_manage_servers') or user.is_master_admin() %}
+                      <button type="button" class="btn btn-ghost btn-sm" style="padding:0 2px;height:16px;min-height:16px;line-height:1;color:var(--red);border:none" title="Putus paksa sesi terminal {{ s.tty }}" onclick="terminateSession({{ server.id }}, '{{ s.tty }}', '{{ a.user }}', this)">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                      </button>
+                    {% endif %}
+                  </span>
                 {% endfor %}
+                </div>
               {% else %}
                 -
               {% endif %}
@@ -5079,6 +5092,69 @@ async function submitUserAction(action, username, btn) {
     if (btn) {
       btn.disabled = false;
       btn.textContent = origText;
+    }
+  }
+}
+
+async function terminateSession(sid, tty, username, btn) {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  if (!CAN_USERS_SYS && !CAN_SERVICES) {
+    showToast(isEn ? 'Access denied: You do not have permission to manage sessions.' : 'Akses ditolak: Anda tidak memiliki wewenang memutus sesi terminal.', false);
+    return;
+  }
+  if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
+    showToast(isEn ? 'Server is offline. Actions disabled.' : 'Server sedang offline. Aksi dinonaktifkan.', false);
+    return;
+  }
+  const promptUser = username ? (' (' + username + ')') : '';
+  const confirmMsg = isEn 
+    ? ('Force terminate active terminal session ' + tty + promptUser + '?')
+    : ('Putus paksa sesi terminal aktif ' + tty + promptUser + '?');
+  if (!confirm(confirmMsg)) return;
+
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '…';
+  }
+
+  try {
+    const csrf = (typeof getCsrf === 'function') ? getCsrf() : '{{ csrf_token }}';
+    const form = new FormData();
+    form.append('csrf_token', csrf);
+    form.append('tty', tty);
+    if (username) form.append('username', username);
+
+    const r = await fetch('/servers/' + (sid || SID) + '/system-users/terminate-session', {
+      method: 'POST',
+      body: form,
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrf
+      }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && (res.ok !== false)) {
+      showToast(res.detail || (isEn ? ('Session ' + tty + ' termination dispatched.') : ('Perintah pemutusan sesi ' + tty + ' berhasil dikirim ke agen.')), true);
+      const badge = btn ? btn.closest('.badge') : null;
+      if (badge) {
+        badge.style.opacity = '0.35';
+        badge.style.textDecoration = 'line-through';
+      }
+      if (typeof pollSystem === 'function') setTimeout(pollSystem, 1500);
+      if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
+    } else {
+      showToast(res.detail || (isEn ? 'Failed to terminate session.' : 'Gagal memutus sesi terminal.'), false);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+    }
+  } catch (err) {
+    showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
     }
   }
 }
@@ -7391,6 +7467,8 @@ function renderProblemsTab(level, openList, histList) {
           toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" title="${isEn ? 'Copy agent update command to clipboard' : 'Salin perintah update agen ke clipboard'}" aria-label="Update Agent">${svgTerm}</button>`;
         } else if (p.action === 'reset_platform' && CAN_SERVICES) {
           toolsHtml += `<button type="button" class="btn btn-primary btn-sm" onclick="resetPlatformAuto(${SID}, this)" title="${isEn ? 'Sync platform configuration to Auto Detect' : 'Sinkronkan konfigurasi platform ke Auto Deteksi'}" aria-label="Auto Platform"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></button>`;
+        } else if (p.action === 'terminate_session' && p.tty && (CAN_USERS_SYS || CAN_SERVICES)) {
+          toolsHtml += `<button type="button" class="btn btn-danger btn-sm" onclick="terminateSession(${SID}, '${escapeHtml(p.tty)}', '${escapeHtml(p.session_user || '')}', this)" title="${isEn ? 'Force terminate active remote session ' + escapeHtml(p.tty) : 'Putus paksa sesi remote ' + escapeHtml(p.tty)}" aria-label="Putus Sesi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg></button>`;
         }
 
         if (p.acknowledged_by) {
@@ -8976,9 +9054,14 @@ function renderSys(data) {
       + '<td class="mono">' + escHtml(String(a.uid)) + '</td>'
       + '<td class="mono">' + escHtml(a.shell || '-') + '</td>'
       + '<td style="font-size:10px;color:var(--dim)">' + escHtml(a.last_login || '-') + '</td>'
-      + '<td style="font-size:10px;color:var(--dim)">'
-      + (a.sessions && a.sessions.length ? a.sessions.map(s =>
-          escHtml((s.tty || '') + (s.from ? ' @ ' + s.from : ''))).join('<br>') : '-')
+      + '<td style="font-size:11px;color:var(--dim)">'
+      + (a.sessions && a.sessions.length ? a.sessions.map(s => {
+          const ttyEsc = escHtml(s.tty || '');
+          const fromEsc = s.from ? ' @ ' + escHtml(s.from) : '';
+          const killBtn = (CAN_USERS_SYS || CAN_SERVICES) && s.tty ?
+            ` <button type="button" class="btn btn-ghost btn-sm" style="padding:0 2px;height:16px;min-height:16px;line-height:1;color:var(--red);border:none" title="${isEn ? 'Force terminate session ' + ttyEsc : 'Putus paksa sesi ' + ttyEsc}" onclick="terminateSession(${SID}, '${ttyEsc}', '${userEsc}', this)">&times;</button>` : '';
+          return `<span class="badge badge-muted" style="font-family:monospace;display:inline-flex;align-items:center;gap:3px;margin:1px 2px;padding:1px 5px">${ttyEsc}${fromEsc}${killBtn}</span>`;
+        }).join(' ') : '-')
       + '</td>'
       + '<td><div style="display:flex;gap:4px;flex-wrap:wrap">' + actions + '</div></td></tr>';
   }).join('');

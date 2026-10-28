@@ -24,7 +24,21 @@
   </div>
   <div class="stat-card">
     <div class="label">Sesi Aktif</div>
-    <div class="value" style="font-size:16px">{{ account.sessions|length if account and account.sessions else 0 }}</div>
+    <div class="value" style="font-size:15px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span>{{ account.sessions|length if account and account.sessions else 0 }}</span>
+      {% if account and account.sessions %}
+        {% for s in account.sessions %}
+          <span class="badge badge-muted" style="font-size:11px;font-family:monospace;display:inline-flex;align-items:center;gap:4px;padding:2px 6px">
+            {{ s.tty }}{% if s.from %} @ {{ s.from }}{% endif %}
+            {% if not user.is_viewer() %}
+              <button type="button" class="btn btn-ghost btn-sm" style="padding:0 2px;height:16px;min-height:16px;line-height:1;color:var(--red);border:none" title="Putus paksa sesi terminal {{ s.tty }}" onclick="terminateSession('{{ s.tty }}', this)">
+                &times;
+              </button>
+            {% endif %}
+          </span>
+        {% endfor %}
+      {% endif %}
+    </div>
   </div>
 </div>
 
@@ -245,6 +259,62 @@ function exportCsv() {
   a.click();
   URL.revokeObjectURL(a.href);
   a.remove();
+}
+
+async function terminateSession(tty, btn) {
+  const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
+  const confirmMsg = isEn
+    ? ('Force terminate active terminal session ' + tty + ' (' + USERNAME + ')?')
+    : ('Putus paksa sesi terminal aktif ' + tty + ' (' + USERNAME + ')?');
+  if (!confirm(confirmMsg)) return;
+
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '…';
+  }
+  try {
+    const csrf = (typeof getCsrf === 'function') ? getCsrf() : '{{ csrf_token }}';
+    const form = new FormData();
+    form.append('csrf_token', csrf);
+    form.append('tty', tty);
+    form.append('username', USERNAME);
+
+    const r = await fetch('/servers/' + SID + '/system-users/terminate-session', {
+      method: 'POST',
+      body: form,
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrf
+      }
+    });
+    const res = await r.json().catch(() => ({}));
+    if (r.ok && res.ok !== false) {
+      if (typeof showToast === 'function') {
+        showToast(res.detail || (isEn ? 'Session termination dispatched.' : 'Perintah pemutusan sesi berhasil dikirim.'), true);
+      } else {
+        alert(res.detail || (isEn ? 'Session termination dispatched.' : 'Perintah pemutusan sesi berhasil dikirim.'));
+      }
+      const badge = btn ? btn.closest('.badge') : null;
+      if (badge) {
+        badge.style.opacity = '0.35';
+        badge.style.textDecoration = 'line-through';
+      }
+      setTimeout(loadActivity, 1500);
+    } else {
+      alert(res.detail || (isEn ? 'Failed to terminate session.' : 'Gagal memutus sesi terminal.'));
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      }
+    }
+  } catch (err) {
+    alert((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message);
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
+  }
 }
 
 document.getElementById('hist-filter').addEventListener('input', () => {

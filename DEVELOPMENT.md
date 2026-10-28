@@ -311,6 +311,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.12
+
+- **Tipe Rilis:** Akurasi Riwayat Login Modern & Pemutusan Sesi SSH Terpusat (*Modern Linux Login Telemetry Multi-Source Ingestion & Centralized Remote Session Termination*)
+- **Fokus Utama:** Mengatasi kendala angka *Login Sukses: 0* pada server Linux modern tanpa `rsyslog` serta menyediakan kapabilitas mitigasi dan terminasi sesi terminal SSH langsung dari dasbor monitoring:
+  1. **Multi-Source Telemetri Login Linux Modern (`agent_pantau.py`):**
+     - Mengatasi hilangnya file fisik `/var/log/auth.log` pada rilis Linux mutakhir (seperti Ubuntu 24.04 LTS Noble dan Debian 12) yang tidak memasang `rsyslog` secara bawaan.
+     - Mengintegrasikan pembacaan multi-lapis:
+       - **Sesi Aktif (`_parse_who()` / utmp):** Menjamin seluruh sesi pengguna yang sedang tersambung seketika tercatat sebagai `sukses` dan `aktif`.
+       - **Akuntansi Login Linux (`last -n 80 -F` / wtmp):** Mengekstrak rekaman riwayat sesi login lengkap dengan timestamp, terminal TTY, dan IP asal.
+       - **Log Otentikasi Terperinci (`systemd-journald` / fallback):** Mengekstraksi event `Accepted`, `Failed password`, `Invalid user`, dan eksekusi perintah `sudo` langsung dari journald tanpa bergantung pada file log tradisional.
+     - Menyempurnakan pembacaan unit log `AUTH` dan `SYSLOG` dengan fallback transparan ke `journalctl`.
+  2. **Aksi Pemutusan Paksa Sesi SSH (*Force Session Termination*):**
+     - Menambahkan aksi `terminate-session <tty>` pada wrapper `/usr/local/sbin/pantau-user` dengan sanitasi regex ketat `^(pts/[0-9]+|tty[0-9]+)$` yang mengeksekusi `pkill -9 -t "$TTY"` dan `fuser -k -9 "/dev/$TTY"`.
+     - Mengembangkan endpoint pusat `POST /servers/{sid}/system-users/terminate-session` dan `/api/servers/{sid}/sessions/terminate` dengan pemeriksaan izin hak akses (`can_users_sys` / `can_manage_servers`).
+     - Mencatat audit log terstruktur berlabel "Putus Sesi Terminal" pada kategori Autentikasi & Akun.
+  3. **Antarmuka Interaktif Pengelolaan Sesi Terminal (UI):**
+     - **Tab Users (`#tab-akun`):** Menyajikan badge sesi aktif lengkap dengan tombol putus sesi cepat (`&times;`) pada tabel pengguna, baik saat initial render Jinja maupun siklus live polling JavaScript.
+     - **Halaman Aktivitas Pengguna (`user_activity.html`):** Menampilkan rincian terminal sesi aktif pada kartu statistik dengan kontrol tombol pemutusan langsung, serta menjamin chip *Login Sukses* mencerminkan jumlah akurat.
+     - **Tab Masalah (`#tab-masalah`):** Menyediakan tombol mitigasi cepat 1-klik berwarna merah (*Terminate Session*) pada baris insiden `ssh_active_session` untuk memutus akses remote seketika.
+
 ## Versi 4.8.11
 
 - **Tipe Rilis:** Deteksi Cerdas Multi-Lapis Kontainer LXC & Eliminasi Status Baremetal Semu (*Multi-Layer LXC Container Auto-Detection & Pending Platform Baseline*)
