@@ -39,3 +39,4 @@ pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-cron
 pantau ALL=(root) NOPASSWD:/usr/local/sbin/pantau-ssl
 pantau ALL=(root) NOPASSWD:/usr/sbin/smartctl, /usr/bin/smartctl
 pantau ALL=(root) NOPASSWD:/usr/sbin/nvme, /usr/bin/nvme
+pantau ALL=(root) NOPASSWD:/usr/bin/systemd-detect-virt, /bin/systemd-detect-virt

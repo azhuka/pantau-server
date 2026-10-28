@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.10"
+AGENT_VERSION = "4.8.11"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -1790,32 +1790,90 @@ def collect_hardware_specs() -> dict:
         except Exception:
             pass
 
-    # Deteksi Hypervisor / Virtualisasi / Kontainer
+    # Deteksi Hypervisor / Virtualisasi / Kontainer secara komprehensif (Multi-Layer Heuristic)
     detected_virt = ""
-    try:
-        res = subprocess.run(
-            ["systemd-detect-virt"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True,
-            timeout=2,
-        )
-        if res.returncode == 0:
-            out = res.stdout.strip()
-            if out and out.lower() != "none":
-                detected_virt = out.upper()
-    except Exception:
-        pass
 
-    # Fallback deteksi kontainer via file system jika systemd-detect-virt belum/tidak mendeteksi
+    # 1. systemd-detect-virt (coba direct, lalu via sudo bila non-root)
+    for cmd in (["systemd-detect-virt"], ["/usr/bin/sudo", "-n", "systemd-detect-virt"]):
+        try:
+            res = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=2,
+            )
+            if res.returncode == 0:
+                out = res.stdout.strip()
+                if out and out.lower() != "none":
+                    detected_virt = out.upper()
+                    break
+        except Exception:
+            pass
+
+    # 2. File /run/systemd/container (dibuat systemd PID 1 jika booted dalam container)
     if not detected_virt:
         try:
             if os.path.exists("/run/systemd/container"):
                 with open("/run/systemd/container", "r", encoding="utf-8", errors="replace") as f:
                     c = f.read().strip()
-                    if c:
+                    if c and c.lower() != "none":
                         detected_virt = c.upper()
-            elif os.path.exists("/proc/1/environ"):
+        except Exception:
+            pass
+
+    # 3. Mount inspection (/proc/mounts & /proc/self/mountinfo) - Proxmox LXCFS
+    if not detected_virt:
+        for mpath in ("/proc/mounts", "/proc/self/mountinfo"):
+            try:
+                if os.path.exists(mpath):
+                    with open(mpath, "r", encoding="utf-8", errors="replace") as f:
+                        m_content = f.read()
+                        if "lxcfs" in m_content or "fuse.lxcfs" in m_content:
+                            detected_virt = "LXC"
+                            break
+            except Exception:
+                pass
+
+    # 4. cgroup inspection (/proc/1/cgroup & /proc/self/cgroup - world-readable)
+    if not detected_virt:
+        for cg_path in ("/proc/1/cgroup", "/proc/self/cgroup"):
+            try:
+                if os.path.exists(cg_path):
+                    with open(cg_path, "r", encoding="utf-8", errors="replace") as f:
+                        cg_content = f.read()
+                        if any(k in cg_content for k in ("/lxc/", "/lxc.payload", "/lxc.monitor", "machine-lxc", "lxc/")):
+                            detected_virt = "LXC"
+                            break
+                        elif "/docker/" in cg_content or "/docker.service" in cg_content:
+                            detected_virt = "DOCKER"
+                            break
+                        elif "/containerd/" in cg_content:
+                            detected_virt = "CONTAINER"
+                            break
+            except Exception:
+                pass
+
+    # 5. AppArmor profile inspection (/proc/self/attr/current)
+    if not detected_virt:
+        for aa_path in ("/proc/self/attr/current", "/proc/self/attr/apparmor/current"):
+            try:
+                if os.path.exists(aa_path):
+                    with open(aa_path, "r", encoding="utf-8", errors="replace") as f:
+                        aa_content = f.read().strip()
+                        if "lxc" in aa_content:
+                            detected_virt = "LXC"
+                            break
+                        elif "docker" in aa_content:
+                            detected_virt = "DOCKER"
+                            break
+            except Exception:
+                pass
+
+    # 6. /proc/1/environ (bila user root atau world-readable)
+    if not detected_virt:
+        try:
+            if os.path.exists("/proc/1/environ"):
                 with open("/proc/1/environ", "rb") as f:
                     env_raw = f.read()
                     if b"container=lxc" in env_raw:
@@ -1826,6 +1884,13 @@ def collect_hardware_specs() -> dict:
                         detected_virt = "PODMAN"
         except Exception:
             pass
+
+    # 7. Device markers & flag files
+    if not detected_virt:
+        if os.path.exists("/dev/lxcfs") or os.path.exists("/dev/.lxc"):
+            detected_virt = "LXC"
+        elif os.path.exists("/.dockerenv"):
+            detected_virt = "DOCKER"
 
     if detected_virt:
         specs["platform"]["virt"] = detected_virt

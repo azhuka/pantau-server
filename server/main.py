@@ -1758,20 +1758,40 @@ def _classify_platform(platform_dict: dict | None, override: str | None = None) 
                 "badge_border": "rgba(6,182,212,0.3)",
             }
 
-    if not isinstance(platform_dict, dict):
-        platform_dict = {}
+    if not isinstance(platform_dict, dict) or not platform_dict:
+        return {
+            "type": "pending",
+            "virt": "Menunggu Laporan Agen",
+            "label": "Auto Deteksi (Menunggu Agen)",
+            "short_label": "Auto",
+            "badge_color": "#94a3b8",
+            "badge_bg": "rgba(148,163,184,0.15)",
+            "badge_border": "rgba(148,163,184,0.3)",
+        }
+
     virt = str(platform_dict.get("virt") or "").strip().upper()
     vendor = str(platform_dict.get("vendor") or "").strip()
     product = str(platform_dict.get("product") or "").strip()
 
+    if platform_dict.get("platform_type") == "pending" or virt in ("VIRTUAL / HOST LINUX", "MENUNGGU LAPORAN AGEN"):
+        return {
+            "type": "pending",
+            "virt": "Menunggu Laporan Agen",
+            "label": "Auto Deteksi (Menunggu Agen)",
+            "short_label": "Auto",
+            "badge_color": "#94a3b8",
+            "badge_bg": "rgba(148,163,184,0.15)",
+            "badge_border": "rgba(148,163,184,0.3)",
+        }
+
     # Kontainer (LXC / Docker / WSL / etc.)
-    if virt in ("LXC", "LXC-LIBVIRT", "DOCKER", "PODMAN", "CONTAINER", "WSL", "SYSTEMD-NSPAWN"):
-        label = "LXC Container" if virt in ("LXC", "LXC-LIBVIRT") else f"Container ({virt})"
+    if virt in ("LXC", "LXC-LIBVIRT", "DOCKER", "PODMAN", "CONTAINER", "WSL", "SYSTEMD-NSPAWN") or platform_dict.get("platform_type") == "lxc":
+        label = "LXC Container" if virt in ("LXC", "LXC-LIBVIRT") or platform_dict.get("platform_type") == "lxc" else f"Container ({virt})"
         return {
             "type": "lxc",
-            "virt": virt,
+            "virt": virt or "LXC",
             "label": label,
-            "short_label": "LXC" if virt in ("LXC", "LXC-LIBVIRT") else virt,
+            "short_label": "LXC" if virt in ("LXC", "LXC-LIBVIRT") or platform_dict.get("platform_type") == "lxc" else virt,
             "badge_color": "#22d3ee",
             "badge_bg": "rgba(6,182,212,0.15)",
             "badge_border": "rgba(6,182,212,0.3)",
@@ -1814,6 +1834,12 @@ def _get_hardware_specs_dict(server: Server, extra: ServerExtras | None, latest:
                 # Bila terdeteksi LXC dan disk masih melaporkan disk host, koreksi dengan kuota rootfs dari snapshot.
                 plat = parsed.get("platform", {})
                 plat_ovr = getattr(server, "platform_override", None)
+                has_lxc_disk = any(d.get("type") == "Virtual (LXC)" or d.get("model") == "Container Allocation" for d in parsed.get("disks", []))
+                if has_lxc_disk and (not plat_ovr or plat_ovr == "auto"):
+                    if plat.get("virt") in ("Bare Metal / Physical", "None", "", "Virtual / Host Linux") or plat.get("platform_type") != "lxc":
+                        plat["virt"] = "LXC"
+                        plat["platform_type"] = "lxc"
+                        plat["platform_label"] = "LXC Container"
                 # Fail-Safe Storage: Jika agen secara definitif mendeteksi kontainer (LXC/Docker),
                 # kuota virtual rootfs selalu dipaksakan agar disk host fisik tidak bocor ke tampilan kontainer,
                 # sekalipun operator keliru memilih override 'baremetal'.
@@ -1954,11 +1980,13 @@ def _get_hardware_specs_dict(server: Server, extra: ServerExtras | None, latest:
             "cache": "",
         },
         "platform": {
-            "virt": "Virtual / Host Linux",
+            "virt": "Virtual / Host Linux" if has_reported else "Menunggu Laporan Agen",
             "vendor": "-",
             "product": server.hostname,
             "bios_version": "-",
             "bios_date": "-",
+            "platform_type": ("lxc" if server.platform_override == "lxc" else ("vm" if server.platform_override == "vm" else ("baremetal" if server.platform_override == "baremetal" else "pending"))) if not has_reported else ("lxc" if server.platform_override == "lxc" else ("vm" if server.platform_override == "vm" else "baremetal")),
+            "platform_label": "Menunggu Laporan Agen" if not has_reported and not server.platform_override else ("LXC Container" if server.platform_override == "lxc" else ("Mesin Virtual (VM)" if server.platform_override == "vm" else "Baremetal")),
         },
         "memory": {
             "ram_total": latest.mem_total if latest else 0,

@@ -311,6 +311,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.11
+
+- **Tipe Rilis:** Deteksi Cerdas Multi-Lapis Kontainer LXC & Eliminasi Status Baremetal Semu (*Multi-Layer LXC Container Auto-Detection & Pending Platform Baseline*)
+- **Fokus Utama:** Mengatasi kesalahan deteksi platform server di mana kontainer LXC teridentifikasi sebagai Baremetal saat registrasi atau eksekusi agen:
+  1. **Inspeksi Virtualisasi Multi-Lapis Bebas Izin Root (`agent_pantau.py`):**
+     - Menambahkan heuristik pemindaian Proxmox LXCFS pada `/proc/mounts` dan `/proc/self/mountinfo` (`lxcfs`, `fuse.lxcfs`).
+     - Menginspeksi hierarki cgroup `/proc/1/cgroup` dan `/proc/self/cgroup` (`/lxc/`, `lxc.payload`, `lxc.monitor`, `machine-lxc`).
+     - Membaca profil AppArmor container `/proc/self/attr/current`.
+     - Menyediakan eskalasi pembacaan virtualisasi `sudo -n systemd-detect-virt` pada daftar whitelist `/etc/sudoers.d/pantau-agent`.
+  2. **Eliminasi Label Baremetal Prematur Saat Registrasi (`server/main.py` & template dasbor):**
+     - Memperbaiki fallback `_get_hardware_specs_dict` dan `_classify_platform` saat server baru ditambahkan dan belum mengirimkan laporan telemetri pertama (`server.last_seen is None`).
+     - Mengubah status default platform yang sebelumnya salah menampilkan *Baremetal* menjadi status informatif **Auto Deteksi (Menunggu Agen)** dengan badge abu-abu rapi bertuliskan `AUTO`.
+  3. **Koreksi Retroaktif Berbasis Alokasi Storage Virtual (`server/main.py`):**
+     - Menambahkan verifikasi rekonsiliasi disk: jika spesifikasi perangkat keras memuat perangkat penyimpanan bertipe `Virtual (LXC)` atau `Container Allocation`, platform secara otomatis dikoreksi menjadi `LXC Container` meskipun string DMI vendor/product menampilkan nama perangkat keras fisik server host (seperti Dell PowerEdge atau HPE ProLiant).
+
 ## Versi 4.8.10
 
 - **Tipe Rilis:** Perbaikan Impor Modul SSL & Konfigurasi Handshake TLS Agen Klien (*Client Agent SSL Import Bugfix & Permissive TLS Opener Context*)
