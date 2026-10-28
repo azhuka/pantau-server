@@ -311,6 +311,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.24
+
+- **Tipe Rilis:** Proteksi Penguncian & Pembersihan Terminal Saat Proses Konsol Aktif (*Terminal Process Safety Guard & Execution State Detection*)
+- **Fokus Utama:** Mengamankan operasional web terminal bawaan Linux dari pemutusan sesi atau pembersihan layar yang tidak disengaja saat ada proses yang sedang berjalan di konsol:
+  1. **Proteksi Dinamis Tombol Kunci & Bersihkan Layar (`server/templates/services.html`):**
+     - Mengubah status Tombol Kunci Terminal (`#term-lock-btn`), Tombol Bersihkan Layar Konsol (`#term-clear-btn`), dan titik kontrol pembersih layar kuning (`#term-dot-clear`) secara otomatis menjadi *disabled* (atribut `disabled = true`, transparansi redup `opacity: 0.35`, kursor `not-allowed`, dan penonaktifan pointer events) ketika ada perintah shell atau tugas APT yang sedang berjalan di konsol terminal.
+     - Menyematkan perlindungan preventif berlapis: fungsi `clearScreen()` dan `openTerminalLockConfirmModal()` secara otomatis menolak eksekusi dan memunculkan toast peringatan jika dipanggil saat proses konsol masih aktif.
+     - Menyematkan responsivitas instan di sisi klien: mendeteksi penekanan tombol Enter (`\r` atau `\n`) pada masukan kursor untuk langsung melumpuhkan tombol secara optimistik sebelum sinyal jaringan kembali dari agen.
+  2. **Deteksi Status Proses Konsol POSIX & Proc Stat Kernel (`agent/agent_pantau.py`):**
+     - Mengimplementasikan fungsi pelacak status proses konsol ganda: inspeksi grup proses foreground POSIX `os.tcgetpgrp(master_fd)` untuk shell PTY langsung, serta pemindaian status `/proc/[pid]/stat` (evaluasi field `pgrp` vs `tpgid`) untuk mendeteksi proses anak yang berjalan di bawah wrapper `pantau-shell` dan session manager tmux tanpa memerlukan eskalasi sudo.
+     - Mengirimkan status `busy: bool` secara realtime dari thread pembaca PTY agen ke backend server saat ada luaran chunk stdout maupun saat konsol kembali idle setelah menyelesaikan eksekusi perintah.
+  3. **Penyempurnaan WebSocket Bridge & Format Durasi Notifikasi Baku:**
+     - Menghubungkan transmisi flag `busy` dari endpoint HTTP POST `/api/agent/terminal/{session_id}/stdout` ke sesi WebSocket browser aktif melalui `bridge.browser_ws`.
+     - Memperbaiki penamaan durasi proses latar belakang pada kartu toast mengambang dan notifikasi desktop di `base.html` dari format singkatan `${durationSecs}s` menjadi format baku Bahasa Indonesia `⏱️ ${durationSecs} dtk` dengan tooltip informatif "Durasi eksekusi proses: X detik".
+  4. **Sinkronisasi SemVer 7 Berkas & Kebijakan Zero-Dependency:**
+     - Menaikkan versi aplikasi menjadi `v4.8.24` secara sinkron dan identik di 7 berkas: `server/config.py`, `server/templates/base.html`, `package/opt/pantau/agent/agent_pantau.py`, `agent/agent_pantau.py`, `package/install.sh`, `README.md`, dan `DEVELOPMENT.md`.
+
 ## Versi 4.8.23
 
 - **Tipe Rilis:** Sistem Notifikasi Tugas Latar Belakang Lintas Halaman & Desktop OS (*Cross-Page Background Task Notification & Native OS Desktop Alerts*)

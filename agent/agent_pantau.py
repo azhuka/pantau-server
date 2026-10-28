@@ -477,7 +477,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.23"
+AGENT_VERSION = "4.8.24"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -5126,15 +5126,77 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
 
     stop_event = threading.Event()
 
+    bash_pgrp = proc.pid
+    try:
+        bash_pgrp = os.getpgid(proc.pid)
+    except Exception:
+        pass
+
+    def check_terminal_busy() -> bool:
+        # 1. POSIX PTY foreground group check (untuk bash langsung tanpa tmux)
+        try:
+            curr_pgrp = os.tcgetpgrp(master_fd)
+            if curr_pgrp > 0 and curr_pgrp != bash_pgrp:
+                return True
+        except Exception:
+            pass
+
+        # 2. Kernel proc stat check untuk bash di bawah tmux / sudo wrapper
+        try:
+            for pid_str in os.listdir("/proc"):
+                if not pid_str.isdigit():
+                    continue
+                try:
+                    with open(f"/proc/{pid_str}/comm", "r") as cf:
+                        if cf.read().strip() != "bash":
+                            continue
+                    with open(f"/proc/{pid_str}/cmdline", "rb") as cf:
+                        cmd = cf.read().replace(b"\x00", b" ").decode("utf-8", errors="ignore")
+                    if "--rcfile" in cmd and "pantau-shellrc" in cmd:
+                        with open(f"/proc/{pid_str}/stat", "r") as sf:
+                            c = sf.read()
+                            idx = c.rfind(")")
+                            if idx != -1:
+                                fields = c[idx + 2:].split()
+                                if len(fields) >= 6:
+                                    pgrp = int(fields[2])
+                                    tpgid = int(fields[5])
+                                    if tpgid > 0 and pgrp != tpgid:
+                                        return True
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        return False
+
     def pty_reader():
         pending_out = []
+        last_busy_state = False
+        last_busy_check = 0.0
+
         try:
             while not stop_event.is_set():
+                now = time.time()
                 r, _, _ = select.select([master_fd], [], [], 0.05)
                 if not r:
                     if proc.poll() is not None:
                         break
+                    # Cek berkala saat terminal idle untuk mendeteksi selesainya proses tanpa stdout baru
+                    if now - last_busy_check >= 0.25:
+                        last_busy_check = now
+                        curr_busy = check_terminal_busy()
+                        if curr_busy != last_busy_state:
+                            last_busy_state = curr_busy
+                            http_json_request(
+                                cfg,
+                                f"/api/agent/terminal/{session_id}/stdout",
+                                method="POST",
+                                data={"chunk": "", "busy": curr_busy},
+                                timeout=5,
+                            )
                     continue
+
                 try:
                     data = os.read(master_fd, 4096)
                 except OSError:
@@ -5163,11 +5225,15 @@ def _run_terminal_session(cfg: dict, session_id: str) -> None:
                     chunk = "".join(pending_out) + chunk
                     pending_out.clear()
 
+                last_busy_check = time.time()
+                curr_busy = check_terminal_busy()
+                last_busy_state = curr_busy
+
                 code, _ = http_json_request(
                     cfg,
                     f"/api/agent/terminal/{session_id}/stdout",
                     method="POST",
-                    data={"chunk": chunk},
+                    data={"chunk": chunk, "busy": curr_busy},
                     timeout=10,
                 )
                 if code == 410:

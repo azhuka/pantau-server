@@ -1325,7 +1325,7 @@ div[style*="position: fixed"] .card {
     <div class="terminal-titlebar">
       <div class="terminal-dots">
         <span class="t-dot t-dot-red" title="Tutup Terminal" onclick="openTerminalCloseConfirmModal()"></span>
-        <span class="t-dot t-dot-yellow" title="Bersihkan Layar (Clear)" onclick="getTerm().clearScreen()"></span>
+        <span class="t-dot t-dot-yellow" id="term-dot-clear" title="Bersihkan Layar (Clear)" onclick="getTerm().clearScreen()"></span>
         <span class="t-dot t-dot-green" title="Layar Penuh (Full Screen)" onclick="getTerm().toggleFullscreen()"></span>
       </div>
       <div class="terminal-title">
@@ -1344,7 +1344,7 @@ div[style*="position: fixed"] .card {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </button>
         <span id="apt-status" class="terminal-status-badge"></span>
-        <button type="button" class="terminal-btn-icon" onclick="getTerm().clearScreen()" title="Bersihkan Layar Konsol" aria-label="Bersihkan Layar">
+        <button type="button" class="terminal-btn-icon" id="term-clear-btn" onclick="getTerm().clearScreen()" title="Bersihkan Layar Konsol" aria-label="Bersihkan Layar">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
         </button>
         <button type="button" class="terminal-btn-icon" id="term-fullscreen-btn" onclick="getTerm().toggleFullscreen()" title="Layar Penuh (Full Screen)" aria-label="Layar Penuh">
@@ -6153,10 +6153,74 @@ class WebTerminal {
     this.state = 'idle'; // idle | connecting | live | closed
     this.aptActive = false;
     this.aptReady = false;
+    this.isProcessRunning = false;
     this.queue = [];
     this.resizeObserver = null;
 
     this.initXterm();
+  }
+
+  setProcessRunning(running) {
+    const isRunning = Boolean(running || this.aptActive);
+    if (this.isProcessRunning === isRunning) return;
+    this.isProcessRunning = isRunning;
+
+    const lockBtn = document.getElementById('term-lock-btn');
+    const clearBtn = document.getElementById('term-clear-btn');
+    const dotClear = document.getElementById('term-dot-clear');
+    const isEn = (typeof isEnPage === 'function') ? isEnPage() : false;
+
+    if (isRunning) {
+      if (lockBtn) {
+        lockBtn.disabled = true;
+        lockBtn.style.opacity = '0.35';
+        lockBtn.style.cursor = 'not-allowed';
+        lockBtn.title = isEn
+          ? 'Cannot lock terminal while a process is running in console'
+          : 'Tidak dapat mengunci saat proses sedang berjalan di konsol';
+      }
+      if (clearBtn) {
+        clearBtn.disabled = true;
+        clearBtn.style.opacity = '0.35';
+        clearBtn.style.cursor = 'not-allowed';
+        clearBtn.title = isEn
+          ? 'Cannot clear screen while a process is running in console'
+          : 'Tidak dapat membersihkan layar saat proses sedang berjalan di konsol';
+      }
+      if (dotClear) {
+        dotClear.style.pointerEvents = 'none';
+        dotClear.style.opacity = '0.35';
+        dotClear.style.cursor = 'not-allowed';
+        dotClear.title = isEn
+          ? 'Cannot clear screen while a process is running in console'
+          : 'Tidak dapat membersihkan layar saat proses sedang berjalan di konsol';
+      }
+    } else {
+      if (lockBtn) {
+        lockBtn.disabled = false;
+        lockBtn.style.opacity = '1';
+        lockBtn.style.cursor = 'pointer';
+        lockBtn.title = isEn
+          ? 'Lock terminal and disconnect active session'
+          : 'Kunci terminal dan putus sesi koneksi aktif';
+      }
+      if (clearBtn) {
+        clearBtn.disabled = false;
+        clearBtn.style.opacity = '1';
+        clearBtn.style.cursor = 'pointer';
+        clearBtn.title = isEn
+          ? 'Clear Console Screen'
+          : 'Bersihkan Layar Konsol';
+      }
+      if (dotClear) {
+        dotClear.style.pointerEvents = '';
+        dotClear.style.opacity = '1';
+        dotClear.style.cursor = 'pointer';
+        dotClear.title = isEn
+          ? 'Clear Screen'
+          : 'Bersihkan Layar (Clear)';
+      }
+    }
   }
 
   initXterm() {
@@ -6204,6 +6268,9 @@ class WebTerminal {
     // Kirim ketikan user ke WebSocket seketika tanpa latency
     this.term.onData(data => {
       if (!data) return;
+      if (typeof data === 'string' && (data.includes('\r') || data.includes('\n'))) {
+        this.setProcessRunning(true);
+      }
       // Filter respon otomatis Device Attributes (DA1, DA2, DA3), kursor (CPR), dan DSR
       // agar respon internal emulator xterm.js (seperti \x1b[?1;2c dan \x1b[>0;276;0c)
       // tidak bocor ke stdin shell (yang menyebabkan '1;2c0;276;0c' muncul pada prompt).
@@ -6470,6 +6537,10 @@ class WebTerminal {
   }
 
   clearScreen() {
+    if (this.isProcessRunning || this.aptActive) {
+      showToast((typeof isEnPage === 'function' && isEnPage()) ? 'Cannot clear screen while a process is running in console.' : 'Tidak dapat membersihkan layar saat proses sedang berjalan di konsol.', false);
+      return;
+    }
     if (this.term) {
       this.term.clear();
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -6514,6 +6585,7 @@ class WebTerminal {
   suspendForApt() {
     this.wasLiveBeforeApt = (this.state === 'live');
     this.aptActive = true;
+    this.setProcessRunning(true);
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
     if (this.titleEl) this.titleEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg><span>' + (isEn ? 'Terminal &middot; package updates' : 'Terminal &middot; pembaruan paket') + '</span>';
     this.status(isEn ? 'running apt process…' : 'menjalankan proses apt…', 'var(--yellow)', 'busy');
@@ -6521,6 +6593,7 @@ class WebTerminal {
 
   resumeAfterApt() {
     this.aptActive = false;
+    this.setProcessRunning(false);
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
     if (this.titleEl) this.titleEl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg><span>' + (isEn ? 'Embedded Terminal &middot; root shell' : 'Terminal Bawaan &middot; shell root') + '</span>';
     if (this.wasLiveBeforeApt && this.state === 'live') {
@@ -6580,6 +6653,9 @@ class WebTerminal {
     this.ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
+        if (msg.busy !== undefined) {
+          this.setProcessRunning(msg.busy);
+        }
         if (msg.type === 'stdout' && msg.data) {
           const sanitized = (typeof msg.data === 'string')
             ? msg.data.replace(/\x1b\[c|\x1b\[0c|\x1b\[>c|\x1b\[>0c|\x1b\[>q|\x1b\]1[01];\?(?:\x07|\x1b\\)/g, '')
@@ -6597,6 +6673,7 @@ class WebTerminal {
 
     this.ws.onclose = (event) => {
       this.state = 'closed';
+      this.setProcessRunning(false);
       if (event.code === 4403 || event.code === 1000) {
         if (typeof setTerminalSessionActive === 'function') setTerminalSessionActive(false);
       }
@@ -6712,6 +6789,11 @@ function proceedCloseTerminalView() {
 }
 
 function openTerminalLockConfirmModal() {
+  const term = getTerm();
+  if (term && (term.isProcessRunning || term.aptActive)) {
+    showToast((typeof isEnPage === 'function' && isEnPage()) ? 'Cannot lock terminal while a process is running in console.' : 'Tidak dapat mengunci terminal saat proses sedang berjalan di konsol.', false);
+    return;
+  }
   const modal = document.getElementById('term-lock-confirm-modal');
   if (modal) modal.style.display = 'flex';
 }

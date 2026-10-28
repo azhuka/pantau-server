@@ -11435,18 +11435,23 @@ async def api_agent_terminal_stdout(
         raise HTTPException(status_code=403, detail="Akses ditolak: Sesi terminal bukan milik server ini")
 
     chunk = body.get("chunk", "")
-    if chunk:
-        clean_chunk = DA_QUERY_PATTERN.sub("", chunk)
+    busy = body.get("busy", None)
+
+    if chunk or busy is not None:
+        clean_chunk = DA_QUERY_PATTERN.sub("", chunk) if chunk else ""
         if clean_chunk:
             bridge.append_output(clean_chunk)
             bridge.last_active = time.time()
-            if bridge.browser_ws:
-                try:
-                    await bridge.browser_ws.send_text(json.dumps({"type": "stdout", "data": clean_chunk}))
-                except Exception:
-                    bridge.browser_ws = None
-                    bridge.detached = True
-                    bridge.detached_at = time.time()
+        if bridge.browser_ws:
+            payload = {"type": "stdout", "data": clean_chunk}
+            if busy is not None:
+                payload["busy"] = bool(busy)
+            try:
+                await bridge.browser_ws.send_text(json.dumps(payload))
+            except Exception:
+                bridge.browser_ws = None
+                bridge.detached = True
+                bridge.detached_at = time.time()
 
     return {"ok": True}
 
