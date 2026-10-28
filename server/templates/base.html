@@ -429,6 +429,84 @@ table .copyable-ip, td .copyable-ip{font-size:9.5px !important}
 .toast.err{background:#3a1515;border:1px solid #c0392b;color:#ffd7d2}
 .toast.show{opacity:1}
 
+/* ---------- Notifikasi Tugas Latar Belakang (NOC Floating Task Toast) ---------- */
+#pantau-bg-notifier-root {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100001;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  max-width: 380px;
+  width: calc(100vw - 40px);
+}
+.pantau-bg-toast {
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.7), 0 0 16px rgba(59, 130, 246, 0.15);
+  border-radius: 8px;
+  padding: 10px 14px 12px;
+  color: var(--text, #f8fafc);
+  font-family: inherit;
+  font-size: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  opacity: 0;
+  transform: translateX(40px);
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pantau-bg-toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+.pantau-bg-toast.hide {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.pantau-bg-toast.success {
+  border-color: rgba(34, 197, 94, 0.45);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.7), 0 0 16px rgba(34, 197, 94, 0.18);
+}
+.pantau-bg-toast.warning {
+  border-color: rgba(234, 179, 8, 0.45);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.7), 0 0 16px rgba(234, 179, 8, 0.18);
+}
+.pantau-bg-toast.error {
+  border-color: rgba(239, 68, 68, 0.45);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.7), 0 0 16px rgba(239, 68, 68, 0.18);
+}
+.pantau-bg-toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: var(--blue, #3b82f6);
+  transform-origin: left;
+  animation: pantauToastProgress 5s linear forwards;
+}
+.pantau-bg-toast.success .pantau-bg-toast-progress {
+  background: #22c55e;
+}
+.pantau-bg-toast.warning .pantau-bg-toast-progress {
+  background: #eab308;
+}
+.pantau-bg-toast.error .pantau-bg-toast-progress {
+  background: #ef4444;
+}
+@keyframes pantauToastProgress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
 /* ---------- Tooltip Modern 2026/2027 (Cepat, Estetik, Glassmorphic) ---------- */
 #app-tooltip {
   position: fixed;
@@ -1114,7 +1192,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.8.22' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.8.23' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -1177,6 +1255,7 @@ body.show-alert-banner .main{padding-top:72px}
 </div>
 
 <div id="toast" class="toast ok" role="status" aria-live="polite" hidden></div>
+<div id="pantau-bg-notifier-root"></div>
 
 <script>
 // Bahasa Aplikasi: Standar Bahasa Indonesia (Fitur alih bahasa dinonaktifkan)
@@ -1324,6 +1403,229 @@ function showToast(msg, ok){
     const remaining = qs.toString();
     history.replaceState({}, '', location.pathname + (remaining ? '?' + remaining : '') + location.hash);
   }
+})();
+
+// ---------- Sistem Notifikasi Tugas Latar Belakang (Desktop Native & In-App Floating) ----------
+function _pantauEsc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+window.requestDesktopNotificationPermission = function() {
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    if (Notification.permission === 'default') {
+      try {
+        Notification.requestPermission().catch(() => {});
+      } catch (e) {}
+    }
+  }
+};
+
+window.notifyBackgroundTaskComplete = function(opts) {
+  if (!opts) return;
+  const title = opts.title || 'Proses Latar Belakang Selesai';
+  const msg = opts.message || 'Tugas telah selesai dijalankan.';
+  const srv = opts.serverName || '';
+  const status = opts.status || 'success'; // 'success' | 'warning' | 'error'
+  const durationSecs = opts.durationSecs || 0;
+  const onClick = opts.onClick || null;
+  const tag = opts.tag || ('pantau-task-' + Date.now());
+
+  // 1. Lapisan Desktop OS (Muncul di atas semua aplikasi OS yang sedang aktif)
+  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    try {
+      const desktopBody = (srv ? `[${srv}] ` : '') + msg + (durationSecs ? ` (${durationSecs}s)` : '');
+      const n = new Notification(title, {
+        body: desktopBody,
+        tag: tag,
+        requireInteraction: false
+      });
+      n.onclick = function() {
+        window.focus();
+        if (typeof onClick === 'function') onClick();
+        try { this.close(); } catch(e){}
+      };
+      setTimeout(() => {
+        try { n.close(); } catch (e) {}
+      }, 5000);
+    } catch (err) {
+      console.warn('[Notifier] Desktop notification error:', err);
+    }
+  }
+
+  // 2. Lapisan Antarmuka Web In-App (Jendela Mini Mengambang di atas semua elemen web, z-index: 100001)
+  const root = document.getElementById('pantau-bg-notifier-root');
+  if (!root) return;
+
+  const toast = document.createElement('div');
+  toast.className = `pantau-bg-toast ${status}`;
+
+  let statusIcon = '';
+  let badgeStyle = '';
+  if (status === 'success') {
+    statusIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+    badgeStyle = 'background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)';
+  } else if (status === 'warning') {
+    statusIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2.5" style="flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+    badgeStyle = 'background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.3)';
+  } else {
+    statusIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" style="flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
+    badgeStyle = 'background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)';
+  }
+
+  const srvBadge = srv ? `<span class="badge" style="font-size:9.5px;padding:1px 5px;${badgeStyle}">${_pantauEsc(srv)}</span>` : '';
+  const durBadge = durationSecs ? `<span class="badge badge-muted mono" style="font-size:9px;padding:1px 4px">${durationSecs}s</span>` : '';
+
+  toast.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="display:inline-flex;align-items:center;gap:6px;min-width:0">
+        ${statusIcon}
+        <strong style="font-size:12px;font-weight:600;color:var(--text-bright,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_pantauEsc(title)}</strong>
+      </div>
+      <div style="display:inline-flex;align-items:center;gap:6px;flex-shrink:0">
+        ${srvBadge}
+        ${durBadge}
+        <button type="button" class="pantau-bg-toast-close" style="background:none;border:none;color:var(--dim,#94a3b8);cursor:pointer;font-size:15px;line-height:1;padding:0 2px" title="Tutup">&times;</button>
+      </div>
+    </div>
+    <div style="font-size:11.5px;color:var(--text,#cbd5e1);line-height:1.35;margin-top:2px;word-break:break-word">
+      ${_pantauEsc(msg)}
+    </div>
+    <div class="pantau-bg-toast-progress"></div>
+  `;
+
+  if (typeof onClick === 'function') {
+    toast.style.cursor = 'pointer';
+    toast.onclick = (e) => {
+      if (e.target.closest('.pantau-bg-toast-close')) return;
+      onClick();
+    };
+  }
+
+  const closeBtn = toast.querySelector('.pantau-bg-toast-close');
+  const progressBar = toast.querySelector('.pantau-bg-toast-progress');
+
+  let dismissTimer = null;
+  let remainingMs = 5000;
+  let startMs = Date.now();
+
+  function dismiss() {
+    clearTimeout(dismissTimer);
+    toast.classList.remove('show');
+    toast.classList.add('hide');
+    setTimeout(() => {
+      try { toast.remove(); } catch(e){}
+    }, 300);
+  }
+
+  function startTimer(ms) {
+    clearTimeout(dismissTimer);
+    startMs = Date.now();
+    remainingMs = ms;
+    dismissTimer = setTimeout(dismiss, ms);
+  }
+
+  if (closeBtn) {
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      dismiss();
+    };
+  }
+
+  toast.onmouseenter = () => {
+    clearTimeout(dismissTimer);
+    const elapsed = Date.now() - startMs;
+    remainingMs = Math.max(500, remainingMs - elapsed);
+    if (progressBar) progressBar.style.animationPlayState = 'paused';
+  };
+  toast.onmouseleave = () => {
+    if (progressBar) progressBar.style.animationPlayState = 'running';
+    startTimer(remainingMs);
+  };
+
+  root.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+  startTimer(5000);
+};
+
+// ---------- Pelacak Tugas Latar Belakang Lintas Halaman ----------
+window.registerTrackedBackgroundTask = function(task) {
+  if (!task || !task.id) return;
+  try {
+    const raw = localStorage.getItem('pantau_tracked_tasks');
+    const tasks = raw ? JSON.parse(raw) : [];
+    if (!tasks.some(t => t.id === task.id)) {
+      tasks.push(task);
+      localStorage.setItem('pantau_tracked_tasks', JSON.stringify(tasks));
+    }
+  } catch (e) {}
+  window.requestDesktopNotificationPermission();
+};
+
+window.unregisterTrackedBackgroundTask = function(id) {
+  if (!id) return;
+  try {
+    const raw = localStorage.getItem('pantau_tracked_tasks');
+    if (!raw) return;
+    const tasks = JSON.parse(raw).filter(t => t.id !== id);
+    localStorage.setItem('pantau_tracked_tasks', JSON.stringify(tasks));
+  } catch (e) {}
+};
+
+(function initBackgroundTaskPoller() {
+  let isChecking = false;
+  setInterval(async () => {
+    if (isChecking) return;
+    let tasks = [];
+    try {
+      const raw = localStorage.getItem('pantau_tracked_tasks');
+      if (raw) tasks = JSON.parse(raw);
+    } catch(e) { return; }
+    if (!tasks || tasks.length === 0) return;
+
+    isChecking = true;
+    try {
+      for (const t of tasks) {
+        if (typeof aptRunning !== 'undefined' && aptRunning && typeof aptRid !== 'undefined' && aptRid === t.id) {
+          continue;
+        }
+        try {
+          const res = await fetch('/api/logs/request/' + t.id, { credentials: 'same-origin' });
+          if (!res.ok) continue;
+          const j = await res.json();
+          if (j && (j.status === 'success' || j.status === 'failed')) {
+            window.unregisterTrackedBackgroundTask(t.id);
+            const durSecs = t.started_ms ? Math.max(1, Math.round((Date.now() - t.started_ms) / 1000)) : 0;
+            const isSuccess = (j.status === 'success');
+            let summary = '';
+            if (isSuccess) {
+              if (t.kind === 'APT_UPDATE') summary = 'Indeks paket OS berhasil dimutakhirkan.';
+              else if (t.kind === 'APT_UPGRADE' || t.kind === 'APT_DIST_UPGRADE') summary = 'Peningkatan paket OS selesai diselesaikan.';
+              else summary = 'Proses latar belakang selesai dengan sukses.';
+            } else {
+              summary = 'Proses latar belakang selesai dengan status gagal.';
+            }
+
+            window.notifyBackgroundTaskComplete({
+              title: (t.title || 'Tugas Sistem') + (isSuccess ? ' Selesai' : ' Gagal'),
+              message: summary,
+              serverName: t.server_name || '',
+              status: isSuccess ? 'success' : 'error',
+              durationSecs: durSecs,
+              tag: 'task-' + t.id,
+              onClick: () => {
+                if (t.server_id) {
+                  window.location.href = `/servers/${t.server_id}/services`;
+                }
+              }
+            });
+          }
+        } catch(err){}
+      }
+    } finally {
+      isChecking = false;
+    }
+  }, 3500);
 })();
 // ---------- Guardrail Dialogue Modal (High-SLA Production Safe Guard) ----------
 let _activeGuardrailForm = null;

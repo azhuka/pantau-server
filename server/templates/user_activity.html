@@ -295,10 +295,20 @@ async function terminateSession(tty, btn) {
     });
     const res = await r.json().catch(() => ({}));
     if (r.ok && res.ok !== false) {
+      const termMsg = res.detail || (isEn ? 'Session termination dispatched.' : 'Perintah pemutusan sesi berhasil dikirim.');
       if (typeof showToast === 'function') {
-        showToast(res.detail || (isEn ? 'Session termination dispatched.' : 'Perintah pemutusan sesi berhasil dikirim.'), true);
+        showToast(termMsg, true);
       } else {
-        alert(res.detail || (isEn ? 'Session termination dispatched.' : 'Perintah pemutusan sesi berhasil dikirim.'));
+        alert(termMsg);
+      }
+      if (typeof window.notifyBackgroundTaskComplete === 'function') {
+        window.notifyBackgroundTaskComplete({
+          title: isEn ? 'User Session Terminated' : 'Pemutusan Sesi Pengguna Selesai',
+          message: termMsg,
+          serverName: (typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : ''),
+          status: 'success',
+          tag: 'term-tty-' + tty
+        });
       }
       const badge = btn ? btn.closest('.badge') : null;
       if (badge) {

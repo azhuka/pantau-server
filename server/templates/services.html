@@ -4402,6 +4402,9 @@ function copyAgentUpdateCmd(ev) {
 }
 
 function triggerAgentUpdate(sid) {
+  if (typeof window.requestDesktopNotificationPermission === 'function') {
+    window.requestDesktopNotificationPermission();
+  }
   const btn = document.getElementById('btn-update-agent');
   const isEn = isEnPage();
   const confirmMsg = isEn
@@ -4432,9 +4435,24 @@ function triggerAgentUpdate(sid) {
     if (ok && data.ok) {
       showToast(isEn ? "Push Update (OTA) command dispatched. The agent is verifying SHA-256 integrity and updating itself…" : "Perintah Push Update (OTA) berhasil dikirim. Agen sedang memverifikasi hash SHA-256 dan memperbarui dirinya…", true);
       let checkCount = 0;
+      let otaNotified = false;
       const pollInterval = setInterval(() => {
         checkCount++;
         if (typeof poll === 'function') poll();
+        const curAver = document.getElementById('agent-ver');
+        if (!otaNotified && curAver && curAver.textContent && !curAver.textContent.includes('update') && !curAver.textContent.includes('perlu')) {
+          otaNotified = true;
+          clearInterval(pollInterval);
+          if (typeof window.notifyBackgroundTaskComplete === 'function') {
+            window.notifyBackgroundTaskComplete({
+              title: isEn ? 'Agent OTA Update Complete' : 'Pembaruan Agen OTA Selesai',
+              message: isEn ? 'Pantau Agent successfully updated and verified.' : 'Agen Pantau di server ini berhasil diperbarui dan aktif.',
+              serverName: (typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : ''),
+              status: 'success',
+              tag: 'ota-' + sid
+            });
+          }
+        }
         if (checkCount >= 12) {
           clearInterval(pollInterval);
         }
@@ -7016,6 +7034,9 @@ function toggleTerminalView() {
 // PEMICU TUGAS SISTEM TERISOLASI (Update & Upgrade OS)
 // ===================================================================
 async function triggerAptTask(kind) {
+  if (typeof window.requestDesktopNotificationPermission === 'function') {
+    window.requestDesktopNotificationPermission();
+  }
   const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
   const isEn = isEnPage();
   if (!isOnline) {
@@ -7127,6 +7148,17 @@ async function aptFollow(rid, kind, startedMs) {
   setAptTaskModalState('running', kind, isEn ? 'Running process...' : 'Menjalankan proses...');
   updateAptTaskActiveBanner();
 
+  if (typeof window.registerTrackedBackgroundTask === 'function') {
+    window.registerTrackedBackgroundTask({
+      id: rid,
+      kind: kind,
+      server_id: SID,
+      server_name: (typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : ''),
+      title: (kind === 'APT_UPDATE' ? 'Update Paket OS' : 'Upgrade Paket OS'),
+      started_ms: startedMs || Date.now()
+    });
+  }
+
   let header = '\x1b[36m──── ' + label + ' ────\x1b[0m\r\n\r\n';
   if (!aptTaskLastOutput) {
     setAptTaskBuffer(header + (isEn ? 'Running command on server...\r\n' : 'Menjalankan perintah di server...\r\n'));
@@ -7163,6 +7195,9 @@ async function aptFollow(rid, kind, startedMs) {
   aptFollowActive = false;
   aptRid = null;
   stopAptTaskTimer();
+  if (typeof window.unregisterTrackedBackgroundTask === 'function') {
+    window.unregisterTrackedBackgroundTask(rid);
+  }
   if (upD) upD.disabled = false;
 
   if (!j || j.status !== 'success') {
@@ -7197,6 +7232,19 @@ async function aptFollow(rid, kind, startedMs) {
       aptSetState('error', 'Gagal mengambil hasil.');
       setAptTaskModalState('error', kind, 'Gagal mengambil hasil.');
     }
+
+    const durSecs = Math.max(1, Math.round((Date.now() - start) / 1000));
+    if (typeof window.notifyBackgroundTaskComplete === 'function') {
+      window.notifyBackgroundTaskComplete({
+        title: (kind === 'APT_UPDATE' ? 'Update Paket OS Gagal' : 'Upgrade Paket OS Gagal'),
+        message: isEn ? 'Process failed or timed out.' : 'Proses gagal dijalankan atau melebihi batas waktu.',
+        serverName: (typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : ''),
+        status: 'error',
+        durationSecs: durSecs,
+        tag: 'apt-' + rid,
+        onClick: () => { if (typeof openAptTaskModal === 'function') openAptTaskModal(kind); }
+      });
+    }
   } else {
     let info = null;
     try { info = JSON.parse(j.result); } catch (e) { /* hasil teks biasa */ }
@@ -7219,9 +7267,42 @@ async function aptFollow(rid, kind, startedMs) {
       setAptTaskModalState('warning', kind, warnText);
       aptSetState('warning', '<b style="color:var(--yellow)">' + (isEn ? 'Warning: ' : 'Peringatan: ') + '</b>' + warnText);
       aptMsg('<span style="color:var(--yellow)">⚠ ' + warnText + '</span>', 'var(--yellow)');
+
+      const durSecs = Math.max(1, Math.round((Date.now() - start) / 1000));
+      if (typeof window.notifyBackgroundTaskComplete === 'function') {
+        window.notifyBackgroundTaskComplete({
+          title: 'Update Paket OS Selesai dengan Peringatan',
+          message: warnText ? String(warnText).slice(0, 140) : (isEn ? 'Some repository indexes failed to download.' : 'Terdapat kendala saat mengunduh sebagian indeks repositori.'),
+          serverName: (typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : ''),
+          status: 'warning',
+          durationSecs: durSecs,
+          tag: 'apt-' + rid,
+          onClick: () => { if (typeof openAptTaskModal === 'function') openAptTaskModal(kind); }
+        });
+      }
     } else {
       setAptTaskBuffer(header + finalOutput + '\r\n\x1b[32m✔ ' + (isEn ? 'Completed successfully.' : 'Selesai dengan sukses.') + '\x1b[0m\r\n');
       setAptTaskModalState('success', kind, isEn ? 'Task completed successfully.' : 'Tugas berhasil diselesaikan.');
+
+      const durSecs = Math.max(1, Math.round((Date.now() - start) / 1000));
+      let succMsg = '';
+      if (kind === 'APT_UPDATE') {
+        const upCnt = (info && info.apt && typeof info.apt.upgradable === 'number') ? info.apt.upgradable : 0;
+        succMsg = upCnt > 0 ? (isEn ? `${upCnt} packages upgradable.` : `${upCnt} paket dapat di-upgrade.`) : (isEn ? 'All packages up to date.' : 'Seluruh paket OS telah mutakhir.');
+      } else {
+        succMsg = isEn ? 'OS package upgrade completed successfully.' : 'Peningkatan paket OS berhasil diselesaikan.';
+      }
+      if (typeof window.notifyBackgroundTaskComplete === 'function') {
+        window.notifyBackgroundTaskComplete({
+          title: (kind === 'APT_UPDATE' ? 'Update Paket OS Selesai' : 'Upgrade Paket OS Selesai'),
+          message: succMsg,
+          serverName: (typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : ''),
+          status: 'success',
+          durationSecs: durSecs,
+          tag: 'apt-' + rid,
+          onClick: () => { if (typeof openAptTaskModal === 'function') openAptTaskModal(kind); }
+        });
+      }
     }
 
     if (info && info.apt) {
@@ -10449,7 +10530,17 @@ async function clearPkgCache(pkgName) {
       const checkRes = await fetch(`/api/logs/request/${rid}`, { credentials: 'same-origin' });
       const checkData = await checkRes.json();
       if (checkData.status === 'success') {
-        showToast(checkData.result || `Cache ${pkgName} berhasil dibersihkan.`, true);
+        const succMsg = checkData.result || `Cache ${pkgName} berhasil dibersihkan.`;
+        showToast(succMsg, true);
+        if (typeof window.notifyBackgroundTaskComplete === 'function') {
+          window.notifyBackgroundTaskComplete({
+            title: 'Pembersihan Cache Paket Selesai',
+            message: succMsg,
+            serverName: (typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : ''),
+            status: 'success',
+            tag: 'pkg-cache-' + rid
+          });
+        }
         return;
       } else if (checkData.status === 'failed') {
         throw new Error(checkData.result || 'Gagal membersihkan cache.');

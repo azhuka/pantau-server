@@ -311,6 +311,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.23
+
+- **Tipe Rilis:** Sistem Notifikasi Tugas Latar Belakang Lintas Halaman & Desktop OS (*Cross-Page Background Task Notification & Native OS Desktop Alerts*)
+- **Fokus Utama:** Membangun sistem notifikasi penyelesaian tugas latar belakang mandiri berarsitektur dua lapis (*Dual-Layer Notification System*) dengan durasi otomatis 5 detik, bilah hitung mundur interaktif (*animated countdown bar*), dan jeda otomatis saat kursor mouse diarahkan (*pause on hover*):
+  1. **Lapisan Desktop OS (Web Notifications API):**
+     - Mengintegrasikan API standar W3C `window.Notification` untuk memunculkan notifikasi native sistem operasi (Windows Action Center, GNOME Shell, KDE, macOS Notification) langsung di atas semua aplikasi aktif di layar pengguna saat tugas berdurasi panjang selesai (Update indeks APT, Upgrade paket OS, Pembaruan agen OTA, Pembersihan cache paket, dan Pemutusan sesi terminal SSH).
+     - Menutup notifikasi desktop secara otomatis setelah 5 detik (`setTimeout(5000)`) dan memfokuskan kembali tab aplikasi saat notifikasi diklik.
+     - Menyediakan fungsi permintaan izin terisolasi `requestDesktopNotificationPermission()` yang dipanggil secara proaktif saat operator memicu tugas sistem.
+  2. **Lapisan Web In-App Mengambang (`server/templates/base.html`):**
+     - Menyediakan kontainer notifikasi mengambang `#pantau-bg-notifier-root` dengan prioritas z-index tertinggi (`z-index: 100001`) yang diposisikan di pojok kanan atas layar di atas seluruh elemen web dan modal dialog.
+     - Menghadirkan kartu toast mini bergaya NOC modern (`.pantau-bg-toast`) lengkap dengan ikon status SVG, badge server, indikator durasi proses, pesan hasil ringkas, tombol tutup (`×`), dan garis susut waktu 5 detik (`@keyframes pantauToastProgress`).
+     - Menyediakan interaksi intuitif: kursor diarahkan (*mouseenter*) menjeda hitung mundur dan animasi, serta melanjutkan kembali saat kursor keluar (*mouseleave*).
+  3. **Pelacak Tugas Latar Belakang Lintas Halaman (*Cross-Page Background Task Tracker*):**
+     - Mengimplementasikan `registerTrackedBackgroundTask` dan `unregisterTrackedBackgroundTask` berbasis `localStorage` (`pantau_tracked_tasks`) dan poller otomatis di `base.html`.
+     - Memastikan jika operator berpindah halaman (misalnya dari halaman detail server ke Dashboard atau Insiden) saat proses upgrade atau update sedang berjalan, notifikasi penyelesaian tetap muncul seketika di halaman tujuan saat proses selesai.
+  4. **Sinkronisasi SemVer 7 Berkas & Kebijakan Zero-Dependency:**
+     - Menaikkan versi aplikasi menjadi `v4.8.23` secara sinkron dan identik di 7 berkas: `server/config.py`, `server/templates/base.html`, `package/opt/pantau/agent/agent_pantau.py`, `agent/agent_pantau.py`, `package/install.sh`, `README.md`, dan `DEVELOPMENT.md`.
+
 ## Versi 4.8.22
 
 - **Tipe Rilis:** Penyelarasan Filosofi Dasbor NOC & Eliminasi Lencana Sekunder HA (*NOC Dashboard Situational Awareness Alignment & HA Secondary Badge Elimination*)
