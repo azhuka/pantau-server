@@ -311,6 +311,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.17
+
+- **Tipe Rilis:** Pemulihan Mandiri Otomatis Wrapper pantau-user & Titik Unduh Wrapper Pusat (*Self-Healing Wrapper & Central Wrapper API*)
+- **Fokus Utama:** Mengatasi kendala eksekusi pemutusan sesi terminal SSH (`gagal: ERROR: Aksi tidak dikenal: 'terminate-session'`) akibat wrapper `/usr/local/sbin/pantau-user` yang usang pada server klien yang dipasang sebelum rilis v4.8.12:
+  1. **Mekanisme Pemulihan Mandiri Wrapper (`agent_pantau.py`):**
+     - Menyematkan kode sumber cangkang resmi wrapper bash `PANTAU_USER_SCRIPT_BODY` ke dalam agen Python klien.
+     - Mengimplementasikan fungsi `ensure_pantau_user_updated(force: bool = False) -> bool` yang secara otomatis memeriksa keberadaan opsi `terminate-session` pada `/usr/local/sbin/pantau-user`. Jika wrapper belum mendukung atau terjadi galat penolakan aksi, agen akan langsung memperbarui berkas wrapper secara atomik melalui hak root langsung atau via wrapper `pantau-file` dengan izin akses `0750`.
+     - Mengintegrasikan pemanggilan `ensure_pantau_user_updated()` pada saat booting agen (`main()`), pada saat siklus pembaruan OTA selesai (`_exec_update_agent`), dan pada saat pemanggilan aksi pengguna (`_exec_user_action`).
+     - Menyematkan logika percobaan ulang otomatis (*auto-retry on outdated wrapper*): jika panggilan wrapper pertama menghasilkan galat `Aksi tidak dikenal`, agen secara instan memaksa pembaruan wrapper mandiri dan mengeksekusi ulang aksi tanpa perlu intervensi operator.
+  2. **Penyediaan Titik Unduh Wrapper Pusat (`server/main.py`):**
+     - Menambahkan endpoint REST API `@app.api_route("/api/agent/wrapper/{wrapper_name}")` yang memungkinkan klien atau skrip pemeliharaan mengunduh seluruh wrapper resmi (`pantau-user`, `pantau-apt`, `pantau-cron`, `pantau-file`, `pantau-firewall`, `pantau-history`, `pantau-host`, `pantau-restart`, `pantau-shell`, `pantau-ssl`) langsung dari dashboard dengan header validasi `X-Checksum-SHA256` dan `ETag`.
+
 ## Versi 4.8.16
 
 - **Tipe Rilis:** Perombakan Semantik Menyeluruh Ikon & Tombol Aksi Antarmuka (*System-Wide Semantic Icon & Action Button Overhaul*)

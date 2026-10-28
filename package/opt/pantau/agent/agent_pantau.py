@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.16"
+AGENT_VERSION = "4.8.17"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -790,8 +790,230 @@ def _exec_kill_process(command: dict) -> dict:
     return {"ok": res.get("ok", False), "output": res.get("output", "Gagal mengirim sinyal ke proses")[:2000]}
 
 
+PANTAU_USER_SCRIPT_BODY = r"""#!/usr/bin/env bash
+#
+# pantau-user - Wrapper terbatas pengelolaan akun pengguna sistem Linux
+# untuk Agen Pantau.
+#
+# Jalur sudo NOPASSWD berguardrail ketat.
+#
+set -euo pipefail
+
+fail() { echo "ERROR: $*" >&2; exit 1; }
+
+ACTION="${1:-}"
+shift 2>/dev/null || true
+
+# Daftar akun terproteksi yang tidak boleh disentuh
+is_protected_user() {
+    local u="$1"
+    case "$u" in
+        root|pantau|daemon|bin|sys|sync|games|man|lp|mail|news|uucp|proxy|www-data|backup|list|irc|gnats|nobody|systemd*|_apt|messagebus|sshd)
+            return 0
+            ;;
+    esac
+    # Cek UID jika user ada (seluruh akun sistem UID < 1000 termasuk UID 0 dilindungi)
+    if id -u "$u" >/dev/null 2>&1; then
+        local uid
+        uid="$(id -u "$u")"
+        if [ "$uid" -lt 1000 ]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+validate_username() {
+    local u="$1"
+    if [[ ! "$u" =~ ^[a-z_][a-z0-9_-]{1,31}$ ]]; then
+        fail "Nama pengguna tidak valid: '$u' (harus diawali huruf kecil/underscore, maks 32 karakter)"
+    fi
+}
+
+case "$ACTION" in
+    create)
+        USERNAME="${1:-}"
+        SHELL_PATH="${2:-/bin/bash}"
+        IS_SUDO="${3:-0}"
+        COMMENT="${4:-Dibuat via Pantau Server}"
+        PASSWORD="${5:-}"
+
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        validate_username "$USERNAME"
+
+        if id "$USERNAME" >/dev/null 2>&1; then
+            fail "Pengguna '$USERNAME' sudah ada di sistem"
+        fi
+
+        # Validasi shell
+        if [ ! -x "$SHELL_PATH" ] && [ "$SHELL_PATH" != "/usr/sbin/nologin" ] && [ "$SHELL_PATH" != "/bin/false" ]; then
+            SHELL_PATH="/bin/bash"
+        fi
+
+        # Sanitasi komentar GECOS: hapus colon dan newline agar tidak merusak format /etc/passwd
+        COMMENT="${COMMENT//:/ }"
+        COMMENT="${COMMENT//$'\n'/ }"
+        COMMENT="${COMMENT//$'\r'/ }"
+
+        useradd -m -s "$SHELL_PATH" -c "$COMMENT" "$USERNAME" || fail "Gagal membuat pengguna '$USERNAME'"
+
+        if [ -n "$PASSWORD" ]; then
+            if [[ "$PASSWORD" == *$'\n'* ]] || [[ "$PASSWORD" == *$'\r'* ]]; then
+                fail "Karakter newline pada password tidak diizinkan"
+            fi
+            echo "${USERNAME}:${PASSWORD}" | chpasswd 2>/dev/null || fail "Gagal mengatur password awal pengguna '$USERNAME'"
+        else
+            # Best practice POSIX/Linux untuk akun SSH key / tanpa password lokal:
+            # Gunakan token unroutable '*' agar akun tidak terkunci disabled ('!') dan dapat di-unlock kapan saja
+            usermod -p '*' "$USERNAME" 2>/dev/null || true
+        fi
+
+        if [ "$IS_SUDO" = "1" ] || [ "$IS_SUDO" = "true" ]; then
+            usermod -aG sudo "$USERNAME" 2>/dev/null || usermod -aG wheel "$USERNAME" 2>/dev/null || true
+        fi
+
+        echo "OK: Pengguna '$USERNAME' berhasil dibuat (Shell: $SHELL_PATH, Sudo: $IS_SUDO)"
+        ;;
+
+    lock)
+        USERNAME="${1:-}"
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        validate_username "$USERNAME"
+
+        if is_protected_user "$USERNAME"; then
+            fail "Pengguna '$USERNAME' adalah akun sistem penting dan dilarang dikunci!"
+        fi
+
+        passwd -l "$USERNAME" >/dev/null 2>&1 || usermod -L "$USERNAME" >/dev/null 2>&1 || fail "Gagal mengunci akun '$USERNAME'"
+        echo "OK: Akun '$USERNAME' berhasil dikunci"
+        ;;
+
+    unlock)
+        USERNAME="${1:-}"
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        validate_username "$USERNAME"
+
+        if is_protected_user "$USERNAME"; then
+            fail "Pengguna '$USERNAME' adalah akun sistem penting!"
+        fi
+
+        # Deteksi status password di /etc/shadow
+        shadow_pwd="$(grep "^${USERNAME}:" /etc/shadow 2>/dev/null | cut -d: -f2 || true)"
+        if [ "$shadow_pwd" = "!" ] || [ "$shadow_pwd" = "!*" ] || [ "$shadow_pwd" = "!!" ] || [ -z "$shadow_pwd" ]; then
+            usermod -p '*' "$USERNAME" 2>/dev/null || fail "Gagal membuka kunci akun '$USERNAME'"
+            echo "OK: Akun '$USERNAME' berhasil dibuka kuncinya"
+        else
+            if passwd -u "$USERNAME" >/dev/null 2>&1 || usermod -U "$USERNAME" >/dev/null 2>&1; then
+                echo "OK: Akun '$USERNAME' berhasil dibuka kuncinya"
+            else
+                usermod -p '*' "$USERNAME" 2>/dev/null || fail "Gagal membuka kunci akun '$USERNAME'"
+                echo "OK: Akun '$USERNAME' berhasil dibuka kuncinya"
+            fi
+        fi
+        ;;
+
+    delete)
+        USERNAME="${1:-}"
+        REMOVE_HOME="${2:-0}"
+        [ -n "$USERNAME" ] || fail "Username wajib diisi"
+        validate_username "$USERNAME"
+
+        if is_protected_user "$USERNAME"; then
+            fail "Pengguna '$USERNAME' adalah akun sistem terlindungi dan dilarang dihapus!"
+        fi
+
+        # Hentikan proses yang masih dijalankan user sebelum dihapus
+        pkill -u "$USERNAME" 2>/dev/null || true
+        sleep 0.5
+
+        if [ "$REMOVE_HOME" = "1" ] || [ "$REMOVE_HOME" = "true" ]; then
+            userdel -r "$USERNAME" 2>/dev/null || userdel "$USERNAME" || fail "Gagal menghapus pengguna '$USERNAME'"
+        else
+            userdel "$USERNAME" || fail "Gagal menghapus pengguna '$USERNAME'"
+        fi
+
+        echo "OK: Pengguna '$USERNAME' berhasil dihapus"
+        ;;
+
+    list-locked)
+        passwd -Sa 2>/dev/null | awk '$2=="L" || $2=="LK" {print $1}' || true
+        ;;
+
+    terminate-session)
+        TTY="${1:-}"
+        [ -n "$TTY" ] || fail "Parameter TTY wajib diisi (misal: pts/0, pts/1, tty1)"
+        TTY="${TTY#/dev/}"
+        if [[ ! "$TTY" =~ ^(pts/[0-9]+|tty[0-9]+)$ ]]; then
+            fail "Format terminal TTY tidak valid: '$TTY' (hanya pts/N atau ttyN yang diizinkan)"
+        fi
+
+        # 1. Hentikan seluruh proses yang terikat dengan terminal tersebut
+        pkill -9 -t "$TTY" 2>/dev/null || true
+        # 2. Paksa putus descriptor device jika masih menempel
+        if [ -e "/dev/$TTY" ]; then
+            fuser -k -9 "/dev/$TTY" 2>/dev/null || true
+        fi
+        echo "OK: Sesi terminal '$TTY' berhasil diputus paksa"
+        ;;
+
+    *)
+        fail "Aksi tidak dikenal: '$ACTION' (harus create, lock, unlock, delete, list-locked, terminate-session)"
+        ;;
+esac
+"""
+
+
+def ensure_pantau_user_updated(force: bool = False) -> bool:
+    """Memastikan wrapper /usr/local/sbin/pantau-user mendukung fitur terbaru (misal: terminate-session).
+    Jika berkas belum ada, versi usang, atau force=True, otomatis perbarui via root langsung atau sudo pantau-file.
+    """
+    try:
+        cur_content = ""
+        if not force and os.path.isfile(PANTUAN_USER_CMD):
+            try:
+                with open(PANTUAN_USER_CMD, "r", encoding="utf-8", errors="replace") as f:
+                    cur_content = f.read()
+            except Exception:
+                pass
+            if "terminate-session" in cur_content:
+                return True
+
+        content_to_write = PANTAU_USER_SCRIPT_BODY.strip() + "\n"
+        if IS_ROOT:
+            with open(PANTUAN_USER_CMD, "w", encoding="utf-8") as f:
+                f.write(content_to_write)
+            os.chmod(PANTUAN_USER_CMD, 0o750)
+            print("[USER] Wrapper /usr/local/sbin/pantau-user berhasil diperbarui (root)")
+            return True
+
+        # Jika user 'pantau', gunakan sudo pantau-file jika tersedia
+        pantau_file = "/usr/local/sbin/pantau-file"
+        if os.path.isfile(pantau_file):
+            payload_write = json.dumps({
+                "action": "write",
+                "params": {"path": PANTUAN_USER_CMD, "content": content_to_write, "make_backup": False}
+            })
+            pw = subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_write, text=True, capture_output=True, timeout=10)
+            try:
+                out_data = json.loads(pw.stdout or "{}")
+            except Exception:
+                out_data = {}
+            if pw.returncode == 0 and out_data.get("ok"):
+                payload_chmod = json.dumps({
+                    "action": "chmod",
+                    "params": {"path": PANTUAN_USER_CMD, "mode": "0750"}
+                })
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_chmod, text=True, capture_output=True, timeout=10)
+                print("[USER] Wrapper /usr/local/sbin/pantau-user berhasil diperbarui via pantau-file")
+                return True
+    except Exception as e:
+        print(f"[USER WARN] Gagal memperbarui {PANTUAN_USER_CMD}: {e}")
+    return False
+
+
 def _exec_user_action(action: str, command: dict) -> dict:
     """Kelola akun pengguna sistem & pemutusan sesi terminal via wrapper pantau-user."""
+    ensure_pantau_user_updated()
     params = command.get("params") or {}
     if action in ("session_terminate", "terminate_session"):
         tty = str(params.get("tty", "")).strip().lstrip("/dev/")
@@ -805,6 +1027,11 @@ def _exec_user_action(action: str, command: dict) -> dict:
             cmd = ["/usr/bin/sudo", "-n", *cmd]
             label = f"sudo -n {label}"
         res = _run_native(cmd, label)
+        # Jika wrapper lama di disk menolak aksi karena belum terbarui, paksa pembaruan mandiri lalu coba lagi sekali
+        if not res.get("ok") and "Aksi tidak dikenal" in res.get("output", ""):
+            print("[USER] Terdeteksi pantau-user versi lama, memperbarui paksa wrapper dan mengulang...")
+            if ensure_pantau_user_updated(force=True):
+                res = _run_native(cmd, label)
         return {"ok": res.get("ok", False), "output": res.get("output", "")[:2000]}
 
     username = str(params.get("username", "")).strip().lower()
@@ -1236,6 +1463,12 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
                 print("[OTA] systemctl daemon-reload berhasil dieksekusi.")
             except Exception as e:
                 print(f"[OTA] Gagal reload systemd daemon: {e}")
+
+        try:
+            ensure_pantau_user_updated(force=True)
+            ensure_pantau_apt_updated()
+        except Exception as we:
+            print(f"[OTA] Peringatan saat pembaruan wrapper mandiri: {we}")
 
         _exec_restart_agent()
 
@@ -2365,7 +2598,7 @@ def _parse_who() -> list[dict]:
 
 def _get_locked_users() -> set[str]:
     try:
-        cmd = ["/usr/local/sbin/pantau-user", "list-locked"] if IS_ROOT else ["/usr/bin/sudo", "-n", "/usr/local/sbin/pantau-user", "list-locked"]
+        cmd = [PANTUAN_USER_CMD, "list-locked"] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTUAN_USER_CMD, "list-locked"]
         res = _run_cmd(cmd, timeout=3)
         if res and res.returncode == 0:
             return set(res.stdout.split())
@@ -4821,6 +5054,7 @@ def main():
     print(f"[INFO] IP Address  : {get_local_ip()}")
     print(f"[INFO] Mode        : {'root' if IS_ROOT else 'user pantau (sudo ss/wrapper)'}")
     ensure_pantau_apt_updated()
+    ensure_pantau_user_updated()
     print()
 
     running = True

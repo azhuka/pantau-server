@@ -10937,6 +10937,38 @@ def api_agent_latest_code():
     )
 
 
+@app.api_route("/api/agent/wrapper/{wrapper_name}", methods=["GET", "HEAD"])
+def api_agent_wrapper(wrapper_name: str):
+    """Unduh berkas wrapper resmi Agen Pantau (mis. pantau-user, pantau-apt, dll.)."""
+    allowed_wrappers = {
+        "pantau-user", "pantau-apt", "pantau-cron", "pantau-file",
+        "pantau-firewall", "pantau-history", "pantau-host",
+        "pantau-restart", "pantau-shell", "pantau-ssl"
+    }
+    clean_name = os.path.basename(wrapper_name.strip())
+    if clean_name not in allowed_wrappers:
+        raise HTTPException(status_code=404, detail=f"Wrapper '{clean_name}' tidak ditemukan.")
+
+    wrapper_path = Path(__file__).parent.parent / "package" / "usr" / "local" / "sbin" / clean_name
+    if not wrapper_path.is_file():
+        wrapper_path = Path("/usr/local/sbin") / clean_name
+
+    if not wrapper_path.is_file():
+        raise HTTPException(status_code=404, detail=f"Berkas wrapper '{clean_name}' tidak tersedia di server.")
+
+    content = wrapper_path.read_bytes()
+    sha256_hash = hashlib.sha256(content).hexdigest()
+    return Response(
+        content=content,
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "X-Wrapper-Name": clean_name,
+            "X-Checksum-SHA256": sha256_hash,
+            "ETag": f'"{sha256_hash}"',
+        },
+    )
+
+
 @app.get("/api/agent/file-requests")
 async def api_agent_file_requests(
     x_api_key: str = Header(alias="X-Api-Key"),
