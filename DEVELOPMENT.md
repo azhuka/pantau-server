@@ -311,6 +311,29 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.16
+
+- **Tipe Rilis:** Perombakan Semantik Menyeluruh Ikon & Tombol Aksi Antarmuka (*System-Wide Semantic Icon & Action Button Overhaul*)
+- **Fokus Utama:** Mengeliminasi seluruh penggunaan ikon generik tambah `(+)`, ikon ambigu, dan ikon tidak representatif pada tombol-tombol aksi di seluruh ekosistem Pantau Server, menghadirkan antarmuka NOC yang ergonomis, intuitif, dan komunikatif:
+  1. **Eliminasi Ambiguitas Ikon Tambah pada Tindakan Restriktif / Blokir IP (`services.html`):**
+     - Mengganti ikon generik `(+)` pada tombol "Blokir IP" (`#btn-fw-block-modal`) yang membingungkan menjadi ikon perisai silang `shield-x` (`<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="9.5" y1="9.5" x2="14.5" y2="14.5"></line><line x1="14.5" y1="9.5" x2="9.5" y2="14.5"></line>`) yang tegas merepresentasikan pemblokiran/penutupan akses jaringan.
+     - Mengganti ikon tempat sampah (`trash-2`) pada aksi "Buka Blokir IP" (`submitFirewallUnblock`) baik pada template Jinja maupun rendering live polling JavaScript menjadi ikon gembok terbuka `unlock` (`<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path>`), mencerminkan pembukaan akses firewall alih-alih penghapusan entitas.
+  2. **Ikon Semantik Kontekstual untuk Setiap Penambahan Entitas (`services.html`, `servers.html`, `probing.html`):**
+     - **Tambah Server (`servers.html` & `server_form.html`):** Mengganti `(+)` polos menjadi ikon rak server representatif (`server`).
+     - **Tambah Layanan (`services.html`):** Mengganti `(+)` polos pada header tabel layanan menjadi ikon tumpukan layanan (`layers`).
+     - **Tambah Tugas Cron (`services.html`):** Mengganti `(+)` polos pada header tabel cron menjadi ikon jam penjadwalan waktu (`clock`).
+     - **Tambah Pengguna Sistem (`services.html` & `users.html`):** Mengganti `(+)` polos menjadi ikon pengguna berperingkat (`user-plus`).
+     - **Tambah Lokasi SSL (`services.html`):** Mengganti `(+)` polos menjadi ikon folder berkas (`folder-plus`).
+     - **Tambah Endpoint Probing (`probing.html`):** Mengganti `(+)` polos menjadi ikon bola dunia jaringan (`globe`).
+     - **Promosi Port Aktif ke Layanan Pantau (`svgAddSvc` di `services.html`):** Mengganti `(+)` polos menjadi ikon detak telemetri (`activity`).
+  3. **Penguatan Visual Tombol Modal & Form Aksi Sistem:**
+     - Menghadirkan ikon semantik pada seluruh tombol submit modal: `layers` pada Modal Tambah Layanan, `zap` pada Modal Kelola Sinyal Proses, `shield-x` pada Modal Blokir IP, `user-plus` pada Modal Buat Pengguna, `clock` pada Modal Tambah Cron, `folder-plus` pada Modal Tambah SSL, dan `save` pada Modal Endpoint Probing.
+     - Mengintegrasikan penanganan status pemrosesan asinkron (`btnText`) agar teks loading ("Membuat...") tidak menghapus ikon SVG tombol.
+  4. **Pembaruan Ikon Visual File Manager & Autentikasi (`file_manager.html`, `users.html`, `login.html`, `login_2fa.html`):**
+     - Mengganti entitas teks unicode kuno pada navigasi File Manager (`&larr;`, `&rarr;`, `&uarr;`, `&#8962;`, `&#8635;`, `&#9998;`) menjadi ikon vektor SVG modern (`arrow-left`, `arrow-right`, `arrow-up`, `home`, `rotate-cw`, `edit-2`).
+     - Mengganti teks tombol polos `+ Folder Baru`, `+ Berkas Baru`, `Unggah Berkas`, dan `Tempel` pada bilah alat File Manager menjadi tombol ber-ikon semantik (`folder-plus`, `file-plus`, `upload`, `clipboard`).
+     - Menyematkan ikon `shield`, `lock`, `unlock`, dan `trash-2` pada baris tabel pengguna (`users.html`), serta ikon `log-in` pada tombol Masuk dan `shield-check` pada tombol Verifikasi 2FA.
+
 ## Versi 4.8.15
 
 - **Tipe Rilis:** Standarisasi Ikon Pemutusan Sesi Terminal Log-Out (*Session Disconnect Log-Out Icon Standardization*)
