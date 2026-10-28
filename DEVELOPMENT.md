@@ -311,6 +311,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.21
+
+- **Tipe Rilis:** Benteng Anti-Bricking Agen & Mekanisme Pemulihan Otomatis OTA (*Agent Anti-Bricking Fortress & Automatic OTA Recovery Mechanism*)
+- **Fokus Utama:** Mengimplementasikan benteng proteksi permanen anti-bricking pada sistem pembaruan Over-The-Air (OTA) agen monitoring agar agen tidak pernah mati total akibat pembaruan rusak di masa depan:
+  1. **Pengujian Pra-Eksekusi Runtime Terisolasi (*Pre-flight Isolated Runtime Execution Check*):**
+     - Menggantikan validasi statis pasif yang sebelumnya hanya mengandalkan `py_compile.compile` dengan pengujian eksekusi runtime penuh di subproses mandiri terisolasi berbatas waktu 15 detik:
+       `subprocess.run([sys.executable, tmp_path, "--test-runtime"], capture_output=True, text=True, timeout=15)`.
+     - Menambahkan flag CLI resmi bawaan `--test-runtime` dan `--check-syntax-only` pada agen klien: jika dipanggil, interpreter memvalidasi seluruh sintaks, hierarki impor modul standar, pemuatan kelas, serta integritas fungsi inti (`AGENT_VERSION`, `main`, `_exec_update_agent`), lalu keluar seketika dengan `sys.exit(0)` tanpa memicu worker latar belakang, permintaan jaringan HTTP, atau thread loop.
+     - Jika subproses menghasilkan kode keluar != 0 (melempar `NameError`, `ImportError`, `SyntaxError`, atau `TimeoutExpired`), agen seketika MENOLAK instruksi pembaruan, menghapus berkas sementara, dan membiarkan berkas aktif `/opt/pantau/agent/agent_pantau.py` tetap berjalan utuh melayani telemetri NOC tanpa terputus.
+  2. **Cadangan Atomik Otomatis (*Atomic Backup Mechanism*):**
+     - Sebelum menyalin berkas pembaruan baru ke `/opt/pantau/agent/agent_pantau.py`, agen secara otomatis membuat salinan cadangan berkas aktif yang saat ini berjalan ke `/opt/pantau/agent/agent_pantau.py.bak` (mendukung eksekusi langsung maupun via wrapper `pantau-file`).
+     - Memastikan izin berkas cadangan disetel ke mode eksekusi `0755` sehingga selalu siap dijalankan kapan pun dibutuhkan.
+  3. **Verifikasi Integritas Pasca-Penulisan (*Post-Write Sanity Check & Instant Rollback*):**
+     - Setelah berkas target ditulis, agen melakukan verifikasi runtime sekunder pada `/opt/pantau/agent/agent_pantau.py`.
+     - Apabila terjadi anomali (misal berkas korup akibat disk I/O tidak lengkap), agen secara otomatis melakukan *instant rollback* memulihkan berkas dari `.bak` sebelum perintah restart dieksekusi.
+  4. **Pemulihan Darurat Otomatis Unit Layanan Systemd (*Service Unit Auto-Recovery via ExecStartPre*):**
+     - Menambahkan direktif `ExecStartPre=+-/bin/sh -c '...'` berhak akses penuh (`+`) pada unit systemd `agent_pantau.service` dan templat otomatis `clean_service_unit`.
+     - Jika berkas utama `/opt/pantau/agent/agent_pantau.py` hilang atau rusak (gagal validasi `--test-runtime`), systemd secara otomatis mendeteksi keberadaan berkas cadangan sehat `/opt/pantau/agent/agent_pantau.py.bak`, mencatat peristiwa pemulihan darurat ke syslog via `logger -t agent_pantau`, menyalin cadangan kembali ke berkas utama, menyetel izin `0755`, dan melanjutkan peluncuran layanan secara mulus tanpa kegagalan operasional.
+  5. **Sinkronisasi SemVer 7 Berkas & Kebijakan Zero-Dependency:**
+     - Sinkronisasi versi v4.8.21 secara menyeluruh dan identik pada `server/config.py`, `server/templates/base.html`, `package/opt/pantau/agent/agent_pantau.py`, `agent/agent_pantau.py`, `package/install.sh`, `README.md`, dan `DEVELOPMENT.md`.
+     - Menjamin agen pemantau tetap 100% mematuhi prinsip *zero external dependency* (Python 3.10+ standard library).
+
 ## Versi 4.8.20
 
 - **Tipe Rilis:** Penyempurnaan Penutupan Subproses Prober, Skema Basis Data, & Pemetaan CN Sertifikat SSL (*Prober Subprocess Clean-up, Database Schema Synchronization, & SSL CN Extraction*)

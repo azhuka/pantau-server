@@ -8,6 +8,7 @@ StartLimitIntervalSec=0
 Type=simple
 User=pantau
 Group=pantau
+ExecStartPre=+-/bin/sh -c 'if [ ! -f /opt/pantau/agent/agent_pantau.py ] || ! /usr/bin/python3 /opt/pantau/agent/agent_pantau.py --test-runtime >/dev/null 2>&1; then if [ -f /opt/pantau/agent/agent_pantau.py.bak ] && /usr/bin/python3 /opt/pantau/agent/agent_pantau.py.bak --test-runtime >/dev/null 2>&1; then logger -t agent_pantau "Auto-rollback: file utama rusak/hilang, memulihkan dari cadangan .bak"; cp -f /opt/pantau/agent/agent_pantau.py.bak /opt/pantau/agent/agent_pantau.py && chmod 755 /opt/pantau/agent/agent_pantau.py; fi; fi'
 ExecStart=/opt/pantau/agent/agent_pantau.py
 Restart=always
 RestartSec=5
