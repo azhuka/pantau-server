@@ -1977,7 +1977,7 @@ div[style*="position: fixed"] .card {
                 </button>
               {% elif p.action == 'terminate_session' and p.tty and (user.is_master_admin() or user.has_perm('can_manage_servers') or user.has_perm('can_users_sys')) %}
                 <button type="button" class="btn btn-danger btn-sm" onclick="terminateSession({{ server.id }}, '{{ p.tty }}', '{{ p.session_user }}', this)" title="Putus paksa sesi terminal remote {{ p.tty }}" aria-label="Putus Sesi">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 </button>
               {% endif %}
             {% endif %}
@@ -2891,7 +2891,7 @@ div[style*="position: fixed"] .card {
                   {% for s in a.sessions %}
                     {% if s.tty %}
                     <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Putus paksa sesi terminal {{ s.tty }} ({{ a.user }})"{% endif %} aria-label="Putus Sesi" onclick="terminateSession({{ server.id }}, '{{ s.tty }}', '{{ a.user }}', this)">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                     </button>
                     {% endif %}
                   {% endfor %}
@@ -7468,7 +7468,7 @@ function renderProblemsTab(level, openList, histList) {
         } else if (p.action === 'reset_platform' && CAN_SERVICES) {
           toolsHtml += `<button type="button" class="btn btn-primary btn-sm" onclick="resetPlatformAuto(${SID}, this)" title="${isEn ? 'Sync platform configuration to Auto Detect' : 'Sinkronkan konfigurasi platform ke Auto Deteksi'}" aria-label="Auto Platform"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></button>`;
         } else if (p.action === 'terminate_session' && p.tty && (CAN_USERS_SYS || CAN_SERVICES)) {
-          toolsHtml += `<button type="button" class="btn btn-danger btn-sm" onclick="terminateSession(${SID}, '${escapeHtml(p.tty)}', '${escapeHtml(p.session_user || '')}', this)" title="${isEn ? 'Force terminate active remote session ' + escapeHtml(p.tty) : 'Putus paksa sesi remote ' + escapeHtml(p.tty)}" aria-label="Putus Sesi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg></button>`;
+          toolsHtml += `<button type="button" class="btn btn-danger btn-sm" onclick="terminateSession(${SID}, '${escapeHtml(p.tty)}', '${escapeHtml(p.session_user || '')}', this)" title="${isEn ? 'Force terminate active remote session ' + escapeHtml(p.tty) : 'Putus paksa sesi remote ' + escapeHtml(p.tty)}" aria-label="Putus Sesi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></button>`;
         }
 
         if (p.acknowledged_by) {
@@ -9037,14 +9037,14 @@ function renderSys(data) {
     const svgUnlock = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
     const svgLock = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
     const svgDel = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
-    const svgPower = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>';
+    const svgLogout = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>';
 
     let actions = '<a href="/servers/' + SID + '/user/' + userEnc + '" class="btn btn-ghost btn-sm" title="' + (isEn ? 'Details' : 'Rincian') + '" aria-label="' + (isEn ? 'Details' : 'Rincian') + '">' + svgRincian + '</a>';
     if ((CAN_USERS_SYS || CAN_SERVICES) && a.sessions && a.sessions.length) {
       for (const s of a.sessions) {
         if (s.tty) {
           const ttyEsc = escHtml(s.tty);
-          actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="' + (isEn ? ('Force terminate session ' + ttyEsc + ' (' + userEsc + ')') : ('Putus paksa sesi ' + ttyEsc + ' (' + userEsc + ')')) + '" aria-label="Putus Sesi" onclick="terminateSession(' + SID + ', \'' + ttyEsc + '\', \'' + userEsc + '\', this)">' + svgPower + '</button>';
+          actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="' + (isEn ? ('Force terminate session ' + ttyEsc + ' (' + userEsc + ')') : ('Putus paksa sesi ' + ttyEsc + ' (' + userEsc + ')')) + '" aria-label="Putus Sesi" onclick="terminateSession(' + SID + ', \'' + ttyEsc + '\', \'' + userEsc + '\', this)">' + svgLogout + '</button>';
         }
       }
     }

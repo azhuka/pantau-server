@@ -311,6 +311,15 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.15
+
+- **Tipe Rilis:** Standarisasi Ikon Pemutusan Sesi Terminal Log-Out (*Session Disconnect Log-Out Icon Standardization*)
+- **Fokus Utama:** Mengeliminasi ambiguitas visual pada tombol pemutusan sesi terminal SSH:
+  1. **Penggantian Ikon Daya Menjadi Ikon Keluar / Putus Sesi (`services.html` & `user_activity.html`):**
+     - Mengganti seluruh representasi ikon tombol pemutusan sesi (`terminate_session`) yang sebelumnya keliru menggunakan ikon tombol power (*standby/power-off*) menjadi ikon baku *log-out* (`<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line>`).
+     - Mengeliminasi kekhawatiran operator bahwa tombol tersebut akan mematikan sistem host fisik, dan memperjelas fungsi aksi murni sebagai terminasi sesi terminal login (*kick / log out*).
+     - Menstandarisasi ikon baru pada seluruh titik interaksi: Tabel Akun Pengguna, Bilah Tindakan Aktivitas Pengguna, dan Tombol Cepat Insiden Masalah Sesi Remote.
+
 ## Versi 4.8.14
 
 - **Tipe Rilis:** Relokasi Tombol Putus Sesi ke Kolom Tindakan Sesuai Standar UI/UX (*Session Disconnect Action Button Relocation to Dedicated Actions Column*)
