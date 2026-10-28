@@ -311,6 +311,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.22
+
+- **Tipe Rilis:** Penyelarasan Filosofi Dasbor NOC & Eliminasi Lencana Sekunder HA (*NOC Dashboard Situational Awareness Alignment & HA Secondary Badge Elimination*)
+- **Fokus Utama:** Mengembalikan filosofi murni halaman utama dasbor pemantauan NOC (`dashboard.html`) yang berfokus tunggal pada kesadaran situasi operasional (*situational awareness*), identitas esensial host, metrik performa real-time, dan insiden aktif:
+  1. **Eliminasi Lencana Proxmox HA pada Dasbor Utama (`server/templates/dashboard.html`):**
+     - Menghapus rendering Server-Side (SSR) lencana emas Proxmox HA (`is_proxmox_ha`) baik pada tampilan tabel armada server (`#dash-fleet-table`) maupun pada tampilan kartu kisi server (`#dash-grid-container`).
+     - Menyederhanakan fungsi pembantu JavaScript `getPlatformBadgeHtml(plat)` pada siklus polling dinamis `pollNocDashboard()` agar mengembalikan murni badge platform inti (`LXC`, `VM (KVM)`, `BAREMETAL`) tanpa menyisipkan lencana HA sekunder.
+     - Membersihkan seluruh pemanggilan `getPlatformBadgeHtml(srv.platform)` di tabel dan kartu dasbor.
+  2. **Preservasi Informasi HA pada Tampilan Detail & Inventaris:**
+     - Informasi proteksi Proxmox HA tetap dipertahankan secara utuh dan proporsional pada inventaris lengkap (`servers.html`), halaman rincian telemetri mendalam (`services.html`), dan formulir pengaturan server (`server_form.html`).
+  3. **Sinkronisasi SemVer 7 Berkas & Stabilitas Sistem:**
+     - Menaikkan versi aplikasi menjadi `v4.8.22` secara sinkron dan identik di 7 berkas: `server/config.py`, `server/templates/base.html`, `package/opt/pantau/agent/agent_pantau.py`, `agent/agent_pantau.py`, `package/install.sh`, `README.md`, dan `DEVELOPMENT.md`.
+
 ## Versi 4.8.21
 
 - **Tipe Rilis:** Benteng Anti-Bricking Agen & Mekanisme Pemulihan Otomatis OTA (*Agent Anti-Bricking Fortress & Automatic OTA Recovery Mechanism*)

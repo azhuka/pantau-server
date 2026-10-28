@@ -1230,12 +1230,6 @@ body.popout-fleet_table #dash-fleet-card {
                   {{ p_label }}
                 </span>
               {% endif %}
-              {% if srv.is_proxmox_ha %}
-                <span class="badge" style="font-size:7.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:0.5px 3.5px;display:inline-flex;align-items:center;gap:2px;font-weight:700" title="Server terproteksi Proxmox HA">
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                  HA
-                </span>
-              {% endif %}
               </span>
               <span class="copyable-ip mono tbl-ip-wrap" id="tbl-ip-{{ srv.id }}" style="font-size:9.5px;color:var(--text)" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
             </div>
@@ -1411,12 +1405,6 @@ body.popout-fleet_table #dash-fleet-card {
                     <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                   {% endif %}
                   {{ srv._platform.short_label }}
-                </span>
-              {% endif %}
-              {% if srv.is_proxmox_ha %}
-                <span class="badge" style="font-size:8px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 4px;display:inline-flex;align-items:center;gap:2px;font-weight:700" title="Server terproteksi Proxmox HA">
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                  HA
                 </span>
               {% endif %}
               </span>
@@ -1966,12 +1954,8 @@ function getTierBadgeHtml(tier) {
   return '<span class="badge" style="font-size:8px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:0.5px 4px;font-weight:700" title="tier-2">tier-2</span>';
 }
 
-function getPlatformBadgeHtml(plat, isHa) {
-  let haHtml = '';
-  if (isHa) {
-    haHtml = ` <span class="badge" style="font-size:7.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:0.5px 3.5px;display:inline-flex;align-items:center;gap:2px;font-weight:700" title="Server terproteksi Proxmox HA"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> HA</span>`;
-  }
-  if (!plat) return haHtml;
+function getPlatformBadgeHtml(plat) {
+  if (!plat) return '';
   let label = (plat.short_label || plat.label || '').toUpperCase();
   if (label === 'FISIK') label = 'BAREMETAL';
   const bg = plat.badge_bg || 'rgba(100,116,139,0.15)';
@@ -1986,7 +1970,7 @@ function getPlatformBadgeHtml(plat, isHa) {
   } else if (pType === 'pending') {
     iconSvg = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
   }
-  return `<span class="badge" style="font-size:8px;background:${bg};color:${col};border:1px solid ${bor};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:700" title="Platform: ${_dashEsc(plat.label || label)}">${iconSvg} ${_dashEsc(label)}</span>` + haHtml;
+  return `<span class="badge" style="font-size:8px;background:${bg};color:${col};border:1px solid ${bor};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:700" title="Platform: ${_dashEsc(plat.label || label)}">${iconSvg} ${_dashEsc(label)}</span>`;
 }
 
 function createAndAppendDashTableRow(srv, tbody) {
@@ -2013,7 +1997,7 @@ function createAndAppendDashTableRow(srv, tbody) {
     </td>
     <td style="white-space:nowrap;vertical-align:middle">
       <div class="tbl-plat-ip-box">
-        <span id="tbl-plat-${srv.id}" class="tbl-plat-wrap">${getPlatformBadgeHtml(srv.platform, srv.is_proxmox_ha)}</span>
+        <span id="tbl-plat-${srv.id}" class="tbl-plat-wrap">${getPlatformBadgeHtml(srv.platform)}</span>
         <span class="copyable-ip mono tbl-ip-wrap" id="tbl-ip-${srv.id}" style="font-size:9.5px;color:var(--text)" onclick="copyIp('${_dashEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_dashEsc(srv.ip_address || '-')}</span>
       </div>
     </td>
@@ -2084,7 +2068,7 @@ function createAndAppendDashGridCard(srv, gridEl) {
           <span class="dot unknown" style="flex-shrink:0" id="card-dot-${srv.id}"></span>
           <strong style="font-size:13.5px;color:var(--text-bright)" id="card-host-${srv.id}">${_dashEsc(srv.hostname || '')}</strong>
           <span id="card-tier-${srv.id}">${getTierBadgeHtml(srv.tier)}</span>
-          <span id="card-plat-${srv.id}">${getPlatformBadgeHtml(srv.platform, srv.is_proxmox_ha)}</span>
+          <span id="card-plat-${srv.id}">${getPlatformBadgeHtml(srv.platform)}</span>
         </div>
         <div style="margin-top:3px" id="card-grp-${srv.id}">
           ${srv.group_name ? `<span class="badge badge-muted" style="font-size:8px;padding:1px 4px">${_dashEsc(srv.group_name)}</span>` : ''}
@@ -2258,7 +2242,7 @@ async function pollNocDashboard() {
       const tblTier = document.getElementById('tbl-tier-' + srv.id);
       if (tblTier) tblTier.innerHTML = getTierBadgeHtml(srv.tier);
       const tblPlat = document.getElementById('tbl-plat-' + srv.id);
-      if (tblPlat) tblPlat.innerHTML = getPlatformBadgeHtml(srv.platform, srv.is_proxmox_ha);
+      if (tblPlat) tblPlat.innerHTML = getPlatformBadgeHtml(srv.platform);
 
       const dTr = document.getElementById('dash-tr-' + srv.id);
       if (dTr) {
@@ -2437,7 +2421,7 @@ async function pollNocDashboard() {
       const cardTier = document.getElementById('card-tier-' + srv.id);
       if (cardTier) cardTier.innerHTML = getTierBadgeHtml(srv.tier);
       const cardPlat = document.getElementById('card-plat-' + srv.id);
-      if (cardPlat) cardPlat.innerHTML = getPlatformBadgeHtml(srv.platform, srv.is_proxmox_ha);
+      if (cardPlat) cardPlat.innerHTML = getPlatformBadgeHtml(srv.platform);
       const cardGrp = document.getElementById('card-grp-' + srv.id);
       if (cardGrp) {
         cardGrp.innerHTML = srv.group_name ? `<span class="badge badge-muted" style="font-size:8px;padding:1px 4px">${_dashEsc(srv.group_name)}</span>` : '';
