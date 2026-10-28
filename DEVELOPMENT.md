@@ -311,6 +311,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.14
+
+- **Tipe Rilis:** Relokasi Tombol Putus Sesi ke Kolom Tindakan Sesuai Standar UI/UX (*Session Disconnect Action Button Relocation to Dedicated Actions Column*)
+- **Fokus Utama:** Menegakkan prinsip tata letak data tabel (*table UI/UX best practice*) dan eliminasi clutter visual:
+  1. **Relokasi Tombol Aksi Tabel Akun Pengguna (`services.html`):**
+     - Memindahkan tombol aksi putus paksa sesi terminal SSH dari kolom data "Sesi Aktif" ke kolom resmi "Tindakan".
+     - Kolom data "Sesi Aktif" kini murni menyajikan data status koneksi berupa teks dan badge badge-muted (`pts/0 @ IP`) tanpa tombol interaktif yang menyusup di dalam sel data.
+     - Kolom "Tindakan" kini menjadi pusat kontrol tunggal yang menampung tombol *Rincian*, tombol merah *Putus Sesi* (`svgPower`), tombol *Kunci/Buka Kunci*, dan tombol *Hapus Pengguna* secara rapi dan seragam, baik pada initial render Jinja maupun siklus live polling JavaScript.
+  2. **Penyempurnaan Halaman Aktivitas Pengguna (`user_activity.html`):**
+     - Mensterilkan kartu ringkasan metrik "Sesi Aktif" dari tombol inline, menyajikannya murni sebagai kartu statistik jumlah dan daftar terminal.
+     - Menempatkan tombol aksi pemutusan sesi terminal aktif secara elegan pada area bilah tindakan atas (*topbar action area*).
+
 ## Versi 4.8.13
 
 - **Tipe Rilis:** Perbaikan Evaluasi Izin Pengayaan Insiden Sesi Remote (*Remote Session Incident Permission Scope Bugfix & HTTP 500 Elimination*)

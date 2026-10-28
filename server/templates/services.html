@@ -2875,18 +2875,9 @@ div[style*="position: fixed"] .card {
             <td style="font-size:12px;color:var(--dim);white-space:nowrap">{{ a.last_login or '-' }}</td>
             <td style="font-size:12px;color:var(--dim);white-space:nowrap">
               {% if a.sessions %}
-                <div style="display:inline-flex;gap:4px;flex-wrap:wrap;align-items:center">
                 {% for s in a.sessions %}
-                  <span class="badge badge-muted" style="font-size:11px;font-family:monospace;display:inline-flex;align-items:center;gap:4px;padding:2px 6px">
-                    <span>{{ s.tty }}{% if s.from %} @ {{ s.from }}{% endif %}</span>
-                    {% if user.has_perm('can_users_sys') or user.has_perm('can_manage_servers') or user.is_master_admin() %}
-                      <button type="button" class="btn btn-ghost btn-sm" style="padding:0 2px;height:16px;min-height:16px;line-height:1;color:var(--red);border:none" title="Putus paksa sesi terminal {{ s.tty }}" onclick="terminateSession({{ server.id }}, '{{ s.tty }}', '{{ a.user }}', this)">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      </button>
-                    {% endif %}
-                  </span>
+                  <span class="badge badge-muted" style="font-size:11px;font-family:monospace">{{ s.tty }}{% if s.from %} @ {{ s.from }}{% endif %}</span>{% if not loop.last %} {% endif %}
                 {% endfor %}
-                </div>
               {% else %}
                 -
               {% endif %}
@@ -2896,6 +2887,15 @@ div[style*="position: fixed"] .card {
                 <a href="/servers/{{ server.id }}/user/{{ a.user }}" class="btn btn-ghost btn-sm" title="Rincian" aria-label="Rincian">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                 </a>
+                {% if a.sessions and (user.has_perm('can_users_sys') or user.has_perm('can_manage_servers') or user.is_master_admin()) %}
+                  {% for s in a.sessions %}
+                    {% if s.tty %}
+                    <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Putus paksa sesi terminal {{ s.tty }} ({{ a.user }})"{% endif %} aria-label="Putus Sesi" onclick="terminateSession({{ server.id }}, '{{ s.tty }}', '{{ a.user }}', this)">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                    </button>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
                 {% if user.has_perm('can_users_sys') and not a.is_protected %}
                   {% if a.is_locked %}
                   <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Buka kunci akun (aktifkan login)"{% endif %} aria-label="Buka Kunci" onclick="submitUserAction('unlock', '{{ a.user }}', this)">
@@ -9037,8 +9037,17 @@ function renderSys(data) {
     const svgUnlock = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
     const svgLock = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>';
     const svgDel = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+    const svgPower = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>';
 
     let actions = '<a href="/servers/' + SID + '/user/' + userEnc + '" class="btn btn-ghost btn-sm" title="' + (isEn ? 'Details' : 'Rincian') + '" aria-label="' + (isEn ? 'Details' : 'Rincian') + '">' + svgRincian + '</a>';
+    if ((CAN_USERS_SYS || CAN_SERVICES) && a.sessions && a.sessions.length) {
+      for (const s of a.sessions) {
+        if (s.tty) {
+          const ttyEsc = escHtml(s.tty);
+          actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(248,113,113,0.3)" title="' + (isEn ? ('Force terminate session ' + ttyEsc + ' (' + userEsc + ')') : ('Putus paksa sesi ' + ttyEsc + ' (' + userEsc + ')')) + '" aria-label="Putus Sesi" onclick="terminateSession(' + SID + ', \'' + ttyEsc + '\', \'' + userEsc + '\', this)">' + svgPower + '</button>';
+        }
+      }
+    }
     if (CAN_USERS_SYS && !isProtected) {
       if (isLocked) {
         actions += ' <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);border-color:rgba(56,189,248,0.3)" title="' + (isEn ? 'Unlock account (enable login)' : 'Buka kunci akun (aktifkan login)') + '" aria-label="Buka Kunci" onclick="submitUserAction(\'unlock\', \'' + userEsc + '\', this)">' + svgUnlock + '</button>';
@@ -9058,9 +9067,7 @@ function renderSys(data) {
       + (a.sessions && a.sessions.length ? a.sessions.map(s => {
           const ttyEsc = escHtml(s.tty || '');
           const fromEsc = s.from ? ' @ ' + escHtml(s.from) : '';
-          const killBtn = (CAN_USERS_SYS || CAN_SERVICES) && s.tty ?
-            ` <button type="button" class="btn btn-ghost btn-sm" style="padding:0 2px;height:16px;min-height:16px;line-height:1;color:var(--red);border:none" title="${isEn ? 'Force terminate session ' + ttyEsc : 'Putus paksa sesi ' + ttyEsc}" onclick="terminateSession(${SID}, '${ttyEsc}', '${userEsc}', this)">&times;</button>` : '';
-          return `<span class="badge badge-muted" style="font-family:monospace;display:inline-flex;align-items:center;gap:3px;margin:1px 2px;padding:1px 5px">${ttyEsc}${fromEsc}${killBtn}</span>`;
+          return '<span class="badge badge-muted" style="font-family:monospace;padding:1px 5px;margin-right:3px">' + ttyEsc + fromEsc + '</span>';
         }).join(' ') : '-')
       + '</td>'
       + '<td><div style="display:flex;gap:4px;flex-wrap:wrap">' + actions + '</div></td></tr>';

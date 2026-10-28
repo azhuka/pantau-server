@@ -7,6 +7,18 @@
     <h2 style="margin-top:10px">Aktivitas User: <span class="mono">{{ username }}</span>
       <span style="font-size:13px;color:var(--dim)">@ {{ server.hostname }}</span></h2>
   </div>
+  {% if account and account.sessions and not user.is_viewer() %}
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      {% for s in account.sessions %}
+        {% if s.tty %}
+          <button type="button" class="btn btn-danger btn-sm" onclick="terminateSession('{{ s.tty }}', this)" title="Putus paksa sesi terminal {{ s.tty }}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+            Putus Sesi {{ s.tty }}
+          </button>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
 </div>
 
 <div class="stats-grid">
@@ -24,19 +36,12 @@
   </div>
   <div class="stat-card">
     <div class="label">Sesi Aktif</div>
-    <div class="value" style="font-size:15px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-      <span>{{ account.sessions|length if account and account.sessions else 0 }}</span>
+    <div class="value" style="font-size:16px">
+      {{ account.sessions|length if account and account.sessions else 0 }}
       {% if account and account.sessions %}
-        {% for s in account.sessions %}
-          <span class="badge badge-muted" style="font-size:11px;font-family:monospace;display:inline-flex;align-items:center;gap:4px;padding:2px 6px">
-            {{ s.tty }}{% if s.from %} @ {{ s.from }}{% endif %}
-            {% if not user.is_viewer() %}
-              <button type="button" class="btn btn-ghost btn-sm" style="padding:0 2px;height:16px;min-height:16px;line-height:1;color:var(--red);border:none" title="Putus paksa sesi terminal {{ s.tty }}" onclick="terminateSession('{{ s.tty }}', this)">
-                &times;
-              </button>
-            {% endif %}
-          </span>
-        {% endfor %}
+        <span style="font-size:11px;color:var(--dim);font-weight:normal;margin-left:4px">
+          ({% for s in account.sessions %}{{ s.tty }}{% if s.from %} @ {{ s.from }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %})
+        </span>
       {% endif %}
     </div>
   </div>
