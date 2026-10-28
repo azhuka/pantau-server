@@ -305,11 +305,13 @@
           </a>
           <form method="POST" action="/servers/{{ srv.id }}/delete" style="display:inline;margin:0"
                 data-guardrail
+                data-guardrail-password="1"
+                data-guardrail-require-name="{{ srv.hostname }}"
                 data-guardrail-title="Hapus Server dari Pantau"
-                data-guardrail-target="{{ srv.hostname }}"
+                data-guardrail-target="{{ srv.hostname }} ({{ srv.ip_address }})"
                 data-guardrail-badge="Hapus Permanen"
-                data-guardrail-msg="Server <strong>{{ srv.hostname }}</strong> ({{ srv.ip_address }}) beserta seluruh riwayat metrik, snapshot, serta pencatatan masalah akan dihapus secara permanen dari basis data."
-                data-guardrail-btn="Hapus Server Sekarang"
+                data-guardrail-msg="Hapus permanen server dan seluruh riwayat metrik dari basis data."
+                data-guardrail-btn="Hapus Server"
                 data-guardrail-color="danger">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button class="btn btn-danger btn-sm" style="padding:4px 7px" type="submit" title="Hapus Server" aria-label="Hapus">

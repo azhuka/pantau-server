@@ -363,12 +363,13 @@ handlePlatformChange();
     <h3>API Key</h3>
     <form method="POST" action="/servers/{{ server.id }}/regenerate-key"
           data-guardrail
-          data-guardrail-title="Regenerate API Key"
+          data-guardrail-password="1"
+          data-guardrail-title="Regenerasi Kunci API Server"
           data-guardrail-target="{{ server.hostname }}"
           data-guardrail-badge="Otentikasi Agen"
-          data-guardrail-msg="Menghasilkan API Key baru akan membatalkan key lama seketika. Agen di host <strong>{{ server.hostname }}</strong> tidak akan dapat melapor sampai file konfigurasi agen diperbarui dengan key baru ini."
-          data-guardrail-btn="Regenerate API Key"
-          data-guardrail-color="warning">
+          data-guardrail-msg="Membatalkan kunci API aktif seketika. Agen klien akan terputus sampai token diperbarui manual."
+          data-guardrail-btn="Regenerasi Kunci API"
+          data-guardrail-color="danger">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button class="btn btn-danger btn-sm">Regenerate Key</button>
     </form>

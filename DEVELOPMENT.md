@@ -311,6 +311,30 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.25
+
+- **Tipe Rilis:** Benteng Otentikasi Tindakan Operator Berat & Standarisasi UI/UX Enterprise (*Privileged Operator Action Step-Up Authentication & Enterprise Guardrail System*)
+- **Fokus Utama:** Mengamankan seluruh tindakan operator berisiko tinggi dan katastropik melalui verifikasi kata sandi akun operator (Step-Up Auth) dan kode 2FA TOTP di tingkat backend, serta menata ulang antarmuka dialog konfirmasi (*Guardrail Modal*) dengan standar enterprise berdensitas tinggi tanpa teks mubazir:
+  1. **Validasi Wajib Kata Sandi Operator di Backend API (`server/main.py`):**
+     - Mengimplementasikan helper otentikasi sentral `_verify_operator_password()` yang memvalidasi hash kata sandi operator login (`pwd_ctx.verify`) dan kode TOTP 2FA akun sebelum tindakan dieksekusi, serta mencatat pencatatan audit kegagalan (`_audit`) jika otentikasi tidak sah.
+     - Menerapkan benteng otentikasi pada seluruh tindakan Tingkat 1 (Katastropik & Permanen):
+       - `POST /servers/{sid}/host/reboot` (Reboot Sistem Operasi Host)
+       - `POST /servers/{sid}/host/poweroff` (Matikan Daya Host)
+       - `POST /servers/{sid}/delete` (Hapus Server dari Pantau + validasi ketik ulang nama host)
+       - `POST /servers/{sid}/regenerate-key` (Regenerasi Kunci API Server)
+       - `POST /servers/{sid}/system-users/delete` (Hapus Pengguna Linux Klien)
+       - `POST /users/{uid}/delete` (Hapus Akun Staf Dashboard)
+       - `POST /api/users/{uid}/2fa/disable` (Nonaktifkan 2FA Akun Staf)
+  2. **Penyempurnaan Dialog Guardrail Enterprise (`server/templates/base.html`):**
+     - Menata ulang komponen `#guardrail-modal` dengan tata letak padat, kontras tinggi, dan pesan lugas tanpa kalimat bertele-tele.
+     - Menyediakan input kata sandi operator, input kode 2FA TOTP otomatis (terbuka jika akun staf mengaktifkan 2FA), input konfirmasi nama host, serta penolakan tombol submit secara dinamis sebelum parameter wajib terisi lengkap.
+     - Mendukung penyerahan instan melalui penekanan tombol `Enter` pada kolom kata sandi dan indikator animasi pemrosesan (*loading spinner*).
+     - Menyediakan API berbasis Promise `window.showGuardrailPasswordModal(options)` untuk integrasi mulus dengan pemanggilan asinkron fetch/AJAX di seluruh antarmuka.
+  3. **Pemisahan Tegas Tingkat 1 (Kata Sandi) vs Tingkat 2 (Penegasan Bahaya):**
+     - Mempertahankan kelincahan respons insiden NOC (*Incident Response Velocity*): tindakan mitigasi cepat seperti Stop/Restart Service, Kill Process, Blokir/Buka Blokir IP Firewall, dan Pemutusan Sesi SSH tetap menggunakan dialog konfirmasi bahaya tanpa hambatan kata sandi agar pemulihan darurat tidak terhambat.
+  4. **Sinkronisasi SemVer 7 Berkas & Kebijakan Zero-Dependency:**
+     - Menaikkan versi aplikasi menjadi `v4.8.25` secara sinkron dan identik di 7 berkas: `server/config.py`, `server/templates/base.html`, `package/opt/pantau/agent/agent_pantau.py`, `agent/agent_pantau.py`, `package/install.sh`, `README.md`, dan `DEVELOPMENT.md`.
+
 ## Versi 4.8.24
 
 - **Tipe Rilis:** Proteksi Penguncian & Pembersihan Terminal Saat Proses Konsol Aktif (*Terminal Process Safety Guard & Execution State Detection*)

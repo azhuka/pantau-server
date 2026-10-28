@@ -1192,7 +1192,7 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.8.24' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.8.25' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -1261,6 +1261,8 @@ body.show-alert-banner .main{padding-top:72px}
 // Bahasa Aplikasi: Standar Bahasa Indonesia (Fitur alih bahasa dinonaktifkan)
 const currentLang = 'id';
 const IS_VIEWER = {{ 'true' if (user and user.is_viewer()) else 'false' }};
+const CURRENT_USER_HAS_TOTP = {{ 'true' if (user and user.totp_enabled and user.totp_secret) else 'false' }};
+window._CURRENT_USER_HAS_TOTP = CURRENT_USER_HAS_TOTP;
 function isEnPage() { return false; }
 function isCurrentLangEn() { return false; }
 function setAppLang(lang) {
@@ -1629,45 +1631,171 @@ window.unregisterTrackedBackgroundTask = function(id) {
 })();
 // ---------- Guardrail Dialogue Modal (High-SLA Production Safe Guard) ----------
 let _activeGuardrailForm = null;
+let _guardrailPromiseResolver = null;
+let _guardrailOpts = null;
+
+function _updateGuardrailSubmitState() {
+  const submitBtn = document.getElementById('guardrail-modal-submit-btn');
+  if (!submitBtn) return;
+  const opts = _guardrailOpts || {};
+  let valid = true;
+
+  if (opts.requireName) {
+    const nameInp = document.getElementById('guardrail-name-input');
+    const val = (nameInp ? nameInp.value : '').trim().toLowerCase();
+    if (val !== opts.requireName.trim().toLowerCase()) {
+      valid = false;
+    }
+  }
+
+  if (opts.requirePassword) {
+    const pwdInp = document.getElementById('guardrail-pwd-input');
+    if (!pwdInp || !pwdInp.value) {
+      valid = false;
+    }
+    if (window._CURRENT_USER_HAS_TOTP) {
+      const totpInp = document.getElementById('guardrail-totp-input');
+      if (!totpInp || !totpInp.value.trim()) {
+        valid = false;
+      }
+    }
+  } else {
+    const cb = document.getElementById('guardrail-confirm-cb');
+    if (cb && !cb.checked) {
+      valid = false;
+    }
+  }
+
+  submitBtn.disabled = !valid;
+}
 
 function openGuardrailModal(form) {
   _activeGuardrailForm = form;
+  _guardrailPromiseResolver = null;
+
+  const title = form.getAttribute('data-guardrail-title') || 'Konfirmasi Tindakan';
+  const target = form.getAttribute('data-guardrail-target') || '';
+  const badgeText = form.getAttribute('data-guardrail-badge') || 'SLA PRODUKSI';
+  const msgHtml = form.getAttribute('data-guardrail-msg') || 'Tindakan ini berdampak langsung pada operasional server.';
+  const btnText = form.getAttribute('data-guardrail-btn') || 'Konfirmasi';
+  const color = form.getAttribute('data-guardrail-color') || 'danger';
+  const requirePassword = Boolean(form.getAttribute('data-guardrail-password') === '1');
+  const requireName = form.getAttribute('data-guardrail-require-name') || '';
+
+  _openGuardrailModalInternal({
+    title, target, badge: badgeText, msg: msgHtml, btnText, color, requirePassword, requireName
+  });
+}
+
+function showGuardrailPasswordModal(options) {
+  return new Promise((resolve) => {
+    _activeGuardrailForm = null;
+    _guardrailPromiseResolver = resolve;
+    _openGuardrailModalInternal(Object.assign({
+      requirePassword: true
+    }, options));
+  });
+}
+
+function _openGuardrailModalInternal(opts) {
+  _guardrailOpts = opts;
   const modal = document.getElementById('guardrail-modal');
   if (!modal) {
-    if (confirm(form.getAttribute('data-guardrail-msg')?.replace(/<[^>]+>/g, '') || 'Konfirmasi tindakan berdampak tinggi?')) {
-      form.dataset.guardrailConfirmed = '1';
-      form.submit();
+    if (confirm(opts.msg ? opts.msg.replace(/<[^>]+>/g, '') : 'Konfirmasi tindakan?')) {
+      if (_guardrailPromiseResolver) {
+        _guardrailPromiseResolver({ password: '', totp: '', confirmName: '' });
+      } else if (_activeGuardrailForm) {
+        _activeGuardrailForm.dataset.guardrailConfirmed = '1';
+        _activeGuardrailForm.submit();
+      }
     }
     return;
   }
-  const title = form.getAttribute('data-guardrail-title') || 'Konfirmasi Tindakan Berdampak Tinggi';
-  const target = form.getAttribute('data-guardrail-target') || '';
-  const badgeText = form.getAttribute('data-guardrail-badge') || 'SLA PRODUKSI';
-  const msgHtml = form.getAttribute('data-guardrail-msg') || 'Tindakan ini dapat berdampak langsung pada operasional server produksi.';
-  const btnText = form.getAttribute('data-guardrail-btn') || 'Konfirmasi & Lanjutkan';
-  const color = form.getAttribute('data-guardrail-color') || 'danger';
 
   const titleEl = document.getElementById('guardrail-modal-title');
-  if (titleEl) titleEl.textContent = title;
+  if (titleEl) titleEl.textContent = opts.title || 'Konfirmasi Tindakan';
+
   const badgeEl = document.getElementById('guardrail-modal-badge');
-  if (badgeEl) badgeEl.textContent = badgeText;
+  if (badgeEl) badgeEl.textContent = opts.badge || 'SLA PRODUKSI';
 
   const targetRow = document.getElementById('guardrail-modal-target-row');
   const targetEl = document.getElementById('guardrail-modal-target');
-  if (target && targetRow && targetEl) {
-    targetEl.textContent = target;
+  if (opts.target && targetRow && targetEl) {
+    targetEl.textContent = opts.target;
     targetRow.style.display = 'flex';
   } else if (targetRow) {
     targetRow.style.display = 'none';
   }
 
   const msgEl = document.getElementById('guardrail-modal-msg');
-  if (msgEl) msgEl.innerHTML = msgHtml;
+  if (msgEl) msgEl.innerHTML = opts.msg || '';
 
+  const errBox = document.getElementById('guardrail-modal-error');
+  if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
+
+  const nameGrp = document.getElementById('guardrail-name-group');
+  const nameToMatch = document.getElementById('guardrail-name-to-match');
+  const nameInp = document.getElementById('guardrail-name-input');
+  if (opts.requireName) {
+    if (nameGrp) nameGrp.style.display = 'block';
+    if (nameToMatch) nameToMatch.textContent = opts.requireName;
+    if (nameInp) {
+      nameInp.value = '';
+      nameInp.oninput = _updateGuardrailSubmitState;
+    }
+  } else if (nameGrp) {
+    nameGrp.style.display = 'none';
+  }
+
+  const pwdGrp = document.getElementById('guardrail-pwd-group');
+  const pwdInp = document.getElementById('guardrail-pwd-input');
+  const totpGrp = document.getElementById('guardrail-totp-group');
+  const totpInp = document.getElementById('guardrail-totp-input');
+  const cbGrp = document.getElementById('guardrail-cb-group');
+  const cb = document.getElementById('guardrail-confirm-cb');
   const submitBtn = document.getElementById('guardrail-modal-submit-btn');
+
+  if (opts.requirePassword) {
+    if (pwdGrp) pwdGrp.style.display = 'block';
+    if (pwdInp) {
+      pwdInp.value = '';
+      pwdInp.oninput = _updateGuardrailSubmitState;
+      pwdInp.onkeydown = function(e) {
+        if (e.key === 'Enter' && submitBtn && !submitBtn.disabled) {
+          e.preventDefault();
+          submitGuardrailAction();
+        }
+      };
+    }
+    if (window._CURRENT_USER_HAS_TOTP && totpGrp) {
+      totpGrp.style.display = 'block';
+      if (totpInp) {
+        totpInp.value = '';
+        totpInp.oninput = _updateGuardrailSubmitState;
+        totpInp.onkeydown = function(e) {
+          if (e.key === 'Enter' && submitBtn && !submitBtn.disabled) {
+            e.preventDefault();
+            submitGuardrailAction();
+          }
+        };
+      }
+    } else if (totpGrp) {
+      totpGrp.style.display = 'none';
+    }
+    if (cbGrp) cbGrp.style.display = 'none';
+  } else {
+    if (pwdGrp) pwdGrp.style.display = 'none';
+    if (totpGrp) totpGrp.style.display = 'none';
+    if (cbGrp) cbGrp.style.display = 'block';
+    if (cb) {
+      cb.checked = false;
+      cb.onchange = _updateGuardrailSubmitState;
+    }
+  }
+
   if (submitBtn) {
-    submitBtn.textContent = btnText;
-    if (color === 'warning') {
+    submitBtn.textContent = opts.btnText || 'Konfirmasi';
+    if (opts.color === 'warning') {
       submitBtn.className = 'btn btn-warning btn-sm';
       submitBtn.style.background = '#d97706';
       submitBtn.style.borderColor = '#d97706';
@@ -1676,30 +1804,96 @@ function openGuardrailModal(form) {
       submitBtn.style.background = '#dc2626';
       submitBtn.style.borderColor = '#dc2626';
     }
-    submitBtn.disabled = true;
   }
 
-  const cb = document.getElementById('guardrail-confirm-cb');
-  if (cb) {
-    cb.checked = false;
-    cb.onchange = function() {
-      if (submitBtn) submitBtn.disabled = !this.checked;
-    };
-  }
-
+  _updateGuardrailSubmitState();
   modal.style.display = 'flex';
+
+  setTimeout(() => {
+    if (opts.requireName && nameInp) {
+      nameInp.focus();
+    } else if (opts.requirePassword && pwdInp) {
+      pwdInp.focus();
+    }
+  }, 40);
 }
 
 function closeGuardrailModal() {
   const modal = document.getElementById('guardrail-modal');
   if (modal) modal.style.display = 'none';
+  if (_guardrailPromiseResolver) {
+    _guardrailPromiseResolver(null);
+    _guardrailPromiseResolver = null;
+  }
   _activeGuardrailForm = null;
+  _guardrailOpts = null;
 }
 
 function submitGuardrailAction() {
-  if (!_activeGuardrailForm) return;
+  const opts = _guardrailOpts || {};
+  const pwdInp = document.getElementById('guardrail-pwd-input');
+  const totpInp = document.getElementById('guardrail-totp-input');
+  const nameInp = document.getElementById('guardrail-name-input');
+  const submitBtn = document.getElementById('guardrail-modal-submit-btn');
+
+  const password = pwdInp ? pwdInp.value : '';
+  const totp = totpInp ? totpInp.value : '';
+  const confirmName = nameInp ? nameInp.value : '';
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite">&#8635;</span> Memverifikasi…';
+  }
+
+  if (_guardrailPromiseResolver) {
+    const res = _guardrailPromiseResolver;
+    _guardrailPromiseResolver = null;
+    closeGuardrailModal();
+    res({ password, totp, confirmName });
+    return;
+  }
+
+  if (!_activeGuardrailForm) {
+    closeGuardrailModal();
+    return;
+  }
+
   const f = _activeGuardrailForm;
   closeGuardrailModal();
+
+  if (opts.requirePassword) {
+    let pInput = f.querySelector('input[name="password"]');
+    if (!pInput) {
+      pInput = document.createElement('input');
+      pInput.type = 'hidden';
+      pInput.name = 'password';
+      f.appendChild(pInput);
+    }
+    pInput.value = password;
+
+    if (totp) {
+      let tInput = f.querySelector('input[name="totp"]');
+      if (!tInput) {
+        tInput = document.createElement('input');
+        tInput.type = 'hidden';
+        tInput.name = 'totp';
+        f.appendChild(tInput);
+      }
+      tInput.value = totp;
+    }
+  }
+
+  if (opts.requireName) {
+    let nInput = f.querySelector('input[name="confirm_hostname"]');
+    if (!nInput) {
+      nInput = document.createElement('input');
+      nInput.type = 'hidden';
+      nInput.name = 'confirm_hostname';
+      f.appendChild(nInput);
+    }
+    nInput.value = confirmName;
+  }
+
   f.dataset.guardrailConfirmed = '1';
   if (typeof f.requestSubmit === 'function') {
     f.requestSubmit();
@@ -2763,11 +2957,11 @@ setInterval(alertFetch, 5000);
 
 <!-- Modal Guardrail Dialog untuk Tindakan Berdampak Tinggi / Produksi SLA -->
 <div id="guardrail-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeGuardrailModal()">
-  <div class="card" style="width:100%;max-width:480px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,0.8);color:var(--text)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+  <div class="card" style="width:100%;max-width:460px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,0.8);color:var(--text)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:8px">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#f59e0b;flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <h3 id="guardrail-modal-title" style="margin:0;font-size:15px;font-weight:600;color:var(--text)">Konfirmasi Tindakan Berdampak Tinggi</h3>
+        <svg id="guardrail-modal-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#ef4444;flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <h3 id="guardrail-modal-title" style="margin:0;font-size:14.5px;font-weight:600;color:var(--text)">Konfirmasi Tindakan</h3>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span id="guardrail-modal-badge" class="badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:10px;font-weight:600">SLA PRODUKSI</span>
@@ -2775,23 +2969,50 @@ setInterval(alertFetch, 5000);
       </div>
     </div>
 
-    <div id="guardrail-modal-target-row" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;margin-bottom:12px">
-      <span style="font-size:11.5px;color:var(--dim)">Target:</span>
-      <strong id="guardrail-modal-target" style="font-size:13px;font-family:var(--font-mono)"></strong>
+    <div id="guardrail-modal-target-row" style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;margin-bottom:10px">
+      <span style="font-size:11px;color:var(--dim)">Target:</span>
+      <strong id="guardrail-modal-target" style="font-size:12.5px;font-family:var(--font-mono)"></strong>
     </div>
 
-    <div id="guardrail-modal-msg" style="font-size:12.5px;color:var(--dim);margin:0 0 14px 0;padding:12px 14px;background:#0d1117;border:1px solid #30363d;border-radius:6px;line-height:1.5;word-break:break-word"></div>
+    <div id="guardrail-modal-msg" style="font-size:12px;color:var(--dim);margin:0 0 12px 0;padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:6px;line-height:1.45;word-break:break-word"></div>
 
-    <div style="margin-bottom:18px">
-      <label style="cursor:pointer;display:flex;align-items:flex-start;gap:9px;font-size:12px;color:var(--text);padding:9px 12px;background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.2);border-radius:6px;line-height:1.4">
-        <input type="checkbox" id="guardrail-confirm-cb" style="margin-top:2px;cursor:pointer;accent-color:#ef4444;width:15px;height:15px">
-        <span>Saya memahami risiko operasional dan dampak tindakan ini terhadap ketersediaan layanan produksi.</span>
+    <div id="guardrail-modal-error" style="display:none;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:6px;padding:8px 10px;margin-bottom:12px"></div>
+
+    <!-- Input Verifikasi Nama Host (Jika Diperlukan) -->
+    <div id="guardrail-name-group" style="display:none;margin-bottom:12px">
+      <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);margin-bottom:4px">
+        Ketik nama host untuk konfirmasi: <code id="guardrail-name-to-match" style="color:#ef4444;background:rgba(239,68,68,0.1);padding:1px 4px;border-radius:4px"></code>
+      </label>
+      <input type="text" id="guardrail-name-input" class="form-control" autocomplete="off" placeholder="Ketik persis nama host" style="width:100%;padding:7px 10px;font-size:12.5px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#fff;font-family:var(--font-mono)">
+    </div>
+
+    <!-- Input Verifikasi Kata Sandi Akun Operator -->
+    <div id="guardrail-pwd-group" style="display:none;margin-bottom:12px">
+      <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);margin-bottom:4px">
+        Kata Sandi Akun Operator
+      </label>
+      <input type="password" id="guardrail-pwd-input" class="form-control" placeholder="Masukkan kata sandi akun Anda" autocomplete="current-password" style="width:100%;padding:7px 10px;font-size:12.5px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#fff">
+    </div>
+
+    <!-- Input Kode 2FA TOTP (Jika Akun Aktif 2FA) -->
+    <div id="guardrail-totp-group" style="display:none;margin-bottom:12px">
+      <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);margin-bottom:4px">
+        Kode Otentikasi 2FA (TOTP)
+      </label>
+      <input type="text" id="guardrail-totp-input" class="form-control" inputmode="numeric" maxlength="8" placeholder="6 digit kode authenticator" style="width:100%;padding:7px 10px;font-size:12.5px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#fff;letter-spacing:2px;font-family:var(--font-mono)">
+    </div>
+
+    <!-- Checkbox Konfirmasi Pemahaman Risiko (Hanya ditampilkan jika BUKAN mode password) -->
+    <div id="guardrail-cb-group" style="margin-bottom:14px">
+      <label style="cursor:pointer;display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:var(--text);padding:8px 10px;background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.2);border-radius:6px;line-height:1.4">
+        <input type="checkbox" id="guardrail-confirm-cb" style="margin-top:2px;cursor:pointer;accent-color:#ef4444;width:14px;height:14px">
+        <span id="guardrail-cb-text">Saya memahami risiko operasional tindakan ini.</span>
       </label>
     </div>
 
-    <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center">
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeGuardrailModal()">Batalkan</button>
-      <button type="button" class="btn btn-danger btn-sm" id="guardrail-modal-submit-btn" onclick="submitGuardrailAction()" disabled>Konfirmasi &amp; Lanjutkan</button>
+    <div style="display:flex;justify-content:flex-end;gap:8px;align-items:center">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeGuardrailModal()">Batal</button>
+      <button type="button" class="btn btn-danger btn-sm" id="guardrail-modal-submit-btn" onclick="submitGuardrailAction()" disabled>Konfirmasi</button>
     </div>
   </div>
 </div>

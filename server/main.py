@@ -493,6 +493,40 @@ def _verify_csrf_header(request: Request) -> None:
         raise HTTPException(status_code=403, detail="CSRF token tidak valid.")
 
 
+def _verify_operator_password(
+    user: User,
+    password: str,
+    totp_code: str = "",
+    action_name: str = "privileged_action",
+    target_info: str = "",
+    db: Session = None,
+) -> None:
+    """Verifikasi kata sandi akun operator login untuk tindakan berisiko tinggi (Step-Up Auth).
+
+    Melempar HTTPException 401 jika kata sandi salah, dan mencatat log audit kegagalan.
+    """
+    clean_pwd = _clean_str(password, "", 256)
+    if not clean_pwd:
+        if db:
+            _audit(db, user.username, f"{action_name}_fail", f"{target_info} (kata sandi tidak diisi)", "gagal")
+            db.commit()
+        raise HTTPException(status_code=401, detail="Kata sandi akun operator diperlukan")
+
+    if not pwd_ctx.verify(clean_pwd, user.password_hash):
+        if db:
+            _audit(db, user.username, f"{action_name}_fail", f"{target_info} (kata sandi salah)", "gagal")
+            db.commit()
+        raise HTTPException(status_code=401, detail="Kata sandi akun operator salah")
+
+    if user.totp_enabled and user.totp_secret:
+        clean_totp = _clean_str(totp_code, "", 10)
+        if not clean_totp or not security_auth.verify_totp(user.totp_secret, clean_totp):
+            if db:
+                _audit(db, user.username, f"{action_name}_fail", f"{target_info} (kode 2FA tidak valid)", "gagal")
+                db.commit()
+            raise HTTPException(status_code=401, detail="Kode 2FA / TOTP tidak valid atau kedaluwarsa")
+
+
 def migrate_api_keys():
     """Sekali pakai: hash API key plaintext lama yang tersisa di DB."""
     db = SessionLocal()
@@ -4012,6 +4046,8 @@ def server_edit_submit(
 def server_regenerate_key(
     request: Request, sid: int,
     csrf_token: str = Form(default=""),
+    password: str = Form(default=""),
+    totp: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
@@ -4019,21 +4055,30 @@ def server_regenerate_key(
         return RedirectResponse("/", status_code=303)
     _verify_csrf_form(request, csrf_token)
     server = db.query(Server).filter(Server.id == sid).first()
-    if server:
-        raw = secrets.token_hex(32)
-        server.api_key = hash_api_key(raw)
-        _audit(db, user.username, "key_regenerate", f"{server.hostname} (id={server.id})", "berhasil")
-        db.commit()
-        resp = tpl(request, "key_reveal.html", {"user": user, "server": server, "api_key": raw})
-        resp.headers["Cache-Control"] = "no-store"
-        return resp
-    return RedirectResponse("/servers", status_code=303)
+    if not server:
+        return RedirectResponse("/servers", status_code=303)
+
+    try:
+        _verify_operator_password(user, password, totp_code=totp, action_name="key_regenerate", target_info=f"{server.hostname} (id={server.id})", db=db)
+    except HTTPException as exc:
+        return RedirectResponse(f"/servers/{sid}/edit" + _flash_qs(False, exc.detail), status_code=303)
+
+    raw = secrets.token_hex(32)
+    server.api_key = hash_api_key(raw)
+    _audit(db, user.username, "key_regenerate", f"{server.hostname} (id={server.id})", "berhasil")
+    db.commit()
+    resp = tpl(request, "key_reveal.html", {"user": user, "server": server, "api_key": raw})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 
 @app.post("/servers/{sid}/delete")
 def server_delete(
     request: Request, sid: int,
     csrf_token: str = Form(default=""),
+    password: str = Form(default=""),
+    totp: str = Form(default=""),
+    confirm_hostname: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
@@ -4041,13 +4086,22 @@ def server_delete(
         return RedirectResponse("/", status_code=303)
     _verify_csrf_form(request, csrf_token)
     server = db.query(Server).filter(Server.id == sid).first()
-    if server:
-        _audit(db, user.username, "server_delete",
-               f"{server.hostname} ({server.ip_address}) id={server.id}", "berhasil")
-        db.delete(server)
-        db.commit()
-        return RedirectResponse("/servers" + _flash_qs(True, "Server dihapus"), status_code=303)
-    return RedirectResponse("/servers" + _flash_qs(False, "Server tidak ditemukan"), status_code=303)
+    if not server:
+        return RedirectResponse("/servers" + _flash_qs(False, "Server tidak ditemukan"), status_code=303)
+
+    if confirm_hostname and confirm_hostname.strip().lower() != server.hostname.strip().lower():
+        return RedirectResponse("/servers" + _flash_qs(False, f"Nama konfirmasi server tidak cocok (harus '{server.hostname}')"), status_code=303)
+
+    try:
+        _verify_operator_password(user, password, totp_code=totp, action_name="server_delete", target_info=f"{server.hostname} ({server.ip_address}) id={server.id}", db=db)
+    except HTTPException as exc:
+        return RedirectResponse("/servers" + _flash_qs(False, exc.detail), status_code=303)
+
+    _audit(db, user.username, "server_delete",
+           f"{server.hostname} ({server.ip_address}) id={server.id}", "berhasil")
+    db.delete(server)
+    db.commit()
+    return RedirectResponse("/servers" + _flash_qs(True, "Server dihapus"), status_code=303)
 
 
 @app.post("/api/servers/{sid}/reset-platform-auto")
@@ -5000,7 +5054,15 @@ def server_agent_update(
     return RedirectResponse(f"/servers/{sid}/services?action=agent_updated", status_code=303)
 
 
-def _host_control(request: Request, sid: int, db: Session, action: str, csrf_token: str = "") -> Response:
+def _host_control(
+    request: Request,
+    sid: int,
+    db: Session,
+    action: str,
+    csrf_token: str = "",
+    password: str = "",
+    totp: str = "",
+) -> Response:
     user = get_current_user(request, db)
     is_json = "application/json" in request.headers.get("accept", "")
     if not user or not user.has_perm("can_server_control"):
@@ -5011,6 +5073,22 @@ def _host_control(request: Request, sid: int, db: Session, action: str, csrf_tok
     server, err_resp = _check_server_online(db, sid, is_json=is_json)
     if err_resp:
         return err_resp
+
+    try:
+        _verify_operator_password(
+            user,
+            password,
+            totp_code=totp,
+            action_name=action,
+            target_info=f"{server.hostname} ({server.ip_address})",
+            db=db,
+        )
+    except HTTPException as exc:
+        if is_json:
+            return JSONResponse({"ok": False, "detail": exc.detail}, status_code=exc.status_code)
+        at_epoch = int(datetime.now(timezone.utc).timestamp())
+        return RedirectResponse(f"/servers/{sid}/services?action=auth_error&msg={quote(exc.detail)}&at={at_epoch}", status_code=303)
+
     if action == "poweroff_host" and getattr(server, "is_proxmox_ha", 0):
         _audit(db, user.username, "poweroff_host",
                f"{server.hostname} ({server.ip_address})", "Ditolak: Server terproteksi Proxmox HA", server_id=sid)
@@ -5055,20 +5133,24 @@ def _host_control(request: Request, sid: int, db: Session, action: str, csrf_tok
 def host_reboot(
     request: Request, sid: int,
     csrf_token: str = Form(default=""),
+    password: str = Form(default=""),
+    totp: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
-    """Reboot OS server klien (admin). Tegas: mesin restart seketika ±4 detik."""
-    return _host_control(request, sid, db, "reboot_host", csrf_token)
+    """Reboot OS server klien (admin). Wajib kata sandi operator."""
+    return _host_control(request, sid, db, "reboot_host", csrf_token, password, totp)
 
 
 @app.post("/servers/{sid}/host/poweroff")
 def host_poweroff(
     request: Request, sid: int,
     csrf_token: str = Form(default=""),
+    password: str = Form(default=""),
+    totp: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
-    """Poweroff OS server klien (admin). Tegas: mesin mati sampai dinyalakan manual."""
-    return _host_control(request, sid, db, "poweroff_host", csrf_token)
+    """Poweroff OS server klien (admin). Wajib kata sandi operator."""
+    return _host_control(request, sid, db, "poweroff_host", csrf_token, password, totp)
 
 
 # ---------------------------------------------------------------------------
@@ -5188,6 +5270,8 @@ def server_user_delete(
     username: str = Form(...),
     remove_home: bool = Form(default=False),
     csrf_token: str = Form(default=""),
+    password: str = Form(default=""),
+    totp: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
@@ -5201,6 +5285,19 @@ def server_user_delete(
     if err_resp:
         return err_resp
     u_clean = username.strip().lower()
+
+    try:
+        _verify_operator_password(
+            user,
+            password,
+            totp_code=totp,
+            action_name="system_user_delete",
+            target_info=f"{server.hostname}: user {u_clean}",
+            db=db,
+        )
+    except HTTPException as exc:
+        if is_json: return JSONResponse({"ok": False, "detail": exc.detail}, status_code=exc.status_code)
+        return RedirectResponse(f"/servers/{sid}/services?tab=akun&action=auth_error&msg={quote(exc.detail)}", status_code=303)
     extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if extra and extra.accounts:
         try:
@@ -12477,6 +12574,8 @@ async def user_edit_submit(
 def user_delete(
     request: Request, uid: int,
     csrf_token: str = Form(default=""),
+    password: str = Form(default=""),
+    totp: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
@@ -12512,6 +12611,19 @@ def user_delete(
         msg = "Pengguna tidak ditemukan"
         if is_json: return JSONResponse({"ok": False, "detail": msg}, status_code=404)
         return RedirectResponse(_flash_profile_users(False, msg), status_code=303)
+
+    try:
+        _verify_operator_password(
+            user,
+            password,
+            totp_code=totp,
+            action_name="user_delete",
+            target_info=f"{target_u.username} ({target_u.role})",
+            db=db,
+        )
+    except HTTPException as exc:
+        if is_json: return JSONResponse({"ok": False, "detail": exc.detail}, status_code=exc.status_code)
+        return RedirectResponse(_flash_profile_users(False, exc.detail), status_code=303)
 
     # Cabut sesi pengguna yang dihapus
     db.query(AppSession).filter(AppSession.user_id == uid).delete(synchronize_session=False)
@@ -12716,6 +12828,7 @@ def api_user_2fa_confirm(
 def api_user_2fa_disable(
     request: Request,
     uid: int,
+    body: dict = Body(default={}),
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
@@ -12738,6 +12851,15 @@ def api_user_2fa_disable(
 
     if not can_manage_users and target_u.role != "viewer":
         raise HTTPException(status_code=403, detail="Akses ditolak: hanya berwenang mengelola akun Viewer")
+
+    _verify_operator_password(
+        user,
+        body.get("password", ""),
+        totp_code=body.get("totp", ""),
+        action_name="user_2fa_disable",
+        target_info=f"Pengguna {target_u.username} ({target_u.role})",
+        db=db,
+    )
 
     target_u.totp_enabled = 0
     target_u.totp_secret = None

@@ -1238,11 +1238,12 @@ div[style*="position: fixed"] .card {
         <span class="toolbar-divider"></span>
         <form method="post" action="/servers/{{ server.id }}/host/reboot" id="form-host-reboot" style="display:inline;margin:0"
               data-guardrail
+              data-guardrail-password="1"
               data-guardrail-title="Reboot Sistem Operasi Host"
-              data-guardrail-target="{{ server.hostname }}"
+              data-guardrail-target="{{ server.hostname }} ({{ server.ip_address }})"
               data-guardrail-badge="Dampak Layanan"
-              data-guardrail-msg="Anda akan melakukan restart sistem operasi pada host <strong>{{ server.hostname }}</strong> ({{ server.ip_address }}). Seluruh layanan dan koneksi aktif akan terputus sementara selama ±1-2 menit hingga sistem operasi menyala kembali."
-              data-guardrail-btn="Lanjutkan Reboot Host"
+              data-guardrail-msg="Restart sistem operasi host. Seluruh layanan dan koneksi aktif akan terputus sementara."
+              data-guardrail-btn="Reboot Host"
               data-guardrail-color="warning">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button class="btn btn-ghost btn-sm" id="hero-reboot-btn" type="submit" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Reboot OS" aria-label="Reboot OS" data-i18n-title="reboot_tooltip"{% endif %}>
@@ -1259,11 +1260,12 @@ div[style*="position: fixed"] .card {
         {% else %}
         <form method="post" action="/servers/{{ server.id }}/host/poweroff" id="form-host-poweroff" style="display:inline;margin:0"
               data-guardrail
+              data-guardrail-password="1"
               data-guardrail-title="Matikan Daya Host (Power Off)"
-              data-guardrail-target="{{ server.hostname }}"
-              data-guardrail-badge="Kritis (Total Downtime)"
-              data-guardrail-msg="Daya mesin host <strong>{{ server.hostname }}</strong> ({{ server.ip_address }}). akan dimatikan sepenuhnya (shutdown). Host <strong>TIDAK akan menyala otomatis</strong> dan memerlukan tindakan manual fisik atau konsol IPMI/BMC host untuk dihidupkan kembali."
-              data-guardrail-btn="Matikan Daya Server"
+              data-guardrail-target="{{ server.hostname }} ({{ server.ip_address }})"
+              data-guardrail-badge="Dampak Kritis"
+              data-guardrail-msg="Matikan total daya host. Mesin tidak dapat dihidupkan kembali melalui dashboard Pantau."
+              data-guardrail-btn="Power Off Host"
               data-guardrail-color="danger">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button class="btn btn-danger btn-sm" id="hero-poweroff-btn" type="submit" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline" data-i18n-title="server_offline_actions_disabled"{% else %}title="Matikan Daya (Power Off)" aria-label="Power Off" data-i18n-title="poweroff_tooltip"{% endif %}>
@@ -5055,14 +5057,24 @@ async function submitUserAction(action, username, btn) {
     return;
   }
   let confirmMsg = '';
-  if (action === 'lock') {
-    confirmMsg = isEn ? ('Lock account ' + username + ' (disable login)?') : ('Kunci akun ' + username + ' (disable login)?');
+  let creds = null;
+  if (action === 'delete') {
+    creds = await showGuardrailPasswordModal({
+      title: 'Hapus Pengguna Linux',
+      target: username,
+      badge: 'Akses Sistem',
+      msg: 'Hapus permanen akun pengguna dan hak aksesnya pada server klien.',
+      btnText: 'Hapus Pengguna',
+      color: 'danger'
+    });
+    if (!creds) return;
+  } else if (action === 'lock') {
+    confirmMsg = isEn ? ('Lock account ' + username + ' (disable login)?') : ('Kunci akun pengguna ' + username + '?');
+    if (!confirm(confirmMsg)) return;
   } else if (action === 'unlock') {
-    confirmMsg = isEn ? ('Unlock account ' + username + ' (enable login)?') : ('Buka kunci akun ' + username + ' (aktifkan login)?');
-  } else if (action === 'delete') {
-    confirmMsg = isEn ? ('Permanently delete user account ' + username + '?') : ('Hapus akun pengguna ' + username + ' secara permanen?');
+    confirmMsg = isEn ? ('Unlock account ' + username + ' (enable login)?') : ('Buka kunci akun pengguna ' + username + '?');
+    if (!confirm(confirmMsg)) return;
   }
-  if (confirmMsg && !confirm(confirmMsg)) return;
 
   const origText = btn ? btn.textContent : '';
   if (btn) {
@@ -5075,6 +5087,12 @@ async function submitUserAction(action, username, btn) {
     const form = new FormData();
     form.append('csrf_token', csrf);
     form.append('username', username);
+    if (creds && creds.password) {
+      form.append('password', creds.password);
+    }
+    if (creds && creds.totp) {
+      form.append('totp', creds.totp);
+    }
 
     const r = await fetch('/servers/' + SID + '/system-users/' + action, {
       method: 'POST',

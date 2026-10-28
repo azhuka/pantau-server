@@ -468,11 +468,12 @@
                   {% if u.id != user.id and not u.is_master_admin() %}
                   <form method="POST" action="/users/{{ u.id }}/delete" style="display:inline"
                         data-guardrail
-                        data-guardrail-title="Hapus Akun Pengguna"
+                        data-guardrail-password="1"
+                        data-guardrail-title="Hapus Akun Staf"
                         data-guardrail-target="{{ u.username }}"
-                        data-guardrail-badge="Keamanan Akun"
-                        data-guardrail-msg="Akun pengguna <strong>{{ u.username }}</strong> akan dihapus secara permanen. Pengguna tidak akan dapat login lagi dan seluruh sesi aktifnya akan dicabut."
-                        data-guardrail-btn="Hapus Pengguna Sekarang"
+                        data-guardrail-badge="Akun Operator"
+                        data-guardrail-msg="Hapus permanen akun staf ini dari sistem. Seluruh sesi aktif akan dicabut."
+                        data-guardrail-btn="Hapus Akun Staf"
                         data-guardrail-color="danger"
                         onsubmit="handleDeleteUserForm(event, '{{ u.username }}')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -1838,15 +1839,27 @@ function finishAdmin2faModal() {
 }
 
 async function disableAdmin2fa(uid, username) {
-  if (!confirm('Matikan perlindungan 2FA untuk akun \'' + username + '\'? Pengguna akan dapat login kembali hanya menggunakan kata sandi.')) {
-    return;
-  }
+  const creds = await showGuardrailPasswordModal({
+    title: 'Nonaktifkan 2FA Akun Staf',
+    target: username,
+    badge: 'Keamanan Akun',
+    msg: 'Nonaktifkan proteksi otentikasi dua faktor (2FA TOTP) untuk akun ini.',
+    btnText: 'Nonaktifkan 2FA',
+    color: 'danger'
+  });
+  if (!creds) return;
+
   try {
     const res = await fetch('/api/users/' + uid + '/2fa/disable', {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'X-CSRF-Token': (typeof getCsrf === 'function' ? getCsrf() : '')
-      }
+      },
+      body: JSON.stringify({
+        password: creds.password,
+        totp: creds.totp
+      })
     });
     const data = await res.json();
     if (!res.ok || !data.ok) {
@@ -1857,7 +1870,11 @@ async function disableAdmin2fa(uid, username) {
     }
     setTimeout(() => { window.location.reload(); }, 600);
   } catch (err) {
-    alert('Gagal mematikan 2FA: ' + (err.message || err));
+    if (typeof showToast === 'function') {
+      showToast(err.message || err, false);
+    } else {
+      alert('Gagal mematikan 2FA: ' + (err.message || err));
+    }
   }
 }
 
