@@ -2667,6 +2667,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "apt_exec": {
             "id": apt_run.id,
             "kind": apt_run.unit,
+            "detail": apt_run.detail,
             "started_ms": int(apt_run.created_at.replace(tzinfo=timezone.utc).timestamp() * 1000)
             if apt_run.created_at else None,
         } if apt_run else None,

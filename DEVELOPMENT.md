@@ -311,6 +311,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.31
+
+- **Tipe Rilis:** Perbaikan Transmisi Parameter Upgrade Paket Mandiri & Pelabelan Modal APT (*Single Package Upgrade Parameter Transmission & Modal Labeling Fix*)
+- **Fokus Utama:** Menyelesaikan masalah kegagalan eksekusi upgrade paket tunggal dari tab Packages dan memperbaiki kekeliruan judul/header modal tugas latar belakang:
+  1. **Transmisi Parameter Paket Target pada Frontend (`server/templates/services.html`):**
+     - Memperbaiki deklarasi fungsi `triggerAptTask(kind, detail = '')` dan `aptFollow(rid, kind, startedMs, detail = '')` agar menyertakan parameter `detail`.
+     - Mengirimkan kolom `detail: pkgName` dalam payload JSON permintaan `fetch('/api/logs/request')` saat fungsi `upgradeSinglePkg(pkgName)` dieksekusi.
+     - Menyimpan parameter `detail` ke dalam variabel sesi pelacakan `aptTaskDetail` serta menyertakannya pada pemanggilan API resume `apt_exec` di backend (`server/main.py`), mengeliminasi galat validasi agen `nama paket tidak valid untuk upgrade: ''`.
+  2. **Standardisasi Label Header Modal & Notifikasi Desktop OS (`server/templates/services.html`):**
+     - Memperbarui fungsi `aptLabel(kind, detail)` agar mengembalikan label perintah riil `apt install --only-upgrade <paket>` untuk tugas bertipe `PKG_UPGRADE`, mengeliminasi kemunculan label keliru bawaan `──── apt update ────`.
+     - Menyesuaikan fungsi `updateAptTaskTitles(kind, detail)` dan notifikasi latar belakang desktop OS via `window.notifyBackgroundTaskComplete` agar secara akurat menampilkan judul `Upgrade Paket: <nama_paket>` baik saat proses dimulai, sedang berjalan, berhasil, maupun mengalami kegagalan.
+  3. **Sinkronisasi SemVer 7 Berkas & Pengujian Runtime:**
+     - Menaikkan versi aplikasi menjadi `v4.8.31` secara sinkron dan identik di 7 berkas: `server/config.py`, `server/templates/base.html`, `package/opt/pantau/agent/agent_pantau.py`, `agent/agent_pantau.py`, `package/install.sh`, `README.md`, dan `DEVELOPMENT.md`.
+
 ## Versi 4.8.30
 
 - **Tipe Rilis:** Sinkronisasi Kolom Insiden & Preservasi Kolom Berperekat Dinamis (*Incident Column Alignment & Dynamic Sticky Action Column Preservation*)
