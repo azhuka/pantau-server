@@ -27,7 +27,7 @@
 }
 #servers-table th {
   white-space: nowrap;
-  padding: 5px 6px;
+  padding: 4px 5px;
   font-size: 9.5px;
   font-weight: 600;
   color: var(--dim);
@@ -36,7 +36,7 @@
 }
 #servers-table td {
   white-space: nowrap;
-  padding: 3.5px 6px;
+  padding: 3px 5px;
   font-size: 10px;
   vertical-align: middle;
 }
@@ -48,8 +48,8 @@
   box-shadow: -4px 0 8px rgba(0,0,0,0.45);
   z-index: 2;
   text-align: center !important;
-  width: 105px !important;
-  min-width: 105px !important;
+  width: 88px !important;
+  min-width: 88px !important;
 }
 #servers-table tbody tr:hover td.col-act {
   background: var(--col-act-hover, #141e30);
@@ -124,18 +124,18 @@
   <table id="servers-table" style="width:100%;margin:0">
     <thead>
       <tr>
-        <th class="sortable" data-col="0" style="cursor:pointer;min-width:140px;white-space:nowrap" title="Urutkan berdasarkan nama host server">Server ↕</th>
-        <th class="sortable" data-col="1" style="cursor:pointer;min-width:110px" title="Urutkan berdasarkan alamat IP — klik IP pada baris untuk menyalin">IP &amp; Interface ↕</th>
-        <th class="sortable" data-col="2" style="cursor:pointer;min-width:125px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform &amp; Mesin ↕</th>
-        <th class="sortable" data-col="3" style="cursor:pointer;min-width:130px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi ↕</th>
-        <th class="sortable" data-col="4" style="cursor:pointer;min-width:125px" title="Model prosesor (CPU) dan jumlah inti">Prosesor ↕</th>
-        <th class="sortable" data-col="5" style="cursor:pointer;min-width:90px" title="Kapasitas total memori utama (RAM) dan Swap">Memori ↕</th>
-        <th class="sortable" data-col="6" style="cursor:pointer;min-width:105px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan ↕</th>
-        <th class="sortable" data-col="7" style="cursor:pointer;min-width:95px" title="Durasi server aktif dan waktu boot terakhir">Uptime ↕</th>
-        <th class="sortable" data-col="8" style="cursor:pointer;min-width:85px;text-align:center" title="Versi agen Pantau dan status paket pembaruan APT">Agen &amp; APT ↕</th>
-        <th class="sortable" data-col="9" style="cursor:pointer;min-width:70px" title="Tag atau label kategori server">Tag ↕</th>
-        <th class="sortable" data-col="10" style="cursor:pointer;min-width:85px;text-align:center" title="Status koneksi dan waktu terakhir data diterima">Status &amp; Lapor ↕</th>
-        <th class="col-act" style="width:85px;min-width:85px;text-align:center" title="Menu aksi cepat: Rincian, Edit, atau Hapus server">Tindakan</th>
+        <th class="sortable" data-col="0" style="cursor:pointer;min-width:120px;white-space:nowrap" title="Urutkan berdasarkan nama host server">Server ↕</th>
+        <th class="sortable" data-col="1" style="cursor:pointer;min-width:95px" title="Urutkan berdasarkan alamat IP — klik IP pada baris untuk menyalin">IP &amp; Interface ↕</th>
+        <th class="sortable" data-col="2" style="cursor:pointer;min-width:110px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform &amp; Mesin ↕</th>
+        <th class="sortable" data-col="3" style="cursor:pointer;min-width:115px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi ↕</th>
+        <th class="sortable" data-col="4" style="cursor:pointer;min-width:105px" title="Model prosesor (CPU) dan jumlah inti">Prosesor ↕</th>
+        <th class="sortable" data-col="5" style="cursor:pointer;min-width:80px" title="Kapasitas total memori utama (RAM) dan Swap">Memori ↕</th>
+        <th class="sortable" data-col="6" style="cursor:pointer;min-width:90px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan ↕</th>
+        <th class="sortable" data-col="7" style="cursor:pointer;min-width:80px" title="Durasi server aktif dan waktu boot terakhir">Uptime ↕</th>
+        <th class="sortable" data-col="8" style="cursor:pointer;min-width:75px;text-align:center" title="Versi agen Pantau dan status paket pembaruan APT">Agen &amp; APT ↕</th>
+        <th class="sortable" data-col="9" style="cursor:pointer;min-width:55px" title="Tag atau label kategori server">Tag ↕</th>
+        <th class="sortable" data-col="10" style="cursor:pointer;min-width:75px;text-align:center" title="Status koneksi dan waktu terakhir data diterima">Status &amp; Lapor ↕</th>
+        <th class="col-act" style="width:88px;min-width:88px;text-align:center" title="Menu aksi cepat: Rincian, Edit, atau Hapus server">Tindakan</th>
       </tr>
     </thead>
     <tbody>

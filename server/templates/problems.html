@@ -119,21 +119,21 @@
 }
 #probtable th.col-time,
 #probtable td.col-time {
-  width: 105px;
-  min-width: 95px;
-  max-width: 115px;
+  width: 120px;
+  min-width: 110px;
+  max-width: 135px;
   white-space: nowrap;
   font-size: 9.5px;
-  padding: 4px 6px;
+  padding: 4px 14px 4px 6px;
 }
 #probtable th.col-server,
 #probtable td.col-server {
-  width: 115px;
-  min-width: 100px;
-  max-width: 135px;
+  width: 130px;
+  min-width: 115px;
+  max-width: 155px;
   white-space: nowrap;
   font-size: 10px;
-  padding: 4px 6px;
+  padding: 4px 8px 4px 10px;
 }
 #probtable th.col-sev,
 #probtable td.col-sev {
@@ -359,8 +359,8 @@
         <th class="col-sev" title="Tingkat keparahan: Critical (kritis), Warning (waspada), atau Info (informasi)">Keparahan</th>
         <th class="col-event" title="Deskripsi ringkas mengenai anomali yang terjadi">Kejadian</th>
         <th class="col-durasi" title="Lama waktu insiden berlangsung hingga sekarang">Durasi</th>
-        <th class="col-act" title="Tindakan penanganan: Rincian, Tangani Insiden, atau Abaikan Masalah">Tindakan</th>
         <th class="col-tips" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">Panduan Solusi</th>
+        <th class="col-act" title="Tindakan penanganan: Rincian, Tangani Insiden, atau Abaikan Masalah">Tindakan</th>
       </tr></thead>
       <tbody>
       {% for p in open_problems %}
@@ -426,6 +426,13 @@
           {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
         </td>
         <td class="mono col-durasi" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">{{ p.durasi }}</td>
+        <td class="col-tips">
+          {% if p.tip %}
+            <div class="prob-tip-text" title="{{ p.tip }}">{{ p.tip }}</div>
+          {% else %}
+            —
+          {% endif %}
+        </td>
         <td class="prob-act-cell col-act">
           <div class="prob-act-wrap">
             <div class="prob-act-row prob-act-tools">
@@ -462,13 +469,6 @@
               </div>
             {% endif %}
           </div>
-        </td>
-        <td class="col-tips">
-          {% if p.tip %}
-            <div class="prob-tip-text" title="{{ p.tip }}">{{ p.tip }}</div>
-          {% else %}
-            —
-          {% endif %}
         </td>
       </tr>
       {% endfor %}

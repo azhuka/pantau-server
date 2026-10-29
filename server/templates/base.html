@@ -60,6 +60,7 @@
   --input-border:rgba(255, 255, 255, 0.14);
   --input-text:#f8fafc;
   --col-act-bg:#0b111e;
+  --col-act-th-bg:#141e30;
   --col-act-hover:#141e30;
   --modal-bg:#161b22;
   --modal-border:#30363d;
@@ -92,6 +93,7 @@
   --input-border:rgba(255, 255, 255, 0.14);
   --input-text:#f8fafc;
   --col-act-bg:#0b111e;
+  --col-act-th-bg:#141e30;
   --col-act-hover:#141e30;
   --modal-bg:#161b22;
   --modal-border:#30363d;
@@ -176,6 +178,7 @@
   --input-border:rgba(0, 0, 0, 0.18);
   --input-text:#0f172a;
   --col-act-bg:#ffffff;
+  --col-act-th-bg:#f1f5f9;
   --col-act-hover:#f1f5f9;
   --modal-bg:#ffffff;
   --modal-border:rgba(0, 0, 0, 0.15);
@@ -446,6 +449,75 @@ td{padding:4px 8px;font-size:10px;border-bottom:1px solid var(--border-subtle);v
 tr:last-child td{border-bottom:none}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:10.5px;color:var(--dim);font-variant-numeric:tabular-nums}
 table .mono{font-size:9.5px}
+
+/* Kolom Tindakan Berperekat Universal (Universal Sticky Right Column dengan Box-Shadow Elevasi) */
+th.col-act,
+td.col-act,
+th.th-actions,
+td.td-actions,
+td.fm-actions-cell {
+  position: sticky !important;
+  right: 0 !important;
+  background: var(--col-act-bg, #0b111e) !important;
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.45) !important;
+  z-index: 2 !important;
+}
+th.col-act,
+th.th-actions {
+  z-index: 3 !important;
+  background: var(--col-act-th-bg, #141e30) !important;
+}
+tbody tr:hover td.col-act,
+tbody tr:hover td.td-actions,
+tbody tr:hover td.fm-actions-cell {
+  background: var(--col-act-hover, #141e30) !important;
+}
+[data-theme="light"] th.col-act,
+[data-theme="light"] th.th-actions {
+  background: #f1f5f9 !important;
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme="light"] td.col-act,
+[data-theme="light"] td.td-actions,
+[data-theme="light"] td.fm-actions-cell {
+  background: #ffffff !important;
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme="light"] tbody tr:hover td.col-act,
+[data-theme="light"] tbody tr:hover td.td-actions,
+[data-theme="light"] tbody tr:hover td.fm-actions-cell {
+  background: #f1f5f9 !important;
+}
+[data-theme="obsidian"] th.col-act,
+[data-theme="obsidian"] td.col-act,
+[data-theme="obsidian"] th.th-actions,
+[data-theme="obsidian"] td.td-actions,
+[data-theme="obsidian"] td.fm-actions-cell {
+  background: #0d0d10 !important;
+}
+[data-theme="obsidian"] tbody tr:hover td.col-act,
+[data-theme="obsidian"] tbody tr:hover td.td-actions,
+[data-theme="obsidian"] tbody tr:hover td.fm-actions-cell {
+  background: #17171f !important;
+}
+[data-theme="navy"] th.col-act,
+[data-theme="navy"] th.th-actions {
+  background: #1b2642 !important;
+}
+[data-theme="navy"] td.col-act,
+[data-theme="navy"] td.td-actions,
+[data-theme="navy"] td.fm-actions-cell {
+  background: #131c31 !important;
+}
+[data-theme="navy"] tbody tr:hover td.col-act,
+[data-theme="navy"] tbody tr:hover td.td-actions,
+[data-theme="navy"] tbody tr:hover td.fm-actions-cell {
+  background: #1b2642 !important;
+}
+.group-header-row td.col-act {
+  background: transparent !important;
+  box-shadow: none !important;
+}
 
 /* Stabilisasi Lebar Kolom Tabel & Eliminasi Pergeseran Tata Letak (Enterprise Best Practice) */
 .col-durasi, th.col-durasi, td.col-durasi, td[data-start] {
@@ -1577,7 +1649,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.28' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.29' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
       <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
       </button>
@@ -4079,8 +4151,10 @@ function attachTablePagination(target, options = {}) {
   if (!table) return null;
   const tbody = table.tagName === 'TBODY' ? table : (table.querySelector('tbody') || table);
   
-  const pageSizeOptions = options.pageSizeOptions || [10, 25, 50, 100, 'all'];
-  let pageSize = options.defaultLimit || 10;
+  const isDnsGw = (table.id === 'spec-ifaces-table' || options.isDnsGw === true || options.defaultLimit === 5);
+  const defaultPageSize = isDnsGw ? 5 : 10;
+  const pageSizeOptions = options.pageSizeOptions || (isDnsGw ? [5, 10, 25, 'all'] : [10, 25, 50, 100, 'all']);
+  let pageSize = options.defaultLimit || defaultPageSize;
   let currentPage = 1;
   const unitLabel = options.unitLabel || 'baris';
   const filterFn = options.filterFn || null;
@@ -4140,7 +4214,8 @@ function attachTablePagination(target, options = {}) {
     });
 
     const total = visibleRows.length;
-    if (total < 5) {
+    const hideThreshold = isDnsGw ? 5 : 10;
+    if (total < hideThreshold || (total <= hideThreshold && (pageSize === 'all' || parseInt(pageSize, 10) >= hideThreshold))) {
       bar.style.display = 'none';
       allRows.forEach(tr => {
         const isMatch = visibleRows.includes(tr);

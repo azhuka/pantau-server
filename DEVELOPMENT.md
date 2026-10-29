@@ -311,6 +311,29 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.29
+
+- **Tipe Rilis:** Standardisasi Kolom Tindakan Berperekat, Kerapatan Tabel, & Kontrol Paginasi Cerdas (*Universal Sticky Action Column, Table Spacing Calibration & Smart Pagination Controls*)
+- **Fokus Utama:** Menyempurnakan kerapatan, keterbacaan, dan ergonomi navigasi tabel pemantauan NOC di seluruh modul web aplikasi Pantau Server:
+  1. **Kolom Tindakan Berperekat Universal (Universal Sticky Right Action Column):**
+     - Mengimplementasikan aturan CSS universal bertaraf enterprise untuk `th.col-act, td.col-act, th.th-actions, td.td-actions, td.fm-actions-cell` dengan properti `position: sticky !important; right: 0 !important;` dan efek bayangan elevasi horizontal `box-shadow: -4px 0 8px rgba(0, 0, 0, 0.45) !important`.
+     - Mendukung adaptasi warna latar belakang penuh di seluruh 4 mode tema: Midnight NOC (`#0b111e` / `#141e30`), Obsidian OLED (`#0d0d10` / `#17171f`), Deep Space Navy (`#131c31` / `#1b2642`), dan Mode Terang (`#ffffff` / `#f1f5f9` dengan bayangan lembut `rgba(0,0,0,0.08)`).
+     - Memastikan tombol operasional cepat (Rincian, Terminal, Web SSH, File Manager, Restart, Hapus, dll.) selalu dapat diakses seketika tanpa perlu menggulir horizontal bolak-balik pada layar dengan resolusi terbatas.
+     - Diterapkan secara konsisten di seluruh tabel: Halaman Daftar Server (`servers.html`), Insiden Server (`problems.html`), Pengelola Berkas (`file_manager.html`), Modal Keparahan Dasbor (`dashboard.html`), Probing Sintetis (`probing.html`), Profil/Pengguna (`profile.html`, `users.html`), serta seluruh tab modul Rincian Server (`services.html`): Layanan Inti, Unit Systemd, Paket Perangkat Lunak, Task Manager, Cron Job, Akun Pengguna Linux, Port Jaringan, Pengawasan SSL, dan Firewall Blocklist.
+  2. **Kalibrasi Kerapatan & Presisi Kolom Daftar Server (`servers.html`):**
+     - Menyelaraskan padding sel header `#servers-table th` menjadi `4px 5px` dan sel data `#servers-table td` menjadi `3px 5px`.
+     - Merapatkan `min-width` seluruh kolom header secara proporsional (~10–20px lebih rapat): Server (`120px`), IP & Antarmuka (`95px`), Platform (`110px`), OS & Kernel (`115px`), Prosesor (`105px`), Memori RAM (`80px`), Penyimpanan (`90px`), Uptime (`80px`), Agen & APT (`75px`), Tag (`55px`), Status (`75px`), dan Tindakan (`88px`).
+     - Menghilangkan celah kosong berlebih antar kolom tanpa mengorbankan keterbacaan teks dan angka metrik, menghasilkan tabel berkepadatan tinggi yang rapi, bersih, dinamis, dan presisi.
+  3. **Penyempurnaan Ruang Napas Kolom Insiden Server (`problems.html`):**
+     - Memberikan jarak proporsional antara kolom Waktu Mulai (`col-time`: `padding: 4px 14px 4px 6px`) dan Identitas Server (`col-server`: `padding: 4px 8px 4px 10px`) pada Kartu Insiden Terbuka (`#probtable`).
+     - Memindahkan posisi kolom *Panduan Solusi* (`col-tips`) ke sebelum kolom *Tindakan* (`col-act`), memastikan kolom tindakan selalu menjadi kolom paling kanan yang berperekat sempurna tanpa menutupi tips penanganan.
+  4. **Standarisasi Kontrol Paginasi Cerdas & Pengecualian Gateway/DNS:**
+     - Menstandarisasi batas default paginasi 10 baris (`pageSize: 10`) pada seluruh tabel modul aplikasi (Unit Systemd, Paket APT, Riwayat Tindakan Operator, Daftar Insiden, Cron Job, Task Manager, dll.).
+     - Menetapkan pengecualian khusus pada tabel *Konfigurasi Gateway & Resolver DNS* (`#spec-ifaces-table`) di tab Spesifikasi dengan batas default 5 baris (`defaultLimit: 5`, opsi `[5, 10, 25, 'all']`).
+     - Mengimplementasikan logika auto-hide bilah paginasi cerdas pada helper `attachTablePagination` dan paginasi kustom: jika total baris data yang cocok kurang dari ambang batas (10 baris, atau 5 baris pada tabel DNS/Gateway), bar paginasi disembunyikan otomatis (`display: none`) untuk membebaskan ruang tampilan vertikal dan mengeliminasi kontrol navigasi yang mubazir.
+  5. **Sinkronisasi SemVer 7 Berkas & Pengujian Runtime:**
+     - Menaikkan versi aplikasi menjadi `v4.8.29` secara sinkron dan identik di 7 berkas: `server/config.py`, `server/templates/base.html`, `package/opt/pantau/agent/agent_pantau.py`, `agent/agent_pantau.py`, `package/install.sh`, `README.md`, dan `DEVELOPMENT.md`.
+
 ## Versi 4.8.28
 
 - **Tipe Rilis:** Sistem Kustomisasi Tampilan & Antarmuka Universal (*Enterprise Theme, Accent Palette, Typography & UI Customization Engine*)

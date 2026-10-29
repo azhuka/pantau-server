@@ -1537,7 +1537,7 @@ body.popout-fleet_table #dash-fleet-card {
               <th style="padding:10px 12px;font-size:11px;width:150px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">SERVER</th>
               <th style="padding:10px 12px;font-size:11px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em">KEJADIAN / ANOMALI</th>
               <th style="padding:10px 12px;font-size:11px;width:120px;color:var(--dim);text-align:right;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">DURASI</th>
-              <th style="padding:10px 12px;font-size:11px;width:140px;color:var(--dim);text-align:center;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">TINDAKAN</th>
+              <th class="col-act" style="padding:10px 12px;font-size:11px;width:140px;color:var(--dim);text-align:center;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">TINDAKAN</th>
             </tr>
           </thead>
           <tbody id="sdm-tbody"></tbody>
@@ -1714,7 +1714,7 @@ function renderSevDetailModal(sev) {
           <td class="mono" style="padding:10px 12px;white-space:nowrap;text-align:right;vertical-align:middle;width:120px;font-size:12px;color:var(--dim)">
             ${durStr}
           </td>
-          <td style="padding:10px 12px;text-align:center;vertical-align:middle;white-space:nowrap;width:140px">
+          <td class="col-act" style="padding:10px 12px;text-align:center;vertical-align:middle;white-space:nowrap;width:140px">
             <div style="display:flex;align-items:center;justify-content:center;gap:6px">
               <button type="button" class="btn btn-ghost btn-sm" onclick='try{openProblemDetailModal(${JSON.stringify(p).replace(/'/g, "&#39;")});}catch(e){window.location.href="${rowHref}";}' title="Diagnosa &amp; Solusi" aria-label="Diagnosa">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>

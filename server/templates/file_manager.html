@@ -1337,7 +1337,7 @@ function fmRenderItems(items) {
       <td>${modeStr}</td>
       <td style="font-size:12px">${ownerStr}</td>
       <td>${dateStr}</td>
-      <td class="fm-actions-cell">
+      <td class="col-act fm-actions-cell">
         ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'View & Edit File' : 'Lihat & Edit Berkas'}" onclick="fmOpenFile('${safePath}')">${FM_ICONS.edit}</button>` : ''}
         ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Download File' : 'Unduh Berkas'}" onclick="fmDownloadFile('${safePath}')">${FM_ICONS.download}</button>` : ''}
         <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Copy' : 'Salin (Copy)'}" onclick="fmCopySingle('${safePath}')">${FM_ICONS.copy}</button>
