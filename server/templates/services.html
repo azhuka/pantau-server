@@ -2872,33 +2872,33 @@ div[style*="position: fixed"] .card {
 
   <!-- Subview 1: Kartu Pengguna (Users) -->
   <div class="card" id="subview-users">
-    <div class="card-header" style="align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px">
       <div>
-        <h3 style="margin:0;font-size:15px;font-weight:600">Daftar Pengguna Sistem &amp; Reguler</h3>
-        <span style="font-size:12px;color:var(--dim)">Inventaris akun Linux, identitas UID/GID, grup primer &amp; sekunder, direktori home, shell, dan sesi login (/etc/passwd, lastlog)</span>
+        <h3 style="margin:0;font-size:14px;font-weight:600">Daftar Pengguna Linux</h3>
+        <span style="font-size:12px;color:var(--dim)">Akun pengguna dan layanan sistem (/etc/passwd)</span>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <div class="btn-group" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px">
-          <button type="button" class="btn btn-xs btn-primary user-filter-btn" data-filter="all" onclick="filterUserCategory('all')" style="font-size:11px;padding:2px 8px">Semua</button>
-          <button type="button" class="btn btn-xs btn-ghost user-filter-btn" data-filter="regular" onclick="filterUserCategory('regular')" style="font-size:11px;padding:2px 8px">Reguler</button>
-          <button type="button" class="btn btn-xs btn-ghost user-filter-btn" data-filter="system" onclick="filterUserCategory('system')" style="font-size:11px;padding:2px 8px">Sistem</button>
-          <button type="button" class="btn btn-xs btn-ghost user-filter-btn" data-filter="active" onclick="filterUserCategory('active')" style="font-size:11px;padding:2px 8px">Sesi Aktif</button>
-        </div>
-        <div style="position:relative;display:inline-flex;align-items:center">
-          <input type="text" id="acc-search-input" placeholder="Cari nama, UID, shell, home..." oninput="searchUsersTable(true)" style="width:190px;height:26px;padding:2px 24px 2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-          <button type="button" onclick="clearUserSearch()" style="position:absolute;right:4px;background:none;border:none;cursor:pointer;color:var(--dim);display:none" id="acc-search-clear" title="Bersihkan">✕</button>
-        </div>
-        <span class="badge badge-info" id="acc-count-badge">{{ accounts|length if accounts else 0 }} Pengguna</span>
+      <span class="badge badge-info" id="acc-count-badge">{{ accounts|length if accounts else 0 }} Pengguna</span>
+    </div>
+    <div class="table-toolbar" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg-subtle, rgba(255,255,255,0.02));border-bottom:1px solid var(--border);gap:12px">
+      <div class="btn-group" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px">
+        <button type="button" class="btn btn-xs btn-primary user-filter-btn" data-filter="all" onclick="filterUserCategory('all')" style="font-size:11px;padding:3px 10px">Semua</button>
+        <button type="button" class="btn btn-xs btn-ghost user-filter-btn" data-filter="regular" onclick="filterUserCategory('regular')" style="font-size:11px;padding:3px 10px">Reguler</button>
+        <button type="button" class="btn btn-xs btn-ghost user-filter-btn" data-filter="system" onclick="filterUserCategory('system')" style="font-size:11px;padding:3px 10px">Sistem</button>
+        <button type="button" class="btn btn-xs btn-ghost user-filter-btn" data-filter="active" onclick="filterUserCategory('active')" style="font-size:11px;padding:3px 10px">Sesi Aktif</button>
+      </div>
+      <div style="position:relative;display:inline-flex;align-items:center">
+        <input type="text" id="acc-search-input" placeholder="Cari nama, UID, shell, home..." oninput="searchUsersTable(true)" style="width:220px;height:28px;padding:2px 26px 2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+        <button type="button" onclick="clearUserSearch()" style="position:absolute;right:6px;background:none;border:none;cursor:pointer;color:var(--dim);display:none" id="acc-search-clear" title="Bersihkan">✕</button>
       </div>
     </div>
-    <div id="acc-empty" class="empty-msg" style="{{ 'display:none' if accounts else 'display:block' }}">Belum ada data akun dari server ini.</div>
+    <div id="acc-empty" class="empty-msg" style="{{ 'display:none' if accounts else 'display:block' }}">Belum ada data pengguna dari server ini.</div>
     <div style="overflow-x:auto">
       <table id="acc-table" style="min-width:850px;{{ 'display:table;width:100%' if accounts else 'display:none;width:100%' }}">
         <thead>
           <tr>
             <th style="min-width:140px">Pengguna</th>
             <th style="width:90px;min-width:80px">UID / GID</th>
-            <th style="min-width:160px">Grup Primer &amp; Tambahan</th>
+            <th style="min-width:160px">Grup Utama &amp; Sekunder</th>
             <th style="min-width:160px">Direktori Home &amp; Shell</th>
             <th style="min-width:140px">Login Terakhir &amp; Sesi</th>
             <th class="col-act" style="width:130px;min-width:120px;text-align:center">Tindakan</th>
@@ -2990,23 +2990,23 @@ div[style*="position: fixed"] .card {
 
   <!-- Subview 2: Kartu Grup Sistem (Groups) -->
   <div class="card" id="subview-groups" style="display:none">
-    <div class="card-header" style="align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px">
       <div>
-        <h3 style="margin:0;font-size:15px;font-weight:600">Daftar Grup Sistem &amp; Pengguna (/etc/group)</h3>
-        <span style="font-size:12px;color:var(--dim)">Inventaris seluruh grup Linux, nomor identifikasi GID, klasifikasi grup sistem/pengguna, dan daftar anggota pengguna aktif</span>
+        <h3 style="margin:0;font-size:14px;font-weight:600">Daftar Grup Linux</h3>
+        <span style="font-size:12px;color:var(--dim)">Daftar grup sistem operasi dan anggota (/etc/group)</span>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <div class="btn-group" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px">
-          <button type="button" class="btn btn-xs btn-primary group-filter-btn" data-filter="all" onclick="filterGroupCategory('all')" style="font-size:11px;padding:2px 8px">Semua</button>
-          <button type="button" class="btn btn-xs btn-ghost group-filter-btn" data-filter="regular" onclick="filterGroupCategory('regular')" style="font-size:11px;padding:2px 8px">Reguler</button>
-          <button type="button" class="btn btn-xs btn-ghost group-filter-btn" data-filter="system" onclick="filterGroupCategory('system')" style="font-size:11px;padding:2px 8px">Sistem</button>
-          <button type="button" class="btn btn-xs btn-ghost group-filter-btn" data-filter="privileged" onclick="filterGroupCategory('privileged')" style="font-size:11px;padding:2px 8px">Istimewa</button>
-        </div>
-        <div style="position:relative;display:inline-flex;align-items:center">
-          <input type="text" id="group-search-input" placeholder="Cari nama grup atau anggota..." oninput="searchGroupsTable(true)" style="width:190px;height:26px;padding:2px 24px 2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-          <button type="button" onclick="clearGroupSearch()" style="position:absolute;right:4px;background:none;border:none;cursor:pointer;color:var(--dim);display:none" id="group-search-clear" title="Bersihkan">✕</button>
-        </div>
-        <span class="badge badge-info" id="groups-count-badge">{{ system_groups|length if system_groups else 0 }} Grup</span>
+      <span class="badge badge-info" id="groups-count-badge">{{ system_groups|length if system_groups else 0 }} Grup</span>
+    </div>
+    <div class="table-toolbar" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg-subtle, rgba(255,255,255,0.02));border-bottom:1px solid var(--border);gap:12px">
+      <div class="btn-group" style="display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px">
+        <button type="button" class="btn btn-xs btn-primary group-filter-btn" data-filter="all" onclick="filterGroupCategory('all')" style="font-size:11px;padding:3px 10px">Semua</button>
+        <button type="button" class="btn btn-xs btn-ghost group-filter-btn" data-filter="regular" onclick="filterGroupCategory('regular')" style="font-size:11px;padding:3px 10px">Reguler</button>
+        <button type="button" class="btn btn-xs btn-ghost group-filter-btn" data-filter="system" onclick="filterGroupCategory('system')" style="font-size:11px;padding:3px 10px">Sistem</button>
+        <button type="button" class="btn btn-xs btn-ghost group-filter-btn" data-filter="privileged" onclick="filterGroupCategory('privileged')" style="font-size:11px;padding:3px 10px">Privileged</button>
+      </div>
+      <div style="position:relative;display:inline-flex;align-items:center">
+        <input type="text" id="group-search-input" placeholder="Cari nama grup atau anggota..." oninput="searchGroupsTable(true)" style="width:220px;height:28px;padding:2px 26px 2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+        <button type="button" onclick="clearGroupSearch()" style="position:absolute;right:6px;background:none;border:none;cursor:pointer;color:var(--dim);display:none" id="group-search-clear" title="Bersihkan">✕</button>
       </div>
     </div>
     <div id="groups-empty" class="empty-msg" style="{{ 'display:none' if system_groups else 'display:block' }}">Belum ada data grup dari server ini.</div>
@@ -3016,8 +3016,8 @@ div[style*="position: fixed"] .card {
           <tr>
             <th style="min-width:140px">Nama Grup</th>
             <th style="width:80px;min-width:75px">GID</th>
-            <th style="width:140px;min-width:120px">Tipe Grup</th>
-            <th style="min-width:240px">Anggota Terdaftar (Members)</th>
+            <th style="width:120px;min-width:100px">Tipe</th>
+            <th style="min-width:240px">Anggota (Members)</th>
             <th style="width:90px;min-width:85px;text-align:center">Jumlah</th>
           </tr>
         </thead>
@@ -3027,15 +3027,15 @@ div[style*="position: fixed"] .card {
             <td style="white-space:nowrap">
               <strong class="mono" style="font-size:13px">{{ g.group }}</strong>
               {% if g.is_privileged %}
-                <span class="badge badge-info" style="font-size:9.5px;padding:1px 5px" title="Grup memiliki hak administratif / akses perangkat sistem">Istimewa</span>
+                <span class="badge badge-info" style="font-size:9.5px;padding:1px 5px" title="Grup administratif dengan hak akses khusus sistem">Privileged</span>
               {% endif %}
             </td>
             <td class="mono" style="white-space:nowrap">{{ g.gid }}</td>
             <td style="white-space:nowrap">
               {% if g.is_system %}
-                <span class="badge badge-muted" style="font-size:9.5px">Sistem (GID &lt; 1000)</span>
+                <span class="badge badge-muted" style="font-size:9.5px" title="Grup sistem (GID < 1000)">Sistem</span>
               {% else %}
-                <span class="badge badge-up" style="font-size:9.5px">Pengguna / Kustom</span>
+                <span class="badge badge-up" style="font-size:9.5px" title="Grup pengguna biasa (GID ≥ 1000)">Reguler</span>
               {% endif %}
             </td>
             <td>
@@ -9789,10 +9789,10 @@ function renderSys(data) {
 
       return '<tr data-group="' + gNameEsc.toLowerCase() + '" data-is-system="' + (isSys ? '1' : '0') + '" data-is-privileged="' + (isPriv ? '1' : '0') + '" data-members="' + escHtml(mems.join(' ').toLowerCase()) + '">'
         + '<td style="white-space:nowrap"><strong class="mono" style="font-size:13px">' + gNameEsc + '</strong>'
-        + (isPriv ? ' <span class="badge badge-info" style="font-size:9.5px;padding:1px 5px" title="' + (isEn ? 'Group has administrative or privileged device permissions' : 'Grup memiliki hak administratif / akses perangkat sistem') + '">' + (isEn ? 'Privileged' : 'Istimewa') + '</span>' : '') + '</td>'
+        + (isPriv ? ' <span class="badge badge-info" style="font-size:9.5px;padding:1px 5px" title="' + (isEn ? 'Group has administrative or privileged device permissions' : 'Grup administratif dengan hak akses khusus sistem') + '">Privileged</span>' : '') + '</td>'
         + '<td class="mono" style="white-space:nowrap">' + escHtml(String(g.gid)) + '</td>'
-        + '<td style="white-space:nowrap">' + (isSys ? ('<span class="badge badge-muted" style="font-size:9.5px">' + (isEn ? 'System (GID < 1000)' : 'Sistem (GID < 1000)') + '</span>')
-                                                     : ('<span class="badge badge-up" style="font-size:9.5px">' + (isEn ? 'User / Custom' : 'Pengguna / Kustom') + '</span>')) + '</td>'
+        + '<td style="white-space:nowrap">' + (isSys ? ('<span class="badge badge-muted" style="font-size:9.5px" title="GID < 1000">' + (isEn ? 'System' : 'Sistem') + '</span>')
+                                                     : ('<span class="badge badge-up" style="font-size:9.5px" title="GID ≥ 1000">' + (isEn ? 'Regular' : 'Reguler') + '</span>')) + '</td>'
         + '<td>' + memsHtml + '</td>'
         + '<td class="mono" style="text-align:center"><span class="badge badge-' + (memCount > 0 ? 'info' : 'muted') + '" style="font-size:10px;padding:1px 6px">' + memCount + '</span></td></tr>';
     }).join('');

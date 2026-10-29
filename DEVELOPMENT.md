@@ -311,6 +311,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.35
+
+- **Tipe Rilis:** Stabilisasi Bilah Alat Filter Pengguna & Grup serta Standardisasi Terminologi Linux (*Users & Groups Zero-Shift Toolbar Architecture & Linux Terminology Standardization*)
+- **Fokus Utama:** Mengatasi anomali pergeseran tata letak tombol (*layout shift*) saat memilih filter Sistem atau kategori lainnya pada subview Pengguna dan Grup, serta menyelaraskan bahasa antarmuka ke standar Bahasa Indonesia yang lugas dan mudah dipahami sysadmin (`server/templates/services.html`):
+  1. **Arsitektur Bilah Alat Berpindah Nol (*Zero Layout Shift Toolbar Strip*):**
+     - Mengeliminasi penempatan kontrol filter dan pencarian dari dalam `card-header` yang sebelumnya rentan turun baris (*wrap*) hingga meloncat ~600px saat teks lencana jumlah entri melebar.
+     - Mengimplementasikan bilah alat khusus (`.table-toolbar`) dengan lebar penuh di bawah judul kartu untuk menaungi tombol filter cepat di sisi kiri dan kotak pencarian instan di sisi kanan.
+     - Hasil pengujian koordinat DOM membuktikan posisi tombol filter 100% terkunci stabil dengan pergeseran tepat **0.00 piksel** (*Zero Layout Shift*), mencegah tombol bergerak saat diklik oleh operator.
+  2. **Penyelarasan Bahasa Indonesia yang Alami & Terminologi Standar Sysadmin:**
+     - Mengganti istilah kaku "Istimewa" menjadi istilah teknis internasional standar **Privileged** pada tombol filter grup, lencana tabel, dan metadata tooltip untuk grup berakses administratif (`sudo`, `wheel`, `root`, `docker`, `adm`).
+     - Menyederhanakan klasifikasi tipe grup menjadi **Sistem** (GID < 1000) dan **Reguler** (GID ≥ 1000), selaras dengan tombol filter dan istilah umum sistem operasi Linux.
+     - Menyempurnakan label kolom dan deskripsi menjadi lebih lugas: **Grup Utama & Sekunder**, **Anggota (Members)**, serta deskripsi judul yang bersih tanpa kalimat bertele-tele.
+
 ## Versi 4.8.34
 
 - **Tipe Rilis:** Perbaikan Sinkronisasi Filter Kategori & Pencarian Pengguna dan Grup dengan Paginasi (*Users & Groups Filter-Hidden Synchronization & Live Pagination Resilience*)
