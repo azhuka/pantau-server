@@ -311,6 +311,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.34
+
+- **Tipe Rilis:** Perbaikan Sinkronisasi Filter Kategori & Pencarian Pengguna dan Grup dengan Paginasi (*Users & Groups Filter-Hidden Synchronization & Live Pagination Resilience*)
+- **Fokus Utama:** Menyelesaikan kendala malfungsi tombol filter kategori (`Semua`, `Reguler`, `Sistem`, `Sesi Aktif` pada Pengguna dan `Semua`, `Reguler`, `Sistem`, `Istimewa` pada Grup) serta kotak pencarian instan pada subview Pengguna & Grup Sistem (`server/templates/services.html`):
+  1. **Integrasi Atribut Filter Terhadap Mesin Paginasi Universal:**
+     - Menetapkan atribut `dataset.filterHidden = isMatch ? '0' : '1'` pada setiap baris tabel (`#acc-table` dan `#groups-table`) di dalam fungsi `searchUsersTable()` dan `searchGroupsTable()`.
+     - Memastikan mesin paginasi universal (`attachTablePagination`) membaca visibilitas baris secara akurat melalui `tr.dataset.filterHidden`, mengeliminasi bug di mana paginasi sebelumnya menimpa visibilitas baris dan membatalkan hasil filter kategori.
+  2. **Pengelolaan Halaman & Pesan Status Kosong Dinamis (*Dynamic Empty State*):**
+     - Mengotomatiskan pemanggilan `setPage(1)` saat tombol kategori diklik atau saat kata kunci pencarian diubah sehingga tampilan langsung melompat ke halaman pertama dari subset hasil filter.
+     - Menyediakan penanganan kondisi tanpa hasil (*empty state*) secara dinamis; menyembunyikan tabel dan menampilkan pesan informatif baku (`Tidak ada pengguna/grup yang cocok dengan filter atau kata kunci pencarian.`) saat `matchCount === 0`, serta memulihkan tampilan tabel seketika saat pencarian dibersihkan.
+  3. **Preservasi Status Filter pada Siklus Polling Latar Belakang (`renderSystem`):**
+     - Mengintegrasikan eksekusi `searchUsersTable(false)` dan `searchGroupsTable(false)` pada fungsi pembaruan berkala `renderSystem(data)` pasca-rendering `tbody.innerHTML`, menjamin filter kategori dan kata kunci pencarian tetap bertahan tanpa ter-reset saat telemetri baru diterima dari agen.
+     - Memperbarui teks lencana jumlah entri secara interaktif (`X / Y Pengguna` dan `X / Y Grup`) untuk memberikan umpan balik visual seketika kepada operator NOC.
+
 ## Versi 4.8.33
 
 - **Tipe Rilis:** Transformasi Modul Users & Groups ala ServerBox Enterprise (*ServerBox-Inspired Users & Groups Modular Architecture*)

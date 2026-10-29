@@ -2885,7 +2885,7 @@ div[style*="position: fixed"] .card {
           <button type="button" class="btn btn-xs btn-ghost user-filter-btn" data-filter="active" onclick="filterUserCategory('active')" style="font-size:11px;padding:2px 8px">Sesi Aktif</button>
         </div>
         <div style="position:relative;display:inline-flex;align-items:center">
-          <input type="text" id="acc-search-input" placeholder="Cari nama, UID, shell, home..." oninput="searchUsersTable()" style="width:190px;height:26px;padding:2px 24px 2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+          <input type="text" id="acc-search-input" placeholder="Cari nama, UID, shell, home..." oninput="searchUsersTable(true)" style="width:190px;height:26px;padding:2px 24px 2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
           <button type="button" onclick="clearUserSearch()" style="position:absolute;right:4px;background:none;border:none;cursor:pointer;color:var(--dim);display:none" id="acc-search-clear" title="Bersihkan">✕</button>
         </div>
         <span class="badge badge-info" id="acc-count-badge">{{ accounts|length if accounts else 0 }} Pengguna</span>
@@ -3003,7 +3003,7 @@ div[style*="position: fixed"] .card {
           <button type="button" class="btn btn-xs btn-ghost group-filter-btn" data-filter="privileged" onclick="filterGroupCategory('privileged')" style="font-size:11px;padding:2px 8px">Istimewa</button>
         </div>
         <div style="position:relative;display:inline-flex;align-items:center">
-          <input type="text" id="group-search-input" placeholder="Cari nama grup atau anggota..." oninput="searchGroupsTable()" style="width:190px;height:26px;padding:2px 24px 2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+          <input type="text" id="group-search-input" placeholder="Cari nama grup atau anggota..." oninput="searchGroupsTable(true)" style="width:190px;height:26px;padding:2px 24px 2px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
           <button type="button" onclick="clearGroupSearch()" style="position:absolute;right:4px;background:none;border:none;cursor:pointer;color:var(--dim);display:none" id="group-search-clear" title="Bersihkan">✕</button>
         </div>
         <span class="badge badge-info" id="groups-count-badge">{{ system_groups|length if system_groups else 0 }} Grup</span>
@@ -4051,6 +4051,8 @@ function initServicesTabPagination() {
   if (document.getElementById('groups-table') && !_servicesTabPagination['groups']) {
     _servicesTabPagination['groups'] = attachTablePagination('#groups-table', { unitLabel: 'grup', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 100, 'all'] });
   }
+  if (typeof searchUsersTable === 'function') searchUsersTable(false);
+  if (typeof searchGroupsTable === 'function') searchGroupsTable(false);
   // 4. Tab Akun (Riwayat Tindakan Akun - default 10)
   if (document.getElementById('acc-action-table') && !_servicesTabPagination['acc-action']) {
     _servicesTabPagination['acc-action'] = attachTablePagination('#acc-action-table', { unitLabel: 'tindakan', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 'all'] });
@@ -5378,12 +5380,13 @@ function switchUserSubnav(subnav) {
   if (viewU) viewU.style.display = isUsers ? 'block' : 'none';
   if (viewG) viewG.style.display = !isUsers ? 'block' : 'none';
 
-  if (typeof _servicesTabPagination !== 'undefined') {
-    if (isUsers && _servicesTabPagination['acc']) {
-      _servicesTabPagination['acc'].update();
-    } else if (!isUsers && _servicesTabPagination['groups']) {
-      _servicesTabPagination['groups'].update();
-    }
+  if (typeof initServicesTabPagination === 'function') {
+    initServicesTabPagination();
+  }
+  if (isUsers) {
+    searchUsersTable(false);
+  } else {
+    searchGroupsTable(false);
   }
 }
 
@@ -5394,7 +5397,7 @@ function filterUserCategory(cat) {
     btn.classList.toggle('btn-primary', isAct);
     btn.classList.toggle('btn-ghost', !isAct);
   });
-  searchUsersTable();
+  searchUsersTable(true);
 }
 
 function filterGroupCategory(cat) {
@@ -5404,15 +5407,16 @@ function filterGroupCategory(cat) {
     btn.classList.toggle('btn-primary', isAct);
     btn.classList.toggle('btn-ghost', !isAct);
   });
-  searchGroupsTable();
+  searchGroupsTable(true);
 }
 
-function searchUsersTable() {
+function searchUsersTable(resetPage = false) {
   const q = (document.getElementById('acc-search-input')?.value || '').trim().toLowerCase();
   const clearBtn = document.getElementById('acc-search-clear');
   if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
 
-  const rows = document.querySelectorAll('#acc-table tbody tr');
+  const rows = Array.from(document.querySelectorAll('#acc-table tbody tr')).filter(tr => !tr.classList.contains('empty-msg'));
+  let matchCount = 0;
   rows.forEach(tr => {
     const isSys = tr.getAttribute('data-is-system') === '1';
     const isAct = tr.getAttribute('data-is-active') === '1';
@@ -5428,11 +5432,46 @@ function searchUsersTable() {
       textMatch = text.includes(q);
     }
 
-    tr.style.display = (catMatch && textMatch) ? '' : 'none';
+    const isMatch = catMatch && textMatch;
+    tr.dataset.filterHidden = isMatch ? '0' : '1';
+    tr.style.display = isMatch ? '' : 'none';
+    if (isMatch) matchCount++;
   });
 
+  const emptyMsg = document.getElementById('acc-empty');
+  const tableEl = document.getElementById('acc-table');
+  const isEn = (typeof isEnPage === 'function') ? isEnPage() : false;
+  if (emptyMsg) {
+    if (rows.length > 0 && matchCount === 0) {
+      emptyMsg.textContent = isEn ? 'No users matching current filter or search query.' : 'Tidak ada pengguna yang cocok dengan filter atau kata kunci pencarian.';
+      emptyMsg.style.display = 'block';
+      if (tableEl) tableEl.style.display = 'none';
+    } else if (rows.length > 0) {
+      emptyMsg.style.display = 'none';
+      if (tableEl) tableEl.style.display = 'table';
+    }
+  }
+
+  const accBadge = document.getElementById('acc-count-badge');
+  if (accBadge) {
+    if (_currentAccCategory !== 'all' || q) {
+      accBadge.textContent = matchCount + ' / ' + rows.length + (isEn ? ' Users' : ' Pengguna');
+    } else {
+      let bText = rows.length + (isEn ? (rows.length === 1 ? ' User' : ' Users') : ' Pengguna');
+      const sessCount = Array.from(rows).filter(r => r.getAttribute('data-is-active') === '1').length;
+      if (sessCount > 0) {
+        bText += isEn ? (' · ' + sessCount + ' Active Sessions (SSH)') : (' · ' + sessCount + ' Sesi Aktif (SSH)');
+      }
+      accBadge.textContent = bText;
+    }
+  }
+
   if (typeof _servicesTabPagination !== 'undefined' && _servicesTabPagination['acc']) {
-    _servicesTabPagination['acc'].update();
+    if (resetPage) {
+      _servicesTabPagination['acc'].setPage(1);
+    } else {
+      _servicesTabPagination['acc'].update();
+    }
   }
 }
 
@@ -5440,16 +5479,17 @@ function clearUserSearch() {
   const inp = document.getElementById('acc-search-input');
   if (inp) {
     inp.value = '';
-    searchUsersTable();
+    searchUsersTable(true);
   }
 }
 
-function searchGroupsTable() {
+function searchGroupsTable(resetPage = false) {
   const q = (document.getElementById('group-search-input')?.value || '').trim().toLowerCase();
   const clearBtn = document.getElementById('group-search-clear');
   if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
 
-  const rows = document.querySelectorAll('#groups-table tbody tr');
+  const rows = Array.from(document.querySelectorAll('#groups-table tbody tr')).filter(tr => !tr.classList.contains('empty-msg'));
+  let matchCount = 0;
   rows.forEach(tr => {
     const isSys = tr.getAttribute('data-is-system') === '1';
     const isPriv = tr.getAttribute('data-is-privileged') === '1';
@@ -5465,11 +5505,41 @@ function searchGroupsTable() {
       textMatch = text.includes(q);
     }
 
-    tr.style.display = (catMatch && textMatch) ? '' : 'none';
+    const isMatch = catMatch && textMatch;
+    tr.dataset.filterHidden = isMatch ? '0' : '1';
+    tr.style.display = isMatch ? '' : 'none';
+    if (isMatch) matchCount++;
   });
 
+  const emptyMsg = document.getElementById('groups-empty');
+  const tableEl = document.getElementById('groups-table');
+  const isEn = (typeof isEnPage === 'function') ? isEnPage() : false;
+  if (emptyMsg) {
+    if (rows.length > 0 && matchCount === 0) {
+      emptyMsg.textContent = isEn ? 'No system groups matching current filter or search query.' : 'Tidak ada grup yang cocok dengan filter atau kata kunci pencarian.';
+      emptyMsg.style.display = 'block';
+      if (tableEl) tableEl.style.display = 'none';
+    } else if (rows.length > 0) {
+      emptyMsg.style.display = 'none';
+      if (tableEl) tableEl.style.display = 'table';
+    }
+  }
+
+  const groupsCountBadge = document.getElementById('groups-count-badge');
+  if (groupsCountBadge) {
+    if (_currentGroupCategory !== 'all' || q) {
+      groupsCountBadge.textContent = matchCount + ' / ' + rows.length + (isEn ? ' Groups' : ' Grup');
+    } else {
+      groupsCountBadge.textContent = rows.length + (isEn ? ' Groups' : ' Grup');
+    }
+  }
+
   if (typeof _servicesTabPagination !== 'undefined' && _servicesTabPagination['groups']) {
-    _servicesTabPagination['groups'].update();
+    if (resetPage) {
+      _servicesTabPagination['groups'].setPage(1);
+    } else {
+      _servicesTabPagination['groups'].update();
+    }
   }
 }
 
@@ -5477,7 +5547,7 @@ function clearGroupSearch() {
   const inp = document.getElementById('group-search-input');
   if (inp) {
     inp.value = '';
-    searchGroupsTable();
+    searchGroupsTable(true);
   }
 }
 
@@ -9687,7 +9757,9 @@ function renderSys(data) {
         + '<div style="font-size:11px;color:var(--dim)">' + escHtml(a.last_login || '-') + '</div></td>'
         + '<td class="col-act" style="white-space:nowrap;text-align:center"><div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">' + actions + '</div></td></tr>';
     }).join('');
-    if (_servicesTabPagination['acc']) {
+    if (typeof searchUsersTable === 'function') {
+      searchUsersTable(false);
+    } else if (_servicesTabPagination['acc']) {
       _servicesTabPagination['acc'].update();
     }
   }
@@ -9724,7 +9796,9 @@ function renderSys(data) {
         + '<td>' + memsHtml + '</td>'
         + '<td class="mono" style="text-align:center"><span class="badge badge-' + (memCount > 0 ? 'info' : 'muted') + '" style="font-size:10px;padding:1px 6px">' + memCount + '</span></td></tr>';
     }).join('');
-    if (_servicesTabPagination['groups']) {
+    if (typeof searchGroupsTable === 'function') {
+      searchGroupsTable(false);
+    } else if (_servicesTabPagination['groups']) {
       _servicesTabPagination['groups'].update();
     }
   }
@@ -9732,18 +9806,30 @@ function renderSys(data) {
   const accBadge = document.getElementById('acc-count-badge');
   const sessCount = data.active_sessions_count || 0;
   if (accBadge) {
-    let bText = acc.length + (isEn ? (acc.length === 1 ? ' User' : ' Users') : ' Pengguna');
-    if (sessCount > 0) {
-      bText += isEn ? (' · ' + sessCount + ' Active Sessions (SSH)') : (' · ' + sessCount + ' Sesi Aktif (SSH)');
+    const qAcc = (document.getElementById('acc-search-input')?.value || '').trim();
+    if (_currentAccCategory !== 'all' || qAcc) {
+      // Biarkan searchUsersTable memperbarui badge sesuai hasil filter
+    } else {
+      let bText = acc.length + (isEn ? (acc.length === 1 ? ' User' : ' Users') : ' Pengguna');
+      if (sessCount > 0) {
+        bText += isEn ? (' · ' + sessCount + ' Active Sessions (SSH)') : (' · ' + sessCount + ' Sesi Aktif (SSH)');
+      }
+      accBadge.textContent = bText;
     }
-    accBadge.textContent = bText;
   }
   const badgeUsersCount = document.getElementById('badge-users-count');
   if (badgeUsersCount) badgeUsersCount.textContent = acc.length;
   const badgeGroupsCount = document.getElementById('badge-groups-count');
   if (badgeGroupsCount) badgeGroupsCount.textContent = grps.length;
   const groupsCountBadge = document.getElementById('groups-count-badge');
-  if (groupsCountBadge) groupsCountBadge.textContent = grps.length + (isEn ? ' Groups' : ' Grup');
+  if (groupsCountBadge) {
+    const qGrp = (document.getElementById('group-search-input')?.value || '').trim();
+    if (_currentGroupCategory !== 'all' || qGrp) {
+      // Biarkan searchGroupsTable memperbarui badge sesuai hasil filter
+    } else {
+      groupsCountBadge.textContent = grps.length + (isEn ? ' Groups' : ' Grup');
+    }
+  }
 
   // Periksa apakah performa server overload untuk tab-dot-perf
   const isHighCpu = (cpu > 85);
