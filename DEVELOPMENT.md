@@ -311,6 +311,31 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.28
+
+- **Tipe Rilis:** Sistem Kustomisasi Tampilan & Antarmuka Universal (*Enterprise Theme, Accent Palette, Typography & UI Customization Engine*)
+- **Fokus Utama:** Menyediakan kontrol personalisasi antarmuka web menyeluruh bagi operator dan sysadmin agar dapat menyesuaikan tema visual, warna aksen, gaya font antarmuka & monospace, serta tingkat kerapatan tata letak (*density*) demi kenyamanan pengamatan monitor NOC di berbagai kondisi pencahayaan (ruangan gelap NOC vs ruangan terang siang hari):
+  1. **Multi-Mode Tema Visual (Theme Engine):**
+     - **Midnight NOC (Bawaan):** Tema gelap seimbang khas monitor NOC dengan gradien radial biru malam pekat.
+     - **Obsidian OLED:** Tema hitam pekat murni (`#000000`) dengan 0% backlight glow dan kontras tinggi untuk efisiensi panel OLED dan kenyamanan mata di malam hari.
+     - **Deep Space:** Tema biru malam pekat khas Proxmox / Grafana dengan aksen border biru transparan.
+     - **Mode Terang (Light Modern):** Tema terang cerah dan bersih (`#f8fafc` & `#ffffff`) dengan bayangan kartu halus dan kontras teks tinggi (`#0f172a`), ideal untuk lingkungan kerja siang hari.
+  2. **Palet Warna Aksen Antarmuka (Accent Palette):**
+     - Mendukung 5 warna aksen primer: Sian (`#38bdf8` - Bawaan), Indigo (`#6366f1`), Zamrud (`#10b981`), Violet (`#a855f7`), dan Sunset Amber (`#f59e0b`).
+     - Mengubah variabel CSS aksen (`--blue`, `--blue-hover`, `--blue-bg`, `--accent`) secara global dan real-time di seluruh komponen (navigasi aktif, lencana, fokus input, tombol, dan border).
+  3. **Tipografi & Gaya Font Fleksibel:**
+     - **Font Antarmuka (UI):** Sistem Bawaan (*San Francisco, Segoe UI, Roboto*), Inter (Modern & Presisi), Geist Sans (Tech & Minimalis), dan Ubuntu / Fira Sans (Khas Linux).
+     - **Font Monospace (Data, IP, Metrik):** Sistem Monospace (*Consolas, SFMono*), JetBrains Mono (Khas IDE), dan Fira Code (Presisi Teknis).
+  4. **Kerapatan Tata Letak Antarmuka (UI Density):**
+     - **Kompak NOC (Bawaan):** Kepadatan data tinggi dengan padding sel rapat 3px-6px dan ruang vertikal minimal khas ruang kendali jaringan.
+     - **Normal Nyaman:** Ruang spasi dan padding kartu lebih lega untuk peninjauan santai.
+  5. **Arsitektur Zero-FOUC & Pratinjau Instan (Live Preview):**
+     - Script inisialisasi awal di `<head>` mengevaluasi `localStorage` sebelum kalkulasi DOM dan rendering CSS peramban, mengeliminasi efek kedipan (*Flash of Unstyled Content*).
+     - Seluruh perubahan pada modal kustomisasi langsung diaplikasikan ke DOM secara live tanpa reload halaman.
+     - Dialog kustomisasi tema dapat dibuka melalui menu sidebar *Kustomisasi UI*, tombol cepat tema pada footer sidebar, header mobile, serta profil akun pengguna. Dilengkapi tombol *Kembalikan Bawaan* dan dukungan tombol `Escape`.
+  6. **Sinkronisasi SemVer 7 Berkas & Pengujian Runtime:**
+     - Menaikkan versi aplikasi menjadi `v4.8.28` secara sinkron dan identik di 7 berkas: `server/config.py`, `server/templates/base.html`, `package/opt/pantau/agent/agent_pantau.py`, `agent/agent_pantau.py`, `package/install.sh`, `README.md`, dan `DEVELOPMENT.md`.
+
 ## Versi 4.8.27
 
 - **Tipe Rilis:** Transformasi Halaman Daftar Server Menjadi Direktori Inventaris Mesin Klien Lengkap (*Fleet Client Machine Identity & Inventory Directory*)

@@ -6,7 +6,26 @@
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
 {% block extra_head %}{% endblock %}
+<script>
+(function() {
+  try {
+    var t = localStorage.getItem('pantau_theme') || 'dark';
+    var a = localStorage.getItem('pantau_accent') || 'cyan';
+    var f = localStorage.getItem('pantau_font_ui') || 'system';
+    var fm = localStorage.getItem('pantau_font_mono') || 'system';
+    var d = localStorage.getItem('pantau_density') || 'compact';
+    var doc = document.documentElement;
+    doc.setAttribute('data-theme', t);
+    doc.setAttribute('data-accent', a);
+    doc.setAttribute('data-font-ui', f);
+    doc.setAttribute('data-font-mono', fm);
+    doc.setAttribute('data-density', d);
+  } catch(e) {}
+})();
+</script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 :root{
   --bg:#111827;
   --bg-gradient:radial-gradient(ellipse at 50% 0%, rgba(37, 99, 235, 0.22) 0%, rgba(17, 24, 39, 1) 72%);
@@ -14,10 +33,13 @@
   --sidebar-hover:rgba(255,255,255,0.07);
   --card:#1a2336;
   --card-hover:#222f47;
+  --card-bg:linear-gradient(180deg, rgba(26, 35, 54, 0.95) 0%, rgba(20, 27, 43, 0.98) 100%);
+  --stat-card-bg:linear-gradient(180deg, rgba(26, 35, 54, 0.9) 0%, rgba(18, 25, 40, 0.95) 100%);
   --border:rgba(255,255,255,0.11);
   --border-subtle:rgba(255,255,255,0.06);
   --border-focus:rgba(56,189,248,0.7);
   --text:#f8fafc;
+  --text-heading:#ffffff;
   --dim:#94a3b8;
   --dim-subtle:#64748b;
   --blue:#38bdf8;
@@ -34,12 +56,261 @@
   --yellow-bg:rgba(251,191,36,0.16);
   --purple:#c084fc;
   --hover:rgba(255,255,255,0.06);
+  --input-bg:rgba(9, 13, 22, 0.75);
+  --input-border:rgba(255, 255, 255, 0.14);
+  --input-text:#f8fafc;
+  --col-act-bg:#0b111e;
+  --col-act-hover:#141e30;
+  --modal-bg:#161b22;
+  --modal-border:#30363d;
   --shadow-sm:0 1px 3px 0 rgba(0,0,0,0.3), 0 1px 2px -1px rgba(0,0,0,0.25);
   --shadow-md:0 6px 16px -2px rgba(0,0,0,0.4), 0 2px 6px -1px rgba(0,0,0,0.28);
   --shadow-lg:0 16px 32px -4px rgba(0,0,0,0.5), 0 8px 14px -3px rgba(0,0,0,0.35);
   --radius-sm:7px;
   --radius-md:11px;
   --radius-lg:14px;
+  --density-card-p:22px;
+}
+
+/* 1. Tema Midnight NOC (Dark Default) */
+[data-theme="dark"] {
+  --bg:#111827;
+  --bg-gradient:radial-gradient(ellipse at 50% 0%, rgba(37, 99, 235, 0.22) 0%, rgba(17, 24, 39, 1) 72%);
+  --sidebar:#162032;
+  --sidebar-hover:rgba(255,255,255,0.07);
+  --card:#1a2336;
+  --card-hover:#222f47;
+  --card-bg:linear-gradient(180deg, rgba(26, 35, 54, 0.95) 0%, rgba(20, 27, 43, 0.98) 100%);
+  --stat-card-bg:linear-gradient(180deg, rgba(26, 35, 54, 0.9) 0%, rgba(18, 25, 40, 0.95) 100%);
+  --border:rgba(255,255,255,0.11);
+  --border-subtle:rgba(255,255,255,0.06);
+  --text:#f8fafc;
+  --text-heading:#ffffff;
+  --dim:#94a3b8;
+  --dim-subtle:#64748b;
+  --input-bg:rgba(9, 13, 22, 0.75);
+  --input-border:rgba(255, 255, 255, 0.14);
+  --input-text:#f8fafc;
+  --col-act-bg:#0b111e;
+  --col-act-hover:#141e30;
+  --modal-bg:#161b22;
+  --modal-border:#30363d;
+}
+
+/* 2. Tema Obsidian (Pitch Black OLED) */
+[data-theme="obsidian"] {
+  --bg:#000000;
+  --bg-gradient:none;
+  --sidebar:#09090b;
+  --sidebar-hover:rgba(255,255,255,0.08);
+  --card:#0d0d10;
+  --card-hover:#16161c;
+  --card-bg:#0d0d10;
+  --stat-card-bg:#0d0d10;
+  --border:rgba(255,255,255,0.14);
+  --border-subtle:rgba(255,255,255,0.08);
+  --text:#f4f4f5;
+  --text-heading:#ffffff;
+  --dim:#a1a1aa;
+  --dim-subtle:#71717a;
+  --hover:rgba(255,255,255,0.08);
+  --input-bg:#000000;
+  --input-border:rgba(255, 255, 255, 0.18);
+  --input-text:#ffffff;
+  --col-act-bg:#0d0d10;
+  --col-act-hover:#17171f;
+  --modal-bg:#0c0c0f;
+  --modal-border:#27272a;
+}
+[data-theme="obsidian"] .card,
+[data-theme="obsidian"] .stat-card {
+  background:#0d0d10 !important;
+  border-color:rgba(255,255,255,0.14) !important;
+}
+
+/* 3. Tema Deep Space (Navy Slate) */
+[data-theme="navy"] {
+  --bg:#0a0f1d;
+  --bg-gradient:radial-gradient(ellipse at 50% 0%, rgba(30, 64, 175, 0.3) 0%, rgba(10, 15, 29, 1) 75%);
+  --sidebar:#0f172a;
+  --sidebar-hover:rgba(255,255,255,0.07);
+  --card:#131c31;
+  --card-hover:#1b2642;
+  --card-bg:linear-gradient(180deg, rgba(19, 28, 49, 0.95) 0%, rgba(14, 21, 38, 0.98) 100%);
+  --stat-card-bg:linear-gradient(180deg, rgba(19, 28, 49, 0.9) 0%, rgba(13, 20, 36, 0.95) 100%);
+  --border:rgba(59, 130, 246, 0.18);
+  --border-subtle:rgba(59, 130, 246, 0.10);
+  --text:#f1f5f9;
+  --text-heading:#ffffff;
+  --dim:#94a3b8;
+  --dim-subtle:#64748b;
+  --hover:rgba(59, 130, 246, 0.10);
+  --input-bg:#0b1122;
+  --input-border:rgba(59, 130, 246, 0.25);
+  --input-text:#f1f5f9;
+  --col-act-bg:#131c31;
+  --col-act-hover:#1b2642;
+  --modal-bg:#0f172a;
+  --modal-border:rgba(59, 130, 246, 0.3);
+}
+
+/* 4. Tema Terang (Light Clean / White Modern) */
+[data-theme="light"] {
+  --bg:#f8fafc;
+  --bg-gradient:linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  --sidebar:#ffffff;
+  --sidebar-hover:rgba(0, 0, 0, 0.05);
+  --card:#ffffff;
+  --card-hover:#f8fafc;
+  --card-bg:#ffffff;
+  --stat-card-bg:#ffffff;
+  --border:rgba(0, 0, 0, 0.10);
+  --border-subtle:rgba(0, 0, 0, 0.05);
+  --border-focus:rgba(2, 132, 199, 0.8);
+  --text:#0f172a;
+  --text-heading:#020617;
+  --dim:#64748b;
+  --dim-subtle:#94a3b8;
+  --hover:rgba(0, 0, 0, 0.04);
+  --input-bg:#ffffff;
+  --input-border:rgba(0, 0, 0, 0.18);
+  --input-text:#0f172a;
+  --col-act-bg:#ffffff;
+  --col-act-hover:#f1f5f9;
+  --modal-bg:#ffffff;
+  --modal-border:rgba(0, 0, 0, 0.15);
+  --shadow-sm:0 1px 3px 0 rgba(0,0,0,0.06), 0 1px 2px -1px rgba(0,0,0,0.04);
+  --shadow-md:0 4px 12px -2px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.05);
+  --shadow-lg:0 12px 28px -4px rgba(0,0,0,0.12), 0 6px 12px -2px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .card,
+[data-theme="light"] .stat-card {
+  box-shadow:0 1px 3px rgba(0,0,0,0.05), 0 2px 6px rgba(0,0,0,0.03) !important;
+  border-color:rgba(0,0,0,0.10) !important;
+}
+[data-theme="light"] .topbar h2,
+[data-theme="light"] .card-header h3,
+[data-theme="light"] .stat-card .value {
+  color:#0f172a !important;
+}
+[data-theme="light"] .sidebar-brand {
+  color:#0f172a !important;
+  border-bottom-color:rgba(0,0,0,0.08) !important;
+}
+[data-theme="light"] .sidebar-footer {
+  background:#f8fafc !important;
+  border-top-color:rgba(0,0,0,0.08) !important;
+}
+[data-theme="light"] .sidebar-footer div {
+  color:#475569 !important;
+}
+[data-theme="light"] table th {
+  background:#f1f5f9 !important;
+  color:#475569 !important;
+  border-bottom:1px solid rgba(0,0,0,0.10) !important;
+}
+[data-theme="light"] table td {
+  color:#1e293b !important;
+  border-bottom:1px solid rgba(0,0,0,0.06) !important;
+}
+[data-theme="light"] table tr:hover td {
+  background:rgba(0,0,0,0.02) !important;
+}
+[data-theme="light"] .group-header-row td {
+  background:#f1f5f9 !important;
+  color:#1e293b !important;
+  border-color:rgba(0,0,0,0.08) !important;
+}
+[data-theme="light"] .btn-ghost {
+  background:rgba(0,0,0,0.04) !important;
+  color:#0f172a !important;
+  border-color:rgba(0,0,0,0.14) !important;
+}
+[data-theme="light"] .btn-ghost:hover {
+  background:rgba(0,0,0,0.08) !important;
+  color:#000000 !important;
+}
+[data-theme="light"] .badge-muted {
+  background:rgba(0,0,0,0.05) !important;
+  color:#475569 !important;
+  border-color:rgba(0,0,0,0.12) !important;
+}
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background:#ffffff !important;
+  color:#0f172a !important;
+  border-color:rgba(0,0,0,0.18) !important;
+}
+[data-theme="light"] input::placeholder {
+  color:#94a3b8 !important;
+}
+
+/* Warna Aksen (Accent Palettes) */
+[data-accent="cyan"] {
+  --blue:#38bdf8;
+  --blue-hover:#0ea5e9;
+  --blue-bg:rgba(56,189,248,0.16);
+  --accent:#38bdf8;
+}
+[data-accent="indigo"] {
+  --blue:#6366f1;
+  --blue-hover:#4f46e5;
+  --blue-bg:rgba(99,102,241,0.16);
+  --accent:#6366f1;
+}
+[data-accent="emerald"] {
+  --blue:#10b981;
+  --blue-hover:#059669;
+  --blue-bg:rgba(16,185,129,0.16);
+  --accent:#10b981;
+}
+[data-accent="violet"] {
+  --blue:#a855f7;
+  --blue-hover:#9333ea;
+  --blue-bg:rgba(168,85,247,0.16);
+  --accent:#a855f7;
+}
+[data-accent="amber"] {
+  --blue:#f59e0b;
+  --blue-hover:#d97706;
+  --blue-bg:rgba(245,158,11,0.16);
+  --accent:#f59e0b;
+}
+
+/* Tipografi (Typography) */
+[data-font-ui="system"] body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif !important; }
+[data-font-ui="inter"] body { font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif !important; }
+[data-font-ui="geist"] body { font-family:'Geist',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif !important; }
+[data-font-ui="ubuntu"] body { font-family:'Ubuntu','Fira Sans',-apple-system,sans-serif !important; }
+
+[data-font-mono="system"] .mono, [data-font-mono="system"] code, [data-font-mono="system"] pre, [data-font-mono="system"] .copyable-ip {
+  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace !important;
+}
+[data-font-mono="jetbrains"] .mono, [data-font-mono="jetbrains"] code, [data-font-mono="jetbrains"] pre, [data-font-mono="jetbrains"] .copyable-ip {
+  font-family:'JetBrains Mono',ui-monospace,monospace !important;
+}
+[data-font-mono="fira"] .mono, [data-font-mono="fira"] code, [data-font-mono="fira"] pre, [data-font-mono="fira"] .copyable-ip {
+  font-family:'Fira Code','JetBrains Mono',ui-monospace,monospace !important;
+}
+
+/* Kerapatan Tampilan (UI Density) */
+[data-density="comfortable"] {
+  --density-card-p:26px;
+}
+[data-density="comfortable"] #servers-table td {
+  padding:6px 8px !important;
+  font-size:10.5px !important;
+}
+[data-density="comfortable"] #servers-table th {
+  padding:7px 8px !important;
+  font-size:10px !important;
+}
+[data-density="comfortable"] .card {
+  padding:26px !important;
+}
+[data-density="comfortable"] .nav-link {
+  padding:10.5px 14px !important;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{
@@ -64,7 +335,7 @@ body{
 .nav-section{padding:10px 14px 4px;font-size:10px;font-weight:700;color:var(--dim-subtle);text-transform:uppercase;letter-spacing:1px}
 .nav-link{display:flex;align-items:center;gap:10px;padding:9px 14px;color:var(--dim);text-decoration:none;font-size:13px;font-weight:500;border-radius:var(--radius-sm);transition:all .15s ease}
 .nav-link:hover{background:var(--sidebar-hover);color:var(--text)}
-.nav-link.active{color:#fff;background:rgba(56,189,248,0.16);border:1px solid rgba(56,189,248,0.35);font-weight:600;box-shadow:0 0 10px rgba(56,189,248,0.18)}
+.nav-link.active{color:var(--text-heading, #fff);background:var(--blue-bg);border:1px solid var(--blue);font-weight:600;box-shadow:0 0 10px var(--blue-bg)}
 .nav-icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--dim);background:rgba(0,0,0,0.15)}
 .sidebar-footer a{color:var(--dim);text-decoration:none;transition:color .15s}
@@ -77,10 +348,10 @@ body{
 .topbar .user-info{font-size:13px;color:var(--dim)}
 
 .card{
-  background:linear-gradient(180deg, rgba(26, 35, 54, 0.95) 0%, rgba(20, 27, 43, 0.98) 100%);
+  background:var(--card-bg, linear-gradient(180deg, rgba(26, 35, 54, 0.95) 0%, rgba(20, 27, 43, 0.98) 100%));
   border:1px solid var(--border);
   border-radius:var(--radius-md);
-  padding:22px;
+  padding:var(--density-card-p, 22px);
   margin-bottom:20px;
   box-shadow:var(--shadow-sm);
   transition:border-color .18s cubic-bezier(0.16,1,0.3,1), box-shadow .18s cubic-bezier(0.16,1,0.3,1), transform .18s cubic-bezier(0.16,1,0.3,1);
@@ -96,7 +367,7 @@ pre{white-space:pre;overflow-x:auto;max-width:100%}
 
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
 .stat-card{
-  background:linear-gradient(180deg, rgba(26, 35, 54, 0.9) 0%, rgba(18, 25, 40, 0.95) 100%);
+  background:var(--stat-card-bg, linear-gradient(180deg, rgba(26, 35, 54, 0.9) 0%, rgba(18, 25, 40, 0.95) 100%));
   border:1px solid var(--border);
   border-radius:var(--radius-md);
   padding:18px 22px;
@@ -924,6 +1195,7 @@ body.kiosk-mode .main {
   /* Penyesuaian Modal pada Mobile */
   #app-confirm-modal > div,
   #guardrail-modal > div,
+  #theme-customizer-modal > div,
   #ignore-problem-modal > div,
   #problem-detail-modal > div,
   .modal-card {
@@ -939,8 +1211,105 @@ body.kiosk-mode .main {
   from { opacity: 0; transform: scale(0.96) translateY(-4px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
-#app-confirm-modal .card, #guardrail-modal .card {
+#app-confirm-modal .card, #guardrail-modal .card, #theme-customizer-modal .theme-modal-card {
   animation: appModalIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Card modal kustomisasi tema */
+.theme-modal-card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--modal-bg, #161b22);
+  border: 1px solid var(--modal-border, #30363d);
+  border-radius: 12px;
+  padding: 22px 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+  color: var(--text);
+  max-height: 92vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.theme-opt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+@media (max-width: 480px) {
+  .theme-opt-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.theme-opt-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+.theme-opt-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--border-focus);
+}
+.theme-opt-card.active {
+  border-color: var(--blue) !important;
+  background: var(--blue-bg) !important;
+  box-shadow: 0 0 10px var(--blue-bg);
+}
+
+.theme-preview-box {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.accent-pill-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.accent-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+  color: var(--text);
+}
+.accent-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.accent-pill.active {
+  border-color: var(--blue) !important;
+  background: var(--blue-bg) !important;
+  color: var(--text-heading, #fff);
+  box-shadow: 0 0 8px var(--blue-bg);
+}
+.accent-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .table-responsive {
@@ -1144,7 +1513,10 @@ body.show-alert-banner .main{padding-top:72px}
     <span class="brand-dot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);vertical-align:middle"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3" fill="currentColor"></circle></svg></span>
     <span>Pantau Server</span>
   </a>
-  <div class="mob-header-right">
+  <div class="mob-header-right" style="display:flex;align-items:center;gap:8px">
+    <button type="button" class="btn btn-ghost btn-sm" onclick="openThemeModal()" style="padding:4px 8px;font-size:11px" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
+    </button>
     {% if user %}
     <span class="mob-user-chip" title="Login: {{ user.username }}">
       {{ user.username[:1].upper() }}
@@ -1196,12 +1568,20 @@ body.show-alert-banner .main{padding-top:72px}
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span> <span class="nav-label">Akun Pengguna</span>
     </a>
     {% endif %}
+    <a href="javascript:void(0)" onclick="openThemeModal();closeMobDrawer()" class="nav-link" id="nav-btn-theme" title="Kustomisasi Tema, Warna &amp; Font">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"></path></svg></span> <span class="nav-label">Kustomisasi UI</span>
+    </a>
     <a href="/logout" class="nav-link mob-logout" onclick="closeMobDrawer()" title="Keluar">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span> <span class="nav-label">Keluar</span>
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="font-size:11px;color:var(--dim);margin-bottom:6px">v{{ app_version or '4.8.27' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.28' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
+      </button>
+    </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
       <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
@@ -3193,6 +3573,270 @@ setInterval(alertFetch, 5000);
     </div>
   </div>
 </div>
+
+<!-- Modal Kustomisasi Tampilan, Tema, Warna & Tipografi (Enterprise Theme Customizer) -->
+<div id="theme-customizer-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:10010;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px" onclick="if(event.target===this)closeThemeModal()">
+  <div class="theme-modal-card" onclick="event.stopPropagation()">
+    <!-- Header Modal -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
+        </div>
+        <div>
+          <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--text)">Kustomisasi Tampilan &amp; Tema</h3>
+          <p style="margin:2px 0 0 0;font-size:11.5px;color:var(--dim)">Sesuaikan tema visual, warna aksen, font, dan kenyamanan layar Anda.</p>
+        </div>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeThemeModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+    </div>
+
+    <!-- 1. Mode Tema -->
+    <div style="margin-bottom:16px">
+      <label style="font-size:11.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;margin-bottom:2px">
+        <span>Mode Tema Utama</span>
+      </label>
+      <div class="theme-opt-grid">
+        <div class="theme-opt-card" id="theme-card-dark" onclick="onThemeModeSelect('dark')">
+          <div class="theme-preview-box" style="background:#111827;border-color:#1a2336">
+            <span style="font-size:12px">🌙</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700">Midnight NOC</div>
+            <div style="font-size:10px;color:var(--dim)">Gelap seimbang bawaan sistem</div>
+          </div>
+        </div>
+        <div class="theme-opt-card" id="theme-card-obsidian" onclick="onThemeModeSelect('obsidian')">
+          <div class="theme-preview-box" style="background:#000000;border-color:#27272a">
+            <span style="font-size:12px">🖤</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700">Obsidian OLED</div>
+            <div style="font-size:10px;color:var(--dim)">Hitam pekat murni 0% glow</div>
+          </div>
+        </div>
+        <div class="theme-opt-card" id="theme-card-navy" onclick="onThemeModeSelect('navy')">
+          <div class="theme-preview-box" style="background:#0a0f1d;border-color:#1e3a8a">
+            <span style="font-size:12px">🌌</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700">Deep Space</div>
+            <div style="font-size:10px;color:var(--dim)">Biru malam khas Proxmox</div>
+          </div>
+        </div>
+        <div class="theme-opt-card" id="theme-card-light" onclick="onThemeModeSelect('light')">
+          <div class="theme-preview-box" style="background:#f8fafc;border-color:#cbd5e1">
+            <span style="font-size:12px">☀️</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700">Mode Terang</div>
+            <div style="font-size:10px;color:var(--dim)">Cerah, bersih &amp; kontras tinggi</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Warna Aksen -->
+    <div style="margin-bottom:16px">
+      <label style="font-size:11.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;margin-bottom:2px">
+        <span>Warna Aksen Antarmuka</span>
+      </label>
+      <div class="accent-pill-list">
+        <div class="accent-pill" id="accent-pill-cyan" onclick="onAccentSelect('cyan')">
+          <span class="accent-dot" style="background:#38bdf8"></span>
+          <span>Sian (Bawaan)</span>
+        </div>
+        <div class="accent-pill" id="accent-pill-indigo" onclick="onAccentSelect('indigo')">
+          <span class="accent-dot" style="background:#6366f1"></span>
+          <span>Indigo</span>
+        </div>
+        <div class="accent-pill" id="accent-pill-emerald" onclick="onAccentSelect('emerald')">
+          <span class="accent-dot" style="background:#10b981"></span>
+          <span>Zamrud</span>
+        </div>
+        <div class="accent-pill" id="accent-pill-violet" onclick="onAccentSelect('violet')">
+          <span class="accent-dot" style="background:#a855f7"></span>
+          <span>Violet</span>
+        </div>
+        <div class="accent-pill" id="accent-pill-amber" onclick="onAccentSelect('amber')">
+          <span class="accent-dot" style="background:#f59e0b"></span>
+          <span>Sunset Amber</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Tipografi / Font -->
+    <div style="margin-bottom:16px">
+      <label style="font-size:11.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <span>Gaya Tipografi &amp; Font</span>
+      </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:10.5px;color:var(--dim);display:block;margin-bottom:4px">Font Antarmuka (UI)</label>
+          <select id="theme-select-font-ui" onchange="onThemeFontUiChange(this.value)" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-size:11.5px;outline:none;cursor:pointer">
+            <option value="system">Sistem Bawaan (San Francisco/Segoe/Roboto)</option>
+            <option value="inter">Inter (Modern &amp; Presisi)</option>
+            <option value="geist">Geist Sans (Tech &amp; Minimalis)</option>
+            <option value="ubuntu">Ubuntu / Fira (Khas Linux)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:10.5px;color:var(--dim);display:block;margin-bottom:4px">Font Monospace (Data &amp; Metrik)</label>
+          <select id="theme-select-font-mono" onchange="onThemeFontMonoChange(this.value)" style="width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-size:11.5px;outline:none;cursor:pointer">
+            <option value="system">Sistem Monospace (Consolas/SFMono)</option>
+            <option value="jetbrains">JetBrains Mono (Khas IDE)</option>
+            <option value="fira">Fira Code (Presisi Teknis)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Kerapatan Tampilan (Density) -->
+    <div style="margin-bottom:18px">
+      <label style="font-size:11.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <span>Kerapatan Tampilan (Density)</span>
+      </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="theme-opt-card" id="density-opt-compact" onclick="onThemeDensityChange('compact')">
+          <div style="font-size:14px">⚡</div>
+          <div>
+            <div style="font-size:12px;font-weight:700">Kompak NOC (Bawaan)</div>
+            <div style="font-size:10px;color:var(--dim)">Kepadatan data tinggi, padding rapat 3-6px</div>
+          </div>
+        </div>
+        <div class="theme-opt-card" id="density-opt-comfortable" onclick="onThemeDensityChange('comfortable')">
+          <div style="font-size:14px">🛋️</div>
+          <div>
+            <div style="font-size:12px;font-weight:700">Normal Nyaman</div>
+            <div style="font-size:10px;color:var(--dim)">Ruang spasi dan padding sel lebih lega</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Modal -->
+    <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:14px">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="resetThemeDefaults()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Kembalikan Bawaan
+      </button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="closeThemeModal()">
+        Selesai
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =============================================================================
+// KONTROLER KUSTOMISASI TAMPILAN, TEMA, WARNA & TIPOGRAFI
+// =============================================================================
+function getThemeSettings() {
+  return {
+    theme: localStorage.getItem('pantau_theme') || 'dark',
+    accent: localStorage.getItem('pantau_accent') || 'cyan',
+    fontUi: localStorage.getItem('pantau_font_ui') || 'system',
+    fontMono: localStorage.getItem('pantau_font_mono') || 'system',
+    density: localStorage.getItem('pantau_density') || 'compact'
+  };
+}
+
+function applyThemeSettings(s) {
+  const doc = document.documentElement;
+  doc.setAttribute('data-theme', s.theme);
+  doc.setAttribute('data-accent', s.accent);
+  doc.setAttribute('data-font-ui', s.fontUi);
+  doc.setAttribute('data-font-mono', s.fontMono);
+  doc.setAttribute('data-density', s.density);
+
+  try {
+    localStorage.setItem('pantau_theme', s.theme);
+    localStorage.setItem('pantau_accent', s.accent);
+    localStorage.setItem('pantau_font_ui', s.fontUi);
+    localStorage.setItem('pantau_font_mono', s.fontMono);
+    localStorage.setItem('pantau_density', s.density);
+  } catch(e) {}
+
+  updateThemeModalUI(s);
+}
+
+function updateThemeModalUI(s) {
+  ['dark', 'obsidian', 'navy', 'light'].forEach(t => {
+    const el = document.getElementById('theme-card-' + t);
+    if (el) el.classList.toggle('active', s.theme === t);
+  });
+  ['cyan', 'indigo', 'emerald', 'violet', 'amber'].forEach(a => {
+    const el = document.getElementById('accent-pill-' + a);
+    if (el) el.classList.toggle('active', s.accent === a);
+  });
+  const sUi = document.getElementById('theme-select-font-ui');
+  if (sUi) sUi.value = s.fontUi;
+  const sMono = document.getElementById('theme-select-font-mono');
+  if (sMono) sMono.value = s.fontMono;
+  const dComp = document.getElementById('density-opt-compact');
+  if (dComp) dComp.classList.toggle('active', s.density === 'compact');
+  const dComf = document.getElementById('density-opt-comfortable');
+  if (dComf) dComf.classList.toggle('active', s.density === 'comfortable');
+}
+
+function onThemeModeSelect(themeName) {
+  const s = getThemeSettings();
+  s.theme = themeName;
+  applyThemeSettings(s);
+}
+
+function onAccentSelect(accentName) {
+  const s = getThemeSettings();
+  s.accent = accentName;
+  applyThemeSettings(s);
+}
+
+function onThemeFontUiChange(fontVal) {
+  const s = getThemeSettings();
+  s.fontUi = fontVal;
+  applyThemeSettings(s);
+}
+
+function onThemeFontMonoChange(monoVal) {
+  const s = getThemeSettings();
+  s.fontMono = monoVal;
+  applyThemeSettings(s);
+}
+
+function onThemeDensityChange(densityVal) {
+  const s = getThemeSettings();
+  s.density = densityVal;
+  applyThemeSettings(s);
+}
+
+function openThemeModal() {
+  const m = document.getElementById('theme-customizer-modal');
+  if (!m) return;
+  m.style.display = 'flex';
+  updateThemeModalUI(getThemeSettings());
+}
+
+function closeThemeModal() {
+  const m = document.getElementById('theme-customizer-modal');
+  if (m) m.style.display = 'none';
+}
+
+function resetThemeDefaults() {
+  applyThemeSettings({
+    theme: 'dark',
+    accent: 'cyan',
+    fontUi: 'system',
+    fontMono: 'system',
+    density: 'compact'
+  });
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeThemeModal();
+  }
+});
+</script>
 
 <!-- Modal Abaikan Masalah -->
 <div id="ignore-problem-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px);padding:16px" onclick="if(event.target===this)closeIgnoreModal()">

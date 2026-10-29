@@ -44,7 +44,7 @@
 #servers-table td.col-act {
   position: sticky;
   right: 0;
-  background: #0b111e;
+  background: var(--col-act-bg, #0b111e);
   box-shadow: -4px 0 8px rgba(0,0,0,0.45);
   z-index: 2;
   text-align: center !important;
@@ -52,7 +52,7 @@
   min-width: 105px !important;
 }
 #servers-table tbody tr:hover td.col-act {
-  background: #141e30;
+  background: var(--col-act-hover, #141e30);
 }
 .group-header-row td.col-act {
   background: transparent !important;
