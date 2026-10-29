@@ -997,7 +997,7 @@ body.popout-fleet_table #dash-fleet-card {
       </thead>
       <tbody id="dash-problems-tbody" data-sig="{% for p in all_open_problems %}{{ p.server_id or p.probe_id or '' }}:{{ p.key }}:{{ p.severity }}:{{ p.acknowledged_by or '' }}:{{ p.message or '' }}:{{ p.started_at_str }}{% if not loop.last %}|{% endif %}{% endfor %}">
         {% for p in all_open_problems %}
-        <tr onclick="window.location.href='{{ '/probing' if (p.probe_id or not p.server_id) else '/servers/' ~ p.server_id ~ '/services' }}'"
+        <tr onclick="window.location.href='{{ '/probing' if (p.probe_id or not p.server_id) else '/servers/' ~ p.server_id }}'"
             title="Klik untuk buka {{ 'menu Endpoint' if (p.probe_id or not p.server_id) else 'rincian server ' ~ p.hostname }}"
             style="border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;cursor:pointer">
           <td style="padding:3.5px 10px;white-space:nowrap;width:115px;min-width:105px">
@@ -1180,7 +1180,7 @@ body.popout-fleet_table #dash-fleet-card {
             data-srv-id="{{ srv.id }}"
             data-row-group="{{ srv.group_name or '' }}"
             data-row-text="{{ (srv.hostname ~ ' ' ~ (srv.ip_address or '') ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' tier-' ~ s_tier) | lower }}"
-            onclick="window.location.href='/servers/{{ srv.id }}/services'"
+            onclick="window.location.href='/servers/{{ srv.id }}'"
             title="Klik untuk buka rincian server {{ srv.hostname }}">
           <!-- 0. Server -->
           <td data-sort-val="{{ srv.hostname | lower }}" style="white-space:nowrap;vertical-align:middle">
@@ -1373,7 +1373,7 @@ body.popout-fleet_table #dash-fleet-card {
            data-srv-id="{{ srv.id }}"
            data-card-group="{{ srv.group_name or '' }}"
            data-card-text="{{ (srv.hostname ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '')) | lower }}"
-           onclick="window.location.href='/servers/{{ srv.id }}/services'"
+           onclick="window.location.href='/servers/{{ srv.id }}'"
            title="Klik untuk buka rincian server {{ srv.hostname }}">
 
         <!-- Header Kartu -->
@@ -1691,7 +1691,7 @@ function renderSevDetailModal(sev) {
         reasonBadge = `<span class="badge badge-muted" style="font-size:9.5px;padding:1px 5px;margin-left:6px" title="Alasan: ${escReason}">Alasan: ${escReason}</span>`;
       }
 
-      const rowHref = p.server_id ? `/servers/${p.server_id}/services` : '/probing';
+      const rowHref = p.server_id ? `/servers/${p.server_id}` : '/probing';
       html += `
         <tr style="border-bottom:1px solid #30363d;transition:background .12s ease">
           <td style="padding:10px 12px;white-space:nowrap;vertical-align:middle;width:115px">
@@ -1979,7 +1979,7 @@ function createAndAppendDashTableRow(srv, tbody) {
   tr.dataset.srvId = srv.id;
   tr.dataset.rowGroup = srv.group_name || '';
   tr.dataset.rowText = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.group_name || '') + ' tier-' + (srv.tier || 2)).toLowerCase();
-  tr.onclick = () => { window.location.href = '/servers/' + srv.id + '/services'; };
+  tr.onclick = () => { window.location.href = '/servers/' + srv.id; };
   tr.title = 'Klik untuk buka rincian server ' + (srv.hostname || '');
 
   tr.innerHTML = `
@@ -2058,7 +2058,7 @@ function createAndAppendDashGridCard(srv, gridEl) {
   card.dataset.srvId = srv.id;
   card.dataset.cardGroup = srv.group_name || '';
   card.dataset.cardText = ((srv.hostname || '') + ' ' + (srv.group_name || '') + ' ' + (srv.tags || '')).toLowerCase();
-  card.onclick = () => { window.location.href = '/servers/' + srv.id + '/services'; };
+  card.onclick = () => { window.location.href = '/servers/' + srv.id; };
   card.title = 'Klik untuk buka rincian server ' + (srv.hostname || '');
 
   card.innerHTML = `
@@ -2780,7 +2780,7 @@ async function pollNocDashboard() {
             }
             const trStyle = 'border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;cursor:pointer;';
 
-            const rowHref = (p.probe_id || !p.server_id) ? '/probing' : `/servers/${p.server_id}/services`;
+            const rowHref = (p.probe_id || !p.server_id) ? '/probing' : `/servers/${p.server_id}`;
             const rowTitle = (p.probe_id || !p.server_id)
               ? (isEn ? `Click to open Endpoint Probing` : `Klik untuk buka menu Endpoint`)
               : (isEn ? `Click to open details of server ${escHost}` : `Klik untuk buka rincian server ${escHost}`);

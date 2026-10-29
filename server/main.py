@@ -1149,7 +1149,7 @@ def _check_server_online(db: Session, sid: int, is_json: bool = False, redirect_
         if is_json:
             return None, JSONResponse({"ok": False, "detail": msg}, status_code=409)
         tab_param = f"?tab={redirect_tab}&error=server_offline" if redirect_tab else "?error=server_offline"
-        return None, RedirectResponse(f"/servers/{sid}/services{tab_param}", status_code=303)
+        return None, RedirectResponse(f"/servers/{sid}{tab_param}", status_code=303)
     return server, None
 
 
@@ -4275,22 +4275,9 @@ def api_reset_platform_auto(
 
 
 # ---------------------------------------------------------------------------
-# SERVICES & SERVER DETAIL SHORTCUT
+# SERVER DETAILS (CANONICAL) & SERVICES ALIAS
 # ---------------------------------------------------------------------------
 @app.get("/servers/{sid}", response_class=HTMLResponse)
-def server_detail_shortcut(request: Request, sid: int, db: Session = Depends(get_db)):
-    user = get_current_user(request, db)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    server = db.query(Server).filter(Server.id == sid).first()
-    if not server:
-        return RedirectResponse("/servers", status_code=303)
-    qs = request.url.query
-    target_url = f"/servers/{sid}/services" + (f"?{qs}" if qs else "")
-    return RedirectResponse(target_url, status_code=303)
-
-
-@app.get("/servers/{sid}/services", response_class=HTMLResponse)
 def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
@@ -4538,6 +4525,30 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     })
 
 
+@app.get("/servers/{sid}/services", response_class=HTMLResponse)
+def server_services_alias(request: Request, sid: int, db: Session = Depends(get_db)):
+    """Alias backward compatibility untuk tautan lama /servers/{sid}/services.
+    Mengarahkan secara semantik ke /servers/{sid}?tab=layanan (atau mempertahankan tab yang diminta).
+    """
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        return RedirectResponse("/servers", status_code=303)
+    qs = request.url.query
+    if not qs:
+        target = f"/servers/{sid}?tab=layanan"
+    elif "tab=" not in qs:
+        target = f"/servers/{sid}?tab=layanan&{qs}"
+    else:
+        target = f"/servers/{sid}?{qs}"
+    return RedirectResponse(target, status_code=303)
+
+
+server_detail_page = services_page
+
+
 @app.get("/servers/{sid}/user/{username}", response_class=HTMLResponse)
 def user_activity_page(request: Request, sid: int, username: str, db: Session = Depends(get_db)):
     """Detail aktivitas seorang user: info akun, aktivitas login, riwayat perintah."""
@@ -4548,7 +4559,7 @@ def user_activity_page(request: Request, sid: int, username: str, db: Session = 
     if not server:
         return RedirectResponse("/servers", status_code=303)
     if not VALID_UNIT_RE.match(username) or len(username) > 64:
-        return RedirectResponse(f"/servers/{sid}/services", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=akun", status_code=303)
     account = None
     extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if extra and extra.accounts:
@@ -4593,7 +4604,7 @@ def service_add_submit(
     if not svc.service_name or not (1 <= svc.port <= 65535):
         if is_json:
             return JSONResponse({"ok": False, "detail": "Data service tidak lengkap: nama wajib & port 1-65535"}, status_code=400)
-        return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(False, "Service tidak lengkap: nama wajib & port 1-65535"), status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=layanan" + _flash_qs(False, "Service tidak lengkap: nama wajib & port 1-65535"), status_code=303)
     existing = (
         db.query(Service).filter(
             Service.server_id == sid, Service.service_name == svc.service_name
@@ -4602,14 +4613,14 @@ def service_add_submit(
     if existing:
         if is_json:
             return JSONResponse({"ok": False, "detail": "Nama service sudah terdaftar di server ini"}, status_code=400)
-        return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(False, "Nama service sudah ada"), status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=layanan" + _flash_qs(False, "Nama service sudah ada"), status_code=303)
     db.add(svc)
     server = db.query(Server).filter(Server.id == sid).first()
     _audit(db, user.username, "service_add", f"{server.hostname if server else sid}:{svc.service_name}", f"port {svc.port}", server_id=sid)
     db.commit()
     if is_json:
         return JSONResponse({"ok": True, "detail": f"Service '{svc.service_name}' berhasil ditambahkan ke pemantauan."})
-    return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(True, "Service ditambahkan"), status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=layanan" + _flash_qs(True, "Service ditambahkan"), status_code=303)
 
 
 @app.post("/servers/{sid}/services/{svc_id}/restart")
@@ -4633,7 +4644,7 @@ def service_restart(
     if not svc:
         if is_json:
             return Response(json.dumps({"ok": False, "detail": "Service tidak ditemukan"}), status_code=404, media_type="application/json")
-        return RedirectResponse(f"/servers/{sid}/services", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=layanan", status_code=303)
 
     existing = (
         db.query(Command)
@@ -4647,7 +4658,7 @@ def service_restart(
     if existing:
         if is_json:
             return Response(json.dumps({"ok": True, "detail": f"Perintah restart {svc.service_name} sedang diproses."}), media_type="application/json")
-        return RedirectResponse(f"/servers/{sid}/services?restarted=1", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=layanan&restarted=1", status_code=303)
 
     db.add(Command(
         server_id=sid, service_id=svc_id, action="restart", status="pending",
@@ -4673,7 +4684,7 @@ def service_restart(
     db.commit()
     if is_json:
         return Response(json.dumps({"ok": True, "detail": f"Perintah restart {svc.service_name} telah dikirim ke Agen Pantau."}), media_type="application/json")
-    return RedirectResponse(f"/servers/{sid}/services?restarted=1", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=layanan&restarted=1", status_code=303)
 
 
 def _service_action(request: Request, sid: int, svc_id: int, action: str, db, csrf_token: str = ""):
@@ -4693,7 +4704,7 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
     if not svc:
         if is_json:
             return Response(json.dumps({"ok": False, "detail": "Service tidak ditemukan"}), status_code=404, media_type="application/json")
-        return RedirectResponse(f"/servers/{sid}/services", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=layanan", status_code=303)
     existing = (
         db.query(Command)
         .filter(
@@ -4707,7 +4718,7 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
     if existing:
         if is_json:
             return Response(json.dumps({"ok": True, "detail": f"Perintah {label_id} {svc.service_name} sedang diproses."}), media_type="application/json")
-        return RedirectResponse(f"/servers/{sid}/services?restarted=1", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=layanan&restarted=1", status_code=303)
 
     # Cek apakah layanan sudah dalam kondisi yang diminta
     latest_m = _latest_metrics(db, [svc_id]).get(svc_id)
@@ -4715,11 +4726,11 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
     if action == "stop" and cur_st == "down":
         if is_json:
             return Response(json.dumps({"ok": True, "detail": f"Layanan {svc.service_name} sudah dalam kondisi berhenti."}), media_type="application/json")
-        return RedirectResponse(f"/servers/{sid}/services", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=layanan", status_code=303)
     if action == "start" and cur_st == "up":
         if is_json:
             return Response(json.dumps({"ok": True, "detail": f"Layanan {svc.service_name} sudah dalam kondisi aktif."}), media_type="application/json")
-        return RedirectResponse(f"/servers/{sid}/services", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=layanan", status_code=303)
 
     db.add(Command(
         server_id=sid, service_id=svc_id, action=action, status="pending",
@@ -4818,7 +4829,7 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
     db.commit()
     if is_json:
         return Response(json.dumps({"ok": True, "detail": f"Perintah {label_id} {svc.service_name} telah dikirim ke Agen Pantau."}), media_type="application/json")
-    return RedirectResponse(f"/servers/{sid}/services?restarted=1", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=layanan&restarted=1", status_code=303)
 
 
 @app.post("/servers/{sid}/services/{svc_id}/start")
@@ -4895,11 +4906,11 @@ def problem_block_ip(
     if not ips:
         if is_json:
             return JSONResponse({"ok": False, "detail": "Tidak ada IP valid yang dapat diblokir"}, status_code=400)
-        return RedirectResponse(f"/servers/{sid}/services?action=noips", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?action=noips", status_code=303)
     _enqueue_mitigation(db, sid, "block_ip", {"ips": ips}, issued_by=user.username)
     if is_json:
         return JSONResponse({"ok": True, "detail": f"Perintah mitigasi blokir {len(ips)} IP penyerang dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?action=block", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action=block", status_code=303)
 
 
 @app.post("/servers/{sid}/firewall/block")
@@ -4926,18 +4937,18 @@ def firewall_block_ip(
         if a.is_loopback or a.is_link_local or a.is_multicast or a.is_unspecified or a.is_reserved or ip_clean == server.ip_address:
             if is_json:
                 return JSONResponse({"ok": False, "detail": f"Alamat IP {ip_clean} tidak diizinkan untuk diblokir"}, status_code=400)
-            return RedirectResponse(f"/servers/{sid}/services?action=invalid_ip", status_code=303)
+            return RedirectResponse(f"/servers/{sid}?action=invalid_ip", status_code=303)
     except ValueError:
         if is_json:
             return JSONResponse({"ok": False, "detail": "Format IP tidak valid"}, status_code=400)
-        return RedirectResponse(f"/servers/{sid}/services?action=invalid_ip", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?action=invalid_ip", status_code=303)
 
     _enqueue_mitigation(db, sid, "block_ip", {"ips": [ip_clean]}, issued_by=user.username)
     _audit(db, user.username, "firewall_block", f"{server.hostname}: blokir {ip_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json:
         return JSONResponse({"ok": True, "detail": f"Perintah blokir IP '{ip_clean}' dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?action=block", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action=block", status_code=303)
 
 
 @app.post("/servers/{sid}/firewall/unblock")
@@ -4964,7 +4975,7 @@ def firewall_unblock_ip(
     db.commit()
     if is_json:
         return JSONResponse({"ok": True, "detail": f"Perintah buka blokir IP '{ip_clean}' dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?action=unblock", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action=unblock", status_code=303)
 
 
 @app.post("/servers/{sid}/firewall/enable")
@@ -4989,7 +5000,7 @@ def firewall_enable(
     db.commit()
     if is_json:
         return JSONResponse({"ok": True, "detail": "Perintah aktifkan firewall (UFW) dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?action=fw_enabled", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action=fw_enabled", status_code=303)
 
 
 @app.post("/servers/{sid}/firewall/disable")
@@ -5014,7 +5025,7 @@ def firewall_disable(
     db.commit()
     if is_json:
         return JSONResponse({"ok": True, "detail": "Perintah nonaktifkan firewall (UFW) dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?action=fw_disabled", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action=fw_disabled", status_code=303)
 
 
 @app.post("/servers/{sid}/firewall/reload")
@@ -5039,7 +5050,7 @@ def firewall_reload(
     db.commit()
     if is_json:
         return JSONResponse({"ok": True, "detail": "Perintah reload aturan firewall dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?action=fw_reloaded", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action=fw_reloaded", status_code=303)
 
 
 @app.post("/servers/{sid}/processes/kill")
@@ -5082,7 +5093,7 @@ def process_kill(
     if pid <= 1:
         if request.headers.get("accept") == "application/json":
             return JSONResponse({"ok": False, "detail": "PID dilindungi atau tidak valid!"}, status_code=400)
-        return RedirectResponse(f"/servers/{sid}/services?action=invalid_pid", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?action=invalid_pid", status_code=303)
 
     pname_clean = (pname or "").strip()[:50]
     _enqueue_mitigation(
@@ -5102,7 +5113,7 @@ def process_kill(
             "ok": True,
             "detail": f"Perintah penghentian PID {pid} ({pname_clean}) dengan sinyal SIG{sig_clean} dikirim ke agen."
         })
-    return RedirectResponse(f"/servers/{sid}/services?action=process_killed&pid={pid}", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action=process_killed&pid={pid}", status_code=303)
 
 
 @app.post("/servers/{sid}/problems/restart-agent")
@@ -5120,7 +5131,7 @@ def problem_restart_agent(
     if err_resp:
         return err_resp
     _enqueue_mitigation(db, sid, "restart_agent", issued_by=user.username)
-    return RedirectResponse(f"/servers/{sid}/services?action=agent", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action=agent", status_code=303)
 
 
 def _get_agent_code_and_sha256() -> tuple[bytes, str, str]:
@@ -5178,7 +5189,7 @@ def server_agent_update(
         msg = "Pembaruan agen sedang diproses atau dalam antrean."
         if is_json:
             return JSONResponse({"ok": True, "status": "already_pending", "message": msg})
-        return RedirectResponse(f"/servers/{sid}/services?action=agent_updating", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?action=agent_updating", status_code=303)
 
     _, sha256_hash, version = _get_agent_code_and_sha256()
     base_url = str(request.base_url).rstrip("/")
@@ -5207,7 +5218,7 @@ def server_agent_update(
             "sha256": sha256_hash,
             "message": msg
         })
-    return RedirectResponse(f"/servers/{sid}/services?action=agent_updated", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action=agent_updated", status_code=303)
 
 
 def _host_control(
@@ -5243,7 +5254,7 @@ def _host_control(
         if is_json:
             return JSONResponse({"ok": False, "detail": exc.detail}, status_code=exc.status_code)
         at_epoch = int(datetime.now(timezone.utc).timestamp())
-        return RedirectResponse(f"/servers/{sid}/services?action=auth_error&msg={quote(exc.detail)}&at={at_epoch}", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?action=auth_error&msg={quote(exc.detail)}&at={at_epoch}", status_code=303)
 
     if action == "poweroff_host" and getattr(server, "is_proxmox_ha", 0):
         _audit(db, user.username, "poweroff_host",
@@ -5255,7 +5266,7 @@ def _host_control(
                 "detail": "Server terproteksi Proxmox HA."
             }, status_code=400)
         at_epoch = int(datetime.now(timezone.utc).timestamp())
-        return RedirectResponse(f"/servers/{sid}/services?action=poweroff_ha_blocked&at={at_epoch}", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?action=poweroff_ha_blocked&at={at_epoch}", status_code=303)
     _enqueue_mitigation(db, sid, action, issued_by=user.username)
     if action == "poweroff_host":
         # Tindakan sengaja oleh operator mematikan host:
@@ -5282,7 +5293,7 @@ def _host_control(
     if is_json:
         label = "Mulai ulang (reboot)" if action == "reboot_host" else "Matikan daya (power off)"
         return JSONResponse({"ok": True, "action": flag, "at": at_epoch, "detail": f"Perintah {label} server klien telah dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?action={flag}&at={at_epoch}", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action={flag}&at={at_epoch}", status_code=303)
 
 
 @app.post("/servers/{sid}/host/reboot")
@@ -5347,7 +5358,7 @@ def server_user_create(
     _audit(db, user.username, "user_create", f"{server.hostname}: buat user {u_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": f"Perintah pembuatan pengguna '{u_clean}' dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=akun", status_code=303)
 
 
 @app.post("/servers/{sid}/system-users/lock")
@@ -5382,7 +5393,7 @@ def server_user_lock(
     _audit(db, user.username, "user_lock", f"{server.hostname}: kunci user {u_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": f"Perintah kunci akun '{u_clean}' dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=akun", status_code=303)
 
 
 @app.post("/servers/{sid}/system-users/unlock")
@@ -5417,7 +5428,7 @@ def server_user_unlock(
     _audit(db, user.username, "user_unlock", f"{server.hostname}: buka kunci user {u_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": f"Perintah buka kunci akun '{u_clean}' dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=akun", status_code=303)
 
 
 @app.post("/servers/{sid}/system-users/delete")
@@ -5453,7 +5464,7 @@ def server_user_delete(
         )
     except HTTPException as exc:
         if is_json: return JSONResponse({"ok": False, "detail": exc.detail}, status_code=exc.status_code)
-        return RedirectResponse(f"/servers/{sid}/services?tab=akun&action=auth_error&msg={quote(exc.detail)}", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=akun&action=auth_error&msg={quote(exc.detail)}", status_code=303)
     extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     if extra and extra.accounts:
         try:
@@ -5466,7 +5477,7 @@ def server_user_delete(
     _audit(db, user.username, "user_delete", f"{server.hostname}: hapus user {u_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": f"Perintah hapus akun '{u_clean}' dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=akun", status_code=303)
 
 
 @app.post("/servers/{sid}/system-users/terminate-session")
@@ -5491,7 +5502,7 @@ def server_session_terminate(
     clean_tty = tty.strip().lstrip("/dev/")
     if not re.match(r"^(pts/\d+|tty\d+)$", clean_tty):
         if is_json: return JSONResponse({"ok": False, "detail": f"Format terminal TTY '{clean_tty}' tidak valid."}, status_code=400)
-        return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=akun", status_code=303)
 
     u_clean = (username or "").strip().lower()
     _enqueue_mitigation(db, sid, "session_terminate", {"tty": clean_tty, "username": u_clean}, issued_by=user.username)
@@ -5502,7 +5513,7 @@ def server_session_terminate(
     detail_msg = f"Perintah pemutusan sesi terminal '{clean_tty}' berhasil dikirim ke agen."
     if is_json:
         return JSONResponse({"ok": True, "detail": detail_msg})
-    return RedirectResponse(f"/servers/{sid}/services?tab=akun", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=akun", status_code=303)
 
 
 # ---------------------------------------------------------------------------
@@ -5546,7 +5557,7 @@ def server_cron_add(
     _audit(db, user.username, "cron_add", f"{server.hostname}: tambah cron {id_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": f"Perintah tambah tugas cron '{id_clean}' dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?tab=cron", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=cron", status_code=303)
 
 
 @app.post("/servers/{sid}/cron/toggle")
@@ -5572,7 +5583,7 @@ def server_cron_toggle(
     _audit(db, user.username, "cron_toggle", f"{server.hostname}: {m_clean} cron {id_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": f"Perintah ubah status cron '{id_clean}' dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?tab=cron", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=cron", status_code=303)
 
 
 @app.post("/servers/{sid}/cron/delete")
@@ -5596,7 +5607,7 @@ def server_cron_delete(
     _audit(db, user.username, "cron_delete", f"{server.hostname}: hapus cron {id_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": f"Perintah hapus cron '{id_clean}' dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?tab=cron", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=cron", status_code=303)
 
 
 @app.post("/servers/{sid}/cron/run")
@@ -5622,7 +5633,7 @@ def server_cron_run(
     _audit(db, user.username, "cron_run_now", f"{server.hostname}: uji jalankan cron ({u_clean}: {cmd_clean[:50]})", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": "Perintah uji jalankan tugas cron dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?tab=cron", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=cron", status_code=303)
 
 
 # ---------------------------------------------------------------------------
@@ -5650,13 +5661,13 @@ def server_port_rule(
     pnum = p_clean.split("/")[0]
     if pnum in ("22", "8400") and r_clean in ("deny", "block"):
         if is_json: return JSONResponse({"ok": False, "detail": f"Port {pnum} dilindungi dan dilarang diblokir!"}, status_code=400)
-        return RedirectResponse(f"/servers/{sid}/services?tab=ports&error=protected_port", status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=ports&error=protected_port", status_code=303)
 
     _enqueue_mitigation(db, sid, "firewall_port_rule", {"port": p_clean, "rule": r_clean}, issued_by=user.username)
     _audit(db, user.username, "firewall_port_rule", f"{server.hostname}: aturan port {p_clean} ({r_clean})", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": f"Aturan port '{p_clean}' ({r_clean}) dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?tab=ports", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=ports", status_code=303)
 
 
 # ---------------------------------------------------------------------------
@@ -5684,7 +5695,7 @@ def server_ssl_add_path(
     _audit(db, user.username, "ssl_path_add", f"{server.hostname}: tambah path SSL {path_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": f"Perintah tambah path sertifikat SSL '{path_clean}' dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?tab=ssl", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=ssl", status_code=303)
 
 
 @app.post("/servers/{sid}/ssl/remove-path")
@@ -5709,7 +5720,7 @@ def server_ssl_remove_path(
     _audit(db, user.username, "ssl_path_remove", f"{server.hostname}: hapus path SSL {path_clean}", "dikirim ke agen", server_id=sid)
     db.commit()
     if is_json: return JSONResponse({"ok": True, "detail": f"Perintah hapus path sertifikat SSL '{path_clean}' dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}/services?tab=ssl", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=ssl", status_code=303)
 
 
 @app.post("/servers/{sid}/services/{svc_id}/delete")
@@ -5745,7 +5756,7 @@ def service_delete(
             return Response(json.dumps({"ok": True, "detail": f"Service {svc_name} dihapus"}), media_type="application/json")
     elif is_json:
         return Response(json.dumps({"ok": False, "detail": "Service tidak ditemukan"}), status_code=404, media_type="application/json")
-    return RedirectResponse(f"/servers/{sid}/services", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=layanan", status_code=303)
 
 
 @app.post("/servers/{sid}/services/{svc_id}/toggle-core")
@@ -5773,10 +5784,10 @@ def service_toggle_core(
         db.commit()
         if is_json:
             return Response(json.dumps({"ok": True, "is_core": new_is_core, "status_label": status_name}), media_type="application/json")
-        return RedirectResponse(f"/servers/{sid}/services" + _flash_qs(True, f"Status layanan {svc.service_name} diperbarui menjadi {status_name}"), status_code=303)
+        return RedirectResponse(f"/servers/{sid}?tab=layanan" + _flash_qs(True, f"Status layanan {svc.service_name} diperbarui menjadi {status_name}"), status_code=303)
     if is_json:
         return Response(json.dumps({"ok": False, "detail": "Service tidak ditemukan"}), status_code=404, media_type="application/json")
-    return RedirectResponse(f"/servers/{sid}/services", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=layanan", status_code=303)
 
 
 # ---------------------------------------------------------------------------
@@ -6547,7 +6558,7 @@ def metrics_page(request: Request, sid: int, db: Session = Depends(get_db)):
     server = db.query(Server).filter(Server.id == sid).first()
     if not server:
         return RedirectResponse("/servers", status_code=303)
-    return RedirectResponse(f"/servers/{sid}/services?tab=layanan", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?tab=layanan", status_code=303)
 
 
 # ---------------------------------------------------------------------------

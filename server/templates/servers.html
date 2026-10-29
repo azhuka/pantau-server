@@ -189,7 +189,7 @@
       <td style="white-space:nowrap">
         <div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
           <span id="srv-dot-{{ srv.id }}" class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
-          <a href="/servers/{{ srv.id }}/services" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</a>
+          <a href="/servers/{{ srv.id }}" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</a>
           {% set s_tier = srv.tier|default(2) %}
           {% if s_tier == 1 %}
             <span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="tier-1">tier-1</span>
@@ -336,7 +336,7 @@
       <!-- Col 11: Tindakan -->
       <td class="col-act" style="text-align:center;white-space:nowrap">
         <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center">
-          <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="Buka Rincian Layanan Server" aria-label="Rincian">
+          <a href="/servers/{{ srv.id }}" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="Buka Rincian Server" aria-label="Rincian">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </a>
           {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
@@ -535,7 +535,7 @@ function createAndAppendServersRow(srv, tbody) {
     <td style="white-space:nowrap">
       <div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
         <span id="srv-dot-${srv.id}" class="dot unknown" style="flex-shrink:0" title="-"></span>
-        <a href="/servers/${srv.id}/services" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-${srv.id}">${_srvEsc(srv.hostname || '')}</a>
+        <a href="/servers/${srv.id}" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-${srv.id}">${_srvEsc(srv.hostname || '')}</a>
         ${getTierBadgeHtml(srv.tier)}
       </div>
       ${srv.notes ? `<div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;margin-top:1px" title="${_srvEsc(srv.notes)}">${_srvEsc(srv.notes)}</div>` : ''}
@@ -598,7 +598,7 @@ function createAndAppendServersRow(srv, tbody) {
     </td>
     <td class="col-act" style="text-align:center;white-space:nowrap">
       <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center">
-        <a href="/servers/${srv.id}/services" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="${isEn ? 'Server Details' : 'Buka Rincian Layanan Server'}" aria-label="Rincian">
+        <a href="/servers/${srv.id}" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="${isEn ? 'Server Details' : 'Buka Rincian Server'}" aria-label="Rincian">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
         </a>
         ${CAN_MANAGE_SERVERS ? `

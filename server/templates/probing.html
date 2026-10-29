@@ -1052,7 +1052,7 @@ function renderTable() {
 
     // Server Hostname
     const serverHtml = p.server_hostname 
-      ? `<a href="/servers/${p.server_id}/services" style="color:var(--blue);text-decoration:none;font-weight:600">${escapeHtml(p.server_hostname)}</a>`
+      ? `<a href="/servers/${p.server_id}" style="color:var(--blue);text-decoration:none;font-weight:600">${escapeHtml(p.server_hostname)}</a>`
       : `<span style="color:var(--dim)">-</span>`;
 
     // Uptime Pill

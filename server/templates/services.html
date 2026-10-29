@@ -3990,6 +3990,21 @@ function showTab(name) {
   document.querySelectorAll('.tab-body').forEach(body => {
     body.hidden = body.id !== 'tab-' + name;
   });
+
+  // Sinkronkan parameter URL secara mulus tanpa reload halaman (Best Practice Deep-Linking)
+  try {
+    const curUrl = new URL(window.location.href);
+    if (name === 'perf') {
+      curUrl.searchParams.delete('tab');
+    } else {
+      curUrl.searchParams.set('tab', name);
+    }
+    if (curUrl.pathname.match(/^\/servers\/\d+\/services\/?$/)) {
+      curUrl.pathname = curUrl.pathname.replace(/\/services\/?$/, '');
+    }
+    window.history.replaceState(null, '', curUrl.toString());
+  } catch (_) {}
+
   if (name === 'masalah') {
     if (typeof probFilter === 'function') probFilter();
     if (typeof filterServerActionHistory === 'function') filterServerActionHistory();

@@ -311,6 +311,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.37
+
+- **Tipe Rilis:** Standarisasi Arsitektur RESTful Kanonikal Rincian Server & Sinkronisasi URL Tab Instan (*Canonical RESTful Server Details Architecture & Seamless Tab URL Deep-Linking*)
+- **Fokus Utama:** Menyempurnakan hierarki semantik URL, mengeliminasi redirect hop yang tidak perlu, dan menyelaraskan seluruh tautan entitas navigasi ke rute kanonikal bersih:
+  1. **Rute Kanonikal Primer Langsung (`server/main.py`):**
+     - Menetapkan rute kanonikal bersih `@app.get("/servers/{sid}", response_class=HTMLResponse)` sebagai handler utama halaman rincian server (`services_page`), mengembalikan kode status **HTTP 200 OK** secara langsung tanpa redirect tambahan.
+     - Mengonfigurasi `@app.get("/servers/{sid}/services")` sebagai alias semantik kompatibel ke belakang; mengarahkan secara mulus ke tab Layanan (`/servers/{sid}?tab=layanan`) jika diakses tanpa query parameter atau mempertahankan parameter query bila disertakan.
+     - Memperbarui seluruh pengalihan pasca-aksi (tambah/hapus layanan, firewall, pengguna, cron, port, SSL, kontrol host) agar mengarah langsung ke `/servers/{sid}` dengan parameter tab atau aksi terkait.
+  2. **Sinkronisasi Bilah Alamat Peramban Real-Time (`server/templates/services.html`):**
+     - Mengintegrasikan pemanggilan `window.history.replaceState` ke dalam fungsi `showTab()` sehingga saat operator berpindah antar-tab (Users, Services, Firewall, Tasks, Ports, Cron, Logs), parameter `?tab=...` langsung diperbarui di bilah URL tanpa memicu reload halaman.
+     - Menghapus parameter `?tab` secara otomatis saat kembali ke tab Performa sehingga URL kembali ke bentuk bersih `/servers/{sid}`.
+  3. **Penyelarasan Tautan Lintas Modul Antarmuka:**
+     - Menstandarisasikan seluruh tautan rincian server pada modul Dashboard (`dashboard.html`), Daftar Server (`servers.html`), Riwayat Insiden (`problems.html`), Pengujian Jaringan (`probing.html`), Manajer Berkas (`file_manager.html`), dan Aktivitas Pengguna (`user_activity.html`) menuju URL kanonikal bersih `/servers/{sid}`.
+
 ## Versi 4.8.36
 
 - **Tipe Rilis:** Penyediaan Rute Pintasan Server & Perbaikan Tautan Notifikasi (*Server Shortcut Route & Alert Notification Links Routing Resilience*)
