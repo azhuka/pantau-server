@@ -1758,6 +1758,61 @@ def _extract_disk_stats(disks_raw):
         return "—", "—", None
 
 
+def _clean_cpu_model(m: str | None) -> str:
+    if not m or m == "—":
+        return "—"
+    s = re.sub(r"\(R\)|\(TM\)", "", m, flags=re.I)
+    s = re.sub(r"\s+", " ", s)
+    s = re.sub(r"\s*CPU\s*@.*$", "", s, flags=re.I)
+    s = re.sub(r"\s*v?CPU\s*$", "", s, flags=re.I)
+    return s.strip() or "—"
+
+
+def _extract_disks_summary(disks: list | None) -> str:
+    if not disks or not isinstance(disks, list):
+        return "—"
+    parts = []
+    for d in disks:
+        if isinstance(d, dict):
+            sz = str(d.get("size", "")).strip()
+            nm = str(d.get("name", "")).strip()
+            if sz:
+                parts.append(f"{sz} ({nm})" if nm else sz)
+    return ", ".join(parts) if parts else "—"
+
+
+def _extract_hw_model(plat_dict: dict | None) -> str:
+    if not plat_dict or not isinstance(plat_dict, dict):
+        return "—"
+    vendor = str(plat_dict.get("vendor", "")).strip()
+    prod = str(plat_dict.get("product", "")).strip()
+    s = f"{vendor} {prod}".strip()
+    if "Standard PC" in s:
+        return "QEMU KVM Guest"
+    return s or "—"
+
+
+def _extract_primary_interface(net_dict: dict | None) -> str:
+    if not net_dict or not isinstance(net_dict, dict):
+        return ""
+    ifaces = net_dict.get("interfaces", [])
+    if isinstance(ifaces, list) and ifaces:
+        for iface in ifaces:
+            if isinstance(iface, dict):
+                name = str(iface.get("name", "")).strip()
+                if (
+                    name
+                    and not name.startswith("br-")
+                    and not name.startswith("docker")
+                    and not name.startswith("veth")
+                    and name != "lo"
+                    and name != "bonding_masters"
+                ):
+                    return name
+        return str(ifaces[0].get("name", "")).strip()
+    return ""
+
+
 def _classify_platform(platform_dict: dict | None, override: str | None = None) -> dict:
     """Klasifikasi tipe platform host: LXC Container, VM (KVM/QEMU/dll), atau Baremetal."""
     if override in ("baremetal", "vm", "lxc"):
@@ -2133,8 +2188,20 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
         hw = _get_hardware_specs_dict(srv, ex, latest_sys)
         cpu_cores = hw.get("cpu", {}).get("cores") or hw.get("cpu", {}).get("logical_cores")
         cpu_cores_str = f"{cpu_cores} Core" if (srv.last_seen and cpu_cores) else "—"
+        cpu_model_clean = _clean_cpu_model(hw.get("cpu", {}).get("model"))
         d_tot, d_avail, d_pct = _extract_disk_stats(latest_sys.disks if latest_sys else None)
-        m_tot = _format_bytes_gb(latest_sys.mem_total if latest_sys else None)
+        disks_str = _extract_disks_summary(hw.get("disks"))
+        hw_model = _extract_hw_model(hw.get("platform"))
+        prim_iface = _extract_primary_interface(hw.get("network"))
+        os_name = hw.get("os", {}).get("os_name") or (ex.os_label if ex else "Linux")
+        kernel = hw.get("os", {}).get("kernel") or (ex.kernel if ex else "—")
+        arch = hw.get("cpu", {}).get("arch") or (ex.arch if ex else "x86_64")
+        boot_time = hw.get("os", {}).get("boot_time") or "—"
+        mem = hw.get("memory", {})
+        ram_b = mem.get("ram_total") or (latest_sys.mem_total if latest_sys else 0)
+        swap_b = mem.get("swap_total") or (latest_sys.swap_total if latest_sys else 0)
+        m_tot = _format_bytes_gb(ram_b if ram_b else (latest_sys.mem_total if latest_sys else None))
+        s_tot = _format_bytes_gb(swap_b if swap_b else (latest_sys.swap_total if latest_sys else None))
         m_avail = _format_bytes_gb(latest_sys.mem_avail if latest_sys else None)
         m_used = _format_bytes_gb(latest_sys.mem_used if latest_sys else None)
         up_str = _format_uptime_str(latest_sys.uptime_secs if latest_sys else None)
@@ -2165,11 +2232,24 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             "problems": _serialize_problem_list(formatted_probs),
             "apt_upgradable": ex.apt_upgradable if ex else None,
             "apt_last_update": ex.apt_last_update.isoformat() if ex and ex.apt_last_update else None,
-            "kernel": ex.kernel if ex else None,
+            "kernel": kernel,
             "os_label": ex.os_label if ex else None,
-            "arch": ex.arch if ex else None,
+            "os_name": os_name,
+            "arch": arch,
             "cpu": cpu_pct,
             "cpu_cores": cpu_cores_str,
+            "cpu_cores_num": cpu_cores or 0,
+            "cpu_model": cpu_model_clean,
+            "ram_total_str": m_tot,
+            "swap_total_str": s_tot,
+            "disk_str": disks_str,
+            "hw_model": hw_model,
+            "prim_iface": prim_iface,
+            "boot_time": boot_time,
+            "notes": srv.notes or "",
+            "tags": srv.tags or "",
+            "agent_version": ex.agent_version if ex else "",
+            "agent_outdated": _is_agent_outdated(ex.agent_version, settings.APP_VERSION) if ex else False,
             "mem_pct": mem_pct,
             "mem_total_str": m_tot,
             "mem_avail_str": m_avail,
@@ -3766,6 +3846,23 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
         )
         hw = _get_hardware_specs_dict(srv, ex, latest_sys)
         srv._platform = _classify_platform(hw.get("platform", {}), getattr(srv, "platform_override", None))
+        srv._hw = hw
+        srv._cpu_model = _clean_cpu_model(hw.get("cpu", {}).get("model"))
+        srv._cpu_cores = hw.get("cpu", {}).get("cores") or hw.get("cpu", {}).get("logical_cores") or 0
+        srv._hw_model = _extract_hw_model(hw.get("platform"))
+        srv._prim_iface = _extract_primary_interface(hw.get("network"))
+        srv._os_name = hw.get("os", {}).get("os_name") or (ex.os_label if ex else "Linux")
+        srv._kernel = hw.get("os", {}).get("kernel") or (ex.kernel if ex else "—")
+        srv._arch = hw.get("cpu", {}).get("arch") or (ex.arch if ex else "x86_64")
+        srv._boot_time = hw.get("os", {}).get("boot_time") or "—"
+        mem = hw.get("memory", {})
+        ram_b = mem.get("ram_total") or (latest_sys.mem_total if latest_sys else 0)
+        swap_b = mem.get("swap_total") or (latest_sys.swap_total if latest_sys else 0)
+        srv._ram_total_str = _format_bytes_gb(ram_b if ram_b else (latest_sys.mem_total if latest_sys else None))
+        srv._swap_total_str = _format_bytes_gb(swap_b if swap_b else (latest_sys.swap_total if latest_sys else None))
+        srv._disk_str = _extract_disks_summary(hw.get("disks"))
+        srv._uptime_str = _format_uptime_str(latest_sys.uptime_secs if latest_sys else None)
+        srv._uptime_secs = latest_sys.uptime_secs if (latest_sys and latest_sys.uptime_secs) else 0
 
         unignored_down = [d for d in svc_data if d.get("status") in ("down", "offline") and not d.get("ignored")]
         is_ign_stale = False

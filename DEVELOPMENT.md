@@ -311,6 +311,36 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.27
+
+- **Tipe Rilis:** Transformasi Halaman Daftar Server Menjadi Direktori Inventaris Mesin Klien Lengkap (*Fleet Client Machine Identity & Inventory Directory*)
+- **Fokus Utama:** Membedakan fungsi secara tegas antara Halaman Utama (`dashboard.html`) sebagai Pusat Telemetri & Beban Real-Time dengan Halaman Daftar Server (`servers.html`) sebagai Direktori Inventaris & Identitas Armada Server Klien Lengkap (*Fleet Machine Identity Directory*) dalam 1 tabel terpadu berdensitas tinggi kelas enterprise khas NOC:
+  1. **Rekayasa Ulang Tabel Daftar Server (`server/templates/servers.html`):**
+     - Mentransformasikan tabel daftar server menjadi 12 kolom identitas teknis mesin klien yang padat, rapi, proporsional, dan informatif tanpa teks mubazir atau pengulangan metrik beban sekunder:
+       1. **Server:** Hostname sebagai tautan navigasi langsung ke `/services`, dot status realtime (Online, Pemeliharaan, Offline), lencana tier (`tier-1`, `tier-2`, `tier-3`), dan catatan singkat host.
+       2. **IP & Interface:** Alamat IP primer tersalin instan (`copyable-ip`) berwarna `#58a6ff`, antarmuka fisik utama terdeteksi (seperti `ens18`, `eth0`, `eno1`), serta lencana `Lokal` untuk host jaringan terisolasi.
+       3. **Platform & Mesin:** Lencana platform virtualisasi (`BAREMETAL`, `VM (KVM)`, `LXC`), lencana proteksi Proxmox HA (`HA`), serta vendor dan tipe model perangkat keras mesin klien (misal `Dell Inc. PowerEdge R440`, `HPE ProLiant DL380 Gen11`, `QEMU KVM Guest`, `ASUSTeK COMPUTER INC.`).
+       4. **Sistem Operasi:** Nama lengkap distribusi OS (misal `Ubuntu 24.04.5 LTS`, `Debian GNU/Linux 12`), versi kernel yang sedang berjalan (misal `7.0.14-11-pve`, `6.8.0-147-generic`, `5.15.0-181-generic`), dan arsitektur CPU (`x86_64`).
+       5. **Prosesor:** Nama model prosesor bersih dari karakter derau registrasi (seperti `Intel Xeon Gold 6430`, `Intel Xeon Bronze 3104`, `Intel Xeon E-2234`) dan jumlah inti CPU (`X Cores`).
+       6. **Memori:** Kapasitas total memori utama (RAM) dan alokasi kapasitas Swap.
+       7. **Penyimpanan:** Ringkasan seluruh partisi dan kapasitas penyimpanan fisik klien (misal `195.8G (rootfs)`, `50G (sda)`, `931G (sda)`).
+       8. **Uptime & Boot:** Durasi aktif sistem dalam format baku Indonesia (`Xh Yj`, `Xj Ym`) serta stempel waktu boot sistem terakhir.
+       9. **Agen & APT:** Versi agen pemantau klien (`v4.8.27`, dengan indikator panah oranye jika usang) dan lencana status ketersediaan pembaruan paket sistem operasi (`X paket` / `mutakhir`).
+       10. **Tag:** Lencana pengelompokan tag server klien.
+       11. **Status & Lapor:** Lencana status operasional (Online, Pemeliharaan, Offline) dan waktu relatif laporan terakhir (`X dtk lalu`, `X mnt lalu`).
+       12. **Tindakan (Sticky Column):** Kolom tindakan berperekat (*sticky right column*) dengan efek bayangan halus (`box-shadow`) yang memastikan tombol aksi cepat (Buka Rincian Layanan, Edit Konfigurasi Server, dan Hapus Server berbasis dialog Guardrail) selalu terlihat dan mudah diakses di seluruh resolusi layar.
+  2. **Ekstraksi & Sanitasi Identitas Perangkat Keras di Backend (`server/main.py`):**
+     - Menambahkan fungsi pembersih `_clean_cpu_model()` untuk mengeliminasi derau simbolis (`(R)`, `(TM)`, clock rate `@ X.XXGHz`, dll.) agar nama model prosesor tampil rapi dan standar enterprise.
+     - Menambahkan ekstraktor penyimpanan fisik `_extract_disks_summary()` dari struktur `hardware_specs.disks`.
+     - Menambahkan ekstraktor model perangkat keras `_extract_hw_model()` yang menggabungkan vendor dan produk sistem host.
+     - Menambahkan detektor antarmuka jaringan primer `_extract_primary_interface()` yang menyaring virtual bridge (`br-`, `docker`, `veth`, `lo`) dan mendeteksi NIC fisik utama.
+     - Memperkaya endpoint API `/api/servers` (`api_servers`) dan perender Jinja `/servers` (`servers_page`) dengan atribut identitas perangkat keras lengkap, durasi uptime numerik (`uptime_secs`), serta kapasitas RAM dalam bytes.
+  3. **Pencarian Cerdas Multivariabel & Pengurutan Berbasis Nilai Numerik Akurat:**
+     - Memperluas atribut pencarian `data-srv-filter` pada setiap baris sehingga operator dapat mencari server secara instan berdasarkan nama host, IP, nama antarmuka (`ens18`), nama model prosesor (`Xeon`), vendor mesin (`Dell`, `HPE`), distro OS (`Ubuntu`, `Debian`), kernel, versi agen, tag, hingga catatan host.
+     - Menyempurnakan pengurutan tabel (`th.sortable`) dengan evaluasi nilai numerik murni: pengurutan Uptime menggunakan `data-uptime-secs`, kapasitas RAM menggunakan `data-ram-bytes`, jumlah core CPU menggunakan `data-cpu-cores`, dan waktu lapor menggunakan stempel ISO `data-last-seen`.
+  4. **Sinkronisasi SemVer 7 Berkas & Pengujian Runtime:**
+     - Menaikkan versi aplikasi menjadi `v4.8.27` secara sinkron dan identik di 7 berkas: `server/config.py`, `server/templates/base.html`, `package/opt/pantau/agent/agent_pantau.py`, `agent/agent_pantau.py`, `package/install.sh`, `README.md`, dan `DEVELOPMENT.md`.
+
 ## Versi 4.8.26
 
 - **Tipe Rilis:** Modal Konfirmasi Universal Enterprise & Eliminasi Dialog Bawaan Browser (*Enterprise Universal Confirmation Modal & Native Browser Dialog Elimination*)

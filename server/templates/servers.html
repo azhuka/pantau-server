@@ -38,6 +38,29 @@
   white-space: nowrap;
   padding: 3.5px 6px;
   font-size: 10px;
+  vertical-align: middle;
+}
+#servers-table th.col-act,
+#servers-table td.col-act {
+  position: sticky;
+  right: 0;
+  background: #0b111e;
+  box-shadow: -4px 0 8px rgba(0,0,0,0.45);
+  z-index: 2;
+  text-align: center !important;
+  width: 105px !important;
+  min-width: 105px !important;
+}
+#servers-table tbody tr:hover td.col-act {
+  background: #141e30;
+}
+.group-header-row td.col-act {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.hover-underline:hover {
+  text-decoration: underline !important;
+  color: var(--blue) !important;
 }
 @media (max-width: 640px) {
   .servers-controls-wrap {
@@ -82,7 +105,7 @@
     {% endif %}
     <div class="servers-search-box" style="position:relative;display:flex;align-items:center">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="search" id="servers-search" placeholder="Cari server, IP, tag…" data-i18n-placeholder="search_server_agent" oninput="serversFilter()"
+      <input type="search" id="servers-search" placeholder="Cari server, IP, spek, tag…" data-i18n-placeholder="search_server_agent" oninput="serversFilter()"
              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:7px 12px 7px 30px;font-size:12px;width:240px;outline:none;transition:border-color .15s">
     </div>
     {% endif %}
@@ -101,17 +124,18 @@
   <table id="servers-table" style="width:100%;margin:0">
     <thead>
       <tr>
-        <th class="sortable" data-col="0" style="cursor:pointer;width:240px;min-width:180px;white-space:nowrap" title="Urutkan berdasarkan nama host server">Hostname ↕</th>
-        <th class="sortable" data-col="1" style="cursor:pointer;width:105px;min-width:95px" title="Urutkan berdasarkan alamat IP — klik IP pada baris untuk menyalin">Alamat IP ↕</th>
-        <th class="sortable" data-col="2" style="cursor:pointer;width:70px;min-width:60px" title="Urutkan berdasarkan tag atau label">Tag ↕</th>
-        <th style="width:65px;min-width:55px;text-align:center" title="Kondisi koneksi mesin saat ini (Online, Pemeliharaan, atau Offline)">Status</th>
-        <th class="sortable" data-col="4" style="cursor:pointer;width:50px;min-width:45px;text-align:center" title="Persentase pemakaian CPU">CPU ↕</th>
-        <th class="sortable" data-col="5" style="cursor:pointer;width:50px;min-width:45px;text-align:center" title="Persentase pemakaian RAM">RAM ↕</th>
-        <th style="width:60px;min-width:55px;text-align:center" title="Ringkasan jumlah layanan: total, aktif, berhenti, atau diabaikan">Layanan</th>
-        <th style="width:65px;min-width:55px;text-align:center" title="Tingkat keparahan anomali atau insiden yang terdeteksi">Insiden</th>
-        <th class="sortable" data-col="8" style="cursor:pointer;width:85px;min-width:75px;text-align:center" title="Jumlah pembaruan paket sistem operasi (APT) yang tersedia">Pembaruan ↕</th>
-        <th class="sortable" data-col="9" style="cursor:pointer;width:80px;min-width:70px;text-align:center" title="Waktu terakhir kali server mengirimkan data ke panel">Lapor ↕</th>
-        <th class="col-act" style="width:95px;min-width:85px;text-align:center" title="Menu aksi cepat: Rincian, Edit, atau Hapus server">Tindakan</th>
+        <th class="sortable" data-col="0" style="cursor:pointer;min-width:140px;white-space:nowrap" title="Urutkan berdasarkan nama host server">Server ↕</th>
+        <th class="sortable" data-col="1" style="cursor:pointer;min-width:110px" title="Urutkan berdasarkan alamat IP — klik IP pada baris untuk menyalin">IP &amp; Interface ↕</th>
+        <th class="sortable" data-col="2" style="cursor:pointer;min-width:125px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform &amp; Mesin ↕</th>
+        <th class="sortable" data-col="3" style="cursor:pointer;min-width:130px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi ↕</th>
+        <th class="sortable" data-col="4" style="cursor:pointer;min-width:125px" title="Model prosesor (CPU) dan jumlah inti">Prosesor ↕</th>
+        <th class="sortable" data-col="5" style="cursor:pointer;min-width:90px" title="Kapasitas total memori utama (RAM) dan Swap">Memori ↕</th>
+        <th class="sortable" data-col="6" style="cursor:pointer;min-width:105px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan ↕</th>
+        <th class="sortable" data-col="7" style="cursor:pointer;min-width:95px" title="Durasi server aktif dan waktu boot terakhir">Uptime ↕</th>
+        <th class="sortable" data-col="8" style="cursor:pointer;min-width:85px;text-align:center" title="Versi agen Pantau dan status paket pembaruan APT">Agen &amp; APT ↕</th>
+        <th class="sortable" data-col="9" style="cursor:pointer;min-width:70px" title="Tag atau label kategori server">Tag ↕</th>
+        <th class="sortable" data-col="10" style="cursor:pointer;min-width:85px;text-align:center" title="Status koneksi dan waktu terakhir data diterima">Status &amp; Lapor ↕</th>
+        <th class="col-act" style="width:85px;min-width:85px;text-align:center" title="Menu aksi cepat: Rincian, Edit, atau Hapus server">Tindakan</th>
       </tr>
     </thead>
     <tbody>
@@ -121,33 +145,29 @@
       {% if all_groups and (srv_grp != ns.current_grp) %}
         {% set ns.current_grp = srv_grp %}
         <tr class="group-header-row" data-header-group="{{ srv_grp }}" onclick="toggleGroupCollapse('{{ srv_grp }}')" title="Klik untuk ciutkan / bentangkan grup ini">
-          <td colspan="11" style="background:linear-gradient(90deg, {% if srv_grp != '__none__' %}rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.02) 100%{% else %}rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%{% endif %});border-top:{% if not loop.first %}1px solid var(--border){% else %}none{% endif %};border-bottom:1px solid var(--border);padding:7px 12px">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <div style="display:flex;align-items:center;gap:8px">
-                <span class="group-collapse-icon" id="collapse-icon-{{ srv_grp }}" title="Ciutkan / Bentangkan">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </span>
-                {% if srv_grp != '__none__' %}
-                <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:rgba(59,130,246,0.2);color:var(--blue)">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                    <polyline points="2 17 12 22 22 17"></polyline>
-                    <polyline points="2 12 12 17 22 12"></polyline>
-                  </svg>
-                </span>
-                <strong style="font-size:11px;color:var(--text)">Grup: <span style="color:var(--blue)">{{ srv_grp }}</span></strong>
-                <span class="badge badge-info" style="font-size:8.5px;padding:1px 5px">{{ group_counts.get(srv_grp, 0) }} Server</span>
-                {% else %}
-                <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--dim)">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-                </span>
-                <strong style="font-size:11px;color:var(--dim)">Server Tanpa Grup</strong>
-                <span class="badge badge-muted" style="font-size:8.5px;padding:1px 5px">{{ ungrouped_count }} Server</span>
-                {% endif %}
-              </div>
-              <div style="font-size:10px;color:var(--dim)">
-                <span id="collapse-hint-{{ srv_grp }}" style="opacity:.65">Klik untuk ciutkan</span>
-              </div>
+          <td colspan="12" style="background:linear-gradient(90deg, {% if srv_grp != '__none__' %}rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.02) 100%{% else %}rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%{% endif %});border-top:{% if not loop.first %}1px solid var(--border){% else %}none{% endif %};border-bottom:1px solid var(--border);padding:7px 12px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="group-collapse-icon" id="collapse-icon-{{ srv_grp }}" title="Ciutkan / Bentangkan">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+              {% if srv_grp != '__none__' %}
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:rgba(59,130,246,0.2);color:var(--blue)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                  <polyline points="2 17 12 22 22 17"></polyline>
+                  <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+              </span>
+              <strong style="font-size:11px;color:var(--text)">Grup: <span style="color:var(--blue)">{{ srv_grp }}</span></strong>
+              <span class="badge badge-info" style="font-size:8.5px;padding:1px 5px">{{ group_counts.get(srv_grp, 0) }} Server</span>
+              {% else %}
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--dim)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+              </span>
+              <strong style="font-size:11px;color:var(--dim)">Server Tanpa Grup</strong>
+              <span class="badge badge-muted" style="font-size:8.5px;padding:1px 5px">{{ ungrouped_count }} Server</span>
+              {% endif %}
+              <span id="collapse-hint-{{ srv_grp }}" style="font-size:9.5px;color:var(--dim);opacity:.6;margin-left:6px">Klik baris untuk ciutkan</span>
             </div>
           </td>
         </tr>
@@ -155,26 +175,57 @@
 
     <tr id="srv-tr-{{ srv.id }}"
         data-srv-id="{{ srv.id }}"
-        data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' ' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '') ~ (' proxmox ha' if srv.is_proxmox_ha else '') ~ ((' ' ~ srv._platform.short_label ~ ' ' ~ srv._platform.type) if srv._platform else '')) | lower }}"
+        data-srv-filter="{{ (srv.hostname ~ ' ' ~ srv.ip_address ~ ' ' ~ (srv._prim_iface or '') ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' ' ~ (srv._os_name or '') ~ ' ' ~ (srv._kernel or '') ~ ' ' ~ (srv._cpu_model or '') ~ ' ' ~ (srv._hw_model or '') ~ ' ' ~ (srv.notes or '') ~ ' ' ~ (srv._agent_version or '') ~ (' usang update' if srv._agent_outdated else '') ~ (' proxmox ha' if srv.is_proxmox_ha else '') ~ ((' ' ~ srv._platform.short_label ~ ' ' ~ srv._platform.type) if srv._platform else '')) | lower }}"
         data-group="{{ srv.group_name or '' }}"
         data-group-membership="{{ srv_grp }}"
         data-id="{{ srv.id }}"
         data-status="{{ srv._status_cls }}"
+        data-uptime-secs="{{ srv._uptime_secs or 0 }}"
+        data-ram-bytes="{{ srv._hw.memory.ram_total if srv._hw and srv._hw.memory and srv._hw.memory.ram_total else 0 }}"
+        data-cpu-cores="{{ srv._cpu_cores or 0 }}"
         data-last-seen="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
+      
+      <!-- Col 0: Server / Hostname -->
       <td style="white-space:nowrap">
         <div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
           <span id="srv-dot-{{ srv.id }}" class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
-          <strong style="font-size:11px" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</strong>
+          <a href="/servers/{{ srv.id }}/services" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</a>
           {% set s_tier = srv.tier|default(2) %}
           {% if s_tier == 1 %}
-            <span class="badge" style="font-size:8.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 4.5px;font-weight:700" title="tier-1">tier-1</span>
+            <span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="tier-1">tier-1</span>
           {% elif s_tier == 3 %}
-            <span class="badge" style="font-size:8.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 4.5px" title="tier-3">tier-3</span>
+            <span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px" title="tier-3">tier-3</span>
           {% else %}
-            <span class="badge" style="font-size:8.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 4.5px;font-weight:600" title="tier-2">tier-2</span>
+            <span class="badge" style="font-size:8px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:0.5px 4px;font-weight:600" title="tier-2">tier-2</span>
           {% endif %}
+        </div>
+        {% if srv.notes %}
+        <div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;margin-top:1px" title="{{ srv.notes }}">{{ srv.notes }}</div>
+        {% endif %}
+      </td>
+
+      <!-- Col 1: IP & Interface -->
+      <td>
+        <div>
+          <span class="copyable-ip mono" id="srv-ip-{{ srv.id }}" style="font-size:9.5px;color:#58a6ff;font-weight:600" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
+        </div>
+        <div style="display:inline-flex;align-items:center;gap:3.5px;margin-top:1px">
+          {% if srv._prim_iface %}
+          <span class="mono" style="font-size:8px;color:var(--dim);background:rgba(255,255,255,0.06);padding:0.5px 3.5px;border-radius:3px;border:1px solid rgba(255,255,255,0.08)" id="srv-iface-{{ srv.id }}" title="Antarmuka Primer">{{ srv._prim_iface }}</span>
+          {% endif %}
+          {% if srv.is_isolated_net %}
+          <span class="badge" style="font-size:7.5px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:0.5px 3px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Jaringan Terisolasi">
+            Lokal
+          </span>
+          {% endif %}
+        </div>
+      </td>
+
+      <!-- Col 2: Platform & Mesin -->
+      <td>
+        <div style="display:inline-flex;align-items:center;gap:3px">
           {% if srv._platform %}
-            <span class="badge" style="font-size:8.5px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:600" title="Platform: {{ srv._platform.label }}">
+            <span class="badge" style="font-size:8px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:600" title="Platform: {{ srv._platform.label }}">
               {% if srv._platform.type == 'lxc' %}
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
               {% elif srv._platform.type == 'vm' %}
@@ -188,112 +239,101 @@
             </span>
           {% endif %}
           {% if srv.is_proxmox_ha %}
-            <span class="badge" style="font-size:7.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:1px 3.5px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Server terproteksi Proxmox HA">
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span class="badge" style="font-size:7.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:0.5px 3px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Server terproteksi Proxmox HA">
+              <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
               HA
             </span>
           {% endif %}
-          {% if srv.is_isolated_net %}
-            <span class="badge" style="font-size:7.5px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:1px 3.5px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Jaringan Terisolasi">
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-              Lokal
-            </span>
-          {% endif %}
+        </div>
+        <div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;margin-top:1px" id="srv-hw-{{ srv.id }}" title="{{ srv._hw_model }}">{{ srv._hw_model }}</div>
+      </td>
+
+      <!-- Col 3: Sistem Operasi -->
+      <td>
+        <div style="font-weight:600;font-size:9.5px;white-space:nowrap" id="srv-os-{{ srv.id }}">{{ srv._os_name }}</div>
+        <div class="mono" style="font-size:8.5px;color:var(--dim);white-space:nowrap" id="srv-kernel-{{ srv.id }}" title="Kernel: {{ srv._kernel }} ({{ srv._arch }})">{{ srv._kernel }} <span style="opacity:0.7">({{ srv._arch }})</span></div>
+      </td>
+
+      <!-- Col 4: Prosesor -->
+      <td>
+        <div style="font-weight:600;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px" id="srv-cpumodel-{{ srv.id }}" title="{{ srv._cpu_model }}">{{ srv._cpu_model }}</div>
+        <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-cpucores-{{ srv.id }}">{{ srv._cpu_cores }} Cores</div>
+      </td>
+
+      <!-- Col 5: Memori -->
+      <td>
+        <div class="mono" style="font-weight:600;font-size:9.5px" id="srv-ramtot-{{ srv.id }}">{{ srv._ram_total_str }}</div>
+        <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-swaptot-{{ srv.id }}">Swap: {{ srv._swap_total_str }}</div>
+      </td>
+
+      <!-- Col 6: Penyimpanan -->
+      <td>
+        <div class="mono" style="font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px" id="srv-disk-{{ srv.id }}" title="{{ srv._disk_str }}">{{ srv._disk_str }}</div>
+      </td>
+
+      <!-- Col 7: Uptime & Boot -->
+      <td>
+        <div class="mono" style="font-weight:600;font-size:9.5px" id="srv-uptime-{{ srv.id }}">{{ srv._uptime_str }}</div>
+        <div class="mono" style="font-size:8px;color:var(--dim);white-space:nowrap" id="srv-boot-{{ srv.id }}" title="Boot Time">{{ srv._boot_time }}</div>
+      </td>
+
+      <!-- Col 8: Agen & APT -->
+      <td style="text-align:center">
+        <div>
           {% if srv._agent_version %}
             {% if srv._agent_outdated %}
-              <span style="font-size:8.5px;color:#d97706;font-family:var(--font-mono);font-weight:500" title="Perlu pembaruan agen (v{{ srv._agent_version }})">v{{ srv._agent_version }} (update)</span>
+              <span class="badge" style="font-size:7.5px;background:rgba(217,119,6,0.15);color:#d97706;border:1px solid rgba(217,119,6,0.3);padding:0.5px 3.5px;font-family:var(--font-mono);font-weight:600" id="srv-agent-{{ srv.id }}" title="Perlu pembaruan agen">v{{ srv._agent_version }} ↑</span>
             {% else %}
-              <span style="font-size:8.5px;color:var(--blue,#3b82f6);font-family:var(--font-mono)" title="Versi agen mutakhir">v{{ srv._agent_version }}</span>
+              <span class="badge" style="font-size:7.5px;background:rgba(59,130,246,0.12);color:var(--blue);border:1px solid rgba(59,130,246,0.25);padding:0.5px 3.5px;font-family:var(--font-mono)" id="srv-agent-{{ srv.id }}" title="Versi agen mutakhir">v{{ srv._agent_version }}</span>
             {% endif %}
+          {% else %}
+            <span style="color:var(--dim);font-size:8px" id="srv-agent-{{ srv.id }}">—</span>
+          {% endif %}
+        </div>
+        <div style="margin-top:2px" id="srv-apt-{{ srv.id }}">
+          {% if srv._apt_upgradable is not none %}
+            {% if srv._apt_upgradable > 0 %}
+              <span class="badge badge-warn" style="font-size:7.5px;padding:0.5px 3.5px" title="{{ srv._apt_upgradable }} paket tersedia">{{ srv._apt_upgradable }} paket</span>
+            {% else %}
+              <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px">mutakhir</span>
+            {% endif %}
+          {% else %}
+            <span style="color:var(--dim);font-size:8px">—</span>
           {% endif %}
         </div>
       </td>
-      <td class="mono">
-        <span class="copyable-ip" id="srv-ip-{{ srv.id }}" style="font-size:9.5px" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
-      </td>
+
+      <!-- Col 9: Tag -->
       <td>
         {% if srv.tags %}
-        <div style="display:inline-flex;align-items:center;gap:4px">
+        <div style="display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap">
           {% for tag in (srv.tags or '').split(',') %}
             {% if tag.strip() %}
             <span class="badge" style="font-size:7.5px;padding:0.5px 3.5px;background:rgba(255,255,255,0.06);color:var(--dim);display:inline-flex;align-items:center;gap:2.5px">
-              <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
               {{ tag.strip() }}
             </span>
             {% endif %}
           {% endfor %}
         </div>
         {% else %}
-        <span style="color:var(--dim-subtle);font-size:10px">—</span>
+        <span style="color:var(--dim-subtle);font-size:9px">—</span>
         {% endif %}
       </td>
+
+      <!-- Col 10: Status & Lapor -->
       <td style="text-align:center">
-        <span class="badge {{ srv._status_cls }}" id="srv-sts-{{ srv.id }}" style="font-size:8px;padding:0.5px 4.5px;font-weight:700;letter-spacing:0.25px">{{ srv._status_label }}</span>
-        {% if srv.is_maintenance and srv.maintenance_reason %}
-        <span style="display:inline-flex;align-items:center;vertical-align:middle;color:var(--yellow);margin-left:4px" title="{{ srv.maintenance_reason }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
-        {% endif %}
-      </td>
-      <td id="srv-cpu-{{ srv.id }}" class="mono" style="font-size:10.5px;text-align:center">{{ srv._cpu ~ '%' if srv._cpu is not none else '—' }}</td>
-      <td id="srv-ram-{{ srv.id }}" class="mono" style="font-size:10.5px;text-align:center">{{ srv._mem_pct ~ '%' if srv._mem_pct is not none else '—' }}</td>
-      <td id="srv-svc-{{ srv.id }}" style="text-align:center;font-size:10px;font-family:ui-monospace,monospace">
-        {% set total_svc_count = (srv._svc_data or [])|length %}
-        {% if not srv.last_seen or total_svc_count == 0 %}
-          <span style="color:var(--dim)">-</span>
-        {% else %}
-          {% set up_count = (srv._svc_data or []) | selectattr('status', 'equalto', 'up') | list | length %}
-          {% set has_inc = (up_count < total_svc_count) or (srv._danger_count + srv._average_count + srv._warning_count + srv._info_count > 0) %}
-          <span style="font-weight:700">
-            <span style="color:var(--green)">{{ total_svc_count }}</span>/<span style="color:{% if has_inc %}var(--text){% else %}var(--green){% endif %}">{{ up_count }}</span>
-          </span>
-        {% endif %}
-      </td>
-      <td id="srv-prob-{{ srv.id }}" style="text-align:center">
-        {% if not srv.last_seen %}
-          <span style="color:var(--dim)">-</span>
-        {% else %}
-          {% set ign_count = srv._ignored_count if srv._ignored_count is defined else 0 %}
-          {% set d_cnt = srv._danger_count if srv._danger_count is defined else 0 %}
-          {% set avg_cnt = srv._average_count if srv._average_count is defined else 0 %}
-          {% set w_cnt = srv._warning_count if srv._warning_count is defined else 0 %}
-          {% set i_cnt = srv._info_count if srv._info_count is defined else 0 %}
-          {% set tot_active = d_cnt + avg_cnt + w_cnt + i_cnt %}
-          <div style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">
-            {% if tot_active == 0 and ign_count == 0 %}
-              <span class="badge badge-up" style="font-size:8px;padding:0.5px 4.5px;font-weight:700">Nihil</span>
-            {% else %}
-              {% if d_cnt > 0 %}
-                <span class="badge badge-danger badge-count" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>
-              {% endif %}
-              {% if avg_cnt > 0 %}
-                <span class="badge badge-orange badge-count" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>
-              {% endif %}
-              {% if w_cnt > 0 %}
-                <span class="badge badge-warn badge-count" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>
-              {% endif %}
-              {% if i_cnt > 0 %}
-                <span class="badge badge-info badge-count" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>
-              {% endif %}
-              {% if ign_count > 0 %}
-                <span class="badge badge-muted badge-count" title="{{ srv._ignored_msgs or 'Diabaikan' }}">{{ ign_count }}</span>
-              {% endif %}
-            {% endif %}
-          </div>
-        {% endif %}
-      </td>
-      <td style="text-align:center" id="srv-apt-{{ srv.id }}">
-        {% if srv._apt_upgradable is not none %}
-          {% if srv._apt_upgradable > 0 %}
-            <span class="badge badge-warn" style="font-size:7.5px;padding:1px 4px" title="{{ srv._apt_upgradable }} paket tersedia">{{ srv._apt_upgradable }} paket</span>
-          {% else %}
-            <span class="badge badge-up" style="font-size:7.5px;padding:1px 4px">mutakhir</span>
+        <div>
+          <span class="badge {{ srv._status_cls }}" id="srv-sts-{{ srv.id }}" style="font-size:8px;padding:0.5px 4.5px;font-weight:700;letter-spacing:0.25px">{{ srv._status_label }}</span>
+          {% if srv.is_maintenance and srv.maintenance_reason %}
+          <span style="display:inline-flex;align-items:center;vertical-align:middle;color:var(--yellow);margin-left:3px" title="{{ srv.maintenance_reason }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
           {% endif %}
-        {% else %}
-          <span style="color:var(--dim);font-size:10px">—</span>
-        {% endif %}
+        </div>
+        <div class="mono" style="font-size:8.5px;color:var(--dim);margin-top:2px" id="srv-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
+          {{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}
+        </div>
       </td>
-      <td class="mono" style="font-size:9.5px;letter-spacing:-0.025em;text-align:center;white-space:nowrap" id="srv-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
-        {{ srv.last_seen.strftime('%d %b %H:%M') if srv.last_seen else 'belum pernah' }}
-      </td>
+
+      <!-- Col 11: Tindakan -->
       <td class="col-act" style="text-align:center;white-space:nowrap">
         <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center">
           <a href="/servers/{{ srv.id }}/services" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="Buka Rincian Layanan Server" aria-label="Rincian">
@@ -324,7 +364,7 @@
     </tr>
     {% endfor %}
     <tr id="servers-no-match" style="display:none">
-      <td colspan="11" class="empty-msg" style="padding:20px">Tidak ada server yang sesuai dengan pencarian.</td>
+      <td colspan="12" class="empty-msg" style="padding:20px">Tidak ada server yang sesuai dengan pencarian.</td>
     </tr>
     </tbody>
   </table>
@@ -339,6 +379,8 @@
 
 {% block scripts %}
 <script>
+const CAN_MANAGE_SERVERS = {{ 'true' if (user.is_master_admin() or user.has_perm('can_manage_servers')) else 'false' }};
+const CSRF_TOKEN = {{ csrf_token|tojson }};
 let isTableSorted = false;
 const collapsedGroups = new Set();
 
@@ -366,7 +408,7 @@ function updateCollapsedDisplay() {
       icon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
     }
     if (hint) {
-      hint.textContent = isCollapsed ? 'Klik untuk bentangkan' : 'Klik untuk ciutkan';
+      hint.textContent = isCollapsed ? 'Klik baris untuk bentangkan' : 'Klik baris untuk ciutkan';
     }
   });
 
@@ -450,11 +492,11 @@ function _srvEsc(s) {
 function getTierBadgeHtml(tier) {
   const t = parseInt(tier, 10) || 2;
   if (t === 1) {
-    return '<span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>';
+    return '<span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="tier-1">tier-1</span>';
   } else if (t === 3) {
-    return '<span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>';
+    return '<span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px" title="tier-3">tier-3</span>';
   }
-  return '<span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>';
+  return '<span class="badge" style="font-size:8px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:0.5px 4px;font-weight:600" title="tier-2">tier-2</span>';
 }
 
 function getPlatformBadgeHtml(plat) {
@@ -465,15 +507,15 @@ function getPlatformBadgeHtml(plat) {
   const col = plat.badge_color || '#94a3b8';
   const bor = plat.badge_border || 'rgba(100,116,139,0.25)';
   const pType = plat.type || '';
-  let iconSvg = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>';
+  let iconSvg = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>';
   if (pType === 'lxc') {
-    iconSvg = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>';
+    iconSvg = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>';
   } else if (pType === 'vm') {
-    iconSvg = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>';
+    iconSvg = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>';
   } else if (pType === 'pending') {
-    iconSvg = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
+    iconSvg = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
   }
-  return `<span class="badge" style="font-size:10px;background:${bg};color:${col};border:1px solid ${bor};padding:1px 5px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="Platform: ${_srvEsc(plat.label || label)}">${iconSvg} ${_srvEsc(label)}</span>`;
+  return `<span class="badge" style="font-size:8px;background:${bg};color:${col};border:1px solid ${bor};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:600" title="Platform: ${_srvEsc(plat.label || label)}">${iconSvg} ${_srvEsc(label)}</span>`;
 }
 
 function createAndAppendServersRow(srv, tbody) {
@@ -484,33 +526,101 @@ function createAndAppendServersRow(srv, tbody) {
   tr.dataset.id = srv.id;
   tr.dataset.group = srv.group_name || '';
   tr.dataset.groupMembership = srv.group_name || '__none__';
-  tr.dataset.srvFilter = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.group_name || '')).toLowerCase();
+  tr.dataset.uptimeSecs = srv.uptime_secs || 0;
+  tr.dataset.lastSeen = srv.last_seen || '';
+  tr.dataset.cpuCores = srv.cpu_cores_num || 0;
+  tr.dataset.srvFilter = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.prim_iface || '') + ' ' + (srv.group_name || '') + ' ' + (srv.tags || '') + ' ' + (srv.os_name || '') + ' ' + (srv.kernel || '') + ' ' + (srv.cpu_model || '') + ' ' + (srv.hw_model || '') + ' ' + (srv.notes || '') + ' ' + (srv.agent_version || '')).toLowerCase();
 
   tr.innerHTML = `
     <td style="white-space:nowrap">
       <div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
         <span id="srv-dot-${srv.id}" class="dot unknown" style="flex-shrink:0" title="-"></span>
-        <strong style="font-size:11px" id="srv-host-${srv.id}">${_srvEsc(srv.hostname || '')}</strong>
+        <a href="/servers/${srv.id}/services" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-${srv.id}">${_srvEsc(srv.hostname || '')}</a>
         ${getTierBadgeHtml(srv.tier)}
-        ${getPlatformBadgeHtml(srv.platform)}
+      </div>
+      ${srv.notes ? `<div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;margin-top:1px" title="${_srvEsc(srv.notes)}">${_srvEsc(srv.notes)}</div>` : ''}
+    </td>
+    <td>
+      <div>
+        <span class="copyable-ip mono" id="srv-ip-${srv.id}" style="font-size:9.5px;color:#58a6ff;font-weight:600" onclick="copyIp('${_srvEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_srvEsc(srv.ip_address || '-')}</span>
+      </div>
+      <div style="display:inline-flex;align-items:center;gap:3.5px;margin-top:1px">
+        ${srv.prim_iface ? `<span class="mono" style="font-size:8px;color:var(--dim);background:rgba(255,255,255,0.06);padding:0.5px 3.5px;border-radius:3px;border:1px solid rgba(255,255,255,0.08)" id="srv-iface-${srv.id}" title="Antarmuka Primer">${_srvEsc(srv.prim_iface)}</span>` : ''}
+        ${srv.is_isolated_net ? `<span class="badge" style="font-size:7.5px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:0.5px 3px;font-weight:600">Lokal</span>` : ''}
       </div>
     </td>
-    <td class="mono">
-      <span class="copyable-ip" id="srv-ip-${srv.id}" style="font-size:9.5px" onclick="copyIp('${_srvEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_srvEsc(srv.ip_address || '-')}</span>
+    <td>
+      <div style="display:inline-flex;align-items:center;gap:3px">
+        ${getPlatformBadgeHtml(srv.platform)}
+        ${srv.is_proxmox_ha ? `<span class="badge" style="font-size:7.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:0.5px 3px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Server terproteksi Proxmox HA"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> HA</span>` : ''}
+      </div>
+      <div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;margin-top:1px" id="srv-hw-${srv.id}" title="${_srvEsc(srv.hw_model || '—')}">${_srvEsc(srv.hw_model || '—')}</div>
     </td>
-    <td>-</td>
-    <td><span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 4px">${_srvEsc(srv.group_name || 'Tanpa Grup')}</span></td>
-    <td style="text-align:center"><span id="srv-sts-${srv.id}" class="badge badge-muted" style="font-size:8px;padding:0.5px 4.5px;font-weight:700">-</span></td>
-    <td class="mono" style="font-size:10.5px;text-align:right" id="srv-cpu-${srv.id}">-</td>
-    <td class="mono" style="font-size:10.5px;text-align:right" id="srv-ram-${srv.id}">-</td>
-    <td class="mono" style="font-size:10px;text-align:center" id="srv-svc-${srv.id}">-</td>
-    <td style="text-align:center" id="srv-prob-${srv.id}">-</td>
-    <td class="mono" style="font-size:9.5px;letter-spacing:-0.025em;text-align:center;white-space:nowrap" id="srv-seen-${srv.id}">-</td>
+    <td>
+      <div style="font-weight:600;font-size:9.5px;white-space:nowrap" id="srv-os-${srv.id}">${_srvEsc(srv.os_name || srv.os_label || 'Linux')}</div>
+      <div class="mono" style="font-size:8.5px;color:var(--dim);white-space:nowrap" id="srv-kernel-${srv.id}">${_srvEsc(srv.kernel || '—')} <span style="opacity:0.7">(${_srvEsc(srv.arch || 'x86_64')})</span></div>
+    </td>
+    <td>
+      <div style="font-weight:600;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px" id="srv-cpumodel-${srv.id}" title="${_srvEsc(srv.cpu_model || '—')}">${_srvEsc(srv.cpu_model || '—')}</div>
+      <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-cpucores-${srv.id}">${srv.cpu_cores_num || 0} Cores</div>
+    </td>
+    <td>
+      <div class="mono" style="font-weight:600;font-size:9.5px" id="srv-ramtot-${srv.id}">${_srvEsc(srv.ram_total_str || '—')}</div>
+      <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-swaptot-${srv.id}">Swap: ${_srvEsc(srv.swap_total_str || '—')}</div>
+    </td>
+    <td>
+      <div class="mono" style="font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px" id="srv-disk-${srv.id}" title="${_srvEsc(srv.disk_str || '—')}">${_srvEsc(srv.disk_str || '—')}</div>
+    </td>
+    <td>
+      <div class="mono" style="font-weight:600;font-size:9.5px" id="srv-uptime-${srv.id}">${_srvEsc(srv.uptime_str || '—')}</div>
+      <div class="mono" style="font-size:8px;color:var(--dim);white-space:nowrap" id="srv-boot-${srv.id}" title="Boot Time">${_srvEsc(srv.boot_time || '—')}</div>
+    </td>
+    <td style="text-align:center">
+      <div>
+        <span class="badge" style="font-size:7.5px;background:${srv.agent_outdated ? 'rgba(217,119,6,0.15)' : 'rgba(59,130,246,0.12)'};color:${srv.agent_outdated ? '#d97706' : 'var(--blue)'};border:1px solid ${srv.agent_outdated ? 'rgba(217,119,6,0.3)' : 'rgba(59,130,246,0.25)'};padding:0.5px 3.5px;font-family:var(--font-mono);font-weight:${srv.agent_outdated ? '600' : '400'}" id="srv-agent-${srv.id}">
+          v${_srvEsc(srv.agent_version || '—')}${srv.agent_outdated ? ' ↑' : ''}
+        </span>
+      </div>
+      <div style="margin-top:2px" id="srv-apt-${srv.id}">
+        ${srv.apt_upgradable != null ? (srv.apt_upgradable > 0 ? `<span class="badge badge-warn" style="font-size:7.5px;padding:0.5px 3.5px">${srv.apt_upgradable} paket</span>` : `<span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px">mutakhir</span>`) : `<span style="color:var(--dim);font-size:8px">—</span>`}
+      </div>
+    </td>
+    <td>
+      ${srv.tags ? `<div style="display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap">${srv.tags.split(',').filter(t => t.trim()).map(t => `<span class="badge" style="font-size:7.5px;padding:0.5px 3.5px;background:rgba(255,255,255,0.06);color:var(--dim)">${_srvEsc(t.trim())}</span>`).join('')}</div>` : `<span style="color:var(--dim-subtle);font-size:9px">—</span>`}
+    </td>
+    <td style="text-align:center">
+      <div>
+        <span id="srv-sts-${srv.id}" class="badge badge-muted" style="font-size:8px;padding:0.5px 4.5px;font-weight:700">-</span>
+      </div>
+      <div class="mono" style="font-size:8.5px;color:var(--dim);margin-top:2px" id="srv-seen-${srv.id}" data-ts="${_srvEsc(srv.last_seen || '')}">
+        ${relTime(srv.last_seen)}
+      </div>
+    </td>
     <td class="col-act" style="text-align:center;white-space:nowrap">
       <div style="display:inline-flex;gap:4px;align-items:center;justify-content:center">
-        <a href="/servers/${srv.id}/services" class="btn btn-ghost btn-sm" style="padding:3px 6px" title="${isEn ? 'Server Details' : 'Buka Rincian Layanan Server'}" aria-label="Rincian">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        <a href="/servers/${srv.id}/services" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="${isEn ? 'Server Details' : 'Buka Rincian Layanan Server'}" aria-label="Rincian">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
         </a>
+        ${CAN_MANAGE_SERVERS ? `
+        <a href="/servers/${srv.id}/edit" class="btn btn-ghost btn-sm" style="padding:4px 7px" title="${isEn ? 'Edit Configuration' : 'Edit Konfigurasi Server'}" aria-label="Edit">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+        </a>
+        <form method="POST" action="/servers/${srv.id}/delete" style="display:inline;margin:0"
+              data-guardrail
+              data-guardrail-password="1"
+              data-guardrail-require-name="${_srvEsc(srv.hostname || '')}"
+              data-guardrail-title="Hapus Server dari Pantau"
+              data-guardrail-target="${_srvEsc(srv.hostname || '')} (${_srvEsc(srv.ip_address || '')})"
+              data-guardrail-badge="Hapus Permanen"
+              data-guardrail-msg="Hapus permanen server dan seluruh riwayat metrik dari basis data."
+              data-guardrail-btn="Hapus Server"
+              data-guardrail-color="danger">
+          <input type="hidden" name="csrf_token" value="${_srvEsc(CSRF_TOKEN)}">
+          <button class="btn btn-danger btn-sm" style="padding:4px 7px" type="submit" title="${isEn ? 'Delete Server' : 'Hapus Server'}" aria-label="Hapus">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+          </button>
+        </form>
+        ` : ''}
       </div>
     </td>
   `;
@@ -570,70 +680,25 @@ async function srvPoll() {
       if (sTr) {
         sTr.dataset.group = srv.group_name || '';
         sTr.dataset.groupMembership = srv.group_name || '__none__';
-        sTr.dataset.srvFilter = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.group_name || '')).toLowerCase();
+        sTr.dataset.uptimeSecs = srv.uptime_secs || 0;
+        sTr.dataset.lastSeen = srv.last_seen || '';
+        sTr.dataset.cpuCores = srv.cpu_cores_num || 0;
+        sTr.dataset.srvFilter = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.prim_iface || '') + ' ' + (srv.group_name || '') + ' ' + (srv.tags || '') + ' ' + (srv.os_name || '') + ' ' + (srv.kernel || '') + ' ' + (srv.cpu_model || '') + ' ' + (srv.hw_model || '') + ' ' + (srv.notes || '') + ' ' + (srv.agent_version || '')).toLowerCase();
       }
 
-      const cpu = document.getElementById('srv-cpu-' + srv.id);
-      if (cpu) cpu.textContent = srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '—';
+      const sUptime = document.getElementById('srv-uptime-' + srv.id);
+      if (sUptime && srv.uptime_str) sUptime.textContent = srv.uptime_str;
 
-      const ram = document.getElementById('srv-ram-' + srv.id);
-      if (ram) ram.textContent = srv.mem_pct != null ? srv.mem_pct.toFixed(1) + '%' : '—';
-
-      const svcEl = document.getElementById('srv-svc-' + srv.id);
-      if (svcEl) {
-        if (!srv.last_seen || !srv.services || srv.services.length === 0) {
-          svcEl.innerHTML = '<span style="color:var(--dim)">-</span>';
-        } else {
-          const totCount = (srv.services || []).length;
-          const upCount = (srv.services || []).filter(s => s.status === 'up').length;
-          const dCnt = srv.danger_count || 0;
-          const avgCnt = srv.average_count || 0;
-          const wCnt = srv.warning_count || 0;
-          const iCnt = srv.info_count || 0;
-          const hasInc = (upCount < totCount) || ((dCnt + avgCnt + wCnt + iCnt) > 0);
-          const upColor = hasInc ? 'var(--text)' : 'var(--green)';
-          svcEl.innerHTML = `<span style="font-weight:700"><span style="color:var(--green)">${totCount}</span>/<span style="color:${upColor}">${upCount}</span></span>`;
-        }
-      }
-
-      const probEl = document.getElementById('srv-prob-' + srv.id);
-      if (probEl) {
-        if (!srv.last_seen) {
-          probEl.innerHTML = '<span style="color:var(--dim)">-</span>';
-        } else {
-          const dCnt = srv.danger_count || 0;
-          const avgCnt = srv.average_count || 0;
-          const wCnt = srv.warning_count || 0;
-          const iCnt = srv.info_count || 0;
-          const ignCnt = srv.ignored_problem_count || 0;
-          const totActive = dCnt + avgCnt + wCnt + iCnt;
-
-          const _esc = s => (s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
-          let html = '<div style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">';
-          if (totActive === 0 && ignCnt === 0) {
-            html += `<span class="badge badge-up" style="font-size:8px;padding:0.5px 4.5px;font-weight:700">${isEn ? 'None' : 'Nihil'}</span>`;
-          } else {
-            if (dCnt > 0) html += `<span class="badge badge-danger badge-count" title="${_esc(srv.danger_msgs || (isEn ? 'Danger' : 'Bahaya'))}">${dCnt}</span>`;
-            if (avgCnt > 0) html += `<span class="badge badge-orange badge-count" title="${_esc(srv.average_msgs || (isEn ? 'High' : 'Gawat'))}">${avgCnt}</span>`;
-            if (wCnt > 0) html += `<span class="badge badge-warn badge-count" title="${_esc(srv.warning_msgs || (isEn ? 'Warning' : 'Peringatan'))}">${wCnt}</span>`;
-            if (iCnt > 0) html += `<span class="badge badge-info badge-count" title="${_esc(srv.info_msgs || 'Info')}">${iCnt}</span>`;
-            if (ignCnt > 0) html += `<span class="badge badge-muted badge-count" title="${_esc(srv.ignored_msgs || (isEn ? 'Ignored' : 'Diabaikan'))}">${ignCnt}</span>`;
-          }
-          html += '</div>';
-          probEl.innerHTML = html;
-        }
-      }
-
-      const aptEl = document.getElementById('srv-apt-' + srv.id);
-      if (aptEl) {
+      const sApt = document.getElementById('srv-apt-' + srv.id);
+      if (sApt) {
         if (srv.apt_upgradable != null) {
           if (srv.apt_upgradable > 0) {
-            aptEl.innerHTML = `<span class="badge badge-warn" style="font-size:7.5px;padding:1px 4px" title="${srv.apt_upgradable} ${isEn ? 'packages available' : 'paket tersedia'}">${srv.apt_upgradable} ${isEn ? 'packages' : 'paket'}</span>`;
+            sApt.innerHTML = `<span class="badge badge-warn" style="font-size:7.5px;padding:0.5px 3.5px" title="${srv.apt_upgradable} ${isEn ? 'packages available' : 'paket tersedia'}">${srv.apt_upgradable} ${isEn ? 'packages' : 'paket'}</span>`;
           } else {
-            aptEl.innerHTML = `<span class="badge badge-up" style="font-size:7.5px;padding:1px 4px">${isEn ? 'up-to-date' : 'mutakhir'}</span>`;
+            sApt.innerHTML = `<span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px">${isEn ? 'up-to-date' : 'mutakhir'}</span>`;
           }
         } else {
-          aptEl.innerHTML = `<span style="color:var(--dim);font-size:10px">—</span>`;
+          sApt.innerHTML = `<span style="color:var(--dim);font-size:8px">—</span>`;
         }
       }
 
@@ -674,12 +739,26 @@ document.querySelectorAll('#servers-table th.sortable').forEach(th => {
     rows.sort((a, b) => {
       let av = (a.cells[col]?.textContent || '').trim().toLowerCase();
       let bv = (b.cells[col]?.textContent || '').trim().toLowerCase();
-      if (col === 4 || col === 5) {
-        const af = parseFloat(av) || 0;
-        const bf = parseFloat(bv) || 0;
-        return sortAsc ? af - bf : bf - af;
+      if (col === 4) {
+        // CPU Cores sort
+        const ac = parseInt(a.dataset.cpuCores || '0', 10);
+        const bc = parseInt(b.dataset.cpuCores || '0', 10);
+        if (ac !== bc) return sortAsc ? ac - bc : bc - ac;
       }
-      if (col === 9) {
+      if (col === 5) {
+        // RAM Bytes sort
+        const ar = parseInt(a.dataset.ramBytes || '0', 10);
+        const br = parseInt(b.dataset.ramBytes || '0', 10);
+        if (ar !== br) return sortAsc ? ar - br : br - ar;
+      }
+      if (col === 7) {
+        // Uptime sort
+        const au = parseInt(a.dataset.uptimeSecs || '0', 10);
+        const bu = parseInt(b.dataset.uptimeSecs || '0', 10);
+        return sortAsc ? au - bu : bu - au;
+      }
+      if (col === 10) {
+        // Status & Lapor sort
         av = a.dataset.lastSeen || '';
         bv = b.dataset.lastSeen || '';
       }
