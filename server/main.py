@@ -4275,8 +4275,21 @@ def api_reset_platform_auto(
 
 
 # ---------------------------------------------------------------------------
-# SERVICES
+# SERVICES & SERVER DETAIL SHORTCUT
 # ---------------------------------------------------------------------------
+@app.get("/servers/{sid}", response_class=HTMLResponse)
+def server_detail_shortcut(request: Request, sid: int, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        return RedirectResponse("/servers", status_code=303)
+    qs = request.url.query
+    target_url = f"/servers/{sid}/services" + (f"?{qs}" if qs else "")
+    return RedirectResponse(target_url, status_code=303)
+
+
 @app.get("/servers/{sid}/services", response_class=HTMLResponse)
 def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     user = get_current_user(request, db)

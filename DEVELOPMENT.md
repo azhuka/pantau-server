@@ -311,6 +311,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.36
+
+- **Tipe Rilis:** Penyediaan Rute Pintasan Server & Perbaikan Tautan Notifikasi (*Server Shortcut Route & Alert Notification Links Routing Resilience*)
+- **Fokus Utama:** Mengeliminasi galat 404 Not Found ketika pengguna mengakses URL langsung `/servers/{sid}`, membuka bookmark lama, atau mengeklik tautan navigasi insiden pada antarmuka web:
+  1. **Rute Pintasan Server Otomatis pada Backend (`server/main.py`):**
+     - Mengimplementasikan handler endpoint `@app.get("/servers/{sid}", response_class=HTMLResponse)` yang memvalidasi otentikasi sesi pengguna dan keberadaan server di basis data.
+     - Mengalihkan (*HTTP 303 Redirect*) permintaan secara mulus ke rute kanonikal `/servers/{sid}/services` dengan mempertahankan seluruh parameter query URL (*query string* seperti `?tab=users`, `?tab=systemd`, dll.).
+     - Mengalihkan pengguna non-otentikasi ke `/login` dan server yang tidak ditemukan ke `/servers`.
+  2. **Standardisasi Tautan Notifikasi Alert Kritis & Modal Masalah (`server/templates/base.html`):**
+     - Memperbarui tautan nama server pada kartu notifikasi baris alert kritis (`#alertTable tbody`) dari `/servers/{sid}` menjadi `/servers/{sid}/services`.
+     - Memperbarui tombol tindakan "Buka Server" / "View Server" pada footer modal rincian masalah (`problemDetailModal`) agar mengarah langsung ke `/servers/{sid}/services`, menghindari beban redirect tambahan di sisi klien.
+
 ## Versi 4.8.35
 
 - **Tipe Rilis:** Stabilisasi Bilah Alat Filter Pengguna & Grup serta Standardisasi Terminologi Linux (*Users & Groups Zero-Shift Toolbar Architecture & Linux Terminology Standardization*)
