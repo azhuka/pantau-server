@@ -28,6 +28,7 @@ Environment variable (override config):
 
 import fcntl
 import glob
+import grp
 import hashlib
 import http.client
 import ipaddress
@@ -477,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.32"
+AGENT_VERSION = "4.8.33"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -607,6 +608,7 @@ def send_report(cfg: dict, services: list, system: dict,
     payload["ssl_certs"] = collect_ssl_certs()
     payload["system_logs"] = collect_system_logs()
     payload["hardware_specs"] = collect_hardware_specs()
+    payload["groups"] = collect_groups()
 
     for attempt in range(1, 4):
         code, _ = http_json_request(cfg, "/api/report", "POST", payload)
@@ -2792,7 +2794,56 @@ def _get_locked_users() -> set[str]:
     return set()
 
 
+def collect_groups() -> list[dict]:
+    """Mengumpulkan inventaris seluruh grup sistem Linux (/etc/group)."""
+    groups_list = []
+    try:
+        gr_entries = list(grp.getgrall())
+    except Exception:
+        gr_entries = []
+
+    primary_group_mems: dict[int, set[str]] = {}
+    try:
+        for pw in pwd.getpwall():
+            primary_group_mems.setdefault(pw.pw_gid, set()).add(pw.pw_name)
+    except Exception:
+        pass
+
+    privileged_names = frozenset({
+        "root", "sudo", "wheel", "admin", "docker", "adm", "shadow", "disk", "lxd", "kvm"
+    })
+
+    for gr in gr_entries:
+        p_name = gr.gr_name
+        gid = gr.gr_gid
+        is_priv = p_name in privileged_names
+        is_sys = (gid < 1000 and gid != 0)
+
+        all_members = set(gr.gr_mem)
+        if gid in primary_group_mems:
+            all_members.update(primary_group_mems[gid])
+        sorted_mems = sorted(list(all_members))
+
+        groups_list.append({
+            "group": p_name,
+            "gid": gid,
+            "is_system": is_sys,
+            "is_privileged": is_priv,
+            "members": sorted_mems[:50],
+            "member_count": len(sorted_mems),
+        })
+
+    def _group_sort_key(g):
+        priv_rank = 0 if g["is_privileged"] else 1
+        type_rank = 0 if not g["is_system"] else 1
+        return (priv_rank, type_rank, g["gid"])
+
+    groups_list.sort(key=_group_sort_key)
+    return groups_list[:250]
+
+
 def collect_accounts() -> list[dict]:
+    """Mengumpulkan inventaris seluruh akun pengguna Linux (/etc/passwd, lastlog, who)."""
     lastlog = _parse_lastlog()
     who = _parse_who()
     locked_set = _get_locked_users()
@@ -2800,33 +2851,61 @@ def collect_accounts() -> list[dict]:
     for s in who:
         sessions_by_user.setdefault(s["user"], []).append(s)
 
+    gid_to_name: dict[int, str] = {}
+    user_to_supp_groups: dict[str, list[str]] = {}
+    try:
+        for gr in grp.getgrall():
+            gid_to_name[gr.gr_gid] = gr.gr_name
+            for m in gr.gr_mem:
+                user_to_supp_groups.setdefault(m, []).append(gr.gr_name)
+    except Exception:
+        pass
+
     protected_set = frozenset({
         "root", "pantau", "daemon", "bin", "sys", "sync", "games", "man", "lp", "mail",
         "news", "uucp", "proxy", "www-data", "backup", "list", "irc", "gnats", "nobody",
         "_apt", "messagebus", "sshd"
     })
+    privileged_groups = frozenset({"sudo", "wheel", "root", "admin"})
 
     accounts = []
     try:
         entries = list(pwd.getpwall())
     except Exception:
         entries = []
-    for pw in sorted(entries, key=lambda e: (0 if e.pw_name in sessions_by_user else 1, e.pw_uid)):
+
+    for pw in entries:
         sessions = sessions_by_user.get(pw.pw_name, [])
-        # Fokus akun manusia: uid >= 1000, root, atau yang sedang logged-in
-        if (pw.pw_uid >= 1000 or pw.pw_uid == 0 or sessions) and pw.pw_uid != 65534:
-            is_protected = (pw.pw_uid < 1000 and pw.pw_uid != 0) or (pw.pw_name in protected_set)
-            accounts.append({
-                "user": pw.pw_name,
-                "uid": pw.pw_uid,
-                "shell": pw.pw_shell or "",
-                "last_login": lastlog.get(pw.pw_name, ""),
-                "sessions": sessions[:5],
-                "is_protected": is_protected,
-                "is_locked": pw.pw_name in locked_set,
-            })
-        if len(accounts) >= 60:
-            break
+        primary_grp_name = gid_to_name.get(pw.pw_gid, str(pw.pw_gid))
+        supp_groups = sorted(user_to_supp_groups.get(pw.pw_name, []))
+
+        is_system = (pw.pw_uid < 1000 and pw.pw_uid != 0)
+        is_sudo = (pw.pw_uid == 0) or (primary_grp_name in privileged_groups) or bool(set(supp_groups) & privileged_groups)
+        is_protected = is_system or (pw.pw_name in protected_set)
+        is_locked = pw.pw_name in locked_set
+
+        accounts.append({
+            "user": pw.pw_name,
+            "uid": pw.pw_uid,
+            "gid": pw.pw_gid,
+            "group": primary_grp_name,
+            "groups": supp_groups[:20],
+            "home": pw.pw_dir or "",
+            "shell": pw.pw_shell or "",
+            "last_login": lastlog.get(pw.pw_name, ""),
+            "sessions": sessions[:5],
+            "is_system": is_system,
+            "is_sudo": is_sudo,
+            "is_protected": is_protected,
+            "is_locked": is_locked,
+        })
+
+    def _acc_sort_key(a):
+        active_rank = 0 if a["user"] in sessions_by_user else 1
+        type_rank = 0 if not a["is_system"] else 1
+        return (active_rank, type_rank, a["uid"])
+
+    accounts.sort(key=_acc_sort_key)
 
     seen_users = {a["user"] for a in accounts}
     for u, u_sessions in sessions_by_user.items():
@@ -2834,13 +2913,19 @@ def collect_accounts() -> list[dict]:
             accounts.append({
                 "user": u,
                 "uid": 9999,
+                "gid": 9999,
+                "group": "nogroup",
+                "groups": [],
+                "home": "",
                 "shell": "/bin/sh",
                 "last_login": "",
                 "sessions": u_sessions[:5],
+                "is_system": False,
+                "is_sudo": False,
                 "is_protected": False,
                 "is_locked": False,
             })
-    return accounts
+    return accounts[:250]
 
 
 def collect_units() -> list[str]:

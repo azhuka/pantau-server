@@ -23,26 +23,39 @@
 
 <div class="stats-grid">
   <div class="stat-card">
-    <div class="label">UID</div>
-    <div class="value">{{ account.uid if account and account.uid is not none else '—' }}</div>
+    <div class="label">UID / GID</div>
+    <div class="value mono" style="font-size:16px">{{ account.uid if account and account.uid is not none else '—' }} / {{ account.gid if account and account.gid is not none else '—' }}</div>
+    <div style="font-size:11px;color:var(--dim);margin-top:2px">
+      {% if account and account.is_sudo %}<span class="badge badge-info" style="font-size:9.5px;padding:1px 5px">Sudoer</span>{% endif %}
+      {% if account and account.is_system %}<span class="badge badge-muted" style="font-size:9.5px;padding:1px 5px">Sistem</span>{% else %}<span class="badge badge-up" style="font-size:9.5px;padding:1px 5px">Reguler</span>{% endif %}
+    </div>
   </div>
   <div class="stat-card">
-    <div class="label">Shell</div>
-    <div class="value" style="font-size:16px">{{ account.shell if account and account.shell else '—' }}</div>
+    <div class="label">Grup Utama &amp; Tambahan</div>
+    <div class="value" style="font-size:14px;word-break:break-all">
+      <strong>{{ account.group or '—' }}</strong>
+      {% if account and account.groups %}
+        <span style="font-size:11px;color:var(--dim);margin-left:4px">({{ account.groups|join(', ') }})</span>
+      {% endif %}
+    </div>
   </div>
   <div class="stat-card">
-    <div class="label">Login Terakhir</div>
-    <div class="value" style="font-size:16px">{{ account.last_login if account and account.last_login else '—' }}</div>
+    <div class="label">Home &amp; Shell</div>
+    <div class="value mono" style="font-size:13px;word-break:break-all">{{ account.home or '—' }}</div>
+    <div class="mono" style="font-size:11px;color:var(--dim);margin-top:2px">{{ account.shell or '—' }}</div>
   </div>
   <div class="stat-card">
-    <div class="label">Sesi Aktif</div>
-    <div class="value" style="font-size:16px">
-      {{ account.sessions|length if account and account.sessions else 0 }}
+    <div class="label">Sesi Aktif &amp; Terakhir</div>
+    <div class="value" style="font-size:15px">
+      {{ account.sessions|length if account and account.sessions else 0 }} Sesi
       {% if account and account.sessions %}
-        <span style="font-size:11px;color:var(--dim);font-weight:normal;margin-left:4px">
+        <span style="font-size:11px;color:var(--green);font-weight:normal;margin-left:4px">
           ({% for s in account.sessions %}{{ s.tty }}{% if s.from %} @ {{ s.from }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %})
         </span>
       {% endif %}
+    </div>
+    <div style="font-size:11px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ account.last_login or '-' }}">
+      {{ account.last_login or 'Belum ada riwayat login' }}
     </div>
   </div>
 </div>

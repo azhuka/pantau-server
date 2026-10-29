@@ -645,19 +645,24 @@ def migrate_server_extras_specs():
         "hardware_specs": "TEXT NULL",
         "installed_packages": "MEDIUMTEXT NULL",
         "systemd_units": "MEDIUMTEXT NULL",
+        "system_groups": "MEDIUMTEXT NULL",
     }
     missing = {k: v for k, v in wanted.items() if k not in existing}
-    if not missing:
-        return
     db = SessionLocal()
     try:
-        for col, ddl in missing.items():
-            db.execute(text(f"ALTER TABLE server_extras ADD COLUMN {col} {ddl}"))
-        db.commit()
-        logger.info("[startup] Kolom baru server_extras (hardware_specs): %s", ", ".join(missing))
+        if missing:
+            for col, ddl in missing.items():
+                db.execute(text(f"ALTER TABLE server_extras ADD COLUMN {col} {ddl}"))
+            db.commit()
+            logger.info("[startup] Kolom baru server_extras: %s", ", ".join(missing))
+        try:
+            db.execute(text("ALTER TABLE server_extras MODIFY COLUMN accounts MEDIUMTEXT NULL"))
+            db.commit()
+        except Exception:
+            db.rollback()
     except Exception as exc:  # noqa: BLE001
         db.rollback()
-        logger.warning("[startup] Migrasi kolom hardware_specs gagal: %s", exc)
+        logger.warning("[startup] Migrasi kolom server_extras gagal: %s", exc)
     finally:
         db.close()
 
@@ -1457,7 +1462,7 @@ def agent_report(
         extras.units = json.dumps(clean_units)
     if isinstance(body.get("accounts"), list):
         clean_accounts = []
-        for acc in body["accounts"][:100]:
+        for acc in body["accounts"][:300]:
             if isinstance(acc, dict):
                 raw_sessions = acc.get("sessions")
                 clean_sessions = []
@@ -1469,16 +1474,48 @@ def agent_report(
                                 "from": _clean_str(s.get("from"), "", 64),
                                 "time": _clean_str(s.get("time"), "", 32),
                             })
+                raw_groups = acc.get("groups")
+                clean_groups_list = []
+                if isinstance(raw_groups, list):
+                    for g in raw_groups[:30]:
+                        if isinstance(g, str) and g.strip():
+                            clean_groups_list.append(_clean_str(g, "", 64))
+
                 clean_accounts.append({
                     "user": _clean_str(acc.get("user"), "", 64),
                     "uid": _clamp_int(acc.get("uid"), None, 0, 2 ** 31),
+                    "gid": _clamp_int(acc.get("gid"), None, 0, 2 ** 31),
+                    "group": _clean_str(acc.get("group"), "", 64),
+                    "groups": clean_groups_list,
+                    "home": _clean_str(acc.get("home"), "", 128),
                     "shell": _clean_str(acc.get("shell"), "", 50),
-                    "last_login": _clean_str(acc.get("last_login"), None, 32),
+                    "last_login": _clean_str(acc.get("last_login"), None, 64),
                     "sessions": clean_sessions,
+                    "is_system": bool(acc.get("is_system")),
+                    "is_sudo": bool(acc.get("is_sudo")),
                     "is_protected": bool(acc.get("is_protected")),
                     "is_locked": bool(acc.get("is_locked")),
                 })
         extras.accounts = json.dumps(clean_accounts)
+    if isinstance(body.get("groups"), list):
+        clean_groups = []
+        for grp_item in body["groups"][:300]:
+            if isinstance(grp_item, dict):
+                raw_mems = grp_item.get("members")
+                clean_mems = []
+                if isinstance(raw_mems, list):
+                    for m in raw_mems[:50]:
+                        if isinstance(m, str) and m.strip():
+                            clean_mems.append(_clean_str(m, "", 64))
+                clean_groups.append({
+                    "group": _clean_str(grp_item.get("group"), "", 64),
+                    "gid": _clamp_int(grp_item.get("gid"), None, 0, 2 ** 31),
+                    "is_system": bool(grp_item.get("is_system")),
+                    "is_privileged": bool(grp_item.get("is_privileged")),
+                    "members": clean_mems,
+                    "member_count": _clamp_int(grp_item.get("member_count"), len(clean_mems), 0, 10000),
+                })
+        extras.system_groups = json.dumps(clean_groups)
     # Info paket OS yang bisa di-upgrade (dari agen)
     if isinstance(body.get("apt"), dict):
         apt = body["apt"]
@@ -4369,6 +4406,13 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         except Exception:
             pass
 
+    groups_data = []
+    if extra and getattr(extra, "system_groups", None):
+        try:
+            groups_data = json.loads(extra.system_groups) if isinstance(extra.system_groups, str) else extra.system_groups
+        except Exception:
+            groups_data = []
+
     latest_sn = db.query(SystemSnapshot).filter(SystemSnapshot.server_id == sid).order_by(desc(SystemSnapshot.timestamp)).first()
     hw_specs = _get_hardware_specs_dict(server, extra, latest_sn)
     platform_info = _classify_platform(hw_specs.get("platform", {}), getattr(server, "platform_override", None))
@@ -4470,6 +4514,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         "problem_history": problem_history,
         "top_procs": top_p,
         "accounts": accounts_data,
+        "system_groups": groups_data,
         "cron_jobs": cron_data,
         "firewall": fw_data,
         "listening_ports": ports_data,
@@ -10900,6 +10945,7 @@ def api_server_system(
         "os_label": (extra.os_label if extra else None),
         "units": parse_list(extra.units if extra else None),
         "accounts": acc_list,
+        "system_groups": parse_list(extra.system_groups if extra else None),
         "active_sessions_count": active_sessions_count,
         "listening_ports": parse_list(extra.listening_ports if extra else None),
         "firewall": parse_json_obj(extra.firewall if extra else None, {"status": "inactive", "backend": "unknown", "rules": [], "blocked_ips": []}),

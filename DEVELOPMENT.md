@@ -311,6 +311,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.33
+
+- **Tipe Rilis:** Transformasi Modul Users & Groups ala ServerBox Enterprise (*ServerBox-Inspired Users & Groups Modular Architecture*)
+- **Fokus Utama:** Perombakan komprehensif tab Users pada modul Rincian Server untuk menyajikan visibilitas total seluruh pengguna reguler, akun sistem Linux, dan inventaris grup sistem operasi:
+  1. **Sub-Navigasi Terpadu (*Segmented Bar*) & Dua Subview Modular (`server/templates/services.html`):**
+     - Mengimplementasikan bilah kendali sub-tab ringkas untuk beralih instan antara tampilan **Pengguna (*Users*)** dan **Grup Sistem (*Groups*)** tanpa reload halaman.
+     - **Subview Pengguna (*Users*)**: Menyajikan seluruh akun sistem operasi (`/etc/passwd`), mencakup pengguna reguler/manusia maupun daemon sistem (seperti `www-data`, `daemon`, `nobody`), disertai informasi UID/GID numerik, grup primer dan pil grup sekunder (*supplementary groups*), direktori home, klasifikasi visual shell interaktif vs nologin, riwayat login terakhir (`lastlog`), lencana hak akses (Sudoer, Sistem, Reguler, Terkunci), serta bilah filter kategori cepat (`Semua`, `Reguler`, `Sistem`, `Sesi Aktif`) dan pencarian instan multivariabel.
+     - **Subview Grup (*Groups*)**: Menampilkan inventaris lengkap grup Linux (`/etc/group`), nomor GID, klasifikasi grup sistem vs kustom, lencana grup berhak istimewa (*privileged* seperti `sudo`, `wheel`, `root`, `docker`, `adm`), dan daftar seluruh pengguna terdaftar (*members*) per grup disertai jumlah anggota.
+     - Menstandarisasi kolom tindakan berperekat (*sticky right action column*) dan paginasi terpadu 10 baris per halaman pada kedua tabel.
+  2. **Pengayaan Telemetri Agen Klien (`agent/agent_pantau.py`):**
+     - Memperbarui fungsi `collect_accounts()` agar mengumpulkan seluruh akun pengguna Linux tanpa mendiskualifikasi akun sistem, memetakan GID ke nama grup primer, mengumpulkan daftar grup sekunder pengguna, direktori home, dan status hak sudo.
+     - Menambahkan fungsi `collect_groups()` untuk mengumpulkan seluruh grup Linux dari `grp.getgrall()`, mendeteksi grup berhak istimewa, serta memetakan keanggotaan grup secara timbal balik (*bidirectional member mapping*).
+     - Mempertahankan prinsip *zero external dependency* hanya dengan modul bawaan Python standard library (`pwd`, `grp`).
+  3. **Migrasi Skema Basis Data & API Backend (`server/models.py`, `server/main.py`):**
+     - Menambahkan kolom `system_groups` berkapasitas `MEDIUMTEXT` pada tabel `server_extras` dan memperluas kapasitas kolom `accounts` menjadi `MEDIUMTEXT` guna menampung telemetri akun dan grup skala besar tanpa risiko pemotongan data.
+     - Mengintegrasikan penanganan ingest payload `groups` pada endpoint `api_report`, penyertaan `system_groups` pada endpoint `api_server_system` dan `services_page`, serta memperkaya statistik identitas akun pada halaman rincian aktivitas pengguna (`user_activity.html`).
+
 ## Versi 4.8.32
 
 - **Tipe Rilis:** Pemulihan Integritas Skrip Halaman Rincian Server & Kebijakan Keamanan Tipografi (*Server Details Script Integrity Recovery & Typography Security Policy Alignment*)

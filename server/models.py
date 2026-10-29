@@ -257,7 +257,8 @@ class ServerExtras(Base):
     arch = Column(String(24), nullable=True)        # arsitektur (mis. x86_64, aarch64)
     agent_version = Column(String(16), nullable=True)  # versi agen yang melapor (mis. "3.4")
     units = Column(Text, nullable=True)    # JSON: ["sshd","mariadb",...]
-    accounts = Column(Text, nullable=True) # JSON: [{"user","uid","shell","last_login","sessions"}]
+    accounts = Column(MEDIUMTEXT, nullable=True) # JSON: [{"user","uid","gid","group","groups","home","shell","last_login","sessions"}]
+    system_groups = Column(MEDIUMTEXT, nullable=True) # JSON: [{"group","gid","is_system","is_privileged","members","member_count"}]
     apt_upgradable = Column(Integer, nullable=True)      # jumlah paket OS yang dapat di-upgrade
     apt_last_update = Column(DateTime, nullable=True)    # kapan apt-get update terakhir di jalankan (per mtime list)
     apt_packages = Column(Text, nullable=True)           # JSON: daftar nama paket yang bisa di-upgrade
