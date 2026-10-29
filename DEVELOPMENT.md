@@ -311,6 +311,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.30
+
+- **Tipe Rilis:** Sinkronisasi Kolom Insiden & Preservasi Kolom Berperekat Dinamis (*Incident Column Alignment & Dynamic Sticky Action Column Preservation*)
+- **Fokus Utama:** Menyelesaikan masalah pertukaran posisi kolom saat polling latar belakang dan menjamin retensi kolom berperekat pada rendering dinamis JavaScript:
+  1. **Sinkronisasi Urutan Kolom Insiden Terbuka (`server/templates/problems.html`):**
+     - Memperbaiki ketidaksesuaian (*mismatch*) urutan kolom antara rendering awal Jinja SSR dengan pembaruan dinamis klien (`pollProblems()`).
+     - Menyinkronkan urutan kolom secara konsisten: kolom ke-6 adalah *Panduan Solusi* (`col-tips`) dan kolom ke-7 adalah *Tindakan* (`col-act`).
+     - Mengeliminasi anomali pertukaran posisi kolom setelah beberapa detik siklus polling berjalan, menjaga stabilitas posisi data panduan solusi dan tombol tindakan penanganan secara permanen.
+  2. **Preservasi Kelas Berperekat pada Rendering Dinamis JavaScript (`server/templates/services.html`):**
+     - Memperbaiki seluruh fungsi rendering dinamis JavaScript agar tetap menyematkan kelas `col-act` pada elemen `<td>` hasil mapping data telemetri:
+       - Tab Users / Akun Linux: Menambahkan kelas `col-act` pada baris tabel `#acc-table` di fungsi `renderSys`.
+       - Tab Ports / Socket Terbuka: Menambahkan kelas `col-act` pada baris tabel `#ports-table` di fungsi `renderPorts`.
+       - Tab Cron Jobs: Menambahkan kelas `col-act` pada baris tabel `#cron-table` di fungsi `renderCron`.
+       - Tab SSL/TLS: Menambahkan kelas `col-act` pada baris tabel `#ssl-table` di fungsi `renderSsl`.
+       - Tab Firewall: Menambahkan kelas `col-act` pada baris tabel `#fw-blocked-table` di fungsi `renderFirewall`.
+     - Menetapkan batas lebar minimum tabel (`min-width: 760px` pada `#acc-table` dan `min-width: 750px` pada `#ports-table`) serta lebar proporsional pada setiap kolom header, memastikan kolom tindakan berperekat (*sticky right*) dengan elevasi bayangan horizontal (`box-shadow: -4px 0 8px rgba(0,0,0,0.45)`) tetap aktif, presisi, dan tidak hilang setelah proses polling data latar belakang.
+  3. **Sinkronisasi SemVer 7 Berkas & Pengujian Runtime:**
+     - Menaikkan versi aplikasi menjadi `v4.8.30` secara sinkron dan identik di 7 berkas: `server/config.py`, `server/templates/base.html`, `package/opt/pantau/agent/agent_pantau.py`, `agent/agent_pantau.py`, `package/install.sh`, `README.md`, dan `DEVELOPMENT.md`.
+
 ## Versi 4.8.29
 
 - **Tipe Rilis:** Standardisasi Kolom Tindakan Berperekat, Kerapatan Tabel, & Kontrol Paginasi Cerdas (*Universal Sticky Action Column, Table Spacing Calibration & Smart Pagination Controls*)

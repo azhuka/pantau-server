@@ -995,8 +995,8 @@ window.poll = async function() {
               <th class="col-sev" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'Severity' : 'Keparahan'}</th>
               <th class="col-event" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'Event' : 'Kejadian'}</th>
               <th class="col-durasi" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'Duration' : 'Durasi'}</th>
-              <th class="col-act" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Masalah'}">${isEn ? 'Actions' : 'Tindakan'}</th>
               <th class="col-tips" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'Solution Guide' : 'Panduan Solusi'}</th>
+              <th class="col-act" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Masalah'}">${isEn ? 'Actions' : 'Tindakan'}</th>
             </tr></thead>
             <tbody></tbody>
           </table>`;
@@ -1081,6 +1081,9 @@ window.poll = async function() {
                 ${count24}
               </td>
               <td class="mono col-durasi" data-start="${_esc(p.started_at_iso || '')}">${_esc(p.durasi || '')}</td>
+              <td class="col-tips">
+                ${pTip && pTip !== '—' ? `<div class="prob-tip-text" title="${_esc(pTip)}">${_esc(pTip)}</div>` : '—'}
+              </td>
               <td class="prob-act-cell col-act">
                 <div class="prob-act-wrap">
                   <div class="prob-act-row prob-act-tools">
@@ -1088,9 +1091,6 @@ window.poll = async function() {
                   </div>
                   ${(ignBtn || ackBtn) ? `<div class="prob-act-row prob-act-ops">${ackBtn}${ignBtn}</div>` : ''}
                 </div>
-              </td>
-              <td class="col-tips">
-                ${pTip && pTip !== '—' ? `<div class="prob-tip-text" title="${_esc(pTip)}">${_esc(pTip)}</div>` : '—'}
               </td>
             </tr>`;
           }).join('');

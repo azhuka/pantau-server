@@ -2849,15 +2849,15 @@ div[style*="position: fixed"] .card {
     </div>
     <div id="acc-empty" class="empty-msg" style="{{ 'display:none' if accounts else 'display:block' }}">Belum ada data akun dari server ini.</div>
     <div style="overflow-x:auto">
-      <table id="acc-table" style="{{ 'display:table;width:100%' if accounts else 'display:none;width:100%' }}">
+      <table id="acc-table" style="min-width:760px;{{ 'display:table;width:100%' if accounts else 'display:none;width:100%' }}">
         <thead>
           <tr>
-            <th>Pengguna</th>
-            <th>UID</th>
-            <th>Shell</th>
-            <th>Login Terakhir</th>
-            <th>Sesi Aktif</th>
-            <th class="col-act" style="width:130px;text-align:center">Tindakan</th>
+            <th style="min-width:140px">Pengguna</th>
+            <th style="width:70px;min-width:65px">UID</th>
+            <th style="min-width:110px">Shell</th>
+            <th style="min-width:140px">Login Terakhir</th>
+            <th style="min-width:150px">Sesi Aktif</th>
+            <th class="col-act" style="width:130px;min-width:120px;text-align:center">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -2983,15 +2983,15 @@ div[style*="position: fixed"] .card {
       <span class="badge badge-info" id="ports-count-badge">{{ (listening_ports|length) if listening_ports else 0 }} socket aktif</span>
     </div>
     <div style="overflow-x:auto" id="ports-wrap" style="display:{{ 'block' if listening_ports else 'none' }}">
-      <table id="ports-table">
+      <table id="ports-table" style="min-width:750px;width:100%">
         <thead>
           <tr>
-            <th style="width:70px" title="Protokol jaringan (TCP atau UDP)">Protokol</th>
-            <th title="Nomor port jaringan yang terbuka">Port</th>
-            <th title="Alamat IP yang di-bind oleh socket">Bind IP</th>
-            <th title="Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)">Akses</th>
-            <th title="Nama proses sistem dan PID yang membuka port ini">Proses &amp; PID</th>
-            <th class="col-act" style="width:110px;text-align:center" title="Tindakan yang dapat dilakukan pada port ini">Tindakan</th>
+            <th style="width:75px;min-width:70px" title="Protokol jaringan (TCP atau UDP)">Protokol</th>
+            <th style="width:85px;min-width:75px" title="Nomor port jaringan yang terbuka">Port</th>
+            <th style="width:130px;min-width:115px" title="Alamat IP yang di-bind oleh socket">Bind IP</th>
+            <th style="width:150px;min-width:135px" title="Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)">Akses</th>
+            <th style="min-width:180px" title="Nama proses sistem dan PID yang membuka port ini">Proses &amp; PID</th>
+            <th class="col-act" style="width:125px;min-width:115px;text-align:center" title="Tindakan yang dapat dilakukan pada port ini">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -8717,7 +8717,7 @@ function renderPorts(ports) {
       <td class="mono" style="color:var(--dim)">${ipStr}</td>
       <td>${accessBadge}</td>
       <td class="mono" style="font-size:10px;color:var(--text)">${procStr}</td>
-      <td><div style="display:flex;gap:4px;flex-wrap:wrap">${actions}</div></td>
+      <td class="col-act" style="white-space:nowrap;text-align:center"><div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">${actions}</div></td>
     </tr>`;
   }).join('');
 
@@ -8805,7 +8805,7 @@ function renderFirewall(fw) {
           </td>
           <td class="mono">${escHtml(String(b.pkts || 0))}</td>
           <td class="mono">${escHtml(String(b.bytes || 0))}</td>
-          ${CAN_FIREWALL ? `<td style="text-align:right">${unblockBtn}</td>` : ''}
+          ${CAN_FIREWALL ? `<td class="col-act" style="text-align:center;white-space:nowrap">${unblockBtn}</td>` : ''}
         </tr>`;
       }).join('');
       if (_servicesTabPagination['fw-blocked']) _servicesTabPagination['fw-blocked'].update();
@@ -8861,7 +8861,7 @@ function renderCron(cron_jobs) {
           <td><span class="mono">${userClean}</span></td>
           <td class="mono" style="font-size:10px;color:var(--text);word-break:break-all">${cmdClean}</td>
           <td class="mono" style="font-size:9.5px;color:var(--dim)">${escHtml(c.source || '')}${c.line ? ':' + c.line : ''}${isManaged ? ` <span class="badge badge-info" style="font-size:8.5px;margin-left:4px">${isEn ? 'Managed' : 'Dikelola'}</span>` : ''}</td>
-          <td style="white-space:nowrap"><div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">${actHtml}</div></td>
+          <td class="col-act" style="white-space:nowrap;text-align:center"><div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">${actHtml}</div></td>
         </tr>`;
       }).join('');
       if (_servicesTabPagination['cron']) _servicesTabPagination['cron'].update();
@@ -8937,7 +8937,7 @@ function renderSsl(sslList) {
       <td class="mono" style="font-weight:700;color:${daysColor}">${daysStr}</td>
       <td>${statusBadge}</td>
       <td class="mono" style="font-size:9.5px;color:var(--dim)">${pathClean}</td>
-      <td>${actHtml}</td>
+      <td class="col-act" style="white-space:nowrap;text-align:center">${actHtml}</td>
     </tr>`;
   }).join('');
 
@@ -9348,7 +9348,7 @@ function renderSys(data) {
           return '<span class="badge badge-muted" style="font-family:monospace;padding:1px 5px;margin-right:3px">' + ttyEsc + fromEsc + '</span>';
         }).join(' ') : '-')
       + '</td>'
-      + '<td><div style="display:flex;gap:4px;flex-wrap:wrap">' + actions + '</div></td></tr>';
+      + '<td class="col-act" style="white-space:nowrap;text-align:center"><div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">' + actions + '</div></td></tr>';
   }).join('');
   if (_servicesTabPagination['acc']) {
     _servicesTabPagination['acc'].update();
