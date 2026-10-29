@@ -189,7 +189,7 @@ flowchart TD
 
 ---
 
-### Pengerasan Keamanan Akun & Autentikasi (Authentication Hardening)
+### Penguatan Keamanan Akun & Autentikasi (Authentication Hardening)
 
 1. **Standar Kompleksitas Password (NIST SP 800-63B)**:
    - Panjang minimum **12 karakter**.
@@ -1335,7 +1335,7 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 2. **Pembaruan Reaktif Visual Background Baris & Kartu Grid (`dashboard.html`):**
    - Menambahkan pembaruan dinamis `dash-tr-${srv.id}.style.background` untuk mengubah rona warna baris tabel armada secara langsung saat insiden terdeteksi (merah untuk bahaya/offline, oranye untuk gawat, kuning untuk peringatan, biru langit untuk info) dan mengembalikan ke normal saat pulih.
    - Menambahkan atribut `id="card-srv-{{ srv.id }}"` pada kartu grid dan menyinkronkan status kelas (`is-danger`, `is-average`, `is-warn`, `is-offline`, `is-healthy`) secara seketika.
-3. **Pengerasan Penanganan Error & Fungsi Escape Mandiri (`_dashEsc`):**
+3. **Penguatan Penanganan Error & Fungsi Escape Mandiri (`_dashEsc`):**
    - Mengganti catch block senyap `catch(e) {}` dengan `console.error('[NOC Polling Error]:', e)` agar kesalahan eksekusi di browser terpantau jelas di console pengembang.
    - Menambahkan fungsi sanitasi string `_dashEsc` mandiri di dalam blok skrip dashboard untuk mencegah dependensi siklik atau kegagalan fungsi escape eksternal.
 4. **Penyelarasan Anti-Jitter Signature Masalah:**
@@ -1814,7 +1814,7 @@ v4.4.0
 ## Versi 4.2.21
 
 - **Release Label:** None
-- **Tipe Rilis:** Rilis Patch (*Patch Release*) — Pengerasan Keamanan Web Terminal Root via *Sudo-Style Step-Up Authentication* & *Ephemeral Lease Session*, Nonaktifkan Akses Terminal secara Bawaan (*Disabled by Default*), dan Pembersihan Ikon UI Minimalis Bebas Emoji Berlebihan
+- **Tipe Rilis:** Rilis Patch (*Patch Release*) — Penguatan Keamanan Web Terminal Root via *Sudo-Style Step-Up Authentication* & *Ephemeral Lease Session*, Nonaktifkan Akses Terminal secara Bawaan (*Disabled by Default*), dan Pembersihan Ikon UI Minimalis Bebas Emoji Berlebihan
 
 ### Struktur Rilis SemVer (Major.Minor.Patch)
 
@@ -1830,7 +1830,7 @@ v4.2.21
 
 ### Perbaikan Masalah & Peningkatan UX — Versi 4.2.21 (Patch Release)
 
-1. **Pengerasan Keamanan Web Terminal Root (*Sudo-Style Step-Up Challenge*):**
+1. **Penguatan Keamanan Web Terminal Root (*Sudo-Style Step-Up Challenge*):**
    - Akses web terminal interaktif root pada detail server kini terkunci secara bawaan dan mewajibkan otentikasi ulang (*step-up authentication challenge*) menggunakan kata sandi akun pengguna dan kode 2FA TOTP (bila akun mengaktifkan 2FA).
    - Menghasilkan sewa akses sementara (*ephemeral lease*) dengan durasi terukur (15, 30, atau 60 menit) serta kolom catatan tujuan/alasan akses yang diaudit secara transparan ke tabel audit log.
    - Endpoint WebSocket `/ws/servers/{sid}/terminal` dan API runner memvalidasi status lease aktif secara ketat dan otomatis memutuskan sesi shell seketika saat masa berlaku habis atau dikunci manual oleh operator.
@@ -2844,7 +2844,7 @@ Fokus pada eliminasi bug siklus hidup service, auto-unignore pemulihan SSH, dan 
 ### Fitur Baru & Keamanan
 - **Remote OS Update:**
   - Eksekusi `apt update` dan `apt upgrade` via web dashboard.
-  - Pengerasan sudo permission agent (*least privilege*) dan validasi token CSRF.
+  - Penguatan sudo permission agent (*least privilege*) dan validasi token CSRF.
 
 ---
 
