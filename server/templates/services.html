@@ -2220,6 +2220,8 @@ div[style*="position: fixed"] .card {
           <span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down</span>
         {% elif svc._status == 'up' and svc._is_ignored %}
           <span class="badge badge-up" title="Layanan aktif (pengawasan down diabaikan)">up</span>
+        {% elif svc._status == 'down' and svc.ignored_reason and ('DIMATIKAN OLEH OPERATOR' in svc.ignored_reason or 'DIHENTIKAN OLEH OPERATOR' in svc.ignored_reason) %}
+          <span class="badge badge-warning" style="font-size:10px;padding:2px 6px;font-weight:600" title="Layanan sengaja dihentikan oleh operator ({{ svc.ignored_by or 'OPERATOR' }})">DIHENTIKAN</span>
         {% else %}
           <span class="badge badge-{{ svc._status }}">{{ svc._status }}</span>
         {% endif %}
@@ -11314,6 +11316,16 @@ _registerNetSvc({{ s.process_name|tojson }}, {{ s.port|tojson }});
 {% endif %}
 {% endfor %}
 
+const _opStoppedSvcMap = new Map();
+{% for s in services %}
+{% if s.ignored_reason and ('DIMATIKAN OLEH OPERATOR' in s.ignored_reason or 'DIHENTIKAN OLEH OPERATOR' in s.ignored_reason) %}
+_opStoppedSvcMap.set({{ s.service_name|lower|tojson }}, {{ (s.ignored_by or 'OPERATOR')|upper|tojson }});
+{% if s.process_name %}
+_opStoppedSvcMap.set({{ s.process_name|lower|tojson }}, {{ (s.ignored_by or 'OPERATOR')|upper|tojson }});
+{% endif %}
+{% endif %}
+{% endfor %}
+
 function _initSystemdData() {
   try {
     if (typeof _systemdRawData === 'string') {
@@ -11546,8 +11558,11 @@ function renderSystemdTable() {
 
     // Status badge
     let statusBadge = '';
+    const opStoppedBy = u.stopped_by_operator || _opStoppedSvcMap.get(baseName.toLowerCase()) || _opStoppedSvcMap.get((u.name || '').toLowerCase());
     if (u.status === 'running') {
       statusBadge = '<span class="badge badge-up" style="font-size:10px;padding:2px 6px">RUNNING</span>';
+    } else if (opStoppedBy) {
+      statusBadge = `<span class="badge badge-warning" style="font-size:9.5px;padding:2px 6px;font-weight:600" title="Layanan sengaja dihentikan oleh operator (${escapeHtml(opStoppedBy)})">DIHENTIKAN OPERATOR</span>`;
     } else if (u.status === 'failed') {
       statusBadge = '<span class="badge badge-danger" style="font-size:10px;padding:2px 6px;font-weight:700">FAILED</span>';
     } else if (u.status === 'exited') {
@@ -11762,6 +11777,16 @@ async function systemdAction(action, unitName, btn) {
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
+      if (action === 'stop') {
+        const cleanU = (unitName || '').replace(/\.service$/, '').toLowerCase();
+        _opStoppedSvcMap.set(cleanU, 'OPERATOR');
+        _opStoppedSvcMap.set((unitName || '').toLowerCase(), 'OPERATOR');
+      } else if (action === 'start' || action === 'restart') {
+        const cleanU = (unitName || '').replace(/\.service$/, '').toLowerCase();
+        _opStoppedSvcMap.delete(cleanU);
+        _opStoppedSvcMap.delete((unitName || '').toLowerCase());
+      }
+      filterSystemdTable();
       showToast(data.detail || `Perintah ${action} unit ${unitName} berhasil dikirim.`, true);
       setTimeout(() => refreshSystemdList(false), 2500);
     } else {

@@ -311,6 +311,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.38
+
+- **Tipe Rilis:** Sinkronisasi Penghentian Unit Systemd oleh Operator & Kesadaran Dependensi Layanan (*Systemd Operator Action Synchronization & Cross-Service Dependency Awareness*)
+- **Fokus Utama:** Mengatasi anomali alarm kritis ketika operator secara sadar menghentikan unit systemd, menyinkronkan status pemeliharaan operator di seluruh model entitas, dan memberikan konteks dependensi cerdas:
+  1. **Sinkronisasi Tindakan Penghentian Systemd (`server/main.py`):**
+     - Memperluas handler API systemd `@app.post("/api/servers/{sid}/systemd/{action}")` agar saat operator menghentikan (`stop`) suatu unit, sistem secara otomatis menormalisasi nama unit (`.service`), mencocokkannya ke tabel `Service`, menetapkan alasan pengabaian sadar (`ignored_reason = "LAYANAN DIMATIKAN OLEH OPERATOR ({USER})"`), menyisipkan metrik `down` dengan pesan kesehatan informatif, serta mendaftarkan atau memperbarui rekaman `ServerProblem` berstatus **Peringatan (*Warning*)**.
+     - Mengaitkan foreign key `service_id` pada perintah tabel `Command` secara langsung ke entitas `Service` terkait.
+     - Memulihkan status pemeliharaan dan menutup insiden terbuka secara bersih dengan catatan `operator_start` saat operator menjalankan perintah `start` atau `restart`.
+  2. **Deteksi Cerdas Operator Intent & Pelindung Alarm Palsu (`_problem_instances` & `sync_server_problems`):**
+     - Mengintegrasikan pemindaian ganda dari tabel `Service` dan riwayat perintah terkini tabel `Command` (`action in ("stop", "start", "restart")`) sebelum menghasilkan daftar masalah terbuka.
+     - Menyaring agar layanan yang saat ini aktif (*up*) tidak salah diidentifikasi sebagai berhenti.
+     - Mengunci tingkat keparahan tindakan terencana operator pada level **Peringatan (*Warning*)**, menekan eskalasi otomatis ke tingkat Gawat (*Average*) maupun Kritis (*Danger*), serta mencegah pemicuan sirine darurat dan banner merah (`banner-danger`).
+  3. **Kesadaran Ketergantungan Lintas Layanan (*Cross-Service Dependency Awareness*):**
+     - Ketika layanan inti pada server mengalami gangguan (*down*) sementara ada layanan lain di server yang sama yang sedang dihentikan sengaja oleh operator, sistem secara otomatis menambahkan konteks diagnosa `[INFO DEPENDENSI]` pada panduan solusi (`svc_tip`) dan muatan JSON rincian konteks teknis (`context.operator_stopped_dependencies`).
+     - Memandu operator bahwa kegagalan layanan terkait kemungkinan besar dipicu oleh penghentian layanan prasyarat tersebut.
+  4. **Visibilitas Status Operator pada Antarmuka (`server/templates/services.html`):**
+     - Menyematkan lencana status khusus berlatar belakang amber **`DIHENTIKAN OPERATOR`** pada tabel Unit Layanan Systemd dan tabel Layanan terpantau saat layanan nonaktif akibat tindakan operator.
+     - Memperbarui peta reaktif JavaScript `_opStoppedSvcMap` seketika saat tombol Stop/Start/Restart systemd dieksekusi tanpa memerlukan reload halaman.
+
 ## Versi 4.8.37
 
 - **Tipe Rilis:** Standarisasi Arsitektur RESTful Kanonikal Rincian Server & Sinkronisasi URL Tab Instan (*Canonical RESTful Server Details Architecture & Seamless Tab URL Deep-Linking*)
