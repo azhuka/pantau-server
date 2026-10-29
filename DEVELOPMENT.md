@@ -311,6 +311,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.32
+
+- **Tipe Rilis:** Pemulihan Integritas Skrip Halaman Rincian Server & Kebijakan Keamanan Tipografi (*Server Details Script Integrity Recovery & Typography Security Policy Alignment*)
+- **Fokus Utama:** Mengatasi galat eksekusi skrip antarmuka pada modul Rincian Server dan menyelaraskan kebijakan keamanan konten (*Content Security Policy*) peramban:
+  1. **Eliminasi Galat Sintaksis JavaScript (`server/templates/services.html`):**
+     - Menghapus karakter kurung kurawal penutup berlebih (`}`) pada blok pendaftaran tugas latar belakang di dalam fungsi `aptFollow`. Karakter berlebih tersebut sebelumnya menyebabkan penutupan fungsi asinkron lebih awal dan memicu galat kritis `SyntaxError: await is only valid in async functions and the top level bodies of modules` pada tingkat parsing peramban, yang melumpuhkan seluruh skrip interaktif modul Rincian Server (navigasi tab, pembaruan metrik berkala `poll()`, grafik performa, dan modal operasional).
+     - Memastikan seluruh 11 tab navigasi (`perf`, `masalah`, `layanan`, `packages`, `proses`, `akun`, `ports`, `firewall`, `ssl`, `cron`, `log`) berfungsi responsif tanpa galat konsol.
+  2. **Penyelarasan Direktif CSP untuk Tipografi Kustom (`server/main.py`):**
+     - Memperbarui header middleware `Content-Security-Policy` dengan menyertakan domain `https://fonts.googleapis.com` pada direktif `style-src` dan `https://fonts.gstatic.com` pada direktif `font-src`. Hal ini mengeliminasi pemblokiran berkas gaya tipografi font kustom (Inter, Fira Code, JetBrains Mono) oleh kebijakan keamanan peramban.
+  3. **Pengujian Menyeluruh & Sinkronisasi SemVer 7 Berkas:**
+     - Menjalankan uji verifikasi komprehensif menggunakan headless Chromium browser via Selenium melintasi seluruh tab operasional dengan hasil 0 galat kritis (*zero severe/warning console errors*).
+     - Menaikkan versi sistem menjadi `v4.8.32` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku.
+
 ## Versi 4.8.31
 
 - **Tipe Rilis:** Perbaikan Transmisi Parameter Upgrade Paket Mandiri & Pelabelan Modal APT (*Single Package Upgrade Parameter Transmission & Modal Labeling Fix*)

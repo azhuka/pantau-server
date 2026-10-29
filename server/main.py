@@ -844,8 +844,8 @@ _SECURITY_HEADERS = {
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
     "Content-Security-Policy": (
         "default-src 'self'; script-src 'self' 'unsafe-inline'; "
-        "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
-        "font-src 'self'; connect-src 'self' ws: wss:; form-action 'self'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; "
+        "font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' ws: wss:; form-action 'self'; "
         "base-uri 'self'; frame-ancestors 'self'; object-src 'none'"
     ),
 }
