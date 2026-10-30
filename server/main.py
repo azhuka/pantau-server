@@ -646,6 +646,7 @@ def migrate_server_extras_specs():
         "installed_packages": "MEDIUMTEXT NULL",
         "systemd_units": "MEDIUMTEXT NULL",
         "system_groups": "MEDIUMTEXT NULL",
+        "kernel_events": "MEDIUMTEXT NULL",
     }
     missing = {k: v for k, v in wanted.items() if k not in existing}
     db = SessionLocal()
@@ -1723,6 +1724,30 @@ def agent_report(
         ]
         extras.system_logs = json.dumps(clean_logs)
 
+    # Validasi & Simpan Kernel Events (OOM killer, disk I/O error, segfault, panic)
+    if isinstance(body.get("kernel_events"), dict):
+        ke = body["kernel_events"]
+        clean_events = []
+        for ev in (ke.get("events") or [])[:40]:
+            if not isinstance(ev, dict):
+                continue
+            clean_events.append({
+                "type": _clean_str(ev.get("type"), "", 30),
+                "time": _clean_str(ev.get("time"), "", 30),
+                "epoch": float(ev.get("epoch") or 0.0),
+                "proc": _clean_str(ev.get("proc"), "", 80),
+                "pid": _clamp_int(ev.get("pid"), 0, 0, 4_194_304),
+                "dev": _clean_str(ev.get("dev"), "", 30),
+                "unit": _clean_str(ev.get("unit"), "", 80),
+                "detail": _clean_str(ev.get("detail"), "", 100),
+                "message": _clean_str(ev.get("message"), "", 400),
+            })
+        clean_ke = {
+            "oom_kill_count": _clamp_int(ke.get("oom_kill_count"), 0, 0, 1_000_000_000),
+            "events": clean_events,
+        }
+        extras.kernel_events = json.dumps(clean_ke)
+
     extras.updated_at = datetime.utcnow()
 
     db.commit()
@@ -2543,6 +2568,31 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             ServerProblem.resolved_at.is_(None),
         ).all()
     }
+    extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    oom_count = 0
+    oom_killed_units = set()
+    if extras and getattr(extras, "kernel_events", None):
+        try:
+            ke_obj = json.loads(extras.kernel_events) if isinstance(extras.kernel_events, str) else extras.kernel_events
+            if isinstance(ke_obj, dict):
+                oom_count = ke_obj.get("oom_kill_count") or 0
+                now_ts = time.time()
+                for ev in (ke_obj.get("events") or []):
+                    if isinstance(ev, dict) and ev.get("type") == "oom_kill":
+                        ev_epoch = float(ev.get("epoch") or 0.0)
+                        if ev_epoch > 0 and (now_ts - ev_epoch) > 1800:
+                            continue
+                        p = (ev.get("proc") or "").lower()
+                        u = (ev.get("unit") or "").lower()
+                        if p:
+                            oom_killed_units.add(p)
+                        if u:
+                            oom_killed_units.add(u)
+                            if u.endswith(".service"):
+                                oom_killed_units.add(u[:-8])
+        except Exception:
+            pass
+
     svc_list = []
     resolved_status_map = {}
     for svc in services:
@@ -2582,10 +2632,15 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         elif p_row and getattr(p_row, "ignored_until", None):
             ign_until = p_row.ignored_until.isoformat()
 
+        s_name_l = (svc.service_name or "").lower()
+        s_proc_l = (svc.process_name or "").lower()
+        is_oom_k = bool(s_name_l in oom_killed_units or s_proc_l in oom_killed_units)
+
         svc_list.append({
             "id": svc.id, "name": svc.service_name, "port": svc.port,
             "status": st,
             "is_core": bool(getattr(svc, "is_core", 1)),
+            "is_oom_killed": is_oom_k,
             "ignored": is_ign,
             "ignored_until": ign_until,
             "ignore_mode": getattr(svc, "ignore_mode", None),
@@ -2674,7 +2729,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             shell_run.result = (shell_run.result or "").strip() + "\n[sesi shell kedaluwarsa]"
             db.commit()
             shell_run = None
-    svc_data = [{"name": s.service_name, "status": resolved_status_map.get(s.id, "unknown"), "is_core": bool(getattr(s, "is_core", 1))}
+    svc_data = [{"name": s.service_name, "status": resolved_status_map.get(s.id, "unknown"), "is_core": bool(getattr(s, "is_core", 1)), "proc": s.process_name}
                 for s in services]
     problem_level, open_problems, problem_history = sync_server_problems(
         db, server, _problem_instances(server, extras, svc_data, db))
@@ -2724,6 +2779,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         "problem_level": problem_level,
         "open_problems": open_prob_serialized,
         "problem_history": hist_prob_serialized,
+        "oom_kill_count": oom_count,
         "notes": server.notes or "",
     }
 
@@ -4638,6 +4694,36 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     except Exception:
         pass
 
+    oom_count = 0
+    oom_killed_units = set()
+    ke_obj = None
+    if extra and getattr(extra, "kernel_events", None):
+        try:
+            ke_obj = json.loads(extra.kernel_events) if isinstance(extra.kernel_events, str) else extra.kernel_events
+            if isinstance(ke_obj, dict):
+                oom_count = ke_obj.get("oom_kill_count") or 0
+                now_ts = time.time()
+                for ev in (ke_obj.get("events") or []):
+                    if isinstance(ev, dict) and ev.get("type") == "oom_kill":
+                        ev_epoch = float(ev.get("epoch") or 0.0)
+                        if ev_epoch > 0 and (now_ts - ev_epoch) > 1800:
+                            continue
+                        p = (ev.get("proc") or "").lower()
+                        u = (ev.get("unit") or "").lower()
+                        if p:
+                            oom_killed_units.add(p)
+                        if u:
+                            oom_killed_units.add(u)
+                            if u.endswith(".service"):
+                                oom_killed_units.add(u[:-8])
+        except Exception:
+            pass
+
+    for s in services:
+        s_name_l = (s.service_name or "").lower()
+        s_proc_l = (s.process_name or "").lower()
+        s._is_oom_killed = bool(s_name_l in oom_killed_units or s_proc_l in oom_killed_units)
+
     if isinstance(systemd_units_list, list):
         for u in systemd_units_list:
             if isinstance(u, dict):
@@ -4649,6 +4735,8 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
                     u["stopped_by_operator"] = op_stopped_units[u_base]
                 elif u_name in op_stopped_units:
                     u["stopped_by_operator"] = op_stopped_units[u_name]
+                if u_base in oom_killed_units or u_name in oom_killed_units:
+                    u["is_oom_killed"] = True
 
     # Otomatis jadwalkan SYSTEMD_LIST jika belum pernah ada data unit
     if extra and not extra.systemd_units:
@@ -4690,6 +4778,8 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         "listening_ports": ports_data,
         "ssl_certs": ssl_data,
         "system_logs": sys_logs_data,
+        "kernel_events": ke_obj,
+        "oom_kill_count": oom_count,
         "hardware_specs": hw_specs,
         "platform_info": platform_info,
     })
@@ -7081,6 +7171,14 @@ BG_PROBLEM_EVAL_SECS = 15      # interval evaluator background
 def _quiet_secs_for(key: str) -> int:
     if key in ("security_danger", "failed_logins"):
         return SECURITY_QUIET_SECS
+    if key.startswith("oom_kill:"):
+        return 900   # 15 menit tanpa kejadian OOM baru
+    if key.startswith("disk_io_error:"):
+        return 1200  # 20 menit tanpa error I/O baru
+    if key.startswith("segfault:"):
+        return 600   # 10 menit tanpa segfault baru
+    if key in ("kernel_panic", "hardware_error_mce"):
+        return 1800  # 30 menit
     if key.startswith(("ram_", "swap_", "cpu_", "disk_")):
         return RESOURCE_QUIET_SECS
     if key.startswith("service_down:"):
@@ -8436,6 +8534,98 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                                          + (f" · terakhir {_rel_dt(event_at)}" if event_at else ""),
                              "tip": SECURITY_TIPS["info"], "event_at": event_at,
                              "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {}, severity="info")})
+    # Evaluasi Event Fatal Kernel & Sistem (OOM Killer, Storage I/O Error, Segfault, Panic)
+    oom_event_map: dict[str, dict] = {}
+    if extras is not None and getattr(extras, "kernel_events", None):
+        try:
+            ke_data = json.loads(extras.kernel_events) if isinstance(extras.kernel_events, str) else extras.kernel_events
+            if isinstance(ke_data, dict):
+                now_ts = time.time()
+                for ev in (ke_data.get("events") or []):
+                    if not isinstance(ev, dict):
+                        continue
+                    ev_type = ev.get("type")
+                    ev_epoch = float(ev.get("epoch") or 0.0)
+                    ev_age = now_ts - ev_epoch if ev_epoch > 0 else 0
+
+                    # Pertahankan event aktif selama jendela 30 menit (1800 dtk)
+                    if ev_epoch > 0 and ev_age > 1800:
+                        continue
+
+                    ev_time_str = ev.get("time") or ""
+                    ev_dt = None
+                    if ev_epoch > 0:
+                        try:
+                            ev_dt = datetime.fromtimestamp(ev_epoch, timezone.utc).replace(tzinfo=None)
+                        except Exception:
+                            ev_dt = None
+
+                    if ev_type == "oom_kill":
+                        p_name = str(ev.get("proc") or "proses").strip()
+                        pid = ev.get("pid")
+                        pid_txt = f" (PID {pid})" if pid else ""
+                        u_name = str(ev.get("unit") or "").strip()
+                        clean_proc = p_name.lower()
+                        clean_unit = u_name[:-8].lower() if u_name.endswith(".service") else u_name.lower()
+
+                        oom_info = {
+                            "proc": p_name,
+                            "pid": pid,
+                            "unit": u_name,
+                            "time": ev_time_str,
+                            "message": ev.get("message"),
+                        }
+                        if clean_proc:
+                            oom_event_map[clean_proc] = oom_info
+                        if clean_unit:
+                            oom_event_map[clean_unit] = oom_info
+
+                        oom_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                        inst.append({
+                            "key": f"oom_kill:{clean_proc}",
+                            "severity": oom_sev,
+                            "message": f"Proses '{p_name}' dihentikan paksa oleh Kernel (Out of Memory - OOM Killer)",
+                            "tip": f"Kernel Linux menghentikan paksa proses {p_name}{pid_txt} karena server kehabisan memori RAM/Swap fisik. Periksa kebocoran memori aplikasi, kurangi beban kerja, atau tingkatkan kapasitas RAM server.",
+                            "event_at": ev_dt,
+                            "context": _build_problem_context("oom_kill", srv, process=p_name, pid=pid, unit=u_name, event_time=ev_time_str, raw=ev.get("message")),
+                        })
+
+                    elif ev_type == "disk_io_error":
+                        dev_name = str(ev.get("dev") or "storage").strip()
+                        io_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                        inst.append({
+                            "key": f"disk_io_error:{dev_name}",
+                            "severity": io_sev,
+                            "message": f"Galat I/O Storage Terdeteksi pada {dev_name}: Kemungkinan Kerusakan Media Fisik",
+                            "tip": f"Kernel Linux mencatat kegagalan baca/tulis sektor fisik (I/O error) pada drive {dev_name}. Segera amankan cadangan data (backup) dan periksa integritas media penyimpanan.",
+                            "event_at": ev_dt,
+                            "context": _build_problem_context("disk_io_error", srv, device=dev_name, event_time=ev_time_str, raw=ev.get("message")),
+                        })
+
+                    elif ev_type == "kernel_panic":
+                        inst.append({
+                            "key": "kernel_panic",
+                            "severity": "danger",
+                            "message": "Kernel Panic atau Kegagalan Fatal Hardware (MCE) Terdeteksi",
+                            "tip": "Kernel Linux mengalami kegagalan fatal (kernel panic) atau Machine Check Exception (MCE). Periksa log dmesg/journalctl untuk analisis hardware crash dump.",
+                            "event_at": ev_dt,
+                            "context": _build_problem_context("kernel_panic", srv, detail=ev.get("detail"), raw=ev.get("message")),
+                        })
+
+                    elif ev_type == "segfault":
+                        p_name = str(ev.get("proc") or "proses").strip()
+                        seg_sev = "average" if tier == 1 else "warning"
+                        inst.append({
+                            "key": f"segfault:{p_name.lower()}",
+                            "severity": seg_sev,
+                            "message": f"Proses '{p_name}' Mengalami Segmentasi Galat (Segfault / Crash)",
+                            "tip": f"Aplikasi {p_name} mengalami crash memori tidak valid (segfault). Periksa berkas konfigurasi, kompatibilitas binary, atau bug memori aplikasi.",
+                            "event_at": ev_dt,
+                            "context": _build_problem_context("segfault", srv, process=p_name, event_time=ev_time_str, raw=ev.get("message")),
+                        })
+        except Exception as e:
+            logger.debug("Gagal evaluasi kernel_events untuk server %s: %s", srv.id, e)
+
     # Kumpulkan seluruh layanan yang sengaja dihentikan atau di-restart oleh operator pada server ini
     # (dari tabel Service dan riwayat Command systemd/service)
     op_action_map: dict[str, dict] = {}
@@ -8523,68 +8713,81 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                     svc_msg = f"Layanan {name} dimatikan oleh operator ({op_by})"
                     svc_tip = f"Unit layanan {name} sengaja dihentikan melalui panel kontrol oleh operator ({op_by}). Tindakan pemeliharaan tidak memicu alarm darurat."
             else:
-                # Hitung durasi layanan telah down dari rekaman ServerProblem terbuka
-                down_secs = 0.0
-                if db is not None:
-                    try:
-                        open_svc_prob = db.query(ServerProblem).filter(
-                            ServerProblem.server_id == srv.id,
-                            ServerProblem.key == f"service_down:{name}",
-                            ServerProblem.resolved_at.is_(None),
-                        ).first()
-                        if open_svc_prob and open_svc_prob.started_at:
-                            now_utc = datetime.utcnow()
-                            st_dt = open_svc_prob.started_at
-                            if st_dt.tzinfo:
-                                st_dt = st_dt.replace(tzinfo=None)
-                            down_secs = max(0.0, (now_utc - st_dt).total_seconds())
-                    except Exception:
-                        pass
+                # Periksa apakah layanan down karena dihentikan paksa oleh OOM Killer
+                oom_info = oom_event_map.get(name_lower) or oom_event_map.get(proc_lower)
+                if not oom_info:
+                    for oom_key, o_info in oom_event_map.items():
+                        if (oom_key and (oom_key in name_lower or name_lower in oom_key)) or \
+                           (proc_lower and (oom_key in proc_lower or proc_lower in oom_key)):
+                            oom_info = o_info
+                            break
+                if oom_info:
+                    svc_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                    svc_msg = f"Layanan {name} Down — Dihentikan paksa oleh Kernel (OOM Killer)"
+                    svc_tip = f"Layanan {name} tidak aktif karena proses utamanya ({oom_info.get('proc')}) dihentikan paksa oleh Kernel Linux akibat kehabisan memori RAM/Swap (OOM Killer). Jalankan: sudo systemctl restart {name} setelah memastikan ketersediaan RAM."
+                else:
+                    # Hitung durasi layanan telah down dari rekaman ServerProblem terbuka
+                    down_secs = 0.0
+                    if db is not None:
+                        try:
+                            open_svc_prob = db.query(ServerProblem).filter(
+                                ServerProblem.server_id == srv.id,
+                                ServerProblem.key == f"service_down:{name}",
+                                ServerProblem.resolved_at.is_(None),
+                            ).first()
+                            if open_svc_prob and open_svc_prob.started_at:
+                                now_utc = datetime.utcnow()
+                                st_dt = open_svc_prob.started_at
+                                if st_dt.tzinfo:
+                                    st_dt = st_dt.replace(tzinfo=None)
+                                down_secs = max(0.0, (now_utc - st_dt).total_seconds())
+                        except Exception:
+                            pass
 
-                if tier == 1:
-                    # Tier 1 Server (Down/crash tidak disengaja):
-                    # - Layanan Inti Aplikasi/Infrastruktur (Web, DB, Docker, App):
-                    #   * 1 menit pertama (< 60s): GAWAT (average)
-                    #   * >= 60s: DANGER (KRITIS — Memicu alarm, badge & banner merah)
-                    # - Layanan Administratif/Remote (sshd, ntp, agent, cron) down: WARNING (Peringatan)
-                    if not is_admin:
-                        if down_secs >= 60:
-                            svc_sev = "danger"
-                            svc_msg = f"Layanan {name} Down (KRITIS)"
-                            svc_tip = SVC_DOWN_TIP.format(name=name)
+                    if tier == 1:
+                        # Tier 1 Server (Down/crash tidak disengaja):
+                        # - Layanan Inti Aplikasi/Infrastruktur (Web, DB, Docker, App):
+                        #   * 1 menit pertama (< 60s): GAWAT (average)
+                        #   * >= 60s: DANGER (KRITIS — Memicu alarm, badge & banner merah)
+                        # - Layanan Administratif/Remote (sshd, ntp, agent, cron) down: WARNING (Peringatan)
+                        if not is_admin:
+                            if down_secs >= 60:
+                                svc_sev = "danger"
+                                svc_msg = f"Layanan {name} Down (KRITIS)"
+                                svc_tip = SVC_DOWN_TIP.format(name=name)
+                            else:
+                                svc_sev = "average"
+                                svc_msg = f"Layanan {name} Down"
+                                svc_tip = SVC_DOWN_TIP.format(name=name)
                         else:
-                            svc_sev = "average"
+                            svc_sev = "warning"
                             svc_msg = f"Layanan {name} Down"
                             svc_tip = SVC_DOWN_TIP.format(name=name)
-                    else:
-                        svc_sev = "warning"
-                        svc_msg = f"Layanan {name} Down"
-                        svc_tip = SVC_DOWN_TIP.format(name=name)
-                elif tier == 2:
-                    # Tier 2 Server (Server Pendukung Operasional):
-                    # - Layanan Inti Aplikasi/Infrastruktur:
-                    #   * 1 menit pertama (< 60s): PERINGATAN (warning)
-                    #   * >= 60s: GAWAT (average). Maksimal GAWAT, tidak memicu alarm/banner.
-                    # - Layanan Administratif: WARNING (Peringatan)
-                    if not is_admin:
-                        if down_secs >= 60:
-                            svc_sev = "average"
-                            svc_msg = f"Layanan {name} Down"
-                            svc_tip = SVC_DOWN_TIP.format(name=name)
+                    elif tier == 2:
+                        # Tier 2 Server (Server Pendukung Operasional):
+                        # - Layanan Inti Aplikasi/Infrastruktur:
+                        #   * 1 menit pertama (< 60s): PERINGATAN (warning)
+                        #   * >= 60s: GAWAT (average). Maksimal GAWAT, tidak memicu alarm/banner.
+                        # - Layanan Administratif: WARNING (Peringatan)
+                        if not is_admin:
+                            if down_secs >= 60:
+                                svc_sev = "average"
+                                svc_msg = f"Layanan {name} Down"
+                                svc_tip = SVC_DOWN_TIP.format(name=name)
+                            else:
+                                svc_sev = "warning"
+                                svc_msg = f"Layanan {name} Down"
+                                svc_tip = SVC_DOWN_TIP.format(name=name)
                         else:
                             svc_sev = "warning"
                             svc_msg = f"Layanan {name} Down"
                             svc_tip = SVC_DOWN_TIP.format(name=name)
                     else:
+                        # Tier 3 Server:
+                        # - Selalu masuk Warning (Peringatan). Tenang tanpa sirene/banner merah.
                         svc_sev = "warning"
                         svc_msg = f"Layanan {name} Down"
                         svc_tip = SVC_DOWN_TIP.format(name=name)
-                else:
-                    # Tier 3 Server:
-                    # - Selalu masuk Warning (Peringatan). Tenang tanpa sirene/banner merah.
-                    svc_sev = "warning"
-                    svc_msg = f"Layanan {name} Down"
-                    svc_tip = SVC_DOWN_TIP.format(name=name)
 
             inst.append({
                 "key": f"service_down:{name}", "severity": svc_sev,
@@ -8597,6 +8800,9 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                     conflict_ips=active_ips if len(active_ips) > 1 else None,
                     is_op_stop=is_op_action,
                     op_by=op_by,
+                    oom_killed=bool(oom_info),
+                    oom_proc=oom_info.get("proc") if oom_info else None,
+                    oom_time=oom_info.get("time") if oom_info else None,
                 ),
             })
         elif st == "unknown":
@@ -8645,6 +8851,17 @@ def _problem_component(key: str) -> str:
     if key.startswith("service_down:") or key.startswith("svc_no_data:"):
         svc = key.split(":", 1)[1]
         return f"Layanan ({svc})"
+    if key.startswith("oom_kill:"):
+        proc = key.split(":", 1)[1] if ":" in key else ""
+        return f"Kernel / OOM ({proc})" if proc else "Kernel (OOM Killer)"
+    if key.startswith("disk_io_error:"):
+        dev = key.split(":", 1)[1] if ":" in key else ""
+        return f"Penyimpanan (I/O {dev})" if dev else "Penyimpanan (I/O Error)"
+    if key in ("kernel_panic", "hardware_error_mce"):
+        return "Kernel / Sistem"
+    if key.startswith("segfault:"):
+        proc = key.split(":", 1)[1] if ":" in key else ""
+        return f"Aplikasi Crash ({proc})" if proc else "Aplikasi (Segfault)"
     if key == "agent_stale":
         return "Agen / Host"
     if key in ("cpu_usage", "cpu_high", "cpu_saturated", "cpu_load"):
@@ -8754,6 +8971,20 @@ def _enrich_problems_for_ui(open_problems, services, extra, user_or_role="viewer
                 r["tty"] = kparts[2].replace("_", "/")
         elif r["key"] == "platform_conflict":
             r["action"] = "reset_platform"
+        elif r["key"].startswith("oom_kill:"):
+            r["action"] = "log"
+            proc = r["key"].split(":", 1)[1] if ":" in r["key"] else ""
+            r["log_unit"] = f"{proc}.service" if proc else "SYSTEM"
+        elif r["key"].startswith("disk_io_error:"):
+            r["action"] = "log"
+            r["log_unit"] = "SYSTEM"
+        elif r["key"].startswith("segfault:"):
+            r["action"] = "log"
+            proc = r["key"].split(":", 1)[1] if ":" in r["key"] else ""
+            r["log_unit"] = f"{proc}.service" if proc else "SYSTEM"
+        elif r["key"] in ("kernel_panic", "hardware_error_mce"):
+            r["action"] = "log"
+            r["log_unit"] = "SYSTEM"
         else:
             r["action"] = None
 

@@ -269,6 +269,7 @@ class ServerExtras(Base):
     listening_ports = Column(Text, nullable=True)        # JSON: daftar port listening & proses (ss -tulpn)
     ssl_certs = Column(Text, nullable=True)              # JSON: sertifikat SSL/TLS & masa kedaluwarsa
     system_logs = Column(Text, nullable=True)            # JSON: log kegagalan sistem penting (journalctl err/crit)
+    kernel_events = Column(MEDIUMTEXT, nullable=True)    # JSON: event fatal kernel (OOM killer, disk I/O error, segfault, panic)
     hardware_specs = Column(Text, nullable=True)         # JSON: spesifikasi hardware & platform server (CPU, RAM, Disks, Board, BIOS)
     installed_packages = Column(MEDIUMTEXT, nullable=True) # JSON: inventaris paket sistem terpasang (dpkg-query)
     systemd_units = Column(MEDIUMTEXT, nullable=True)      # JSON: inventaris unit service systemd (systemctl list-units)

@@ -311,6 +311,31 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.42
+
+- **Tipe Rilis:** Pengawas Pola Log Kritis Kernel & Sistem, Deteksi OOM Killer, Galat Storage I/O, dan Korelasi Akar Masalah Layanan (*Kernel Critical Log Pattern Monitor, OOM Killer Detection, Storage Disk I/O Errors, and Root-Cause Correlation*)
+- **Fokus Utama:** Menghadirkan subsistem pengawasan mendalam terhadap anomali fatal level kernel Linux pada mesin klien (zero external dependency) yang mencakup pembunuhan proses akibat kehabisan memori (*OOM Killer*), kegagalan baca/tulis sektor media penyimpanan (*Storage Disk I/O Error*), crash memori aplikasi (*Segmentation Fault*), dan *Kernel Panic*, serta menghubungkan secara otomatis status kegagalan layanan dengan pemicu akar masalah kernel:
+  1. **Mesin Pengumpul Log Kritis Kernel Zero-Dependency (`agent_pantau.py`):**
+     - Membaca pembacaan mutlak insiden OOM dari penghitung kernel Linux `/proc/vmstat` (`oom_kill`).
+     - Memindai riwayat *kernel ring buffer* pada sesi *boot* berjalan via `journalctl -k -b 0 -n 80 --no-pager -o json` dengan ekspresi reguler (Regex) presisi tinggi untuk menangkap korban OOM killer (`_RE_OOM_KERNEL` dan `_RE_OOM_SYSTEMD`), galat fisik I/O penyimpanan (`blk_update_request: I/O error`, `Buffer I/O error`, `EXT4-fs error`, remount *read-only*), segmentasi memori ilegal (`segfault`), dan *kernel panic*.
+     - Menerapkan *monotonic timestamp cache* 25 detik guna mencegah beban berlebih (*overhead* CPU mendekati 0%) serta memanfaatkan hak akses grup `adm` sistem tanpa memerlukan eskalasi root/sudo berlebih.
+  2. **Ekstensi Skema Relasional & Model Data (`models.py` & `main.py`):**
+     - Menambahkan kolom `kernel_events MEDIUMTEXT NULL` pada tabel basis data `server_extras` di MariaDB dengan inspeksi otomatis skema runtime (`_ensure_server_extras_columns`).
+     - Melakukan sanitasi, validasi, dan pembatasan muatan telemetri kernel pada endpoint penerimaan laporan agen `/api/report`.
+  3. **Mesin Evaluasi Insiden & Korelasi Akar Masalah Cerdas (`server/main.py`):**
+     - Mengidentifikasi dan menerbitkan kejadian insiden fatal sistem (`oom_kill:{proc}`, `disk_io_error:{dev}`, `kernel_panic`, `segfault:{proc}`) dengan keparahan berjenjang berdasarkan Tier Server (Tier 1: Kritis/Danger, Tier 2: Gawat/Average, Tier 3: Peringatan/Warning).
+     - Menetapkan jendela tenang (*quiet window*) terukur: 900 detik untuk OOM, 1200 detik untuk Storage I/O Error, 1800 detik untuk Kernel Panic, dan 600 detik untuk Segfault.
+     - **Korelasi Lintas-Entitas (Root Cause Analysis):** Mengorelasikan status layanan *down* dengan insiden OOM killer pada nama layanan atau proses biner terkait (`oom_event_map`), secara otomatis mentransformasikan pesan insiden menjadi:
+       `Layanan {name} Down — Dihentikan paksa oleh Kernel (OOM Killer)`,
+       lengkap dengan rekomendasi investigasi RAM/Swap fisik pada kartu panduan insiden.
+     - Menetapkan label komponen masalah terstruktur (`Kernel / OOM ({proc})`, `Penyimpanan (I/O {dev})`, `Kernel / Sistem`, `Aplikasi Crash ({proc})`) serta tautan tombol aksi terarah ke unit log terkait.
+  4. **Peningkatan Kepadatan Informasi NOC Antarmuka Pengguna (`services.html`):**
+     - Menambahkan baris metrik operasional `OOM Kills` pada kartu *Kapasitas Memori* di tab Performa (`#spec-oom-count`), menampilkan lencana hijau `0 (Nihil)` pada kondisi normal dan lencana merah `X Kejadian` bila terdeteksi pembunuhan proses oleh kernel.
+     - Menyematkan lencana sorotan keparahan pada tabel Log Sistem Journal (`#sublog-panel-sys`): lencana merah `OOM`, `DISK I/O`, `PANIC`, serta lencana oranye `SEGFAULT`.
+     - Menampilkan lencana status `OOM KILLED` merah tegas pada tabel layanan terpantau dan daftar unit Systemd saat layanan menjadi korban kehabisan memori.
+  5. **Otomasi Pembaruan SemVer v4.8.42:**
+     - Menaikkan versi sistem menjadi `v4.8.42` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.41
 
 - **Tipe Rilis:** Standarisasi Tata Letak, Desain Visual, dan Kebahasaan Baku Tabel Insiden Terbuka (*Layout Standardization, Visual Polish, and Language Consistency of Open Incidents Table*)

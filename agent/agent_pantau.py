@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.41"
+AGENT_VERSION = "4.8.42"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -607,6 +607,7 @@ def send_report(cfg: dict, services: list, system: dict,
     payload["listening_ports"] = collect_listening_ports()
     payload["ssl_certs"] = collect_ssl_certs()
     payload["system_logs"] = collect_system_logs()
+    payload["kernel_events"] = collect_kernel_events(syslogs=payload["system_logs"])
     payload["hardware_specs"] = collect_hardware_specs()
     payload["groups"] = collect_groups()
 
@@ -4899,6 +4900,187 @@ def collect_system_logs(lines: int = 25) -> list[dict]:
     _syslog_cache["data"] = events
     _syslog_cache["at"] = now
     return events
+
+
+# ---------------------------------------------------------------------------
+# Deteksi Pola Log Kritis Kernel & Sistem (OOM Killer, Storage I/O, Segfault)
+# ---------------------------------------------------------------------------
+_RE_OOM_KERNEL = re.compile(
+    r"(?:Out of memory:\s*Kill(?:ed)?\s*process\s*(\d+)\s*\(([^)]+)\)|oom-kill:.*?task=([^\s,]+),\s*pid=(\d+))",
+    re.IGNORECASE,
+)
+_RE_OOM_SYSTEMD = re.compile(
+    r"(\S+\.service):\s*A process of this unit has been killed by the OOM killer",
+    re.IGNORECASE,
+)
+_RE_DISK_IO = re.compile(
+    r"(?:blk_update_request:\s*I/O error,\s*dev\s*([a-zA-Z0-9_\/]+)|Buffer I/O error on (?:dev|device)\s*([a-zA-Z0-9_\/]+)|(?:EXT4|XFS|BTRFS)[- ](?:fs )?error.*?device\s*([a-zA-Z0-9_\/]+)|Remounting filesystem read-only)",
+    re.IGNORECASE,
+)
+_RE_SEGFAULT = re.compile(
+    r"(\S+)\[(\d+)\]:\s*segfault at [0-9a-fA-F]+\s+ip\s+[0-9a-fA-F]+\s+sp\s+[0-9a-fA-F]+",
+    re.IGNORECASE,
+)
+_RE_PANIC = re.compile(
+    r"(?:Kernel panic - not syncing:\s*(.*)|\[Hardware Error\]:\s*(Machine check events logged.*))",
+    re.IGNORECASE,
+)
+
+_kernel_events_cache: dict = {"at": 0.0, "data": {}}
+
+
+def _read_vmstat_oom() -> int:
+    try:
+        with open("/proc/vmstat", "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("oom_kill "):
+                    return int(line.split()[1])
+    except Exception:
+        pass
+    return 0
+
+
+def collect_kernel_events(syslogs=None) -> dict:
+    """Kumpulkan event kritis kernel (OOM Killer, Storage I/O Error, Segfault, Panic)."""
+    now = time.monotonic()
+    if _kernel_events_cache["data"] and now - _kernel_events_cache["at"] < 25:
+        return _kernel_events_cache["data"]
+
+    oom_count = _read_vmstat_oom()
+    events: list[dict] = []
+    seen_keys: set[str] = set()
+
+    # 1. Baca buffer kernel sesi boot saat ini (journalctl -k -b 0)
+    res = _run_cmd(
+        ["journalctl", "-k", "-b", "0", "-n", "80", "-r", "--no-pager", "-o", "json"],
+        timeout=4,
+    )
+    if res and res.returncode == 0:
+        for ln in res.stdout.splitlines():
+            if not ln.strip():
+                continue
+            try:
+                d = json.loads(ln)
+                msg = (d.get("MESSAGE") or "").strip()
+                if not msg:
+                    continue
+                ts_raw = d.get("__REALTIME_TIMESTAMP")
+                epoch = 0.0
+                time_str = ""
+                if ts_raw:
+                    try:
+                        epoch = int(ts_raw) / 1_000_000.0
+                        dt = datetime.fromtimestamp(epoch, timezone.utc)
+                        time_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        pass
+                unit = d.get("_SYSTEMD_UNIT") or d.get("SYSLOG_IDENTIFIER") or "kernel"
+
+                # Evaluasi OOM Killer
+                m_oom = _RE_OOM_KERNEL.search(msg)
+                if m_oom:
+                    pid = m_oom.group(1) or m_oom.group(4) or ""
+                    proc = m_oom.group(2) or m_oom.group(3) or "process"
+                    ev_key = f"oom:{proc}:{pid}:{time_str[:16]}"
+                    if ev_key not in seen_keys:
+                        seen_keys.add(ev_key)
+                        events.append({
+                            "type": "oom_kill",
+                            "time": time_str,
+                            "epoch": epoch,
+                            "proc": proc,
+                            "pid": int(pid) if pid.isdigit() else 0,
+                            "unit": unit,
+                            "message": msg[:300],
+                        })
+                    continue
+
+                # Evaluasi Storage I/O Error
+                m_io = _RE_DISK_IO.search(msg)
+                if m_io:
+                    dev = m_io.group(1) or m_io.group(2) or m_io.group(3) or "storage"
+                    ev_key = f"disk_io:{dev}:{time_str[:16]}"
+                    if ev_key not in seen_keys:
+                        seen_keys.add(ev_key)
+                        events.append({
+                            "type": "disk_io_error",
+                            "time": time_str,
+                            "epoch": epoch,
+                            "dev": dev,
+                            "unit": unit,
+                            "message": msg[:300],
+                        })
+                    continue
+
+                # Evaluasi Segfault
+                m_seg = _RE_SEGFAULT.search(msg)
+                if m_seg:
+                    proc = m_seg.group(1)
+                    pid = m_seg.group(2)
+                    ev_key = f"segfault:{proc}:{pid}:{time_str[:16]}"
+                    if ev_key not in seen_keys:
+                        seen_keys.add(ev_key)
+                        events.append({
+                            "type": "segfault",
+                            "time": time_str,
+                            "epoch": epoch,
+                            "proc": proc,
+                            "pid": int(pid) if pid.isdigit() else 0,
+                            "unit": unit,
+                            "message": msg[:300],
+                        })
+                    continue
+
+                # Evaluasi Kernel Panic / Hardware MCE
+                m_pan = _RE_PANIC.search(msg)
+                if m_pan:
+                    det = m_pan.group(1) or m_pan.group(2) or "Kernel Panic"
+                    ev_key = f"panic:{time_str[:16]}"
+                    if ev_key not in seen_keys:
+                        seen_keys.add(ev_key)
+                        events.append({
+                            "type": "kernel_panic",
+                            "time": time_str,
+                            "epoch": epoch,
+                            "detail": det[:100],
+                            "unit": unit,
+                            "message": msg[:300],
+                        })
+                    continue
+            except Exception:
+                continue
+
+    # 2. Cek juga log galat sistem untuk unit systemd yang dibunuh OOM killer
+    if syslogs and isinstance(syslogs, list):
+        for log in syslogs:
+            if not isinstance(log, dict):
+                continue
+            msg = log.get("message") or ""
+            m_s_oom = _RE_OOM_SYSTEMD.search(msg)
+            if m_s_oom:
+                u_name = m_s_oom.group(1)
+                proc_name = u_name[:-8] if u_name.endswith(".service") else u_name
+                time_str = log.get("time") or ""
+                ev_key = f"oom:{proc_name}:0:{time_str[:16]}"
+                if ev_key not in seen_keys:
+                    seen_keys.add(ev_key)
+                    events.append({
+                        "type": "oom_kill",
+                        "time": time_str,
+                        "epoch": time.time(),
+                        "proc": proc_name,
+                        "pid": 0,
+                        "unit": u_name,
+                        "message": msg[:300],
+                    })
+
+    result = {
+        "oom_kill_count": oom_count,
+        "events": events[:30],
+    }
+    _kernel_events_cache["data"] = result
+    _kernel_events_cache["at"] = now
+    return result
 
 
 _HIST_EPOCH = re.compile(r"^#(\d{9,11})$")                      # bash: baris before command (#epoch)

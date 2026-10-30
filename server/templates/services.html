@@ -1562,6 +1562,7 @@ div[style*="position: fixed"] .card {
           <tbody>
             <tr><td style="color:var(--dim);width:40%">Total RAM</td><td><strong id="spec-ram-total">{{ ((hardware_specs.memory.ram_total / (1024**3))|round(2)) ~ ' GB' if hardware_specs and hardware_specs.memory and hardware_specs.memory.ram_total else '0 GB' }}</strong></td></tr>
             <tr><td style="color:var(--dim)">Total Swap</td><td class="mono" id="spec-swap-total">{{ ((hardware_specs.memory.swap_total / (1024**3))|round(2)) ~ ' GB' if hardware_specs and hardware_specs.memory and hardware_specs.memory.swap_total else '0 GB' }}</td></tr>
+            <tr><td style="color:var(--dim)">OOM Kills</td><td><span id="spec-oom-count" class="badge badge-{{ 'danger' if (oom_kill_count or 0) > 0 else 'success' }} mono" style="font-size:8.5px">{{ oom_kill_count or 0 }} {{ 'Kejadian' if (oom_kill_count or 0) > 0 else '(Nihil)' }}</span></td></tr>
             <tr><td style="color:var(--dim)">Alokasi</td><td><span class="badge badge-muted" style="font-size:8.5px">Dinamis (Kernel)</span></td></tr>
           </tbody>
         </table>
@@ -2222,6 +2223,8 @@ div[style*="position: fixed"] .card {
           <span class="badge badge-up" title="Layanan aktif (pengawasan down diabaikan)">up</span>
         {% elif svc._status == 'down' and svc.ignored_reason and ('DIMATIKAN OLEH OPERATOR' in svc.ignored_reason or 'DIHENTIKAN OLEH OPERATOR' in svc.ignored_reason) %}
           <span class="badge badge-warning" style="font-size:10px;padding:2px 6px;font-weight:600" title="Layanan sengaja dihentikan oleh operator ({{ svc.ignored_by or 'OPERATOR' }})">DIHENTIKAN</span>
+        {% elif svc._status == 'down' and getattr(svc, '_is_oom_killed', False) %}
+          <span class="badge badge-danger" style="font-size:9.5px;padding:2px 6px;font-weight:700" title="Layanan dihentikan paksa oleh Kernel (Out of Memory - OOM Killer)">OOM KILLED</span>
         {% else %}
           <span class="badge badge-{{ svc._status }}">{{ svc._status }}</span>
         {% endif %}
@@ -3325,8 +3328,13 @@ div[style*="position: fixed"] .card {
 
   <!-- Sub-Panel 2: Log Galat Sistem (Systemd Journal) -->
   <div id="sublog-panel-sys" style="display:none;margin-top:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:6px 10px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:6px">
-      <span style="font-size:12px;color:var(--dim)">Kejadian kegagalan dan peringatan kritis sistem terbaru (journalctl err, crit, alert, emerg)</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:6px 10px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:6px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:var(--dim)">Kejadian kegagalan dan peringatan kritis sistem terbaru (journalctl err, crit, alert, emerg)</span>
+        {% if (oom_kill_count or 0) > 0 %}
+        <span class="badge badge-danger mono" style="font-size:9px">{{ oom_kill_count }} OOM Terdeteksi</span>
+        {% endif %}
+      </div>
       <span style="font-size:11.5px;color:var(--dim)">Otomatis disinkronkan oleh Agen Pantau</span>
     </div>
     {% if system_logs %}
@@ -3335,7 +3343,7 @@ div[style*="position: fixed"] .card {
         <thead>
           <tr>
             <th style="width:190px" title="Waktu kejadian tercatat di sistem">Waktu (Terbaru di Atas)</th>
-            <th style="width:110px" title="Tingkat keparahan event journald">Prioritas</th>
+            <th style="width:125px" title="Tingkat keparahan event journald">Prioritas</th>
             <th style="width:200px" title="Unit layanan atau proses penghasil log">Unit / Identitas</th>
             <th title="Pesan rincian galat">Pesan Galat</th>
           </tr>
@@ -3351,6 +3359,16 @@ div[style*="position: fixed"] .card {
                 <span class="badge badge-warn">ERROR</span>
               {% else %}
                 <span class="badge badge-muted">PRIO {{ log.priority }}</span>
+              {% endif %}
+              {% set lmsg = (log.message or '')|lower %}
+              {% if 'out of memory' in lmsg or 'oom-kill' in lmsg or 'oom killer' in lmsg %}
+                <span class="badge badge-danger" style="font-size:8px;padding:1px 4px;margin-left:3px;font-weight:700">OOM</span>
+              {% elif 'i/o error' in lmsg or 'ext4-fs error' in lmsg or 'buffer i/o error' in lmsg %}
+                <span class="badge badge-danger" style="font-size:8px;padding:1px 4px;margin-left:3px;font-weight:700">DISK I/O</span>
+              {% elif 'segfault at' in lmsg %}
+                <span class="badge badge-warn" style="font-size:8px;padding:1px 4px;margin-left:3px">SEGFAULT</span>
+              {% elif 'kernel panic' in lmsg %}
+                <span class="badge badge-danger" style="font-size:8px;padding:1px 4px;margin-left:3px;font-weight:700">PANIC</span>
               {% endif %}
             </td>
             <td class="mono" style="font-size:12px"><strong>{{ log.unit }}</strong></td>
@@ -9009,6 +9027,8 @@ function patch(data) {
         sts.innerHTML = '<span class="badge badge-muted" title="' + (isEnPatch ? 'Service stopped (monitoring ignored)' : 'Layanan berhenti (diabaikan)') + '">down</span>';
       } else if (s.status === 'up' && s.ignored) {
         sts.innerHTML = '<span class="badge badge-up" title="' + (isEnPatch ? 'Service running (down monitoring ignored)' : 'Layanan aktif (pengawasan down diabaikan)') + '">up</span>';
+      } else if (s.status === 'down' && s.is_oom_killed) {
+        sts.innerHTML = '<span class="badge badge-danger" style="font-size:9.5px;padding:2px 6px;font-weight:700" title="' + (isEnPatch ? 'Service terminated by Kernel (OOM Killer)' : 'Layanan dihentikan paksa oleh Kernel (Out of Memory - OOM Killer)') + '">OOM KILLED</span>';
       } else {
         const st = s.status === 'unknown' ? 'inactive' : s.status;
         sts.innerHTML = '<span class="badge badge-' + st + '">' + escHtml(s.status) + '</span>';
@@ -9034,6 +9054,13 @@ function patch(data) {
       );
     }
 
+  }
+
+  const oomEl = document.getElementById('spec-oom-count');
+  if (oomEl && data.oom_kill_count !== undefined) {
+    const oomCnt = data.oom_kill_count || 0;
+    oomEl.className = 'badge badge-' + (oomCnt > 0 ? 'danger' : 'success') + ' mono';
+    oomEl.textContent = oomCnt + (oomCnt > 0 ? ' Kejadian' : ' (Nihil)');
   }
 
   if (data.actions && Array.isArray(data.actions)) {
@@ -11329,6 +11356,16 @@ _opStoppedSvcMap.set({{ s.process_name|lower|tojson }}, {{ (s.ignored_by or 'OPE
 {% endif %}
 {% endfor %}
 
+const _oomKilledSvcMap = new Map();
+{% if kernel_events and kernel_events.events %}
+  {% for ev in kernel_events.events %}
+    {% if ev.type == 'oom_kill' %}
+      {% if ev.proc %}_oomKilledSvcMap.set({{ ev.proc|lower|tojson }}, true);{% endif %}
+      {% if ev.unit %}_oomKilledSvcMap.set({{ ev.unit|lower|tojson }}, true);{% endif %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
 function _initSystemdData() {
   try {
     if (typeof _systemdRawData === 'string') {
@@ -11562,10 +11599,13 @@ function renderSystemdTable() {
     // Status badge
     let statusBadge = '';
     const opStoppedBy = u.stopped_by_operator || _opStoppedSvcMap.get(baseName.toLowerCase()) || _opStoppedSvcMap.get((u.name || '').toLowerCase());
+    const isOomKilled = u.is_oom_killed || _oomKilledSvcMap.has(baseName.toLowerCase()) || _oomKilledSvcMap.has((u.name || '').toLowerCase());
     if (u.status === 'running') {
       statusBadge = '<span class="badge badge-up" style="font-size:10px;padding:2px 6px">RUNNING</span>';
     } else if (opStoppedBy) {
       statusBadge = `<span class="badge badge-warning" style="font-size:9.5px;padding:2px 6px;font-weight:600" title="Layanan sengaja dihentikan oleh operator (${escapeHtml(opStoppedBy)})">DIHENTIKAN OPERATOR</span>`;
+    } else if (isOomKilled) {
+      statusBadge = '<span class="badge badge-danger" style="font-size:9.5px;padding:2px 6px;font-weight:700" title="Layanan dihentikan paksa oleh Kernel (Out of Memory - OOM Killer)">OOM KILLED</span>';
     } else if (u.status === 'failed') {
       statusBadge = '<span class="badge badge-danger" style="font-size:10px;padding:2px 6px;font-weight:700">FAILED</span>';
     } else if (u.status === 'exited') {
