@@ -3785,6 +3785,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 "server_id": srv.id,
                 "hostname": srv.hostname,
                 "group_name": srv.group_name or "",
+                "ip_address": srv.ip_address or "",
+                "is_offline": (srv.last_seen is None) or _server_stale(srv),
                 "severity": p.get("severity", "warning"),
                 "message": p.get("message", ""),
                 "key": p.get("key", ""),
@@ -8183,13 +8185,11 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
 
         if is_op_poweroff:
             stale_sev = "warning"
-            dur_txt = f"{int(sec_silent // 60)} mnt" if sec_silent >= 60 else f"{int(sec_silent)} dtk"
-            stale_msg = f"Host dimatikan oleh operator ({op_by}) (> {dur_txt})"
+            stale_msg = f"Host dimatikan oleh operator ({op_by})"
             stale_tip = f"Server sengaja dimatikan melalui perintah poweroff oleh operator ({op_by})."
         elif is_op_reboot:
             stale_sev = "warning"
-            dur_txt = f"{int(sec_silent // 60)} mnt" if sec_silent >= 60 else f"{int(sec_silent)} dtk"
-            stale_msg = f"Server sedang di-reboot oleh operator ({op_by}) (> {dur_txt})"
+            stale_msg = f"Server sedang di-reboot oleh operator ({op_by})"
             stale_tip = f"Server sedang dalam proses mulai ulang (reboot) yang diinisiasi oleh operator ({op_by})."
         elif tier == 1:
             # Tier 1: Server Kritis / Produksi Utama (Layanan Vital 24/7)

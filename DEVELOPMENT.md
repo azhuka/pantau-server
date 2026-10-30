@@ -311,6 +311,29 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.40
+
+- **Tipe Rilis:** Penyempurnaan Tata Letak, Desain Visual, dan Tipografi Tabel Insiden Terkini Dasbor (*Layout, Visual Design, and Typography Polish of Dashboard Recent Incidents Table*)
+- **Fokus Utama:** Menyempurnakan tata letak dan ergonomi visual tabel pada kartu *Insiden Terkini* di halaman Dashboard Utama (`dashboard.html`), mengeliminasi benturan lencana status terhadap kolom deskripsi masalah, menambahkan indikator status host, memformat durasi menjadi badge pill NOC, serta menyelaraskan status kartu insiden secara real-time:
+  1. **Arsitektur Tata Letak Tetap & Isolasi Namespace Kolom (`dashboard.html`):**
+     - Mengimplementasikan `table-layout: fixed` dengan pendefinisian `<colgroup>` khusus (`115px`, `180px`, `165px`, `auto`, `120px`, `36px`) guna mengeliminasi pergeseran tata letak dan memastikan lebar kolom presisi secara konsisten.
+     - Mengisolasi tata letak kolom tabel insiden dasbor dengan namespace kelas khusus (`.dash-col-time`, `.dash-col-server`, `.dash-col-sev`, `.dash-col-desc`, `.dash-col-durasi`, `.dash-col-action`).
+     - Menyelesaikan kendala tumpang-tindih teks antara lencana subordinat (`DIABAIKAN` / `✓ DITANGANI`) dan teks deskripsi masalah yang sebelumnya dipicu oleh pembatasan `max-width: 100px !important` dari kelas global `.col-sev` di `base.html`.
+  2. **Indikator Titik Status Host & Lencana Grup Sistem:**
+     - Menghadirkan indikator titik status host (`●` hijau jika server aktif, merah jika server offline, atau ikon bola dunia SVG biru jika endpoint probing) berdampingan dengan nama host dan lencana grup (`CLONE`) pada kolom `SERVER`.
+  3. **Standardisasi Tipografi Monospasi & Badge Pill Durasi NOC:**
+     - Mengonversi format durasi insiden ke dalam chip badge pill monospasi NOC yang kontras, bersih, dan berorientasi operasional (`background: rgba(148, 163, 184, 0.08); border: 1px solid rgba(148, 163, 184, 0.18)`), selaras sempurna antara rendering SSR Jinja dan pembaruan berkala live polling JavaScript.
+  4. **Efek Interaktif Baris & Indikator Aksi Chevron:**
+     - Menambahkan efek hover baris halus (`background: rgba(255, 255, 255, 0.035)`) dan indikator panah interaktif (`.dash-row-arrow` / `→`) yang bertransisi dinamis untuk memperjelas bahwa seluruh baris dapat diklik untuk membuka rincian server atau endpoint probing terkait.
+  5. **Sinkronisasi Dinamis Status Ikon & Header Kartu Insiden Terkini:**
+     - Menyelaraskan logika perhitungan status kartu insiden dengan seluruh insiden terbuka (`all_open_problems` / `allProblems`), sehingga ikon header secara akurat menampilkan segitiga peringatan kuning saat ada insiden terbuka (termasuk tindakan operator) dan lencana jumlah insiden aktif (`X INSIDEN`).
+     - Menautkan tombol pintasan "Riwayat Lengkap →" langsung ke halaman `/problems`.
+  6. **Pembersihan Duplikasi Durasi Pesan Stale Backend (`server/main.py`):**
+     - Menghapus penyertaan teks durasi redundan `(> {dur_txt})` pada string status stale pemadaman (`poweroff_host`) dan reboot (`reboot_host`), sehingga pesan terbaca lugas (`Host dimatikan oleh operator (OPERATOR)` dan `Server sedang di-reboot oleh operator (OPERATOR)`), menghindari pengulangan informasi durasi yang telah tersaji di kolom `DURASI`.
+     - Melengkapi payload kamus insiden SSR dengan atribut status `is_offline` dan `ip_address`.
+  7. **Otomasi Pembaruan SemVer v4.8.40:**
+     - Menaikkan versi sistem menjadi `v4.8.40` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku.
+
 ## Versi 4.8.39
 
 - **Tipe Rilis:** Standarisasi Label Peringatan Tindakan Operator, Lencana Status Subordinat, dan Integrasi Status Reboot (*Standardization of Operator Action Warning Labels, Subordinate Badges, and Host Reboot Integration*)
