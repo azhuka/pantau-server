@@ -311,6 +311,29 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.47
+
+- **Tipe Rilis:** Estimasi Laju Konsumsi Penyimpanan & Analisis Proyeksi Kapasitas (Storage Runway) Partisi Server (*Storage Runway, Linear Consumption Rate Analysis, and Clean Diagnostic Context*)
+- **Fokus Utama:** Menghadirkan subsistem analitis kapasitas penyimpanan linier (*Storage Runway / Capacity Planning*) berbasis telemetri historis 24 jam terakhir pada kartu partisi filesystem halaman Rincian Server (`/servers/{id}`), mempertahankan kebersihan Dasbor dan Insiden dari alarm prediktif spekulatif, serta mengoptimalkan performa polling dengan cache memori:
+  1. **Mesin Kalkulasi Laju Konsumsi & Runway Penyimpanan (`server/main.py`):**
+     - Mengembangkan fungsi `_get_storage_runway_for_server(db, sid, disks)` yang menganalisis pertumbuhan byte per partisi filesystem (`cur_used - old_used`) terhadap rentang waktu delta snapshot (`dt_hours`) dalam 24 jam terakhir.
+     - Mengkalkulasikan laju konsumsi harian (`rate_bytes_day`) dan proyeksi sisa waktu hingga kapasitas 100% penuh (`runway days`).
+     - Mengklasifikasikan status kapasitas secara cerdas:
+       * `danger`: Kapasitas diproyeksikan habis dalam `< 7 Hari` (`▲ +X/hari · Est. ~N Hari`).
+       * `warning`: Kapasitas diproyeksikan habis dalam `7 - 30 Hari`.
+       * `normal`: Kapasitas aman `> 30 Hari`.
+       * `stable`: Fluktuasi di bawah 5 MB/hari (`● Stabil (0 B/hari)`).
+       * `shrinking`: Pembebasan kapasitas atau pembersihan ruang disk (`▼ Berkurang (X/hari)`).
+     - Mengimplementasikan *in-memory cache* (`_storage_runway_cache`) berdurasi TTL 5 menit (300 detik) per server, sehingga siklus AJAX polling reguler berkecepatan 0 ms tanpa membebani basis data MariaDB.
+  2. **Penyajian Visual Berdensitas Tinggi NOC (`server/templates/services.html`):**
+     - Memperbarui tabel `#disks-table` pada kartu *Partisi Penyimpanan & Laju I/O Disk*.
+     - Menyematkan baris indikator runway monospasi rapat di bawah meter bar persentase pemakaian tanpa mengubah lebar kolom atau merusak tata letak tabel.
+     - Menghadirkan warna indikator semantik (merah untuk bahaya, kuning untuk peringatan, hijau untuk pengurangan, dan abu-abu netral untuk stabil) lengkap dengan tooltip penjelasan.
+  3. **Integritas Kokpit Kedaruratan Dasbor & Insiden Tetap Terjaga:**
+     - Menjaga Dasbor Utama (`dashboard.html`) dan Riwayat Insiden (`problems.html`) tetap 100% bebas dari alarm spekulatif prediktif, murni mengevaluasi insiden darurat nyata berbasis ambang batas fisik teruji untuk mencegah kelelahan alarm (*alert fatigue*).
+  4. **Otomasi Pembaruan SemVer v4.8.47:**
+     - Menaikkan versi sistem menjadi `v4.8.47` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.46
 
 - **Tipe Rilis:** Penyempurnaan Komponen Dropdown Multi-Pilih Server & Normalisasi Tata Letak Formulir NOC (*Enterprise Multi-Select Dropdown Component Refinement, Global Form Group Layout Normalization, and Clean Alignment*)

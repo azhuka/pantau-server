@@ -1738,7 +1738,7 @@ div[style*="position: fixed"] .card {
             <th>Mount</th>
             <th>Tipe</th>
             <th>Terpakai</th>
-            <th style="width:25%">Pemakaian</th>
+            <th style="width:28%" title="Persentase pemakaian ruang dan proyeksi kapasitas penyimpanan (Runway 24j)">Pemakaian &amp; Estimasi Laju</th>
             <th title="Kecepatan baca dan tulis disk saat ini">Laju I/O (R / W)</th>
             <th title="Persentase utilisasi waktu aktif disk (I/O util)">Util I/O</th>
           </tr>
@@ -9690,11 +9690,37 @@ function renderSys(data) {
       const uColor = uVal >= 80 ? 'var(--red)' : (uVal >= 50 ? 'var(--yellow)' : 'var(--text)');
       utilText = '<span style="font-weight:600;color:' + uColor + '">' + uVal + '%</span>';
     }
+
+    let runwayHtml = '';
+    if (d.runway && d.runway.text) {
+      let rColor = 'var(--dim-subtle)';
+      let rIcon = '●';
+      if (d.runway.status === 'danger') {
+        rColor = 'var(--red)';
+        rIcon = '▲';
+      } else if (d.runway.status === 'warning') {
+        rColor = 'var(--yellow)';
+        rIcon = '▲';
+      } else if (d.runway.status === 'shrinking') {
+        rColor = 'var(--green)';
+        rIcon = '▼';
+      } else if (d.runway.status === 'normal') {
+        rColor = 'var(--dim)';
+        rIcon = '▲';
+      }
+      runwayHtml = '<div style="font-size:9.5px;font-family:var(--font-mono, monospace);margin-top:3px;color:' + rColor + ';white-space:nowrap;line-height:1.2" title="Tren konsumsi 24 jam terakhir">'
+        + rIcon + ' ' + escHtml(d.runway.text) + '</div>';
+    }
+
     return '<tr><td class="mono"><strong>' + escHtml(d.mount) + '</strong></td><td class="mono">' + escHtml(d.type) + '</td>'
       + '<td>' + fmtBytes(d.used) + ' / ' + fmtBytes(d.total) + '</td>'
       + '<td><div class="meter"><div class="meter-bar" style="width:' + Math.min(100, d.pct) + '%;'
-      + (d.pct >= 90 ? 'background:var(--red)' : '') + '"></div></div>'
-      + '<span style="font-size:9.5px;color:var(--dim)">' + d.pct + '%</span></td>'
+      + (d.pct >= 90 ? 'background:var(--red)' : (d.pct >= 80 ? 'background:var(--yellow)' : '')) + '"></div></div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">'
+      + '<span style="font-size:9.5px;color:var(--dim);font-weight:600">' + d.pct + '%</span>'
+      + '</div>'
+      + runwayHtml
+      + '</td>'
       + '<td class="mono" style="font-size:10px">' + ioText + '</td>'
       + '<td class="mono" style="font-size:10px">' + utilText + '</td></tr>';
   }).join('');

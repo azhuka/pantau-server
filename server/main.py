@@ -12006,6 +12006,132 @@ def api_service_history(
     }
 
 
+# ---------------------------------------------------------------------------
+# Storage Capacity Planning & Runway (Historical 24h Linear Consumption Rate)
+# ---------------------------------------------------------------------------
+_storage_runway_cache: dict[int, tuple[float, dict[str, dict]]] = {}
+
+def _format_bytes_compact(b: int | float | None) -> str:
+    if not b or b <= 0:
+        return "0 B"
+    b = float(b)
+    if b >= 1024 ** 4:
+        return f"{b / (1024 ** 4):.1f} TB"
+    if b >= 1024 ** 3:
+        return f"{b / (1024 ** 3):.1f} GB"
+    if b >= 1024 ** 2:
+        return f"{b / (1024 ** 2):.1f} MB"
+    if b >= 1024:
+        return f"{b / 1024:.0f} KB"
+    return f"{int(b)} B"
+
+def _get_storage_runway_for_server(db: Session, sid: int, disks: list[dict]) -> list[dict]:
+    """Menghitung estimasi laju konsumsi penyimpanan (Runway) berbasis telemetri 24 jam terakhir.
+    Murni analitis sekunder pada halaman rincian server (zero dependency, zero client overhead).
+    Hasil di-cache in-memory selama 5 menit per server guna menjaga latensi polling 0 ms.
+    """
+    if not disks:
+        return disks
+    now_ts = time.time()
+    cached = _storage_runway_cache.get(sid)
+    runway_map = None
+    if cached and (now_ts - cached[0] < 300):
+        runway_map = cached[1]
+    else:
+        try:
+            cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=24)
+            snap_old = (
+                db.query(SystemSnapshot.timestamp, SystemSnapshot.disks)
+                .filter(
+                    SystemSnapshot.server_id == sid,
+                    SystemSnapshot.timestamp >= cutoff,
+                    SystemSnapshot.disks.isnot(None),
+                )
+                .order_by(SystemSnapshot.timestamp.asc())
+                .first()
+            )
+            snap_latest = (
+                db.query(SystemSnapshot.timestamp)
+                .filter(
+                    SystemSnapshot.server_id == sid,
+                    SystemSnapshot.disks.isnot(None),
+                )
+                .order_by(SystemSnapshot.timestamp.desc())
+                .first()
+            )
+            if snap_old and snap_latest:
+                dt_hours = (snap_latest.timestamp - snap_old.timestamp).total_seconds() / 3600.0
+                if dt_hours >= 0.5:
+                    old_disks_list = json.loads(snap_old.disks) if isinstance(snap_old.disks, str) else snap_old.disks
+                    old_map = {d.get("mount"): d for d in (old_disks_list or []) if isinstance(d, dict)}
+                    runway_map = {}
+                    for d in disks:
+                        if not isinstance(d, dict):
+                            continue
+                        mount = d.get("mount")
+                        old_d = old_map.get(mount)
+                        if not old_d:
+                            continue
+                        cur_used = d.get("used", 0) or 0
+                        old_used = old_d.get("used", 0) or 0
+                        cur_tot = d.get("total", 0) or 0
+                        cur_avail = max(0, cur_tot - cur_used)
+                        growth = cur_used - old_used
+                        rate = int((growth / dt_hours) * 24.0)
+
+                        # Pertumbuhan di bawah 5 MB per hari dianggap stabil (noise logging normal)
+                        if abs(rate) < 5 * 1024 * 1024:
+                            status = "stable"
+                            text = "Stabil (0 B/hari)"
+                            days = None
+                            days_txt = None
+                        elif rate <= -5 * 1024 * 1024:
+                            status = "shrinking"
+                            rate_abs = abs(rate)
+                            text = f"Berkurang ({_format_bytes_compact(rate_abs)}/hari)"
+                            days = None
+                            days_txt = None
+                        else:
+                            days = cur_avail / rate if rate > 0 else 9999
+                            days_int = int(days)
+                            if days_int <= 0:
+                                days_txt = "< 1 Hari"
+                                status = "danger"
+                            elif days_int < 7:
+                                days_txt = f"~{days_int} Hari"
+                                status = "danger"
+                            elif days_int <= 30:
+                                days_txt = f"~{days_int} Hari"
+                                status = "warning"
+                            elif days_int <= 90:
+                                days_txt = f"~{days_int} Hari"
+                                status = "normal"
+                            else:
+                                days_txt = "> 90 Hari"
+                                status = "normal"
+                            text = f"+{_format_bytes_compact(rate)}/hari · Est. {days_txt}"
+
+                        runway_map[mount] = {
+                            "status": status,
+                            "rate_bytes_day": rate,
+                            "days": round(days, 1) if days is not None else None,
+                            "days_text": days_txt,
+                            "text": text,
+                        }
+                    _storage_runway_cache[sid] = (now_ts, runway_map)
+        except Exception as e:
+            logger.debug("Gagal menghitung storage runway server %s: %s", sid, e)
+
+    if runway_map:
+        for d in disks:
+            if isinstance(d, dict):
+                mount = d.get("mount")
+                if mount in runway_map:
+                    d["runway"] = runway_map[mount]
+
+    return disks
+
+
 @app.get("/api/servers/{sid}/system")
 def api_server_system(
     sid: int,
@@ -12063,6 +12189,8 @@ def api_server_system(
                 target_n["ip_addrs"] = [server.ip_address]
 
     hw_specs = _get_hardware_specs_dict(server, extra, latest)
+    disks_raw = parse_list(latest.disks) if latest else []
+    disks_enriched = _get_storage_runway_for_server(db, sid, disks_raw)
 
     return {
         "server_id": sid,
@@ -12079,7 +12207,7 @@ def api_server_system(
             "swap_used": latest.swap_used if latest else None,
             "procs": latest.procs if latest else None,
             "uptime": latest.uptime_secs if latest else None,
-            "disks": parse_list(latest.disks) if latest else [],
+            "disks": disks_enriched,
             "net": net_list,
         },
         "series": [
