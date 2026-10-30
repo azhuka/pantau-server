@@ -9232,6 +9232,8 @@ def _agg_row(srv, row, counts=None) -> dict:
         "group_name": getattr(srv, "group_name", None) or None,
         "tier": getattr(srv, "tier", 2),
         "tags": getattr(srv, "tags", "") or "",
+        "is_offline": (srv.last_seen is None) or _server_stale(srv),
+        "ip_address": getattr(srv, "ip_address", "") or "",
     })
     if counts:
         d["count_24h"] = counts.get(row.key, 0)

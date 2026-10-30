@@ -311,6 +311,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.41
+
+- **Tipe Rilis:** Standarisasi Tata Letak, Desain Visual, dan Kebahasaan Baku Tabel Insiden Terbuka (*Layout Standardization, Visual Polish, and Language Consistency of Open Incidents Table*)
+- **Fokus Utama:** Menyempurnakan tata letak dan visual tabel kartu *Insiden Terbuka* serta bilah filter triase pada halaman Insiden (`problems.html`), mengeliminasi benturan lencana status terhadap kolom deskripsi kejadian, menghadirkan indikator status host, menstandardisasi durasi dengan badge pill monospasi NOC, serta membersihkan inkonsistensi bahasa:
+  1. **Arsitektur Tata Letak Tetap & Eliminasi Benturan Lencana (`problems.html`):**
+     - Mengimplementasikan `table-layout: fixed !important` dengan pendefinisian `<colgroup>` terukur (`115px`, `175px`, `165px`, `auto`, `120px`, `260px`, `95px`) untuk mencegah pergeseran kolom saat pembaruan data dinamis.
+     - Memperluas lebar kolom keparahan (`#probtable th.col-sev, #probtable td.col-sev`) menjadi `165px` (min-width `155px`) dengan perataan tengah dan flex wrap yang rapi, memberikan ruang leluasa bagi lencana subordinat (`DIABAIKAN` / `✓ DITANGANI`) sehingga tidak lagi bertumpuk atau meluap ke kolom `KEJADIAN`.
+  2. **Indikator Titik Status Host & Pelengkap Telemetri Armada:**
+     - Menghadirkan indikator titik status host (`●` hijau jika server aktif, merah jika server offline, atau ikon bola dunia SVG biru jika endpoint probing) berdampingan dengan nama host dan lencana grup (`CLONE`) pada kolom `SERVER` baik dalam SSR Jinja maupun poller JavaScript dinamis.
+     - Menyediakan atribut `is_offline` dan `ip_address` secara konsisten pada payload server data `_agg_row` di `server/main.py`.
+  3. **Standardisasi Tipografi Monospasi & Badge Pill Durasi NOC:**
+     - Memformat durasi kejadian insiden ke dalam chip badge pill monospasi NOC (`background: rgba(148, 163, 184, 0.08); border: 1px solid rgba(148, 163, 184, 0.18)`), serta mengamankan fungsi `tickAllDurations()` pada `server/templates/base.html` agar tidak menghapus elemen `<span>` badge pill saat detak pewaktu berjalan.
+  4. **Pembersihan Inkonsistensi Bahasa Asing ke Bahasa Indonesia Baku:**
+     - Menstandardisasi istilah bahasa Inggris pada bilah filter atas, filter pill triase, opsi dropdown keparahan, serta riwayat tabel insiden (`Critical` → `Kritis`, `Warning` → `Peringatan`) selaras dengan pedoman baku proyek NOC.
+  5. **Elevasi Header Kartu & Penyelarasan Status Real-Time:**
+     - Menambahkan kontainer ikon SVG status responsif (`#prob-active-icon`), subjudul informatif, serta lencana status dinamis (`#prob-active-badge` dan `#prob-ignored-badge`) pada header kartu *Insiden Terbuka*, disinkronkan langsung via `poll()` JavaScript.
+  6. **Penyempurnaan Kolom Panduan Solusi & Tindakan:**
+     - Memastikan teks panduan teknis tampil terstruktur dan rapi dengan tipografi monospasi pada perintah command line (`sudo systemctl ...`).
+     - Menata tombol tindakan operasional (`.action-btn-mini`) secara proporsional berukuran 24x24 piksel dengan pemusatan horizontal yang presisi.
+  7. **Otomasi Pembaruan SemVer v4.8.41:**
+     - Menaikkan versi sistem menjadi `v4.8.41` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.40
 
 - **Tipe Rilis:** Penyempurnaan Tata Letak, Desain Visual, dan Tipografi Tabel Insiden Terkini Dasbor (*Layout, Visual Design, and Typography Polish of Dashboard Recent Incidents Table*)
