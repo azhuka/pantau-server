@@ -311,6 +311,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.46
+
+- **Tipe Rilis:** Penyempurnaan Komponen Dropdown Multi-Pilih Server & Normalisasi Tata Letak Formulir NOC (*Enterprise Multi-Select Dropdown Component Refinement, Global Form Group Layout Normalization, and Clean Alignment*)
+- **Fokus Utama:** Menggantikan daftar centang mentah menjadi komponen *Multi-Select Dropdown* enterprise yang elegan dan ringkas pada dialog Jendela Pemeliharaan Terjadwal, menormalkan interferensi CSS global `.form-group` pada elemen radio dan checkbox, serta menata ulang tata letak antarmuka agar sejalan dengan prinsip kepadatan dan kerapian NOC:
+  1. **Komponen Multi-Select Dropdown Enterprise (`server/templates/maintenance.html`):**
+     - Mentransformasi pemilihan multi-server dari daftar statis panjang menjadi kotak pemicu (*trigger box*) setara form control dengan lencana chip dinamis dan panah indikator dropdown (*chevron* rotasi halus).
+     - Mengembangkan panel menu mengambang (*floating dropdown*) berlatar tema gelap NOC kontras (`#131d31`, garis tepi biru subtle, dan bayangan elevasi) yang tidak merusak tata letak dialog modal.
+     - Menyediakan bilah pencarian instan dalam dropdown serta tombol pintas massal (*Semua / Reset*).
+     - Menata baris server (`.multi-server-row`) dengan penjajaran kiri presisi: kotak centang berukuran proporsional (15x15 px), nama host tegas (`server-name`), IP monospasi (`server-ip mono`), dan lencana grup (`badge badge-muted`) tanpa pembungkusan baris (*overflow hidden / text-ellipsis*).
+     - Mengeliminasi bilah gulir horizontal (*overflow-x: hidden*) sehingga daftar server tergulung vertikal secara mulus.
+     - Mendukung penutupan dropdown otomatis saat klik di luar area (*click outside handler*) serta reset status bersih saat modal dibuka atau ditutup.
+  2. **Normalisasi CSS Global `.form-group` (`server/templates/base.html`):**
+     - Memperbaiki aturan selektor CSS `.form-group input` agar mengecualikan `input[type="checkbox"]` dan `input[type="radio"]` (`:not([type="checkbox"]):not([type="radio"])`).
+     - Menghentikan pemaksaan `width: 100%` dan *padding* tebal pada kotak centang dan tombol radio di seluruh sistem.
+     - Memperbaiki tata letak `.radio-label` pada modal sehingga tombol radio dan label deskripsi berjejer horizontal rapi tanpa anomali teks terdorong ke bawah atau terpusat di tengah.
+  3. **Otomasi Pembaruan SemVer v4.8.46:**
+     - Menaikkan versi sistem menjadi `v4.8.46` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.45
 
 - **Tipe Rilis:** Ekspansi Multi-Pilih Server Sasaran & Tombol Preset Waktu Cepat Jendela Pemeliharaan (*Multi-Select Server Target Expansion, Quick Time Presets, and Ad-Hoc Integration for Scheduled Maintenance Windows*)

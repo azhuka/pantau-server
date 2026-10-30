@@ -141,15 +141,29 @@
 }
 .radio-group {
   display: flex;
-  gap: 14px;
+  gap: 16px;
   flex-wrap: wrap;
-}
-.radio-label {
-  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  cursor: pointer;
+}
+.form-group .radio-label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--text) !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  margin-bottom: 0 !important;
+  cursor: pointer !important;
+}
+.radio-label input[type="radio"] {
+  margin: 0 !important;
+  width: 15px !important;
+  height: 15px !important;
+  accent-color: var(--blue);
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
 }
 .day-checkboxes {
   display: flex;
@@ -190,6 +204,57 @@
   background: var(--yellow, #eab308);
   animation: pulseWarn 1.8s infinite ease-in-out;
   box-shadow: 0 0 8px rgba(234, 179, 8, 0.6);
+}
+/* Multi-Select Dropdown Component */
+.multi-server-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 6px 10px !important;
+  gap: 10px !important;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.12s ease;
+  user-select: none;
+}
+.multi-server-row:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+.multi-server-row.is-selected {
+  background: rgba(56, 189, 248, 0.12) !important;
+}
+.multi-server-row input[type="checkbox"] {
+  width: 15px !important;
+  height: 15px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  accent-color: var(--blue);
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+}
+.multi-server-row .server-name {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  font-weight: 600 !important;
+  color: var(--text-bright) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-align: left !important;
+}
+.multi-server-row .server-ip {
+  flex-shrink: 0 !important;
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 11px !important;
+  color: var(--dim) !important;
+}
+.multi-server-row .server-group {
+  flex-shrink: 0 !important;
+  font-size: 9.5px !important;
+  padding: 2px 6px !important;
 }
 </style>
 {% endblock %}
@@ -359,30 +424,41 @@
           </select>
         </div>
 
-        <!-- Target Beberapa Server (Multi-Select Lintas Grup) -->
-        <div class="form-group" id="wrapTargetMultiServers" style="display:none">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <label style="margin:0">Pilih Server Sasaran (Centang Bebas Lintas Grup)</label>
-            <div style="font-size:11px;display:flex;gap:8px">
-              <a href="javascript:void(0)" onclick="toggleAllMultiServers(true)" style="color:var(--blue);text-decoration:none">Pilih Semua</a>
-              <span style="color:var(--dim)">|</span>
-              <a href="javascript:void(0)" onclick="toggleAllMultiServers(false)" style="color:var(--dim);text-decoration:none">Batal Semua</a>
+        <!-- Target Beberapa Server (Multi-Select Dropdown) -->
+        <div class="form-group" id="wrapTargetMultiServers" style="display:none;position:relative">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <label style="margin:0">Pilih Server Sasaran</label>
+            <span id="multiSelectCountLabel" style="font-size:11px;font-weight:normal;color:var(--dim)">0 server dipilih</span>
+          </div>
+          
+          <!-- Trigger Box (Dropdown Box) -->
+          <div id="multiSelectTrigger" class="form-control" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:6px 12px;min-height:36px;user-select:none" onclick="toggleMultiSelectDropdown(event)">
+            <div id="multiSelectDisplay" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;overflow:hidden;max-width:calc(100% - 24px);font-size:12px;color:var(--dim)">
+              Pilih satu atau beberapa server...
             </div>
+            <svg id="multiSelectChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--dim);transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
-          <div style="margin-bottom:6px">
-            <input type="text" id="multiServerSearch" class="form-control" style="font-size:11.5px;padding:4px 8px" placeholder="Saring server (ketik nama, ip, atau grup)..." oninput="filterMultiServerList()" />
-          </div>
-          <div id="multiServersList" style="max-height:165px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px;background:rgba(0,0,0,0.15);display:flex;flex-direction:column;gap:4px">
-            {% for s in servers %}
-            <label class="multi-server-item" style="display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:4px;cursor:pointer;background:rgba(255,255,255,0.02);font-size:12px;user-select:none" data-search="{{ s.hostname | lower }} {{ s.ip_address }} {{ (s.group_name or '') | lower }}">
-              <input type="checkbox" name="multi_server_ids" value="{{ s.id }}" style="cursor:pointer" />
-              <strong style="color:var(--text-bright)">{{ s.hostname }}</strong>
-              <span class="mono" style="color:var(--dim);font-size:11px">({{ s.ip_address }})</span>
-              {% if s.group_name %}
-              <span class="badge badge-muted" style="font-size:9px;margin-left:auto">{{ s.group_name }}</span>
-              {% endif %}
-            </label>
-            {% endfor %}
+
+          <!-- Floating Dropdown Panel -->
+          <div id="multiSelectMenu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#131d31;border:1px solid rgba(56,189,248,0.3);border-radius:6px;box-shadow:0 14px 32px rgba(0,0,0,0.7);z-index:1100;padding:8px" onclick="event.stopPropagation()">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <input type="text" id="multiServerSearch" class="form-control" style="font-size:11.5px;padding:4px 8px;flex:1" placeholder="Cari nama, IP, atau grup..." oninput="filterMultiServerList()" />
+              <button type="button" class="btn btn-ghost btn-sm" style="font-size:10.5px;padding:3px 8px;white-space:nowrap;color:var(--blue)" onclick="toggleAllMultiServers(true)">Semua</button>
+              <button type="button" class="btn btn-ghost btn-sm" style="font-size:10.5px;padding:3px 8px;white-space:nowrap;color:var(--dim)" onclick="toggleAllMultiServers(false)">Reset</button>
+            </div>
+            
+            <div id="multiServersList" style="max-height:180px;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;width:100%;box-sizing:border-box">
+              {% for s in servers %}
+              <div class="multi-server-row" onclick="toggleServerRow(this, event)" data-search="{{ s.hostname | lower }} {{ s.ip_address }} {{ (s.group_name or '') | lower }}" data-name="{{ s.hostname }}">
+                <input type="checkbox" name="multi_server_ids" value="{{ s.id }}" onchange="updateMultiSelectDisplay()" />
+                <span class="server-name">{{ s.hostname }}</span>
+                <span class="server-ip mono">{{ s.ip_address }}</span>
+                {% if s.group_name %}
+                <span class="badge badge-muted server-group">{{ s.group_name }}</span>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
           </div>
         </div>
 
@@ -498,24 +574,100 @@ function onScopeTypeChange() {
   document.getElementById('wrapTargetServer').style.display = (val === 'server') ? 'block' : 'none';
   document.getElementById('wrapTargetMultiServers').style.display = (val === 'servers') ? 'block' : 'none';
   document.getElementById('wrapTargetGroup').style.display = (val === 'group') ? 'block' : 'none';
+  closeMultiSelectDropdown();
+}
+
+function toggleMultiSelectDropdown(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('multiSelectMenu');
+  const chev = document.getElementById('multiSelectChevron');
+  const isHidden = (menu.style.display === 'none' || !menu.style.display);
+  menu.style.display = isHidden ? 'block' : 'none';
+  if (chev) chev.style.transform = isHidden ? 'rotate(180deg)' : 'none';
+  if (isHidden) {
+    const sInput = document.getElementById('multiServerSearch');
+    if (sInput) {
+      setTimeout(() => sInput.focus(), 50);
+    }
+  }
+}
+
+function closeMultiSelectDropdown() {
+  const menu = document.getElementById('multiSelectMenu');
+  const chev = document.getElementById('multiSelectChevron');
+  if (menu) menu.style.display = 'none';
+  if (chev) chev.style.transform = 'none';
+}
+
+function toggleServerRow(rowEl, e) {
+  if (e && e.target && e.target.tagName === 'INPUT') return;
+  const cb = rowEl.querySelector('input[name="multi_server_ids"]');
+  if (cb) {
+    cb.checked = !cb.checked;
+    updateMultiSelectDisplay();
+  }
+}
+
+function updateMultiSelectDisplay() {
+  const cbs = Array.from(document.querySelectorAll('input[name="multi_server_ids"]:checked'));
+  const count = cbs.length;
+  const countLbl = document.getElementById('multiSelectCountLabel');
+  if (countLbl) countLbl.textContent = `${count} server dipilih`;
+
+  document.querySelectorAll('.multi-server-row').forEach(row => {
+    const cb = row.querySelector('input[name="multi_server_ids"]');
+    if (cb && cb.checked) {
+      row.classList.add('is-selected');
+    } else {
+      row.classList.remove('is-selected');
+    }
+  });
+
+  const disp = document.getElementById('multiSelectDisplay');
+  if (!disp) return;
+
+  if (count === 0) {
+    disp.innerHTML = '<span style="color:var(--dim)">Pilih satu atau beberapa server...</span>';
+    return;
+  }
+
+  const names = cbs.map(cb => {
+    const row = cb.closest('.multi-server-row');
+    return row ? row.dataset.name : `Server #${cb.value}`;
+  });
+
+  if (count <= 3) {
+    disp.innerHTML = names.map(n => `<span class="badge badge-info mono" style="font-size:10.5px;padding:2px 7px;text-transform:none;letter-spacing:normal">${escapeHtml(n)}</span>`).join(' ');
+  } else {
+    disp.innerHTML = names.slice(0, 2).map(n => `<span class="badge badge-info mono" style="font-size:10.5px;padding:2px 7px;text-transform:none;letter-spacing:normal">${escapeHtml(n)}</span>`).join(' ') +
+      ` <span class="badge badge-muted mono" style="font-size:10.5px;padding:2px 7px;text-transform:none;letter-spacing:normal">+${count - 2} lainnya</span>`;
+  }
 }
 
 function toggleAllMultiServers(check) {
-  document.querySelectorAll('input[name="multi_server_ids"]').forEach(cb => {
-    const item = cb.closest('.multi-server-item');
-    if (!item || item.style.display !== 'none') {
-      cb.checked = check;
+  document.querySelectorAll('.multi-server-row').forEach(row => {
+    if (row.style.display !== 'none') {
+      const cb = row.querySelector('input[name="multi_server_ids"]');
+      if (cb) cb.checked = check;
     }
   });
+  updateMultiSelectDisplay();
 }
 
 function filterMultiServerList() {
   const q = (document.getElementById('multiServerSearch')?.value || '').toLowerCase().trim();
-  document.querySelectorAll('.multi-server-item').forEach(item => {
-    const text = (item.dataset.search || '').toLowerCase();
-    item.style.display = (!q || text.includes(q)) ? 'flex' : 'none';
+  document.querySelectorAll('.multi-server-row').forEach(row => {
+    const text = (row.dataset.search || '').toLowerCase();
+    row.style.display = (!q || text.includes(q)) ? 'flex' : 'none';
   });
 }
+
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('wrapTargetMultiServers');
+  if (wrap && !wrap.contains(e.target)) {
+    closeMultiSelectDropdown();
+  }
+});
 
 function applyTimePreset(val) {
   const now = new Date();
@@ -561,6 +713,7 @@ function openAddModal() {
   document.querySelector('input[name="scope_type"][value="server"]').checked = true;
   document.querySelector('input[name="schedule_type"][value="once"]').checked = true;
   document.querySelectorAll('input[name="multi_server_ids"]').forEach(cb => cb.checked = false);
+  updateMultiSelectDisplay();
   const searchInput = document.getElementById('multiServerSearch');
   if (searchInput) {
     searchInput.value = '';
@@ -573,6 +726,7 @@ function openAddModal() {
 }
 
 function closeModal() {
+  closeMultiSelectDropdown();
   document.getElementById('maintenanceModalBackdrop').style.display = 'none';
 }
 
