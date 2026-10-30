@@ -311,6 +311,32 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.49
+
+- **Tipe Rilis:** Pengujian Menyeluruh Alur Kerja Operasional, Penguatan Ketahanan Endpoint Probing, dan Penyelarasan Modal Dismissal (*Comprehensive Operational Workflows Audit, Probing Endpoint Resilience Hardening, and Universal Modal Dismissal Alignment*)
+- **Fokus Utama:** Melaksanakan rangkaian audit integrasi operasional berskala penuh (48 uji skenario: 40 alur backend dan 8 alur browser visual headless via Chrome DevTools Protocol) yang memverifikasi seluruh spektrum alur kerja dari yang paling sederhana hingga yang paling berat, memperkuat ketahanan parsing tipe data tier pada modul probe kustom untuk mencegah error HTTP 500, serta memperluas integrasi modal dismiss pada pengendali modal terpusat `dismissActiveModal`:
+  1. **Audit Menyeluruh Alur Kerja Operasional Nyata (Master QA Integration Audit):**
+     - Menguji 40 skenario operasional mendalam: autentikasi kredensial login, isolasi sesi operator, penolakan mutasi tanpa token atau dengan pemalsuan CSRF token HMAC, pembacaan ringkasan telemetri, metrik kinerja, dan kalkulasi Storage Runway analitis 24 jam.
+     - Menguji siklus hidup jendela pemeliharaan terjadwal server tunggal dan multi-server (pembuatan, transisi status aktif/selesai, pembatalan, hingga pembersihan dari database).
+     - Menguji siklus triage insiden lengkap: penanganan darurat (Acknowledge), pengabaian sementara 1 jam dengan batas waktu kedaluwarsa presisi, pengabaian permanen tanpa alarm, pembatalan pengabaian (Re-arm), dan penyelesaian manual (Resolve).
+     - Menguji siklus perintah agen: pendaftaran antrean (pending), polling agen via header API key, penerimaan laporan hasil eksekusi agen, dan pembaruan status ke 'success' di database.
+     - Menguji proteksi Proxmox HA pada penolakan eksekusi perintah Power OFF (HTTP 400).
+     - Menguji otentikasi bertingkat (*step-up auth*) pada File Manager dan Web Terminal (penolakan password salah HTTP 401, pembukaan kunci dengan masa sewa, dan penguncian manual).
+     - Menguji ketahanan konkurensi koneksi basis data dengan 50 transaksi paralel tanpa SQLite lock atau connection pool starvation.
+     - Menguji pencatatan mutasi sistem secara akurat pada tabel jejak audit (`audit_logs`).
+  2. **Audit Antarmuka Visual Browser Nyata (Headless Chrome via CDP):**
+     - Menguji interaksi dialog modal pemeliharaan terjadwal: pembukaan via `openAddModal()`, penutupan via tombol silang (X), penutupan via klik area latar belakang (*backdrop click*), dan penutupan via tombol keyboard `Escape`.
+     - Menguji komponen *Multi-Select Dropdown* multi-server: pembukaan pemicu, pemilihan checkbox server sasaran, pembaruan otomatis lencana hitung counter, dan penutupan otomatis saat mengeklik area luar.
+     - Menguji modal ambang batas masalah (`#threshold-modal`) dan modal pemeliharaan internal server (`#maint-modal`) dengan penutupan Escape.
+     - Menguji perenderan visual elemen tren Storage Runway pada DOM partisi penyimpanan.
+  3. **Penguatan Ketahanan Mesin Probing (`server/main.py`):**
+     - Memperbaiki parsing nilai `tier` pada endpoint `POST /api/probes` dan `PUT /api/probes/{pid}` agar kebal terhadap masukan string alfanumerik (seperti `"tier2"`) sehingga tidak memicu unhandled exception `ValueError` (HTTP 500).
+  4. **Penyelarasan Registrasi Modal Universal (`server/templates/base.html` & `file_manager.html`):**
+     - Menambahkan modal tema (`#theme-customizer-modal`), modal edit akun pengguna (`#editMyAccountModal`), modal 2FA (`#setupMy2faModal`), serta seluruh modal File Manager (`fm-editor-modal`, `fm-rename-modal`, `fm-upload-modal`, `fm-chmod-modal`, `fm-delete-modal`, `fm-prompt-modal`, `fm-bulk-delete-modal`, `fm-bulk-chmod-modal`) ke dalam daftar `modalClosers` pengendali terpusat `dismissActiveModal`.
+     - Memperbaiki penanganan klik backdrop dan tombol Escape pada `file_manager.html` agar memanggil fungsi penutup spesifik untuk membersihkan state formulir dan target variabel.
+  5. **Otomasi Pembaruan SemVer v4.8.49:**
+     - Menaikkan versi sistem menjadi `v4.8.49` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.48
 
 - **Tipe Rilis:** Penguatan Penutupan Modal Universal, Integrasi Tombol Escape, dan Audit Kualitas Alur Kerja (*Universal Modal Dismissal Enhancement, Escape Key & Backdrop Dismissal Integration, and Comprehensive Workflow QA Audit*)

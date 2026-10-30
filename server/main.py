@@ -6518,7 +6518,13 @@ async def api_probe_create(
 
     latency_threshold = int(body.get("latency_threshold_ms", 2000) or 2000)
     consec_threshold = int(body.get("consecutive_threshold", 2) or 2)
-    tier_raw = int(body.get("tier", 2) or 2)
+    tier_input = body.get("tier", 2)
+    if isinstance(tier_input, str):
+        tier_input = "".join(c for c in tier_input if c.isdigit())
+    try:
+        tier_raw = int(tier_input or 2)
+    except (ValueError, TypeError):
+        tier_raw = 2
     tier_val = 1 if tier_raw == 1 else (3 if tier_raw == 3 else 2)
 
     new_probe = ProbeTarget(
@@ -6779,7 +6785,13 @@ async def api_probe_update(
     probe.latency_threshold_ms = int(body.get("latency_threshold_ms", probe.latency_threshold_ms or 2000) or 2000)
     probe.consecutive_threshold = int(body.get("consecutive_threshold", probe.consecutive_threshold or 2) or 2)
     if "tier" in body:
-        tier_raw = int(body.get("tier", getattr(probe, "tier", 2) or 2) or 2)
+        tier_input = body.get("tier", getattr(probe, "tier", 2) or 2)
+        if isinstance(tier_input, str):
+            tier_input = "".join(c for c in tier_input if c.isdigit())
+        try:
+            tier_raw = int(tier_input or 2)
+        except (ValueError, TypeError):
+            tier_raw = 2
         probe.tier = 1 if tier_raw == 1 else (3 if tier_raw == 3 else 2)
 
     db.commit()

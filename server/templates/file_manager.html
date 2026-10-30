@@ -2009,20 +2009,21 @@ document.addEventListener('keydown', (e) => {
 
   // Escape key: tutup modal atau batalkan seleksi / clipboard
   if (e.key === 'Escape') {
-    const openModals = document.querySelectorAll('.fm-modal-backdrop');
-    let anyOpen = false;
-    openModals.forEach(m => {
-      if (m.id === 'fm-page-unlock-modal' && (!fmIsUnlocked || fmLeaseSecondsLeft <= 0)) {
+    const openModals = Array.from(document.querySelectorAll('.fm-modal-backdrop')).filter(m => m.style.display === 'flex' || m.style.display === 'block');
+    if (openModals.length > 0) {
+      for (const m of openModals) {
+        if (m.id === 'fm-page-unlock-modal' && (!fmIsUnlocked || fmLeaseSecondsLeft <= 0)) continue;
+        if (m.id === 'fm-editor-modal') { fmCloseEditor(); return; }
+        if (m.id === 'fm-rename-modal') { fmCloseRename(); return; }
+        if (m.id === 'fm-upload-modal') { fmCloseUpload(); return; }
+        if (m.id === 'fm-chmod-modal') { fmCloseChmod(); return; }
+        if (m.id === 'fm-delete-modal') { fmCloseDelete(); return; }
+        if (m.id === 'fm-prompt-modal') { fmClosePrompt(); return; }
+        if (m.id === 'fm-bulk-delete-modal') { fmCloseBulkDelete(); return; }
+        if (m.id === 'fm-bulk-chmod-modal') { fmCloseBulkChmod(); return; }
+        m.style.display = 'none';
         return;
       }
-      if (m.style.display === 'flex') {
-        m.style.display = 'none';
-        anyOpen = true;
-      }
-    });
-    if (anyOpen) {
-      if (fmEditingPath) fmCloseEditor();
-      return;
     }
     if (fmSelected.size > 0) {
       fmClearSelection();
@@ -2079,8 +2080,15 @@ document.addEventListener('click', (e) => {
     if (e.target.id === 'fm-page-unlock-modal' && (!fmIsUnlocked || fmLeaseSecondsLeft <= 0)) {
       return;
     }
+    if (e.target.id === 'fm-editor-modal') { fmCloseEditor(); return; }
+    if (e.target.id === 'fm-rename-modal') { fmCloseRename(); return; }
+    if (e.target.id === 'fm-upload-modal') { fmCloseUpload(); return; }
+    if (e.target.id === 'fm-chmod-modal') { fmCloseChmod(); return; }
+    if (e.target.id === 'fm-delete-modal') { fmCloseDelete(); return; }
+    if (e.target.id === 'fm-prompt-modal') { fmClosePrompt(); return; }
+    if (e.target.id === 'fm-bulk-delete-modal') { fmCloseBulkDelete(); return; }
+    if (e.target.id === 'fm-bulk-chmod-modal') { fmCloseBulkChmod(); return; }
     e.target.style.display = 'none';
-    if (e.target.id === 'fm-editor-modal') fmCloseEditor();
   }
 });
 
