@@ -311,6 +311,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.48
+
+- **Tipe Rilis:** Penguatan Penutupan Modal Universal, Integrasi Tombol Escape, dan Audit Kualitas Alur Kerja (*Universal Modal Dismissal Enhancement, Escape Key & Backdrop Dismissal Integration, and Comprehensive Workflow QA Audit*)
+- **Fokus Utama:** Menyempurnakan interaktivitas seluruh modal dialog aplikasi dengan menyelaraskan pengendali penutupan universal (*Escape key, backdrop click, and close button*), serta menyelenggarakan pengujian alur kerja end-to-end terotomasi yang mencakup seluruh rute web, telemetri live, evaluasi pemeliharaan, dan audit log:
+  1. **Pengendali Penutupan Modal Universal (`server/templates/base.html` & `maintenance.html`):**
+     - Mendaftarkan modal jadwal pemeliharaan (`#maintenanceModalBackdrop`) ke dalam daftar `modalClosers` pada fungsi pengendali universal `dismissActiveModal`.
+     - Menambahkan *event listener* `keydown` tombol Escape (`e.key === 'Escape'`) pada antarmuka pemeliharaan.
+     - Menyematkan handler penutupan saat pengguna mengeklik area latar belakang modal (`onclick="if(event.target===this)closeModal()"`).
+  2. **Audit Kualitas Menyeluruh Seluruh Alur Kerja Sistem (QA Test Suite):**
+     - Melakukan pengujian terotomasi terhadap seluruh rute web utama (`/`, `/servers`, `/problems`, `/probing`, `/maintenance`, `/logs`, `/audit`, `/profile`, `/servers/1`) dengan status `200 OK`.
+     - Memverifikasi telemetri live, kalkulasi akurat Storage Runway, penekanan alarm multi-server pemeliharaan, serta pemulihan otomatis status pengawasan normal pasca pembatalan jadwal.
+     - Memverifikasi persistensi dan integritas pencatatan riwayat tindakan (*audit logs*).
+  3. **Otomasi Pembaruan SemVer v4.8.48:**
+     - Menaikkan versi sistem menjadi `v4.8.48` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.47
 
 - **Tipe Rilis:** Estimasi Laju Konsumsi Penyimpanan & Analisis Proyeksi Kapasitas (Storage Runway) Partisi Server (*Storage Runway, Linear Consumption Rate Analysis, and Clean Diagnostic Context*)

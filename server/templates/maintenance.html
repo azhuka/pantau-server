@@ -372,7 +372,7 @@
 </div>
 
 <!-- MODAL TAMBAH JENDELA PEMELIHARAAN -->
-<div class="modal-backdrop" id="maintenanceModalBackdrop">
+<div class="modal-backdrop" id="maintenanceModalBackdrop" onclick="if(event.target===this)closeModal()">
   <div class="modal-window">
     <div class="modal-header">
       <h3 style="margin:0;font-size:14px" id="modalTitle">Tambah Jendela Pemeliharaan Terjadwal</h3>
@@ -729,6 +729,12 @@ function closeModal() {
   closeMultiSelectDropdown();
   document.getElementById('maintenanceModalBackdrop').style.display = 'none';
 }
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeModal();
+  }
+});
 
 function setStatusFilter(st) {
   _curStatusFilter = st;
