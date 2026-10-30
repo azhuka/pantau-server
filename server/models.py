@@ -483,3 +483,44 @@ class SystemSetting(Base):
     key = Column(String(64), primary_key=True)
     value = Column(Text, nullable=False)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class MaintenanceWindow(Base):
+    """Jendela Pemeliharaan Terjadwal (Scheduled Maintenance Windows).
+
+    Digunakan untuk merencanakan periode pemeliharaan sistem terencana (one-time atau recurring),
+    secara otomatis menekan eskalasi alarm kritis, menyematkan lencana status pemeliharaan,
+    dan memulihkan pengawasan normal saat jendela berakhir.
+    """
+
+    __tablename__ = "maintenance_windows"
+
+    id = Column(INTEGER_UNSIGNED, primary_key=True, autoincrement=True)
+    title = Column(String(150), nullable=False)
+    description = Column(Text, nullable=True)
+    scope_type = Column(String(30), nullable=False, default="server")  # 'all', 'group', 'server'
+    server_id = Column(INTEGER_UNSIGNED, ForeignKey("servers.id", ondelete="CASCADE"), nullable=True, index=True)
+    server_group = Column(String(64), nullable=True, index=True)
+
+    schedule_type = Column(String(30), nullable=False, default="once")  # 'once', 'daily', 'weekly'
+    start_time = Column(DateTime, nullable=False, index=True)
+    end_time = Column(DateTime, nullable=False, index=True)
+
+    repeat_days = Column(String(50), nullable=True)      # 'mon,tue,wed,thu,fri,sat,sun'
+    repeat_time_start = Column(String(10), nullable=True) # 'HH:MM'
+    repeat_time_end = Column(String(10), nullable=True)   # 'HH:MM'
+
+    is_active = Column(SmallInteger, nullable=False, default=1, index=True)
+    status = Column(String(30), nullable=False, default="scheduled")  # 'scheduled', 'active', 'completed', 'cancelled'
+
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = Column(String(64), nullable=True)
+
+    server = relationship("Server")
+
+    __table_args__ = (
+        Index("idx_mw_scope", "scope_type", "server_id", "server_group"),
+        Index("idx_mw_time", "is_active", "start_time", "end_time"),
+        Index("idx_mw_status", "status"),
+    )

@@ -41,7 +41,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from config import settings
 import security_auth
 from models import (
-    AppSession, AuditLog, Base, Command, LogRequest, LoginAttempt, Metric,
+    AppSession, AuditLog, Base, Command, LogRequest, LoginAttempt, MaintenanceWindow, Metric,
     ProbeLog, ProbeTarget, Server, ServerExtras, ServerProblem, Service,
     SysSnapshotHour, SystemSetting, SystemSnapshot, User,
 )
@@ -790,6 +790,144 @@ def get_existing_groups_and_tags(db: Session) -> tuple[list[str], list[str]]:
     return sorted(list(groups)), sorted(list(tags))
 
 
+def migrate_maintenance_windows_system():
+    """Migrasi tabel maintenance_windows dan index terkait untuk sistem jendela pemeliharaan terjadwal."""
+    from sqlalchemy import inspect
+    Base.metadata.create_all(bind=engine, tables=[MaintenanceWindow.__table__])
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    if "maintenance_windows" in existing_tables:
+        logger.info("[startup] Tabel maintenance_windows siap")
+
+
+_ACTIVE_MAINTENANCE_CACHE: dict = {"count": 0, "titles": [], "updated_at": 0.0}
+
+
+def get_active_maintenance_info() -> tuple[int, list[str]]:
+    """Kembalikan tuple (count, titles) dari jendela pemeliharaan yang sedang aktif saat ini."""
+    now_ts = time.time()
+    if now_ts - _ACTIVE_MAINTENANCE_CACHE.get("updated_at", 0.0) < 15.0 and _ACTIVE_MAINTENANCE_CACHE.get("titles") is not None:
+        return _ACTIVE_MAINTENANCE_CACHE["count"], _ACTIVE_MAINTENANCE_CACHE["titles"]
+
+    try:
+        with SessionLocal() as db:
+            active_windows = db.query(MaintenanceWindow).filter(
+                MaintenanceWindow.is_active == 1,
+                MaintenanceWindow.status == "active",
+            ).all()
+            count = len(active_windows)
+            titles = [w.title for w in active_windows]
+            _ACTIVE_MAINTENANCE_CACHE["count"] = count
+            _ACTIVE_MAINTENANCE_CACHE["titles"] = titles
+            _ACTIVE_MAINTENANCE_CACHE["updated_at"] = now_ts
+            return count, titles
+    except Exception:
+        return _ACTIVE_MAINTENANCE_CACHE.get("count", 0), _ACTIVE_MAINTENANCE_CACHE.get("titles", [])
+
+
+def _evaluate_maintenance_windows(db: Session, now: Optional[datetime] = None) -> None:
+    """Evaluasi dan terapkan status jendela pemeliharaan terjadwal ke server klien.
+
+    1. Memperbarui status jendela pemeliharaan ('scheduled' -> 'active' -> 'completed').
+    2. Menandai server yang tercakup ke dalam mode pemeliharaan (is_maintenance=1,
+       maintenance_reason='[Jadwal: ...]'), sehingga inspeksi alarm otomatis menekan sirene merah.
+    3. Mengembalikan server ke status pemantauan normal (is_maintenance=0) begitu jendela berakhir.
+    """
+    now = now or datetime.utcnow()
+    weekday_str = now.strftime("%a").lower()[:3]
+    curr_hm = now.strftime("%H:%M")
+
+    windows = db.query(MaintenanceWindow).filter(
+        MaintenanceWindow.is_active == 1,
+        MaintenanceWindow.status.in_(["scheduled", "active"]),
+    ).all()
+
+    active_windows: list[MaintenanceWindow] = []
+
+    for w in windows:
+        if w.schedule_type == "once":
+            if now < w.start_time:
+                w.status = "scheduled"
+            elif w.start_time <= now < w.end_time:
+                w.status = "active"
+                active_windows.append(w)
+            else:
+                w.status = "completed"
+        elif w.schedule_type in ("daily", "weekly"):
+            if now < w.start_time:
+                w.status = "scheduled"
+            elif w.end_time and now >= w.end_time:
+                w.status = "completed"
+            else:
+                day_match = True
+                if w.schedule_type == "weekly" and w.repeat_days:
+                    allowed_days = [d.strip().lower() for d in w.repeat_days.split(",") if d.strip()]
+                    if weekday_str not in allowed_days:
+                        day_match = False
+
+                if not day_match:
+                    w.status = "scheduled"
+                else:
+                    if w.repeat_time_start and w.repeat_time_end:
+                        if w.repeat_time_start <= w.repeat_time_end:
+                            in_slot = (w.repeat_time_start <= curr_hm < w.repeat_time_end)
+                        else:
+                            in_slot = (curr_hm >= w.repeat_time_start or curr_hm < w.repeat_time_end)
+                        if in_slot:
+                            w.status = "active"
+                            active_windows.append(w)
+                        else:
+                            w.status = "scheduled"
+                    else:
+                        w.status = "active"
+                        active_windows.append(w)
+
+    all_servers = db.query(Server).all()
+    servers_by_id = {s.id: s for s in all_servers}
+    covered_servers: dict[int, MaintenanceWindow] = {}
+
+    for aw in active_windows:
+        if aw.scope_type == "all":
+            for s in all_servers:
+                if s.id not in covered_servers:
+                    covered_servers[s.id] = aw
+        elif aw.scope_type == "group" and aw.server_group:
+            for s in all_servers:
+                if (s.group_name or "").strip().lower() == aw.server_group.strip().lower():
+                    if s.id not in covered_servers:
+                        covered_servers[s.id] = aw
+        elif aw.scope_type == "server" and aw.server_id:
+            if aw.server_id in servers_by_id and aw.server_id not in covered_servers:
+                covered_servers[aw.server_id] = aw
+
+    for sid, aw in covered_servers.items():
+        s = servers_by_id.get(sid)
+        if not s:
+            continue
+        tag_reason = f"[Jadwal: {aw.title}]"
+        if not getattr(s, "is_maintenance", 0) or (s.maintenance_reason and s.maintenance_reason.startswith("[Jadwal:")):
+            s.is_maintenance = 1
+            s.maintenance_reason = tag_reason
+            s.maintenance_until = aw.end_time if aw.schedule_type == "once" else None
+
+    for s in all_servers:
+        if s.id not in covered_servers:
+            if getattr(s, "is_maintenance", 0) and s.maintenance_reason and s.maintenance_reason.startswith("[Jadwal:"):
+                s.is_maintenance = 0
+                s.maintenance_reason = None
+                s.maintenance_until = None
+
+    try:
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        logger.warning("[maintenance] Gagal commit evaluasi jendela pemeliharaan: %s", exc)
+
+    _ACTIVE_MAINTENANCE_CACHE["count"] = len(active_windows)
+    _ACTIVE_MAINTENANCE_CACHE["titles"] = [w.title for w in active_windows]
+    _ACTIVE_MAINTENANCE_CACHE["updated_at"] = time.time()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _SECRET_KEY, _probe_scheduler
@@ -802,6 +940,7 @@ async def lifespan(app: FastAPI):
     migrate_log_request_input()
     migrate_api_keys()
     migrate_probing_system()
+    migrate_maintenance_windows_system()
     try:
         with SessionLocal() as sess:
             _prune_expired_sessions(sess)
@@ -959,6 +1098,9 @@ def tpl(request: Request, name: str, context: dict, status_code: int = 200) -> H
     ctx.setdefault("csrf_token", _csrf_token(sid) if sid else "")
     ctx.setdefault("app_version", settings.APP_VERSION)
     ctx.setdefault("brand", get_branding_settings())
+    active_m_count, active_m_titles = get_active_maintenance_info()
+    ctx.setdefault("active_maintenance_count", active_m_count)
+    ctx.setdefault("active_maintenance_titles", active_m_titles)
     resp = templates.TemplateResponse(request, name, ctx, status_code=status_code)
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     resp.headers["Pragma"] = "no-cache"
@@ -2502,6 +2644,10 @@ def _get_server_actions(db, sid: int, limit: int = 50) -> list[dict]:
             "problem_resolve": "Selesaikan Masalah",
             "service_recovered": "Layanan Pulih",
             "maintenance_mode": "Mode Pemeliharaan",
+            "maintenance_create": "Buat Jadwal Pemeliharaan",
+            "maintenance_cancel": "Batalkan Jadwal Pemeliharaan",
+            "maintenance_complete": "Selesaikan Jadwal Pemeliharaan",
+            "maintenance_delete": "Hapus Jadwal Pemeliharaan",
             "service_add": "Tambah Layanan",
             "service_delete": "Hapus Layanan",
             "host_reboot": "Reboot OS",
@@ -6828,6 +6974,334 @@ def api_probe_history(
 
 
 # ---------------------------------------------------------------------------
+# JENDELA PEMELIHARAAN TERJADWAL (SCHEDULED MAINTENANCE WINDOWS)
+# ---------------------------------------------------------------------------
+
+def _parse_iso_datetime(dt_str: Optional[str]) -> Optional[datetime]:
+    if not dt_str:
+        return None
+    try:
+        s = dt_str.replace("Z", "").split("+")[0].strip()
+        if "T" in s:
+            parts = s.split("T")
+            d_part = parts[0]
+            t_part = parts[1]
+            if len(t_part) == 5:
+                t_part += ":00"
+            return datetime.fromisoformat(f"{d_part}T{t_part}")
+        return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+    except Exception:
+        try:
+            return datetime.fromisoformat(dt_str)
+        except Exception:
+            return None
+
+
+@app.get("/maintenance", response_class=HTMLResponse)
+def maintenance_page(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+
+    servers_list = db.query(Server).order_by(Server.hostname).all()
+    servers_data = [
+        {"id": s.id, "hostname": s.hostname, "ip_address": s.ip_address, "group_name": s.group_name}
+        for s in servers_list
+    ]
+    groups, _ = get_existing_groups_and_tags(db)
+    can_manage = user.is_master_admin() or user.has_perm("can_manage_servers")
+
+    return tpl(request, "maintenance.html", {
+        "user": user,
+        "servers": servers_data,
+        "groups": sorted(groups),
+        "server_groups": sorted(groups),
+        "can_manage": can_manage,
+    })
+
+
+@app.get("/api/maintenance-windows")
+def api_maintenance_windows_list(
+    request: Request,
+    status: Optional[str] = None,
+    scope_type: Optional[str] = None,
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Harap login terlebih dahulu")
+
+    _evaluate_maintenance_windows(db)
+
+    query = db.query(MaintenanceWindow).order_by(MaintenanceWindow.id.desc())
+
+    if status and status != "all":
+        query = query.filter(MaintenanceWindow.status == status)
+
+    if scope_type and scope_type != "all":
+        query = query.filter(MaintenanceWindow.scope_type == scope_type)
+
+    all_windows = db.query(MaintenanceWindow).all()
+    active_count = sum(1 for w in all_windows if w.status == "active")
+    upcoming_count = sum(1 for w in all_windows if w.status == "scheduled")
+    completed_count = sum(1 for w in all_windows if w.status in ("completed", "cancelled"))
+
+    windows = query.all()
+    result = []
+    for w in windows:
+        result.append({
+            "id": w.id,
+            "title": w.title,
+            "description": w.description,
+            "scope_type": w.scope_type,
+            "server_id": w.server_id,
+            "server_hostname": w.server.hostname if w.server else None,
+            "server_group": w.server_group,
+            "schedule_type": w.schedule_type,
+            "start_time": w.start_time.isoformat() if w.start_time else None,
+            "end_time": w.end_time.isoformat() if w.end_time else None,
+            "repeat_days": w.repeat_days,
+            "repeat_time_start": w.repeat_time_start,
+            "repeat_time_end": w.repeat_time_end,
+            "is_active": w.is_active,
+            "status": w.status,
+            "created_by": w.created_by,
+            "created_at": w.created_at.isoformat() if w.created_at else None,
+        })
+
+    return {
+        "ok": True,
+        "windows": result,
+        "active_count": active_count,
+        "upcoming_count": upcoming_count,
+        "completed_count": completed_count,
+    }
+
+
+@app.post("/api/maintenance-windows")
+async def api_maintenance_windows_create(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Harap login terlebih dahulu")
+    if not (user.is_master_admin() or user.has_perm("can_manage_servers")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin kelola server diperlukan")
+
+    _verify_csrf_header(request)
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Format JSON tidak valid")
+
+    title = str(body.get("title", "") or "").strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Judul jadwal pemeliharaan wajib diisi")
+    if len(title) > 150:
+        raise HTTPException(status_code=400, detail="Judul jadwal maksimal 150 karakter")
+
+    description = str(body.get("description", "") or "").strip() or None
+    scope_type = str(body.get("scope_type", "server") or "").strip()
+    if scope_type not in ("all", "group", "server"):
+        raise HTTPException(status_code=400, detail="Tipe cakupan tidak valid")
+
+    server_id = None
+    server_group = None
+    if scope_type == "server":
+        try:
+            server_id = int(body.get("server_id"))
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Server target wajib dipilih")
+        srv = db.query(Server).filter(Server.id == server_id).first()
+        if not srv:
+            raise HTTPException(status_code=404, detail="Server target tidak ditemukan")
+    elif scope_type == "group":
+        server_group = str(body.get("server_group", "") or "").strip()
+        if not server_group:
+            raise HTTPException(status_code=400, detail="Grup target wajib dipilih")
+
+    schedule_type = str(body.get("schedule_type", "once") or "").strip()
+    if schedule_type not in ("once", "daily", "weekly"):
+        raise HTTPException(status_code=400, detail="Tipe jadwal tidak valid")
+
+    start_time = _parse_iso_datetime(body.get("start_time"))
+    end_time = _parse_iso_datetime(body.get("end_time"))
+
+    repeat_days = None
+    repeat_time_start = None
+    repeat_time_end = None
+
+    if schedule_type == "once":
+        if not start_time or not end_time:
+            raise HTTPException(status_code=400, detail="Waktu mulai dan selesai wajib diisi")
+        if end_time <= start_time:
+            raise HTTPException(status_code=400, detail="Waktu selesai harus lebih besar dari waktu mulai")
+    else:
+        repeat_time_start = str(body.get("repeat_time_start", "") or "").strip() or None
+        repeat_time_end = str(body.get("repeat_time_end", "") or "").strip() or None
+        if not repeat_time_start or not repeat_time_end:
+            raise HTTPException(status_code=400, detail="Jam mulai dan jam selesai pengulangan wajib diisi (HH:MM)")
+        if schedule_type == "weekly":
+            repeat_days = str(body.get("repeat_days", "") or "").strip() or None
+            if not repeat_days:
+                raise HTTPException(status_code=400, detail="Hari pengulangan mingguan wajib dipilih")
+        if not start_time:
+            start_time = datetime.utcnow()
+        if not end_time:
+            end_time = datetime.utcnow() + timedelta(days=3650)
+
+    now = datetime.utcnow()
+    initial_status = "scheduled"
+    if schedule_type == "once" and start_time <= now < end_time:
+        initial_status = "active"
+
+    mw = MaintenanceWindow(
+        title=title,
+        description=description,
+        scope_type=scope_type,
+        server_id=server_id,
+        server_group=server_group,
+        schedule_type=schedule_type,
+        start_time=start_time,
+        end_time=end_time,
+        repeat_days=repeat_days,
+        repeat_time_start=repeat_time_start,
+        repeat_time_end=repeat_time_end,
+        is_active=1,
+        status=initial_status,
+        created_by=user.username,
+    )
+    db.add(mw)
+    db.commit()
+    db.refresh(mw)
+
+    _audit(
+        db, user.username, "maintenance_create",
+        target=mw.title, result=f"Jendela pemeliharaan dibuat (ID #{mw.id}, scope: {scope_type})",
+        server_id=server_id
+    )
+
+    _evaluate_maintenance_windows(db)
+
+    return {
+        "ok": True,
+        "id": mw.id,
+        "message": "Jendela pemeliharaan berhasil dijadwalkan",
+    }
+
+
+@app.post("/api/maintenance-windows/{wid}/cancel")
+async def api_maintenance_windows_cancel(
+    wid: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Harap login terlebih dahulu")
+    if not (user.is_master_admin() or user.has_perm("can_manage_servers")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin kelola server diperlukan")
+
+    _verify_csrf_header(request)
+
+    mw = db.query(MaintenanceWindow).filter(MaintenanceWindow.id == wid).first()
+    if not mw:
+        raise HTTPException(status_code=404, detail="Jadwal pemeliharaan tidak ditemukan")
+
+    mw.status = "cancelled"
+    mw.is_active = 0
+    _audit(
+        db, user.username, "maintenance_cancel",
+        target=mw.title, result=f"Jadwal pemeliharaan #{wid} dibatalkan",
+        server_id=mw.server_id
+    )
+    db.commit()
+
+    _evaluate_maintenance_windows(db)
+
+    return {
+        "ok": True,
+        "message": "Jadwal pemeliharaan berhasil dibatalkan",
+    }
+
+
+@app.post("/api/maintenance-windows/{wid}/complete")
+async def api_maintenance_windows_complete(
+    wid: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Harap login terlebih dahulu")
+    if not (user.is_master_admin() or user.has_perm("can_manage_servers")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin kelola server diperlukan")
+
+    _verify_csrf_header(request)
+
+    mw = db.query(MaintenanceWindow).filter(MaintenanceWindow.id == wid).first()
+    if not mw:
+        raise HTTPException(status_code=404, detail="Jadwal pemeliharaan tidak ditemukan")
+
+    mw.status = "completed"
+    mw.is_active = 0
+    mw.end_time = datetime.utcnow()
+    _audit(
+        db, user.username, "maintenance_complete",
+        target=mw.title, result=f"Jadwal pemeliharaan #{wid} ditandai selesai lebih awal",
+        server_id=mw.server_id
+    )
+    db.commit()
+
+    _evaluate_maintenance_windows(db)
+
+    return {
+        "ok": True,
+        "message": "Jendela pemeliharaan selesai lebih awal, server dipulihkan",
+    }
+
+
+@app.delete("/api/maintenance-windows/{wid}")
+async def api_maintenance_windows_delete(
+    wid: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Harap login terlebih dahulu")
+    if not (user.is_master_admin() or user.has_perm("can_manage_servers")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin kelola server diperlukan")
+
+    _verify_csrf_header(request)
+
+    mw = db.query(MaintenanceWindow).filter(MaintenanceWindow.id == wid).first()
+    if not mw:
+        raise HTTPException(status_code=404, detail="Jadwal pemeliharaan tidak ditemukan")
+
+    title = mw.title
+    server_id = mw.server_id
+    db.delete(mw)
+    _audit(
+        db, user.username, "maintenance_delete",
+        target=title, result=f"Jadwal pemeliharaan #{wid} dihapus permanen",
+        server_id=server_id
+    )
+    db.commit()
+
+    _evaluate_maintenance_windows(db)
+
+    return {
+        "ok": True,
+        "message": "Jadwal pemeliharaan berhasil dihapus",
+    }
+
+
+
+# ---------------------------------------------------------------------------
 # METRICS
 # ---------------------------------------------------------------------------
 # Halaman Metrik tidak lagi terpisah: seluruh data metrik per-layanan sudah
@@ -9647,6 +10121,10 @@ AUDIT_ACTION_LABELS = {
     "problem_unignore": "Pantau Kembali Masalah",
     "problem_resolve": "Selesaikan Masalah",
     "maintenance_mode": "Mode Pemeliharaan",
+    "maintenance_create": "Buat Jadwal Pemeliharaan",
+    "maintenance_cancel": "Batalkan Jadwal Pemeliharaan",
+    "maintenance_complete": "Selesaikan Jadwal Pemeliharaan",
+    "maintenance_delete": "Hapus Jadwal Pemeliharaan",
     "terminal_shell_open": "Buka Terminal Root",
     "terminal_open": "Buka Terminal",
     "terminal_close": "Tutup Terminal",
@@ -10243,6 +10721,8 @@ def api_alerts(
     else:
         highest_severity = "ok"
 
+    active_m_count, active_m_titles = get_active_maintenance_info()
+
     return {
         "alerts": firing_danger_alerts,
         "all_alerts": all_unack_alerts,
@@ -10280,6 +10760,8 @@ def api_alerts(
         "host_average_counts": host_average_counts,
         "host_warning_counts": host_warning_counts,
         "highest_severity": highest_severity,
+        "active_maintenance_count": active_m_count,
+        "active_maintenance_titles": active_m_titles,
     }
 
 
@@ -13654,6 +14136,7 @@ def _problem_bg_loop() -> None:
         time.sleep(BG_PROBLEM_EVAL_SECS)
         try:
             with SessionLocal() as sess:
+                _evaluate_maintenance_windows(sess)
                 problems_aggregate(sess)
         except Exception as exc:  # noqa: BLE001 -- jangan matikan thread
             print(f"[bg-problems] error: {exc}", flush=True)

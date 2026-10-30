@@ -1007,7 +1007,7 @@ table .copyable-ip, td .copyable-ip{font-size:9.5px !important}
   body.sb-collapsed .nav-link .nav-icon{margin:0;width:20px;height:20px}
   body.sb-collapsed .nav-label{display:none !important}
   body.sb-collapsed .nav-section{display:none !important}
-  body.sb-collapsed #nav-incident-badge, body.sb-collapsed #nav-probe-badge{position:absolute;top:4px;right:6px;margin:0 !important;font-size:9px !important;padding:1px 4px !important;min-width:15px;height:15px;line-height:13px;border-radius:8px;text-align:center;box-shadow:0 0 6px rgba(239,68,68,0.6)}
+  body.sb-collapsed #nav-incident-badge, body.sb-collapsed #nav-probe-badge, body.sb-collapsed #nav-maintenance-badge{position:absolute;top:4px;right:6px;margin:0 !important;font-size:9px !important;padding:1px 4px !important;min-width:15px;height:15px;line-height:13px;border-radius:8px;text-align:center;box-shadow:0 0 6px rgba(239,68,68,0.6)}
   body.sb-collapsed .mob-logout{display:flex !important}
   body.sb-collapsed .sidebar-footer{display:none}
   .mob-header, .mob-drawer-backdrop, .mob-drawer-close{display:none !important}
@@ -1629,11 +1629,17 @@ body.show-alert-banner .main{padding-top:72px}
     <a href="/logs" class="nav-link {% if '/logs' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Log Sistem">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></span> <span class="nav-label" data-i18n="menu_logs">Log</span>
     </a>
-    {% if user and (user.is_master_admin() or user.has_perm('can_audit')) %}
+    {% if user and (user.is_master_admin() or user.has_perm('can_audit') or user.has_perm('can_manage_servers')) %}
     <div class="nav-section">Kelola</div>
+    <a href="/maintenance" class="nav-link {% if '/maintenance' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Jendela Pemeliharaan Terjadwal">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span> <span class="nav-label">Pemeliharaan</span>
+      <span id="nav-maintenance-badge" class="badge badge-warn" style="{% if not active_maintenance_count or active_maintenance_count == 0 %}display:none;{% endif %}margin-left:auto;font-size:10px;font-weight:700;padding:1px 5px;border-radius:8px">{{ active_maintenance_count or 0 }}</span>
+    </a>
+    {% if user.is_master_admin() or user.has_perm('can_audit') %}
     <a href="/audit" class="nav-link {% if '/audit' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Riwayat Tindakan">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span> <span class="nav-label">Riwayat Tindakan</span>
     </a>
+    {% endif %}
     {% endif %}
     {% if user and not user.is_viewer() %}
     <a href="/profile" class="nav-link {% if '/profile' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Akun Pengguna">
@@ -1649,7 +1655,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.43' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.44' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
       <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
       </button>
@@ -2746,6 +2752,18 @@ function renderAlerts(d){
       navBadge.style.color = '#fff';
     } else {
       navBadge.style.display = 'none';
+    }
+  }
+
+  // Perbarui indikator badge Pemeliharaan di menu navigasi sidebar
+  const maintBadge = document.getElementById('nav-maintenance-badge');
+  if (maintBadge) {
+    const maintCount = d.active_maintenance_count !== undefined ? d.active_maintenance_count : 0;
+    if (maintCount > 0) {
+      maintBadge.style.display = 'inline-flex';
+      maintBadge.textContent = maintCount;
+    } else {
+      maintBadge.style.display = 'none';
     }
   }
 

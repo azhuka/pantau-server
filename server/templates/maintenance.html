@@ -1,0 +1,776 @@
+{% extends "base.html" %}
+
+{% block title %}Jendela Pemeliharaan Terjadwal - Pantau Server{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Kontrol Header & Filter Halaman Pemeliharaan */
+.maint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.maint-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.maint-stat-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+}
+.maint-stat-val {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  font-family: var(--font-mono, monospace);
+}
+.maint-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.search-input-wrap {
+  position: relative;
+  min-width: 260px;
+}
+.search-input-wrap input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px 6px 32px;
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  transition: all 0.15s ease;
+}
+.search-input-wrap input:focus {
+  border-color: var(--blue);
+  background: rgba(255, 255, 255, 0.07);
+}
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--dim);
+  pointer-events: none;
+}
+/* Modal Styling */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 16px;
+}
+.modal-window {
+  background: #0f172a;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+}
+.modal-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.modal-footer {
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: rgba(0,0,0,0.15);
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.form-group label {
+  font-size: 11.5px;
+  color: var(--dim);
+  font-weight: 600;
+}
+.form-control {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  color-scheme: dark;
+}
+.form-control:focus {
+  border-color: var(--blue);
+}
+.radio-group {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.day-checkboxes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.day-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255,255,255,0.03);
+  user-select: none;
+  transition: all 0.15s ease;
+}
+.day-btn.is-selected {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+/* Pulse animation untuk maintenance aktif */
+@keyframes pulseWarn {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+.dot-pulse-warn {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--yellow, #eab308);
+  animation: pulseWarn 1.8s infinite ease-in-out;
+  box-shadow: 0 0 8px rgba(234, 179, 8, 0.6);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="maint-header">
+  <div>
+    <h2 style="margin:0;display:flex;align-items:center;gap:8px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      <span>Jendela Pemeliharaan Terjadwal</span>
+    </h2>
+    <div style="font-size:12px;color:var(--dim);margin-top:4px">
+      Rencanakan jadwal pemeliharaan terencana, tekan alarm darurat palsu selama masa pemeliharaan, dan pertahankan kedaulatan operasional NOC.
+    </div>
+  </div>
+  {% if user and (user.is_master_admin() or user.has_perm('can_manage_servers') or user.is_operator()) %}
+  <button type="button" class="btn btn-primary" onclick="openAddModal()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <span>Tambah Jadwal Pemeliharaan</span>
+  </button>
+  {% endif %}
+</div>
+
+<!-- 3 Stat Tiles Ringkasan Metrik -->
+<div class="maint-stats-grid">
+  <div class="maint-stat-card">
+    <div>
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Sedang Berjalan (Aktif)</div>
+      <div class="maint-stat-val" id="stat-active" style="color:var(--yellow)">0</div>
+      <div style="font-size:10.5px;color:var(--dim);margin-top:2px">Server dalam mode pemeliharaan</div>
+    </div>
+    <div style="background:rgba(234,179,8,0.12);padding:10px;border-radius:8px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    </div>
+  </div>
+
+  <div class="maint-stat-card">
+    <div>
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Jadwal Mendatang</div>
+      <div class="maint-stat-val" id="stat-scheduled" style="color:var(--blue)">0</div>
+      <div style="font-size:10.5px;color:var(--dim);margin-top:2px">Jadwal yang akan aktif otomatis</div>
+    </div>
+    <div style="background:rgba(56,189,248,0.12);padding:10px;border-radius:8px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+    </div>
+  </div>
+
+  <div class="maint-stat-card">
+    <div>
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.5px">Selesai / Riwayat</div>
+      <div class="maint-stat-val" id="stat-completed" style="color:var(--dim)">0</div>
+      <div style="font-size:10.5px;color:var(--dim);margin-top:2px">Riwayat jadwal pemeliharaan lampau</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:8px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--dim)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+    </div>
+  </div>
+</div>
+
+<!-- Controls Bar: Search & Status Filter -->
+<div class="maint-controls">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div class="search-input-wrap">
+      <span class="search-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      </span>
+      <input type="text" id="maintSearch" placeholder="Cari judul, server, atau deskripsi…" oninput="filterWindows()" />
+    </div>
+
+    <!-- Segmented Filter Status -->
+    <div class="segmented-control" id="statusFilterCtrl">
+      <button type="button" class="btn btn-sm is-on" data-status="all" onclick="setStatusFilter('all')">Semua</button>
+      <button type="button" class="btn btn-sm" data-status="active" onclick="setStatusFilter('active')">
+        <span class="dot-pulse-warn" style="width:6px;height:6px;margin-right:4px"></span>Aktif
+      </button>
+      <button type="button" class="btn btn-sm" data-status="scheduled" onclick="setStatusFilter('scheduled')">Mendatang</button>
+      <button type="button" class="btn btn-sm" data-status="completed" onclick="setStatusFilter('completed')">Selesai</button>
+    </div>
+  </div>
+
+  <span style="font-size:11.5px;color:var(--dim)" id="maintCountInfo">Memuat daftar jadwal…</span>
+</div>
+
+<!-- Card Tabel Jendela Pemeliharaan -->
+<div class="card" style="padding:0;overflow:hidden">
+  <div style="overflow-x:auto">
+    <table class="table-compact" id="maintenanceTable" style="width:100%;font-size:11.5px;table-layout:fixed">
+      <colgroup>
+        <col style="width:115px" />
+        <col style="width:auto" />
+        <col style="width:160px" />
+        <col style="width:145px" />
+        <col style="width:230px" />
+        <col style="width:110px" />
+        <col style="width:125px" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>STATUS</th>
+          <th>JUDUL &amp; KETERANGAN</th>
+          <th>CAKUPAN SERVER</th>
+          <th>POLA JADWAL</th>
+          <th>WAKTU &amp; HITUNG MUNDUR</th>
+          <th>PEMBUAT</th>
+          <th style="text-align:right">AKSI</th>
+        </tr>
+      </thead>
+      <tbody id="maintenanceTbody">
+        <tr>
+          <td colspan="7" style="text-align:center;padding:24px;color:var(--dim)">Memuat jadwal pemeliharaan…</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL TAMBAH JENDELA PEMELIHARAAN -->
+<div class="modal-backdrop" id="maintenanceModalBackdrop">
+  <div class="modal-window">
+    <div class="modal-header">
+      <h3 style="margin:0;font-size:14px" id="modalTitle">Tambah Jendela Pemeliharaan Terjadwal</h3>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal()" style="padding:2px 6px">✕</button>
+    </div>
+    <form id="maintenanceForm" onsubmit="submitMaintenanceForm(event)">
+      <div class="modal-body">
+        <input type="hidden" id="formWindowId" value="" />
+
+        <div class="form-group">
+          <label for="formTitle">Judul Pemeliharaan <span style="color:#ef4444">*</span></label>
+          <input type="text" id="formTitle" class="form-control" placeholder="Contoh: Pembaruan Rutin Kernel &amp; Patch OS" required maxlength="150" />
+        </div>
+
+        <div class="form-group">
+          <label for="formDesc">Deskripsi / Prosedur SOP (Opsional)</label>
+          <textarea id="formDesc" class="form-control" rows="2" placeholder="Tuliskan catatan teknis atau perubahan yang akan dilakukan…"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Cakupan Target Pemeliharaan <span style="color:#ef4444">*</span></label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="scope_type" value="server" checked onchange="onScopeTypeChange()" />
+              <span>Server Tertentu</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="scope_type" value="group" onchange="onScopeTypeChange()" />
+              <span>Grup Server</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="scope_type" value="all" onchange="onScopeTypeChange()" />
+              <span>Seluruh Server (Global)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Target Server Tunggal -->
+        <div class="form-group" id="wrapTargetServer">
+          <label for="formServerId">Pilih Server Target</label>
+          <select id="formServerId" class="form-control">
+            {% for s in servers %}
+            <option value="{{ s.id }}">{{ s.hostname }} ({{ s.ip_address }}){% if s.group_name %} [{{ s.group_name }}]{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Target Grup Server -->
+        <div class="form-group" id="wrapTargetGroup" style="display:none">
+          <label for="formServerGroup">Pilih Grup Server</label>
+          <select id="formServerGroup" class="form-control">
+            {% for g in server_groups %}
+            <option value="{{ g }}">{{ g }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Tipe Penjadwalan <span style="color:#ef4444">*</span></label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="schedule_type" value="once" checked onchange="onScheduleTypeChange()" />
+              <span>Sekali Jalan (One-Time)</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="schedule_type" value="weekly" onchange="onScheduleTypeChange()" />
+              <span>Mingguan (Weekly)</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="schedule_type" value="daily" onchange="onScheduleTypeChange()" />
+              <span>Harian (Daily)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Input Waktu untuk Sekali Jalan -->
+        <div id="wrapOnceSchedule" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-group">
+            <label for="formStartTime">Waktu Mulai <span style="color:#ef4444">*</span></label>
+            <input type="datetime-local" id="formStartTime" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label for="formEndTime">Waktu Selesai <span style="color:#ef4444">*</span></label>
+            <input type="datetime-local" id="formEndTime" class="form-control" />
+          </div>
+        </div>
+
+        <!-- Input Hari untuk Mingguan -->
+        <div id="wrapWeeklyDays" style="display:none" class="form-group">
+          <label>Pilih Hari Pemeliharaan</label>
+          <div class="day-checkboxes">
+            <div class="day-btn" data-day="mon" onclick="toggleDayBtn(this)">Sen</div>
+            <div class="day-btn" data-day="tue" onclick="toggleDayBtn(this)">Sel</div>
+            <div class="day-btn" data-day="wed" onclick="toggleDayBtn(this)">Rab</div>
+            <div class="day-btn" data-day="thu" onclick="toggleDayBtn(this)">Kam</div>
+            <div class="day-btn" data-day="fri" onclick="toggleDayBtn(this)">Jum</div>
+            <div class="day-btn is-selected" data-day="sat" onclick="toggleDayBtn(this)">Sab</div>
+            <div class="day-btn is-selected" data-day="sun" onclick="toggleDayBtn(this)">Min</div>
+          </div>
+        </div>
+
+        <!-- Input Jam untuk Berulang (Daily/Weekly) -->
+        <div id="wrapRecurringTime" style="display:none;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-group">
+            <label for="formTimeStart">Jam Mulai (HH:MM)</label>
+            <input type="time" id="formTimeStart" class="form-control" value="23:00" />
+          </div>
+          <div class="form-group">
+            <label for="formTimeEnd">Jam Selesai (HH:MM)</label>
+            <input type="time" id="formTimeEnd" class="form-control" value="03:00" />
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Batal</button>
+        <button type="submit" class="btn btn-primary" id="btnSubmitForm">Simpan Jadwal</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let _windowsList = [];
+let _curStatusFilter = 'all';
+const CSRF_TOKEN = '{{ csrf_token }}';
+
+// Inisialisasi datetime-local default (mulai: sekarang + 1 jam, selesai: mulai + 2 jam)
+function initDefaultDateTimes() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  now.setSeconds(0, 0);
+  
+  const start = new Date(now.getTime() + 15 * 60000); // 15 menit ke depan
+  const end = new Date(start.getTime() + 120 * 60000); // durasi 2 jam
+  
+  document.getElementById('formStartTime').value = start.toISOString().slice(0, 16);
+  document.getElementById('formEndTime').value = end.toISOString().slice(0, 16);
+}
+
+// Beralih Cakupan
+function onScopeTypeChange() {
+  const val = document.querySelector('input[name="scope_type"]:checked')?.value || 'server';
+  document.getElementById('wrapTargetServer').style.display = (val === 'server') ? 'block' : 'none';
+  document.getElementById('wrapTargetGroup').style.display = (val === 'group') ? 'block' : 'none';
+}
+
+// Beralih Tipe Jadwal
+function onScheduleTypeChange() {
+  const val = document.querySelector('input[name="schedule_type"]:checked')?.value || 'once';
+  document.getElementById('wrapOnceSchedule').style.display = (val === 'once') ? 'grid' : 'none';
+  document.getElementById('wrapWeeklyDays').style.display = (val === 'weekly') ? 'block' : 'none';
+  document.getElementById('wrapRecurringTime').style.display = (val !== 'once') ? 'grid' : 'none';
+}
+
+function toggleDayBtn(el) {
+  el.classList.toggle('is-selected');
+}
+
+function getSelectedDays() {
+  return Array.from(document.querySelectorAll('.day-btn.is-selected'))
+    .map(b => b.dataset.day)
+    .join(',');
+}
+
+function openAddModal() {
+  document.getElementById('formWindowId').value = '';
+  document.getElementById('modalTitle').textContent = 'Tambah Jendela Pemeliharaan Terjadwal';
+  document.getElementById('formTitle').value = '';
+  document.getElementById('formDesc').value = '';
+  document.querySelector('input[name="scope_type"][value="server"]').checked = true;
+  document.querySelector('input[name="schedule_type"][value="once"]').checked = true;
+  onScopeTypeChange();
+  onScheduleTypeChange();
+  initDefaultDateTimes();
+  document.getElementById('maintenanceModalBackdrop').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('maintenanceModalBackdrop').style.display = 'none';
+}
+
+function setStatusFilter(st) {
+  _curStatusFilter = st;
+  document.querySelectorAll('#statusFilterCtrl button').forEach(b => {
+    b.classList.toggle('is-on', b.dataset.status === st);
+  });
+  filterWindows();
+}
+
+async function fetchWindows() {
+  try {
+    const res = await fetch('/api/maintenance-windows?status=all&_=' + Date.now());
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || 'Gagal memuat jadwal');
+    _windowsList = data.windows || [];
+
+    document.getElementById('stat-active').textContent = data.active_count || 0;
+    document.getElementById('stat-scheduled').textContent = data.upcoming_count || 0;
+    document.getElementById('stat-completed').textContent = data.completed_count || 0;
+
+    filterWindows();
+  } catch (err) {
+    document.getElementById('maintenanceTbody').innerHTML = `
+      <tr><td colspan="7" style="text-align:center;padding:24px;color:#ef4444">
+        Gagal memuat jadwal: ${escapeHtml(err.message)}
+      </td></tr>
+    `;
+  }
+}
+
+function filterWindows() {
+  const q = (document.getElementById('maintSearch').value || '').toLowerCase().trim();
+  let list = _windowsList.slice();
+
+  if (_curStatusFilter !== 'all') {
+    list = list.filter(w => w.status === _curStatusFilter);
+  }
+
+  if (q) {
+    list = list.filter(w => {
+      const t = (w.title || '').toLowerCase();
+      const d = (w.description || '').toLowerCase();
+      const s = (w.server_hostname || '').toLowerCase();
+      const g = (w.server_group || '').toLowerCase();
+      return t.includes(q) || d.includes(q) || s.includes(q) || g.includes(q);
+    });
+  }
+
+  document.getElementById('maintCountInfo').textContent = `Menampilkan ${list.length} dari ${_windowsList.length} jadwal`;
+  renderTable(list);
+}
+
+function renderTable(list) {
+  const tb = document.getElementById('maintenanceTbody');
+  if (!list.length) {
+    tb.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--dim)">Tidak ada jadwal pemeliharaan yang cocok dengan filter.</td></tr>`;
+    return;
+  }
+
+  const nowEpoch = Date.now();
+  let html = '';
+
+  list.forEach(w => {
+    let statusBadge = '';
+    if (w.status === 'active') {
+      statusBadge = '<span class="badge badge-warn" style="font-size:9.5px;padding:2px 7px;font-weight:700"><span class="dot-pulse-warn" style="width:6px;height:6px;margin-right:4px"></span>AKTIF</span>';
+    } else if (w.status === 'scheduled') {
+      statusBadge = '<span class="badge badge-info" style="font-size:9.5px;padding:2px 7px;font-weight:600">MENDATANG</span>';
+    } else if (w.status === 'completed') {
+      statusBadge = '<span class="badge badge-muted" style="font-size:9.5px;padding:2px 7px">SELESAI</span>';
+    } else {
+      statusBadge = '<span class="badge badge-danger" style="font-size:9.5px;padding:2px 7px">DIBATALKAN</span>';
+    }
+
+    let scopeBadge = '';
+    if (w.scope_type === 'all') {
+      scopeBadge = '<span class="badge badge-purple mono" style="font-size:9.5px">SEMUA SERVER</span>';
+    } else if (w.scope_type === 'group') {
+      scopeBadge = `<span class="badge badge-info mono" style="font-size:9.5px">Grup: ${escapeHtml(w.server_group || '-')}</span>`;
+    } else {
+      scopeBadge = `<strong style="font-size:12px;color:var(--text-bright)">${escapeHtml(w.server_hostname || 'Server #' + w.server_id)}</strong>`;
+    }
+
+    let scheduleDesc = '';
+    if (w.schedule_type === 'once') {
+      scheduleDesc = '<span class="badge badge-muted" style="font-size:9px">Sekali Jalan</span>';
+    } else if (w.schedule_type === 'weekly') {
+      scheduleDesc = `<span class="badge badge-blue" style="font-size:9px">Mingguan (${escapeHtml(w.repeat_days || '')})</span><div class="mono" style="font-size:9.5px;color:var(--dim);margin-top:2px">${escapeHtml(w.repeat_time_start)} - ${escapeHtml(w.repeat_time_end)} UTC</div>`;
+    } else {
+      scheduleDesc = `<span class="badge badge-blue" style="font-size:9px">Harian</span><div class="mono" style="font-size:9.5px;color:var(--dim);margin-top:2px">${escapeHtml(w.repeat_time_start)} - ${escapeHtml(w.repeat_time_end)} UTC</div>`;
+    }
+
+    // Waktu & Countdown
+    let timeCol = '';
+    if (w.schedule_type === 'once') {
+      const stIso = w.start_time ? w.start_time.replace('T', ' ') : '-';
+      const enIso = w.end_time ? w.end_time.replace('T', ' ') : '-';
+      timeCol = `<div class="mono" style="font-size:10px">${stIso} s/d<br>${enIso} UTC</div>`;
+    } else {
+      timeCol = `<div class="mono" style="font-size:10.5px">Setiap ${escapeHtml(w.repeat_days || 'hari')} jam ${escapeHtml(w.repeat_time_start || '')} s/d ${escapeHtml(w.repeat_time_end || '')} UTC</div>`;
+    }
+
+    // Tombol Aksi
+    let actionBtns = '<div style="display:inline-flex;gap:4px;align-items:center;justify-content:flex-end;width:100%">';
+    if (w.status === 'active') {
+      actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="padding:2px 6px;font-size:10px;color:var(--green)" onclick="completeWindow(${w.id})" title="Selesaikan masa pemeliharaan sekarang">Selesai</button>`;
+    }
+    if (w.status === 'active' || w.status === 'scheduled') {
+      actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="padding:2px 6px;font-size:10px;color:var(--yellow)" onclick="cancelWindow(${w.id})" title="Batalkan jadwal pemeliharaan">Batal</button>`;
+    }
+    actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="padding:2px 6px;font-size:10px;color:var(--dim)" onclick="deleteWindow(${w.id})" title="Hapus catatan jadwal">✕</button>`;
+    actionBtns += '</div>';
+
+    html += `
+      <tr>
+        <td style="vertical-align:middle">${statusBadge}</td>
+        <td style="vertical-align:middle">
+          <div style="font-weight:700;color:var(--text-bright);font-size:12.5px">${escapeHtml(w.title)}</div>
+          ${w.description ? `<div style="font-size:10.5px;color:var(--dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(w.description)}</div>` : ''}
+        </td>
+        <td style="vertical-align:middle">${scopeBadge}</td>
+        <td style="vertical-align:middle">${scheduleDesc}</td>
+        <td style="vertical-align:middle">${timeCol}</td>
+        <td style="vertical-align:middle;color:var(--dim);font-size:11px">${escapeHtml(w.created_by || 'SISTEM')}</td>
+        <td style="vertical-align:middle;text-align:right">${actionBtns}</td>
+      </tr>
+    `;
+  });
+
+  tb.innerHTML = html;
+}
+
+// Submit Form
+async function submitMaintenanceForm(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btnSubmitForm');
+  btn.disabled = true;
+
+  const scopeType = document.querySelector('input[name="scope_type"]:checked')?.value || 'server';
+  const scheduleType = document.querySelector('input[name="schedule_type"]:checked')?.value || 'once';
+
+  const payload = {
+    title: document.getElementById('formTitle').value.trim(),
+    description: document.getElementById('formDesc').value.trim(),
+    scope_type: scopeType,
+    schedule_type: scheduleType,
+    server_id: (scopeType === 'server') ? parseInt(document.getElementById('formServerId').value, 10) : null,
+    server_group: (scopeType === 'group') ? document.getElementById('formServerGroup').value : null,
+  };
+
+  if (scheduleType === 'once') {
+    const stVal = document.getElementById('formStartTime').value;
+    const enVal = document.getElementById('formEndTime').value;
+    if (!stVal || !enVal) {
+      showToast('Waktu mulai dan selesai wajib diisi', false);
+      btn.disabled = false;
+      return;
+    }
+    payload.start_time = new Date(stVal).toISOString().replace('.000Z', '');
+    payload.end_time = new Date(enVal).toISOString().replace('.000Z', '');
+  } else {
+    payload.repeat_days = (scheduleType === 'weekly') ? getSelectedDays() : null;
+    payload.repeat_time_start = document.getElementById('formTimeStart').value;
+    payload.repeat_time_end = document.getElementById('formTimeEnd').value;
+    // Set dummy start/end date for schema
+    const now = new Date();
+    payload.start_time = now.toISOString().replace('.000Z', '');
+    const future = new Date(now.getTime() + 365 * 86400000);
+    payload.end_time = future.toISOString().replace('.000Z', '');
+  }
+
+  try {
+    const res = await fetch('/api/maintenance-windows', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': CSRF_TOKEN
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || data.message || 'Gagal menyimpan jadwal');
+
+    showToast('Jendela pemeliharaan berhasil dijadwalkan', true);
+    closeModal();
+    await fetchWindows();
+  } catch (err) {
+    showToast('Galat: ' + err.message, false);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function cancelWindow(id) {
+  const ok = await showConfirmModal({
+    title: 'Batalkan Jadwal Pemeliharaan',
+    target: `Jadwal #${id}`,
+    message: 'Batalkan jadwal pemeliharaan ini. Server terkait akan segera dikembalikan ke mode pengawasan normal.',
+    btnText: 'Batalkan Jadwal',
+    btnClass: 'btn-warning',
+    iconType: 'warning',
+    badge: 'PEMELIHARAAN'
+  });
+  if (!ok) return;
+
+  try {
+    const res = await fetch(`/api/maintenance-windows/${id}/cancel`, {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': CSRF_TOKEN }
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || 'Gagal membatalkan');
+    showToast('Jadwal pemeliharaan berhasil dibatalkan', true);
+    await fetchWindows();
+  } catch (err) {
+    showToast('Galat: ' + err.message, false);
+  }
+}
+
+async function completeWindow(id) {
+  const ok = await showConfirmModal({
+    title: 'Selesaikan Pemeliharaan Sekarang',
+    target: `Jadwal #${id}`,
+    message: 'Tandai pekerjaan pemeliharaan telah selesai lebih awal. Pengawasan normal server akan segera dipulihkan.',
+    btnText: 'Selesaikan Sekarang',
+    btnClass: 'btn-success',
+    iconType: 'info',
+    badge: 'PEMELIHARAAN'
+  });
+  if (!ok) return;
+
+  try {
+    const res = await fetch(`/api/maintenance-windows/${id}/complete`, {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': CSRF_TOKEN }
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || 'Gagal menyelesaikan');
+    showToast('Jendela pemeliharaan selesai, server dipulihkan', true);
+    await fetchWindows();
+  } catch (err) {
+    showToast('Galat: ' + err.message, false);
+  }
+}
+
+async function deleteWindow(id) {
+  const ok = await showConfirmModal({
+    title: 'Hapus Jadwal Pemeliharaan',
+    target: `Jadwal #${id}`,
+    message: 'Hapus rekaman jadwal pemeliharaan ini secara permanen.',
+    btnText: 'Hapus Permanen',
+    btnClass: 'btn-danger',
+    iconType: 'danger',
+    badge: 'PEMELIHARAAN'
+  });
+  if (!ok) return;
+
+  try {
+    const res = await fetch(`/api/maintenance-windows/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-CSRF-Token': CSRF_TOKEN }
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || 'Gagal menghapus');
+    showToast('Jadwal pemeliharaan berhasil dihapus', true);
+    await fetchWindows();
+  } catch (err) {
+    showToast('Galat: ' + err.message, false);
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  fetchWindows();
+  // Polling pembaruan berkala tiap 15 detik
+  setInterval(fetchWindows, 15000);
+});
+</script>
+{% endblock %}

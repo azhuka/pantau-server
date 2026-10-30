@@ -311,6 +311,32 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.44
+
+- **Tipe Rilis:** Jendela Pemeliharaan Terjadwal (Scheduled Maintenance Windows) & Penekanan Alarm Otomatis (*Scheduled Maintenance Windows, Automated Alarm Suppression, and NOC Operations Triage*)
+- **Fokus Utama:** Menghadirkan subsistem perencanaan pemeliharaan terencana (*Scheduled Maintenance Windows*) bertaraf NOC enterprise yang mengotomatiskan penekanan alarm palsu, pelabelan status armada, dan pemulihan pengawasan normal tanpa mengganggu mode pemeliharaan manual ad-hoc operator:
+  1. **Skema Basis Data & Model Relasional Maintenance Windows (`models.py` & MariaDB):**
+     - Menambahkan tabel `maintenance_windows` dengan kolom terstruktur: `id`, `title`, `description`, `scope_type` ('all', 'group', 'server'), `server_id` (FK ke `servers.id`), `server_group`, `schedule_type` ('once', 'daily', 'weekly'), `start_time`, `end_time`, `repeat_days` ('mon,tue,...'), `repeat_time_start`, `repeat_time_end` ('HH:MM'), `is_active`, `status` ('scheduled', 'active', 'completed', 'cancelled'), `created_at`, `updated_at`, dan `created_by`.
+     - Menyertakan indeks komposit optimasi query: `idx_mw_scope`, `idx_mw_time`, dan `idx_mw_status`.
+     - Fungsi inisialisasi migrasi startup otomatis `migrate_maintenance_windows_system()` pada `lifespan`.
+  2. **Mesin Evaluasi Jadwal & Rekonsiliasi Otomatis Armada (`server/main.py`):**
+     - Mengimplementasikan `_evaluate_maintenance_windows(db, now)` yang dieksekusi secara berkala dalam `_problem_bg_loop` sebelum agregasi insiden, serta dieksekusi instan saat ada operasi CRUD jadwal pemeliharaan.
+     - Mendukung jadwal sekali jalan (*one-time*) berbasis rentang tanggal UTC absolut dan jadwal berulang (*recurring*: harian dan mingguan) berbasis hari pengulangan serta rentang jam harian (termasuk penanganan rentang lintas tengah malam / *overnight*).
+     - Menandai server tercakup ke dalam mode pemeliharaan (`is_maintenance = 1`, `maintenance_reason = f"[Jadwal: {title}]"`, `maintenance_until`), sehingga inspeksi alarm otomatis menandai insiden sebagai `target_ignored = 1` dengan alasan `"Mode Pemeliharaan"`.
+     - Mengembalikan server secara otomatis ke mode pengawasan normal (`is_maintenance = 0`) saat jendela berakhir, dengan memelihara integritas mode pemeliharaan manual operator (tidak menyentuh server yang disetel pemeliharaan tanpa prefiks `[Jadwal:`).
+  3. **Antarmuka Pengelolaan Khusus Bertaraf NOC (`server/templates/maintenance.html`):**
+     - Menyediakan halaman mandiri `/maintenance` berprinsip kepadatan data tinggi (*high density* NOC).
+     - Menyajikan 3 kartu metrik ringkasan KPI di bagian atas: *Sedang Berjalan (Aktif)*, *Jadwal Mendatang*, dan *Selesai / Riwayat*.
+     - Bilah filter tersegmentasi (*Semua*, *Aktif*, *Mendatang*, *Selesai*) dan kotak pencarian instan multivariabel (*client-side fast filter*).
+     - Tabel ber-`<colgroup>` terukur (`115px`, `auto`, `160px`, `145px`, `230px`, `110px`, `125px`) dengan lencana status berdenyut, lencana cakupan server (`SEMUA SERVER`, `Grup: [nama]`, atau `[hostname]`), deskripsi jadwal, waktu & hitung mundur, pembuat, serta tombol tindakan operasional (*Selesai*, *Batal*, *✕*).
+     - Dialog modal penambahan jadwal pemeliharaan interaktif dengan selektor cakupan dinamis, pilihan hari interaktif, dan validasi waktu klien/server.
+  4. **Penyelarasan Dasbor Utama & Navigasi Global (`dashboard.html` & `base.html`):**
+     - Menambahkan banner informatif khusus di atas dasbor utama saat ada jendela pemeliharaan aktif, memberi tahu operator bahwa alarm server terkait sengaja ditekan beserta tautan langsung ke halaman pemeliharaan.
+     - Menambahkan item navigasi `Pemeliharaan` di bawah bilah `Kelola` pada sidebar, lengkap dengan lencana angka hitung aktif (`nav-maintenance-badge`) yang disinkronkan secara real-time via `alertFetch()` tanpa memuat ulang halaman.
+     - Penambahan 4 label aksi audit log baru: `maintenance_create`, `maintenance_cancel`, `maintenance_complete`, dan `maintenance_delete`.
+  5. **Otomasi Pembaruan SemVer v4.8.44:**
+     - Menaikkan versi sistem menjadi `v4.8.44` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.43
 
 - **Tipe Rilis:** Perbaikan Kritis Monopoli Connection Pool Basis Data & Pencegahan Pemblokiran Event Loop Asinkron (*Critical Database Connection Pool Exhaustion Fix and Async Event Loop Starvation Prevention*)
