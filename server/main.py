@@ -3789,6 +3789,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 "message": p.get("message", ""),
                 "key": p.get("key", ""),
                 "is_ignored": is_ign,
+                "is_operator_action": bool(p.get("is_operator_action")),
                 "ignored_reason": p.get("ignored_reason"),
                 "ignored_by": ("master-admin" if p.get("ignored_by") == "admin" else p.get("ignored_by")),
                 "started_at": p_started.isoformat() if p_started else "",
@@ -3806,8 +3807,10 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 else:
                     problems_by_sev["warning"].append(item)
 
-            # Seluruh insiden yang diabaikan (level apapun) disembunyikan dari kartu Insiden Terkini
-            if is_ign:
+            # Seluruh insiden yang diabaikan (level apapun) disembunyikan dari kartu Insiden Terkini,
+            # KECUALI insiden akibat tindakan operator yang tetap harus tampil dengan label PERINGATAN dan lencana DIABAIKAN.
+            is_op = bool(p.get("is_operator_action")) or ("operator" in (p.get("message") or "").lower()) or ("operator" in (p.get("ignored_reason") or "").lower())
+            if is_ign and not is_op:
                 continue
 
             all_open_problems.append(item)
@@ -7157,10 +7160,7 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                 diagnosa_en = f"Service {svc_name} Inactive (DOWN)"
                 penyebab = f"Layanan {svc_name} tidak mendengarkan (listening) pada port {port or 'terkait'} atau proses tidak ditemukan."
                 penyebab_en = f"Service {svc_name} is not listening on port {port or 'associated'} or process was not found running."
-                if op_deps:
-                    penyebab += f" [INFO DEPENDENSI] Layanan '{', '.join(op_deps)}' sedang dihentikan sengaja oleh operator pada server ini; periksa apakah kegagalan ini disebabkan oleh ketergantungan (dependensi) tersebut."
-                    penyebab_en += f" [DEPENDENCY INFO] Service(s) '{', '.join(op_deps)}' are intentionally stopped by operator on this server; check if this failure is caused by that dependency."
-                elif conflict_ips and len(conflict_ips) > 1:
+                if conflict_ips and len(conflict_ips) > 1:
                     penyebab += f" Terdeteksi juga konflik multi-IP ({', '.join(conflict_ips)}) yang menyebabkan status layanan berfluktuasi."
                     penyebab_en += f" Multi-IP agent conflict ({', '.join(conflict_ips)}) detected, causing service status to flap."
                 elif health_msg:
@@ -7174,16 +7174,12 @@ def _build_problem_context(key: str, srv, **kwargs) -> str | None:
                     f"Pastikan port listening: ss -tulpn | grep :{port}" if port else f"Periksa proses: pgrep -fa {proc or svc_name}",
                     f"Coba mulai ulang layanan: sudo systemctl restart {svc_name}"
                 ]
-                if op_deps:
-                    rekomendasi.insert(0, f"Pastikan dependensi layanan aktif: Layanan '{', '.join(op_deps)}' saat ini berstatus dihentikan operator.")
                 rekomendasi_en = [
                     f"Check service status: sudo systemctl status {svc_name}",
                     f"Inspect service error logs: sudo journalctl -u {svc_name} -n 50 --no-pager",
                     f"Verify listening port: ss -tulpn | grep :{port}" if port else f"Check process: pgrep -fa {proc or svc_name}",
                     f"Restart service: sudo systemctl restart {svc_name}"
                 ]
-                if op_deps:
-                    rekomendasi_en.insert(0, f"Ensure prerequisite services are active: Service(s) '{', '.join(op_deps)}' are currently stopped by operator.")
 
             return json.dumps({
                 "diagnosa": diagnosa,
@@ -8156,28 +8152,32 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
     tier = getattr(srv, "tier", 2) or 2
 
     if _server_stale(srv):
-        # Periksa apakah server dimatikan secara sadar oleh operator (poweroff_host)
+        # Periksa apakah server dimatikan atau direboot secara sadar oleh operator (poweroff_host / reboot_host)
         is_op_poweroff = False
+        is_op_reboot = False
         op_by = "OPERATOR"
         if db is not None:
             try:
-                last_po = (
+                last_cmd = (
                     db.query(Command)
                     .filter(
                         Command.server_id == srv.id,
-                        Command.action == "poweroff_host",
+                        Command.action.in_(["poweroff_host", "reboot_host"]),
                     )
                     .order_by(desc(Command.created_at))
                     .first()
                 )
-                if last_po:
-                    po_time = last_po.created_at
+                if last_cmd:
+                    cmd_time = last_cmd.created_at
                     ls_time = srv.last_seen
                     if ls_time and ls_time.tzinfo:
                         ls_time = ls_time.replace(tzinfo=None)
-                    if po_time and (ls_time is None or po_time >= ls_time - timedelta(seconds=60)):
-                        is_op_poweroff = True
-                        op_by = (last_po.issued_by or "OPERATOR").upper()
+                    if cmd_time and (ls_time is None or cmd_time >= ls_time - timedelta(seconds=60)):
+                        op_by = (last_cmd.issued_by or "OPERATOR").upper()
+                        if last_cmd.action == "reboot_host":
+                            is_op_reboot = True
+                        else:
+                            is_op_poweroff = True
             except Exception:
                 pass
 
@@ -8185,7 +8185,12 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             stale_sev = "warning"
             dur_txt = f"{int(sec_silent // 60)} mnt" if sec_silent >= 60 else f"{int(sec_silent)} dtk"
             stale_msg = f"Host dimatikan oleh operator ({op_by}) (> {dur_txt})"
-            stale_tip = "Server sengaja dimatikan melalui perintah poweroff oleh operator."
+            stale_tip = f"Server sengaja dimatikan melalui perintah poweroff oleh operator ({op_by})."
+        elif is_op_reboot:
+            stale_sev = "warning"
+            dur_txt = f"{int(sec_silent // 60)} mnt" if sec_silent >= 60 else f"{int(sec_silent)} dtk"
+            stale_msg = f"Server sedang di-reboot oleh operator ({op_by}) (> {dur_txt})"
+            stale_tip = f"Server sedang dalam proses mulai ulang (reboot) yang diinisiasi oleh operator ({op_by})."
         elif tier == 1:
             # Tier 1: Server Kritis / Produksi Utama (Layanan Vital 24/7)
             # - Detik awal (> 15s) s/d 1 menit (< 60s): Average (GAWAT)
@@ -8431,19 +8436,20 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                                          + (f" · terakhir {_rel_dt(event_at)}" if event_at else ""),
                              "tip": SECURITY_TIPS["info"], "event_at": event_at,
                              "context": _build_problem_context("failed_logins", srv, failed=failed, invalid=invalid, source_ips=sec.get("source_ips") or {}, severity="info")})
-    # Kumpulkan seluruh layanan yang sengaja dihentikan oleh operator pada server ini
+    # Kumpulkan seluruh layanan yang sengaja dihentikan atau di-restart oleh operator pada server ini
     # (dari tabel Service dan riwayat Command systemd/service)
-    op_stopped_map: dict[str, str] = {}
+    op_action_map: dict[str, dict] = {}
     if db is not None:
         try:
             # 1. Dari tabel Service
             for s in db.query(Service).filter(Service.server_id == srv.id).all():
-                if s.ignored_reason and ("DIMATIKAN OLEH OPERATOR" in s.ignored_reason or "DIHENTIKAN OLEH OPERATOR" in s.ignored_reason):
+                if s.ignored_reason and ("DIMATIKAN OLEH OPERATOR" in s.ignored_reason or "DIHENTIKAN OLEH OPERATOR" in s.ignored_reason or "DI-RESTART OLEH OPERATOR" in s.ignored_reason):
                     by_txt = (s.ignored_by or "OPERATOR").upper()
+                    act_type = "restart" if "DI-RESTART" in s.ignored_reason else "stop"
                     if s.service_name:
-                        op_stopped_map[s.service_name.lower()] = by_txt
+                        op_action_map[s.service_name.lower()] = {"action": act_type, "by": by_txt}
                     if s.process_name:
-                        op_stopped_map[s.process_name.lower()] = by_txt
+                        op_action_map[s.process_name.lower()] = {"action": act_type, "by": by_txt}
 
             # 2. Dari riwayat Command aksi stop/start/restart terkini
             recent_cmds = (
@@ -8473,14 +8479,14 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                     clean_tgt = (tgt[:-8] if tgt.endswith(".service") else tgt).lower()
                     if clean_tgt not in seen_cmd_targets:
                         seen_cmd_targets.add(clean_tgt)
-                        if cmd.action == "stop":
+                        if cmd.action in ("stop", "restart"):
                             by_txt = (cmd.issued_by or "OPERATOR").upper()
-                            op_stopped_map[clean_tgt] = by_txt
-                            op_stopped_map[tgt.lower()] = by_txt
+                            op_action_map[clean_tgt] = {"action": cmd.action, "by": by_txt}
+                            op_action_map[tgt.lower()] = {"action": cmd.action, "by": by_txt}
         except Exception as e:
             logger.debug("Gagal memetakan layanan operator server %s: %s", srv.id, e)
 
-    # Saring agar layanan yang saat ini aktif (up) tidak dianggap sebagai dihentikan operator
+    # Saring agar layanan yang saat ini aktif (up) tidak dianggap sebagai dihentikan/direstart operator
     up_names = {
         (d.get("name") or "").lower() for d in svc_data or [] if d.get("status") == "up"
     } | {
@@ -8488,8 +8494,8 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
     }
     up_names.discard("")
     for u_n in up_names:
-        op_stopped_map.pop(u_n, None)
-        op_stopped_map.pop(u_n + ".service", None)
+        op_action_map.pop(u_n, None)
+        op_action_map.pop(u_n + ".service", None)
 
     for d in svc_data or []:
         name = d.get("name", "?")
@@ -8500,18 +8506,22 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
 
         name_lower = (name or "").lower()
         proc_lower = (proc or "").lower()
-        is_op_stop = (name_lower in op_stopped_map or proc_lower in op_stopped_map)
-        op_by = op_stopped_map.get(name_lower) or op_stopped_map.get(proc_lower) or "OPERATOR"
-        other_stopped = [k for k in op_stopped_map.keys() if k != name_lower and not k.endswith(".service")]
-        uniq_stopped = sorted(set(other_stopped)) if other_stopped else []
+        act_info = op_action_map.get(name_lower) or op_action_map.get(proc_lower)
+        is_op_action = bool(act_info)
+        op_action = act_info.get("action", "stop") if act_info else "stop"
+        op_by = act_info.get("by", "OPERATOR") if act_info else "OPERATOR"
 
         if st == "down":
-            if is_op_stop:
+            if is_op_action:
                 # Semua tindakan operator yang disengaja dan disadari (baik Tier-1 maupun selainnya)
                 # diklasifikasikan sebagai insiden tingkat keparahan PERINGATAN (warning)
                 svc_sev = "warning"
-                svc_msg = f"Layanan {name} dimatikan oleh operator ({op_by})"
-                svc_tip = f"Unit layanan {name} sengaja dihentikan melalui panel kontrol oleh operator ({op_by}). Tindakan pemeliharaan tidak memicu alarm darurat."
+                if op_action == "restart":
+                    svc_msg = f"Layanan {name} di-restart oleh operator ({op_by})"
+                    svc_tip = f"Unit layanan {name} dimulai ulang (restart) oleh operator ({op_by}) namun saat ini belum aktif. Tindakan pemeliharaan tidak memicu alarm darurat."
+                else:
+                    svc_msg = f"Layanan {name} dimatikan oleh operator ({op_by})"
+                    svc_tip = f"Unit layanan {name} sengaja dihentikan melalui panel kontrol oleh operator ({op_by}). Tindakan pemeliharaan tidak memicu alarm darurat."
             else:
                 # Hitung durasi layanan telah down dari rekaman ServerProblem terbuka
                 down_secs = 0.0
@@ -8576,10 +8586,6 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                     svc_msg = f"Layanan {name} Down"
                     svc_tip = SVC_DOWN_TIP.format(name=name)
 
-                # Tambahkan konteks dependensi bila ada layanan lain yang sedang dihentikan sengaja oleh operator di server ini
-                if uniq_stopped:
-                    svc_tip += f" [INFO DEPENDENSI] Layanan '{', '.join(uniq_stopped)}' sedang dihentikan sengaja oleh operator pada server ini; periksa apakah kegagalan layanan {name} dipicu oleh dependensi tersebut."
-
             inst.append({
                 "key": f"service_down:{name}", "severity": svc_sev,
                 "message": svc_msg,
@@ -8589,9 +8595,8 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                     service_name=name, port=port, proc=proc,
                     health_msg=d.get("health_msg"),
                     conflict_ips=active_ips if len(active_ips) > 1 else None,
-                    is_op_stop=is_op_stop,
+                    is_op_stop=is_op_action,
                     op_by=op_by,
-                    operator_stopped_dependencies=uniq_stopped if (not is_op_stop and uniq_stopped) else None,
                 ),
             })
         elif st == "unknown":
@@ -8667,6 +8672,14 @@ def _problem_component(key: str) -> str:
 
 def _problem_row2dict(row) -> dict:
     end = row.resolved_at
+    is_op = bool(
+        ("dimatikan oleh operator" in (row.message or "").lower())
+        or ("dihentikan oleh operator" in (row.message or "").lower())
+        or ("di-reboot oleh operator" in (row.message or "").lower())
+        or ("di-restart oleh operator" in (row.message or "").lower())
+        or ("oleh operator" in (row.message or "").lower())
+        or (row.ignored_reason and "OPERATOR" in row.ignored_reason)
+    )
     return {
         "id": row.id,
         "key": row.key, "severity": row.severity, "message": row.message,
@@ -8678,6 +8691,7 @@ def _problem_row2dict(row) -> dict:
         "resolved_note": row.resolved_note,
         "durasi": _fmt_duration(row.started_at, end if end else datetime.utcnow()),
         "is_ignored": bool(getattr(row, "is_ignored", 0)),
+        "is_operator_action": is_op,
         "ignored_until": getattr(row, "ignored_until", None),
         "ignored_by": ("master-admin" if getattr(row, "ignored_by", None) == "admin" else getattr(row, "ignored_by", None)),
         "ignored_reason": getattr(row, "ignored_reason", None),
@@ -8890,41 +8904,44 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             target_ignore_mode = "duration" if srv.maintenance_until else "permanent"
             target_ignored_until = srv.maintenance_until
         elif p["key"] == "agent_stale":
-            # Periksa apakah host dimatikan melalui perintah poweroff_host resmi oleh operator
-            last_po = (
+            # Periksa apakah host dimatikan atau direboot melalui perintah resmi oleh operator
+            last_cmd = (
                 db.query(Command)
                 .filter(
                     Command.server_id == srv.id,
-                    Command.action == "poweroff_host",
+                    Command.action.in_(["poweroff_host", "reboot_host"]),
                 )
                 .order_by(desc(Command.created_at))
                 .first()
             )
-            if last_po:
-                po_time = last_po.created_at
+            if last_cmd:
+                cmd_time = last_cmd.created_at
                 ls_time = srv.last_seen
                 if ls_time and ls_time.tzinfo:
                     ls_time = ls_time.replace(tzinfo=None)
-                # Jika poweroff dikirim dan sejak itu mesin belum melapor kembali
-                if po_time and (ls_time is None or po_time >= ls_time - timedelta(seconds=60)):
+                # Jika poweroff/reboot dikirim dan sejak itu mesin belum melapor kembali
+                if cmd_time and (ls_time is None or cmd_time >= ls_time - timedelta(seconds=60)):
                     is_operator_action = True
-                    operator_action_by = last_po.issued_by or "operator"
-                    operator_action_reason = f"SERVER DIMATIKAN OLEH OPERATOR ({operator_action_by.upper()})"
+                    operator_action_by = (last_cmd.issued_by or "operator").upper()
+                    if last_cmd.action == "reboot_host":
+                        operator_action_reason = f"SERVER SEDANG DI-REBOOT OLEH OPERATOR ({operator_action_by})"
+                    else:
+                        operator_action_reason = f"SERVER DIMATIKAN OLEH OPERATOR ({operator_action_by})"
         elif is_svc_ignored:
             target_ignored = 1
             target_ignored_by = svc_obj.ignored_by
             target_ignored_reason = svc_obj.ignored_reason
             target_ignore_mode = getattr(svc_obj, "ignore_mode", "permanent") or "permanent"
             target_ignored_until = svc_obj.ignored_until
-        elif svc_obj and svc_obj.ignored_reason and ("DIMATIKAN OLEH OPERATOR" in svc_obj.ignored_reason or "DIHENTIKAN OLEH OPERATOR" in svc_obj.ignored_reason):
+        elif svc_obj and svc_obj.ignored_reason and ("DIMATIKAN OLEH OPERATOR" in svc_obj.ignored_reason or "DIHENTIKAN OLEH OPERATOR" in svc_obj.ignored_reason or "DI-RESTART OLEH OPERATOR" in svc_obj.ignored_reason):
             is_operator_action = True
             operator_action_by = (svc_obj.ignored_by or "OPERATOR").upper()
             operator_action_reason = svc_obj.ignored_reason
 
-        # Deteksi penghentian oleh operator dari pesan instans atau riwayat Command terkini
+        # Deteksi penghentian atau reboot oleh operator dari pesan instans atau riwayat Command terkini
         if p["key"].startswith("service_down:"):
             p_msg_l = p.get("message", "").lower()
-            if "dimatikan oleh operator" in p_msg_l or "dihentikan oleh operator" in p_msg_l:
+            if "dimatikan oleh operator" in p_msg_l or "dihentikan oleh operator" in p_msg_l or "di-restart oleh operator" in p_msg_l:
                 is_operator_action = True
                 if not operator_action_reason:
                     operator_action_reason = p.get("message")
@@ -8961,18 +8978,22 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                                     is_operator_action = True
                                     operator_action_by = (c.issued_by or "OPERATOR").upper()
                                     operator_action_reason = f"LAYANAN DIMATIKAN OLEH OPERATOR ({operator_action_by})"
+                                elif c.action == "restart":
+                                    is_operator_action = True
+                                    operator_action_by = (c.issued_by or "OPERATOR").upper()
+                                    operator_action_reason = f"LAYANAN DI-RESTART OLEH OPERATOR ({operator_action_by})"
                                 break
                 except Exception:
                     pass
 
-        if row and row.ignored_reason and ("DIMATIKAN OLEH OPERATOR" in row.ignored_reason or "DIHENTIKAN OLEH OPERATOR" in row.ignored_reason):
+        if row and row.ignored_reason and ("DIMATIKAN OLEH OPERATOR" in row.ignored_reason or "DIHENTIKAN OLEH OPERATOR" in row.ignored_reason or "DI-RESTART OLEH OPERATOR" in row.ignored_reason or "DI-REBOOT OLEH OPERATOR" in row.ignored_reason):
             is_operator_action = True
             if not operator_action_reason:
                 operator_action_reason = row.ignored_reason
             if not operator_action_by:
                 operator_action_by = row.ignored_by
 
-        if row and ("dimatikan oleh operator" in (row.message or "").lower() or "dihentikan oleh operator" in (row.message or "").lower()):
+        if row and ("dimatikan oleh operator" in (row.message or "").lower() or "dihentikan oleh operator" in (row.message or "").lower() or "di-restart oleh operator" in (row.message or "").lower() or "di-reboot oleh operator" in (row.message or "").lower()):
             is_operator_action = True
             if not operator_action_reason:
                 operator_action_reason = row.message

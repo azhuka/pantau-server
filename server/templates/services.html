@@ -1923,23 +1923,23 @@ div[style*="position: fixed"] .card {
       <td class="col-sev">
         {% set op_name = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
         {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
-        {% if p.is_ignored and p.acknowledged_by %}
+        {% set base_badge_cls = 'badge badge-' ~ ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) %}
+        {% set base_badge_text = 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else ('PERINGATAN' if p.severity == 'warning' else p.severity | upper)) %}
+        {% set base_badge = '<span class="' ~ base_badge_cls ~ '">' ~ base_badge_text ~ '</span>' %}
+        {% if p.is_ignored or p.acknowledged_by %}
           <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-muted">DIABAIKAN</span>
-            <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
-          </div>
-        {% elif p.is_ignored %}
-          <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-muted" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
-            <span class="col-sev-sub-text" title="oleh {{ op_name }}">(oleh {{ op_name }})</span>
-          </div>
-        {% elif p.acknowledged_by %}
-          <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
-            <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+            {{ base_badge | safe }}
+            <div style="display:inline-flex;align-items:center;gap:2px">
+              {% if p.is_ignored %}
+                <span class="badge badge-muted badge-sub" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
+              {% endif %}
+              {% if p.acknowledged_by %}
+                <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+              {% endif %}
+            </div>
           </div>
         {% else %}
-          <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}">{{ 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else p.severity | upper) }}</span>
+          {{ base_badge | safe }}
         {% endif %}
       </td>
       <td class="col-event">
@@ -8087,12 +8087,15 @@ function renderProblemsTab(level, openList, histList) {
     const rawSevText = sev === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (sev === 'danger' ? 'CRITICAL' : sev.toUpperCase());
     
     let sevCellHtml = '';
-    if (isIgnored && p.acknowledged_by) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span class="badge badge-up badge-sub" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
-    } else if (isIgnored) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="badge badge-muted" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span><span class="col-sev-sub-text" title="${(isEn ? 'by ' : 'oleh ') + escapeHtml(opName)}">(${isEn ? 'by ' : 'oleh '}${escapeHtml(opName)})</span></div>`;
-    } else if (p.acknowledged_by) {
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}">${rawSevText}</span><span class="badge badge-up badge-sub" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+    if (isIgnored || p.acknowledged_by) {
+      let subBadges = '';
+      if (isIgnored) {
+        subBadges += `<span class="badge badge-muted badge-sub" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span>`;
+      }
+      if (p.acknowledged_by) {
+        subBadges += `<span class="badge badge-up badge-sub" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
+      }
+      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}">${rawSevText}</span><div style="display:inline-flex;align-items:center;gap:2px">${subBadges}</div></div>`;
     } else {
       sevCellHtml = `<span class="${rawSevBadge}">${rawSevText}</span>`;
     }

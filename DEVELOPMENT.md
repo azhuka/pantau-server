@@ -311,6 +311,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.39
+
+- **Tipe Rilis:** Standarisasi Label Peringatan Tindakan Operator, Lencana Status Subordinat, dan Integrasi Status Reboot (*Standardization of Operator Action Warning Labels, Subordinate Badges, and Host Reboot Integration*)
+- **Fokus Utama:** Menyempurnakan visibilitas tindakan sadar operator pada kartu Insiden Terkini halaman utama, memastikan label keparahan primer tidak terhapus saat diabaikan atau ditangani, menyelaraskan deskripsi aksi sesuai tindakan aktual, serta mengeliminasi teks diagnostik yang membingungkan:
+  1. **Pertahanan Label Keparahan Primer (`PERINGATAN`) & Lencana Subordinat (`dashboard.html`, `problems.html`, `services.html`):**
+     - Memperbaiki logika rendering badge keparahan (baik SSR Jinja maupun poller dynamic JavaScript) agar lencana keparahan primer (`KRITIS`, `GAWAT`, `PERINGATAN`, `INFO`) **selalu tampil di posisi teratas** dan tidak pernah digantikan atau dihilangkan saat insiden diabaikan (`is_ignored = 1`) atau ditangani (`acknowledged_by`).
+     - Menampilkan lencana status subordinat **`DIABAIKAN`** dan/atau **`✓ DITANGANI`** secara proporsional dan berdampingan di bawah label keparahan primer tanpa merusak kepadatan vertikal sel tabel NOC (~30–34px).
+  2. **Pelaporan Terpusat Tindakan Operator pada Kartu Insiden Terkini (`server/main.py` & `dashboard.html`):**
+     - Memastikan seluruh anomali atau kondisi terbuka yang dipicu oleh tindakan operator pada server klien (penghentian layanan, restart layanan, reboot host, power off host) tetap tampil pada tabel kartu *Insiden Terkini* di halaman Dashboard, bahkan jika status pengabaian (*ignored*) aktif, dengan atribut `is_operator_action`.
+     - Insiden non-operator yang diabaikan tetap disembunyikan dari layar utama demi menjaga kebersihan monitor NOC.
+  3. **Integrasi Status Host Reboot (`_problem_instances` & `sync_server_problems`):**
+     - Memperluas deteksi ketidakaktifan agen (*agent_stale*) agar mengenali perintah `reboot_host` dari operator selain `poweroff_host`.
+     - Mengklasifikasikan mesin yang sedang dalam siklus mulai ulang resmi sebagai tingkat keparahan **Peringatan (*Warning*)** dengan pesan deskriptif: `Server sedang di-reboot oleh operator ({OPERATOR}) (> {durasi})` dan rekomendasi teknis yang tepat tanpa memicu sirine darurat atau banner merah.
+  4. **Penyelarasan Deskripsi Aksi Spesifik:**
+     - Menyesuaikan keterangan insiden secara presisi berdasarkan tindakan aktual operator: penghentian layanan (`dimatikan oleh operator`), restart layanan (`di-restart oleh operator`), pemadaman host (`dimatikan oleh operator`), dan reboot host (`sedang di-reboot oleh operator`).
+  5. **Pembersihan Teks Diagnostik Clutter (`[INFO DEPENDENSI]`):**
+     - Menghapus sepenuhnya string `[INFO DEPENDENSI]` dan saran dependensi silang yang tidak diperlukan dari modul diagnosa dan rekomendasi teknis agar antarmuka tetap bersih, fokus, dan mudah dipahami operator.
+
 ## Versi 4.8.38
 
 - **Tipe Rilis:** Sinkronisasi Penghentian Unit Systemd oleh Operator & Kesadaran Dependensi Layanan (*Systemd Operator Action Synchronization & Cross-Service Dependency Awareness*)
