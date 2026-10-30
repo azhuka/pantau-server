@@ -792,11 +792,23 @@ def get_existing_groups_and_tags(db: Session) -> tuple[list[str], list[str]]:
 
 def migrate_maintenance_windows_system():
     """Migrasi tabel maintenance_windows dan index terkait untuk sistem jendela pemeliharaan terjadwal."""
-    from sqlalchemy import inspect
+    from sqlalchemy import inspect, text
     Base.metadata.create_all(bind=engine, tables=[MaintenanceWindow.__table__])
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
     if "maintenance_windows" in existing_tables:
+        cols = {c["name"]: c for c in inspector.get_columns("maintenance_windows")}
+        if "server_ids" not in cols:
+            db = SessionLocal()
+            try:
+                db.execute(text("ALTER TABLE maintenance_windows ADD COLUMN server_ids TEXT NULL AFTER server_id"))
+                db.commit()
+                logger.info("[startup] Kolom maintenance_windows.server_ids berhasil ditambahkan")
+            except Exception as e:
+                db.rollback()
+                logger.warning("[startup] Gagal tambah server_ids: %s", e)
+            finally:
+                db.close()
         logger.info("[startup] Tabel maintenance_windows siap")
 
 
@@ -899,6 +911,14 @@ def _evaluate_maintenance_windows(db: Session, now: Optional[datetime] = None) -
         elif aw.scope_type == "server" and aw.server_id:
             if aw.server_id in servers_by_id and aw.server_id not in covered_servers:
                 covered_servers[aw.server_id] = aw
+        elif aw.scope_type in ("servers", "custom") and aw.server_ids:
+            try:
+                target_sids = [int(x.strip()) for x in aw.server_ids.split(",") if x.strip().isdigit()]
+                for tsid in target_sids:
+                    if tsid in servers_by_id and tsid not in covered_servers:
+                        covered_servers[tsid] = aw
+            except Exception:
+                pass
 
     for sid, aw in covered_servers.items():
         s = servers_by_id.get(sid)
@@ -7048,15 +7068,25 @@ def api_maintenance_windows_list(
     completed_count = sum(1 for w in all_windows if w.status in ("completed", "cancelled"))
 
     windows = query.all()
+    all_servers_map = {s.id: s.hostname for s in db.query(Server).all()}
     result = []
     for w in windows:
+        server_hostnames = []
+        if w.scope_type in ("servers", "custom") and w.server_ids:
+            try:
+                sids = [int(x.strip()) for x in w.server_ids.split(",") if x.strip().isdigit()]
+                server_hostnames = [all_servers_map[sid] for sid in sids if sid in all_servers_map]
+            except Exception:
+                pass
         result.append({
             "id": w.id,
             "title": w.title,
             "description": w.description,
             "scope_type": w.scope_type,
             "server_id": w.server_id,
+            "server_ids": w.server_ids,
             "server_hostname": w.server.hostname if w.server else None,
+            "server_hostnames": server_hostnames,
             "server_group": w.server_group,
             "schedule_type": w.schedule_type,
             "start_time": w.start_time.isoformat() if w.start_time else None,
@@ -7105,10 +7135,11 @@ async def api_maintenance_windows_create(
 
     description = str(body.get("description", "") or "").strip() or None
     scope_type = str(body.get("scope_type", "server") or "").strip()
-    if scope_type not in ("all", "group", "server"):
+    if scope_type not in ("all", "group", "server", "servers", "custom"):
         raise HTTPException(status_code=400, detail="Tipe cakupan tidak valid")
 
     server_id = None
+    server_ids = None
     server_group = None
     if scope_type == "server":
         try:
@@ -7118,6 +7149,17 @@ async def api_maintenance_windows_create(
         srv = db.query(Server).filter(Server.id == server_id).first()
         if not srv:
             raise HTTPException(status_code=404, detail="Server target tidak ditemukan")
+    elif scope_type in ("servers", "custom"):
+        raw_ids = body.get("server_ids") or []
+        if isinstance(raw_ids, str):
+            parsed_ids = [x.strip() for x in raw_ids.split(",") if x.strip().isdigit()]
+        elif isinstance(raw_ids, list):
+            parsed_ids = [str(int(x)) for x in raw_ids if str(x).isdigit()]
+        else:
+            parsed_ids = []
+        if not parsed_ids:
+            raise HTTPException(status_code=400, detail="Pilih minimal satu server target")
+        server_ids = ",".join(parsed_ids)
     elif scope_type == "group":
         server_group = str(body.get("server_group", "") or "").strip()
         if not server_group:
@@ -7163,6 +7205,7 @@ async def api_maintenance_windows_create(
         description=description,
         scope_type=scope_type,
         server_id=server_id,
+        server_ids=server_ids,
         server_group=server_group,
         schedule_type=schedule_type,
         start_time=start_time,

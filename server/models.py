@@ -500,6 +500,7 @@ class MaintenanceWindow(Base):
     description = Column(Text, nullable=True)
     scope_type = Column(String(30), nullable=False, default="server")  # 'all', 'group', 'server'
     server_id = Column(INTEGER_UNSIGNED, ForeignKey("servers.id", ondelete="CASCADE"), nullable=True, index=True)
+    server_ids = Column(Text, nullable=True)  # Comma-separated server IDs, e.g. '1,4,7' (Multi-Select Server)
     server_group = Column(String(64), nullable=True, index=True)
 
     schedule_type = Column(String(30), nullable=False, default="once")  # 'once', 'daily', 'weekly'

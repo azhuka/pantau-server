@@ -311,6 +311,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.45
+
+- **Tipe Rilis:** Ekspansi Multi-Pilih Server Sasaran & Tombol Preset Waktu Cepat Jendela Pemeliharaan (*Multi-Select Server Target Expansion, Quick Time Presets, and Ad-Hoc Integration for Scheduled Maintenance Windows*)
+- **Fokus Utama:** Menyempurnakan subsistem jendela pemeliharaan terjadwal dengan kemampuan memilih beberapa server target sekaligus (*Multi-Select Servers*) lintas grup dalam satu jadwal pemeliharaan terpadu, menghadirkan tombol preset waktu cepat untuk kenyamanan pemeliharaan ad-hoc, serta mempererat integrasi antarmuka:
+  1. **Ekspansi Model & Basis Data Multi-Server (`models.py`, `main.py`, & MariaDB):**
+     - Menambahkan kolom `server_ids TEXT NULL` pada tabel `maintenance_windows` dan model ORM `MaintenanceWindow` untuk menyimpan daftar ID server terpilih.
+     - Menyediakan migrasi otomatis runtime pada fungsi `migrate_maintenance_windows_system()`.
+  2. **Dukungan Evaluasi & Pelaporan Multi-Host Backend (`server/main.py`):**
+     - Memperluas mesin evaluasi `_evaluate_maintenance_windows(db, now)` untuk memproses jadwal bertipe cakupan `servers`/`custom`, secara simultan mengaktifkan mode pemeliharaan pada seluruh host terpilih lintas grup tanpa batasan.
+     - Memperkaya endpoint `GET /api/maintenance-windows` dengan atribut `server_hostnames` (daftar nama host) dan memvalidasi muatan `server_ids` pada `POST /api/maintenance-windows`.
+  3. **Antarmuka Checklist Multi-Server & Preset Waktu Cepat (`maintenance.html`):**
+     - Menambahkan opsi radio *Beberapa Server (Multi-Pilih)* pada dialog modal penambahan jadwal pemeliharaan.
+     - Menyediakan kotak centang server interaktif berdensitas tinggi dengan filter pencarian instan (*live search*) dan tombol pintas *Pilih Semua | Batal Semua*.
+     - Menambahkan tombol preset waktu cepat (*Quick Presets*): `+1 Jam Sekarang`, `+2 Jam`, `+4 Jam`, dan `Malam Ini (23:00 - 04:00 UTC)` untuk aktivasi instan tanpa perlu repot mengetik kalender/jam manual.
+     - Memperbarui tabel NOC untuk menyajikan lencana chip host yang informatif (`host1, host2` atau `host1, host2 +N host`).
+  4. **Otomasi Pembaruan SemVer v4.8.45:**
+     - Menaikkan versi sistem menjadi `v4.8.45` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.44
 
 - **Tipe Rilis:** Jendela Pemeliharaan Terjadwal (Scheduled Maintenance Windows) & Penekanan Alarm Otomatis (*Scheduled Maintenance Windows, Automated Alarm Suppression, and NOC Operations Triage*)

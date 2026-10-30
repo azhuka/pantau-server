@@ -332,7 +332,11 @@
           <div class="radio-group">
             <label class="radio-label">
               <input type="radio" name="scope_type" value="server" checked onchange="onScopeTypeChange()" />
-              <span>Server Tertentu</span>
+              <span>Server Tunggal</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="scope_type" value="servers" onchange="onScopeTypeChange()" />
+              <span>Beberapa Server (Multi-Pilih)</span>
             </label>
             <label class="radio-label">
               <input type="radio" name="scope_type" value="group" onchange="onScopeTypeChange()" />
@@ -353,6 +357,33 @@
             <option value="{{ s.id }}">{{ s.hostname }} ({{ s.ip_address }}){% if s.group_name %} [{{ s.group_name }}]{% endif %}</option>
             {% endfor %}
           </select>
+        </div>
+
+        <!-- Target Beberapa Server (Multi-Select Lintas Grup) -->
+        <div class="form-group" id="wrapTargetMultiServers" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <label style="margin:0">Pilih Server Sasaran (Centang Bebas Lintas Grup)</label>
+            <div style="font-size:11px;display:flex;gap:8px">
+              <a href="javascript:void(0)" onclick="toggleAllMultiServers(true)" style="color:var(--blue);text-decoration:none">Pilih Semua</a>
+              <span style="color:var(--dim)">|</span>
+              <a href="javascript:void(0)" onclick="toggleAllMultiServers(false)" style="color:var(--dim);text-decoration:none">Batal Semua</a>
+            </div>
+          </div>
+          <div style="margin-bottom:6px">
+            <input type="text" id="multiServerSearch" class="form-control" style="font-size:11.5px;padding:4px 8px" placeholder="Saring server (ketik nama, ip, atau grup)..." oninput="filterMultiServerList()" />
+          </div>
+          <div id="multiServersList" style="max-height:165px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px;background:rgba(0,0,0,0.15);display:flex;flex-direction:column;gap:4px">
+            {% for s in servers %}
+            <label class="multi-server-item" style="display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:4px;cursor:pointer;background:rgba(255,255,255,0.02);font-size:12px;user-select:none" data-search="{{ s.hostname | lower }} {{ s.ip_address }} {{ (s.group_name or '') | lower }}">
+              <input type="checkbox" name="multi_server_ids" value="{{ s.id }}" style="cursor:pointer" />
+              <strong style="color:var(--text-bright)">{{ s.hostname }}</strong>
+              <span class="mono" style="color:var(--dim);font-size:11px">({{ s.ip_address }})</span>
+              {% if s.group_name %}
+              <span class="badge badge-muted" style="font-size:9px;margin-left:auto">{{ s.group_name }}</span>
+              {% endif %}
+            </label>
+            {% endfor %}
+          </div>
         </div>
 
         <!-- Target Grup Server -->
@@ -384,14 +415,25 @@
         </div>
 
         <!-- Input Waktu untuk Sekali Jalan -->
-        <div id="wrapOnceSchedule" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div class="form-group">
-            <label for="formStartTime">Waktu Mulai <span style="color:#ef4444">*</span></label>
-            <input type="datetime-local" id="formStartTime" class="form-control" />
+        <div id="wrapOnceSchedule">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px">
+            <label style="margin:0">Rentang Waktu Pelaksanaan <span style="color:#ef4444">*</span></label>
+            <div style="display:inline-flex;gap:4px;flex-wrap:wrap">
+              <button type="button" class="btn btn-sm btn-ghost" style="font-size:10px;padding:1px 6px;color:var(--blue)" onclick="applyTimePreset(60)">+1 Jam Sekarang</button>
+              <button type="button" class="btn btn-sm btn-ghost" style="font-size:10px;padding:1px 6px;color:var(--blue)" onclick="applyTimePreset(120)">+2 Jam</button>
+              <button type="button" class="btn btn-sm btn-ghost" style="font-size:10px;padding:1px 6px;color:var(--blue)" onclick="applyTimePreset(240)">+4 Jam</button>
+              <button type="button" class="btn btn-sm btn-ghost" style="font-size:10px;padding:1px 6px;color:#facc15" onclick="applyTimePreset('tonight')">Malam Ini (23:00 - 04:00)</button>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="formEndTime">Waktu Selesai <span style="color:#ef4444">*</span></label>
-            <input type="datetime-local" id="formEndTime" class="form-control" />
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group" style="margin:0">
+              <label for="formStartTime" style="font-size:11px;color:var(--dim)">Waktu Mulai</label>
+              <input type="datetime-local" id="formStartTime" class="form-control" />
+            </div>
+            <div class="form-group" style="margin:0">
+              <label for="formEndTime" style="font-size:11px;color:var(--dim)">Waktu Selesai</label>
+              <input type="datetime-local" id="formEndTime" class="form-control" />
+            </div>
           </div>
         </div>
 
@@ -454,7 +496,43 @@ function initDefaultDateTimes() {
 function onScopeTypeChange() {
   const val = document.querySelector('input[name="scope_type"]:checked')?.value || 'server';
   document.getElementById('wrapTargetServer').style.display = (val === 'server') ? 'block' : 'none';
+  document.getElementById('wrapTargetMultiServers').style.display = (val === 'servers') ? 'block' : 'none';
   document.getElementById('wrapTargetGroup').style.display = (val === 'group') ? 'block' : 'none';
+}
+
+function toggleAllMultiServers(check) {
+  document.querySelectorAll('input[name="multi_server_ids"]').forEach(cb => {
+    const item = cb.closest('.multi-server-item');
+    if (!item || item.style.display !== 'none') {
+      cb.checked = check;
+    }
+  });
+}
+
+function filterMultiServerList() {
+  const q = (document.getElementById('multiServerSearch')?.value || '').toLowerCase().trim();
+  document.querySelectorAll('.multi-server-item').forEach(item => {
+    const text = (item.dataset.search || '').toLowerCase();
+    item.style.display = (!q || text.includes(q)) ? 'flex' : 'none';
+  });
+}
+
+function applyTimePreset(val) {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  now.setSeconds(0, 0);
+
+  if (typeof val === 'number') {
+    const end = new Date(now.getTime() + val * 60000);
+    document.getElementById('formStartTime').value = now.toISOString().slice(0, 16);
+    document.getElementById('formEndTime').value = end.toISOString().slice(0, 16);
+  } else if (val === 'tonight') {
+    const start = new Date(now);
+    start.setHours(23, 0, 0, 0);
+    const end = new Date(start.getTime() + 5 * 3600000);
+    document.getElementById('formStartTime').value = start.toISOString().slice(0, 16);
+    document.getElementById('formEndTime').value = end.toISOString().slice(0, 16);
+  }
 }
 
 // Beralih Tipe Jadwal
@@ -482,6 +560,12 @@ function openAddModal() {
   document.getElementById('formDesc').value = '';
   document.querySelector('input[name="scope_type"][value="server"]').checked = true;
   document.querySelector('input[name="schedule_type"][value="once"]').checked = true;
+  document.querySelectorAll('input[name="multi_server_ids"]').forEach(cb => cb.checked = false);
+  const searchInput = document.getElementById('multiServerSearch');
+  if (searchInput) {
+    searchInput.value = '';
+    filterMultiServerList();
+  }
   onScopeTypeChange();
   onScheduleTypeChange();
   initDefaultDateTimes();
@@ -570,6 +654,15 @@ function renderTable(list) {
       scopeBadge = '<span class="badge badge-purple mono" style="font-size:9.5px">SEMUA SERVER</span>';
     } else if (w.scope_type === 'group') {
       scopeBadge = `<span class="badge badge-info mono" style="font-size:9.5px">Grup: ${escapeHtml(w.server_group || '-')}</span>`;
+    } else if (w.scope_type === 'servers' || w.scope_type === 'custom') {
+      const names = w.server_hostnames || [];
+      if (names.length === 0) {
+        scopeBadge = '<span class="badge badge-blue mono" style="font-size:9.5px">Multi Server</span>';
+      } else if (names.length <= 2) {
+        scopeBadge = `<span class="badge badge-blue mono" style="font-size:9.5px" title="${escapeHtml(names.join(', '))}">${escapeHtml(names.join(', '))}</span>`;
+      } else {
+        scopeBadge = `<span class="badge badge-blue mono" style="font-size:9.5px" title="${escapeHtml(names.join(', '))}">${escapeHtml(names.slice(0, 2).join(', '))} +${names.length - 2} host</span>`;
+      }
     } else {
       scopeBadge = `<strong style="font-size:12px;color:var(--text-bright)">${escapeHtml(w.server_hostname || 'Server #' + w.server_id)}</strong>`;
     }
@@ -632,12 +725,23 @@ async function submitMaintenanceForm(e) {
   const scopeType = document.querySelector('input[name="scope_type"]:checked')?.value || 'server';
   const scheduleType = document.querySelector('input[name="schedule_type"]:checked')?.value || 'once';
 
+  let multiIds = [];
+  if (scopeType === 'servers') {
+    multiIds = Array.from(document.querySelectorAll('input[name="multi_server_ids"]:checked')).map(cb => parseInt(cb.value, 10));
+    if (!multiIds.length) {
+      showToast('Pilih minimal satu server sasaran', false);
+      btn.disabled = false;
+      return;
+    }
+  }
+
   const payload = {
     title: document.getElementById('formTitle').value.trim(),
     description: document.getElementById('formDesc').value.trim(),
     scope_type: scopeType,
     schedule_type: scheduleType,
     server_id: (scopeType === 'server') ? parseInt(document.getElementById('formServerId').value, 10) : null,
+    server_ids: (scopeType === 'servers') ? multiIds : null,
     server_group: (scopeType === 'group') ? document.getElementById('formServerGroup').value : null,
   };
 
