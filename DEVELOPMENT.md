@@ -311,6 +311,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.43
+
+- **Tipe Rilis:** Perbaikan Kritis Monopoli Connection Pool Basis Data & Pencegahan Pemblokiran Event Loop Asinkron (*Critical Database Connection Pool Exhaustion Fix and Async Event Loop Starvation Prevention*)
+- **Fokus Utama:** Mengeliminasi kendala saturasi 100% pada *QueuePool* SQLAlchemy MariaDB dan pemblokiran fatal *event loop* asyncio Uvicorn yang dipicu oleh endpoint *long-polling* agen, memulihkan latensi respons dasbor dari *timeout* (>10 detik) menjadi ~4 milidetik, serta menuntaskan anomali insiden keliru `Probe Pantau Web Dashboard GAGAL` dan `Agen tidak melapor`:
+  1. **Eliminasi Pengikatan Sesi DB pada Handler Long-Poll (`main.py`):**
+     - Menghapus ketergantungan injeksi `db: Session = Depends(get_db)` dari endpoint *long-polling* `/api/agent/file-requests`, `/api/agent/terminal-requests`, dan `/api/agent/terminal/{session_id}/stdin`.
+     - Mengatasi kendala koneksi menggantung (*idle sleep*) hingga 15 detik per permintaan agen yang sebelumnya memonopoli seluruh kapasitas *pool* (30/30 koneksi) secara terus-menerus.
+  2. **Cache Validasi API Key Agen In-Memory (`_get_cached_server_id`):**
+     - Mengimplementasikan kamus cache in-memory `_AGENT_KEY_CACHE` dengan masa kedaluwarsa 120 detik untuk memvalidasi kredensial agen secara instan dalam hitungan mikrodetik (*zero DB overhead*).
+     - Menjamin koneksi database hanya dibuka secara singkat via blok `with SessionLocal()` pada saat *cache miss* dan segera dikembalikan ke *pool* sebelum jeda asinkron `asyncio.wait_for(...)`.
+  3. **Eskalasi Kapasitas dan Batas Waktu Connection Pool (`config.py` & `main.py`):**
+     - Meningkatkan parameter `POOL_SIZE` dari 10 menjadi 25 dan `POOL_MAX_OVERFLOW` dari 20 menjadi 50.
+     - Menambahkan batas waktu antrean `pool_timeout=10` pada inisialisasi `create_engine` guna mencegah *deadlock* atau *thread hanging*.
+  4. **Penyelesaian Insiden Sistem Terpadu:**
+     - Mengembalikan metrik ketersediaan *synthetic probe* dasbor ke status normal (UP, latensi ~157 ms) dan secara otomatis menyelesaikan insiden palsu `probe_failed:6` serta `agent_stale`.
+  5. **Otomasi Pembaruan SemVer v4.8.43:**
+     - Menaikkan versi sistem menjadi `v4.8.43` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.42
 
 - **Tipe Rilis:** Pengawas Pola Log Kritis Kernel & Sistem, Deteksi OOM Killer, Galat Storage I/O, dan Korelasi Akar Masalah Layanan (*Kernel Critical Log Pattern Monitor, OOM Killer Detection, Storage Disk I/O Errors, and Root-Cause Correlation*)

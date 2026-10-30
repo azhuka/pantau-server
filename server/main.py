@@ -70,6 +70,7 @@ _probe_scheduler: Optional[ProbeScheduler] = None
 engine = create_engine(
     settings.database_url,
     pool_size=settings.POOL_SIZE, max_overflow=settings.POOL_MAX_OVERFLOW,
+    pool_timeout=settings.POOL_TIMEOUT,
     pool_recycle=settings.POOL_RECYCLE, pool_pre_ping=True,
 )
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
@@ -456,6 +457,28 @@ def api_key_fingerprint(api_key: str) -> str:
     if h.startswith(KEY_PREFIX):
         h = h[len(KEY_PREFIX):]
     return h[:8] + "…" + h[-8:] if len(h) > 16 else h
+
+
+# Cache in-memory untuk validasi API key agen pada koneksi long-poll (mencegah leak/monopoli pool DB)
+_AGENT_KEY_CACHE: dict[str, tuple[int, float]] = {}
+
+
+def _get_cached_server_id(raw_key: str) -> Optional[int]:
+    """Resolusi ID server dari API key dengan cache in-memory 120 detik non-blocking."""
+    if not raw_key:
+        return None
+    hk = hash_api_key(raw_key)
+    now = time.time()
+    cached = _AGENT_KEY_CACHE.get(hk)
+    if cached and cached[1] > now:
+        return cached[0]
+    with SessionLocal() as db:
+        srv = db.query(Server.id).filter(Server.api_key == hk, Server.is_active == 1).first()
+        if not srv:
+            return None
+        sid = srv[0]
+        _AGENT_KEY_CACHE[hk] = (sid, now + 120.0)
+        return sid
 
 
 # ---------------------------------------------------------------------------
@@ -11821,24 +11844,23 @@ def api_agent_wrapper(wrapper_name: str):
 @app.get("/api/agent/file-requests")
 async def api_agent_file_requests(
     x_api_key: str = Header(alias="X-Api-Key"),
-    db: Session = Depends(get_db),
 ):
     """Agen mem-poll permintaan berkas secara cepat/long-poll (tahan hingga 15 dtk)."""
-    server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
-    if not server:
+    server_id = _get_cached_server_id(x_api_key)
+    if not server_id:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
-    reqs = await file_dispatcher.pop_pending(server.id)
+    reqs = await file_dispatcher.pop_pending(server_id)
     if reqs:
         return {"requests": reqs}
 
-    event = await file_dispatcher.get_or_create_event(server.id)
+    event = await file_dispatcher.get_or_create_event(server_id)
     try:
         await asyncio.wait_for(event.wait(), timeout=15.0)
     except asyncio.TimeoutError:
         pass
 
-    reqs = await file_dispatcher.pop_pending(server.id)
+    reqs = await file_dispatcher.pop_pending(server_id)
     return {"requests": reqs}
 
 
@@ -12207,24 +12229,23 @@ async def ws_server_terminal(websocket: WebSocket, sid: int):
 @app.get("/api/agent/terminal-requests")
 async def api_agent_terminal_requests(
     x_api_key: str = Header(alias="X-Api-Key"),
-    db: Session = Depends(get_db),
 ):
     """Agen mem-poll permintaan pembukaan terminal session realtime (long-poll 15 dtk)."""
-    server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
-    if not server:
+    server_id = _get_cached_server_id(x_api_key)
+    if not server_id:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
-    sess_id = await term_dispatcher.pop_pending_open(server.id)
+    sess_id = await term_dispatcher.pop_pending_open(server_id)
     if sess_id:
         return {"session_id": sess_id}
 
-    event = await term_dispatcher.get_or_create_event(server.id)
+    event = await term_dispatcher.get_or_create_event(server_id)
     try:
         await asyncio.wait_for(event.wait(), timeout=15.0)
     except asyncio.TimeoutError:
         pass
 
-    sess_id = await term_dispatcher.pop_pending_open(server.id)
+    sess_id = await term_dispatcher.pop_pending_open(server_id)
     return {"session_id": sess_id}
 
 
@@ -12232,17 +12253,16 @@ async def api_agent_terminal_requests(
 async def api_agent_terminal_stdin(
     session_id: str,
     x_api_key: str = Header(alias="X-Api-Key"),
-    db: Session = Depends(get_db),
 ):
     """Agen mengambil ketikan admin (stdin) atau sinyal resize dari dashboard."""
-    server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
-    if not server:
+    server_id = _get_cached_server_id(x_api_key)
+    if not server_id:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
     bridge = term_dispatcher.get_session(session_id)
     if not bridge or bridge.closed:
         raise HTTPException(status_code=410, detail="Sesi terminal sudah ditutup")
-    if bridge.server_id != server.id:
+    if bridge.server_id != server_id:
         raise HTTPException(status_code=403, detail="Akses ditolak: Sesi terminal bukan milik server ini")
 
     try:
