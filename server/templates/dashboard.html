@@ -816,7 +816,7 @@ body.popout-fleet_table #dash-fleet-card {
 .dash-clock-day {
   font-size: 11.5px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--text-heading, #f1f5f9);
   letter-spacing: -0.01em;
   text-transform: capitalize;
 }
@@ -841,7 +841,7 @@ body.popout-fleet_table #dash-fleet-card {
   font-size: 16px;
   font-weight: 700;
   line-height: 1;
-  color: #ffffff;
+  color: var(--text-heading, #ffffff);
   letter-spacing: 0.5px;
   display: flex;
   align-items: baseline;
@@ -853,7 +853,7 @@ body.popout-fleet_table #dash-fleet-card {
   text-align: center;
 }
 .dash-clock-sep {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--dim, rgba(255, 255, 255, 0.4));
   margin: 0 1px;
   font-weight: 500;
   animation: dashColonBlink 1s ease-in-out infinite;
@@ -900,7 +900,7 @@ body.popout-fleet_table #dash-fleet-card {
       </svg>
       {% endif %}
     </div>
-    <div style="font-size:20px;font-weight:800;letter-spacing:1.5px;color:#fff;text-transform:uppercase;line-height:1;margin:0">PANTAU SERVER</div>
+    <div class="dash-brand-title" style="font-size:20px;font-weight:800;letter-spacing:1.5px;color:var(--text-heading, #fff);text-transform:uppercase;line-height:1;margin:0">PANTAU SERVER</div>
     <div style="font-size:14.5px;font-weight:700;color:var(--text-bright);letter-spacing:0.2px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ brand.org_name }}</div>
     {% if brand.org_unit %}
     <div style="font-size:12.5px;color:var(--dim);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding-bottom:1px">{{ brand.org_unit }}</div>

@@ -40,6 +40,8 @@
   --border-focus:rgba(56,189,248,0.7);
   --text:#f8fafc;
   --text-heading:#ffffff;
+  --text-bright:#ffffff;
+  color-scheme:dark;
   --dim:#94a3b8;
   --dim-subtle:#64748b;
   --blue:#38bdf8;
@@ -171,6 +173,8 @@
   --border-focus:rgba(2, 132, 199, 0.8);
   --text:#0f172a;
   --text-heading:#020617;
+  --text-bright:#020617;
+  color-scheme:light;
   --dim:#64748b;
   --dim-subtle:#94a3b8;
   --hover:rgba(0, 0, 0, 0.04);
@@ -187,14 +191,35 @@
   --shadow-lg:0 12px 28px -4px rgba(0,0,0,0.12), 0 6px 12px -2px rgba(0,0,0,0.06);
 }
 [data-theme="light"] .card,
-[data-theme="light"] .stat-card {
+[data-theme="light"] .stat-card,
+[data-theme="light"] .hero-card.card,
+[data-theme="light"] .tab-body .card,
+[data-theme="light"] .probe-stat-card,
+[data-theme="light"] .perf-overview-card {
+  background:#ffffff !important;
+  color:#0f172a !important;
   box-shadow:0 1px 3px rgba(0,0,0,0.05), 0 2px 6px rgba(0,0,0,0.03) !important;
   border-color:rgba(0,0,0,0.10) !important;
 }
 [data-theme="light"] .topbar h2,
 [data-theme="light"] .card-header h3,
-[data-theme="light"] .stat-card .value {
+[data-theme="light"] .stat-card .value,
+[data-theme="light"] .hero-host strong,
+[data-theme="light"] .dash-clock-digits,
+[data-theme="light"] .probe-stat-card .value,
+[data-theme="light"] .probe-modal-stat-card .val {
   color:#0f172a !important;
+}
+[data-theme="light"] .dash-clock-sep {
+  color:#64748b !important;
+}
+[data-theme="light"] .dash-brand-title,
+[data-theme="light"] .dash-org-header div[style*="color:#fff"],
+[data-theme="light"] .dash-org-header div[style*="color: #fff"] {
+  color:#0f172a !important;
+}
+[data-theme="light"] .day-btn.is-selected {
+  color:#0b1120 !important;
 }
 [data-theme="light"] .sidebar-brand {
   color:#0f172a !important;
@@ -207,12 +232,14 @@
 [data-theme="light"] .sidebar-footer div {
   color:#475569 !important;
 }
-[data-theme="light"] table th {
+[data-theme="light"] table th,
+[data-theme="light"] .tab-body .card table th {
   background:#f1f5f9 !important;
   color:#475569 !important;
   border-bottom:1px solid rgba(0,0,0,0.10) !important;
 }
-[data-theme="light"] table td {
+[data-theme="light"] table td,
+[data-theme="light"] .tab-body .card table td {
   color:#1e293b !important;
   border-bottom:1px solid rgba(0,0,0,0.06) !important;
 }
@@ -241,9 +268,28 @@
 [data-theme="light"] input,
 [data-theme="light"] select,
 [data-theme="light"] textarea {
+  color-scheme:light !important;
   background:#ffffff !important;
   color:#0f172a !important;
   border-color:rgba(0,0,0,0.18) !important;
+}
+[data-theme="light"] select option,
+[data-theme="light"] select optgroup {
+  background-color:#ffffff !important;
+  color:#0f172a !important;
+}
+[data-theme="light"] select option:checked,
+[data-theme="light"] select option:hover {
+  background-color:#e0f2fe !important;
+  color:#0284c7 !important;
+}
+[data-theme="light"] .perf-notes-textarea {
+  background:#ffffff !important;
+  color:#0f172a !important;
+  border-color:rgba(0,0,0,0.14) !important;
+}
+[data-theme="light"] .perf-notes-textarea::placeholder {
+  color:#94a3b8 !important;
 }
 [data-theme="light"] input::placeholder {
   color:#94a3b8 !important;
@@ -347,7 +393,7 @@ body{
 .main{flex:1;min-width:0;margin-left:230px;padding:26px 36px;transition:margin-left .2s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column;min-height:100vh}
 .app-footer{margin-top:auto;text-align:center;padding:28px 0 16px;font-size:12px;color:var(--dim);opacity:0.8;user-select:none}
 .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:12px}
-.topbar h2{font-size:20px;font-weight:700;letter-spacing:-0.02em;color:#fff}
+.topbar h2{font-size:20px;font-weight:700;letter-spacing:-0.02em;color:var(--text-heading, #fff)}
 .topbar .user-info{font-size:13px;color:var(--dim)}
 
 .card{
@@ -365,7 +411,7 @@ body{
   box-shadow:var(--shadow-md);
 }
 .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px}
-.card-header h3{font-size:15px;font-weight:700;letter-spacing:-0.01em;color:#f8fafc}
+.card-header h3{font-size:15px;font-weight:700;letter-spacing:-0.01em;color:var(--text-heading, #f8fafc)}
 pre{white-space:pre;overflow-x:auto;max-width:100%}
 
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
@@ -384,7 +430,7 @@ pre{white-space:pre;overflow-x:auto;max-width:100%}
   box-shadow:var(--shadow-md);
 }
 .stat-card .label{font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.stat-card .value{font-size:26px;font-weight:800;letter-spacing:-0.03em;color:#fff}
+.stat-card .value{font-size:26px;font-weight:800;letter-spacing:-0.03em;color:var(--text-heading, #fff)}
 
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;line-height:1.3}
 .badge-up, .badge-success{background:var(--green-bg);color:var(--green);border:1px solid rgba(52,211,153,0.35);box-shadow:0 0 8px rgba(52,211,153,0.12)}
@@ -885,7 +931,7 @@ table .copyable-ip, td .copyable-ip{font-size:9.5px !important}
 .hero-row{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:nowrap}
 .hero-ident{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 auto}
 .hero-host{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
-.hero-host strong{font-size:17px;font-weight:700;color:#fff;letter-spacing:-0.015em}
+.hero-host strong{font-size:17px;font-weight:700;color:var(--text-heading, #fff);letter-spacing:-0.015em}
 .hero-host .dot{width:9px;height:9px}
 .hero-online{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
 .hero-online.on{color:var(--green)}
@@ -1656,7 +1702,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.49' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.50' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
       <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
       </button>

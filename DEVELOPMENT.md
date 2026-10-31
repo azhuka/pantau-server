@@ -311,6 +311,27 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.50
+
+- **Tipe Rilis:** Optimalisasi Kontras Visual, Pembenahan Komprehensif Mode Tema Terang, dan Penyelarasan Tipografi NOC (*Visual Contrast Optimization, Comprehensive Light Theme Styling Hardening, and NOC Typography Alignment*)
+- **Fokus Utama:** Mengeliminasi seluruh anomali teks putih yang tidak terbaca pada latar terang di seluruh halaman aplikasi saat Mode Tema Terang (*Light Clean*) diaktifkan, memastikan kontras visual tinggi, keterbacaan tajam, dan keselarasan estetika antarmuka NOC:
+  1. **Pembenahan Tipografi & Judul Branding (`server/templates/dashboard.html` & `profile.html`):**
+     - Menghapus warna teks putih statis (`#fff`) pada judul branding organisasi "PANTAU SERVER" (`.dash-brand-title`), menggantinya dengan variabel dinamis `color: var(--text-heading, #fff)` sehingga otomatis beralih menjadi warna gelap pekat (`#020617`) saat tema terang aktif.
+     - Memperbaiki komponen digit jam digital sistem (`.dash-clock-digits`) dari hardcoded `#ffffff` menjadi `color: var(--text-heading, #ffffff)`, pemisah titik dua (`.dash-clock-sep`) menjadi `var(--dim)`, serta label hari (`.dash-clock-day`) menjadi `var(--text-heading, #f1f5f9)` agar angka jam, menit, dan hari terlihat tegas dan terbaca sempurna di atas kartu putih.
+  2. **Harmonisasi Kartu Rincian Server & Modul Pemantauan (`server/templates/services.html` & `probing.html`):**
+     - Memperbaiki aturan CSS kartu pada halaman rincian server (`.hero-card.card`, `.tab-body .card`, `.perf-overview-card`) dan modul probing (`.probe-kpi-card`, `.probe-table-card`) dari gradien gelap statis dengan `!important` menjadi variabel responsif `var(--card-bg, #ffffff) !important` dan `var(--border) !important`.
+     - Memperbaiki judul kartu spesifikasi perangkat keras (`.tab-body .card-header h3`) dari teks putih statis `#f8fafc !important` menjadi `color: var(--text-heading, #0f172a) !important`.
+     - Menyelaraskan teks judul host hero (`.hero-host strong`) dari `#fff !important` menjadi `var(--text-heading, #fff) !important`.
+     - Menyelaraskan kotak textarea catatan operasional server (`.perf-notes-textarea`) agar mengadopsi latar belakang putih bersih (`#ffffff`) dengan teks gelap kontras (`#0f172a`) dan placeholder terdistribusi rapi.
+  3. **Penyesuaian Skema Warna Formulir & Komponen Select (`server/templates/base.html` & `probing.html`):**
+     - Menambahkan deklarasi skema warna terang (`color-scheme: light !important`) pada seluruh elemen `input`, `select`, dan `textarea` saat `[data-theme="light"]` aktif.
+     - Mengonfigurasi gaya opsi dropdown (`select option`, `select optgroup`) pada tema terang dengan latar belakang `#ffffff`, teks `#0f172a`, serta warna hover/terpilih biru lembut (`#e0f2fe` dan `#0284c7`).
+     - Menyediakan definisi variabel `--text-bright: #020617;` pada `[data-theme="light"]` dan `--text-bright: #ffffff;` pada `:root` agar seluruh teks berpenanda terang dapat beradaptasi secara harmonis.
+  4. **Verifikasi Visual Browser Nyata via Chrome DevTools Protocol:**
+     - Menjalankan inspeksi otomatis browser headless Chrome dengan inspeksi DOM per halaman (Dasbor, Masalah/Insiden, Rincian Server, Pemantauan Endpoint Probing, dan Jendela Pemeliharaan) dalam Mode Tema Terang dengan tingkat keterbacaan kontras 100%.
+  5. **Otomasi Pembaruan SemVer v4.8.50:**
+     - Menaikkan versi sistem menjadi `v4.8.50` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.49
 
 - **Tipe Rilis:** Pengujian Menyeluruh Alur Kerja Operasional, Penguatan Ketahanan Endpoint Probing, dan Penyelarasan Modal Dismissal (*Comprehensive Operational Workflows Audit, Probing Endpoint Resilience Hardening, and Universal Modal Dismissal Alignment*)

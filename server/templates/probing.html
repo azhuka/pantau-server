@@ -74,6 +74,16 @@
   background-color: #2563eb !important;
   color: #ffffff !important;
 }
+[data-theme="light"] .filter-select option,
+[data-theme="light"] .filter-select optgroup {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .filter-select option:checked,
+[data-theme="light"] .filter-select option:hover {
+  background-color: #e0f2fe !important;
+  color: #0284c7 !important;
+}
 
 /* KPI Strip Ringkasan */
 .probe-kpi-grid {
@@ -83,7 +93,7 @@
   margin-bottom: 20px;
 }
 .probe-kpi-card {
-  background: linear-gradient(180deg, rgba(26, 35, 54, 0.9) 0%, rgba(18, 25, 40, 0.95) 100%);
+  background: var(--stat-card-bg, linear-gradient(180deg, rgba(26, 35, 54, 0.9) 0%, rgba(18, 25, 40, 0.95) 100%));
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 14px 18px;
@@ -116,7 +126,7 @@
 
 /* Tabel Pemantauan Proporsional Standar Pantau */
 .probe-table-card {
-  background: linear-gradient(180deg, rgba(26, 35, 54, 0.95) 0%, rgba(20, 27, 43, 0.98) 100%);
+  background: var(--card-bg, linear-gradient(180deg, rgba(26, 35, 54, 0.95) 0%, rgba(20, 27, 43, 0.98) 100%));
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -423,6 +433,16 @@
 .probe-form-group select option:hover {
   background-color: #2563eb !important;
   color: #ffffff !important;
+}
+[data-theme="light"] .probe-form-group select option,
+[data-theme="light"] .probe-form-group select optgroup {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .probe-form-group select option:checked,
+[data-theme="light"] .probe-form-group select option:hover {
+  background-color: #e0f2fe !important;
+  color: #0284c7 !important;
 }
 
 .type-tabs {
@@ -829,7 +849,7 @@
         </div>
         <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;text-align:center">
           <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Rata-rata Latensi</div>
-          <div id="hist-avg-lat" style="font-size:16px;font-weight:700;color:#fff;margin-top:2px;font-family:ui-monospace,monospace">—</div>
+          <div id="hist-avg-lat" style="font-size:16px;font-weight:700;color:var(--text-heading, #fff);margin-top:2px;font-family:ui-monospace,monospace">—</div>
         </div>
         <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;text-align:center">
           <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Ketersediaan 24 Jam</div>
@@ -1081,7 +1101,7 @@ function renderTable() {
         <td class="td-target">
           <div style="display:flex;align-items:center;gap:6px">
             <span class="type-badge ${typeClass}">${typeLabel}</span>
-            <strong style="color:#fff;font-size:12px">${escapeHtml(p.name)}</strong>
+            <strong style="color:var(--text-heading, #fff);font-size:12px">${escapeHtml(p.name)}</strong>
             ${tierBadge}
           </div>
           <div style="margin-top:2px;font-family:ui-monospace,monospace;font-size:11px;color:var(--dim);word-break:break-all">
