@@ -5,7 +5,7 @@
 .group-header-row {
   cursor: pointer;
   user-select: none;
-  transition: filter .15s ease;
+  transition: filter .15s ease, background .15s ease;
 }
 .group-header-row:hover td {
   filter: brightness(1.2);
@@ -24,6 +24,17 @@
 .group-header-row:hover .group-collapse-icon {
   background: rgba(255,255,255,0.12);
   color: var(--text);
+}
+[data-theme="light"] .group-collapse-icon {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--dim);
+}
+[data-theme="light"] .group-header-row:hover .group-collapse-icon {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--text);
+}
+[data-theme="light"] .group-header-row:hover td {
+  filter: brightness(0.96);
 }
 #servers-table th {
   white-space: nowrap;
@@ -167,7 +178,6 @@
               <strong style="font-size:11px;color:var(--dim)">Server Tanpa Grup</strong>
               <span class="badge badge-muted" style="font-size:8.5px;padding:1px 5px">{{ ungrouped_count }} Server</span>
               {% endif %}
-              <span id="collapse-hint-{{ srv_grp }}" style="font-size:9.5px;color:var(--dim);opacity:.6;margin-left:6px">Klik baris untuk ciutkan</span>
             </div>
           </td>
         </tr>
@@ -402,13 +412,9 @@ function updateCollapsedDisplay() {
   document.querySelectorAll('.group-header-row').forEach(hdr => {
     const grp = hdr.getAttribute('data-header-group');
     const icon = document.getElementById('collapse-icon-' + grp);
-    const hint = document.getElementById('collapse-hint-' + grp);
     const isCollapsed = collapsedGroups.has(grp);
     if (icon) {
       icon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
-    }
-    if (hint) {
-      hint.textContent = isCollapsed ? 'Klik baris untuk bentangkan' : 'Klik baris untuk ciutkan';
     }
   });
 
@@ -437,6 +443,7 @@ function serversFilter() {
     }
 
     const matchesFilter = matchQ && matchGrp;
+    tr.dataset.filterMatch = matchesFilter ? '1' : '0';
     if (matchesFilter) {
       visibleGroups.add(memGrp || '__none__');
     }
@@ -450,18 +457,11 @@ function serversFilter() {
     serversPagination.update();
   } else {
     rows.forEach(tr => { tr.style.display = (tr.dataset.filterHidden === '1' ? 'none' : ''); });
-    document.querySelectorAll('#servers-table tbody tr.group-header-row').forEach(hdr => {
-      const hGrp = hdr.getAttribute('data-header-group');
-      if (isTableSorted) {
-        hdr.style.display = 'none';
-      } else {
-        hdr.style.display = visibleGroups.has(hGrp) ? '' : 'none';
-      }
-    });
+    updateServerGroupHeaders();
   }
 
   const noMatch = document.getElementById('servers-no-match');
-  if (noMatch) noMatch.style.display = (visible === 0 && rows.length > 0) ? '' : 'none';
+  if (noMatch) noMatch.style.display = (visibleGroups.size === 0 && rows.length > 0) ? '' : 'none';
 }
 
 function relTime(isoStr) {
@@ -782,11 +782,21 @@ function updateServerGroupHeaders() {
     const hGrp = hdr.getAttribute('data-header-group');
     if (isTableSorted) {
       hdr.style.display = 'none';
-    } else {
-      const hasVisibleMember = Array.from(tbody.querySelectorAll(`tr[data-group-membership="${hGrp}"]`))
-        .some(r => r.style.display !== 'none');
-      hdr.style.display = hasVisibleMember ? '' : 'none';
+      return;
     }
+    const memberRows = Array.from(tbody.querySelectorAll(`tr[data-group-membership="${hGrp}"]`));
+    const hasMatchingMember = memberRows.some(r => r.dataset.filterMatch !== '0');
+    if (!hasMatchingMember) {
+      hdr.style.display = 'none';
+      return;
+    }
+    const isCollapsed = collapsedGroups.has(hGrp);
+    if (isCollapsed) {
+      hdr.style.display = '';
+      return;
+    }
+    const hasVisibleMember = memberRows.some(r => r.style.display !== 'none');
+    hdr.style.display = hasVisibleMember ? '' : 'none';
   });
 }
 
@@ -801,7 +811,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-  updateServerGroupHeaders();
+  serversFilter();
 });
 </script>
 {% endblock %}

@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.51"
+AGENT_VERSION = "4.8.52"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -3069,14 +3069,15 @@ def collect_systemd_units(limit: int = 2000) -> list[dict]:
 
 
 def _last_apt_update_iso() -> str | None:
-    """Perkiraan kapan 'apt update' terakhir berjalan.
-
-    Berdasarkan mtime terbaru isi /var/lib/apt/lists (daftar paket)
-    dan /var/cache/apt/pkgcache.bin (ditulis ulang tiap apt update).
-    Bukan kebutuhan root; hanya baca metadata.
+    """Perkiraan kapan pembaruan metadata paket terakhir berjalan (apt, dnf/yum, pacman).
+    Bukan kebutuhan root; hanya membaca waktu modifikasi berkas metadata cache.
     """
     latest = 0.0
-    for base in ("/var/lib/apt/lists", "/var/cache/apt"):
+    for base in (
+        "/var/lib/apt/lists", "/var/cache/apt",
+        "/var/cache/dnf", "/var/cache/yum", "/var/lib/dnf",
+        "/var/lib/pacman/sync"
+    ):
         try:
             names = os.listdir(base)
         except OSError:
@@ -3094,123 +3095,253 @@ def _last_apt_update_iso() -> str | None:
 
 
 def collect_apt() -> dict | None:
-    """Jumlah paket OS yang bisa di-upgrade (Debian/Ubuntu, via apt).
+    """Jumlah paket OS yang bisa di-upgrade (Debian/Ubuntu via apt, RHEL/CentOS/Rocky via dnf/yum, Arch via checkupdates).
 
-    Mengembalikan {"upgradable": N, "last_update": "<ISO>"}, atau None
-    bila apt tidak tersedia / bukan sistem debian.
+    Mengembalikan {"upgradable": N, "packages": [...], "last_update": "<ISO>"},
+    atau None bila tidak ada manajer paket yang didukung.
     """
-    if not (os.path.exists("/usr/bin/apt") or os.path.exists("/usr/bin/apt-get")):
-        return None
     apt = {
         "upgradable": 0,
         "packages": [],
         "last_update": _last_apt_update_iso(),
     }
-    res = _run_cmd(["/usr/bin/apt", "list", "--upgradable", "-qq"], timeout=20)
-    if res is None:
+
+    # 1. Debian / Ubuntu via apt / apt-get
+    bin_apt = "/usr/bin/apt" if os.path.exists("/usr/bin/apt") else (shutil.which("apt") or ("/usr/bin/apt-get" if os.path.exists("/usr/bin/apt-get") else shutil.which("apt-get")))
+    if bin_apt:
+        res = _run_cmd([bin_apt, "list", "--upgradable", "-qq"], timeout=20)
+        if res and res.stdout:
+            for line in res.stdout.splitlines():
+                line = line.strip()
+                if not line or "/" not in line or line.lower().startswith("listing"):
+                    continue
+                if "upgradable" in line.lower() or "upgradeable" in line.lower():
+                    parts = line.split()
+                    name = parts[0].split("/")[0] if parts else ""
+                    if name:
+                        apt["upgradable"] += 1
+                        apt["packages"].append({
+                            "name": name,
+                            "version": parts[1] if len(parts) > 1 else "",
+                        })
         return apt
-    for line in res.stdout.splitlines():
-        line = line.strip()
-        if not line or "/" not in line or line.lower().startswith("listing"):
-            continue
-        if "upgradable" in line.lower() or "upgradeable" in line.lower():
-            parts = line.split()
-            name = parts[0].split("/")[0] if parts else ""
-            if name:
-                apt["upgradable"] += 1
-                apt["packages"].append({
-                    "name": name,
-                    "version": parts[1] if len(parts) > 1 else "",
-                })
-    return apt
+
+    # 2. RHEL / Rocky / Alma / CentOS / Fedora via dnf / yum
+    bin_rpm_pm = None
+    for pm in ("dnf", "yum"):
+        p = f"/usr/bin/{pm}" if os.path.exists(f"/usr/bin/{pm}") else shutil.which(pm)
+        if p and os.path.isfile(p):
+            bin_rpm_pm = p
+            break
+    if bin_rpm_pm:
+        res = _run_cmd([bin_rpm_pm, "check-update", "-q"], timeout=25)
+        if res and res.returncode in (0, 100) and res.stdout:
+            for line in res.stdout.splitlines():
+                line = line.strip()
+                if not line or line.startswith("Last metadata") or line.startswith("Obsoleting") or "Security:" in line:
+                    continue
+                parts = line.split()
+                if len(parts) >= 2 and "." in parts[0]:
+                    name = parts[0].split(".")[0]
+                    ver = parts[1]
+                    apt["upgradable"] += 1
+                    apt["packages"].append({
+                        "name": name,
+                        "version": ver,
+                    })
+        return apt
+
+    # 3. Arch Linux via checkupdates
+    bin_arch_chk = "/usr/bin/checkupdates" if os.path.exists("/usr/bin/checkupdates") else shutil.which("checkupdates")
+    if bin_arch_chk:
+        res = _run_cmd([bin_arch_chk], timeout=20)
+        if res and res.stdout:
+            for line in res.stdout.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split()
+                if parts:
+                    name = parts[0]
+                    ver = parts[3] if len(parts) >= 4 and parts[2] == "->" else (parts[1] if len(parts) > 1 else "")
+                    apt["upgradable"] += 1
+                    apt["packages"].append({
+                        "name": name,
+                        "version": ver,
+                    })
+        return apt
+
+    return None
 
 
 PANTAU_APT_SCRIPT_BODY = """#!/bin/sh
 # pantau-apt — Cangkang sempit utk tombol Update/Upgrade paket OS.
+# Mendukung Debian/Ubuntu (apt-get), RHEL/Rocky/Alma/CentOS/Fedora (dnf/yum), dan Arch (pacman).
 # Dipanggil agen 'pantau' via sudo NOPASSWD (lihat /etc/sudoers.d/pantau-agent).
-# Dijalankan lewat pty (script -qfec) supaya output PERSIS seperti terminal SSH:
-# baris progress \\r ikut terlihat, dan dpkg bisa BERINTERAKSI lewat stdin.
-# Argumen divalidasi di sini; BUKAN shell passthrough. URL/repo tetap apa adanya.
-#
-# Pemakaian:
-#   pantau-apt update            -> sinkron, non-interaktif
-#   pantau-apt upgrade           -> upgrade NON-INTERAKTIF (aman, tak menggantung)
-#   pantau-apt upgrade-interact  -> upgrade INTERAKTIF: admin mengetik jawaban
-#                                   sendiri lewat kotak input di Dashboard
-#                                   (dpkg boleh bertanya apa pun)
-#
-# Kenapa ada dua mode? Non-interaktif cocok untuk update terjadwal/massal.
-# Interaktif dipakai admin yang ingin memutuskan sendiri tiap prompt dpkg
-# (mis. memakai konfigurasi bawaan paket, bukan miliknya).
 set -e
 
-DPKG_KEEP_LOCAL="-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
-DPKG_COMMON="-o Dpkg::Use-Pty=0 -o Dpkg::Lock::Timeout=600 -o APT::Get::Always-Include-Phased-Updates=true"
-
-if [ -e /var/lib/dpkg/lock-frontend ] && fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
-    echo "pantau-apt: proses apt/dpkg lain sedang berjalan (lock /var/lib/dpkg/lock-frontend dipegang)." >&2
-    echo "           Tunggu proses itu selesai, lalu ulangi. Tidak ada yang dirusak." >&2
-    exit 3
+# Deteksi manajer paket sistem
+if command -v apt-get >/dev/null 2>&1; then
+    PKG_MGR="apt"
+elif command -v dnf >/dev/null 2>&1; then
+    PKG_MGR="dnf"
+elif command -v yum >/dev/null 2>&1; then
+    PKG_MGR="yum"
+elif command -v pacman >/dev/null 2>&1; then
+    PKG_MGR="pacman"
+else
+    echo "pantau-apt: manajer paket yang didukung (apt-get, dnf, yum, pacman) tidak ditemukan di sistem ini." >&2
+    exit 1
 fi
 
-case "${1:-}" in
-    update)
-        export DEBIAN_FRONTEND=noninteractive
-        export NEEDRESTART_MODE=l
-        export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfec "/usr/bin/apt-get update -o Dpkg::Lock::Timeout=600" /dev/null
-        ;;
-    upgrade)
-        export DEBIAN_FRONTEND=noninteractive
-        export NEEDRESTART_MODE=a
-        export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfec "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON upgrade" /dev/null
-        ;;
-    upgrade-interact)
-        unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
-        export NEEDRESTART_MODE=a
-        export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfec "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true upgrade" /dev/null
-        ;;
-    dist-upgrade)
-        unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
-        export NEEDRESTART_MODE=a
-        export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfec "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true dist-upgrade" /dev/null
-        ;;
-    fix)
-        unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
-        export NEEDRESTART_MODE=a
-        export APT_LISTCHANGES_FRONTEND=none
-        /usr/bin/script -qfec "/usr/bin/dpkg --configure -a" /dev/null || true
-        exec /usr/bin/script -qfec "/usr/bin/apt-get -y -f -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true install" /dev/null
-        ;;
-    clean)
-        exec /usr/bin/apt-get clean
-        ;;
-    upgrade-pkg)
-        pkg="${2:-}"
-        if [ -z "$pkg" ]; then
-            echo "pantau-apt: nama paket target tidak boleh kosong" >&2
-            exit 2
-        fi
-        case "$pkg" in
-            *[!a-z0-9+.-]* | "" | -* | .* | +* )
-                echo "pantau-apt: nama paket tidak valid: '$pkg'" >&2
+if [ "$PKG_MGR" = "apt" ]; then
+    DPKG_KEEP_LOCAL="-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold"
+    DPKG_COMMON="-o Dpkg::Use-Pty=0 -o Dpkg::Lock::Timeout=600 -o APT::Get::Always-Include-Phased-Updates=true"
+
+    if [ -e /var/lib/dpkg/lock-frontend ] && fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
+        echo "pantau-apt: proses apt/dpkg lain sedang berjalan (lock /var/lib/dpkg/lock-frontend dipegang)." >&2
+        echo "           Tunggu proses itu selesai, lalu ulangi. Tidak ada yang dirusak." >&2
+        exit 3
+    fi
+
+    case "${1:-}" in
+        update)
+            export DEBIAN_FRONTEND=noninteractive
+            export NEEDRESTART_MODE=l
+            export APT_LISTCHANGES_FRONTEND=none
+            exec /usr/bin/script -qfec "/usr/bin/apt-get update -o Dpkg::Lock::Timeout=600" /dev/null
+            ;;
+        upgrade)
+            export DEBIAN_FRONTEND=noninteractive
+            export NEEDRESTART_MODE=a
+            export APT_LISTCHANGES_FRONTEND=none
+            exec /usr/bin/script -qfec "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON upgrade" /dev/null
+            ;;
+        upgrade-interact)
+            unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
+            export NEEDRESTART_MODE=a
+            export APT_LISTCHANGES_FRONTEND=none
+            exec /usr/bin/script -qfec "/usr/bin/apt-get --with-new-pkgs -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true upgrade" /dev/null
+            ;;
+        dist-upgrade)
+            unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
+            export NEEDRESTART_MODE=a
+            export APT_LISTCHANGES_FRONTEND=none
+            exec /usr/bin/script -qfec "/usr/bin/apt-get -y -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true dist-upgrade" /dev/null
+            ;;
+        fix)
+            unset DEBIAN_FRONTEND DEBCONF_NONINTERACTIVE_SEEN
+            export NEEDRESTART_MODE=a
+            export APT_LISTCHANGES_FRONTEND=none
+            /usr/bin/script -qfec "/usr/bin/dpkg --configure -a" /dev/null || true
+            exec /usr/bin/script -qfec "/usr/bin/apt-get -y -f -o Dpkg::Lock::Timeout=600 -o Dpkg::Use-Pty=1 -o APT::Get::Always-Include-Phased-Updates=true install" /dev/null
+            ;;
+        clean)
+            exec /usr/bin/apt-get clean
+            ;;
+        upgrade-pkg)
+            pkg="${2:-}"
+            if [ -z "$pkg" ]; then
+                echo "pantau-apt: nama paket target tidak boleh kosong" >&2
                 exit 2
-                ;;
-        esac
-        export DEBIAN_FRONTEND=noninteractive
-        export NEEDRESTART_MODE=a
-        export APT_LISTCHANGES_FRONTEND=none
-        exec /usr/bin/script -qfec "/usr/bin/apt-get --only-upgrade -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON install '$pkg'" /dev/null
-        ;;
-    *)
-        echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2
-        echo "            (hanya: update | upgrade | upgrade-interact | dist-upgrade | fix | clean | upgrade-pkg)" >&2
-        exit 2
-        ;;
-esac
+            fi
+            case "$pkg" in
+                *[!a-z0-9+.-]* | "" | -* | .* | +* )
+                    echo "pantau-apt: nama paket tidak valid: '$pkg'" >&2
+                    exit 2
+                    ;;
+            esac
+            export DEBIAN_FRONTEND=noninteractive
+            export NEEDRESTART_MODE=a
+            export APT_LISTCHANGES_FRONTEND=none
+            exec /usr/bin/script -qfec "/usr/bin/apt-get --only-upgrade -y -o Dpkg::Lock::Timeout=600 $DPKG_KEEP_LOCAL $DPKG_COMMON install '$pkg'" /dev/null
+            ;;
+        *)
+            echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2
+            echo "            (hanya: update | upgrade | upgrade-interact | dist-upgrade | fix | clean | upgrade-pkg)" >&2
+            exit 2
+            ;;
+    esac
+
+elif [ "$PKG_MGR" = "dnf" ] || [ "$PKG_MGR" = "yum" ]; then
+    PM="$(command -v dnf 2>/dev/null || command -v yum)"
+    case "${1:-}" in
+        update)
+            exec /usr/bin/script -qfec "$PM check-update || true" /dev/null
+            ;;
+        upgrade)
+            exec /usr/bin/script -qfec "$PM -y upgrade" /dev/null
+            ;;
+        upgrade-interact|dist-upgrade)
+            exec /usr/bin/script -qfec "$PM upgrade" /dev/null
+            ;;
+        fix)
+            exec /usr/bin/script -qfec "$PM check; $PM -y distro-sync || true" /dev/null
+            ;;
+        clean)
+            exec $PM clean all
+            ;;
+        upgrade-pkg)
+            pkg="${2:-}"
+            if [ -z "$pkg" ]; then
+                echo "pantau-apt: nama paket target tidak boleh kosong" >&2
+                exit 2
+            fi
+            case "$pkg" in
+                *[!a-zA-Z0-9+._-]* | "" | -* )
+                    echo "pantau-apt: nama paket tidak valid: '$pkg'" >&2
+                    exit 2
+                    ;;
+            esac
+            exec /usr/bin/script -qfec "$PM -y upgrade '$pkg'" /dev/null
+            ;;
+        *)
+            echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2
+            exit 2
+            ;;
+    esac
+
+elif [ "$PKG_MGR" = "pacman" ]; then
+    if [ -e /var/lib/pacman/db.lck ]; then
+        echo "pantau-apt: berkas kunci /var/lib/pacman/db.lck aktif." >&2
+        exit 3
+    fi
+    case "${1:-}" in
+        update)
+            exec /usr/bin/script -qfec "/usr/bin/pacman -Sy" /dev/null
+            ;;
+        upgrade)
+            exec /usr/bin/script -qfec "/usr/bin/pacman -Syu --noconfirm" /dev/null
+            ;;
+        upgrade-interact|dist-upgrade)
+            exec /usr/bin/script -qfec "/usr/bin/pacman -Syu" /dev/null
+            ;;
+        fix)
+            exec /usr/bin/script -qfec "/usr/bin/pacman -D --check || true" /dev/null
+            ;;
+        clean)
+            exec /usr/bin/pacman -Sc --noconfirm
+            ;;
+        upgrade-pkg)
+            pkg="${2:-}"
+            if [ -z "$pkg" ]; then
+                echo "pantau-apt: nama paket target tidak boleh kosong" >&2
+                exit 2
+            fi
+            case "$pkg" in
+                *[!a-zA-Z0-9+._-]* | "" | -* )
+                    echo "pantau-apt: nama paket tidak valid: '$pkg'" >&2
+                    exit 2
+                    ;;
+            esac
+            exec /usr/bin/script -qfec "/usr/bin/pacman -S --noconfirm '$pkg'" /dev/null
+            ;;
+        *)
+            echo "pantau-apt: argumen tidak dikenal: '${1:-}'" >&2
+            exit 2
+            ;;
+    esac
+fi
 """
 
 
@@ -3249,7 +3380,7 @@ def ensure_pantau_apt_updated() -> bool:
                     cur_content = f.read()
             except Exception:
                 pass
-        if "Always-Include-Phased-Updates" in cur_content and "upgrade-pkg" in cur_content and "clean" in cur_content and "-qfec" in cur_content:
+        if "PKG_MGR" in cur_content and "Always-Include-Phased-Updates" in cur_content and "upgrade-pkg" in cur_content and "clean" in cur_content and "-qfec" in cur_content:
             return True
 
         if IS_ROOT:
@@ -3313,28 +3444,24 @@ def _apt_cmd(kind: str, detail: str = ""):
 
 def collect_installed_packages(limit: int = 5000) -> list[dict]:
     """Mengumpulkan inventaris seluruh paket OS yang terpasang via dpkg-query,
-    beserta deteksi paket pengguna vs sistem (apt-mark showmanual) dan
-    status layanan aktif runtime systemd (running, exited, inactive, installed).
+    rpm, atau pacman, beserta klasifikasi paket pengguna vs sistem dan
+    status layanan runtime systemd.
     """
     pkgs = []
-    if not os.path.exists("/usr/bin/dpkg-query"):
+
+    # Deteksi binary manajer paket
+    bin_dpkg = "/usr/bin/dpkg-query" if os.path.exists("/usr/bin/dpkg-query") else shutil.which("dpkg-query")
+    bin_rpm = "/usr/bin/rpm" if os.path.exists("/usr/bin/rpm") else shutil.which("rpm")
+    bin_pacman = "/usr/bin/pacman" if os.path.exists("/usr/bin/pacman") else shutil.which("pacman")
+
+    if not bin_dpkg and not bin_rpm and not bin_pacman:
         return pkgs
 
-    # 1. Ambil daftar paket manual/pengguna via apt-mark showmanual
-    manual_set = set()
-    res_manual = _run_cmd(["/usr/bin/apt-mark", "showmanual"], timeout=8)
-    if res_manual and res_manual.stdout:
-        for line in res_manual.stdout.splitlines():
-            line = line.strip()
-            if line:
-                manual_set.add(line)
-                if ":" in line:
-                    manual_set.add(line.split(":")[0])
-
-    # 2. Ambil status layanan systemd terkini
+    # 1. Ambil status layanan systemd terkini (berlaku universal di semua distro Linux dengan systemd)
     svc_map = {}
+    bin_systemctl = "/usr/bin/systemctl" if os.path.exists("/usr/bin/systemctl") else (shutil.which("systemctl") or "systemctl")
     res_svc = _run_cmd([
-        "/usr/bin/systemctl", "list-units", "--type=service", "--all", "--no-pager", "--no-legend"
+        bin_systemctl, "list-units", "--type=service", "--all", "--no-pager", "--no-legend"
     ], timeout=8)
     if res_svc and res_svc.stdout:
         for line in res_svc.stdout.splitlines():
@@ -3358,121 +3485,229 @@ def collect_installed_packages(limit: int = 5000) -> list[dict]:
 
     # Alias / pemetaan umum nama paket ke nama unit systemd
     alias_map = {
-        "openssh-server": "ssh",
+        "openssh-server": "sshd" if (not bin_dpkg and bin_rpm) else "ssh",
         "mariadb-server": "mariadb",
-        "mysql-server": "mysql",
+        "mysql-server": "mysqld" if (not bin_dpkg and bin_rpm) else "mysql",
+        "httpd": "httpd",
         "apache2": "apache2",
         "nginx": "nginx",
-        "cron": "cron",
+        "cron": "crond" if (not bin_dpkg and bin_rpm) else "cron",
+        "crontabs": "crond",
         "systemd": "systemd-journald",
+        "firewalld": "firewalld",
         "ufw": "ufw",
+        "named": "named",
+        "bind": "named",
         "bind9": "named",
-        "docker.io": "docker",
+        "docker": "docker",
         "docker-ce": "docker",
+        "docker.io": "docker",
+        "redis": "redis",
         "redis-server": "redis",
     }
 
-    # 3. Kueri dpkg-query untuk paket
-    res = _run_cmd([
-        "/usr/bin/dpkg-query", "-W", "-f",
-        "${binary:Package}\t${Version}\t${Architecture}\t${Installed-Size}\t${Priority}\t${Section}\t${binary:Summary}\n"
-    ], timeout=15)
-    if not res or not res.stdout or "\t" not in res.stdout:
+    # Kasus 1: DPKG (Debian / Ubuntu / Proxmox)
+    if bin_dpkg:
+        manual_set = set()
+        bin_apt_mark = "/usr/bin/apt-mark" if os.path.exists("/usr/bin/apt-mark") else shutil.which("apt-mark")
+        if bin_apt_mark:
+            res_manual = _run_cmd([bin_apt_mark, "showmanual"], timeout=8)
+            if res_manual and res_manual.stdout:
+                for line in res_manual.stdout.splitlines():
+                    line = line.strip()
+                    if line:
+                        manual_set.add(line)
+                        if ":" in line:
+                            manual_set.add(line.split(":")[0])
+
         res = _run_cmd([
-            "/usr/bin/dpkg-query", "-W",
-            "-f=${binary:Package}\t${Version}\t${Architecture}\t${Installed-Size}\t${Priority}\t${Section}\t${binary:Summary}\n"
+            bin_dpkg, "-W", "-f",
+            "${binary:Package}\t${Version}\t${Architecture}\t${Installed-Size}\t${Priority}\t${Section}\t${binary:Summary}\n"
         ], timeout=15)
+        if not res or not res.stdout or "\t" not in res.stdout:
+            res = _run_cmd([
+                bin_dpkg, "-W",
+                "-f=${binary:Package}\t${Version}\t${Architecture}\t${Installed-Size}\t${Priority}\t${Section}\t${binary:Summary}\n"
+            ], timeout=15)
 
-    if res and res.stdout:
-        for line in res.stdout.splitlines()[:limit]:
-            parts = line.split("\t")
-            if len(parts) >= 2:
-                name = parts[0].strip()
-                ver = parts[1].strip()
-                arch = parts[2].strip() if len(parts) > 2 else ""
-                size_kb = 0
-                if len(parts) > 3:
-                    try:
-                        size_kb = int(parts[3].strip())
-                    except ValueError:
-                        size_kb = 0
-                prio = parts[4].strip().lower() if len(parts) > 4 else ""
-                sec = parts[5].strip().lower() if len(parts) > 5 else ""
-                summary = parts[6].strip() if len(parts) > 6 else ""
+        if res and res.stdout:
+            for line in res.stdout.splitlines()[:limit]:
+                parts = line.split("\t")
+                if len(parts) >= 2:
+                    name = parts[0].strip()
+                    ver = parts[1].strip()
+                    arch = parts[2].strip() if len(parts) > 2 else ""
+                    size_kb = 0
+                    if len(parts) > 3:
+                        try:
+                            size_kb = int(parts[3].strip())
+                        except ValueError:
+                            size_kb = 0
+                    prio = parts[4].strip().lower() if len(parts) > 4 else ""
+                    summary = parts[6].strip() if len(parts) > 6 else ""
 
-                base_name = name.split(":")[0]
+                    base_name = name.split(":")[0]
+                    is_user = False
+                    if (name in manual_set or base_name in manual_set) and prio not in ("required", "important"):
+                        is_user = True
 
-                # Klasifikasi Paket Pengguna vs Sistem
-                is_user = False
-                if (name in manual_set or base_name in manual_set) and prio not in ("required", "important"):
-                    is_user = True
+                    unit_candidate = alias_map.get(base_name) or alias_map.get(name) or base_name
+                    status = svc_map.get(unit_candidate)
+                    if not status:
+                        stripped = base_name.replace("-server", "").replace("server-", "")
+                        status = svc_map.get(stripped)
+                    if not status:
+                        status = "installed"
 
-                # Klasifikasi Runtime Status dari unit systemd
-                unit_candidate = alias_map.get(base_name) or alias_map.get(name) or base_name
-                status = svc_map.get(unit_candidate)
-                if not status:
-                    stripped = base_name.replace("-server", "").replace("server-", "")
-                    status = svc_map.get(stripped)
-                if not status:
-                    status = "installed"
+                    pkgs.append({
+                        "name": name,
+                        "version": ver,
+                        "arch": arch,
+                        "size_kb": size_kb,
+                        "summary": summary,
+                        "is_user": is_user,
+                        "status": status,
+                    })
+        return pkgs
 
-                pkgs.append({
-                    "name": name,
-                    "version": ver,
-                    "arch": arch,
-                    "size_kb": size_kb,
-                    "summary": summary,
-                    "is_user": is_user,
-                    "status": status,
-                })
+    # Kasus 2: RPM (RHEL / CentOS / Rocky / AlmaLinux / Fedora / openSUSE)
+    if bin_rpm:
+        manual_set = set()
+        bin_dnf = "/usr/bin/dnf" if os.path.exists("/usr/bin/dnf") else shutil.which("dnf")
+        if bin_dnf:
+            res_user = _run_cmd([bin_dnf, "history", "userinstalled"], timeout=8)
+            if res_user and res_user.stdout:
+                for line in res_user.stdout.splitlines():
+                    line = line.strip()
+                    if line and not line.startswith("Packages") and not line.startswith("Updating"):
+                        token = line.split()[0]
+                        manual_set.add(token)
+                        manual_set.add(token.rsplit("-", 2)[0])
+
+        res = _run_cmd([
+            bin_rpm, "-qa", "--queryformat",
+            "%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}\t%{SIZE}\t%{SUMMARY}\n"
+        ], timeout=15)
+        if res and res.stdout:
+            for line in res.stdout.splitlines()[:limit]:
+                parts = line.split("\t")
+                if len(parts) >= 2:
+                    name = parts[0].strip()
+                    ver = parts[1].strip()
+                    arch = parts[2].strip() if len(parts) > 2 else ""
+                    size_kb = 0
+                    if len(parts) > 3:
+                        try:
+                            size_kb = int(parts[3].strip()) // 1024
+                        except ValueError:
+                            size_kb = 0
+                    summary = parts[4].strip() if len(parts) > 4 else ""
+
+                    is_user = name in manual_set or any(m == name for m in manual_set)
+
+                    unit_candidate = alias_map.get(name) or name
+                    status = svc_map.get(unit_candidate)
+                    if not status:
+                        stripped = name.replace("-server", "").replace("server-", "")
+                        status = svc_map.get(stripped)
+                    if not status:
+                        status = "installed"
+
+                    pkgs.append({
+                        "name": name,
+                        "version": ver,
+                        "arch": arch,
+                        "size_kb": size_kb,
+                        "summary": summary,
+                        "is_user": is_user,
+                        "status": status,
+                    })
+        return pkgs
+
+    # Kasus 3: Pacman (Arch Linux / Manjaro)
+    if bin_pacman:
+        manual_set = set()
+        res_exp = _run_cmd([bin_pacman, "-Qe"], timeout=8)
+        if res_exp and res_exp.stdout:
+            for line in res_exp.stdout.splitlines():
+                if line.strip():
+                    manual_set.add(line.split()[0].strip())
+
+        res = _run_cmd([bin_pacman, "-Q"], timeout=15)
+        if res and res.stdout:
+            for line in res.stdout.splitlines()[:limit]:
+                parts = line.split(None, 2)
+                if len(parts) >= 2:
+                    name = parts[0].strip()
+                    ver = parts[1].strip()
+                    is_user = name in manual_set
+                    unit_candidate = alias_map.get(name) or name
+                    status = svc_map.get(unit_candidate) or "installed"
+                    pkgs.append({
+                        "name": name,
+                        "version": ver,
+                        "arch": platform.machine() or "x86_64",
+                        "size_kb": 0,
+                        "summary": "",
+                        "is_user": is_user,
+                        "status": status,
+                    })
+        return pkgs
+
     return pkgs
 
 
 def clear_package_cache(pkg: str = "") -> str:
-    """Membersihkan cache berkas .deb unduhan untuk paket tertentu atau seluruh apt cache."""
+    """Membersihkan cache berkas paket unduhan untuk paket tertentu atau seluruh cache paket."""
     cleaned = 0
     bytes_freed = 0
     pkg = (pkg or "").strip()
-    if pkg and re.fullmatch(r"[a-z0-9][a-z0-9+.-]+", pkg):
-        cache_dir = "/var/cache/apt/archives"
-        if os.path.isdir(cache_dir):
-            for fname in os.listdir(cache_dir):
-                if fname.startswith(f"{pkg}_") and fname.endswith(".deb"):
-                    fpath = os.path.join(cache_dir, fname)
-                    try:
-                        sz = os.path.getsize(fpath)
-                        os.unlink(fpath)
-                        cleaned += 1
-                        bytes_freed += sz
-                    except OSError:
-                        pass
+    if pkg and re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9+._-]+", pkg):
+        for cache_dir in ("/var/cache/apt/archives", "/var/cache/dnf", "/var/cache/yum"):
+            if os.path.isdir(cache_dir):
+                for root, _, fnames in os.walk(cache_dir):
+                    for fname in fnames:
+                        if fname.startswith(f"{pkg}_") or fname.startswith(f"{pkg}-"):
+                            fpath = os.path.join(root, fname)
+                            try:
+                                sz = os.path.getsize(fpath)
+                                os.unlink(fpath)
+                                cleaned += 1
+                                bytes_freed += sz
+                            except OSError:
+                                pass
         mb_freed = bytes_freed / (1024 * 1024)
-        return f"Cache untuk paket '{pkg}' berhasil dibersihkan: {cleaned} berkas deb ({mb_freed:.2f} MB)."
+        return f"Cache untuk paket '{pkg}' berhasil dibersihkan: {cleaned} berkas ({mb_freed:.2f} MB)."
     prefix = [] if IS_ROOT else ["/usr/bin/sudo", "-n"]
     res = _run_cmd(prefix + [PANTAU_APT_CMD, "clean"], timeout=30)
     if res and res.returncode == 0:
-        return "Seluruh cache paket sistem operasi (/var/cache/apt/archives) berhasil dibersihkan."
+        return "Seluruh cache paket sistem operasi berhasil dibersihkan."
     return "Cache paket sistem dibersihkan."
 
 
 def get_package_logs(pkg: str, lines: int = 100) -> str:
-    """Membaca riwayat aktivitas dpkg untuk paket spesifik dari /var/log/dpkg.log."""
+    """Membaca riwayat aktivitas paket spesifik dari dpkg.log, dnf.log, yum.log, atau pacman.log."""
     pkg = (pkg or "").strip()
-    if not pkg or not re.fullmatch(r"[a-z0-9][a-z0-9+.-]+", pkg):
+    if not pkg or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9+._-]+", pkg):
         return "Nama paket tidak valid."
     matched_lines = []
-    for path in ("/var/log/dpkg.log.1", "/var/log/dpkg.log"):
+    log_candidates = (
+        "/var/log/dpkg.log.1", "/var/log/dpkg.log",
+        "/var/log/dnf.rpm.log", "/var/log/dnf.log", "/var/log/yum.log",
+        "/var/log/pacman.log"
+    )
+    for path in log_candidates:
         if not os.path.exists(path):
             continue
         try:
             with open(path, "r", encoding="utf-8", errors="replace") as f:
                 for line in f:
-                    if f" {pkg}:" in line or f" {pkg} " in line:
+                    if f" {pkg}:" in line or f" {pkg} " in line or f": {pkg}-" in line:
                         matched_lines.append(line.strip())
         except OSError as e:
             matched_lines.append(f"[Gagal membaca {path}: {e}]")
     if not matched_lines:
-        return f"Belum ada riwayat aktivitas log untuk paket '{pkg}' pada berkas /var/log/dpkg.log."
+        return f"Belum ada riwayat aktivitas log untuk paket '{pkg}' pada berkas log sistem."
     return "\n".join(matched_lines[-lines:])
 
 
@@ -5608,22 +5843,24 @@ _last_pkg_signature: tuple | None = None
 
 
 def _get_pkg_state_signature() -> tuple:
-    """Mengambil signature timestamp status dpkg dan apt lists untuk deteksi reaktif instan.
-    Jika operator menjalankan apt install/upgrade/remove via SSH, mtime dpkg status akan berubah.
+    """Mengambil signature timestamp status manajer paket untuk deteksi reaktif instan.
+    Mendukung dpkg (Debian/Ubuntu), RPM / sqlite (RHEL/CentOS/Rocky), pacman (Arch).
     """
-    m_dpkg = 0.0
+    m_pkg = 0.0
     m_lists = 0.0
-    try:
-        if os.path.exists("/var/lib/dpkg/status"):
-            m_dpkg = os.path.getmtime("/var/lib/dpkg/status")
-    except Exception:
-        pass
-    try:
-        if os.path.exists("/var/lib/apt/lists"):
-            m_lists = os.path.getmtime("/var/lib/apt/lists")
-    except Exception:
-        pass
-    return (m_dpkg, m_lists)
+    for p in ("/var/lib/dpkg/status", "/var/lib/rpm/rpmdb.sqlite", "/var/lib/rpm/Packages", "/var/lib/pacman/local"):
+        try:
+            if os.path.exists(p):
+                m_pkg = max(m_pkg, os.path.getmtime(p))
+        except Exception:
+            pass
+    for p in ("/var/lib/apt/lists", "/var/cache/dnf", "/var/cache/yum", "/var/lib/pacman/sync"):
+        try:
+            if os.path.exists(p):
+                m_lists = max(m_lists, os.path.getmtime(p))
+        except Exception:
+            pass
+    return (m_pkg, m_lists)
 
 
 def main():

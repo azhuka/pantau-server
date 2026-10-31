@@ -311,6 +311,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.52
+
+- **Tipe Rilis:** Perbaikan Mekanisme Ciutkan-Bentangkan Grup Server, Pembersihan Anotasi Redundan UI NOC, dan Penguatan Kompatibilitas Lintas Distro Linux Non-Debian (*Server Group Collapse-Expand Mechanism Restoration, Redundant NOC Hint Removal, and Non-Debian Linux Distro Cross-Platform Hardening*)
+- **Fokus Utama:** Menyelesaikan anomali hilangnya header grup server saat diciutkan pada halaman Daftar Server (`/servers`), menghapus teks petunjuk berlebih demi standar antarmuka NOC profesional, serta memperkuat ketahanan instalasi dan inventarisasi Agen Pantau pada seluruh keluarga distribusi Linux non-Debian (RHEL, Rocky Linux, AlmaLinux, CentOS, Fedora, openSUSE, Arch Linux):
+  1. **Pemulihan Mekanisme Ciutkan-Bentangkan (*Collapse-Expand*) Grup Server (`server/templates/servers.html`):**
+     - Mengidentifikasi akar masalah hilangnya grup server saat diciutkan: fungsi `updateServerGroupHeaders()` sebelumnya mengevaluasi `hasVisibleMember` berdasarkan `r.style.display !== 'none'`. Saat grup diciutkan, seluruh baris anggota diset `display: none`, sehingga `hasVisibleMember` bernilai `false` dan menyembunyikan baris header grup itu sendiri (`hdr.style.display = 'none'`), menghilangkan elemen klik dari DOM.
+     - Memperbaiki logika evaluasi header grup: jika suatu grup dalam status diciutkan (`isCollapsed === true`), baris header grup dipertahankan tetap terlihat (`hdr.style.display = ''`) selama memiliki server yang cocok dengan kueri pencarian atau filter aktif (`hasMatchingMember`).
+     - Mengeliminasi teks instruksi redundan *"Klik baris untuk ciutkan"* / *"Klik baris untuk bentangkan"* (`#collapse-hint-{{ srv_grp }}`) demi tampilan NOC yang bersih dan profesional, mengandalkan rotasi ikon chevron (`rotate(-90deg)` saat diciutkan dan `rotate(0deg)` saat direntangkan).
+     - Memperbaiki penanganan pesan kosong pencarian (`#servers-no-match`): mengubah penjagaan dari `visible === 0` menjadi `visibleGroups.size === 0 && rows.length > 0`, mencegah munculnya pesan *"Tidak ada server yang cocok"* ketika semua grup dalam keadaan diciutkan.
+     - Menambahkan penataan CSS tema terang adaptif untuk `.group-collapse-icon` dan efek hover baris header grup.
+  2. **Penguatan Agen Pantau untuk Seluruh Keluarga Linux Non-Debian (`agent_pantau.py` & `pantau-apt`):**
+     - **Inventarisasi Paket Universal (`collect_installed_packages`):** Mengembangkan dukungan multi-manajer paket: selain DPKG (`dpkg-query` pada Debian/Ubuntu), agen kini secara bawaan mendukung RPM (`rpm -qa --queryformat ...` pada RHEL, Rocky, Alma, CentOS, Fedora, openSUSE) dan Pacman (`pacman -Q` pada Arch Linux), memetakan nama paket, versi, arsitektur, ukuran KB, summary, serta status runtime layanan systemd secara presisi.
+     - **Pengecekan Pembaruan Sistem Multi-Distro (`collect_apt`):** Memperluas deteksi pembaruan paket yang bisa di-upgrade: mendukung `apt list --upgradable` (Debian/Ubuntu), `dnf check-update` / `yum check-update` (keluarga RHEL/Fedora, menangani exit code 100 secara akurat), dan `checkupdates` (Arch Linux).
+     - **Pemantauan Status Berkas Paket Multi-Distro (`_get_pkg_state_signature` & `_last_apt_update_iso`):** Memperluas deteksi mtime reaktif ke database paket `/var/lib/rpm/rpmdb.sqlite`, `/var/lib/rpm/Packages`, `/var/lib/pacman/local`, serta cache sinkronisasi `/var/cache/dnf`, `/var/cache/yum`, dan `/var/lib/pacman/sync`.
+     - **Adaptasi Pembungkus Tindakan Pembaruan Paket (`package/usr/local/sbin/pantau-apt`):** Memperbarui skrip pembungkus sempit `pantau-apt` agar secara cerdas mendeteksi manajer paket aktif (`apt-get`, `dnf`, `yum`, atau `pacman`) dan meneruskan perintah `update`, `upgrade`, `fix`, `clean`, serta `upgrade-pkg` ke utilitas yang sesuai tanpa merusak restriksi sudoers `least-privilege`.
+     - **Riwayat Log Paket Lintas Distro (`get_package_logs` & `clear_package_cache`):** Memperluas pencarian riwayat log ke `/var/log/dnf.log`, `/var/log/dnf.rpm.log`, `/var/log/yum.log`, dan `/var/log/pacman.log`.
+  3. **Penguatan Skrip Pemasangan Agen Klien (`package/install.sh`):**
+     - Menggantikan hardcoded shell `/usr/sbin/nologin` dengan deteksi dinamis `nologin` (`command -v nologin`, fallback `/sbin/nologin` atau `/bin/false`).
+     - Mengembangkan penambahan grup log ganda: memeriksa ketersediaan grup `adm` (Debian/Ubuntu) dan `systemd-journal` (RHEL/CentOS/Rocky/Alma/Fedora/Arch) sebelum menambahkan user `pantau`, mencegah kegagalan instalasi jika salah satu grup tidak ada pada distro target.
+  4. **Otomasi Pembaruan SemVer v4.8.52:**
+     - Menaikkan versi sistem menjadi `v4.8.52` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.51
 
 - **Tipe Rilis:** Akselerasi Ekstrem Pemuatan Rincian Server, Eliminasi Bottleneck Kueri N+1 Metrik, dan Penuntasan Komprehensif Visual Mode Tema Terang (*Extreme Server Detail Loading Acceleration, N+1 Metric Query Loop Elimination, and Comprehensive Light Theme Styling Hardening*)

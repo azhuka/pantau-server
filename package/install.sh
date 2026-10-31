@@ -102,19 +102,42 @@ get_file() {
 }
 
 # ---------------------------------------------------------------------------
-# 1. User khusus 'pantau' + grup adm
+# 1. User khusus 'pantau' + grup adm / systemd-journal
 # ---------------------------------------------------------------------------
+NOLOGIN_BIN="$(command -v nologin 2>/dev/null || which nologin 2>/dev/null || true)"
+if [ -z "$NOLOGIN_BIN" ] || [ ! -x "$NOLOGIN_BIN" ]; then
+    if [ -x "/usr/sbin/nologin" ]; then
+        NOLOGIN_BIN="/usr/sbin/nologin"
+    elif [ -x "/sbin/nologin" ]; then
+        NOLOGIN_BIN="/sbin/nologin"
+    else
+        NOLOGIN_BIN="/bin/false"
+    fi
+fi
+
 if ! id -u pantau >/dev/null 2>&1; then
-    useradd --system --no-create-home --shell /usr/sbin/nologin pantau || { echo "[ERROR] Gagal membuat user 'pantau'."; exit 1; }
-    echo "[OK]   User 'pantau' dibuat"
+    useradd --system --no-create-home --shell "$NOLOGIN_BIN" pantau || { echo "[ERROR] Gagal membuat user 'pantau'."; exit 1; }
+    echo "[OK]   User 'pantau' dibuat (shell: $NOLOGIN_BIN)"
 else
     echo "[SKIP] User 'pantau' sudah ada"
 fi
-if ! id -nG pantau | tr ' ' '\n' | grep -qx adm; then
-    usermod -a -G adm pantau || { echo "[ERROR] Gagal menambah pantau ke grup adm."; exit 1; }
-    echo "[OK]   pantau -> grup adm (baca journal & /var/log)"
-else
-    echo "[SKIP] pantau sudah di grup adm"
+
+ADDED_LOG_GROUP=0
+for grp in adm systemd-journal; do
+    if getent group "$grp" >/dev/null 2>&1; then
+        if ! id -nG pantau | tr ' ' '\n' | grep -qx "$grp"; then
+            if usermod -a -G "$grp" pantau 2>/dev/null; then
+                echo "[OK]   pantau -> grup $grp (baca journal & log)"
+                ADDED_LOG_GROUP=1
+            fi
+        else
+            echo "[SKIP] pantau sudah di grup $grp"
+            ADDED_LOG_GROUP=1
+        fi
+    fi
+done
+if [ "$ADDED_LOG_GROUP" -eq 0 ]; then
+    echo "[INFO] Grup adm/systemd-journal tidak ditemukan; menggunakan hak akses bawaan sistem."
 fi
 
 # ---------------------------------------------------------------------------
@@ -217,7 +240,7 @@ except Exception as e:
     print("UNREACHABLE:%s" % e); raise SystemExit
 try:
     req = urllib.request.Request(url + "/api/commands")
-    req.add_header("User-Agent", "AgentPantau-Installer/4.8.51")
+    req.add_header("User-Agent", "AgentPantau-Installer/4.8.52")
     req.add_header("X-Api-Key", key)
     with urllib.request.urlopen(req, timeout=8) as r:
         print("OK" if r.status == 200 else "HTTP%d" % r.status)
