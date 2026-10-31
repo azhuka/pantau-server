@@ -132,25 +132,54 @@ sudo /opt/pantau/server/env/bin/python /opt/pantau/server/seed_admin.py \
 
 Agen Pantau beroperasi dengan metode **Outbound Pull** (koneksi keluar dari klien ke server pusat setiap 5–10 detik via HTTP/HTTPS POST). Klien tidak memerlukan port inbound terbuka dan dapat berjalan di balik NAT, firewall, atau jaringan privat (LAN/VPN).
 
-1. Buka dashboard: Masuk ke menu **Daftar Server → Tambah Server**, kemudian salin **API Key** (64 karakter hex).
-2. Di server klien yang akan dipantau, unduh dan jalankan installer agen:
+### Kompatibilitas Sistem Operasi Klien
+Agen Pantau dibangun dengan prinsip *zero-dependency* (hanya Python 3.10+ standard library) dan mendukung penuh distribusi Linux modern berbasis systemd:
+- **Keluarga Debian / Ubuntu:** Ubuntu 20.04/22.04/24.04 LTS, Debian 10/11/12, Proxmox VE.
+- **Keluarga RHEL / RPM:** Rocky Linux 8/9, AlmaLinux 8/9, RHEL 8/9, CentOS Stream 8/9, Fedora, openSUSE Leap/Tumbleweed.
+- **Keluarga Arch Linux:** Arch Linux, Manjaro.
 
-```bash
-sudo curl -fsSL -o /tmp/pantau-install.sh \
-  https://raw.githubusercontent.com/azhuka/pantau-server/master/package/install.sh
-sudo bash /tmp/pantau-install.sh
-```
+---
+
+### Langkah Pemasangan Klien
+
+1. **Salin API Key:** Buka dashboard web, masuk ke menu **Daftar Server → Tambah Server**, kemudian salin **API Key** (64 karakter hex unik).
+2. **Siapkan Paket Prasyarat (Bila Mesin Minimalis):**
+   Pastikan paket dasar `python3` (3.10+), `curl`, utilitas socket `ss` (`iproute`/`iproute2`), `sudo`, dan `systemd` tersedia di server klien:
+   - **RHEL / Rocky Linux / AlmaLinux / CentOS / Fedora:**
+     ```bash
+     sudo dnf install -y python3 curl iproute sudo systemd
+     ```
+   - **Arch Linux / Manjaro:**
+     ```bash
+     sudo pacman -Sy --noconfirm python curl iproute2 sudo systemd
+     ```
+   - **openSUSE Leap / Tumbleweed:**
+     ```bash
+     sudo zypper install -y python3 curl iproute2 sudo systemd
+     ```
+   - **Debian / Ubuntu:**
+     ```bash
+     sudo apt update && sudo apt install -y python3 curl iproute2 sudo systemd
+     ```
+3. **Jalankan Skrip Installer Satu-Langkah:**
+   ```bash
+   sudo curl -fsSL -o /tmp/pantau-install.sh \
+     https://raw.githubusercontent.com/azhuka/pantau-server/master/package/install.sh
+   sudo bash /tmp/pantau-install.sh
+   ```
 
 Installer akan meminta konfigurasi interaktif:
 - **URL Dashboard:** Masukkan URL server pusat (contoh LAN/VPN: `http://172.30.1.40:8400` atau domain `https://pantau.domainanda.com`).
 - **API Key:** Masukkan API Key yang telah disalin dari dashboard.
 
 Skrip installer klien otomatis melakukan:
+- Deteksi dinamis shell `nologin` sistem (`/usr/sbin/nologin`, `/sbin/nologin`, atau `/bin/false`).
+- Pendaftaran akun sistem `pantau` ke grup log yang sesuai (`adm` pada Debian/Ubuntu atau `systemd-journal` pada keluarga RHEL/Arch).
 - Validasi konektivitas dan autentikasi token ke Dashboard.
 - Menulis konfigurasi aman pada `/etc/pantau/config.json` (izin `0640`, owner `root:pantau`).
-- Memasang dan mengaktifkan service systemd `agent_pantau.service` di bawah pengguna `pantau`.
+- Memasang unit service `agent_pantau.service` dan mengaktifkannya di bawah pengguna `pantau`.
 
-*(Mode non-interaktif untuk skrip automasi/Ansible: `sudo bash /tmp/pantau-install.sh "http://<IP-DASHBOARD>:8400" "<API_KEY>"`)*
+*(Mode non-interaktif untuk skrip automasi/Ansible/cloud-init: `sudo bash /tmp/pantau-install.sh "http://<IP-DASHBOARD>:8400" "<API_KEY>"`)*
 
 Server klien akan terdeteksi dan berstatus online di dashboard dalam ±10 detik.
 

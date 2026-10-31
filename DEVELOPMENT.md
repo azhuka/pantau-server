@@ -55,7 +55,50 @@ Agent client ([`agent/agent_pantau.py`](file:///home/bos/rj45/agent/agent_pantau
 - Hanya menggunakan Python standard library (`urllib.request`, `subprocess`, `json`, `os`, `sys`, `platform`, `hashlib`, `shutil`, `socket`).
 - Tidak menggunakan third-party library seperti `psutil` yang membutuhkan compiler C (`gcc`, `python3-dev`) dan rentan gagal saat dipasang pada instalasi distro Linux minimalis.
 - Metrik sistem dibaca langsung dari pseudo-filesystem Linux (`/proc/stat`, `/proc/meminfo`, `/proc/loadavg`, `/proc/net/dev`, `/proc/diskstats`, `/sys/class/net/`) dan utilitas core Linux (`df`, `systemctl`, `journalctl`, `ss`, `ufw`).
-- Hal ini menjamin agent dapat di-deploy seketika di semua distro Linux modern (Ubuntu 18.04+, Debian 10+, CentOS 7+, RHEL, AlmaLinux, Rocky Linux) dalam hitungan detik.
+- Hal ini menjamin agent dapat di-deploy seketika di semua distro Linux modern (Ubuntu 20.04+, Debian 10+, Rocky Linux 8/9, AlmaLinux 8/9, RHEL 8/9, CentOS Stream, Fedora, Arch Linux, openSUSE) dalam hitungan detik.
+
+### Kompatibilitas Lintas Distribusi Linux & Prosedur Pemasangan Multi-Distro
+
+Agen Pantau dan skrip pemasangan otomatis ([`package/install.sh`](file:///home/bos/rj45/package/install.sh)) dirancang dengan arsitektur toleran distribusi (*distro-agnostic*) untuk seluruh varian Linux modern yang mengadopsi systemd:
+
+1. **Persiapan Paket Prasyarat Per Keluarga Distribusi:**
+   Sebelum menjalankan skrip instalasi satu-langkah, pastikan utilitas dasar (`python3` 3.10+, `curl`, `ss` dari `iproute`/`iproute2`, `sudo`, dan `systemd`) telah tersedia di sistem:
+   - **Keluarga RHEL / RPM (Rocky Linux, AlmaLinux, RHEL, CentOS Stream, Fedora):**
+     ```bash
+     sudo dnf install -y python3 curl iproute sudo systemd
+     ```
+   - **Keluarga Arch Linux (Arch Linux, Manjaro):**
+     ```bash
+     sudo pacman -Sy --noconfirm python curl iproute2 sudo systemd
+     ```
+   - **Keluarga openSUSE (Leap, Tumbleweed):**
+     ```bash
+     sudo zypper install -y python3 curl iproute2 sudo systemd
+     ```
+   - **Keluarga Debian / Ubuntu (Ubuntu, Debian, Proxmox VE):**
+     ```bash
+     sudo apt update && sudo apt install -y python3 curl iproute2 sudo systemd
+     ```
+
+2. **Eksekusi Pemasangan Satu-Langkah:**
+   ```bash
+   sudo curl -fsSL -o /tmp/pantau-install.sh \
+     https://raw.githubusercontent.com/azhuka/pantau-server/master/package/install.sh
+   sudo bash /tmp/pantau-install.sh
+   ```
+   *Atau mode non-interaktif untuk integrasi CI/CD, Ansible, atau cloud-init:*
+   ```bash
+   sudo bash /tmp/pantau-install.sh "http://<IP-DASHBOARD>:8400" "<API_KEY_64_HEX>"
+   ```
+
+3. **Mekanisme Adaptasi Distribusi pada Installer (`install.sh`):**
+   - **Deteksi Shell `nologin` Dinamis:** Tidak mengasumsikan `/usr/sbin/nologin` statis (yang tidak selalu ada pada beberapa distro RPM/Arch minimalis), melainkan mendeteksi secara dinamis melalui `command -v nologin`, dengan fallback ke `/sbin/nologin` atau `/bin/false`.
+   - **Penanganan Hak Akses Log Ganda:** Mendaftarkan pengguna sistem `pantau` ke grup `adm` (standar Debian/Ubuntu) dan `systemd-journal` (standar RHEL/Rocky/Alma/Fedora/Arch) jika grup tersebut ada di sistem, tanpa memicu kegagalan instalasi jika salah satu grup tidak terdaftar.
+
+4. **Adaptasi Manajer Paket Runtime pada Agen ([`agent_pantau.py`](file:///home/bos/rj45/agent/agent_pantau.py)) & Wrapper ([`pantau-apt`](file:///home/bos/rj45/package/usr/local/sbin/pantau-apt)):**
+   - **Inventarisasi Paket:** Mendukung kueri DPKG (`dpkg-query`), RPM (`rpm -qa --queryformat ...`), dan Pacman (`pacman -Q`).
+   - **Deteksi Pembaruan:** Mendukung `apt list --upgradable`, `dnf check-update` / `yum check-update`, dan `checkupdates`.
+   - **Wrapper Tindakan:** Skrip `/usr/local/sbin/pantau-apt` secara transparan mendeteksi manajer paket aktif (`apt-get`, `dnf`, `yum`, atau `pacman`) untuk mengeksekusi operasi pembaruan secara terisolasi di bawah sudoers *least-privilege*.
 
 ---
 
