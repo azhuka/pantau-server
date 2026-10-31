@@ -2658,10 +2658,10 @@ def _get_server_actions(db, sid: int, limit: int = 50) -> list[dict]:
             continue
 
         act_label = {
-            "problem_ignore": "Abaikan Masalah",
+            "problem_ignore": "Abaikan Insiden",
             "problem_unignore": "Pantau Kembali",
             "alert_ack": "Tandai Ditangani",
-            "problem_resolve": "Selesaikan Masalah",
+            "problem_resolve": "Selesaikan Insiden",
             "service_recovered": "Layanan Pulih",
             "maintenance_mode": "Mode Pemeliharaan",
             "maintenance_create": "Buat Jadwal Pemeliharaan",
@@ -9326,6 +9326,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
         is_op_action = bool(act_info)
         op_action = act_info.get("action", "stop") if act_info else "stop"
         op_by = act_info.get("by", "OPERATOR") if act_info else "OPERATOR"
+        oom_info = None
 
         if st == "down":
             if is_op_action:
@@ -10007,7 +10008,7 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
             elif row.key.startswith("ssh_active_session:"):
                 audit_msg = f"{srv.hostname}: sesi remote SSH telah ditutup ({row.message})"
             else:
-                audit_msg = f"{srv.hostname}: masalah '{row.message}' telah selesai"
+                audit_msg = f"{srv.hostname}: insiden '{row.message}' telah selesai"
             try:
                 _audit(db, "sistem", "masalah_selesai", audit_msg, "selesai", server_id=srv.id)
             except Exception:
@@ -10246,9 +10247,9 @@ AUDIT_ACTION_LABELS = {
     "cmd:reboot_host": "Reboot Server",
     "poweroff_host": "Power Off Server",
     "cmd:poweroff_host": "Power Off Server",
-    "problem_ignore": "Abaikan Masalah",
-    "problem_unignore": "Pantau Kembali Masalah",
-    "problem_resolve": "Selesaikan Masalah",
+    "problem_ignore": "Abaikan Insiden",
+    "problem_unignore": "Pantau Kembali Insiden",
+    "problem_resolve": "Selesaikan Insiden",
     "maintenance_mode": "Mode Pemeliharaan",
     "maintenance_create": "Buat Jadwal Pemeliharaan",
     "maintenance_cancel": "Batalkan Jadwal Pemeliharaan",
@@ -10302,12 +10303,12 @@ AUDIT_ACTION_LABELS = {
     # Layanan & proses
     "service_start": "Mulai Layanan",
     "service_stop": "Hentikan Layanan",
-    # Kejadian insiden / masalah
-    "masalah_selesai": "Masalah Selesai",
-    "masalah_pulih": "Masalah Selesai",
-    "masalah_warning": "Peringatan Masalah",
-    "masalah_danger": "Bahaya Masalah",
-    "masalah_info": "Informasi Masalah",
+    # Kejadian insiden
+    "masalah_selesai": "Insiden Selesai",
+    "masalah_pulih": "Insiden Selesai",
+    "masalah_warning": "Peringatan Insiden",
+    "masalah_danger": "Bahaya Insiden",
+    "masalah_info": "Informasi Insiden",
     # Setel Organisasi
     "branding_update": "Setel Organisasi",
     # Pemantauan Endpoint
@@ -10431,8 +10432,8 @@ AUDIT_CATEGORIES = [
             ("terminal_shell_open", "Buka Terminal Root", "Open Root Terminal"),
             ("maintenance_mode", "Mode Pemeliharaan", "Maintenance Mode"),
             ("alert_ack", "Akui Peringatan (Alert)", "Acknowledge Alert"),
-            ("problem_ignore", "Abaikan Masalah", "Ignore Incident"),
-            ("problem_unignore", "Pantau Kembali Masalah", "Cancel Ignore Incident"),
+            ("problem_ignore", "Abaikan Insiden", "Ignore Incident"),
+            ("problem_unignore", "Pantau Kembali Insiden", "Cancel Ignore Incident"),
         ]
     },
     {
@@ -11016,7 +11017,7 @@ def api_alert_resolve(
         ServerProblem.resolved_at.is_(None),
     ).first()
     if not row:
-        raise HTTPException(status_code=404, detail="Masalah tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Insiden tidak ditemukan")
     now = datetime.utcnow()
     row.resolved_at = now
     row.resolved_note = _clean_str(f"manual ({user.username})", "manual", 100)
@@ -11047,7 +11048,7 @@ def api_alert_ignore(
         ServerProblem.resolved_at.is_(None),
     ).first()
     if not row:
-        raise HTTPException(status_code=404, detail="Masalah tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Insiden tidak ditemukan")
 
     duration = str(body.get("duration", "24h")).lower().strip()
     reason = str(body.get("reason", "")).strip()[:255] or None
@@ -11075,7 +11076,7 @@ def api_alert_ignore(
     row.is_ignored = 1
     row.ignored_until = until
     row.ignored_by = user.username
-    row.ignored_reason = reason or row.ignored_reason
+    row.ignored_reason = reason or f"diabaikan oleh {user.username}"
     row.ignore_mode = ignore_mode
     row.updated_at = now
     if not row.acknowledged_at:
@@ -11093,7 +11094,7 @@ def api_alert_ignore(
             svc.is_ignored = 1
             svc.ignored_until = until
             svc.ignored_by = user.username
-            svc.ignored_reason = reason or svc.ignored_reason
+            svc.ignored_reason = reason or f"diabaikan oleh {user.username}"
             svc.ignore_mode = ignore_mode
 
     dur_label = f" ({duration})" if ignore_mode != "permanent" else " (permanen)"
@@ -11132,7 +11133,7 @@ def api_alert_unignore(
         ServerProblem.resolved_at.is_(None),
     ).first()
     if not row:
-        raise HTTPException(status_code=404, detail="Masalah tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Insiden tidak ditemukan")
 
     # Bersihkan seluruh riwayat pengabaian pada masalah ini dan key terkait di server ini
     db.query(ServerProblem).filter(
@@ -11216,7 +11217,7 @@ def api_service_ignore(
     svc.is_ignored = 1
     svc.ignored_until = until
     svc.ignored_by = user.username
-    svc.ignored_reason = reason or svc.ignored_reason
+    svc.ignored_reason = reason or f"diabaikan oleh {user.username}"
     svc.ignore_mode = ignore_mode
 
     prob = db.query(ServerProblem).filter(
@@ -11228,9 +11229,12 @@ def api_service_ignore(
         prob.is_ignored = 1
         prob.ignored_until = until
         prob.ignored_by = user.username
-        prob.ignored_reason = reason or prob.ignored_reason
+        prob.ignored_reason = reason or f"diabaikan oleh {user.username}"
         prob.ignore_mode = ignore_mode
         prob.updated_at = now
+        if not prob.acknowledged_at:
+            prob.acknowledged_at = now
+            prob.acknowledged_by = user.username
 
     dur_label = f" ({duration})" if ignore_mode != "permanent" else " (permanen)"
     if ignore_mode == "incident":
@@ -11350,7 +11354,7 @@ def api_update_thresholds(
         row.value = json.dumps(current_th)
         row.updated_at = datetime.utcnow()
 
-    _audit(db, user.username, "settings_update", target="Ambang Batas Masalah Global", result="disimpan")
+    _audit(db, user.username, "settings_update", target="Ambang Batas Insiden Global", result="disimpan")
     db.commit()
     return {"ok": True, "thresholds": current_th}
 
@@ -11369,7 +11373,7 @@ def api_reset_thresholds(
     row = db.query(SystemSetting).filter(SystemSetting.key == "thresholds").first()
     if row:
         db.delete(row)
-        _audit(db, user.username, "settings_reset", target="Ambang Batas Masalah Global", result="direset ke bawaan pabrik")
+        _audit(db, user.username, "settings_reset", target="Ambang Batas Insiden Global", result="direset ke bawaan pabrik")
         db.commit()
 
     return {"ok": True, "thresholds": dict(DEFAULT_THRESHOLDS)}

@@ -1713,7 +1713,7 @@ body.show-alert-banner .main{padding-top:72px}
     <a href="/servers" class="nav-link {% if '/servers' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Daftar Server">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span> <span class="nav-label" data-i18n="menu_servers">Daftar Server</span>
     </a>
-    <a href="/problems" class="nav-link {% if '/problems' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Insiden &amp; Masalah">
+    <a href="/problems" class="nav-link {% if '/problems' in request.url.path %}active{% endif %}" onclick="closeMobDrawer()" title="Daftar Insiden">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span> <span class="nav-label" data-i18n="menu_problems">Insiden</span>
       <span id="nav-incident-badge" class="badge" style="display:none;margin-left:auto;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:10px"></span>
     </a>
@@ -1750,7 +1750,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.53' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.54' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
       <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
       </button>
@@ -3015,7 +3015,7 @@ function openIgnoreModal(target, msg, onDone) {
   const m = document.getElementById('ignore-problem-modal');
   const txt = document.getElementById('ignore-modal-msg');
   if (txt) {
-    let displayMsg = text || ((isEn ? 'Incident #' : 'Masalah #') + id);
+    let displayMsg = text || ((isEn ? 'Incident #' : 'Insiden #') + id);
     if (isEn && typeof replaceWithSmartBoundary === 'function' && typeof UI_TEXT_PAIRS !== 'undefined') {
       const sortedPairs = [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length);
       displayMsg = replaceWithSmartBoundary(displayMsg, sortedPairs, true);
@@ -3366,7 +3366,7 @@ function renderProblemDetailModal(p) {
   if (isEn) {
     titleText = ctx.diagnosa_en || (ctx.diagnosa && typeof replaceWithSmartBoundary === 'function' ? replaceWithSmartBoundary(ctx.diagnosa, [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length), true) : '') || pMsg || ('Incident: ' + p.key);
   } else {
-    titleText = ctx.diagnosa || ctx.diagnosa_en || p.message || ('Masalah: ' + p.key);
+    titleText = ctx.diagnosa || ctx.diagnosa_en || p.message || ('Insiden: ' + p.key);
   }
   if (titleEl) titleEl.textContent = titleText;
 
@@ -4035,13 +4035,13 @@ document.addEventListener('keydown', (e) => {
 });
 </script>
 
-<!-- Modal Abaikan Masalah -->
+<!-- Modal Abaikan Insiden -->
 <div id="ignore-problem-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px);padding:16px" onclick="if(event.target===this)closeIgnoreModal()">
   <div class="card" style="width:100%;max-width:440px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;box-shadow:0 16px 40px rgba(0,0,0,0.7);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h3 style="margin:0;font-size:15px;display:flex;align-items:center;gap:8px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-        Abaikan Pemantauan
+        Abaikan Insiden
       </h3>
       <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeIgnoreModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
     </div>
@@ -4068,7 +4068,7 @@ document.addEventListener('keydown', (e) => {
   </div>
 </div>
 
-<!-- Modal Diagnosa & Rincian Akar Masalah -->
+<!-- Modal Diagnosa & Rincian Akar Insiden -->
 <div id="problem-detail-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeProblemDetailModal()">
   <div class="card" style="width:min(660px,94vw);max-height:88vh;display:flex;flex-direction:column;background:#161b22;border:1px solid #30363d;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,0.8);color:var(--text);padding:0;overflow:hidden">
     <!-- Header -->
@@ -4076,7 +4076,7 @@ document.addEventListener('keydown', (e) => {
       <div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--dim)"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <h3 id="pdm-title" style="margin:0;font-size:16px;font-weight:600;color:var(--text);word-break:break-word">Rincian Masalah</h3>
+          <h3 id="pdm-title" style="margin:0;font-size:16px;font-weight:600;color:var(--text);word-break:break-word">Rincian Insiden</h3>
           <span id="pdm-badge" class="badge badge-danger">DANGER</span>
         </div>
       </div>
@@ -4088,7 +4088,7 @@ document.addEventListener('keydown', (e) => {
       <!-- Status Waktu -->
       <div id="pdm-status-box"></div>
 
-      <!-- Analisis Akar Masalah -->
+      <!-- Analisis Akar Insiden -->
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px 16px">
         <div style="font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent,#3b82f6)"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> <span id="pdm-sec-cause">Analisis Penyebab (Root Cause)</span>
@@ -4384,7 +4384,7 @@ function attachTablePagination(target, options = {}) {
     let displayUnit = unitLabel;
     if (isEn) {
       if (unitLabel === 'tindakan') displayUnit = 'actions';
-      else if (unitLabel === 'masalah') displayUnit = 'incidents';
+      else if (unitLabel === 'masalah' || unitLabel === 'insiden') displayUnit = 'incidents';
       else if (unitLabel === 'pengguna') displayUnit = 'users';
       else if (unitLabel === 'akun') displayUnit = 'accounts';
       else if (unitLabel === 'socket') displayUnit = 'sockets';

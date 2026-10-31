@@ -1065,7 +1065,7 @@ body.popout-fleet_table #dash-fleet-card {
       </span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <a href="/problems" class="btn btn-ghost btn-sm" style="font-size:10.5px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;color:var(--text-bright)" title="Buka seluruh riwayat insiden dan masalah armada">
+      <a href="/problems" class="btn btn-ghost btn-sm" style="font-size:10.5px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;color:var(--text-bright)" title="Buka seluruh riwayat insiden armada">
         Riwayat Lengkap
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
       </a>
@@ -1090,7 +1090,7 @@ body.popout-fleet_table #dash-fleet-card {
           <th class="dash-col-time" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700">WAKTU</th>
           <th class="dash-col-server" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700">SERVER</th>
           <th class="dash-col-sev" style="padding:5px 8px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.6px;font-weight:700">KEPARAHAN</th>
-          <th class="dash-col-desc" style="padding:5px 18px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700">DESKRIPSI MASALAH</th>
+          <th class="dash-col-desc" style="padding:5px 18px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700">DESKRIPSI INSIDEN</th>
           <th class="dash-col-durasi" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.6px;font-weight:700">DURASI</th>
           <th class="dash-col-action" style="padding:5px 8px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap"></th>
         </tr>
@@ -1619,7 +1619,7 @@ body.popout-fleet_table #dash-fleet-card {
     <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #30363d;background:rgba(255,255,255,0.02)">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span id="sdm-icon" style="display:inline-flex;align-items:center"></span>
-        <h3 id="sdm-title" style="margin:0;font-size:15.5px;font-weight:600;color:var(--text)">Rincian Masalah</h3>
+        <h3 id="sdm-title" style="margin:0;font-size:15.5px;font-weight:600;color:var(--text)">Rincian Insiden</h3>
         <span id="sdm-badge" class="badge">0 Insiden</span>
       </div>
       <button type="button" class="btn btn-ghost btn-sm" onclick="closeSevDetailModal()" style="font-size:20px;line-height:1;padding:2px 8px;cursor:pointer;color:var(--dim)" title="Tutup (Esc)">&times;</button>
@@ -1630,7 +1630,7 @@ body.popout-fleet_table #dash-fleet-card {
       <!-- Empty State -->
       <div id="sdm-empty" style="display:none;padding:45px 20px;text-align:center;flex-direction:column;align-items:center;justify-content:center;gap:8px">
         <div style="width:44px;height:44px;border-radius:50%;background:rgba(16,185,129,0.12);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:22px">✓</div>
-        <div style="font-size:14px;font-weight:600;color:var(--text-bright);margin-top:6px" id="sdm-empty-title">Nihil Masalah</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-bright);margin-top:6px" id="sdm-empty-title">Nihil Insiden</div>
         <div style="font-size:12.5px;color:var(--dim);max-width:380px" id="sdm-empty-sub">Tidak ditemukan insiden aktif pada kategori keparahan ini.</div>
       </div>
 
@@ -1658,7 +1658,7 @@ body.popout-fleet_table #dash-fleet-card {
         Menampilkan insiden berdasarkan keparahan
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <a href="/problems" class="btn btn-ghost btn-sm" style="text-decoration:none;font-size:12px">Buka Halaman Masalah &rarr;</a>
+        <a href="/problems" class="btn btn-ghost btn-sm" style="text-decoration:none;font-size:12px">Buka Halaman Insiden &rarr;</a>
         <button type="button" class="btn btn-primary btn-sm" onclick="closeSevDetailModal()">Tutup</button>
       </div>
     </div>
@@ -1806,11 +1806,7 @@ function renderSevDetailModal(sev) {
           opNote = `(${ignReason})`;
         }
       } else if (p.is_ignored && p.ignored_by) {
-        if ((p.key || '').startsWith('service_down:')) {
-          opNote = `(dihentikan oleh ${ignOp})`;
-        } else {
-          opNote = `(diabaikan oleh ${ignOp})`;
-        }
+        opNote = `(diabaikan oleh ${ignOp})`;
       }
 
       // Bersihkan redundansi jika rawMsg sudah mengandung keterangan operator
@@ -1864,7 +1860,7 @@ function renderSevDetailModal(sev) {
 
     if (!window._sdmPagination && typeof attachTablePagination === 'function' && document.getElementById('sdm-table')) {
       window._sdmPagination = attachTablePagination('#sdm-table', {
-        unitLabel: 'masalah',
+        unitLabel: 'insiden',
         defaultLimit: 5,
         pageSizeOptions: [5, 10, 25, 'all']
       });

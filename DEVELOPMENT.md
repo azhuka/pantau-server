@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.54
+
+- **Tipe Rilis:** Standarisasi Istilah Insiden, Koreksi Atribusi Pengabaian Layanan, dan Pemulihan Tombol Aksi Live (*Incident Term Standardization, Accurate Service Ignore Attribution, and Live Action Button Restoration*)
+- **Fokus Utama:** Melakukan standarisasi menyeluruh istilah "masalah" menjadi "insiden" di seluruh antarmuka dan API, memulihkan responsivitas tombol pengabaian insiden seketika via perbaikan *runtime exception* pada ringkasan server, mengoreksi atribusi keterangan operator pada insiden yang diabaikan, serta mengotomatisasi penandaan status ditangani (*handled*) pada insiden yang diabaikan:
+  1. **Standarisasi Menyeluruh Istilah Insiden (`server/templates/`, `server/main.py`):**
+     - Menggantikan seluruh terminologi "masalah" menjadi "insiden" secara konsisten pada antarmuka, judul kartu metrik, modal rincian, tooltip tombol aksi, menu navigasi, pagination bar, serta pesan status sistem (`Status Insiden`, `X insiden aktif · Y diabaikan`, `10/25/50/all insiden`, `Abaikan Insiden`, `Pantau Kembali Insiden`, `Rincian Insiden`, `Daftar Insiden`, `Ambang Batas Insiden Global`, dll.).
+     - Menyelaraskan teks audit log dan respon API (`masalah_selesai` $\rightarrow$ `Insiden Selesai`, `masalah_warning` $\rightarrow$ `Peringatan Insiden`, dll., serta pesan 404 `Insiden tidak ditemukan`).
+  2. **Koreksi Atribusi Keterangan Pengabaian Insiden (`server/templates/dashboard.html`):**
+     - Menghilangkan asumsi otomatis (*hardcoded fallback*) bahwa setiap layanan berhenti yang diabaikan adalah akibat penghentian sengaja oleh operator.
+     - Mengklasifikasikan secara presisi: layanan yang tidak digunakan atau down sejak awal dan diabaikan operator kini menampilkan keterangan yang akurat `(diabaikan oleh <operator>)`, sedangkan tindakan sengaja operator (`dihentikan oleh`, `dimatikan oleh`, `di-reboot oleh`) tetap mempertahankan label aksi operasional masing-masing.
+  3. **Penyelesaian `UnboundLocalError` dan Pemulihan Tombol Aksi Live (`server/main.py`):**
+     - Mengatasi *runtime exception* `UnboundLocalError: cannot access local variable 'oom_info'` pada fungsi `_problem_instances()`.
+     - Mengembalikan integritas endpoint `api_server_overview()` sehingga mekanisme polling *real-time* di antarmuka web (`poll()`) berjalan normal tanpa kegagalan HTTP 500, memulihkan pembaruan live tombol pengabaian/pantau kembali seketika tanpa perlu memuat ulang halaman (*zero reload*).
+  4. **Otomasi Status Penanganan Insiden (*Handled / Ditangani*):**
+     - Menyelaraskan siklus hidup insiden: ketika operator memilih untuk mengabaikan suatu insiden (`is_ignored = 1`), sistem secara otomatis menandai insiden tersebut sebagai telah ditangani (`acknowledged_at = now`, `acknowledged_by = user.username`).
+     - Menampilkan penanda centang hijau `prob-status-ack` serta badge `✓ DITANGANI` pada seluruh tabel insiden dan layanan terkait, dengan tetap mempertahankan prinsip bahwa insiden yang ditangani tidak otomatis diabaikan.
+  5. **Otomasi Pembaruan SemVer v4.8.54:**
+     - Menaikkan versi sistem menjadi `v4.8.54` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.53
 
 - **Tipe Rilis:** Redesain Modal Rincian Insiden Diabaikan 6 Kolom, Isolasi Ketat Aksi Sengaja Operator dari Insiden Aktif, dan Penyelarasan Fondasi Alerting Eksternal (*Ignored Incident 6-Column Detail Modal Redesign, Strict Operator Action Isolation from Active Incidents, and External Alerting Foundation Alignment*)

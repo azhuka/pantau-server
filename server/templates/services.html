@@ -1240,7 +1240,7 @@ div[style*="position: fixed"] .card {
           data-guardrail-title="Hapus Server dari Pantau"
           data-guardrail-target="{{ server.hostname }}"
           data-guardrail-badge="Hapus Permanen"
-          data-guardrail-msg="Server <strong>{{ server.hostname }}</strong> ({{ server.ip_address }}) beserta seluruh riwayat metrik, snapshot, serta pencatatan masalah akan dihapus secara permanen dari basis data."
+          data-guardrail-msg="Server <strong>{{ server.hostname }}</strong> ({{ server.ip_address }}) beserta seluruh riwayat metrik, snapshot, serta pencatatan insiden akan dihapus secara permanen dari basis data."
           data-guardrail-btn="Hapus Server Sekarang"
           data-guardrail-color="danger">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -2005,7 +2005,7 @@ div[style*="position: fixed"] .card {
 
 <div class="tab-body" id="tab-masalah" hidden>
 <div class="card">
-  <div class="card-header" id="prob-card-header"><h3>Status Masalah</h3>
+  <div class="card-header" id="prob-card-header"><h3>Status Insiden</h3>
     <div id="prob-header-status" style="display:flex;align-items:center;gap:8px">
     {% if problem_level is none %}
       <span class="badge badge-muted">belum ada data</span>
@@ -2014,7 +2014,7 @@ div[style*="position: fixed"] .card {
       {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
       {% set meta_info = pmeta.get(problem_level, (problem_level|upper, 'orange')) %}
       <span class="badge badge-{{ meta_info[1] }}">{{ meta_info[0] }}</span>
-      <span style="font-size:12px;color:var(--dim)">{{ active_open|length }} masalah aktif{% if ignored_open %} · {{ ignored_open|length }} diabaikan{% endif %}</span>
+      <span style="font-size:12px;color:var(--dim)">{{ active_open|length }} insiden aktif{% if ignored_open %} · {{ ignored_open|length }} diabaikan{% endif %}</span>
     {% endif %}
     </div>
   </div>
@@ -2040,10 +2040,10 @@ div[style*="position: fixed"] .card {
       <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
       <select id="prob-limit-top" onchange="setProbLimit(this.value)"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
-        <option value="10" selected>10 masalah</option>
-        <option value="25">25 masalah</option>
-        <option value="50">50 masalah</option>
-        <option value="all">Semua masalah</option>
+        <option value="10" selected>10 insiden</option>
+        <option value="25">25 insiden</option>
+        <option value="50">50 insiden</option>
+        <option value="all">Semua insiden</option>
       </select>
     </div>
   </div>
@@ -2097,8 +2097,8 @@ div[style*="position: fixed"] .card {
               {% if p.is_ignored %}
                 <span class="badge badge-muted badge-sub" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
               {% endif %}
-              {% if p.acknowledged_by %}
-                <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+              {% if p.acknowledged_by or p.is_ignored %}
+                <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op if p.acknowledged_by else op_name }}">✓ DITANGANI</span>
               {% endif %}
             </div>
           </div>
@@ -2121,7 +2121,7 @@ div[style*="position: fixed"] .card {
       <td class="col-act prob-act-cell">
         <div class="prob-act-wrap">
           <div class="prob-act-row prob-act-tools">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar masalah" aria-label="Diagnosa">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="Lihat diagnosa &amp; rincian akar insiden" aria-label="Diagnosa">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </button>
             {% if p.log_unit %}
@@ -2164,8 +2164,8 @@ div[style*="position: fixed"] .card {
           {% if p.is_open or p.acknowledged_by %}
             <div class="prob-act-row prob-act-ops">
               {% if not user.is_viewer() and p.is_open %}
-                {% if p.acknowledged_by %}
-                  <span class="btn btn-ghost btn-sm prob-status-ack" title="Insiden Ditangani{% if p.acknowledged_by %} (oleh {{ p.acknowledged_by }}){% endif %}" aria-label="Insiden Ditangani">
+                {% if p.acknowledged_by or p.is_ignored %}
+                  <span class="btn btn-ghost btn-sm prob-status-ack" title="Insiden Ditangani (oleh {{ p.acknowledged_by or op_name }})" aria-label="Insiden Ditangani">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   </span>
                 {% else %}
@@ -2178,7 +2178,7 @@ div[style*="position: fixed"] .card {
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                   </button>
                 {% else %}
-                  <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan Masalah" aria-label="Abaikan Masalah">
+                  <button type="button" class="btn btn-ghost btn-sm" data-id="{{ p.id }}" data-msg="{{ p.message }}" onclick="openIgnoreModal(this)" title="Abaikan Insiden" aria-label="Abaikan Insiden">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                   </button>
                 {% endif %}
@@ -2196,9 +2196,9 @@ div[style*="position: fixed"] .card {
     {% endfor %}
     </tbody>
   </table>
-  <div id="prob-pagination-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:12px">
+  <div id="prob-pagination-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:var(--dim);flex-wrap:gap:12px">
     <div style="display:flex;align-items:center;gap:12px">
-      <span id="prob-showing-summary">Menampilkan 0 masalah</span>
+      <span id="prob-showing-summary">Menampilkan 0 insiden</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <button type="button" id="prob-prev-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(-1)" style="padding:4px 10px;font-size:11px" disabled>« Sebelumnya</button>
@@ -2209,17 +2209,17 @@ div[style*="position: fixed"] .card {
       <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
       <select id="prob-limit-bottom" onchange="setProbLimit(this.value)"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
-        <option value="10" selected>10 masalah</option>
-        <option value="25">25 masalah</option>
-        <option value="50">50 masalah</option>
-        <option value="all">Semua masalah</option>
+        <option value="10" selected>10 insiden</option>
+        <option value="25">25 insiden</option>
+        <option value="50">50 insiden</option>
+        <option value="all">Semua insiden</option>
       </select>
     </div>
   </div>
   {% else %}
   <div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;padding:12px 0">
     <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
-    Tidak ada masalah terdeteksi saat ini.
+    Tidak ada insiden terdeteksi saat ini.
   </div>
   {% endif %}
   </div>
@@ -3845,7 +3845,7 @@ div[style*="position: fixed"] .card {
     </div>
     
     <p style="font-size:13px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
-      Saat mode pemeliharaan aktif, server ini tidak akan memicu alarm atau tiket masalah baru ketika layanan dimatikan atau saat mesin di-reboot.
+      Saat mode pemeliharaan aktif, server ini tidak akan memicu alarm atau tiket insiden baru ketika layanan dimatikan atau saat mesin di-reboot.
     </p>
 
     <div style="margin-bottom:16px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:13px">
@@ -4365,7 +4365,7 @@ function updateTabAlertDots(options) {
     if (d) {
       const hasOpen = options.problems > 0;
       d.style.display = hasOpen ? 'inline-block' : 'none';
-      d.title = hasOpen ? options.problems + ' masalah aktif memerlukan perhatian' : '';
+      d.title = hasOpen ? options.problems + ' insiden aktif memerlukan perhatian' : '';
     }
   }
 
@@ -8191,7 +8191,7 @@ function renderProblemsTab(level, openList, histList) {
     if (level === null || level === undefined) {
       headEl.innerHTML = '<span class="badge badge-muted">' + (isEn ? 'no data' : 'belum ada data') + '</span>';
     } else {
-      let sub = isEn ? `${activeCount} active issues` : `${activeCount} masalah aktif`;
+      let sub = isEn ? `${activeCount} active issues` : `${activeCount} insiden aktif`;
       if (ignoredCount > 0) {
         sub += isEn ? ` · ${ignoredCount} ignored` : ` · ${ignoredCount} diabaikan`;
       }
@@ -8213,7 +8213,7 @@ function renderProblemsTab(level, openList, histList) {
   if (rows.length === 0) {
     wrap.innerHTML = `<div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;padding:12px 0">
       <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
-      ${isEn ? 'No incidents detected.' : 'Tidak ada masalah terdeteksi.'}
+      ${isEn ? 'No incidents detected.' : 'Tidak ada insiden terdeteksi.'}
     </div>`;
     return;
   }
@@ -8240,10 +8240,10 @@ function renderProblemsTab(level, openList, histList) {
       <span style="font-size:12px;color:var(--dim)">${isEn ? 'Show:' : 'Tampilkan:'}</span>
       <select id="prob-limit-top" onchange="setProbLimit(this.value)"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
-        <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>${isEn ? '10 incidents' : '10 masalah'}</option>
-        <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>${isEn ? '25 incidents' : '25 masalah'}</option>
-        <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>${isEn ? '50 incidents' : '50 masalah'}</option>
-        <option value="all"${String(probLimit) === 'all' ? ' selected' : ''}>${isEn ? 'All incidents' : 'Semua masalah'}</option>
+        <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>${isEn ? '10 incidents' : '10 insiden'}</option>
+        <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>${isEn ? '25 incidents' : '25 insiden'}</option>
+        <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>${isEn ? '50 incidents' : '50 insiden'}</option>
+        <option value="all"${String(probLimit) === 'all' ? ' selected' : ''}>${isEn ? 'All incidents' : 'Semua insiden'}</option>
       </select>
     </div>
   </div>
@@ -8273,8 +8273,9 @@ function renderProblemsTab(level, openList, histList) {
       if (isIgnored) {
         subBadges += `<span class="badge badge-muted badge-sub" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span>`;
       }
-      if (p.acknowledged_by) {
-        subBadges += `<span class="badge badge-up badge-sub" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + escapeHtml(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
+      if (p.acknowledged_by || isIgnored) {
+        const ackDisplay = p.acknowledged_by ? ackOp : opName;
+        subBadges += `<span class="badge badge-up badge-sub" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + escapeHtml(ackDisplay)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
       }
       sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}">${rawSevText}</span><div style="display:inline-flex;align-items:center;gap:2px">${subBadges}</div></div>`;
     } else {
@@ -8305,7 +8306,7 @@ function renderProblemsTab(level, openList, histList) {
     const svgBellOff = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
     const svgBell = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
 
-    let toolsHtml = `<button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar masalah'}" aria-label="${isEn ? 'Diagnose' : 'Diagnosa'}">${svgDiag}</button>`;
+    let toolsHtml = `<button type="button" class="btn btn-ghost btn-sm" onclick="openProblemDetailModal(this.closest('tr'))" title="${isEn ? 'View diagnosis &amp; root cause details' : 'Lihat diagnosa &amp; rincian akar insiden'}" aria-label="${isEn ? 'Diagnose' : 'Diagnosa'}">${svgDiag}</button>`;
     if (p.log_unit) {
       toolsHtml += `<button type="button" class="btn btn-ghost btn-sm" onclick="jumpToLog('${escapeHtml(p.log_unit)}')" title="${isEn ? 'View unit logs' : 'Lihat log unit'}" aria-label="Log">${svgLog}</button>`;
     } else if (p.action === 'mitigate') {
@@ -8329,24 +8330,27 @@ function renderProblemsTab(level, openList, histList) {
           toolsHtml += `<button type="button" class="btn btn-danger btn-sm" onclick="terminateSession(${SID}, '${escapeHtml(p.tty)}', '${escapeHtml(p.session_user || '')}', this)" title="${isEn ? 'Force terminate active remote session ' + escapeHtml(p.tty) : 'Putus paksa sesi remote ' + escapeHtml(p.tty)}" aria-label="Putus Sesi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></button>`;
         }
 
-        if (p.acknowledged_by) {
-          opsHtml += `<span class="btn btn-ghost btn-sm prob-status-ack" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}${p.acknowledged_by ? (isEn ? ' (by ' : ' (oleh ') + escapeHtml(p.acknowledged_by) + ')' : ''}" aria-label="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
+        if (p.acknowledged_by || isIgnored) {
+          const ackDisplay = p.acknowledged_by ? p.acknowledged_by : (p.ignored_by || 'operator');
+          opsHtml += `<span class="btn btn-ghost btn-sm prob-status-ack" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'} (${isEn ? 'by ' : 'oleh '}${escapeHtml(ackDisplay)})" aria-label="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
         } else {
           opsHtml += `<button type="button" class="btn btn-ghost btn-sm prob-status-unack" onclick="ackProblemInDetail(${p.id}, this)" title="${isEn ? 'Handle Incident' : 'Tangani Insiden'}" aria-label="${isEn ? 'Handle Incident' : 'Tangani Insiden'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red)"><polyline points="20 6 9 17 4 12"></polyline></svg></button>`;
         }
 
         if (isIgnored) {
-          opsHtml += `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali masalah ini'}" aria-label="${isEn ? 'Monitor' : 'Pantau Kembali'}">${svgBell}</button>`;
+          opsHtml += `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" onclick="unignoreProblem(this)" title="${isEn ? 'Cancel ignore for this incident' : 'Pantau kembali insiden ini'}" aria-label="${isEn ? 'Monitor' : 'Pantau Kembali'}">${svgBell}</button>`;
         } else {
-          opsHtml += `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan masalah ini'}" aria-label="${isEn ? 'Ignore' : 'Abaikan'}">${svgBellOff}</button>`;
+          opsHtml += `<button type="button" class="btn btn-ghost btn-sm" data-id="${p.id}" data-msg="${escapeHtml(p.message || '')}" onclick="openIgnoreModal(this)" title="${isEn ? 'Ignore this incident' : 'Abaikan insiden ini'}" aria-label="${isEn ? 'Ignore' : 'Abaikan'}">${svgBellOff}</button>`;
         }
       } else {
-        if (p.acknowledged_by) {
-          opsHtml += `<span class="btn btn-ghost btn-sm prob-status-ack" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}${p.acknowledged_by ? (isEn ? ' (by ' : ' (oleh ') + escapeHtml(p.acknowledged_by) + ')' : ''}" aria-label="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
+        if (p.acknowledged_by || isIgnored) {
+          const ackDisplay = p.acknowledged_by ? p.acknowledged_by : (p.ignored_by || 'operator');
+          opsHtml += `<span class="btn btn-ghost btn-sm prob-status-ack" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'} (${isEn ? 'by ' : 'oleh '}${escapeHtml(ackDisplay)})" aria-label="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
         }
       }
-    } else if (p.acknowledged_by) {
-      opsHtml += `<span class="btn btn-ghost btn-sm prob-status-ack" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}${p.acknowledged_by ? (isEn ? ' (by ' : ' (oleh ') + escapeHtml(p.acknowledged_by) + ')' : ''}" aria-label="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
+    } else if (p.acknowledged_by || isIgnored) {
+      const ackDisplay = p.acknowledged_by ? p.acknowledged_by : (p.ignored_by || 'operator');
+      opsHtml += `<span class="btn btn-ghost btn-sm prob-status-ack" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'} (${isEn ? 'by ' : 'oleh '}${escapeHtml(ackDisplay)})" aria-label="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`;
     }
 
     const actHtml = `<div class="prob-act-wrap">
@@ -8381,7 +8385,7 @@ function renderProblemsTab(level, openList, histList) {
   html += `</tbody></table>
   <div id="prob-pagination-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:12px">
     <div style="display:flex;align-items:center;gap:12px">
-      <span id="prob-showing-summary">${isEn ? 'Showing 0 incidents' : 'Menampilkan 0 masalah'}</span>
+      <span id="prob-showing-summary">${isEn ? 'Showing 0 incidents' : 'Menampilkan 0 insiden'}</span>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <button type="button" id="prob-prev-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(-1)" style="padding:4px 10px;font-size:11px" disabled>« ${isEn ? 'Previous' : 'Sebelumnya'}</button>
@@ -8392,10 +8396,10 @@ function renderProblemsTab(level, openList, histList) {
       <span style="font-size:12px;color:var(--dim)">${isEn ? 'Show:' : 'Tampilkan:'}</span>
       <select id="prob-limit-bottom" onchange="setProbLimit(this.value)"
               style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
-        <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>${isEn ? '10 incidents' : '10 masalah'}</option>
-        <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>${isEn ? '25 incidents' : '25 masalah'}</option>
-        <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>${isEn ? '50 incidents' : '50 masalah'}</option>
-        <option value="all"${String(probLimit) === 'all' ? ' selected' : ''}>${isEn ? 'All incidents' : 'Semua masalah'}</option>
+        <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>${isEn ? '10 incidents' : '10 insiden'}</option>
+        <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>${isEn ? '25 incidents' : '25 insiden'}</option>
+        <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>${isEn ? '50 incidents' : '50 insiden'}</option>
+        <option value="all"${String(probLimit) === 'all' ? ' selected' : ''}>${isEn ? 'All incidents' : 'Semua insiden'}</option>
       </select>
     </div>
   </div>`;
@@ -8473,7 +8477,7 @@ function probFilter() {
   const startShow = totalMatched === 0 ? 0 : startIdx + 1;
   const endShow = endIdx;
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  const txtSummary = totalMatched === 0 ? (isEn ? '0 issues' : '0 masalah') : (isEn ? `Showing ${startShow}-${endShow} of ${totalMatched} issues` : `Menampilkan ${startShow}-${endShow} dari ${totalMatched} masalah`);
+  const txtSummary = totalMatched === 0 ? (isEn ? '0 issues' : '0 insiden') : (isEn ? `Showing ${startShow}-${endShow} of ${totalMatched} issues` : `Menampilkan ${startShow}-${endShow} dari ${totalMatched} insiden`);
   if (countElTop) countElTop.textContent = txtSummary;
   if (countElBottom) countElBottom.textContent = txtSummary;
   if (pageInfoEl) pageInfoEl.textContent = isEn ? `Page ${probCurrentPage} of ${totalPages}` : `Halaman ${probCurrentPage} dari ${totalPages}`;
@@ -8576,9 +8580,12 @@ function formatActionRowI18n(a, isEn) {
       'Restart Layanan': 'Restart Service',
       'Hentikan Layanan': 'Stop Service',
       'Jalankan Layanan': 'Start Service',
+      'Abaikan Insiden': 'Ignore Incident',
       'Abaikan Masalah': 'Ignore Incident',
       'Pantau Kembali': 'Cancel Ignore',
+      'Pantau Kembali Insiden': 'Cancel Incident Ignore',
       'Tandai Ditangani': 'Mark Acknowledged',
+      'Selesaikan Insiden': 'Resolve Incident',
       'Selesaikan Masalah': 'Resolve Incident',
       'Layanan Pulih': 'Service Recovered',
       'layanan pulih': 'Service Recovered',
