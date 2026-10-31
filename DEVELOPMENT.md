@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.53
+
+- **Tipe Rilis:** Redesain Modal Rincian Insiden Diabaikan 6 Kolom, Isolasi Ketat Aksi Sengaja Operator dari Insiden Aktif, dan Penyelarasan Fondasi Alerting Eksternal (*Ignored Incident 6-Column Detail Modal Redesign, Strict Operator Action Isolation from Active Incidents, and External Alerting Foundation Alignment*)
+- **Fokus Utama:** Menyempurnakan manajemen siklus hidup insiden dengan mengisolasi tindakan sengaja operator dari daftar masalah aktif, meredesain antarmuka modal rincian insiden yang diabaikan menjadi 6 kolom berdensitas tinggi, serta meletakkan fondasi yang bersih untuk mekanisme notifikasi alerting eksternal:
+  1. **Redesain Modal Rincian Insiden Diabaikan 6 Kolom (`server/templates/dashboard.html`):**
+     - Memperbarui struktur tabel modal `#sdm-table` menjadi 6 kolom terstruktur: `WAKTU | SERVER | KEPARAHAN | INSIDEN | DURASI | TINDAKAN`.
+     - Menyajikan badge tingkat keparahan asli (`KRITIS`, `GAWAT`, `PERINGATAN`, `INFO`) pada kolom `KEPARAHAN`.
+     - Menggabungkan ringkasan insiden dengan catatan operator secara dinamis pada kolom `INSIDEN` (contoh: `Layanan agy Down (dihentikan oleh master-admin)` atau `(diabaikan oleh master-admin)`).
+     - Mempertahankan seluruh tombol operasional baku pada kolom `TINDAKAN` (ikon Diagnosa & Solusi serta tombol Buka Rincian ke server terkait).
+     - Memperbarui fungsi rendering modal `renderSevDetailModal()` dan mekanisme polling langsung agar membawa atribut `ignored_reason` dan `ignored_by`, serta menyelaraskan label tile menjadi `Diabaikan`.
+  2. **Isolasi Ketat Aksi Sengaja Operator dari Tabel Insiden Aktif (`server/main.py`):**
+     - Memastikan seluruh aksi operasional yang disengaja oleh operator (penghentian layanan tunggal, penghentian layanan massal/bulk, hingga pematian daya host) secara otomatis ditandai sebagai `is_ignored = 1` dengan `ignore_mode = 'permanent'`.
+     - Menyaring secara ketat seluruh masalah yang berstatus `is_ignored = 1` agar tidak pernah masuk ke dalam tabel "Insiden Terkini" (`all_open_problems`).
+     - Seluruh insiden yang disadari dan diakui oleh operator dialihkan secara tertib ke kartu metrik "DIABAIKAN" dan dapat diaudit sewaktu-waktu melalui jendela modal rincian.
+  3. **Penyelarasan Fondasi Notifikasi Alerting Eksternal:**
+     - Penyingkiran insiden yang disengaja/diabaikan dari daftar masalah aktif menjamin bahwa modul notifikasi eksternal (Telegram Bot / Webhook) tidak akan mengirimkan spam peringatan palsu (*false alert fatigue*) ke ponsel operator saat pemeliharaan atau penghentian layanan sengaja dilakukan.
+  4. **Otomasi Pembaruan SemVer v4.8.53:**
+     - Menaikkan versi sistem menjadi `v4.8.53` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.52
 
 - **Tipe Rilis:** Perbaikan Mekanisme Ciutkan-Bentangkan Grup Server, Pembersihan Anotasi Redundan UI NOC, dan Penguatan Kompatibilitas Lintas Distro Linux Non-Debian (*Server Group Collapse-Expand Mechanism Restoration, Redundant NOC Hint Removal, and Non-Debian Linux Distro Cross-Platform Hardening*)

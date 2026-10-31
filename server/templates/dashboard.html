@@ -1641,7 +1641,8 @@ body.popout-fleet_table #dash-fleet-card {
             <tr style="border-bottom:1px solid #30363d;background:rgba(255,255,255,0.02)">
               <th style="padding:10px 12px;font-size:11px;width:115px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">WAKTU</th>
               <th style="padding:10px 12px;font-size:11px;width:150px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">SERVER</th>
-              <th style="padding:10px 12px;font-size:11px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em">KEJADIAN / ANOMALI</th>
+              <th style="padding:10px 10px;font-size:11px;width:115px;color:var(--dim);text-align:center;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">KEPARAHAN</th>
+              <th style="padding:10px 14px;font-size:11px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em">INSIDEN</th>
               <th style="padding:10px 12px;font-size:11px;width:120px;color:var(--dim);text-align:right;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">DURASI</th>
               <th class="col-act" style="padding:10px 12px;font-size:11px;width:140px;color:var(--dim);text-align:center;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">TINDAKAN</th>
             </tr>
@@ -1673,7 +1674,7 @@ let activeModalSev = null;
 
 const SEV_CONFIG = {
   danger: {
-    label: 'Kritis (Critical / Disaster)',
+    label: 'Kritis',
     badgeCls: 'badge-danger',
     iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>',
     emptyMsg: 'Tidak ada insiden Kritis saat ini.'
@@ -1685,19 +1686,19 @@ const SEV_CONFIG = {
     emptyMsg: 'Tidak ada insiden Gawat saat ini.'
   },
   warning: {
-    label: 'Peringatan (Warning)',
+    label: 'Peringatan',
     badgeCls: 'badge-warn',
     iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
     emptyMsg: 'Tidak ada anomali atau ambang batas Peringatan yang terlampaui.'
   },
   info: {
-    label: 'Informasi (Info)',
+    label: 'Informasi',
     badgeCls: 'badge-info',
     iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>',
     emptyMsg: 'Tidak ada catatan informasi operasional saat ini.'
   },
   ignored: {
-    label: 'Diabaikan (Silenced / Ignored)',
+    label: 'Diabaikan',
     badgeCls: 'badge-muted',
     iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>',
     emptyMsg: 'Tidak ada insiden yang sedang diabaikan.'
@@ -1768,34 +1769,62 @@ function renderSevDetailModal(sev) {
   if (tbody) {
     let html = '';
     list.forEach(p => {
-      const escMsg = (p.message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const escHost = (p.hostname || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const escGrp = (p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      const globeIcon = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
+      const globeIcon = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
       const hostDisplay = (p.probe_id || p.is_probe) ? `<span style="display:inline-flex;align-items:center;gap:4px">${globeIcon}<span>${escHost}</span></span>` : escHost;
       const grpHtml = escGrp ? `<span style="font-size:11px;color:var(--dim);margin-left:4px">(${escGrp})</span>` : '';
       const startedStr = p.started_at_str || (p.started_at ? relTime(p.started_at) : '—');
       const durStr = p.durasi || (p.started_at ? relTime(p.started_at).replace(' lalu', '').replace(' ago', '') : '—');
 
-      let ignBadge = '';
-      if (p.is_ignored) {
-        ignBadge = '<span class="badge badge-muted" style="font-size:10px;padding:1px 5px;margin-left:6px;display:inline-flex;align-items:center;gap:3px">Diabaikan <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></span>';
+      // 1. Kolom Keparahan
+      const s = (p.severity || 'warning').toLowerCase();
+      let sevBadge = '';
+      if (s === 'danger') sevBadge = '<span class="badge badge-danger" style="font-size:8.5px;padding:2px 7px;font-weight:700;letter-spacing:0.3px">KRITIS</span>';
+      else if (s === 'average') sevBadge = '<span class="badge badge-orange" style="font-size:8.5px;padding:2px 7px;font-weight:700;letter-spacing:0.3px">GAWAT</span>';
+      else if (s === 'warning') sevBadge = '<span class="badge badge-warn" style="font-size:8.5px;padding:2px 7px;font-weight:700;letter-spacing:0.3px">PERINGATAN</span>';
+      else if (s === 'info') sevBadge = '<span class="badge badge-info" style="font-size:8.5px;padding:2px 7px;font-weight:700;letter-spacing:0.3px">INFO</span>';
+      else sevBadge = `<span class="badge badge-muted" style="font-size:8.5px;padding:2px 7px;font-weight:700">${s.toUpperCase()}</span>`;
+
+      // 2. Kolom Insiden: nama masalah + catatan operator dalam kurung
+      let rawMsg = (p.message || '').trim();
+      let opNote = '';
+      const ignBy = (p.ignored_by || '').toLowerCase();
+      const ignOp = (ignBy === 'admin') ? 'master-admin' : (ignBy || 'master-admin');
+      const ignReason = (p.ignored_reason || '').trim();
+
+      if (ignReason) {
+        if (/dimatikan oleh|dihentikan oleh/i.test(ignReason)) {
+          opNote = `(dihentikan oleh ${ignOp})`;
+        } else if (/dihapus oleh/i.test(ignReason)) {
+          opNote = `(dihapus oleh ${ignOp})`;
+        } else if (/di-reboot oleh/i.test(ignReason)) {
+          opNote = `(di-reboot oleh ${ignOp})`;
+        } else if (/diabaikan oleh/i.test(ignReason)) {
+          opNote = `(diabaikan oleh ${ignOp})`;
+        } else {
+          opNote = `(${ignReason})`;
+        }
+      } else if (p.is_ignored && p.ignored_by) {
+        if ((p.key || '').startsWith('service_down:')) {
+          opNote = `(dihentikan oleh ${ignOp})`;
+        } else {
+          opNote = `(diabaikan oleh ${ignOp})`;
+        }
       }
 
-      let sevPill = '';
-      if (sev === 'ignored') {
-        const s = (p.severity || '').toLowerCase();
-        if (s === 'danger') sevPill = '<span class="badge badge-danger" style="font-size:9.5px;padding:1px 5px;margin-right:6px">KRITIS</span>';
-        else if (s === 'average') sevPill = '<span class="badge badge-orange" style="font-size:9.5px;padding:1px 5px;margin-right:6px">GAWAT</span>';
-        else if (s === 'warning') sevPill = '<span class="badge badge-warn" style="font-size:9.5px;padding:1px 5px;margin-right:6px">PERINGATAN</span>';
-        else if (s === 'info') sevPill = '<span class="badge badge-info" style="font-size:9.5px;padding:1px 5px;margin-right:6px">INFO</span>';
+      // Bersihkan redundansi jika rawMsg sudah mengandung keterangan operator
+      let cleanMsg = rawMsg;
+      if (/\((?:dimatikan|dihentikan|di-reboot|dihapus|diabaikan)\s+oleh[^)]+\)/i.test(cleanMsg)) {
+        opNote = '';
+      } else if (/(?:dimatikan|dihentikan)\s+oleh\s+operator/i.test(cleanMsg)) {
+        cleanMsg = cleanMsg.replace(/\s*\(?(?:dimatikan|dihentikan|di-reboot)\s+oleh\s+operator(?:\s*\([^)]+\))?\)?/gi, '').trim();
+        if (!opNote) opNote = `(dihentikan oleh ${ignOp})`;
       }
 
-      let reasonBadge = '';
-      if (p.ignored_reason) {
-        const escReason = (p.ignored_reason || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        reasonBadge = `<span class="badge badge-muted" style="font-size:9.5px;padding:1px 5px;margin-left:6px" title="Alasan: ${escReason}">Alasan: ${escReason}</span>`;
-      }
+      const escMsg = cleanMsg.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const escNote = opNote ? ` <span style="color:var(--dim);font-weight:400;font-size:11px">${opNote.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>` : '';
+      const fullIncidentHtml = `<span style="font-weight:500;color:var(--text-bright)">${escMsg}</span>${escNote}`;
 
       const rowHref = p.server_id ? `/servers/${p.server_id}` : '/probing';
       html += `
@@ -1809,16 +1838,14 @@ function renderSevDetailModal(sev) {
             </a>
             ${grpHtml}
           </td>
-          <td style="padding:10px 12px;font-size:12.5px;color:var(--text);vertical-align:middle">
-            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
-              ${sevPill}
-              <span>${escMsg}</span>
-              ${ignBadge}
-              ${reasonBadge}
-            </div>
+          <td style="padding:10px 10px;text-align:center;vertical-align:middle;white-space:nowrap;width:115px">
+            ${sevBadge}
+          </td>
+          <td style="padding:10px 14px;font-size:12.5px;color:var(--text);vertical-align:middle;line-height:1.4">
+            ${fullIncidentHtml}
           </td>
           <td class="mono" style="padding:10px 12px;white-space:nowrap;text-align:right;vertical-align:middle;width:120px;font-size:12px;color:var(--dim)">
-            ${durStr}
+            <span class="dash-dur-badge" style="background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18)">${durStr}</span>
           </td>
           <td class="col-act" style="padding:10px 12px;text-align:center;vertical-align:middle;white-space:nowrap;width:140px">
             <div style="display:flex;align-items:center;justify-content:center;gap:6px">
@@ -2659,9 +2686,13 @@ async function pollNocDashboard() {
             message: p.message || '',
             key: p.key || '',
             is_ignored: isIgn,
+            ignored_reason: p.ignored_reason,
+            ignored_by: (p.ignored_by === 'admin' ? 'master-admin' : p.ignored_by),
             started_at: pStarted || '',
             started_at_str: p.started_at_str || (pStarted ? relTime(pStarted) : '—'),
             durasi: durStr,
+            acknowledged_by: (p.acknowledged_by === 'admin' ? 'master-admin' : p.acknowledged_by),
+            acknowledged_at: p.acknowledged_at || ''
           };
           if (isIgn) {
             newProblemsBySev.ignored.push(item);
@@ -2746,10 +2777,8 @@ async function pollNocDashboard() {
       if (Array.isArray(srv.problems)) {
         srv.problems.forEach(p => {
           const isIgn = Boolean(p.is_ignored);
-          const isOp = Boolean(p.is_operator_action) || (p.message || '').toLowerCase().includes('operator') || (p.ignored_reason || '').toLowerCase().includes('operator');
-          // Sembunyikan insiden diabaikan biasa dari kartu Insiden Terkini,
-          // KECUALI insiden akibat tindakan operator yang tetap harus tampil dengan label PERINGATAN dan lencana DIABAIKAN.
-          if (isIgn && !isOp) {
+          // Sembunyikan seluruh insiden yang diabaikan (termasuk tindakan sengaja operator) dari kartu Insiden Terkini
+          if (isIgn) {
             return;
           }
           allProblems.push({

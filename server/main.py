@@ -3155,11 +3155,11 @@ async def api_systemd_action(
     if action == "stop":
         reason_txt = f"LAYANAN DIMATIKAN OLEH OPERATOR ({op_name})"
         for svc in matching_services:
-            svc.is_ignored = 0
+            svc.is_ignored = 1
             svc.ignored_until = None
             svc.ignored_by = user.username
             svc.ignored_reason = reason_txt
-            svc.ignore_mode = None
+            svc.ignore_mode = "permanent"
             db.add(Metric(
                 service_id=svc.id,
                 status="down",
@@ -3191,11 +3191,11 @@ async def api_systemd_action(
                 prob.severity = "warning"
                 prob.message = f"Layanan {disp_name} dimatikan oleh operator ({op_name})"
                 prob.tip = f"Unit {unit} sengaja dihentikan melalui panel kontrol oleh operator ({op_name}). Tindakan pemeliharaan tidak memicu alarm darurat."
-                prob.is_ignored = 0
+                prob.is_ignored = 1
                 prob.ignored_until = None
                 prob.ignored_by = user.username
                 prob.ignored_reason = reason_txt
-                prob.ignore_mode = None
+                prob.ignore_mode = "permanent"
                 prob.context = ctx_json
                 prob.updated_at = now_ts
             else:
@@ -3205,7 +3205,8 @@ async def api_systemd_action(
                     severity="warning",
                     message=f"Layanan {disp_name} dimatikan oleh operator ({op_name})",
                     tip=f"Unit {unit} sengaja dihentikan melalui panel kontrol oleh operator ({op_name}). Tindakan pemeliharaan tidak memicu alarm darurat.",
-                    is_ignored=0,
+                    is_ignored=1,
+                    ignore_mode="permanent",
                     ignored_reason=reason_txt,
                     ignored_by=user.username,
                     context=ctx_json,
@@ -4089,10 +4090,9 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 else:
                     problems_by_sev["warning"].append(item)
 
-            # Seluruh insiden yang diabaikan (level apapun) disembunyikan dari kartu Insiden Terkini,
-            # KECUALI insiden akibat tindakan operator yang tetap harus tampil dengan label PERINGATAN dan lencana DIABAIKAN.
-            is_op = bool(p.get("is_operator_action")) or ("operator" in (p.get("message") or "").lower()) or ("operator" in (p.get("ignored_reason") or "").lower())
-            if is_ign and not is_op:
+            # Seluruh insiden yang diabaikan (level apapun, termasuk tindakan sengaja operator)
+            # disembunyikan dari kartu Insiden Terkini dan dialihkan ke kotak DIABAIKAN.
+            if is_ign:
                 continue
 
             all_open_problems.append(item)
@@ -5264,15 +5264,15 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
            f"{server.hostname if server else sid}:{svc.service_name}", "dikirim ke agen", server_id=sid)
     now_ts = datetime.utcnow()
     if action == "stop":
-        # Tindakan sengaja oleh operator: catat alasan penghentian namun BUKAN DIABAIKAN (is_ignored = 0)
-        # Insiden tetap berstatus GAWAT aktif, namun tidak memicu alarm banner atau overlay darurat
+        # Tindakan sengaja oleh operator: otomatis diabaikan (is_ignored = 1),
+        # masuk ke kotak DIABAIKAN dan tidak mencemari tabel Insiden Terkini.
         op_name = (user.username if user else "OPERATOR").upper()
         reason_txt = f"LAYANAN DIMATIKAN OLEH OPERATOR ({op_name})"
-        svc.is_ignored = 0
+        svc.is_ignored = 1
         svc.ignored_until = None
         svc.ignored_by = user.username
         svc.ignored_reason = reason_txt
-        svc.ignore_mode = None
+        svc.ignore_mode = "permanent"
 
         # 1. Segera sisipkan metrik down agar database dan seluruh API live sinkron seketika dari akar
         db.add(Metric(
@@ -5285,7 +5285,6 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
         ))
 
         # 2. Buka atau perbarui ServerProblem seketika
-        # Semua tindakan sengaja dan disadari oleh operator berstatus PERINGATAN (warning)
         sev = "warning"
         msg = f"Layanan {svc.service_name} dimatikan oleh operator ({op_name})"
         tip = "Layanan sengaja dihentikan melalui panel kontrol oleh operator."
@@ -5299,11 +5298,11 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
             prob.severity = sev
             prob.message = msg
             prob.tip = tip
-            prob.is_ignored = 0
+            prob.is_ignored = 1
             prob.ignored_until = None
             prob.ignored_by = user.username
             prob.ignored_reason = reason_txt
-            prob.ignore_mode = None
+            prob.ignore_mode = "permanent"
             prob.updated_at = now_ts
         else:
             db.add(ServerProblem(
@@ -5312,7 +5311,8 @@ def _service_action(request: Request, sid: int, svc_id: int, action: str, db, cs
                 severity=sev,
                 message=msg,
                 tip=tip,
-                is_ignored=0,
+                is_ignored=1,
+                ignore_mode="permanent",
                 ignored_reason=reason_txt,
                 ignored_by=user.username,
                 started_at=now_ts,
@@ -5802,11 +5802,11 @@ def _host_control(
             ServerProblem.resolved_at.is_(None),
         ).first()
         if prob:
-            prob.is_ignored = 0
+            prob.is_ignored = 1
             prob.ignored_until = None
             prob.ignored_by = user.username
             prob.ignored_reason = f"SERVER DIMATIKAN OLEH OPERATOR ({op_name})"
-            prob.ignore_mode = None
+            prob.ignore_mode = "permanent"
             prob.updated_at = datetime.utcnow()
     _audit(db, user.username, action,
            f"{server.hostname} ({server.ip_address})", "dikirim ke agen", server_id=sid)
@@ -9873,11 +9873,11 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 new_row.ignore_mode = target_ignore_mode
             elif is_operator_action:
                 new_row.severity = "warning"
-                new_row.is_ignored = 0
+                new_row.is_ignored = 1
                 new_row.ignored_until = None
                 new_row.ignored_by = operator_action_by
                 new_row.ignored_reason = operator_action_reason
-                new_row.ignore_mode = None
+                new_row.ignore_mode = "permanent"
             else:
                 # 2. Cek riwayat ServerProblem sebelumnya untuk key ini (termasuk non-service atau flappy)
                 lookup_keys = [p["key"]]
@@ -9940,12 +9940,12 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 row.ignore_mode = target_ignore_mode
             elif is_operator_action:
                 row.severity = "warning"
+                row.is_ignored = 1
+                row.ignore_mode = "permanent"
                 if not row.ignored_reason:
                     row.ignored_reason = operator_action_reason
                 if not row.ignored_by:
                     row.ignored_by = operator_action_by
-                # Menjaga status pengabaian: bila operator telah mengabaikan insiden ini (row.is_ignored == 1),
-                # status diabaikan tetap dipertahankan dan tidak di-reset ke 0.
 
             if p["key"] == "agent_stale" and ev and (row.started_at > ev):
                 row.started_at = ev
