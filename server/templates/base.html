@@ -37,6 +37,7 @@
   --stat-card-bg:linear-gradient(180deg, rgba(26, 35, 54, 0.9) 0%, rgba(18, 25, 40, 0.95) 100%);
   --border:rgba(255,255,255,0.11);
   --border-subtle:rgba(255,255,255,0.06);
+  --bg-subtle:rgba(255,255,255,0.02);
   --border-focus:rgba(56,189,248,0.7);
   --text:#f8fafc;
   --text-heading:#ffffff;
@@ -87,6 +88,7 @@
   --stat-card-bg:linear-gradient(180deg, rgba(26, 35, 54, 0.9) 0%, rgba(18, 25, 40, 0.95) 100%);
   --border:rgba(255,255,255,0.11);
   --border-subtle:rgba(255,255,255,0.06);
+  --bg-subtle:rgba(255,255,255,0.02);
   --text:#f8fafc;
   --text-heading:#ffffff;
   --dim:#94a3b8;
@@ -168,6 +170,7 @@
   --card-hover:#f8fafc;
   --card-bg:#ffffff;
   --stat-card-bg:#ffffff;
+  --bg-subtle:#f8fafc;
   --border:rgba(0, 0, 0, 0.10);
   --border-subtle:rgba(0, 0, 0, 0.05);
   --border-focus:rgba(2, 132, 199, 0.8);
@@ -293,6 +296,51 @@
 }
 [data-theme="light"] input::placeholder {
   color:#94a3b8 !important;
+}
+[data-theme="light"] .tabbar {
+  background:#ffffff !important;
+  border:1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow:0 1px 3px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+}
+[data-theme="light"] .tab {
+  color:#475569 !important;
+  background:transparent !important;
+  border-color:transparent !important;
+}
+[data-theme="light"] .tab:hover {
+  color:#0f172a !important;
+  background:rgba(0, 0, 0, 0.04) !important;
+  border-color:rgba(0, 0, 0, 0.06) !important;
+}
+[data-theme="light"] .tab.is-on {
+  background:#f0f9ff !important;
+  color:#0284c7 !important;
+  border-color:rgba(2, 132, 199, 0.4) !important;
+  box-shadow:0 1px 3px rgba(2, 132, 199, 0.15) !important;
+  text-shadow:none !important;
+}
+[data-theme="light"] .tab.is-on::after {
+  background:#0284c7 !important;
+  box-shadow:0 -1px 4px rgba(2, 132, 199, 0.5) !important;
+}
+[data-theme="light"] .segmented-control {
+  background:#f1f5f9 !important;
+  border:1px solid rgba(0, 0, 0, 0.10) !important;
+  box-shadow:inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+[data-theme="light"] .segmented-control .btn {
+  color:#475569 !important;
+  background:transparent !important;
+}
+[data-theme="light"] .segmented-control .btn:hover {
+  color:#0f172a !important;
+  background:rgba(0, 0, 0, 0.05) !important;
+}
+[data-theme="light"] .segmented-control .btn.is-on {
+  background:#ffffff !important;
+  color:#0284c7 !important;
+  border-color:rgba(2, 132, 199, 0.4) !important;
+  box-shadow:0 1px 3px rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Warna Aksen (Accent Palettes) */
@@ -1702,7 +1750,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.50' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.51' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
       <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
       </button>

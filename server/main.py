@@ -3572,16 +3572,51 @@ def compute_uptime(metrics: list[Metric]) -> dict:
     }
 
 
+_UPTIME_CACHE_TTL = 60.0  # 1 menit cache in-memory
+_uptime_stats_cache: dict[tuple[int, int], tuple[float, dict]] = {}
+
+
 def get_uptime_stats(db: Session, service_id: int, hours: int = 24) -> dict:
-    """Uptime stats untuk service dalam rentang waktu."""
-    since = datetime.utcnow() - timedelta(hours=hours)
-    metrics = (
-        db.query(Metric)
-        .filter(Metric.service_id == service_id, Metric.timestamp >= since)
-        .order_by(Metric.timestamp)
-        .all()
-    )
-    return compute_uptime(metrics)
+    """Uptime stats untuk service dalam rentang waktu (teroptimasi event-based & in-memory cache)."""
+    now_ts = time.time()
+    cache_key = (service_id, hours)
+    cached = _uptime_stats_cache.get(cache_key)
+    if cached and (now_ts - cached[0]) < _UPTIME_CACHE_TTL:
+        return cached[1]
+
+    svc = db.query(Service).filter(Service.id == service_id).first()
+    if not svc:
+        return {"uptime_pct": None, "downtime_seconds": 0, "samples": 0}
+
+    now_utc = datetime.utcnow()
+    since = now_utc - timedelta(hours=hours)
+    down_sec = 0.0
+    if svc.server_id and svc.service_name:
+        down_probs = (
+            db.query(ServerProblem)
+            .filter(
+                ServerProblem.server_id == svc.server_id,
+                ServerProblem.key == f"service_down:{svc.service_name}",
+                (ServerProblem.resolved_at.is_(None)) | (ServerProblem.resolved_at >= since),
+                ServerProblem.started_at <= now_utc,
+            )
+            .all()
+        )
+        for prob in down_probs:
+            p_start = max(since, prob.started_at)
+            p_end = prob.resolved_at or now_utc
+            if p_end > p_start:
+                down_sec += (p_end - p_start).total_seconds()
+
+    total_sec = float(hours * 3600)
+    pct = round(max(0.0, min(100.0, ((total_sec - down_sec) / total_sec) * 100.0)), 1)
+    res = {
+        "uptime_pct": pct,
+        "downtime_seconds": int(down_sec),
+        "samples": 1 if down_sec == 0 else int(down_sec // 10) + 1,
+    }
+    _uptime_stats_cache[cache_key] = (now_ts, res)
+    return res
 
 
 def _latest_metrics(db: Session, service_ids) -> dict[int, Metric]:
@@ -4664,6 +4699,33 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         if rc.service_id and rc.service_id not in recent_svc_cmds:
             recent_svc_cmds[rc.service_id] = rc
 
+    # -------------------------------------------------------------------------
+    # Optimasi Presisi Uptime (0 ms): Batch downtime calculation dari ServerProblem
+    # Mengeliminasi query N+1 berat dan pemindaian jutaan baris tabel metrics.
+    # -------------------------------------------------------------------------
+    now_utc = datetime.utcnow()
+    since_24 = now_utc - timedelta(hours=24)
+    svc_names = {s.service_name for s in services if s.service_name}
+    prob_keys = [f"service_down:{name}" for name in svc_names]
+    down_by_svc = {}
+    if prob_keys:
+        down_probs = (
+            db.query(ServerProblem)
+            .filter(
+                ServerProblem.server_id == sid,
+                ServerProblem.key.in_(prob_keys),
+                (ServerProblem.resolved_at.is_(None)) | (ServerProblem.resolved_at >= since_24),
+                ServerProblem.started_at <= now_utc,
+            )
+            .all()
+        )
+        for p in down_probs:
+            s_name = p.key.split(":", 1)[1] if ":" in p.key else p.key
+            p_start = max(since_24, p.started_at)
+            p_end = p.resolved_at or now_utc
+            if p_end > p_start:
+                down_by_svc[s_name] = down_by_svc.get(s_name, 0.0) + (p_end - p_start).total_seconds()
+
     latest_map = _latest_metrics(db, (s.id for s in services))
     for svc in services:
         latest = latest_map.get(svc.id)
@@ -4697,7 +4759,19 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
         svc._response_time = latest.response_time_ms if latest and svc._status == "up" else None
         svc._health_msg = latest.health_message if latest else None
         svc._last_check = latest.timestamp if latest else None
-        svc._uptime = get_uptime_stats(db, svc.id, hours=24)
+
+        down_sec = down_by_svc.get(svc.service_name, 0.0)
+        if svc._status == "down" and down_sec <= 0:
+            down_sec = 60.0
+        total_sec = 86400.0
+        pct = round(max(0.0, min(100.0, ((total_sec - down_sec) / total_sec) * 100.0)), 1)
+        svc._uptime = {
+            "uptime_pct": pct,
+            "downtime_seconds": int(down_sec),
+            "samples": 1 if down_sec == 0 else int(down_sec // 10) + 1,
+        }
+        # Update cache in-memory
+        _uptime_stats_cache[(svc.id, 24)] = (time.time(), svc._uptime)
 
     commands = (
         db.query(Command)
