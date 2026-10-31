@@ -1,26 +1,26 @@
-# Pantau Server
+# Pantau-Server
 
-**Pantau Server** adalah platform pemantauan (*monitoring*) dan manajemen armada multi-server Linux berbasis web yang dirancang khusus untuk Sysadmin, DevOps, dan tim operasional NOC. Menggabungkan telemetri performa berdensitas tinggi secara *real-time* dengan kemampuan eksekusi kontrol sistem langsung (*actionable dashboard*) dari satu antarmuka terpusat.
+**Pantau-Server** adalah platform pemantauan (*monitoring*) dan manajemen multi-server Linux berbasis web yang dirancang khusus untuk Sysadmin, DevOps, dan tim operasional NOC. Menggabungkan telemetri performa berdensitas tinggi secara *real-time* dengan kemampuan eksekusi kontrol sistem langsung (*actionable dashboard*) dari satu antarmuka terpusat.
 
 Arsitektur sistem dibangun menggunakan backend **FastAPI + MariaDB** pada server pusat serta **Daemon Agent Python mandiri (*Zero-Dependency*)** pada setiap server klien.
 
 ---
 
-## Kenapa Sysadmin Membutuhkan Pantau Server?
+## Alasan Pengembangan Aplikasi Pantau-Server?
 
 Mengelola puluhan hingga ratusan server Linux di berbagai lingkungan (baremetal, VPS, cloud, atau on-premise) seringkali menghadapi tantangan umum:
 
-1. **Stack Monitoring Terlalu Berat & Rumit:** Solusi seperti Prometheus, Grafana, atau Zabbix membutuhkan konfigurasi yang kompleks, *resource footprint* yang besar di klien, serta waktu setup yang lama hanya untuk memantau metrik dasar.
-2. **Dashboard Pasif (Hanya Menonton):** Sebagian besar dashboard monitoring hanya menyajikan grafik metrik. Ketika ada *service* down atau CPU *spike* di tengah malam, sysadmin tetap harus membuka terminal, login SSH manual ke server terkait, dan mencari penyebabnya satu per satu.
-3. **Mimpi Buruk Port Inbound & SSH:** Membuka port SSH atau listening port monitoring ke internet pada setiap mesin klien menimbulkan celah keamanan (*attack surface*) yang luas dan rumit dikonfigurasi di balik NAT atau firewall korporat.
+1. **Stack Monitoring Terlalu Berat & Rumit:** Solusi pada alat monitoring konvensional lain membutuhkan konfigurasi yang kompleks, *resource footprint* yang besar di klien, serta waktu setup yang lama dan rumit hanya untuk memantau metrik dasar.
+2. **Dashboard Pasif (Hanya Melihat):** Sebagian besar dashboard monitoring hanya menyajikan grafik metrik. Ketika ada *service* down atau CPU *spike* di tengah malam, Tim IT tetap harus membuka terminal, login SSH manual ke server terkait, dan mencari penyebabnya satu per satu.
+3. **Kekurangan Port Inbound & SSH:** Membuka port SSH atau listening port monitoring ke internet pada setiap mesin klien menimbulkan celah keamanan (*attack surface*) yang luas dan rumit dikonfigurasi di balik NAT atau firewall korporat.
 
-**Pantau Server menyelesaikan masalah tersebut:** Memberikan pemantauan ringan, aman, dan langsung menyertakan alat kendali operasional (Web Terminal, manajemen service, kill process, edit config, kontrol firewall) dalam satu browser.
+**Pantau-Server menyelesaikan masalah tersebut:** Memberikan pemantauan ringan, aman, dan langsung menyertakan alat kendali operasional (Web Terminal, manajemen service, kill process, edit config, kontrol firewall) dalam satu browser.
 
 ---
 
-## Apa Perbedaan Pantau Server dengan Solusi Lain?
+## Apa Perbedaan Pantau-server dengan Solusi Lain?
 
-| Aspek | Pantau Server | Monitoring Konvensional (Zabbix / Prometheus) | Script SSH Monitoring Ad-Hoc |
+| Aspek | Pantau-Server | Monitoring Konvensional | Script SSH Monitoring Ad-Hoc |
 | :--- | :--- | :--- | :--- |
 | **Koneksi Jaringan** | **Outbound-Only Pull:** Agent mengontak server pusat via HTTP/HTTPS POST. Tidak butuh port masuk terbuka, aman di balik NAT/firewall. | Perlu membuka port inbound agent (misal 9100 / 10050) atau konfigurasi proxy rumit. | Memerlukan port SSH inbound terbuka di seluruh server klien. |
 | **Dependensi Agent** | **Zero-Dependency:** Murni pustaka standar Python 3.10+. Tanpa `pip`, tanpa `psutil`, tanpa kompilasi C (`gcc`). | Memerlukan instalasi binary berat, package repository eksternal, atau Node Exporter. | Memerlukan setup SSH key exchange terpusat dengan risiko kredensial bocor. |
@@ -41,7 +41,7 @@ Mengelola puluhan hingga ratusan server Linux di berbagai lingkungan (baremetal,
 ### 2. Tindakan Operasional Langsung (*Actionable NOC*)
 - **Manajemen Layanan Systemd:** Mulai (*start*), hentikan (*stop*), restart unit service, dan pantau log journald langsung dari antarmuka web.
 - **Task Manager & Manajemen Proses:** Inspeksi proses sistem teratas berdasarkan CPU/RAM dengan opsi terminasi cepat (*SIGTERM* atau *SIGKILL*) yang dilengkapi guardrail proteksi PID sistem kritis.
-- **Web Terminal Interaktif (`>_ Terminal`):** Akses shell Linux interaktif langsung di browser via WebSocket dan pseudo-terminal (PTY) dengan dukungan penuh warna ANSI, auto-completion, tombol shortcut Bash, htop, serta editor nano/vim.
+- **Web Terminal Interaktif (`>_ Terminal`):** Akses shell Linux yang interaktif langsung di browser via WebSocket dan pseudo-terminal (PTY) dengan dukungan penuh warna ANSI, auto-completion, tombol shortcut Bash, htop, serta editor nano/vim.
 - **Web File Manager:** Eksplorasi direktori remote, unggah/unduh berkas, ubah permission (*chmod/chown*), serta penyuntingan berkas konfigurasi dengan mekanisme *auto-backup* (`.bak`).
 - **Audit Port Listening & Firewall:** Monitoring socket port TCP/UDP yang sedang terbuka beserta proses pemiliknya, serta manajemen blokir/buka blokir IP pada kernel firewall (UFW / iptables).
 
@@ -80,7 +80,7 @@ Mengelola puluhan hingga ratusan server Linux di berbagai lingkungan (baremetal,
 Jalankan di server pusat yang akan dijadikan dashboard monitoring:
 
 ```bash
-# 1. Clone repositori Pantau Server
+# 1. Clone repositori Pantau-server
 git clone https://github.com/azhuka/pantau-server.git
 cd pantau-server
 
@@ -93,6 +93,7 @@ Skrip installer akan secara otomatis:
 - Memasang dependensi backend dan menginisialisasi database MariaDB.
 - Memasang serta mengaktifkan service systemd `pantau-server.service`.
 - Meminta kata sandi awal untuk akun `admin`.
+- Akun ini akan menjadi satu-satunya akun yang aktif dan berperan sebagai akun utama (root/master-admin)
 
 Setelah instalasi selesai, buka dashboard melalui peramban:
 - **URL Dashboard:** `http://<IP-SERVER-PUSAT>:8400`
@@ -106,8 +107,9 @@ Setelah instalasi selesai, buka dashboard melalui peramban:
 Setelah dashboard aktif, daftarkan server klien dengan langkah berikut:
 
 1. Buka dashboard web, masuk ke menu **Daftar Server → Tambah Server**.
-2. Masukkan nama server dan pilih kelompok (*group*), lalu simpan untuk mendapatkan **API Key** (token hex 64 karakter).
-3. Login ke server klien via SSH, lalu jalankan perintah instalasi satu-langkah:
+2. Masukkan nama server dan pilih kelompok (*group*), lalu klik tombol "Tambah Server" untuk mendapatkan **API Key** (token hex 64 karakter).
+3. Salin **API Key** ditempat aman dan sementara untuk menyalin kembali pada saat proses instalasi agent pada server klien.
+4. Login ke server klien via SSH, lalu jalankan perintah instalasi satu-langkah:
 
 ```bash
 sudo curl -fsSL -o /tmp/pantau-install.sh \
@@ -116,8 +118,8 @@ sudo bash /tmp/pantau-install.sh
 ```
 
 Installer akan meminta input secara interaktif:
-- **URL Dashboard:** Masukkan alamat server pusat (contoh: `http://192.168.1.10:8400` atau `https://pantau.domainanda.com`).
-- **API Key:** Tempelkan API Key yang telah disalin dari dashboard.
+- **URL Dashboard:** Masukkan alamat server pusat (contoh: `http://192.168.1.10:8400`).
+- **API Key:** Tempelkan API Key yang didapatkan saat proses tambah server pada aplikasi pantau-server.
 
 > **Tips Automasi (Mode Non-Interaktif / Ansible / Cloud-Init):**
 > Anda dapat langsung memasukkan parameter URL dan API Key dalam satu baris perintah:
