@@ -10620,6 +10620,7 @@ async function poll() {
     if (r.ok) patch(await r.json());
   } catch (e) { /* polling lanjut */ }
 }
+window.poll = poll;
 
 document.addEventListener('visibilitychange', function() {
   if (!document.hidden) {

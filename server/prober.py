@@ -32,9 +32,9 @@ from sqlalchemy import desc, func, text
 from sqlalchemy.orm import Session
 
 try:
-    from models import ProbeLog, ProbeTarget, Server, ServerProblem
+    from models import AuditLog, ProbeLog, ProbeTarget, Server, ServerProblem
 except ImportError:
-    from server.models import ProbeLog, ProbeTarget, Server, ServerProblem
+    from server.models import AuditLog, ProbeLog, ProbeTarget, Server, ServerProblem
 
 logger = logging.getLogger("pantau.prober")
 
@@ -648,9 +648,15 @@ def sync_probe_incident(
         .first()
     )
 
+    p_tier = getattr(probe, "tier", 2) or 2
+
     if result.status in ("down", "degraded"):
-        sev = "danger" if result.status == "down" else "warning"
-        status_word = "GAGAL" if result.status == "down" else "TERGANGGU"
+        if result.status == "down":
+            sev = "danger" if p_tier == 1 else ("average" if p_tier == 2 else "warning")
+            status_word = "GAGAL"
+        else:
+            sev = "warning" if p_tier <= 2 else "info"
+            status_word = "TERGANGGU"
         err_msg = result.error_message or "Endpoint tidak merespons"
         msg = f"Probe {probe.name} ({probe.target}) {status_word}: {err_msg}"
         tip = (
@@ -680,7 +686,48 @@ def sync_probe_incident(
             open_prob.last_active_at = now
             open_prob.updated_at = now
             open_prob.context = ctx_str
+            if open_prob.is_ignored:
+                open_prob.acknowledged_at = open_prob.acknowledged_at or now
+                open_prob.acknowledged_by = open_prob.acknowledged_by or open_prob.ignored_by or "operator"
         else:
+            # Cek apakah ada riwayat pengabaian permanen atau durasi sebelumnya untuk probe ini
+            prev_prob = (
+                db.query(ServerProblem)
+                .filter(
+                    ServerProblem.probe_id == probe.id,
+                    ServerProblem.key == prob_key,
+                    ServerProblem.is_ignored == 1,
+                )
+                .order_by(desc(ServerProblem.started_at))
+                .first()
+            )
+
+            is_ign = 0
+            ign_mode = None
+            ign_until = None
+            ign_by = None
+            ign_reason = None
+            ack_at = None
+            ack_by = None
+
+            if prev_prob:
+                prev_mode = getattr(prev_prob, "ignore_mode", None)
+                if prev_mode == "permanent":
+                    is_ign = 1
+                    ign_mode = "permanent"
+                    ign_by = prev_prob.ignored_by
+                    ign_reason = prev_prob.ignored_reason
+                    ack_at = now
+                    ack_by = prev_prob.ignored_by or "operator"
+                elif prev_mode == "duration" and prev_prob.ignored_until and prev_prob.ignored_until > now:
+                    is_ign = 1
+                    ign_mode = "duration"
+                    ign_until = prev_prob.ignored_until
+                    ign_by = prev_prob.ignored_by
+                    ign_reason = prev_prob.ignored_reason
+                    ack_at = now
+                    ack_by = prev_prob.ignored_by or "operator"
+
             new_p = ServerProblem(
                 server_id=probe.server_id,
                 probe_id=probe.id,
@@ -692,6 +739,13 @@ def sync_probe_incident(
                 updated_at=now,
                 last_active_at=now,
                 context=ctx_str,
+                is_ignored=is_ign,
+                ignore_mode=ign_mode,
+                ignored_until=ign_until,
+                ignored_by=ign_by,
+                ignored_reason=ign_reason,
+                acknowledged_at=ack_at,
+                acknowledged_by=ack_by,
             )
             db.add(new_p)
 
@@ -700,6 +754,18 @@ def sync_probe_incident(
         open_prob.resolved_at = now
         open_prob.updated_at = now
         open_prob.resolved_note = "auto"
+        try:
+            audit_row = AuditLog(
+                server_id=probe.server_id,
+                username="sistem",
+                action="masalah_selesai",
+                target=f"Probe {probe.name} ({probe.target}): endpoint kembali UP/sehat",
+                result="selesai",
+                created_at=now,
+            )
+            db.add(audit_row)
+        except Exception:
+            pass
 
 
 def calculate_rolling_uptime(db: Session, probe_id: int) -> Tuple[float, float]:

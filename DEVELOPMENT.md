@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.56
+
+- **Tipe Rilis:** Penguatan Menyeluruh Siklus Hidup Insiden, Reduksi Jendela Redam Pemulihan 45s, Sinkronisasi Riwayat Audit Offline, Hierarki Tingkat Keparahan Synthetic Probing Berdasarkan Tier, dan Konsistensi UI/UX Status Pengabaian (*Comprehensive Incident Lifecycle Hardening, 45s Resource Quiet Window Reduction, Server Offline Audit Synchronization, Tier-Based Synthetic Probe Severity Mapping, and Live Ignore UI/UX Consistency*)
+- **Fokus Utama:** Menyempurnakan dan memperkuat logika siklus hidup insiden di seluruh lapisan backend hingga antarmuka pengguna (UI/UX) sebelum penerapan notifikasi eksternal:
+  1. **Penyesuaian Jendela Tenang Pemulihan Ambang Batas (*Resource Quiet Window*):**
+     - Mempercepat jendela tenang pemulihan sumber daya server (`RESOURCE_QUIET_SECS`) dari 60 detik menjadi 45 detik pada `server/main.py`. Hal ini memberikan responsivitas penutupan insiden otomatis yang lebih tangkas saat penggunaan CPU, memori, atau metrik kembali ke batas normal tanpa menimbulkan flapping.
+  2. **Integritas Jejak Audit Saat Server Mengalami Agent Stale / Host Down:**
+     - Memperbaiki logika penutupan insiden otomatis pada `server/main.py`: ketika sebuah server terdeteksi offline / agent stale, insiden aktif yang ditutup kini dicatat pada `audit_logs` dengan keterangan baku `ditutup karena server offline` (status `offline`), bukan lagi klaim keliru bahwa insiden `telah selesai`.
+  3. **Hierarki Keparahan Berdasarkan Tier & Persistensi Pengabaian Synthetic Probing (`server/prober.py`):**
+     - Menerapkan pemetaan tingkat keparahan (*severity mapping*) dinamis pada modul synthetic prober sesuai Tier probe/server: kegagalan probe pada Tier 1 memicu keparahan `danger` (KRITIS), pada Tier 2 memicu `average` (GAWAT), dan pada Tier 3 memicu `warning` (PERINGATAN). Probing berstatus terganggu (*degraded*) memetakan ke `warning` (Tier 1 & 2) atau `info` (Tier 3).
+     - Menjamin persistensi pengabaian (*ignore persistence*) pada synthetic probe: ketika probe yang sedang diabaikan (permanen atau durasi aktif) pulih dan kemudian gagal kembali, status pengabaian dan pengakuan (*acknowledged*) tetap dipertahankan secara otomatis dari riwayat sebelumnya.
+     - Menambahkan pencatatan jejak audit otomatis pada `audit_logs` saat synthetic probe kembali pulih/UP.
+  4. **Konsistensi UI/UX Pengabaian Insiden & Polling Antarmuka Rincian Server (`server/templates/`):**
+     - Memastikan seluruh baris insiden yang berstatus diabaikan (`is_ignored = 1`) secara otomatis memiliki atribut `acknowledged_at` dan `acknowledged_by` yang valid.
+     - Menyinkronkan eksekusi rekonsiliasi insiden (`sync_server_problems`) pada endpoint API `/api/servers/{sid}/overview` agar berjalan sebelum pembentukan data layanan, menjamin status tombol abaikan/pantau kembali pada tab Layanan dan kartu Status Insiden selalu konsisten 100% secara instan.
+     - Memperbaiki penanganan pemicu pembaruan UI instan pada `server/templates/base.html` dan `server/templates/services.html` dengan mengekspos `window.poll`, membersihkan `window._lastProbSig`, dan mengeksekusi callback tanpa delay saat aksi pengabaian disimpan.
+  5. **Otomasi Pembaruan SemVer v4.8.56:**
+     - Menaikkan versi sistem menjadi `v4.8.56` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.55
 
 - **Tipe Rilis:** Eliminasi Total Polusi Riwayat Perintah Kedaluwarsa, Perbaikan Evaluasi Status Layanan Down, dan Penegasan Batas Waktu Tindakan Operator (*Total Elimination of Stale Command History Pollution, Service Down Status Evaluation Fix, and Operator Action Strict TTL Enforcement*)

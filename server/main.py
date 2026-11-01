@@ -2751,12 +2751,6 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             recent_svc_cmds[rc.service_id] = rc
 
     latest_map = _latest_metrics(db, (s.id for s in services))
-    open_prob_map = {
-        p.key: p for p in db.query(ServerProblem).filter(
-            ServerProblem.server_id == sid,
-            ServerProblem.resolved_at.is_(None),
-        ).all()
-    }
     extras = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
     oom_count = 0
     oom_killed_units = set()
@@ -2782,7 +2776,6 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
         except Exception:
             pass
 
-    svc_list = []
     resolved_status_map = {}
     for svc in services:
         latest = latest_map.get(svc.id)
@@ -2809,17 +2802,32 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
 
         resolved_status_map[svc.id] = st
 
-        p_row = open_prob_map.get(f"service_down:{svc.service_name}")
-        is_ign = bool(getattr(p_row, "is_ignored", 0)) if p_row else bool(getattr(svc, "is_ignored", 0))
+    svc_data = [{"name": s.service_name, "status": resolved_status_map.get(s.id, "unknown"), "port": s.port, "proc": s.process_name, "is_core": bool(getattr(s, "is_core", 1))}
+                for s in services]
+    problem_level, open_problems, problem_history = sync_server_problems(
+        db, server, _problem_instances(server, extras, svc_data, db))
+    _enrich_problems_for_ui(open_problems, services, extras, user)
+    open_prob_serialized = _serialize_problem_list(open_problems)
+    hist_prob_serialized = _serialize_problem_list(problem_history)
+    prob_by_key = {p["key"]: p for p in open_problems}
+
+    svc_list = []
+    for svc in services:
+        latest = latest_map.get(svc.id)
+        st = resolved_status_map.get(svc.id, "unknown")
+        p_row = prob_by_key.get(f"service_down:{svc.service_name}")
+        is_ign = bool(getattr(svc, "is_ignored", 0)) or (bool(p_row and p_row.get("is_ignored")))
         if st == "up" and getattr(svc, "ignore_mode", None) == "incident":
             is_ign = False
-        p_id = p_row.id if p_row else None
-        p_msg = p_row.message if p_row else None
+        p_id = p_row.get("id") if p_row else None
+        p_msg = p_row.get("message") if p_row else None
         ign_until = None
         if getattr(svc, "ignored_until", None):
             ign_until = svc.ignored_until.isoformat()
-        elif p_row and getattr(p_row, "ignored_until", None):
-            ign_until = p_row.ignored_until.isoformat()
+        elif p_row and p_row.get("ignored_until"):
+            ign_until = p_row.get("ignored_until")
+            if isinstance(ign_until, datetime):
+                ign_until = ign_until.isoformat()
 
         s_name_l = (svc.service_name or "").lower()
         s_proc_l = (svc.process_name or "").lower()
@@ -2832,7 +2840,7 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             "is_oom_killed": is_oom_k,
             "ignored": is_ign,
             "ignored_until": ign_until,
-            "ignore_mode": getattr(svc, "ignore_mode", None),
+            "ignore_mode": getattr(svc, "ignore_mode", None) or (p_row.get("ignore_mode") if p_row else None),
             "problem_id": p_id,
             "problem_msg": p_msg,
             "connections": latest.active_connections if latest else 0,
@@ -2918,13 +2926,6 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             shell_run.result = (shell_run.result or "").strip() + "\n[sesi shell kedaluwarsa]"
             db.commit()
             shell_run = None
-    svc_data = [{"name": s.service_name, "status": resolved_status_map.get(s.id, "unknown"), "is_core": bool(getattr(s, "is_core", 1)), "proc": s.process_name}
-                for s in services]
-    problem_level, open_problems, problem_history = sync_server_problems(
-        db, server, _problem_instances(server, extras, svc_data, db))
-    _enrich_problems_for_ui(open_problems, services, extras, user)
-    open_prob_serialized = _serialize_problem_list(open_problems)
-    hist_prob_serialized = _serialize_problem_list(problem_history)
 
     return {
         "services": svc_list, "commands": cmd_list, "actions": actions_list,
@@ -4782,7 +4783,7 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     )
     actions = _get_server_actions(db, sid, limit=50)
     extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
-    svc_data = [{"name": s.service_name, "status": getattr(s, "_status", "unknown"), "is_core": bool(getattr(s, "is_core", 1))}
+    svc_data = [{"name": s.service_name, "status": getattr(s, "_status", "unknown"), "port": s.port, "proc": s.process_name, "is_core": bool(getattr(s, "is_core", 1))}
                 for s in services]
     problem_level, open_problems, problem_history = sync_server_problems(
         db, server, _problem_instances(server, extra, svc_data, db))
@@ -7790,7 +7791,7 @@ SWAP_TIP = ("Penggunaan swap meningkat karena alokasi RAM tinggi — dapat menur
 # Jendela tenang: masalah danger ditutup otomatis bila tidak ada deteksi/kejadian
 # baru selama rentang ini (mencegah banner macet karena sisa data auth.log).
 SECURITY_QUIET_SECS = 600      # keamanan: 10 menit tanpa percobaan baru
-RESOURCE_QUIET_SECS = 60       # resource: 1 menit dalam kondisi normal
+RESOURCE_QUIET_SECS = 45       # resource: 45 detik dalam kondisi normal sebelum dinyatakan pulih
 BG_PROBLEM_EVAL_SECS = 15      # interval evaluator background
 
 
@@ -9231,9 +9232,10 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                         })
 
                     elif ev_type == "kernel_panic":
+                        panic_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
                         inst.append({
                             "key": "kernel_panic",
-                            "severity": "danger",
+                            "severity": panic_sev,
                             "message": "Kernel Panic atau Kegagalan Fatal Hardware (MCE) Terdeteksi",
                             "tip": "Kernel Linux mengalami kegagalan fatal (kernel panic) atau Machine Check Exception (MCE). Periksa log dmesg/journalctl untuk analisis hardware crash dump.",
                             "event_at": ev_dt,
@@ -9518,7 +9520,6 @@ def _problem_row2dict(row) -> dict:
         ("dimatikan oleh operator" in (row.message or "").lower())
         or ("dihentikan oleh operator" in (row.message or "").lower())
         or ("di-reboot oleh operator" in (row.message or "").lower())
-        or ("di-restart oleh operator" in (row.message or "").lower())
         or ("oleh operator" in (row.message or "").lower())
         or (row.ignored_reason and "OPERATOR" in row.ignored_reason)
     )
@@ -9870,6 +9871,8 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 new_row.ignored_by = target_ignored_by
                 new_row.ignored_reason = target_ignored_reason
                 new_row.ignore_mode = target_ignore_mode
+                new_row.acknowledged_at = now
+                new_row.acknowledged_by = target_ignored_by or "operator"
             elif is_operator_action:
                 new_row.severity = "warning"
                 new_row.is_ignored = 1
@@ -9877,6 +9880,8 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 new_row.ignored_by = operator_action_by
                 new_row.ignored_reason = operator_action_reason
                 new_row.ignore_mode = "permanent"
+                new_row.acknowledged_at = now
+                new_row.acknowledged_by = operator_action_by or "operator"
             else:
                 # 2. Cek riwayat ServerProblem sebelumnya untuk key ini (termasuk non-service atau flappy)
                 lookup_keys = [p["key"]]
@@ -9906,12 +9911,16 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                         new_row.ignored_until = None
                         new_row.ignored_by = prev_prob.ignored_by
                         new_row.ignored_reason = prev_prob.ignored_reason
+                        new_row.acknowledged_at = now
+                        new_row.acknowledged_by = prev_prob.ignored_by or "operator"
                     elif prev_mode == "duration" and prev_prob.ignored_until and prev_prob.ignored_until > now:
                         new_row.is_ignored = 1
                         new_row.ignore_mode = "duration"
                         new_row.ignored_until = prev_prob.ignored_until
                         new_row.ignored_by = prev_prob.ignored_by
                         new_row.ignored_reason = prev_prob.ignored_reason
+                        new_row.acknowledged_at = now
+                        new_row.acknowledged_by = prev_prob.ignored_by or "operator"
 
             db.add(new_row)
             try:
@@ -9937,6 +9946,8 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 row.ignored_by = target_ignored_by
                 row.ignored_reason = target_ignored_reason
                 row.ignore_mode = target_ignore_mode
+                row.acknowledged_at = row.acknowledged_at or now
+                row.acknowledged_by = row.acknowledged_by or target_ignored_by or "operator"
             elif is_operator_action:
                 row.severity = "warning"
                 row.is_ignored = 1
@@ -9945,6 +9956,8 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                     row.ignored_reason = operator_action_reason
                 if not row.ignored_by:
                     row.ignored_by = operator_action_by
+                row.acknowledged_at = row.acknowledged_at or now
+                row.acknowledged_by = row.acknowledged_by or operator_action_by or "operator"
 
             if p["key"] == "agent_stale" and ev and (row.started_at > ev):
                 row.started_at = ev
@@ -10003,12 +10016,18 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 row.resolved_note = "auto" if quiet > 0 else "resolved"
             if row.key == "agent_stale":
                 audit_msg = f"{srv.hostname}: server kembali online dan aktif melapor"
+                audit_res = "online"
             elif row.key.startswith("ssh_active_session:"):
                 audit_msg = f"{srv.hostname}: sesi remote SSH telah ditutup ({row.message})"
+                audit_res = "selesai"
+            elif _server_stale(srv):
+                audit_msg = f"{srv.hostname}: insiden '{row.message}' ditutup karena server offline"
+                audit_res = "offline"
             else:
                 audit_msg = f"{srv.hostname}: insiden '{row.message}' telah selesai"
+                audit_res = "selesai"
             try:
-                _audit(db, "sistem", "masalah_selesai", audit_msg, "selesai", server_id=srv.id)
+                _audit(db, "sistem", "masalah_selesai", audit_msg, audit_res, server_id=srv.id)
             except Exception:
                 pass
 
@@ -10115,6 +10134,8 @@ def problems_aggregate(db):
             latest = latest_map.get(svc.id)
             svc_data.append({"name": svc.service_name,
                              "status": latest.status if latest else "unknown",
+                             "port": svc.port,
+                             "proc": svc.process_name,
                              "is_core": bool(getattr(svc, "is_core", 1))})
         if _server_stale(srv):
             for d in svc_data:
@@ -10216,7 +10237,7 @@ AUDIT_ACTION_LABELS = {
     "apt_upgrade": "Upgrade Paket OS (apt)",
     "apt_upgrade_interact": "APT Upgrade (Interaktif)",
     "apt_fix": "APT Fix",
-    "alert_ack": "Akui Peringatan (Alert)",
+    "alert_ack": "Tangani Insiden",
     "restart": "Restart Layanan",
     "cmd:restart": "Restart Layanan",
     "start": "Mulai Layanan",
@@ -10747,8 +10768,8 @@ def api_alerts(
     )
 
     open_danger = [r for r in open_problems if r.severity == "danger" and get_effective_tier(r) == 1]
-    open_average = [r for r in open_problems if r.severity == "average"]
-    open_warning = [r for r in open_problems if r.severity == "warning"]
+    open_average = [r for r in open_problems if r.severity == "average" or (r.severity == "danger" and get_effective_tier(r) == 2)]
+    open_warning = [r for r in open_problems if r.severity == "warning" or (r.severity in ("danger", "average") and get_effective_tier(r) == 3)]
     open_info = [r for r in open_problems if r.severity == "info"]
 
     unack_danger = [r for r in open_danger if r.acknowledged_at is None]
@@ -10988,7 +11009,7 @@ def api_alert_ack(
         ServerProblem.resolved_at.is_(None),
     ).first()
     if not row:
-        raise HTTPException(status_code=404, detail="Peringatan tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Insiden tidak ditemukan")
     row.acknowledged_at = datetime.utcnow()
     row.acknowledged_by = user.username
     _audit(
