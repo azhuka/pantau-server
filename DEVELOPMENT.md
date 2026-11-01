@@ -354,6 +354,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.57
+
+- **Tipe Rilis:** Rincian Komprehensif Metadata Akun Pengguna, Penambahan Jejak Pembuat Akun, Eliminasi Akun Uji Coba, dan Modernisasi Modal Hak Akses (*Comprehensive User Account Metadata Details, Account Creator Tracking, Test Account Cleanup, and Modernized Permissions Modal*)
+- **Fokus Utama:** Menyempurnakan manajemen identitas pengguna pada halaman Profil (`/profile?tab=users`) dengan menyajikan visibilitas total seluruh atribut akun, jejak pembuat, sesi aktif, serta pembersihan akun uji coba:
+  1. **Penghapusan Akun Uji Coba (`test_operator` & `admin`):**
+     - Menghapus akun uji coba `test_operator` dan `admin` secara bersih dari basis data relasional MariaDB bersama seluruh sesi login aktifnya (`app_sessions`).
+     - Mencatat jejak audit resmi (`user_delete`) pada tabel `audit_logs` dengan pelaku `master-admin`.
+  2. **Skema & Pelacakan Pembuat Akun (`users.created_by`):**
+     - Menambahkan kolom `created_by VARCHAR(100)` pada tabel `users` dan model SQLAlchemy `User` di `server/models.py`.
+     - Mengimplementasikan migrasi basis data otomatis pada startup (`migrate_user_created_by()` di `server/main.py`) untuk menjamin inisialisasi kolom tanpa interupsi operasional.
+     - Mengisi otomatis nilai `created_by` saat akun baru dibuat via form `/users/add` sesuai username operator/admin yang sedang login.
+  3. **Penghitungan Metrik Sesi Web Aktif & Kode Pemulihan 2FA:**
+     - Menambahkan kalkulasi jumlah sesi web aktif yang belum kedaluwarsa (`AppSession.expires_at > now()`) per akun pengguna pada fungsi `_render_profile_page()`.
+     - Menghitung sisa kode cadangan pemulihan 2FA (*recovery codes*) yang tersedia untuk akun terkait.
+  4. **Perombakan Antarmuka Modal Rincian Akun (`#viewUserModal` di `server/templates/profile.html`):**
+     - Menggantikan modal hak akses lama menjadi modal rincian akun komprehensif berstandar kepadatan tinggi (NOC-grade density).
+     - Menyajikan 8 kartu metrik terstruktur: Status Akun (Aktif/Terkunci), Tanggal Pembuatan Akun, Pembuat Akun (`created_by`), Status 2FA TOTP & Sisa Kode Pemulihan, Waktu Login Terakhir, Alamat IP Asal Login Terakhir, Waktu Terakhir Penggantian Sandi, dan Jumlah Sesi Web Aktif.
+     - Menyediakan kartu penjelasan wewenang peran (Master Admin, Operator, Viewer) serta matriks hak akses sistem lengkap (15 izin granular) dengan status badge proporsional (✔ Diizinkan / ✖ Tidak).
+     - Menyertakan tombol pintasan langsung menuju rekaman Jejak Audit Pengguna (`/audit?user=...`).
+  5. **Otomasi Pembaruan SemVer v4.8.57:**
+     - Menaikkan versi sistem menjadi `v4.8.57` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.56
 
 - **Tipe Rilis:** Penguatan Menyeluruh Siklus Hidup Insiden, Reduksi Jendela Redam Pemulihan 45s, Sinkronisasi Riwayat Audit Offline, Hierarki Tingkat Keparahan Synthetic Probing Berdasarkan Tier, dan Konsistensi UI/UX Status Pengabaian (*Comprehensive Incident Lifecycle Hardening, 45s Resource Quiet Window Reduction, Server Offline Audit Synchronization, Tier-Based Synthetic Probe Severity Mapping, and Live Ignore UI/UX Consistency*)

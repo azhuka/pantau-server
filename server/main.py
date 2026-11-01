@@ -656,6 +656,30 @@ def migrate_service_ignored():
         db.close()
 
 
+def migrate_user_created_by():
+    """Migrasi penambahan kolom created_by pada tabel users."""
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+    existing = {c["name"] for c in inspector.get_columns("users")}
+    if "created_by" in existing:
+        return
+    db = SessionLocal()
+    try:
+        db.execute(text("ALTER TABLE users ADD COLUMN created_by VARCHAR(100) NULL AFTER created_at"))
+        db.execute(text("UPDATE users SET created_by = 'Sistem (Setup Awal)' WHERE username = 'master-admin' AND (created_by IS NULL OR created_by = '')"))
+        db.execute(text("UPDATE users SET created_by = 'master-admin' WHERE username IN ('sysadmin_sadri', 'viewer-1') AND (created_by IS NULL OR created_by = '')"))
+        db.commit()
+        logger.info("[startup] Kolom baru users.created_by berhasil ditambahkan dan diinisialisasi")
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        logger.warning("[startup] Migrasi kolom users.created_by gagal: %s", exc)
+    finally:
+        db.close()
+
+
 def migrate_server_extras_specs():
     """Migrasi penambahan kolom spesifikasi perangkat keras pada tabel server_extras."""
     from sqlalchemy import inspect, text
@@ -957,6 +981,7 @@ async def lifespan(app: FastAPI):
     migrate_server_extras_specs()
     migrate_server_problem_ignored()
     migrate_service_ignored()
+    migrate_user_created_by()
     migrate_log_request_input()
     migrate_api_keys()
     migrate_probing_system()
@@ -1019,6 +1044,7 @@ def _fmt_short_dt(dt: datetime | None) -> str:
 templates.env.globals["_fmt_dt"] = _fmt_dt
 templates.env.globals["_fmt_short_dt"] = _fmt_short_dt
 templates.env.globals["getattr"] = getattr
+templates.env.globals["bool"] = bool
 
 static_dir = Path(__file__).resolve().parent / "static"
 if static_dir.exists():
@@ -13646,6 +13672,24 @@ def _render_profile_page(
     elif can_manage_viewers:
         users_list = db.query(User).filter(User.role == "viewer").order_by(User.id).all()
 
+    now_utc = datetime.utcnow()
+    active_sessions_map = {}
+    try:
+        for uid_cnt in db.query(AppSession.user_id, func.count(AppSession.id)).filter(AppSession.expires_at > now_utc).group_by(AppSession.user_id).all():
+            active_sessions_map[uid_cnt[0]] = uid_cnt[1]
+    except Exception:
+        pass
+
+    for u in users_list:
+        u._active_sessions = active_sessions_map.get(u.id, 0)
+        rec_cnt = 0
+        if u.recovery_codes:
+            try:
+                rec_cnt = len(json.loads(u.recovery_codes))
+            except Exception:
+                rec_cnt = 0
+        u._recovery_codes_count = rec_cnt
+
     return tpl(request, "profile.html", {
         "user": user,
         "users": users_list,
@@ -13994,6 +14038,7 @@ async def user_add_submit(
         is_active=1,
         password_changed_at=datetime.utcnow(),
         permissions=perms_json,
+        created_by=user.username,
     )
     db.add(new_u)
     _audit(db, user.username, "user_add", f"{username} (peran {role})", "berhasil")

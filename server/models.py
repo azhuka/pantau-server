@@ -32,6 +32,7 @@ class User(Base):
     recovery_codes = Column(Text, nullable=True)                  # JSON list SHA-256 backup codes
     permissions = Column(Text, nullable=True)                     # JSON dict granular permissions (operator)
     created_at = Column(DateTime, default=datetime.utcnow)
+    created_by = Column(String(100), nullable=True)               # Username pembuat akun (NULL = sistem/awal)
 
     def is_master_admin(self) -> bool:
         return self.role in ("master_admin", "admin")

@@ -379,8 +379,31 @@
               </td>
               <td class="col-act" style="padding:6px 8px;text-align:left;white-space:nowrap">
                 <div style="display:inline-flex;gap:3px;align-items:center;justify-content:flex-start;flex-wrap:nowrap">
-                  <!-- Tombol 1: LIHAT Detail Hak Akses -->
-                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openViewUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ u.totp_enabled }}, {{ (u.last_login_at.strftime("%d %b %Y %H:%M UTC") if u.last_login_at else "-")|tojson }}, {{ (u.last_login_ip or "-")|tojson }}, {{ uperms|tojson }})' title="Lihat detail hak akses {{ u.username }}">
+                  <!-- Tombol 1: LIHAT Seluruh Informasi Akun -->
+                  {% set u_created_at = _fmt_dt(u.created_at, with_sec=False) if u.created_at else '-' %}
+                  {% set u_created_by = u.created_by or ('Sistem (Setup Awal)' if u.id == 1 else 'master-admin') %}
+                  {% set u_pwd_changed = _fmt_dt(u.password_changed_at, with_sec=False) if u.password_changed_at else 'Belum pernah diubah' %}
+                  {% set u_last_login = _fmt_dt(u.last_login_at, with_sec=False) if u.last_login_at else 'Belum pernah login' %}
+                  {% set u_last_ip = u.last_login_ip or '-' %}
+                  {% set u_sessions = getattr(u, '_active_sessions', 0) %}
+                  {% set u_rec_codes = getattr(u, '_recovery_codes_count', 0) %}
+                  {% set u_payload = {
+                    'id': u.id,
+                    'username': u.username,
+                    'role': u.role,
+                    'role_display': u.role_display(),
+                    'is_active': true if u.is_active else false,
+                    'totp_enabled': true if u.totp_enabled else false,
+                    'recovery_codes_count': u_rec_codes,
+                    'created_at': u_created_at,
+                    'created_by': u_created_by,
+                    'last_login_at': u_last_login,
+                    'last_login_ip': u_last_ip,
+                    'password_changed_at': u_pwd_changed,
+                    'active_sessions': u_sessions,
+                    'permissions': uperms
+                  } %}
+                  <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openViewUserModal({{ u_payload|tojson }})' title="Lihat seluruh informasi akun {{ u.username }}">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                       <circle cx="12" cy="12" r="3"></circle>
@@ -788,21 +811,24 @@
 
 
 <!-- ======================================================================= -->
-<!-- MODAL 1: LIHAT DETAIL HAK AKSES PENGGUNA                                 -->
+<!-- MODAL 1: LIHAT SELURUH INFORMASI AKUN PENGGUNA                           -->
 <!-- ======================================================================= -->
 <div id="viewUserModal" class="modal-backdrop" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)closeViewUserModal()">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:560px;width:92%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.6)">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:580px;width:92%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.6)">
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
       <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:32px;height:32px;border-radius:8px;background:rgba(56,189,248,0.12);display:flex;align-items:center;justify-content:center;color:var(--blue)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
+        <div style="width:36px;height:36px;border-radius:8px;background:rgba(56,189,248,0.12);display:flex;align-items:center;justify-content:center;color:var(--blue)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
           </svg>
         </div>
         <div>
-          <h3 style="font-size:15px;font-weight:700;margin:0" id="view-user-title">Detail Pengguna</h3>
-          <span style="font-size:11px;color:var(--dim)" id="view-user-subtitle">-</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <h3 style="font-size:16px;font-weight:700;margin:0" id="view-user-title">Detail Pengguna</h3>
+            <span id="view-user-role-badge" class="badge" style="font-size:9.5px;padding:2px 7px;font-weight:700">-</span>
+          </div>
+          <span style="font-size:11px;color:var(--dim)" id="view-user-subtitle">ID Pengguna: -</span>
         </div>
       </div>
       <button type="button" onclick="closeViewUserModal()" class="btn btn-ghost btn-sm" style="padding:4px 8px;border-radius:6px" aria-label="Tutup">
@@ -810,19 +836,50 @@
       </button>
     </div>
 
-    <div style="padding:18px 20px;overflow-y:auto;flex:1;font-size:13px">
-      <!-- Info Ringkas -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;background:rgba(9,13,22,0.6);padding:12px;border-radius:8px;border:1px solid var(--border);margin-bottom:18px">
-        <div><span style="color:var(--dim);font-size:11px">Status Akun:</span> <div id="view-user-status" style="font-weight:700;margin-top:2px">-</div></div>
-        <div><span style="color:var(--dim);font-size:11px">2FA (TOTP):</span> <div id="view-user-2fa" style="font-weight:700;margin-top:2px">-</div></div>
-        <div><span style="color:var(--dim);font-size:11px">Login Terakhir:</span> <div id="view-user-lastlogin" style="margin-top:2px">-</div></div>
-        <div><span style="color:var(--dim);font-size:11px">IP Terakhir:</span> <div id="view-user-ip" style="font-family:ui-monospace,monospace;margin-top:2px">-</div></div>
+    <div style="padding:18px 20px;overflow-y:auto;flex:1;font-size:12.5px">
+      <!-- Grid Informasi Lengkap Akun (3 Kolom / 2 Kolom responsif) -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:10px;background:rgba(9,13,22,0.65);padding:14px;border-radius:8px;border:1px solid var(--border);margin-bottom:16px">
+        <div>
+          <span style="color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:0.3px">Status Akun</span>
+          <div id="view-user-status" style="font-weight:700;margin-top:3px">-</div>
+        </div>
+        <div>
+          <span style="color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:0.3px">Tanggal Dibuat</span>
+          <div id="view-user-created-at" style="margin-top:3px;font-weight:600;color:var(--text)" class="mono">-</div>
+        </div>
+        <div>
+          <span style="color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:0.3px">Dibuat Oleh</span>
+          <div id="view-user-created-by" style="margin-top:3px;font-weight:600;color:var(--text)" class="mono">-</div>
+        </div>
+        <div>
+          <span style="color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:0.3px">Autentikasi 2FA</span>
+          <div id="view-user-2fa" style="font-weight:700;margin-top:3px">-</div>
+        </div>
+        <div>
+          <span style="color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:0.3px">Login Terakhir</span>
+          <div id="view-user-lastlogin" style="margin-top:3px;font-weight:500;color:var(--text)" class="mono">-</div>
+        </div>
+        <div>
+          <span style="color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:0.3px">IP Asal Login</span>
+          <div id="view-user-ip" style="font-family:ui-monospace,monospace;margin-top:3px;color:var(--text)">-</div>
+        </div>
+        <div>
+          <span style="color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:0.3px">Terakhir Ganti Sandi</span>
+          <div id="view-user-pwd-changed" style="margin-top:3px;color:var(--text)" class="mono">-</div>
+        </div>
+        <div>
+          <span style="color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:0.3px">Sesi Web Aktif</span>
+          <div id="view-user-sessions" style="margin-top:3px;font-weight:600">-</div>
+        </div>
       </div>
 
-      <!-- Detail Matriks Izin -->
+      <!-- Deskripsi / Ringkasan Peran -->
+      <div id="view-user-role-summary" style="margin-bottom:16px"></div>
+
+      <!-- Matriks Wewenang & Hak Akses -->
       <div style="font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-        Matriks Wewenang &amp; Hak Akses:
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>Matriks Wewenang &amp; Hak Akses:</span>
       </div>
 
       <div id="view-perms-container">
@@ -1366,70 +1423,163 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// --- MODAL 1: LIHAT HAK AKSES ---
-function openViewUserModal(id, username, role, isActive, totpEnabled, lastLogin, ip, permissions) {
-  document.getElementById('view-user-title').textContent = username;
-  let roleBadge = {% if user.is_master_admin() %}role === 'master_admin' ? 'Master Admin (Root)' : {% endif %}(role === 'operator' ? 'Operator' : 'Viewer (Hanya-Baca)');
-  document.getElementById('view-user-subtitle').textContent = 'Peran: ' + roleBadge;
-
-  document.getElementById('view-user-status').innerHTML = isActive
-    ? '<span style="color:#4ade80">● Aktif</span>'
-    : '<span style="color:#f87171">● Terkunci</span>';
-
-  document.getElementById('view-user-2fa').innerHTML = totpEnabled
-    ? '<span style="color:#4ade80">Aktif (TOTP)</span>'
-    : '<span style="color:var(--dim)">Nonaktif</span>';
-
-  document.getElementById('view-user-lastlogin').textContent = lastLogin;
-  document.getElementById('view-user-ip').textContent = ip;
-
-  const auditBtn = document.getElementById('view-user-audit-btn');
-  if (auditBtn) {
-    auditBtn.href = '/audit?user=' + encodeURIComponent(username);
+// --- MODAL 1: LIHAT SELURUH INFORMASI AKUN PENGGUNA ---
+function openViewUserModal(arg1, username, role, isActive, totpEnabled, lastLogin, ip, permissions) {
+  let u = {};
+  if (typeof arg1 === 'object' && arg1 !== null) {
+    u = arg1;
+  } else {
+    u = {
+      id: arg1,
+      username: username,
+      role: role,
+      role_display: role === 'master_admin' ? 'Master Admin' : (role === 'operator' ? 'Operator' : 'Viewer'),
+      is_active: Boolean(isActive),
+      totp_enabled: Boolean(totpEnabled),
+      recovery_codes_count: 0,
+      created_at: '-',
+      created_by: '-',
+      last_login_at: lastLogin,
+      last_login_ip: ip,
+      password_changed_at: '-',
+      active_sessions: 0,
+      permissions: permissions
+    };
   }
 
-  const container = document.getElementById('view-perms-container');
-  container.innerHTML = '';
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
-  {% if user.is_master_admin() %}
-  if (role === 'master_admin') {
-    container.innerHTML = `
-      <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:14px;color:#fca5a5;line-height:1.5">
-        <strong>Hak Istimewa Mutlak (Setara Root):</strong> Akun ini memiliki seluruh wewenang tanpa pembatasan, termasuk hak akses audit trail, pengendalian sistem, dan manajemen operator.
-      </div>
-    `;
-  } else
-  {% endif %}
-  if (role === 'viewer') {
-    container.innerHTML = `
-      <div style="background:rgba(148,163,184,0.1);border:1px solid rgba(148,163,184,0.3);border-radius:8px;padding:14px;color:#cbd5e1;line-height:1.5">
-        <strong>Hanya-Baca (Read-Only):</strong> Akun ini hanya memiliki wewenang observasi dan pemantauan metrik. Seluruh fungsi eksekusi, terminal, file manager, dan pengaturan sistem diblokir.
-      </div>
-    `;
-  } else {
-    let html = '<div style="display:grid;grid-template-columns:1fr;gap:6px;max-height:280px;overflow-y:auto;padding-right:4px">';
-    for (const [key, meta] of Object.entries(ALL_SYSTEM_PERMS)) {
-      const isGranted = Boolean(permissions && permissions[key]);
-      html += `
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:6px;background:${isGranted ? 'rgba(56,189,248,0.06)' : 'rgba(255,255,255,0.02)'};border:1px solid ${isGranted ? 'rgba(56,189,248,0.25)' : 'rgba(255,255,255,0.04)'}">
-          <div>
-            <div style="font-weight:600;color:${isGranted ? 'var(--text)' : 'var(--dim)'}">${meta.label}</div>
-            <div style="font-size:11px;color:var(--dim)">${meta.desc}</div>
-          </div>
-          <div>
-            ${isGranted 
-              ? '<span class="badge" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:10px">✔ Diizinkan</span>'
-              : '<span class="badge" style="background:rgba(255,255,255,0.04);color:var(--dim);border:1px solid var(--border);font-size:10px">✖ Tidak</span>'}
-          </div>
+  document.getElementById('view-user-title').textContent = u.username;
+  document.getElementById('view-user-subtitle').textContent = 'ID Akun: #' + (u.id || '-');
+
+  const roleBadge = document.getElementById('view-user-role-badge');
+  if (roleBadge) {
+    if (u.role === 'master_admin' || u.role === 'admin') {
+      roleBadge.textContent = 'Master Admin';
+      roleBadge.style.background = 'rgba(239,68,68,0.15)';
+      roleBadge.style.color = '#f87171';
+      roleBadge.style.border = '1px solid rgba(239,68,68,0.3)';
+    } else if (u.role === 'operator') {
+      roleBadge.textContent = 'Operator';
+      roleBadge.style.background = 'rgba(56,189,248,0.15)';
+      roleBadge.style.color = '#38bdf8';
+      roleBadge.style.border = '1px solid rgba(56,189,248,0.3)';
+    } else {
+      roleBadge.textContent = 'Viewer';
+      roleBadge.style.background = 'rgba(148,163,184,0.15)';
+      roleBadge.style.color = '#94a3b8';
+      roleBadge.style.border = '1px solid rgba(148,163,184,0.3)';
+    }
+  }
+
+  const statusEl = document.getElementById('view-user-status');
+  if (statusEl) {
+    statusEl.innerHTML = u.is_active
+      ? '<span style="color:#4ade80">● Aktif</span>'
+      : '<span style="color:#f87171">● Terkunci</span>';
+  }
+
+  const createdEl = document.getElementById('view-user-created-at');
+  if (createdEl) createdEl.textContent = u.created_at || '-';
+
+  const createdByEl = document.getElementById('view-user-created-by');
+  if (createdByEl) createdByEl.textContent = u.created_by || '-';
+
+  const totpEl = document.getElementById('view-user-2fa');
+  if (totpEl) {
+    if (u.totp_enabled) {
+      const rec = u.recovery_codes_count ? ` (${u.recovery_codes_count} backup)` : '';
+      totpEl.innerHTML = `<span style="color:#4ade80">✔ Aktif (TOTP)${rec}</span>`;
+    } else {
+      totpEl.innerHTML = '<span style="color:#fbbf24">✖ Nonaktif</span>';
+    }
+  }
+
+  const loginEl = document.getElementById('view-user-lastlogin');
+  if (loginEl) loginEl.textContent = u.last_login_at || (isEn ? 'Never logged in' : 'Belum pernah login');
+
+  const ipEl = document.getElementById('view-user-ip');
+  if (ipEl) ipEl.textContent = u.last_login_ip || '-';
+
+  const pwdChangedEl = document.getElementById('view-user-pwd-changed');
+  if (pwdChangedEl) pwdChangedEl.textContent = u.password_changed_at || '-';
+
+  const sessEl = document.getElementById('view-user-sessions');
+  if (sessEl) {
+    const sCnt = u.active_sessions || 0;
+    sessEl.innerHTML = sCnt > 0
+      ? `<span class="badge" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:10px;padding:2px 7px">${sCnt} Sesi Berjalan</span>`
+      : `<span style="color:var(--dim);font-size:11px">Tidak ada sesi</span>`;
+  }
+
+  const roleSummaryEl = document.getElementById('view-user-role-summary');
+  if (roleSummaryEl) {
+    if (u.role === 'master_admin' || u.role === 'admin') {
+      roleSummaryEl.innerHTML = `
+        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:12px 14px;color:#fca5a5;line-height:1.5;font-size:12px">
+          <strong>Hak Istimewa Mutlak (Setara Root):</strong> Memiliki kendali penuh tanpa batasan pada seluruh modul sistem, mencakup observasi metrik, manajemen server &amp; layanan, eksekusi Web Terminal, File Manager, jejak audit, dan konfigurasi platform.
+        </div>
+      `;
+    } else if (u.role === 'operator') {
+      roleSummaryEl.innerHTML = `
+        <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);border-radius:8px;padding:12px 14px;color:#bae6fd;line-height:1.5;font-size:12px">
+          <strong>Operator Sistem (Wewenang Terpilih):</strong> Diberikan wewenang operasional terperinci sesuai izin yang dialokasikan oleh Master Admin pada matriks hak akses di bawah ini.
+        </div>
+      `;
+    } else {
+      roleSummaryEl.innerHTML = `
+        <div style="background:rgba(148,163,184,0.08);border:1px solid rgba(148,163,184,0.2);border-radius:8px;padding:12px 14px;color:#cbd5e1;line-height:1.5;font-size:12px">
+          <strong>Hanya-Baca (Read-Only):</strong> Akun ini hanya memiliki izin observasi metrik dasbor pemantauan. Seluruh kemampuan kontrol operasional, Web Terminal, File Manager, dan modifikasi konfigurasi dinonaktifkan secara ketat.
         </div>
       `;
     }
-    html += '</div>';
-    container.innerHTML = html;
+  }
+
+  const auditBtn = document.getElementById('view-user-audit-btn');
+  if (auditBtn) {
+    auditBtn.href = '/audit?user=' + encodeURIComponent(u.username);
+  }
+
+  const container = document.getElementById('view-perms-container');
+  if (container) {
+    container.innerHTML = '';
+    if (u.role === 'master_admin' || u.role === 'admin') {
+      container.innerHTML = `
+        <div style="font-size:11.5px;color:var(--dim);font-style:italic">
+          Seluruh hak akses (15/15) otomatis aktif untuk peran Master Admin.
+        </div>
+      `;
+    } else if (u.role === 'viewer') {
+      container.innerHTML = `
+        <div style="font-size:11.5px;color:var(--dim);font-style:italic">
+          Seluruh wewenang eksekusi diblokir (0/15) untuk peran Viewer.
+        </div>
+      `;
+    } else {
+      let html = '<div style="display:grid;grid-template-columns:1fr;gap:6px;max-height:260px;overflow-y:auto;padding-right:4px">';
+      for (const [key, meta] of Object.entries(ALL_SYSTEM_PERMS)) {
+        const isGranted = Boolean(u.permissions && u.permissions[key]);
+        html += `
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:7px 10px;border-radius:6px;background:${isGranted ? 'rgba(56,189,248,0.06)' : 'rgba(255,255,255,0.02)'};border:1px solid ${isGranted ? 'rgba(56,189,248,0.22)' : 'rgba(255,255,255,0.04)'}">
+            <div>
+              <div style="font-weight:600;font-size:12px;color:${isGranted ? 'var(--text)' : 'var(--dim)'}">${meta.label}</div>
+              <div style="font-size:11px;color:var(--dim);line-height:1.3">${meta.desc}</div>
+            </div>
+            <div>
+              ${isGranted 
+                ? '<span class="badge" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:9.5px;padding:1px 6px">✔ Diizinkan</span>'
+                : '<span class="badge" style="background:rgba(255,255,255,0.04);color:var(--dim);border:1px solid var(--border);font-size:9.5px;padding:1px 6px">✖ Tidak</span>'}
+            </div>
+          </div>
+        `;
+      }
+      html += '</div>';
+      container.innerHTML = html;
+    }
   }
 
   const modal = document.getElementById('viewUserModal');
-  modal.style.display = 'flex';
+  if (modal) modal.style.display = 'flex';
 }
 
 function closeViewUserModal() {
