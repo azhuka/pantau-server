@@ -354,6 +354,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.60
+
+- **Tipe Rilis:** Tombol Penyesuai Kolom Tabel Mandiri, Mesin Penyembunyian Kolom CSS Reaktif, dan Persistensi Preferensi Peramban (*Self-Contained Table Column Visibility Toggler, Reactive CSS Column Hiding Engine, and Browser Preference Persistence*)
+- **Fokus Utama:** Menghadirkan kapabilitas kustomisasi kolom tabel data padat berstandar NOC mandiri (*Column Visibility Toggler*) dengan jaminan 100% kolom tampil secara default, persistensi `localStorage`, serta performa tinggi tanpa manipulasi DOM berulang:
+  1. **Mesin Penyesuai Kolom Universal (`PantauColManager`):**
+     - Mengembangkan modul arsitektur `PantauColManager` pada [`server/templates/base.html`](file:///home/bos/rj45/server/templates/base.html) yang secara otomatis mendeteksi tabel target via atribut `data-table-id`.
+     - Menggunakan injeksi CSS adaptif (`#tableId > colgroup > col:nth-child(n)`, `#tableId > thead > tr > th:nth-child(n)`, `#tableId > tbody > tr > td:nth-child(n):not([colspan])`) sehingga baris baru yang masuk via live polling, SSE, WebSocket, atau pagination otomatis konsisten tanpa siklus perulangan DOM.
+     - Menyediakan pengaman minimal 1 kolom wajib tampil (*guardrail anti-blank table*).
+     - Menjamin **seluruh kolom tampil 100% secara default** bila belum ada kustomisasi atau setelah menekan tombol "Reset".
+  2. **Penerapan Lintas Tabel Inti Sistem:**
+     - **Daftar Server (`/servers`):** Penyesuaian 12 kolom pada tabel `#servers-table` di [`server/templates/servers.html`](file:///home/bos/rj45/server/templates/servers.html) (Server, IP, Platform, OS, CPU, RAM, Disk, Uptime, Agen & APT, Tag, Status, Tindakan).
+     - **Dasbor Operasional (`/`):** Penyesuaian 10 kolom pada tabel `#dash-server-table` di [`server/templates/dashboard.html`](file:///home/bos/rj45/server/templates/dashboard.html) (Server, Status, Prioritas, Platform & IP, Uptime, CPU, RAM, Storage, Layanan, Insiden).
+     - **Tab Layanan & Paket & Port (`/servers/{id}`):** Penyesuaian kolom pada `#tbl-services`, `#tbl-packages`, dan `#ports-table` di [`server/templates/services.html`](file:///home/bos/rj45/server/templates/services.html).
+     - **Modul Insiden (`/problems`):** Penyesuaian kolom pada `#probtable` di [`server/templates/problems.html`](file:///home/bos/rj45/server/templates/problems.html).
+  3. **Antarmuka & Pengalaman Pengguna Berstandar NOC:**
+     - Dropdown menu mengambang dengan tema gelap proporsional NOC, daftar centang interaktif, indikator badge jumlah kolom aktif (contoh: `9/10`), dan penutupan otomatis saat klik di luar atau menekan tombol `Escape`.
+     - Tombol cepat *Reset* untuk mengembalikan tampilan kolom seketika ke pengaturan bawaan.
+  4. **Otomasi Pembaruan SemVer v4.8.60:**
+     - Menaikkan versi sistem menjadi `v4.8.60` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.59
 
 - **Tipe Rilis:** Tombol Pil Filter Rentang Waktu Cepat Lintas-Halaman, Penanganan Periode Hari Ini Terpadu, dan Filter Riwayat Insiden Teratasi (*Cross-Page Quick Period Filter Pills, Unified Today Period Handling, and Resolved Incidents History Filter*)

@@ -47,6 +47,7 @@ Pantau-Server mengadopsi model **Outbound-Only Pull**. Agen klien yang aktif men
 
 ### 1. Observabilitas & Telemetri Real-Time
 - **Metrik Sistem Real-Time:** Monitoring utilisasi CPU, RAM, Swap, Disk per partisi, Network I/O throughput, Load Average, dan sesi login SSH.
+- **Kustomisasi Kolom Tabel Berdensitas Tinggi (*Column Visibility Toggler*):** Fleksibilitas memilih dan menyembunyikan kolom tabel data padat (Daftar Server, Dasbor Operasional, Rincian Layanan, Paket Sistem, dan Port Terbuka) dengan tampilan default 100% lengkap serta penyimpanan preferensi di peramban (*localStorage*).
 - **Kesehatan Media Penyimpanan (S.M.A.R.T. & NVMe):** Audit fisik hard drive dan SSD via `smartctl` dan `nvme-cli` (status PASSED/FAILED, estimasi sisa umur/wearout percentage, suhu drive, bad sectors, dan laju pertumbuhan *Storage Runway*).
 - **Deteksi Hardware & Virtualisasi Otomatis:** Mengidentifikasi tipe prosesor, core, clock speed, interface jaringan, MAC address, serta platform hypervisor (KVM, Proxmox LXC/QEMU, VMware, AWS, Baremetal).
 - **Audit Pembaruan Paket Sistem:** Deteksi otomatis pembaruan sistem dan keamanan yang tertunda di klien (mendukung `apt`, `dnf`/`yum`, dan `pacman`).
