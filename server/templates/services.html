@@ -1946,6 +1946,7 @@ div[style*="position: fixed"] .card {
         <span style="font-size:12px;color:var(--dim)">Grafik utilisasi sumber daya mesin jangka panjang</span>
       </div>
       <div id="perf-ranges" class="segmented-control">
+        <button class="btn btn-sm" data-range="today">Hari Ini</button>
         <button class="btn btn-sm" data-range="1h">1 Jam</button>
         <button class="btn btn-sm" data-range="6h">6 Jam</button>
         <button class="btn btn-sm is-on" data-range="24h">24 Jam</button>
@@ -2311,10 +2312,12 @@ div[style*="position: fixed"] .card {
             style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;margin-right:8px">
       <option value="">memuat layanan…</option>
     </select>
-    <div id="svc-ranges" style="display:flex;gap:6px;flex-wrap:wrap">
+    <div id="svc-ranges" class="segmented-control" style="display:flex;gap:4px;flex-wrap:wrap">
+      <button class="btn btn-sm" data-range="today">Hari Ini</button>
       <button class="btn btn-sm" data-range="1h">1 Jam</button>
       <button class="btn btn-sm is-on" data-range="24h">24 Jam</button>
       <button class="btn btn-sm" data-range="7d">7 Hari</button>
+      <button class="btn btn-sm" data-range="30d">30 Hari</button>
     </div>
   </div>
   <div id="svc-current" style="font-size:12px;color:var(--dim);margin-bottom:12px"></div>

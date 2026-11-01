@@ -6351,8 +6351,11 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
     filter_sid_str = request.query_params.get("server", "")
     filter_sid = int(filter_sid_str) if filter_sid_str.isdigit() else None
     filter_group = (request.query_params.get("group") or "").strip()
+    res_period = (request.query_params.get("res_period") or "24h").strip().lower()
+    if res_period not in ("today", "24h", "7d", "30d"):
+        res_period = "24h"
 
-    open_problems, recent_resolved = problems_aggregate(db)
+    open_problems, recent_resolved = problems_aggregate(db, res_period=res_period)
     if filter_sid:
         open_problems = [p for p in open_problems if p["server_id"] == filter_sid]
         recent_resolved = [p for p in recent_resolved if p["server_id"] == filter_sid]
@@ -6409,6 +6412,7 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
         "all_servers": all_servers,
         "filter_sid": filter_sid,
         "filter_group": filter_group,
+        "res_period": res_period,
         "all_groups": existing_groups,
         "all_tags": existing_tags,
         "global_thresholds": global_thresholds,
@@ -10141,14 +10145,26 @@ def _agg_row(srv, row, counts=None) -> dict:
     return d
 
 
-def problems_aggregate(db):
+def problems_aggregate(db, res_period: str = "24h"):
     """Daftar masalah semua server untuk halaman /problems.
 
     Kembalikan (open_list, recent_resolved), urut severity lalu waktu.
     """
     extras_map = {e.server_id: e for e in db.query(ServerExtras).all()}
     servers = db.query(Server).order_by(desc(Server.last_seen)).all()
-    cutoff_24 = datetime.utcnow() - timedelta(hours=24)
+    now_utc = datetime.utcnow()
+    cutoff_24 = now_utc - timedelta(hours=24)
+
+    p_clean = (res_period or "24h").strip().lower()
+    if p_clean == "today":
+        res_cutoff = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif p_clean == "7d":
+        res_cutoff = now_utc - timedelta(days=7)
+    elif p_clean == "30d":
+        res_cutoff = now_utc - timedelta(days=30)
+    else:
+        res_cutoff = cutoff_24
+
     open_list: list = []
     resolved_list: list = []
     for srv in servers:
@@ -10185,7 +10201,7 @@ def problems_aggregate(db):
         for r in db.query(ServerProblem).filter(
             ServerProblem.server_id == srv.id,
             ServerProblem.resolved_at.isnot(None),
-            ServerProblem.resolved_at >= cutoff_24,
+            ServerProblem.resolved_at >= res_cutoff,
         ).all():
             resolved_list.append(_agg_row(srv, r, counts))
 
@@ -10210,7 +10226,7 @@ def problems_aggregate(db):
             })
             if r.resolved_at is None:
                 open_list.append(d)
-            elif r.resolved_at >= cutoff_24:
+            elif r.resolved_at >= res_cutoff:
                 resolved_list.append(d)
 
     rank = {"danger": 4, "average": 3, "warning": 2, "info": 1}
@@ -10499,18 +10515,31 @@ AUDIT_CATEGORIES = [
 AUDIT_ACTION_SET = dict(AUDIT_ACTION_LABELS)
 
 
-def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter: str = ""):
+def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter: str = "", period: str = ""):
     """Gabungkan jejak audit_logs + tabel commands (aksi remote), urut turun waktu."""
     q = (q or "").strip().lower()
     user_filter = (user_filter or "").strip()
+    period = (period or "").strip().lower()
     rows: list[dict] = []
+
+    cutoff = None
+    now_utc = datetime.utcnow()
+    if period == "today":
+        cutoff = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == "24h":
+        cutoff = now_utc - timedelta(hours=24)
+    elif period == "7d":
+        cutoff = now_utc - timedelta(days=7)
+    elif period == "30d":
+        cutoff = now_utc - timedelta(days=30)
 
     server_map = {s.id: s.hostname for s in db.query(Server).all()}
     svc_map = {s.id: s.service_name for s in db.query(Service).all()}
 
-    items = (
-        db.query(AuditLog).order_by(desc(AuditLog.created_at)).limit(limit).all()
-    )
+    audit_query = db.query(AuditLog)
+    if cutoff is not None:
+        audit_query = audit_query.filter(AuditLog.created_at >= cutoff)
+    items = audit_query.order_by(desc(AuditLog.created_at)).limit(limit).all()
     for a in items:
         srv_name = server_map.get(a.server_id) or ""
         tgt = (a.target or "").strip()
@@ -10556,9 +10585,10 @@ def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter
             "target": tgt, "status": log_st, "result": a.result or "",
         })
 
-    cmds = (
-        db.query(Command).order_by(desc(Command.created_at)).limit(limit).all()
-    )
+    cmd_query = db.query(Command)
+    if cutoff is not None:
+        cmd_query = cmd_query.filter(Command.created_at >= cutoff)
+    cmds = cmd_query.order_by(desc(Command.created_at)).limit(limit).all()
     label_map = {
         "restart": "cmd:restart", "start": "cmd:start", "stop": "cmd:stop",
         "block_ip": "cmd:block_ip", "unblock_ip": "cmd:unblock_ip",
@@ -10649,7 +10679,7 @@ def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter
 @app.get("/audit", response_class=HTMLResponse)
 def audit_page(
     request: Request, db: Session = Depends(get_db),
-    q: str = "", action: str = "", user: str = "",
+    q: str = "", action: str = "", user: str = "", period: str = "",
 ):
     user_actor = get_current_user(request, db)
     if not user_actor:
@@ -10658,7 +10688,8 @@ def audit_page(
         return RedirectResponse("/", status_code=303)
 
     user_clean = user.strip()
-    rows = _audit_rows(db, limit=500, q=q, action=action, user_filter=user_clean)
+    period_clean = period.strip().lower()
+    rows = _audit_rows(db, limit=500, q=q, action=action, user_filter=user_clean, period=period_clean)
     if not user_actor.is_master_admin():
         master_admin_names = {u.username for u in db.query(User).filter(User.role == "master_admin").all()}
         for r in rows:
@@ -10701,6 +10732,7 @@ def audit_page(
         "rows": rows,
         "q": q,
         "action": action,
+        "period": period_clean,
         "selected_user": user_clean,
         "available_users": available_users,
         "categories": AUDIT_CATEGORIES,
@@ -10944,11 +10976,15 @@ def api_alerts(
 def api_problems(
     server: int | None = None,
     group: str | None = None,
+    res_period: str = "24h",
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     """Endpoint realtime JSON untuk halaman /problems dan pemantauan aktif."""
-    open_problems, recent_resolved = problems_aggregate(db)
+    p_clean = (res_period or "24h").strip().lower()
+    if p_clean not in ("today", "24h", "7d", "30d"):
+        p_clean = "24h"
+    open_problems, recent_resolved = problems_aggregate(db, res_period=p_clean)
     if server:
         open_problems = [p for p in open_problems if p.get("server_id") == server]
         recent_resolved = [p for p in recent_resolved if p.get("server_id") == server]
@@ -11971,18 +12007,21 @@ def api_server_perf(
     if not server:
         raise HTTPException(status_code=404, detail="Server tidak ditemukan")
 
-    span = {
-        "1h": timedelta(hours=1),
-        "6h": timedelta(hours=6),
-        "24h": timedelta(hours=24),
-        "7d": timedelta(days=7),
-        "30d": timedelta(days=30),
-    }.get(range)
-    if not span:
-        raise HTTPException(status_code=400, detail="Rentang tidak dikenal")
-
     now = datetime.utcnow()
-    start = now - span
+    if range == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        span = max(now - start, timedelta(minutes=5))
+    else:
+        span = {
+            "1h": timedelta(hours=1),
+            "6h": timedelta(hours=6),
+            "24h": timedelta(hours=24),
+            "7d": timedelta(days=7),
+            "30d": timedelta(days=30),
+        }.get(range)
+        if not span:
+            raise HTTPException(status_code=400, detail="Rentang tidak dikenal")
+        start = now - span
     # Jam terakhir yang sudah selesai dipandu (anchor pemisah historis vs mentah)
     anchor = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
     points: list[dict] = []
@@ -12083,16 +12122,21 @@ def api_service_history(
     if not svc:
         raise HTTPException(status_code=404, detail="Service tidak ditemukan")
 
-    span = {
-        "1h": timedelta(hours=1),
-        "6h": timedelta(hours=6),
-        "24h": timedelta(hours=24),
-        "7d": timedelta(days=7),
-    }.get(range)
-    if not span:
-        raise HTTPException(status_code=400, detail="Rentang tidak dikenal")
-
     now = datetime.utcnow()
+    if range == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        span = max(now - start, timedelta(minutes=5))
+    else:
+        span = {
+            "1h": timedelta(hours=1),
+            "6h": timedelta(hours=6),
+            "24h": timedelta(hours=24),
+            "7d": timedelta(days=7),
+            "30d": timedelta(days=30),
+        }.get(range)
+        if not span:
+            raise HTTPException(status_code=400, detail="Rentang tidak dikenal")
+        start = now - span
     step_secs = max(int(span.total_seconds() / 120), 30)
     rows = (
         db.query(

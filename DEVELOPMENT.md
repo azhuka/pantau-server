@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.59
+
+- **Tipe Rilis:** Tombol Pil Filter Rentang Waktu Cepat Lintas-Halaman, Penanganan Periode Hari Ini Terpadu, dan Filter Riwayat Insiden Teratasi (*Cross-Page Quick Period Filter Pills, Unified Today Period Handling, and Resolved Incidents History Filter*)
+- **Fokus Utama:** Menyediakan kontrol penyaringan rentang waktu instan berstandar NOC (*Hari Ini*, *24 Jam*, *7 Hari*, *30 Hari*) pada modul Jejak Audit, Riwayat Insiden Teratasi, Riwayat Kinerja Server, dan Ketersediaan Layanan:
+  1. **Tombol Pil Filter Rentang Waktu pada Jejak Audit (`/audit`):**
+     - Menambahkan tombol pil cepat (*Quick Period Pills*): **Semua**, **Hari Ini** (`period=today`), **24 Jam** (`period=24h`), **7 Hari** (`period=7d`), dan **30 Hari** (`period=30d`) pada [`server/templates/audit.html`](file:///home/bos/rj45/server/templates/audit.html).
+     - Menyaring catatan `audit_logs` dan remote `commands` secara akurat pada backend `_audit_rows()` di `server/main.py`.
+     - Mempertahankan state filter secara dinamis pada live polling `auditRefresh()` tanpa reload penuh.
+  2. **Filter Rentang Waktu pada Riwayat Insiden Teratasi (`/problems`):**
+     - Menambahkan selektor rentang waktu cepat di kartu **Riwayat Insiden (Teratasi)** pada [`server/templates/problems.html`](file:///home/bos/rj45/server/templates/problems.html): **Hari Ini**, **24 Jam** (default), **7 Hari**, dan **30 Hari**.
+     - Memperbarui fungsi `problems_aggregate()` dan API `/api/problems` di `server/main.py` untuk memfilter insiden yang teratasi (`ServerProblem.resolved_at >= res_cutoff`) serta memperbarui metrik rekapitulasi MTTR secara dinamis tanpa me-reload halaman.
+  3. **Penanganan Periode "Hari Ini" (*Today*) & "30 Hari" pada Metrik Kinerja & Layanan:**
+     - Menambahkan opsi rentang waktu **Hari Ini** (`data-range="today"`, dihitung dari jam 00:00:00 UTC hari ini) dan **30 Hari** pada grafik riwayat performa sistem dan ketersediaan layanan di [`server/templates/services.html`](file:///home/bos/rj45/server/templates/services.html).
+     - Menangani kalkulasi cutoff dinamis dan step sampling waktu pada endpoint backend `/api/servers/{sid}/perf` dan `/api/servers/{sid}/services/{svc_id}/history` di `server/main.py`.
+  4. **Otomasi Pembaruan SemVer v4.8.59:**
+     - Menaikkan versi sistem menjadi `v4.8.59` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.58
 
 - **Tipe Rilis:** Layar Penuh Murni Native Fullscreen API, Sinkronisasi Dua Arah Status Peramban, dan Optimalisasi Tata Letak Dasbor Wallboard NOC (*True Native Fullscreen API Integration, Bi-directional Browser Fullscreen Synchronization, and NOC Wallboard Layout Optimization*)

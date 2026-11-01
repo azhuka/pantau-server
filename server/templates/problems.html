@@ -539,22 +539,31 @@
 </div>
 
 <div class="card" id="prob-resolved-card">
-  <div class="card-header" style="flex-wrap:wrap;gap:10px">
+  <div class="card-header" style="flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
     <div style="display:flex;align-items:center;gap:10px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--dim);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
       <div>
         <h3 style="margin:0;font-size:15px;font-weight:700">Riwayat Insiden</h3>
-        <div style="font-size:11.5px;color:var(--dim);margin-top:2px">Rekapitulasi insiden yang telah teratasi dan catatan pemulihan sistem (24 jam terakhir).</div>
+        <div style="font-size:11.5px;color:var(--dim);margin-top:2px" id="prob-resolved-subtitle">Rekapitulasi insiden yang telah teratasi dan catatan pemulihan sistem ({% if res_period == 'today' %}sejak 00:00 UTC hari ini{% elif res_period == '7d' %}7 hari terakhir{% elif res_period == '30d' %}30 hari terakhir{% else %}24 jam terakhir{% endif %}).</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="prob-resolved-stats-badges">
-      <span class="badge badge-up" style="font-size:11.5px;padding:3px 8px" title="Total insiden yang berhasil dipulihkan dalam 24 jam">{{ recent_resolved|length }} Teratasi</span>
-      {% if resolved_stats and resolved_stats.avg_mttr != '—' %}
-      <span class="badge badge-info" style="font-size:11.5px;padding:3px 8px" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: {{ resolved_stats.avg_mttr }}</span>
-      {% endif %}
-      {% if resolved_stats and resolved_stats.manual_count > 0 %}
-      <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Ditangani langsung oleh operator">{{ resolved_stats.manual_count }} ditangani operator</span>
-      {% endif %}
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <!-- Tombol Pil Rentang Waktu Cepat (Quick Period Pills) -->
+      <div class="segmented-control" id="prob-res-ranges" style="display:inline-flex;gap:4px">
+        <button type="button" class="btn btn-sm {% if res_period == 'today' %}is-on{% endif %}" onclick="setResolvedPeriod('today', this)" title="Insiden teratasi sejak jam 00:00 UTC hari ini">Hari Ini</button>
+        <button type="button" class="btn btn-sm {% if res_period == '24h' or not res_period %}is-on{% endif %}" onclick="setResolvedPeriod('24h', this)" title="Insiden teratasi dalam 24 jam terakhir">24 Jam</button>
+        <button type="button" class="btn btn-sm {% if res_period == '7d' %}is-on{% endif %}" onclick="setResolvedPeriod('7d', this)" title="Insiden teratasi dalam 7 hari terakhir">7 Hari</button>
+        <button type="button" class="btn btn-sm {% if res_period == '30d' %}is-on{% endif %}" onclick="setResolvedPeriod('30d', this)" title="Insiden teratasi dalam 30 hari terakhir">30 Hari</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="prob-resolved-stats-badges">
+        <span class="badge badge-up" style="font-size:11.5px;padding:3px 8px" title="Total insiden yang berhasil dipulihkan">{{ recent_resolved|length }} Teratasi</span>
+        {% if resolved_stats and resolved_stats.avg_mttr != '—' %}
+        <span class="badge badge-info" style="font-size:11.5px;padding:3px 8px" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: {{ resolved_stats.avg_mttr }}</span>
+        {% endif %}
+        {% if resolved_stats and resolved_stats.manual_count > 0 %}
+        <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Ditangani langsung oleh operator">{{ resolved_stats.manual_count }} ditangani operator</span>
+        {% endif %}
+      </div>
     </div>
   </div>
 
@@ -970,6 +979,32 @@ async function ackProblem(id, btn, sev) {
 
 // Live Update Tanpa Reload (Seamless Asynchronous Polling)
 let _isPolling = false;
+let currentResPeriod = "{{ res_period or '24h' }}";
+
+function setResolvedPeriod(period, btn) {
+  currentResPeriod = period;
+  document.querySelectorAll('#prob-res-ranges .btn').forEach(b => b.classList.remove('is-on'));
+  if (btn) btn.classList.add('is-on');
+  try {
+    const url = new URL(window.location);
+    if (period && period !== '24h') {
+      url.searchParams.set('res_period', period);
+    } else {
+      url.searchParams.delete('res_period');
+    }
+    window.history.replaceState({}, '', url);
+  } catch (e) {}
+  const sub = document.getElementById('prob-resolved-subtitle');
+  if (sub) {
+    let txt = '24 jam terakhir';
+    if (period === 'today') txt = 'sejak 00:00 UTC hari ini';
+    else if (period === '7d') txt = '7 hari terakhir';
+    else if (period === '30d') txt = '30 hari terakhir';
+    sub.textContent = `Rekapitulasi insiden yang telah teratasi dan catatan pemulihan sistem (${txt}).`;
+  }
+  if (window.poll) window.poll();
+}
+
 window.poll = async function() {
   if (_isPolling) return;
   _isPolling = true;
@@ -978,6 +1013,7 @@ window.poll = async function() {
     const params = new URLSearchParams();
     if (FILTER_SID) params.set('server', FILTER_SID);
     if (FILTER_GROUP) params.set('group', FILTER_GROUP);
+    if (currentResPeriod) params.set('res_period', currentResPeriod);
     params.set('_', Date.now());
     const qs = params.toString();
     const url = '/api/problems' + (qs ? '?' + qs : '');
@@ -1290,6 +1326,19 @@ window.poll = async function() {
           </td>
         </tr>`;
       }).join('');
+    }
+
+    const resBadges = document.getElementById('prob-resolved-stats-badges');
+    if (resBadges && data.summary) {
+      const s = data.summary;
+      let rHtml = `<span class="badge badge-up" style="font-size:11.5px;padding:3px 8px" title="Total insiden yang berhasil dipulihkan">${s.total_resolved || 0} Teratasi</span>`;
+      if (s.avg_mttr && s.avg_mttr !== '—') {
+        rHtml += ` <span class="badge badge-info" style="font-size:11.5px;padding:3px 8px" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: ${_esc(s.avg_mttr)}</span>`;
+      }
+      if (s.manual_resolved && s.manual_resolved > 0) {
+        rHtml += ` <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Ditangani langsung oleh operator">${s.manual_resolved} ditangani operator</span>`;
+      }
+      resBadges.innerHTML = rHtml;
     }
 
     probFilter();
