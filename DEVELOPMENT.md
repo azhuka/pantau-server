@@ -354,6 +354,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.58
+
+- **Tipe Rilis:** Layar Penuh Murni Native Fullscreen API, Sinkronisasi Dua Arah Status Peramban, dan Optimalisasi Tata Letak Dasbor Wallboard NOC (*True Native Fullscreen API Integration, Bi-directional Browser Fullscreen Synchronization, and NOC Wallboard Layout Optimization*)
+- **Fokus Utama:** Menyempurnakan fitur mode layar penuh pada dasbor utama (`/`) dari yang sebelumnya hanya manipulasi CSS penyembunyian sidebar menjadi mode layar penuh sejati (*True Native Fullscreen*) berstandar Wallboard TV NOC:
+  1. **Integrasi HTML5 Fullscreen API Peramban (`requestFullscreen` & `exitFullscreen`):**
+     - Memperbarui fungsi `toggleKioskMode()` dan `setKioskMode()` pada `server/templates/dashboard.html` untuk memicu antarmuka `document.documentElement.requestFullscreen()` saat tombol diklik.
+     - Mengeliminasi bilah tab, address bar URL peramban, bilah bookmark, dan taskbar sistem operasi sehingga seluruh area layar monitor terpakai 100% untuk pemantauan armada server.
+     - Menyediakan penanganan pembatalan mulus melalui `document.exitFullscreen()`.
+  2. **Sinkronisasi Otomatis Dua Arah (`fullscreenchange`):**
+     - Mendaftarkan event listener `fullscreenchange` (termasuk prefix vendor `webkit`, `moz`, `MS`) agar antarmuka dasbor secara otomatis tersinkronisasi saat pengguna masuk atau keluar dari fullscreen melalui tombol fisik keyboard bawaan peramban (`F11` atau tombol `Esc`).
+  3. **Optimalisasi Tata Letak Kepadatan Wallboard NOC:**
+     - Menyembunyikan footer aplikasi (`.app-footer`) dan subjudul deskripsi saat mode fullscreen/kiosk aktif pada `server/templates/base.html` dan `server/templates/dashboard.html`.
+     - Mengompresi margin dan tinggi elemen header brand organisasi (`.dash-org-header`) dan topbar secara proporsional guna memaksimalkan visibilitas vertikal kartu metrik sistem, status server, grafik performa, dan insiden aktif dalam 1 pandangan layar tanpa perlu scrolling.
+  4. **Otomasi Pembaruan SemVer v4.8.58:**
+     - Menaikkan versi sistem menjadi `v4.8.58` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.57
 
 - **Tipe Rilis:** Rincian Komprehensif Metadata Akun Pengguna, Penambahan Jejak Pembuat Akun, Eliminasi Akun Uji Coba, dan Modernisasi Modal Hak Akses (*Comprehensive User Account Metadata Details, Account Creator Tracking, Test Account Cleanup, and Modernized Permissions Modal*)

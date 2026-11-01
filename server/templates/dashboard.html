@@ -648,7 +648,7 @@
   transform: scale(0.95);
 }
 
-/* Tampilan saat Mode Kiosk / Overwatch Aktif */
+/* Tampilan saat Mode Kiosk / Overwatch Aktif (True Native Fullscreen NOC) */
 body.kiosk-mode .kiosk-toggle-btn {
   background: rgba(15, 23, 42, 0.72);
   border-color: rgba(255, 255, 255, 0.16);
@@ -663,7 +663,19 @@ body.kiosk-mode .kiosk-toggle-btn:hover {
   box-shadow: 0 0 16px rgba(239, 68, 68, 0.5);
 }
 body.kiosk-mode .topbar {
-  margin-bottom: 14px;
+  margin-bottom: 8px !important;
+}
+body.kiosk-mode .topbar > div > div:last-child {
+  display: none !important;
+}
+body.kiosk-mode .dash-org-header {
+  margin-bottom: 10px !important;
+}
+body.kiosk-mode .dash-org-header img {
+  max-height: 44px !important;
+}
+body.kiosk-mode .dash-org-header .dash-brand-title {
+  font-size: 16px !important;
 }
 body.show-alert-banner .kiosk-toggle-btn {
   top: 58px;
@@ -919,12 +931,12 @@ body.popout-fleet_table #dash-fleet-card {
 </div>
 {% endif %}
 
-<button type="button" id="kioskToggleBtn" class="kiosk-toggle-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh / Monitor Kedua (Kiosk)" aria-label="Mode Layar Penuh">
-  <!-- Ikon Masuk Kiosk Mode (Expand) -->
+<button type="button" id="kioskToggleBtn" class="kiosk-toggle-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
+  <!-- Ikon Masuk Layar Penuh (Expand) -->
   <svg id="kioskIconEnter" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
   </svg>
-  <!-- Ikon Keluar Kiosk Mode / Kembali ke Normal (Compress) -->
+  <!-- Ikon Keluar Layar Penuh / Kembali ke Normal (Compress) -->
   <svg id="kioskIconExit" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
     <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
   </svg>
@@ -3071,9 +3083,45 @@ updateDashboardClock();
 setInterval(updateDashboardClock, 1000);
 
 // ===================================================================
-// KIOSK / OVERWATCH MODE (Monitor Kedua / NOC Wallboard)
+// KIOSK / OVERWATCH MODE (Monitor Kedua / True Native Fullscreen NOC)
 // ===================================================================
-function setKioskMode(active, updateUrl = true) {
+function isNativeFullscreen() {
+  return Boolean(
+    document.fullscreenElement ||
+    document.webkitFullscreenElement ||
+    document.mozFullScreenElement ||
+    document.msFullscreenElement
+  );
+}
+
+function requestNativeFullscreen() {
+  const el = document.documentElement;
+  try {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (req) {
+      const p = req.call(el);
+      if (p && typeof p.catch === 'function') {
+        p.catch(() => {});
+      }
+    }
+  } catch (e) {}
+}
+
+function exitNativeFullscreen() {
+  try {
+    if (isNativeFullscreen()) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+      if (exit) {
+        const p = exit.call(document);
+        if (p && typeof p.catch === 'function') {
+          p.catch(() => {});
+        }
+      }
+    }
+  } catch (e) {}
+}
+
+function setKioskMode(active, updateUrl = true, syncNative = true) {
   const isKiosk = Boolean(active);
   const body = document.body;
   const btn = document.getElementById('kioskToggleBtn');
@@ -3086,8 +3134,8 @@ function setKioskMode(active, updateUrl = true) {
     if (iconEnter) iconEnter.style.display = 'none';
     if (iconExit) iconExit.style.display = 'inline-block';
     if (btn) {
-      btn.title = 'Mode Normal (Esc)';
-      btn.setAttribute('aria-label', 'Mode Normal');
+      btn.title = 'Keluar dari Layar Penuh (Esc)';
+      btn.setAttribute('aria-label', 'Keluar Layar Penuh');
     }
     if (updateUrl) {
       try {
@@ -3096,13 +3144,16 @@ function setKioskMode(active, updateUrl = true) {
         window.history.replaceState({}, '', url);
       } catch (e) {}
     }
+    if (syncNative && !isNativeFullscreen()) {
+      requestNativeFullscreen();
+    }
   } else {
     body.classList.remove('kiosk-mode');
     sessionStorage.removeItem('pantau_kiosk_mode');
     if (iconEnter) iconEnter.style.display = 'inline-block';
     if (iconExit) iconExit.style.display = 'none';
     if (btn) {
-      btn.title = 'Mode Layar Penuh / Monitor Kedua (Kiosk)';
+      btn.title = 'Mode Layar Penuh (NOC Wallboard)';
       btn.setAttribute('aria-label', 'Mode Layar Penuh');
     }
     if (updateUrl) {
@@ -3112,13 +3163,32 @@ function setKioskMode(active, updateUrl = true) {
         window.history.replaceState({}, '', url);
       } catch (e) {}
     }
+    if (syncNative && isNativeFullscreen()) {
+      exitNativeFullscreen();
+    }
   }
 }
 
 function toggleKioskMode() {
-  const isKiosk = document.body.classList.contains('kiosk-mode');
-  setKioskMode(!isKiosk, true);
+  const isKiosk = document.body.classList.contains('kiosk-mode') || isNativeFullscreen();
+  // Karena dipicu oleh aksi klik langsung pengguna (user-gesture), kita minta native fullscreen
+  setKioskMode(!isKiosk, true, true);
 }
+
+// Sinkronisasi otomatis dua arah saat pengguna keluar dari fullscreen via Esc atau F11 bawaan browser
+function handleFullscreenChange() {
+  const isFs = isNativeFullscreen();
+  const hasKioskClass = document.body.classList.contains('kiosk-mode');
+  if (isFs && !hasKioskClass) {
+    setKioskMode(true, true, false);
+  } else if (!isFs && hasKioskClass) {
+    setKioskMode(false, true, false);
+  }
+}
+
+['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+  document.addEventListener(evt, handleFullscreenChange);
+});
 
 // Inisialisasi awal saat halaman dimuat (mendukung URL ?kiosk=1 dan sessionStorage)
 (function initKioskMode() {
@@ -3126,21 +3196,24 @@ function toggleKioskMode() {
     const urlParams = new URLSearchParams(window.location.search);
     const paramKiosk = urlParams.get('kiosk');
     if (paramKiosk === '1' || paramKiosk === 'true') {
-      setKioskMode(true, false);
+      setKioskMode(true, false, false);
     } else if (paramKiosk === '0' || paramKiosk === 'false') {
-      setKioskMode(false, false);
+      setKioskMode(false, false, false);
     } else if (sessionStorage.getItem('pantau_kiosk_mode') === '1') {
-      setKioskMode(true, false);
+      setKioskMode(true, false, false);
     }
   } catch (e) {}
 })();
 
 // Shortcut tombol Escape untuk kembali ke mode normal
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && document.body.classList.contains('kiosk-mode')) {
-    const openModal = document.querySelector('.modal[style*="display: flex"], [id$="-modal"][style*="display: flex"]');
-    if (!openModal) {
-      setKioskMode(false, true);
+  if (e.key === 'Escape') {
+    const isKiosk = document.body.classList.contains('kiosk-mode') || isNativeFullscreen();
+    if (isKiosk) {
+      const openModal = document.querySelector('.modal[style*="display: flex"], [id$="-modal"][style*="display: flex"]');
+      if (!openModal) {
+        setKioskMode(false, true, true);
+      }
     }
   }
 });
