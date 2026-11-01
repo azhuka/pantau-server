@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.55
+
+- **Tipe Rilis:** Eliminasi Total Polusi Riwayat Perintah Kedaluwarsa, Perbaikan Evaluasi Status Layanan Down, dan Penegasan Batas Waktu Tindakan Operator (*Total Elimination of Stale Command History Pollution, Service Down Status Evaluation Fix, and Operator Action Strict TTL Enforcement*)
+- **Fokus Utama:** Mengatasi anomali kemunculan insiden palsu *"Layanan di-restart oleh operator (ADMIN)"*, menegakkan batas waktu (*Time-to-Live / TTL*) ketat 15 menit pada riwayat perintah operator, serta menghapus klasifikasi restart sebagai status henti operasional persisten:
+  1. **Investigasi Mendalam & Penemuan Akar Masalah (`server/main.py`):**
+     - Mengungkap penyebab munculnya pesan insiden palsu `Layanan agy di-restart oleh operator (ADMIN)` pada server `rj45`: fungsi `_problem_instances()` dan `reconcile_problems()` sebelumnya menarik 50 riwayat perintah terakhir dari tabel `commands` tanpa batasan waktu (*no time filter / no TTL*) dan tanpa memfilter status kegagalan perintah.
+     - Perintah uji coba usang dari tanggal 5 Oktober 2026 (ID 63, `action=restart`, `issued_by=admin`, `status=failed`) yang tersimpan 27 hari lalu secara keliru ditarik terus-menerus dan dianggap sebagai tindakan operator aktif setiap kali proses CLI `agy` sedang tidak berjalan, mengubah insiden henti normal menjadi tuduhan restart oleh operator `(ADMIN)`.
+  2. **Penegasan Batas Waktu Ketat (*Strict TTL Enforcement*):**
+     - Menerapkan batasan kedaluwarsa ketat 15 menit (`Command.created_at >= datetime.utcnow() - timedelta(minutes=15)`) serta validasi status eksekusi (`status in ('pending', 'executing', 'success')`) pada seluruh kueri riwayat perintah henti layanan (`stop`). Perintah lama yang sudah kedaluwarsa atau berstatus gagal tidak akan pernah lagi memengaruhi evaluasi status layanan.
+     - Menerapkan batasan kedaluwarsa 30 menit pada pendeteksian perintah pematian/reboot host (`poweroff_host`, `reboot_host`).
+  3. **Eliminasi Klasifikasi Keliru Perintah Restart:**
+     - Menghapus perlakuan perintah `restart` sebagai label henti operasional persisten (`di-restart oleh operator`). Perintah restart ditujukan untuk menyalakan kembali unit, sehingga jika layanan tetap down setelah restart selesai, layanan tersebut murni diklasifikasikan sebagai `Layanan <nama> Down` tanpa atribut restart palsu.
+  4. **Pembersihan Data Historis Basis Data:**
+     - Mengoreksi catatan historis pada tabel `server_problems` dan `audit_logs` yang sempat tercemar label usang `di-restart oleh operator (ADMIN)`, memulihkannya ke format baku `Layanan <nama> Down`.
+  5. **Otomasi Pembaruan SemVer v4.8.55:**
+     - Menaikkan versi sistem menjadi `v4.8.55` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.54
 
 - **Tipe Rilis:** Standarisasi Istilah Insiden, Koreksi Atribusi Pengabaian Layanan, dan Pemulihan Tombol Aksi Live (*Incident Term Standardization, Accurate Service Ignore Attribution, and Live Action Button Restoration*)
