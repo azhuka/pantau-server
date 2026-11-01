@@ -354,6 +354,27 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.61
+
+- **Tipe Rilis:** Refaktorisasi Logika Pengurutan 3-State Presisi, Eliminasi Polusi Panah Kolom Non-Sortir, Standardisasi Tooltip Seragam, dan Pembersihan Footer Menu (*Precision 3-State Sorting Refactoring, Non-Sortable Column Arrow Pollution Elimination, Uniform Tooltip Standardization, and Menu Footer Cleanup*)
+- **Fokus Utama:** Menyempurnakan integritas fungsi pengurutan tabel, merapikan antarmuka NOC dari kontrol yang berlebihan, dan menyeragamkan pesan tooltip:
+  1. **Perbaikan Logika & Arsitektur Pengurutan 3-State (`#servers-table` & `#dash-server-table`):**
+     - Memperbaiki *SyntaxError* duplikasi deklarasi variabel `isTableSorted` yang sebelumnya menghambat eksekusi event listener pengurutan.
+     - Mengisolasi penanda panah pengurutan di dalam `<span class="sort-arrow">↕</span>` sehingga teks nama kolom tidak lagi bermutasi atau terduplikasi (`↕ ↕`) saat diklik berulang kali.
+     - Menerapkan siklus pengurutan 3 arah (*3-State Cycling*): Klik 1 = *Ascending* (`↑`), Klik 2 = *Descending* (`↓`), Klik 3 = *Reset* ke urutan bawaan (`↕`).
+     - Mengembalikan susunan header grup (`.group-header-row`) dan status ciutkan/bentangkan secara utuh saat status pengurutan di-reset.
+     - Membaca nilai murni melalui atribut data (`data-hostname`, `data-ram-bytes`, `data-uptime-secs`) alih-alih mengekstrak seluruh teks sel HTML yang bercampur badge dan catatan.
+  2. **Eliminasi Pengurutan pada Kolom yang Tidak Relevan:**
+     - Membatasi fungsi pengurutan hanya pada kolom kunci yang bernilai operasional bagi sysadmin/NOC: **Server (Hostname)**, **Memori (RAM)**, dan **Uptime**.
+     - Menghilangkan `class="sortable"` dan simbol panah `↕` pada kolom non-sortir (IP & Interface, Platform, OS, Prosesor, Penyimpanan, Agen & APT, Tag, Status & Lapor, dan Tindakan) untuk memangkas polusi visual.
+  3. **Standardisasi Tooltip Kolom Baku & Seragam:**
+     - Menyeragamkan seluruh atribut `title` pada header kolom tabel daftar server menjadi deskripsi fungsi kolom yang baku, profesional, dan informatif.
+     - Menghilangkan teks instruksi salin IP baris (`Klik IP pada baris untuk menyalin`) dari header kolom IP & Interface yang seharusnya hanya berada pada level sel baris data.
+  4. **Pembersihan Footer Popover Kustomisasi Kolom:**
+     - Menghapus elemen footer redundan (`Tersimpan otomatis di peramban`) pada modul `PantauColManager` di [`server/templates/base.html`](file:///home/bos/rj45/server/templates/base.html) agar menu lebih bersih, ringkas, dan profesional.
+  5. **Otomasi Pembaruan SemVer v4.8.61:**
+     - Menaikkan versi sistem menjadi `v4.8.61` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.60
 
 - **Tipe Rilis:** Tombol Penyesuai Kolom Tabel Mandiri, Mesin Penyembunyian Kolom CSS Reaktif, dan Persistensi Preferensi Peramban (*Self-Contained Table Column Visibility Toggler, Reactive CSS Column Hiding Engine, and Browser Preference Persistence*)

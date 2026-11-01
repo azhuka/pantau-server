@@ -147,18 +147,18 @@
   <table id="servers-table" style="width:100%;margin:0">
     <thead>
       <tr>
-        <th class="sortable" data-col="0" data-col-title="Server" style="cursor:pointer;min-width:120px;white-space:nowrap" title="Urutkan berdasarkan nama host server">Server ↕</th>
-        <th class="sortable" data-col="1" data-col-title="IP &amp; Interface" style="cursor:pointer;min-width:95px" title="Urutkan berdasarkan alamat IP — klik IP pada baris untuk menyalin">IP &amp; Interface ↕</th>
-        <th class="sortable" data-col="2" data-col-title="Platform &amp; Mesin" style="cursor:pointer;min-width:110px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform &amp; Mesin ↕</th>
-        <th class="sortable" data-col="3" data-col-title="Sistem Operasi" style="cursor:pointer;min-width:115px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi ↕</th>
-        <th class="sortable" data-col="4" data-col-title="Prosesor" style="cursor:pointer;min-width:105px" title="Model prosesor (CPU) dan jumlah inti">Prosesor ↕</th>
-        <th class="sortable" data-col="5" data-col-title="Memori" style="cursor:pointer;min-width:80px" title="Kapasitas total memori utama (RAM) dan Swap">Memori ↕</th>
-        <th class="sortable" data-col="6" data-col-title="Penyimpanan" style="cursor:pointer;min-width:90px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan ↕</th>
-        <th class="sortable" data-col="7" data-col-title="Uptime" style="cursor:pointer;min-width:80px" title="Durasi server aktif dan waktu boot terakhir">Uptime ↕</th>
-        <th class="sortable" data-col="8" data-col-title="Agen &amp; APT" style="cursor:pointer;min-width:75px;text-align:center" title="Versi agen Pantau dan status paket pembaruan APT">Agen &amp; APT ↕</th>
-        <th class="sortable" data-col="9" data-col-title="Tag" style="cursor:pointer;min-width:55px" title="Tag atau label kategori server">Tag ↕</th>
-        <th class="sortable" data-col="10" data-col-title="Status &amp; Lapor" style="cursor:pointer;min-width:75px;text-align:center" title="Status koneksi dan waktu terakhir data diterima">Status &amp; Lapor ↕</th>
-        <th class="col-act" data-col-title="Tindakan" style="width:88px;min-width:88px;text-align:center" title="Menu aksi cepat: Rincian, Edit, atau Hapus server">Tindakan</th>
+        <th class="sortable" data-sort-key="server" data-col-title="Server" style="cursor:pointer;min-width:120px;white-space:nowrap" title="Nama host server dan kategori prioritas">Server <span class="sort-arrow">↕</span></th>
+        <th data-col-title="IP &amp; Interface" style="min-width:95px" title="Alamat IP utama dan antarmuka jaringan server">IP &amp; Interface</th>
+        <th data-col-title="Platform &amp; Mesin" style="min-width:110px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform &amp; Mesin</th>
+        <th data-col-title="Sistem Operasi" style="min-width:115px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
+        <th data-col-title="Prosesor" style="min-width:105px" title="Model prosesor (CPU) dan jumlah inti">Prosesor</th>
+        <th class="sortable" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer;min-width:80px" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow">↕</span></th>
+        <th data-col-title="Penyimpanan" style="min-width:90px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan</th>
+        <th class="sortable" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer;min-width:80px" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow">↕</span></th>
+        <th data-col-title="Agen &amp; APT" style="min-width:75px;text-align:center" title="Versi agen pemantau dan ketersediaan pembaruan paket">Agen &amp; APT</th>
+        <th data-col-title="Tag" style="min-width:55px" title="Label kategori dan pengelompokan server">Tag</th>
+        <th data-col-title="Status &amp; Lapor" style="min-width:75px;text-align:center" title="Status konektivitas dan waktu laporan data terakhir">Status &amp; Lapor</th>
+        <th class="col-act" data-col-title="Tindakan" style="width:88px;min-width:88px;text-align:center" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
       </tr>
     </thead>
     <tbody>
@@ -201,6 +201,7 @@
         data-group="{{ srv.group_name or '' }}"
         data-group-membership="{{ srv_grp }}"
         data-id="{{ srv.id }}"
+        data-hostname="{{ srv.hostname | lower }}"
         data-status="{{ srv._status_cls }}"
         data-uptime-secs="{{ srv._uptime_secs or 0 }}"
         data-ram-bytes="{{ srv._hw.memory.ram_total if srv._hw and srv._hw.memory and srv._hw.memory.ram_total else 0 }}"
@@ -690,6 +691,7 @@ async function srvPoll() {
       if (sIp && srv.ip_address) sIp.textContent = srv.ip_address;
       const sTr = document.getElementById('srv-tr-' + srv.id);
       if (sTr) {
+        if (srv.hostname) sTr.dataset.hostname = srv.hostname.toLowerCase();
         sTr.dataset.group = srv.group_name || '';
         sTr.dataset.groupMembership = srv.group_name || '__none__';
         sTr.dataset.uptimeSecs = srv.uptime_secs || 0;
@@ -732,54 +734,86 @@ async function srvPoll() {
 }
 setInterval(srvPoll, 3000);
 
-let sortCol = -1, sortAsc = true;
+let currentSortKey = null; // 'server' | 'mem' | 'uptime' | null
+let sortAsc = true;
+let initialTbodyRows = [];
+
+// Tangkap urutan baris awal (beserta header grup) saat DOM siap
+document.addEventListener('DOMContentLoaded', () => {
+  const tbody = document.querySelector('#servers-table tbody');
+  if (tbody) {
+    initialTbodyRows = Array.from(tbody.querySelectorAll('tr'));
+  }
+});
+
 document.querySelectorAll('#servers-table th.sortable').forEach(th => {
   th.addEventListener('click', () => {
-    const col = parseInt(th.dataset.col, 10);
-    if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = true; }
-    isTableSorted = true;
+    const key = th.dataset.sortKey;
+    const arrow = th.querySelector('.sort-arrow');
+    const tbody = document.querySelector('#servers-table tbody');
+    if (!tbody || !key) return;
 
+    if (initialTbodyRows.length === 0) {
+      initialTbodyRows = Array.from(tbody.querySelectorAll('tr'));
+    }
+
+    // Siklus 3-state pengurutan:
+    // 1. None -> Ascending (↑)
+    // 2. Ascending -> Descending (↓)
+    // 3. Descending -> Reset ke Bawaan (↕)
+    if (currentSortKey !== key) {
+      currentSortKey = key;
+      sortAsc = true;
+    } else if (sortAsc) {
+      sortAsc = false;
+    } else {
+      currentSortKey = null;
+      sortAsc = true;
+    }
+
+    // Bersihkan indikator visual pada seluruh kolom sortable
     document.querySelectorAll('#servers-table th.sortable').forEach(h => {
       h.style.color = '';
-      const base = h.textContent.replace(/ [↑↓]$/, '').trim();
-      h.textContent = base + ' ↕';
+      const a = h.querySelector('.sort-arrow');
+      if (a) a.textContent = '↕';
     });
-    th.style.color = 'var(--blue)';
-    th.textContent = th.textContent.replace('↕', sortAsc ? '↑' : '↓');
-    const tbody = document.querySelector('#servers-table tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr[data-srv-filter]'));
-    rows.sort((a, b) => {
-      let av = (a.cells[col]?.textContent || '').trim().toLowerCase();
-      let bv = (b.cells[col]?.textContent || '').trim().toLowerCase();
-      if (col === 4) {
-        // CPU Cores sort
-        const ac = parseInt(a.dataset.cpuCores || '0', 10);
-        const bc = parseInt(b.dataset.cpuCores || '0', 10);
-        if (ac !== bc) return sortAsc ? ac - bc : bc - ac;
-      }
-      if (col === 5) {
-        // RAM Bytes sort
-        const ar = parseInt(a.dataset.ramBytes || '0', 10);
-        const br = parseInt(b.dataset.ramBytes || '0', 10);
-        if (ar !== br) return sortAsc ? ar - br : br - ar;
-      }
-      if (col === 7) {
-        // Uptime sort
-        const au = parseInt(a.dataset.uptimeSecs || '0', 10);
-        const bu = parseInt(b.dataset.uptimeSecs || '0', 10);
-        return sortAsc ? au - bu : bu - au;
-      }
-      if (col === 10) {
-        // Status & Lapor sort
-        av = a.dataset.lastSeen || '';
-        bv = b.dataset.lastSeen || '';
-      }
-      return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
-    });
-    document.querySelectorAll('#servers-table tbody tr.group-header-row').forEach(hdr => {
-      hdr.style.display = 'none';
-    });
-    rows.forEach(r => tbody.appendChild(r));
+
+    if (!currentSortKey) {
+      // Kembalikan ke urutan grup awal
+      isTableSorted = false;
+      initialTbodyRows.forEach(r => tbody.appendChild(r));
+      updateServerGroupHeaders();
+    } else {
+      isTableSorted = true;
+      th.style.color = 'var(--blue)';
+      if (arrow) arrow.textContent = sortAsc ? '↑' : '↓';
+
+      const dataRows = Array.from(tbody.querySelectorAll('tr[data-srv-filter]'));
+      dataRows.sort((a, b) => {
+        let cmp = 0;
+        if (currentSortKey === 'server') {
+          const valA = (a.dataset.hostname || '').toLowerCase();
+          const valB = (b.dataset.hostname || '').toLowerCase();
+          cmp = valA.localeCompare(valB);
+        } else if (currentSortKey === 'mem') {
+          const valA = parseInt(a.dataset.ramBytes || '0', 10);
+          const valB = parseInt(b.dataset.ramBytes || '0', 10);
+          cmp = valA - valB;
+        } else if (currentSortKey === 'uptime') {
+          const valA = parseInt(a.dataset.uptimeSecs || '0', 10);
+          const valB = parseInt(b.dataset.uptimeSecs || '0', 10);
+          cmp = valA - valB;
+        }
+        return sortAsc ? cmp : -cmp;
+      });
+
+      // Sembunyikan header grup selama tabel dalam mode sortir global
+      document.querySelectorAll('#servers-table tbody tr.group-header-row').forEach(hdr => {
+        hdr.style.display = 'none';
+      });
+      dataRows.forEach(r => tbody.appendChild(r));
+    }
+
     if (serversPagination) {
       serversPagination.update();
     }

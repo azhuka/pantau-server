@@ -1264,15 +1264,15 @@ body.popout-fleet_table #dash-fleet-card {
       <thead>
         <tr>
           <th class="sortable" data-col="0" data-col-title="Server" style="vertical-align:middle;cursor:pointer;width:115px;min-width:100px;text-align:left" title="Nama host server">Server <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="1" data-col-title="Status" style="vertical-align:middle;cursor:pointer;width:65px;min-width:60px;text-align:center" title="Status koneksi server saat ini">Status <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="2" data-col-title="Prioritas" style="vertical-align:middle;cursor:pointer;width:70px;min-width:65px;text-align:center" title="Tingkat prioritas dan peran layanan">Prioritas <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="3" data-col-title="Platform &amp; IP" style="vertical-align:middle;cursor:pointer;width:120px;min-width:110px;text-align:left" title="Platform dan alamat IP server"><span class="th-plat-std">Platform / IP</span><span class="th-plat-cpt" style="display:none">IP &amp; Platform</span> <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="4" data-col-title="Uptime" style="vertical-align:middle;cursor:pointer;width:70px;min-width:65px;text-align:center" title="Waktu aktif sejak reboot terakhir">Uptime <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="5" data-col-title="CPU (%)" style="vertical-align:middle;cursor:pointer;width:140px;min-width:130px;text-align:center" title="Persentase beban CPU, visual meter dan jumlah inti prosesor">CPU (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="6" data-col-title="RAM (%)" style="vertical-align:middle;cursor:pointer;width:165px;min-width:150px;text-align:center" title="Persentase beban RAM, visual meter dan pemakaian memori">RAM (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="7" data-col-title="STORAGE (%)" style="vertical-align:middle;cursor:pointer;width:195px;min-width:180px;text-align:center" title="Persentase beban penyimpanan, visual meter, total dan sisa ruang">STORAGE (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="8" data-col-title="Layanan" style="vertical-align:middle;cursor:pointer;width:65px;min-width:60px;text-align:center" title="Rasio total layanan yang dipantau terhadap layanan aktif">Layanan <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="9" data-col-title="Insiden" style="vertical-align:middle;cursor:pointer;width:80px;min-width:75px;text-align:center" title="Insiden dan anomali aktif pada server">Insiden <span class="sort-arrow">↕</span></th>
+          <th data-col-title="Status" style="vertical-align:middle;width:65px;min-width:60px;text-align:center" title="Status konektivitas server">Status</th>
+          <th data-col-title="Prioritas" style="vertical-align:middle;width:70px;min-width:65px;text-align:center" title="Tingkat prioritas dan peran layanan (Tier)">Prioritas</th>
+          <th data-col-title="Platform &amp; IP" style="vertical-align:middle;width:120px;min-width:110px;text-align:left" title="Platform virtualisasi dan alamat IP"><span class="th-plat-std">Platform / IP</span><span class="th-plat-cpt" style="display:none">IP &amp; Platform</span></th>
+          <th class="sortable" data-col="4" data-col-title="Uptime" style="vertical-align:middle;cursor:pointer;width:70px;min-width:65px;text-align:center" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="5" data-col-title="CPU (%)" style="vertical-align:middle;cursor:pointer;width:140px;min-width:130px;text-align:center" title="Persentase utilisasi CPU dan jumlah inti prosesor">CPU (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="6" data-col-title="RAM (%)" style="vertical-align:middle;cursor:pointer;width:165px;min-width:150px;text-align:center" title="Persentase utilisasi memori dan kapasitas total RAM">RAM (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="7" data-col-title="STORAGE (%)" style="vertical-align:middle;cursor:pointer;width:195px;min-width:180px;text-align:center" title="Persentase utilisasi penyimpanan dan kapasitas partisi utama">STORAGE (%) <span class="sort-arrow">↕</span></th>
+          <th data-col-title="Layanan" style="vertical-align:middle;width:65px;min-width:60px;text-align:center" title="Rasio layanan aktif terhadap total layanan terpantau">Layanan</th>
+          <th class="sortable" data-col="9" data-col-title="Insiden" style="vertical-align:middle;cursor:pointer;width:80px;min-width:75px;text-align:center" title="Jumlah insiden dan anomali aktif pada server">Insiden <span class="sort-arrow">↕</span></th>
         </tr>
       </thead>
       <tbody id="dash-servers-tbody">
@@ -2035,38 +2035,63 @@ function dashFilterAll() {
 
 // 4. Table Column Sorting (CSS class-based: never strips UP/Down colors)
 let dashSortCol = -1, dashSortAsc = true;
+let initialDashRows = [];
+document.addEventListener('DOMContentLoaded', () => {
+  const tbody = document.querySelector('#dash-server-table tbody');
+  if (tbody) initialDashRows = Array.from(tbody.querySelectorAll('tr'));
+});
+
 document.querySelectorAll('#dash-server-table th.sortable').forEach(th => {
   th.addEventListener('click', () => {
     const col = parseInt(th.dataset.col, 10);
-    if (dashSortCol === col) dashSortAsc = !dashSortAsc; else { dashSortCol = col; dashSortAsc = true; }
+    const tbody = document.querySelector('#dash-server-table tbody');
+    if (!tbody) return;
+
+    if (initialDashRows.length === 0) {
+      initialDashRows = Array.from(tbody.querySelectorAll('tr'));
+    }
+
+    if (dashSortCol !== col) {
+      dashSortCol = col;
+      dashSortAsc = true;
+    } else if (dashSortAsc) {
+      dashSortAsc = false;
+    } else {
+      dashSortCol = -1;
+      dashSortAsc = true;
+    }
 
     document.querySelectorAll('#dash-server-table th.sortable').forEach(h => {
       h.classList.remove('is-sorted');
       const arrow = h.querySelector('.sort-arrow');
       if (arrow) arrow.textContent = '↕';
     });
-    th.classList.add('is-sorted');
-    const arrow = th.querySelector('.sort-arrow');
-    if (arrow) arrow.textContent = dashSortAsc ? '↑' : '↓';
 
-    const tbody = document.querySelector('#dash-server-table tbody');
-    if (!tbody) return;
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    rows.sort((a, b) => {
-      const cellA = a.children[col];
-      const cellB = b.children[col];
-      const rawA = cellA?.getAttribute('data-sort-val') ?? cellA?.textContent?.trim() ?? '';
-      const rawB = cellB?.getAttribute('data-sort-val') ?? cellB?.textContent?.trim() ?? '';
-      const numA = parseFloat(rawA), numB = parseFloat(rawB);
-      let cmp = 0;
-      if (!isNaN(numA) && !isNaN(numB) && rawA !== '' && rawB !== '') {
-        cmp = numA - numB;
-      } else {
-        cmp = String(rawA).localeCompare(String(rawB));
-      }
-      return dashSortAsc ? cmp : -cmp;
-    });
-    rows.forEach(r => tbody.appendChild(r));
+    if (dashSortCol === -1) {
+      initialDashRows.forEach(r => tbody.appendChild(r));
+    } else {
+      th.classList.add('is-sorted');
+      const arrow = th.querySelector('.sort-arrow');
+      if (arrow) arrow.textContent = dashSortAsc ? '↑' : '↓';
+
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      rows.sort((a, b) => {
+        const cellA = a.children[col];
+        const cellB = b.children[col];
+        const rawA = cellA?.getAttribute('data-sort-val') ?? cellA?.textContent?.trim() ?? '';
+        const rawB = cellB?.getAttribute('data-sort-val') ?? cellB?.textContent?.trim() ?? '';
+        const numA = parseFloat(rawA), numB = parseFloat(rawB);
+        let cmp = 0;
+        if (!isNaN(numA) && !isNaN(numB) && rawA !== '' && rawB !== '') {
+          cmp = numA - numB;
+        } else {
+          cmp = String(rawA).localeCompare(String(rawB));
+        }
+        return dashSortAsc ? cmp : -cmp;
+      });
+      rows.forEach(r => tbody.appendChild(r));
+    }
+
     if (dashServerPagination && typeof dashServerPagination.update === 'function') {
       dashServerPagination.update();
     }
