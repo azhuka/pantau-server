@@ -109,7 +109,7 @@ class Server(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     group_name = Column(String(64), nullable=True, default=None, index=True)
-    tier = Column(SmallInteger, nullable=False, default=2)  # 1=Tier 1 (Kritis), 2=Tier 2 (Pendukung), 3=Tier 3 (Eksperimen/Clone)
+    tier = Column(SmallInteger, nullable=False, default=2)  # 1=Produksi (Vital & Kritis), 2=Non-Produksi (Lab / Pengujian / Kloning)
     tags = Column(String(255), nullable=True)
     custom_thresholds = Column(Text, nullable=True)  # JSON: ambang batas CPU, RAM, Disk per-server
     is_proxmox_ha = Column(SmallInteger, nullable=False, default=0)
@@ -293,7 +293,7 @@ class ProbeTarget(Base):
     target = Column(String(255), nullable=False)                  # URL (http/https) atau Host/IP (ping/tcp)
     port = Column(Integer, nullable=True)                         # Port target khusus TCP (mis. 3306, 5432, 22)
     server_id = Column(INTEGER_UNSIGNED, ForeignKey("servers.id", ondelete="SET NULL"), nullable=True, index=True)
-    tier = Column(SmallInteger, nullable=False, default=2)        # 1=Tier 1 (Kritis / Vital), 2=Tier 2 (Standar), 3=Tier 3 (Non-Kritis)
+    tier = Column(SmallInteger, nullable=False, default=2)        # 1=Produksi (Prioritas / Kritis), 2=Non-Produksi (Standar / Peringatan)
 
     interval_seconds = Column(Integer, nullable=False, default=60)# Frekuensi pengecekan (detik, default 60s)
     timeout_seconds = Column(Integer, nullable=False, default=5)  # Batas waktu respons (detik, default 5s)

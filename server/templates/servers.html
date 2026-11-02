@@ -215,11 +215,9 @@
           <a href="/servers/{{ srv.id }}" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</a>
           {% set s_tier = srv.tier|default(2) %}
           {% if s_tier == 1 %}
-            <span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="tier-1">tier-1</span>
-          {% elif s_tier == 3 %}
-            <span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px" title="tier-3">tier-3</span>
+            <span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="PRODUKSI (Vital &amp; Kritis)">PROD</span>
           {% else %}
-            <span class="badge" style="font-size:8px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:0.5px 4px;font-weight:600" title="tier-2">tier-2</span>
+            <span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px;font-weight:600" title="NON-PRODUKSI (Lab / Uji Coba)">NON-PROD</span>
           {% endif %}
         </div>
         {% if srv.notes %}
@@ -505,11 +503,9 @@ function _srvEsc(s) {
 function getTierBadgeHtml(tier) {
   const t = parseInt(tier, 10) || 2;
   if (t === 1) {
-    return '<span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="tier-1">tier-1</span>';
-  } else if (t === 3) {
-    return '<span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px" title="tier-3">tier-3</span>';
+    return '<span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="PRODUKSI (Vital &amp; Kritis)">PROD</span>';
   }
-  return '<span class="badge" style="font-size:8px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:0.5px 4px;font-weight:600" title="tier-2">tier-2</span>';
+  return '<span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px;font-weight:600" title="NON-PRODUKSI (Lab / Uji Coba)">NON-PROD</span>';
 }
 
 function getPlatformBadgeHtml(plat) {

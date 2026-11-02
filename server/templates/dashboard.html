@@ -1311,7 +1311,7 @@ body.popout-fleet_table #dash-fleet-card {
         <tr id="dash-tr-{{ srv.id }}"
             data-srv-id="{{ srv.id }}"
             data-row-group="{{ srv.group_name or '' }}"
-            data-row-text="{{ (srv.hostname ~ ' ' ~ (srv.ip_address or '') ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ ' tier-' ~ s_tier) | lower }}"
+            data-row-text="{{ (srv.hostname ~ ' ' ~ (srv.ip_address or '') ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ (' prod' if s_tier == 1 else ' non-prod') ~ ' tier-' ~ s_tier) | lower }}"
             onclick="window.location.href='/servers/{{ srv.id }}'"
             title="Klik untuk buka rincian server {{ srv.hostname }}">
           <!-- 0. Server -->
@@ -1331,14 +1331,12 @@ body.popout-fleet_table #dash-fleet-card {
             {% endif %}
           </td>
 
-          <!-- 2. Prioritas (Tier) -->
+          <!-- 2. Lingkungan (Level) -->
           <td data-sort-val="{{ s_tier }}" id="tbl-tier-{{ srv.id }}" style="text-align:center;vertical-align:middle">
             {% if s_tier == 1 %}
-              <span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="tier-1">tier-1</span>
-            {% elif s_tier == 3 %}
-              <span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px;font-weight:700" title="tier-3">tier-3</span>
+              <span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="PRODUKSI (Vital &amp; Kritis)">PROD</span>
             {% else %}
-              <span class="badge" style="font-size:8px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:0.5px 4px;font-weight:700" title="tier-2">tier-2</span>
+              <span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px;font-weight:600" title="NON-PRODUKSI (Lab / Uji Coba)">NON-PROD</span>
             {% endif %}
           </td>
 
@@ -1517,11 +1515,9 @@ body.popout-fleet_table #dash-fleet-card {
               {% set s_tier = srv.tier|default(2) %}
               <span id="card-tier-{{ srv.id }}">
               {% if s_tier == 1 %}
-                <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="tier-1">tier-1</span>
-              {% elif s_tier == 3 %}
-                <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="tier-3">tier-3</span>
+                <span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="PRODUKSI (Vital &amp; Kritis)">PROD</span>
               {% else %}
-                <span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="tier-2">tier-2</span>
+                <span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px;font-weight:600" title="NON-PRODUKSI (Lab / Uji Coba)">NON-PROD</span>
               {% endif %}
               </span>
               <span id="card-plat-{{ srv.id }}">
@@ -2127,11 +2123,9 @@ function _dashEsc(s) {
 function getTierBadgeHtml(tier) {
   const t = parseInt(tier, 10) || 2;
   if (t === 1) {
-    return '<span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="tier-1">tier-1</span>';
-  } else if (t === 3) {
-    return '<span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px;font-weight:700" title="tier-3">tier-3</span>';
+    return '<span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="PRODUKSI (Vital &amp; Kritis)">PROD</span>';
   }
-  return '<span class="badge" style="font-size:8px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:0.5px 4px;font-weight:700" title="tier-2">tier-2</span>';
+  return '<span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px;font-weight:600" title="NON-PRODUKSI (Lab / Uji Coba)">NON-PROD</span>';
 }
 
 function getPlatformBadgeHtml(plat) {
@@ -2158,7 +2152,7 @@ function createAndAppendDashTableRow(srv, tbody) {
   tr.id = 'dash-tr-' + srv.id;
   tr.dataset.srvId = srv.id;
   tr.dataset.rowGroup = srv.group_name || '';
-  tr.dataset.rowText = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.group_name || '') + ' tier-' + (srv.tier || 2)).toLowerCase();
+  tr.dataset.rowText = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.group_name || '') + (srv.tier == 1 ? ' prod' : ' non-prod') + ' tier-' + (srv.tier || 2)).toLowerCase();
   tr.onclick = () => { window.location.href = '/servers/' + srv.id; };
   tr.title = 'Klik untuk buka rincian server ' + (srv.hostname || '');
 
@@ -2427,7 +2421,7 @@ async function pollNocDashboard() {
       const dTr = document.getElementById('dash-tr-' + srv.id);
       if (dTr) {
         dTr.dataset.rowGroup = srv.group_name || '';
-        dTr.dataset.rowText = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.group_name || '') + ' tier-' + (srv.tier || 2)).toLowerCase();
+        dTr.dataset.rowText = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.group_name || '') + (srv.tier == 1 ? ' prod' : ' non-prod') + ' tier-' + (srv.tier || 2)).toLowerCase();
       }
 
       // --- A. Update Table View Elements ---

@@ -649,13 +649,14 @@ def sync_probe_incident(
     )
 
     p_tier = getattr(probe, "tier", 2) or 2
+    is_prod = (p_tier == 1)
 
     if result.status in ("down", "degraded"):
         if result.status == "down":
-            sev = "danger" if p_tier == 1 else ("average" if p_tier == 2 else "warning")
+            sev = "danger" if is_prod else "warning"
             status_word = "GAGAL"
         else:
-            sev = "warning" if p_tier <= 2 else "info"
+            sev = "warning" if is_prod else "info"
             status_word = "TERGANGGU"
         err_msg = result.error_message or "Endpoint tidak merespons"
         msg = f"Probe {probe.name} ({probe.target}) {status_word}: {err_msg}"

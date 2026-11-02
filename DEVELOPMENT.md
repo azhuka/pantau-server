@@ -354,6 +354,29 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.62
+
+- **Tipe Rilis:** Perombakan Arsitektur Klasifikasi Lingkungan Operasional Presisi (Produksi vs Non-Produksi) & Eskalasi Insiden Terpadu (*Precision 2-Level Operational Environment Architecture & Unified Incident Escalation Overhaul*)
+- **Fokus Utama:** Menyederhanakan model klasifikasi server dari 3-Tier yang redundan menjadi model 2-Level yang tegas, presisi, dan sesuai realitas operasional NOC:
+  1. **Klasifikasi 2-Level Lingkungan Operasional (Produksi vs Non-Produksi):**
+     - **Server Produksi (*Production* - `PROD`):** Seluruh infrastruktur vital operasional. Insiden host offline (> 60 dtk), service crash/down (> 60 dtk), atau penggunaan sumber daya $\ge 95\%$ otomatis memicu alarm darurat Kritis (*Danger*), audio sirene, dan banner merah.
+     - **Server Non-Produksi (*Non-Production* - `NON-PROD`):** Mesin lingkungan lab, pengujian (*testing/QA*), kloning (*cloning*), maupun eksperimen. Seluruh insiden host offline, service down, maupun saturasi sumber daya **tidak pernah memicu Kritis (*Danger*) maupun Gawat (*Average*)**, melainkan dibatasi maksimal hanya berstatus **Peringatan (*Warning*)** yang tenang tanpa membunyikan sirene darurat atau banner merah.
+  2. **Eskalasi Layanan Universal (*Universal Service Escalation*):**
+     - Pada Server Produksi: Layanan down/crash secara tidak disengaja 0–60 detik berstatus **Gawat (*Average*)**; setelah $> 60$ detik otomatis bereskalasi menjadi **Kritis (*Danger*)** dengan audit trail pencatatan eskalasi.
+     - Pada Server Non-Produksi: Layanan down langsung berstatus **Peringatan (*Warning*)** statis tanpa eskalasi darurat.
+  3. **Ambang Batas Penggunaan Resource Berjenjang (CPU, RAM, Swap, Disk):**
+     - Server Produksi: $\ge 80\%$ Peringatan (*Warning*), $\ge 90\%$ Gawat (*Average*), $\ge 95\%$ Kritis (*Danger* dengan anti-spike delay 60 dtk).
+     - Server Non-Produksi: Saturasi resource $\ge 80\%$, $90\%$, $\ge 95\%$ dibatasi maksimal berstatus Peringatan (*Warning*).
+  4. **Preservasi Supresi Host Terputus (*Host Offline Incident Suppression*):**
+     - Mempertahankan logika supresi: saat host offline terdeteksi, seluruh alert child services otomatis disupresi sehingga hanya menerbitkan 1 insiden host offline terpadu.
+  5. **Standardisasi Visual Badge & Antarmuka NOC:**
+     - Mengganti seluruh badge `tier-1`, `tier-2`, `tier-3` menjadi badge formal NOC: `PROD` (merah tegas) dan `NON-PROD` (slate/muted) di Daftar Server, Dasbor Operasional, Kartu Ringkasan, Header Rincian Server, dan Synthetic Probing.
+     - Memperbarui formulir Tambah Server (`/servers/add`), Sunting Server (`/servers/{id}/edit`), dan Modal Probing (`/probing`) menjadi dropdown pilihan 2-Level yang intuitif dengan panduan penjelasan yang informatif.
+  6. **Kompatibilitas Basis Data & Normalisasi Transparan:**
+     - Mempertahankan skema kolom `tier` (1=Produksi, 2=Non-Produksi) dengan normalisasi data warisan `tier > 2` menjadi `2` pada saat startup tanpa memerlukan alter table yang destruktif.
+  7. **Otomasi Pembaruan SemVer v4.8.62:**
+     - Menaikkan versi sistem menjadi `v4.8.62` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.61
 
 - **Tipe Rilis:** Refaktorisasi Logika Pengurutan 3-State Presisi, Eliminasi Polusi Panah Kolom Non-Sortir, Standardisasi Tooltip Seragam, dan Pembersihan Footer Menu (*Precision 3-State Sorting Refactoring, Non-Sortable Column Arrow Pollution Elimination, Uniform Tooltip Standardization, and Menu Footer Cleanup*)

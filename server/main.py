@@ -797,6 +797,18 @@ def migrate_probing_system():
             finally:
                 db.close()
 
+        # Normalisasi model 2-level lingkungan (1=Produksi, 2=Non-Produksi)
+        db = SessionLocal()
+        try:
+            db.execute(text("UPDATE servers SET tier = 2 WHERE tier > 2"))
+            db.execute(text("UPDATE probe_targets SET tier = 2 WHERE tier > 2"))
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.debug("[startup] Normalisasi 2-level tier: %s", e)
+        finally:
+            db.close()
+
 
 def get_existing_groups_and_tags(db: Session) -> tuple[list[str], list[str]]:
     """Ambil daftar grup dan tag unik dari semua server untuk auto-complete / chips."""
@@ -4420,7 +4432,7 @@ def server_add_submit(
     tags_clean = _clean_str(tags, "", 255).strip()
     tags = tags_clean if tags_clean else None
     notes_clean = (notes or "").strip() or None
-    tier_val = 1 if tier == 1 else (3 if tier == 3 else 2)
+    tier_val = 1 if tier == 1 else 2
     if ip_address and not _validate_ip(ip_address):
         existing_groups, existing_tags = get_existing_groups_and_tags(db)
         return tpl(request, "server_form.html", {
@@ -4467,7 +4479,7 @@ def server_add_submit(
         api_key=hash_api_key(raw)
     )
     db.add(srv)
-    _audit(db, user.username, "server_add", f"{hostname} ({ip_address}) [Tier: {tier_val}]" + (f" [Grup: {group_name}]" if group_name else ""), "berhasil")
+    _audit(db, user.username, "server_add", f"{hostname} ({ip_address}) [Lingkungan: {'Produksi' if tier_val == 1 else 'Non-Produksi'}]" + (f" [Grup: {group_name}]" if group_name else ""), "berhasil")
     db.commit()
     resp = tpl(request, "key_reveal.html", {"user": user, "server": srv, "api_key": raw})
     resp.headers["Cache-Control"] = "no-store"
@@ -4549,7 +4561,7 @@ def server_edit_submit(
         group_name = group_name_clean if group_name_clean and group_name_clean.lower() != "default" else None
         tags_clean = _clean_str(tags, "", 255).strip()
         tags = tags_clean if tags_clean else None
-        tier_val = 1 if tier == 1 else (3 if tier == 3 else 2)
+        tier_val = 1 if tier == 1 else 2
         if ip_address and not _validate_ip(ip_address):
             server._key_fp = api_key_fingerprint(server.api_key)
             existing_groups, existing_tags = get_existing_groups_and_tags(db)
@@ -4598,7 +4610,7 @@ def server_edit_submit(
         server.is_isolated_net = 1 if is_isolated_net else 0
         server.allow_web_terminal = 1 if allow_web_terminal else 0
         _audit(db, user.username, "server_edit",
-               f"id={server.id} {server.hostname} ({server.ip_address}) [Tier: {tier_val}]" + (f" [Grup: {group_name}]" if group_name else ""), "berhasil")
+               f"id={server.id} {server.hostname} ({server.ip_address}) [Lingkungan: {'Produksi' if tier_val == 1 else 'Non-Produksi'}]" + (f" [Grup: {group_name}]" if group_name else ""), "berhasil")
         db.commit()
         return RedirectResponse("/servers" + _flash_qs(True, "Server diperbarui"), status_code=303)
     return RedirectResponse("/servers" + _flash_qs(False, "Server tidak ditemukan"), status_code=303)
@@ -6630,7 +6642,7 @@ async def api_probe_create(
         tier_raw = int(tier_input or 2)
     except (ValueError, TypeError):
         tier_raw = 2
-    tier_val = 1 if tier_raw == 1 else (3 if tier_raw == 3 else 2)
+    tier_val = 1 if tier_raw == 1 else 2
 
     new_probe = ProbeTarget(
         name=name,
@@ -6897,7 +6909,7 @@ async def api_probe_update(
             tier_raw = int(tier_input or 2)
         except (ValueError, TypeError):
             tier_raw = 2
-        probe.tier = 1 if tier_raw == 1 else (3 if tier_raw == 3 else 2)
+        probe.tier = 1 if tier_raw == 1 else 2
 
     db.commit()
     _audit(db, user.username, "probe_edit", f"Ubah endpoint pantau #{pid} '{probe.name}' -> {probe.target}", "berhasil", server_id=probe.server_id)
@@ -8688,6 +8700,7 @@ def _resource_problem_instances(db, srv) -> list:
 
     th = get_server_thresholds(srv, db)
     tier = getattr(srv, "tier", 2) or 2
+    is_prod = (tier == 1)
 
     # Kunci masalah yang saat ini aktif terbuka untuk server ini
     open_keys = {
@@ -8713,7 +8726,10 @@ def _resource_problem_instances(db, srv) -> list:
         if is_ram_open:
             if cur_ram >= th["ram_danger"]:
                 should_emit_ram = True
-                ram_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                ram_sev = "danger" if is_prod else "warning"
+            elif is_prod and cur_ram >= 90.0:
+                should_emit_ram = True
+                ram_sev = "average"
             elif cur_ram >= th["ram_warn"]:
                 should_emit_ram = True
                 ram_sev = "warning"
@@ -8722,13 +8738,15 @@ def _resource_problem_instances(db, srv) -> list:
                 should_emit_ram = True
                 ram_avg = sum(recent_mems) / len(recent_mems)
                 if cur_ram >= th["ram_danger"] and ram_avg >= th["ram_danger"]:
-                    ram_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                    ram_sev = "danger" if is_prod else "warning"
+                elif is_prod and (cur_ram >= 90.0 or ram_avg >= 90.0):
+                    ram_sev = "average"
                 else:
                     ram_sev = "warning"
 
         if should_emit_ram:
-            active_th = th["ram_danger"] if ram_sev == "danger" else th["ram_warn"]
-            label_text = f"RAM HAMPIR PENUH: {cur_ram:.0f}% (ambang {active_th:.0f}%)" if ram_sev == "danger" else f"RAM tinggi: {cur_ram:.0f}% (ambang {active_th:.0f}%)"
+            active_th = th["ram_danger"] if ram_sev == "danger" else (90.0 if ram_sev == "average" else th["ram_warn"])
+            label_text = f"RAM HAMPIR PENUH: {cur_ram:.0f}% (ambang {active_th:.0f}%)" if ram_sev == "danger" else (f"RAM sangat tinggi: {cur_ram:.0f}% (ambang {active_th:.0f}%)" if ram_sev == "average" else f"RAM tinggi: {cur_ram:.0f}% (ambang {active_th:.0f}%)")
             inst.append({
                 "key": "ram_usage",
                 "severity": ram_sev,
@@ -8754,7 +8772,10 @@ def _resource_problem_instances(db, srv) -> list:
         if is_swap_open:
             if cur_swap >= th["swap_danger"]:
                 should_emit_swap = True
-                swap_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                swap_sev = "danger" if is_prod else "warning"
+            elif is_prod and cur_swap >= 90.0:
+                should_emit_swap = True
+                swap_sev = "average"
             elif cur_swap >= th["swap_warn"]:
                 should_emit_swap = True
                 swap_sev = "warning"
@@ -8763,13 +8784,15 @@ def _resource_problem_instances(db, srv) -> list:
                 should_emit_swap = True
                 swap_avg = sum(recent_swaps) / len(recent_swaps)
                 if cur_swap >= th["swap_danger"] and swap_avg >= th["swap_danger"]:
-                    swap_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                    swap_sev = "danger" if is_prod else "warning"
+                elif is_prod and (cur_swap >= 90.0 or swap_avg >= 90.0):
+                    swap_sev = "average"
                 else:
                     swap_sev = "warning"
 
         if should_emit_swap:
-            active_th = th["swap_danger"] if swap_sev == "danger" else th["swap_warn"]
-            label_text = f"Swap hampir penuh: {cur_swap:.0f}% (ambang {active_th:.0f}%) — RAM menipis" if swap_sev == "danger" else f"Swap terpakai tinggi: {cur_swap:.0f}% (ambang {active_th:.0f}%)"
+            active_th = th["swap_danger"] if swap_sev == "danger" else (90.0 if swap_sev == "average" else th["swap_warn"])
+            label_text = f"Swap hampir penuh: {cur_swap:.0f}% (ambang {active_th:.0f}%) — RAM menipis" if swap_sev == "danger" else (f"Swap sangat tinggi: {cur_swap:.0f}% (ambang {active_th:.0f}%)" if swap_sev == "average" else f"Swap terpakai tinggi: {cur_swap:.0f}% (ambang {active_th:.0f}%)")
             inst.append({
                 "key": "swap_usage",
                 "severity": swap_sev,
@@ -8791,7 +8814,10 @@ def _resource_problem_instances(db, srv) -> list:
         if is_cpu_open:
             if cur_cpu >= th["cpu_danger"] or recent_avg >= th["cpu_danger"]:
                 should_emit_cpu = True
-                cpu_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                cpu_sev = "danger" if is_prod else "warning"
+            elif is_prod and (cur_cpu >= 90.0 or recent_avg >= 90.0):
+                should_emit_cpu = True
+                cpu_sev = "average"
             elif cur_cpu >= th["cpu_warn"] or recent_avg >= th["cpu_warn"]:
                 should_emit_cpu = True
                 cpu_sev = "warning"
@@ -8799,13 +8825,15 @@ def _resource_problem_instances(db, srv) -> list:
             if len(recent_cpus) >= 3 and (all(c >= th["cpu_warn"] for c in recent_cpus) or recent_avg >= th["cpu_warn"]):
                 should_emit_cpu = True
                 if recent_avg >= th["cpu_danger"] and cur_cpu >= th["cpu_danger"]:
-                    cpu_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                    cpu_sev = "danger" if is_prod else "warning"
+                elif is_prod and (recent_avg >= 90.0 or cur_cpu >= 90.0):
+                    cpu_sev = "average"
                 else:
                     cpu_sev = "warning"
 
         if should_emit_cpu:
-            active_th = th["cpu_danger"] if cpu_sev == "danger" else th["cpu_warn"]
-            label_text = f"CPU jenuh/saturasi: {cur_cpu:.0f}% (ambang {active_th:.0f}%) (rata-rata {recent_avg:.0f}%)" if cpu_sev == "danger" else f"CPU tinggi: {cur_cpu:.0f}% (ambang {active_th:.0f}%) (rata-rata {recent_avg:.0f}%)"
+            active_th = th["cpu_danger"] if cpu_sev == "danger" else (90.0 if cpu_sev == "average" else th["cpu_warn"])
+            label_text = f"CPU jenuh/saturasi: {cur_cpu:.0f}% (ambang {active_th:.0f}%) (rata-rata {recent_avg:.0f}%)" if cpu_sev == "danger" else (f"CPU sangat tinggi: {cur_cpu:.0f}% (ambang {active_th:.0f}%) (rata-rata {recent_avg:.0f}%)" if cpu_sev == "average" else f"CPU tinggi: {cur_cpu:.0f}% (ambang {active_th:.0f}%) (rata-rata {recent_avg:.0f}%)")
             inst.append({
                 "key": "cpu_usage",
                 "severity": cpu_sev,
@@ -8824,7 +8852,7 @@ def _resource_problem_instances(db, srv) -> list:
     for d in disks or []:
         mount = d.get("mount", "?")
         if d.get("is_ro"):
-            ro_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+            ro_sev = "danger" if is_prod else "warning"
             inst.append({
                 "key": f"disk_ro:{mount}", "severity": ro_sev,
                 "message": f"Partisi disk {mount} READ-ONLY (sistem berkas terkunci — operasi tulis ditolak!)",
@@ -8836,12 +8864,19 @@ def _resource_problem_instances(db, srv) -> list:
             continue
         dpct = used / total * 100 if total else 0
         if dpct >= th["disk_danger"]:
-            disk_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+            disk_sev = "danger" if is_prod else "warning"
             inst.append({
                 "key": f"disk_usage:{mount}", "severity": disk_sev,
                 "message": f"Disk {mount} HAMPIR PENUH: {dpct:.0f}% (ambang {th['disk_danger']:.0f}%) ({_fmt_size(used)} / {_fmt_size(total)})",
                 "tip": DISK_TIP,
                 "context": _build_problem_context(f"disk_usage:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=th["disk_danger"], severity=disk_sev),
+            })
+        elif is_prod and dpct >= 90.0:
+            inst.append({
+                "key": f"disk_usage:{mount}", "severity": "average",
+                "message": f"Disk {mount} terisi sangat tinggi: {dpct:.0f}% ({_fmt_size(used)} / {_fmt_size(total)})",
+                "tip": DISK_TIP,
+                "context": _build_problem_context(f"disk_usage:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=90.0, severity="average"),
             })
         elif dpct >= th["disk_warn"]:
             inst.append({
@@ -8886,11 +8921,12 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
     now_ep = time.time()
     active_ips = [ip for ip, ts in s_ips.items() if (now_ep - ts) <= 120]
     tier = getattr(srv, "tier", 2) or 2
+    is_prod = (tier == 1)
     if len(active_ips) > 1:
         active_ips_sorted = sorted(active_ips)
         inst.append({
             "key": "agent_conflict",
-            "severity": "danger" if tier == 1 else "average",
+            "severity": "danger" if is_prod else "warning",
             "message": f"Konflik Agen Terdeteksi: API key aktif di beberapa host ({', '.join(active_ips_sorted)})",
             "tip": "Dua mesin berbeda melapor dengan API key yang sama (kemungkinan VM dikloning atau duplikat instalasi agen). "
                    "Hentikan agent_pantau di mesin kloningan atau daftarkan sebagai server baru.",
@@ -8905,8 +8941,6 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
     if ls.tzinfo is None:
         ls = ls.replace(tzinfo=timezone.utc)
     sec_silent = (datetime.now(timezone.utc) - ls).total_seconds()
-
-    tier = getattr(srv, "tier", 2) or 2
 
     if _server_stale(srv):
         # Periksa apakah server dimatikan atau direboot secara sadar oleh operator (poweroff_host / reboot_host)
@@ -8948,39 +8982,26 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             stale_sev = "warning"
             stale_msg = f"Server sedang di-reboot oleh operator ({op_by})"
             stale_tip = f"Server sedang dalam proses mulai ulang (reboot) yang diinisiasi oleh operator ({op_by})."
-        elif tier == 1:
-            # Tier 1: Server Kritis / Produksi Utama (Layanan Vital 24/7)
+        elif is_prod:
+            # Server Produksi (Layanan Vital 24/7):
             # - Detik awal (> 15s) s/d 1 menit (< 60s): Average (GAWAT)
             # - >= 60s (1 menit): Danger (KRITIS — Memicu sirene darurat, badge & banner merah)
+            dur_txt = f"{int(sec_silent // 60)} mnt" if sec_silent >= 60 else f"{int(sec_silent)} dtk"
             if sec_silent >= 60:
                 stale_sev = "danger"
-                dur_txt = f"{int(sec_silent // 60)} mnt" if sec_silent >= 60 else f"{int(sec_silent)} dtk"
                 stale_msg = f"Agen tidak melapor (> {dur_txt}) — SERVER OFFLINE"
-                stale_tip = "SEGERA lakukan inspeksi fisik atau virtual mesin server Tier 1, periksa suplai daya, dan verifikasi konektivitas jaringan."
+                stale_tip = "SEGERA lakukan inspeksi fisik atau virtual mesin server Produksi, periksa suplai daya, dan verifikasi konektivitas jaringan."
             else:
                 stale_sev = "average"
                 stale_msg = f"Agen tidak melapor (> {int(sec_silent)} dtk)"
                 stale_tip = "Periksa suplai daya server, koneksi jaringan, atau status service agent_pantau."
-        elif tier == 2:
-            # Tier 2: Server Pendukung Operasional
-            # - Detik awal (> 15s) s/d 1 menit (< 60s): Warning (Peringatan)
-            # - >= 60s (1 menit): Average (GAWAT). Maksimal GAWAT, tidak memicu banner/alarm merah.
-            if sec_silent >= 60:
-                stale_sev = "average"
-                dur_txt = f"{int(sec_silent // 60)} mnt" if sec_silent >= 60 else f"{int(sec_silent)} dtk"
-                stale_msg = f"Agen tidak melapor (> {dur_txt})"
-                stale_tip = "Periksa suplai daya server, koneksi jaringan, atau status service agent_pantau."
-            else:
-                stale_sev = "warning"
-                stale_msg = f"Agen tidak melapor (> {int(sec_silent)} dtk)"
-                stale_tip = "Periksa latensi konektivitas jaringan atau pastikan service agent_pantau berjalan aktif."
         else:
-            # Tier 3: Server Lab / Clone / Eksperimen
-            # - Selalu masuk Warning (Peringatan). Tenang tanpa sirene/banner merah.
-            stale_sev = "warning"
+            # Server Non-Produksi (Lab / Pengujian / Uji Coba / Kloning / Dev):
+            # - Selalu masuk Warning (Peringatan). Tenang tanpa sirene darurat / banner merah.
             dur_txt = f"{int(sec_silent // 60)} mnt" if sec_silent >= 60 else f"{int(sec_silent)} dtk"
+            stale_sev = "warning"
             stale_msg = f"Agen tidak melapor (> {dur_txt})"
-            stale_tip = "Server pengujian/clone sedang tidak aktif atau agent_pantau belum berjalan."
+            stale_tip = "Server non-produksi (lab/pengujian) sedang tidak aktif atau agent_pantau belum berjalan."
 
         inst.append({
             "key": "agent_stale",
@@ -9071,7 +9092,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
 
                     # 1. Drive Failing / Kerusakan S.M.A.R.T.
                     if health == "critical" or smart.get("status_label") == "CRITICAL":
-                        crit_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                        crit_sev = "danger" if is_prod else "warning"
                         inst.append({
                             "key": f"disk_smart_failing:{dname}",
                             "severity": crit_sev,
@@ -9082,7 +9103,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
 
                     # 2. Overheating Drive (Suhu Tinggi >= 65°C)
                     elif temp_c and temp_c >= 65:
-                        temp_sev = "danger" if (tier == 1 and temp_c >= 75) else "warning"
+                        temp_sev = "danger" if (is_prod and temp_c >= 75) else "warning"
                         inst.append({
                             "key": f"disk_smart_temp:{dname}",
                             "severity": temp_sev,
@@ -9094,7 +9115,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                     # 3. Sisa Umur SSD / NVMe Menipis (Wearout >= 90% atau Sisa Umur <= 10%)
                     elif (wear_pct is not None and wear_pct >= 90) or (wear_rem is not None and wear_rem <= 10):
                         rem_val = wear_rem if wear_rem is not None else (100 - wear_pct)
-                        wear_sev = "danger" if (tier == 1 and rem_val <= 3) else "warning"
+                        wear_sev = "danger" if (is_prod and rem_val <= 3) else "warning"
                         inst.append({
                             "key": f"disk_smart_wear:{dname}",
                             "severity": wear_sev,
@@ -9173,7 +9194,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
             if event_at is None and extras is not None and extras.updated_at is not None:
                 event_at = extras.updated_at  # fallback bila agen tak mengirim last_seen
             if invalid >= SECURITY_DANGER_INVALID or failed >= th["ssh_fail_danger"]:
-                ssh_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                ssh_sev = "danger" if is_prod else "warning"
                 inst.append({"key": "failed_logins", "severity": ssh_sev,
                              "message": f"Indikasi brute-force SSH: {failed} login gagal (ambang batas >={th['ssh_fail_danger']}), "
                                          f"{invalid} user invalid, dari {nips} IP"
@@ -9239,7 +9260,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                         if clean_unit:
                             oom_event_map[clean_unit] = oom_info
 
-                        oom_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                        oom_sev = "danger" if is_prod else "warning"
                         inst.append({
                             "key": f"oom_kill:{clean_proc}",
                             "severity": oom_sev,
@@ -9251,7 +9272,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
 
                     elif ev_type == "disk_io_error":
                         dev_name = str(ev.get("dev") or "storage").strip()
-                        io_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                        io_sev = "danger" if is_prod else "warning"
                         inst.append({
                             "key": f"disk_io_error:{dev_name}",
                             "severity": io_sev,
@@ -9262,7 +9283,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                         })
 
                     elif ev_type == "kernel_panic":
-                        panic_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                        panic_sev = "danger" if is_prod else "warning"
                         inst.append({
                             "key": "kernel_panic",
                             "severity": panic_sev,
@@ -9274,7 +9295,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
 
                     elif ev_type == "segfault":
                         p_name = str(ev.get("proc") or "proses").strip()
-                        seg_sev = "average" if tier == 1 else "warning"
+                        seg_sev = "average" if is_prod else "warning"
                         inst.append({
                             "key": f"segfault:{p_name.lower()}",
                             "severity": seg_sev,
@@ -9379,7 +9400,7 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                             oom_info = o_info
                             break
                 if oom_info:
-                    svc_sev = "danger" if tier == 1 else ("average" if tier == 2 else "warning")
+                    svc_sev = "danger" if is_prod else "warning"
                     svc_msg = f"Layanan {name} Down — Dihentikan paksa oleh Kernel (OOM Killer)"
                     svc_tip = f"Layanan {name} tidak aktif karena proses utamanya ({oom_info.get('proc')}) dihentikan paksa oleh Kernel Linux akibat kehabisan memori RAM/Swap (OOM Killer). Jalankan: sudo systemctl restart {name} setelah memastikan ketersediaan RAM."
                 else:
@@ -9401,47 +9422,23 @@ def _problem_instances(srv, extras, svc_data, db=None) -> list:
                         except Exception:
                             pass
 
-                    if tier == 1:
-                        # Tier 1 Server (Down/crash tidak disengaja):
-                        # - Layanan Inti Aplikasi/Infrastruktur (Web, DB, Docker, App):
-                        #   * 1 menit pertama (< 60s): GAWAT (average)
-                        #   * >= 60s: DANGER (KRITIS — Memicu alarm, badge & banner merah)
-                        # - Layanan Administratif/Remote (sshd, ntp, agent, cron) down: WARNING (Peringatan)
-                        if not is_admin:
-                            if down_secs >= 60:
-                                svc_sev = "danger"
-                                svc_msg = f"Layanan {name} Down (KRITIS)"
-                                svc_tip = SVC_DOWN_TIP.format(name=name)
-                            else:
-                                svc_sev = "average"
-                                svc_msg = f"Layanan {name} Down"
-                                svc_tip = SVC_DOWN_TIP.format(name=name)
-                        else:
-                            svc_sev = "warning"
-                            svc_msg = f"Layanan {name} Down"
+                    if is_prod:
+                        # Server Produksi (Layanan Vital 24/7):
+                        # Seluruh services server produksi:
+                        # - 0 s/d 60 detik (< 60s): GAWAT (average)
+                        # - > 60 detik (>= 60s): KRITIS (danger — Memicu alarm, badge & banner merah)
+                        if down_secs >= 60:
+                            svc_sev = "danger"
+                            svc_msg = f"Layanan {name} Down (KRITIS)"
                             svc_tip = SVC_DOWN_TIP.format(name=name)
-                    elif tier == 2:
-                        # Tier 2 Server (Server Pendukung Operasional):
-                        # - Layanan Inti Aplikasi/Infrastruktur:
-                        #   * 1 menit pertama (< 60s): PERINGATAN (warning)
-                        #   * >= 60s: GAWAT (average). Maksimal GAWAT, tidak memicu alarm/banner.
-                        # - Layanan Administratif: WARNING (Peringatan)
-                        if not is_admin:
-                            if down_secs >= 60:
-                                svc_sev = "average"
-                                svc_msg = f"Layanan {name} Down"
-                                svc_tip = SVC_DOWN_TIP.format(name=name)
-                            else:
-                                svc_sev = "warning"
-                                svc_msg = f"Layanan {name} Down"
-                                svc_tip = SVC_DOWN_TIP.format(name=name)
                         else:
-                            svc_sev = "warning"
+                            svc_sev = "average"
                             svc_msg = f"Layanan {name} Down"
                             svc_tip = SVC_DOWN_TIP.format(name=name)
                     else:
-                        # Tier 3 Server:
-                        # - Selalu masuk Warning (Peringatan). Tenang tanpa sirene/banner merah.
+                        # Server Non-Produksi (Lab / Pengujian / Uji Coba / Kloning / Dev):
+                        # Seluruh services server non-produksi:
+                        # - Hanya PERINGATAN (warning) tanpa eskalasi! Tenang tanpa sirene/banner merah.
                         svc_sev = "warning"
                         svc_msg = f"Layanan {name} Down"
                         svc_tip = SVC_DOWN_TIP.format(name=name)
@@ -10131,11 +10128,16 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
 
 def _agg_row(srv, row, counts=None) -> dict:
     d = _problem_row2dict(row)
+    s_tier = getattr(srv, "tier", 2) or 2
+    eff_sev = d.get("severity", "warning")
+    if s_tier != 1 and eff_sev in ("danger", "average"):
+        eff_sev = "warning"
     d.update({
         "server_id": srv.id,
         "hostname": srv.hostname,
         "group_name": getattr(srv, "group_name", None) or None,
-        "tier": getattr(srv, "tier", 2),
+        "tier": s_tier,
+        "severity": eff_sev,
         "tags": getattr(srv, "tags", "") or "",
         "is_offline": (srv.last_seen is None) or _server_stale(srv),
         "ip_address": getattr(srv, "ip_address", "") or "",
@@ -10215,12 +10217,17 @@ def problems_aggregate(db, res_period: str = "24h"):
         for r in standalone_probs:
             prb = probes_map.get(r.probe_id)
             prb_name = prb.name if prb else f"Probe #{r.probe_id}"
+            prb_tier = getattr(prb, "tier", 2) or 2 if prb else 2
             d = _problem_row2dict(r)
+            eff_sev = d.get("severity", "warning")
+            if prb_tier != 1 and eff_sev in ("danger", "average"):
+                eff_sev = "warning"
             d.update({
                 "server_id": None,
                 "hostname": prb_name,
                 "group_name": "Probing",
-                "tier": getattr(prb, "tier", 2) or 2 if prb else 2,
+                "tier": prb_tier,
+                "severity": eff_sev,
                 "tags": prb.probe_type if prb else "probe",
                 "count_24h": 1,
             })
@@ -10826,8 +10833,8 @@ def api_alerts(
     )
 
     open_danger = [r for r in open_problems if r.severity == "danger" and get_effective_tier(r) == 1]
-    open_average = [r for r in open_problems if r.severity == "average" or (r.severity == "danger" and get_effective_tier(r) == 2)]
-    open_warning = [r for r in open_problems if r.severity == "warning" or (r.severity in ("danger", "average") and get_effective_tier(r) == 3)]
+    open_average = [r for r in open_problems if r.severity == "average" and get_effective_tier(r) == 1]
+    open_warning = [r for r in open_problems if (r.severity == "warning") or (get_effective_tier(r) != 1 and r.severity != "info")]
     open_info = [r for r in open_problems if r.severity == "info"]
 
     unack_danger = [r for r in open_danger if r.acknowledged_at is None]

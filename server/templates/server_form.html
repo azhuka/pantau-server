@@ -99,15 +99,14 @@
 
       <div class="form-group" style="margin-bottom:14px">
         <label for="f-tier" style="font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px">
-          Klasifikasi Kepentingan Layanan (Level Operasional)
+          Klasifikasi Lingkungan Operasional (Level Kepentingan)
         </label>
         <select id="f-tier" name="tier" style="width:100%">
-          <option value="1" {% if server and server.tier == 1 %}selected{% endif %}>Tier 1 — Layanan Utama / Prioritas</option>
-          <option value="2" {% if not server or (server and server.tier == 2) %}selected{% endif %}>Tier 2 — Layanan Pendukung / Sekunder</option>
-          <option value="3" {% if server and server.tier == 3 %}selected{% endif %}>Tier 3 — Layanan Sementara / Non-Kritis</option>
+          <option value="1" {% if server and server.tier == 1 %}selected{% endif %}>🟢 Produksi (Production) — Infrastruktur Vital &amp; Alarm Kritis Aktif</option>
+          <option value="2" {% if not server or (server and server.tier != 1) %}selected{% endif %}>⚪ Non-Produksi (Lab / Pengujian / Uji Coba / Kloning) — Alarm Dibatasi Peringatan</option>
         </select>
         <span style="font-size:11px;color:var(--dim);margin-top:4px;display:block">
-          Tier 1: Layanan vital &amp; Prioritas. Tier 2: Layanan Pendukung operasional. Tier 3: Layanan bersifat sementara/uji coba.
+          Produksi: Host offline / service down (>60 dtk) atau pemakaian resource &ge;95% memicu alarm Kritis (Danger), audio sirene, dan banner merah. Non-Produksi: Seluruh insiden maksimal hanya berstatus Peringatan (Warning) tanpa sirene.
         </span>
       </div>
 

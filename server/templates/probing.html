@@ -676,11 +676,10 @@
             <span class="probe-field-help">Nama bebas yang mudah Anda kenali.</span>
           </div>
           <div class="probe-form-group">
-            <label for="formTier">Prioritas (Tier)</label>
+            <label for="formTier">Klasifikasi Lingkungan</label>
             <select id="formTier">
-              <option value="1">Tier 1 (Prioritas)</option>
-              <option value="2" selected>Tier 2 (Standar)</option>
-              <option value="3">Tier 3 (Non-Kritis)</option>
+              <option value="1">🟢 Produksi (Vital &amp; Alarm Kritis Aktif)</option>
+              <option value="2" selected>⚪ Non-Produksi (Standar / Dibatasi Peringatan)</option>
             </select>
           </div>
         </div>
@@ -1083,14 +1082,12 @@ function renderTable() {
     const up24Color = up24Num >= 99.0 ? 'var(--green)' : (up24Num >= 95.0 ? 'var(--yellow)' : 'var(--red)');
     const up30Color = up30Num >= 99.0 ? 'var(--dim)' : (up30Num >= 95.0 ? 'var(--yellow)' : 'var(--red)');
 
-    const pTier = p.tier || 2;
+    const pTier = parseInt(p.tier, 10) || 2;
     let tierBadge = '';
     if (pTier === 1) {
-      tierBadge = `<span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="Tier-1 (Prioritas / Vital)">tier-1</span>`;
-    } else if (pTier === 3) {
-      tierBadge = `<span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px" title="Tier-3 (Sementara / Non-Kritis)">tier-3</span>`;
+      tierBadge = `<span class="badge" style="font-size:9.5px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:1px 5px;font-weight:700" title="PRODUKSI (Vital & Kritis)">PROD</span>`;
     } else {
-      tierBadge = `<span class="badge" style="font-size:9.5px;background:rgba(59,130,246,0.12);color:#60a5fa;border:1px solid rgba(59,130,246,0.25);padding:1px 5px;font-weight:600" title="Tier-2 (Standar)">tier-2</span>`;
+      tierBadge = `<span class="badge" style="font-size:9.5px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:1px 5px;font-weight:600" title="NON-PRODUKSI (Standar / Dibatasi Peringatan)">NON-PROD</span>`;
     }
 
     html += `

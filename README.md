@@ -65,7 +65,7 @@ Pantau-Server mengadopsi model **Outbound-Only Pull**. Agen klien yang aktif men
 - **Jendela Pemeliharaan Terjadwal (*Maintenance Windows*):** Fitur penjadwalan pemeliharaan server untuk menekan alarm darurat dan banner merah saat tim sedang melakukan pekerjaan terjadwal.
 
 ### 3. Keamanan, RBAC & Siklus Hidup Insiden
-- **Klasifikasi Insiden Multi-Tier (Tier 1 Utama, Tier 2 Pendukung, Tier 3 Pengujian):** Alarm darurat dan banner merah hanya bereskalasi pada server misi kritis (Tier 1), mencegah kejenuhan alarm (*alert fatigue*).
+- **Klasifikasi Lingkungan Operasional Presisi (Produksi vs Non-Produksi) & Eskalasi Insiden Otomatis:** Pemisahan tegas tingkat kepentingan operasional. Server Produksi memberlakukan eskalasi otomatis (Gawat ke Kritis setelah 60 detik) dengan audio sirene dan banner merah, sedangkan server Non-Produksi (Lab / Pengujian / Uji Coba / Kloning) dibatasi maksimal status Peringatan (*Warning*) tanpa memicu sirene darurat, mencegah kepanikan dan kejenuhan alarm (*alert fatigue*).
 - **Kontrol Hak Akses untuk 3 Peran (RBAC):** Hak akses terbagi atas *Master Admin*, *Operator* (dengan batasan hak sudo selektif), dan *Viewer* (hanya-baca).
 - **Autentikasi Dua Langkah (2FA TOTP):** Proteksi login menggunakan aplikasi autentikator standar (Google Authenticator, Bitwarden, 2FAS).
 - **Notifikasi Insiden Terpusat:** Integrasi notifikasi bot Telegram seketika saat terjadi insiden pada server penting.
