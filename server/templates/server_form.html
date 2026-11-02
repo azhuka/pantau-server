@@ -99,12 +99,15 @@
 
       <div class="form-group" style="margin-bottom:14px">
         <label for="f-tier" style="font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px">
-          Klasifikasi Lingkungan Operasional (Level Kepentingan)
+          Peran Server
         </label>
         <select id="f-tier" name="tier" style="width:100%">
-          <option value="1" {% if server and server.tier == 1 %}selected{% endif %}>🟢 Produksi (Production) — Infrastruktur Vital &amp; Alarm Kritis Aktif</option>
-          <option value="2" {% if not server or (server and server.tier != 1) %}selected{% endif %}>⚪ Non-Produksi (Lab / Pengujian / Uji Coba / Kloning) — Alarm Dibatasi Peringatan</option>
+          <option value="1" {% if server and server.tier == 1 %}selected{% endif %}>🟢 Server Produksi</option>
+          <option value="2" {% if not server or (server and server.tier != 1) %}selected{% endif %}>⚪ Server Non-Produksi</option>
         </select>
+        <span style="font-size:11px;color:var(--dim);margin-top:4px;display:block">
+          Server Produksi memicu alarm prioritas saat terjadi gangguan, sedangkan Server Non-Produksi dibatasi pada peringatan.
+        </span>
       </div>
 
       <div class="form-group" style="margin-bottom:14px">

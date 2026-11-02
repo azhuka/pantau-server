@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.64
+
+- **Tipe Rilis:** Penyederhanaan Semantik Peran Server, Teks Keterangan Bantuan Kelas Enterprise, dan Eliminasi Kursor Tanda Tanya (*Server Role Semantic Simplification, Enterprise Helper Description, and Cursor Help Elimination*)
+- **Fokus Utama:** Menyempurnakan keterbacaan antarmuka formulir server dengan bahasa manusiawi yang langsung dipahami seluruh pemangku kepentingan, menyediakan panduan ringkas standar enterprise, serta mengeliminasi pointer kursor tanda tanya yang mengganggu:
+  1. **Penyederhanaan Bahasa Opsi Level Server (Manusiawi & Operasional):**
+     - Mengubah label formulir server dari istilah teknis kaku (*"Klasifikasi Lingkungan Operasional (Level Kepentingan)"*) menjadi istilah operasional yang lugas: **"Peran Server"**.
+     - Mengubah opsi pilihan dropdown menjadi tegas dan bersih:
+       - Opsi 1: `🟢 Server Produksi`
+       - Opsi 2: `⚪ Server Non-Produksi`
+     - Menyelaraskan opsi modal endpoint probing menjadi `🟢 Server Produksi` dan `⚪ Server Non-Produksi` dengan label **"Peran Endpoint"**.
+  2. **Penyediaan Teks Keterangan Bantuan Standar Enterprise:**
+     - Menggantikan teks teknis bertele-tele dengan keterangan satu kalimat yang ringkas, elegan, dan informatif:
+       > *"Server Produksi memicu alarm prioritas saat terjadi gangguan, sedangkan Server Non-Produksi dibatasi pada peringatan."*
+  3. **Eliminasi Total Pointer Kursor Tanda Tanya (`cursor:help`):**
+     - Menghapus aturan CSS `cursor:help` pada seluruh badge ikon level server di Tabel Dasbor Utama, Kartu Ringkasan, Tabel Daftar Server, Header Rincian Server, dan Modal/Tabel Probing.
+     - Pointer mouse kini mempertahankan perilaku kursor natural bawaan (default/pointer) tanpa memicu simbol tanda tanya (`?`) yang mengganggu saat kursor melintas.
+  4. **Otomasi Pembaruan SemVer v4.8.64:**
+     - Menaikkan versi sistem menjadi `v4.8.64` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.63
 
 - **Tipe Rilis:** Standardisasi Nama Kolom Lingkungan, Ikonografi Representatif Level Server, dan Penyederhanaan Teks Bantuan Formulir (*Operational Environment Column Standardization, Representative Server Level Iconography, and Form Helper Text Streamlining*)

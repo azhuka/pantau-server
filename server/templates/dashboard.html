@@ -1334,11 +1334,11 @@ body.popout-fleet_table #dash-fleet-card {
           <!-- 2. Lingkungan (Level) -->
           <td data-sort-val="{{ s_tier }}" id="tbl-tier-{{ srv.id }}" style="text-align:center;vertical-align:middle">
             {% if s_tier == 1 %}
-              <span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px;cursor:help">
+              <span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
               </span>
             {% else %}
-              <span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px;cursor:help">
+              <span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
               </span>
             {% endif %}
@@ -1519,11 +1519,11 @@ body.popout-fleet_table #dash-fleet-card {
               {% set s_tier = srv.tier|default(2) %}
               <span id="card-tier-{{ srv.id }}">
               {% if s_tier == 1 %}
-                <span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px;cursor:help">
+                <span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
                 </span>
               {% else %}
-                <span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px;cursor:help">
+                <span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
                 </span>
               {% endif %}
@@ -2131,9 +2131,9 @@ function _dashEsc(s) {
 function getTierBadgeHtml(tier) {
   const t = parseInt(tier, 10) || 2;
   if (t === 1) {
-    return '<span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px;cursor:help"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>';
+    return '<span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>';
   }
-  return '<span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px;cursor:help"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>';
+  return '<span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>';
 }
 
 function getPlatformBadgeHtml(plat) {
