@@ -354,6 +354,29 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.63
+
+- **Tipe Rilis:** Standardisasi Nama Kolom Lingkungan, Ikonografi Representatif Level Server, dan Penyederhanaan Teks Bantuan Formulir (*Operational Environment Column Standardization, Representative Server Level Iconography, and Form Helper Text Streamlining*)
+- **Fokus Utama:** Menyempurnakan konsistensi semantik UI/UX antarmuka NOC, mengganti nama kolom dan badge tekstual dengan ikon representatif ber-tooltip baku, serta membersihkan formulir server dari teks bertele-tele:
+  1. **Standardisasi Nama Kolom Lingkungan Operasional:**
+     - Mengubah nama kolom tabel dari `Prioritas` menjadi `Lingkungan` (`data-col-title="Lingkungan"`) pada tabel dasbor operasional dan modal pengaturan keterlihatan kolom (`PantauColManager`).
+     - Menetapkan tooltip header yang representatif: *"Klasifikasi Lingkungan Operasional (Server level Produksi vs Server level Non-produksi)"*.
+  2. **Ikonografi Representatif Level Server & Tooltip Baku:**
+     - Mengganti badge teks `PROD` dan `NON-PROD` dengan ikon SVG representatif berkepadatan tinggi:
+       - **Server level Produksi:** Ikon Shield-Check (perisai centang) warna Emerald Green (`#10b981`) dengan tooltip baku *"Server level Produksi"*.
+       - **Server level Non-produksi:** Ikon Lab Beaker / Flask warna Slate Gray (`#94a3b8`) dengan tooltip baku *"Server level Non-produksi"*.
+     - Menyelaraskan seluruh tampilan ikonik tersebut di Tabel Dasbor Utama, Kartu Ringkasan Dasbor, Tabel Daftar Server (`/servers`), Header Halaman Rincian Server (`/servers/{id}`), dan Pemantauan Probing Sintetis (`/probing`).
+     - Memperbarui fungsi JavaScript `getTierBadgeHtml(tier)` dan handler WebSocket/polling real-time agar merender ikon SVG dan tooltip yang identik secara dinamis.
+  3. **Pembersihan & Penyederhanaan Teks Formulir Server (`server_form.html`):**
+     - **Pemberian Solusi untuk Pesan Aturan Eskalasi Bertele-tele:** Menghapus sepenuhnya teks bantuan panjang di bawah dropdown klasifikasi lingkungan karena membocorkan detail internal backend yang tidak wajar dan tidak diperlukan oleh operator NOC pada form entitas server.
+     - **Catatan Server:** Mengubah bantuan *"Catatan bebas terkait fungsi server..."* menjadi *"Catatan bebas terkait keterangan server."*
+     - **Platform Lingkungan:** Mengubah bantuan menjadi *"Pilih jenis platform server. Pilih Auto Deteksi agar agen-pantau mengidentifikasi arsitektur lingkungan secara otomatis."*
+     - **Proteksi Proxmox HA:** Menyederhanakan teks toggle menjadi *"Server terproteksi oleh Proxmox HA."*
+     - **Jaringan Terisolasi:** Menyederhanakan teks toggle menjadi *"Server berada dalam jaringan tertutup tanpa akses internet luar."*
+     - **Akses Web Terminal:** Memperjelas teks toggle menjadi *"Aktifkan jika ingin mengakses terminal server klien via web shell dan nonaktifkan untuk mematuhi kebijakan kepatuhan keamanan."*
+  4. **Otomasi Pembaruan SemVer v4.8.63:**
+     - Menaikkan versi sistem menjadi `v4.8.63` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.62
 
 - **Tipe Rilis:** Perombakan Arsitektur Klasifikasi Lingkungan Operasional Presisi (Produksi vs Non-Produksi) & Eskalasi Insiden Terpadu (*Precision 2-Level Operational Environment Architecture & Unified Incident Escalation Overhaul*)

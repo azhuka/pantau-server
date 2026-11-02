@@ -147,7 +147,7 @@
   <table id="servers-table" style="width:100%;margin:0">
     <thead>
       <tr>
-        <th class="sortable" data-sort-key="server" data-col-title="Server" style="cursor:pointer;min-width:120px;white-space:nowrap" title="Nama host server dan kategori prioritas">Server <span class="sort-arrow">↕</span></th>
+        <th class="sortable" data-sort-key="server" data-col-title="Server" style="cursor:pointer;min-width:120px;white-space:nowrap" title="Nama host server dan klasifikasi lingkungan">Server <span class="sort-arrow">↕</span></th>
         <th data-col-title="IP &amp; Interface" style="min-width:95px" title="Alamat IP utama dan antarmuka jaringan server">IP &amp; Interface</th>
         <th data-col-title="Platform &amp; Mesin" style="min-width:110px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform &amp; Mesin</th>
         <th data-col-title="Sistem Operasi" style="min-width:115px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
@@ -215,9 +215,13 @@
           <a href="/servers/{{ srv.id }}" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</a>
           {% set s_tier = srv.tier|default(2) %}
           {% if s_tier == 1 %}
-            <span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="PRODUKSI (Vital &amp; Kritis)">PROD</span>
+            <span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px;cursor:help">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+            </span>
           {% else %}
-            <span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px;font-weight:600" title="NON-PRODUKSI (Lab / Uji Coba)">NON-PROD</span>
+            <span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px;cursor:help">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
+            </span>
           {% endif %}
         </div>
         {% if srv.notes %}
@@ -503,9 +507,9 @@ function _srvEsc(s) {
 function getTierBadgeHtml(tier) {
   const t = parseInt(tier, 10) || 2;
   if (t === 1) {
-    return '<span class="badge" style="font-size:8px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:0.5px 4px;font-weight:700" title="PRODUKSI (Vital &amp; Kritis)">PROD</span>';
+    return '<span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px;cursor:help"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>';
   }
-  return '<span class="badge" style="font-size:8px;background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:0.5px 4px;font-weight:600" title="NON-PRODUKSI (Lab / Uji Coba)">NON-PROD</span>';
+  return '<span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px;cursor:help"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>';
 }
 
 function getPlatformBadgeHtml(plat) {
