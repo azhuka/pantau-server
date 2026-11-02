@@ -146,7 +146,7 @@
   width: 165px !important;
   min-width: 155px !important;
   max-width: 180px !important;
-  text-align: center !important;
+  text-align: left !important;
   padding: 4px 8px !important;
   white-space: nowrap !important;
 }
@@ -174,7 +174,7 @@
   white-space: nowrap;
   line-height: 1.2;
   display: block;
-  text-align: center;
+  text-align: left;
 }
 #probtable th.col-event,
 #probtable td.col-event {
@@ -419,7 +419,7 @@
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);user-select:none">
           <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Waktu saat insiden mulai terdeteksi">WAKTU MULAI</th>
           <th class="col-server" data-col-title="Server" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Mesin server tempat anomali atau gangguan terjadi">SERVER</th>
-          <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">KEPARAHAN</th>
+          <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">KEPARAHAN</th>
           <th class="col-event" data-col-title="Kejadian" style="padding:5px 14px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="Deskripsi ringkas mengenai anomali yang terjadi">KEJADIAN</th>
           <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Lama waktu insiden berlangsung hingga sekarang">DURASI</th>
           <th class="col-tips" data-col-title="Panduan Solusi" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">PANDUAN SOLUSI</th>
@@ -461,16 +461,16 @@
             {% endif %}
           </div>
         </td>
-        <td class="col-sev" style="padding:4px 8px;white-space:nowrap;text-align:center">
+        <td class="col-sev" style="padding:4px 8px;white-space:nowrap;text-align:left">
           {% set op_name = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
           {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
           {% set base_badge_cls = 'badge badge-' ~ ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) %}
           {% set base_badge_text = 'KRITIS' if p.severity == 'danger' else ('GAWAT' if p.severity == 'average' else ('PERINGATAN' if p.severity == 'warning' else p.severity | upper)) %}
           {% set base_badge = '<span class="' ~ base_badge_cls ~ '" style="font-size:8.5px;padding:1px 6.5px;letter-spacing:0.3px;font-weight:700">' ~ base_badge_text ~ '</span>' %}
           {% if p.is_ignored or p.acknowledged_by %}
-            <div style="display:inline-flex;flex-direction:column;align-items:center;gap:2.5px">
+            <div style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2.5px">
               {{ base_badge | safe }}
-              <div style="display:inline-flex;align-items:center;justify-content:center;gap:3px">
+              <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:3px">
                 {% if p.is_ignored %}
                   <span class="badge badge-muted badge-sub" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
                 {% endif %}
@@ -498,7 +498,7 @@
         </td>
         <td class="col-tips" style="padding:5px 12px;line-height:1.35">
           {% if p.tip %}
-            <div class="prob-tip-text" style="font-size:11px;color:var(--dim);line-height:1.35" title="{{ p.tip }}">{{ p.tip }}</div>
+            <div class="prob-tip-text" style="font-size:11px;color:var(--dim);line-height:1.35">{{ p.tip }}</div>
           {% else %}
             <span style="color:var(--dim);font-size:11px">—</span>
           {% endif %}
@@ -979,6 +979,8 @@ async function ackProblem(id, btn, sev) {
     });
     if (r.ok) {
       showToast(isEn ? 'Incident marked as handled.' : 'Insiden ditandai telah ditangani.', true);
+      _lastOpenFingerprint = null;
+      _lastResFingerprint = null;
       if (typeof window.poll === 'function') {
         window.poll();
       }
@@ -994,10 +996,49 @@ async function ackProblem(id, btn, sev) {
 
 // Live Update Tanpa Reload (Seamless Asynchronous Polling)
 let _isPolling = false;
+let _lastOpenFingerprint = null;
+let _lastResFingerprint = null;
 let currentResPeriod = "{{ res_period or '24h' }}";
+
+function computeOpenFingerprint(list, isEn) {
+  if (!list || list.length === 0) return 'empty:' + (isEn ? 'en' : 'id');
+  return (isEn ? 'en' : 'id') + '::' + list.map(p => [
+    p.id,
+    p.key || '',
+    p.severity || '',
+    p.is_ignored ? 1 : 0,
+    p.ignored_reason || '',
+    p.ignored_until_str || '',
+    p.acknowledged_by || '',
+    p.message || '',
+    p.tip || '',
+    p.count_24h || 0,
+    p.is_offline ? 1 : 0,
+    p.hostname || '',
+    p.group_name || ''
+  ].join('|')).join(';;');
+}
+
+function computeResFingerprint(list, isEn) {
+  if (!list || list.length === 0) return 'empty:' + (isEn ? 'en' : 'id');
+  return (isEn ? 'en' : 'id') + '::' + list.map(p => [
+    p.id,
+    p.key || '',
+    p.severity || '',
+    p.resolved_note || '',
+    p.acknowledged_by || '',
+    p.message || '',
+    p.durasi || '',
+    p.hostname || '',
+    p.group_name || '',
+    p.started_at || '',
+    p.resolved_at || ''
+  ].join('|')).join(';;');
+}
 
 function setResolvedPeriod(period, btn) {
   currentResPeriod = period;
+  _lastResFingerprint = null;
   document.querySelectorAll('#prob-res-ranges .btn').forEach(b => b.classList.remove('is-on'));
   if (btn) btn.classList.add('is-on');
   try {
@@ -1114,15 +1155,20 @@ window.poll = async function() {
       if (lblIgn) lblIgn.textContent = isEn ? 'Ignored' : 'Diabaikan';
     }
 
-    // 3. Perbarui Daftar Insiden Terbuka
+    // 3. Perbarui Daftar Insiden Terbuka (Anti-Flicker Fingerprinting)
     const wrapper = document.getElementById('prob-table-wrapper');
     const openList = data.open_problems || [];
+    const openFp = computeOpenFingerprint(openList, isEn);
     if (wrapper) {
       if (openList.length === 0) {
-        wrapper.innerHTML = `<div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px">
-          <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
-          ${isEn ? 'No open incidents' : 'Tidak ada insiden terbuka'}${FILTER_SID ? (isEn ? ' for this server' : ' untuk server ini') : ''}.
-        </div>`;
+        if (_lastOpenFingerprint !== openFp) {
+          _lastOpenFingerprint = openFp;
+          wrapper.innerHTML = `<div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px">
+            <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
+            ${isEn ? 'No open incidents' : 'Tidak ada insiden terbuka'}${FILTER_SID ? (isEn ? ' for this server' : ' untuk server ini') : ''}.
+          </div>`;
+          probFilter();
+        }
       } else {
         let table = document.getElementById('probtable');
         if (!table) {
@@ -1140,7 +1186,7 @@ window.poll = async function() {
               <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);user-select:none">
                 <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden mulai terdeteksi'}">${isEn ? 'START TIME' : 'WAKTU MULAI'}</th>
                 <th class="col-server" data-col-title="Server" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">SERVER</th>
-                <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'SEVERITY' : 'KEPARAHAN'}</th>
+                <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'SEVERITY' : 'KEPARAHAN'}</th>
                 <th class="col-event" data-col-title="Kejadian" style="padding:5px 14px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'EVENT' : 'KEJADIAN'}</th>
                 <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'DURATION' : 'DURASI'}</th>
                 <th class="col-tips" data-col-title="Panduan Solusi" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'SOLUTION GUIDE' : 'PANDUAN SOLUSI'}</th>
@@ -1151,9 +1197,11 @@ window.poll = async function() {
           </table>`;
           table = document.getElementById('probtable');
           if (window.PantauColManager) window.PantauColManager.applyStyles('probtable');
+          _lastOpenFingerprint = null;
         }
         const tbody = table.querySelector('tbody');
-        if (tbody) {
+        if (tbody && (_lastOpenFingerprint !== openFp || tbody.children.length === 0)) {
+          _lastOpenFingerprint = openFp;
           tbody.innerHTML = openList.map(p => {
             const isIgn = !!p.is_ignored;
             const rowStyle = isIgn ? ' style="opacity:.8;background:rgba(255,255,255,0.02)"' : '';
@@ -1183,7 +1231,7 @@ window.poll = async function() {
               if (p.acknowledged_by) {
                 subBadges += `<span class="badge badge-up badge-sub" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
               }
-              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:2.5px">${baseBadge}<div style="display:inline-flex;align-items:center;justify-content:center;gap:3px">${subBadges}</div></div>`;
+              sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2.5px">${baseBadge}<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:3px">${subBadges}</div></div>`;
             } else {
               sevCellHtml = baseBadge;
             }
@@ -1241,7 +1289,7 @@ window.poll = async function() {
                   ${grpBadge}
                 </div>
               </td>
-              <td class="col-sev" style="padding:4px 8px;white-space:nowrap;text-align:center">${sevCellHtml}</td>
+              <td class="col-sev" style="padding:4px 8px;white-space:nowrap;text-align:left">${sevCellHtml}</td>
               <td class="col-event" style="padding:5px 14px;line-height:1.35">
                 <span style="font-size:11.5px;font-weight:500;line-height:1.35;color:var(--text-bright)">${_esc(pMsg)}</span>
                 ${ignReasonBadge}
@@ -1252,7 +1300,7 @@ window.poll = async function() {
                 <span class="mono" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">${_esc(p.durasi || '')}</span>
               </td>
               <td class="col-tips" style="padding:5px 12px;line-height:1.35">
-                ${pTip && pTip !== '—' ? `<div class="prob-tip-text" style="font-size:11px;color:var(--dim);line-height:1.35" title="${_esc(pTip)}">${_esc(pTip)}</div>` : '<span style="color:var(--dim);font-size:11px">—</span>'}
+                ${pTip && pTip !== '—' ? `<div class="prob-tip-text" style="font-size:11px;color:var(--dim);line-height:1.35">${_esc(pTip)}</div>` : '<span style="color:var(--dim);font-size:11px">—</span>'}
               </td>
               <td class="prob-act-cell col-act" style="padding:5px 6px;text-align:center;white-space:nowrap">
                 <div class="prob-act-wrap" style="display:inline-flex;align-items:center;justify-content:center;gap:4px">
@@ -1264,14 +1312,17 @@ window.poll = async function() {
               </td>
             </tr>`;
           }).join('');
+          probFilter();
         }
       }
     }
 
-    // 4. Perbarui Riwayat Insiden (Teratasi)
+    // 4. Perbarui Riwayat Insiden (Teratasi, Anti-Flicker Fingerprinting)
     const resTbody = document.getElementById('prob-resolved-tbody');
     const resList = data.recent_resolved || [];
-    if (resTbody && resList.length > 0) {
+    const resFp = computeResFingerprint(resList, isEn);
+    if (resTbody && resList.length > 0 && (_lastResFingerprint !== resFp || resTbody.children.length === 0)) {
+      _lastResFingerprint = resFp;
       resTbody.innerHTML = resList.map(p => {
         const sevBadge = 'badge badge-' + ({danger:'danger',average:'orange',warning:'warn',info:'info'}[p.severity] || 'info');
         const grp = p.group_name || '';
@@ -1342,6 +1393,7 @@ window.poll = async function() {
           </td>
         </tr>`;
       }).join('');
+      if (probResolvedPagination) probResolvedPagination.update();
     }
 
     const resBadges = document.getElementById('prob-resolved-stats-badges');
@@ -1356,17 +1408,21 @@ window.poll = async function() {
       }
       resBadges.innerHTML = rHtml;
     }
-
-    probFilter();
   } catch(e) {
   } finally {
     _isPolling = false;
   }
 };
 
-window.refreshProblemsTable = window.poll;
+window.refreshProblemsTable = function() {
+  _lastOpenFingerprint = null;
+  _lastResFingerprint = null;
+  if (typeof window.poll === 'function') window.poll();
+};
 
 window.onAppLangChanged = function(lang) {
+  _lastOpenFingerprint = null;
+  _lastResFingerprint = null;
   if (typeof window.poll === 'function') window.poll();
   if (typeof probFilter === 'function') probFilter();
 };

@@ -354,6 +354,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.67
+
+- **Tipe Rilis:** Cetak Miring Unit Organisasi Dasbor, Perataan Kiri Kolom Keparahan, dan Eliminasi Flicker Tabel Insiden (*Dashboard Organization Unit Italicization, Severity Column Left Alignment, and Incident Table Polling Flicker Elimination*)
+- **Fokus Utama:** Menyempurnakan tipografi kartu identitas dasbor, merapikan keterbacaan kolom tingkat keparahan insiden secara presisi rata kiri, serta mengeliminasi total anomali flicker teks dan duplikasi tooltip melayang pada tabel insiden terbuka:
+  1. **Cetak Miring Unit Organisasi Dasbor & Nilai Bawaan Baku:**
+     - Menerapkan gaya cetak miring (*italic*) pada unit organisasi (`brand.org_unit`) di kartu identitas NOC dasbor utama ([`dashboard.html`](file:///home/bos/rj45/server/templates/dashboard.html)) dan pratinjau profil ([`profile.html`](file:///home/bos/rj45/server/templates/profile.html)).
+     - Menerapkan nilai bawaan baku *"Bidang Aplikasi dan Informatika"* secara otomatis apabila unit organisasi belum dikonfigurasi.
+  2. **Perataan Kiri (*Left-Aligned*) Kolom Keparahan Tabel Insiden:**
+     - Mengubah perataan teks kolom `KEPARAHAN` pada kartu Insiden Terbuka ([`problems.html`](file:///home/bos/rj45/server/templates/problems.html)) dari rata tengah menjadi rata kiri presisi (`text-align: left !important;`), baik pada header tabel (`th.col-sev`), sel baris data (`td.col-sev`), maupun kontainer flex sub-badge (`DIABAIKAN`, `DITANGANI`).
+  3. **Eliminasi Anomali Flicker Teks & Tooltip Melayang pada Polling Otomatis:**
+     - Mengimplementasikan mekanisme cerdas *state fingerprinting* (`computeOpenFingerprint`) pada alur polling asinkronus latar belakang. Jika data insiden terbuka tidak mengalami perubahan status atau nilai, DOM baris tabel tidak lagi dihancurkan dan disusun ulang secara kasar setiap 3 detik.
+     - Menghapus atribut tooltip redundan pada elemen teks panduan solusi (`.prob-tip-text`) yang sebelumnya memicu kotak tooltip melayang dan menindih teks asli saat kursor mouse melintas.
+  4. **Otomasi Pembaruan SemVer v4.8.67:**
+     - Menaikkan versi sistem menjadi `v4.8.67` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.66
 
 - **Tipe Rilis:** Penambahan Petunjuk Operasional Alarm Insiden pada Formulir Server (*Server Form Operational Incident Alarm Hint Addition*)

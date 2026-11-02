@@ -791,7 +791,7 @@
             <div id="prev-dash-org" style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:0.2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">
               {{ brand.org_name if brand and brand.org_name else '(Nama Organisasi)' }}
             </div>
-            <div id="prev-dash-unit" style="font-size:11px;color:var(--dim);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;{% if not brand or not brand.org_unit %}display:none{% endif %}">
+            <div id="prev-dash-unit" style="font-size:11px;color:var(--dim);font-style:italic;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;{% if not brand or not brand.org_unit %}display:none{% endif %}">
               {{ brand.org_unit if brand and brand.org_unit else '' }}
             </div>
           </div>

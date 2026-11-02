@@ -915,7 +915,9 @@ body.popout-fleet_table #dash-fleet-card {
     <div class="dash-brand-title" style="font-size:20px;font-weight:800;letter-spacing:1.5px;color:var(--text-heading, #fff);text-transform:uppercase;line-height:1;margin:0">PANTAU SERVER</div>
     <div style="font-size:14.5px;font-weight:700;color:var(--text-bright);letter-spacing:0.2px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ brand.org_name }}</div>
     {% if brand.org_unit %}
-    <div style="font-size:12.5px;color:var(--dim);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding-bottom:1px">{{ brand.org_unit }}</div>
+    <div style="font-size:12.5px;color:var(--dim);font-style:italic;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding-bottom:1px">{{ brand.org_unit }}</div>
+    {% else %}
+    <div style="font-size:12.5px;color:var(--dim);font-style:italic;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding-bottom:1px">Bidang Aplikasi dan Informatika</div>
     {% endif %}
   </div>
   {% if brand.show_motd and brand.dash_motd %}
