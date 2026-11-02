@@ -354,6 +354,16 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.66
+
+- **Tipe Rilis:** Penambahan Petunjuk Operasional Alarm Insiden pada Formulir Server (*Server Form Operational Incident Alarm Hint Addition*)
+- **Fokus Utama:** Melengkapi keterangan maksud peran server dengan baris petunjuk (*hint*) operasional terkait penanganan alarm insiden:
+  1. **Penambahan Baris Petunjuk (*Hint*) Operasional:**
+     - Menambahkan baris kedua keterangan pada dropdown Peran Server di [`server_form.html`](file:///home/bos/rj45/server/templates/server_form.html):
+       > *"Hint : Server Produksi memicu alarm prioritas saat terjadi insiden, sedangkan Server Non-Produksi dibatasi hanya pada peringatan."*
+  2. **Otomasi Pembaruan SemVer v4.8.66:**
+     - Menaikkan versi sistem menjadi `v4.8.66` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.65
 
 - **Tipe Rilis:** Penyempurnaan Teks Bantuan Maksud dan Definisi Peran Server (*Server Role Intent and Definition Helper Text Refinement*)
