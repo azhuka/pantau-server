@@ -354,6 +354,16 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.65
+
+- **Tipe Rilis:** Penyempurnaan Teks Bantuan Maksud dan Definisi Peran Server (*Server Role Intent and Definition Helper Text Refinement*)
+- **Fokus Utama:** Mengganti pesan mekanisme alarm backend menjadi penjelasan maksud dan fungsi praktis dari peran server (Produksi vs Non-Produksi) secara lugas, ringkas, dan baku:
+  1. **Penjelasan Maksud Peran Server yang Lugas & Baku:**
+     - Mengubah pesan keterangan bantuan di bawah dropdown Peran Server pada [`server_form.html`](file:///home/bos/rj45/server/templates/server_form.html) menjadi penjelasan fungsional yang langsung dipahami pengguna:
+       > *"Produksi untuk layanan operasional utama, sedangkan Non-Produksi untuk lingkungan pengujian atau eksperimen."*
+  2. **Otomasi Pembaruan SemVer v4.8.65:**
+     - Menaikkan versi sistem menjadi `v4.8.65` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.64
 
 - **Tipe Rilis:** Penyederhanaan Semantik Peran Server, Teks Keterangan Bantuan Kelas Enterprise, dan Eliminasi Kursor Tanda Tanya (*Server Role Semantic Simplification, Enterprise Helper Description, and Cursor Help Elimination*)
