@@ -6363,11 +6363,29 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
     filter_sid_str = request.query_params.get("server", "")
     filter_sid = int(filter_sid_str) if filter_sid_str.isdigit() else None
     filter_group = (request.query_params.get("group") or "").strip()
-    res_period = (request.query_params.get("res_period") or "24h").strip().lower()
-    if res_period not in ("today", "24h", "7d", "30d"):
-        res_period = "24h"
 
-    open_problems, recent_resolved = problems_aggregate(db, res_period=res_period)
+    # Parameter filter kartu Riwayat Insiden
+    res_period = (request.query_params.get("res_period") or "24h").strip().lower()
+    if res_period not in ("today", "24h", "7d", "30d", "custom"):
+        res_period = "24h"
+    res_start = (request.query_params.get("start_date") or "").strip()
+    res_end = (request.query_params.get("end_date") or "").strip()
+    res_server_str = (request.query_params.get("res_server") or "").strip()
+    res_server = int(res_server_str) if res_server_str.isdigit() else None
+    res_sev = (request.query_params.get("res_sev") or "").strip()
+    res_type = (request.query_params.get("res_type") or "").strip()
+    res_q = (request.query_params.get("res_q") or "").strip()
+
+    open_problems, recent_resolved = problems_aggregate(
+        db,
+        res_period=res_period,
+        res_start=res_start,
+        res_end=res_end,
+        res_server=res_server,
+        res_sev=res_sev,
+        res_type=res_type,
+        res_q=res_q,
+    )
     if filter_sid:
         open_problems = [p for p in open_problems if p["server_id"] == filter_sid]
         recent_resolved = [p for p in recent_resolved if p["server_id"] == filter_sid]
@@ -6394,10 +6412,8 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
         res = p.get("resolved_at")
         if isinstance(st, datetime) and isinstance(res, datetime):
             res_durations.append(max(0, int((res - st).total_seconds())))
-        if p.get("acknowledged_by"):
+        if p.get("res_type") == "manual" or p.get("acknowledged_by"):
             manual_res_cnt += 1
-        elif p.get("resolved_note") in ("auto", "server_offline"):
-            auto_res_cnt += 1
         else:
             auto_res_cnt += 1
     avg_secs = int(sum(res_durations) / len(res_durations)) if res_durations else 0
@@ -6425,6 +6441,12 @@ def problems_page(request: Request, db: Session = Depends(get_db)):
         "filter_sid": filter_sid,
         "filter_group": filter_group,
         "res_period": res_period,
+        "res_start": res_start,
+        "res_end": res_end,
+        "res_server": res_server,
+        "res_sev": res_sev,
+        "res_type": res_type,
+        "res_q": res_q,
         "all_groups": existing_groups,
         "all_tags": existing_tags,
         "global_thresholds": global_thresholds,
@@ -9550,6 +9572,68 @@ def _problem_row2dict(row) -> dict:
         or ("oleh operator" in (row.message or "").lower())
         or (row.ignored_reason and "OPERATOR" in row.ignored_reason)
     )
+
+    ack_by = getattr(row, "acknowledged_by", None)
+    res_note = getattr(row, "resolved_note", None)
+    key = getattr(row, "key", "") or ""
+
+    if ack_by:
+        res_type = "manual"
+        res_label = f"✓ Ditangani ({ack_by})"
+        res_label_en = f"✓ Handled ({ack_by})"
+        res_tip = f"Diselesaikan secara manual oleh operator {ack_by}"
+        res_tip_en = f"Handled manually by operator {ack_by}"
+        res_badge_cls = "badge-up"
+    elif res_note == "server_offline":
+        res_type = "stale_closed"
+        res_label = "Ditutup (Host Terputus)"
+        res_label_en = "Closed (Host Down)"
+        res_tip = "Insiden ditutup karena host terputus / agen berhenti melapor (supresi insiden)"
+        res_tip_en = "Closed because host disconnected / agent stopped reporting"
+        res_badge_cls = "badge-muted"
+    elif res_note == "server_online" or key == "agent_stale":
+        res_type = "online"
+        res_label = "✓ Host Kembali Online"
+        res_label_en = "✓ Host Back Online"
+        res_tip = "Koneksi agen pulih dan server aktif melapor kembali"
+        res_tip_en = "Agent connection restored and server reporting online"
+        res_badge_cls = "badge-up"
+    elif res_note == "service_up":
+        res_type = "service_up"
+        res_label = "✓ Layanan Aktif Kembali"
+        res_label_en = "✓ Service Running"
+        res_tip = "Layanan sistem telah beroperasi normal kembali"
+        res_tip_en = "System service resumed and running normally"
+        res_badge_cls = "badge-up"
+    elif res_note == "session_closed":
+        res_type = "session_closed"
+        res_label = "✓ Sesi SSH Ditutup"
+        res_label_en = "✓ SSH Closed"
+        res_tip = "Sesi remote SSH telah selesai ditutup"
+        res_tip_en = "Remote SSH session closed"
+        res_badge_cls = "badge-muted"
+    elif res_note == "auto":
+        res_type = "auto"
+        res_label = "✓ Pulih Otomatis"
+        res_label_en = "✓ Auto Recovered"
+        res_tip = "Metrik sistem kembali normal dan aman"
+        res_tip_en = "System metrics normalized automatically"
+        res_badge_cls = "badge-up"
+    elif res_note:
+        res_type = "other"
+        res_label = f"✓ {res_note}"
+        res_label_en = f"✓ {res_note}"
+        res_tip = str(res_note)
+        res_tip_en = str(res_note)
+        res_badge_cls = "badge-up"
+    else:
+        res_type = "auto"
+        res_label = "✓ Pulih Normal"
+        res_label_en = "✓ Recovered"
+        res_tip = "Kondisi sistem kembali beroperasi normal"
+        res_tip_en = "System condition recovered normally"
+        res_badge_cls = "badge-up"
+
     return {
         "id": row.id,
         "key": row.key, "severity": row.severity, "message": row.message,
@@ -9559,6 +9643,12 @@ def _problem_row2dict(row) -> dict:
         "acknowledged_by": row.acknowledged_by,
         "acknowledged_at": row.acknowledged_at,
         "resolved_note": row.resolved_note,
+        "res_type": res_type,
+        "res_label": res_label,
+        "res_label_en": res_label_en,
+        "res_tip": res_tip,
+        "res_tip_en": res_tip_en,
+        "res_badge_cls": res_badge_cls,
         "durasi": _fmt_duration(row.started_at, end if end else datetime.utcnow()),
         "is_ignored": bool(getattr(row, "is_ignored", 0)),
         "is_operator_action": is_op,
@@ -10147,7 +10237,16 @@ def _agg_row(srv, row, counts=None) -> dict:
     return d
 
 
-def problems_aggregate(db, res_period: str = "24h"):
+def problems_aggregate(
+    db,
+    res_period: str = "24h",
+    res_start: str | None = None,
+    res_end: str | None = None,
+    res_server: int | None = None,
+    res_sev: str | None = None,
+    res_type: str | None = None,
+    res_q: str | None = None,
+):
     """Daftar masalah semua server untuk halaman /problems.
 
     Kembalikan (open_list, recent_resolved), urut severity lalu waktu.
@@ -10158,7 +10257,22 @@ def problems_aggregate(db, res_period: str = "24h"):
     cutoff_24 = now_utc - timedelta(hours=24)
 
     p_clean = (res_period or "24h").strip().lower()
-    if p_clean == "today":
+    res_cutoff_end = None
+    if res_start or res_end:
+        p_clean = "custom"
+        if res_start:
+            try:
+                res_cutoff = datetime.strptime(res_start.strip(), "%Y-%m-%d")
+            except Exception:
+                res_cutoff = cutoff_24
+        else:
+            res_cutoff = datetime(2020, 1, 1)
+        if res_end:
+            try:
+                res_cutoff_end = datetime.strptime(res_end.strip(), "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            except Exception:
+                res_cutoff_end = None
+    elif p_clean == "today":
         res_cutoff = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
     elif p_clean == "7d":
         res_cutoff = now_utc - timedelta(days=7)
@@ -10200,11 +10314,16 @@ def problems_aggregate(db, res_period: str = "24h"):
                 continue
             seen_open_keys.add(r.key)
             open_list.append(_agg_row(srv, r, counts))
-        for r in db.query(ServerProblem).filter(
+
+        # Riwayat insiden teratasi
+        q_res = db.query(ServerProblem).filter(
             ServerProblem.server_id == srv.id,
             ServerProblem.resolved_at.isnot(None),
             ServerProblem.resolved_at >= res_cutoff,
-        ).all():
+        )
+        if res_cutoff_end:
+            q_res = q_res.filter(ServerProblem.resolved_at <= res_cutoff_end)
+        for r in q_res.all():
             resolved_list.append(_agg_row(srv, r, counts))
 
     # Masukkan masalah dari Synthetic Probing mandiri (tanpa server_id)
@@ -10233,8 +10352,22 @@ def problems_aggregate(db, res_period: str = "24h"):
             })
             if r.resolved_at is None:
                 open_list.append(d)
-            elif r.resolved_at >= res_cutoff:
+            elif r.resolved_at >= res_cutoff and (res_cutoff_end is None or r.resolved_at <= res_cutoff_end):
                 resolved_list.append(d)
+
+    # Filter kriteria tambahan pada recent_resolved
+    if res_server:
+        resolved_list = [p for p in resolved_list if p.get("server_id") == res_server]
+    if res_sev:
+        resolved_list = [p for p in resolved_list if p.get("severity") == res_sev]
+    if res_type:
+        resolved_list = [p for p in resolved_list if p.get("res_type") == res_type]
+    if res_q:
+        q_lower = res_q.strip().lower()
+        resolved_list = [
+            p for p in resolved_list
+            if q_lower in f"{p.get('hostname','')} {p.get('message','')} {p.get('component','')} {p.get('res_label','')} {p.get('group_name','')}".lower()
+        ]
 
     rank = {"danger": 4, "average": 3, "warning": 2, "info": 1}
     open_list.sort(key=lambda r: (rank.get(r["severity"], 0), r["started_at"]),
@@ -10522,16 +10655,44 @@ AUDIT_CATEGORIES = [
 AUDIT_ACTION_SET = dict(AUDIT_ACTION_LABELS)
 
 
-def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter: str = "", period: str = ""):
+def _audit_rows(
+    db,
+    limit: int = 500,
+    q: str = "",
+    action: str = "",
+    user_filter: str = "",
+    period: str = "",
+    server_id: int | None = None,
+    status_filter: str = "",
+    start_date: str = "",
+    end_date: str = "",
+):
     """Gabungkan jejak audit_logs + tabel commands (aksi remote), urut turun waktu."""
     q = (q or "").strip().lower()
     user_filter = (user_filter or "").strip()
     period = (period or "").strip().lower()
+    status_filter = (status_filter or "").strip().upper()
+    start_date = (start_date or "").strip()
+    end_date = (end_date or "").strip()
     rows: list[dict] = []
 
     cutoff = None
+    cutoff_end = None
     now_utc = datetime.utcnow()
-    if period == "today":
+
+    if start_date or end_date:
+        period = "custom"
+        if start_date:
+            try:
+                cutoff = datetime.strptime(start_date, "%Y-%m-%d")
+            except Exception:
+                cutoff = None
+        if end_date:
+            try:
+                cutoff_end = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            except Exception:
+                cutoff_end = None
+    elif period == "today":
         cutoff = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
     elif period == "24h":
         cutoff = now_utc - timedelta(hours=24)
@@ -10546,6 +10707,11 @@ def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter
     audit_query = db.query(AuditLog)
     if cutoff is not None:
         audit_query = audit_query.filter(AuditLog.created_at >= cutoff)
+    if cutoff_end is not None:
+        audit_query = audit_query.filter(AuditLog.created_at <= cutoff_end)
+    if server_id is not None:
+        audit_query = audit_query.filter(AuditLog.server_id == server_id)
+
     items = audit_query.order_by(desc(AuditLog.created_at)).limit(limit).all()
     for a in items:
         srv_name = server_map.get(a.server_id) or ""
@@ -10589,12 +10755,18 @@ def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter
             "label": AUDIT_ACTION_LABELS.get(a.action, a.action),
             "key": a.action,
             "server": srv_name or "-",
+            "server_id": a.server_id,
             "target": tgt, "status": log_st, "result": a.result or "",
         })
 
     cmd_query = db.query(Command)
     if cutoff is not None:
         cmd_query = cmd_query.filter(Command.created_at >= cutoff)
+    if cutoff_end is not None:
+        cmd_query = cmd_query.filter(Command.created_at <= cutoff_end)
+    if server_id is not None:
+        cmd_query = cmd_query.filter(Command.server_id == server_id)
+
     cmds = cmd_query.order_by(desc(Command.created_at)).limit(limit).all()
     label_map = {
         "restart": "cmd:restart", "start": "cmd:start", "stop": "cmd:stop",
@@ -10656,6 +10828,7 @@ def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter
             "key": key,
             "label": AUDIT_ACTION_LABELS.get(key, AUDIT_ACTION_LABELS.get(c.action, c.action)),
             "server": srv_name,
+            "server_id": c.server_id,
             "target": tgt, "status": status, "result": short,
         })
 
@@ -10679,6 +10852,9 @@ def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter
     if user_filter:
         rows = [r for r in rows if r["user"].lower() == user_filter.lower()]
 
+    if status_filter:
+        rows = [r for r in rows if (r.get("status") or "").upper() == status_filter]
+
     rows.sort(key=lambda r: r["t"], reverse=True)
     return rows[:limit]
 
@@ -10687,6 +10863,7 @@ def _audit_rows(db, limit: int = 500, q: str = "", action: str = "", user_filter
 def audit_page(
     request: Request, db: Session = Depends(get_db),
     q: str = "", action: str = "", user: str = "", period: str = "",
+    server: str = "", status: str = "", start_date: str = "", end_date: str = "",
 ):
     user_actor = get_current_user(request, db)
     if not user_actor:
@@ -10696,7 +10873,16 @@ def audit_page(
 
     user_clean = user.strip()
     period_clean = period.strip().lower()
-    rows = _audit_rows(db, limit=500, q=q, action=action, user_filter=user_clean, period=period_clean)
+    server_id = int(server.strip()) if server.strip().isdigit() else None
+    status_clean = status.strip().upper()
+    start_date_clean = start_date.strip()
+    end_date_clean = end_date.strip()
+
+    rows = _audit_rows(
+        db, limit=500, q=q, action=action, user_filter=user_clean, period=period_clean,
+        server_id=server_id, status_filter=status_clean,
+        start_date=start_date_clean, end_date=end_date_clean
+    )
     if not user_actor.is_master_admin():
         master_admin_names = {u.username for u in db.query(User).filter(User.role == "master_admin").all()}
         for r in rows:
@@ -10721,6 +10907,8 @@ def audit_page(
         available_users.append(user_clean)
         available_users.sort()
 
+    all_servers = db.query(Server).order_by(Server.hostname).all()
+
     st_cls = {
         "SUCCESS": "up",
         "FAILED": "danger",
@@ -10741,6 +10929,11 @@ def audit_page(
         "action": action,
         "period": period_clean,
         "selected_user": user_clean,
+        "selected_server": server_id,
+        "selected_status": status_clean,
+        "start_date": start_date_clean,
+        "end_date": end_date_clean,
+        "all_servers": all_servers,
         "available_users": available_users,
         "categories": AUDIT_CATEGORIES,
         "actions": sorted(AUDIT_ACTION_LABELS.items()),
@@ -10984,14 +11177,29 @@ def api_problems(
     server: int | None = None,
     group: str | None = None,
     res_period: str = "24h",
+    res_start: str | None = None,
+    res_end: str | None = None,
+    res_server: int | None = None,
+    res_sev: str | None = None,
+    res_type: str | None = None,
+    res_q: str | None = None,
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     """Endpoint realtime JSON untuk halaman /problems dan pemantauan aktif."""
     p_clean = (res_period or "24h").strip().lower()
-    if p_clean not in ("today", "24h", "7d", "30d"):
+    if p_clean not in ("today", "24h", "7d", "30d", "custom"):
         p_clean = "24h"
-    open_problems, recent_resolved = problems_aggregate(db, res_period=p_clean)
+    open_problems, recent_resolved = problems_aggregate(
+        db,
+        res_period=p_clean,
+        res_start=res_start,
+        res_end=res_end,
+        res_server=res_server,
+        res_sev=res_sev,
+        res_type=res_type,
+        res_q=res_q,
+    )
     if server:
         open_problems = [p for p in open_problems if p.get("server_id") == server]
         recent_resolved = [p for p in recent_resolved if p.get("server_id") == server]
@@ -11013,6 +11221,7 @@ def api_problems(
         if isinstance(p.get("resolved_at"), datetime):
             p["resolved_at_iso"] = p["resolved_at"].replace(tzinfo=None).isoformat() + "Z"
             p["resolved_at_str"] = _fmt_dt(p["resolved_at"], with_sec=True)
+            p["resolved_at_date"] = p["resolved_at"].strftime("%Y-%m-%d")
             p["resolved_at"] = _fmt_dt(p["resolved_at"], with_sec=True)
         if isinstance(p.get("acknowledged_at"), datetime):
             p["acknowledged_at_str"] = _fmt_dt(p["acknowledged_at"], with_sec=True)
@@ -11036,7 +11245,7 @@ def api_problems(
         res = p.get("resolved_at")
         if isinstance(st, datetime) and isinstance(res, datetime):
             res_durations.append(max(0, int((res - st).total_seconds())))
-        if p.get("acknowledged_by"):
+        if p.get("res_type") == "manual" or p.get("acknowledged_by"):
             manual_cnt += 1
         else:
             auto_cnt += 1

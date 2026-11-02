@@ -559,25 +559,94 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--dim);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
       <div>
         <h3 style="margin:0;font-size:15px;font-weight:700">Riwayat Insiden</h3>
-        <div style="font-size:11.5px;color:var(--dim);margin-top:2px" id="prob-resolved-subtitle">Rekapitulasi insiden yang telah teratasi dan catatan pemulihan sistem ({% if res_period == 'today' %}sejak 00:00 UTC hari ini{% elif res_period == '7d' %}7 hari terakhir{% elif res_period == '30d' %}30 hari terakhir{% else %}24 jam terakhir{% endif %}).</div>
+        <div style="font-size:11.5px;color:var(--dim);margin-top:2px" id="prob-resolved-subtitle">Rekapitulasi insiden yang telah teratasi dan catatan pemulihan sistem ({% if res_period == 'today' %}sejak 00:00 UTC hari ini{% elif res_period == '7d' %}7 hari terakhir{% elif res_period == '30d' %}30 hari terakhir{% elif res_start or res_end %}rentang tanggal kustom{% else %}24 jam terakhir{% endif %}).</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <!-- Tombol Pil Rentang Waktu Cepat (Quick Period Pills) -->
-      <div class="segmented-control" id="prob-res-ranges" style="display:inline-flex;gap:4px">
-        <button type="button" class="btn btn-sm {% if res_period == 'today' %}is-on{% endif %}" onclick="setResolvedPeriod('today', this)" title="Insiden teratasi sejak jam 00:00 UTC hari ini">Hari Ini</button>
-        <button type="button" class="btn btn-sm {% if res_period == '24h' or not res_period %}is-on{% endif %}" onclick="setResolvedPeriod('24h', this)" title="Insiden teratasi dalam 24 jam terakhir">24 Jam</button>
-        <button type="button" class="btn btn-sm {% if res_period == '7d' %}is-on{% endif %}" onclick="setResolvedPeriod('7d', this)" title="Insiden teratasi dalam 7 hari terakhir">7 Hari</button>
-        <button type="button" class="btn btn-sm {% if res_period == '30d' %}is-on{% endif %}" onclick="setResolvedPeriod('30d', this)" title="Insiden teratasi dalam 30 hari terakhir">30 Hari</button>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="prob-resolved-stats-badges">
+      <span class="badge badge-up" style="font-size:11.5px;padding:3px 8px" title="Total insiden yang berhasil dipulihkan">{{ recent_resolved|length }} Teratasi</span>
+      {% if resolved_stats and resolved_stats.avg_mttr != '—' %}
+      <span class="badge badge-info" style="font-size:11.5px;padding:3px 8px" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: {{ resolved_stats.avg_mttr }}</span>
+      {% endif %}
+      {% if resolved_stats and resolved_stats.manual_count > 0 %}
+      <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Ditangani langsung oleh operator">{{ resolved_stats.manual_count }} ditangani operator</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Bilah Filter Interaktif Riwayat Insiden -->
+  <div style="background:rgba(15,23,42,0.45);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px">
+    <!-- Baris 1: Kontrol Filter Interaktif -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <!-- 1. Filter Server -->
+      <div style="display:flex;align-items:center;gap:4px">
+        <label for="res-filter-server" style="font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap">Server:</label>
+        <select id="res-filter-server" onchange="onResFilterChange()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:4px 8px;font-size:11.5px;outline:none;min-width:130px;max-width:180px">
+          <option value="">Semua Server</option>
+          {% for s in all_servers %}
+          <option value="{{ s.id }}" {% if res_server == s.id %}selected{% endif %}>{{ s.hostname }}</option>
+          {% endfor %}
+        </select>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="prob-resolved-stats-badges">
-        <span class="badge badge-up" style="font-size:11.5px;padding:3px 8px" title="Total insiden yang berhasil dipulihkan">{{ recent_resolved|length }} Teratasi</span>
-        {% if resolved_stats and resolved_stats.avg_mttr != '—' %}
-        <span class="badge badge-info" style="font-size:11.5px;padding:3px 8px" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: {{ resolved_stats.avg_mttr }}</span>
-        {% endif %}
-        {% if resolved_stats and resolved_stats.manual_count > 0 %}
-        <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Ditangani langsung oleh operator">{{ resolved_stats.manual_count }} ditangani operator</span>
-        {% endif %}
+
+      <!-- 2. Filter Keparahan -->
+      <div style="display:flex;align-items:center;gap:4px">
+        <label for="res-filter-sev" style="font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap">Keparahan:</label>
+        <select id="res-filter-sev" onchange="onResFilterChange()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:4px 8px;font-size:11.5px;outline:none">
+          <option value="">Semua</option>
+          <option value="danger" {% if res_sev == 'danger' %}selected{% endif %}>Kritis</option>
+          <option value="average" {% if res_sev == 'average' %}selected{% endif %}>Gawat</option>
+          <option value="warning" {% if res_sev == 'warning' %}selected{% endif %}>Peringatan</option>
+          <option value="info" {% if res_sev == 'info' %}selected{% endif %}>Info</option>
+        </select>
+      </div>
+
+      <!-- 3. Filter Resolusi -->
+      <div style="display:flex;align-items:center;gap:4px">
+        <label for="res-filter-type" style="font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap">Resolusi:</label>
+        <select id="res-filter-type" onchange="onResFilterChange()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:4px 8px;font-size:11.5px;outline:none">
+          <option value="">Semua Resolusi</option>
+          <option value="auto" {% if res_type == 'auto' %}selected{% endif %}>✓ Pulih Otomatis</option>
+          <option value="manual" {% if res_type == 'manual' %}selected{% endif %}>✓ Ditangani Operator</option>
+          <option value="online" {% if res_type == 'online' %}selected{% endif %}>✓ Host Kembali Online</option>
+          <option value="service_up" {% if res_type == 'service_up' %}selected{% endif %}>✓ Layanan Aktif</option>
+          <option value="stale_closed" {% if res_type == 'stale_closed' %}selected{% endif %}>Ditutup (Host Terputus)</option>
+        </select>
+      </div>
+
+      <!-- 4. Rentang Tanggal: Dari > Sampai -->
+      <div style="display:flex;align-items:center;gap:4px">
+        <label for="res-date-start" style="font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap">Dari:</label>
+        <input type="date" id="res-date-start" value="{{ res_start }}" onchange="onResDateChange()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:3px 6px;font-size:11px;outline:none;font-family:var(--font-mono)">
+        <label for="res-date-end" style="font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap">Sampai:</label>
+        <input type="date" id="res-date-end" value="{{ res_end }}" onchange="onResDateChange()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:3px 6px;font-size:11px;outline:none;font-family:var(--font-mono)">
+      </div>
+
+      <!-- 5. Pencarian Kata Kunci -->
+      <div style="display:flex;align-items:center;position:relative;flex:1;min-width:160px">
+        <input type="search" id="res-search-input" value="{{ res_q }}" oninput="onResFilterChange()" placeholder="Cari insiden / pesan / komponen…" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:4px 8px;font-size:11.5px;width:100%;outline:none">
+      </div>
+
+      <!-- 6. Tombol Reset Filter -->
+      <button type="button" class="btn btn-ghost btn-sm" onclick="resetResFilters()" style="padding:3px 8px;font-size:11px;display:inline-flex;align-items:center;gap:4px" title="Hapus semua filter riwayat insiden">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+        <span>Reset</span>
+      </button>
+    </div>
+
+    <!-- Baris 2: Tombol Kecil Quick Presets (Hari Ini, 24 Jam, 7 Hari, 30 Hari, Kustom) -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px dashed rgba(255,255,255,0.06);padding-top:6px">
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="font-size:10.5px;color:var(--dim);font-weight:600;margin-right:2px">Rentang Cepat:</span>
+        <div class="segmented-control" id="prob-res-ranges" style="display:inline-flex;gap:3px">
+          <button type="button" class="btn btn-sm {% if res_period == 'today' %}is-on{% endif %}" onclick="setResolvedPeriod('today', this)" style="padding:2px 7px;font-size:10.5px" title="Insiden teratasi sejak jam 00:00 UTC hari ini">Hari Ini</button>
+          <button type="button" class="btn btn-sm {% if res_period == '24h' or not res_period %}is-on{% endif %}" onclick="setResolvedPeriod('24h', this)" style="padding:2px 7px;font-size:10.5px" title="Insiden teratasi dalam 24 jam terakhir">24 Jam</button>
+          <button type="button" class="btn btn-sm {% if res_period == '7d' %}is-on{% endif %}" onclick="setResolvedPeriod('7d', this)" style="padding:2px 7px;font-size:10.5px" title="Insiden teratasi dalam 7 hari terakhir">7 Hari</button>
+          <button type="button" class="btn btn-sm {% if res_period == '30d' %}is-on{% endif %}" onclick="setResolvedPeriod('30d', this)" style="padding:2px 7px;font-size:10.5px" title="Insiden teratasi dalam 30 hari terakhir">30 Hari</button>
+          <button type="button" id="btn-res-custom" class="btn btn-sm {% if res_period == 'custom' %}is-on{% endif %}" onclick="setResolvedPeriod('custom', this)" style="padding:2px 7px;font-size:10.5px;{% if res_period != 'custom' %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
+        </div>
+      </div>
+      <div id="res-filter-summary-info" style="font-size:11px;color:var(--dim)">
+        Menampilkan {{ recent_resolved|length }} insiden teratasi
       </div>
     </div>
   </div>
@@ -604,6 +673,9 @@
           data-prob-id="{{ p.id }}"
           data-prob-key="{{ p.key }}"
           data-prob-sev="{{ p.severity }}"
+          data-prob-res-type="{{ p.res_type or 'auto' }}"
+          data-prob-res-date="{{ p.resolved_at.strftime('%Y-%m-%d') if p.resolved_at else '' }}"
+          data-text="{{ (p.hostname or '')|lower }} {{ (p.message or '')|lower }} {{ (p.component or '')|lower }} {{ (p.res_label or '')|lower }} {{ (p.group_name or '')|lower }}"
           data-prob-msg="{{ p.message }}"
           data-prob-start="{{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '' }}"
           data-prob-res="{{ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '' }}"
@@ -655,21 +727,7 @@
         </td>
         <!-- 7. Resolusi -->
         <td style="padding:5px 6px;white-space:nowrap" class="col-res">
-          {% if p.resolved_note == 'server_offline' %}
-            <span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="Ditutup karena host/server offline">Host Offline</span>
-          {% elif p.resolved_note == 'server_online' or p.key == 'agent_stale' %}
-            <span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="Server dinyalakan kembali dan aktif melapor">✓ Server Kembali Online</span>
-          {% elif p.resolved_note == 'service_up' %}
-            <span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="Layanan aktif kembali">✓ Layanan Aktif Kembali</span>
-          {% elif p.acknowledged_by %}
-            <span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="Ditangani oleh {{ p.acknowledged_by }}">✓ {{ p.acknowledged_by }}</span>
-          {% elif p.resolved_note == 'auto' %}
-            <span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="Kondisi kembali normal dan tenang">✓ Normal Kembali</span>
-          {% elif p.resolved_note %}
-            <span class="badge badge-muted" style="font-size:10px;padding:1px 5px">{{ p.resolved_note }}</span>
-          {% else %}
-            <span class="badge badge-up" style="font-size:10px;padding:1px 5px">✓ Selesai</span>
-          {% endif %}
+          <span class="badge {{ p.res_badge_cls or 'badge-up' }}" style="font-size:10px;padding:1px 5px" title="{{ p.res_tip }}">{{ p.res_label }}</span>
         </td>
         <td style="padding:5px 6px;white-space:nowrap;text-align:left;width:50px" class="col-act">
           <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" title="Rincian" aria-label="Rincian">
@@ -682,8 +740,8 @@
     </table>
   </div>
   {% else %}
-  <div style="font-size:13px;color:var(--dim);display:flex;align-items:center;gap:8px;padding:8px 4px">
-    <span>Belum ada riwayat insiden dalam 24 jam terakhir. Seluruh sistem beroperasi normal.</span>
+  <div style="font-size:13px;color:var(--dim);display:flex;align-items:center;gap:8px;padding:8px 4px" id="prob-resolved-empty">
+    <span>Belum ada riwayat insiden dalam periode terpilih. Seluruh sistem beroperasi normal.</span>
   </div>
   {% endif %}
 </div>
@@ -999,6 +1057,12 @@ let _isPolling = false;
 let _lastOpenFingerprint = null;
 let _lastResFingerprint = null;
 let currentResPeriod = "{{ res_period or '24h' }}";
+let currentResStartDate = '{{ res_start }}' || '';
+let currentResEndDate = '{{ res_end }}' || '';
+let currentResServer = '{{ res_server or "" }}';
+let currentResSev = '{{ res_sev or "" }}';
+let currentResType = '{{ res_type or "" }}';
+let currentResQ = '{{ res_q or "" }}';
 
 function computeOpenFingerprint(list, isEn) {
   if (!list || list.length === 0) return 'empty:' + (isEn ? 'en' : 'id');
@@ -1019,12 +1083,16 @@ function computeOpenFingerprint(list, isEn) {
   ].join('|')).join(';;');
 }
 
+
+
 function computeResFingerprint(list, isEn) {
   if (!list || list.length === 0) return 'empty:' + (isEn ? 'en' : 'id');
   return (isEn ? 'en' : 'id') + '::' + list.map(p => [
     p.id,
     p.key || '',
     p.severity || '',
+    p.res_type || '',
+    p.res_label || '',
     p.resolved_note || '',
     p.acknowledged_by || '',
     p.message || '',
@@ -1036,11 +1104,116 @@ function computeResFingerprint(list, isEn) {
   ].join('|')).join(';;');
 }
 
+function filterResolvedTable() {
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+  const selServer = document.getElementById('res-filter-server')?.value || '';
+  const selSev = document.getElementById('res-filter-sev')?.value || '';
+  const selType = document.getElementById('res-filter-type')?.value || '';
+  const searchQ = (document.getElementById('res-search-input')?.value || '').toLowerCase().trim();
+
+  const rows = document.querySelectorAll('#prob-resolved-tbody tr');
+  let vis = 0;
+  rows.forEach(tr => {
+    let matchServer = !selServer || (tr.dataset.probSid === selServer);
+    let matchSev = !selSev || (tr.dataset.probSev === selSev);
+    let matchType = !selType || (tr.dataset.probResType === selType);
+    let matchQ = !searchQ || (tr.dataset.text || '').includes(searchQ);
+
+    const isMatch = matchServer && matchSev && matchType && matchQ;
+    tr.dataset.filterHidden = isMatch ? '0' : '1';
+    if (isMatch) vis++;
+  });
+
+  if (probResolvedPagination) {
+    probResolvedPagination.update();
+  } else {
+    rows.forEach(tr => {
+      tr.style.display = (tr.dataset.filterHidden === '1' ? 'none' : '');
+    });
+  }
+
+  const infoEl = document.getElementById('res-filter-summary-info');
+  if (infoEl) {
+    if (rows.length === 0) {
+      infoEl.textContent = isEn ? 'No resolved incidents recorded' : 'Tidak ada catatan insiden teratasi';
+    } else {
+      infoEl.textContent = isEn ? `Showing ${vis} of ${rows.length} resolved incidents` : `Menampilkan ${vis} dari ${rows.length} insiden teratasi`;
+    }
+  }
+}
+
+function onResFilterChange() {
+  currentResServer = document.getElementById('res-filter-server')?.value || '';
+  currentResSev = document.getElementById('res-filter-sev')?.value || '';
+  currentResType = document.getElementById('res-filter-type')?.value || '';
+  currentResQ = document.getElementById('res-search-input')?.value || '';
+  filterResolvedTable();
+}
+
+function onResDateChange() {
+  const st = document.getElementById('res-date-start')?.value || '';
+  const en = document.getElementById('res-date-end')?.value || '';
+  currentResStartDate = st;
+  currentResEndDate = en;
+
+  document.querySelectorAll('#prob-res-ranges .btn').forEach(b => b.classList.remove('is-on'));
+  const btnCustom = document.getElementById('btn-res-custom');
+  if (btnCustom) {
+    btnCustom.style.display = 'inline-block';
+    btnCustom.classList.add('is-on');
+  }
+  currentResPeriod = 'custom';
+
+  const sub = document.getElementById('prob-resolved-subtitle');
+  if (sub) {
+    if (st && en) {
+      sub.textContent = `Rekapitulasi insiden yang telah teratasi (${st} s/d ${en}).`;
+    } else if (st) {
+      sub.textContent = `Rekapitulasi insiden yang telah teratasi (sejak ${st}).`;
+    } else if (en) {
+      sub.textContent = `Rekapitulasi insiden yang telah teratasi (hingga ${en}).`;
+    }
+  }
+
+  _lastResFingerprint = null;
+  if (window.poll) window.poll();
+}
+
 function setResolvedPeriod(period, btn) {
   currentResPeriod = period;
+  currentResStartDate = '';
+  currentResEndDate = '';
   _lastResFingerprint = null;
+
   document.querySelectorAll('#prob-res-ranges .btn').forEach(b => b.classList.remove('is-on'));
   if (btn) btn.classList.add('is-on');
+  const btnCustom = document.getElementById('btn-res-custom');
+  if (btnCustom) {
+    btnCustom.classList.remove('is-on');
+    btnCustom.style.display = 'none';
+  }
+
+  const now = new Date();
+  const fmtDate = (d) => d.toISOString().split('T')[0];
+  const startInp = document.getElementById('res-date-start');
+  const endInp = document.getElementById('res-date-end');
+
+  if (period === 'today') {
+    if (startInp) startInp.value = fmtDate(now);
+    if (endInp) endInp.value = fmtDate(now);
+  } else if (period === '7d') {
+    const d7 = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    if (startInp) startInp.value = fmtDate(d7);
+    if (endInp) endInp.value = fmtDate(now);
+  } else if (period === '30d') {
+    const d30 = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
+    if (startInp) startInp.value = fmtDate(d30);
+    if (endInp) endInp.value = fmtDate(now);
+  } else {
+    if (startInp) startInp.value = '';
+    if (endInp) endInp.value = '';
+  }
+
   try {
     const url = new URL(window.location);
     if (period && period !== '24h') {
@@ -1048,8 +1221,11 @@ function setResolvedPeriod(period, btn) {
     } else {
       url.searchParams.delete('res_period');
     }
+    url.searchParams.delete('start_date');
+    url.searchParams.delete('end_date');
     window.history.replaceState({}, '', url);
   } catch (e) {}
+
   const sub = document.getElementById('prob-resolved-subtitle');
   if (sub) {
     let txt = '24 jam terakhir';
@@ -1061,6 +1237,32 @@ function setResolvedPeriod(period, btn) {
   if (window.poll) window.poll();
 }
 
+function resetResFilters() {
+  const srv = document.getElementById('res-filter-server');
+  if (srv) srv.value = '';
+  const sev = document.getElementById('res-filter-sev');
+  if (sev) sev.value = '';
+  const type = document.getElementById('res-filter-type');
+  if (type) type.value = '';
+  const q = document.getElementById('res-search-input');
+  if (q) q.value = '';
+  const st = document.getElementById('res-date-start');
+  if (st) st.value = '';
+  const en = document.getElementById('res-date-end');
+  if (en) en.value = '';
+
+  currentResServer = '';
+  currentResSev = '';
+  currentResType = '';
+  currentResQ = '';
+  currentResStartDate = '';
+  currentResEndDate = '';
+
+  const btn24 = document.querySelector('#prob-res-ranges .btn[onclick*="24h"]');
+  setResolvedPeriod('24h', btn24);
+  filterResolvedTable();
+}
+
 window.poll = async function() {
   if (_isPolling) return;
   _isPolling = true;
@@ -1070,6 +1272,12 @@ window.poll = async function() {
     if (FILTER_SID) params.set('server', FILTER_SID);
     if (FILTER_GROUP) params.set('group', FILTER_GROUP);
     if (currentResPeriod) params.set('res_period', currentResPeriod);
+    if (currentResStartDate) params.set('res_start', currentResStartDate);
+    if (currentResEndDate) params.set('res_end', currentResEndDate);
+    if (currentResServer) params.set('res_server', currentResServer);
+    if (currentResSev) params.set('res_sev', currentResSev);
+    if (currentResType) params.set('res_type', currentResType);
+    if (currentResQ) params.set('res_q', currentResQ);
     params.set('_', Date.now());
     const qs = params.toString();
     const url = '/api/problems' + (qs ? '?' + qs : '');
@@ -1326,30 +1534,39 @@ window.poll = async function() {
       resTbody.innerHTML = resList.map(p => {
         const sevBadge = 'badge badge-' + ({danger:'danger',average:'orange',warning:'warn',info:'info'}[p.severity] || 'info');
         const grp = p.group_name || '';
+
+        const resType = p.res_type || (p.acknowledged_by ? 'manual' : (p.resolved_note === 'server_offline' ? 'stale_closed' : (p.resolved_note === 'server_online' || p.key === 'agent_stale' ? 'online' : (p.resolved_note === 'service_up' ? 'service_up' : (p.resolved_note === 'session_closed' ? 'session_closed' : 'auto')))));
+        const resLabel = isEn ? (p.res_label_en || p.res_label) : p.res_label;
+        const resTip = isEn ? (p.res_tip_en || p.res_tip) : p.res_tip;
+        const resBadgeCls = p.res_badge_cls || (resType === 'stale_closed' || resType === 'session_closed' ? 'badge-muted' : 'badge-up');
+
         let resBadge = '';
-        if (p.resolved_note === 'server_offline') {
-          resBadge = `<span class="badge badge-muted" style="font-size:11px;padding:2px 7px" title="Ditutup karena host/server offline">${isEn ? 'Host Offline' : 'Host Offline'}</span>`;
-        } else if (p.resolved_note === 'server_online' || p.key === 'agent_stale') {
-          resBadge = `<span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="${isEn ? 'Server powered on / back online' : 'Server dinyalakan kembali dan aktif melapor'}">✓ ${isEn ? 'Host Back Online' : 'Server Kembali Online'}</span>`;
-        } else if (p.resolved_note === 'service_up') {
-          resBadge = `<span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="${isEn ? 'Service active again' : 'Layanan aktif kembali'}">✓ ${isEn ? 'Service Running' : 'Layanan Aktif Kembali'}</span>`;
+        if (resLabel) {
+          resBadge = `<span class="badge ${resBadgeCls}" style="font-size:10px;padding:1px 5px" title="${_esc(resTip || '')}">${_esc(resLabel)}</span>`;
         } else if (p.acknowledged_by) {
-          resBadge = `<span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="${isEn ? 'Handled by ' : 'Ditangani oleh '}${_esc(p.acknowledged_by)}">✓ ${_esc(p.acknowledged_by)}</span>`;
-        } else if (p.resolved_note === 'auto') {
-          resBadge = `<span class="badge badge-up" style="font-size:11px;padding:2px 7px" title="${isEn ? 'Condition normal' : 'Kondisi kembali normal dan tenang'}">✓ ${isEn ? 'Condition Normal' : 'Normal Kembali'}</span>`;
-        } else if (p.resolved_note) {
-          resBadge = `<span class="badge badge-muted" style="font-size:11px;padding:2px 7px">${_esc(p.resolved_note)}</span>`;
+          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Handled manually by operator ' + _esc(p.acknowledged_by) : 'Diselesaikan secara manual oleh operator ' + _esc(p.acknowledged_by)}">✓ ${isEn ? 'Handled (' + _esc(p.acknowledged_by) + ')' : 'Ditangani (' + _esc(p.acknowledged_by) + ')'}</span>`;
+        } else if (p.resolved_note === 'server_offline') {
+          resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Closed because host disconnected / agent stopped reporting' : 'Insiden ditutup karena host terputus / agen berhenti melapor (supresi insiden)'}">${isEn ? 'Closed (Host Down)' : 'Ditutup (Host Terputus)'}</span>`;
+        } else if (p.resolved_note === 'server_online' || p.key === 'agent_stale') {
+          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Agent connection restored and server reporting online' : 'Koneksi agen pulih dan server aktif melapor kembali'}">✓ ${isEn ? 'Host Back Online' : 'Host Kembali Online'}</span>`;
+        } else if (p.resolved_note === 'service_up') {
+          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'System service resumed and running normally' : 'Layanan sistem telah beroperasi normal kembali'}">✓ ${isEn ? 'Service Running' : 'Layanan Aktif Kembali'}</span>`;
         } else {
-          resBadge = `<span class="badge badge-up" style="font-size:11px;padding:2px 7px">${isEn ? '✓ Resolved' : '✓ Selesai'}</span>`;
+          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'System metrics normalized automatically' : 'Metrik sistem kembali normal dan aman'}">✓ ${isEn ? 'Auto Recovered' : 'Pulih Otomatis'}</span>`;
         }
 
         const resSevLabel = _esc(p.severity === 'danger' ? (isEn ? 'CRITICAL' : 'KRITIS') : (p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'warning' ? (isEn ? 'WARNING' : 'PERINGATAN') : (p.severity || '').toUpperCase())));
+        const resDate = p.resolved_at_date || (p.resolved_at ? p.resolved_at.slice(0, 10) : '');
+        const textSearch = `${p.hostname || ''} ${p.message || ''} ${p.component || ''} ${resLabel || ''} ${grp}`.toLowerCase();
 
         return `<tr style="opacity:.8;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease"
             data-group="${_esc(grp)}"
             data-prob-id="${p.id}"
             data-prob-key="${_esc(p.key)}"
             data-prob-sev="${_esc(p.severity)}"
+            data-prob-res-type="${_esc(resType)}"
+            data-prob-res-date="${_esc(resDate)}"
+            data-text="${_esc(textSearch)}"
             data-prob-msg="${_esc(p.message || '')}"
             data-prob-start="${_esc(p.started_at || '')}"
             data-prob-res="${_esc(p.resolved_at || '')}"
@@ -1393,6 +1610,7 @@ window.poll = async function() {
           </td>
         </tr>`;
       }).join('');
+      filterResolvedTable();
       if (probResolvedPagination) probResolvedPagination.update();
     }
 
@@ -1454,6 +1672,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   initProbPagination();
   probFilter();
+  filterResolvedTable();
 });
 </script>
 {% endblock %}

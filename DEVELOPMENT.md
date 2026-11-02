@@ -354,6 +354,31 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.68
+
+- **Tipe Rilis:** Penyempurnaan Bilah Filter Interaktif Riwayat Insiden & Audit Serta Standardisasi Kosakata Resolusi (*Incident & Audit History Interactive Filter Enhancement and Resolution Vocabulary Standardization*)
+- **Fokus Utama:** Menghadirkan bilah kontrol filter interaktif padat data (*high-density NOC*) pada kartu Riwayat Insiden dan Halaman Riwayat Tindakan (Audit), serta menata ulang semantik kolom Resolusi secara terstruktur, manusiawi, dan mudah dipahami:
+  1. **Bilah Kontrol Filter Interaktif Kartu Riwayat Insiden (`#prob-resolved-card`):**
+     - Menyediakan kontrol filter multi-kriteria: Dropdown Server Klien, Dropdown Keparahan (Kritis, Gawat, Peringatan, Info), Dropdown Tipe Resolusi (Pulih Otomatis, Ditangani Operator, Host Kembali Online, Layanan Aktif, Ditutup Host Terputus), Pemilih Rentang Tanggal interaktif (*Dari Tanggal* s/d *Sampai Tanggal*), Pencarian Kata Kunci instan, dan tombol Reset Filter.
+     - Menyediakan tombol kecil pintasan rentang waktu cepat (*quick presets*: Hari Ini, 24 Jam, 7 Hari, 30 Hari, Kustom) yang secara dinamis mengisi rentang tanggal dan status filter.
+     - Mengintegrasikan penyaringan *client-side* instan tanpa re-render (0 ms respons) dengan dukungan parameter kueri database backend (`problems_aggregate` dan `/api/problems`).
+  2. **Standardisasi Semantik & Keterbacaan Kolom Resolusi:**
+     - Menghilangkan kebingungan label mentah lama (seperti `"ADMIN"` atau `"Host Offline"` pada insiden yang telah selesai).
+     - Menstandardisasi nilai kolom resolusi dengan format baku dan tooltip informatif:
+       - `✓ Ditangani (nama_operator)`: Diselesaikan secara manual oleh operator terkait.
+       - `Ditutup (Host Terputus)`: Insiden layanan ditutup secara otomatis akibat host terputus / agen berhenti melapor (supresi insiden).
+       - `✓ Host Kembali Online`: Koneksi agen pulih dan server aktif melapor kembali.
+       - `✓ Layanan Aktif Kembali`: Layanan sistem telah beroperasi normal kembali.
+       - `✓ Sesi SSH Ditutup`: Sesi remote SSH telah selesai ditutup.
+       - `✓ Pulih Otomatis`: Metrik sistem kembali normal dan aman di bawah ambang batas.
+  3. **Penyempurnaan Bilah Kontrol Filter Halaman Riwayat Tindakan (Audit):**
+     - Menambahkan kontrol filter Server Klien, filter Status Eksekusi (Semua, Berhasil, Gagal, Menunggu/Proses), serta input rentang tanggal kustom (*Dari Tanggal* s/d *Sampai Tanggal*) pada [`audit.html`](file:///home/bos/rj45/server/templates/audit.html).
+     - Memperbarui fungsi `_audit_rows` di backend [`server/main.py`](file:///home/bos/rj45/server/main.py) untuk memproses filter `server_id`, `status_filter`, `start_date`, dan `end_date` secara akurat pada log audit dan commands.
+  4. **Integritas Dasbor Utama & Kartu Insiden Terbuka:**
+     - Mempertahankan integritas penuh halaman Dasbor Utama ([`dashboard.html`](file:///home/bos/rj45/server/templates/dashboard.html)) dan kartu Insiden Terbuka ([`problems.html`](file:///home/bos/rj45/server/templates/problems.html#probtable)) tanpa modifikasi yang tidak diinginkan sesuai instruksi pengguna.
+  5. **Otomasi Pembaruan SemVer v4.8.68:**
+     - Menaikkan versi sistem menjadi `v4.8.68` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.67
 
 - **Tipe Rilis:** Cetak Miring Unit Organisasi Dasbor, Perataan Kiri Kolom Keparahan, dan Eliminasi Flicker Tabel Insiden (*Dashboard Organization Unit Italicization, Severity Column Left Alignment, and Incident Table Polling Flicker Elimination*)

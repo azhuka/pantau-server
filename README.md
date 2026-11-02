@@ -69,7 +69,7 @@ Pantau-Server mengadopsi model **Outbound-Only Pull**. Agen klien yang aktif men
 - **Kontrol Hak Akses untuk 3 Peran (RBAC):** Hak akses terbagi atas *Master Admin*, *Operator* (dengan batasan hak sudo selektif), dan *Viewer* (hanya-baca).
 - **Autentikasi Dua Langkah (2FA TOTP):** Proteksi login menggunakan aplikasi autentikator standar (Google Authenticator, Bitwarden, 2FAS).
 - **Notifikasi Insiden Terpusat:** Integrasi notifikasi bot Telegram seketika saat terjadi insiden pada server penting.
-- **Audit Trail Forensik:** Pencatatan otomatis setiap tindakan administratif (siapa operatornya, aksi yang dijalankan, target server, parameter, dan status output).
+- **Audit Trail Forensik & Riwayat Insiden Interaktif:** Pencatatan komprehensif tindakan administratif dan rekapitulasi pemulihan insiden dilengkapi bilah filter multi-kriteria (server, keparahan, status/resolusi, rentang tanggal kustom, dan preset cepat).
 
 ---
 
