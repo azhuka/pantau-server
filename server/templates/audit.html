@@ -20,99 +20,83 @@
     Catatan aktivitas autentikasi, manajemen server, layanan, pengguna, serta eksekusi perintah remote beserta pelaksana dan hasilnya.
   </p>
 
-  <form method="get" action="/audit" style="background:rgba(15,23,42,0.45);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px">
+  <form method="get" action="/audit" class="noc-filter-bar" style="margin-bottom:14px">
     <input type="hidden" name="period" id="audit-period-input" value="{{ period }}">
 
     <!-- Baris 1: Kontrol Filter Interaktif -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <div class="noc-filter-row">
       <!-- 1. Filter Pengguna -->
-      <div style="display:flex;align-items:center;gap:4px">
-        <label for="audit-user-filter" style="font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap">Pengguna:</label>
-        <select name="user" id="audit-user-filter" title="Saring berdasarkan nama pengguna" onchange="this.form.submit()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:4px 8px;font-size:11.5px;outline:none">
-          <option value="">Semua pengguna</option>
-          {% for u_name in available_users %}
-          <option value="{{ u_name }}" {% if selected_user == u_name %}selected{% endif %}>{{ u_name }}</option>
-          {% endfor %}
-        </select>
-      </div>
+      <select name="user" id="audit-user-filter" class="noc-filter-select" title="Filter Pengguna" onchange="this.form.submit()" style="max-width:130px">
+        <option value="">Semua Pengguna</option>
+        {% for u_name in available_users %}
+        <option value="{{ u_name }}" {% if selected_user == u_name %}selected{% endif %}>{{ u_name }}</option>
+        {% endfor %}
+      </select>
 
       <!-- 2. Filter Server -->
-      <div style="display:flex;align-items:center;gap:4px">
-        <label for="audit-server-filter" style="font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap">Server:</label>
-        <select name="server" id="audit-server-filter" title="Saring berdasarkan server tujuan" onchange="this.form.submit()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:4px 8px;font-size:11.5px;outline:none;min-width:120px;max-width:180px">
-          <option value="">Semua server</option>
-          {% for s in all_servers %}
-          <option value="{{ s.id }}" {% if selected_server == s.id %}selected{% endif %}>{{ s.hostname }}</option>
-          {% endfor %}
-        </select>
-      </div>
+      <select name="server" id="audit-server-filter" class="noc-filter-select" title="Filter Server" onchange="this.form.submit()" style="max-width:135px">
+        <option value="">Semua Server</option>
+        {% for s in all_servers %}
+        <option value="{{ s.id }}" {% if selected_server == s.id %}selected{% endif %}>{{ s.hostname }}</option>
+        {% endfor %}
+      </select>
 
       <!-- 3. Filter Tindakan -->
-      <div style="display:flex;align-items:center;gap:4px">
-        <label for="audit-action-filter" style="font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap">Tindakan:</label>
-        <select name="action" id="audit-action-filter" title="Saring berdasarkan jenis aktivitas" onchange="this.form.submit()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:4px 8px;font-size:11.5px;outline:none;max-width:200px">
-          <option value="" data-label-id="Semua tindakan" data-label-en="All actions">Semua tindakan</option>
-          {% for cat in categories %}
-          <optgroup label="{{ cat.name }}" data-label-id="{{ cat.name }}" data-label-en="{{ cat.name_en }}">
-            <option value="{{ cat.id }}" data-label-id="Semua {{ cat.name }}" data-label-en="All {{ cat.name_en }}" {% if action == cat.id %}selected{% endif %}>Semua {{ cat.name }}</option>
-            {% for a_key, a_label, a_label_en in cat.actions %}
-            <option value="{{ a_key }}" data-label-id="{{ a_label }}" data-label-en="{{ a_label_en }}" {% if action == a_key %}selected{% endif %}>{{ a_label }}</option>
-            {% endfor %}
-          </optgroup>
+      <select name="action" id="audit-action-filter" class="noc-filter-select" title="Filter Tindakan" onchange="this.form.submit()" style="max-width:150px">
+        <option value="" data-label-id="Semua tindakan" data-label-en="All actions">Semua Tindakan</option>
+        {% for cat in categories %}
+        <optgroup label="{{ cat.name }}" data-label-id="{{ cat.name }}" data-label-en="{{ cat.name_en }}">
+          <option value="{{ cat.id }}" data-label-id="Semua {{ cat.name }}" data-label-en="All {{ cat.name_en }}" {% if action == cat.id %}selected{% endif %}>Semua {{ cat.name }}</option>
+          {% for a_key, a_label, a_label_en in cat.actions %}
+          <option value="{{ a_key }}" data-label-id="{{ a_label }}" data-label-en="{{ a_label_en }}" {% if action == a_key %}selected{% endif %}>{{ a_label }}</option>
           {% endfor %}
-        </select>
-      </div>
+        </optgroup>
+        {% endfor %}
+      </select>
 
       <!-- 4. Filter Status -->
-      <div style="display:flex;align-items:center;gap:4px">
-        <label for="audit-status-filter" style="font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap">Status:</label>
-        <select name="status" id="audit-status-filter" title="Saring berdasarkan hasil eksekusi" onchange="this.form.submit()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:4px 8px;font-size:11.5px;outline:none">
-          <option value="">Semua status</option>
-          <option value="SUCCESS" {% if selected_status == 'SUCCESS' %}selected{% endif %}>Berhasil</option>
-          <option value="FAILED" {% if selected_status == 'FAILED' %}selected{% endif %}>Gagal</option>
-          <option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>Menunggu / Proses</option>
-        </select>
-      </div>
+      <select name="status" id="audit-status-filter" class="noc-filter-select" title="Filter Status" onchange="this.form.submit()" style="max-width:125px">
+        <option value="">Semua Status</option>
+        <option value="SUCCESS" {% if selected_status == 'SUCCESS' %}selected{% endif %}>Berhasil</option>
+        <option value="FAILED" {% if selected_status == 'FAILED' %}selected{% endif %}>Gagal</option>
+        <option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>Menunggu / Proses</option>
+      </select>
 
-      <!-- 5. Rentang Tanggal: Dari > Sampai -->
-      <div style="display:flex;align-items:center;gap:4px">
-        <label for="audit-start-date" style="font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap">Dari:</label>
-        <input type="date" name="start_date" id="audit-start-date" value="{{ start_date }}" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:3px 6px;font-size:11px;outline:none;font-family:var(--font-mono)">
-        <label for="audit-end-date" style="font-size:11px;font-weight:600;color:var(--dim);white-space:nowrap">Sampai:</label>
-        <input type="date" name="end_date" id="audit-end-date" value="{{ end_date }}" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:3px 6px;font-size:11px;outline:none;font-family:var(--font-mono)">
+      <!-- 5. Rentang Tanggal Terpadu (Dari > Sampai) -->
+      <div class="date-range-picker" title="Rentang tanggal audit (Mulai → Selesai)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--dim);flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        <input type="date" name="start_date" id="audit-start-date" value="{{ start_date }}" title="Dari tanggal" aria-label="Dari tanggal">
+        <span class="date-sep">→</span>
+        <input type="date" name="end_date" id="audit-end-date" value="{{ end_date }}" title="Sampai tanggal" aria-label="Sampai tanggal">
       </div>
 
       <!-- 6. Pencarian Kata Kunci -->
-      <div style="position:relative;display:flex;align-items:center;flex:1;min-width:180px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:8px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="search" name="q" value="{{ q }}" placeholder="Cari target / server / hasil…"
-               style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:4px 8px 4px 26px;font-size:11.5px;width:100%;outline:none;transition:border-color .15s">
+      <div class="noc-search-box" style="min-width:140px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="search" name="q" value="{{ q }}" placeholder="Cari target / server / hasil…">
       </div>
 
       <!-- 7. Tombol Terapkan & Reset -->
-      <button class="btn btn-primary btn-sm" type="submit" style="padding:3px 10px;font-size:11px" title="Terapkan filter pencarian audit">Terapkan</button>
-      <a href="/audit" class="btn btn-ghost btn-sm" title="Hapus filter dan tampilkan semua catatan" style="padding:3px 8px;font-size:11px;display:inline-flex;align-items:center;gap:4px{% if not q and not action and not selected_user and not period and not selected_server and not selected_status and not start_date and not end_date %};display:none{% endif %}">
+      <button class="btn btn-primary btn-sm" type="submit" style="height:32px;padding:0 12px;font-size:11.5px" title="Terapkan filter pencarian audit">Terapkan</button>
+      <a href="/audit" class="btn btn-ghost btn-sm" title="Hapus filter dan tampilkan semua catatan" style="height:32px;padding:0 10px;font-size:11.5px;display:inline-flex;align-items:center;gap:5px{% if not q and not action and not selected_user and not period and not selected_server and not selected_status and not start_date and not end_date %};display:none{% endif %}">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
         <span>Reset</span>
       </a>
     </div>
 
-    <!-- Baris 2: Tombol Kecil Quick Presets (Semua, Hari Ini, 24 Jam, 7 Hari, 30 Hari, Kustom) -->
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px dashed rgba(255,255,255,0.06);padding-top:6px">
-      <div style="display:flex;align-items:center;gap:4px">
-        <span style="font-size:10.5px;color:var(--dim);font-weight:600;margin-right:2px">Rentang Cepat:</span>
-        <div class="segmented-control" id="audit-period-pills" style="display:inline-flex;gap:3px">
-          <button type="button" class="btn btn-sm {% if not period and not start_date and not end_date %}is-on{% endif %}" onclick="setAuditPeriod('', this)" style="padding:2px 7px;font-size:10.5px" title="Tampilkan seluruh catatan terbaru">Semua</button>
-          <button type="button" class="btn btn-sm {% if period == 'today' %}is-on{% endif %}" onclick="setAuditPeriod('today', this)" style="padding:2px 7px;font-size:10.5px" title="Catatan aktivitas sejak jam 00:00 UTC hari ini">Hari Ini</button>
-          <button type="button" class="btn btn-sm {% if period == '24h' %}is-on{% endif %}" onclick="setAuditPeriod('24h', this)" style="padding:2px 7px;font-size:10.5px" title="Catatan aktivitas 24 jam terakhir">24 Jam</button>
-          <button type="button" class="btn btn-sm {% if period == '7d' %}is-on{% endif %}" onclick="setAuditPeriod('7d', this)" style="padding:2px 7px;font-size:10.5px" title="Catatan aktivitas 7 hari terakhir">7 Hari</button>
-          <button type="button" class="btn btn-sm {% if period == '30d' %}is-on{% endif %}" onclick="setAuditPeriod('30d', this)" style="padding:2px 7px;font-size:10.5px" title="Catatan aktivitas 30 hari terakhir">30 Hari</button>
-          {% if start_date or end_date or period == 'custom' %}
-          <button type="button" class="btn btn-sm is-on" style="padding:2px 7px;font-size:10.5px" title="Rentang tanggal kustom aktif">Kustom</button>
-          {% endif %}
-        </div>
+    <!-- Baris 2: Tombol Cepat (Quick Presets) & Info Ringkasan -->
+    <div class="noc-filter-subbar">
+      <div class="segmented-control" id="audit-period-pills" style="display:inline-flex;gap:3px">
+        <button type="button" class="btn btn-sm {% if not period and not start_date and not end_date %}is-on{% endif %}" onclick="setAuditPeriod('', this)" style="padding:2.5px 9px;font-size:11px" title="Tampilkan seluruh catatan terbaru">Semua</button>
+        <button type="button" class="btn btn-sm {% if period == 'today' %}is-on{% endif %}" onclick="setAuditPeriod('today', this)" style="padding:2.5px 9px;font-size:11px" title="Catatan aktivitas sejak jam 00:00 UTC hari ini">Hari Ini</button>
+        <button type="button" class="btn btn-sm {% if period == '24h' %}is-on{% endif %}" onclick="setAuditPeriod('24h', this)" style="padding:2.5px 9px;font-size:11px" title="Catatan aktivitas 24 jam terakhir">24 Jam</button>
+        <button type="button" class="btn btn-sm {% if period == '7d' %}is-on{% endif %}" onclick="setAuditPeriod('7d', this)" style="padding:2.5px 9px;font-size:11px" title="Catatan aktivitas 7 hari terakhir">7 Hari</button>
+        <button type="button" class="btn btn-sm {% if period == '30d' %}is-on{% endif %}" onclick="setAuditPeriod('30d', this)" style="padding:2.5px 9px;font-size:11px" title="Catatan aktivitas 30 hari terakhir">30 Hari</button>
+        {% if start_date or end_date or period == 'custom' %}
+        <button type="button" class="btn btn-sm is-on" style="padding:2.5px 9px;font-size:11px" title="Rentang tanggal kustom aktif">Kustom</button>
+        {% endif %}
       </div>
-      <div style="font-size:11px;color:var(--dim)">
+      <div style="font-size:11.5px;color:var(--dim)">
         {% if start_date or end_date %}
           Menampilkan catatan rentang {{ start_date or 'awal' }} s/d {{ end_date or 'sekarang' }}
         {% elif period == 'today' %}

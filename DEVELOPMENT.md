@@ -354,6 +354,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.69
+
+- **Tipe Rilis:** Redesain Bilah Filter Presisi Tinggi NOC, Integrasi Toolbar Bersih, dan Standardisasi Antarmuka (*High-Density NOC Clean Toolbar Redesign, Seamless Integrated Filters, and Interface Standardization*)
+- **Fokus Utama:** Merombak total tata letak bilah filter pada kartu Riwayat Insiden dan Halaman Riwayat Tindakan (Audit) menjadi satu baris toolbar terpadu yang ramping, presisi, bersih, dan profesional tanpa kotak bertumpuk yang kaku:
+  1. **Eliminasi Kotak Kontainer Bertingkat & Label Redundan:**
+     - Menghapus kontainer latar gelap bertingkat sekunder (`background: rgba(15,23,42,0.45); border: 1px solid var(--border)`) yang menciptakan kesan bertumpuk kaku (*nested box clutter*).
+     - Menghilangkan label teks redundan (`Server:`, `Keparahan:`, `Resolusi:`, `Pengguna:`, `Tindakan:`, `Status:`, `Dari:`, `Sampai:`) dan memanfaatkan opsi pertama dropdown sebagai penanda fungsional alami (`Semua Server`, `Semua Keparahan`, `Semua Resolusi`, dll.).
+  2. **Komponen Pemilih Rentang Tanggal Terpadu (*Integrated Date Range Picker*):**
+     - Menggabungkan pemilih tanggal awal dan akhir ke dalam satu modul kapsul ramping (`.date-range-picker`) berhias ikon kalender SVG minimalis dan tanda panah pemisah (`→`), dengan keselarasan tinggi baku `32px`.
+  3. **Standardisasi Tinggi & Kesejajaran Elemen Toolbar (`32px`):**
+     - Menyeragamkan tinggi seluruh kontrol input baris pertama (select filter, date range picker, search input, dan tombol aksi) secara presisi pada `height: 32px;` dengan perataan vertikal sempurna (*pixel-perfect alignment*).
+  4. **Pemisahan Elemen Pintasan Cepat (*Quick Presets*) yang Elegan:**
+     - Menata baris kedua dengan kontrol segmented pill kompak (`Hari Ini`, `24 Jam`, `7 Hari`, `30 Hari`, `Kustom`) di sisi kiri dan info jumlah data terfilter di sisi kanan tanpa garis putus-putus (*dashed border*) yang mengganggu.
+  5. **Dukungan Penuh Mode Gelap & Mode Terang:**
+     - Menambahkan kelas utilitas global `.noc-filter-bar`, `.noc-filter-row`, `.noc-filter-select`, `.date-range-picker`, `.noc-search-box`, dan `.noc-filter-subbar` pada [`server/templates/base.html`](file:///home/bos/rj45/server/templates/base.html) yang adaptif terhadap seluruh tema Pantau Server (Dark Default, Pitch Black Obsidian, Deep Space Navy, dan Light Mode).
+  6. **Integritas Halaman Utama & Kartu Insiden Terbuka:**
+     - Mempertahankan integritas 100% tanpa mengubah apapun pada Halaman Utama / Dasbor ([`dashboard.html`](file:///home/bos/rj45/server/templates/dashboard.html)) serta Kartu Insiden Terbuka ([`problems.html`](file:///home/bos/rj45/server/templates/problems.html#probtable)).
+  7. **Otomasi Pembaruan SemVer v4.8.69:**
+     - Menaikkan versi sistem menjadi `v4.8.69` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.68
 
 - **Tipe Rilis:** Penyempurnaan Bilah Filter Interaktif Riwayat Insiden & Audit Serta Standardisasi Kosakata Resolusi (*Incident & Audit History Interactive Filter Enhancement and Resolution Vocabulary Standardization*)
