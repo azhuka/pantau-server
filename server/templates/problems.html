@@ -1180,7 +1180,26 @@ function onResDateChange() {
   } catch (e) {}
 
   _lastResFingerprint = null;
-  if (window.poll) window.poll();
+  if ((st && en) || (!st && !en)) {
+    showResolvedLoadingState(true, txtPeriod);
+    if (window.poll) window.poll({ force: true, loading: true, periodLabel: txtPeriod });
+  }
+}
+
+function showResolvedLoadingState(isLoading, periodLabel) {
+  const tableWrap = document.getElementById('prob-resolved-table-wrap');
+  const summaryEl = document.getElementById('res-filter-summary-info');
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+
+  if (isLoading) {
+    if (tableWrap) tableWrap.classList.add('table-loading-dimmed');
+    if (summaryEl) {
+      const pTxt = periodLabel ? ` (${periodLabel})` : '';
+      summaryEl.innerHTML = `<span class="pantau-spinner"></span><span style="color:var(--blue);font-weight:500">${isEn ? 'Loading resolved incidents' + pTxt + '…' : 'Memuat riwayat insiden' + pTxt + '…'}</span>`;
+    }
+  } else {
+    if (tableWrap) tableWrap.classList.remove('table-loading-dimmed');
+  }
 }
 
 function setResolvedPeriod(period, btn) {
@@ -1197,6 +1216,9 @@ function setResolvedPeriod(period, btn) {
   if (startInp) startInp.value = '';
   if (endInp) endInp.value = '';
 
+  const customBtn = document.getElementById('btn-res-custom');
+  if (customBtn && period !== 'custom') customBtn.style.display = 'none';
+
   try {
     const url = new URL(window.location);
     if (period && period !== '24h') {
@@ -1209,15 +1231,19 @@ function setResolvedPeriod(period, btn) {
     window.history.replaceState({}, '', url);
   } catch (e) {}
 
+  let txt = '24 jam terakhir';
+  if (period === 'today') txt = 'hari ini';
+  else if (period === '7d') txt = '7 hari terakhir';
+  else if (period === '30d') txt = '30 hari terakhir';
+
   const sub = document.getElementById('prob-resolved-subtitle');
   if (sub) {
-    let txt = '24 jam terakhir';
-    if (period === 'today') txt = 'sejak 00:00 UTC hari ini';
-    else if (period === '7d') txt = '7 hari terakhir';
-    else if (period === '30d') txt = '30 hari terakhir';
     sub.textContent = `Rekapitulasi insiden yang telah teratasi dan catatan pemulihan sistem (${txt}).`;
   }
-  if (window.poll) window.poll();
+
+  // Tampilkan loading visual seketika (< 10ms) dan batalkan background request lama
+  showResolvedLoadingState(true, txt);
+  if (window.poll) window.poll({ force: true, loading: true, periodLabel: txt });
 }
 
 function resetResFilters() {
@@ -1246,9 +1272,27 @@ function resetResFilters() {
   filterResolvedTable();
 }
 
-window.poll = async function() {
-  if (_isPolling) return;
+let _pollAbortController = null;
+
+window.poll = async function(opts = {}) {
+  // Jika dipaksa oleh interaksi pengguna, batalkan request sebelumnya yang masih berjalan
+  if (opts.force) {
+    if (_pollAbortController) {
+      try { _pollAbortController.abort(); } catch(e) {}
+    }
+    _isPolling = false;
+  } else if (_isPolling) {
+    return;
+  }
+
   _isPolling = true;
+  _pollAbortController = new AbortController();
+  const signal = _pollAbortController.signal;
+
+  if (opts.loading) {
+    showResolvedLoadingState(true, opts.periodLabel);
+  }
+
   try {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const params = new URLSearchParams();
@@ -1264,7 +1308,7 @@ window.poll = async function() {
     params.set('_', Date.now());
     const qs = params.toString();
     const url = '/api/problems' + (qs ? '?' + qs : '');
-    const r = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
+    const r = await fetch(url, { credentials: 'same-origin', cache: 'no-store', signal });
     if (!r.ok) return;
     const data = await r.json();
 
@@ -1611,8 +1655,12 @@ window.poll = async function() {
       resBadges.innerHTML = rHtml;
     }
   } catch(e) {
+    if (e.name !== 'AbortError') {
+      console.error('Polling error:', e);
+    }
   } finally {
     _isPolling = false;
+    showResolvedLoadingState(false);
   }
 };
 

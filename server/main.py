@@ -10247,6 +10247,7 @@ def problems_aggregate(
     res_sev: str | None = None,
     res_type: str | None = None,
     res_q: str | None = None,
+    res_limit: int = 500,
 ):
     """Daftar masalah semua server untuk halaman /problems.
 
@@ -10316,25 +10317,15 @@ def problems_aggregate(
             seen_open_keys.add(r.key)
             open_list.append(_agg_row(srv, r, counts))
 
-        # Riwayat insiden teratasi
-        q_res = db.query(ServerProblem).filter(
-            ServerProblem.server_id == srv.id,
-            ServerProblem.resolved_at.isnot(None),
-            ServerProblem.resolved_at >= res_cutoff,
-        )
-        if res_cutoff_end:
-            q_res = q_res.filter(ServerProblem.resolved_at <= res_cutoff_end)
-        for r in q_res.all():
-            resolved_list.append(_agg_row(srv, r, counts))
-
-    # Masukkan masalah dari Synthetic Probing mandiri (tanpa server_id)
-    standalone_probs = db.query(ServerProblem).filter(
+    # Masukkan open problems dari Synthetic Probing mandiri (tanpa server_id)
+    standalone_open = db.query(ServerProblem).filter(
         ServerProblem.server_id.is_(None),
         ServerProblem.probe_id.isnot(None),
+        ServerProblem.resolved_at.is_(None),
     ).all()
-    if standalone_probs:
-        probes_map = {p.id: p for p in db.query(ProbeTarget).all()}
-        for r in standalone_probs:
+    probes_map = {p.id: p for p in db.query(ProbeTarget).all()}
+    if standalone_open:
+        for r in standalone_open:
             prb = probes_map.get(r.probe_id)
             prb_name = prb.name if prb else f"Probe #{r.probe_id}"
             prb_tier = getattr(prb, "tier", 2) or 2 if prb else 2
@@ -10351,16 +10342,45 @@ def problems_aggregate(
                 "tags": prb.probe_type if prb else "probe",
                 "count_24h": 1,
             })
-            if r.resolved_at is None:
-                open_list.append(d)
-            elif r.resolved_at >= res_cutoff and (res_cutoff_end is None or r.resolved_at <= res_cutoff_end):
-                resolved_list.append(d)
+            open_list.append(d)
+
+    # Riwayat insiden teratasi terpadu (Kinerja Tinggi & Skalabilitas NOC)
+    q_res = db.query(ServerProblem).filter(
+        ServerProblem.resolved_at.isnot(None),
+        ServerProblem.resolved_at >= res_cutoff,
+    )
+    if res_cutoff_end:
+        q_res = q_res.filter(ServerProblem.resolved_at <= res_cutoff_end)
+    if res_server:
+        q_res = q_res.filter(ServerProblem.server_id == res_server)
+    if res_sev:
+        q_res = q_res.filter(ServerProblem.severity == res_sev)
+
+    servers_map = {s.id: s for s in servers}
+    resolved_rows = q_res.order_by(ServerProblem.resolved_at.desc()).limit(res_limit).all()
+    for r in resolved_rows:
+        if r.server_id and r.server_id in servers_map:
+            resolved_list.append(_agg_row(servers_map[r.server_id], r))
+        elif r.probe_id and r.probe_id in probes_map:
+            prb = probes_map[r.probe_id]
+            prb_name = prb.name if prb else f"Probe #{r.probe_id}"
+            prb_tier = getattr(prb, "tier", 2) or 2 if prb else 2
+            d = _problem_row2dict(r)
+            eff_sev = d.get("severity", "warning")
+            if prb_tier != 1 and eff_sev in ("danger", "average"):
+                eff_sev = "warning"
+            d.update({
+                "server_id": None,
+                "hostname": prb_name,
+                "group_name": "Probing",
+                "tier": prb_tier,
+                "severity": eff_sev,
+                "tags": prb.probe_type if prb else "probe",
+                "count_24h": 1,
+            })
+            resolved_list.append(d)
 
     # Filter kriteria tambahan pada recent_resolved
-    if res_server:
-        resolved_list = [p for p in resolved_list if p.get("server_id") == res_server]
-    if res_sev:
-        resolved_list = [p for p in resolved_list if p.get("severity") == res_sev]
     if res_type:
         resolved_list = [p for p in resolved_list if p.get("res_type") == res_type]
     if res_q:

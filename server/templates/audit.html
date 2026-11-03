@@ -200,6 +200,8 @@ function auditPatch(html) {
 }
 
 let _auditDebounceTimer = null;
+let _auditAbortController = null;
+
 function debounceAuditFilter() {
   clearTimeout(_auditDebounceTimer);
   _auditDebounceTimer = setTimeout(() => {
@@ -207,9 +209,34 @@ function debounceAuditFilter() {
   }, 250);
 }
 
-async function applyAuditFilters() {
+function showAuditLoadingState(isLoading, periodLabel) {
+  const tbody = document.getElementById('audit-tbody');
+  const summaryEl = document.getElementById('audit-summary-info');
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+
+  if (isLoading) {
+    if (tbody) tbody.classList.add('table-loading-dimmed');
+    if (summaryEl) {
+      const pTxt = periodLabel ? ` (${periodLabel})` : '';
+      summaryEl.innerHTML = `<span class="pantau-spinner"></span><span style="color:var(--blue);font-weight:500">${isEn ? 'Loading audit records' + pTxt + '…' : 'Memuat data audit' + pTxt + '…'}</span>`;
+    }
+  } else {
+    if (tbody) tbody.classList.remove('table-loading-dimmed');
+  }
+}
+
+async function applyAuditFilters(periodLabel) {
   const form = document.getElementById('audit-filter-form');
   if (!form) return;
+
+  if (_auditAbortController) {
+    try { _auditAbortController.abort(); } catch(e) {}
+  }
+  _auditAbortController = new AbortController();
+  const signal = _auditAbortController.signal;
+
+  showAuditLoadingState(true, periodLabel);
+
   const fd = new FormData(form);
   const sp = new URLSearchParams();
   for (const [k, v] of fd.entries()) {
@@ -223,7 +250,7 @@ async function applyAuditFilters() {
   } catch (e) {}
 
   try {
-    const res = await fetch(targetUrl, { credentials: 'same-origin' });
+    const res = await fetch(targetUrl, { credentials: 'same-origin', signal });
     if (!res.ok) return;
     const html = await res.text();
     auditPatch(html);
@@ -237,7 +264,11 @@ async function applyAuditFilters() {
     const curHeaderCount = document.getElementById('audit-header-count');
     if (newHeaderCount && curHeaderCount) curHeaderCount.textContent = newHeaderCount.textContent;
   } catch (e) {
-    console.error('Audit filter error:', e);
+    if (e.name !== 'AbortError') {
+      console.error('Audit filter error:', e);
+    }
+  } finally {
+    showAuditLoadingState(false);
   }
 }
 
@@ -246,6 +277,7 @@ function onAuditDateChange() {
   const e = document.getElementById('audit-end-date')?.value || '';
   const pInp = document.getElementById('audit-period-input');
   const customBtn = document.getElementById('btn-audit-custom');
+  let txt = '';
   if (s || e) {
     if (pInp) pInp.value = 'custom';
     document.querySelectorAll('#audit-period-pills .btn').forEach(b => b.classList.remove('is-on'));
@@ -253,9 +285,10 @@ function onAuditDateChange() {
       customBtn.style.display = '';
       customBtn.classList.add('is-on');
     }
+    txt = (s && e) ? `${s} s/d ${e}` : (s ? `sejak ${s}` : `hingga ${e}`);
   }
   if ((s && e) || (!s && !e)) {
-    applyAuditFilters();
+    applyAuditFilters(txt);
   }
 }
 
@@ -273,7 +306,14 @@ function setAuditPeriod(p, btn) {
   document.querySelectorAll('#audit-period-pills .btn').forEach(b => b.classList.remove('is-on'));
   if (btn) btn.classList.add('is-on');
 
-  applyAuditFilters();
+  let txt = 'seluruh catatan';
+  if (p === 'today') txt = 'hari ini';
+  else if (p === '24h') txt = '24 jam terakhir';
+  else if (p === '7d') txt = '7 hari terakhir';
+  else if (p === '30d') txt = '30 hari terakhir';
+
+  showAuditLoadingState(true, txt);
+  applyAuditFilters(txt);
 }
 
 function resetAuditFilters() {

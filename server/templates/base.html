@@ -791,6 +791,27 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
 
+@keyframes pantau-spin {
+  to { transform: rotate(360deg); }
+}
+.pantau-spinner {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgba(56, 189, 248, 0.25);
+  border-top-color: var(--blue, #38bdf8);
+  border-radius: 50%;
+  animation: pantau-spin 0.6s linear infinite;
+  vertical-align: -1px;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+.table-loading-dimmed {
+  opacity: 0.38 !important;
+  pointer-events: none !important;
+  transition: opacity 0.12s ease;
+}
+
 /* Tombol Modern dengan sentuhan Neon Halus */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;border:1px solid transparent;cursor:pointer;text-decoration:none;transition:all .18s cubic-bezier(0.16,1,0.3,1);white-space:nowrap;user-select:none;position:relative}
 .btn:hover{filter:brightness(1.12)}
@@ -1935,7 +1956,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.73' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.74' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
       <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
       </button>
