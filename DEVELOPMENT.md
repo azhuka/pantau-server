@@ -354,6 +354,39 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.75
+
+- **Tipe Rilis:** Ekstensivitas Filter Interaktif Multi-Tabel Menyeluruh, Normalisasi Presisi Nilai Kolom Resolusi, dan Penyelarasan Antarmuka NOC (*Comprehensive Multi-Table Interactive Filtering, Complete Resolution Column Normalization, and Enterprise NOC Interface Standardization*)
+- **Fokus Utama:** Menjawab kebutuhan mendalam operator terhadap ketersediaan filter interaktif di seluruh modul tabel operasional serta mengeliminasi kebingungan semantik pada kolom Resolusi riwayat insiden:
+  1. **Normalisasi Menyeluruh Nilai Kolom Resolusi Insiden (`problems.html` & `server/main.py`):**
+     - Memetakan dan menormalisasi seluruh representasi mentah database ke dalam badge resmi Bahasa Indonesia yang lugas dan informatif:
+       - `ADMIN` / `admin` -> `✓ Ditangani (Master Admin)` dengan tooltip penanganan resmi.
+       - `resolved` / `auto` -> `✓ Pulih Normal (Otomatis)` dengan tooltip pemulihan metrik aman.
+       - `server_offline` -> `Ditutup Otomatis (Host Terputus)` (`badge-muted`) dengan penjelasan supresi alarm bertingkat saat mesin terputus.
+       - `server_online` / `agent_stale` -> `✓ Koneksi Pulih (Kembali Online)` menandakan pulihnya koneksi agen.
+       - `duplicate_cleanup` -> `Dibersihkan (Duplikasi)` (`badge-muted`).
+       - `operator_start` -> `✓ Dijalankan Operator`.
+       - `auto (upgrade...)` -> `✓ Pembaruan Selesai`.
+     - Menyelaraskan opsi dropdown filter `#res-filter-type` dengan badge-badge tersebut.
+  2. **Filter Interaktif Multi-Kriteria pada Halaman Daftar Server (`servers.html`):**
+     - Mengintegrasikan panel filter sebaris stabil `.pantau-filter-panel` yang seragam dengan Riwayat Insiden dan Audit Trail.
+     - Menghadirkan filter **Status Konektivitas** (`Semua status`, `Online`, `Terputus/Down`, `Ada Masalah`, `Pemeliharaan`) dan filter **Lingkungan Operasional** (`Semua lingkungan`, `Produksi/Tier 1`, `Non-Produksi/Tier 2`).
+     - Menyediakan tombol *Reset* dinamis dan pemfilteran client-side real-time instan melalui `serversFilter()`.
+  3. **Filter Server pada Jendela Pemeliharaan (`maintenance.html`):**
+     - Menambahkan dropdown filter Server (`#maintServerFilter`) terintegrasi langsung dengan `filterWindows()`.
+  4. **Filter Server / Node pada Pemantauan Endpoint (`probing.html`):**
+     - Menambahkan pemilih Server / Node Target (`#probeServerFilter`) terintegrasi dengan `getFilteredProbes()`.
+  5. **Filter Interaktif pada Audit Port Terbuka (`services.html#tab-ports`):**
+     - Menghadirkan bilah filter pencarian cepat, filter protokol (TCP / UDP), dan filter cakupan akses (Publik / Lokal) dengan fungsi `filterPortsTable()`.
+  6. **Filter Interaktif pada Manajemen Pengguna (`users.html`):**
+     - Menambahkan pencarian username dan filter dropdown peran akun (`Master Admin`, `Operator`, `Viewer`) dengan fungsi `filterUsersTable()`.
+  7. **Interaktivitas Riwayat Aktivitas Pengguna (`user_activity.html`):**
+     - Menjadikan badge chip statistik dapat diklik untuk memfilter jenis aktivitas (Login Sukses, Login Gagal, Sesi Baru, Sudo) serta kolom pencarian kata kunci.
+  8. **Integritas Mutlak Halaman Utama & Kartu Insiden Terbuka:**
+     - Mempertahankan integritas 100% tanpa mengubah apapun pada Halaman Utama / Dasbor ([`dashboard.html`](file:///home/bos/rj45/server/templates/dashboard.html)) serta Kartu Insiden Terbuka ([`problems.html#probtable`](file:///home/bos/rj45/server/templates/problems.html#probtable)).
+  9. **Otomasi Pembaruan SemVer v4.8.75:**
+     - Menaikkan versi sistem menjadi `v4.8.75` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.74
 
 - **Tipe Rilis:** Eliminasi Total Delay Persepsi Filter, Umpan Balik Visual Instan (<10ms), Integrasi AbortController Pembatalan Permintaan Usang, dan Kueri Agregat Terpadu Berkinerja Tinggi (*Zero-Delay Filter Perception, Instant Visual Feedback, AbortController In-Flight Cancellation, and High-Performance Unified Aggregate Query*)

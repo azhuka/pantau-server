@@ -333,6 +333,17 @@
       <button type="button" class="btn btn-sm" data-status="scheduled" onclick="setStatusFilter('scheduled')">Mendatang</button>
       <button type="button" class="btn btn-sm" data-status="completed" onclick="setStatusFilter('completed')">Selesai</button>
     </div>
+
+    <!-- Filter Server -->
+    {% if servers and servers|length > 0 %}
+    <select id="maintServerFilter" onchange="filterWindows()" title="Filter berdasarkan Server"
+            style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:34px;font-size:11.5px;outline:none;width:145px">
+      <option value="">Semua Server</option>
+      {% for s in servers %}
+      <option value="{{ s.id }}">{{ s.hostname }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
   </div>
 
   <span style="font-size:11.5px;color:var(--dim)" id="maintCountInfo">Memuat daftar jadwal…</span>
@@ -766,11 +777,16 @@ async function fetchWindows() {
 }
 
 function filterWindows() {
-  const q = (document.getElementById('maintSearch').value || '').toLowerCase().trim();
+  const q = (document.getElementById('maintSearch')?.value || '').toLowerCase().trim();
+  const srvF = (document.getElementById('maintServerFilter')?.value || '').trim();
   let list = _windowsList.slice();
 
   if (_curStatusFilter !== 'all') {
     list = list.filter(w => w.status === _curStatusFilter);
+  }
+
+  if (srvF) {
+    list = list.filter(w => String(w.server_id) === srvF);
   }
 
   if (q) {

@@ -49,9 +49,25 @@
 
   <!-- Tabel Pengguna -->
   <div class="card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <h3 style="font-size:15px;font-weight:700;margin:0">Pengguna Terdaftar</h3>
-      <span style="font-size:12px;color:var(--dim)">{{ users|length }} akun</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div>
+        <h3 style="font-size:15px;font-weight:700;margin:0">Pengguna Terdaftar</h3>
+        <span style="font-size:12px;color:var(--dim)" id="users-count-badge">{{ users|length }} akun</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <select id="user-role-filter" onchange="filterUsersTable()" title="Filter berdasarkan Peran"
+                style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:32px;font-size:11.5px;outline:none">
+          <option value="">Semua Peran</option>
+          <option value="admin">Master Admin</option>
+          <option value="operator">Operator</option>
+          <option value="viewer">Viewer</option>
+        </select>
+        <div style="position:relative;display:flex;align-items:center">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:8px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="search" id="user-search-input" placeholder="Cari username…" oninput="filterUsersTable()"
+                 style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px 0 26px;height:32px;font-size:11.5px;outline:none;width:150px">
+        </div>
+      </div>
     </div>
 
     <table id="users-table" style="width:100%;border-collapse:collapse;font-size:10.5px">
@@ -66,7 +82,7 @@
       </thead>
       <tbody>
         {% for u in users %}
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04)" data-username="{{ u.username|lower }}" data-role="{{ 'admin' if u.is_master_admin() else ('operator' if u.is_operator() else 'viewer') }}">
           <td style="padding:6px 8px">
             <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace">
               {{ u.username }}
@@ -332,9 +348,33 @@ function closeEditPermsModal() {
   m.style.display = 'none';
 }
 
+let usersPagination = null;
+function filterUsersTable() {
+  const q = (document.getElementById('user-search-input')?.value || '').toLowerCase().trim();
+  const r = (document.getElementById('user-role-filter')?.value || '').trim();
+  const rows = document.querySelectorAll('#users-table tbody tr[data-username]');
+  let count = 0;
+  rows.forEach(tr => {
+    const u = tr.getAttribute('data-username') || '';
+    const role = tr.getAttribute('data-role') || '';
+    const matchQ = !q || u.includes(q);
+    const matchR = !r || role === r;
+    const show = matchQ && matchR;
+    tr.dataset.filterHidden = show ? '0' : '1';
+    if (show) count++;
+  });
+  if (usersPagination) {
+    usersPagination.update();
+  } else {
+    rows.forEach(tr => { tr.style.display = (tr.dataset.filterHidden === '1' ? 'none' : ''); });
+  }
+  const b = document.getElementById('users-count-badge');
+  if (b) b.textContent = `${count} akun`;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('users-table') && typeof attachTablePagination === 'function') {
-    attachTablePagination('#users-table', {
+    usersPagination = attachTablePagination('#users-table', {
       unitLabel: 'pengguna',
       defaultLimit: 10,
       pageSizeOptions: [10, 25, 50, 100, 'all']

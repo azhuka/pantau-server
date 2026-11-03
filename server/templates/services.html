@@ -3342,6 +3342,25 @@ div[style*="position: fixed"] .card {
         <span class="badge badge-info" id="ports-count-badge">{{ (listening_ports|length) if listening_ports else 0 }} socket aktif</span>
       </div>
     </div>
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,255,255,0.02);border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-wrap:wrap">
+      <div style="position:relative;flex:1;min-width:180px;display:flex;align-items:center">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:8px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="search" id="port-search-input" placeholder="Cari port, proses, atau IP…" oninput="filterPortsTable()"
+               style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px 0 26px;height:30px;font-size:11.5px;outline:none;width:100%;box-sizing:border-box">
+      </div>
+      <select id="port-proto-filter" onchange="filterPortsTable()" title="Filter Protokol"
+              style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:30px;font-size:11.5px;outline:none;width:120px">
+        <option value="">Semua Protokol</option>
+        <option value="tcp">TCP</option>
+        <option value="udp">UDP</option>
+      </select>
+      <select id="port-access-filter" onchange="filterPortsTable()" title="Filter Akses"
+              style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:30px;font-size:11.5px;outline:none;width:130px">
+        <option value="">Semua Akses</option>
+        <option value="public">Publik (Luar)</option>
+        <option value="local">Lokal (Loopback)</option>
+      </select>
+    </div>
     <div style="overflow-x:auto" id="ports-wrap" style="display:{{ 'block' if listening_ports else 'none' }}">
       <table id="ports-table" style="min-width:750px;width:100%">
         <thead>
@@ -3356,7 +3375,7 @@ div[style*="position: fixed"] .card {
         </thead>
         <tbody>
           {% for p in (listening_ports if listening_ports else []) %}
-          <tr>
+          <tr data-proto="{{ p.proto|lower }}" data-is-public="{{ '1' if p.is_public else '0' }}" data-search="{{ (p.proto ~ ' ' ~ p.port ~ ' ' ~ p.ip ~ ' ' ~ (p.proc or ''))|lower }}">
             <td><span class="badge {{ 'badge-info' if p.proto == 'tcp' else 'badge-warn' }}">{{ p.proto | upper }}</span></td>
             <td class="mono" style="font-weight:700;font-size:13px;color:var(--text)">{{ p.port }}</td>
             <td class="mono" style="color:var(--dim)">{{ p.ip }}</td>
@@ -9363,7 +9382,8 @@ function renderPorts(ports) {
       actions += `<span style="font-size:11px;color:var(--dim);white-space:nowrap">⛨ ${isEn ? 'Protected' : 'Dilindungi'}</span>`;
     }
 
-    return `<tr>
+    const rowSearch = `${p.proto || ''} ${portNum} ${ipStr} ${p.proc || ''}`.toLowerCase();
+    return `<tr data-proto="${(p.proto || '').toLowerCase()}" data-is-public="${isPublic ? '1' : '0'}" data-search="${escHtml(rowSearch)}">
       <td>${protoBadge}</td>
       <td class="mono" style="font-weight:700;font-size:10.5px;color:var(--text)">${portNum}</td>
       <td class="mono" style="color:var(--dim)">${ipStr}</td>
@@ -9373,8 +9393,39 @@ function renderPorts(ports) {
     </tr>`;
   }).join('');
 
+  filterPortsTable();
+}
+
+function filterPortsTable() {
+  const q = (document.getElementById('port-search-input')?.value || '').toLowerCase().trim();
+  const protoF = (document.getElementById('port-proto-filter')?.value || '').toLowerCase().trim();
+  const accessF = (document.getElementById('port-access-filter')?.value || '').toLowerCase().trim();
+  const rows = document.querySelectorAll('#ports-table tbody tr');
+  let count = 0;
+  rows.forEach(tr => {
+    const search = tr.getAttribute('data-search') || tr.textContent.toLowerCase();
+    const proto = tr.getAttribute('data-proto') || '';
+    const isPub = tr.getAttribute('data-is-public') === '1';
+
+    const matchQ = !q || search.includes(q);
+    const matchProto = !protoF || proto === protoF;
+    let matchAccess = true;
+    if (accessF === 'public') matchAccess = isPub;
+    else if (accessF === 'local') matchAccess = !isPub;
+
+    const show = matchQ && matchProto && matchAccess;
+    tr.dataset.filterHidden = show ? '0' : '1';
+    if (show) count++;
+  });
   if (_servicesTabPagination['ports']) {
     _servicesTabPagination['ports'].update();
+  } else {
+    rows.forEach(tr => { tr.style.display = (tr.dataset.filterHidden === '1' ? 'none' : ''); });
+  }
+  const badge = document.getElementById('ports-count-badge');
+  if (badge) {
+    const isEn = typeof isEnPage === 'function' ? isEnPage() : false;
+    badge.textContent = `${count} ${isEn ? 'active sockets' : 'socket aktif'}`;
   }
 }
 

@@ -9574,50 +9574,77 @@ def _problem_row2dict(row) -> dict:
     )
 
     raw_ack = getattr(row, "acknowledged_by", None)
-    ack_by = "master-admin" if raw_ack == "admin" else raw_ack
+    ack_by = None
+    if raw_ack:
+        raw_str = str(raw_ack).strip()
+        ack_by = "master-admin" if raw_str.lower() in ("admin", "master-admin", "master_admin") else raw_str
+
     res_note = getattr(row, "resolved_note", None)
+    res_note_str = str(res_note).strip().lower() if res_note else ""
     key = getattr(row, "key", "") or ""
 
     if ack_by:
         res_type = "manual"
-        res_label = f"✓ Ditangani ({ack_by})"
-        res_label_en = f"✓ Handled ({ack_by})"
-        res_tip = f"Diselesaikan secara manual oleh operator {ack_by}"
-        res_tip_en = f"Handled manually by operator {ack_by}"
+        op_label = "Master Admin" if ack_by == "master-admin" else ack_by
+        res_label = f"✓ Ditangani ({op_label})"
+        res_label_en = f"✓ Handled ({op_label})"
+        res_tip = f"Diselesaikan secara manual oleh operator {op_label}"
+        res_tip_en = f"Handled manually by operator {op_label}"
         res_badge_cls = "badge-up"
-    elif res_note == "server_offline":
+    elif res_note_str == "server_offline":
         res_type = "stale_closed"
-        res_label = "Ditutup (Host Terputus)"
+        res_label = "Ditutup Otomatis (Host Terputus)"
         res_label_en = "Closed (Host Down)"
-        res_tip = "Insiden ditutup karena host terputus / agen berhenti melapor (supresi insiden)"
-        res_tip_en = "Closed because host disconnected / agent stopped reporting"
+        res_tip = "Insiden layanan ditutup sementara otomatis karena host terputus / agen berhenti melapor (supresi alarm bertingkat)"
+        res_tip_en = "Service incident closed automatically because host disconnected (alarm suppression)"
         res_badge_cls = "badge-muted"
-    elif res_note == "server_online" or key == "agent_stale":
+    elif res_note_str == "server_online" or key == "agent_stale":
         res_type = "online"
-        res_label = "✓ Host Kembali Online"
+        res_label = "✓ Koneksi Pulih (Kembali Online)"
         res_label_en = "✓ Host Back Online"
-        res_tip = "Koneksi agen pulih dan server aktif melapor kembali"
+        res_tip = "Koneksi agen pulih sepenuhnya dan server aktif melapor kembali"
         res_tip_en = "Agent connection restored and server reporting online"
         res_badge_cls = "badge-up"
-    elif res_note == "service_up":
+    elif res_note_str == "service_up":
         res_type = "service_up"
-        res_label = "✓ Layanan Aktif Kembali"
+        res_label = "✓ Layanan Berjalan Kembali"
         res_label_en = "✓ Service Running"
         res_tip = "Layanan sistem telah beroperasi normal kembali"
         res_tip_en = "System service resumed and running normally"
         res_badge_cls = "badge-up"
-    elif res_note == "session_closed":
+    elif res_note_str == "session_closed":
         res_type = "session_closed"
         res_label = "✓ Sesi SSH Ditutup"
         res_label_en = "✓ SSH Closed"
-        res_tip = "Sesi remote SSH telah selesai ditutup"
-        res_tip_en = "Remote SSH session closed"
+        res_tip = "Sesi remote SSH telah selesai ditutup dengan aman"
+        res_tip_en = "Remote SSH session closed safely"
         res_badge_cls = "badge-muted"
-    elif res_note == "auto":
+    elif res_note_str in ("duplicate_cleanup", "dedup"):
+        res_type = "dedup"
+        res_label = "Dibersihkan (Duplikasi)"
+        res_label_en = "Cleaned (Duplicate)"
+        res_tip = "Entri insiden duplikat dibersihkan secara otomatis oleh sistem konsolidasi"
+        res_tip_en = "Duplicate incident record cleaned automatically by consolidation engine"
+        res_badge_cls = "badge-muted"
+    elif res_note_str == "operator_start":
+        res_type = "manual"
+        res_label = "✓ Dijalankan Operator"
+        res_label_en = "✓ Started by Operator"
+        res_tip = "Layanan berhasil dihidupkan kembali melalui tindakan operator"
+        res_tip_en = "Service restarted by operator action"
+        res_badge_cls = "badge-up"
+    elif "upgrade" in res_note_str:
         res_type = "auto"
-        res_label = "✓ Pulih Otomatis"
+        res_label = "✓ Pembaruan Selesai"
+        res_label_en = "✓ Upgrade Completed"
+        res_tip = "Pembaruan paket sistem selesai dan kondisi kembali aman"
+        res_tip_en = "Package upgrade finished and condition secured"
+        res_badge_cls = "badge-up"
+    elif res_note_str in ("auto", "resolved", "auto (reset)", "ok", "normal"):
+        res_type = "auto"
+        res_label = "✓ Pulih Normal (Otomatis)"
         res_label_en = "✓ Auto Recovered"
-        res_tip = "Metrik sistem kembali normal dan aman"
+        res_tip = "Metrik sistem kembali normal dan aman secara otomatis"
         res_tip_en = "System metrics normalized automatically"
         res_badge_cls = "badge-up"
     elif res_note:

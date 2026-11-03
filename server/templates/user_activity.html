@@ -61,16 +61,35 @@
 </div>
 
 <div id="chip-row" style="display:none;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-  <span class="chip chip-up">Login Sukses: <b id="chip-sukses">0</b></span>
-  <span class="chip chip-down">Login Gagal: <b id="chip-gagal">0</b></span>
-  <span class="chip chip-inactive">Sesi Baru: <b id="chip-sesi">0</b></span>
-  <span class="chip chip-warn">Sudo: <b id="chip-sudo">0</b></span>
-  <span class="chip chip-inactive">Perintah: <b id="chip-cmd">0</b></span>
+  <span class="chip chip-up" style="cursor:pointer" onclick="setLlTypeFilter('sukses')" title="Klik untuk filter Login Sukses">Login Sukses: <b id="chip-sukses">0</b></span>
+  <span class="chip chip-down" style="cursor:pointer" onclick="setLlTypeFilter('gagal')" title="Klik untuk filter Login Gagal">Login Gagal: <b id="chip-gagal">0</b></span>
+  <span class="chip chip-inactive" style="cursor:pointer" onclick="setLlTypeFilter('sesi')" title="Klik untuk filter Sesi Baru">Sesi Baru: <b id="chip-sesi">0</b></span>
+  <span class="chip chip-warn" style="cursor:pointer" onclick="setLlTypeFilter('sudo')" title="Klik untuk filter Sudo">Sudo: <b id="chip-sudo">0</b></span>
+  <span class="chip chip-inactive" style="cursor:pointer" onclick="document.getElementById('hist-filter').focus()" title="Fokus ke riwayat perintah">Perintah: <b id="chip-cmd">0</b></span>
+  <button type="button" class="btn btn-ghost btn-sm" id="btn-reset-ll-filter" onclick="setLlTypeFilter('')" style="display:none;padding:2px 8px;font-size:11px">Reset Filter</button>
 </div>
 
 <div class="card">
-  <div class="card-header"><h3>Aktivitas Login &amp; Sudo</h3>
-    <span id="ll-state" style="font-size:12px;color:var(--dim)"></span>
+  <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div>
+      <h3 style="margin:0">Aktivitas Login &amp; Sudo</h3>
+      <span id="ll-state" style="font-size:12px;color:var(--dim)"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <select id="ll-type-filter" onchange="filterLoginsTable()" title="Filter Jenis Aktivitas"
+              style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:30px;font-size:11.5px;outline:none">
+        <option value="">Semua Jenis</option>
+        <option value="sukses">Login Sukses</option>
+        <option value="gagal">Login Gagal</option>
+        <option value="sesi">Sesi Baru</option>
+        <option value="sudo">Sudo</option>
+      </select>
+      <div style="position:relative;display:flex;align-items:center">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:8px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="search" id="ll-search-input" placeholder="Cari IP, perintah, metode…" oninput="filterLoginsTable()"
+               style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px 0 26px;height:30px;font-size:11.5px;outline:none;width:180px">
+      </div>
+    </div>
   </div>
   <div id="ll-empty" class="empty-msg" style="display:none">Belum ada aktivitas login untuk user ini.</div>
   <div id="ll-scroll" style="display:none;overflow-x:auto;border:1px solid var(--border);border-radius:6px">
@@ -219,7 +238,8 @@ async function loadActivity() {
             : escapeHtml(x.method || '-');
           const typeLabel = {sukses: 'Login sukses', gagal: 'Login gagal',
                              sudo: 'Sudo', sesi: 'Sesi baru'}[x.type] || x.type || '-';
-          return '<tr><td class="mono">' + escapeHtml(x.ts || '-') + '</td>'
+          const rowSearch = `${x.ts || ''} ${x.user || ''} ${x.from || ''} ${x.method || ''} ${typeLabel}`.toLowerCase();
+          return '<tr data-type="' + escapeHtml(x.type || '') + '" data-search="' + escapeHtml(rowSearch) + '"><td class="mono">' + escapeHtml(x.ts || '-') + '</td>'
             + '<td><strong>' + escapeHtml(x.user || '-') + '</strong></td>'
             + '<td><span class="badge ' + cls + '">' + escapeHtml(typeLabel) + '</span></td>'
             + '<td class="mono">' + escapeHtml(x.from || '-') + '</td>'
@@ -235,10 +255,47 @@ async function loadActivity() {
         } else if (window._llPagination) {
           window._llPagination.update();
         }
+        filterLoginsTable();
       }
       const pgBar = document.querySelector('.table-pagination-bar[data-for-table="ll-table"]');
       if (pgBar) pgBar.style.display = (logins.length > 10) ? 'flex' : 'none';
       if (st1) st1.textContent = logins.length ? logins.length + ' aktivitas' : '';
+    }
+  }
+}
+
+function setLlTypeFilter(t) {
+  const sel = document.getElementById('ll-type-filter');
+  if (sel) sel.value = t;
+  const btnReset = document.getElementById('btn-reset-ll-filter');
+  if (btnReset) btnReset.style.display = t ? 'inline-flex' : 'none';
+  filterLoginsTable();
+}
+
+function filterLoginsTable() {
+  const q = (document.getElementById('ll-search-input')?.value || '').toLowerCase().trim();
+  const typeF = (document.getElementById('ll-type-filter')?.value || '').trim();
+  const btnReset = document.getElementById('btn-reset-ll-filter');
+  if (btnReset) btnReset.style.display = (q || typeF) ? 'inline-flex' : 'none';
+
+  const rows = document.querySelectorAll('#ll-table tbody tr');
+  let count = 0;
+  rows.forEach(tr => {
+    const search = tr.getAttribute('data-search') || tr.textContent.toLowerCase();
+    const type = tr.getAttribute('data-type') || '';
+    const matchQ = !q || search.includes(q);
+    const matchType = !typeF || type === typeF;
+    const show = matchQ && matchType;
+    tr.dataset.filterHidden = show ? '0' : '1';
+    if (show) count++;
+  });
+  if (window._llPagination) {
+    window._llPagination.update();
+  } else {
+    rows.forEach(tr => { tr.style.display = (tr.dataset.filterHidden === '1' ? 'none' : ''); });
+  }
+  const st1 = document.getElementById('ll-state');
+  if (st1) st1.textContent = `${count} aktivitas`;
 
       renderChips(logins, history);
       renderHistory(history);

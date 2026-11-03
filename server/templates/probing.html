@@ -546,6 +546,15 @@
       <option value="degraded">Terganggu (Degraded)</option>
       <option value="paused">Dijeda</option>
     </select>
+    <select id="probeServerFilter" class="filter-select" onchange="handleSearchFilter()" aria-label="Filter Server Target">
+      <option value="all">Semua Node / Server</option>
+      <option value="standalone">Mandiri / Eksternal</option>
+      {% if servers %}
+        {% for s in servers %}
+        <option value="{{ s.id }}">{{ s.hostname }}</option>
+        {% endfor %}
+      {% endif %}
+    </select>
     <button type="button" class="btn btn-ghost btn-sm" onclick="fetchProbes(true)" title="Muat Ulang Data">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/></svg>
     </button>
@@ -979,6 +988,7 @@ function getFilteredProbes() {
   const q = (document.getElementById('probeSearchInput')?.value || '').toLowerCase().trim();
   const typeF = document.getElementById('probeTypeFilter')?.value || 'all';
   const statusF = document.getElementById('probeStatusFilter')?.value || 'all';
+  const srvF = document.getElementById('probeServerFilter')?.value || 'all';
 
   return probeDataList.filter(p => {
     if (typeF !== 'all') {
@@ -988,6 +998,10 @@ function getFilteredProbes() {
     if (statusF !== 'all') {
       const curStatus = p.is_active ? p.status : 'paused';
       if (curStatus !== statusF) return false;
+    }
+    if (srvF !== 'all') {
+      if (srvF === 'standalone' && p.server_id) return false;
+      if (srvF !== 'standalone' && String(p.server_id) !== srvF) return false;
     }
     if (q) {
       const matchName = (p.name || '').toLowerCase().includes(q);

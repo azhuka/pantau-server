@@ -598,13 +598,15 @@
 
       <!-- Filter Resolusi -->
       <select id="res-filter-type" onchange="onResFilterChange()" title="Filter berdasarkan Status / Tipe Resolusi"
-              style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:34px;font-size:11.5px;outline:none;width:135px;flex-shrink:0">
+              style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:34px;font-size:11.5px;outline:none;width:150px;flex-shrink:0">
         <option value="">Semua resolusi</option>
-        <option value="auto" {% if res_type == 'auto' %}selected{% endif %}>✓ Pulih Otomatis</option>
+        <option value="auto" {% if res_type == 'auto' %}selected{% endif %}>✓ Pulih Normal (Otomatis)</option>
         <option value="manual" {% if res_type == 'manual' %}selected{% endif %}>✓ Ditangani Operator</option>
-        <option value="online" {% if res_type == 'online' %}selected{% endif %}>✓ Host Kembali Online</option>
-        <option value="service_up" {% if res_type == 'service_up' %}selected{% endif %}>✓ Layanan Aktif</option>
+        <option value="online" {% if res_type == 'online' %}selected{% endif %}>✓ Koneksi Pulih (Online)</option>
+        <option value="service_up" {% if res_type == 'service_up' %}selected{% endif %}>✓ Layanan Berjalan</option>
         <option value="stale_closed" {% if res_type == 'stale_closed' %}selected{% endif %}>Ditutup (Host Terputus)</option>
+        <option value="session_closed" {% if res_type == 'session_closed' %}selected{% endif %}>Sesi SSH Ditutup</option>
+        <option value="dedup" {% if res_type == 'dedup' %}selected{% endif %}>Dibersihkan (Duplikasi)</option>
       </select>
 
       <!-- Filter Rentang Tanggal (Kompak & Elegan Berlabel Jelas) -->
@@ -1562,25 +1564,29 @@ window.poll = async function(opts = {}) {
         const sevBadge = 'badge badge-' + ({danger:'danger',average:'orange',warning:'warn',info:'info'}[p.severity] || 'info');
         const grp = p.group_name || '';
 
-        const resType = p.res_type || (p.acknowledged_by ? 'manual' : (p.resolved_note === 'server_offline' ? 'stale_closed' : (p.resolved_note === 'server_online' || p.key === 'agent_stale' ? 'online' : (p.resolved_note === 'service_up' ? 'service_up' : (p.resolved_note === 'session_closed' ? 'session_closed' : 'auto')))));
+        const resType = p.res_type || (p.acknowledged_by ? 'manual' : (p.resolved_note === 'server_offline' ? 'stale_closed' : (p.resolved_note === 'server_online' || p.key === 'agent_stale' ? 'online' : (p.resolved_note === 'service_up' ? 'service_up' : (p.resolved_note === 'session_closed' ? 'session_closed' : (p.resolved_note === 'duplicate_cleanup' ? 'dedup' : 'auto'))))));
         const resLabel = isEn ? (p.res_label_en || p.res_label) : p.res_label;
         const resTip = isEn ? (p.res_tip_en || p.res_tip) : p.res_tip;
-        const resBadgeCls = p.res_badge_cls || (resType === 'stale_closed' || resType === 'session_closed' ? 'badge-muted' : 'badge-up');
+        const resBadgeCls = p.res_badge_cls || (resType === 'stale_closed' || resType === 'session_closed' || resType === 'dedup' ? 'badge-muted' : 'badge-up');
 
         let resBadge = '';
         if (resLabel) {
           resBadge = `<span class="badge ${resBadgeCls}" style="font-size:10px;padding:1px 5px" title="${_esc(resTip || '')}">${_esc(resLabel)}</span>`;
         } else if (p.acknowledged_by) {
-          const ackOp = (p.acknowledged_by === 'admin' ? 'master-admin' : p.acknowledged_by);
+          const ackOp = (String(p.acknowledged_by).toLowerCase().includes('admin') ? 'Master Admin' : p.acknowledged_by);
           resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Handled manually by operator ' + _esc(ackOp) : 'Diselesaikan secara manual oleh operator ' + _esc(ackOp)}">✓ ${isEn ? 'Handled (' + _esc(ackOp) + ')' : 'Ditangani (' + _esc(ackOp) + ')'}</span>`;
         } else if (p.resolved_note === 'server_offline') {
-          resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Closed because host disconnected / agent stopped reporting' : 'Insiden ditutup karena host terputus / agen berhenti melapor (supresi insiden)'}">${isEn ? 'Closed (Host Down)' : 'Ditutup (Host Terputus)'}</span>`;
+          resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Closed because host disconnected (alarm suppression)' : 'Insiden layanan ditutup sementara otomatis karena host terputus (supresi alarm bertingkat)'}">${isEn ? 'Closed (Host Down)' : 'Ditutup Otomatis (Host Terputus)'}</span>`;
         } else if (p.resolved_note === 'server_online' || p.key === 'agent_stale') {
-          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Agent connection restored and server reporting online' : 'Koneksi agen pulih dan server aktif melapor kembali'}">✓ ${isEn ? 'Host Back Online' : 'Host Kembali Online'}</span>`;
+          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Agent connection restored and server reporting online' : 'Koneksi agen pulih sepenuhnya dan server aktif melapor kembali'}">✓ ${isEn ? 'Host Back Online' : 'Koneksi Pulih (Kembali Online)'}</span>`;
         } else if (p.resolved_note === 'service_up') {
-          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'System service resumed and running normally' : 'Layanan sistem telah beroperasi normal kembali'}">✓ ${isEn ? 'Service Running' : 'Layanan Aktif Kembali'}</span>`;
+          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'System service resumed and running normally' : 'Layanan sistem telah beroperasi normal kembali'}">✓ ${isEn ? 'Service Running' : 'Layanan Berjalan Kembali'}</span>`;
+        } else if (p.resolved_note === 'session_closed') {
+          resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Remote SSH session closed safely' : 'Sesi remote SSH telah selesai ditutup dengan aman'}">✓ ${isEn ? 'SSH Closed' : 'Sesi SSH Ditutup'}</span>`;
+        } else if (p.resolved_note === 'duplicate_cleanup') {
+          resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Duplicate record cleaned' : 'Entri insiden duplikat dibersihkan secara otomatis'}">${isEn ? 'Cleaned (Duplicate)' : 'Dibersihkan (Duplikasi)'}</span>`;
         } else {
-          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'System metrics normalized automatically' : 'Metrik sistem kembali normal dan aman'}">✓ ${isEn ? 'Auto Recovered' : 'Pulih Otomatis'}</span>`;
+          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'System metrics normalized automatically' : 'Metrik sistem kembali normal dan aman secara otomatis'}">✓ ${isEn ? 'Auto Recovered' : 'Pulih Normal (Otomatis)'}</span>`;
         }
 
         const resSevLabel = _esc(p.severity === 'danger' ? (isEn ? 'CRITICAL' : 'KRITIS') : (p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'warning' ? (isEn ? 'WARNING' : 'PERINGATAN') : (p.severity || '').toUpperCase())));
