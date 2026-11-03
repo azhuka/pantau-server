@@ -491,7 +491,7 @@
     {% if open_problems %}
     <table id="probtable" style="width:100%;border-collapse:collapse;table-layout:fixed">
       <colgroup>
-        <col style="width:115px">
+        <col style="width:135px">
         <col style="width:175px">
         <col style="width:165px">
         <col>
@@ -529,8 +529,8 @@
           data-prob-host="{{ p.hostname }}"
           data-prob-sid="{{ p.server_id }}"
           data-prob-context='{{ p.context or "" }}'>
-        <td class="col-time" style="padding:5px 10px;white-space:nowrap">
-          <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px">{{ p.started_at.strftime('%d %b %H:%M') if p.started_at else '—' }}</span>
+        <td class="col-time" style="padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px" title="Waktu Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }}">{{ p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—' }}</span>
         </td>
         <td class="col-server" style="padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
           <div style="display:inline-flex;align-items:center;gap:6px;max-width:100%">
@@ -1498,7 +1498,7 @@ window.poll = async function(opts = {}) {
         if (!table) {
           wrapper.innerHTML = `<table id="probtable" style="width:100%;border-collapse:collapse;table-layout:fixed">
             <colgroup>
-              <col style="width:115px">
+              <col style="width:135px">
               <col style="width:175px">
               <col style="width:165px">
               <col>
@@ -1604,8 +1604,8 @@ window.poll = async function(opts = {}) {
               data-prob-host="${_esc(p.hostname)}"
               data-prob-sid="${p.server_id}"
               data-prob-context="${ctxStr}">
-              <td class="col-time" style="padding:5px 10px;white-space:nowrap">
-                <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px">${_esc(p.started_at_str || '')}</span>
+              <td class="col-time" style="padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px" title="${(isEn ? 'Started: ' : 'Mulai: ') + _esc(p.started_at_str || '')}">${_esc((p.started_at_str || '').replace(/\s*\d{4}\s*/, ' '))}</span>
               </td>
               <td class="col-server" style="padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                 <div style="display:inline-flex;align-items:center;gap:6px;max-width:100%">

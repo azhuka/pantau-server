@@ -354,6 +354,32 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.82
+
+- **Tipe Rilis:** Resolusi Total Tabrakan Teks Tabel Insiden, Harmonisasi Kontras Tema Terang (Light Mode), Pelepasan Kliping Menu Dropdown Kolom (*Fixed Dropdown Unclipping*), dan Standarisasi Densitas Tinggi NOC (*Full Text Collision Resolution, Light Mode Contrast Harmonization, Fixed Dropdown Unclipping, and NOC High-Density Incident Standardization*)
+- **Fokus Utama:** Menyempurnakan presisi visual, konsistensi multi-tema, dan kerapian tata letak operasional:
+  1. **Resolusi Tabrakan Teks & Standarisasi Kolom Waktu Tabel Insiden (`problems.html`):**
+     - Memperlebar kolom Waktu pada tabel Insiden Aktif (`#probtable`) dari 115px ke 135px (min-width: 125px) baik pada markup Jinja maupun pembuatan tabel JavaScript dinamis.
+     - Menghilangkan redundansi tahun 4-digit pada tampilan sel (`03 Nov 14:57:58`) sehingga teks waktu tidak menabrak nama server atau bulatan status, dengan rincian lengkap tetap tersimpan di tooltip hover `title="Waktu Mulai: ..."`.
+     - Menambahkan proteksi `overflow: hidden; text-overflow: ellipsis; white-space: nowrap;` pada kelas `.col-time`.
+  2. **Harmonisasi Kontras Hak Akses & Tema Terang (`profile.html`, `users.html`, `base.html`):**
+     - Mengeliminasi background gelap statis `rgba(9,13,22,0.7)` pada kartu wewenang operator dan formulir input, menggantinya dengan variabel CSS semantik `var(--input-bg)` dan `var(--card-bg-subtle)`.
+     - Memastikan seluruh teks wewenang dan izin operator terbaca 100% jelas, kontras tajam (WCAG AA), dan ramah mata pada tema terang (Light Mode).
+  3. **Pelepasan Kliping Menu Dropdown Kolom (*Fixed Dropdown Unclipping* di `base.html`):**
+     - Mengubah arsitektur posisi menu visibilitas kolom `.pantau-col-menu` dari `position: absolute` menjadi `position: fixed; z-index: 99999` dengan perhitungan bounding box dinamis (`getBoundingClientRect()`).
+     - Menu kini melayang bebas di atas seluruh kartu dan tabel tanpa terpotong oleh `overflow-x: auto` bilah filter, dan tertutup secara mulus saat scroll, resize, escape, atau klik di luar menu.
+  4. **Pembersihan dan Standarisasi Halaman Audit (`audit.html`):**
+     - Menghilangkan tautan redundan dan tooltip `Saring hanya aktivitas pengguna...` pada sel nama pengguna, menjadikannya teks monospaced statis yang bersih.
+     - Merapikan posisi info ringkasan filter `#audit-summary-info` agar menyatu berdampingan dengan tombol preset dan pemisah halus, menghilangkan tampilan teks yang melayang sendirian di ujung kanan.
+  5. **Standarisasi Densitas Tinggi NOC pada Rincian Layanan (`services.html`):**
+     - Merestrukturisasi kolom Keparahan (*Severity*) pada tabel Status Insiden menjadi satu lencana murni tanpa penumpukan vertikal lencana `DIABAIKAN` / `DITANGANI`, menjaga tinggi baris tabel seragam (~32px).
+     - Menormalkan kolom Waktu menjadi satu baris waktu yang padat dan elegan dengan tooltip komprehensif `Mulai: ... | Selesai: ...`.
+     - Menghilangkan duplikasi teks paginasi `Menampilkan 1-10 dari ...` dari bilah filter atas dan kartu Riwayat Tindakan.
+     - Merestrukturisasi kontrol segmen (Users vs Groups dan filter kategori) menjadi pill switcher tanpa nested double borders, serta memperbaiki kontras lencana jumlah akun pada tab aktif di Light Mode.
+  6. **Integritas Mutlak Halaman Utama & Standarisasi SemVer v4.8.82:**
+     - Menjaga integritas 100% tanpa mengubah kode apapun pada Halaman Utama / Dasbor (`dashboard.html`).
+     - Menaikkan versi sistem secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.81
 
 - **Tipe Rilis:** Perbaikan Eksepsi Fatal JavaScript Polling Insiden, Restorasi Kepadatan Data NOC Tabel Riwayat Insiden, Modernisasi Ikon Pengurutan Tabel SVG, dan Fleksibilitas Layout Bebas Clipping (*Fatal JavaScript Polling Exception Elimination, NOC High-Density Restoration for Resolved Incidents Table, Modern SVG Table Sorting Indicator, and Fluid Main Layout Clipping Prevention*)

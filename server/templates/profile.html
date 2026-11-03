@@ -38,7 +38,7 @@
   <p style="font-size:13px;color:var(--text);line-height:1.5;margin-bottom:16px">
     Kode-kode di bawah ini hanya ditampilkan <strong>satu kali ini saja</strong>. Setiap kode hanya dapat dipakai <strong>satu kali</strong> untuk masuk jika Anda kehilangan akses ke aplikasi autentikator Anda.
   </p>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;margin-bottom:16px;background:rgba(9,13,22,0.8);padding:14px;border-radius:8px;border:1px solid var(--border)">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;margin-bottom:16px;background:var(--card-bg-subtle, var(--bg));padding:14px;border-radius:8px;border:1px solid var(--border)">
     {% for code in newly_generated_codes %}
     <div style="font-family:ui-monospace,monospace;font-size:14px;font-weight:700;letter-spacing:1px;color:var(--blue);text-align:center;padding:6px;background:rgba(255,255,255,0.04);border-radius:4px">
       {{ code }}
@@ -198,7 +198,7 @@
         </p>
 
         {% if user.totp_enabled %}
-        <div style="background:rgba(9,13,22,0.6);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:11.5px">
+        <div style="background:var(--card-bg-subtle, var(--bg));border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:11.5px">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <span style="color:var(--dim)">Kode Pemulihan Cadangan Tersedia:</span>
             <strong style="color:var(--blue);font-size:12.5px">{{ recovery_codes_remaining }} kode</strong>
@@ -553,18 +553,18 @@
 
         <div class="form-group" style="margin-bottom:10px">
           <label style="display:block;font-size:10.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Username</label>
-          <input type="text" name="username" required minlength="3" maxlength="50" placeholder="Contoh: sysops-andi" autocomplete="off" style="width:100%;padding:7px 10px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
+          <input type="text" name="username" required minlength="3" maxlength="50" placeholder="Contoh: sysops-andi" autocomplete="off" style="width:100%;padding:7px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
         </div>
 
         <div class="form-group" style="margin-bottom:10px">
           <label style="display:block;font-size:10.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Kata Sandi Awal</label>
-          <input type="password" name="password" required autocomplete="new-password" placeholder="Minimal 12 karakter kombinasi kuat" oninput="checkAddPwdStrength(this.value)" style="width:100%;padding:7px 10px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
+          <input type="password" name="password" required autocomplete="new-password" placeholder="Minimal 12 karakter kombinasi kuat" oninput="checkAddPwdStrength(this.value)" style="width:100%;padding:7px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
           <div id="add-pwd-hint" style="font-size:10.5px;color:var(--dim);margin-top:3px;line-height:1.3">Wajib min. 12 karakter (huruf besar, kecil, angka, simbol).</div>
         </div>
 
         <div class="form-group" style="margin-bottom:12px">
           <label style="display:block;font-size:10.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Peran / Hak Akses</label>
-          <select id="select-role" name="role" onchange="toggleAddPermsSection(this.value)" style="width:100%;padding:7px 10px;background:rgba(9,13,22,0.9);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
+          <select id="select-role" name="role" onchange="toggleAddPermsSection(this.value)" style="width:100%;padding:7px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
             {% if can_manage_users %}
             <option value="operator" selected>Operator (Hak Sudo Terpilih)</option>
             <option value="viewer">Viewer (Hanya-Baca)</option>
@@ -576,7 +576,7 @@
 
         {% if can_manage_users %}
         <!-- Checklist Wewenang Operator Baru -->
-        <div id="add-perms-box" style="margin-bottom:14px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:8px;padding:10px 12px">
+        <div id="add-perms-box" style="margin-bottom:14px;background:var(--card-bg-subtle, var(--bg));border:1px solid var(--border);border-radius:8px;padding:10px 12px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
             <span style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px">Wewenang Operator:</span>
             <div style="display:flex;gap:4px">
@@ -593,7 +593,7 @@
 
           <div style="display:grid;grid-template-columns:1fr;gap:6px;max-height:220px;overflow-y:auto;padding-right:4px">
             {% for p_key, p_meta in all_perms.items() %}
-            <label style="display:flex;align-items:flex-start;gap:8px;font-size:11.5px;cursor:pointer;padding:5px 6px;border-radius:4px;background:rgba(255,255,255,0.02)">
+            <label style="display:flex;align-items:flex-start;gap:8px;font-size:11.5px;cursor:pointer;padding:5px 6px;border-radius:4px;background:var(--input-bg);border:1px solid var(--border)">
               <input type="checkbox" name="perm_{{ p_key }}" class="add-perm-cb" style="margin-top:2px">
               <div>
                 <div style="font-weight:600;color:var(--text);line-height:1.2">{{ p_meta.label }}</div>
@@ -654,7 +654,7 @@
           <label for="brand-org-name" style="display:block;font-size:11.5px;font-weight:700;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">
             1. Nama Organisasi
           </label>
-          <input type="text" id="brand-org-name" name="org_name" value="{{ brand.org_name if brand else '' }}" placeholder="Contoh: Dinas Kominfo Kab. A" maxlength="100" style="width:100%;padding:10px 14px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13.5px;outline:none" autocomplete="off">
+          <input type="text" id="brand-org-name" name="org_name" value="{{ brand.org_name if brand else '' }}" placeholder="Contoh: Dinas Kominfo Kab. A" maxlength="100" style="width:100%;padding:10px 14px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13.5px;outline:none" autocomplete="off">
           <span style="font-size:11px;color:var(--dim);display:block;margin-top:4px">Ditampilkan pada halaman login dan bilah atas dashboard.</span>
         </div>
 
@@ -663,7 +663,7 @@
           <label for="brand-org-unit" style="display:block;font-size:11.5px;font-weight:700;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">
             2. Unit Kerja
           </label>
-          <input type="text" id="brand-org-unit" name="org_unit" value="{{ brand.org_unit if brand else '' }}" placeholder="Contoh: Bidang Aplikasi dan Informatika" maxlength="100" style="width:100%;padding:10px 14px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13.5px;outline:none" autocomplete="off">
+          <input type="text" id="brand-org-unit" name="org_unit" value="{{ brand.org_unit if brand else '' }}" placeholder="Contoh: Bidang Aplikasi dan Informatika" maxlength="100" style="width:100%;padding:10px 14px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13.5px;outline:none" autocomplete="off">
           <span style="font-size:11px;color:var(--dim);display:block;margin-top:4px">Sub-bagian atau bidang pelaksana tugas operasional.</span>
         </div>
 
@@ -699,7 +699,7 @@
           <label for="brand-dash-motd" style="display:block;font-size:11.5px;font-weight:700;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">
             4. Pengumuman
           </label>
-          <textarea id="brand-dash-motd" name="dash_motd" rows="3" placeholder="Contoh: Seluruh server produksi beroperasi optimal. Jadwal backup otomatis aktif." maxlength="500" style="width:100%;padding:10px 14px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;line-height:1.5;outline:none;resize:vertical;font-family:inherit">{{ brand.dash_motd if brand else '' }}</textarea>
+          <textarea id="brand-dash-motd" name="dash_motd" rows="3" placeholder="Contoh: Seluruh server produksi beroperasi optimal. Jadwal backup otomatis aktif." maxlength="500" style="width:100%;padding:10px 14px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;line-height:1.5;outline:none;resize:vertical;font-family:inherit">{{ brand.dash_motd if brand else '' }}</textarea>
           <span style="font-size:11px;color:var(--dim);display:block;margin-top:4px">Pengumuman pada dashboard utama.</span>
         </div>
 
@@ -735,7 +735,7 @@
         </h3>
         <p style="font-size:11.5px;color:var(--dim);margin-bottom:14px">Simulasi susunan header login sesuai tata letak yang dipilih.</p>
         
-        <div style="background:rgba(9,13,22,0.92);border:1px solid var(--border);border-radius:8px;padding:22px 16px;text-align:center">
+        <div style="background:var(--card-bg-subtle, var(--bg));border:1px solid var(--border);border-radius:8px;padding:22px 16px;text-align:center">
           <div style="position:relative;display:inline-flex;flex-direction:column;justify-content:space-between;text-align:center;height:56px;max-width:calc(100% - 140px)">
             <div id="prev-login-logo" style="position:absolute;right:calc(100% + 14px);top:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;flex-shrink:0">
               {% if brand and brand.logo_url %}
@@ -774,7 +774,7 @@
         </h3>
         <p style="font-size:11.5px;color:var(--dim);margin-bottom:14px">Simulasi susunan identitas organisasi dan pengumuman pada dashboard utama.</p>
 
-        <div style="background:rgba(9,13,22,0.92);border:1px solid var(--border);border-radius:8px;padding:22px 16px;text-align:center">
+        <div style="background:var(--card-bg-subtle, var(--bg));border:1px solid var(--border);border-radius:8px;padding:22px 16px;text-align:center">
           <div style="position:relative;display:inline-flex;flex-direction:column;justify-content:space-between;text-align:center;height:56px;max-width:calc(100% - 140px)">
             <div id="prev-dash-logo-box" style="position:absolute;right:calc(100% + 14px);top:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;flex-shrink:0">
               {% if brand and brand.logo_url %}
@@ -838,7 +838,7 @@
 
     <div style="padding:18px 20px;overflow-y:auto;flex:1;font-size:12.5px">
       <!-- Grid Informasi Lengkap Akun (3 Kolom / 2 Kolom responsif) -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:10px;background:rgba(9,13,22,0.65);padding:14px;border-radius:8px;border:1px solid var(--border);margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:10px;background:var(--card-bg-subtle, var(--bg));padding:14px;border-radius:8px;border:1px solid var(--border);margin-bottom:16px">
         <div>
           <span style="color:var(--dim);font-size:10.5px;text-transform:uppercase;letter-spacing:0.3px">Status Akun</span>
           <div id="view-user-status" style="font-weight:700;margin-top:3px">-</div>
@@ -935,18 +935,18 @@
 
       <div class="form-group" style="margin-bottom:14px">
         <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Username</label>
-        <input type="text" name="username" value="{{ user.username }}" required minlength="3" maxlength="50" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:ui-monospace,monospace">
+        <input type="text" name="username" value="{{ user.username }}" required minlength="3" maxlength="50" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-family:ui-monospace,monospace">
       </div>
 
       <div class="form-group" style="margin-bottom:14px">
         <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Kata Sandi Saat Ini</label>
-        <input type="password" name="current_password" autocomplete="current-password" placeholder="Masukkan kata sandi saat ini untuk konfirmasi" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <input type="password" name="current_password" autocomplete="current-password" placeholder="Masukkan kata sandi saat ini untuk konfirmasi" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
         <div style="font-size:10.5px;color:var(--dim);margin-top:4px">Wajib dimasukkan jika Anda mengubah username atau mengganti kata sandi.</div>
       </div>
 
       <div class="form-group" style="margin-bottom:14px">
         <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Kata Sandi Baru <span style="font-weight:normal;color:var(--dim);text-transform:none">(Opsional)</span></label>
-        <input type="password" id="p-new" name="password" autocomplete="new-password" placeholder="Kosongkan jika kata sandi tidak ingin diubah" oninput="checkStrength(this.value)" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <input type="password" id="p-new" name="password" autocomplete="new-password" placeholder="Kosongkan jika kata sandi tidak ingin diubah" oninput="checkStrength(this.value)" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
         <div id="strength-meter" style="height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:6px;overflow:hidden">
           <div id="strength-bar" style="width:0%;height:100%;transition:all .2s"></div>
         </div>
@@ -955,7 +955,7 @@
 
       <div class="form-group" style="margin-bottom:16px">
         <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Konfirmasi Kata Sandi Baru</label>
-        <input type="password" name="confirm_password" autocomplete="new-password" placeholder="Ulangi kata sandi baru" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <input type="password" name="confirm_password" autocomplete="new-password" placeholder="Ulangi kata sandi baru" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
       </div>
 
       <div style="font-size:11.5px;color:var(--dim);line-height:1.4;margin-bottom:16px;background:rgba(56,189,248,0.06);padding:10px;border-radius:6px;border-left:3px solid var(--blue)">
@@ -1012,7 +1012,7 @@
         <input type="hidden" name="secret" value="{{ raw_secret }}">
         <div class="form-group" style="margin-bottom:14px">
           <label style="display:block;font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;margin-bottom:6px">Masukkan 6 Digit Kode Konfirmasi</label>
-          <input type="text" name="code" required maxlength="6" placeholder="000000" autocomplete="one-time-code" class="mono" style="width:100%;padding:9px;background:rgba(9,13,22,0.9);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:18px;letter-spacing:4px;text-align:center">
+          <input type="text" name="code" required maxlength="6" placeholder="000000" autocomplete="one-time-code" class="mono" style="width:100%;padding:9px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:18px;letter-spacing:4px;text-align:center">
         </div>
         <div style="display:flex;justify-content:flex-end;gap:10px">
           <button type="button" class="btn btn-ghost btn-sm" onclick="closeSetupMy2faModal()" style="font-size:12px;padding:7px 14px">Batal</button>
@@ -1055,11 +1055,11 @@
         <!-- Input Username -->
         <div class="form-group" style="margin-bottom:14px">
           <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Username</label>
-          <input type="text" id="edit-username" name="username" required minlength="3" maxlength="50" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+          <input type="text" id="edit-username" name="username" required minlength="3" maxlength="50" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
         </div>
 
         <!-- Input Reset Kata Sandi Pengguna (Admin Override) -->
-        <div class="form-group" style="margin-bottom:14px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <div class="form-group" style="margin-bottom:14px;background:var(--card-bg-subtle, var(--bg));border:1px solid var(--border);border-radius:8px;padding:12px">
           <label style="display:block;font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">
             Reset Kata Sandi Pengguna <span style="color:var(--dim);font-weight:normal;text-transform:none">(Opsional)</span>
           </label>
@@ -1069,11 +1069,11 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div>
               <label style="display:block;font-size:10px;font-weight:600;color:var(--dim);text-transform:uppercase;margin-bottom:4px">Kata Sandi Baru</label>
-              <input type="password" id="edit-password" name="password" autocomplete="new-password" placeholder="Minimal 12 karakter kuat" oninput="checkEditPwdStrength(this.value)" style="width:100%;padding:8px 10px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px">
+              <input type="password" id="edit-password" name="password" autocomplete="new-password" placeholder="Minimal 12 karakter kuat" oninput="checkEditPwdStrength(this.value)" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px">
             </div>
             <div>
               <label style="display:block;font-size:10px;font-weight:600;color:var(--dim);text-transform:uppercase;margin-bottom:4px">Konfirmasi Kata Sandi</label>
-              <input type="password" id="edit-confirm-password" name="confirm_password" autocomplete="new-password" placeholder="Ulangi kata sandi baru" style="width:100%;padding:8px 10px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px">
+              <input type="password" id="edit-confirm-password" name="confirm_password" autocomplete="new-password" placeholder="Ulangi kata sandi baru" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px">
             </div>
           </div>
           <div id="edit-pwd-hint" style="font-size:10.5px;color:var(--dim);margin-top:6px">Jika diisi, minimal 12 karakter kombinasi huruf besar, huruf kecil, angka, dan simbol khusus.</div>
@@ -1083,14 +1083,14 @@
         <div id="edit-role-status-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
           <div>
             <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Peran Sistem</label>
-            <select id="edit-role" name="role" onchange="toggleEditPermsSection(this.value)" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.9);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+            <select id="edit-role" name="role" onchange="toggleEditPermsSection(this.value)" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
               <option value="operator">Operator (Pengguna Harian)</option>
               <option value="viewer">Viewer (Hanya-Baca)</option>
             </select>
           </div>
           <div>
             <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Status Akun</label>
-            <select id="edit-is-active" name="is_active" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.9);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+            <select id="edit-is-active" name="is_active" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
               <option value="1">Aktif</option>
               <option value="0">Terkunci / Nonaktif</option>
             </select>
@@ -1098,7 +1098,7 @@
         </div>
 
         <!-- Checklist Izin Operator Edit -->
-        <div id="edit-perms-box" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px">
+        <div id="edit-perms-box" style="background:var(--card-bg-subtle, var(--bg));border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
             <span style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px">Wewenang Khusus Operator:</span>
             <div style="display:flex;gap:6px">
@@ -1115,7 +1115,7 @@
 
           <div style="display:grid;grid-template-columns:1fr;gap:8px;max-height:260px;overflow-y:auto;padding-right:4px">
             {% for p_key, p_meta in all_perms.items() %}
-            <label style="display:flex;align-items:flex-start;gap:10px;font-size:12px;cursor:pointer;padding:6px;border-radius:4px;background:rgba(255,255,255,0.02)">
+            <label style="display:flex;align-items:flex-start;gap:10px;font-size:12px;cursor:pointer;padding:6px;border-radius:4px;background:var(--input-bg);border:1px solid var(--border)">
               <input type="checkbox" name="perm_{{ p_key }}" id="edit_perm_{{ p_key }}" class="edit-perm-cb" style="margin-top:2px">
               <div>
                 <div style="font-weight:600;color:var(--text)">{{ p_meta.label }}</div>

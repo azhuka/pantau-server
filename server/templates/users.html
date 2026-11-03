@@ -201,18 +201,18 @@
 
       <div class="form-group" style="margin-bottom:10px">
         <label style="display:block;font-size:10.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Username</label>
-        <input type="text" name="username" required minlength="3" maxlength="50" placeholder="Contoh: sysops-andi" autocomplete="off" style="width:100%;padding:7px 10px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
+        <input type="text" name="username" required minlength="3" maxlength="50" placeholder="Contoh: sysops-andi" autocomplete="off" style="width:100%;padding:7px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
       </div>
 
       <div class="form-group" style="margin-bottom:10px">
         <label style="display:block;font-size:10.5px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Kata Sandi Awal</label>
-        <input type="password" name="password" required autocomplete="new-password" placeholder="Minimal 12 karakter kombinasi kuat" oninput="checkAddPwdStrength(this.value)" style="width:100%;padding:7px 10px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
+        <input type="password" name="password" required autocomplete="new-password" placeholder="Minimal 12 karakter kombinasi kuat" oninput="checkAddPwdStrength(this.value)" style="width:100%;padding:7px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12.5px">
         <div id="add-pwd-hint" style="font-size:10.5px;color:var(--dim);margin-top:3px">Wajib minimal 12 karakter, huruf besar, huruf kecil, angka, dan simbol.</div>
       </div>
 
       <div class="form-group" style="margin-bottom:16px">
         <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Peran / Hak Akses</label>
-        <select id="select-role" name="role" onchange="togglePermsSection(this.value)" style="width:100%;padding:9px 12px;background:rgba(9,13,22,0.9);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <select id="select-role" name="role" onchange="togglePermsSection(this.value)" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
           {% if user.is_master_admin() %}
           <option value="operator" selected>Operator (Pengguna harian dengan izin terpilih)</option>
           <option value="viewer">Viewer (Tamu pemantau, hanya-baca tanpa izin kontrol)</option>
@@ -224,7 +224,7 @@
 
       {% if user.is_master_admin() %}
       <!-- Checklist Wewenang Operator -->
-      <div id="perms-box" style="margin-bottom:20px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:8px;padding:14px">
+      <div id="perms-box" style="margin-bottom:20px;background:var(--card-bg-subtle, var(--bg));border:1px solid var(--border);border-radius:8px;padding:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <span style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.5px">Wewenang Khusus Operator:</span>
           <div style="display:flex;gap:8px">
@@ -235,7 +235,7 @@
 
         <div style="display:grid;grid-template-columns:1fr;gap:8px;max-height:280px;overflow-y:auto;padding-right:4px">
           {% for p_key, p_meta in all_perms.items() %}
-          <label style="display:flex;align-items:flex-start;gap:10px;font-size:12px;cursor:pointer;padding:6px;border-radius:4px;background:rgba(255,255,255,0.02)">
+          <label style="display:flex;align-items:flex-start;gap:10px;font-size:12px;cursor:pointer;padding:6px;border-radius:4px;background:var(--input-bg);border:1px solid var(--border)">
             <input type="checkbox" name="perm_{{ p_key }}" class="perm-cb" style="margin-top:2px">
             <div>
               <div style="font-weight:600;color:var(--text)">{{ p_meta.label }}</div>

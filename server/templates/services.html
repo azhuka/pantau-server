@@ -1175,6 +1175,87 @@ div[style*="position: fixed"] .card {
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 
+/* Segmented Controls & Subnav Pill Switchers */
+.user-subnav-bar {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-subtle, rgba(255,255,255,0.03));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+}
+.user-subnav-bar .user-subnav-btn {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--dim) !important;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.user-subnav-bar .user-subnav-btn:hover {
+  color: var(--text) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+.user-subnav-bar .user-subnav-btn.is-active,
+.user-subnav-bar .user-subnav-btn.btn-primary {
+  background: var(--blue) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+}
+.user-subnav-count {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--card-bg-subtle, rgba(0, 0, 0, 0.08));
+  color: var(--dim);
+  display: inline-block;
+  line-height: 1.3;
+}
+.user-subnav-btn.is-active .user-subnav-count,
+.user-subnav-btn.btn-primary .user-subnav-count {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+/* Toolbar Filter Segmented Buttons (Users & Groups filters) */
+.table-toolbar .btn-group {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.03)) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  padding: 2px !important;
+  gap: 2px !important;
+}
+.table-toolbar .btn-group .btn {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--dim) !important;
+  border-radius: 4px !important;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.table-toolbar .btn-group .btn:hover {
+  color: var(--text) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+.table-toolbar .btn-group .btn.btn-primary,
+.table-toolbar .btn-group .btn.is-active {
+  background: var(--blue) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+}
 </style>
 {% endblock %}
 {% block content %}
@@ -2005,7 +2086,6 @@ div[style*="position: fixed"] .card {
       </select>
       <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari kejadian…" class="filter-select"
              style="min-width:200px">
-      <span style="font-size:11px;color:var(--dim)" id="prob-count"></span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
@@ -2019,7 +2099,7 @@ div[style*="position: fixed"] .card {
   </div>
   <table id="probtable" style="width:100%">
     <thead><tr>
-      <th class="col-time-detailed" style="width:145px;min-width:135px">Waktu</th>
+      <th class="col-time-detailed" style="width:135px;min-width:125px">Waktu</th>
       <th class="col-sev" style="width:92px;min-width:86px;text-align:center">Keparahan</th>
       <th class="col-event" style="min-width:240px;max-width:500px">Kejadian</th>
       <th class="col-durasi" style="width:85px;min-width:78px;text-align:center">Durasi</th>
@@ -2044,37 +2124,13 @@ div[style*="position: fixed"] .card {
         data-prob-host="{{ server.hostname }}"
         data-prob-sid="{{ server.id }}"
         data-prob-context='{{ p.context or "" }}'>
-      <td style="white-space:nowrap" class="mono col-time-detailed">
-        <div style="font-size:9.5px;color:var(--text);font-weight:600">
-          <span style="color:var(--dim);font-size:8px;text-transform:uppercase;margin-right:4px">Mulai</span>{{ _fmt_dt(p.started_at) if p.started_at else '—' }}
-        </div>
-        {% if p.resolved_at %}
-        <div style="font-size:9.5px;color:var(--dim);margin-top:2px">
-          <span style="font-size:8px;text-transform:uppercase;margin-right:4px">Selesai</span>{{ _fmt_dt(p.resolved_at) }}
-        </div>
-        {% endif %}
+      <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" class="mono col-time-detailed" title="Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }}{{ ' | Selesai: ' ~ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '' }}">
+        {{ p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—' }}
       </td>
-      <td class="col-sev">
-        {% set op_name = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
-        {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
+      <td class="col-sev" style="text-align:center">
         {% set base_badge_cls = 'badge badge-' ~ ({'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info')) %}
         {% set base_badge_text = 'GAWAT' if p.severity == 'average' else ('CRITICAL' if p.severity == 'danger' else ('PERINGATAN' if p.severity == 'warning' else p.severity | upper)) %}
-        {% set base_badge = '<span class="' ~ base_badge_cls ~ '">' ~ base_badge_text ~ '</span>' %}
-        {% if p.is_ignored or p.acknowledged_by %}
-          <div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">
-            {{ base_badge | safe }}
-            <div style="display:inline-flex;align-items:center;gap:2px">
-              {% if p.is_ignored %}
-                <span class="badge badge-muted badge-sub" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
-              {% endif %}
-              {% if p.acknowledged_by or p.is_ignored %}
-                <span class="badge badge-up badge-sub" title="Ditangani oleh {{ ack_op if p.acknowledged_by else op_name }}">✓ DITANGANI</span>
-              {% endif %}
-            </div>
-          </div>
-        {% else %}
-          {{ base_badge | safe }}
-        {% endif %}
+        <span class="{{ base_badge_cls }}">{{ base_badge_text }}</span>
       </td>
       <td class="col-event">
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
@@ -2202,7 +2258,6 @@ div[style*="position: fixed"] .card {
       <span style="font-size:12px;color:var(--dim)">Rekam jejak seluruh tindakan dan perintah</span>
     </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span style="font-size:12px;color:var(--dim)" id="action-history-count">{{ actions|length if actions else 0 }} tindakan terakhir</span>
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
         <select id="action-limit-top" onchange="setActionLimit(this.value)"
@@ -2220,7 +2275,7 @@ div[style*="position: fixed"] .card {
     <table id="tbl-action-history">
       <thead>
         <tr>
-          <th class="col-time-detailed" style="white-space:nowrap;width:195px;min-width:185px">Waktu</th>
+          <th class="col-time-detailed" style="white-space:nowrap;width:135px;min-width:125px">Waktu</th>
           <th style="width:100px">Pengguna</th>
           <th style="width:160px">Tindakan</th>
           <th>Sasaran</th>
@@ -2232,7 +2287,7 @@ div[style*="position: fixed"] .card {
       {% if actions %}
         {% for a in actions %}
         <tr id="act-row-{{ a.id }}">
-          <td class="mono col-time-detailed" style="white-space:nowrap">{{ _fmt_dt(a.time) if a.time else '—' }}</td>
+          <td class="mono col-time-detailed" style="white-space:nowrap" title="Waktu Eksekusi: {{ a.time.strftime('%d %b %Y %H:%M:%S') if a.time else '—' }}">{{ a.time.strftime('%d %b %H:%M:%S') if a.time else '—' }}</td>
           <td><span class="mono">{{ a.user }}</span></td>
           <td><span class="badge badge-muted">{{ a.action_label }}</span></td>
           <td style="font-size:13px"><strong>{{ a.target }}</strong></td>
@@ -3034,16 +3089,16 @@ div[style*="position: fixed"] .card {
 <div class="tab-body" id="tab-akun" hidden>
   <!-- Sub-Navigasi Terpadu: Pengguna (Users) vs Grup Sistem (Groups) -->
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
-    <div class="user-subnav-bar" style="display:inline-flex;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:3px;gap:4px">
-      <button type="button" class="btn btn-sm btn-primary user-subnav-btn is-active" id="btn-subnav-users" onclick="switchUserSubnav('users')" style="font-weight:600;font-size:12px;padding:4px 12px;display:inline-flex;align-items:center;gap:6px">
+    <div class="user-subnav-bar">
+      <button type="button" class="user-subnav-btn is-active btn-primary" id="btn-subnav-users" onclick="switchUserSubnav('users')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
         <span>Pengguna (Users)</span>
-        <span class="badge badge-info" id="badge-users-count" style="font-size:9.5px;padding:1px 6px">{{ accounts|length if accounts else 0 }}</span>
+        <span class="user-subnav-count" id="badge-users-count">{{ accounts|length if accounts else 0 }}</span>
       </button>
-      <button type="button" class="btn btn-sm btn-ghost user-subnav-btn" id="btn-subnav-groups" onclick="switchUserSubnav('groups')" style="font-weight:600;font-size:12px;padding:4px 12px;display:inline-flex;align-items:center;gap:6px">
+      <button type="button" class="user-subnav-btn btn-ghost" id="btn-subnav-groups" onclick="switchUserSubnav('groups')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
         <span>Grup (Groups)</span>
-        <span class="badge badge-muted" id="badge-groups-count" style="font-size:9.5px;padding:1px 6px">{{ system_groups|length if system_groups else 0 }}</span>
+        <span class="user-subnav-count" id="badge-groups-count">{{ system_groups|length if system_groups else 0 }}</span>
       </button>
     </div>
 
@@ -8209,6 +8264,13 @@ function fmtProbDate(isoStr) {
   return `${day} ${mon} ${y} ${h}:${m}:${s}`;
 }
 
+function fmtProbDateShort(isoStr) {
+  if (!isoStr) return '—';
+  const full = fmtProbDate(isoStr);
+  if (!full) return '—';
+  return full.replace(/\s*\d{4}\s*/, ' ');
+}
+
 function getServicesI18nText(text) {
   return text;
 }
@@ -8291,7 +8353,6 @@ function renderProblemsTab(level, openList, histList) {
       </select>
       <input type="search" id="prob-search" oninput="probFilter()" value="${escapeHtml(oldSearch)}" placeholder="${isEn ? 'Search incident…' : 'Cari kejadian…'}"
              class="filter-select" style="min-width:200px">
-      <span style="font-size:11px;color:var(--dim)" id="prob-count"></span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:12px;color:var(--dim)">${isEn ? 'Show:' : 'Tampilkan:'}</span>
@@ -8305,7 +8366,7 @@ function renderProblemsTab(level, openList, histList) {
   </div>
   <table id="probtable" style="width:100%">
     <thead><tr>
-      <th class="col-time-detailed" style="width:145px;min-width:135px">${isEn ? 'Time' : 'Waktu'}</th>
+      <th class="col-time-detailed" style="width:135px;min-width:125px">${isEn ? 'Time' : 'Waktu'}</th>
       <th class="col-sev" style="width:92px;min-width:86px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
       <th class="col-event" style="min-width:240px;max-width:500px">${isEn ? 'Event' : 'Kejadian'}</th>
       <th class="col-durasi" style="width:85px;min-width:78px;text-align:center">${isEn ? 'Duration' : 'Durasi'}</th>
@@ -8318,32 +8379,18 @@ function renderProblemsTab(level, openList, histList) {
     const isOpen = !!p.is_open;
     const isIgnored = !!p.is_ignored;
     const sev = p.severity || 'info';
-    const opName = p.ignored_by === 'admin' ? 'master-admin' : (p.ignored_by || 'operator');
-    const ackOp = p.acknowledged_by === 'admin' ? 'master-admin' : (p.acknowledged_by || 'operator');
     const rawSevBadge = `badge badge-${['danger', 'average', 'warning', 'info'].includes(sev) ? (sev === 'average' ? 'orange' : (sev === 'warning' ? 'warn' : sev)) : 'info'}`;
     const rawSevText = sev === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (sev === 'danger' ? 'CRITICAL' : sev.toUpperCase());
-    
-    let sevCellHtml = '';
-    if (isIgnored || p.acknowledged_by) {
-      let subBadges = '';
-      if (isIgnored) {
-        subBadges += `<span class="badge badge-muted badge-sub" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(opName)}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span>`;
-      }
-      if (p.acknowledged_by || isIgnored) {
-        const ackDisplay = p.acknowledged_by ? ackOp : opName;
-        subBadges += `<span class="badge badge-up badge-sub" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + escapeHtml(ackDisplay)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
-      }
-      sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px"><span class="${rawSevBadge}">${rawSevText}</span><div style="display:inline-flex;align-items:center;gap:2px">${subBadges}</div></div>`;
-    } else {
-      sevCellHtml = `<span class="${rawSevBadge}">${rawSevText}</span>`;
-    }
+    const sevCellHtml = `<span class="${rawSevBadge}">${rawSevText}</span>`;
 
     const pMsg = isEn ? getServicesI18nText(p.message || '', true) : (p.message || '');
     const pTip = isEn ? getServicesI18nText(p.tip || '—', true) : (p.tip || '—');
     const searchTxt = ((pMsg || '') + ' ' + (p.key || '')).toLowerCase();
     const rowStyle = !isOpen ? ' style="opacity:.65"' : (isIgnored ? ' style="opacity:.75;background:rgba(255,255,255,0.02)"' : '');
-    const startStr = `<div style="font-size:9.5px;color:var(--text);font-weight:600"><span style="color:var(--dim);font-size:8px;text-transform:uppercase;margin-right:4px">${isEn ? 'START' : 'MULAI'}</span>${fmtProbDate(p.started_at)}</div>`;
-    const resStr = p.resolved_at ? `<div style="font-size:9.5px;color:var(--dim);margin-top:2px"><span style="font-size:8px;text-transform:uppercase;margin-right:4px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>${fmtProbDate(p.resolved_at)}</div>` : '';
+    const startTip = p.started_at ? fmtProbDate(p.started_at) : '—';
+    const resTip = p.resolved_at ? fmtProbDate(p.resolved_at) : '';
+    const fullTimeTip = (isEn ? 'Start: ' : 'Mulai: ') + startTip + (resTip ? (isEn ? ' | Resolved: ' : ' | Selesai: ') + resTip : '');
+    const displayTime = fmtProbDateShort(p.started_at);
     const checkMark = isOpen ? '' : '<span style="color:var(--green)">✓</span> ';
     const msgStyle = isOpen ? '' : ' style="color:var(--dim)"';
     const ignoredBadge = isIgnored
@@ -8429,8 +8476,8 @@ function renderProblemsTab(level, openList, histList) {
       data-prob-host="${escapeHtml(SERVER_NAME)}"
       data-prob-sid="${SID}"
       data-prob-context="${escapeHtml(ctxAttr)}">
-      <td style="white-space:nowrap" class="mono col-time-detailed">${startStr}${resStr}</td>
-      <td class="col-sev">${sevCellHtml}</td>
+      <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" class="mono col-time-detailed" title="${escapeHtml(fullTimeTip)}">${escapeHtml(displayTime)}</td>
+      <td class="col-sev" style="text-align:center">${sevCellHtml}</td>
       <td class="col-event">${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${kambuhBadge}</td>
       <td class="mono col-durasi" style="white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
       <td class="col-act prob-act-cell">${actHtml}</td>
@@ -8534,7 +8581,6 @@ function probFilter() {
   const endShow = endIdx;
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const txtSummary = totalMatched === 0 ? (isEn ? '0 issues' : '0 insiden') : (isEn ? `Showing ${startShow}-${endShow} of ${totalMatched} issues` : `Menampilkan ${startShow}-${endShow} dari ${totalMatched} insiden`);
-  if (countElTop) countElTop.textContent = txtSummary;
   if (countElBottom) countElBottom.textContent = txtSummary;
   if (pageInfoEl) pageInfoEl.textContent = isEn ? `Page ${probCurrentPage} of ${totalPages}` : `Halaman ${probCurrentPage} dari ${totalPages}`;
   if (prevBtn) prevBtn.disabled = (probCurrentPage <= 1);
@@ -8606,7 +8652,6 @@ function filterServerActionHistory() {
   const endShow = endIdx;
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const txtSummary = total === 0 ? (isEn ? '0 actions' : '0 tindakan') : (isEn ? `Showing ${startShow}-${endShow} of ${total} actions` : `Menampilkan ${startShow}-${endShow} dari ${total} tindakan`);
-  if (countTop) countTop.textContent = txtSummary;
   if (countBottom) countBottom.textContent = txtSummary;
   if (pageInfo) pageInfo.textContent = isEn ? `Page ${actionCurrentPage} of ${totalPages}` : `Halaman ${actionCurrentPage} dari ${totalPages}`;
   if (prevBtn) prevBtn.disabled = (actionCurrentPage <= 1);
@@ -8732,7 +8777,6 @@ function renderActionHistory(actions) {
 
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   if (!actions.length) {
-    if (countTop) countTop.textContent = isEn ? '0 actions' : '0 tindakan';
     if (countBottom) countBottom.textContent = isEn ? '0 actions' : '0 tindakan';
     if (pageInfo) pageInfo.textContent = isEn ? 'Page 1 of 1' : 'Halaman 1 dari 1';
     if (prevBtn) prevBtn.disabled = true;
@@ -8755,7 +8799,6 @@ function renderActionHistory(actions) {
   const startShow = total === 0 ? 0 : startIdx + 1;
   const endShow = endIdx;
   const txtSummary = total === 0 ? (isEn ? '0 actions' : '0 tindakan') : (isEn ? `Showing ${startShow}-${endShow} of ${total} actions` : `Menampilkan ${startShow}-${endShow} dari ${total} tindakan`);
-  if (countTop) countTop.textContent = txtSummary;
   if (countBottom) countBottom.textContent = txtSummary;
   if (pageInfo) pageInfo.textContent = isEn ? `Page ${actionCurrentPage} of ${totalPages}` : `Halaman ${actionCurrentPage} dari ${totalPages}`;
   if (prevBtn) prevBtn.disabled = (actionCurrentPage <= 1);
@@ -8764,7 +8807,7 @@ function renderActionHistory(actions) {
   tbody.innerHTML = displayList.map(a => {
     const f = formatActionRowI18n(a, isEn);
     return `<tr id="act-row-${escHtml(a.id || '')}">
-      <td class="mono col-time-detailed" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
+      <td class="mono col-time-detailed" style="white-space:nowrap" title="${isEn ? 'Execution Time: ' : 'Waktu Eksekusi: '}${escHtml(fmtProbDate(a.time) || a.time || '—')}">${escHtml(fmtProbDateShort(a.time) || a.time || '—')}</td>
       <td><span class="mono">${escHtml(a.user || '-')}</span></td>
       <td><span class="badge badge-muted">${escHtml(f.act)}</span></td>
       <td style="font-size:13px"><strong>${escHtml(f.tgt)}</strong></td>
