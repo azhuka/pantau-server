@@ -354,6 +354,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.80
+
+- **Tipe Rilis:** Redesain Tooltip Seleksi Teks Bersih Standar Enterprise, Adaptabilitas Penuh Zoom Peramban Bebas Overflow Horizontal, dan Stabilisasi Kolom & Margin Tabel Kartu (*Enterprise-Grade Clean Selectable Tooltip Redesign, Zero Page Horizontal Scroll on Zoom-In, and Table Column & Card Edge Margin Stabilization*)
+- **Fokus Utama:** Menyempurnakan kenyamanan visual dan interaksi sysadmin/NOC sesuai standar arsitektur perangkat lunak enterprise kelas atas:
+  1. **Redesain Tooltip Seleksi Murni Standar Enterprise (*Clean Selectable Tooltip Engine*):**
+     - Menghilangkan sepenuhnya tombol salin (*copy button*) dari dalam container tooltip, mengembalikan interaksi tooltip ke standar industri profesional (VS Code, Datadog, GitHub) di mana tooltip murni berupa gelembung teks yang bersih tanpa tombol aksi yang membingungkan atau mengganggu.
+     - Memastikan teks di dalam `#pantau-tip-text` 100% dapat diblok/diseleksi bebas dengan kursor tetikus (`user-select: text !important; cursor: text;`) serta dapat disalin melalui pintasan papan tombol `Ctrl+C` maupun klik kanan tanpa polusi elemen tombol.
+     - Mempertahankan masa tenggang hover kursor (*cursor bridge grace period*) sehingga pengguna dapat menggerakkan kursor masuk ke dalam tooltip untuk menyeleksi teks panjang tanpa risiko tooltip tertutup tiba-tiba.
+  2. **Adaptabilitas Responsif Penuh Zoom Peramban & Eliminasi Overflow Horizontal Halaman (*Zero Page Scroll on Zoom*):**
+     - Menetapkan restriksi lebar mutlak pada kontainer tata letak halaman (`html, body { width: 100%; max-width: 100vw; overflow-x: hidden; }` dan `.main { width: calc(100% - 230px); max-width: calc(100vw - 230px); overflow-x: hidden; }`) serta penyesuaian otomatis pada mode sidebar collapsed dan layar ponsel.
+     - Memastikan seluruh kontainer tabel (`.table-responsive`, `div[style*="overflow-x:auto"]`) memiliki pembatasan fluida (`max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;`), sehingga saat pengguna melakukan perbesaran layar (*zoom-in* 110%, 125%, 150%, 175%, hingga 200%), **halaman/jendela peramban tidak pernah mengalami scroll horizontal**. Bilah navigasi, topbar, panel filter, dan kartu tetap terkunci rapi di dalam viewport layar, dan scroll horizontal hanya terjadi di dalam kontainer data tabel terkait.
+  3. **Stabilisasi Kolom Tabel & Ruang Margin Tepi Kartu (*Card Edge Gutter & Column Breathing Room*):**
+     - Menghapus aturan `!important` kaku yang sebelumnya membatasi lebar kolom secara berlebihan (`.col-server` dari 115px menjadi `min-width: 150px; white-space: nowrap;`, `.col-sev` dari 92px menjadi `min-width: 110px; white-space: nowrap;`, dan `.col-act` yang disesuaikan secara proporsional).
+     - Mencegah teks nama host server dan lencana status terpotong atau berpindah baris secara acak (*anti-layout jump*).
+     - Menetapkan padding tepi minimum yang lapang (`padding-left: 16px !important;` pada kolom pertama dan `padding-right: 16px !important;` pada kolom terakhir/aksi) pada seluruh tabel kartu di luar dasbor (termasuk `#servers-table`), sehingga teks tidak pernah menempel rapat ke garis batas bingkai kartu (*no text flush against card borders*).
+  4. **Kejelasan Umpan Balik Visual Pemilihan Rentang Waktu (*Immediate Loading State for Period Filter*):**
+     - Pada pemilihan rentang waktu insiden teratasi di `problems.html`, sistem seketika mengosongkan baris riwayat lama dan menampilkan indikator pemuatan data (*spinner loading row*) sehingga operator mendapatkan kepastian langsung bahwa sistem sedang memuat data rentang waktu baru tanpa kerancuan data riwayat sebelumnya.
+  5. **Integritas Mutlak Halaman Utama & Kartu Insiden Terbuka:**
+     - Mempertahankan integritas 100% tanpa mengubah apapun pada Halaman Utama / Dasbor (`dashboard.html`) serta susunan kolom tabel data `#probtable`.
+  6. **Otomasi Pembaruan SemVer v4.8.80:**
+     - Menaikkan versi sistem menjadi `v4.8.80` secara sinkron dan identik di seluruh berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.79
 
 - **Tipe Rilis:** Hak Akses Salin Teks Menyeluruh Seluruh Antarmuka dan Engine Tooltip Modern Interaktif yang Dapat Disalin (*Universal Copyable Text Across All UI Elements and Copyable Modern Interactive Tooltip Engine*)

@@ -751,9 +751,9 @@
     <table style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border)">
-          <th class="col-time-detailed" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:140px;min-width:140px" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
-          <th class="col-server" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:150px;min-width:130px" title="Nama host dan grup server">Server</th>
-          <th class="col-sev" style="color:var(--dim);text-align:center;white-space:nowrap;padding:7px 12px;width:85px;min-width:80px" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
+          <th class="col-time-detailed" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:145px;min-width:140px" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
+          <th class="col-server" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:165px;min-width:150px" title="Nama host dan grup server">Server</th>
+          <th class="col-sev" style="color:var(--dim);text-align:center;white-space:nowrap;padding:7px 12px;width:115px;min-width:105px" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
           <th class="col-component" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:110px;min-width:95px" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
           <th class="col-desc" style="color:var(--dim);text-align:left;padding:7px 14px;min-width:280px" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
           <th class="col-durasi" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:85px;min-width:80px" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
@@ -1285,6 +1285,7 @@ function onResDateChange() {
 function showResolvedLoadingState(isLoading, periodLabel) {
   const tableWrap = document.getElementById('prob-resolved-table-wrap');
   const summaryEl = document.getElementById('res-filter-summary-info');
+  const resTbody = document.getElementById('prob-resolved-tbody');
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
 
   if (isLoading) {
@@ -1292,6 +1293,10 @@ function showResolvedLoadingState(isLoading, periodLabel) {
     if (summaryEl) {
       const pTxt = periodLabel ? ` (${periodLabel})` : '';
       summaryEl.innerHTML = `<span class="pantau-spinner"></span><span style="color:var(--blue);font-weight:500">${isEn ? 'Loading resolved incidents' + pTxt + '…' : 'Memuat riwayat insiden' + pTxt + '…'}</span>`;
+    }
+    if (resTbody) {
+      const pTxt = periodLabel ? ` untuk ${periodLabel}` : '';
+      resTbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:28px 16px;color:var(--blue);font-size:12px;font-weight:500"><span class="pantau-spinner" style="vertical-align:middle;margin-right:8px"></span>${isEn ? 'Loading resolved incident history' + pTxt + '…' : 'Memuat riwayat insiden teratasi' + pTxt + '…'}</td></tr>`;
     }
   } else {
     if (tableWrap) tableWrap.classList.remove('table-loading-dimmed');

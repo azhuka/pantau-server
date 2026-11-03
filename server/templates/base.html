@@ -742,6 +742,12 @@ input[type="checkbox"], input[type="radio"], input[type="range"] {
   -webkit-user-select: none !important;
   user-select: none !important;
 }
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";
   background:var(--bg);
@@ -770,7 +776,20 @@ body{
 .sidebar-footer a{color:var(--dim);text-decoration:none;transition:color .15s}
 .sidebar-footer a:hover{color:var(--red)}
 
-.main{flex:1;min-width:0;margin-left:230px;padding:26px 36px;transition:margin-left .2s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column;min-height:100vh}
+.main{
+  flex: 1;
+  min-width: 0;
+  width: calc(100% - 230px);
+  max-width: calc(100vw - 230px);
+  margin-left: 230px;
+  padding: 26px 36px;
+  transition: margin-left .2s cubic-bezier(0.4,0,0.2,1);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
 .app-footer{margin-top:auto;text-align:center;padding:28px 0 16px;font-size:12px;color:var(--dim);opacity:0.8}
 .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:12px}
 .topbar h2{font-size:20px;font-weight:700;letter-spacing:-0.02em;color:var(--text-heading, #fff)}
@@ -947,98 +966,87 @@ tbody tr:hover td.fm-actions-cell {
 
 /* Stabilisasi Lebar Kolom Tabel & Eliminasi Pergeseran Tata Letak (Enterprise Best Practice) */
 .col-durasi, th.col-durasi, td.col-durasi, td[data-start] {
-  width: 85px !important;
-  min-width: 78px !important;
-  max-width: 95px !important;
-  white-space: nowrap !important;
-  font-size: 9.5px !important;
-  letter-spacing: -0.025em !important;
-  word-spacing: -1px !important;
-  font-variant-numeric: tabular-nums !important;
-  box-sizing: border-box !important;
+  width: 85px;
+  min-width: 80px;
+  white-space: nowrap;
+  font-size: 9.5px;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
 }
 .col-time, th.col-time, td.col-time {
-  width: 105px !important;
-  min-width: 95px !important;
-  max-width: 115px !important;
-  white-space: nowrap !important;
-  font-size: 9.5px !important;
-  font-variant-numeric: tabular-nums !important;
+  width: 110px;
+  min-width: 100px;
+  white-space: nowrap;
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
 }
 .col-time-detailed, th.col-time-detailed, td.col-time-detailed {
-  width: 145px !important;
-  min-width: 135px !important;
-  white-space: nowrap !important;
-  font-size: 9.5px !important;
-  font-variant-numeric: tabular-nums !important;
+  width: 145px;
+  min-width: 135px;
+  white-space: nowrap;
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
 }
 .col-server, th.col-server, td.col-server {
-  width: 115px !important;
-  min-width: 100px !important;
-  max-width: 135px !important;
-  white-space: nowrap !important;
-  font-size: 10px !important;
+  min-width: 150px;
+  white-space: nowrap;
+  font-size: 10px;
 }
 .col-sev, th.col-sev, td.col-sev {
-  width: 92px !important;
-  min-width: 86px !important;
-  max-width: 100px !important;
-  white-space: nowrap !important;
-  text-align: center !important;
-  padding: 4px 5px !important;
+  min-width: 110px;
+  white-space: nowrap;
+  text-align: center;
+  padding: 4px 6px;
 }
 .col-sev .badge, th.col-sev .badge, td.col-sev .badge {
-  font-size: 8px !important;
-  padding: 1px 4.5px !important;
-  border-radius: 3px !important;
-  line-height: 1.2 !important;
-  letter-spacing: 0.2px !important;
-  font-weight: 700 !important;
+  font-size: 8px;
+  padding: 1.5px 5px;
+  border-radius: 3px;
+  line-height: 1.2;
+  letter-spacing: 0.2px;
+  font-weight: 700;
 }
 .col-sev .badge-sub, th.col-sev .badge-sub, td.col-sev .badge-sub {
-  font-size: 7.5px !important;
-  padding: 0.5px 3.5px !important;
-  font-weight: 600 !important;
-  line-height: 1.2 !important;
-  letter-spacing: 0.1px !important;
+  font-size: 7.5px;
+  padding: 0.5px 3.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.1px;
 }
 td.col-sev .col-sev-sub-text {
-  font-size: 7.5px !important;
-  color: var(--dim) !important;
-  margin-top: 1.5px !important;
-  white-space: nowrap !important;
-  line-height: 1.2 !important;
-  display: block !important;
-  text-align: center !important;
+  font-size: 7.5px;
+  color: var(--dim);
+  margin-top: 1.5px;
+  white-space: nowrap;
+  line-height: 1.2;
+  display: block;
+  text-align: center;
 }
 .col-event, th.col-event, td.col-event,
 .col-desc, th.col-desc, td.col-desc {
-  /* Hero Content Column: Flexibel terluas, proporsional, ukuran kompak & nyaman dibaca */
   width: auto;
-  min-width: 240px !important;
-  font-size: 10px !important;
-  line-height: 1.35 !important;
+  min-width: 240px;
+  font-size: 10px;
+  line-height: 1.35;
   word-break: break-word;
 }
 .col-event .badge, .col-desc .badge {
-  font-size: 7.5px !important;
-  padding: 0.5px 3.5px !important;
+  font-size: 7.5px;
+  padding: 0.5px 3.5px;
 }
 .col-act, th.col-act, td.col-act, .prob-act-cell,
 th.th-act, td.td-act, td.cell-act, .fm-actions-cell {
-  width: 125px !important;
-  min-width: 120px !important;
-  white-space: nowrap !important;
-  text-align: left !important;
-  box-sizing: border-box !important;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 .col-tips, th.col-tips, td.col-tips {
   width: auto;
-  min-width: 240px !important;
-  font-size: 9.5px !important;
-  color: var(--dim) !important;
-  line-height: 1.35 !important;
-  vertical-align: middle !important;
+  min-width: 240px;
+  font-size: 9.5px;
+  color: var(--dim);
+  line-height: 1.35;
+  vertical-align: middle;
   word-break: break-word;
 }
 .prob-tip-text {
@@ -1052,24 +1060,43 @@ th.th-act, td.td-act, td.cell-act, .fm-actions-cell {
   font-size: 9.5px !important;
 }
 
-/* ---------- Pantau Copyable Tooltip Engine ---------- */
+/* Padding batas tepi tabel agar teks tidak pernah menempel ke garis pinggir kartu */
+.card table:not(.dash-prob-table):not(#dash-server-table):not(#sdm-table) th:first-child,
+.card table:not(.dash-prob-table):not(#dash-server-table):not(#sdm-table) td:first-child,
+.table-responsive table:not(.dash-prob-table):not(#dash-server-table):not(#sdm-table) th:first-child,
+.table-responsive table:not(.dash-prob-table):not(#dash-server-table):not(#sdm-table) td:first-child,
+div[style*="overflow-x:auto"] > table:not(.dash-prob-table):not(#dash-server-table):not(#sdm-table) th:first-child,
+div[style*="overflow-x:auto"] > table:not(.dash-prob-table):not(#dash-server-table):not(#sdm-table) td:first-child {
+  padding-left: 16px !important;
+}
+
+.card table:not(.dash-prob-table):not(#dash-server-table):not(#sdm-table) th:last-child,
+.card table:not(.dash-prob-table):not(#dash-server-table):not(#sdm-table) td:last-child,
+.table-responsive table:not(.dash-prob-table):not(#dash-server-table):not(#sdm-table) th:last-child,
+.table-responsive table:not(.dash-prob-table):not(#dash-server-table):not(#sdm-table) td:last-child,
+div[style*="overflow-x:auto"] > table:not(.dash-prob-table):not(#dash-server-table):not(#sdm-table) th:last-child,
+div[style*="overflow-x:auto"] > table:not(.dash-prob-table):not(#dash-server-table):not(#sdm-table) td:last-child {
+  padding-right: 16px !important;
+}
+
+/* ---------- Pantau Selectable Tooltip Engine ---------- */
 .pantau-copy-tooltip {
   position: fixed;
   z-index: 999999;
   display: none;
   opacity: 0;
   pointer-events: auto;
-  max-width: 460px;
-  min-width: 120px;
+  max-width: 420px;
+  min-width: 80px;
   background: var(--modal-bg, #161b22);
   color: var(--text, #f8fafc);
   border: 1px solid var(--border-focus, #38bdf8);
   border-radius: 6px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
   padding: 6px 10px;
   font-family: inherit;
   font-size: 11.5px;
-  line-height: 1.45;
+  line-height: 1.4;
   transition: opacity 0.12s cubic-bezier(0.16, 1, 0.3, 1), transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
   transform: translateY(3px) scale(0.98);
   backdrop-filter: blur(8px);
@@ -1081,14 +1108,7 @@ th.th-act, td.td-act, td.cell-act, .fm-actions-cell {
   opacity: 1;
   transform: translateY(0) scale(1);
 }
-.pantau-tip-body {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  width: 100%;
-}
 .pantau-tip-text {
-  flex: 1;
   word-break: break-word;
   white-space: pre-wrap;
   user-select: text !important;
@@ -1097,63 +1117,27 @@ th.th-act, td.td-act, td.cell-act, .fm-actions-cell {
   max-height: 260px;
   overflow-y: auto;
   font-size: 11.5px;
+  line-height: 1.4;
 }
 .pantau-tip-text code,
 .pantau-tip-text pre {
   font-family: var(--font-mono, monospace);
   user-select: text !important;
 }
-.pantau-tip-copy-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  padding: 3px 8px;
-  font-size: 10.5px;
-  font-weight: 600;
-  border-radius: 4px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
-  background: var(--input-bg, rgba(255, 255, 255, 0.06));
-  color: var(--blue, #38bdf8);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  line-height: 1.2;
-  user-select: none !important;
-}
-.pantau-tip-copy-btn:hover {
-  background: var(--blue, #38bdf8);
-  color: #fff;
-  border-color: var(--blue, #38bdf8);
-}
-.pantau-tip-copy-btn.copied {
-  background: var(--green, #22c55e) !important;
-  color: #fff !important;
-  border-color: var(--green, #22c55e) !important;
-}
 [data-theme="light"] .pantau-copy-tooltip {
   background: #ffffff;
   color: #0f172a;
   border-color: #0284c7;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 [data-theme="light"] .pantau-tip-text {
   color: #0f172a;
-}
-[data-theme="light"] .pantau-tip-copy-btn {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #0284c7;
-}
-[data-theme="light"] .pantau-tip-copy-btn:hover {
-  background: #0284c7;
-  color: #ffffff;
-  border-color: #0284c7;
 }
 [data-theme="obsidian"] .pantau-copy-tooltip {
   background: #050505;
   color: #ffffff;
   border-color: #38bdf8;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
 }
 
 /* ---------- Panel Filter Presisi Tinggi NOC ---------- */
@@ -2519,7 +2503,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.79' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.80' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
       <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
       </button>
@@ -4908,41 +4892,22 @@ document.addEventListener('keydown', (e) => {
   </div>
 </div>
 
-<!-- Tooltip Salin Menyeluruh (Pantau Copyable Tooltip Engine) -->
+<!-- Tooltip Berteks Seleksi Penuh (Pantau Selectable Tooltip Engine) -->
 <div id="pantau-copy-tooltip" class="pantau-copy-tooltip" role="tooltip" aria-hidden="true">
-  <div class="pantau-tip-body">
-    <div class="pantau-tip-text" id="pantau-tip-text"></div>
-    <button type="button" class="pantau-tip-copy-btn" id="pantau-tip-copy-btn" title="Salin isi tooltip ke papan klip">
-      <svg class="tip-copy-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-      <svg class="tip-check-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:none"><polyline points="20 6 9 17 4 12"></polyline></svg>
-      <span class="tip-copy-label">Salin</span>
-    </button>
-  </div>
+  <div class="pantau-tip-text" id="pantau-tip-text"></div>
 </div>
 
 <script>
-// ---------- Pantau Copyable Tooltip Engine ----------
+// ---------- Pantau Selectable Tooltip Engine ----------
 (function() {
   const tipEl = document.getElementById('pantau-copy-tooltip');
   if (!tipEl) return;
   const tipTextEl = document.getElementById('pantau-tip-text');
-  const copyBtn = document.getElementById('pantau-tip-copy-btn');
-  const copyIcon = copyBtn ? copyBtn.querySelector('.tip-copy-icon') : null;
-  const checkIcon = copyBtn ? copyBtn.querySelector('.tip-check-icon') : null;
-  const copyLabel = copyBtn ? copyBtn.querySelector('.tip-copy-label') : null;
 
   let currentTarget = null;
   let showTimer = null;
   let hideTimer = null;
   let isHoveringTip = false;
-
-  function resetCopyBtn() {
-    if (!copyBtn) return;
-    copyBtn.classList.remove('copied');
-    if (copyIcon) copyIcon.style.display = 'inline-block';
-    if (checkIcon) checkIcon.style.display = 'none';
-    if (copyLabel) copyLabel.textContent = 'Salin';
-  }
 
   function resolveTooltipTarget(el) {
     if (!el || el === document.body || el === document.documentElement) return null;
@@ -5009,7 +4974,6 @@ document.addEventListener('keydown', (e) => {
       if (!target || !document.body.contains(target)) return;
       currentTarget = target;
       
-      resetCopyBtn();
       tipTextEl.textContent = text;
       
       positionTooltip(target);
@@ -5036,7 +5000,7 @@ document.addEventListener('keydown', (e) => {
     }, delay);
   }
 
-  // Interaksi kursor pada tooltip (agar pengguna dapat memilih teks atau klik Salin)
+  // Interaksi kursor pada tooltip (agar pengguna dapat memblok / memilih teks untuk disalin)
   tipEl.addEventListener('mouseenter', () => {
     isHoveringTip = true;
     clearTimeout(hideTimer);
@@ -5065,43 +5029,6 @@ document.addEventListener('keydown', (e) => {
     if (related && (currentTarget.contains(related) || tipEl.contains(related))) return;
     hide(220);
   }, { passive: true });
-
-  // Aksi tombol Salin
-  if (copyBtn) {
-    copyBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      const text = tipTextEl ? tipTextEl.textContent : '';
-      if (!text) return;
-      
-      let copied = false;
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(text);
-          copied = true;
-        } else {
-          const ta = document.createElement('textarea');
-          ta.value = text;
-          ta.style.position = 'fixed';
-          ta.style.opacity = '0';
-          document.body.appendChild(ta);
-          ta.select();
-          copied = document.execCommand('copy');
-          document.body.removeChild(ta);
-        }
-      } catch (err) {
-        console.error('Gagal menyalin:', err);
-      }
-
-      if (copied) {
-        copyBtn.classList.add('copied');
-        if (copyIcon) copyIcon.style.display = 'none';
-        if (checkIcon) checkIcon.style.display = 'inline-block';
-        if (copyLabel) copyLabel.textContent = 'Tersalin!';
-        setTimeout(resetCopyBtn, 1500);
-      }
-    });
-  }
 
   // Sembunyikan seketika bila ada klik di luar, tombol Escape, atau scroll halaman
   window.addEventListener('scroll', () => {
