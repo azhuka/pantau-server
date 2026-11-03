@@ -35,10 +35,10 @@
   .fm-address-bar:focus-within { border-color: var(--blue); }
   .fm-breadcrumbs { display: flex; align-items: center; gap: 2px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; flex: 1; }
   .fm-breadcrumbs::-webkit-scrollbar { display: none; }
-  .fm-crumb { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 4px; color: var(--dim); cursor: pointer; font-size: 13px; font-weight: 500; text-decoration: none; user-select: none; }
+  .fm-crumb { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 4px; color: var(--dim); cursor: pointer; font-size: 13px; font-weight: 500; text-decoration: none; }
   .fm-crumb:hover { color: var(--blue); background: var(--hover); }
   .fm-crumb.active { color: var(--text); font-weight: 600; cursor: default; }
-  .fm-crumb-sep { color: var(--border); font-size: 11px; margin: 0 1px; user-select: none; }
+  .fm-crumb-sep { color: var(--border); font-size: 11px; margin: 0 1px; }
   .fm-address-toggle { padding: 4px 6px; font-size: 12px; color: var(--dim); background: none; border: none; cursor: pointer; border-radius: 4px; }
   .fm-address-toggle:hover { color: var(--text); background: var(--hover); }
   
@@ -54,7 +54,7 @@
   .fm-disk-fill { height: 100%; background: var(--blue); border-radius: 4px; transition: width 0.3s ease; }
 
   .fm-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
-  .fm-table th { padding: 7px 12px; text-align: left; color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; user-select: none; }
+  .fm-table th { padding: 7px 12px; text-align: left; color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; }
   .fm-table th.sortable { cursor: pointer; }
   .fm-table th.sortable:hover { color: var(--blue); }
   .fm-table td { padding: 6px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 11px; }
@@ -64,7 +64,7 @@
   .fm-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: var(--blue); }
   .fm-item-name { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; color: var(--text); text-decoration: none; word-break: break-all; }
   .fm-item-name:hover { color: var(--blue); }
-  .fm-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; user-select: none; }
+  .fm-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
   .fm-actions-cell { text-align: left; white-space: nowrap; }
   .fm-act-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 1px solid transparent; border-radius: 4px; background: transparent; cursor: pointer; font-size: 11.5px; transition: all 0.15s; }
   .fm-act-btn:hover { background: var(--hover); border-color: var(--border); }

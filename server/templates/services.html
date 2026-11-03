@@ -21,7 +21,6 @@
   padding: 8px 14px;
   background: #161b22;
   border-bottom: 1px solid #30363d;
-  user-select: none;
 }
 .terminal-dots {
   display: flex;
@@ -2526,19 +2525,19 @@ div[style*="position: fixed"] .card {
     <table class="table" id="tbl-systemd" style="width:100%;margin:0">
       <thead>
         <tr>
-          <th style="width:105px;text-align:center;cursor:pointer;user-select:none" onclick="toggleSysdSort('status')" title="Klik untuk mengurutkan Status">
+          <th style="width:105px;text-align:center;cursor:pointer" onclick="toggleSysdSort('status')" title="Klik untuk mengurutkan Status">
             Status <span id="sysd-sort-status" style="font-size:10px;opacity:0.6">↕</span>
           </th>
-          <th style="min-width:200px;cursor:pointer;user-select:none" onclick="toggleSysdSort('name')" title="Klik untuk mengurutkan Nama Unit">
+          <th style="min-width:200px;cursor:pointer" onclick="toggleSysdSort('name')" title="Klik untuk mengurutkan Nama Unit">
             Nama Unit <span id="sysd-sort-name" style="font-size:10px;opacity:0.6">↕</span>
           </th>
-          <th style="width:100px;text-align:center;cursor:pointer;user-select:none" onclick="toggleSysdSort('boot')" title="Klik untuk mengurutkan Status Boot">
+          <th style="width:100px;text-align:center;cursor:pointer" onclick="toggleSysdSort('boot')" title="Klik untuk mengurutkan Status Boot">
             Boot <span id="sysd-sort-boot" style="font-size:10px;opacity:0.6">↕</span>
           </th>
-          <th style="width:90px;text-align:center;cursor:pointer;user-select:none" onclick="toggleSysdSort('sub')" title="Klik untuk mengurutkan Sub-State">
+          <th style="width:90px;text-align:center;cursor:pointer" onclick="toggleSysdSort('sub')" title="Klik untuk mengurutkan Sub-State">
             Sub-State <span id="sysd-sort-sub" style="font-size:10px;opacity:0.6">↕</span>
           </th>
-          <th style="width:105px;text-align:right;cursor:pointer;user-select:none" onclick="toggleSysdSort('memory')" title="Klik untuk mengurutkan Penggunaan Memori">
+          <th style="width:105px;text-align:right;cursor:pointer" onclick="toggleSysdSort('memory')" title="Klik untuk mengurutkan Penggunaan Memori">
             Memori <span id="sysd-sort-memory" style="font-size:10px;opacity:0.6">↕</span>
           </th>
           <th style="min-width:240px">Deskripsi</th>
@@ -2664,19 +2663,19 @@ div[style*="position: fixed"] .card {
       <table class="table" id="tbl-packages" style="width:100%;margin:0">
         <thead>
           <tr>
-            <th data-col-title="Status" style="width:125px;text-align:center;cursor:pointer;user-select:none" onclick="togglePkgSort('status')" title="Klik untuk mengurutkan Status">
+            <th data-col-title="Status" style="width:125px;text-align:center;cursor:pointer" onclick="togglePkgSort('status')" title="Klik untuk mengurutkan Status">
               Status <span id="pkg-sort-status" style="font-size:10px;opacity:0.6">↕</span>
             </th>
-            <th data-col-title="Nama Paket" style="min-width:180px;cursor:pointer;user-select:none" onclick="togglePkgSort('name')" title="Klik untuk mengurutkan Nama Paket">
+            <th data-col-title="Nama Paket" style="min-width:180px;cursor:pointer" onclick="togglePkgSort('name')" title="Klik untuk mengurutkan Nama Paket">
               Nama Paket <span id="pkg-sort-name" style="font-size:10px;opacity:0.6">↕</span>
             </th>
-            <th data-col-title="Tipe" style="width:105px;text-align:center;cursor:pointer;user-select:none" onclick="togglePkgSort('is_user')" title="Klik untuk mengurutkan Tipe Paket (Pengguna/Sistem)">
+            <th data-col-title="Tipe" style="width:105px;text-align:center;cursor:pointer" onclick="togglePkgSort('is_user')" title="Klik untuk mengurutkan Tipe Paket (Pengguna/Sistem)">
               Tipe <span id="pkg-sort-is_user" style="font-size:10px;opacity:0.6">↕</span>
             </th>
-            <th data-col-title="Versi" style="width:170px;cursor:pointer;user-select:none" onclick="togglePkgSort('version')" title="Klik untuk mengurutkan Versi">
+            <th data-col-title="Versi" style="width:170px;cursor:pointer" onclick="togglePkgSort('version')" title="Klik untuk mengurutkan Versi">
               Versi <span id="pkg-sort-version" style="font-size:10px;opacity:0.6">↕</span>
             </th>
-            <th data-col-title="Ukuran" style="width:105px;text-align:right;cursor:pointer;user-select:none" onclick="togglePkgSort('size_kb')" title="Klik untuk mengurutkan Ukuran">
+            <th data-col-title="Ukuran" style="width:105px;text-align:right;cursor:pointer" onclick="togglePkgSort('size_kb')" title="Klik untuk mengurutkan Ukuran">
               Ukuran <span id="pkg-sort-size_kb" style="font-size:10px;opacity:0.6">↕</span>
             </th>
             <th data-col-title="Deskripsi" style="min-width:240px" title="Deskripsi singkat fungsi paket">Deskripsi</th>
@@ -2751,22 +2750,22 @@ div[style*="position: fixed"] .card {
     <table id="tbl-task-manager" style="width:100%;font-size:10px">
       <thead>
         <tr>
-          <th style="width:80px;cursor:pointer;user-select:none" onclick="toggleProcSort('pid')" title="Klik untuk mengurutkan PID">
+          <th style="width:80px;cursor:pointer" onclick="toggleProcSort('pid')" title="Klik untuk mengurutkan PID">
             PID <span id="sort-icon-pid" style="font-size:11px;opacity:0.6">↕</span>
           </th>
-          <th style="width:110px;cursor:pointer;user-select:none" onclick="toggleProcSort('user')" title="Klik untuk mengurutkan Pengguna">
+          <th style="width:110px;cursor:pointer" onclick="toggleProcSort('user')" title="Klik untuk mengurutkan Pengguna">
             Pengguna <span id="sort-icon-user" style="font-size:11px;opacity:0.6">↕</span>
           </th>
-          <th style="cursor:pointer;user-select:none" onclick="toggleProcSort('comm')" title="Klik untuk mengurutkan Nama Perintah">
+          <th style="cursor:pointer" onclick="toggleProcSort('comm')" title="Klik untuk mengurutkan Nama Perintah">
             Nama Perintah / Proses <span id="sort-icon-comm" style="font-size:11px;opacity:0.6">↕</span>
           </th>
-          <th style="width:100px;text-align:center;cursor:pointer;user-select:none" onclick="toggleProcSort('state')" title="Klik untuk mengurutkan Status">
+          <th style="width:100px;text-align:center;cursor:pointer" onclick="toggleProcSort('state')" title="Klik untuk mengurutkan Status">
             Status <span id="sort-icon-state" style="font-size:11px;opacity:0.6">↕</span>
           </th>
-          <th style="width:95px;min-width:90px;text-align:right;cursor:pointer;user-select:none" onclick="toggleProcSort('cpu')" title="Klik untuk mengurutkan penggunaan CPU">
+          <th style="width:95px;min-width:90px;text-align:right;cursor:pointer" onclick="toggleProcSort('cpu')" title="Klik untuk mengurutkan penggunaan CPU">
             %CPU <span id="sort-icon-cpu" style="font-size:11px;color:var(--blue)">▼</span>
           </th>
-          <th style="width:95px;min-width:90px;text-align:right;cursor:pointer;user-select:none" onclick="toggleProcSort('mem')" title="Klik untuk mengurutkan penggunaan Memori">
+          <th style="width:95px;min-width:90px;text-align:right;cursor:pointer" onclick="toggleProcSort('mem')" title="Klik untuk mengurutkan penggunaan Memori">
             %Memori <span id="sort-icon-mem" style="font-size:11px;opacity:0.6">↕</span>
           </th>
           {% if user.has_perm('can_processes') %}

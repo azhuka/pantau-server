@@ -166,7 +166,6 @@
   font-weight: 600;
   cursor: pointer;
   background: rgba(255,255,255,0.03);
-  user-select: none;
   transition: all 0.15s ease;
 }
 .day-btn.is-selected {
@@ -202,7 +201,6 @@
   cursor: pointer;
   border-radius: 4px;
   transition: background 0.12s ease;
-  user-select: none;
 }
 .multi-server-row:hover {
   background: rgba(255, 255, 255, 0.06) !important;
@@ -436,7 +434,7 @@
           </div>
           
           <!-- Trigger Box (Dropdown Box) -->
-          <div id="multiSelectTrigger" class="form-control" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:6px 12px;min-height:36px;user-select:none" onclick="toggleMultiSelectDropdown(event)">
+          <div id="multiSelectTrigger" class="form-control" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:6px 12px;min-height:36px" onclick="toggleMultiSelectDropdown(event)">
             <div id="multiSelectDisplay" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;overflow:hidden;max-width:calc(100% - 24px);font-size:12px;color:var(--dim)">
               Pilih satu atau beberapa server...
             </div>

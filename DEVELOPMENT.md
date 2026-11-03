@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.79
+
+- **Tipe Rilis:** Hak Akses Salin Teks Menyeluruh Seluruh Antarmuka dan Engine Tooltip Modern Interaktif yang Dapat Disalin (*Universal Copyable Text Across All UI Elements and Copyable Modern Interactive Tooltip Engine*)
+- **Fokus Utama:** Mengatasi hambatan operasional sysadmin dalam menyeleksi dan menyalin teks di layar (*copy-paste text*), serta merekayasa ulang arsitektur tooltip agar informasinya dapat disalin secara instan dan bebas polusi visual:
+  1. **Hak Akses Salin Teks Menyeluruh Tanpa Batasan (`user-select: text !important`):**
+     - Menghapus dan menonaktifkan seluruh restriksi `user-select: none` di seluruh berkas template dan CSS global (`base.html`, `problems.html`, `servers.html`, `services.html`, `file_manager.html`, `probing.html`, `maintenance.html`, `login.html`, `login_2fa.html`).
+     - Memastikan seluruh elemen teks (header tabel `th`, baris/sel data `td`, lencana status `.badge`, tag keparahan, riwayat login, nama server, IP, label filter, tombol kontrol, dan modal) 100% dapat diseleksi kursor dan disalin (`Ctrl+C` / klik kanan).
+  2. **Engine Tooltip Modern Interaktif & Dapat Disalin (*Pantau Copyable Tooltip Engine*):**
+     - Membangun container tooltip mandiri `#pantau-copy-tooltip` yang melayang presisi di atas/bawah elemen target dengan jarak aman (offset 8px), sehingga **tidak pernah menumpuk, membayangi teks asli, atau memicu kedipan (*anti-flicker & zero ghosting*)**.
+     - Mendukung penyalinan instan via tombol **"Salin" (*One-Click Copy*)** di sudut tooltip dengan indikator umpan balik visual (*"Tersalin!"* berwarna hijau) serta seleksi teks manual di dalam bodi tooltip.
+     - Menyediakan masa tenggang kursor (*grace period bridge 220ms*), sehingga kursor dapat berpindah mulus dari elemen target langsung ke dalam tooltip tanpa tertutup tiba-tiba.
+     - Otomatis menekan tooltip bawaan peramban (*native browser tooltip*) yang kaku dan tidak bisa disalin, menggantikannya secara terpadu di seluruh modul operasional.
+     - Kompatibel penuh dan harmonis di seluruh 4 tema (*Dark*, *Light*, *Obsidian OLED*, *Navy*).
+  3. **Integritas Mutlak Halaman Utama & Kartu Insiden Terbuka:**
+     - Mempertahankan integritas 100% tanpa mengubah apapun pada Halaman Utama / Dasbor (`dashboard.html`) serta susunan kolom tabel data `#probtable`.
+  4. **Otomasi Pembaruan SemVer v4.8.79:**
+     - Menaikkan versi sistem menjadi `v4.8.79` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.78
 
 - **Tipe Rilis:** Harmonisasi Menyeluruh Tema Multi-Mode (Dark/Light/Obsidian/Navy), Standardisasi Filter Berlabel Vertikal, dan Eliminasi Inkonsistensi Visual Sistem (*Universal Multi-Mode Theme Harmonization across Dark, Light, Obsidian OLED & Navy, Vertical Labeled Filter Standardization, and Total System Visual Inconsistency Elimination*)

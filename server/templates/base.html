@@ -728,6 +728,20 @@
   padding:10.5px 14px !important;
 }
 *{margin:0;padding:0;box-sizing:border-box}
+
+/* Hak Akses Salin Teks Menyeluruh (Universal Copyable Text) */
+html, body, *, *::before, *::after {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Pengecualian seleksi hanya untuk elemen form interaktif native tertentu */
+input[type="checkbox"], input[type="radio"], input[type="range"] {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";
   background:var(--bg);
@@ -744,7 +758,7 @@ body{
 .sidebar{width:230px;background:var(--sidebar);border-right:1px solid var(--border);padding:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:20;transition:width .2s cubic-bezier(0.4,0,0.2,1);box-shadow:var(--shadow-md)}
 .sidebar-brand{padding:18px 20px;font-size:15px;font-weight:700;letter-spacing:-0.02em;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;white-space:nowrap}
 .sidebar-brand .brand-dot{color:var(--blue)}
-.sb-toggle{margin-left:auto;cursor:pointer;color:var(--dim);font-size:15px;line-height:1;padding:5px 8px;border-radius:6px;user-select:none;background:none;border:1px solid transparent;font-family:inherit;transition:all .15s}
+.sb-toggle{margin-left:auto;cursor:pointer;color:var(--dim);font-size:15px;line-height:1;padding:5px 8px;border-radius:6px;background:none;border:1px solid transparent;font-family:inherit;transition:all .15s}
 .sb-toggle:hover{color:var(--text);background:var(--hover);border-color:var(--border)}
 .sidebar-nav{flex:1;padding:14px 10px;overflow-y:auto}
 .nav-section{padding:10px 14px 4px;font-size:10px;font-weight:700;color:var(--dim-subtle);text-transform:uppercase;letter-spacing:1px}
@@ -757,7 +771,7 @@ body{
 .sidebar-footer a:hover{color:var(--red)}
 
 .main{flex:1;min-width:0;margin-left:230px;padding:26px 36px;transition:margin-left .2s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column;min-height:100vh}
-.app-footer{margin-top:auto;text-align:center;padding:28px 0 16px;font-size:12px;color:var(--dim);opacity:0.8;user-select:none}
+.app-footer{margin-top:auto;text-align:center;padding:28px 0 16px;font-size:12px;color:var(--dim);opacity:0.8}
 .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:12px}
 .topbar h2{font-size:20px;font-weight:700;letter-spacing:-0.02em;color:var(--text-heading, #fff)}
 .topbar .user-info{font-size:13px;color:var(--dim)}
@@ -1038,6 +1052,110 @@ th.th-act, td.td-act, td.cell-act, .fm-actions-cell {
   font-size: 9.5px !important;
 }
 
+/* ---------- Pantau Copyable Tooltip Engine ---------- */
+.pantau-copy-tooltip {
+  position: fixed;
+  z-index: 999999;
+  display: none;
+  opacity: 0;
+  pointer-events: auto;
+  max-width: 460px;
+  min-width: 120px;
+  background: var(--modal-bg, #161b22);
+  color: var(--text, #f8fafc);
+  border: 1px solid var(--border-focus, #38bdf8);
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 11.5px;
+  line-height: 1.45;
+  transition: opacity 0.12s cubic-bezier(0.16, 1, 0.3, 1), transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(3px) scale(0.98);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  user-select: text !important;
+}
+.pantau-copy-tooltip.show {
+  display: block;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.pantau-tip-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+.pantau-tip-text {
+  flex: 1;
+  word-break: break-word;
+  white-space: pre-wrap;
+  user-select: text !important;
+  cursor: text;
+  color: var(--text, #f8fafc);
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 11.5px;
+}
+.pantau-tip-text code,
+.pantau-tip-text pre {
+  font-family: var(--font-mono, monospace);
+  user-select: text !important;
+}
+.pantau-tip-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 3px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+  background: var(--input-bg, rgba(255, 255, 255, 0.06));
+  color: var(--blue, #38bdf8);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+  user-select: none !important;
+}
+.pantau-tip-copy-btn:hover {
+  background: var(--blue, #38bdf8);
+  color: #fff;
+  border-color: var(--blue, #38bdf8);
+}
+.pantau-tip-copy-btn.copied {
+  background: var(--green, #22c55e) !important;
+  color: #fff !important;
+  border-color: var(--green, #22c55e) !important;
+}
+[data-theme="light"] .pantau-copy-tooltip {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #0284c7;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .pantau-tip-text {
+  color: #0f172a;
+}
+[data-theme="light"] .pantau-tip-copy-btn {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0284c7;
+}
+[data-theme="light"] .pantau-tip-copy-btn:hover {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+}
+[data-theme="obsidian"] .pantau-copy-tooltip {
+  background: #050505;
+  color: #ffffff;
+  border-color: #38bdf8;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.9);
+}
+
 /* ---------- Panel Filter Presisi Tinggi NOC ---------- */
 .pantau-filter-panel {
   background: var(--filter-panel-bg);
@@ -1082,7 +1200,6 @@ th.th-act, td.td-act, td.cell-act, .fm-actions-cell {
   color: var(--dim, #94a3b8);
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  user-select: none;
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -1190,7 +1307,6 @@ th.th-act, td.td-act, td.cell-act, .fm-actions-cell {
   font-size: 10px;
   font-weight: 700;
   color: var(--dim);
-  user-select: none;
   letter-spacing: 0.3px;
   text-transform: uppercase;
 }
@@ -1266,7 +1382,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 /* Tombol Modern dengan sentuhan Neon Halus */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;border:1px solid transparent;cursor:pointer;text-decoration:none;transition:all .18s cubic-bezier(0.16,1,0.3,1);white-space:nowrap;user-select:none;position:relative}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;border:1px solid transparent;cursor:pointer;text-decoration:none;transition:all .18s cubic-bezier(0.16,1,0.3,1);white-space:nowrap;position:relative}
 .btn:hover{filter:brightness(1.12)}
 .btn:active{transform:scale(0.97)}
 .btn-primary{background:var(--blue);color:#0b1120;border-color:rgba(56,189,248,0.7);box-shadow:0 0 10px rgba(56,189,248,0.28), inset 0 1px 0 rgba(255,255,255,0.2)}
@@ -1322,7 +1438,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   text-decoration:none;
   white-space:nowrap;
   cursor:pointer;
-  user-select:none;
   transition:all .18s cubic-bezier(0.16,1,0.3,1);
 }
 .prob-btn svg{width:12px;height:12px;flex-shrink:0;stroke-width:2;stroke:currentColor;vertical-align:middle;pointer-events:none}
@@ -1542,7 +1657,6 @@ table .copyable-ip, td .copyable-ip{font-size:9.5px !important}
   display:inline-flex;
   align-items:center;
   gap:7px;
-  user-select:none;
   overflow:hidden;
 }
 /* Efek Hover Glass Tint */
@@ -1938,7 +2052,6 @@ body.kiosk-mode .main {
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.03);
   cursor: pointer;
-  user-select: none;
   transition: all 0.15s ease;
 }
 .theme-opt-card:hover {
@@ -1979,7 +2092,6 @@ body.kiosk-mode .main {
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  user-select: none;
   transition: all 0.15s ease;
   color: var(--text);
 }
@@ -2069,7 +2181,7 @@ body.show-alert-banner .main{padding-top:72px}
 /* Terminal live Update/Upgrade — Gaya Konsol Terminal Linux Modern */
 .terminal-window{background:#0b0e14;border:1px solid #282f3e;border-radius:10px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.5);margin:0;width:100%;transition:border-color .2s,box-shadow .2s}
 .terminal-window:focus-within{border-color:#38bdf8;box-shadow:0 8px 30px rgba(0,0,0,.6),0 0 0 1px rgba(56,189,248,.35)}
-.terminal-titlebar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#131822;border-bottom:1px solid #232a38;user-select:none}
+.terminal-titlebar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#131822;border-bottom:1px solid #232a38}
 .terminal-dots{display:flex;gap:7px;align-items:center}
 .t-dot{width:11px;height:11px;border-radius:50%;display:inline-block;cursor:pointer;transition:opacity .15s}
 .t-dot:hover{opacity:.8}
@@ -2207,7 +2319,6 @@ body.show-alert-banner .main{padding-top:72px}
   color: var(--input-text);
   cursor: pointer;
   transition: all 0.15s ease;
-  user-select: none;
   line-height: 1.2;
 }
 .pantau-col-btn:hover {
@@ -2307,7 +2418,6 @@ body.show-alert-banner .main{padding-top:72px}
   cursor: pointer;
   color: var(--text);
   transition: background 0.12s ease;
-  user-select: none;
 }
 .pantau-col-item:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -2409,7 +2519,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.78' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.79' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
       <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
       </button>
@@ -4798,7 +4908,216 @@ document.addEventListener('keydown', (e) => {
   </div>
 </div>
 
+<!-- Tooltip Salin Menyeluruh (Pantau Copyable Tooltip Engine) -->
+<div id="pantau-copy-tooltip" class="pantau-copy-tooltip" role="tooltip" aria-hidden="true">
+  <div class="pantau-tip-body">
+    <div class="pantau-tip-text" id="pantau-tip-text"></div>
+    <button type="button" class="pantau-tip-copy-btn" id="pantau-tip-copy-btn" title="Salin isi tooltip ke papan klip">
+      <svg class="tip-copy-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      <svg class="tip-check-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <span class="tip-copy-label">Salin</span>
+    </button>
+  </div>
+</div>
+
 <script>
+// ---------- Pantau Copyable Tooltip Engine ----------
+(function() {
+  const tipEl = document.getElementById('pantau-copy-tooltip');
+  if (!tipEl) return;
+  const tipTextEl = document.getElementById('pantau-tip-text');
+  const copyBtn = document.getElementById('pantau-tip-copy-btn');
+  const copyIcon = copyBtn ? copyBtn.querySelector('.tip-copy-icon') : null;
+  const checkIcon = copyBtn ? copyBtn.querySelector('.tip-check-icon') : null;
+  const copyLabel = copyBtn ? copyBtn.querySelector('.tip-copy-label') : null;
+
+  let currentTarget = null;
+  let showTimer = null;
+  let hideTimer = null;
+  let isHoveringTip = false;
+
+  function resetCopyBtn() {
+    if (!copyBtn) return;
+    copyBtn.classList.remove('copied');
+    if (copyIcon) copyIcon.style.display = 'inline-block';
+    if (checkIcon) checkIcon.style.display = 'none';
+    if (copyLabel) copyLabel.textContent = 'Salin';
+  }
+
+  function resolveTooltipTarget(el) {
+    if (!el || el === document.body || el === document.documentElement) return null;
+    if (tipEl.contains(el)) return null;
+
+    let text = null;
+    if (el.hasAttribute('title')) {
+      text = el.getAttribute('title').trim();
+      if (text) {
+        el.dataset.pantauTip = text;
+        el.removeAttribute('title');
+      }
+    } else if (el.dataset.pantauTip && el.dataset.pantauTip.trim()) {
+      text = el.dataset.pantauTip.trim();
+    } else if (el.hasAttribute('data-tooltip') && el.getAttribute('data-tooltip').trim()) {
+      text = el.getAttribute('data-tooltip').trim();
+    }
+
+    if (text) {
+      return { target: el, text };
+    }
+    return resolveTooltipTarget(el.parentElement);
+  }
+
+  function positionTooltip(target) {
+    const rect = target.getBoundingClientRect();
+    
+    // Tampilkan tooltip tersembunyi untuk menghitung bounding box
+    tipEl.style.visibility = 'hidden';
+    tipEl.style.display = 'block';
+    const tipRect = tipEl.getBoundingClientRect();
+    
+    const margin = 8;
+    // Preferensi di atas target
+    let top = rect.top - tipRect.height - margin;
+    let left = rect.left + (rect.width / 2) - (tipRect.width / 2);
+    
+    // Jika mepet ke atas viewport, posisikan di bawah target
+    if (top < margin) {
+      top = rect.bottom + margin;
+    }
+    
+    // Batasi horizontal agar selalu terlihat penuh di dalam layar
+    const maxLeft = window.innerWidth - tipRect.width - margin;
+    if (left < margin) left = margin;
+    if (left > maxLeft) left = maxLeft;
+    
+    // Batasi vertikal agar tidak overflow bawah layar
+    if (top + tipRect.height > window.innerHeight - margin) {
+      top = Math.max(margin, window.innerHeight - tipRect.height - margin);
+    }
+    
+    tipEl.style.top = Math.round(top) + 'px';
+    tipEl.style.left = Math.round(left) + 'px';
+    tipEl.style.visibility = 'visible';
+  }
+
+  function show(target, text) {
+    clearTimeout(hideTimer);
+    clearTimeout(showTimer);
+
+    // Debounce 160ms agar kursor yang melintas cepat tidak memicu kedipan
+    showTimer = setTimeout(() => {
+      if (!target || !document.body.contains(target)) return;
+      currentTarget = target;
+      
+      resetCopyBtn();
+      tipTextEl.textContent = text;
+      
+      positionTooltip(target);
+      tipEl.classList.add('show');
+      tipEl.setAttribute('aria-hidden', 'false');
+    }, 160);
+  }
+
+  function hide(delay = 180) {
+    clearTimeout(showTimer);
+    clearTimeout(hideTimer);
+    
+    hideTimer = setTimeout(() => {
+      if (isHoveringTip) return;
+      tipEl.classList.remove('show');
+      tipEl.setAttribute('aria-hidden', 'true');
+      setTimeout(() => {
+        if (!tipEl.classList.contains('show')) {
+          tipEl.style.display = 'none';
+          tipEl.style.visibility = 'hidden';
+        }
+      }, 120);
+      currentTarget = null;
+    }, delay);
+  }
+
+  // Interaksi kursor pada tooltip (agar pengguna dapat memilih teks atau klik Salin)
+  tipEl.addEventListener('mouseenter', () => {
+    isHoveringTip = true;
+    clearTimeout(hideTimer);
+  });
+
+  tipEl.addEventListener('mouseleave', () => {
+    isHoveringTip = false;
+    hide(150);
+  });
+
+  // Delegasi event mouseover dan mouseout pada seluruh dokumen
+  document.addEventListener('mouseover', (e) => {
+    const res = resolveTooltipTarget(e.target);
+    if (!res) return;
+    
+    if (currentTarget !== res.target) {
+      show(res.target, res.text);
+    } else {
+      clearTimeout(hideTimer);
+    }
+  }, { passive: true });
+
+  document.addEventListener('mouseout', (e) => {
+    if (!currentTarget) return;
+    const related = e.relatedTarget;
+    if (related && (currentTarget.contains(related) || tipEl.contains(related))) return;
+    hide(220);
+  }, { passive: true });
+
+  // Aksi tombol Salin
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const text = tipTextEl ? tipTextEl.textContent : '';
+      if (!text) return;
+      
+      let copied = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          copied = true;
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          copied = document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+      } catch (err) {
+        console.error('Gagal menyalin:', err);
+      }
+
+      if (copied) {
+        copyBtn.classList.add('copied');
+        if (copyIcon) copyIcon.style.display = 'none';
+        if (checkIcon) checkIcon.style.display = 'inline-block';
+        if (copyLabel) copyLabel.textContent = 'Tersalin!';
+        setTimeout(resetCopyBtn, 1500);
+      }
+    });
+  }
+
+  // Sembunyikan seketika bila ada klik di luar, tombol Escape, atau scroll halaman
+  window.addEventListener('scroll', () => {
+    if (!isHoveringTip) hide(0);
+  }, { passive: true });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hide(0);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (tipEl.contains(e.target)) return;
+    hide(0);
+  });
+})();
+
 // ---------- Helper Paginasi Tabel Terpadu (Universal Table Pagination Engine) ----------
 function attachTablePagination(target, options = {}) {
   const table = typeof target === 'string' ? document.querySelector(target) : target;
