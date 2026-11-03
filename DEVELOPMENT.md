@@ -354,6 +354,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.73
+
+- **Tipe Rilis:** Penyempurnaan Menyeluruh Panel Filter Terpadu, Arsitektur Sebaris Presisi Tinggi, Date Picker Tema Gelap, dan Interaktivitas Dinamis Tanpa Reload Prematur (*Unified NOC Filter Panel Architecture, High-Precision Single-Row Layout, Dark Theme Date Picker, and Seamless Dynamic In-Place Filtering*)
+- **Fokus Utama:** Menyelesaikan permasalahan visual dan fungsionalitas panel filter pada kartu Riwayat Insiden dan Halaman Audit agar 100% rapi, profesional, bersih, dan mudah digunakan sesuai standar kelas enterprise:
+  1. **Arsitektur Kontainer Filter Terpadu (`.pantau-filter-panel`):**
+     - Membungkus seluruh bilah filter dan preset cepat ke dalam kontainer panel terpadu dengan latar belakang gelap semi-transparan (`rgba(13, 19, 33, 0.65)`), border halus (`rgba(255, 255, 255, 0.08)`), padding rapat NOC, dan garis pemisah `.filter-divider` yang elegan.
+  2. **Presisi Tata Letak Sebaris Tanpa Pemenggalan (`.filter-row-main`):**
+     - Menjamin seluruh elemen operasional (dropdown kriteria, pemilih tanggal, pencarian, dan tombol Reset) berada tepat pada satu baris stabil tanpa ada elemen yang terdorong atau jatuh ke baris berikutnya pada resolusi desktop/laptop standar.
+     - Mengeliminasi tombol besar "Terapkan" pada halaman audit yang sebelumnya memicu ketidaksinkronan visual dengan kartu riwayat insiden dan merusak aliran horizontal.
+  3. **Penyempurnaan Pemilih Rentang Tanggal (`.pantau-date-range`):**
+     - Mengintegrasikan styling `color-scheme: dark;` pada elemen `<input type="date">` sehingga dialog kalender Chromium/browser secara otomatis mengikuti skema warna gelap NOC yang kontras dan bersih.
+     - Menghapus ikon kalender SVG eksternal yang redundan dan menyelaraskan label teks `Dari:` serta tanda pemisah `—` dengan ukuran input proporsional (`width: 96px`).
+     - Menambahkan handler `onclick="try{this.showPicker()}catch(e){}"` agar dialog kalender dapat dibuka seketika saat pengguna mengklik area input tanggal.
+  4. **Interaktivitas Dinamis Tanpa Reload Penuh (`applyAuditFilters`):**
+     - Mengimplementasikan sistem pembaruan tabel audit secara dinamis berbasis `fetch()` dan `auditPatch()` yang sinkron dengan URL bar (`window.history.replaceState`), menghilangkan efek kedipan layar (*screen flicker*) dan lonjakan posisi scroll (*scroll jumping*).
+     - Menghilangkan bug auto-submit prematur saat operator baru memilih salah satu tanggal, sehingga operator dapat leluasa menentukan rentang waktu sebelum pemfilteran dipicu.
+     - Pencarian kata kunci audit terintegrasi dengan mekanisme *debounce* 250ms agar tidak memutus fokus pengetikan operator.
+  5. **Integritas Mutlak Halaman Utama & Kartu Insiden Terbuka:**
+     - Mempertahankan integritas 100% tanpa mengubah apapun pada Halaman Utama / Dasbor ([`dashboard.html`](file:///home/bos/rj45/server/templates/dashboard.html)) serta Kartu Insiden Terbuka ([`problems.html#probtable`](file:///home/bos/rj45/server/templates/problems.html#probtable)).
+  6. **Otomasi Pembaruan SemVer v4.8.73:**
+     - Menaikkan versi sistem menjadi `v4.8.73` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.72
 
 - **Tipe Rilis:** Penetapan Posisi Baku Toolbar Filter & Tombol Quick Presets di Bawahnya, Eliminasi Total Tooltip Overlay yang Menindih & Berkedip, serta Standardisasi Atribusi Operator Master-Admin (*Standardized NOC Filter Hierarchy, Elimination of Overlapping Flickering Tooltip Engine, and Master-Admin Attribution Normalization*)

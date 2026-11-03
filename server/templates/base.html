@@ -720,6 +720,77 @@ th.th-act, td.td-act, td.cell-act, .fm-actions-cell {
   font-size: 9.5px !important;
 }
 
+/* ---------- Panel Filter Presisi Tinggi NOC ---------- */
+.pantau-filter-panel {
+  background: rgba(13, 19, 33, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 14px;
+  box-sizing: border-box;
+}
+.pantau-filter-panel .filter-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin: 8px 0 7px;
+}
+.pantau-filter-panel .filter-row-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+@media (max-width: 1024px) {
+  .pantau-filter-panel .filter-row-main {
+    flex-wrap: wrap;
+  }
+}
+.pantau-date-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(9, 13, 22, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 0 6px;
+  height: 34px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: border-color .15s ease;
+}
+.pantau-date-range:focus-within {
+  border-color: rgba(56, 189, 248, 0.5);
+}
+.pantau-date-range input[type="date"] {
+  width: 96px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  outline: none;
+  padding: 0;
+  color-scheme: dark;
+}
+.pantau-date-range .date-sep {
+  font-size: 10.5px;
+  color: var(--dim);
+  user-select: none;
+}
+input[type="date"] {
+  color-scheme: dark;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8) brightness(1.1);
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.15s ease;
+  margin-left: 2px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 /* Tombol Modern dengan sentuhan Neon Halus */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;border:1px solid transparent;cursor:pointer;text-decoration:none;transition:all .18s cubic-bezier(0.16,1,0.3,1);white-space:nowrap;user-select:none;position:relative}
 .btn:hover{filter:brightness(1.12)}
@@ -1864,7 +1935,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.72' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.73' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
       <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
       </button>
