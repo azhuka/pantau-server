@@ -354,6 +354,33 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.85
+
+- **Tipe Rilis:** Resolusi Presisi Sudut Status Firewall, Standarisasi Universal Paginasi Tabel < 10 Baris, Reaktivitas & Rentang Waktu Riwayat Layanan, Indikator Memuat Aktivitas Pengguna, dan Konsistensi Istilah Jaringan Sysadmin (*Firewall Status Card Corner Clipping Resolution, Universal Table Pagination Auto-Hide Fix, Service History Timeframe Scale Reactivity, User Activity Async Loader State, and Sysadmin Networking Packet Terminology Standardization*)
+- **Fokus Utama:** Menyelesaikan inkonsistensi visual, kejelasan alur pemantauan riwayat layanan, dan ketepatan tata bahasa sysadmin standar dunia:
+  1. **Resolusi Sudut Tajam Strip Status Firewall (`services.html` & `base.html`):**
+     - Memperbaiki aksen vertikal status firewall (`position: absolute; left: 0; width: 3.5px`) yang sebelumnya menonjol keluar dari sudut melengkung kartu (`border-radius: 5px`).
+     - Menambahkan aturan `position: relative !important; overflow: hidden !important;` pada kartu statistik firewall serta pewarisan kelengkungan sudut `border-top-left-radius: inherit !important; border-bottom-left-radius: inherit !important;` pada seluruh strip warna absolut (`#fw-stat-status-bar`, backend, dan IP blocked).
+     - Menetapkan `overflow: hidden;` secara global pada komponen `.stat-card` di `base.html`.
+  2. **Resolusi Inkonsistensi Paginasi Tabel < 10 Baris (`services.html` & `base.html`):**
+     - Mengidentifikasi akar masalah di mana aturan CSS `.tab-body .table-pagination-bar { display: flex !important; }` menimpa manipulasi DOM JavaScript `bar.style.display = 'none'` pada `attachTablePagination()`.
+     - Menghapus deklarasi `!important` dari properti `display: flex;` di `services.html` dan memperkuat logika JavaScript di `base.html` menggunakan `bar.style.setProperty('display', 'none', 'important')` saat jumlah baris berada di bawah ambang batas (`hideThreshold < 10`, atau `< 5` untuk DNS/Gateway).
+     - Memastikan seluruh tabel dengan baris < 10 (Block Devices, Partisi Disk, Antarmuka Gateway & DNS, Statistik Jaringan) menyembunyikan bilah navigasi paginasi secara konsisten tanpa menyisakan kontrol kosong.
+  3. **Penyempurnaan Reaktivitas Visual & Skala Riwayat Layanan (`server/main.py` & `services.html`):**
+     - Menambahkan kepastian timestamp absolut rentang waktu `"from"` dan `"to"` pada respon JSON backend endpoint `/api/servers/{sid}/services/{svc_id}/history`.
+     - Memberikan feedback visual instan (transisi opasitas kartu meredup halus `opacity: 0.55`) seketika saat tombol rentang waktu ("Hari Ini", "1 Jam", "24 Jam", "7 Hari", "30 Hari") diklik oleh operator.
+     - Menyinkronkan label rentang waktu `#svc-strip-from` dan `#svc-strip-to` dengan timestamp awal dan akhir rentang yang dipilih secara presisi.
+     - Merender balok gap penanda "Tanpa Data Riwayat (Belum Dimonitor)" pada garis waktu SVG apabila server/layanan baru online di paruh akhir rentang waktu yang diminta, serta memposisikan kurva garis pada skala waktu absolut yang akurat sehingga perbedaan visual antar rentang terlihat nyata seketika.
+  4. **Penyediaan Indikator Pemuatan Visual pada Halaman Aktivitas Pengguna (`user_activity.html`):**
+     - Mengatasi tampilan kosong melompong (hampa visual) saat halaman aktivitas pengguna dibuka pertama kali dengan menyematkan komponen `#ll-loading` dan `#hist-loading` berspinner NOC terpadu.
+     - Memberikan sinyal visual yang informatif bagi operator selagi daemon agen mengambil catatan aktivitas login sudo dan riwayat perintah shell dari server target.
+  5. **Standarisasi Istilah Jaringan Sysadmin & NOC (`services.html`):**
+     - Menyelaraskan istilah teknis standar dunia sesuai instruksi: mempertahankan istilah `Packet` (bukan `Packages`) untuk seluruh lalu lintas data jaringan (seperti pada kolom "Packet Terblokir" di tabel daftar hitam firewall).
+     - Membatasi penggunaan istilah `Packages` hanya untuk paket perangkat lunak sistem operasi (manajemen APT / DPKG).
+  6. **Integritas Mutlak Halaman Utama & Standarisasi SemVer v4.8.85:**
+     - Menjaga integritas 100% tanpa mengubah berkas Halaman Utama / Dasbor (`dashboard.html`).
+     - Menaikkan versi SemVer secara serempak di 7 berkas proyek.
+
 ## Versi 4.8.84
 
 - **Tipe Rilis:** Resolusi Fatal ReferenceError Temporal Dead Zone (TDZ) Riwayat Tindakan, Reaktivitas Real-Time Seluruh Aksi Operator Tanpa Reload, Sinkronisasi Otomatis Tabel Akun, dan Normalisasi Metadata Sasaran Perintah Backend (*Action History TDZ ReferenceError Resolution, Full Operator Action Real-Time Reactivity Without Reload, Synchronous User Account Action Table Updates, and Backend Command Target Metadata Normalization*)

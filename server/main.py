@@ -12474,6 +12474,8 @@ def api_service_history(
         "server_id": sid,
         "service": {"id": svc.id, "name": svc.service_name, "port": svc.port},
         "range": range,
+        "from": int(start.timestamp()),
+        "to": int(now.timestamp()),
         "now": {
             "status": latest.status if latest else "unknown",
             "connections": latest.active_connections if latest else 0,

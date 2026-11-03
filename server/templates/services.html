@@ -950,6 +950,14 @@
   border-radius: 5px !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   background: rgba(0, 0, 0, 0.16) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.tab-body #tab-firewall .card:first-child .stat-card > div[style*="position:absolute"],
+.tab-body #tab-firewall .card:first-child .stat-card > div[style*="position: absolute"],
+.tab-body #tab-firewall .card:first-child .stat-card #fw-stat-status-bar {
+  border-top-left-radius: inherit !important;
+  border-bottom-left-radius: inherit !important;
 }
 .tab-body #tab-firewall .card:first-child .stat-card .label {
   font-size: 10px !important;
@@ -963,7 +971,7 @@
   font-size: 11.5px !important;
 }
 .tab-body .table-pagination-bar {
-  display: flex !important;
+  display: flex;
   justify-content: space-between !important;
   align-items: center !important;
   flex-wrap: wrap !important;
@@ -2997,19 +3005,19 @@ div[style*="position: fixed"] .card {
     
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px">
       <div class="stat-card" style="position:relative;overflow:hidden;padding-left:14px">
-        <div id="fw-stat-status-bar" style="position:absolute;left:0;top:0;bottom:0;width:3.5px;background:{{ 'var(--green)' if firewall.status == 'active' else 'var(--yellow)' }}"></div>
+        <div id="fw-stat-status-bar" style="position:absolute;left:0;top:0;bottom:0;width:3.5px;border-top-left-radius:inherit;border-bottom-left-radius:inherit;background:{{ 'var(--green)' if firewall.status == 'active' else 'var(--yellow)' }}"></div>
         <div class="label">Status Firewall</div>
         <div class="value" id="fw-stat-status" style="font-size:20px;color:{{ 'var(--green)' if firewall.status == 'active' else 'var(--yellow)' }}">
           {{ firewall.status | upper }}
         </div>
       </div>
       <div class="stat-card" style="position:relative;overflow:hidden;padding-left:14px">
-        <div style="position:absolute;left:0;top:0;bottom:0;width:3.5px;background:var(--blue)"></div>
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3.5px;border-top-left-radius:inherit;border-bottom-left-radius:inherit;background:var(--blue)"></div>
         <div class="label">Backend Firewall</div>
         <div class="value" id="fw-stat-backend" style="font-size:20px">{{ firewall.backend | upper }}</div>
       </div>
       <div class="stat-card" style="position:relative;overflow:hidden;padding-left:14px">
-        <div style="position:absolute;left:0;top:0;bottom:0;width:3.5px;background:var(--red)"></div>
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3.5px;border-top-left-radius:inherit;border-bottom-left-radius:inherit;background:var(--red)"></div>
         <div class="label">IP Diblokir (DROP)</div>
         <div class="value" id="fw-stat-blocked" style="font-size:20px;color:var(--red)">
           {{ (firewall.blocked_ips|length) if firewall and firewall.blocked_ips else 0 }} IP
@@ -3065,7 +3073,7 @@ div[style*="position: fixed"] .card {
           <tr>
             <th>Baris</th>
             <th>Alamat IP Sumber</th>
-            <th>Paket Terblokir</th>
+            <th>Packet Terblokir</th>
             <th>Total Byte</th>
             {% if user.has_perm('can_firewall') %}
             <th class="col-act" style="width:120px;text-align:right">Tindakan</th>
@@ -10281,7 +10289,7 @@ function fmtAxisTime(t) {
   return hh + ':' + mm;
 }
 
-function renderLineChart(elId, points, valueOf, yfmt, colorHex, fixedMax, statId) {
+function renderLineChart(elId, points, valueOf, yfmt, colorHex, fixedMax, statId, tRangeMin, tRangeMax) {
   const el = document.getElementById(elId);
   if (!el) return;
   const W = 600, H = 150, PL = 46, PR = 14, PT = 14, PB = 24;
@@ -10311,7 +10319,8 @@ function renderLineChart(elId, points, valueOf, yfmt, colorHex, fixedMax, statId
   }
 
   const maxV = fixedMax || (maxDataV * 1.15 || 1);
-  const t0 = points[0].t, t1 = Math.max(points[points.length - 1].t, t0 + 1);
+  const t0 = (tRangeMin !== undefined && tRangeMin !== null) ? tRangeMin : points[0].t;
+  const t1 = (tRangeMax !== undefined && tRangeMax !== null) ? Math.max(tRangeMax, t0 + 1) : Math.max(points[points.length - 1].t, t0 + 1);
   const iw = W - PL - PR, ih = H - PT - PB;
   const X = t => PL + ((t - t0) / (t1 - t0)) * iw;
   const Y = v => PT + ih - (Math.min(Math.max(v, 0), maxV) / maxV) * ih;
@@ -10404,10 +10413,24 @@ function fmtDateTime(d) {
   return d.toLocaleDateString([], { day: '2-digit', month: 'short' }) + ' ' + fmtTime(d);
 }
 
-function renderSvcStrip(elId, points) {
+function renderSvcStrip(elId, points, rangeFrom, rangeTo) {
   const el = document.getElementById(elId);
   if (!el) return;
-  if (!points || points.length === 0) { el.innerHTML = ''; return; }
+  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
+
+  if (!points || points.length === 0) {
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:24px;font-size:11px;color:var(--dim);background:var(--card-hover, rgba(0,0,0,0.25));border-radius:4px">' + (isEn ? 'No timeline history available' : 'Belum ada data riwayat') + '</div>';
+    const pill = document.getElementById('svc-uptime-pill');
+    if (pill) {
+      pill.textContent = isEn ? 'no data' : 'tidak ada data';
+      pill.className = 'badge badge-muted';
+    }
+    const fromEl = document.getElementById('svc-strip-from');
+    const toEl = document.getElementById('svc-strip-to');
+    if (rangeFrom && fromEl) fromEl.textContent = fmtDateTime(new Date(rangeFrom * 1000));
+    if (rangeTo && toEl) toEl.textContent = fmtDateTime(new Date(rangeTo * 1000));
+    return;
+  }
   
   // Hitung persentase ketersediaan total
   let totalSamples = 0;
@@ -10421,7 +10444,6 @@ function renderSvcStrip(elId, points) {
   const overallPct = totalSamples > 0 ? (upSamples / totalSamples * 100) : null;
   const pill = document.getElementById('svc-uptime-pill');
   if (pill) {
-    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
     if (overallPct === null) {
       pill.textContent = isEn ? 'no data' : 'tidak ada data';
       pill.className = 'badge badge-muted';
@@ -10434,28 +10456,48 @@ function renderSvcStrip(elId, points) {
   // Update label waktu dari - hingga
   const fromEl = document.getElementById('svc-strip-from');
   const toEl = document.getElementById('svc-strip-to');
-  if (points.length > 0) {
-    const tFirst = new Date(points[0].t * 1000);
-    const tLast = new Date(points[points.length - 1].t * 1000);
-    if (fromEl) fromEl.textContent = fmtDateTime(tFirst);
-    if (toEl) toEl.textContent = fmtDateTime(tLast);
+  if (rangeFrom && fromEl) {
+    fromEl.textContent = fmtDateTime(new Date(rangeFrom * 1000));
+  } else if (points.length > 0 && fromEl) {
+    fromEl.textContent = fmtDateTime(new Date(points[0].t * 1000));
+  }
+  if (rangeTo && toEl) {
+    toEl.textContent = fmtDateTime(new Date(rangeTo * 1000));
+  } else if (points.length > 0 && toEl) {
+    toEl.textContent = fmtDateTime(new Date(points[points.length - 1].t * 1000));
   }
 
   const W = 600, H = 24;
   let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:24px;display:block;border-radius:4px;overflow:hidden;background:var(--card-hover, rgba(0,0,0,0.25))">';
+  
+  const tMin = (rangeFrom && rangeFrom < points[0].t) ? rangeFrom : points[0].t;
+  const tMax = (rangeTo && rangeTo > points[points.length - 1].t) ? rangeTo : points[points.length - 1].t;
+  const totalSpan = Math.max(tMax - tMin, 1);
+  
+  // Jika ada periode sebelum data pertama direkam (server baru terpasang / baru aktif dalam rentang ini)
+  let curX = 0;
+  if (rangeFrom && points[0].t > rangeFrom + 60) {
+    const gapSecs = points[0].t - rangeFrom;
+    const gapRatio = Math.min(gapSecs / totalSpan, 0.95);
+    const gapW = gapRatio * W;
+    const gapTip = (isEn ? 'No history recorded before ' : 'Belum ada rekaman metrik sebelum ') + fmtDateTime(new Date(points[0].t * 1000));
+    s += '<rect x="0" y="0" width="' + Math.max(2, gapW - 0.5).toFixed(2) + '" height="' + H + '" fill="rgba(148,163,184,0.18)" rx="1.5" data-tooltip="' + escapeHtml(gapTip) + '" style="cursor:help"/>';
+    curX = gapW;
+  }
+
+  const remainW = W - curX;
   const n = points.length;
-  const barW = Math.max(1, W / n);
+  const barW = Math.max(1, remainW / n);
 
   for (let i = 0; i < n; i++) {
     const p = points[i];
-    const x = i * (W / n);
+    const x = curX + (i * (remainW / n));
     const ratio = (p.up_ratio === null || p.up_ratio === undefined) ? null : p.up_ratio;
     const col = ratio === null ? 'var(--dim)'
       : ratio >= 0.99 ? 'var(--green)'
       : ratio >= 0.5 ? 'var(--yellow)'
       : 'var(--red)';
     
-    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
     const timeStr = fmtDateTime(new Date(p.t * 1000));
     let tipText = timeStr;
     if (ratio === null) {
@@ -10487,15 +10529,17 @@ async function loadSvcHistory() {
   const svc = data.service || {};
   const now = data.now || {};
   const pts = data.points || [];
+  const tMin = data.from || null;
+  const tMax = data.to || null;
   document.getElementById('svc-empty').style.display = pts.length ? 'none' : 'block';
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
   document.getElementById('svc-current').textContent =
     (svc.name || '') + ' — ' + (isEn ? 'now: ' : 'sekarang: ') + (now.status || '-')
     + (now.connections ? ' · ' + now.connections + (isEn ? ' connections' : ' koneksi') : '')
     + (now.response_time_ms !== null && now.response_time_ms !== undefined ? ' · ' + now.response_time_ms + ' ms' : '');
-  renderLineChart('chart-svc-rt', pts, p => p.rt, v => v.toFixed(0) + ' ms', 'var(--blue)', 0);
-  renderLineChart('chart-svc-conn', pts, p => p.conns, v => Math.round(v) + '', 'var(--green)', 0);
-  renderSvcStrip('svc-status-strip', pts);
+  renderLineChart('chart-svc-rt', pts, p => p.rt, v => v.toFixed(0) + ' ms', 'var(--blue)', 0, null, tMin, tMax);
+  renderLineChart('chart-svc-conn', pts, p => p.conns, v => Math.round(v) + '', 'var(--green)', 0, null, tMin, tMax);
+  renderSvcStrip('svc-status-strip', pts, tMin, tMax);
 }
 
 function primeSvcGraph(services) {
@@ -10825,23 +10869,47 @@ async function loadPerf(range) {
     data = await r.json();
   } catch (e) { return; }
   const pts = data.points || [];
+  const tMin = data.from ? Math.floor(new Date(data.from).getTime() / 1000) : null;
+  const tMax = data.to ? Math.floor(new Date(data.to).getTime() / 1000) : null;
   document.getElementById('perf-empty').style.display = pts.length ? 'none' : 'block';
-  renderLineChart('chart-cpu', pts, p => p.cpu, v => v.toFixed(0) + '%', PERF_COLORS.cpu, 100);
-  renderLineChart('chart-mem', pts, pctOf, v => v.toFixed(0) + '%', PERF_COLORS.mem, 100);
-  renderLineChart('chart-swap', pts, swapPct, v => v.toFixed(0) + '%', PERF_COLORS.swap, 100);
-  renderLineChart('chart-load', pts, p => p.load, v => v.toFixed(2), PERF_COLORS.load, 0);
+  renderLineChart('chart-cpu', pts, p => p.cpu, v => v.toFixed(0) + '%', PERF_COLORS.cpu, 100, 'stats-cpu', tMin, tMax);
+  renderLineChart('chart-mem', pts, pctOf, v => v.toFixed(0) + '%', PERF_COLORS.mem, 100, 'stats-mem', tMin, tMax);
+  renderLineChart('chart-swap', pts, swapPct, v => v.toFixed(0) + '%', PERF_COLORS.swap, 100, 'stats-swap', tMin, tMax);
+  renderLineChart('chart-load', pts, p => p.load, v => v.toFixed(2), PERF_COLORS.load, 0, 'stats-load', tMin, tMax);
   renderDiskCharts(pts);
 }
 
 document.querySelectorAll('#perf-ranges .btn').forEach(b =>
-  b.addEventListener('click', () => loadPerf(b.dataset.range)));
+  b.addEventListener('click', () => {
+    perfRange = b.dataset.range;
+    document.querySelectorAll('#perf-ranges .btn').forEach(btn => btn.classList.toggle('is-on', btn === b));
+    const card = document.querySelector('#tab-perf .card:first-child');
+    if (card) {
+      card.style.opacity = '0.55';
+      card.style.transition = 'opacity .15s ease';
+    }
+    loadPerf(b.dataset.range).finally(() => {
+      if (card) card.style.opacity = '1';
+    });
+  }));
 setTimeout(() => loadPerf('24h'), 900);
 setInterval(() => { if (!document.hidden) loadPerf(); }, 30000);
 
 const svcSel = document.getElementById('svc-graph-sel');
 if (svcSel) svcSel.addEventListener('change', loadSvcHistory);
 document.querySelectorAll('#svc-ranges .btn').forEach(b =>
-  b.addEventListener('click', () => { svcRange = b.dataset.range; loadSvcHistory(); }));
+  b.addEventListener('click', () => {
+    svcRange = b.dataset.range;
+    document.querySelectorAll('#svc-ranges .btn').forEach(btn => btn.classList.toggle('is-on', btn === b));
+    const card = document.querySelector('#tab-layanan .card:first-child');
+    if (card) {
+      card.style.opacity = '0.55';
+      card.style.transition = 'opacity .15s ease';
+    }
+    loadSvcHistory().finally(() => {
+      if (card) card.style.opacity = '1';
+    });
+  }));
 setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
 
 // Deep-link tab via ?tab= (dijalankan setelah semua fungsi dan state selesai dimuat)

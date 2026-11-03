@@ -95,6 +95,10 @@
       </div>
     </div>
   </div>
+  <div id="ll-loading" style="padding:28px 16px;text-align:center;color:var(--dim);font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:pantau-spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+    <span>Memuat aktivitas login &amp; sudo dari server…</span>
+  </div>
   <div id="ll-empty" class="empty-msg" style="display:none">Belum ada aktivitas login untuk user ini.</div>
   <div id="ll-scroll" style="display:none;overflow-x:auto;border:1px solid var(--border);border-radius:6px">
     <table id="ll-table">
@@ -120,6 +124,10 @@
     </div>
   </div>
   <div id="user-act-sub" style="font-size:11px;color:var(--dim);margin-bottom:8px">Riwayat perintah shell user {{ username }} di server ini, terbaru di atas. Waktu hanya tampil untuk perintah yang shellnya mencatat timestamp; selebihnya hanya urutan eksekusi.</div>
+  <div id="hist-loading" style="padding:28px 16px;text-align:center;color:var(--dim);font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:pantau-spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+    <span>Mengambil riwayat perintah shell dari server…</span>
+  </div>
   <pre id="hist-pre" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;max-height:52vh;overflow:auto;white-space:pre;color:var(--text);display:none"></pre>
   <div id="hist-empty" class="empty-msg" style="display:none">Riwayat perintah tidak ditemukan atau belum ada perintah.</div>
 </div>
@@ -193,6 +201,10 @@ async function loadActivity() {
   const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
   const st1 = document.getElementById('ll-state');
   const st2 = document.getElementById('hist-state');
+  const loadEl1 = document.getElementById('ll-loading');
+  const loadEl2 = document.getElementById('hist-loading');
+  if (loadEl1) loadEl1.style.display = 'flex';
+  if (loadEl2) loadEl2.style.display = 'flex';
   if (st1) st1.textContent = isEn ? 'loading…' : 'memuat…';
   if (st2) st2.textContent = isEn ? 'loading…' : 'memuat…';
   let rid;
@@ -210,6 +222,8 @@ async function loadActivity() {
     rid = j.id;
   } catch (e) {
     activityBusy = false;
+    if (loadEl1) loadEl1.style.display = 'none';
+    if (loadEl2) loadEl2.style.display = 'none';
     if (st1) st1.textContent = 'gagal: ' + escapeHtml(e.message);
     if (st2) st2.textContent = '';
     return;
@@ -224,6 +238,8 @@ async function loadActivity() {
     } catch (e) { continue; }
     if (j.status === 'success' || j.status === 'failed') {
       activityBusy = false;
+      if (loadEl1) loadEl1.style.display = 'none';
+      if (loadEl2) loadEl2.style.display = 'none';
       if (j.status === 'failed') {
         if (st1) st1.textContent = 'gagal: ' + escapeHtml(String(j.result || '').slice(0, 200));
         return;
@@ -314,6 +330,10 @@ function filterLoginsTable() {
     }
   }
   activityBusy = false;
+  if (loadEl1) loadEl1.style.display = 'none';
+  if (loadEl2) loadEl2.style.display = 'none';
+  document.getElementById('ll-empty').style.display = 'block';
+  document.getElementById('hist-empty').style.display = 'block';
   if (st1) st1.textContent = 'agen tidak merespons';
 }
 
