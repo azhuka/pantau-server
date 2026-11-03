@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.71
+
+- **Tipe Rilis:** Penyeragaman Total Visual UI Filter NOC, Eliminasi Tombol Raksasa & Drawer, Serta Keselarasan Toolbar Satu Baris (*Unified NOC Filter UI Standardization, Giant Button & Drawer Elimination, and Seamless Single-Row Toolbar Alignment*)
+- **Fokus Utama:** Menyeragamkan tampilan antarmuka (UI/UX) kartu Riwayat Insiden dan Halaman Audit agar 100% identik secara visual dengan standar kartu Insiden Terbuka, menghilangkan ketidakseragaman gaya, tombol raksasa, dan drawer tanggal:
+  1. **Penyeragaman Visual Identik dengan Standar Insiden Terbuka:**
+     - Menyamakan format bilah filter kartu Riwayat Insiden dan Audit menggunakan struktur kelas `.prob-filters-row` satu baris yang seragam dengan kartu Insiden Terbuka, baik dalam padding sel, tinggi input (33px - 35px), warna latar belakang transparan gelap (`rgba(9,13,22,0.7)`), ketebalan border, maupun font size (11.5px - 12px).
+  2. **Eliminasi Tombol Kapsul Raksasa & Pengembalian Segmented Control Kompak:**
+     - Menghapus tombol rentang waktu berbentuk pill raksasa (`.prob-pill-btn`) yang membuat tampilan berbeda sendiri dan terkesan tidak profesional.
+     - Mengembalikan selektor rentang waktu cepat (`Hari Ini`, `24 Jam`, `7 Hari`, `30 Hari`) ke bentuk tombol kecil proporsional berstandar sistem kontrol tersegmentasi (`.segmented-control` berukuran `.btn-sm`) di dalam `card-header` di samping badge statistik.
+  3. **Penghapusan Drawer Tanggal & Integrasi Pemilih Tanggal Kompak Satu Baris:**
+     - Menghapus drawer tanggal kustom collapsible (`#res-custom-date-drawer` dan `#audit-custom-date-drawer`) yang melompat dan memakan ruang berlebih.
+     - Menggantinya dengan pemilih rentang tanggal terpadu yang kompak (`Dari – Sampai`) langsung di dalam baris toolbar utama, berhias ikon kalender minimalis tanpa memicu pembungkusan baris (*line wrapping*).
+  4. **Tata Letak Satu Baris Sempurna Tanpa Wrap (*Zero-Wrap Single Row Layout*):**
+     - Mengoptimalkan lebar input pencarian, pemilih tanggal, dan opsi dropdown sehingga seluruh kontrol filter di kartu Riwayat Insiden dan Halaman Audit muat rapi dalam satu baris datar horizontal.
+  5. **Integritas Penuh Halaman Utama & Kartu Insiden Terbuka:**
+     - Mempertahankan integritas 100% tanpa mengubah apapun pada Halaman Utama / Dasbor ([`dashboard.html`](file:///home/bos/rj45/server/templates/dashboard.html)) serta Kartu Insiden Terbuka ([`problems.html#probtable`](file:///home/bos/rj45/server/templates/problems.html#probtable)).
+  6. **Otomasi Pembaruan SemVer v4.8.71:**
+     - Menaikkan versi sistem menjadi `v4.8.71` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.70
 
 - **Tipe Rilis:** Harmonisasi Desain Sistem NOC Enterprise, Penyelarasan Simetris Triage Pills Waktu, dan Eliminasi Total Cacat Visual (*Enterprise NOC Design Harmonization, Symmetrical Time Triage Pills, and Visual Glitch Elimination*)

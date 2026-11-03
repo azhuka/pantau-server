@@ -562,57 +562,28 @@
         <div style="font-size:11.5px;color:var(--dim);margin-top:2px" id="prob-resolved-subtitle">Rekapitulasi insiden yang telah teratasi dan catatan pemulihan sistem ({% if res_period == 'today' %}sejak 00:00 UTC hari ini{% elif res_period == '7d' %}7 hari terakhir{% elif res_period == '30d' %}30 hari terakhir{% elif res_start or res_end %}rentang tanggal kustom{% else %}24 jam terakhir{% endif %}).</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="prob-resolved-stats-badges">
-      <span class="badge badge-up" style="font-size:11.5px;padding:3px 8px" title="Total insiden yang berhasil dipulihkan">{{ recent_resolved|length }} Teratasi</span>
-      {% if resolved_stats and resolved_stats.avg_mttr != '—' %}
-      <span class="badge badge-info" style="font-size:11.5px;padding:3px 8px" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: {{ resolved_stats.avg_mttr }}</span>
-      {% endif %}
-      {% if resolved_stats and resolved_stats.manual_count > 0 %}
-      <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Ditangani langsung oleh operator">{{ resolved_stats.manual_count }} ditangani operator</span>
-      {% endif %}
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <!-- Tombol Pil Rentang Waktu Cepat (Kompak, Standar NOC) -->
+      <div class="segmented-control" id="prob-res-ranges" style="display:inline-flex;gap:3px">
+        <button type="button" class="btn btn-sm {% if res_period == 'today' %}is-on{% endif %}" onclick="setResolvedPeriod('today', this)" title="Insiden teratasi sejak jam 00:00 UTC hari ini">Hari Ini</button>
+        <button type="button" class="btn btn-sm {% if res_period == '24h' or not res_period %}is-on{% endif %}" onclick="setResolvedPeriod('24h', this)" title="Insiden teratasi dalam 24 jam terakhir">24 Jam</button>
+        <button type="button" class="btn btn-sm {% if res_period == '7d' %}is-on{% endif %}" onclick="setResolvedPeriod('7d', this)" title="Insiden teratasi dalam 7 hari terakhir">7 Hari</button>
+        <button type="button" class="btn btn-sm {% if res_period == '30d' %}is-on{% endif %}" onclick="setResolvedPeriod('30d', this)" title="Insiden teratasi dalam 30 hari terakhir">30 Hari</button>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="prob-resolved-stats-badges">
+        <span class="badge badge-up" style="font-size:11.5px;padding:3px 8px" title="Total insiden yang berhasil dipulihkan">{{ recent_resolved|length }} Teratasi</span>
+        {% if resolved_stats and resolved_stats.avg_mttr != '—' %}
+        <span class="badge badge-info" style="font-size:11.5px;padding:3px 8px" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: {{ resolved_stats.avg_mttr }}</span>
+        {% endif %}
+        {% if resolved_stats and resolved_stats.manual_count > 0 %}
+        <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Ditangani langsung oleh operator">{{ resolved_stats.manual_count }} ditangani operator</span>
+        {% endif %}
+      </div>
     </div>
   </div>
 
-  <!-- 1. Pills Rentang Waktu (Harmonis & Sejajar dengan Triage Pills Insiden Terbuka) -->
-  <div class="prob-triage-pills" id="prob-res-ranges" style="margin-bottom:12px">
-    <button type="button" class="prob-pill-btn {% if res_period == 'today' %}active{% endif %}" onclick="setResolvedPeriod('today', this)" title="Insiden teratasi sejak jam 00:00 UTC hari ini">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
-      <span>Hari Ini</span>
-    </button>
-    <button type="button" class="prob-pill-btn {% if res_period == '24h' or not res_period %}active{% endif %}" onclick="setResolvedPeriod('24h', this)" title="Insiden teratasi dalam 24 jam terakhir">
-      <span>24 Jam</span>
-    </button>
-    <button type="button" class="prob-pill-btn {% if res_period == '7d' %}active{% endif %}" onclick="setResolvedPeriod('7d', this)" title="Insiden teratasi dalam 7 hari terakhir">
-      <span>7 Hari</span>
-    </button>
-    <button type="button" class="prob-pill-btn {% if res_period == '30d' %}active{% endif %}" onclick="setResolvedPeriod('30d', this)" title="Insiden teratasi dalam 30 hari terakhir">
-      <span>30 Hari</span>
-    </button>
-    <button type="button" class="prob-pill-btn {% if res_period == 'custom' or res_start or res_end %}active{% endif %}" id="btn-res-custom-toggle" onclick="toggleResCustomDate(this)" title="Pilih rentang tanggal kustom">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-      <span id="btn-res-custom-label">{% if res_start or res_end %}{{ res_start or 'Awal' }} – {{ res_end or 'Kini' }}{% else %}Rentang Tanggal…{% endif %}</span>
-    </button>
-  </div>
-
-  <!-- 2. Drawer Rentang Tanggal Kustom (Ramping & Elegan) -->
-  <div id="res-custom-date-drawer" style="{% if res_period == 'custom' or res_start or res_end %}display:flex;{% else %}display:none;{% endif %}align-items:center;gap:10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:14px;flex-wrap:wrap">
-    <span style="font-size:11.5px;font-weight:600;color:var(--text);display:inline-flex;align-items:center;gap:6px">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-      Rentang Tanggal Kustom:
-    </span>
-    <div style="display:inline-flex;align-items:center;gap:6px">
-      <label for="res-date-start" style="font-size:11px;color:var(--dim)">Dari:</label>
-      <input type="date" id="res-date-start" value="{{ res_start }}" onchange="onResDateChange()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:5px 8px;font-size:11.5px;outline:none;font-family:var(--font-mono)">
-    </div>
-    <div style="display:inline-flex;align-items:center;gap:6px">
-      <label for="res-date-end" style="font-size:11px;color:var(--dim)">Sampai:</label>
-      <input type="date" id="res-date-end" value="{{ res_end }}" onchange="onResDateChange()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:5px 8px;font-size:11.5px;outline:none;font-family:var(--font-mono)">
-    </div>
-    <button type="button" class="btn btn-primary btn-sm" onclick="applyResCustomDate()" style="padding:4px 10px;font-size:11.5px">Terapkan</button>
-    <button type="button" class="btn btn-ghost btn-sm" onclick="toggleResCustomDate(false)" style="padding:4px 8px;font-size:11.5px">Tutup</button>
-  </div>
-
-  <!-- 3. Bilah Filter Multi-Kriteria Satu Baris (Presisi & Rapi) -->
+  <!-- Bilah Filter Multi-Kriteria Satu Baris (Identik Persis dengan Insiden Terbuka: .prob-filters-row) -->
   <div class="prob-filters-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
     <!-- Filter Server -->
     <select id="res-filter-server" onchange="onResFilterChange()"
@@ -644,16 +615,24 @@
       <option value="stale_closed" {% if res_type == 'stale_closed' %}selected{% endif %}>Ditutup (Host Terputus)</option>
     </select>
 
+    <!-- Filter Rentang Tanggal (Kompak, Satu Baris) -->
+    <div style="display:inline-flex;align-items:center;gap:4px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 8px;height:35px;box-sizing:border-box" title="Rentang tanggal kustom">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--dim);flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <input type="date" id="res-date-start" value="{{ res_start }}" onchange="onResDateChange()" title="Dari tanggal" style="background:transparent;border:none;color:var(--text);font-size:11.5px;font-family:var(--font-mono);outline:none;padding:0;width:95px">
+      <span style="color:var(--dim);font-size:11px">–</span>
+      <input type="date" id="res-date-end" value="{{ res_end }}" onchange="onResDateChange()" title="Sampai tanggal" style="background:transparent;border:none;color:var(--text);font-size:11.5px;font-family:var(--font-mono);outline:none;padding:0;width:95px">
+    </div>
+
     <!-- Pencarian Kata Kunci -->
-    <div class="prob-search-box" style="position:relative;display:flex;align-items:center;flex:1;min-width:220px">
+    <div class="prob-search-box" style="position:relative;display:flex;align-items:center;min-width:160px;max-width:200px">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="search" id="res-search-input" value="{{ res_q }}" oninput="onResFilterChange()" placeholder="Cari insiden / komponen / pesan…"
+      <input type="search" id="res-search-input" value="{{ res_q }}" oninput="onResFilterChange()" placeholder="Cari insiden teratasi…"
              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px 8px 30px;font-size:12px;width:100%;outline:none;transition:border-color .15s">
     </div>
 
     <!-- Teks Info Jumlah Data Terfilter -->
     <span style="font-size:11px;color:var(--dim);align-self:center;white-space:nowrap" id="res-filter-summary-info">
-      {{ recent_resolved|length }} dari {{ recent_resolved|length }} insiden
+      {{ recent_resolved|length }} insiden
     </span>
 
     <!-- Tombol Reset Filter -->
@@ -1147,9 +1126,9 @@ function filterResolvedTable() {
   const infoEl = document.getElementById('res-filter-summary-info');
   if (infoEl) {
     if (rows.length === 0) {
-      infoEl.textContent = isEn ? 'No resolved incidents recorded' : 'Tidak ada catatan insiden teratasi';
+      infoEl.textContent = isEn ? 'No resolved incidents recorded' : 'Tidak ada insiden teratasi';
     } else {
-      infoEl.textContent = isEn ? `Showing ${vis} of ${rows.length} resolved incidents` : `Menampilkan ${vis} dari ${rows.length} insiden teratasi`;
+      infoEl.textContent = isEn ? (vis === rows.length ? `${rows.length} incidents` : `${vis} of ${rows.length} incidents`) : (vis === rows.length ? `${rows.length} insiden` : `${vis} dari ${rows.length} insiden`);
     }
   }
 }
@@ -1169,11 +1148,6 @@ function onResDateChange() {
   currentResEndDate = en;
 
   document.querySelectorAll('#prob-res-ranges .btn').forEach(b => b.classList.remove('is-on'));
-  const btnCustom = document.getElementById('btn-res-custom');
-  if (btnCustom) {
-    btnCustom.style.display = 'inline-block';
-    btnCustom.classList.add('is-on');
-  }
   currentResPeriod = 'custom';
 
   const sub = document.getElementById('prob-resolved-subtitle');
@@ -1184,43 +1158,21 @@ function onResDateChange() {
       sub.textContent = `Rekapitulasi insiden yang telah teratasi (sejak ${st}).`;
     } else if (en) {
       sub.textContent = `Rekapitulasi insiden yang telah teratasi (hingga ${en}).`;
+    } else {
+      sub.textContent = `Rekapitulasi insiden yang telah teratasi dan catatan pemulihan sistem.`;
     }
   }
 
+  try {
+    const url = new URL(window.location);
+    url.searchParams.delete('res_period');
+    if (st) url.searchParams.set('start_date', st); else url.searchParams.delete('start_date');
+    if (en) url.searchParams.set('end_date', en); else url.searchParams.delete('end_date');
+    window.history.replaceState({}, '', url);
+  } catch (e) {}
+
   _lastResFingerprint = null;
   if (window.poll) window.poll();
-}
-
-function toggleResCustomDate(forceOpen) {
-  const drawer = document.getElementById('res-custom-date-drawer');
-  if (!drawer) return;
-  const isOpening = forceOpen !== undefined ? forceOpen : (drawer.style.display === 'none' || !drawer.style.display);
-  drawer.style.display = isOpening ? 'flex' : 'none';
-  if (isOpening) {
-    const stInp = document.getElementById('res-date-start');
-    if (stInp) stInp.focus();
-  }
-}
-
-function applyResCustomDate() {
-  const st = document.getElementById('res-date-start')?.value || '';
-  const en = document.getElementById('res-date-end')?.value || '';
-  if (!st && !en) {
-    showToast('Pilih tanggal mulai atau selesai terlebih dahulu', false);
-    return;
-  }
-  const btnCustom = document.getElementById('btn-res-custom-toggle');
-  const labelEl = document.getElementById('btn-res-custom-label');
-  if (labelEl) {
-    labelEl.textContent = (st || 'Awal') + ' – ' + (en || 'Kini');
-  }
-  document.querySelectorAll('#prob-res-ranges .prob-pill-btn').forEach(b => b.classList.remove('active'));
-  if (btnCustom) btnCustom.classList.add('active');
-  currentResPeriod = 'custom';
-  currentResStartDate = st;
-  currentResEndDate = en;
-  toggleResCustomDate(false);
-  onResDateChange();
 }
 
 function setResolvedPeriod(period, btn) {
@@ -1229,34 +1181,13 @@ function setResolvedPeriod(period, btn) {
   currentResEndDate = '';
   _lastResFingerprint = null;
 
-  document.querySelectorAll('#prob-res-ranges .prob-pill-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
+  document.querySelectorAll('#prob-res-ranges .btn').forEach(b => b.classList.remove('is-on'));
+  if (btn) btn.classList.add('is-on');
 
-  const customLabel = document.getElementById('btn-res-custom-label');
-  if (customLabel) customLabel.textContent = 'Rentang Tanggal…';
-  const drawer = document.getElementById('res-custom-date-drawer');
-  if (drawer) drawer.style.display = 'none';
-
-  const now = new Date();
-  const fmtDate = (d) => d.toISOString().split('T')[0];
   const startInp = document.getElementById('res-date-start');
   const endInp = document.getElementById('res-date-end');
-
-  if (period === 'today') {
-    if (startInp) startInp.value = fmtDate(now);
-    if (endInp) endInp.value = fmtDate(now);
-  } else if (period === '7d') {
-    const d7 = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
-    if (startInp) startInp.value = fmtDate(d7);
-    if (endInp) endInp.value = fmtDate(now);
-  } else if (period === '30d') {
-    const d30 = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
-    if (startInp) startInp.value = fmtDate(d30);
-    if (endInp) endInp.value = fmtDate(now);
-  } else {
-    if (startInp) startInp.value = '';
-    if (endInp) endInp.value = '';
-  }
+  if (startInp) startInp.value = '';
+  if (endInp) endInp.value = '';
 
   try {
     const url = new URL(window.location);
@@ -1302,7 +1233,7 @@ function resetResFilters() {
   currentResStartDate = '';
   currentResEndDate = '';
 
-  const btn24 = document.querySelector('#prob-res-ranges .prob-pill-btn[onclick*="24h"]');
+  const btn24 = document.querySelector('#prob-res-ranges .btn[onclick*="24h"]');
   setResolvedPeriod('24h', btn24);
   filterResolvedTable();
 }
