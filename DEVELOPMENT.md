@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.78
+
+- **Tipe Rilis:** Harmonisasi Menyeluruh Tema Multi-Mode (Dark/Light/Obsidian/Navy), Standardisasi Filter Berlabel Vertikal, dan Eliminasi Inkonsistensi Visual Sistem (*Universal Multi-Mode Theme Harmonization across Dark, Light, Obsidian OLED & Navy, Vertical Labeled Filter Standardization, and Total System Visual Inconsistency Elimination*)
+- **Fokus Utama:** Mengatasi inkonsistensi visual, benturan palet warna tema, serta disparitas kontrol antarmuka antar modul secara menyeluruh dan sistemik:
+  1. **Harmonisasi Variabel CSS Semantik & Dukungan Multi-Tema Penuh (`base.html`):**
+     - Memperkenalkan variabel terpadu `--filter-panel-bg`, `--filter-panel-border`, dan `--filter-divider` di seluruh scope 4 tema (`dark` Midnight NOC, `obsidian` OLED `#000000`, `navy` Deep Space `#0a0f1d`, dan `light` Clean Modern `#f8fafc`).
+     - Mengatasi masalah keterbacaan pada Mode Terang (*Light Mode*) dengan mendefinisikan warna aksen semantik berbobot kontras tinggi WCAG AA (`--blue: #0284c7`, `--green: #16a34a`, `--red: #dc2626`, `--yellow: #d97706`, `--purple: #7c3aed`, `--dim: #475569`) serta menata ulang tombol (`.btn-primary`, `.btn-danger`, `.btn-warn`, `.btn-success`) dan lencana status badge (`.badge-*`, `.badge-up`, `.badge-down`, `.badge-warn`, dll.) agar tidak pucat atau silau berlebihan.
+     - Membersihkan seluruh *hardcoded dark hex/rgba* pada panel filter, dropdown select, bilah pencarian, pemilih rentang tanggal, pagination bar (`.table-pagination-nav .btn-pg`, `.table-pagination-limit select`), dan pemilih kolom (`.pantau-col-btn`, `.pantau-col-menu`) sehingga berubah warna secara mulus dan konsisten tanpa sisa warna gelap di mode terang atau semburat navy di mode obsidian hitam pekat.
+  2. **Standardisasi Filter Berlabel Vertikal pada Kartu Insiden Terbuka (`problems.html`):**
+     - Mengubah baris filter insiden terbuka (`.prob-filters-row`) menjadi panel filter standar `.pantau-filter-panel` lengkap dengan label vertikal di atas kontrol (`SERVER`, `GRUP SERVER`, `KEPARAHAN`, `CARI INSIDEN`, `KOLOM`) persis identik dengan panel Riwayat Insiden dan modul operasional lainnya.
+     - Mengintegrasikan tombol pil triase (`.prob-pill-btn`) dengan palet multi-tema (`dark`, `light`, `obsidian`, `navy`) tanpa mengubah tabel data `#probtable` yang tetap utuh 100%.
+  3. **Penyelarasan Komponen Modal & Kontrol Segmen di Seluruh Halaman:**
+     - Menyeragamkan seluruh kotak dialog modal (`#problem-detail-modal`, `#app-confirm-modal`, `#guardrail-modal`, `#ignore-problem-modal`, `#admin-2fa-modal`, dan modal File Manager step-up) untuk mengonsumsi `--modal-bg`, `--modal-border`, dan `--input-bg`.
+     - Menghapus CSS duplikat lokal yang menimpa gaya global di `probing.html`, `maintenance.html`, dan `services.html`.
+  4. **Integritas Mutlak Halaman Utama & Kartu Insiden Terbuka:**
+     - Mempertahankan integritas 100% tanpa mengubah apapun pada Halaman Utama / Dasbor (`dashboard.html`) serta susunan kolom tabel data `#probtable`.
+  5. **Otomasi Pembaruan SemVer v4.8.78:**
+     - Menaikkan versi sistem menjadi `v4.8.78` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.77
 
 - **Tipe Rilis:** Reposisi Vertikal Label Filter di Atas Kontrol dan Standarisasi Padding Proporsional Menyeluruh Seluruh Tabel Sistem (*Vertical Top-Stacked Filter Label Repositioning and Comprehensive Universal Table Padding Across All System Modules*)

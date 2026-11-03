@@ -95,6 +95,74 @@
 .prob-pill-btn.active .prob-pill-count {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* Dukungan Multi-Tema Tombol Pil Triage */
+[data-theme="light"] .prob-pill-btn {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  color: #475569 !important;
+}
+[data-theme="light"] .prob-pill-btn:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(0, 0, 0, 0.25) !important;
+}
+[data-theme="light"] .prob-pill-btn.active {
+  background: rgba(2, 132, 199, 0.12) !important;
+  border-color: #0284c7 !important;
+  color: #0369a1 !important;
+}
+[data-theme="light"] .prob-pill-btn.active.pill-danger {
+  background: rgba(220, 38, 38, 0.12) !important;
+  border-color: #dc2626 !important;
+  color: #b91c1c !important;
+}
+[data-theme="light"] .prob-pill-btn.active.pill-average {
+  background: rgba(234, 88, 12, 0.12) !important;
+  border-color: #ea580c !important;
+  color: #c2410c !important;
+}
+[data-theme="light"] .prob-pill-btn.active.pill-warning {
+  background: rgba(217, 119, 6, 0.12) !important;
+  border-color: #d97706 !important;
+  color: #b45309 !important;
+}
+[data-theme="light"] .prob-pill-btn.active.pill-info {
+  background: rgba(2, 132, 199, 0.12) !important;
+  border-color: #0284c7 !important;
+  color: #0369a1 !important;
+}
+[data-theme="light"] .prob-pill-btn.active.pill-ignored {
+  background: rgba(100, 116, 139, 0.12) !important;
+  border-color: #64748b !important;
+  color: #334155 !important;
+}
+[data-theme="light"] .prob-pill-count {
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+[data-theme="light"] .prob-pill-btn.active .prob-pill-count {
+  background: rgba(0, 0, 0, 0.14) !important;
+}
+
+[data-theme="obsidian"] .prob-pill-btn {
+  background: #09090b !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #a1a1aa !important;
+}
+[data-theme="obsidian"] .prob-pill-btn:hover {
+  background: #18181b !important;
+  color: #ffffff !important;
+}
+
+[data-theme="navy"] .prob-pill-btn {
+  background: #0b1122 !important;
+  border-color: rgba(59, 130, 246, 0.22) !important;
+  color: #94a3b8 !important;
+}
+[data-theme="navy"] .prob-pill-btn:hover {
+  background: #131c31 !important;
+  color: #f1f5f9 !important;
+}
 @media (max-width: 640px) {
   .prob-filters-row {
     width: 100% !important;
@@ -351,55 +419,72 @@
       <span id="pill-label-ignored">Diabaikan</span> <span class="prob-pill-count" id="pill-count-ignored">{{ ignored_open }}</span>
     </button>
   </div>
-  <div class="prob-filters-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
-    <form method="get" action="/problems" style="display:contents">
-      <select name="server" onchange="this.form.submit()"
-              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
-        <option value="">Semua server</option>
-        {% for srv in all_servers %}
-        <option value="{{ srv.id }}" {% if filter_sid == srv.id %}selected{% endif %}>{{ srv.hostname }}</option>
-        {% endfor %}
-      </select>
-      <select name="group" onchange="this.form.submit()"
-              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
-        <option value="">Semua grup server</option>
-        {% for grp in all_groups %}
-        <option value="{{ grp }}" {% if filter_group == grp %}selected{% endif %}>❖ {{ grp }}</option>
-        {% endfor %}
-        <option value="__none__" {% if filter_group == '__none__' %}selected{% endif %}>Tanpa Grup</option>
-      </select>
-    </form>
-    <select id="prob-filter" onchange="probFilter()"
-            style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
-      <option value="">Semua keparahan</option>
-      <option value="danger">Kritis</option>
-      <option value="average">Gawat</option>
-      <option value="warning">Peringatan</option>
-      <option value="info">Info</option>
-      <option value="ignored">Diabaikan</option>
-    </select>
-    <div class="prob-search-box" style="position:relative;display:flex;align-items:center">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari server / grup / kejadian…"
-             style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px 8px 30px;font-size:12px;min-width:240px;outline:none;transition:border-color .15s">
-    </div>
+  <div class="pantau-filter-panel" style="margin-bottom:14px">
+    <div class="filter-row-main">
+      <form method="get" action="/problems" style="display:contents">
+        <div class="filter-col" title="Filter berdasarkan Server">
+          <label class="filter-col-label" for="prob-open-filter-server">Server</label>
+          <select id="prob-open-filter-server" name="server" onchange="this.form.submit()" class="filter-select">
+            <option value="">Semua Server</option>
+            {% for srv in all_servers %}
+            <option value="{{ srv.id }}" {% if filter_sid == srv.id %}selected{% endif %}>{{ srv.hostname }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="filter-col" title="Filter berdasarkan Grup Server">
+          <label class="filter-col-label" for="prob-open-filter-group">Grup Server</label>
+          <select id="prob-open-filter-group" name="group" onchange="this.form.submit()" class="filter-select">
+            <option value="">Semua Grup</option>
+            {% for grp in all_groups %}
+            <option value="{{ grp }}" {% if filter_group == grp %}selected{% endif %}>❖ {{ grp }}</option>
+            {% endfor %}
+            <option value="__none__" {% if filter_group == '__none__' %}selected{% endif %}>Tanpa Grup</option>
+          </select>
+        </div>
+      </form>
+      <div class="filter-col" title="Filter berdasarkan Keparahan Insiden">
+        <label class="filter-col-label" for="prob-filter">Keparahan</label>
+        <select id="prob-filter" onchange="probFilter()" class="filter-select">
+          <option value="">Semua Keparahan</option>
+          <option value="danger">Kritis</option>
+          <option value="average">Gawat</option>
+          <option value="warning">Peringatan</option>
+          <option value="info">Info</option>
+          <option value="ignored">Diabaikan</option>
+        </select>
+      </div>
+      <div class="filter-col-search" title="Cari server / grup / kejadian…">
+        <label class="filter-col-label" for="prob-search">Cari Insiden</label>
+        <div class="filter-search-box">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari server / grup / kejadian…">
+        </div>
+      </div>
 
-    <!-- Tombol Penyesuai Kolom Insiden -->
-    <div class="pantau-col-dropdown" data-table-id="probtable">
-      <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('probtable', this)" title="Sesuaikan kolom tabel insiden">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="9" y1="3" x2="9" y2="21"></line>
-          <line x1="15" y1="3" x2="15" y2="21"></line>
-        </svg>
-        <span>Kolom</span>
-        <span class="pantau-col-badge" style="display:none"></span>
-      </button>
-      <div class="pantau-col-menu" style="display:none"></div>
-    </div>
+      <!-- Tombol Penyesuai Kolom Insiden -->
+      <div class="filter-col" style="justify-content:flex-end">
+        <div class="pantau-col-dropdown" data-table-id="probtable">
+          <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('probtable', this)" title="Sesuaikan kolom tabel insiden" style="height:32px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+              <line x1="15" y1="3" x2="15" y2="21"></line>
+            </svg>
+            <span>Kolom</span>
+            <span class="pantau-col-badge" style="display:none"></span>
+          </button>
+          <div class="pantau-col-menu" style="display:none"></div>
+        </div>
+      </div>
 
-    <span style="font-size:11px;color:var(--dim);align-self:center" id="prob-count"></span>
-    {% if filter_sid or filter_group %}<a href="/problems" class="btn btn-ghost btn-sm">Reset filter</a>{% endif %}
+      {% if filter_sid or filter_group %}
+      <div class="filter-col" style="justify-content:flex-end">
+        <a href="/problems" class="btn btn-ghost btn-sm" style="height:32px;display:inline-flex;align-items:center">Reset Filter</a>
+      </div>
+      {% endif %}
+
+      <span style="font-size:11px;color:var(--dim);align-self:flex-end;padding-bottom:8px" id="prob-count"></span>
+    </div>
   </div>
   {% endif %}
   

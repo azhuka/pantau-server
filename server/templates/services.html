@@ -516,36 +516,6 @@
 }
 
 /* Estetika Riwayat Kinerja */
-.segmented-control {
-  display: inline-flex;
-  gap: 3px;
-  background: rgba(15, 23, 42, 0.65);
-  padding: 3px 4px;
-  border-radius: 9px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
-}
-.segmented-control .btn {
-  border: 1px solid transparent !important;
-  background: transparent !important;
-  color: var(--dim) !important;
-  font-size: 11.5px !important;
-  padding: 4px 11px !important;
-  border-radius: 6px !important;
-  transition: all .18s cubic-bezier(0.16, 1, 0.3, 1);
-  font-weight: 500;
-}
-.segmented-control .btn:hover {
-  color: #fff !important;
-  background: rgba(255, 255, 255, 0.04) !important;
-}
-.segmented-control .btn.is-on {
-  background: linear-gradient(180deg, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.08) 100%) !important;
-  color: #38bdf8 !important;
-  border-color: rgba(56, 189, 248, 0.35) !important;
-  font-weight: 600;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.22) !important;
-}
 .perf-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2024,10 +1994,9 @@ div[style*="position: fixed"] .card {
   <div id="prob-wrapper">
   {% set rows = open_problems + problem_history %}
   {% if rows %}
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;background:var(--filter-panel-bg);border:1px solid var(--filter-panel-border);border-radius:8px;padding:8px 12px">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <select id="prob-filter" onchange="probFilter()"
-              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
+      <select id="prob-filter" onchange="probFilter()" class="filter-select">
         <option value="">Semua keparahan</option>
         <option value="danger">Critical</option>
         <option value="average">Gawat</option>
@@ -2035,14 +2004,13 @@ div[style*="position: fixed"] .card {
         <option value="info">Info</option>
         <option value="ignored">Diabaikan</option>
       </select>
-      <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari kejadian…"
-             style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;min-width:200px">
+      <input type="search" id="prob-search" oninput="probFilter()" placeholder="Cari kejadian…" class="filter-select"
+             style="min-width:200px">
       <span style="font-size:11px;color:var(--dim)" id="prob-count"></span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
-      <select id="prob-limit-top" onchange="setProbLimit(this.value)"
-              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+      <select id="prob-limit-top" onchange="setProbLimit(this.value)" class="filter-select">
         <option value="10" selected>10 insiden</option>
         <option value="25">25 insiden</option>
         <option value="50">50 insiden</option>
@@ -8312,10 +8280,9 @@ function renderProblemsTab(level, openList, histList) {
   const oldFilter = document.getElementById('prob-filter')?.value || '';
   const oldSearch = document.getElementById('prob-search')?.value || '';
 
-  let html = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;background:var(--filter-panel-bg);border:1px solid var(--filter-panel-border);border-radius:8px;padding:8px 12px">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <select id="prob-filter" onchange="probFilter()"
-              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
+      <select id="prob-filter" onchange="probFilter()" class="filter-select">
         <option value=""${oldFilter === '' ? ' selected' : ''}>${isEn ? 'All severities' : 'Semua keparahan'}</option>
         <option value="danger"${oldFilter === 'danger' ? ' selected' : ''}>Critical</option>
         <option value="average"${oldFilter === 'average' ? ' selected' : ''}>${isEn ? 'High' : 'Gawat'}</option>
@@ -8324,13 +8291,12 @@ function renderProblemsTab(level, openList, histList) {
         <option value="ignored"${oldFilter === 'ignored' ? ' selected' : ''}>${isEn ? 'Ignored' : 'Diabaikan'}</option>
       </select>
       <input type="search" id="prob-search" oninput="probFilter()" value="${escapeHtml(oldSearch)}" placeholder="${isEn ? 'Search incident…' : 'Cari kejadian…'}"
-             style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;min-width:200px">
+             class="filter-select" style="min-width:200px">
       <span style="font-size:11px;color:var(--dim)" id="prob-count"></span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:12px;color:var(--dim)">${isEn ? 'Show:' : 'Tampilkan:'}</span>
-      <select id="prob-limit-top" onchange="setProbLimit(this.value)"
-              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+      <select id="prob-limit-top" onchange="setProbLimit(this.value)" class="filter-select">
         <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>${isEn ? '10 incidents' : '10 insiden'}</option>
         <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>${isEn ? '25 incidents' : '25 insiden'}</option>
         <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>${isEn ? '50 incidents' : '50 insiden'}</option>
