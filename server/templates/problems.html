@@ -573,71 +573,94 @@
     </div>
   </div>
 
-  <!-- Bilah Filter Interaktif Riwayat Insiden -->
-  <div class="noc-filter-bar">
-    <!-- Baris 1: Filter Dropdown, Rentang Tanggal, & Pencarian -->
-    <div class="noc-filter-row">
-      <!-- 1. Filter Server -->
-      <select id="res-filter-server" onchange="onResFilterChange()" class="noc-filter-select" title="Filter berdasarkan Server" style="min-width:130px;max-width:180px">
-        <option value="">Semua Server</option>
-        {% for s in all_servers %}
-        <option value="{{ s.id }}" {% if res_server == s.id %}selected{% endif %}>{{ s.hostname }}</option>
-        {% endfor %}
-      </select>
+  <!-- 1. Pills Rentang Waktu (Harmonis & Sejajar dengan Triage Pills Insiden Terbuka) -->
+  <div class="prob-triage-pills" id="prob-res-ranges" style="margin-bottom:12px">
+    <button type="button" class="prob-pill-btn {% if res_period == 'today' %}active{% endif %}" onclick="setResolvedPeriod('today', this)" title="Insiden teratasi sejak jam 00:00 UTC hari ini">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+      <span>Hari Ini</span>
+    </button>
+    <button type="button" class="prob-pill-btn {% if res_period == '24h' or not res_period %}active{% endif %}" onclick="setResolvedPeriod('24h', this)" title="Insiden teratasi dalam 24 jam terakhir">
+      <span>24 Jam</span>
+    </button>
+    <button type="button" class="prob-pill-btn {% if res_period == '7d' %}active{% endif %}" onclick="setResolvedPeriod('7d', this)" title="Insiden teratasi dalam 7 hari terakhir">
+      <span>7 Hari</span>
+    </button>
+    <button type="button" class="prob-pill-btn {% if res_period == '30d' %}active{% endif %}" onclick="setResolvedPeriod('30d', this)" title="Insiden teratasi dalam 30 hari terakhir">
+      <span>30 Hari</span>
+    </button>
+    <button type="button" class="prob-pill-btn {% if res_period == 'custom' or res_start or res_end %}active{% endif %}" id="btn-res-custom-toggle" onclick="toggleResCustomDate(this)" title="Pilih rentang tanggal kustom">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <span id="btn-res-custom-label">{% if res_start or res_end %}{{ res_start or 'Awal' }} – {{ res_end or 'Kini' }}{% else %}Rentang Tanggal…{% endif %}</span>
+    </button>
+  </div>
 
-      <!-- 2. Filter Keparahan -->
-      <select id="res-filter-sev" onchange="onResFilterChange()" class="noc-filter-select" title="Filter berdasarkan Tingkat Keparahan">
-        <option value="">Semua Keparahan</option>
-        <option value="danger" {% if res_sev == 'danger' %}selected{% endif %}>Kritis</option>
-        <option value="average" {% if res_sev == 'average' %}selected{% endif %}>Gawat</option>
-        <option value="warning" {% if res_sev == 'warning' %}selected{% endif %}>Peringatan</option>
-        <option value="info" {% if res_sev == 'info' %}selected{% endif %}>Info</option>
-      </select>
+  <!-- 2. Drawer Rentang Tanggal Kustom (Ramping & Elegan) -->
+  <div id="res-custom-date-drawer" style="{% if res_period == 'custom' or res_start or res_end %}display:flex;{% else %}display:none;{% endif %}align-items:center;gap:10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:11.5px;font-weight:600;color:var(--text);display:inline-flex;align-items:center;gap:6px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      Rentang Tanggal Kustom:
+    </span>
+    <div style="display:inline-flex;align-items:center;gap:6px">
+      <label for="res-date-start" style="font-size:11px;color:var(--dim)">Dari:</label>
+      <input type="date" id="res-date-start" value="{{ res_start }}" onchange="onResDateChange()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:5px 8px;font-size:11.5px;outline:none;font-family:var(--font-mono)">
+    </div>
+    <div style="display:inline-flex;align-items:center;gap:6px">
+      <label for="res-date-end" style="font-size:11px;color:var(--dim)">Sampai:</label>
+      <input type="date" id="res-date-end" value="{{ res_end }}" onchange="onResDateChange()" style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:5px 8px;font-size:11.5px;outline:none;font-family:var(--font-mono)">
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" onclick="applyResCustomDate()" style="padding:4px 10px;font-size:11.5px">Terapkan</button>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="toggleResCustomDate(false)" style="padding:4px 8px;font-size:11.5px">Tutup</button>
+  </div>
 
-      <!-- 3. Filter Resolusi -->
-      <select id="res-filter-type" onchange="onResFilterChange()" class="noc-filter-select" title="Filter berdasarkan Status Resolusi">
-        <option value="">Semua Resolusi</option>
-        <option value="auto" {% if res_type == 'auto' %}selected{% endif %}>✓ Pulih Otomatis</option>
-        <option value="manual" {% if res_type == 'manual' %}selected{% endif %}>✓ Ditangani Operator</option>
-        <option value="online" {% if res_type == 'online' %}selected{% endif %}>✓ Host Kembali Online</option>
-        <option value="service_up" {% if res_type == 'service_up' %}selected{% endif %}>✓ Layanan Aktif</option>
-        <option value="stale_closed" {% if res_type == 'stale_closed' %}selected{% endif %}>Ditutup (Host Terputus)</option>
-      </select>
+  <!-- 3. Bilah Filter Multi-Kriteria Satu Baris (Presisi & Rapi) -->
+  <div class="prob-filters-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+    <!-- Filter Server -->
+    <select id="res-filter-server" onchange="onResFilterChange()"
+            style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none;min-width:130px;max-width:180px">
+      <option value="">Semua server</option>
+      {% for s in all_servers %}
+      <option value="{{ s.id }}" {% if res_server == s.id %}selected{% endif %}>{{ s.hostname }}</option>
+      {% endfor %}
+    </select>
 
-      <!-- 4. Rentang Tanggal Terpadu (Dari > Sampai) -->
-      <div class="date-range-picker" title="Rentang tanggal insiden (Mulai → Selesai)">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--dim);flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-        <input type="date" id="res-date-start" value="{{ res_start }}" onchange="onResDateChange()" title="Dari tanggal" aria-label="Dari tanggal">
-        <span class="date-sep">→</span>
-        <input type="date" id="res-date-end" value="{{ res_end }}" onchange="onResDateChange()" title="Sampai tanggal" aria-label="Sampai tanggal">
-      </div>
+    <!-- Filter Keparahan -->
+    <select id="res-filter-sev" onchange="onResFilterChange()"
+            style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
+      <option value="">Semua keparahan</option>
+      <option value="danger" {% if res_sev == 'danger' %}selected{% endif %}>Kritis</option>
+      <option value="average" {% if res_sev == 'average' %}selected{% endif %}>Gawat</option>
+      <option value="warning" {% if res_sev == 'warning' %}selected{% endif %}>Peringatan</option>
+      <option value="info" {% if res_sev == 'info' %}selected{% endif %}>Info</option>
+    </select>
 
-      <!-- 5. Pencarian Kata Kunci -->
-      <div class="noc-search-box">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="search" id="res-search-input" value="{{ res_q }}" oninput="onResFilterChange()" placeholder="Cari insiden / komponen / pesan…">
-      </div>
+    <!-- Filter Resolusi -->
+    <select id="res-filter-type" onchange="onResFilterChange()"
+            style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none">
+      <option value="">Semua resolusi</option>
+      <option value="auto" {% if res_type == 'auto' %}selected{% endif %}>✓ Pulih Otomatis</option>
+      <option value="manual" {% if res_type == 'manual' %}selected{% endif %}>✓ Ditangani Operator</option>
+      <option value="online" {% if res_type == 'online' %}selected{% endif %}>✓ Host Kembali Online</option>
+      <option value="service_up" {% if res_type == 'service_up' %}selected{% endif %}>✓ Layanan Aktif</option>
+      <option value="stale_closed" {% if res_type == 'stale_closed' %}selected{% endif %}>Ditutup (Host Terputus)</option>
+    </select>
 
-      <!-- 6. Tombol Reset Filter -->
-      <button type="button" class="btn btn-ghost btn-sm" onclick="resetResFilters()" style="height:32px;padding:0 10px;font-size:11.5px;display:inline-flex;align-items:center;gap:5px" title="Hapus semua filter riwayat insiden">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-        <span>Reset</span>
-      </button>
+    <!-- Pencarian Kata Kunci -->
+    <div class="prob-search-box" style="position:relative;display:flex;align-items:center;flex:1;min-width:220px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="search" id="res-search-input" value="{{ res_q }}" oninput="onResFilterChange()" placeholder="Cari insiden / komponen / pesan…"
+             style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px 8px 30px;font-size:12px;width:100%;outline:none;transition:border-color .15s">
     </div>
 
-    <!-- Baris 2: Tombol Cepat (Quick Presets) & Info Ringkasan -->
-    <div class="noc-filter-subbar">
-      <div class="segmented-control" id="prob-res-ranges" style="display:inline-flex;gap:3px">
-        <button type="button" class="btn btn-sm {% if res_period == 'today' %}is-on{% endif %}" onclick="setResolvedPeriod('today', this)" style="padding:2.5px 9px;font-size:11px" title="Insiden teratasi sejak jam 00:00 UTC hari ini">Hari Ini</button>
-        <button type="button" class="btn btn-sm {% if res_period == '24h' or not res_period %}is-on{% endif %}" onclick="setResolvedPeriod('24h', this)" style="padding:2.5px 9px;font-size:11px" title="Insiden teratasi dalam 24 jam terakhir">24 Jam</button>
-        <button type="button" class="btn btn-sm {% if res_period == '7d' %}is-on{% endif %}" onclick="setResolvedPeriod('7d', this)" style="padding:2.5px 9px;font-size:11px" title="Insiden teratasi dalam 7 hari terakhir">7 Hari</button>
-        <button type="button" class="btn btn-sm {% if res_period == '30d' %}is-on{% endif %}" onclick="setResolvedPeriod('30d', this)" style="padding:2.5px 9px;font-size:11px" title="Insiden teratasi dalam 30 hari terakhir">30 Hari</button>
-        <button type="button" id="btn-res-custom" class="btn btn-sm {% if res_period == 'custom' %}is-on{% endif %}" onclick="setResolvedPeriod('custom', this)" style="padding:2.5px 9px;font-size:11px;{% if res_period != 'custom' %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
-      </div>
-      <div id="res-filter-summary-info" style="font-size:11.5px;color:var(--dim)">
-        Menampilkan {{ recent_resolved|length }} insiden teratasi
-      </div>
-    </div>
+    <!-- Teks Info Jumlah Data Terfilter -->
+    <span style="font-size:11px;color:var(--dim);align-self:center;white-space:nowrap" id="res-filter-summary-info">
+      {{ recent_resolved|length }} dari {{ recent_resolved|length }} insiden
+    </span>
+
+    <!-- Tombol Reset Filter -->
+    <button type="button" class="btn btn-ghost btn-sm" onclick="resetResFilters()" style="padding:6px 10px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px" title="Hapus semua filter riwayat insiden">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+      <span>Reset</span>
+    </button>
   </div>
 
   {% if recent_resolved %}
@@ -1168,19 +1191,51 @@ function onResDateChange() {
   if (window.poll) window.poll();
 }
 
+function toggleResCustomDate(forceOpen) {
+  const drawer = document.getElementById('res-custom-date-drawer');
+  if (!drawer) return;
+  const isOpening = forceOpen !== undefined ? forceOpen : (drawer.style.display === 'none' || !drawer.style.display);
+  drawer.style.display = isOpening ? 'flex' : 'none';
+  if (isOpening) {
+    const stInp = document.getElementById('res-date-start');
+    if (stInp) stInp.focus();
+  }
+}
+
+function applyResCustomDate() {
+  const st = document.getElementById('res-date-start')?.value || '';
+  const en = document.getElementById('res-date-end')?.value || '';
+  if (!st && !en) {
+    showToast('Pilih tanggal mulai atau selesai terlebih dahulu', false);
+    return;
+  }
+  const btnCustom = document.getElementById('btn-res-custom-toggle');
+  const labelEl = document.getElementById('btn-res-custom-label');
+  if (labelEl) {
+    labelEl.textContent = (st || 'Awal') + ' – ' + (en || 'Kini');
+  }
+  document.querySelectorAll('#prob-res-ranges .prob-pill-btn').forEach(b => b.classList.remove('active'));
+  if (btnCustom) btnCustom.classList.add('active');
+  currentResPeriod = 'custom';
+  currentResStartDate = st;
+  currentResEndDate = en;
+  toggleResCustomDate(false);
+  onResDateChange();
+}
+
 function setResolvedPeriod(period, btn) {
   currentResPeriod = period;
   currentResStartDate = '';
   currentResEndDate = '';
   _lastResFingerprint = null;
 
-  document.querySelectorAll('#prob-res-ranges .btn').forEach(b => b.classList.remove('is-on'));
-  if (btn) btn.classList.add('is-on');
-  const btnCustom = document.getElementById('btn-res-custom');
-  if (btnCustom) {
-    btnCustom.classList.remove('is-on');
-    btnCustom.style.display = 'none';
-  }
+  document.querySelectorAll('#prob-res-ranges .prob-pill-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const customLabel = document.getElementById('btn-res-custom-label');
+  if (customLabel) customLabel.textContent = 'Rentang Tanggal…';
+  const drawer = document.getElementById('res-custom-date-drawer');
+  if (drawer) drawer.style.display = 'none';
 
   const now = new Date();
   const fmtDate = (d) => d.toISOString().split('T')[0];
@@ -1247,7 +1302,7 @@ function resetResFilters() {
   currentResStartDate = '';
   currentResEndDate = '';
 
-  const btn24 = document.querySelector('#prob-res-ranges .btn[onclick*="24h"]');
+  const btn24 = document.querySelector('#prob-res-ranges .prob-pill-btn[onclick*="24h"]');
   setResolvedPeriod('24h', btn24);
   filterResolvedTable();
 }

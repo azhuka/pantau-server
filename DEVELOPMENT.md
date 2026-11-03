@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.70
+
+- **Tipe Rilis:** Harmonisasi Desain Sistem NOC Enterprise, Penyelarasan Simetris Triage Pills Waktu, dan Eliminasi Total Cacat Visual (*Enterprise NOC Design Harmonization, Symmetrical Time Triage Pills, and Visual Glitch Elimination*)
+- **Fokus Utama:** Menyempurnakan antarmuka visual kartu Riwayat Insiden dan Halaman Audit hingga ke tingkat presisi enterprise kelas dunia yang harmonis 100% dengan kartu Insiden Terbuka:
+  1. **Harmonisasi Simetris Triage Pills Rentang Waktu:**
+     - Mengubah pintasan rentang waktu (`Hari Ini`, `24 Jam`, `7 Hari`, `30 Hari`, `Rentang Tanggal…`) menjadi komponen pill rounded berstandar sistem desain Pantau Server (`.prob-pill-btn`) yang diletakkan di bagian atas secara simetris, selaras sempurna dengan Triage Pills kartu Insiden Terbuka.
+  2. **Eliminasi Total Input Tanggal Mentah (*Native Date Placeholder Glitch*):**
+     - Menghilangkan input tanggal telanjang dengan placeholder abu-abu bawaan browser (`mm/dd/yyyy`) yang sebelumnya mengotori bilah filter utama.
+     - Menyematkan drawer pemilihan tanggal kustom interaktif (`#res-custom-date-drawer` dan `#audit-custom-date-drawer`) yang ramping, elegan, dan hanya muncul secara kontekstual saat operator memilih opsi rentang tanggal kustom.
+  3. **Bilah Filter Multi-Kriteria Satu Baris Sempurna (*Single-Row Full Toolbar*):**
+     - Mengembalikan tinggi, padding (`8px 12px`), dan ukuran font (`12px`) select dropdown pada kartu Riwayat Insiden dan Audit agar identik dengan standar kartu Insiden Terbuka, menghilangkan efek visual mengecil (*visual shrink*) yang mengganggu.
+     - Memberikan ruang horizontal leluasa (`min-width: 220px; flex: 1`) untuk input pencarian sehingga teks placeholder (`Cari target / server / hasil…`) terbaca utuh dan tidak terpotong.
+  4. **Penyatuan Status dan Reset pada Garis Toolbar:**
+     - Menempatkan ringkasan jumlah data terfilter dan tombol Reset langsung di ujung kanan baris filter yang sama, mengeliminasi ruang kosong melompong (*negative void*) pada baris kedua.
+  5. **Integritas Dasbor Utama & Kartu Insiden Terbuka:**
+     - Menjaga integritas penuh halaman Dasbor Utama ([`dashboard.html`](file:///home/bos/rj45/server/templates/dashboard.html)) dan kartu Insiden Terbuka ([`problems.html#probtable`](file:///home/bos/rj45/server/templates/problems.html#probtable)) tetap 100% utuh tanpa modifikasi apa pun.
+  6. **Otomasi Pembaruan SemVer v4.8.70:**
+     - Menaikkan versi sistem menjadi `v4.8.70` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.69
 
 - **Tipe Rilis:** Redesain Bilah Filter Presisi Tinggi NOC, Integrasi Toolbar Bersih, dan Standardisasi Antarmuka (*High-Density NOC Clean Toolbar Redesign, Seamless Integrated Filters, and Interface Standardization*)
