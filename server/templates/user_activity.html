@@ -75,20 +75,23 @@
       <h3 style="margin:0">Aktivitas Login &amp; Sudo</h3>
       <span id="ll-state" style="font-size:12px;color:var(--dim)"></span>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <div class="filter-field" title="Filter Jenis Aktivitas">
-        <label class="filter-field-label" for="ll-type-filter">Jenis:</label>
-        <select id="ll-type-filter" class="filter-field-select" onchange="filterLoginsTable()">
-          <option value="">Semua</option>
+    <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
+      <div class="filter-col" title="Filter Jenis Aktivitas">
+        <label class="filter-col-label" for="ll-type-filter">Jenis</label>
+        <select id="ll-type-filter" class="filter-select" onchange="filterLoginsTable()">
+          <option value="">Semua Jenis</option>
           <option value="sukses">Login Sukses</option>
           <option value="gagal">Login Gagal</option>
           <option value="sesi">Sesi Baru</option>
           <option value="sudo">Sudo</option>
         </select>
       </div>
-      <div class="filter-field-search" title="Cari aktivitas login atau sudo" style="min-width:180px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="search" id="ll-search-input" placeholder="Cari IP, perintah, metode…" oninput="filterLoginsTable()">
+      <div class="filter-col-search" title="Cari aktivitas login atau sudo" style="min-width:180px">
+        <label class="filter-col-label" for="ll-search-input">Cari Aktivitas</label>
+        <div class="filter-search-box">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="search" id="ll-search-input" placeholder="Cari IP, perintah, metode…" oninput="filterLoginsTable()">
+        </div>
       </div>
     </div>
   </div>
@@ -103,10 +106,13 @@
 
 <div class="card">
   <div class="card-header"><h3>Riwayat Perintah (history)</h3>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <div class="filter-field-search" title="Filter riwayat perintah" style="min-width:220px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input id="hist-filter" type="search" placeholder="Filter perintah…">
+    <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
+      <div class="filter-col-search" title="Filter riwayat perintah" style="min-width:220px">
+        <label class="filter-col-label" for="hist-filter">Filter Perintah</label>
+        <div class="filter-search-box">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input id="hist-filter" type="search" placeholder="Cari perintah…">
+        </div>
       </div>
       <button id="hist-more" class="btn btn-ghost btn-sm" style="display:none;height:32px" onclick="historyLines=1000;loadActivity()">Muat lebih banyak</button>
       <button class="btn btn-ghost btn-sm" style="height:32px" onclick="exportCsv()">Ekspor CSV</button>

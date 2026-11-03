@@ -38,8 +38,8 @@
 }
 #servers-table th {
   white-space: nowrap;
-  padding: 4px 5px;
-  font-size: 9.5px;
+  padding: 7px 12px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--dim);
   text-transform: uppercase;
@@ -47,8 +47,8 @@
 }
 #servers-table td {
   white-space: nowrap;
-  padding: 3px 5px;
-  font-size: 10px;
+  padding: 6px 12px;
+  font-size: 11px;
   vertical-align: middle;
 }
 #servers-table th.col-act,
@@ -103,14 +103,14 @@
 </div>
 
 <div class="pantau-filter-panel" style="margin-bottom:14px">
-  <div class="filter-row-main" style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px">
+  <div class="filter-row-main">
     {% if servers %}
     <!-- Filter Grup -->
     {% if all_groups and all_groups|length > 0 %}
-    <div class="filter-field" title="Filter berdasarkan Grup Server">
-      <label class="filter-field-label" for="servers-group-filter">Grup:</label>
-      <select id="servers-group-filter" class="filter-field-select" onchange="serversFilter()">
-        <option value="">Semua ({{ servers|length }})</option>
+    <div class="filter-col" title="Filter berdasarkan Grup Server">
+      <label class="filter-col-label" for="servers-group-filter">Grup</label>
+      <select id="servers-group-filter" class="filter-select" onchange="serversFilter()">
+        <option value="">Semua Grup ({{ servers|length }})</option>
         {% for grp in all_groups %}
         <option value="{{ grp }}">❖ {{ grp }} ({{ group_counts.get(grp, 0) }})</option>
         {% endfor %}
@@ -122,10 +122,10 @@
     {% endif %}
 
     <!-- Filter Status -->
-    <div class="filter-field" title="Filter berdasarkan Status Konektivitas Server">
-      <label class="filter-field-label" for="servers-status-filter">Status:</label>
-      <select id="servers-status-filter" class="filter-field-select" onchange="serversFilter()">
-        <option value="">Semua</option>
+    <div class="filter-col" title="Filter berdasarkan Status Konektivitas Server">
+      <label class="filter-col-label" for="servers-status-filter">Status</label>
+      <select id="servers-status-filter" class="filter-select" onchange="serversFilter()">
+        <option value="">Semua Status</option>
         <option value="online">● Online (Normal)</option>
         <option value="down">● Terputus (Down)</option>
         <option value="problem">▲ Ada Masalah</option>
@@ -134,28 +134,31 @@
     </div>
 
     <!-- Filter Lingkungan (Tier) -->
-    <div class="filter-field" title="Filter berdasarkan Lingkungan Operasional">
-      <label class="filter-field-label" for="servers-tier-filter">Lingkungan:</label>
-      <select id="servers-tier-filter" class="filter-field-select" onchange="serversFilter()">
-        <option value="">Semua</option>
+    <div class="filter-col" title="Filter berdasarkan Lingkungan Operasional">
+      <label class="filter-col-label" for="servers-tier-filter">Lingkungan</label>
+      <select id="servers-tier-filter" class="filter-select" onchange="serversFilter()">
+        <option value="">Semua Lingkungan</option>
         <option value="1">★ Produksi (Tier 1)</option>
         <option value="2">◇ Non-Produksi (Tier 2)</option>
       </select>
     </div>
 
     <!-- Pencarian Cepat -->
-    <div class="filter-field-search" title="Cari server, IP, spek, tag, OS">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="search" id="servers-search" placeholder="Cari server, IP, spek, tag, OS…" data-i18n-placeholder="search_server_agent" oninput="serversFilter()">
+    <div class="filter-col-search" title="Cari server, IP, spek, tag, OS">
+      <label class="filter-col-label" for="servers-search">Cari Server</label>
+      <div class="filter-search-box">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="search" id="servers-search" placeholder="Cari server, IP, spek, tag, OS…" data-i18n-placeholder="search_server_agent" oninput="serversFilter()">
+      </div>
     </div>
 
     <!-- Tombol Reset -->
     <button type="button" class="btn btn-ghost btn-sm" id="servers-filter-reset" onclick="resetServersFilters()" title="Reset semua filter ke default"
-            style="display:none;height:32px;padding:0 10px;font-size:11.5px;border-radius:var(--radius-sm);flex-shrink:0">
+            style="display:none;height:32px;padding:0 12px;font-size:11.5px;border-radius:var(--radius-sm);flex-shrink:0">
       Reset
     </button>
 
-    <div class="filter-divider" style="width:1px;height:20px;background:rgba(255,255,255,0.1);margin:0 2px;flex-shrink:0"></div>
+    <div class="filter-divider" style="width:1px;height:24px;background:rgba(255,255,255,0.1);margin:0 2px;flex-shrink:0"></div>
 
     <!-- Kolom Toggler -->
     <div class="pantau-col-dropdown" data-table-id="servers-table" style="flex-shrink:0">

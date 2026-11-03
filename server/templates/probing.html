@@ -138,8 +138,8 @@
 }
 .probe-table th {
   background: rgba(0, 0, 0, 0.2);
-  padding: 5px 8px;
-  font-size: 9.5px;
+  padding: 7px 12px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--dim);
   text-transform: uppercase;
@@ -149,8 +149,8 @@
   user-select: none;
 }
 .probe-table td {
-  padding: 4px 8px;
-  font-size: 10px;
+  padding: 6px 12px;
+  font-size: 11px;
   border-bottom: 1px solid var(--border-subtle);
   vertical-align: middle;
 }
@@ -528,33 +528,36 @@
       Pantau kondisi layanan endpoint (aplikasi, jaringan, port) dari luar
     </div>
   </div>
-  <div class="probe-controls">
-    <div class="filter-field-search" title="Cari nama atau target endpoint" style="min-width:180px">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="search" id="probeSearchInput" placeholder="Cari endpoint, URL, IP, port…" oninput="handleSearchFilter()">
+  <div class="probe-controls" style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
+    <div class="filter-col-search" title="Cari nama atau target endpoint" style="min-width:180px">
+      <label class="filter-col-label" for="probeSearchInput">Cari Endpoint</label>
+      <div class="filter-search-box">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="search" id="probeSearchInput" placeholder="Cari endpoint, URL, IP, port…" oninput="handleSearchFilter()">
+      </div>
     </div>
-    <div class="filter-field" title="Filter Protokol">
-      <label class="filter-field-label" for="probeTypeFilter">Protokol:</label>
-      <select id="probeTypeFilter" class="filter-field-select" onchange="handleSearchFilter()">
-        <option value="all">Semua</option>
+    <div class="filter-col" title="Filter Protokol">
+      <label class="filter-col-label" for="probeTypeFilter">Protokol</label>
+      <select id="probeTypeFilter" class="filter-select" onchange="handleSearchFilter()">
+        <option value="all">Semua Protokol</option>
         <option value="http">Web (HTTP / HTTPS)</option>
         <option value="ping">Ping Jaringan (ICMP)</option>
         <option value="tcp">Port Layanan (TCP)</option>
       </select>
     </div>
-    <div class="filter-field" title="Filter Status">
-      <label class="filter-field-label" for="probeStatusFilter">Status:</label>
-      <select id="probeStatusFilter" class="filter-field-select" onchange="handleSearchFilter()">
-        <option value="all">Semua</option>
+    <div class="filter-col" title="Filter Status">
+      <label class="filter-col-label" for="probeStatusFilter">Status</label>
+      <select id="probeStatusFilter" class="filter-select" onchange="handleSearchFilter()">
+        <option value="all">Semua Status</option>
         <option value="up">Normal (UP)</option>
         <option value="down">Terputus (DOWN)</option>
         <option value="degraded">Terganggu (Degraded)</option>
         <option value="paused">Dijeda</option>
       </select>
     </div>
-    <div class="filter-field" title="Filter Server Target">
-      <label class="filter-field-label" for="probeServerFilter">Server:</label>
-      <select id="probeServerFilter" class="filter-field-select" onchange="handleSearchFilter()">
+    <div class="filter-col" title="Filter Server Target">
+      <label class="filter-col-label" for="probeServerFilter">Server</label>
+      <select id="probeServerFilter" class="filter-select" onchange="handleSearchFilter()">
         <option value="all">Semua Node</option>
         <option value="standalone">Mandiri / Eksternal</option>
         {% if servers %}
@@ -564,11 +567,11 @@
         {% endif %}
       </select>
     </div>
-    <button type="button" class="btn btn-ghost btn-sm" onclick="fetchProbes(true)" title="Muat Ulang Data" style="height:32px;padding:0 10px">
+    <button type="button" class="btn btn-ghost btn-sm" onclick="fetchProbes(true)" title="Muat Ulang Data" style="height:32px;padding:0 10px;flex-shrink:0">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/></svg>
     </button>
     {% if can_probing or user.is_master_admin() %}
-    <button type="button" class="btn btn-primary btn-sm" onclick="openAddProbeModal()" style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px">
+    <button type="button" class="btn btn-primary btn-sm" onclick="openAddProbeModal()" style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;flex-shrink:0">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
       <span>Tambah Endpoint</span>
     </button>

@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.77
+
+- **Tipe Rilis:** Reposisi Vertikal Label Filter di Atas Kontrol dan Standarisasi Padding Proporsional Menyeluruh Seluruh Tabel Sistem (*Vertical Top-Stacked Filter Label Repositioning and Comprehensive Universal Table Padding Across All System Modules*)
+- **Fokus Utama:** Menyempurnakan secara radikal ergonomi dan estetika antarmuka NOC sesuai arahan spesifik pengguna:
+  1. **Reposisi Vertikal Label Filter di Atas Kontrol (`.filter-col` & `.filter-col-label`):**
+     - Memindahkan posisi label filter dari yang sebelumnya sejajar di samping/dalam dropdown menjadi tersusun vertikal rapi di atas masing-masing kontrol (`label on top`).
+     - Menjamin deretan label sejajar sempurna di baris atas dan deretan kontrol/tombol sejajar rata di baris bawah via `align-items: flex-end`.
+     - Mengeliminasi kesan sempit dan kaku akibat label menyamping, menghasilkan antarmuka kontrol yang bersih, teratur, dan intuitif setara standar Grafana dan Datadog.
+  2. **Standarisasi Padding Proporsional Menyeluruh pada Seluruh Tabel Sistem:**
+     - Mengubah padding global tabel pada `base.html` dari `5px 8px` / `4px 8px` menjadi `th` (`7px 12px; font-size: 10px; font-weight: 600; text-transform: uppercase`) dan `td` (`6px 12px; font-size: 11px; vertical-align: middle`).
+     - Mengeliminasi sel mepet pada `#servers-table` (`servers.html`) dari `3px 5px` menjadi `6px 12px` (dan `7px 12px` pada header).
+     - Menyeragamkan padding lapang pada `.probe-table` (`probing.html`), `#maintenanceTable` (`maintenance.html`), `#users-table` (`users.html` & `profile.html`), `.fm-table` (`file_manager.html`), `#ll-table` (`user_activity.html`), serta seluruh tabel layanan, paket, dan socket (`services.html`).
+  3. **Integritas Mutlak Halaman Utama & Kartu Insiden Terbuka:**
+     - Mempertahankan integritas 100% tanpa mengubah apapun pada Halaman Utama / Dasbor (`dashboard.html`) serta Kartu Insiden Terbuka (`#probtable`).
+  4. **Otomasi Pembaruan SemVer v4.8.77:**
+     - Menaikkan versi sistem menjadi `v4.8.77` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.76
 
 - **Tipe Rilis:** Standarisasi Dropdown Filter Berlabel, Padding Tabel Proporsional, dan Stabilitas Tata Letak Presisi NOC (*Standardized Labeled Filter Dropdowns, Proportional Table Padding, and Precision NOC Stable Layouts*)

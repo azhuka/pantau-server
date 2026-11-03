@@ -890,7 +890,7 @@
   font-size: 11.5px !important;
 }
 .tab-body .table-compact td {
-  padding: 2.5px 5px !important;
+  padding: 5px 8px !important;
   font-size: 11px !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
 }
@@ -2504,17 +2504,20 @@ div[style*="position: fixed"] .card {
     </div>
 
     <!-- Toolbar: Search + Filter + Refresh -->
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <div class="filter-field-search" title="Cari unit atau fungsi" style="min-width:170px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="search" id="sysd-search-input" placeholder="Cari unit atau fungsi…" oninput="filterSystemdTable()">
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+      <div class="filter-col-search" title="Cari unit atau fungsi" style="min-width:170px">
+        <label class="filter-col-label" for="sysd-search-input">Cari Layanan</label>
+        <div class="filter-search-box">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="search" id="sysd-search-input" placeholder="Cari unit atau fungsi…" oninput="filterSystemdTable()">
+        </div>
       </div>
 
       <!-- Filter Status -->
-      <div class="filter-field" title="Filter Status Layanan">
-        <label class="filter-field-label" for="sysd-status-filter">Status:</label>
-        <select id="sysd-status-filter" class="filter-field-select" onchange="filterSystemdTable()">
-          <option value="all">Semua</option>
+      <div class="filter-col" title="Filter Status Layanan">
+        <label class="filter-col-label" for="sysd-status-filter">Status</label>
+        <select id="sysd-status-filter" class="filter-select" onchange="filterSystemdTable()">
+          <option value="all">Semua Status</option>
           <option value="running">running (aktif)</option>
           <option value="failed">failed (bermasalah)</option>
           <option value="exited">exited (aktif)</option>
@@ -2523,10 +2526,10 @@ div[style*="position: fixed"] .card {
       </div>
 
       <!-- Filter Boot -->
-      <div class="filter-field" title="Filter Startup Boot">
-        <label class="filter-field-label" for="sysd-boot-filter">Boot:</label>
-        <select id="sysd-boot-filter" class="filter-field-select" onchange="filterSystemdTable()">
-          <option value="all">Semua</option>
+      <div class="filter-col" title="Filter Startup Boot">
+        <label class="filter-col-label" for="sysd-boot-filter">Boot</label>
+        <select id="sysd-boot-filter" class="filter-select" onchange="filterSystemdTable()">
+          <option value="all">Semua Boot</option>
           <option value="enabled">enabled (otomatis)</option>
           <option value="disabled">disabled (manual)</option>
           <option value="static">static / masked</option>
@@ -2534,7 +2537,7 @@ div[style*="position: fixed"] .card {
       </div>
 
       <!-- Refresh button -->
-      <button type="button" class="btn btn-ghost btn-sm" id="btn-sysd-refresh" onclick="refreshSystemdList(true)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %} title="Refresh daftar unit systemd" aria-label="Refresh daftar unit systemd">
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-sysd-refresh" onclick="refreshSystemdList(true)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed;height:32px"{% endif %} style="height:32px" title="Refresh daftar unit systemd" aria-label="Refresh daftar unit systemd">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
       </button>
     </div>
@@ -2617,27 +2620,30 @@ div[style*="position: fixed"] .card {
       </div>
       
       <!-- Toolbar Tombol Kontrol: Hanya Ikon + Tooltip -->
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <div class="filter-field-search" title="Cari paket, fungsi, versi" style="min-width:170px">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input type="search" id="pkg-search-input" placeholder="Cari paket, fungsi, versi…" oninput="filterPackagesTable()">
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div class="filter-col-search" title="Cari paket, fungsi, versi" style="min-width:170px">
+          <label class="filter-col-label" for="pkg-search-input">Cari Paket</label>
+          <div class="filter-search-box">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="search" id="pkg-search-input" placeholder="Cari paket, fungsi, versi…" oninput="filterPackagesTable()">
+          </div>
         </div>
         
         <!-- Filter Tipe Paket: Pengguna vs Sistem -->
-        <div class="filter-field" title="Filter Tipe Paket">
-          <label class="filter-field-label" for="pkg-type-filter">Tipe:</label>
-          <select id="pkg-type-filter" class="filter-field-select" onchange="filterPackagesTable()">
-            <option value="all">Semua</option>
+        <div class="filter-col" title="Filter Tipe Paket">
+          <label class="filter-col-label" for="pkg-type-filter">Tipe</label>
+          <select id="pkg-type-filter" class="filter-select" onchange="filterPackagesTable()">
+            <option value="all">Semua Tipe</option>
             <option value="user">Paket Pengguna</option>
             <option value="system">Paket Sistem</option>
           </select>
         </div>
 
         <!-- Filter Status: runtime status -->
-        <div class="filter-field" title="Filter Status Paket">
-          <label class="filter-field-label" for="pkg-status-filter">Status:</label>
-          <select id="pkg-status-filter" class="filter-field-select" onchange="filterPackagesTable()">
-            <option value="all">Semua</option>
+        <div class="filter-col" title="Filter Status Paket">
+          <label class="filter-col-label" for="pkg-status-filter">Status</label>
+          <select id="pkg-status-filter" class="filter-select" onchange="filterPackagesTable()">
+            <option value="all">Semua Status</option>
             <option value="running">running</option>
             <option value="exited">exited (active)</option>
             <option value="failed">failed</option>
@@ -3354,26 +3360,29 @@ div[style*="position: fixed"] .card {
         <span class="badge badge-info" id="ports-count-badge">{{ (listening_ports|length) if listening_ports else 0 }} socket aktif</span>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,255,255,0.02);border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-wrap:wrap">
-      <div class="filter-field" title="Filter Protokol">
-        <label class="filter-field-label" for="port-proto-filter">Protokol:</label>
-        <select id="port-proto-filter" class="filter-field-select" onchange="filterPortsTable()">
-          <option value="">Semua</option>
+    <div style="display:flex;align-items:flex-end;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.02);border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-wrap:wrap">
+      <div class="filter-col" title="Filter Protokol">
+        <label class="filter-col-label" for="port-proto-filter">Protokol</label>
+        <select id="port-proto-filter" class="filter-select" onchange="filterPortsTable()">
+          <option value="">Semua Protokol</option>
           <option value="tcp">TCP</option>
           <option value="udp">UDP</option>
         </select>
       </div>
-      <div class="filter-field" title="Filter Akses">
-        <label class="filter-field-label" for="port-access-filter">Akses:</label>
-        <select id="port-access-filter" class="filter-field-select" onchange="filterPortsTable()">
-          <option value="">Semua</option>
+      <div class="filter-col" title="Filter Akses">
+        <label class="filter-col-label" for="port-access-filter">Akses</label>
+        <select id="port-access-filter" class="filter-select" onchange="filterPortsTable()">
+          <option value="">Semua Akses</option>
           <option value="public">Publik (Luar)</option>
           <option value="local">Lokal (Loopback)</option>
         </select>
       </div>
-      <div class="filter-field-search" title="Cari port, proses, atau IP" style="min-width:180px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="search" id="port-search-input" placeholder="Cari port, proses, IP…" oninput="filterPortsTable()">
+      <div class="filter-col-search" title="Cari port, proses, atau IP" style="min-width:180px">
+        <label class="filter-col-label" for="port-search-input">Cari Port / Socket</label>
+        <div class="filter-search-box">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="search" id="port-search-input" placeholder="Cari port, proses, IP…" oninput="filterPortsTable()">
+        </div>
       </div>
     </div>
     <div style="overflow-x:auto" id="ports-wrap" style="display:{{ 'block' if listening_ports else 'none' }}">

@@ -578,10 +578,10 @@
     <!-- Baris 1: Filter Multi-Kriteria Berlabel Rapi & Presisi -->
     <div class="filter-row-main">
       <!-- 1. Filter Server -->
-      <div class="filter-field" title="Filter berdasarkan Server">
-        <label for="res-filter-server" class="filter-field-label">Server:</label>
-        <select id="res-filter-server" class="filter-field-select" onchange="onResFilterChange()">
-          <option value="">Semua</option>
+      <div class="filter-col" title="Filter berdasarkan Server">
+        <label for="res-filter-server" class="filter-col-label">Server</label>
+        <select id="res-filter-server" class="filter-select" onchange="onResFilterChange()">
+          <option value="">Semua Server</option>
           {% for s in all_servers %}
           <option value="{{ s.id }}" {% if res_server == s.id %}selected{% endif %}>{{ s.hostname }}</option>
           {% endfor %}
@@ -589,10 +589,10 @@
       </div>
 
       <!-- 2. Filter Keparahan -->
-      <div class="filter-field" title="Filter berdasarkan Tingkat Keparahan">
-        <label for="res-filter-sev" class="filter-field-label">Keparahan:</label>
-        <select id="res-filter-sev" class="filter-field-select" onchange="onResFilterChange()">
-          <option value="">Semua</option>
+      <div class="filter-col" title="Filter berdasarkan Tingkat Keparahan">
+        <label for="res-filter-sev" class="filter-col-label">Keparahan</label>
+        <select id="res-filter-sev" class="filter-select" onchange="onResFilterChange()">
+          <option value="">Semua Keparahan</option>
           <option value="danger" {% if res_sev == 'danger' %}selected{% endif %}>Kritis</option>
           <option value="average" {% if res_sev == 'average' %}selected{% endif %}>Gawat</option>
           <option value="warning" {% if res_sev == 'warning' %}selected{% endif %}>Peringatan</option>
@@ -601,10 +601,10 @@
       </div>
 
       <!-- 3. Filter Resolusi -->
-      <div class="filter-field" title="Filter berdasarkan Status / Tipe Resolusi">
-        <label for="res-filter-type" class="filter-field-label">Resolusi:</label>
-        <select id="res-filter-type" class="filter-field-select" onchange="onResFilterChange()">
-          <option value="">Semua</option>
+      <div class="filter-col" title="Filter berdasarkan Status / Tipe Resolusi">
+        <label for="res-filter-type" class="filter-col-label">Resolusi</label>
+        <select id="res-filter-type" class="filter-select" onchange="onResFilterChange()">
+          <option value="">Semua Resolusi</option>
           <option value="auto" {% if res_type == 'auto' %}selected{% endif %}>✓ Pulih Normal (Otomatis)</option>
           <option value="manual" {% if res_type == 'manual' %}selected{% endif %}>✓ Ditangani Operator</option>
           <option value="online" {% if res_type == 'online' %}selected{% endif %}>✓ Koneksi Pulih (Online)</option>
@@ -616,21 +616,26 @@
       </div>
 
       <!-- 4. Filter Rentang Tanggal -->
-      <div class="pantau-date-range" title="Rentang tanggal kustom">
-        <span class="date-sep">Rentang:</span>
-        <input type="date" id="res-date-start" value="{{ res_start }}" onchange="onResDateChange()" onclick="try{this.showPicker()}catch(e){}" title="Dari tanggal">
-        <span class="date-sep" style="margin:0 1px">—</span>
-        <input type="date" id="res-date-end" value="{{ res_end }}" onchange="onResDateChange()" onclick="try{this.showPicker()}catch(e){}" title="Sampai tanggal">
+      <div class="filter-col" title="Rentang tanggal kustom">
+        <span class="filter-col-label">Rentang Tanggal</span>
+        <div class="pantau-date-range">
+          <input type="date" id="res-date-start" value="{{ res_start }}" onchange="onResDateChange()" onclick="try{this.showPicker()}catch(e){}" title="Dari tanggal">
+          <span class="date-sep">—</span>
+          <input type="date" id="res-date-end" value="{{ res_end }}" onchange="onResDateChange()" onclick="try{this.showPicker()}catch(e){}" title="Sampai tanggal">
+        </div>
       </div>
 
       <!-- 5. Pencarian Kata Kunci -->
-      <div class="filter-field-search" title="Cari kata kunci insiden">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="search" id="res-search-input" value="{{ res_q }}" oninput="onResFilterChange()" placeholder="Cari insiden, pesan, komponen…">
+      <div class="filter-col-search" title="Cari kata kunci insiden">
+        <label for="res-search-input" class="filter-col-label">Cari Insiden</label>
+        <div class="filter-search-box">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="search" id="res-search-input" value="{{ res_q }}" oninput="onResFilterChange()" placeholder="Cari insiden, pesan, komponen…">
+        </div>
       </div>
 
       <!-- 6. Tombol Reset Filter -->
-      <button type="button" class="btn btn-ghost btn-sm" onclick="resetResFilters()" style="height:32px;padding:0 10px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px;flex-shrink:0" title="Hapus semua filter riwayat insiden">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="resetResFilters()" style="height:32px;padding:0 12px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px;flex-shrink:0" title="Hapus semua filter riwayat insiden">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
         <span>Reset</span>
       </button>
