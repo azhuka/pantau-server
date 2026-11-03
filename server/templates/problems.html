@@ -575,57 +575,62 @@
 
   <!-- Panel Filter Presisi Tinggi NOC: Terpadu, Rapi, & Bersih -->
   <div class="pantau-filter-panel">
-    <!-- Baris 1: Filter Multi-Kriteria Rapi & Kompak (Tetap Sebaris Presisi) -->
+    <!-- Baris 1: Filter Multi-Kriteria Berlabel Rapi & Presisi -->
     <div class="filter-row-main">
-      <!-- Filter Server -->
-      <select id="res-filter-server" onchange="onResFilterChange()" title="Filter berdasarkan Server"
-              style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:34px;font-size:11.5px;outline:none;width:130px;flex-shrink:0">
-        <option value="">Semua server</option>
-        {% for s in all_servers %}
-        <option value="{{ s.id }}" {% if res_server == s.id %}selected{% endif %}>{{ s.hostname }}</option>
-        {% endfor %}
-      </select>
+      <!-- 1. Filter Server -->
+      <div class="filter-field" title="Filter berdasarkan Server">
+        <label for="res-filter-server" class="filter-field-label">Server:</label>
+        <select id="res-filter-server" class="filter-field-select" onchange="onResFilterChange()">
+          <option value="">Semua</option>
+          {% for s in all_servers %}
+          <option value="{{ s.id }}" {% if res_server == s.id %}selected{% endif %}>{{ s.hostname }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-      <!-- Filter Keparahan -->
-      <select id="res-filter-sev" onchange="onResFilterChange()" title="Filter berdasarkan Tingkat Keparahan"
-              style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:34px;font-size:11.5px;outline:none;width:135px;flex-shrink:0">
-        <option value="">Semua keparahan</option>
-        <option value="danger" {% if res_sev == 'danger' %}selected{% endif %}>Kritis</option>
-        <option value="average" {% if res_sev == 'average' %}selected{% endif %}>Gawat</option>
-        <option value="warning" {% if res_sev == 'warning' %}selected{% endif %}>Peringatan</option>
-        <option value="info" {% if res_sev == 'info' %}selected{% endif %}>Info</option>
-      </select>
+      <!-- 2. Filter Keparahan -->
+      <div class="filter-field" title="Filter berdasarkan Tingkat Keparahan">
+        <label for="res-filter-sev" class="filter-field-label">Keparahan:</label>
+        <select id="res-filter-sev" class="filter-field-select" onchange="onResFilterChange()">
+          <option value="">Semua</option>
+          <option value="danger" {% if res_sev == 'danger' %}selected{% endif %}>Kritis</option>
+          <option value="average" {% if res_sev == 'average' %}selected{% endif %}>Gawat</option>
+          <option value="warning" {% if res_sev == 'warning' %}selected{% endif %}>Peringatan</option>
+          <option value="info" {% if res_sev == 'info' %}selected{% endif %}>Info</option>
+        </select>
+      </div>
 
-      <!-- Filter Resolusi -->
-      <select id="res-filter-type" onchange="onResFilterChange()" title="Filter berdasarkan Status / Tipe Resolusi"
-              style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:34px;font-size:11.5px;outline:none;width:150px;flex-shrink:0">
-        <option value="">Semua resolusi</option>
-        <option value="auto" {% if res_type == 'auto' %}selected{% endif %}>✓ Pulih Normal (Otomatis)</option>
-        <option value="manual" {% if res_type == 'manual' %}selected{% endif %}>✓ Ditangani Operator</option>
-        <option value="online" {% if res_type == 'online' %}selected{% endif %}>✓ Koneksi Pulih (Online)</option>
-        <option value="service_up" {% if res_type == 'service_up' %}selected{% endif %}>✓ Layanan Berjalan</option>
-        <option value="stale_closed" {% if res_type == 'stale_closed' %}selected{% endif %}>Ditutup (Host Terputus)</option>
-        <option value="session_closed" {% if res_type == 'session_closed' %}selected{% endif %}>Sesi SSH Ditutup</option>
-        <option value="dedup" {% if res_type == 'dedup' %}selected{% endif %}>Dibersihkan (Duplikasi)</option>
-      </select>
+      <!-- 3. Filter Resolusi -->
+      <div class="filter-field" title="Filter berdasarkan Status / Tipe Resolusi">
+        <label for="res-filter-type" class="filter-field-label">Resolusi:</label>
+        <select id="res-filter-type" class="filter-field-select" onchange="onResFilterChange()">
+          <option value="">Semua</option>
+          <option value="auto" {% if res_type == 'auto' %}selected{% endif %}>✓ Pulih Normal (Otomatis)</option>
+          <option value="manual" {% if res_type == 'manual' %}selected{% endif %}>✓ Ditangani Operator</option>
+          <option value="online" {% if res_type == 'online' %}selected{% endif %}>✓ Koneksi Pulih (Online)</option>
+          <option value="service_up" {% if res_type == 'service_up' %}selected{% endif %}>✓ Layanan Berjalan</option>
+          <option value="stale_closed" {% if res_type == 'stale_closed' %}selected{% endif %}>Ditutup (Host Terputus)</option>
+          <option value="session_closed" {% if res_type == 'session_closed' %}selected{% endif %}>Sesi SSH Ditutup</option>
+          <option value="dedup" {% if res_type == 'dedup' %}selected{% endif %}>Dibersihkan (Duplikasi)</option>
+        </select>
+      </div>
 
-      <!-- Filter Rentang Tanggal (Kompak & Elegan Berlabel Jelas) -->
+      <!-- 4. Filter Rentang Tanggal -->
       <div class="pantau-date-range" title="Rentang tanggal kustom">
-        <span class="date-sep">Dari:</span>
+        <span class="date-sep">Rentang:</span>
         <input type="date" id="res-date-start" value="{{ res_start }}" onchange="onResDateChange()" onclick="try{this.showPicker()}catch(e){}" title="Dari tanggal">
         <span class="date-sep" style="margin:0 1px">—</span>
         <input type="date" id="res-date-end" value="{{ res_end }}" onchange="onResDateChange()" onclick="try{this.showPicker()}catch(e){}" title="Sampai tanggal">
       </div>
 
-      <!-- Pencarian Kata Kunci -->
-      <div class="prob-search-box" style="position:relative;display:flex;align-items:center;flex:1;min-width:140px;height:34px">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="search" id="res-search-input" value="{{ res_q }}" oninput="onResFilterChange()" placeholder="Cari insiden / pesan / komponen…"
-               style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 12px 0 30px;height:34px;font-size:11.5px;width:100%;outline:none;transition:border-color .15s">
+      <!-- 5. Pencarian Kata Kunci -->
+      <div class="filter-field-search" title="Cari kata kunci insiden">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="search" id="res-search-input" value="{{ res_q }}" oninput="onResFilterChange()" placeholder="Cari insiden, pesan, komponen…">
       </div>
 
-      <!-- Tombol Reset Filter -->
-      <button type="button" class="btn btn-ghost btn-sm" onclick="resetResFilters()" style="height:34px;padding:0 10px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px;flex-shrink:0" title="Hapus semua filter riwayat insiden">
+      <!-- 6. Tombol Reset Filter -->
+      <button type="button" class="btn btn-ghost btn-sm" onclick="resetResFilters()" style="height:32px;padding:0 10px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px;flex-shrink:0" title="Hapus semua filter riwayat insiden">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
         <span>Reset</span>
       </button>
@@ -637,7 +642,7 @@
     <!-- Baris 2: Tombol Kecil Quick Presets (Dibawahnya) & Info Data -->
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div style="display:inline-flex;align-items:center;gap:8px">
-        <span style="font-size:11px;color:var(--dim);font-weight:600;letter-spacing:0.3px;text-transform:uppercase">Rentang Cepat:</span>
+        <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.4px;text-transform:uppercase">Preset:</span>
         <div class="segmented-control" id="prob-res-ranges" style="display:inline-flex;gap:3px">
           <button type="button" class="btn btn-sm {% if res_period == 'today' %}is-on{% endif %}" onclick="setResolvedPeriod('today', this)" style="padding:2px 10px;font-size:11px" title="Insiden teratasi sejak jam 00:00 UTC hari ini">Hari Ini</button>
           <button type="button" class="btn btn-sm {% if res_period == '24h' or not res_period %}is-on{% endif %}" onclick="setResolvedPeriod('24h', this)" style="padding:2px 10px;font-size:11px" title="Insiden teratasi dalam 24 jam terakhir">24 Jam</button>
@@ -657,14 +662,14 @@
     <table style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border)">
-          <th class="col-time-detailed" style="color:var(--dim);text-align:left;white-space:nowrap" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
-          <th class="col-server" style="color:var(--dim);text-align:left;white-space:nowrap" title="Nama host dan grup server">Server</th>
-          <th class="col-sev" style="color:var(--dim);text-align:center;white-space:nowrap" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
-          <th class="col-component" style="color:var(--dim);text-align:left;white-space:nowrap" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
-          <th class="col-desc" style="color:var(--dim);text-align:left" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
-          <th class="col-durasi" style="color:var(--dim);text-align:left;white-space:nowrap" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
-          <th class="col-res" style="color:var(--dim);text-align:left;white-space:nowrap" title="Catatan status penanganan atau pemulihan">Resolusi</th>
-          <th class="col-act" style="color:var(--dim);text-align:left;white-space:nowrap" title="Tindakan ke rincian server">Tindakan</th>
+          <th class="col-time-detailed" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:140px;min-width:140px" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
+          <th class="col-server" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:150px;min-width:130px" title="Nama host dan grup server">Server</th>
+          <th class="col-sev" style="color:var(--dim);text-align:center;white-space:nowrap;padding:7px 12px;width:85px;min-width:80px" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
+          <th class="col-component" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:110px;min-width:95px" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
+          <th class="col-desc" style="color:var(--dim);text-align:left;padding:7px 14px;min-width:280px" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
+          <th class="col-durasi" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:85px;min-width:80px" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
+          <th class="col-res" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:165px;min-width:155px" title="Catatan status penanganan atau pemulihan">Resolusi</th>
+          <th class="col-act" style="color:var(--dim);text-align:center;white-space:nowrap;padding:7px 12px;width:55px;min-width:50px" title="Tindakan ke rincian server">Tindakan</th>
         </tr>
       </thead>
       <tbody id="prob-resolved-tbody">
@@ -685,7 +690,7 @@
           data-prob-host="{{ p.hostname }}"
           data-prob-sid="{{ p.server_id }}">
         <!-- 1. Waktu -->
-        <td style="padding:5px 6px;white-space:nowrap" class="col-time-detailed">
+        <td style="padding:6px 12px;white-space:nowrap" class="col-time-detailed">
           <div class="mono" style="display:flex;align-items:center;gap:5px;line-height:1.4">
             <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">MULAI</span>
             <span style="font-size:11px;color:var(--text);font-weight:600">{{ p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—' }}</span>
@@ -698,7 +703,7 @@
           {% endif %}
         </td>
         <!-- 2. Server & Grup -->
-        <td style="padding:5px 6px;white-space:nowrap" class="col-server">
+        <td style="padding:6px 12px;white-space:nowrap" class="col-server">
           <div style="font-size:11.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
           {% if p.group_name %}
           <div style="margin-top:2px">
@@ -707,30 +712,30 @@
           {% endif %}
         </td>
         <!-- 3. Tingkat / Keparahan -->
-        <td style="padding:5px 6px;white-space:nowrap" class="col-sev">
+        <td style="padding:6px 12px;white-space:nowrap;text-align:center" class="col-sev">
           <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px;border-radius:3px">
             {{ 'KRITIS' if p.severity == 'danger' else ('GAWAT' if p.severity == 'average' else ('PERINGATAN' if p.severity == 'warning' else p.severity | upper)) }}
           </span>
         </td>
         <!-- 4. Komponen -->
-        <td style="padding:5px 6px;white-space:nowrap" class="col-component">
+        <td style="padding:6px 12px;white-space:nowrap" class="col-component">
           <span style="font-size:11px;color:var(--text);font-weight:500">
             {{ p.component or 'Sistem' }}
           </span>
         </td>
         <!-- 5. Deskripsi Insiden -->
-        <td style="padding:5px 6px;font-size:11px;line-height:1.35;color:var(--text)" class="col-desc">
+        <td style="padding:6px 14px;font-size:11px;line-height:1.4;color:var(--text)" class="col-desc">
           <span style="color:var(--dim)">{{ p.message }}</span>
         </td>
         <!-- 6. Durasi Gangguan (Downtime) -->
-        <td style="padding:5px 6px;white-space:nowrap" class="mono col-durasi">
+        <td style="padding:6px 12px;white-space:nowrap" class="mono col-durasi">
           <span class="badge badge-muted" style="font-size:10px;padding:1px 5px;font-weight:600;letter-spacing:-0.025em;word-spacing:-1px" title="Total waktu insiden berlangsung hingga teratasi">{{ p.durasi }}</span>
         </td>
         <!-- 7. Resolusi -->
-        <td style="padding:5px 6px;white-space:nowrap" class="col-res">
+        <td style="padding:6px 12px;white-space:nowrap" class="col-res">
           <span class="badge {{ p.res_badge_cls or 'badge-up' }}" style="font-size:10px;padding:1px 5px" title="{{ p.res_tip }}">{{ p.res_label }}</span>
         </td>
-        <td style="padding:5px 6px;white-space:nowrap;text-align:left;width:50px" class="col-act">
+        <td style="padding:6px 12px;white-space:nowrap;text-align:center;width:55px" class="col-act">
           <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" title="Rincian" aria-label="Rincian">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
           </a>
@@ -1608,7 +1613,7 @@ window.poll = async function(opts = {}) {
             data-prob-open="0"
             data-prob-host="${_esc(p.hostname)}"
             data-prob-sid="${p.server_id}">
-          <td style="padding:5px 6px;white-space:nowrap" class="col-time-detailed">
+          <td style="padding:6px 12px;white-space:nowrap" class="col-time-detailed">
             <div class="mono" style="display:flex;align-items:center;gap:5px;line-height:1.4">
               <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">${isEn ? 'START' : 'MULAI'}</span>
               <span style="font-size:11px;color:var(--text);font-weight:600">${_esc((p.started_at || p.started_at_str || '—').replace(/\s*\d{4}\s*/, ' '))}</span>
@@ -1618,26 +1623,26 @@ window.poll = async function(opts = {}) {
               <span style="font-size:11px;color:var(--dim)">${_esc((p.resolved_at || p.resolved_at_str || '—').replace(/\s*\d{4}\s*/, ' '))}</span>
             </div>
           </td>
-          <td style="padding:5px 6px;white-space:nowrap" class="col-server">
+          <td style="padding:6px 12px;white-space:nowrap" class="col-server">
             <div style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${_esc(p.hostname)}</div>
             ${grp ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px">${_esc(grp)}</span></div>` : ''}
           </td>
-          <td style="padding:5px 6px;white-space:nowrap" class="col-sev">
+          <td style="padding:6px 12px;white-space:nowrap;text-align:center" class="col-sev">
             <span class="${sevBadge}" style="font-size:8px;padding:1px 4.5px;border-radius:3px">
               ${resSevLabel}
             </span>
           </td>
-          <td style="padding:5px 6px;white-space:nowrap" class="col-component">
+          <td style="padding:6px 12px;white-space:nowrap" class="col-component">
             <span style="font-size:11px;color:var(--text);font-weight:500">${_esc(p.component || 'Sistem')}</span>
           </td>
-          <td style="padding:5px 6px;font-size:11px;line-height:1.35;color:var(--text)" class="col-desc">
+          <td style="padding:6px 14px;font-size:11px;line-height:1.4;color:var(--text)" class="col-desc">
             <span style="color:var(--dim)">${_esc(p.message || '')}</span>
           </td>
-          <td style="padding:5px 6px;white-space:nowrap" class="mono col-durasi">
+          <td style="padding:6px 12px;white-space:nowrap" class="mono col-durasi">
             <span class="badge badge-muted" style="font-size:10px;padding:1px 5px;font-weight:600;letter-spacing:-0.025em;word-spacing:-1px">${_esc(p.durasi || '')}</span>
           </td>
-          <td style="padding:5px 6px;white-space:nowrap" class="col-res">${resBadge}</td>
-          <td style="padding:5px 6px;white-space:nowrap;text-align:left" class="col-act">
+          <td style="padding:6px 12px;white-space:nowrap" class="col-res">${resBadge}</td>
+          <td style="padding:6px 12px;white-space:nowrap;text-align:center" class="col-act">
             <a href="/servers/${p.server_id}" class="btn btn-ghost btn-sm" title="${isEn ? 'Details' : 'Rincian'}" aria-label="Rincian">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </a>

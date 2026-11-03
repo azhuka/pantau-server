@@ -529,37 +529,46 @@
     </div>
   </div>
   <div class="probe-controls">
-    <div class="search-input-wrap">
-      <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="text" id="probeSearchInput" placeholder="Cari nama atau target endpoint..." oninput="handleSearchFilter()">
+    <div class="filter-field-search" title="Cari nama atau target endpoint" style="min-width:180px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="search" id="probeSearchInput" placeholder="Cari endpoint, URL, IP, port…" oninput="handleSearchFilter()">
     </div>
-    <select id="probeTypeFilter" class="filter-select" onchange="handleSearchFilter()" aria-label="Filter Protokol">
-      <option value="all">Semua Protokol</option>
-      <option value="http">Web (HTTP / HTTPS)</option>
-      <option value="ping">Ping Jaringan (ICMP)</option>
-      <option value="tcp">Port Layanan (TCP)</option>
-    </select>
-    <select id="probeStatusFilter" class="filter-select" onchange="handleSearchFilter()" aria-label="Filter Status">
-      <option value="all">Semua Status</option>
-      <option value="up">Normal (UP)</option>
-      <option value="down">Terputus (DOWN)</option>
-      <option value="degraded">Terganggu (Degraded)</option>
-      <option value="paused">Dijeda</option>
-    </select>
-    <select id="probeServerFilter" class="filter-select" onchange="handleSearchFilter()" aria-label="Filter Server Target">
-      <option value="all">Semua Node / Server</option>
-      <option value="standalone">Mandiri / Eksternal</option>
-      {% if servers %}
-        {% for s in servers %}
-        <option value="{{ s.id }}">{{ s.hostname }}</option>
-        {% endfor %}
-      {% endif %}
-    </select>
-    <button type="button" class="btn btn-ghost btn-sm" onclick="fetchProbes(true)" title="Muat Ulang Data">
+    <div class="filter-field" title="Filter Protokol">
+      <label class="filter-field-label" for="probeTypeFilter">Protokol:</label>
+      <select id="probeTypeFilter" class="filter-field-select" onchange="handleSearchFilter()">
+        <option value="all">Semua</option>
+        <option value="http">Web (HTTP / HTTPS)</option>
+        <option value="ping">Ping Jaringan (ICMP)</option>
+        <option value="tcp">Port Layanan (TCP)</option>
+      </select>
+    </div>
+    <div class="filter-field" title="Filter Status">
+      <label class="filter-field-label" for="probeStatusFilter">Status:</label>
+      <select id="probeStatusFilter" class="filter-field-select" onchange="handleSearchFilter()">
+        <option value="all">Semua</option>
+        <option value="up">Normal (UP)</option>
+        <option value="down">Terputus (DOWN)</option>
+        <option value="degraded">Terganggu (Degraded)</option>
+        <option value="paused">Dijeda</option>
+      </select>
+    </div>
+    <div class="filter-field" title="Filter Server Target">
+      <label class="filter-field-label" for="probeServerFilter">Server:</label>
+      <select id="probeServerFilter" class="filter-field-select" onchange="handleSearchFilter()">
+        <option value="all">Semua Node</option>
+        <option value="standalone">Mandiri / Eksternal</option>
+        {% if servers %}
+          {% for s in servers %}
+          <option value="{{ s.id }}">{{ s.hostname }}</option>
+          {% endfor %}
+        {% endif %}
+      </select>
+    </div>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="fetchProbes(true)" title="Muat Ulang Data" style="height:32px;padding:0 10px">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/></svg>
     </button>
     {% if can_probing or user.is_master_admin() %}
-    <button type="button" class="btn btn-primary btn-sm" onclick="openAddProbeModal()" style="display:inline-flex;align-items:center;gap:6px">
+    <button type="button" class="btn btn-primary btn-sm" onclick="openAddProbeModal()" style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
       <span>Tambah Endpoint</span>
     </button>

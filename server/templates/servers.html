@@ -107,46 +107,51 @@
     {% if servers %}
     <!-- Filter Grup -->
     {% if all_groups and all_groups|length > 0 %}
-    <select id="servers-group-filter" onchange="serversFilter()" title="Filter berdasarkan Grup Server"
-            style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:34px;font-size:11.5px;outline:none;width:145px;flex-shrink:0">
-      <option value="">Semua Grup ({{ servers|length }})</option>
-      {% for grp in all_groups %}
-      <option value="{{ grp }}">❖ {{ grp }} ({{ group_counts.get(grp, 0) }})</option>
-      {% endfor %}
-      {% if ungrouped_count > 0 %}
-      <option value="__none__">Tanpa Grup ({{ ungrouped_count }})</option>
-      {% endif %}
-    </select>
+    <div class="filter-field" title="Filter berdasarkan Grup Server">
+      <label class="filter-field-label" for="servers-group-filter">Grup:</label>
+      <select id="servers-group-filter" class="filter-field-select" onchange="serversFilter()">
+        <option value="">Semua ({{ servers|length }})</option>
+        {% for grp in all_groups %}
+        <option value="{{ grp }}">❖ {{ grp }} ({{ group_counts.get(grp, 0) }})</option>
+        {% endfor %}
+        {% if ungrouped_count > 0 %}
+        <option value="__none__">Tanpa Grup ({{ ungrouped_count }})</option>
+        {% endif %}
+      </select>
+    </div>
     {% endif %}
 
     <!-- Filter Status -->
-    <select id="servers-status-filter" onchange="serversFilter()" title="Filter berdasarkan Status Konektivitas Server"
-            style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:34px;font-size:11.5px;outline:none;width:130px;flex-shrink:0">
-      <option value="">Semua status</option>
-      <option value="online">● Online (Normal)</option>
-      <option value="down">● Terputus (Down)</option>
-      <option value="problem">▲ Ada Masalah</option>
-      <option value="maint">⚙ Pemeliharaan</option>
-    </select>
+    <div class="filter-field" title="Filter berdasarkan Status Konektivitas Server">
+      <label class="filter-field-label" for="servers-status-filter">Status:</label>
+      <select id="servers-status-filter" class="filter-field-select" onchange="serversFilter()">
+        <option value="">Semua</option>
+        <option value="online">● Online (Normal)</option>
+        <option value="down">● Terputus (Down)</option>
+        <option value="problem">▲ Ada Masalah</option>
+        <option value="maint">⚙ Pemeliharaan</option>
+      </select>
+    </div>
 
     <!-- Filter Lingkungan (Tier) -->
-    <select id="servers-tier-filter" onchange="serversFilter()" title="Filter berdasarkan Lingkungan Operasional"
-            style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:34px;font-size:11.5px;outline:none;width:130px;flex-shrink:0">
-      <option value="">Semua lingkungan</option>
-      <option value="1">★ Produksi (Tier 1)</option>
-      <option value="2">◇ Non-Produksi (Tier 2)</option>
-    </select>
+    <div class="filter-field" title="Filter berdasarkan Lingkungan Operasional">
+      <label class="filter-field-label" for="servers-tier-filter">Lingkungan:</label>
+      <select id="servers-tier-filter" class="filter-field-select" onchange="serversFilter()">
+        <option value="">Semua</option>
+        <option value="1">★ Produksi (Tier 1)</option>
+        <option value="2">◇ Non-Produksi (Tier 2)</option>
+      </select>
+    </div>
 
     <!-- Pencarian Cepat -->
-    <div style="position:relative;flex:1;min-width:180px;display:flex;align-items:center">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:9px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="search" id="servers-search" placeholder="Cari server, IP, spek, tag, OS…" data-i18n-placeholder="search_server_agent" oninput="serversFilter()"
-             style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 10px 0 28px;height:34px;font-size:11.5px;outline:none;width:100%;box-sizing:border-box">
+    <div class="filter-field-search" title="Cari server, IP, spek, tag, OS">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="search" id="servers-search" placeholder="Cari server, IP, spek, tag, OS…" data-i18n-placeholder="search_server_agent" oninput="serversFilter()">
     </div>
 
     <!-- Tombol Reset -->
     <button type="button" class="btn btn-ghost btn-sm" id="servers-filter-reset" onclick="resetServersFilters()" title="Reset semua filter ke default"
-            style="display:none;height:34px;padding:0 10px;font-size:11.5px;border-radius:var(--radius-sm);flex-shrink:0">
+            style="display:none;height:32px;padding:0 10px;font-size:11.5px;border-radius:var(--radius-sm);flex-shrink:0">
       Reset
     </button>
 
@@ -154,7 +159,7 @@
 
     <!-- Kolom Toggler -->
     <div class="pantau-col-dropdown" data-table-id="servers-table" style="flex-shrink:0">
-      <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('servers-table', this)" title="Sesuaikan kolom tabel server" style="height:34px">
+      <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('servers-table', this)" title="Sesuaikan kolom tabel server" style="height:32px">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
           <line x1="9" y1="3" x2="9" y2="21"></line>
@@ -168,7 +173,7 @@
     {% endif %}
 
     {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-    <a href="/servers/add" class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;font-size:11.5px;flex-shrink:0">
+    <a href="/servers/add" class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;font-size:11.5px;flex-shrink:0">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
       <span data-i18n="add_server">Tambah Server</span>
     </a>

@@ -315,38 +315,44 @@
 </div>
 
 <!-- Controls Bar: Search & Status Filter -->
-<div class="maint-controls">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <div class="search-input-wrap">
-      <span class="search-icon">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      </span>
-      <input type="text" id="maintSearch" placeholder="Cari judul, server, atau deskripsi…" oninput="filterWindows()" />
+<div class="pantau-filter-panel" style="margin-bottom:14px">
+  <div class="filter-row-main" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1">
+      <!-- 1. Filter Status -->
+      <div style="display:inline-flex;align-items:center;gap:6px">
+        <span style="font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.4px;text-transform:uppercase">Status:</span>
+        <div class="segmented-control" id="statusFilterCtrl">
+          <button type="button" class="btn btn-sm is-on" data-status="all" onclick="setStatusFilter('all')">Semua</button>
+          <button type="button" class="btn btn-sm" data-status="active" onclick="setStatusFilter('active')">
+            <span class="dot-pulse-warn" style="width:6px;height:6px;margin-right:4px"></span>Aktif
+          </button>
+          <button type="button" class="btn btn-sm" data-status="scheduled" onclick="setStatusFilter('scheduled')">Mendatang</button>
+          <button type="button" class="btn btn-sm" data-status="completed" onclick="setStatusFilter('completed')">Selesai</button>
+        </div>
+      </div>
+
+      <!-- 2. Filter Server -->
+      {% if servers and servers|length > 0 %}
+      <div class="filter-field" title="Filter berdasarkan Server">
+        <label class="filter-field-label" for="maintServerFilter">Server:</label>
+        <select id="maintServerFilter" class="filter-field-select" onchange="filterWindows()">
+          <option value="">Semua Server</option>
+          {% for s in servers %}
+          <option value="{{ s.id }}">{{ s.hostname }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <!-- 3. Pencarian -->
+      <div class="filter-field-search" title="Cari judul, server, atau deskripsi">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="search" id="maintSearch" placeholder="Cari judul, server, deskripsi…" oninput="filterWindows()">
+      </div>
     </div>
 
-    <!-- Segmented Filter Status -->
-    <div class="segmented-control" id="statusFilterCtrl">
-      <button type="button" class="btn btn-sm is-on" data-status="all" onclick="setStatusFilter('all')">Semua</button>
-      <button type="button" class="btn btn-sm" data-status="active" onclick="setStatusFilter('active')">
-        <span class="dot-pulse-warn" style="width:6px;height:6px;margin-right:4px"></span>Aktif
-      </button>
-      <button type="button" class="btn btn-sm" data-status="scheduled" onclick="setStatusFilter('scheduled')">Mendatang</button>
-      <button type="button" class="btn btn-sm" data-status="completed" onclick="setStatusFilter('completed')">Selesai</button>
-    </div>
-
-    <!-- Filter Server -->
-    {% if servers and servers|length > 0 %}
-    <select id="maintServerFilter" onchange="filterWindows()" title="Filter berdasarkan Server"
-            style="background:rgba(9,13,22,0.85);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);color:var(--text);padding:0 8px;height:34px;font-size:11.5px;outline:none;width:145px">
-      <option value="">Semua Server</option>
-      {% for s in servers %}
-      <option value="{{ s.id }}">{{ s.hostname }}</option>
-      {% endfor %}
-    </select>
-    {% endif %}
+    <span style="font-size:11.5px;color:var(--dim);white-space:nowrap" id="maintCountInfo">Memuat daftar jadwal…</span>
   </div>
-
-  <span style="font-size:11.5px;color:var(--dim)" id="maintCountInfo">Memuat daftar jadwal…</span>
 </div>
 
 <!-- Card Tabel Jendela Pemeliharaan -->

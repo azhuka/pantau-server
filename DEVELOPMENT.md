@@ -354,6 +354,27 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.76
+
+- **Tipe Rilis:** Standarisasi Dropdown Filter Berlabel, Padding Tabel Proporsional, dan Stabilitas Tata Letak Presisi NOC (*Standardized Labeled Filter Dropdowns, Proportional Table Padding, and Precision NOC Stable Layouts*)
+- **Fokus Utama:** Menyempurnakan kenyamanan visual dan ergonomi operator sesuai masukan mendalam pengguna dengan menambahkan label teks eksplisit pada seluruh kontrol filter dropdown, memperluas padding sel tabel menjadi proporsional (6px 12px), mengunci lebar kolom untuk mengeliminasi lonjakan wrapping teks yang mengganggu, serta penyeragaman desain antarmuka enterprise:
+  1. **Standarisasi Kontrol Filter Berlabel Terpadu (`.filter-field` & `.filter-field-label`):**
+     - Membungkus seluruh input dropdown filter dengan kontainer terpadu berlabel teks eksplisit huruf kapital kompak (e.g. `Server:`, `Keparahan:`, `Resolusi:`, `Status:`, `Lingkungan:`, `Grup:`, `Peran:`, `Protokol:`, `Akses:`, `Jenis:`) dengan tinggi seragam 32px, border halus terpadu, dan aksen fokus cyan tanpa membuat UI terasa kaku.
+     - Menyediakan bilah pencarian sebaris terpadu `.filter-field-search` dengan ikon terintegrasi dan transisi mulus.
+     - Mengubah label prefix tombol pintasan segmented control menjadi `Preset:` yang jelas dan rapi.
+  2. **Perbaikan Padding dan Geometri Kolom Tabel Riwayat Insiden (`problems.html`):**
+     - Mengganti padding sel yang terlalu mepet (`5px 6px`) menjadi padding proporsional (`6px 12px` untuk kolom data, `6px 14px` untuk kolom deskripsi insiden) dengan tinggi baris nyaman `line-height: 1.4`.
+     - Mengunci lebar minimum dan lebar tetap pada masing-masing kolom (`Waktu: 140px`, `Server: 150px`, `Keparahan: 85px`, `Komponen: 110px`, `Deskripsi: min-width 280px`, `Durasi: 85px`, `Resolusi: 165px`, `Tindakan: 55px`) sehingga terbebas dari lonjakan teks yang tiba-tiba bertumpuk menjadi 2 baris.
+     - Menyelaraskan rendering sisi klien JavaScript (`resList.map`) secara identik dengan template Jinja SSR.
+  3. **Penyeragaman Padding dan Tata Letak Tabel Audit Trail (`audit.html`):**
+     - Menyelaraskan padding sel tabel audit menjadi `6px 12px` (dan `6px 14px` pada hasil respons) dengan lebar kolom pasti untuk menjaga kesimetrisan visual.
+  4. **Ekstensivitas Label Dropdown pada Seluruh Modul Operasional:**
+     - Menerapkan `.filter-field` berlabel pada Daftar Server (`servers.html`), Jendela Pemeliharaan (`maintenance.html`), Pemantauan Endpoint (`probing.html`), Audit Port Terbuka (`services.html#tab-ports`), Unit Layanan & Paket (`services.html`), Manajemen Pengguna (`users.html`), dan Riwayat Aktivitas Pengguna (`user_activity.html`).
+  5. **Integritas Mutlak Halaman Utama & Kartu Insiden Terbuka:**
+     - Mempertahankan integritas 100% tanpa mengubah apapun pada Halaman Utama / Dasbor (`dashboard.html`) serta Kartu Insiden Terbuka (`#probtable`).
+  6. **Otomasi Pembaruan SemVer v4.8.76:**
+     - Menaikkan versi sistem menjadi `v4.8.76` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.75
 
 - **Tipe Rilis:** Ekstensivitas Filter Interaktif Multi-Tabel Menyeluruh, Normalisasi Presisi Nilai Kolom Resolusi, dan Penyelarasan Antarmuka NOC (*Comprehensive Multi-Table Interactive Filtering, Complete Resolution Column Normalization, and Enterprise NOC Interface Standardization*)
