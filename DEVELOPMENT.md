@@ -354,6 +354,29 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.86
+
+- **Tipe Rilis:** Pembenahan Padding & Margin Horizontal Elemen Kartu (Eliminasi Teks Rapat ke Pinggir Kiri), Pemulihan Kontinuitas Kurva Grafik Kinerja Historis, dan Penegasan Terminologi Standar Packages OS (*Card Inner Horizontal Spacing Normalization, Historical Perf Chart Curve Continuity Restoration, and Strict OS Packages Terminology Refinement*)
+- **Fokus Utama:** Menyelesaikan masalah visual jarak teks yang terlalu rapat ke dinding kartu, memulihkan garis kurva grafik metrik yang melayang di tengah, dan menata ulang istilah packages OS:
+  1. **Eliminasi Teks Rapat ke Garis Pinggir Kiri Kartu (`services.html`):**
+     - Memperbaiki judul *"Aturan Port & Kebijakan Akses (Rules)"* pada tab Firewall yang sebelumnya memiliki margin kiri 0px (menempel langsung di tepi kiri kartu) dengan memberikan jarak standar `margin: 14px 14px 8px 14px;` serta menyelaraskan kartu ringkasan status firewall dengan `margin: 10px 14px 14px 14px; gap: 10px;`.
+     - Memperbaiki teks status *"sshd — sekarang: up · 1 koneksi · 0 ms"* (`#svc-current`) dan kartu timeline ketersediaan (`.svc-timeline-card`) pada tab Layanan dengan padding dan margin standar `14px` dari dinding tepi kartu.
+     - Memperbaiki judul *"Waktu Respon (ms)"* dan *"Koneksi Aktif"* pada grid dua kolom grafik layanan dengan padding container `0 14px 14px 14px; gap: 14px;` sehingga seluruh hierarki teks tampil sejajar rapi dan presisi.
+  2. **Pemulihan Kontinuitas Kurva Garis Grafik Kinerja Historis (`services.html`):**
+     - Mengatasi anomali kurva garis metrik CPU, RAM, Swap, dan Load yang melayang dan terpotong di tengah kotak grafik pada rentang 24 jam (`Screenshot from 2026-11-04 05-19-06.png`).
+     - Mengembalikan sumbu waktu grafik garis pada `renderLineChart` untuk membentang secara kontinu dari titik data awal ke titik data akhir yang ada (`const t0 = points[0].t, t1 = Math.max(points[points.length - 1].t, t0 + 1)`), sehingga kurva garis selalu membentang mulus dari tepi kiri ke tepi kanan tanpa celah kosong melayang.
+     - Menyinkronkan kembali garis waktu Uptime Timeline pada tab Layanan agar membentang proporsional penuh.
+  3. **Penegasan Terminologi Standar Packages OS (`services.html`):**
+     - Mengubah badge total paket menjadi `979 packages` (bukan istilah ambigu "979 paket" yang dapat dirancukan dengan paket data jaringan).
+     - Menata ulang dropdown filter tipe packages yang sebelumnya rancu ("Paket Pengguna" vs "Paket Sistem") menjadi istilah baku sysadmin Linux yang jelas:
+       - `Semua Tipe`
+       - `Aplikasi (Manual Install)` — merepresentasikan paket yang diinstal manual oleh administrator (`apt-mark showmanual`).
+       - `Sistem & Dependensi` — merepresentasikan paket dependensi dan pustaka otomatis sistem.
+     - Menyelaraskan badge baris tabel menjadi `Aplikasi` (badge primary) dan `Sistem` (badge muted) serta seluruh teks filter dan paginasi menggunakan istilah `packages`.
+  4. **Integritas Mutlak Halaman Utama & Standarisasi SemVer v4.8.86:**
+     - Menjaga integritas 100% tanpa mengubah berkas Halaman Utama / Dasbor (`dashboard.html`).
+     - Menaikkan versi SemVer secara sinkron di 7 berkas proyek.
+
 ## Versi 4.8.85
 
 - **Tipe Rilis:** Resolusi Presisi Sudut Status Firewall, Standarisasi Universal Paginasi Tabel < 10 Baris, Reaktivitas & Rentang Waktu Riwayat Layanan, Indikator Memuat Aktivitas Pengguna, dan Konsistensi Istilah Jaringan Sysadmin (*Firewall Status Card Corner Clipping Resolution, Universal Table Pagination Auto-Hide Fix, Service History Timeframe Scale Reactivity, User Activity Async Loader State, and Sysadmin Networking Packet Terminology Standardization*)

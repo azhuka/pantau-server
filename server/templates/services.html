@@ -921,32 +921,40 @@
 
 /* Toolbar dan filter dalam kartu */
 .tab-body .card > #prob-wrapper > div:first-child,
-.tab-body #tab-proses .card > div:nth-child(2),
-.tab-body #tab-layanan .card:first-child > div:nth-of-type(2) {
+.tab-body #tab-proses .card > div:nth-child(2) {
   margin: 6px 8px !important;
   padding: 5px 8px !important;
   border-radius: 5px !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   background: rgba(0, 0, 0, 0.14) !important;
 }
+.tab-body #tab-layanan .card:first-child #svc-current,
+.tab-body #tab-layanan .card:first-child > div:nth-of-type(2) {
+  padding: 8px 14px 4px 14px !important;
+  margin: 0 !important;
+  font-size: 12px !important;
+  color: var(--dim) !important;
+  border: none !important;
+  background: transparent !important;
+}
 .tab-body #tab-layanan .card:first-child .svc-timeline-card {
-  margin: 6px 8px 10px 8px !important;
-  padding: 8px 12px !important;
+  margin: 4px 14px 12px 14px !important;
+  padding: 10px 14px !important;
   border-radius: 6px !important;
 }
 .tab-body #tab-layanan .card:first-child {
-  padding: 0 0 8px 0 !important;
+  padding: 0 0 10px 0 !important;
 }
 .tab-body #tab-layanan .card:first-child .grid-2 {
-  padding: 0 8px 8px 8px !important;
-  gap: 8px !important;
+  padding: 0 14px 14px 14px !important;
+  gap: 14px !important;
 }
 .tab-body #tab-firewall .card:first-child > div[style*="display:grid"] {
-  gap: 6px !important;
-  margin: 6px 8px !important;
+  gap: 10px !important;
+  margin: 10px 14px 12px 14px !important;
 }
 .tab-body #tab-firewall .card:first-child .stat-card {
-  padding: 8px 10px 8px 14px !important;
+  padding: 8px 12px 8px 14px !important;
   border-radius: 5px !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   background: rgba(0, 0, 0, 0.16) !important;
@@ -967,8 +975,9 @@
   font-size: 16px !important;
 }
 .tab-body #tab-firewall .card:first-child h4 {
-  margin: 6px 8px 4px 8px !important;
-  font-size: 11.5px !important;
+  margin: 14px 14px 8px 14px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
 }
 .tab-body .table-pagination-bar {
   display: flex;
@@ -2362,8 +2371,8 @@ div[style*="position: fixed"] .card {
       <button class="btn btn-sm" data-range="30d">30 Hari</button>
     </div>
   </div>
-  <div id="svc-current" style="font-size:12px;color:var(--dim);margin-bottom:12px"></div>
-  <div class="svc-timeline-card" style="background:var(--bg-subtle, rgba(0,0,0,0.18));border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin:6px 8px 10px 8px">
+  <div id="svc-current" style="font-size:12px;color:var(--dim);padding:8px 14px 4px 14px;margin:0"></div>
+  <div class="svc-timeline-card" style="background:var(--bg-subtle, rgba(0,0,0,0.18));border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin:4px 14px 12px 14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--text)">Garis Waktu Ketersediaan (Uptime Timeline)</span>
@@ -2383,13 +2392,13 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
   <div id="svc-empty" class="empty-msg" style="display:none">Belum ada data riwayat layanan.</div>
-  <div class="grid-2">
+  <div class="grid-2" style="padding:0 14px 14px 14px;gap:14px">
     <div>
-      <div style="font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.3px;margin-bottom:4px">Waktu Respon (ms)</div>
+      <div style="font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.3px;margin-bottom:6px">Waktu Respon (ms)</div>
       <div id="chart-svc-rt"></div>
     </div>
     <div>
-      <div style="font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.3px;margin-bottom:4px">Koneksi Aktif</div>
+      <div style="font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.3px;margin-bottom:6px">Koneksi Aktif</div>
       <div id="chart-svc-conn"></div>
     </div>
   </div>
@@ -2645,7 +2654,7 @@ div[style*="position: fixed"] .card {
 </div>
 
 
-<!-- Tab: Packages (Manajemen Paket Sistem Operasi) -->
+<!-- Tab: Packages (Manajemen Packages Perangkat Lunak OS) -->
 <div class="tab-body" id="tab-packages" hidden>
   <div class="card">
     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
@@ -2653,29 +2662,29 @@ div[style*="position: fixed"] .card {
         <h3 style="margin:0;display:flex;align-items:center;gap:8px">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><path d="M16.5 9.4 7.55 4.24"></path><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
           <span>Packages</span>
-          <span class="badge badge-info" id="pkg-total-badge" style="font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('all')" title="Tampilkan semua paket">0 paket</span>
+          <span class="badge badge-info" id="pkg-total-badge" style="font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('all')" title="Tampilkan semua packages">0 packages</span>
           <span class="badge badge-warn" id="pkg-upg-badge" style="display:none;font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('upgradable')" title="Filter pembaruan tersedia (klik ulang untuk reset)">0 pembaruan</span>
         </h3>
-        <span style="font-size:12px;color:var(--dim)">Daftar paket perangkat lunak sistem operasi dan pustaka terpasang</span>
+        <span style="font-size:12px;color:var(--dim)">Daftar packages perangkat lunak sistem operasi dan pustaka terpasang</span>
       </div>
       
       <!-- Toolbar Tombol Kontrol: Hanya Ikon + Tooltip -->
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-        <div class="filter-col-search" title="Cari paket, fungsi, versi" style="min-width:170px">
-          <label class="filter-col-label" for="pkg-search-input">Cari Paket</label>
+        <div class="filter-col-search" title="Cari packages, fungsi, versi" style="min-width:170px">
+          <label class="filter-col-label" for="pkg-search-input">Cari Packages</label>
           <div class="filter-search-box">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="search" id="pkg-search-input" placeholder="Cari paket, fungsi, versi…" oninput="filterPackagesTable()">
+            <input type="search" id="pkg-search-input" placeholder="Cari packages, fungsi, versi…" oninput="filterPackagesTable()">
           </div>
         </div>
         
-        <!-- Filter Tipe Paket: Pengguna vs Sistem -->
-        <div class="filter-col" title="Filter Tipe Paket">
+        <!-- Filter Tipe Packages: Aplikasi vs Sistem -->
+        <div class="filter-col" title="Filter Tipe Packages (Aplikasi Manual vs Sistem Dependensi)">
           <label class="filter-col-label" for="pkg-type-filter">Tipe</label>
           <select id="pkg-type-filter" class="filter-select" onchange="filterPackagesTable()">
             <option value="all">Semua Tipe</option>
-            <option value="user">Paket Pengguna</option>
-            <option value="system">Paket Sistem</option>
+            <option value="user">Aplikasi (Manual Install)</option>
+            <option value="system">Sistem &amp; Dependensi</option>
           </select>
         </div>
 
@@ -3003,7 +3012,7 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
     
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:10px 14px 14px 14px">
       <div class="stat-card" style="position:relative;overflow:hidden;padding-left:14px">
         <div id="fw-stat-status-bar" style="position:absolute;left:0;top:0;bottom:0;width:3.5px;border-top-left-radius:inherit;border-bottom-left-radius:inherit;background:{{ 'var(--green)' if firewall.status == 'active' else 'var(--yellow)' }}"></div>
         <div class="label">Status Firewall</div>
@@ -3025,7 +3034,7 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
 
-    <h4 style="margin:16px 0 10px;font-size:13px;color:var(--text);letter-spacing:.3px">Aturan Port &amp; Kebijakan Akses (Rules)</h4>
+    <h4 style="margin:14px 14px 8px 14px;font-size:12.5px;font-weight:600;color:var(--text);letter-spacing:.3px">Aturan Port &amp; Kebijakan Akses (Rules)</h4>
     <div style="overflow-x:auto" id="fw-rules-wrap" style="display:{{ 'block' if (firewall and firewall.rules) else 'none' }}">
       <table id="fw-rules-table">
         <thead>
@@ -10289,7 +10298,7 @@ function fmtAxisTime(t) {
   return hh + ':' + mm;
 }
 
-function renderLineChart(elId, points, valueOf, yfmt, colorHex, fixedMax, statId, tRangeMin, tRangeMax) {
+function renderLineChart(elId, points, valueOf, yfmt, colorHex, fixedMax, statId) {
   const el = document.getElementById(elId);
   if (!el) return;
   const W = 600, H = 150, PL = 46, PR = 14, PT = 14, PB = 24;
@@ -10319,8 +10328,7 @@ function renderLineChart(elId, points, valueOf, yfmt, colorHex, fixedMax, statId
   }
 
   const maxV = fixedMax || (maxDataV * 1.15 || 1);
-  const t0 = (tRangeMin !== undefined && tRangeMin !== null) ? tRangeMin : points[0].t;
-  const t1 = (tRangeMax !== undefined && tRangeMax !== null) ? Math.max(tRangeMax, t0 + 1) : Math.max(points[points.length - 1].t, t0 + 1);
+  const t0 = points[0].t, t1 = Math.max(points[points.length - 1].t, t0 + 1);
   const iw = W - PL - PR, ih = H - PT - PB;
   const X = t => PL + ((t - t0) / (t1 - t0)) * iw;
   const Y = v => PT + ih - (Math.min(Math.max(v, 0), maxV) / maxV) * ih;
@@ -10469,29 +10477,12 @@ function renderSvcStrip(elId, points, rangeFrom, rangeTo) {
 
   const W = 600, H = 24;
   let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:24px;display:block;border-radius:4px;overflow:hidden;background:var(--card-hover, rgba(0,0,0,0.25))">';
-  
-  const tMin = (rangeFrom && rangeFrom < points[0].t) ? rangeFrom : points[0].t;
-  const tMax = (rangeTo && rangeTo > points[points.length - 1].t) ? rangeTo : points[points.length - 1].t;
-  const totalSpan = Math.max(tMax - tMin, 1);
-  
-  // Jika ada periode sebelum data pertama direkam (server baru terpasang / baru aktif dalam rentang ini)
-  let curX = 0;
-  if (rangeFrom && points[0].t > rangeFrom + 60) {
-    const gapSecs = points[0].t - rangeFrom;
-    const gapRatio = Math.min(gapSecs / totalSpan, 0.95);
-    const gapW = gapRatio * W;
-    const gapTip = (isEn ? 'No history recorded before ' : 'Belum ada rekaman metrik sebelum ') + fmtDateTime(new Date(points[0].t * 1000));
-    s += '<rect x="0" y="0" width="' + Math.max(2, gapW - 0.5).toFixed(2) + '" height="' + H + '" fill="rgba(148,163,184,0.18)" rx="1.5" data-tooltip="' + escapeHtml(gapTip) + '" style="cursor:help"/>';
-    curX = gapW;
-  }
-
-  const remainW = W - curX;
   const n = points.length;
-  const barW = Math.max(1, remainW / n);
+  const barW = Math.max(1, W / n);
 
   for (let i = 0; i < n; i++) {
     const p = points[i];
-    const x = curX + (i * (remainW / n));
+    const x = i * (W / n);
     const ratio = (p.up_ratio === null || p.up_ratio === undefined) ? null : p.up_ratio;
     const col = ratio === null ? 'var(--dim)'
       : ratio >= 0.99 ? 'var(--green)'
@@ -10537,8 +10528,8 @@ async function loadSvcHistory() {
     (svc.name || '') + ' — ' + (isEn ? 'now: ' : 'sekarang: ') + (now.status || '-')
     + (now.connections ? ' · ' + now.connections + (isEn ? ' connections' : ' koneksi') : '')
     + (now.response_time_ms !== null && now.response_time_ms !== undefined ? ' · ' + now.response_time_ms + ' ms' : '');
-  renderLineChart('chart-svc-rt', pts, p => p.rt, v => v.toFixed(0) + ' ms', 'var(--blue)', 0, null, tMin, tMax);
-  renderLineChart('chart-svc-conn', pts, p => p.conns, v => Math.round(v) + '', 'var(--green)', 0, null, tMin, tMax);
+  renderLineChart('chart-svc-rt', pts, p => p.rt, v => v.toFixed(0) + ' ms', 'var(--blue)', 0);
+  renderLineChart('chart-svc-conn', pts, p => p.conns, v => Math.round(v) + '', 'var(--green)', 0);
   renderSvcStrip('svc-status-strip', pts, tMin, tMax);
 }
 
@@ -10869,13 +10860,11 @@ async function loadPerf(range) {
     data = await r.json();
   } catch (e) { return; }
   const pts = data.points || [];
-  const tMin = data.from ? Math.floor(new Date(data.from).getTime() / 1000) : null;
-  const tMax = data.to ? Math.floor(new Date(data.to).getTime() / 1000) : null;
   document.getElementById('perf-empty').style.display = pts.length ? 'none' : 'block';
-  renderLineChart('chart-cpu', pts, p => p.cpu, v => v.toFixed(0) + '%', PERF_COLORS.cpu, 100, 'stats-cpu', tMin, tMax);
-  renderLineChart('chart-mem', pts, pctOf, v => v.toFixed(0) + '%', PERF_COLORS.mem, 100, 'stats-mem', tMin, tMax);
-  renderLineChart('chart-swap', pts, swapPct, v => v.toFixed(0) + '%', PERF_COLORS.swap, 100, 'stats-swap', tMin, tMax);
-  renderLineChart('chart-load', pts, p => p.load, v => v.toFixed(2), PERF_COLORS.load, 0, 'stats-load', tMin, tMax);
+  renderLineChart('chart-cpu', pts, p => p.cpu, v => v.toFixed(0) + '%', PERF_COLORS.cpu, 100, 'stats-cpu');
+  renderLineChart('chart-mem', pts, pctOf, v => v.toFixed(0) + '%', PERF_COLORS.mem, 100, 'stats-mem');
+  renderLineChart('chart-swap', pts, swapPct, v => v.toFixed(0) + '%', PERF_COLORS.swap, 100, 'stats-swap');
+  renderLineChart('chart-load', pts, p => p.load, v => v.toFixed(2), PERF_COLORS.load, 0, 'stats-load');
   renderDiskCharts(pts);
 }
 
@@ -11424,7 +11413,7 @@ function renderPackagesTable() {
   const lastBtn = document.getElementById('pkg-last-btn');
   const paginationWrap = document.getElementById('pkg-pagination-wrap');
 
-  if (totalBadge) totalBadge.textContent = `${_packagesList.length} paket`;
+  if (totalBadge) totalBadge.textContent = `${_packagesList.length} packages`;
   if (upgBadge) {
     if (_upgMap.size > 0) {
       upgBadge.textContent = `${_upgMap.size} pembaruan`;
@@ -11455,8 +11444,8 @@ function renderPackagesTable() {
 
   if (pageInfo) {
     pageInfo.textContent = totalFiltered === 0
-      ? 'Tidak ada paket yang sesuai kriteria filter'
-      : `Menampilkan ${startIdx + 1} - ${endIdx} dari ${totalFiltered} paket${totalFiltered !== _packagesList.length ? ' (terfilter)' : ''}`;
+      ? 'Tidak ada packages yang sesuai kriteria filter'
+      : `Menampilkan ${startIdx + 1} - ${endIdx} dari ${totalFiltered} packages${totalFiltered !== _packagesList.length ? ' (terfilter)' : ''}`;
   }
   if (pageNum) pageNum.textContent = `Halaman ${_pkgCurrentPage} / ${maxPage}`;
   if (firstBtn) firstBtn.disabled = (_pkgCurrentPage <= 1);
@@ -11467,7 +11456,7 @@ function renderPackagesTable() {
   if (!tbody) return;
 
   if (pageItems.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--dim)">Tidak ada paket yang cocok dengan pencarian / filter.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--dim)">Tidak ada packages yang cocok dengan pencarian / filter.</td></tr>';
     return;
   }
 
@@ -11495,10 +11484,10 @@ function renderPackagesTable() {
       statusBadge = '<span class="badge badge-warn" style="font-weight:600">inactive</span>';
     }
 
-    // Badge Tipe Paket (Pengguna vs Sistem)
+    // Badge Tipe Packages (Aplikasi Manual vs Sistem Dependensi)
     const typeBadge = pkg.is_user
-      ? '<span class="badge badge-primary" style="font-size:8.5px;padding:1px 5px">Pengguna</span>'
-      : '<span class="badge badge-muted" style="font-size:8.5px;padding:1px 5px">Sistem</span>';
+      ? '<span class="badge badge-primary" style="font-size:8.5px;padding:1px 5px" title="Dipasang manual oleh administrator">Aplikasi</span>'
+      : '<span class="badge badge-muted" style="font-size:8.5px;padding:1px 5px" title="Pustaka atau dependensi sistem otomatis">Sistem</span>';
 
     // Kolom Versi tunggal
     const upgIndicator = isUpg
@@ -11508,8 +11497,8 @@ function renderPackagesTable() {
 
     // Tombol upgrade: aktif jika ada update, disabled jika mutakhir
     const upgradeBtn = isUpg
-      ? `<button type="button" class="btn btn-primary btn-sm" onclick="upgradeSinglePkg('${safeName}')" ${!isOnline ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="Upgrade paket" aria-label="Upgrade paket"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg></button>`
-      : `<button type="button" class="btn btn-ghost btn-sm" disabled style="opacity:0.35;cursor:not-allowed" title="Paket sudah mutakhir" aria-label="Paket sudah mutakhir"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>`;
+      ? `<button type="button" class="btn btn-primary btn-sm" onclick="upgradeSinglePkg('${safeName}')" ${!isOnline ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="Upgrade package" aria-label="Upgrade package"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg></button>`
+      : `<button type="button" class="btn btn-ghost btn-sm" disabled style="opacity:0.35;cursor:not-allowed" title="Package sudah mutakhir" aria-label="Package sudah mutakhir"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>`;
 
     // Tombol Bersihkan cache: Ikon sapu + bintang (sparkles)
     const clearCacheBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="clearPkgCache('${safeName}')" ${!isOnline ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="Bersihkan cache" aria-label="Bersihkan cache">
