@@ -354,6 +354,30 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.83
+
+- **Tipe Rilis:** Eliminasi Redundansi Teks Insiden Diabaikan, Standarisasi Indikator Kartu Firewall Tanpa Distorsi Sudut, Penataan Margin Kartu Riwayat Layanan, dan Penyeragaman Padding Footer Paginasi Kartu (*Ignored Incident Redundant Reason Elimination, Firewall Card Border Distortion Fix, Service Timeline Margin Realignment, and Card Pagination Footer Padding Standardization*)
+- **Fokus Utama:** Menyempurnakan presisi visual, keterbacaan data operasional, dan eliminasi cacat rendering pada antarmuka rincian server:
+  1. **Resolusi Total Redundansi Teks Insiden Diabaikan (`server/main.py` & `services.html`):**
+     - Mengembangkan fungsi helper `_format_ignored_prob_msg()` pada backend server untuk mendeteksi tumpang tindih antara pesan insiden dan alasan tindakan operator secara cerdas.
+     - Mengeliminasi duplikasi teks huruf kapital redundan `(LAYANAN DIMATIKAN OLEH OPERATOR (USER))` pada tooltip lencana abu-abu dan ringkasan insiden server ketika pesan insiden telah secara jelas menyatakan bahwa layanan dimatikan/dihentikan oleh operator.
+     - Menyelaraskan logika Jinja dan JavaScript tabel Status Insiden pada rincian server agar lencana alasan diabaikan tidak dimunculkan berdampingan jika sudah tertera pada pesan insiden.
+  2. **Eliminasi Distorsi Sudut Sabit pada Kartu Metrik Firewall (`services.html`):**
+     - Menggantikan implementasi CSS `border-left: 3px solid ...` pada kartu `.stat-card` bertab Firewall dengan aksen strip warna vertikal absolut (`width: 3.5px; position: absolute; left: 0; top: 0; bottom: 0;`).
+     - Mengeliminasi distorsi visual berbentuk lekukan melengkung/sabit (*crescent curve*) pada sudut kiri atas dan bawah kartu akibat perpaduan `border-radius: 5px` dan ketebalan border asimetris.
+     - Memastikan indikator status aktif/nonaktif firewall terbarui secara mulus via JavaScript real-time.
+  3. **Penataan Margin & Kerapian Visual Kartu Garis Waktu Riwayat Layanan (`services.html`):**
+     - Mengisolasi tata letak `.svc-timeline-card` dengan margin samping yang seimbang (`margin: 6px 8px 10px 8px`), mencegah kartu menempel langsung pada batas tepi kontainer.
+     - Menormalkan tipografi tajuk dari huruf kapital kaku menjadi *title case* yang nyaman dibaca: `Garis Waktu Ketersediaan (Uptime Timeline)`.
+     - Mengubah label diagram `Waktu Respon (ms)` dan `Koneksi Aktif` agar seragam dengan desain grafis NOC modern.
+  4. **Standarisasi Padding Footer Paginasi Terpadu (`services.html`):**
+     - Mengintegrasikan kelas `.table-pagination-bar` pada footer paginasi tabel Status Insiden (`#prob-pagination-footer`) dan Riwayat Tindakan (`#action-pagination-footer`).
+     - Menetapkan padding proporsional (`padding: 8px 14px !important; margin: 0 !important;`) sehingga teks ringkasan (mis. `Menampilkan 1-10 dari 42 insiden`) dan kontrol dropdown tidak lagi menempel kaku ke sudut atau tepi bawah kartu.
+     - Menstandarisasi ukuran dropdown limit per halaman (`padding: 4px 8px; font-size: 11.5px;`) agar rapi dan proporsional.
+  5. **Integritas Mutlak Halaman Utama & Standarisasi SemVer v4.8.83:**
+     - Menjaga integritas 100% tanpa mengubah baris kode apapun pada Halaman Utama / Dasbor (`dashboard.html`).
+     - Menaikkan versi sistem secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.82
 
 - **Tipe Rilis:** Resolusi Total Tabrakan Teks Tabel Insiden, Harmonisasi Kontras Tema Terang (Light Mode), Pelepasan Kliping Menu Dropdown Kolom (*Fixed Dropdown Unclipping*), dan Standarisasi Densitas Tinggi NOC (*Full Text Collision Resolution, Light Mode Contrast Harmonization, Fixed Dropdown Unclipping, and NOC High-Density Incident Standardization*)

@@ -2382,6 +2382,29 @@ def _get_hardware_specs_dict(server: Server, extra: ServerExtras | None, latest:
 
 
 # ---------------------------------------------------------------------------
+# Format pesan insiden yang diabaikan (mencegah redundansi alasan operator)
+# ---------------------------------------------------------------------------
+def _format_ignored_prob_msg(p: dict) -> str:
+    msg = (p.get("message") or "").strip()
+    ign = (p.get("ignored_reason") or "").strip()
+    if not ign:
+        return msg
+    msg_l = msg.lower()
+    ign_l = ign.lower()
+    if ign_l == msg_l or ign_l in msg_l or msg_l in ign_l:
+        return msg
+    op_phrases = (
+        "dimatikan oleh operator",
+        "dihentikan oleh operator",
+        "di-reboot oleh operator",
+        "di-restart oleh operator",
+    )
+    if any(phrase in ign_l for phrase in op_phrases) and any(phrase in msg_l for phrase in op_phrases):
+        return msg
+    return f"{msg} ({ign})"
+
+
+# ---------------------------------------------------------------------------
 # JSON API (read-only)
 # ---------------------------------------------------------------------------
 @app.get("/api/servers")
@@ -2465,10 +2488,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
         average_msgs = " • ".join(p.get("message", "") for p in average_p)
         warning_msgs = " • ".join(p.get("message", "") for p in warning_p)
         info_msgs = " • ".join(p.get("message", "") for p in info_p)
-        ignored_msgs = " • ".join(
-            (p.get("message", "") + (f" ({p.get('ignored_reason')})" if p.get("ignored_reason") else ""))
-            for p in ignored_p
-        )
+        ignored_msgs = " • ".join(_format_ignored_prob_msg(p) for p in ignored_p)
 
         hw = _get_hardware_specs_dict(srv, ex, latest_sys)
         cpu_cores = hw.get("cpu", {}).get("cores") or hw.get("cpu", {}).get("logical_cores")
@@ -3983,10 +4003,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         srv._average_msgs = " • ".join(p.get("message", "") for p in average_probs)
         srv._warning_msgs = " • ".join(p.get("message", "") for p in warning_probs)
         srv._info_msgs = " • ".join(p.get("message", "") for p in info_probs)
-        srv._ignored_msgs = " • ".join(
-            (p.get("message", "") + (f" ({p.get('ignored_reason')})" if p.get("ignored_reason") else ""))
-            for p in ignored_probs
-        )
+        srv._ignored_msgs = " • ".join(_format_ignored_prob_msg(p) for p in ignored_probs)
 
         ignored_keys = {p.get("key") for p in srv._problems if p.get("is_ignored")}
         svc_ignored_db = {s.service_name for s in services if getattr(s, "is_ignored", 0)}
@@ -4308,7 +4325,7 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
         srv._average_msgs = " • ".join(p.get("message", "") for p in average_probs)
         srv._warning_msgs = " • ".join(p.get("message", "") for p in warning_probs)
         srv._info_msgs = " • ".join(p.get("message", "") for p in info_probs)
-        srv._ignored_msgs = " • ".join(p.get("message", "") for p in ignored_probs)
+        srv._ignored_msgs = " • ".join(_format_ignored_prob_msg(p) for p in ignored_probs)
 
         latest_sys = (
             db.query(SystemSnapshot)

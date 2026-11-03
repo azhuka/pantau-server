@@ -929,19 +929,24 @@
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   background: rgba(0, 0, 0, 0.14) !important;
 }
+.tab-body #tab-layanan .card:first-child .svc-timeline-card {
+  margin: 6px 8px 10px 8px !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+}
 .tab-body #tab-layanan .card:first-child {
-  padding: 0 0 6px 0 !important;
+  padding: 0 0 8px 0 !important;
 }
 .tab-body #tab-layanan .card:first-child .grid-2 {
-  padding: 0 8px !important;
-  gap: 6px !important;
+  padding: 0 8px 8px 8px !important;
+  gap: 8px !important;
 }
 .tab-body #tab-firewall .card:first-child > div[style*="display:grid"] {
   gap: 6px !important;
   margin: 6px 8px !important;
 }
 .tab-body #tab-firewall .card:first-child .stat-card {
-  padding: 8px 10px !important;
+  padding: 8px 10px 8px 14px !important;
   border-radius: 5px !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   background: rgba(0, 0, 0, 0.16) !important;
@@ -958,7 +963,12 @@
   font-size: 11.5px !important;
 }
 .tab-body .table-pagination-bar {
-  padding: 4px 10px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  padding: 8px 14px !important;
   margin: 0 !important;
   border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
   background: rgba(0, 0, 0, 0.12) !important;
@@ -2135,7 +2145,7 @@ div[style*="position: fixed"] .card {
       <td class="col-event">
         {% if not p.is_open %}<span style="color:var(--green)">✓</span> {% endif %}
         <span{% if not p.is_open %} style="color:var(--dim)"{% endif %}>{{ p.message }}</span>
-        {% if p.is_ignored and p.ignored_reason %}
+        {% if p.is_ignored and p.ignored_reason and p.ignored_reason != p.message and ('DIMATIKAN OLEH OPERATOR' not in p.ignored_reason and 'DIHENTIKAN OLEH OPERATOR' not in p.ignored_reason and 'DI-REBOOT OLEH OPERATOR' not in p.ignored_reason and 'DI-RESTART OLEH OPERATOR' not in p.ignored_reason) and ('dimatikan oleh operator' not in (p.message or '').lower() and 'dihentikan oleh operator' not in (p.message or '').lower()) %}
           <span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
         {% endif %}
         {% if p.is_ignored and p.ignored_until %}
@@ -2222,7 +2232,7 @@ div[style*="position: fixed"] .card {
     {% endfor %}
     </tbody>
   </table>
-  <div id="prob-pagination-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:var(--dim);flex-wrap:gap:12px">
+  <div id="prob-pagination-footer" class="table-pagination-bar" style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;margin:0;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.12);font-size:11.5px;color:var(--dim);flex-wrap:wrap;gap:12px">
     <div style="display:flex;align-items:center;gap:12px">
       <span id="prob-showing-summary">Menampilkan 0 insiden</span>
     </div>
@@ -2232,9 +2242,9 @@ div[style*="position: fixed"] .card {
       <button type="button" id="prob-next-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(1)" style="padding:4px 10px;font-size:11px" disabled>Berikutnya »</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
+      <span style="font-size:11.5px;color:var(--dim)">Tampilkan:</span>
       <select id="prob-limit-bottom" onchange="setProbLimit(this.value)"
-              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+              style="background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 8px;font-size:11.5px;cursor:pointer">
         <option value="10" selected>10 insiden</option>
         <option value="25">25 insiden</option>
         <option value="50">50 insiden</option>
@@ -2305,7 +2315,7 @@ div[style*="position: fixed"] .card {
       </tbody>
     </table>
   </div>
-  <div id="action-pagination-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:12px">
+  <div id="action-pagination-footer" class="table-pagination-bar" style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;margin:0;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.12);font-size:11.5px;color:var(--dim);flex-wrap:wrap;gap:12px">
     <div style="display:flex;align-items:center;gap:12px">
       <span id="action-showing-summary">Menampilkan 0 tindakan</span>
     </div>
@@ -2315,9 +2325,9 @@ div[style*="position: fixed"] .card {
       <button type="button" id="action-next-btn" class="btn btn-ghost btn-sm" onclick="actionChangePage(1)" style="padding:4px 10px;font-size:11px" disabled>Berikutnya »</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;color:var(--dim)">Tampilkan:</span>
+      <span style="font-size:11.5px;color:var(--dim)">Tampilkan:</span>
       <select id="action-limit-bottom" onchange="setActionLimit(this.value)"
-              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+              style="background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 8px;font-size:11.5px;cursor:pointer">
         <option value="10" selected>10 tindakan</option>
         <option value="25">25 tindakan</option>
         <option value="50">50 tindakan</option>
@@ -2345,10 +2355,10 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
   <div id="svc-current" style="font-size:12px;color:var(--dim);margin-bottom:12px"></div>
-  <div class="svc-timeline-card" style="background:var(--bg-subtle, rgba(0,0,0,0.18));border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:18px">
+  <div class="svc-timeline-card" style="background:var(--bg-subtle, rgba(0,0,0,0.18));border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin:6px 8px 10px 8px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text)">Garis Waktu Ketersediaan Layanan (Uptime Timeline)</span>
+        <span style="font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--text)">Garis Waktu Ketersediaan (Uptime Timeline)</span>
         <span id="svc-uptime-pill" class="badge badge-up" style="font-size:11px">100% normal</span>
       </div>
       <div style="display:flex;gap:12px;font-size:11px;color:var(--dim)">
@@ -2367,11 +2377,11 @@ div[style*="position: fixed"] .card {
   <div id="svc-empty" class="empty-msg" style="display:none">Belum ada data riwayat layanan.</div>
   <div class="grid-2">
     <div>
-      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Waktu Respon (ms)</div>
+      <div style="font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.3px;margin-bottom:4px">Waktu Respon (ms)</div>
       <div id="chart-svc-rt"></div>
     </div>
     <div>
-      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Koneksi Aktif</div>
+      <div style="font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.3px;margin-bottom:4px">Koneksi Aktif</div>
       <div id="chart-svc-conn"></div>
     </div>
   </div>
@@ -2986,17 +2996,20 @@ div[style*="position: fixed"] .card {
     </div>
     
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px">
-      <div class="stat-card" style="border-left:3px solid {{ 'var(--green)' if firewall.status == 'active' else 'var(--yellow)' }}">
+      <div class="stat-card" style="position:relative;overflow:hidden;padding-left:14px">
+        <div id="fw-stat-status-bar" style="position:absolute;left:0;top:0;bottom:0;width:3.5px;background:{{ 'var(--green)' if firewall.status == 'active' else 'var(--yellow)' }}"></div>
         <div class="label">Status Firewall</div>
         <div class="value" id="fw-stat-status" style="font-size:20px;color:{{ 'var(--green)' if firewall.status == 'active' else 'var(--yellow)' }}">
           {{ firewall.status | upper }}
         </div>
       </div>
-      <div class="stat-card" style="border-left:3px solid var(--blue)">
+      <div class="stat-card" style="position:relative;overflow:hidden;padding-left:14px">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3.5px;background:var(--blue)"></div>
         <div class="label">Backend Firewall</div>
         <div class="value" id="fw-stat-backend" style="font-size:20px">{{ firewall.backend | upper }}</div>
       </div>
-      <div class="stat-card" style="border-left:3px solid var(--red)">
+      <div class="stat-card" style="position:relative;overflow:hidden;padding-left:14px">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:3.5px;background:var(--red)"></div>
         <div class="label">IP Diblokir (DROP)</div>
         <div class="value" id="fw-stat-blocked" style="font-size:20px;color:var(--red)">
           {{ (firewall.blocked_ips|length) if firewall and firewall.blocked_ips else 0 }} IP
@@ -8393,7 +8406,9 @@ function renderProblemsTab(level, openList, histList) {
     const displayTime = fmtProbDateShort(p.started_at);
     const checkMark = isOpen ? '' : '<span style="color:var(--green)">✓</span> ';
     const msgStyle = isOpen ? '' : ' style="color:var(--dim)"';
-    const ignoredBadge = isIgnored
+    const pMsgLower = (p.message || '').toLowerCase();
+    const isOpActionProb = pMsgLower.includes('dimatikan oleh operator') || pMsgLower.includes('dihentikan oleh operator') || pMsgLower.includes('di-reboot oleh operator') || pMsgLower.includes('di-restart oleh operator');
+    const ignoredBadge = (isIgnored && !isOpActionProb)
       ? `<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3.5px" title="${p.ignored_reason ? (isEn ? 'Reason: ' : 'Alasan: ') + escapeHtml(p.ignored_reason) : (p.ignored_by ? (isEn ? 'Ignored by ' : 'Diabaikan oleh ') + escapeHtml(p.ignored_by) : '')}">${isEn ? 'ignored' : 'diabaikan'}${p.ignored_until ? (isEn ? ' until ' : ' s/d ') + fmtProbDate(p.ignored_until) : (isEn ? ' permanent' : ' permanen')}</span>`
       : '';
     const kambuhBadge = (p.count_24h && p.count_24h > 1) ? `<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
@@ -8486,7 +8501,7 @@ function renderProblemsTab(level, openList, histList) {
   }
 
   html += `</tbody></table>
-  <div id="prob-pagination-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:12px">
+  <div id="prob-pagination-footer" class="table-pagination-bar" style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;margin:0;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.12);font-size:11.5px;color:var(--dim);flex-wrap:wrap;gap:12px">
     <div style="display:flex;align-items:center;gap:12px">
       <span id="prob-showing-summary">${isEn ? 'Showing 0 incidents' : 'Menampilkan 0 insiden'}</span>
     </div>
@@ -8496,9 +8511,9 @@ function renderProblemsTab(level, openList, histList) {
       <button type="button" id="prob-next-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(1)" style="padding:4px 10px;font-size:11px" disabled>${isEn ? 'Next' : 'Berikutnya'} »</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:12px;color:var(--dim)">${isEn ? 'Show:' : 'Tampilkan:'}</span>
+      <span style="font-size:11.5px;color:var(--dim)">${isEn ? 'Show:' : 'Tampilkan:'}</span>
       <select id="prob-limit-bottom" onchange="setProbLimit(this.value)"
-              style="background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;cursor:pointer">
+              style="background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 8px;font-size:11.5px;cursor:pointer">
         <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>${isEn ? '10 incidents' : '10 insiden'}</option>
         <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>${isEn ? '25 incidents' : '25 insiden'}</option>
         <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>${isEn ? '50 incidents' : '50 insiden'}</option>
@@ -9497,6 +9512,8 @@ function renderFirewall(fw) {
   if (statStatus) {
     statStatus.textContent = (f.status || 'inactive').toUpperCase();
     statStatus.style.color = isActive ? 'var(--green)' : 'var(--yellow)';
+    const bar = document.getElementById('fw-stat-status-bar');
+    if (bar) bar.style.background = isActive ? 'var(--green)' : 'var(--yellow)';
   }
 
   const statBackend = document.getElementById('fw-stat-backend');
