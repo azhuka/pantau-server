@@ -354,6 +354,29 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.81
+
+- **Tipe Rilis:** Perbaikan Eksepsi Fatal JavaScript Polling Insiden, Restorasi Kepadatan Data NOC Tabel Riwayat Insiden, Modernisasi Ikon Pengurutan Tabel SVG, dan Fleksibilitas Layout Bebas Clipping (*Fatal JavaScript Polling Exception Elimination, NOC High-Density Restoration for Resolved Incidents Table, Modern SVG Table Sorting Indicator, and Fluid Main Layout Clipping Prevention*)
+- **Fokus Utama:** Menyempurnakan stabilitas operasional, presisi rendering komponen, dan kepadatan observasi NOC:
+  1. **Eliminasi Total Eksepsi Fatal JavaScript pada Polling Insiden (`problems.html`):**
+     - Memperbaiki kesalahan fatal sintaksis JavaScript pada evaluasi filter pengabaian tindakan operator (`'DIMATIKAN OLEH OPERATOR' in p.ignored_reason`) yang melempar `TypeError: Cannot use 'in' operator` saat string alasan diperiksa.
+     - Menggantinya dengan evaluasi string native yang aman dan toleran tipe data (`ignStr.includes(...)`), mencegah penghentian sepihak daur hidup polling background.
+     - Menyelesaikan kendala tabel Riwayat Insiden yang macet pada status loading tak berujung saat beralih filter rentang waktu (seperti `30 Hari`).
+  2. **Restorasi Kepadatan Data Tinggi NOC pada Tabel Riwayat Insiden (`problems.html`):**
+     - Merestrukturisasi kolom `WAKTU` pada tabel Riwayat Insiden dari yang sebelumnya memuat dua baris lencana bertumpuk (*MULAI* dan *SELESAI*) menjadi satu baris waktu penyelesaian/pemulihan yang ringkas dan padat (`font-size: 11px; font-weight: 600`), dengan rincian lengkap waktu mulai dan selesai tetap dapat diakses melalui tooltip.
+     - Menormalkan padding sel baris menjadi `padding: 4px 6px` konsisten, mengembalikan tinggi baris tabel (*row height*) dari ~52px ke standar NOC ideal ~30-33px.
+     - Menyederhanakan tampilan kolom `DURASI` menjadi teks unboxed yang bersih tanpa lencana abu-abu yang tebal.
+     - Menyempurnakan penanganan state data kosong (`resList.length === 0`) dengan pesan informatif dan pembaruan paginasi otomatis.
+  3. **Modernisasi Ikon Pengurutan Tabel SVG Bersih (`servers.html`):**
+     - Menggantikan karakter glif unicode mentah `↕`, `↑`, `↓` pada tajuk kolom tabel yang sebelumnya terdistorsi menyerupai tanda titik dua (`:`) menjadi indikator visual SVG vektor inline yang tajam dan presisi dengan opacity dinamis dan highlight biru saat aktif.
+  4. **Optimasi Tata Letak Fluida Kontainer Utama (`base.html`):**
+     - Menghapus aturan kaku `width: calc(100% - 230px); max-width: calc(100vw - 230px); overflow-x: hidden;` pada `.main`, mengembalikannya ke flexbox fluida alami (`flex: 1; min-width: 0; margin-left: 230px;`).
+     - Mencegah terpotongnya (*clipping*) menu dropdown atau popup yang melayang di tepi halaman, sekaligus memastikan kompatibilitas mulus saat sidebar diciutkan (*collapsed*) ke 64px.
+  5. **Integritas Mutlak Halaman Utama & Kartu Insiden Terbuka:**
+     - Mempertahankan integritas 100% tanpa mengubah kode apapun pada Halaman Utama / Dasbor (`dashboard.html`) serta susunan kolom tabel data `#probtable`.
+  6. **Otomasi Pembaruan SemVer v4.8.81:**
+     - Menaikkan versi sistem menjadi `v4.8.81` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.80
 
 - **Tipe Rilis:** Redesain Tooltip Seleksi Teks Bersih Standar Enterprise, Adaptabilitas Penuh Zoom Peramban Bebas Overflow Horizontal, dan Stabilisasi Kolom & Margin Tabel Kartu (*Enterprise-Grade Clean Selectable Tooltip Redesign, Zero Page Horizontal Scroll on Zoom-In, and Table Column & Card Edge Margin Stabilization*)

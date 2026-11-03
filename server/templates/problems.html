@@ -778,21 +778,14 @@
           data-prob-open="0"
           data-prob-host="{{ p.hostname }}"
           data-prob-sid="{{ p.server_id }}">
-        <!-- 1. Waktu -->
-        <td style="padding:6px 12px;white-space:nowrap" class="col-time-detailed">
-          <div class="mono" style="display:flex;align-items:center;gap:5px;line-height:1.4">
-            <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">MULAI</span>
-            <span style="font-size:11px;color:var(--text);font-weight:600">{{ p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—' }}</span>
-          </div>
-          {% if p.resolved_at %}
-          <div class="mono" style="display:flex;align-items:center;gap:5px;line-height:1.4;margin-top:2px">
-            <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">SELESAI</span>
-            <span style="font-size:11px;color:var(--dim)">{{ p.resolved_at.strftime('%d %b %H:%M:%S') if p.resolved_at else '—' }}</span>
-          </div>
-          {% endif %}
+        <!-- 1. Waktu Selesai -->
+        <td style="padding:4px 6px;white-space:nowrap" class="col-time-detailed">
+          <span class="mono" style="font-size:11px;color:var(--text-bright);font-weight:600" title="Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }} | Selesai: {{ p.resolved_at.strftime('%d %b %Y %H:%M:%S') if p.resolved_at else '—' }}">
+            {{ p.resolved_at.strftime('%d %b %H:%M:%S') if p.resolved_at else (p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—') }}
+          </span>
         </td>
         <!-- 2. Server & Grup -->
-        <td style="padding:6px 12px;white-space:nowrap" class="col-server">
+        <td style="padding:4px 6px;white-space:nowrap" class="col-server">
           <div style="font-size:11.5px;font-weight:600;color:var(--text-bright)">{{ p.hostname }}</div>
           {% if p.group_name %}
           <div style="margin-top:2px">
@@ -801,30 +794,30 @@
           {% endif %}
         </td>
         <!-- 3. Tingkat / Keparahan -->
-        <td style="padding:6px 12px;white-space:nowrap;text-align:center" class="col-sev">
+        <td style="padding:4px 6px;white-space:nowrap;text-align:center" class="col-sev">
           <span class="badge badge-{{ {'danger':'danger','average':'orange','warning':'warn','info':'info'}.get(p.severity, 'info') }}" style="font-size:8px;padding:1px 4.5px;border-radius:3px">
             {{ 'KRITIS' if p.severity == 'danger' else ('GAWAT' if p.severity == 'average' else ('PERINGATAN' if p.severity == 'warning' else p.severity | upper)) }}
           </span>
         </td>
         <!-- 4. Komponen -->
-        <td style="padding:6px 12px;white-space:nowrap" class="col-component">
+        <td style="padding:4px 6px;white-space:nowrap" class="col-component">
           <span style="font-size:11px;color:var(--text);font-weight:500">
             {{ p.component or 'Sistem' }}
           </span>
         </td>
         <!-- 5. Deskripsi Insiden -->
-        <td style="padding:6px 14px;font-size:11px;line-height:1.4;color:var(--text)" class="col-desc">
+        <td style="padding:4px 6px;font-size:11px;line-height:1.35;color:var(--text)" class="col-desc">
           <span style="color:var(--dim)">{{ p.message }}</span>
         </td>
         <!-- 6. Durasi Gangguan (Downtime) -->
-        <td style="padding:6px 12px;white-space:nowrap" class="mono col-durasi">
-          <span class="badge badge-muted" style="font-size:10px;padding:1px 5px;font-weight:600;letter-spacing:-0.025em;word-spacing:-1px" title="Total waktu insiden berlangsung hingga teratasi">{{ p.durasi }}</span>
+        <td style="padding:4px 6px;white-space:nowrap" class="mono col-durasi">
+          <span style="font-size:11px;color:var(--dim);letter-spacing:-0.02em" title="Total waktu insiden berlangsung hingga teratasi">{{ p.durasi or '—' }}</span>
         </td>
         <!-- 7. Resolusi -->
-        <td style="padding:6px 12px;white-space:nowrap" class="col-res">
+        <td style="padding:4px 6px;white-space:nowrap" class="col-res">
           <span class="badge {{ p.res_badge_cls or 'badge-up' }}" style="font-size:10px;padding:1px 5px" title="{{ p.res_tip }}">{{ p.res_label }}</span>
         </td>
-        <td style="padding:6px 12px;white-space:nowrap;text-align:center;width:55px" class="col-act">
+        <td style="padding:4px 6px;white-space:nowrap;text-align:center;width:55px" class="col-act">
           <a href="/servers/{{ p.server_id }}" class="btn btn-ghost btn-sm" title="Rincian" aria-label="Rincian">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
           </a>
@@ -1285,7 +1278,6 @@ function onResDateChange() {
 function showResolvedLoadingState(isLoading, periodLabel) {
   const tableWrap = document.getElementById('prob-resolved-table-wrap');
   const summaryEl = document.getElementById('res-filter-summary-info');
-  const resTbody = document.getElementById('prob-resolved-tbody');
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
 
   if (isLoading) {
@@ -1293,10 +1285,6 @@ function showResolvedLoadingState(isLoading, periodLabel) {
     if (summaryEl) {
       const pTxt = periodLabel ? ` (${periodLabel})` : '';
       summaryEl.innerHTML = `<span class="pantau-spinner"></span><span style="color:var(--blue);font-weight:500">${isEn ? 'Loading resolved incidents' + pTxt + '…' : 'Memuat riwayat insiden' + pTxt + '…'}</span>`;
-    }
-    if (resTbody) {
-      const pTxt = periodLabel ? ` untuk ${periodLabel}` : '';
-      resTbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:28px 16px;color:var(--blue);font-size:12px;font-weight:500"><span class="pantau-spinner" style="vertical-align:middle;margin-right:8px"></span>${isEn ? 'Loading resolved incident history' + pTxt + '…' : 'Memuat riwayat insiden teratasi' + pTxt + '…'}</td></tr>`;
     }
   } else {
     if (tableWrap) tableWrap.classList.remove('table-loading-dimmed');
@@ -1549,7 +1537,8 @@ window.poll = async function(opts = {}) {
             const opName = (p.ignored_by === 'admin' ? 'master-admin' : (p.ignored_by || (isEn ? 'operator' : 'operator')));
             const ackOp = (p.acknowledged_by === 'admin' ? 'master-admin' : (p.acknowledged_by || (isEn ? 'operator' : 'operator')));
 
-            const isOpActionIgn = p.ignored_reason && ('DIMATIKAN OLEH OPERATOR' in p.ignored_reason || 'DIHENTIKAN OLEH OPERATOR' in p.ignored_reason || 'DI-REBOOT OLEH OPERATOR' in p.ignored_reason || 'DI-RESTART OLEH OPERATOR' in p.ignored_reason || p.ignored_reason === p.message);
+            const ignStr = String(p.ignored_reason || '');
+            const isOpActionIgn = ignStr && (ignStr.includes('DIMATIKAN OLEH OPERATOR') || ignStr.includes('DIHENTIKAN OLEH OPERATOR') || ignStr.includes('DI-REBOOT OLEH OPERATOR') || ignStr.includes('DI-RESTART OLEH OPERATOR') || ignStr === p.message);
             const ignReasonBadge = (isIgn && p.ignored_reason && !isOpActionIgn) ? `<span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4.5px" title="${_esc(p.ignored_reason)}">${_esc(p.ignored_reason)}</span>` : '';
             const ignUntilBadge = (isIgn && p.ignored_until_str) ? `<span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4.5px">${(isEn ? 'until ' : 's/d ') + _esc(p.ignored_until_str)}</span>` : '';
             const count24 = (p.count_24h && p.count_24h > 1) ? ` <span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4px;font-weight:500;color:var(--dim)" title="${isEn ? 'Recurring event within last 24 hours' : 'Kejadian berulang dalam 24 jam terakhir'}">${isEn ? 'relapsed ' : 'kambuh '}${p.count_24h}×</span>` : '';
@@ -1657,92 +1646,91 @@ window.poll = async function(opts = {}) {
     const resTbody = document.getElementById('prob-resolved-tbody');
     const resList = data.recent_resolved || [];
     const resFp = computeResFingerprint(resList, isEn);
-    if (resTbody && resList.length > 0 && (_lastResFingerprint !== resFp || resTbody.children.length === 0)) {
+    if (resTbody && (_lastResFingerprint !== resFp || resTbody.children.length === 0)) {
       _lastResFingerprint = resFp;
-      resTbody.innerHTML = resList.map(p => {
-        const sevBadge = 'badge badge-' + ({danger:'danger',average:'orange',warning:'warn',info:'info'}[p.severity] || 'info');
-        const grp = p.group_name || '';
+      if (resList.length === 0) {
+        resTbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px 12px;color:var(--dim);font-size:12px">${isEn ? 'No resolved incidents recorded' : 'Tidak ada riwayat insiden teratasi'}</td></tr>`;
+      } else {
+        resTbody.innerHTML = resList.map(p => {
+          const sevBadge = 'badge badge-' + ({danger:'danger',average:'orange',warning:'warn',info:'info'}[p.severity] || 'info');
+          const grp = p.group_name || '';
 
-        const resType = p.res_type || (p.acknowledged_by ? 'manual' : (p.resolved_note === 'server_offline' ? 'stale_closed' : (p.resolved_note === 'server_online' || p.key === 'agent_stale' ? 'online' : (p.resolved_note === 'service_up' ? 'service_up' : (p.resolved_note === 'session_closed' ? 'session_closed' : (p.resolved_note === 'duplicate_cleanup' ? 'dedup' : 'auto'))))));
-        const resLabel = isEn ? (p.res_label_en || p.res_label) : p.res_label;
-        const resTip = isEn ? (p.res_tip_en || p.res_tip) : p.res_tip;
-        const resBadgeCls = p.res_badge_cls || (resType === 'stale_closed' || resType === 'session_closed' || resType === 'dedup' ? 'badge-muted' : 'badge-up');
+          const resType = p.res_type || (p.acknowledged_by ? 'manual' : (p.resolved_note === 'server_offline' ? 'stale_closed' : (p.resolved_note === 'server_online' || p.key === 'agent_stale' ? 'online' : (p.resolved_note === 'service_up' ? 'service_up' : (p.resolved_note === 'session_closed' ? 'session_closed' : (p.resolved_note === 'duplicate_cleanup' ? 'dedup' : 'auto'))))));
+          const resLabel = isEn ? (p.res_label_en || p.res_label) : p.res_label;
+          const resTip = isEn ? (p.res_tip_en || p.res_tip) : p.res_tip;
+          const resBadgeCls = p.res_badge_cls || (resType === 'stale_closed' || resType === 'session_closed' || resType === 'dedup' ? 'badge-muted' : 'badge-up');
 
-        let resBadge = '';
-        if (resLabel) {
-          resBadge = `<span class="badge ${resBadgeCls}" style="font-size:10px;padding:1px 5px" title="${_esc(resTip || '')}">${_esc(resLabel)}</span>`;
-        } else if (p.acknowledged_by) {
-          const ackOp = (String(p.acknowledged_by).toLowerCase().includes('admin') ? 'Master Admin' : p.acknowledged_by);
-          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Handled manually by operator ' + _esc(ackOp) : 'Diselesaikan secara manual oleh operator ' + _esc(ackOp)}">✓ ${isEn ? 'Handled (' + _esc(ackOp) + ')' : 'Ditangani (' + _esc(ackOp) + ')'}</span>`;
-        } else if (p.resolved_note === 'server_offline') {
-          resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Closed because host disconnected (alarm suppression)' : 'Insiden layanan ditutup sementara otomatis karena host terputus (supresi alarm bertingkat)'}">${isEn ? 'Closed (Host Down)' : 'Ditutup Otomatis (Host Terputus)'}</span>`;
-        } else if (p.resolved_note === 'server_online' || p.key === 'agent_stale') {
-          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Agent connection restored and server reporting online' : 'Koneksi agen pulih sepenuhnya dan server aktif melapor kembali'}">✓ ${isEn ? 'Host Back Online' : 'Koneksi Pulih (Kembali Online)'}</span>`;
-        } else if (p.resolved_note === 'service_up') {
-          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'System service resumed and running normally' : 'Layanan sistem telah beroperasi normal kembali'}">✓ ${isEn ? 'Service Running' : 'Layanan Berjalan Kembali'}</span>`;
-        } else if (p.resolved_note === 'session_closed') {
-          resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Remote SSH session closed safely' : 'Sesi remote SSH telah selesai ditutup dengan aman'}">✓ ${isEn ? 'SSH Closed' : 'Sesi SSH Ditutup'}</span>`;
-        } else if (p.resolved_note === 'duplicate_cleanup') {
-          resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Duplicate record cleaned' : 'Entri insiden duplikat dibersihkan secara otomatis'}">${isEn ? 'Cleaned (Duplicate)' : 'Dibersihkan (Duplikasi)'}</span>`;
-        } else {
-          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'System metrics normalized automatically' : 'Metrik sistem kembali normal dan aman secara otomatis'}">✓ ${isEn ? 'Auto Recovered' : 'Pulih Normal (Otomatis)'}</span>`;
-        }
+          let resBadge = '';
+          if (resLabel) {
+            resBadge = `<span class="badge ${resBadgeCls}" style="font-size:10px;padding:1px 5px" title="${_esc(resTip || '')}">${_esc(resLabel)}</span>`;
+          } else if (p.acknowledged_by) {
+            const ackOp = (String(p.acknowledged_by).toLowerCase().includes('admin') ? 'Master Admin' : p.acknowledged_by);
+            resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Handled manually by operator ' + _esc(ackOp) : 'Diselesaikan secara manual oleh operator ' + _esc(ackOp)}">✓ ${isEn ? 'Handled (' + _esc(ackOp) + ')' : 'Ditangani (' + _esc(ackOp) + ')'}</span>`;
+          } else if (p.resolved_note === 'server_offline') {
+            resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Closed because host disconnected (alarm suppression)' : 'Insiden layanan ditutup sementara otomatis karena host terputus (supresi alarm bertingkat)'}">${isEn ? 'Closed (Host Down)' : 'Ditutup Otomatis (Host Terputus)'}</span>`;
+          } else if (p.resolved_note === 'server_online' || p.key === 'agent_stale') {
+            resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Agent connection restored and server reporting online' : 'Koneksi agen pulih sepenuhnya dan server aktif melapor kembali'}">✓ ${isEn ? 'Host Back Online' : 'Koneksi Pulih (Kembali Online)'}</span>`;
+          } else if (p.resolved_note === 'service_up') {
+            resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'System service resumed and running normally' : 'Layanan sistem telah beroperasi normal kembali'}">✓ ${isEn ? 'Service Running' : 'Layanan Berjalan Kembali'}</span>`;
+          } else if (p.resolved_note === 'session_closed') {
+            resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Remote SSH session closed safely' : 'Sesi remote SSH telah selesai ditutup dengan aman'}">✓ ${isEn ? 'SSH Closed' : 'Sesi SSH Ditutup'}</span>`;
+          } else if (p.resolved_note === 'duplicate_cleanup') {
+            resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Duplicate record cleaned' : 'Entri insiden duplikat dibersihkan secara otomatis'}">${isEn ? 'Cleaned (Duplicate)' : 'Dibersihkan (Duplikasi)'}</span>`;
+          } else {
+            resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'System metrics normalized automatically' : 'Metrik sistem kembali normal dan aman secara otomatis'}">✓ ${isEn ? 'Auto Recovered' : 'Pulih Normal (Otomatis)'}</span>`;
+          }
 
-        const resSevLabel = _esc(p.severity === 'danger' ? (isEn ? 'CRITICAL' : 'KRITIS') : (p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'warning' ? (isEn ? 'WARNING' : 'PERINGATAN') : (p.severity || '').toUpperCase())));
-        const resDate = p.resolved_at_date || (p.resolved_at ? p.resolved_at.slice(0, 10) : '');
-        const textSearch = `${p.hostname || ''} ${p.message || ''} ${p.component || ''} ${resLabel || ''} ${grp}`.toLowerCase();
+          const resSevLabel = _esc(p.severity === 'danger' ? (isEn ? 'CRITICAL' : 'KRITIS') : (p.severity === 'average' ? (isEn ? 'HIGH' : 'GAWAT') : (p.severity === 'warning' ? (isEn ? 'WARNING' : 'PERINGATAN') : (p.severity || '').toUpperCase())));
+          const resDate = p.resolved_at_date || (p.resolved_at ? p.resolved_at.slice(0, 10) : '');
+          const textSearch = `${p.hostname || ''} ${p.message || ''} ${p.component || ''} ${resLabel || ''} ${grp}`.toLowerCase();
 
-        return `<tr style="opacity:.8;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease"
-            data-group="${_esc(grp)}"
-            data-prob-id="${p.id}"
-            data-prob-key="${_esc(p.key)}"
-            data-prob-sev="${_esc(p.severity)}"
-            data-prob-res-type="${_esc(resType)}"
-            data-prob-res-date="${_esc(resDate)}"
-            data-text="${_esc(textSearch)}"
-            data-prob-msg="${_esc(p.message || '')}"
-            data-prob-start="${_esc(p.started_at || '')}"
-            data-prob-res="${_esc(p.resolved_at || '')}"
-            data-prob-durasi="${_esc(p.durasi || '')}"
-            data-prob-open="0"
-            data-prob-host="${_esc(p.hostname)}"
-            data-prob-sid="${p.server_id}">
-          <td style="padding:6px 12px;white-space:nowrap" class="col-time-detailed">
-            <div class="mono" style="display:flex;align-items:center;gap:5px;line-height:1.4">
-              <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">${isEn ? 'START' : 'MULAI'}</span>
-              <span style="font-size:11px;color:var(--text);font-weight:600">${_esc((p.started_at || p.started_at_str || '—').replace(/\s*\d{4}\s*/, ' '))}</span>
-            </div>
-            <div class="mono" style="display:flex;align-items:center;gap:5px;line-height:1.4;margin-top:2px">
-              <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:700;letter-spacing:0.3px">${isEn ? 'RESOLVED' : 'SELESAI'}</span>
-              <span style="font-size:11px;color:var(--dim)">${_esc((p.resolved_at || p.resolved_at_str || '—').replace(/\s*\d{4}\s*/, ' '))}</span>
-            </div>
-          </td>
-          <td style="padding:6px 12px;white-space:nowrap" class="col-server">
-            <div style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${_esc(p.hostname)}</div>
-            ${grp ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px">${_esc(grp)}</span></div>` : ''}
-          </td>
-          <td style="padding:6px 12px;white-space:nowrap;text-align:center" class="col-sev">
-            <span class="${sevBadge}" style="font-size:8px;padding:1px 4.5px;border-radius:3px">
-              ${resSevLabel}
-            </span>
-          </td>
-          <td style="padding:6px 12px;white-space:nowrap" class="col-component">
-            <span style="font-size:11px;color:var(--text);font-weight:500">${_esc(p.component || 'Sistem')}</span>
-          </td>
-          <td style="padding:6px 14px;font-size:11px;line-height:1.4;color:var(--text)" class="col-desc">
-            <span style="color:var(--dim)">${_esc(p.message || '')}</span>
-          </td>
-          <td style="padding:6px 12px;white-space:nowrap" class="mono col-durasi">
-            <span class="badge badge-muted" style="font-size:10px;padding:1px 5px;font-weight:600;letter-spacing:-0.025em;word-spacing:-1px">${_esc(p.durasi || '')}</span>
-          </td>
-          <td style="padding:6px 12px;white-space:nowrap" class="col-res">${resBadge}</td>
-          <td style="padding:6px 12px;white-space:nowrap;text-align:center" class="col-act">
-            <a href="/servers/${p.server_id}" class="btn btn-ghost btn-sm" title="${isEn ? 'Details' : 'Rincian'}" aria-label="Rincian">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-            </a>
-          </td>
-        </tr>`;
-      }).join('');
+          return `<tr style="opacity:.8;border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease"
+              data-group="${_esc(grp)}"
+              data-prob-id="${p.id}"
+              data-prob-key="${_esc(p.key)}"
+              data-prob-sev="${_esc(p.severity)}"
+              data-prob-res-type="${_esc(resType)}"
+              data-prob-res-date="${_esc(resDate)}"
+              data-text="${_esc(textSearch)}"
+              data-prob-msg="${_esc(p.message || '')}"
+              data-prob-start="${_esc(p.started_at || '')}"
+              data-prob-res="${_esc(p.resolved_at || '')}"
+              data-prob-durasi="${_esc(p.durasi || '')}"
+              data-prob-open="0"
+              data-prob-host="${_esc(p.hostname)}"
+              data-prob-sid="${p.server_id}">
+            <td style="padding:4px 6px;white-space:nowrap" class="col-time-detailed">
+              <span class="mono" style="font-size:11px;color:var(--text-bright);font-weight:600" title="${(isEn ? 'Started: ' : 'Mulai: ') + _esc(p.started_at || p.started_at_str || '—') + ' | ' + (isEn ? 'Resolved: ' : 'Selesai: ') + _esc(p.resolved_at || p.resolved_at_str || '—')}">
+                ${_esc((p.resolved_at || p.resolved_at_str || p.started_at || p.started_at_str || '—').replace(/\s*\d{4}\s*/, ' '))}
+              </span>
+            </td>
+            <td style="padding:4px 6px;white-space:nowrap" class="col-server">
+              <div style="font-size:11.5px;font-weight:600;color:var(--text-bright)">${_esc(p.hostname)}</div>
+              ${grp ? `<div style="margin-top:2px"><span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px">${_esc(grp)}</span></div>` : ''}
+            </td>
+            <td style="padding:4px 6px;white-space:nowrap;text-align:center" class="col-sev">
+              <span class="${sevBadge}" style="font-size:8px;padding:1px 4.5px;border-radius:3px">
+                ${resSevLabel}
+              </span>
+            </td>
+            <td style="padding:4px 6px;white-space:nowrap" class="col-component">
+              <span style="font-size:11px;color:var(--text);font-weight:500">${_esc(p.component || 'Sistem')}</span>
+            </td>
+            <td style="padding:4px 6px;font-size:11px;line-height:1.35;color:var(--text)" class="col-desc">
+              <span style="color:var(--dim)">${_esc(p.message || '')}</span>
+            </td>
+            <td style="padding:4px 6px;white-space:nowrap" class="mono col-durasi">
+              <span style="font-size:11px;color:var(--dim);letter-spacing:-0.02em" title="${isEn ? 'Duration' : 'Durasi'}">${_esc(p.durasi || '—')}</span>
+            </td>
+            <td style="padding:4px 6px;white-space:nowrap" class="col-res">${resBadge}</td>
+            <td style="padding:4px 6px;white-space:nowrap;text-align:center" class="col-act">
+              <a href="/servers/${p.server_id}" class="btn btn-ghost btn-sm" title="${isEn ? 'Details' : 'Rincian'}" aria-label="Rincian">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+              </a>
+            </td>
+          </tr>`;
+        }).join('');
+      }
       filterResolvedTable();
       if (probResolvedPagination) probResolvedPagination.update();
     }
