@@ -4823,7 +4823,8 @@ function toggleMaintenanceAction(action) {
       showToast(msg, true);
       const mbanner = document.getElementById('maintenance-banner');
       if (mbanner) mbanner.style.display = (action === 'disable') ? 'none' : 'flex';
-      if (typeof poll === 'function') poll();
+      if (typeof triggerFastPoll === 'function') triggerFastPoll();
+      else if (typeof poll === 'function') poll();
     } else {
       showToast((isEn ? 'Failed: ' : 'Gagal: ') + (res.detail || (isEn ? 'An error occurred' : 'Terjadi kesalahan')), false);
     }
@@ -5310,6 +5311,7 @@ async function sendProcDirectSignal(pid, pname, sig, btn) {
     const j = await r.json().catch(() => ({}));
     if (r.ok) {
       showToast(j.detail || `Sinyal ${sig} berhasil dikirim ke PID ${pid}.`, true);
+      if (typeof triggerFastPoll === 'function') triggerFastPoll();
       setTimeout(fetchTopProcs, 1200);
     } else {
       showToast(j.detail || 'Gagal mengirim sinyal ke proses.', false);
@@ -5352,6 +5354,7 @@ async function submitKillProc(e) {
     if (r.ok) {
       showToast(j.detail || `Perintah sinyal SIG${sig} ke PID ${pid} (${pname}) telah dikirim.`, true);
       closeKillProcModal();
+      if (typeof triggerFastPoll === 'function') triggerFastPoll();
       setTimeout(fetchTopProcs, 1200);
     } else {
       showToast(j.detail || 'Gagal mengirim perintah sinyal.', false);
@@ -5468,6 +5471,7 @@ async function submitCreateUser(e) {
       showToast(res.detail || 'Pengguna berhasil dibuat!', true);
       closeCreateUserModal();
       form.reset();
+      if (typeof triggerFastPoll === 'function') triggerFastPoll();
       if (typeof pollSystem === 'function') pollSystem();
       if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
     } else {
@@ -5594,6 +5598,7 @@ async function submitUserAction(action, username, btn) {
         }
         if (typeof pollSystem === 'function') pollSystem();
       }
+      if (typeof triggerFastPoll === 'function') triggerFastPoll();
       if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
     } else {
       showToast(res.detail || (isEn ? ('Failed to ' + action + ' account ' + username) : ('Gagal memproses ' + action + ' akun ' + username)), false);
@@ -5660,6 +5665,7 @@ async function terminateSession(sid, tty, username, btn) {
         badge.style.opacity = '0.35';
         badge.style.textDecoration = 'line-through';
       }
+      if (typeof triggerFastPoll === 'function') triggerFastPoll();
       if (typeof pollSystem === 'function') setTimeout(pollSystem, 1500);
       if (typeof filterServerActionHistory === 'function') filterServerActionHistory();
     } else {
@@ -8693,9 +8699,15 @@ function formatActionRowI18n(a, isEn) {
       'kunci user': 'Lock User',
       'Buat Pengguna': 'Create User',
       'Hapus Pengguna': 'Delete User',
+      'Putus Sesi Terminal': 'Terminate Terminal Session',
+      'Hentikan Proses (Kill)': 'Kill Process',
+      'Muat Ulang Layanan': 'Reload Service',
+      'Aktifkan Boot (Systemd)': 'Enable Boot (Systemd)',
+      'Nonaktifkan Boot (Systemd)': 'Disable Boot (Systemd)',
       'Restart Layanan': 'Restart Service',
       'Hentikan Layanan': 'Stop Service',
       'Jalankan Layanan': 'Start Service',
+      'Pembaruan Agen (OTA)': 'Agent Update (OTA)',
       'Abaikan Insiden': 'Ignore Incident',
       'Abaikan Masalah': 'Ignore Incident',
       'Pantau Kembali': 'Cancel Ignore',
@@ -8759,6 +8771,10 @@ function formatActionRowI18n(a, isEn) {
       tgt = 'Account ' + tgt.slice(5);
     } else if (tgt.startsWith('akun ')) {
       tgt = 'account ' + tgt.slice(5);
+    } else if (tgt.startsWith('Sesi ')) {
+      tgt = 'Session ' + tgt.slice(5);
+    } else if (tgt.startsWith('sesi ')) {
+      tgt = 'session ' + tgt.slice(5);
     } else {
       tgt = getServicesI18nText(tgt, true);
     }
@@ -8771,6 +8787,7 @@ function formatActionRowI18n(a, isEn) {
 
 function renderActionHistory(actions) {
   _cachedActions = actions || [];
+  const total = _cachedActions.length;
   const tbody = document.getElementById('action-history-tbody');
   const countTop = document.getElementById('action-history-count');
   const countBottom = document.getElementById('action-showing-summary');
@@ -8791,16 +8808,26 @@ function renderActionHistory(actions) {
   window._lastActionSig = actionSig;
 
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  if (!actions.length) {
+  if (!total) {
     if (countBottom) countBottom.textContent = isEn ? '0 actions' : '0 tindakan';
     if (pageInfo) pageInfo.textContent = isEn ? 'Page 1 of 1' : 'Halaman 1 dari 1';
     if (prevBtn) prevBtn.disabled = true;
     if (nextBtn) nextBtn.disabled = true;
     tbody.innerHTML = '<tr id="act-row-empty"><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">' + (isEn ? 'No action history on this server.' : 'Belum ada riwayat tindakan di server ini.') + '</td></tr>';
+
+    const accTbody = document.getElementById('acc-action-tbody');
+    const accBadge = document.getElementById('acc-action-badge');
+    if (accTbody) {
+      if (accBadge) accBadge.textContent = '0 ' + (isEn ? 'actions' : 'tindakan');
+      accTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:20px">' +
+        (isEn ? 'No user account action history on this server.' : 'Belum ada riwayat tindakan akun pengguna di server ini.') + '</td></tr>';
+      if (_servicesTabPagination && _servicesTabPagination['acc-action']) {
+        _servicesTabPagination['acc-action'].update();
+      }
+    }
     return;
   }
 
-  const total = actions.length;
   let pageSize = (actionLimit === 'all') ? total : (parseInt(actionLimit, 10) || 10);
   if (pageSize <= 0) pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -10766,7 +10793,9 @@ async function poll() {
   try {
     const r = await fetch('/api/servers/' + SID + '/overview', {credentials: 'same-origin'});
     if (r.ok) patch(await r.json());
-  } catch (e) { /* polling lanjut */ }
+  } catch (e) {
+    console.error('Error during poll overview patch:', e);
+  }
 }
 window.poll = poll;
 
@@ -12176,6 +12205,7 @@ async function systemdAction(action, unitName, btn) {
       }
       filterSystemdTable();
       showToast(data.detail || `Perintah ${action} unit ${unitName} berhasil dikirim.`, true);
+      if (typeof triggerFastPoll === 'function') triggerFastPoll();
       setTimeout(() => refreshSystemdList(false), 2500);
     } else {
       showToast(data.detail || `Gagal menjalankan ${action} unit ${unitName}.`, false);

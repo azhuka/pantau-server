@@ -354,6 +354,35 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.84
+
+- **Tipe Rilis:** Resolusi Fatal ReferenceError Temporal Dead Zone (TDZ) Riwayat Tindakan, Reaktivitas Real-Time Seluruh Aksi Operator Tanpa Reload, Sinkronisasi Otomatis Tabel Akun, dan Normalisasi Metadata Sasaran Perintah Backend (*Action History TDZ ReferenceError Resolution, Full Operator Action Real-Time Reactivity Without Reload, Synchronous User Account Action Table Updates, and Backend Command Target Metadata Normalization*)
+- **Fokus Utama:** Mengatasi akar masalah riwayat tindakan dan tabel-tabel terkait yang tidak terbarui secara live saat operator mengeksekusi perintah kontrol tanpa me-reload halaman rincian server:
+  1. **Resolusi Fatal ReferenceError Temporal Dead Zone (TDZ) pada `renderActionHistory` (`services.html`):**
+     - Memperbaiki deklarasi variabel `total` yang dievaluasi pada baris pengaturan visibilitas footer paginasi sebelum variabel tersebut dideklarasikan (`const total = actions.length;`), yang menyebabkan eksepsi JavaScript fatal `ReferenceError: Cannot access 'total' before initialization` setiap kali overview dipolling.
+     - Mengangkat inisialisasi `const total = _cachedActions.length;` ke baris paling awal fungsi `renderActionHistory()`, sehingga alur eksekusi DOM innerHTML dan pembaruan paginasi riwayat tindakan berjalan mulus dan stabil.
+     - Menghilangkan silent swallowing pada blok `catch` fungsi `poll()` dengan menambahkan logging eksplisit `console.error()` guna mencegah kegagalan JavaScript tersembunyi di masa depan.
+  2. **Asinkronisasi & Integrasi Fast Polling Terpadu untuk Seluruh Aksi Operator (`services.html` & `base.html`):**
+     - Mengintegrasikan pemanggilan `triggerFastPoll()` (dengan interval responsif 250ms, 750ms, 1500ms, 3000ms, 5000ms) pada seluruh handler tindakan operator:
+       - Tindakan unit Systemd (`systemdAction`: restart, stop, start, reload, enable, disable).
+       - Penghentian proses dan pengiriman sinyal kendali (`quickKillProc` & `submitKillProc`: SIGTERM, SIGKILL, SIGSTOP, SIGCONT).
+       - Pembuatan pengguna sistem Linux baru (`submitCreateUser`).
+       - Pengelolaan hak akses dan kunci akun sistem (`submitUserAction`: lock, unlock, delete).
+       - Pemutusan paksa sesi terminal remote aktif (`terminateSession`).
+       - Pengaktifan dan penonaktifan mode pemeliharaan (`toggleMaintenanceAction`).
+       - Pengabaian dan pemulihan pemantauan insiden (`submitIgnoreProblem` & `unignoreProblem` di `base.html`).
+     - Memastikan seluruh baris tindakan baru seketika muncul di tabel `#tbl-action-history` dalam hitungan milidetik tanpa mewajibkan pengguna me-refresh atau memuat ulang halaman secara manual.
+  3. **Sinkronisasi Reaktif Tabel Riwayat Tindakan Akun Pengguna (`services.html`):**
+     - Memastikan kartu Riwayat Tindakan Akun Pengguna pada `#tab-akun` (`#acc-action-tbody` & `#acc-action-badge`) ikut terbarui secara reaktif baik saat terdapat riwayat akun baru maupun ketika data riwayat kosong, tanpa terputus oleh alur return awal.
+  4. **Normalisasi Metadata Sasaran & Label Tindakan Backend (`server/main.py`):**
+     - Memperluas ekstraksi sasaran perintah pada helper `_get_server_actions()` backend untuk membaca properti `service_name`/`unit`, `pname`/`process_name`/`pid`, dan `tty`, sehingga aksi systemd unit non-layanan inti dan kill PID tidak lagi menampilkan sasaran tanda hubung kosong (`—`).
+     - Melengkapi kamus label tindakan bahasa Indonesia baku (`act_label`) untuk `kill_process` ("Hentikan Proses (Kill)"), `reload` ("Muat Ulang Layanan"), `enable` ("Aktifkan Boot (Systemd)"), dan `disable` ("Nonaktifkan Boot (Systemd)").
+     - Mengeliminasi duplikasi entri antara tabel `commands` dan `audit_logs` untuk aksi proses dan systemd agar riwayat tampil presisi dan rapi.
+     - Menyelaraskan kamus alih bahasa dwibahasa `formatActionRowI18n` pada antarmuka frontend (Bahasa Indonesia & Bahasa Inggris).
+  5. **Integritas Mutlak Halaman Utama & Standarisasi SemVer v4.8.84:**
+     - Menjaga integritas 100% tanpa mengubah baris kode apapun pada Halaman Utama / Dasbor (`dashboard.html`).
+     - Menaikkan versi sistem secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.83
 
 - **Tipe Rilis:** Eliminasi Redundansi Teks Insiden Diabaikan, Standarisasi Indikator Kartu Firewall Tanpa Distorsi Sudut, Penataan Margin Kartu Riwayat Layanan, dan Penyeragaman Padding Footer Paginasi Kartu (*Ignored Incident Redundant Reason Elimination, Firewall Card Border Distortion Fix, Service Timeline Margin Realignment, and Card Pagination Footer Padding Standardization*)

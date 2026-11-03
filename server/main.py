@@ -2617,6 +2617,14 @@ def _get_server_actions(db, sid: int, limit: int = 50) -> list[dict]:
                 uname = p_dict.get("username")
                 if uname:
                     tgt_name = f"Akun {uname}"
+                elif p_dict.get("service_name") or p_dict.get("unit"):
+                    tgt_name = p_dict.get("service_name") or p_dict.get("unit")
+                elif p_dict.get("pname") or p_dict.get("process_name") or p_dict.get("pid"):
+                    pname = p_dict.get("pname") or p_dict.get("process_name")
+                    pid = p_dict.get("pid")
+                    tgt_name = f"PID {pid} ({pname})" if pid and pname else (f"PID {pid}" if pid else pname)
+                elif p_dict.get("tty"):
+                    tgt_name = f"Sesi {p_dict['tty']}"
                 elif p_dict.get("ips"):
                     tgt_name = f"IP {', '.join(p_dict['ips'])}"
                 elif p_dict.get("ident"):
@@ -2635,6 +2643,8 @@ def _get_server_actions(db, sid: int, limit: int = 50) -> list[dict]:
         if not tgt_name:
             if c.action in ("restart_agent", "update_agent"):
                 tgt_name = "Agen Pantau"
+            elif c.action in ("reboot_host", "poweroff_host"):
+                tgt_name = server.hostname
             else:
                 tgt_name = "—"
 
@@ -2642,9 +2652,13 @@ def _get_server_actions(db, sid: int, limit: int = 50) -> list[dict]:
             "restart": "Restart Layanan",
             "stop": "Hentikan Layanan",
             "start": "Jalankan Layanan",
+            "reload": "Muat Ulang Layanan",
+            "enable": "Aktifkan Boot (Systemd)",
+            "disable": "Nonaktifkan Boot (Systemd)",
             "service_restart": "Restart Layanan",
             "service_stop": "Hentikan Layanan",
             "service_start": "Jalankan Layanan",
+            "kill_process": "Hentikan Proses (Kill)",
             "block_ip": "Blokir IP",
             "unblock_ip": "Buka Blokir IP",
             "restart_agent": "Restart Agen",
@@ -2712,7 +2726,8 @@ def _get_server_actions(db, sid: int, limit: int = 50) -> list[dict]:
             "server_add", "server_delete", "user_add", "user_delete",
             "user_create", "user_lock", "user_unlock", "user_delete", "session_terminate", "block_ip", "unblock_ip",
             "reboot_host", "poweroff_host", "restart_agent", "agent_update", "update_agent",
-        ) or a.action.startswith("masalah_"):
+            "kill_process",
+        ) or a.action.startswith("masalah_") or a.action.startswith("systemd_"):
             continue
 
         act_label = {
