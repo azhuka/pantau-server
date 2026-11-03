@@ -562,29 +562,19 @@
         <div style="font-size:11.5px;color:var(--dim);margin-top:2px" id="prob-resolved-subtitle">Rekapitulasi insiden yang telah teratasi dan catatan pemulihan sistem ({% if res_period == 'today' %}sejak 00:00 UTC hari ini{% elif res_period == '7d' %}7 hari terakhir{% elif res_period == '30d' %}30 hari terakhir{% elif res_start or res_end %}rentang tanggal kustom{% else %}24 jam terakhir{% endif %}).</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <!-- Tombol Pil Rentang Waktu Cepat (Kompak, Standar NOC) -->
-      <div class="segmented-control" id="prob-res-ranges" style="display:inline-flex;gap:3px">
-        <button type="button" class="btn btn-sm {% if res_period == 'today' %}is-on{% endif %}" onclick="setResolvedPeriod('today', this)" title="Insiden teratasi sejak jam 00:00 UTC hari ini">Hari Ini</button>
-        <button type="button" class="btn btn-sm {% if res_period == '24h' or not res_period %}is-on{% endif %}" onclick="setResolvedPeriod('24h', this)" title="Insiden teratasi dalam 24 jam terakhir">24 Jam</button>
-        <button type="button" class="btn btn-sm {% if res_period == '7d' %}is-on{% endif %}" onclick="setResolvedPeriod('7d', this)" title="Insiden teratasi dalam 7 hari terakhir">7 Hari</button>
-        <button type="button" class="btn btn-sm {% if res_period == '30d' %}is-on{% endif %}" onclick="setResolvedPeriod('30d', this)" title="Insiden teratasi dalam 30 hari terakhir">30 Hari</button>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="prob-resolved-stats-badges">
-        <span class="badge badge-up" style="font-size:11.5px;padding:3px 8px" title="Total insiden yang berhasil dipulihkan">{{ recent_resolved|length }} Teratasi</span>
-        {% if resolved_stats and resolved_stats.avg_mttr != '—' %}
-        <span class="badge badge-info" style="font-size:11.5px;padding:3px 8px" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: {{ resolved_stats.avg_mttr }}</span>
-        {% endif %}
-        {% if resolved_stats and resolved_stats.manual_count > 0 %}
-        <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Ditangani langsung oleh operator">{{ resolved_stats.manual_count }} ditangani operator</span>
-        {% endif %}
-      </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="prob-resolved-stats-badges">
+      <span class="badge badge-up" style="font-size:11.5px;padding:3px 8px" title="Total insiden yang berhasil dipulihkan">{{ recent_resolved|length }} Teratasi</span>
+      {% if resolved_stats and resolved_stats.avg_mttr != '—' %}
+      <span class="badge badge-info" style="font-size:11.5px;padding:3px 8px" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: {{ resolved_stats.avg_mttr }}</span>
+      {% endif %}
+      {% if resolved_stats and resolved_stats.manual_count > 0 %}
+      <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Ditangani langsung oleh operator">{{ resolved_stats.manual_count }} ditangani operator</span>
+      {% endif %}
     </div>
   </div>
 
-  <!-- Bilah Filter Multi-Kriteria Satu Baris (Identik Persis dengan Insiden Terbuka: .prob-filters-row) -->
-  <div class="prob-filters-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+  <!-- Baris 1: Filter Multi-Kriteria Rapi & Kompak -->
+  <div class="prob-filters-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
     <!-- Filter Server -->
     <select id="res-filter-server" onchange="onResFilterChange()"
             style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none;min-width:130px;max-width:180px">
@@ -615,7 +605,7 @@
       <option value="stale_closed" {% if res_type == 'stale_closed' %}selected{% endif %}>Ditutup (Host Terputus)</option>
     </select>
 
-    <!-- Filter Rentang Tanggal (Kompak, Satu Baris) -->
+    <!-- Filter Rentang Tanggal (Kompak & Elegan) -->
     <div style="display:inline-flex;align-items:center;gap:4px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 8px;height:35px;box-sizing:border-box" title="Rentang tanggal kustom">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--dim);flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
       <input type="date" id="res-date-start" value="{{ res_start }}" onchange="onResDateChange()" title="Dari tanggal" style="background:transparent;border:none;color:var(--text);font-size:11.5px;font-family:var(--font-mono);outline:none;padding:0;width:95px">
@@ -624,22 +614,34 @@
     </div>
 
     <!-- Pencarian Kata Kunci -->
-    <div class="prob-search-box" style="position:relative;display:flex;align-items:center;min-width:160px;max-width:200px">
+    <div class="prob-search-box" style="position:relative;display:flex;align-items:center;flex:1;min-width:180px">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input type="search" id="res-search-input" value="{{ res_q }}" oninput="onResFilterChange()" placeholder="Cari insiden teratasi…"
+      <input type="search" id="res-search-input" value="{{ res_q }}" oninput="onResFilterChange()" placeholder="Cari insiden / pesan / komponen…"
              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px 8px 30px;font-size:12px;width:100%;outline:none;transition:border-color .15s">
     </div>
-
-    <!-- Teks Info Jumlah Data Terfilter -->
-    <span style="font-size:11px;color:var(--dim);align-self:center;white-space:nowrap" id="res-filter-summary-info">
-      {{ recent_resolved|length }} insiden
-    </span>
 
     <!-- Tombol Reset Filter -->
     <button type="button" class="btn btn-ghost btn-sm" onclick="resetResFilters()" style="padding:6px 10px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px" title="Hapus semua filter riwayat insiden">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
       <span>Reset</span>
     </button>
+  </div>
+
+  <!-- Baris 2: Tombol Kecil Quick Presets (Dibawahnya) -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div style="display:inline-flex;align-items:center;gap:6px">
+      <span style="font-size:11px;color:var(--dim);font-weight:600">Rentang Cepat:</span>
+      <div class="segmented-control" id="prob-res-ranges" style="display:inline-flex;gap:3px">
+        <button type="button" class="btn btn-sm {% if res_period == 'today' %}is-on{% endif %}" onclick="setResolvedPeriod('today', this)" style="padding:2px 8px;font-size:11px" title="Insiden teratasi sejak jam 00:00 UTC hari ini">Hari Ini</button>
+        <button type="button" class="btn btn-sm {% if res_period == '24h' or not res_period %}is-on{% endif %}" onclick="setResolvedPeriod('24h', this)" style="padding:2px 8px;font-size:11px" title="Insiden teratasi dalam 24 jam terakhir">24 Jam</button>
+        <button type="button" class="btn btn-sm {% if res_period == '7d' %}is-on{% endif %}" onclick="setResolvedPeriod('7d', this)" style="padding:2px 8px;font-size:11px" title="Insiden teratasi dalam 7 hari terakhir">7 Hari</button>
+        <button type="button" class="btn btn-sm {% if res_period == '30d' %}is-on{% endif %}" onclick="setResolvedPeriod('30d', this)" style="padding:2px 8px;font-size:11px" title="Insiden teratasi dalam 30 hari terakhir">30 Hari</button>
+        <button type="button" id="btn-res-custom" class="btn btn-sm {% if res_period == 'custom' or res_start or res_end %}is-on{% endif %}" onclick="setResolvedPeriod('custom', this)" style="padding:2px 8px;font-size:11px;{% if res_period != 'custom' and not res_start and not res_end %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
+      </div>
+    </div>
+    <div id="res-filter-summary-info" style="font-size:11px;color:var(--dim)">
+      Menampilkan {{ recent_resolved|length }} dari {{ recent_resolved|length }} insiden teratasi
+    </div>
   </div>
 
   {% if recent_resolved %}
@@ -1519,7 +1521,8 @@ window.poll = async function() {
         if (resLabel) {
           resBadge = `<span class="badge ${resBadgeCls}" style="font-size:10px;padding:1px 5px" title="${_esc(resTip || '')}">${_esc(resLabel)}</span>`;
         } else if (p.acknowledged_by) {
-          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Handled manually by operator ' + _esc(p.acknowledged_by) : 'Diselesaikan secara manual oleh operator ' + _esc(p.acknowledged_by)}">✓ ${isEn ? 'Handled (' + _esc(p.acknowledged_by) + ')' : 'Ditangani (' + _esc(p.acknowledged_by) + ')'}</span>`;
+          const ackOp = (p.acknowledged_by === 'admin' ? 'master-admin' : p.acknowledged_by);
+          resBadge = `<span class="badge badge-up" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Handled manually by operator ' + _esc(ackOp) : 'Diselesaikan secara manual oleh operator ' + _esc(ackOp)}">✓ ${isEn ? 'Handled (' + _esc(ackOp) + ')' : 'Ditangani (' + _esc(ackOp) + ')'}</span>`;
         } else if (p.resolved_note === 'server_offline') {
           resBadge = `<span class="badge badge-muted" style="font-size:10px;padding:1px 5px" title="${isEn ? 'Closed because host disconnected / agent stopped reporting' : 'Insiden ditutup karena host terputus / agen berhenti melapor (supresi insiden)'}">${isEn ? 'Closed (Host Down)' : 'Ditutup (Host Terputus)'}</span>`;
         } else if (p.resolved_note === 'server_online' || p.key === 'agent_stale') {

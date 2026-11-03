@@ -9573,7 +9573,8 @@ def _problem_row2dict(row) -> dict:
         or (row.ignored_reason and "OPERATOR" in row.ignored_reason)
     )
 
-    ack_by = getattr(row, "acknowledged_by", None)
+    raw_ack = getattr(row, "acknowledged_by", None)
+    ack_by = "master-admin" if raw_ack == "admin" else raw_ack
     res_note = getattr(row, "resolved_note", None)
     key = getattr(row, "key", "") or ""
 
@@ -9640,7 +9641,7 @@ def _problem_row2dict(row) -> dict:
         "tip": row.tip, "started_at": row.started_at, "resolved_at": end,
         "is_open": end is None,
         "component": _problem_component(row.key),
-        "acknowledged_by": row.acknowledged_by,
+        "acknowledged_by": ack_by,
         "acknowledged_at": row.acknowledged_at,
         "resolved_note": row.resolved_note,
         "res_type": res_type,
@@ -10955,6 +10956,8 @@ def _alert_dict(row, hostname: str, now: datetime) -> dict:
     s_iso = row.started_at.isoformat()
     if not s_iso.endswith("Z"):
         s_iso += "Z"
+    ack_user = getattr(row, "acknowledged_by", None)
+    disp_ack = "master-admin" if ack_user == "admin" else ack_user
     return {
         "id": row.id,
         "server_id": row.server_id,
@@ -10966,7 +10969,7 @@ def _alert_dict(row, hostname: str, now: datetime) -> dict:
         "started_at": s_iso,
         "durasi": _fmt_duration(row.started_at, now),
         "acknowledged": row.acknowledged_at is not None,
-        "acknowledged_by": row.acknowledged_by,
+        "acknowledged_by": disp_ack,
         "context": ctx,
         "is_ignored": bool(getattr(row, "is_ignored", 0)),
         "ignore_mode": getattr(row, "ignore_mode", None),

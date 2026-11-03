@@ -947,34 +947,6 @@ table .copyable-ip, td .copyable-ip{font-size:9.5px !important}
   to { width: 0%; }
 }
 
-/* ---------- Tooltip Modern 2026/2027 (Cepat, Estetik, Glassmorphic) ---------- */
-#app-tooltip {
-  position: fixed;
-  z-index: 100000;
-  pointer-events: none;
-  background: rgba(15, 23, 42, 0.96);
-  color: #f8fafc;
-  font-size: 11.5px;
-  font-weight: 500;
-  line-height: 1.45;
-  padding: 6px 12px;
-  border-radius: 7px;
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 2px 8px rgba(56, 189, 248, 0.15);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  max-width: 340px;
-  word-wrap: break-word;
-  white-space: normal;
-  opacity: 0;
-  transform: translateY(4px) scale(0.98);
-  transition: opacity 0.1s cubic-bezier(0, 0, 0.2, 1), transform 0.1s cubic-bezier(0, 0, 0.2, 1);
-  will-change: transform, opacity;
-}
-#app-tooltip.show {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
 
 /* ---------- Halaman Rincian: hero ringkasan + tab ---------- */
 .hero-card{padding:18px 20px}
@@ -1892,7 +1864,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.71' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.72' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
       <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
       </button>
@@ -4281,145 +4253,7 @@ document.addEventListener('keydown', (e) => {
   </div>
 </div>
 
-<!-- Tooltip Engine Modern Cepat & Estetik -->
-<div id="app-tooltip" role="tooltip" aria-hidden="true"></div>
 <script>
-(function() {
-  const tipEl = document.getElementById('app-tooltip');
-  if (!tipEl) return;
-
-  let currentTarget = null;
-  let showTimer = null;
-  let hideTimer = null;
-
-  function stripAncestorTitles(el) {
-    let parent = el.parentElement;
-    while (parent && parent !== document.body && parent !== document.documentElement) {
-      if (parent.hasAttribute('title')) {
-        const pText = parent.getAttribute('title').trim();
-        if (pText && !parent.hasAttribute('data-tooltip-orig')) {
-          parent.setAttribute('data-tooltip-orig', pText);
-        }
-        parent.removeAttribute('title');
-      }
-      parent = parent.parentElement;
-    }
-  }
-
-  function getTooltipText(el) {
-    if (!el || el === document.body || el === document.documentElement) return null;
-    if (el.hasAttribute('title')) {
-      const text = el.getAttribute('title').trim();
-      if (text) {
-        if (!el.hasAttribute('data-tooltip-orig')) {
-          el.setAttribute('data-tooltip-orig', text);
-        }
-        el.setAttribute('data-tooltip', text);
-      }
-      el.removeAttribute('title');
-      stripAncestorTitles(el);
-    }
-    if (el.hasAttribute('data-tooltip') && el.getAttribute('data-tooltip').trim()) {
-      stripAncestorTitles(el);
-      return el.getAttribute('data-tooltip').trim();
-    }
-    return getTooltipText(el.parentElement);
-  }
-
-  function positionTooltip(target) {
-    const rect = target.getBoundingClientRect();
-    const tipRect = tipEl.getBoundingClientRect();
-    const margin = 8;
-    
-    // Default: di atas elemen secara horizontal terpusat
-    let top = rect.top - tipRect.height - margin;
-    let left = rect.left + (rect.width / 2) - (tipRect.width / 2);
-
-    // Jika mepet ke atas layar, posisikan di bawah elemen
-    if (top < margin) {
-      top = rect.bottom + margin;
-    }
-
-    // Hindari keluar dari sisi kiri atau kanan layar
-    const maxLeft = window.innerWidth - tipRect.width - margin;
-    if (left < margin) left = margin;
-    if (left > maxLeft) left = maxLeft;
-
-    tipEl.style.top = Math.round(top) + 'px';
-    tipEl.style.left = Math.round(left) + 'px';
-  }
-
-  function show(el) {
-    clearTimeout(hideTimer);
-    clearTimeout(showTimer);
-    
-    // Tampil super cepat dalam 80ms
-    showTimer = setTimeout(() => {
-      const origText = el.getAttribute('data-tooltip-orig') || el.getAttribute('data-tooltip');
-      if (!origText) return;
-
-      const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
-      let text = origText;
-      if (isEn && typeof replaceWithSmartBoundary === 'function' && typeof UI_TEXT_PAIRS !== 'undefined') {
-        const sortedPairs = [...UI_TEXT_PAIRS].sort((a, b) => b[0].length - a[0].length);
-        text = replaceWithSmartBoundary(origText, sortedPairs, true);
-      }
-
-      tipEl.textContent = text;
-      tipEl.style.display = 'block';
-      positionTooltip(el);
-      
-      requestAnimationFrame(() => {
-        tipEl.classList.add('show');
-        tipEl.setAttribute('aria-hidden', 'false');
-      });
-    }, 80);
-  }
-
-  function hide() {
-    clearTimeout(showTimer);
-    clearTimeout(hideTimer);
-    
-    tipEl.classList.remove('show');
-    tipEl.setAttribute('aria-hidden', 'true');
-    hideTimer = setTimeout(() => {
-      if (!tipEl.classList.contains('show')) {
-        tipEl.style.display = 'none';
-      }
-    }, 120);
-    currentTarget = null;
-  }
-
-  // Delegated event listener untuk efisiensi maksimal pada DOM dinamis
-  document.addEventListener('mouseover', (e) => {
-    const text = getTooltipText(e.target);
-    if (!text) return;
-    
-    // Cari elemen pembawa data-tooltip
-    const target = e.target.closest('[data-tooltip]');
-    if (!target) return;
-
-    if (currentTarget !== target) {
-      currentTarget = target;
-      show(target);
-    }
-  }, { passive: true });
-
-  document.addEventListener('mouseout', (e) => {
-    if (!currentTarget) return;
-    const related = e.relatedTarget;
-    if (related && currentTarget.contains(related)) return;
-    hide();
-  }, { passive: true });
-
-  // Sembunyikan seketika bila ada klik, scroll, atau tombol ESC
-  window.addEventListener('scroll', hide, { passive: true });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') hide();
-  });
-  document.addEventListener('click', hide, { passive: true });
-})();
-
 // ---------- Helper Paginasi Tabel Terpadu (Universal Table Pagination Engine) ----------
 function attachTablePagination(target, options = {}) {
   const table = typeof target === 'string' ? document.querySelector(target) : target;

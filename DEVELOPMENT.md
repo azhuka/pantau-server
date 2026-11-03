@@ -354,6 +354,27 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.72
+
+- **Tipe Rilis:** Penetapan Posisi Baku Toolbar Filter & Tombol Quick Presets di Bawahnya, Eliminasi Total Tooltip Overlay yang Menindih & Berkedip, serta Standardisasi Atribusi Operator Master-Admin (*Standardized NOC Filter Hierarchy, Elimination of Overlapping Flickering Tooltip Engine, and Master-Admin Attribution Normalization*)
+- **Fokus Utama:** Menyelesaikan permasalahan layout posisi filter yang stabil tanpa berubah-ubah, mengeliminasi kecacatan teks yang bertumpuk, berbayang, dan berkedip akibat engine tooltip global, serta menormalkan resolusi penanganan operator:
+  1. **Penetapan Posisi Baku Elemen Filter Sesuai Struktur Tetap NOC:**
+     - Header kartu murni berisi identitas (Judul & Subjudul ringkas) di sisi kiri dan metrik ringkasan (Badges statistik) di sisi kanan tanpa dijejali tombol navigasi waktu.
+     - **Baris 1:** Bilah filter multi-kriteria rapat dan presisi (`.prob-filters-row`): Dropdowns (Server, Keparahan/Pengguna, Resolusi/Tindakan, Status), Pemilih Rentang Tanggal Kompak (`Dari – Sampai` tinggi 35px), Kolom Pencarian Kata Kunci, serta Tombol Aksi (Terapkan / Reset).
+     - **Baris 2 (DIBAWAHNYA):** Tombol kecil quick presets (`.segmented-control` berukuran `.btn-sm`: `Hari Ini`, `24 Jam`, `7 Hari`, `30 Hari`, `Kustom`/`Semua`) di sisi kiri, dan teks jumlah data di sisi kanan.
+  2. **Eliminasi Total Engine Tooltip Global (`app-tooltip`) Penyebab Teks Bertumpuk & Berkedip:**
+     - Menghapus engine floating tooltip JavaScript global di `base.html` yang sebelumnya membajak atribut `title` di seluruh dokumen dengan timer agresif 80ms.
+     - Menghilangkan bug teks kembar yang menindih teks asli pada tabel, membayangi tombol aksi di kolom sebelahnya, dan berkedip hilang-timbul saat kursor digerakkan.
+     - Mengembalikan fungsionalitas tooltip ke standar native browser yang stabil, ringan, tanpa overhead JavaScript, dan tidak memicu layout thrashing.
+  3. **Standardisasi Atribusi Operator Master-Admin pada Kolom Resolusi:**
+     - Memperbaiki pemetaan resolusi insiden di backend `server/main.py` sehingga pencatatan penanganan operator menampilkan label resmi `✓ Ditangani (master-admin)` alih-alih nilai mentah `ADMIN`.
+  4. **Konsistensi Visual Antara Kartu Riwayat Insiden dan Halaman Audit:**
+     - Menyamakan ketinggian (35px), ukuran font (12px), warna latar belakang semi-transparan (`rgba(9,13,22,0.7)`), dan border pada semua dropdown, date-picker, dan input pencarian di seluruh modul.
+  5. **Integritas Mutlak Halaman Utama & Kartu Insiden Terbuka:**
+     - Mempertahankan integritas 100% tanpa mengubah apapun pada Halaman Utama / Dasbor ([`dashboard.html`](file:///home/bos/rj45/server/templates/dashboard.html)) serta Kartu Insiden Terbuka ([`problems.html#probtable`](file:///home/bos/rj45/server/templates/problems.html#probtable)).
+  6. **Otomasi Pembaruan SemVer v4.8.72:**
+     - Menaikkan versi sistem menjadi `v4.8.72` secara sinkron dan identik di 7 berkas proyek sesuai standar operasional baku Pantau Server.
+
 ## Versi 4.8.71
 
 - **Tipe Rilis:** Penyeragaman Total Visual UI Filter NOC, Eliminasi Tombol Raksasa & Drawer, Serta Keselarasan Toolbar Satu Baris (*Unified NOC Filter UI Standardization, Giant Button & Drawer Elimination, and Seamless Single-Row Toolbar Alignment*)

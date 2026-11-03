@@ -12,29 +12,20 @@
 </div>
 
 <div class="card">
-  <div class="card-header" style="flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
-    <div>
-      <h3 style="margin:0;font-size:15px;font-weight:700">Riwayat Tindakan Pengguna</h3>
-      <div style="font-size:11.5px;color:var(--dim);margin-top:2px">Catatan aktivitas autentikasi, manajemen server, layanan, pengguna, serta eksekusi perintah remote.</div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div class="segmented-control" id="audit-ranges" style="display:inline-flex;gap:3px">
-        <button type="button" class="btn btn-sm {% if not period and not start_date and not end_date %}is-on{% endif %}" onclick="setAuditPeriod('', this)" title="Tampilkan seluruh catatan">Semua</button>
-        <button type="button" class="btn btn-sm {% if period == 'today' %}is-on{% endif %}" onclick="setAuditPeriod('today', this)" title="Aktivitas sejak jam 00:00 UTC hari ini">Hari Ini</button>
-        <button type="button" class="btn btn-sm {% if period == '24h' %}is-on{% endif %}" onclick="setAuditPeriod('24h', this)" title="Aktivitas 24 jam terakhir">24 Jam</button>
-        <button type="button" class="btn btn-sm {% if period == '7d' %}is-on{% endif %}" onclick="setAuditPeriod('7d', this)" title="Aktivitas 7 hari terakhir">7 Hari</button>
-        <button type="button" class="btn btn-sm {% if period == '30d' %}is-on{% endif %}" onclick="setAuditPeriod('30d', this)" title="Aktivitas 30 hari terakhir">30 Hari</button>
-      </div>
-      <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px">{{ rows|length }} catatan</span>
-    </div>
+  <div class="card-header">
+    <h3>Riwayat Tindakan Pengguna</h3>
+    <span style="font-size:12px;color:var(--dim)">{{ rows|length }} terbaru</span>
   </div>
+  <p style="font-size:12px;color:var(--dim);margin:0 0 14px">
+    Catatan aktivitas autentikasi, manajemen server, layanan, pengguna, serta eksekusi perintah remote beserta pelaksana dan hasilnya.
+  </p>
 
-  <form method="get" action="/audit" class="prob-filters-row" style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+  <form method="get" action="/audit" class="prob-filters-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
     <input type="hidden" name="period" id="audit-period-input" value="{{ period }}">
 
     <!-- 1. Filter Pengguna -->
     <select name="user" id="audit-user-filter" title="Filter Pengguna" onchange="this.form.submit()"
-            style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:7px 9px;font-size:11.5px;outline:none">
+            style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none;height:35px">
       <option value="">Semua pengguna</option>
       {% for u_name in available_users %}
       <option value="{{ u_name }}" {% if selected_user == u_name %}selected{% endif %}>{{ u_name }}</option>
@@ -43,7 +34,7 @@
 
     <!-- 2. Filter Server -->
     <select name="server" id="audit-server-filter" title="Filter Server" onchange="this.form.submit()"
-            style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:7px 9px;font-size:11.5px;outline:none;min-width:110px;max-width:150px">
+            style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none;min-width:110px;max-width:160px;height:35px">
       <option value="">Semua server</option>
       {% for s in all_servers %}
       <option value="{{ s.id }}" {% if selected_server == s.id %}selected{% endif %}>{{ s.hostname }}</option>
@@ -52,7 +43,7 @@
 
     <!-- 3. Filter Tindakan -->
     <select name="action" id="audit-action-filter" title="Filter Tindakan" onchange="this.form.submit()"
-            style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:7px 9px;font-size:11.5px;outline:none;max-width:160px">
+            style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none;max-width:180px;height:35px">
       <option value="" data-label-id="Semua tindakan" data-label-en="All actions">Semua tindakan</option>
       {% for cat in categories %}
       <optgroup label="{{ cat.name }}" data-label-id="{{ cat.name }}" data-label-en="{{ cat.name_en }}">
@@ -66,7 +57,7 @@
 
     <!-- 4. Filter Status -->
     <select name="status" id="audit-status-filter" title="Filter Status" onchange="this.form.submit()"
-            style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:7px 9px;font-size:11.5px;outline:none">
+            style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px;font-size:12px;outline:none;height:35px">
       <option value="">Semua status</option>
       <option value="SUCCESS" {% if selected_status == 'SUCCESS' %}selected{% endif %}>Berhasil</option>
       <option value="FAILED" {% if selected_status == 'FAILED' %}selected{% endif %}>Gagal</option>
@@ -74,7 +65,7 @@
     </select>
 
     <!-- 5. Filter Rentang Tanggal (Kompak, Satu Baris) -->
-    <div style="display:inline-flex;align-items:center;gap:4px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 7px;height:33px;box-sizing:border-box" title="Rentang tanggal audit">
+    <div style="display:inline-flex;align-items:center;gap:4px;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0 8px;height:35px;box-sizing:border-box" title="Rentang tanggal audit">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--dim);flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
       <input type="date" name="start_date" id="audit-start-date" value="{{ start_date }}" onchange="onAuditDateChange()" title="Dari tanggal" style="background:transparent;border:none;color:var(--text);font-size:11.5px;font-family:var(--font-mono);outline:none;padding:0;width:95px">
       <span style="color:var(--dim);font-size:11px">–</span>
@@ -82,19 +73,41 @@
     </div>
 
     <!-- 6. Pencarian Kata Kunci -->
-    <div class="prob-search-box" style="position:relative;display:flex;align-items:center;min-width:140px;max-width:170px">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:8px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    <div class="prob-search-box" style="position:relative;display:flex;align-items:center;flex:1;min-width:180px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;color:var(--dim);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
       <input type="search" name="q" value="{{ q }}" placeholder="Cari target / hasil…"
-             style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:7px 9px 7px 26px;font-size:11.5px;width:100%;outline:none;transition:border-color .15s">
+             style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 12px 8px 30px;font-size:12px;width:100%;outline:none;transition:border-color .15s;height:35px">
     </div>
 
     <!-- 7. Tombol Terapkan & Reset (Ukuran Proporsional .btn-sm) -->
-    <button class="btn btn-primary btn-sm" type="submit" style="padding:5px 10px;font-size:11.5px" title="Terapkan filter pencarian audit">Terapkan</button>
-    <a href="/audit" class="btn btn-ghost btn-sm" title="Hapus filter dan tampilkan semua catatan" style="padding:5px 8px;font-size:11.5px;display:inline-flex;align-items:center;gap:3px{% if not q and not action and not selected_user and not period and not selected_server and not selected_status and not start_date and not end_date %};display:none{% endif %}">
+    <button class="btn btn-primary btn-sm" type="submit" style="padding:0 14px;height:35px;font-size:11.5px" title="Terapkan filter pencarian audit">Terapkan</button>
+    <a href="/audit" class="btn btn-ghost btn-sm" title="Hapus filter dan kembalikan ke setelan bawaan" style="padding:0 12px;height:35px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
       <span>Reset</span>
     </a>
   </form>
+
+  <!-- Baris 2: Tombol Kecil Quick Presets (Dibawahnya) -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div style="display:inline-flex;align-items:center;gap:6px">
+      <span style="font-size:11px;color:var(--dim);font-weight:600">Rentang Cepat:</span>
+      <div class="segmented-control" id="audit-period-pills" style="display:inline-flex;gap:3px">
+        <button type="button" class="btn btn-sm {% if not period and not start_date and not end_date %}is-on{% endif %}" onclick="setAuditPeriod('', this)" style="padding:2px 8px;font-size:11px" title="Tampilkan seluruh catatan">Semua</button>
+        <button type="button" class="btn btn-sm {% if period == 'today' %}is-on{% endif %}" onclick="setAuditPeriod('today', this)" style="padding:2px 8px;font-size:11px" title="Catatan aktivitas sejak jam 00:00 UTC hari ini">Hari Ini</button>
+        <button type="button" class="btn btn-sm {% if period == '24h' %}is-on{% endif %}" onclick="setAuditPeriod('24h', this)" style="padding:2px 8px;font-size:11px" title="Catatan aktivitas 24 jam terakhir">24 Jam</button>
+        <button type="button" class="btn btn-sm {% if period == '7d' %}is-on{% endif %}" onclick="setAuditPeriod('7d', this)" style="padding:2px 8px;font-size:11px" title="Catatan aktivitas 7 hari terakhir">7 Hari</button>
+        <button type="button" class="btn btn-sm {% if period == '30d' %}is-on{% endif %}" onclick="setAuditPeriod('30d', this)" style="padding:2px 8px;font-size:11px" title="Catatan aktivitas 30 hari terakhir">30 Hari</button>
+      </div>
+    </div>
+    <div style="font-size:11.5px;color:var(--dim)">
+      {% if period == 'today' %}Menampilkan catatan sejak jam 00:00 UTC hari ini
+      {% elif period == '24h' %}Menampilkan catatan 24 jam terakhir
+      {% elif period == '7d' %}Menampilkan catatan 7 hari terakhir
+      {% elif period == '30d' %}Menampilkan catatan 30 hari terakhir
+      {% elif start_date or end_date %}Menampilkan catatan {{ start_date or 'awal' }} s/d {{ end_date or 'kini' }}
+      {% else %}Menampilkan {{ rows|length }} catatan terbaru{% endif %}
+    </div>
+  </div>
 
   <table>
     <thead>
