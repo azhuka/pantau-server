@@ -135,7 +135,6 @@
 <script>
 const SID = {{ server.id }};
 const USERNAME = {{ username|tojson }};
-const IS_VIEWER = {{ 'true' if user and user.is_viewer() else 'false' }};
 const INITIAL_LOGINS = {{ (initial_logins or [])|tojson }};
 
 function sleepMs(ms) { return new Promise(r => setTimeout(r, ms)); }

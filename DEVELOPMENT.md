@@ -354,6 +354,16 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.98
+
+- **Tipe Rilis:** Perbaikan Kritis Eksekusi Skrip Frontend & Pemulihan Render Tabel Aktivitas Pengguna (*Critical Frontend Syntax Scope Fix & User Activity Table Rendering Restoration*)
+- **Fokus Utama:** Menyelesaikan kendala tabel aktivitas kosong akibat kegagalan parsing skrip JavaScript pada antarmuka web:
+  1. **Eliminasi Duplikasi Deklarasi Lingkup Global (`IS_VIEWER`):**
+     - Menghapus deklarasi redundan `const IS_VIEWER` pada template `user_activity.html` yang sebelumnya memicu fatal `SyntaxError: Identifier 'IS_VIEWER' has already been declared` karena konstanta tersebut telah dideklarasikan secara global pada `base.html`.
+     - Memulihkan eksekusi seluruh fungsi perenderan data (`renderLoginsData`), sinkronisasi chip statistik, serta *event loop* polling latar belakang.
+  2. **Verifikasi Validitas DOM & Render Multi-Baris:**
+     - Memastikan seluruh baris data terisi penuh (33+ aktivitas login, sesi, dan eksekusi sudo) secara instan saat halaman dibuka tanpa ada *blocking screen* maupun kesalahan konsol browser.
+
 ## Versi 4.8.97
 
 - **Tipe Rilis:** Pemuatan Instan Tanpa Blokir Aktivitas Pengguna & Prapengambilan Data dari Basis Data (*Instant Zero-Wait User Activity Loading & SSR Database Pre-fetching*)
