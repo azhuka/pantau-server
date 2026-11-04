@@ -258,7 +258,7 @@ let activityBusy = false;
 let llCount = 0;
 
 function renderChips(logins) {
-  const c = {aktif: 0, selesai: 0, sudo: 0, sudo_gagal: 0, gagal: 0, sesi: 0, sukses: 0};
+  const c = {aktif: 0, selesai: 0, sudo: 0, sudo_gagal: 0, gagal: 0, sesi: 0, sukses: 0, polkit: 0, polkit_gagal: 0};
   for (const x of logins) {
     if (c.hasOwnProperty(x.type)) c[x.type]++;
     else if (x.type === 'sukses') c.selesai++;
@@ -271,9 +271,9 @@ function renderChips(logins) {
   const elSelesai = document.getElementById('chip-selesai');
   if (elSelesai) elSelesai.textContent = c.selesai + c.sukses;
   const elSudo = document.getElementById('chip-sudo');
-  if (elSudo) elSudo.textContent = c.sudo;
+  if (elSudo) elSudo.textContent = c.sudo + c.polkit;
   const elSudoGagal = document.getElementById('chip-sudo-gagal');
-  if (elSudoGagal) elSudoGagal.textContent = c.sudo_gagal;
+  if (elSudoGagal) elSudoGagal.textContent = c.sudo_gagal + c.polkit_gagal;
   const elGagal = document.getElementById('chip-gagal');
   if (elGagal) elGagal.textContent = c.gagal;
   const elSesi = document.getElementById('chip-sesi');
@@ -296,7 +296,7 @@ function deduplicateLogins(rawList) {
   for (const item of rawList) {
     if (!item) continue;
     const isAktif = (item.type === 'aktif');
-    const isSudo = (item.type === 'sudo' || item.type === 'sudo_gagal');
+    const isSudo = (item.type === 'sudo' || item.type === 'sudo_gagal' || item.type === 'polkit' || item.type === 'polkit_gagal');
     const tty = String(item.tty || '').trim();
     const ts = String(item.ts || '').trim();
     const method = String(item.method || '').trim();
@@ -365,12 +365,14 @@ function renderLoginsData(rawLogins) {
       const isAktif = (x.type === 'aktif');
       const isSudo = (x.type === 'sudo');
       const isSudoGagal = (x.type === 'sudo_gagal');
+      const isPolkit = (x.type === 'polkit');
+      const isPolkitGagal = (x.type === 'polkit_gagal');
       const isGagal = (x.type === 'gagal');
       const isSelesai = (x.type === 'selesai' || x.type === 'sukses');
 
       const cls = isAktif ? 'badge-up'
-                : isSudo ? 'badge-warn'
-                : (isGagal || isSudoGagal) ? 'badge-down' : 'badge-muted';
+                : (isSudo || isPolkit) ? 'badge-warn'
+                : (isGagal || isSudoGagal || isPolkitGagal) ? 'badge-down' : 'badge-muted';
 
       let typeLabel = '';
       if (isAktif) {
@@ -381,6 +383,10 @@ function renderLoginsData(rawLogins) {
         typeLabel = 'Sudo' + (x.target_user ? ' (' + escapeHtml(x.target_user) + ')' : '');
       } else if (isSudoGagal) {
         typeLabel = 'Sudo Gagal';
+      } else if (isPolkit) {
+        typeLabel = 'Polkit (root)';
+      } else if (isPolkitGagal) {
+        typeLabel = 'Polkit Gagal';
       } else if (isGagal) {
         typeLabel = 'Login Gagal';
       } else if (x.type === 'sesi') {
@@ -394,7 +400,7 @@ function renderLoginsData(rawLogins) {
       const detailedStart = formatDetailed(dtStart);
 
       let timeTooltip = '';
-      if (isSudo || isSudoGagal) {
+      if (isSudo || isSudoGagal || isPolkit || isPolkitGagal) {
         timeTooltip = 'Waktu Eksekusi: ' + detailedStart;
       } else if (isAktif) {
         timeTooltip = 'Waktu Mulai: ' + detailedStart + ' (Sesi Masih Aktif)';
@@ -439,7 +445,7 @@ function renderLoginsData(rawLogins) {
       }
 
       let methodCell = '';
-      if (isSudo || isSudoGagal) {
+      if (isSudo || isSudoGagal || isPolkit || isPolkitGagal) {
         const actualCmd = getActualCommand(x.method);
         const tipLines = [];
         if (x.method && x.method !== actualCmd) {
@@ -448,17 +454,21 @@ function renderLoginsData(rawLogins) {
         } else {
           tipLines.push('Perintah: ' + (actualCmd || '—'));
         }
+        if (isPolkit || isPolkitGagal) {
+          tipLines.push('Mekanisme: Polkit (Tanpa Sudo)');
+          if (x.raw_action) tipLines.push('Aksi D-Bus: ' + x.raw_action);
+        }
         if (x.target_user) tipLines.push('Jalankan Sebagai: ' + x.target_user);
-        if (x.pwd) tipLines.push('Direktori (PWD): ' + x.pwd);
-        if (x.tty) tipLines.push('Terminal: ' + x.tty);
-        if (isSudoGagal) {
+        if (x.pwd && x.pwd !== '—') tipLines.push('Direktori (PWD): ' + x.pwd);
+        if (x.tty && x.tty !== '—') tipLines.push('Terminal: ' + x.tty);
+        if (isSudoGagal || isPolkitGagal) {
           tipLines.push('Status: Gagal' + (x.alert ? ' (' + x.alert + ')' : ''));
         } else {
           tipLines.push('Status: Berhasil');
         }
         const cmdTooltip = tipLines.join('\n');
 
-        if (isSudoGagal) {
+        if (isSudoGagal || isPolkitGagal) {
           methodCell = '<span style="color:var(--red);font-weight:600;font-size:10.5px">' + escapeHtml(x.alert || 'Otentikasi Gagal') + ':</span> '
             + '<code class="cmd-code" style="border-color:rgba(248,113,113,0.3)" title="' + escapeHtml(cmdTooltip) + '">' + escapeHtml(actualCmd || '—') + '</code>';
         } else {

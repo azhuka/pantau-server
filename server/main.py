@@ -5173,11 +5173,11 @@ def _deduplicate_user_logins(raw_list: list) -> list:
             if tty:
                 seen_active_tty.add(tty)
             result.append(item)
-        elif ev_type in ("sudo", "sudo_gagal"):
+        elif ev_type in ("sudo", "sudo_gagal", "polkit", "polkit_gagal"):
             sudo_key = (ts, tty, method)
             if sudo_key in seen_sudo:
                 for existing in result:
-                    if (existing.get("type") in ("sudo", "sudo_gagal")) and (str(existing.get("ts") or "").strip(), str(existing.get("tty") or "").strip(), str(existing.get("method") or "").strip()) == sudo_key:
+                    if (existing.get("type") in ("sudo", "sudo_gagal", "polkit", "polkit_gagal")) and (str(existing.get("ts") or "").strip(), str(existing.get("tty") or "").strip(), str(existing.get("method") or "").strip()) == sudo_key:
                         if not existing.get("pwd") and item.get("pwd"):
                             existing["pwd"] = item["pwd"]
                             existing["target_user"] = item.get("target_user", existing.get("target_user"))

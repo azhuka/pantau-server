@@ -354,6 +354,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.104
+
+- **Tipe Rilis:** Penangkapan Audit Aksi Administratif Polkit Tanpa Sudo (*Polkit Administrative Action Audit without Sudo*)
+- **Fokus Utama:** Menutup celah observabilitas perintah administratif yang dieksekusi tanpa biner `sudo`:
+  1. **Audit Otorisasi Polkit Real-Time (*Polkit Authorization Ingestion*):**
+     - Agen Pantau kini memantau log otorisasi `polkitd` via `journalctl` untuk menangkap tindakan administratif sistem (seperti kontrol unit `systemctl`, manajemen berkas unit, reload daemon, reboot, dan poweroff) yang dieksekusi pengguna tanpa kata kunci `sudo`.
+     - Memetakan aksi D-Bus resmi (`org.freedesktop.systemd1.manage-units`, `org.freedesktop.login1.reboot`, dll.) ke dalam perintah sistem yang mudah dipahami di kolom "Perintah".
+     - Menyediakan rincian lengkap aksi Polkit, mekanisme D-Bus, dan status otorisasi (berhasil/gagal) pada tooltip multibaris.
+  2. **Integrasi Antarmuka & Pembedaan Status (*Polkit Badge & Visual Integration*):**
+     - Menyajikan badge khusus `Polkit (root)` dan `Polkit Gagal` pada kolom jenis aktivitas.
+     - Menyaring dan mendeduplikasi event Polkit secara konsisten di tingkat backend FastAPI dan frontend klien.
+
 ## Versi 4.8.103
 
 - **Tipe Rilis:** Standardisasi Kolom Perintah Baku, Tooltip Metadata Multibaris, dan Pembersihan Tombol Terminal (*Standard Command Column Refinement, Multiline Metadata Tooltips, & Terminal Button Elimination*)

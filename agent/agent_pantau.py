@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.103"
+AGENT_VERSION = "4.8.104"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4654,7 +4654,69 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
         except Exception:
             pass
 
-    # 4. Log Otentikasi Terperinci (auth.log, secure, atau systemd journalctl)
+    # 4. Kueri Otorisasi Administratif Polkit (Perintah sistem tanpa sudo, e.g. systemctl)
+    try:
+        polkit_action_map = {
+            "org.freedesktop.systemd1.manage-units": "systemctl (Kontrol Unit Layanan)",
+            "org.freedesktop.systemd1.manage-unit-files": "systemctl (Konfigurasi Unit File)",
+            "org.freedesktop.systemd1.reload-daemon": "systemctl daemon-reload",
+            "org.freedesktop.login1.reboot": "systemctl reboot",
+            "org.freedesktop.login1.reboot-multiple-sessions": "systemctl reboot",
+            "org.freedesktop.login1.power-off": "systemctl poweroff",
+            "org.freedesktop.login1.power-off-multiple-sessions": "systemctl poweroff",
+            "org.freedesktop.timedate1.set-time": "timedatectl set-time",
+            "org.freedesktop.timedate1.set-timezone": "timedatectl set-timezone",
+            "org.freedesktop.hostname1.set-static-hostname": "hostnamectl set-hostname",
+            "org.freedesktop.networkd.modify": "networkctl modify",
+            "org.freedesktop.NetworkManager.settings.modify.system": "nmcli connection modify",
+            "org.freedesktop.packagekit.system-sources-refresh": "packagekit refresh",
+            "org.freedesktop.packagekit.package-install": "packagekit install",
+        }
+        p_polkit = re.compile(
+            r"(?:Operator of \S+ (?P<fail>FAILED to authenticate to gain(?: ONE-SHOT)? authorization)|"
+            r"Operator of \S+ (?P<succ>successfully authenticated as unix-user:(?P<auth_user>[\w.-]+) to gain(?: ONE-SHOT)? authorization)|"
+            r"Operator of \S+ (?P<grant>gained authorization)) "
+            r"for action (?P<action>[\w.-]+)"
+            r"(?:.*?owned by unix-user:(?P<owner_user>[\w.-]+))?"
+        )
+        res_polkit = _run_cmd(["journalctl", "-q", "-o", "short-iso", "-u", "polkit.service", "-n", "100", "--no-pager"], timeout=5)
+        if not res_polkit or not res_polkit.stdout:
+            res_polkit = _run_cmd(["journalctl", "-q", "-o", "short-iso", "_COMM=polkitd", "-n", "100", "--no-pager"], timeout=5)
+        if res_polkit and res_polkit.stdout:
+            for line in res_polkit.stdout.splitlines():
+                m_pk = p_polkit.search(line)
+                if m_pk:
+                    ts = line[:19].replace("T", " ") if len(line) >= 19 else ""
+                    g = m_pk.groupdict()
+                    u = g.get("owner_user") or g.get("auth_user") or ""
+                    if not u or u == "pantau":
+                        continue
+                    if target_user and u != target_user and not u.endswith(" " + target_user):
+                        continue
+                    is_fail = bool(g.get("fail"))
+                    action = g.get("action") or ""
+                    cmd_label = polkit_action_map.get(action, action.split(".")[-1])
+                    ev_type = "polkit_gagal" if is_fail else "polkit"
+                    alert_msg = "Otorisasi Ditolak / Dibatalkan" if is_fail else ""
+                    pk_key = (u, ts, action, ev_type)
+                    if pk_key not in seen_sudo:
+                        seen_sudo.add(pk_key)
+                        events.append({
+                            "ts": ts,
+                            "user": u,
+                            "type": ev_type,
+                            "from": "(lokal)",
+                            "tty": "—",
+                            "pwd": "—",
+                            "target_user": "root",
+                            "alert": alert_msg,
+                            "raw_action": action,
+                            "method": cmd_label,
+                        })
+    except Exception:
+        pass
+
+    # 5. Log Otentikasi Terperinci (auth.log, secure, atau systemd journalctl)
     patterns = [
         ("sukses", re.compile(
             r"Accepted (?P<method>password|publickey|keyboard-interactive|gssapi-with-mic) "
