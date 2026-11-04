@@ -354,6 +354,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.93
+
+- **Tipe Rilis:** Sinkronisasi Reaktif Instan & Akselerasi Pembaruan Otomatis Aktivitas Pengguna (*Instant Reactive Tab-Focus Synchronization & 10s Live Activity Refresh*)
+- **Fokus Utama:** Mengatasi jeda pembaruan dan menjawab kebutuhan alur pemantauan live di mana operator melakukan tindakan di terminal server klien tanpa perlu melakukan reload halaman web secara manual:
+  1. **Sinkronisasi Otomatis Tab-Focus / Visibility Change (`user_activity.html`):**
+     - Menambahkan event listener `visibilitychange` dan `window.focus` sehingga seketika operator beralih dari jendela terminal SSH kembali ke tab browser Pantau Server, sistem langsung memicu penyegaran latar belakang secara hening (< 1.0 detik). Operator langsung melihat baris aktivitas baru yang baru saja dieksekusi di terminal klien.
+  2. **Akselerasi Polling Berkala dari 30 Detik ke 10 Detik:**
+     - Menurunkan interval polling latar belakang dari 30 detik menjadi 10 detik dengan debounce 8 detik agar tabel aktivitas pengguna dan riwayat perintah shell terperbarui secara responsif dan dinamis tanpa membebani CPU maupun jaringan.
+  3. **Indikator Status Visual NOC `Live 10d`:**
+     - Menambahkan badge status sinkronisasi `Live 10d` berindikator titik hijau/kuning dinamis di samping tombol "Segarkan" pada topbar antarmuka NOC untuk menegaskan kepada operator bahwa pemantauan berjalan secara mandiri dan otomatis tanpa perlu tombol refresh atau reload browser.
+
 ## Versi 4.8.92
 
 - **Tipe Rilis:** Pembedaan Tegas Sesi Aktif/Selesai & Pelaporan Presisi Eksekusi Sudo Pengguna (*Active vs Closed Session Disambiguation & User-Specific Sudo Audit Logging*)
