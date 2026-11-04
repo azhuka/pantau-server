@@ -559,7 +559,7 @@
                   <span class="badge badge-muted badge-sub" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="{{ 'Alasan: ' ~ p.ignored_reason if p.ignored_reason else ('Diabaikan oleh ' ~ op_name) }}">DIABAIKAN</span>
                 {% endif %}
                 {% if p.acknowledged_by or p.is_ignored %}
-                  <span class="badge badge-up badge-sub" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="Ditangani oleh {{ ack_op if p.acknowledged_by else op_name }}">DITANGANI</span>
+                  <span class="badge badge-up badge-sub" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="Ditangani oleh {{ ack_op if p.acknowledged_by else op_name }}">✓ DITANGANI</span>
                 {% endif %}
               </div>
             </div>
@@ -1554,7 +1554,7 @@ window.poll = async function(opts = {}) {
                 subBadges += `<span class="badge badge-muted badge-sub" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="${(isEn ? 'Reason: ' : 'Alasan: ') + _esc(p.ignored_reason || '')}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span>`;
               }
               if (p.acknowledged_by) {
-                subBadges += `<span class="badge badge-up badge-sub" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
+                subBadges += `<span class="badge badge-up badge-sub" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _esc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
               }
               sevCellHtml = `<div style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2.5px">${baseBadge}<div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:3px">${subBadges}</div></div>`;
             } else {

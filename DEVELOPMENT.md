@@ -354,27 +354,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
-## Versi 4.8.87
+## Versi 4.8.88
 
-- **Tipe Rilis:** Penambahan Kotak Ditangani (*Handled*) pada Strip Insiden Aktif, Tombol Aksi Cepat Triage Dasbor (*Dashboard Quick Triage Actions*), Endpoint Pembatalan Penanganan (*Alert Unacknowledge API*), Standarisasi Badge & Terminologi Triage Standar NOC Enterprise (*NOC Enterprise Incident Triage & Strip Tile Density Enhancement*)
-- **Fokus Utama:** Mengimplementasikan alur triage insiden kelas enterprise standar NOC (Incident Triage & Acknowledgment) yang presisi, responsif, dan konsisten:
-  1. **Penambahan Kotak Ditangani pada Strip Insiden Aktif Dasbor (`dashboard.html`):**
-     - Memperluas strip keparahan insiden dari 5 kotak menjadi 6 kotak presisi: `Kritis`, `Gawat`, `Peringatan`, `Info`, `Ditangani`, dan `Diabaikan`.
-     - Memberikan styling hijau standar NOC (`var(--green)` / `#22c55e`) pada tile `.zbx-tile-handled` ketika memiliki insiden aktif yang telah ditangani oleh operator.
-     - Menyaring penghitungan keparahan insiden (Kritis, Gawat, Peringatan, Info) agar secara ketat hanya menghitung insiden yang **Belum Ditangani** (unhandled), sehingga angka pada kotak keparahan berkurang saat insiden ditandai ditangani, dan angka pada kotak Ditangani bertambah.
-  2. **Tombol Aksi Cepat (*Quick Action Buttons*) pada Tabel & Modal Dasbor (`dashboard.html` & `server/main.py`):**
-     - Menyediakan tombol aksi cepat inline pada kolom aksi tabel "Insiden Terkini" di dasbor (tombol hijau checkmark untuk "Tandai Ditangani", tombol mata silang untuk "Abaikan").
-     - Ketika operator mengklik "Tandai Ditangani", insiden secara instan dipindahkan dari tabel "Insiden Terkini" (agar operator fokus hanya pada insiden yang butuh penanganan) ke dalam kotak Ditangani pada strip insiden.
-     - Menyediakan tombol aksi kontekstual di dalam Modal Rincian Keparahan:
-       - Pada modal keparahan aktif: tombol "Tandai Ditangani" dan "Abaikan".
-       - Pada modal "Ditangani": tombol "Batalkan Penanganan" (Unacknowledge) dan "Tandai Selesai" (Resolve).
-       - Pada modal "Diabaikan": tombol "Pulihkan" (Restore).
-  3. **Backend API Endpoint Pembatalan Penanganan (`server/main.py`):**
-     - Menambahkan endpoint `POST /api/alerts/{pid}/unack` untuk mengembalikan status insiden dari ditangani kembali ke status aktif belum ditangani.
-     - Mencatat audit trail `alert_unack` pada riwayat aktivitas sistem dan menyinkronkan polling `/api/servers` serta dasbor secara real-time.
-  4. **Standarisasi Visual & Eliminasi Kerancuan Istilah NOC (`problems.html`, `services.html`, `dashboard.html`):**
-     - Menghilangkan karakter centang mentah UTF-8 (`✓`) dari teks badge status di seluruh sistem, menstandarisasikan label menjadi teks kapital bersih `DITANGANI` dengan ikon SVG terpadu.
-     - Menghapus kerancuan istilah "insiden terbuka" dan menggantikannya dengan konsep baku NOC: **Insiden Aktif** (dengan 3 status: *Belum Ditangani*, *Ditangani*, *Diabaikan*) vs **Insiden Selesai / Riwayat Insiden**.
+- **Tipe Rilis:** Pemulihan Integritas Dasbor dan Pembatalan Perubahan Triage Insiden (*Dashboard Integrity Restoration & Incident Triage Reversion*)
+- **Fokus Utama:** Memulihkan seluruh antarmuka dasbor dan alur insiden ke kondisi stabil, bersih, dan nyaman:
+  1. **Pemulihan Tabel Insiden Terkini:**
+     - Menghapus total kolom aksi tambahan pada tabel Insiden Terkini di dasbor utama (`dashboard.html`).
+     - Mengembalikan lebar kolom dan kolom navigasi chevron tunggal (`36px`) yang bersih dan rapi.
+     - Seluruh baris tabel kembali berfungsi sebagai navigasi langsung ke rincian server/endpoint tanpa tombol tambahan yang mengganggu.
+  2. **Pemulihan Strip Keparahan Kartu INSIDEN AKTIF:**
+     - Mengembalikan kartu INSIDEN AKTIF ke format 5 kotak keparahan asli (`Kritis`, `Gawat`, `Peringatan`, `Info`, `Diabaikan`).
+     - Memastikan perhitungan masalah dan integrasi backend beroperasi sesuai kondisi stabil `v4.8.86`.
 
 ## Versi 4.8.86
 

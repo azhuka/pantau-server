@@ -5962,7 +5962,7 @@ async function ackProblemInDetail(id, btn) {
         if (sevCell && !sevCell.innerHTML.includes('DITANGANI')) {
           const currentBadge = sevCell.querySelector('.badge');
           if (currentBadge) {
-            sevCell.innerHTML = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">${currentBadge.outerHTML}<span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}">${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
+            sevCell.innerHTML = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1.5px">${currentBadge.outerHTML}<span class="badge badge-up" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:600" title="${isEn ? 'Incident Handled' : 'Insiden Ditangani'}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span></div>`;
           }
         }
       }
