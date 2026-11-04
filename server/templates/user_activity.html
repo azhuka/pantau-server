@@ -7,8 +7,12 @@
     <h2 style="margin-top:10px">Aktivitas User: <span class="mono">{{ username }}</span>
       <span style="font-size:13px;color:var(--dim)">@ {{ server.hostname }}</span></h2>
   </div>
-  {% if account and account.sessions and not user.is_viewer() %}
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <button type="button" class="btn btn-ghost btn-sm" onclick="loadActivity(false)" title="Segarkan data aktivitas sekarang">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+      Segarkan
+    </button>
+    {% if account and account.sessions and not user.is_viewer() %}
       {% for s in account.sessions %}
         {% if s.tty %}
           <button type="button" class="btn btn-danger btn-sm" onclick="terminateSession('{{ s.tty }}', this)" title="Putus paksa sesi terminal {{ s.tty }}">
@@ -17,8 +21,8 @@
           </button>
         {% endif %}
       {% endfor %}
-    </div>
-  {% endif %}
+    {% endif %}
+  </div>
 </div>
 
 <div class="stats-grid">
@@ -195,7 +199,7 @@ function renderHistory(history) {
     history.length >= historyLines && historyLines < 1000 ? 'inline-flex' : 'none';
 }
 
-async function loadActivity() {
+async function loadActivity(isBackground = false) {
   if (activityBusy) return;
   activityBusy = true;
   const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
@@ -203,10 +207,18 @@ async function loadActivity() {
   const st2 = document.getElementById('hist-state');
   const loadEl1 = document.getElementById('ll-loading');
   const loadEl2 = document.getElementById('hist-loading');
-  if (loadEl1) loadEl1.style.display = 'flex';
-  if (loadEl2) loadEl2.style.display = 'flex';
-  if (st1) st1.textContent = isEn ? 'loading…' : 'memuat…';
-  if (st2) st2.textContent = isEn ? 'loading…' : 'memuat…';
+  const hasExistingData = !!(window.__llLast || window.__hlLast);
+
+  // Hanya tampilkan banner/spinner pemuatan jika data belum ada sama sekali (initial load)
+  if (!hasExistingData && !isBackground) {
+    if (loadEl1) loadEl1.style.display = 'flex';
+    if (loadEl2) loadEl2.style.display = 'flex';
+    if (st1) st1.textContent = isEn ? 'loading…' : 'memuat…';
+    if (st2) st2.textContent = isEn ? 'loading…' : 'memuat…';
+  } else if (!isBackground) {
+    if (st1) st1.textContent = isEn ? 'refreshing…' : 'menyegarkan…';
+    if (st2) st2.textContent = isEn ? 'refreshing…' : 'menyegarkan…';
+  }
   let rid;
   try {
     const r = await fetch('/api/logs/request', {
@@ -224,8 +236,10 @@ async function loadActivity() {
     activityBusy = false;
     if (loadEl1) loadEl1.style.display = 'none';
     if (loadEl2) loadEl2.style.display = 'none';
-    if (st1) st1.textContent = 'gagal: ' + escapeHtml(e.message);
-    if (st2) st2.textContent = '';
+    if (!hasExistingData) {
+      if (st1) st1.textContent = 'gagal: ' + escapeHtml(e.message);
+      if (st2) st2.textContent = '';
+    }
     return;
   }
   const start = Date.now();
@@ -243,7 +257,9 @@ async function loadActivity() {
       if (loadEl1) loadEl1.style.display = 'none';
       if (loadEl2) loadEl2.style.display = 'none';
       if (j.status === 'failed') {
-        if (st1) st1.textContent = 'gagal: ' + escapeHtml(String(j.result || '').slice(0, 200));
+        if (!hasExistingData) {
+          if (st1) st1.textContent = 'gagal: ' + escapeHtml(String(j.result || '').slice(0, 200));
+        }
         return;
       }
       let data = null;
@@ -298,9 +314,11 @@ async function loadActivity() {
   activityBusy = false;
   if (loadEl1) loadEl1.style.display = 'none';
   if (loadEl2) loadEl2.style.display = 'none';
-  document.getElementById('ll-empty').style.display = 'block';
-  document.getElementById('hist-empty').style.display = 'block';
-  if (st1) st1.textContent = 'agen tidak merespons';
+  if (!hasExistingData) {
+    document.getElementById('ll-empty').style.display = 'block';
+    document.getElementById('hist-empty').style.display = 'block';
+    if (st1) st1.textContent = isEn ? 'agent did not respond' : 'agen tidak merespons';
+  }
 }
 
 function setLlTypeFilter(t) {
@@ -438,6 +456,8 @@ document.getElementById('hist-filter').addEventListener('input', () => {
 });
 
 loadActivity();
-setInterval(loadActivity, 5000);
+setInterval(() => {
+  if (!document.hidden) loadActivity(true);
+}, 30000);
 </script>
 {% endblock %}

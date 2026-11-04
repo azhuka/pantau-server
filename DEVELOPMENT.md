@@ -354,6 +354,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.91
+
+- **Tipe Rilis:** Eliminasi Kedipan Status Pemuatan & Stabilisasi Penyegaran Aktivitas Pengguna (*Silent Background Refresh & Loading Banner Flicker Elimination*)
+- **Fokus Utama:** Mengatasi masalah teks indikator "Mengambil riwayat perintah shell dari server…" dan "Memuat aktivitas login & sudo dari server…" yang selalu muncul berulang kali setiap beberapa detik di layar antarmuka:
+  1. **Penyegaran Latar Belakang Senyap (*Silent Refresh Guard* - `user_activity.html`):**
+     - Memodifikasi fungsi `loadActivity(isBackground = false)` agar banner/spinner pemuatan `#hist-loading` dan `#ll-loading` **hanya** muncul pada pemuatan pertama (*initial load*) saat belum ada data sama sekali di memori peramban.
+     - Jika data telah tersedia, proses penyegaran berkala berjalan secara senyap di latar belakang tanpa memicu kedipan (*flicker*), pergeseran tata letak (*layout shift*), atau memunculkan kembali blok loading di hadapan operator.
+  2. **Penyesuaian Siklus Polling Berkala:**
+     - Mengubah interval penyegaran otomatis dari semula per 5 detik menjadi siklus standar 30 detik yang dilengkapi proteksi visibilitas tab (`!document.hidden`).
+  3. **Penyediaan Tombol Kontrol Cepat Manual:**
+     - Menambahkan tombol "Segarkan" langsung pada bilah atas (*topbar*) antarmuka agar operator dapat memicu sinkronisasi manual kapan pun diperlukan tanpa menunggu timer interval.
+  4. **Hasil Verifikasi Headless Chrome:**
+     - Pengujian pemantauan berkelanjutan selama 12 detik mengonfirmasi bahwa indikator `histLoading` dan `llLoading` bernilai `false` (0 kali muncul kembali pasca-pemuatan awal).
+
 ## Versi 4.8.90
 
 - **Tipe Rilis:** Akselerasi Eksekusi & Pemulihan Skrip Pemuatan Aktivitas Pengguna (*Instant User Activity & Log Worker Execution Acceleration*)
