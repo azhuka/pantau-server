@@ -254,13 +254,6 @@ function formatDetailed(d) {
   return `${day} ${mon} ${yr} ${hh}:${mm}:${ss}`;
 }
 
-function copyCmd(cmd) {
-  if (!cmd) return;
-  navigator.clipboard.writeText(cmd).then(() => {
-    if (typeof showToast === 'function') showToast('Perintah disalin ke clipboard', true);
-  }).catch(() => {});
-}
-
 let activityBusy = false;
 let llCount = 0;
 
@@ -388,10 +381,10 @@ function renderLoginsData(logins) {
 
       let methodCell = '';
       if (isSudo) {
-        methodCell = '<code class="cmd-code" onclick="copyCmd(' + JSON.stringify(x.method || '') + ')" style="cursor:pointer" title="Klik untuk menyalin: ' + escapeHtml(x.method || '') + '">' + escapeHtml(x.method || '—') + '</code>';
+        methodCell = '<code class="cmd-code" title="' + escapeHtml(x.method || '') + '">' + escapeHtml(x.method || '—') + '</code>';
       } else if (isSudoGagal) {
         methodCell = '<span style="color:var(--red);font-weight:600;font-size:10.5px">' + escapeHtml(x.alert || 'Otentikasi Gagal') + ':</span> '
-          + '<code class="cmd-code" onclick="copyCmd(' + JSON.stringify(x.method || '') + ')" style="cursor:pointer;border-color:rgba(248,113,113,0.3)" title="Klik untuk menyalin: ' + escapeHtml(x.method || '') + '">' + escapeHtml(x.method || '—') + '</code>';
+          + '<code class="cmd-code" style="border-color:rgba(248,113,113,0.3)" title="' + escapeHtml(x.method || '') + '">' + escapeHtml(x.method || '—') + '</code>';
       } else if (isAktif) {
         methodCell = '<span style="color:var(--green)">Sesi terminal sedang terhubung dan aktif</span>';
       } else if (isSelesai) {

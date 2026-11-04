@@ -354,6 +354,15 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.101
+
+- **Tipe Rilis:** Reduksi Dimensi Tooltip Berdensitas Tinggi NOC dan Eliminasi Handler Salin Perintah Tambahan (*NOC High-Density Tooltip Dimension Reduction & Command Copy Handler Removal*)
+- **Fokus Utama:** Menyempurnakan kenyamanan visual dan ergonomi antarmuka pengguna:
+  1. **Reduksi Dimensi Tooltip Global (*Compact 9.5px Tooltip Engine*):**
+     - Memperkecil dimensi seluruh tooltip global (`.pantau-copy-tooltip` & `.pantau-tip-text`) pada `base.html`: padding sel dipadatkan 50% dari 6px 10px menjadi 3px 6px, ukuran font diselaraskan ke 9.5px, border-radius menjadi 4px, dan bayangan elevasi diperlembut agar selaras dengan densitas tinggi NOC tanpa menutupi pandangan baris di sekitarnya.
+  2. **Penghapusan Fitur Salin Perintah Tambahan (*Command Copy Handler Removal*):**
+     - Menghapus fungsi `copyCmd`, handler event klik, dan tooltip redundan pada kode perintah sudo di kolom detail tabel aktivitas pengguna (`user_activity.html`), menjaga teks perintah tetap statis, bersih, dan murni untuk seleksi teks standar.
+
 ## Versi 4.8.100
 
 - **Tipe Rilis:** Format Waktu Esensial dengan Tooltip Rinci, Eliminasi Kolom Aksi Kosong, dan Tindakan Interaktif Terkontekstualisasi (*Essential Time Display with Rich Tooltips, Empty Action Column Elimination, & Contextual In-Row Action Integration*)
