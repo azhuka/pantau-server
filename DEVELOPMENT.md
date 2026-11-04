@@ -354,6 +354,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.100
+
+- **Tipe Rilis:** Format Waktu Esensial dengan Tooltip Rinci, Eliminasi Kolom Aksi Kosong, dan Tindakan Interaktif Terkontekstualisasi (*Essential Time Display with Rich Tooltips, Empty Action Column Elimination, & Contextual In-Row Action Integration*)
+- **Fokus Utama:** Menyempurnakan presisi dan ergonomi tabel audit aktivitas pengguna (`/servers/{sid}/user/{username}`) berdasarkan standar baku pemantauan NOC:
+  1. **Format Kolom Waktu Esensial & Tooltip Rinci (*Essential Time with Rich Contextual Tooltip*):**
+     - Mengadaptasi standar format waktu esensial `DD Mon HH:MM:SS` (contoh: `04 Nov 15:27:04`) pada sel tabel tanpa tahun 4-digit yang redundan, menghemat ruang horizontal dan meningkatkan kerapian visual tabel.
+     - Menyediakan tooltip hover lengkap `title="..."` dengan tahun dan konteks kejadian penuh:
+       - Sudo: `Waktu Eksekusi: DD Mon YYYY HH:MM:SS`
+       - Sesi Selesai: `Mulai: ... | Selesai: ... (Durasi: HH:MM)`
+       - Sesi Aktif: `Waktu Mulai: ... (Sesi Masih Aktif)`
+  2. **Eliminasi Kolom Aksi Kosong (*Elimination of Empty Action Column*):**
+     - Menghapus kolom 'Aksi' yang sebelumnya dipenuhi tanda hubung kosong (`—`) pada seluruh baris audit pasif.
+     - Mengintegrasikan tombol tindakan pemutusan sesi (`Putus`) secara langsung dan kontekstual di dalam kolom Terminal khusus untuk baris sesi yang sedang aktif, sehingga tidak ada ruang tabel yang terbuang sia-sia.
+  3. **Kemampuan Salin Perintah Cepat (*One-Click Command Copy*):**
+     - Seluruh perintah sudo pada kolom detail aktivitas dapat diklik langsung untuk disalin ke clipboard dengan notifikasi toast konfirmasi instan.
+
 ## Versi 4.8.99
 
 - **Tipe Rilis:** Standardisasi Tata Letak Tabel Audit NOC, Eliminasi Duplikasi Kolom Sumber IP, dan Penyeragaman Format Waktu (*NOC Table Layout Standardization, IP Column De-duplication, & Uniform Timestamps*)
