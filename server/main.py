@@ -5165,8 +5165,29 @@ def user_activity_page(request: Request, sid: int, username: str, db: Session = 
             if a.get("user") == username:
                 account = a
                 break
+
+    last_log = (
+        db.query(LogRequest)
+        .filter(
+            LogRequest.server_id == sid,
+            LogRequest.unit == "USER_ACTIVITY",
+            LogRequest.detail == username,
+            LogRequest.status == "success",
+        )
+        .order_by(LogRequest.id.desc())
+        .first()
+    )
+    initial_logins = []
+    if last_log and last_log.result:
+        try:
+            parsed = json.loads(last_log.result)
+            initial_logins = parsed.get("logins", []) if isinstance(parsed, dict) else []
+        except Exception:
+            initial_logins = []
+
     return tpl(request, "user_activity.html", {
         "user": user, "server": server, "username": username, "account": account,
+        "initial_logins": initial_logins,
     })
 
 

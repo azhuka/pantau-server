@@ -68,7 +68,7 @@
   </div>
 </div>
 
-<div id="chip-row" style="display:none;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+<div id="chip-row" style="{% if initial_logins and initial_logins|length > 0 %}display:flex;{% else %}display:none;{% endif %}flex-wrap:wrap;gap:10px;margin-bottom:16px">
   <span class="chip chip-up" style="cursor:pointer" onclick="setLlTypeFilter('aktif')" title="Klik untuk filter Sesi Aktif">Sesi Aktif: <b id="chip-aktif">0</b></span>
   <span class="chip chip-inactive" style="cursor:pointer" onclick="setLlTypeFilter('selesai')" title="Klik untuk filter Sesi Selesai">Selesai: <b id="chip-selesai">0</b></span>
   <span class="chip chip-warn" style="cursor:pointer" onclick="setLlTypeFilter('sudo')" title="Klik untuk filter Sudo">Sudo: <b id="chip-sudo">0</b></span>
@@ -106,12 +106,12 @@
       </div>
     </div>
   </div>
-  <div id="ll-loading" style="padding:28px 16px;text-align:center;color:var(--dim);font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px">
+  <div id="ll-loading" style="padding:28px 16px;text-align:center;color:var(--dim);font-size:12px;{% if initial_logins and initial_logins|length > 0 %}display:none;{% else %}display:flex;{% endif %}align-items:center;justify-content:center;gap:8px">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:pantau-spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
     <span>Memuat aktivitas login &amp; sudo dari server…</span>
   </div>
   <div id="ll-empty" class="empty-msg" style="display:none">Belum ada aktivitas login atau sudo untuk user ini.</div>
-  <div id="ll-scroll" style="display:none;overflow-x:auto;border:1px solid var(--border);border-radius:6px">
+  <div id="ll-scroll" style="{% if initial_logins and initial_logins|length > 0 %}display:block;{% else %}display:none;{% endif %}overflow-x:auto;border:1px solid var(--border);border-radius:6px">
     <table id="ll-table" style="width:100%;border-collapse:collapse">
       <thead>
         <tr>
@@ -136,6 +136,7 @@
 const SID = {{ server.id }};
 const USERNAME = {{ username|tojson }};
 const IS_VIEWER = {{ 'true' if user and user.is_viewer() else 'false' }};
+const INITIAL_LOGINS = {{ (initial_logins or [])|tojson }};
 
 function sleepMs(ms) { return new Promise(r => setTimeout(r, ms)); }
 function escapeHtml(s) {
@@ -155,7 +156,7 @@ function renderChips(logins) {
   }
   llCount = logins.length;
   const chip = document.getElementById('chip-row');
-  chip.style.display = 'flex';
+  if (chip) chip.style.display = 'flex';
   const elAktif = document.getElementById('chip-aktif');
   if (elAktif) elAktif.textContent = c.aktif;
   const elSelesai = document.getElementById('chip-selesai');
@@ -170,180 +171,203 @@ function renderChips(logins) {
   if (elSesi) elSesi.textContent = c.sesi;
 }
 
+function renderLoginsData(logins) {
+  const loadEl1 = document.getElementById('ll-loading');
+  if (loadEl1) loadEl1.style.display = 'none';
+  const st1 = document.getElementById('ll-state');
+  const wrap = document.getElementById('ll-scroll');
+  const emptyEl = document.getElementById('ll-empty');
+
+  if (!logins || !logins.length) {
+    if (wrap) wrap.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'block';
+    renderChips([]);
+    if (st1) st1.textContent = '0 aktivitas';
+    window.__llLast = [];
+    return;
+  }
+
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (wrap) wrap.style.display = 'block';
+
+  const tbody = document.getElementById('ll-table')?.querySelector('tbody');
+  if (tbody) {
+    tbody.innerHTML = logins.map(x => {
+      const isAktif = (x.type === 'aktif');
+      const isSudo = (x.type === 'sudo');
+      const isSudoGagal = (x.type === 'sudo_gagal');
+      const isGagal = (x.type === 'gagal');
+      const isSelesai = (x.type === 'selesai' || x.type === 'sukses');
+
+      const cls = isAktif ? 'badge-up'
+                : isSudo ? 'badge-warn'
+                : (isGagal || isSudoGagal) ? 'badge-down' : 'badge-muted';
+
+      let typeLabel = '';
+      if (isAktif) {
+        typeLabel = '<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Sesi Aktif</span>';
+      } else if (isSelesai) {
+        typeLabel = 'Selesai';
+      } else if (isSudo) {
+        typeLabel = 'Sudo' + (x.target_user ? ' (' + escapeHtml(x.target_user) + ')' : '');
+      } else if (isSudoGagal) {
+        typeLabel = 'Sudo Gagal';
+      } else if (isGagal) {
+        typeLabel = 'Login Gagal';
+      } else if (x.type === 'sesi') {
+        typeLabel = 'Sesi Baru';
+      } else {
+        typeLabel = escapeHtml(x.type || '-');
+      }
+
+      let termInfo = escapeHtml(x.tty || '-');
+      if (isAktif) {
+        termInfo = '<span class="mono" style="font-weight:600;color:var(--green)">' + escapeHtml(x.tty || 'ssh') + '</span>'
+          + (x.pid ? ' <span style="font-size:10px;color:var(--dim)">(PID ' + escapeHtml(x.pid) + ')</span>' : '');
+      } else if (isSelesai && x.duration) {
+        termInfo = '<span class="mono">' + escapeHtml(x.tty || '-') + '</span>'
+          + '<div style="font-size:10px;color:var(--dim)">Durasi: ' + escapeHtml(x.duration) + '</div>';
+      }
+
+      let pwdCell = '<span style="color:var(--dim)">—</span>';
+      if (x.pwd) {
+        const shortPwd = x.pwd.length > 26 ? '…' + x.pwd.slice(-24) : x.pwd;
+        pwdCell = '<code class="mono" style="font-size:11px;background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:3px" title="' + escapeHtml(x.pwd) + '">'
+          + escapeHtml(shortPwd) + '</code>';
+      }
+
+      let methodCell = '';
+      if (isSudo) {
+        methodCell = '<code class="mono" style="font-size:11.5px;color:var(--text);font-weight:600;background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;word-break:break-all" title="' + escapeHtml(x.method || '') + '">'
+          + escapeHtml(x.method || '-') + '</code>';
+      } else if (isSudoGagal) {
+        methodCell = '<span style="color:var(--red);font-weight:600">' + escapeHtml(x.alert || 'Otentikasi Gagal') + ':</span> '
+          + '<code class="mono" style="font-size:11px;margin-left:4px">' + escapeHtml(x.method || '-') + '</code>';
+      } else if (isAktif) {
+        methodCell = '<span style="color:var(--green);font-weight:500">Sesi terminal sedang terhubung dan aktif</span>';
+      } else if (isSelesai) {
+        methodCell = '<span style="color:var(--dim)">Sesi logout selesai' + (x.logout_time ? ' (' + escapeHtml(x.logout_time) + ')' : '') + '</span>';
+      } else if (isGagal) {
+        methodCell = '<span style="color:var(--red)">Percobaan autentikasi gagal: ' + escapeHtml(x.method || 'Password salah') + '</span>';
+      } else {
+        methodCell = escapeHtml(x.method || '-');
+      }
+
+      let actionCell = '<span style="color:var(--dim)">—</span>';
+      if (isAktif && x.tty && !IS_VIEWER) {
+        actionCell = '<button type="button" class="btn btn-danger btn-xs" style="padding:2px 6px;font-size:10px" onclick="terminateSession(\'' + escapeHtml(x.tty) + '\', this)" title="Putus paksa sesi terminal ini">Putus Sesi</button>';
+      }
+
+      const filterType = (x.type === 'sukses') ? 'selesai' : (x.type || '');
+      const rowSearch = `${x.ts || ''} ${x.user || ''} ${x.from || ''} ${x.tty || ''} ${x.pwd || ''} ${x.method || ''} ${filterType} ${isAktif ? 'aktif' : ''} ${isSelesai ? 'selesai' : ''}`.toLowerCase();
+      return '<tr data-type="' + escapeHtml(filterType) + '" data-search="' + escapeHtml(rowSearch) + '">'
+        + '<td class="mono" style="font-size:11.5px">' + escapeHtml(x.ts || '-') + '</td>'
+        + '<td><strong>' + escapeHtml(x.user || '-') + '</strong></td>'
+        + '<td><span class="badge ' + cls + '">' + typeLabel + '</span></td>'
+        + '<td>' + termInfo + '</td>'
+        + '<td class="mono">' + escapeHtml(x.from || '-') + '</td>'
+        + '<td>' + pwdCell + '</td>'
+        + '<td>' + methodCell + '</td>'
+        + '<td style="text-align:right">' + actionCell + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  if (!window._llPagination && typeof attachTablePagination === 'function') {
+    window._llPagination = attachTablePagination('#ll-table', {
+      unitLabel: 'aktivitas',
+      defaultLimit: 10,
+      pageSizeOptions: [10, 25, 50, 100, 'all']
+    });
+  } else if (window._llPagination) {
+    window._llPagination.update();
+  }
+  filterLoginsTable();
+
+  const pgBar = document.querySelector('.table-pagination-bar[data-for-table="ll-table"]');
+  if (pgBar) pgBar.style.display = (logins.length > 10) ? 'flex' : 'none';
+  if (st1) st1.textContent = logins.length ? logins.length + ' aktivitas' : '';
+
+  renderChips(logins);
+  window.__llLast = logins;
+}
+
 async function loadActivity(isBackground = false) {
   if (activityBusy) return;
   activityBusy = true;
   const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
   const st1 = document.getElementById('ll-state');
   const loadEl1 = document.getElementById('ll-loading');
-  const hasExistingData = !!window.__llLast;
+  const hasExistingData = !!(window.__llLast && window.__llLast.length);
 
-  if (!hasExistingData && !isBackground) {
-    if (loadEl1) loadEl1.style.display = 'flex';
-    if (st1) st1.textContent = isEn ? 'loading…' : 'memuat…';
-  } else if (!isBackground) {
-    if (st1) st1.textContent = isEn ? 'refreshing…' : 'menyegarkan…';
-  }
-
-  let rid;
   try {
-    const r = await fetch('/api/logs/request', {
-      method: 'POST', credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': getCsrf()
-      },
-      body: JSON.stringify({server_id: SID, unit: 'USER_ACTIVITY', detail: USERNAME, lines: 100}),
-    });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status));
-    rid = j.id;
-  } catch (e) {
-    activityBusy = false;
-    if (loadEl1) loadEl1.style.display = 'none';
-    if (!hasExistingData) {
-      if (st1) st1.textContent = 'gagal: ' + escapeHtml(e.message);
+    if (!hasExistingData && !isBackground) {
+      if (loadEl1) loadEl1.style.display = 'flex';
+      if (st1) st1.textContent = isEn ? 'loading…' : 'memuat…';
+    } else if (!isBackground) {
+      if (st1) st1.textContent = isEn ? 'refreshing…' : 'menyegarkan…';
     }
-    return;
-  }
 
-  const start = Date.now();
-  let firstPoll = true;
-  while (Date.now() - start < 45000) {
-    await sleepMs(firstPoll ? 400 : 600);
-    firstPoll = false;
-    let j;
+    let rid;
     try {
-      const r = await fetch('/api/logs/request/' + rid, {credentials: 'same-origin'});
-      j = await r.json();
-    } catch (e) { continue; }
-
-    if (j.status === 'success' || j.status === 'failed') {
-      activityBusy = false;
+      const r = await fetch('/api/logs/request', {
+        method: 'POST', credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrf()
+        },
+        body: JSON.stringify({server_id: SID, unit: 'USER_ACTIVITY', detail: USERNAME, lines: 100}),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status));
+      rid = j.id;
+    } catch (e) {
       if (loadEl1) loadEl1.style.display = 'none';
-      if (j.status === 'failed') {
-        if (!hasExistingData) {
-          if (st1) st1.textContent = 'gagal: ' + escapeHtml(String(j.result || '').slice(0, 200));
-        }
-        return;
+      if (!hasExistingData) {
+        if (st1) st1.textContent = 'gagal: ' + escapeHtml(e.message);
       }
-
-      let data = null;
-      try { data = JSON.parse(j.result); } catch (e) {}
-      const logins = (data && data.logins) || [];
-
-      const wrap = document.getElementById('ll-scroll');
-      wrap.style.display = logins.length ? 'block' : 'none';
-      document.getElementById('ll-empty').style.display = logins.length ? 'none' : 'block';
-
-      if (logins.length) {
-        document.getElementById('ll-table').querySelector('tbody').innerHTML = logins.map(x => {
-          const isAktif = (x.type === 'aktif');
-          const isSudo = (x.type === 'sudo');
-          const isSudoGagal = (x.type === 'sudo_gagal');
-          const isGagal = (x.type === 'gagal');
-          const isSelesai = (x.type === 'selesai' || x.type === 'sukses');
-
-          const cls = isAktif ? 'badge-up'
-                    : isSudo ? 'badge-warn'
-                    : (isGagal || isSudoGagal) ? 'badge-down' : 'badge-muted';
-
-          let typeLabel = '';
-          if (isAktif) {
-            typeLabel = '<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Sesi Aktif</span>';
-          } else if (isSelesai) {
-            typeLabel = 'Selesai';
-          } else if (isSudo) {
-            typeLabel = 'Sudo' + (x.target_user ? ' (' + escapeHtml(x.target_user) + ')' : '');
-          } else if (isSudoGagal) {
-            typeLabel = 'Sudo Gagal';
-          } else if (isGagal) {
-            typeLabel = 'Login Gagal';
-          } else if (x.type === 'sesi') {
-            typeLabel = 'Sesi Baru';
-          } else {
-            typeLabel = escapeHtml(x.type || '-');
-          }
-
-          let termInfo = escapeHtml(x.tty || '-');
-          if (isAktif) {
-            termInfo = '<span class="mono" style="font-weight:600;color:var(--green)">' + escapeHtml(x.tty || 'ssh') + '</span>'
-              + (x.pid ? ' <span style="font-size:10px;color:var(--dim)">(PID ' + escapeHtml(x.pid) + ')</span>' : '');
-          } else if (isSelesai && x.duration) {
-            termInfo = '<span class="mono">' + escapeHtml(x.tty || '-') + '</span>'
-              + '<div style="font-size:10px;color:var(--dim)">Durasi: ' + escapeHtml(x.duration) + '</div>';
-          }
-
-          let pwdCell = '<span style="color:var(--dim)">—</span>';
-          if (x.pwd) {
-            const shortPwd = x.pwd.length > 26 ? '…' + x.pwd.slice(-24) : x.pwd;
-            pwdCell = '<code class="mono" style="font-size:11px;background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:3px" title="' + escapeHtml(x.pwd) + '">'
-              + escapeHtml(shortPwd) + '</code>';
-          }
-
-          let methodCell = '';
-          if (isSudo) {
-            methodCell = '<code class="mono" style="font-size:11.5px;color:var(--text);font-weight:600;background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;word-break:break-all" title="' + escapeHtml(x.method || '') + '">'
-              + escapeHtml(x.method || '-') + '</code>';
-          } else if (isSudoGagal) {
-            methodCell = '<span style="color:var(--red);font-weight:600">' + escapeHtml(x.alert || 'Otentikasi Gagal') + ':</span> '
-              + '<code class="mono" style="font-size:11px;margin-left:4px">' + escapeHtml(x.method || '-') + '</code>';
-          } else if (isAktif) {
-            methodCell = '<span style="color:var(--green);font-weight:500">Sesi terminal sedang terhubung dan aktif</span>';
-          } else if (isSelesai) {
-            methodCell = '<span style="color:var(--dim)">Sesi logout selesai' + (x.logout_time ? ' (' + escapeHtml(x.logout_time) + ')' : '') + '</span>';
-          } else if (isGagal) {
-            methodCell = '<span style="color:var(--red)">Percobaan autentikasi gagal: ' + escapeHtml(x.method || 'Password salah') + '</span>';
-          } else {
-            methodCell = escapeHtml(x.method || '-');
-          }
-
-          let actionCell = '<span style="color:var(--dim)">—</span>';
-          if (isAktif && x.tty && !IS_VIEWER) {
-            actionCell = '<button type="button" class="btn btn-danger btn-xs" style="padding:2px 6px;font-size:10px" onclick="terminateSession(\'' + escapeHtml(x.tty) + '\', this)" title="Putus paksa sesi terminal ini">Putus Sesi</button>';
-          }
-
-          const filterType = (x.type === 'sukses') ? 'selesai' : (x.type || '');
-          const rowSearch = `${x.ts || ''} ${x.user || ''} ${x.from || ''} ${x.tty || ''} ${x.pwd || ''} ${x.method || ''} ${filterType} ${isAktif ? 'aktif' : ''} ${isSelesai ? 'selesai' : ''}`.toLowerCase();
-          return '<tr data-type="' + escapeHtml(filterType) + '" data-search="' + escapeHtml(rowSearch) + '">'
-            + '<td class="mono" style="font-size:11.5px">' + escapeHtml(x.ts || '-') + '</td>'
-            + '<td><strong>' + escapeHtml(x.user || '-') + '</strong></td>'
-            + '<td><span class="badge ' + cls + '">' + typeLabel + '</span></td>'
-            + '<td>' + termInfo + '</td>'
-            + '<td class="mono">' + escapeHtml(x.from || '-') + '</td>'
-            + '<td>' + pwdCell + '</td>'
-            + '<td>' + methodCell + '</td>'
-            + '<td style="text-align:right">' + actionCell + '</td>'
-            + '</tr>';
-        }).join('');
-
-        if (!window._llPagination && typeof attachTablePagination === 'function') {
-          window._llPagination = attachTablePagination('#ll-table', {
-            unitLabel: 'aktivitas',
-            defaultLimit: 10,
-            pageSizeOptions: [10, 25, 50, 100, 'all']
-          });
-        } else if (window._llPagination) {
-          window._llPagination.update();
-        }
-        filterLoginsTable();
-      }
-
-      const pgBar = document.querySelector('.table-pagination-bar[data-for-table="ll-table"]');
-      if (pgBar) pgBar.style.display = (logins.length > 10) ? 'flex' : 'none';
-      if (st1) st1.textContent = logins.length ? logins.length + ' aktivitas' : '';
-
-      renderChips(logins);
-      window.__llLast = logins;
       return;
     }
-  }
 
-  activityBusy = false;
-  if (loadEl1) loadEl1.style.display = 'none';
-  if (!hasExistingData) {
-    document.getElementById('ll-empty').style.display = 'block';
-    if (st1) st1.textContent = isEn ? 'agent did not respond' : 'agen tidak merespons';
+    const start = Date.now();
+    let firstPoll = true;
+    while (Date.now() - start < 10000) {
+      await sleepMs(firstPoll ? 400 : 600);
+      firstPoll = false;
+      let j;
+      try {
+        const r = await fetch('/api/logs/request/' + rid, {credentials: 'same-origin'});
+        j = await r.json();
+      } catch (e) { continue; }
+
+      if (j.status === 'success' || j.status === 'failed') {
+        if (loadEl1) loadEl1.style.display = 'none';
+        if (j.status === 'failed') {
+          if (!hasExistingData) {
+            if (st1) st1.textContent = 'gagal: ' + escapeHtml(String(j.result || '').slice(0, 200));
+          }
+          return;
+        }
+
+        let data = null;
+        try { data = JSON.parse(j.result); } catch (e) {}
+        const logins = (data && data.logins) || [];
+        renderLoginsData(logins);
+        return;
+      }
+    }
+
+    // Timeout polling dari agen (maksimal 10 detik)
+    if (loadEl1) loadEl1.style.display = 'none';
+    if (!hasExistingData) {
+      document.getElementById('ll-empty').style.display = 'block';
+      if (st1) st1.textContent = isEn ? 'agent did not respond' : 'agen tidak merespons (timeout)';
+    }
+  } catch (err) {
+    if (loadEl1) loadEl1.style.display = 'none';
+    console.error('loadActivity error:', err);
+  } finally {
+    activityBusy = false;
   }
 }
 
@@ -480,7 +504,11 @@ async function terminateSession(tty, btn) {
   }
 }
 
-loadActivity();
+if (INITIAL_LOGINS && INITIAL_LOGINS.length > 0) {
+  renderLoginsData(INITIAL_LOGINS);
+}
+
+loadActivity(INITIAL_LOGINS && INITIAL_LOGINS.length > 0);
 setInterval(() => {
   loadActivity(true);
 }, 10000);

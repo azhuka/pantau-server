@@ -354,6 +354,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.97
+
+- **Tipe Rilis:** Pemuatan Instan Tanpa Blokir Aktivitas Pengguna & Prapengambilan Data dari Basis Data (*Instant Zero-Wait User Activity Loading & SSR Database Pre-fetching*)
+- **Fokus Utama:** Mengeliminasi waktu tunggu operator saat membuka detail aktivitas pengguna dengan memuat data audit login & sudo terakhir langsung dari basis data server (*zero wait time*):
+  1. **Prapengambilan Data Sisi Server (Server-Side Pre-fetch & SSR Data):**
+     - Rute antarmuka `/servers/{sid}/user/{username}` langsung mengambil entri `USER_ACTIVITY` sukses terakhir dari basis data server dan menyediakannya langsung ke template (`initial_logins`).
+     - Kontainer tabel dan indikator chip langsung berstatus aktif dan terisi seketika saat halaman dibuka tanpa menunggu putaran *round-trip* agen (0 ms waktu tunggu bagi operator).
+  2. **Penyegaran Halus Latar Belakang (*Silent Seamless Background Refresh*):**
+     - Mekanisme pembaruan data berkala (10 detik) dan penyegaran awal berjalan secara hening (*background mode*), tanpa menampilkan animasi pemuatan yang memblokir tampilan atau mengosongkan tabel yang sedang dibaca operator.
+     - Penanganan kesalahan dan jaminan status `finally { activityBusy = false; }` mencegah antarmuka tersangkut pada status memuat.
+     - Pemangkasan batas waktu tunggu permintaan agen dari 45 detik menjadi 10 detik dengan pesan status kegagalan yang informatif jika agen klien tidak merespons.
+
 ## Versi 4.8.96
 
 - **Tipe Rilis:** Optimasi Presisi Ekstraksi Field Sudo & Penyempurnaan Parser Akuntansi Sesi (*Precision Sudo Audit Field Parsing & Session Accounting Polish*)
