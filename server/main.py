@@ -10127,14 +10127,17 @@ def sync_server_problems(db, srv, instances, keep_history=40, now=None):
                 row.acknowledged_by = row.acknowledged_by or target_ignored_by or "operator"
             elif is_operator_action:
                 row.severity = "warning"
-                row.is_ignored = 1
-                row.ignore_mode = "permanent"
-                if not row.ignored_reason:
-                    row.ignored_reason = operator_action_reason
-                if not row.ignored_by:
-                    row.ignored_by = operator_action_by
-                row.acknowledged_at = row.acknowledged_at or now
-                row.acknowledged_by = row.acknowledged_by or operator_action_by or "operator"
+                # Hanya pertahankan pengabaian jika row memang sedang berstatus diabaikan.
+                # Jangan pernah memaksa kembali is_ignored = 1 jika operator sudah mencabut pengabaiannya (is_ignored == 0).
+                if getattr(row, "is_ignored", 0) == 1:
+                    row.is_ignored = 1
+                    row.ignore_mode = getattr(row, "ignore_mode", "permanent") or "permanent"
+                    if not row.ignored_reason:
+                        row.ignored_reason = operator_action_reason
+                    if not row.ignored_by:
+                        row.ignored_by = operator_action_by
+                    row.acknowledged_at = row.acknowledged_at or now
+                    row.acknowledged_by = row.acknowledged_by or operator_action_by or "operator"
 
             if p["key"] == "agent_stale" and ev and (row.started_at > ev):
                 row.started_at = ev

@@ -354,6 +354,15 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.89
+
+- **Tipe Rilis:** Perbaikan Cacat Logika Rekonsiliasi Pengabaian Insiden (*Incident Unignore Reconciliation Bug Fix & Operator Action State Preservation*)
+- **Fokus Utama:** Mengatasi masalah di mana insiden yang sengaja dihentikan operator selalu dipaksa kembali menjadi diabaikan saat operator mengklik "Pantau Kembali":
+  1. **Penghormatan terhadap Aksi Pemulihan Pemantauan Operator (`server/main.py`):**
+     - Memperbaiki fungsi rekonsiliasi latar belakang `sync_server_problems` agar tidak lagi memaksa `row.is_ignored = 1` pada insiden yang telah dicabut pengabaiannya (`row.is_ignored == 0`) oleh operator.
+     - Memastikan status `is_ignored = 0` bertahan secara konsisten di database dan memindahkan insiden mati tersebut ke kategori insiden aktif (muncul di tabel Insiden Terkini dan bertambah di kotak Peringatan dasbor).
+     - Menjamin alur bolak-balik (Abaikan -> Pantau Kembali -> Abaikan Kembali) beroperasi secara presisi tanpa ada konflik dengan riwayat perintah Command.
+
 ## Versi 4.8.88
 
 - **Tipe Rilis:** Pemulihan Integritas Dasbor dan Pembatalan Perubahan Triage Insiden (*Dashboard Integrity Restoration & Incident Triage Reversion*)
