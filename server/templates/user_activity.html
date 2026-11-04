@@ -229,8 +229,10 @@ async function loadActivity() {
     return;
   }
   const start = Date.now();
+  let firstPoll = true;
   while (Date.now() - start < 45000) {
-    await sleepMs(1200);
+    await sleepMs(firstPoll ? 400 : 600);
+    firstPoll = false;
     let j;
     try {
       const r = await fetch('/api/logs/request/' + rid, {credentials: 'same-origin'});
@@ -285,8 +287,20 @@ async function loadActivity() {
       const pgBar = document.querySelector('.table-pagination-bar[data-for-table="ll-table"]');
       if (pgBar) pgBar.style.display = (logins.length > 10) ? 'flex' : 'none';
       if (st1) st1.textContent = logins.length ? logins.length + ' aktivitas' : '';
+
+      renderChips(logins, history);
+      renderHistory(history);
+      window.__llLast = logins;
+      window.__hlLast = history;
+      return;
     }
   }
+  activityBusy = false;
+  if (loadEl1) loadEl1.style.display = 'none';
+  if (loadEl2) loadEl2.style.display = 'none';
+  document.getElementById('ll-empty').style.display = 'block';
+  document.getElementById('hist-empty').style.display = 'block';
+  if (st1) st1.textContent = 'agen tidak merespons';
 }
 
 function setLlTypeFilter(t) {
@@ -321,20 +335,6 @@ function filterLoginsTable() {
   }
   const st1 = document.getElementById('ll-state');
   if (st1) st1.textContent = `${count} aktivitas`;
-
-      renderChips(logins, history);
-      renderHistory(history);
-      window.__llLast = logins;
-      window.__hlLast = history;
-      return;
-    }
-  }
-  activityBusy = false;
-  if (loadEl1) loadEl1.style.display = 'none';
-  if (loadEl2) loadEl2.style.display = 'none';
-  document.getElementById('ll-empty').style.display = 'block';
-  document.getElementById('hist-empty').style.display = 'block';
-  if (st1) st1.textContent = 'agen tidak merespons';
 }
 
 function exportCsv() {

@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.89"
+AGENT_VERSION = "4.8.90"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4577,8 +4577,8 @@ def collect_user_logins(max_events: int = 50) -> list:
     if not data:
         # Fallback journalctl untuk host tanpa file auth fisik
         res_j = _run_cmd(
-            ["journalctl", "-u", "ssh", "-u", "sshd", "-u", "sudo", "-u", "systemd-logind",
-             "-n", "600", "--no-pager"],
+            ["journalctl", "-q", "-u", "ssh", "-u", "sshd", "-u", "sudo", "-u", "systemd-logind",
+             "-n", "200", "--no-pager"],
             timeout=10,
         )
         if res_j and res_j.stdout:
@@ -5483,6 +5483,16 @@ def poll_log_requests(cfg: dict):
         http_json_request(cfg, f"/api/logs/{rid}/result", "POST", result)
 
 
+def _log_worker_loop(cfg: dict) -> None:
+    """Worker background untuk merespons dan mengeksekusi permintaan log & aktivitas pengguna seketika (1.0 dtk)."""
+    while True:
+        try:
+            poll_log_requests(cfg)
+        except Exception:
+            pass
+        time.sleep(1.0)
+
+
 # ---------------------------------------------------------------------------
 # File Manager operations (Berkas)
 # ---------------------------------------------------------------------------
@@ -5898,10 +5908,11 @@ def main():
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
 
-    # Jalankan worker file manager, terminal & command executor di background thread
+    # Jalankan worker file manager, terminal, command executor & log worker di background thread
     threading.Thread(target=_file_worker_loop, args=(cfg,), daemon=True).start()
     threading.Thread(target=_terminal_worker_loop, args=(cfg,), daemon=True).start()
     threading.Thread(target=_command_worker_loop, args=(cfg,), daemon=True).start()
+    threading.Thread(target=_log_worker_loop, args=(cfg,), daemon=True).start()
 
     run_once(cfg)
 
@@ -5981,12 +5992,6 @@ def _run_once(cfg: dict):
         poll_and_execute_commands(cfg)
     except Exception as e:
         print(f"[WARN] Polling command error: {e}")
-
-    # 3. Polling permintaan log layanan dari Dashboard
-    try:
-        poll_log_requests(cfg)
-    except Exception as e:
-        print(f"[WARN] Polling log error: {e}")
 
     print()
 

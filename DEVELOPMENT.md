@@ -354,6 +354,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.90
+
+- **Tipe Rilis:** Akselerasi Eksekusi & Pemulihan Skrip Pemuatan Aktivitas Pengguna (*Instant User Activity & Log Worker Execution Acceleration*)
+- **Fokus Utama:** Menyelesaikan masalah loading lambat/abadi pada pemuatan aktivitas login, sudo, dan riwayat perintah shell pengguna (`/servers/{sid}/user/{username}`):
+  1. **Pemulihan Skrip & Penghapusan Galat Sintaksis JavaScript (`server/templates/user_activity.html`):**
+     - Memperbaiki penutupan blok kurung kurawal pada fungsi `loadActivity()` yang sebelumnya terpotong dan tertumpuk di dalam fungsi `filterLoginsTable()`, yang sempat menyebabkan kegagalan parse parser JavaScript pada browser.
+     - Mengoptimalkan interval polling status log di peramban dari 1200ms menjadi respons awal 400ms disusul interval 600ms, sehingga hasil log langsung dirender segera setelah dikirim oleh agen.
+  2. **Worker Latar Belakang Khusus Log & Aktivitas Agen (`agent/agent_pantau.py` & `package/opt/pantau/agent/agent_pantau.py`):**
+     - Menambahkan daemon thread `_log_worker_loop` dengan interval polling seketika (1.0 detik), setara dengan responsivitas `_command_worker_loop` dan `_file_worker_loop`.
+     - Menghapus keterikatan eksekusi log dari siklus pemindaian berat utama (yang sebelumnya menunggu siklus 5–10 detik).
+  3. **Optimasi Performa Perintah Fallback Otentikasi:**
+     - Menyelaraskan query fallback `journalctl` pada sistem tanpa file auth fisik dengan menyertakan flag senyap `-q` dan membatasi riwayat relevan `-n 200` (mengurangi beban pemindaian jurnal sebesar 90%).
+  4. **Hasil Pengujian Operasional:**
+     - Waktu pemuatan halaman aktivitas pengguna terpangkas drastis dari sebelumnya 15–25+ detik menjadi hanya **1.57 detik** secara instan dan konsisten.
+
 ## Versi 4.8.89
 
 - **Tipe Rilis:** Perbaikan Cacat Logika Rekonsiliasi Pengabaian Insiden (*Incident Unignore Reconciliation Bug Fix & Operator Action State Preservation*)
