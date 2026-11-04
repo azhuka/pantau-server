@@ -198,6 +198,18 @@
   color: #93c5fd;
 }
 
+/* Ditangani (Hijau NOC Handled - Sinkron dengan badge-up) */
+.zbx-sev-tile.zbx-tile-handled.is-active {
+  background: rgba(34, 197, 94, 0.16);
+  border-color: rgba(34, 197, 94, 0.6);
+}
+.zbx-sev-tile.zbx-tile-handled.is-active .zbx-sev-count {
+  color: #22c55e;
+}
+.zbx-sev-tile.zbx-tile-handled.is-active .zbx-sev-label {
+  color: #86efac;
+}
+
 /* Diabaikan (Netral Slate - Low Distraction!) */
 .zbx-sev-tile.zbx-tile-ignored.is-active {
   background: rgba(148, 163, 184, 0.12);
@@ -986,12 +998,13 @@ body.popout-fleet_table #dash-fleet-card {
     </div>
   </a>
 
-  {% set total_active = danger_total + average_total + warning_total + info_total %}
-  {% set total_all = total_active + ignored_total %}
-  <div class="card" id="kpi-card-prob" style="margin:0;padding:6px 12px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid {% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% elif ignored_total > 0 %}rgba(148,163,184,0.45){% else %}var(--border){% endif %}">
+  {% set total_unhandled = danger_total + average_total + warning_total + info_total %}
+  {% set total_handled = (handled_total if handled_total is defined else 0) %}
+  {% set total_all = total_unhandled + total_handled + ignored_total %}
+  <div class="card" id="kpi-card-prob" style="margin:0;padding:6px 12px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid {% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% elif total_handled > 0 %}var(--green){% elif ignored_total > 0 %}rgba(148,163,184,0.45){% else %}var(--border){% endif %}">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
       <div style="font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;display:flex;align-items:center;gap:5px">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% else %}var(--green){% endif %};flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif total_handled > 0 %}var(--green){% else %}var(--dim){% endif %};flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         <span>Insiden Aktif</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
@@ -1017,6 +1030,10 @@ body.popout-fleet_table #dash-fleet-card {
       <div class="zbx-sev-tile zbx-tile-info {% if info_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('info')" title="Klik untuk rincian insiden Info">
         <span class="zbx-sev-count" id="zbx-count-info">{{ info_total }}</span>
         <span class="zbx-sev-label">Info</span>
+      </div>
+      <div class="zbx-sev-tile zbx-tile-handled {% if total_handled > 0 %}is-active{% endif %}" onclick="openSevDetailModal('handled')" title="Klik untuk rincian insiden yang Ditangani Operator">
+        <span class="zbx-sev-count" id="zbx-count-handled">{{ total_handled }}</span>
+        <span class="zbx-sev-label" title="Insiden aktif yang sedang ditangani oleh operator">Ditangani</span>
       </div>
       <div class="zbx-sev-tile zbx-tile-ignored {% if ignored_total > 0 %}is-active{% endif %}" onclick="openSevDetailModal('ignored')" title="Klik untuk rincian insiden yang Diabaikan (Netral)">
         <span class="zbx-sev-count" id="zbx-count-ignored">{{ ignored_total }}</span>
@@ -1097,7 +1114,7 @@ body.popout-fleet_table #dash-fleet-card {
         <col style="width:165px">
         <col>
         <col style="width:120px">
-        <col style="width:36px">
+        <col style="width:90px">
       </colgroup>
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);user-select:none">
@@ -1106,7 +1123,7 @@ body.popout-fleet_table #dash-fleet-card {
           <th class="dash-col-sev" style="padding:5px 8px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.6px;font-weight:700">KEPARAHAN</th>
           <th class="dash-col-desc" style="padding:5px 18px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700">DESKRIPSI INSIDEN</th>
           <th class="dash-col-durasi" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.6px;font-weight:700">DURASI</th>
-          <th class="dash-col-action" style="padding:5px 8px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap"></th>
+          <th class="dash-col-action" style="padding:5px 8px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.6px;font-weight:700">AKSI</th>
         </tr>
       </thead>
       <tbody id="dash-problems-tbody" data-sig="{% for p in all_open_problems %}{{ p.server_id or p.probe_id or '' }}:{{ p.key }}:{{ p.severity }}:{{ p.acknowledged_by or '' }}:{{ p.message or '' }}:{{ p.started_at_str }}{% if not loop.last %}|{% endif %}{% endfor %}">
@@ -1152,7 +1169,7 @@ body.popout-fleet_table #dash-fleet-card {
                     <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="Diabaikan oleh {{ ign_op }}">DIABAIKAN</span>
                   {% endif %}
                   {% if p.acknowledged_by %}
-                    <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="Ditangani oleh {{ ack_op }}">✓ DITANGANI</span>
+                    <span class="badge badge-up" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="Ditangani oleh {{ ack_op }}">DITANGANI</span>
                   {% endif %}
                 </div>
               </div>
@@ -1169,8 +1186,18 @@ body.popout-fleet_table #dash-fleet-card {
           <td class="dash-col-durasi" style="padding:5px 12px;white-space:nowrap;text-align:right">
             <span class="mono dash-dur-badge" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">{{ p.durasi }}</span>
           </td>
-          <td class="dash-col-action" style="padding:5px 8px;text-align:center;color:var(--dim)">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="dash-row-arrow" style="opacity:0.4;transition:all .15s ease"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          <td class="dash-col-action" style="padding:4px 6px;text-align:center;white-space:nowrap" onclick="event.stopPropagation()">
+            <div style="display:inline-flex;align-items:center;justify-content:center;gap:3px">
+              <button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);padding:2px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" onclick="event.stopPropagation();handleDashboardAck(this, '{{ p.id }}', '{{ p.key }}')" title="Tandai Ditangani" aria-label="Tandai Ditangani">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" style="color:var(--dim);padding:2px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" onclick="event.stopPropagation();openIgnoreModal({id:'{{ p.id }}', service_id:'{{ p.service_id or '' }}', server_id:'{{ p.server_id or '' }}'}, '{{ p.message | replace("'", "\\'") }}', () => { if (typeof pollNocDashboard==='function') pollNocDashboard(); })" title="Abaikan Insiden" aria-label="Abaikan Insiden">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              </button>
+              <a href="{{ '/probing' if (p.probe_id or not p.server_id) else '/servers/' ~ p.server_id }}" class="btn btn-ghost btn-sm" style="color:var(--dim);padding:2px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" title="Buka Detail Server" aria-label="Detail Server" onclick="event.stopPropagation()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+              </a>
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -1661,7 +1688,9 @@ body.popout-fleet_table #dash-fleet-card {
     <div style="padding:0;overflow-y:auto;flex:1;max-height:calc(86vh - 120px)">
       <!-- Empty State -->
       <div id="sdm-empty" style="display:none;padding:45px 20px;text-align:center;flex-direction:column;align-items:center;justify-content:center;gap:8px">
-        <div style="width:44px;height:44px;border-radius:50%;background:rgba(16,185,129,0.12);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:22px">✓</div>
+        <div style="width:44px;height:44px;border-radius:50%;background:rgba(16,185,129,0.12);color:var(--green);display:flex;align-items:center;justify-content:center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
         <div style="font-size:14px;font-weight:600;color:var(--text-bright);margin-top:6px" id="sdm-empty-title">Nihil Insiden</div>
         <div style="font-size:12.5px;color:var(--dim);max-width:380px" id="sdm-empty-sub">Tidak ditemukan insiden aktif pada kategori keparahan ini.</div>
       </div>
@@ -1728,6 +1757,12 @@ const SEV_CONFIG = {
     badgeCls: 'badge-info',
     iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>',
     emptyMsg: 'Tidak ada catatan informasi operasional saat ini.'
+  },
+  handled: {
+    label: 'Ditangani',
+    badgeCls: 'badge-up',
+    iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+    emptyMsg: 'Tidak ada insiden yang sedang dalam penanganan operator saat ini.'
   },
   ignored: {
     label: 'Diabaikan',
@@ -1839,6 +1874,9 @@ function renderSevDetailModal(sev) {
         }
       } else if (p.is_ignored && p.ignored_by) {
         opNote = `(diabaikan oleh ${ignOp})`;
+      } else if (p.acknowledged_by) {
+        const ackOp = (p.acknowledged_by === 'admin' ? 'master-admin' : p.acknowledged_by);
+        opNote = `(ditangani oleh ${ackOp})`;
       }
 
       // Bersihkan redundansi jika rawMsg sudah mengandung keterangan operator
@@ -1854,33 +1892,61 @@ function renderSevDetailModal(sev) {
       const escNote = opNote ? ` <span style="color:var(--dim);font-weight:400;font-size:11px">${opNote.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>` : '';
       const fullIncidentHtml = `<span style="font-weight:500;color:var(--text-bright)">${escMsg}</span>${escNote}`;
 
+      let actBtns = '';
+      if (sev === 'handled') {
+        actBtns = `
+          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--yellow);padding:3px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" onclick="handleDashboardUnack(this, '${p.id}')" title="Batalkan Penanganan (Kembalikan ke Belum Ditangani)" aria-label="Batal Ditangani">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--blue);padding:3px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" onclick="handleDashboardResolve(this, '${p.id}')" title="Tandai Selesai / Teratasi Manual" aria-label="Selesai Manual">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          </button>
+        `;
+      } else if (sev === 'ignored') {
+        actBtns = `
+          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);padding:3px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" onclick="unignoreProblem(this, '${p.id}', '${p.service_id || ''}', '${p.server_id || ''}', () => { if (typeof pollNocDashboard==='function') pollNocDashboard(); })" title="Aktifkan Kembali Pemantauan" aria-label="Aktifkan Kembali">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        `;
+      } else {
+        actBtns = `
+          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);padding:3px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" onclick="handleDashboardAck(this, '${p.id}', '${p.key || ''}')" title="Tandai Ditangani" aria-label="Tandai Ditangani">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" style="color:var(--dim);padding:3px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" onclick="openIgnoreModal({id:'${p.id}', service_id:'${p.service_id || ''}', server_id:'${p.server_id || ''}'}, '${escMsg.replace(/'/g, "\\'")}', () => { if (typeof pollNocDashboard==='function') pollNocDashboard(); })" title="Abaikan Insiden" aria-label="Abaikan Insiden">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+          </button>
+        `;
+      }
+
       const rowHref = p.server_id ? `/servers/${p.server_id}` : '/probing';
       html += `
         <tr style="border-bottom:1px solid #30363d;transition:background .12s ease">
-          <td style="padding:10px 12px;white-space:nowrap;vertical-align:middle;width:115px">
-            <span class="mono" style="font-size:12px;font-weight:600;color:var(--text)">${startedStr}</span>
+          <td style="padding:8px 12px;white-space:nowrap;vertical-align:middle;width:115px">
+            <span class="mono" style="font-size:11.5px;font-weight:600;color:var(--text)">${startedStr}</span>
           </td>
-          <td style="padding:10px 12px;white-space:nowrap;vertical-align:middle;width:150px;max-width:180px;overflow:hidden;text-overflow:ellipsis">
-            <a href="${rowHref}" style="font-size:13px;font-weight:600;color:var(--blue);text-decoration:none" title="Buka Detail">
+          <td style="padding:8px 12px;white-space:nowrap;vertical-align:middle;width:150px;max-width:180px;overflow:hidden;text-overflow:ellipsis">
+            <a href="${rowHref}" style="font-size:12.5px;font-weight:600;color:var(--blue);text-decoration:none" title="Buka Detail">
               ${hostDisplay}
             </a>
             ${grpHtml}
           </td>
-          <td style="padding:10px 10px;text-align:center;vertical-align:middle;white-space:nowrap;width:115px">
+          <td style="padding:8px 10px;text-align:center;vertical-align:middle;white-space:nowrap;width:115px">
             ${sevBadge}
           </td>
-          <td style="padding:10px 14px;font-size:12.5px;color:var(--text);vertical-align:middle;line-height:1.4">
+          <td style="padding:8px 14px;font-size:12px;color:var(--text);vertical-align:middle;line-height:1.4">
             ${fullIncidentHtml}
           </td>
-          <td class="mono" style="padding:10px 12px;white-space:nowrap;text-align:right;vertical-align:middle;width:120px;font-size:12px;color:var(--dim)">
+          <td class="mono" style="padding:8px 12px;white-space:nowrap;text-align:right;vertical-align:middle;width:110px;font-size:11.5px;color:var(--dim)">
             <span class="dash-dur-badge" style="background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18)">${durStr}</span>
           </td>
-          <td class="col-act" style="padding:10px 12px;text-align:center;vertical-align:middle;white-space:nowrap;width:140px">
-            <div style="display:flex;align-items:center;justify-content:center;gap:6px">
-              <button type="button" class="btn btn-ghost btn-sm" onclick='try{openProblemDetailModal(${JSON.stringify(p).replace(/'/g, "&#39;")});}catch(e){window.location.href="${rowHref}";}' title="Diagnosa &amp; Solusi" aria-label="Diagnosa">
+          <td class="col-act" style="padding:8px 10px;text-align:center;vertical-align:middle;white-space:nowrap;width:150px">
+            <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+              ${actBtns}
+              <button type="button" class="btn btn-ghost btn-sm" style="padding:3px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" onclick='try{openProblemDetailModal(${JSON.stringify(p).replace(/'/g, "&#39;")});}catch(e){window.location.href="${rowHref}";}' title="Diagnosa &amp; Solusi" aria-label="Diagnosa">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               </button>
-              <a href="${rowHref}" class="btn btn-ghost btn-sm" title="Buka Rincian Layanan Server" aria-label="Rincian">
+              <a href="${rowHref}" class="btn btn-ghost btn-sm" style="padding:3px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" title="Buka Rincian Layanan Server" aria-label="Rincian">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
               </a>
             </div>
@@ -2317,7 +2383,7 @@ async function pollNocDashboard() {
     if (rProbes && rProbes.ok) {
       try { probeProblems = await rProbes.json(); } catch(e) {}
     }
-    let upCnt = 0, dnCnt = 0, dangerTot = 0, avgTot = 0, warnTot = 0, infoTot = 0, ignTot = 0;
+    let upCnt = 0, dnCnt = 0, dangerTot = 0, avgTot = 0, warnTot = 0, infoTot = 0, handledTot = 0, ignTot = 0;
 
     list.forEach(srv => {
       const hasReported = Boolean(srv.last_seen);
@@ -2328,19 +2394,24 @@ async function pollNocDashboard() {
       const avgCnt = srv.average_count || 0;
       const wCnt = srv.warning_count || 0;
       const iCnt = srv.info_count || 0;
+      const hCnt = srv.handled_problem_count || 0;
       const ignCnt = srv.ignored_problem_count || 0;
       dangerTot += dCnt;
       avgTot += avgCnt;
       warnTot += wCnt;
       infoTot += iCnt;
+      handledTot += hCnt;
       ignTot += ignCnt;
     });
 
     if (Array.isArray(probeProblems)) {
       probeProblems.forEach(sp => {
         const isIgn = Boolean(sp.is_ignored);
+        const isHnd = Boolean(sp.acknowledged_at || sp.acknowledged_by || sp.acknowledged);
         if (isIgn) {
           ignTot++;
+        } else if (isHnd) {
+          handledTot++;
         } else {
           const sev = (sp.severity || 'warning').toLowerCase();
           if (sev === 'danger') dangerTot++;
@@ -2690,7 +2761,7 @@ async function pollNocDashboard() {
       dnEl.className = 'badge badge-' + (dnCnt > 0 ? 'danger' : 'muted');
     }
     const activeTot = dangerTot + avgTot + warnTot + infoTot;
-    const totalAll = activeTot + ignTot;
+    const totalAll = activeTot + handledTot + ignTot;
     if (totPrbEl) totPrbEl.textContent = totalAll;
 
     // Update Zabbix Severity Strip counts & active state
@@ -2698,38 +2769,44 @@ async function pollNocDashboard() {
     const tileAverage = document.querySelector('.zbx-sev-tile.zbx-tile-average');
     const tileWarning = document.querySelector('.zbx-sev-tile.zbx-tile-warning');
     const tileInfo = document.querySelector('.zbx-sev-tile.zbx-tile-info');
+    const tileHandled = document.querySelector('.zbx-sev-tile.zbx-tile-handled');
     const tileIgnored = document.querySelector('.zbx-sev-tile.zbx-tile-ignored');
 
     const cntDanger = document.getElementById('zbx-count-danger');
     const cntAverage = document.getElementById('zbx-count-average');
     const cntWarning = document.getElementById('zbx-count-warning');
     const cntInfo = document.getElementById('zbx-count-info');
+    const cntHandled = document.getElementById('zbx-count-handled');
     const cntIgnored = document.getElementById('zbx-count-ignored');
 
     if (cntDanger) cntDanger.textContent = dangerTot;
     if (cntAverage) cntAverage.textContent = avgTot;
     if (cntWarning) cntWarning.textContent = warnTot;
     if (cntInfo) cntInfo.textContent = infoTot;
+    if (cntHandled) cntHandled.textContent = handledTot;
     if (cntIgnored) cntIgnored.textContent = ignTot;
 
     if (tileDanger) tileDanger.classList.toggle('is-active', dangerTot > 0);
     if (tileAverage) tileAverage.classList.toggle('is-active', avgTot > 0);
     if (tileWarning) tileWarning.classList.toggle('is-active', warnTot > 0);
     if (tileInfo) tileInfo.classList.toggle('is-active', infoTot > 0);
+    if (tileHandled) tileHandled.classList.toggle('is-active', handledTot > 0);
     if (tileIgnored) tileIgnored.classList.toggle('is-active', ignTot > 0);
 
     const stripTotal = document.getElementById('zbx-strip-total');
     if (stripTotal) stripTotal.innerHTML = `Total: <strong id="dash-total-prob" style="color:var(--text-bright)">${totalAll}</strong>`;
 
     // Reconstruct problems_by_sev data structure for live in-page detail modal
-    const newProblemsBySev = { danger: [], average: [], warning: [], info: [], ignored: [] };
+    const newProblemsBySev = { danger: [], average: [], warning: [], info: [], handled: [], ignored: [] };
     list.forEach(srv => {
       if (Array.isArray(srv.problems)) {
         srv.problems.forEach(p => {
           const isIgn = Boolean(p.is_ignored);
+          const isHandled = Boolean(p.acknowledged_at || p.acknowledged_by || p.acknowledged);
           const pStarted = p.started_at;
           const durStr = pStarted ? relTime(pStarted).replace(' lalu', '').replace(' ago', '') : '—';
           const item = {
+            id: p.id,
             server_id: srv.id,
             hostname: srv.hostname,
             group_name: srv.group_name || '',
@@ -2747,6 +2824,8 @@ async function pollNocDashboard() {
           };
           if (isIgn) {
             newProblemsBySev.ignored.push(item);
+          } else if (isHandled) {
+            newProblemsBySev.handled.push(item);
           } else {
             const s = item.severity;
             if (newProblemsBySev[s]) {
@@ -2761,9 +2840,11 @@ async function pollNocDashboard() {
     if (Array.isArray(probeProblems)) {
       probeProblems.forEach(p => {
         const isIgn = Boolean(p.is_ignored);
+        const isHandled = Boolean(p.acknowledged_at || p.acknowledged_by || p.acknowledged);
         const pStarted = p.started_at;
         const durStr = pStarted ? relTime(pStarted).replace(' lalu', '').replace(' ago', '') : '—';
         const item = {
+          id: p.id,
           server_id: null,
           probe_id: p.probe_id,
           hostname: p.hostname || (p.probe_name || 'Endpoint'),
@@ -2783,6 +2864,8 @@ async function pollNocDashboard() {
         };
         if (isIgn) {
           newProblemsBySev.ignored.push(item);
+        } else if (isHandled) {
+          newProblemsBySev.handled.push(item);
         } else {
           const s = item.severity;
           if (newProblemsBySev[s]) {
@@ -2815,6 +2898,9 @@ async function pollNocDashboard() {
     } else if (infoTot > 0) {
       kpiColor = 'var(--blue)';
       kpiTextColor = 'var(--blue)';
+    } else if (handledTot > 0) {
+      kpiColor = 'var(--green)';
+      kpiTextColor = 'var(--green)';
     } else if (ignTot > 0) {
       kpiColor = 'rgba(148, 163, 184, 0.45)';
       kpiTextColor = 'var(--dim)';
@@ -2822,14 +2908,15 @@ async function pollNocDashboard() {
     if (kpiCardProb) kpiCardProb.style.borderLeftColor = kpiColor;
     if (totPrbEl) totPrbEl.style.color = kpiTextColor;
 
-    // Aggregate all active operational problems (insiden yang diabaikan sepenuhnya disaring keluar dari kartu Insiden Terkini)
+    // Aggregate all active operational problems (insiden yang diabaikan ATAU sudah ditangani operator sepenuhnya disaring keluar dari kartu Insiden Terkini)
     const allProblems = [];
     list.forEach(srv => {
       if (Array.isArray(srv.problems)) {
         srv.problems.forEach(p => {
           const isIgn = Boolean(p.is_ignored);
-          // Sembunyikan seluruh insiden yang diabaikan (termasuk tindakan sengaja operator) dari kartu Insiden Terkini
-          if (isIgn) {
+          const isHandled = Boolean(p.acknowledged_at || p.acknowledged_by || p.acknowledged);
+          // Sembunyikan seluruh insiden yang diabaikan DAN yang sudah ditangani operator dari kartu Insiden Terkini
+          if (isIgn || isHandled) {
             return;
           }
           allProblems.push({
@@ -2845,13 +2932,13 @@ async function pollNocDashboard() {
     if (Array.isArray(probeProblems)) {
       probeProblems.forEach(p => {
         const isIgn = Boolean(p.is_ignored);
-        if (isIgn) return;
+        const isHandled = Boolean(p.acknowledged_at || p.acknowledged_by || p.acknowledged);
+        if (isIgn || isHandled) return;
         allProblems.push({
           ...p,
           server_id: null,
           probe_id: p.probe_id,
           hostname: p.hostname || (p.probe_name || 'Endpoint'),
-          is_probe: true,
           is_probe: true,
           group_name: p.group_name || 'Endpoint'
         });
@@ -2959,7 +3046,7 @@ async function pollNocDashboard() {
                 subBadges += `<span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="${(isEn ? 'Ignored by ' : 'Diabaikan oleh ') + _dashEsc(ignOp)}">${isEn ? 'IGNORED' : 'DIABAIKAN'}</span>`;
               }
               if (p.acknowledged_by) {
-                subBadges += `<span class="badge badge-up" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _dashEsc(ackOp)}">✓ ${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
+                subBadges += `<span class="badge badge-up" style="font-size:7.5px;padding:0.5px 4.5px;font-weight:600;letter-spacing:0.2px" title="${(isEn ? 'Handled by ' : 'Ditangani oleh ') + _dashEsc(ackOp)}">${isEn ? 'HANDLED' : 'DITANGANI'}</span>`;
               }
               sevBadge = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:2.5px">${rawSev}<div style="display:inline-flex;align-items:center;justify-content:center;gap:3px">${subBadges}</div></div>`;
             } else {
@@ -3017,8 +3104,18 @@ async function pollNocDashboard() {
               <td class="dash-col-durasi" style="padding:5px 12px;white-space:nowrap;text-align:right">
                 <span class="mono dash-dur-badge" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">${durStr}</span>
               </td>
-              <td class="dash-col-action" style="padding:5px 8px;text-align:center;color:var(--dim)">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="dash-row-arrow" style="opacity:0.4;transition:all .15s ease"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              <td class="dash-col-action" style="padding:4px 6px;text-align:center;white-space:nowrap" onclick="event.stopPropagation()">
+                <div style="display:inline-flex;align-items:center;justify-content:center;gap:3px">
+                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--green);padding:2px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" onclick="event.stopPropagation();handleDashboardAck(this, '${p.id}', '${p.key || ''}')" title="Tandai Ditangani" aria-label="Tandai Ditangani">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-sm" style="color:var(--dim);padding:2px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" onclick="event.stopPropagation();openIgnoreModal({id:'${p.id}', service_id:'${p.service_id || ''}', server_id:'${p.server_id || ''}'}, '${escMsg.replace(/'/g, "\\'")}', () => { if (typeof pollNocDashboard==='function') pollNocDashboard(); })" title="Abaikan Insiden" aria-label="Abaikan Insiden">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                  </button>
+                  <a href="${rowHref}" class="btn btn-ghost btn-sm" style="color:var(--dim);padding:2px 5px;height:24px;width:24px;min-width:24px;border-radius:4px" title="Buka Detail Server" aria-label="Detail Server" onclick="event.stopPropagation()">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                  </a>
+                </div>
               </td>
             </tr>`;
           });
@@ -3050,6 +3147,85 @@ document.addEventListener('visibilitychange', () => {
     pollNocDashboard();
   }
 });
+
+// ===================================================================
+// NOC QUICK ACTIONS (Triage Cepat Dasbor)
+// ===================================================================
+async function handleDashboardAck(btn, id, key) {
+  if (typeof IS_VIEWER !== 'undefined' && IS_VIEWER) {
+    showToast('Akun Viewer tidak memiliki izin melakukan tindakan.', false);
+    return;
+  }
+  if (!id) return;
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch('/api/alerts/' + id + '/ack', {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': (typeof getCsrf === 'function' ? getCsrf() : '') },
+      credentials: 'same-origin'
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    showToast('Insiden ditandai telah ditangani oleh operator.', true);
+    if (typeof pollNocDashboard === 'function') await pollNocDashboard();
+  } catch(e) {
+    showToast('Gagal menandai ditangani: ' + e.message, false);
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function handleDashboardUnack(btn, id) {
+  if (typeof IS_VIEWER !== 'undefined' && IS_VIEWER) {
+    showToast('Akun Viewer tidak memiliki izin melakukan tindakan.', false);
+    return;
+  }
+  if (!id) return;
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch('/api/alerts/' + id + '/unack', {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': (typeof getCsrf === 'function' ? getCsrf() : '') },
+      credentials: 'same-origin'
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    showToast('Penanganan insiden dibatalkan (kembali ke belum ditangani).', true);
+    if (typeof pollNocDashboard === 'function') await pollNocDashboard();
+  } catch(e) {
+    showToast('Gagal membatalkan penanganan: ' + e.message, false);
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function handleDashboardResolve(btn, id) {
+  if (typeof IS_VIEWER !== 'undefined' && IS_VIEWER) {
+    showToast('Akun Viewer tidak memiliki izin melakukan tindakan.', false);
+    return;
+  }
+  if (!id) return;
+  const ok = await showConfirmModal({
+    title: 'Selesaikan Insiden',
+    target: 'Insiden #' + id,
+    message: 'Tandai insiden ini selesai/teratasi secara manual?',
+    btnText: 'Selesaikan',
+    btnClass: 'btn-primary',
+    iconType: 'info',
+    badge: 'RESOLVE'
+  });
+  if (!ok) return;
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch('/api/alerts/' + id + '/resolve', {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': (typeof getCsrf === 'function' ? getCsrf() : '') },
+      credentials: 'same-origin'
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    showToast('Insiden berhasil diselesaikan manual.', true);
+    if (typeof pollNocDashboard === 'function') await pollNocDashboard();
+  } catch(e) {
+    showToast('Gagal menyelesaikan insiden: ' + e.message, false);
+    if (btn) btn.disabled = false;
+  }
+}
 
 // ===================================================================
 // REAL-TIME DASHBOARD CLOCK & DATE WIDGET (Hari, Tanggal, Jam, Menit, Detik)

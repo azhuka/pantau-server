@@ -2472,16 +2472,21 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
         down_svc_count = sum(1 for s in svc_list if s["status"] in ("down", "offline") and not s.get("ignored"))
         ignored_svc_count = sum(1 for s in svc_list if s["status"] in ("down", "offline") and s.get("ignored"))
         active_p = [p for p in open_prob if not p.get("is_ignored")]
-        danger_p = [p for p in active_p if p.get("severity") == "danger"]
-        average_p = [p for p in active_p if p.get("severity") == "average"]
-        warning_p = [p for p in active_p if p.get("severity") == "warning"]
-        info_p = [p for p in active_p if p.get("severity") == "info"]
+        # Triage NOC: Pisahkan insiden yang sudah ditangani operator dari insiden yang belum disentuh
+        handled_p = [p for p in active_p if p.get("acknowledged_at") or p.get("acknowledged_by")]
+        unhandled_p = [p for p in active_p if not (p.get("acknowledged_at") or p.get("acknowledged_by"))]
+
+        danger_p = [p for p in unhandled_p if p.get("severity") == "danger"]
+        average_p = [p for p in unhandled_p if p.get("severity") == "average"]
+        warning_p = [p for p in unhandled_p if p.get("severity") == "warning"]
+        info_p = [p for p in unhandled_p if p.get("severity") == "info"]
         ignored_p = [p for p in open_prob if p.get("is_ignored")]
 
         danger_count = len(danger_p)
         average_count = len(average_p)
         warning_count = len(warning_p)
         info_count = len(info_p)
+        handled_count = len(handled_p)
         active_prob_count = len(active_p)
         ignored_prob_count = len(ignored_p)
         danger_msgs = " • ".join(p.get("message", "") for p in danger_p)
@@ -2568,6 +2573,7 @@ def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db
             "ignored_svc_count": ignored_svc_count,
             "problem_level": prob_level,
             "active_problem_count": active_prob_count,
+            "handled_problem_count": handled_count,
             "ignored_problem_count": ignored_prob_count,
             "danger_count": danger_count,
             "average_count": average_count,
@@ -4003,16 +4009,20 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         srv._problem_level, srv._problems, _ph = sync_server_problems(
             db, srv, _problem_instances(srv, ex, srv._svc_data, db))
         active_probs = [p for p in srv._problems if not p.get("is_ignored")]
-        danger_probs = [p for p in active_probs if p.get("severity") == "danger"]
-        average_probs = [p for p in active_probs if p.get("severity") == "average"]
-        warning_probs = [p for p in active_probs if p.get("severity") == "warning"]
-        info_probs = [p for p in active_probs if p.get("severity") == "info"]
+        handled_probs = [p for p in active_probs if p.get("acknowledged_at") or p.get("acknowledged_by")]
+        unhandled_probs = [p for p in active_probs if not (p.get("acknowledged_at") or p.get("acknowledged_by"))]
+
+        danger_probs = [p for p in unhandled_probs if p.get("severity") == "danger"]
+        average_probs = [p for p in unhandled_probs if p.get("severity") == "average"]
+        warning_probs = [p for p in unhandled_probs if p.get("severity") == "warning"]
+        info_probs = [p for p in unhandled_probs if p.get("severity") == "info"]
         ignored_probs = [p for p in srv._problems if p.get("is_ignored")]
 
         srv._danger_count = len(danger_probs)
         srv._average_count = len(average_probs)
         srv._warning_count = len(warning_probs)
         srv._info_count = len(info_probs)
+        srv._handled_count = len(handled_probs)
         srv._ignored_count = len(ignored_probs)
         srv._danger_msgs = " • ".join(p.get("message", "") for p in danger_probs)
         srv._average_msgs = " • ".join(p.get("message", "") for p in average_probs)
@@ -4107,6 +4117,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     average_total = sum(srv._average_count for srv in servers)
     warning_total = sum(srv._warning_count for srv in servers)
     info_total = sum(srv._info_count for srv in servers)
+    handled_total = sum(getattr(srv, "_handled_count", 0) for srv in servers)
     ignored_total = sum(srv._ignored_count for srv in servers)
     healthy_total = sum(1 for srv in servers if srv._status_cls == "badge-up" and (srv._danger_count + srv._average_count + srv._warning_count) == 0)
 
@@ -4115,12 +4126,14 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         "average": [],
         "warning": [],
         "info": [],
+        "handled": [],
         "ignored": [],
     }
     all_open_problems = []
     for srv in servers:
         for p in (srv._problems or []):
             is_ign = bool(p.get("is_ignored"))
+            is_handled = bool(p.get("acknowledged_at") or p.get("acknowledged_by"))
             p_started = p.get("started_at")
             dur_str = "—"
             if p_started:
@@ -4134,6 +4147,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 elif m: dur_str = f"{m} mnt {s} dtk"
                 else: dur_str = f"{s} dtk"
             item = {
+                "id": p.get("id"),
                 "server_id": srv.id,
                 "hostname": srv.hostname,
                 "group_name": srv.group_name or "",
@@ -4154,6 +4168,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             }
             if is_ign:
                 problems_by_sev["ignored"].append(item)
+            elif is_handled:
+                problems_by_sev["handled"].append(item)
             else:
                 sev = item["severity"]
                 if sev in problems_by_sev:
@@ -4161,9 +4177,9 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 else:
                     problems_by_sev["warning"].append(item)
 
-            # Seluruh insiden yang diabaikan (level apapun, termasuk tindakan sengaja operator)
-            # disembunyikan dari kartu Insiden Terkini dan dialihkan ke kotak DIABAIKAN.
-            if is_ign:
+            # Seluruh insiden yang diabaikan ATAU sudah ditangani operator
+            # disembunyikan dari kartu Insiden Terkini dan dialihkan ke kotaknya masing-masing.
+            if is_ign or is_handled:
                 continue
 
             all_open_problems.append(item)
@@ -4180,6 +4196,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             prb = probes_map.get(sp.probe_id)
             prb_name = prb.name if prb else f"Endpoint #{sp.probe_id}"
             is_ign = bool(sp.is_ignored)
+            is_handled = bool(sp.acknowledged_at or sp.acknowledged_by)
             p_started = sp.started_at
             dur_str = "—"
             if p_started:
@@ -4193,6 +4210,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 elif m: dur_str = f"{m} mnt {s} dtk"
                 else: dur_str = f"{s} dtk"
             item = {
+                "id": sp.id,
                 "server_id": None,
                 "probe_id": sp.probe_id,
                 "hostname": prb_name,
@@ -4213,6 +4231,9 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             if is_ign:
                 problems_by_sev["ignored"].append(item)
                 ignored_total += 1
+            elif is_handled:
+                problems_by_sev["handled"].append(item)
+                handled_total += 1
             else:
                 sev = item["severity"]
                 if sev == "danger":
@@ -4228,8 +4249,8 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 else:
                     problems_by_sev["warning"].append(item)
 
-            # Seluruh insiden yang diabaikan (level apapun) disembunyikan dari kartu Insiden Terkini
-            if is_ign:
+            # Seluruh insiden yang diabaikan ATAU sudah ditangani operator disembunyikan dari kartu Insiden Terkini
+            if is_ign or is_handled:
                 continue
 
             all_open_problems.append(item)
@@ -4266,6 +4287,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         "average_total": average_total,
         "warning_total": warning_total,
         "info_total": info_total,
+        "handled_total": handled_total,
         "ignored_total": ignored_total,
         "healthy_total": healthy_total,
         "all_open_problems": all_open_problems,
@@ -4326,15 +4348,20 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
         srv._svc_data = svc_data
 
         active_probs = [p for p in srv._problems if not p.get("is_ignored")]
-        danger_probs = [p for p in active_probs if p.get("severity") == "danger"]
-        average_probs = [p for p in active_probs if p.get("severity") == "average"]
-        warning_probs = [p for p in active_probs if p.get("severity") == "warning"]
-        info_probs = [p for p in active_probs if p.get("severity") == "info"]
+        handled_probs = [p for p in active_probs if p.get("acknowledged_at") or p.get("acknowledged_by")]
+        unhandled_probs = [p for p in active_probs if not (p.get("acknowledged_at") or p.get("acknowledged_by"))]
+
+        danger_probs = [p for p in unhandled_probs if p.get("severity") == "danger"]
+        average_probs = [p for p in unhandled_probs if p.get("severity") == "average"]
+        warning_probs = [p for p in unhandled_probs if p.get("severity") == "warning"]
+        info_probs = [p for p in unhandled_probs if p.get("severity") == "info"]
         ignored_probs = [p for p in srv._problems if p.get("is_ignored")]
+
         srv._danger_count = len(danger_probs)
         srv._average_count = len(average_probs)
         srv._warning_count = len(warning_probs)
         srv._info_count = len(info_probs)
+        srv._handled_count = len(handled_probs)
         srv._ignored_count = len(ignored_probs)
         srv._danger_msgs = " • ".join(p.get("message", "") for p in danger_probs)
         srv._average_msgs = " • ".join(p.get("message", "") for p in average_probs)
@@ -11378,6 +11405,33 @@ def api_alert_ack(
     )
     db.commit()
     return {"ok": True, "id": pid, "acknowledged_by": user.username}
+
+
+@app.post("/api/alerts/{pid}/unack")
+def api_alert_unack(
+    pid: int,
+    request: Request,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Batalkan status ditangani (kembalikan ke belum ditangani)."""
+    _verify_csrf_header(request)
+    if user.is_viewer():
+        raise HTTPException(status_code=403, detail="Akses ditolak: Viewer tidak memiliki izin melakukan tindakan pada insiden")
+    row = db.query(ServerProblem).filter(
+        ServerProblem.id == pid,
+        ServerProblem.resolved_at.is_(None),
+    ).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Insiden tidak ditemukan")
+    row.acknowledged_at = None
+    row.acknowledged_by = None
+    _audit(
+        db, user.username, "alert_unack",
+        target=row.message[:100], result="batal ditangani", server_id=row.server_id
+    )
+    db.commit()
+    return {"ok": True, "id": pid, "acknowledged": False}
 
 
 @app.post("/api/alerts/{pid}/resolve")
