@@ -354,6 +354,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.103
+
+- **Tipe Rilis:** Standardisasi Kolom Perintah Baku, Tooltip Metadata Multibaris, dan Pembersihan Tombol Terminal (*Standard Command Column Refinement, Multiline Metadata Tooltips, & Terminal Button Elimination*)
+- **Fokus Utama:** Menyempurnakan kemurnian semantik kolom dan tata letak tabel aktivitas pengguna:
+  1. **Standardisasi Kolom "Perintah" (*Pure Command Column & Actual Executed Command*):**
+     - Mengubah judul kolom tabel dari "Detail Aktivitas / Perintah" menjadi "Perintah".
+     - Menampilkan perintah sebenarnya yang dieksekusi pengguna (`getActualCommand`), menyederhanakan prefiks path biner sistem standar (`/usr/bin/`, `/bin/`, `/usr/sbin/`, `/sbin/`) agar mudah dibaca operator NOC.
+     - Menyediakan tooltip kaya multibaris berisi rincian lengkap perintah: perintah sebenarnya, path biner penuh, target eksekusi (user), direktori kerja (PWD), terminal, dan status hasil eksekusi.
+     - Menampilkan indikator kosong (`—`) yang rapi untuk baris aktivitas login yang tidak menjalankan perintah.
+  2. **Eliminasi Tombol Putus pada Kolom Terminal (*Terminal Column Action Elimination*):**
+     - Menghapus tombol aksi `[Putus]` yang menyalahi penempatan pada sel data kolom "Terminal".
+     - Kolom "Terminal" murni hanya menampilkan pengenal TTY dan PID tanpa elemen aksi yang mengganggu kepadatan data NOC. Tindakan penghentian sesi tetap terpusat pada bilah alat (*toolbar*) header halaman.
+
 ## Versi 4.8.102
 
 - **Tipe Rilis:** Konsolidasi Sesi Aktif Presisi Tinggi dan Eliminasi Total Duplikasi Audit Sudo (*High-Precision Active Session Consolidation & Complete Sudo Audit Deduplication*)

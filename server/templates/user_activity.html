@@ -190,7 +190,7 @@
           <th style="width:130px;min-width:130px">Terminal</th>
           <th style="width:125px;min-width:125px">Sumber (IP)</th>
           <th style="width:150px;min-width:150px">Direktori (PWD)</th>
-          <th>Detail Aktivitas / Perintah</th>
+          <th>Perintah</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -278,6 +278,12 @@ function renderChips(logins) {
   if (elGagal) elGagal.textContent = c.gagal;
   const elSesi = document.getElementById('chip-sesi');
   if (elSesi) elSesi.textContent = c.sesi;
+}
+
+function getActualCommand(cmd) {
+  if (!cmd) return '—';
+  let s = String(cmd).trim();
+  return s.replace(/^\/(?:usr\/(?:local\/)?)?(?:s?bin)\//, '');
 }
 
 function deduplicateLogins(rawList) {
@@ -410,8 +416,7 @@ function renderLoginsData(rawLogins) {
         const ttyClean = escapeHtml(x.tty);
         if (isAktif) {
           termInfo = '<span class="mono" style="font-weight:600;color:var(--green)">' + ttyClean + '</span>'
-            + (x.pid ? ' <span class="mono" style="font-size:10px;color:var(--dim)">(PID ' + escapeHtml(x.pid) + ')</span>' : '')
-            + (!IS_VIEWER ? ' <button type="button" class="btn btn-danger btn-xs" style="padding:1px 5px;font-size:9px;line-height:1.2;margin-left:4px" onclick="terminateSession(\'' + ttyClean + '\', this)" title="Putus paksa sesi terminal aktif ini">Putus</button>' : '');
+            + (x.pid ? ' <span class="mono" style="font-size:10px;color:var(--dim)">(PID ' + escapeHtml(x.pid) + ')</span>' : '');
         } else if (isSelesai && x.duration) {
           termInfo = '<span class="mono">' + ttyClean + '</span>'
             + ' <span class="mono" style="font-size:10px;color:var(--dim)" title="Durasi: ' + escapeHtml(x.duration) + '">(' + escapeHtml(x.duration) + ')</span>';
@@ -434,21 +439,39 @@ function renderLoginsData(rawLogins) {
       }
 
       let methodCell = '';
-      if (isSudo) {
-        methodCell = '<code class="cmd-code" title="' + escapeHtml(x.method || '') + '">' + escapeHtml(x.method || '—') + '</code>';
-      } else if (isSudoGagal) {
-        methodCell = '<span style="color:var(--red);font-weight:600;font-size:10.5px">' + escapeHtml(x.alert || 'Otentikasi Gagal') + ':</span> '
-          + '<code class="cmd-code" style="border-color:rgba(248,113,113,0.3)" title="' + escapeHtml(x.method || '') + '">' + escapeHtml(x.method || '—') + '</code>';
+      if (isSudo || isSudoGagal) {
+        const actualCmd = getActualCommand(x.method);
+        const tipLines = [];
+        if (x.method && x.method !== actualCmd) {
+          tipLines.push('Perintah: ' + actualCmd);
+          tipLines.push('Path Penuh: ' + x.method);
+        } else {
+          tipLines.push('Perintah: ' + (actualCmd || '—'));
+        }
+        if (x.target_user) tipLines.push('Jalankan Sebagai: ' + x.target_user);
+        if (x.pwd) tipLines.push('Direktori (PWD): ' + x.pwd);
+        if (x.tty) tipLines.push('Terminal: ' + x.tty);
+        if (isSudoGagal) {
+          tipLines.push('Status: Gagal' + (x.alert ? ' (' + x.alert + ')' : ''));
+        } else {
+          tipLines.push('Status: Berhasil');
+        }
+        const cmdTooltip = tipLines.join('\n');
+
+        if (isSudoGagal) {
+          methodCell = '<span style="color:var(--red);font-weight:600;font-size:10.5px">' + escapeHtml(x.alert || 'Otentikasi Gagal') + ':</span> '
+            + '<code class="cmd-code" style="border-color:rgba(248,113,113,0.3)" title="' + escapeHtml(cmdTooltip) + '">' + escapeHtml(actualCmd || '—') + '</code>';
+        } else {
+          methodCell = '<code class="cmd-code" title="' + escapeHtml(cmdTooltip) + '">' + escapeHtml(actualCmd || '—') + '</code>';
+        }
       } else if (isAktif) {
-        methodCell = '<span style="color:var(--green)">Sesi terminal sedang terhubung dan aktif</span>';
+        methodCell = '<span style="color:var(--dim)" title="Sesi terminal aktif — tidak ada eksekusi perintah">—</span>';
       } else if (isSelesai) {
-        const dtEnd = parseDt(x.logout_time);
-        const endStr = dtEnd ? formatEssential(dtEnd) : (x.logout_time ? escapeHtml(x.logout_time) : '');
-        methodCell = '<span style="color:var(--dim)">Sesi logout selesai' + (endStr ? ' (' + endStr + ')' : '') + '</span>';
+        methodCell = '<span style="color:var(--dim)" title="Sesi login selesai — tidak ada eksekusi perintah">—</span>';
       } else if (isGagal) {
-        methodCell = '<span style="color:var(--red)">Percobaan autentikasi gagal: ' + escapeHtml(x.method || 'Password salah') + '</span>';
+        methodCell = '<span style="color:var(--dim)" title="Percobaan login gagal: ' + escapeHtml(x.method || 'Password salah') + '">—</span>';
       } else {
-        methodCell = '<span style="color:var(--dim)">' + escapeHtml(x.method || '—') + '</span>';
+        methodCell = '<span style="color:var(--dim)">—</span>';
       }
 
       const filterType = (x.type === 'sukses') ? 'selesai' : (x.type || '');
@@ -462,7 +485,7 @@ function renderLoginsData(rawLogins) {
         + '<td>' + termInfo + '</td>'
         + '<td>' + fromCell + '</td>'
         + '<td>' + pwdCell + '</td>'
-        + '<td class="col-detail" title="' + escapeHtml(x.method || '') + '">' + methodCell + '</td>'
+        + '<td class="col-detail">' + methodCell + '</td>'
         + '</tr>';
     }).join('');
   }
