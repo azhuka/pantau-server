@@ -280,7 +280,61 @@ function renderChips(logins) {
   if (elSesi) elSesi.textContent = c.sesi;
 }
 
-function renderLoginsData(logins) {
+function deduplicateLogins(rawList) {
+  if (!Array.isArray(rawList)) return [];
+  const result = [];
+  const seenActiveTty = new Set();
+  const seenSudo = new Set();
+  const seenOther = new Set();
+
+  for (const item of rawList) {
+    if (!item) continue;
+    const isAktif = (item.type === 'aktif');
+    const isSudo = (item.type === 'sudo' || item.type === 'sudo_gagal');
+    const tty = String(item.tty || '').trim();
+    const ts = String(item.ts || '').trim();
+    const method = String(item.method || '').trim();
+
+    if (isAktif) {
+      if (tty && seenActiveTty.has(tty)) {
+        const existingIdx = result.findIndex(r => r.type === 'aktif' && String(r.tty || '').trim() === tty);
+        if (existingIdx !== -1) {
+          if (!result[existingIdx].pid && item.pid) {
+            result[existingIdx].pid = item.pid;
+          }
+          if (ts.length > String(result[existingIdx].ts || '').length) {
+            result[existingIdx].ts = ts;
+          }
+        }
+        continue;
+      }
+      if (tty) seenActiveTty.add(tty);
+      result.push(item);
+    } else if (isSudo) {
+      const sudoKey = `${ts}|${tty}|${method}`;
+      if (seenSudo.has(sudoKey)) {
+        const existingIdx = result.findIndex(r => (r.type === 'sudo' || r.type === 'sudo_gagal') && `${String(r.ts || '').trim()}|${String(r.tty || '').trim()}|${String(r.method || '').trim()}` === sudoKey);
+        if (existingIdx !== -1 && !result[existingIdx].pwd && item.pwd) {
+          result[existingIdx].pwd = item.pwd;
+          result[existingIdx].target_user = item.target_user || result[existingIdx].target_user;
+          result[existingIdx].alert = item.alert || result[existingIdx].alert;
+        }
+        continue;
+      }
+      seenSudo.add(sudoKey);
+      result.push(item);
+    } else {
+      const otherKey = `${item.type || ''}|${ts}|${tty}|${item.from || ''}|${method}`;
+      if (seenOther.has(otherKey)) continue;
+      seenOther.add(otherKey);
+      result.push(item);
+    }
+  }
+  return result;
+}
+
+function renderLoginsData(rawLogins) {
+  const logins = deduplicateLogins(rawLogins);
   const loadEl1 = document.getElementById('ll-loading');
   if (loadEl1) loadEl1.style.display = 'none';
   const st1 = document.getElementById('ll-state');

@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.101"
+AGENT_VERSION = "4.8.102"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4491,9 +4491,13 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
     Secara tegas membedakan 'aktif' (masih login) vs 'selesai' (sudah logout/selesai).
     """
     events: list[dict] = []
-    seen_keys: set[str] = set()
+    seen_sessions: set[tuple] = set()
+    seen_sudo: set[tuple] = set()
+    seen_auth: set[tuple] = set()
 
     # 1. Prioritas Sesi Aktif Real-Time (who)
+    # Dipetakan per (user, tty) agar tidak pernah terjadi duplikasi sesi aktif
+    active_by_key: dict[tuple[str, str], dict] = {}
     try:
         active_sessions = _parse_who()
         for s in active_sessions:
@@ -4519,7 +4523,7 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                         pass
             pid = s.get("pid", "")
             idle = s.get("idle", "")
-            ev = {
+            active_by_key[(u, tty)] = {
                 "ts": t,
                 "user": u,
                 "type": "aktif",
@@ -4531,10 +4535,6 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                 "method": f"{tty} (Sesi Aktif)",
                 "active": True,
             }
-            k = f"{u}:{t}:{src}:{tty}:aktif"
-            if k not in seen_keys:
-                seen_keys.add(k)
-                events.append(ev)
     except Exception:
         pass
 
@@ -4563,8 +4563,16 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                     except Exception:
                         ts_str = raw_time
                     is_active = "still logged in" in status
-                    ev_type = "aktif" if is_active else "selesai"
                     from_clean = src if (src and src != ":0" and not src.startswith(":")) else "(lokal)"
+
+                    if is_active:
+                        # Konsolidasi: bila sesi ini ada di active_by_key (who), perkaya dengan timestamp detik yang presisi
+                        if (u, tty) in active_by_key:
+                            active_by_key[(u, tty)]["ts"] = ts_str
+                            if from_clean != "(lokal)" and active_by_key[(u, tty)]["from"] == "(lokal)":
+                                active_by_key[(u, tty)]["from"] = from_clean
+                        # Bila tidak terdaftar di who, merupakan entri wtmp usang/hang (abaikan agar tidak menduplikasi sesi aktif)
+                        continue
 
                     logout_time = ""
                     dur_str = ""
@@ -4578,26 +4586,30 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                         except Exception:
                             logout_time = raw_end
 
-                    method_desc = f"{tty} (Sesi Aktif)" if is_active else f"{tty} (Selesai)"
-                    k = f"{u}:{ts_str}:{from_clean}:{tty}:{ev_type}"
-                    if k not in seen_keys:
-                        seen_keys.add(k)
+                    sess_key = (u, tty, ts_str, "selesai")
+                    if sess_key not in seen_sessions:
+                        seen_sessions.add(sess_key)
                         events.append({
                             "ts": ts_str,
                             "user": u,
-                            "type": ev_type,
+                            "type": "selesai",
                             "from": from_clean,
                             "tty": tty,
                             "duration": dur_str,
                             "logout_time": logout_time,
                             "pwd": "",
-                            "method": method_desc,
-                            "active": is_active,
+                            "method": f"{tty} (Selesai)",
+                            "active": False,
                         })
     except Exception:
         pass
 
+    # Masukkan seluruh sesi aktif yang sudah terkonsolidasi murni (tanpa duplikasi)
+    for act_ev in active_by_key.values():
+        events.append(act_ev)
+
     # 3. Kueri Khusus Sudo via Journalctl (Bebas dari polusi otomatis agen pantau)
+    sudo_handled_by_section_3 = False
     if target_user:
         try:
             import pwd
@@ -4605,6 +4617,7 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
             cmd_sudo = ["journalctl", "-q", "-o", "short-iso", "_COMM=sudo", f"_UID={target_uid}", "-n", "150", "--no-pager"]
             res_sudo = _run_cmd(cmd_sudo, timeout=6)
             if res_sudo and res_sudo.stdout:
+                sudo_handled_by_section_3 = True
                 p_sudo = re.compile(
                     r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+"
                     r"(?:(?P<alert>(?:\d+\s+incorrect\s+password\s+attempt|user\s+NOT\s+in\s+sudoers|[\w\s]+error|[\w\s]+failure)[^;]*);\s*)?"
@@ -4620,13 +4633,13 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                         tty = m.group("tty") or "(lokal)"
                         pwd_val = m.group("pwd") or ""
                         target_val = m.group("target") or "root"
-                        cmd_val = m.group("cmd")
+                        cmd_val = (m.group("cmd") or "").strip()
                         alert_raw = (m.group("alert") or "").strip().rstrip(";")
                         is_failed = bool(alert_raw and ("incorrect" in alert_raw.lower() or "not in sudoers" in alert_raw.lower()))
                         ev_type = "sudo_gagal" if is_failed else "sudo"
-                        k = f"{target_user}:{ts}:{tty}:{ev_type}:{cmd_val[:40]}"
-                        if k not in seen_keys:
-                            seen_keys.add(k)
+                        sudo_key = (target_user, ts, tty, cmd_val)
+                        if sudo_key not in seen_sudo:
+                            seen_sudo.add(sudo_key)
                             events.append({
                                 "ts": ts,
                                 "user": target_user,
@@ -4654,10 +4667,12 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
             r"Maximum authentication attempts exceeded for (?:invalid user )?"
             r"(?P<user>[\w.-]+) from (?P<from>[\da-fA-F:.]+)")),
         ("sesi", re.compile(r"New session \d+ of user (?P<user>[\w.-]+)\.")),
-        ("sudo", re.compile(
-            r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+(?:TTY=(?P<tty>\S+)\s*;\s*)?.+?USER=\S+\s*;\s*"
-            r"COMMAND=(?P<cmd>.+)$")),
     ]
+    # Hanya sertakan pola regex sudo jika kueri journalctl khusus sudo (Langkah 3) tidak dijalankan
+    if not sudo_handled_by_section_3:
+        patterns.append(("sudo", re.compile(
+            r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+(?:TTY=(?P<tty>\S+)\s*;\s*)?.+?USER=\S+\s*;\s*"
+            r"COMMAND=(?P<cmd>.+)$")))
 
     data = ""
     for auth_path in (AUTH_FILE, "/var/log/secure"):
@@ -4705,14 +4720,18 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                 if kind == "sudo":
                     src = "(lokal)"
                     tty_val = g.get("tty") or "(lokal)"
-                    method = g.get("cmd", "")
+                    method = (g.get("cmd") or "").strip()
+                    sudo_key = (user, ts, tty_val, method)
+                    if sudo_key in seen_sudo:
+                        break
+                    seen_sudo.add(sudo_key)
                 else:
                     src = g.get("from") or "(lokal)"
                     tty_val = ""
                     method = g.get("method") or ("ssh" if kind != "sesi" else "console")
-                k = f"{user}:{ts}:{src}:{kind}:{method[:40]}"
-                if k not in seen_keys:
-                    seen_keys.add(k)
+                auth_key = (user, ts, src, kind, method[:40])
+                if auth_key not in seen_auth:
+                    seen_auth.add(auth_key)
                     events.append({"ts": ts, "user": user, "type": kind, "from": src, "tty": tty_val, "method": method})
                 break
 

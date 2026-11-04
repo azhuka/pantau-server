@@ -354,6 +354,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.102
+
+- **Tipe Rilis:** Konsolidasi Sesi Aktif Presisi Tinggi dan Eliminasi Total Duplikasi Audit Sudo (*High-Precision Active Session Consolidation & Complete Sudo Audit Deduplication*)
+- **Fokus Utama:** Mengeliminasi akar anomali pelaporan ganda sesi terminal aktif dan riwayat perintah sudo di antarmuka aktivitas pengguna:
+  1. **Konsolidasi Sesi Aktif Multi-Sumber (*Active Session Deduplication & Precision Timestamp Enrichment*):**
+     - Mengatasi disparitas resolusi waktu antara utilitas `who` (akuntansi sesi *real-time* berbasis menit) dan `last -F` (akuntansi berkas *wtmp* berbasis detik).
+     - Menggabungkan kedua sumber data berdasarkan identitas `(user, tty)`: informasi proses langsung (`pid` & `idle`) dari `who` diperkaya secara presisi dengan stempel waktu detik dari `last -F` tanpa memunculkan duplikasi baris sesi aktif.
+     - Mengeliminasi laporan sesi aktif berlebih pada terminal TTY yang identik.
+  2. **Eliminasi Total Duplikasi Perintah Sudo (*Journalctl & Auth Log Sudo Deduplication*):**
+     - Mencegah kueri ganda riwayat `sudo` antara kueri struktural `journalctl` berbasis UID dengan parser ekspresi reguler `auth.log` fallback.
+     - Menjamin setiap eksekusi sudo hanya tercatat satu kali dengan metadata terlengkap (`pwd`, `target_user`, `alert`).
+  3. **Penyaringan Pertahanan Berlapis (*Multi-Layer Defensive Sanitization*):**
+     - Menambahkan fungsi deduplikasi dan pembersihan menyeluruh pada backend FastAPI (`_deduplicate_user_logins`) dan frontend klien (`deduplicateLogins`), menjamin data riwayat masa lalu yang tersimpan di basis data tetap tampil rapi, bersih, dan bebas duplikasi seketika.
+
 ## Versi 4.8.101
 
 - **Tipe Rilis:** Reduksi Dimensi Tooltip Berdensitas Tinggi NOC dan Eliminasi Handler Salin Perintah Tambahan (*NOC High-Density Tooltip Dimension Reduction & Command Copy Handler Removal*)

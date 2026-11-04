@@ -5143,6 +5143,58 @@ def server_services_alias(request: Request, sid: int, db: Session = Depends(get_
 server_detail_page = services_page
 
 
+def _deduplicate_user_logins(raw_list: list) -> list:
+    """Menjamin konsolidasi murni dan eliminasi total duplikasi entri sesi dan sudo."""
+    if not isinstance(raw_list, list):
+        return []
+    result = []
+    seen_active_tty = set()
+    seen_sudo = set()
+    seen_other = set()
+
+    for item in raw_list:
+        if not isinstance(item, dict):
+            continue
+        ev_type = item.get("type")
+        tty = str(item.get("tty") or "").strip()
+        ts = str(item.get("ts") or "").strip()
+        method = str(item.get("method") or "").strip()
+
+        if ev_type == "aktif":
+            if tty and tty in seen_active_tty:
+                for existing in result:
+                    if existing.get("type") == "aktif" and str(existing.get("tty") or "").strip() == tty:
+                        if not existing.get("pid") and item.get("pid"):
+                            existing["pid"] = item["pid"]
+                        if len(ts) > len(str(existing.get("ts") or "")):
+                            existing["ts"] = ts
+                        break
+                continue
+            if tty:
+                seen_active_tty.add(tty)
+            result.append(item)
+        elif ev_type in ("sudo", "sudo_gagal"):
+            sudo_key = (ts, tty, method)
+            if sudo_key in seen_sudo:
+                for existing in result:
+                    if (existing.get("type") in ("sudo", "sudo_gagal")) and (str(existing.get("ts") or "").strip(), str(existing.get("tty") or "").strip(), str(existing.get("method") or "").strip()) == sudo_key:
+                        if not existing.get("pwd") and item.get("pwd"):
+                            existing["pwd"] = item["pwd"]
+                            existing["target_user"] = item.get("target_user", existing.get("target_user"))
+                            existing["alert"] = item.get("alert", existing.get("alert"))
+                        break
+                continue
+            seen_sudo.add(sudo_key)
+            result.append(item)
+        else:
+            other_key = (ev_type, ts, tty, str(item.get("from") or "").strip(), method)
+            if other_key in seen_other:
+                continue
+            seen_other.add(other_key)
+            result.append(item)
+    return result
+
+
 @app.get("/servers/{sid}/user/{username}", response_class=HTMLResponse)
 def user_activity_page(request: Request, sid: int, username: str, db: Session = Depends(get_db)):
     """Detail aktivitas seorang user: info akun, aktivitas login, riwayat perintah."""
@@ -5181,7 +5233,8 @@ def user_activity_page(request: Request, sid: int, username: str, db: Session = 
     if last_log and last_log.result:
         try:
             parsed = json.loads(last_log.result)
-            initial_logins = parsed.get("logins", []) if isinstance(parsed, dict) else []
+            raw_logins = parsed.get("logins", []) if isinstance(parsed, dict) else []
+            initial_logins = _deduplicate_user_logins(raw_logins)
         except Exception:
             initial_logins = []
 
