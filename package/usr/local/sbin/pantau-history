@@ -50,5 +50,9 @@ for p in \
 done
 [ -n "$SRC" ] || { echo "history tidak ditemukan atau tidak aman (symlink ditolak)" >&2; exit 3; }
 
+# Header metadata mtime (epoch detik) agar agen merekonstruksi waktu presisi
+MTIME="$(stat -c "%Y" "$SRC" 2>/dev/null || echo 0)"
+echo "#PANTAU_MTIME:${MTIME}"
+
 # Batasi ukuran agar agen tidak kewalahan memori (maks 512 KB).
 head -c 524288 "$SRC"

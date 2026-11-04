@@ -5166,6 +5166,8 @@ def _deduplicate_user_logins(raw_list: list) -> list:
                     if existing.get("type") == "aktif" and str(existing.get("tty") or "").strip() == tty:
                         if not existing.get("pid") and item.get("pid"):
                             existing["pid"] = item["pid"]
+                        if item.get("active_cmd"):
+                            existing["active_cmd"] = item["active_cmd"]
                         if len(ts) > len(str(existing.get("ts") or "")):
                             existing["ts"] = ts
                         break
@@ -5185,6 +5187,12 @@ def _deduplicate_user_logins(raw_list: list) -> list:
                         break
                 continue
             seen_sudo.add(sudo_key)
+            result.append(item)
+        elif ev_type == "shell":
+            sh_key = (ts, method)
+            if sh_key in seen_other:
+                continue
+            seen_other.add(sh_key)
             result.append(item)
         else:
             other_key = (ev_type, ts, tty, str(item.get("from") or "").strip(), method)

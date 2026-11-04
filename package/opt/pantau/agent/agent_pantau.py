@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.104"
+AGENT_VERSION = "4.8.105"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4535,6 +4535,27 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                 "method": f"{tty} (Sesi Aktif)",
                 "active": True,
             }
+        # Deteksi proses foreground aktif pada terminal sesi pengguna
+        try:
+            ps_cmd = ["ps", "-u", target_user, "-o", "tty,stat,args", "--no-headers"] if target_user else ["ps", "-eo", "user,tty,stat,args", "--no-headers"]
+            ps_res = _run_cmd(ps_cmd, timeout=3)
+            if ps_res and ps_res.stdout:
+                for pline in ps_res.stdout.splitlines():
+                    pparts = pline.split(None, 2 if target_user else 3)
+                    if target_user and len(pparts) == 3:
+                        ptty, pstat, pargs = pparts
+                        puser = target_user
+                    elif not target_user and len(pparts) == 4:
+                        puser, ptty, pstat, pargs = pparts
+                    else:
+                        continue
+                    if "+" in pstat and ptty != "?" and not any(pargs.startswith(x) for x in ("-bash", "bash", "sshd", "-sh", "sh", "zsh", "su", "-su")):
+                        clean_tty = ptty if ptty.startswith("pts/") else f"pts/{ptty}"
+                        for (u, t), act_dict in active_by_key.items():
+                            if u == puser and (t == ptty or t == clean_tty or clean_tty.endswith(t) or t.endswith(ptty)):
+                                act_dict["active_cmd"] = pargs
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -4796,6 +4817,37 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                     seen_auth.add(auth_key)
                     events.append({"ts": ts, "user": user, "type": kind, "from": src, "tty": tty_val, "method": method})
                 break
+
+    # 6. Riwayat Perintah Shell Non-Sudo (Pengguna Umum & Sudoers tanpa awalan sudo)
+    if target_user:
+        try:
+            hist_list = _collect_user_history(target_user, max_lines=100)
+            for h in hist_list:
+                cmd_raw = (h.get("cmd") or "").strip()
+                if not cmd_raw:
+                    continue
+                # Jangan duplikasi bila perintah diawali sudo dan sudah ada di audit sudo
+                if cmd_raw.startswith("sudo ") or cmd_raw.startswith("sudo\t"):
+                    cmd_core = cmd_raw[5:].strip()
+                    if any(cmd_core in s[3] or s[3] in cmd_core for s in seen_sudo if len(s) >= 4):
+                        continue
+                ts_hist = h.get("ts") or ""
+                sh_key = (target_user, ts_hist, cmd_raw, "shell")
+                if sh_key not in seen_sudo:
+                    seen_sudo.add(sh_key)
+                    events.append({
+                        "ts": ts_hist,
+                        "user": target_user,
+                        "type": "shell",
+                        "from": "(lokal)",
+                        "tty": "—",
+                        "pwd": "—",
+                        "target_user": target_user,
+                        "alert": "",
+                        "method": cmd_raw,
+                    })
+        except Exception:
+            pass
 
     events.sort(key=lambda e: str(e.get("ts", "")), reverse=True)
     return events[: max(0, max_events)]
@@ -5507,23 +5559,29 @@ def collect_kernel_events(syslogs=None) -> dict:
     return result
 
 
-_HIST_EPOCH = re.compile(r"^#(\d{9,11})$")                      # bash: baris before command (#epoch)
-_HIST_ZSH = re.compile(r"^: (\d{9,11}):\d*;(.*)$")              # zsh: : <epoch>:<status>;<command>
+_HIST_EPOCH = re.compile(r"^#(\d{9,12})$")                      # bash: baris before command (#epoch)
+_HIST_MTIME = re.compile(r"^#PANTAU_MTIME:(\d{9,12})$")          # metadata mtime wrapper
+_HIST_ZSH = re.compile(r"^: (\d{9,12}):\d*;(.*)$")              # zsh: : <epoch>:<status>;<command>
 _HIST_FISH_CMD = re.compile(r"^- cmd:\s*(.*)$")                 # fish: - cmd: <command>
-_HIST_FISH_WHEN = re.compile(r"^\s+when:\s*(\d{9,11})$")        # fish:   when: <epoch>
+_HIST_FISH_WHEN = re.compile(r"^\s+when:\s*(\d{9,12})$")        # fish:   when: <epoch>
 
 
 def _parse_history_entries(raw: str) -> list:
     """Parse konten file history (bash/zsh/fish) -> [(epoch|None, command)] urut waktu.
 
     epoch None = tidak ada timestamp (bash tanpa HISTTIMEFORMAT, atau baris bawaan
-    fish tanpa 'when'). Urutan tetap mengikuti baris file (kronologis).
+    fish tanpa 'when'). Bila metadata mtime ada, diinterpolasi mundur per detik agar kronologis stabil.
     """
     entries: list = []
     pending_epoch = None
+    mtime_epoch = None
     for ln in raw.splitlines():
         s = ln.rstrip("\r\n")
         if not s:
+            continue
+        m_mt = _HIST_MTIME.match(s)
+        if m_mt:
+            mtime_epoch = int(m_mt.group(1))
             continue
         m = _HIST_EPOCH.match(s)
         if m:
@@ -5555,6 +5613,16 @@ def _parse_history_entries(raw: str) -> list:
             pending_epoch = None
         else:
             entries.append((None, cmd))
+
+    # Rekonstruksi timestamp logis untuk entri tanpa epoch bila mtime_epoch tersedia
+    if mtime_epoch and mtime_epoch > 0:
+        total_len = len(entries)
+        for idx in range(total_len):
+            ep, cmd = entries[idx]
+            if ep is None:
+                approx_ep = max(0, mtime_epoch - (total_len - 1 - idx))
+                entries[idx] = (approx_ep, cmd)
+
     return [e for e in entries if e and e[1]]
 
 
@@ -5562,7 +5630,7 @@ def _collect_user_history(user: str, max_lines: int) -> list:
     """Riwayat perintah user (bash/zsh/fish), paling baru di atas.
 
     Wrapper sudo hanya membaca file history di /home/<user> atau /root;
-    format diurai di sini. Setiap entri: {"ts": epoch|None, "cmd": str}.
+    format diurai di sini. Setiap entri: {"ts": str, "cmd": str}.
     """
     if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,32}", str(user)):
         return []
@@ -5571,7 +5639,18 @@ def _collect_user_history(user: str, max_lines: int) -> list:
     if res is None or res.returncode != 0:
         return []
     entries = _parse_history_entries(res.stdout or "")
-    return [{"ts": t, "cmd": c} for t, c in reversed(entries)][:max_lines]
+    result = []
+    for ep, c in reversed(entries):
+        ts_str = ""
+        if ep:
+            try:
+                ts_str = datetime.fromtimestamp(ep).strftime("%Y-%m-%d %H:%M:%S")
+            except Exception:
+                ts_str = ""
+        result.append({"ts": ts_str, "cmd": c})
+        if len(result) >= max_lines:
+            break
+    return result
 
 
 def _tail_file(path: str, lines: int) -> str:

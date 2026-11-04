@@ -135,12 +135,19 @@
     font-size: 10.5px;
     font-variant-numeric: tabular-nums;
   }
+  .chip-info {
+    background: var(--blue-bg);
+    color: var(--blue);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+  }
 </style>
 
 <div id="chip-row" style="{% if initial_logins and initial_logins|length > 0 %}display:flex;{% else %}display:none;{% endif %}flex-wrap:wrap;gap:8px;margin-bottom:14px">
   <span class="chip chip-up" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('aktif')" title="Klik untuk filter Sesi Aktif">Sesi Aktif: <b id="chip-aktif">0</b></span>
   <span class="chip chip-inactive" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('selesai')" title="Klik untuk filter Sesi Selesai">Selesai: <b id="chip-selesai">0</b></span>
   <span class="chip chip-warn" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sudo')" title="Klik untuk filter Sudo">Sudo: <b id="chip-sudo">0</b></span>
+  <span class="chip chip-info" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('shell')" title="Klik untuk filter Perintah Shell (Non-Sudo)">Shell: <b id="chip-shell">0</b></span>
+  <span class="chip chip-warn" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('polkit')" title="Klik untuk filter Polkit">Polkit: <b id="chip-polkit">0</b></span>
   <span class="chip chip-down" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sudo_gagal')" title="Klik untuk filter Sudo Gagal">Sudo Gagal: <b id="chip-sudo-gagal">0</b></span>
   <span class="chip chip-down" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('gagal')" title="Klik untuk filter Login Gagal">Login Gagal: <b id="chip-gagal">0</b></span>
   <span class="chip chip-inactive" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sesi')" title="Klik untuk filter Sesi Baru">Sesi Baru: <b id="chip-sesi">0</b></span>
@@ -150,7 +157,7 @@
 <div class="card">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <div>
-      <h3 style="margin:0">Aktivitas Login &amp; Audit Sudo</h3>
+      <h3 style="margin:0">Aktivitas Pengguna &amp; Audit Perintah</h3>
       <span id="ll-state" style="font-size:12px;color:var(--dim)"></span>
     </div>
     <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
@@ -161,6 +168,8 @@
           <option value="aktif">Sesi Aktif (Masih Login)</option>
           <option value="selesai">Sesi Selesai (Logout)</option>
           <option value="sudo">Eksekusi Sudo</option>
+          <option value="shell">Perintah Shell (Non-Sudo)</option>
+          <option value="polkit">Otorisasi Polkit</option>
           <option value="sudo_gagal">Sudo Gagal / Ilegal</option>
           <option value="gagal">Login Gagal</option>
           <option value="sesi">Sesi Baru</option>
@@ -258,7 +267,7 @@ let activityBusy = false;
 let llCount = 0;
 
 function renderChips(logins) {
-  const c = {aktif: 0, selesai: 0, sudo: 0, sudo_gagal: 0, gagal: 0, sesi: 0, sukses: 0, polkit: 0, polkit_gagal: 0};
+  const c = {aktif: 0, selesai: 0, sudo: 0, sudo_gagal: 0, gagal: 0, sesi: 0, sukses: 0, polkit: 0, polkit_gagal: 0, shell: 0};
   for (const x of logins) {
     if (c.hasOwnProperty(x.type)) c[x.type]++;
     else if (x.type === 'sukses') c.selesai++;
@@ -271,7 +280,11 @@ function renderChips(logins) {
   const elSelesai = document.getElementById('chip-selesai');
   if (elSelesai) elSelesai.textContent = c.selesai + c.sukses;
   const elSudo = document.getElementById('chip-sudo');
-  if (elSudo) elSudo.textContent = c.sudo + c.polkit;
+  if (elSudo) elSudo.textContent = c.sudo;
+  const elShell = document.getElementById('chip-shell');
+  if (elShell) elShell.textContent = c.shell;
+  const elPolkit = document.getElementById('chip-polkit');
+  if (elPolkit) elPolkit.textContent = c.polkit;
   const elSudoGagal = document.getElementById('chip-sudo-gagal');
   if (elSudoGagal) elSudoGagal.textContent = c.sudo_gagal + c.polkit_gagal;
   const elGagal = document.getElementById('chip-gagal');
@@ -291,12 +304,14 @@ function deduplicateLogins(rawList) {
   const result = [];
   const seenActiveTty = new Set();
   const seenSudo = new Set();
+  const seenShell = new Set();
   const seenOther = new Set();
 
   for (const item of rawList) {
     if (!item) continue;
     const isAktif = (item.type === 'aktif');
     const isSudo = (item.type === 'sudo' || item.type === 'sudo_gagal' || item.type === 'polkit' || item.type === 'polkit_gagal');
+    const isShell = (item.type === 'shell');
     const tty = String(item.tty || '').trim();
     const ts = String(item.ts || '').trim();
     const method = String(item.method || '').trim();
@@ -307,6 +322,9 @@ function deduplicateLogins(rawList) {
         if (existingIdx !== -1) {
           if (!result[existingIdx].pid && item.pid) {
             result[existingIdx].pid = item.pid;
+          }
+          if (item.active_cmd) {
+            result[existingIdx].active_cmd = item.active_cmd;
           }
           if (ts.length > String(result[existingIdx].ts || '').length) {
             result[existingIdx].ts = ts;
@@ -319,7 +337,7 @@ function deduplicateLogins(rawList) {
     } else if (isSudo) {
       const sudoKey = `${ts}|${tty}|${method}`;
       if (seenSudo.has(sudoKey)) {
-        const existingIdx = result.findIndex(r => (r.type === 'sudo' || r.type === 'sudo_gagal') && `${String(r.ts || '').trim()}|${String(r.tty || '').trim()}|${String(r.method || '').trim()}` === sudoKey);
+        const existingIdx = result.findIndex(r => (r.type === 'sudo' || r.type === 'sudo_gagal' || r.type === 'polkit' || r.type === 'polkit_gagal') && `${String(r.ts || '').trim()}|${String(r.tty || '').trim()}|${String(r.method || '').trim()}` === sudoKey);
         if (existingIdx !== -1 && !result[existingIdx].pwd && item.pwd) {
           result[existingIdx].pwd = item.pwd;
           result[existingIdx].target_user = item.target_user || result[existingIdx].target_user;
@@ -328,6 +346,11 @@ function deduplicateLogins(rawList) {
         continue;
       }
       seenSudo.add(sudoKey);
+      result.push(item);
+    } else if (isShell) {
+      const shellKey = `${ts}|${method}`;
+      if (seenShell.has(shellKey)) continue;
+      seenShell.add(shellKey);
       result.push(item);
     } else {
       const otherKey = `${item.type || ''}|${ts}|${tty}|${item.from || ''}|${method}`;
@@ -367,11 +390,13 @@ function renderLoginsData(rawLogins) {
       const isSudoGagal = (x.type === 'sudo_gagal');
       const isPolkit = (x.type === 'polkit');
       const isPolkitGagal = (x.type === 'polkit_gagal');
+      const isShell = (x.type === 'shell');
       const isGagal = (x.type === 'gagal');
       const isSelesai = (x.type === 'selesai' || x.type === 'sukses');
 
       const cls = isAktif ? 'badge-up'
                 : (isSudo || isPolkit) ? 'badge-warn'
+                : isShell ? 'badge-info'
                 : (isGagal || isSudoGagal || isPolkitGagal) ? 'badge-down' : 'badge-muted';
 
       let typeLabel = '';
@@ -387,6 +412,8 @@ function renderLoginsData(rawLogins) {
         typeLabel = 'Polkit (root)';
       } else if (isPolkitGagal) {
         typeLabel = 'Polkit Gagal';
+      } else if (isShell) {
+        typeLabel = 'Shell';
       } else if (isGagal) {
         typeLabel = 'Login Gagal';
       } else if (x.type === 'sesi') {
@@ -402,6 +429,8 @@ function renderLoginsData(rawLogins) {
       let timeTooltip = '';
       if (isSudo || isSudoGagal || isPolkit || isPolkitGagal) {
         timeTooltip = 'Waktu Eksekusi: ' + detailedStart;
+      } else if (isShell) {
+        timeTooltip = x.ts ? ('Waktu Eksekusi: ' + (detailedStart || x.ts)) : 'Waktu: Berurutan kronologis';
       } else if (isAktif) {
         timeTooltip = 'Waktu Mulai: ' + detailedStart + ' (Sesi Masih Aktif)';
       } else if (isSelesai) {
@@ -445,26 +474,34 @@ function renderLoginsData(rawLogins) {
       }
 
       let methodCell = '';
-      if (isSudo || isSudoGagal || isPolkit || isPolkitGagal) {
+      if (isSudo || isSudoGagal || isPolkit || isPolkitGagal || isShell) {
         const actualCmd = getActualCommand(x.method);
         const tipLines = [];
-        if (x.method && x.method !== actualCmd) {
+        if (isShell) {
           tipLines.push('Perintah: ' + actualCmd);
-          tipLines.push('Path Penuh: ' + x.method);
+          tipLines.push('Mekanisme: Shell Pengguna (Tanpa Sudo)');
+          tipLines.push('Pengguna: ' + (x.user || USERNAME));
+          if (x.ts) tipLines.push('Waktu Eksekusi: ' + (detailedStart || x.ts));
+          tipLines.push('Status: Selesai / Terekam');
         } else {
-          tipLines.push('Perintah: ' + (actualCmd || '—'));
-        }
-        if (isPolkit || isPolkitGagal) {
-          tipLines.push('Mekanisme: Polkit (Tanpa Sudo)');
-          if (x.raw_action) tipLines.push('Aksi D-Bus: ' + x.raw_action);
-        }
-        if (x.target_user) tipLines.push('Jalankan Sebagai: ' + x.target_user);
-        if (x.pwd && x.pwd !== '—') tipLines.push('Direktori (PWD): ' + x.pwd);
-        if (x.tty && x.tty !== '—') tipLines.push('Terminal: ' + x.tty);
-        if (isSudoGagal || isPolkitGagal) {
-          tipLines.push('Status: Gagal' + (x.alert ? ' (' + x.alert + ')' : ''));
-        } else {
-          tipLines.push('Status: Berhasil');
+          if (x.method && x.method !== actualCmd) {
+            tipLines.push('Perintah: ' + actualCmd);
+            tipLines.push('Path Penuh: ' + x.method);
+          } else {
+            tipLines.push('Perintah: ' + (actualCmd || '—'));
+          }
+          if (isPolkit || isPolkitGagal) {
+            tipLines.push('Mekanisme: Polkit (Tanpa Sudo)');
+            if (x.raw_action) tipLines.push('Aksi D-Bus: ' + x.raw_action);
+          }
+          if (x.target_user) tipLines.push('Jalankan Sebagai: ' + x.target_user);
+          if (x.pwd && x.pwd !== '—') tipLines.push('Direktori (PWD): ' + x.pwd);
+          if (x.tty && x.tty !== '—') tipLines.push('Terminal: ' + x.tty);
+          if (isSudoGagal || isPolkitGagal) {
+            tipLines.push('Status: Gagal' + (x.alert ? ' (' + x.alert + ')' : ''));
+          } else {
+            tipLines.push('Status: Berhasil');
+          }
         }
         const cmdTooltip = tipLines.join('\n');
 
@@ -475,7 +512,12 @@ function renderLoginsData(rawLogins) {
           methodCell = '<code class="cmd-code" title="' + escapeHtml(cmdTooltip) + '">' + escapeHtml(actualCmd || '—') + '</code>';
         }
       } else if (isAktif) {
-        methodCell = '<span style="color:var(--dim)" title="Sesi terminal aktif — tidak ada eksekusi perintah">—</span>';
+        if (x.active_cmd) {
+          const activeClean = getActualCommand(x.active_cmd);
+          methodCell = '<code class="cmd-code" style="border-color:rgba(74,222,128,0.35);color:var(--green);font-weight:600" title="Sedang Berjalan di ' + escapeHtml(x.tty || 'terminal') + ':\n' + escapeHtml(x.active_cmd) + '">▶ ' + escapeHtml(activeClean) + '</code>';
+        } else {
+          methodCell = '<span style="color:var(--dim)" title="Sesi terminal aktif — prompt standby">—</span>';
+        }
       } else if (isSelesai) {
         methodCell = '<span style="color:var(--dim)" title="Sesi login selesai — tidak ada eksekusi perintah">—</span>';
       } else if (isGagal) {
@@ -485,7 +527,7 @@ function renderLoginsData(rawLogins) {
       }
 
       const filterType = (x.type === 'sukses') ? 'selesai' : (x.type || '');
-      const rowSearch = `${x.ts || ''} ${x.user || ''} ${rawFrom} ${x.tty || ''} ${x.pwd || ''} ${x.method || ''} ${filterType} ${isAktif ? 'aktif' : ''} ${isSelesai ? 'selesai' : ''}`.toLowerCase();
+      const rowSearch = `${x.ts || ''} ${x.user || ''} ${rawFrom} ${x.tty || ''} ${x.pwd || ''} ${x.method || ''} ${filterType} ${isAktif ? 'aktif' : ''} ${isSelesai ? 'selesai' : ''} ${isShell ? 'shell' : ''}`.toLowerCase();
       return '<tr data-type="' + escapeHtml(filterType) + '" data-search="' + escapeHtml(rowSearch) + '">'
         + '<td class="mono col-time" style="font-size:10.5px;white-space:nowrap" title="' + escapeHtml(timeTooltip) + '">'
         + '<span class="mono" style="font-size:10.5px;color:var(--text);font-weight:600">' + escapeHtml(essentialTime) + '</span>'

@@ -180,6 +180,10 @@ echo "[OK]   Unit manager daemon-reload"
 get_file etc/logrotate.d/pantau-agent /etc/logrotate.d/pantau-agent 644 root:root
 echo "[OK]   Logrotate /etc/logrotate.d/pantau-agent"
 
+install -d -o root -g root -m 755 /etc/profile.d
+get_file etc/profile.d/pantau-history.sh /etc/profile.d/pantau-history.sh 644 root:root
+echo "[OK]   Profile hook -> /etc/profile.d/pantau-history.sh"
+
 # ---------------------------------------------------------------------------
 # 3. Arahkan ke Dashboard (config) — pakai lama bila valid, selain itu minta.
 # ---------------------------------------------------------------------------
@@ -240,7 +244,7 @@ except Exception as e:
     print("UNREACHABLE:%s" % e); raise SystemExit
 try:
     req = urllib.request.Request(url + "/api/commands")
-    req.add_header("User-Agent", "AgentPantau-Installer/4.8.104")
+    req.add_header("User-Agent", "AgentPantau-Installer/4.8.105")
     req.add_header("X-Api-Key", key)
     with urllib.request.urlopen(req, timeout=8) as r:
         print("OK" if r.status == 200 else "HTTP%d" % r.status)

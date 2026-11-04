@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.105
+
+- **Tipe Rilis:** Pelaporan Lengkap Perintah Shell Non-Sudo, Inspeksi Proses Aktif Terminal, & Sinkronisasi Instan Riwayat (*Non-Sudo Shell Command Logging, Active Terminal Process Inspection, & Instant Real-Time History Sync*)
+- **Fokus Utama:** Menutup seluruh celah pelaporan aktivitas pengguna sehingga perintah yang dieksekusi tanpa awalan `sudo` maupun perintah yang sedang berjalan di terminal aktif terekam secara otomatis dan bertambah di tabel aktivitas:
+  1. **Integrasi Penuh Riwayat Perintah Shell Non-Sudo (*Shell History Ingestion*):**
+     - Mengintegrasikan kembali pembacaan riwayat shell (`~/.bash_history`, `~/.zsh_history`, `fish_history`) via wrapper aman `/usr/local/sbin/pantau-history`.
+     - Merekonstruksi urutan kronologis perintah shell dengan dukungan penuh stempel waktu presisi (`HISTTIMEFORMAT`) maupun interpolasi waktu berkas (`mtime`), sehingga perintah non-sudo langsung terdaftar di kolom "Perintah" dengan badge jenis `Shell`.
+     - Mencegah duplikasi entri antara riwayat shell dan log audit `sudo`.
+  2. **Inspeksi Proses Foreground Sesi Aktif (*Real-Time Foreground Process Tracking*):**
+     - Agen kini memindai proses anak (*foreground process*) pada setiap TTY sesi aktif secara real-time (`ps -u <user>`).
+     - Jika pengguna sedang menjalankan perintah di terminal (seperti `top`, `ping`, `systemctl`, `nano`), kolom "Perintah" pada baris Sesi Aktif langsung menampilkan nama perintah aktif dengan indikator visual `▶ <perintah>`.
+  3. **Sinkronisasi Riwayat Instan via Profile Hook (*Real-Time History Sync via /etc/profile.d*):**
+     - Menambahkan konfigurasi audit otomatis `/etc/profile.d/pantau-history.sh` pada skrip installer (`package/install.sh`) yang mengaktifkan `export HISTTIMEFORMAT` dan `PROMPT_COMMAND="history -a; $PROMPT_COMMAND"`.
+     - Perintah yang dieksekusi di bash langsung di-flush ke disk seketika tanpa harus menunggu pengguna logout (`exit`).
+  4. **Pembaruan Filter & Chip Ringkasan (*UI Filter & Chip Bar Upgrade*):**
+     - Menambahkan chip filter `Shell` dan opsi dropdown `Perintah Shell (Non-Sudo)`.
+     - Memperbarui judul kartu menjadi `Aktivitas Pengguna & Audit Perintah`.
+
 ## Versi 4.8.104
 
 - **Tipe Rilis:** Penangkapan Audit Aksi Administratif Polkit Tanpa Sudo (*Polkit Administrative Action Audit without Sudo*)
