@@ -12,6 +12,10 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
       Segarkan
     </button>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="exportCsv()" title="Unduh riwayat aktivitas sebagai CSV">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Ekspor CSV
+    </button>
     {% if account and account.sessions and not user.is_viewer() %}
       {% for s in account.sessions %}
         {% if s.tty %}
@@ -68,16 +72,16 @@
   <span class="chip chip-up" style="cursor:pointer" onclick="setLlTypeFilter('aktif')" title="Klik untuk filter Sesi Aktif">Sesi Aktif: <b id="chip-aktif">0</b></span>
   <span class="chip chip-inactive" style="cursor:pointer" onclick="setLlTypeFilter('selesai')" title="Klik untuk filter Sesi Selesai">Selesai: <b id="chip-selesai">0</b></span>
   <span class="chip chip-warn" style="cursor:pointer" onclick="setLlTypeFilter('sudo')" title="Klik untuk filter Sudo">Sudo: <b id="chip-sudo">0</b></span>
+  <span class="chip chip-down" style="cursor:pointer" onclick="setLlTypeFilter('sudo_gagal')" title="Klik untuk filter Sudo Gagal">Sudo Gagal: <b id="chip-sudo-gagal">0</b></span>
   <span class="chip chip-down" style="cursor:pointer" onclick="setLlTypeFilter('gagal')" title="Klik untuk filter Login Gagal">Login Gagal: <b id="chip-gagal">0</b></span>
   <span class="chip chip-inactive" style="cursor:pointer" onclick="setLlTypeFilter('sesi')" title="Klik untuk filter Sesi Baru">Sesi Baru: <b id="chip-sesi">0</b></span>
-  <span class="chip chip-inactive" style="cursor:pointer" onclick="document.getElementById('hist-filter').focus()" title="Fokus ke riwayat perintah">Perintah: <b id="chip-cmd">0</b></span>
   <button type="button" class="btn btn-ghost btn-sm" id="btn-reset-ll-filter" onclick="setLlTypeFilter('')" style="display:none;padding:2px 8px;font-size:11px">Reset Filter</button>
 </div>
 
 <div class="card">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <div>
-      <h3 style="margin:0">Aktivitas Login &amp; Sudo</h3>
+      <h3 style="margin:0">Aktivitas Login &amp; Audit Sudo</h3>
       <span id="ll-state" style="font-size:12px;color:var(--dim)"></span>
     </div>
     <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
@@ -87,16 +91,17 @@
           <option value="">Semua Jenis</option>
           <option value="aktif">Sesi Aktif (Masih Login)</option>
           <option value="selesai">Sesi Selesai (Logout)</option>
-          <option value="sudo">Sudo (Perintah Root)</option>
+          <option value="sudo">Eksekusi Sudo</option>
+          <option value="sudo_gagal">Sudo Gagal / Ilegal</option>
           <option value="gagal">Login Gagal</option>
           <option value="sesi">Sesi Baru</option>
         </select>
       </div>
-      <div class="filter-col-search" title="Cari aktivitas login atau sudo" style="min-width:180px">
+      <div class="filter-col-search" title="Cari aktivitas login atau sudo" style="min-width:220px">
         <label class="filter-col-label" for="ll-search-input">Cari Aktivitas</label>
         <div class="filter-search-box">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input type="search" id="ll-search-input" placeholder="Cari IP, perintah, metode…" oninput="filterLoginsTable()">
+          <input type="search" id="ll-search-input" placeholder="Cari IP, perintah, path, TTY…" oninput="filterLoginsTable()">
         </div>
       </div>
     </div>
@@ -105,37 +110,24 @@
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:pantau-spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
     <span>Memuat aktivitas login &amp; sudo dari server…</span>
   </div>
-  <div id="ll-empty" class="empty-msg" style="display:none">Belum ada aktivitas login untuk user ini.</div>
+  <div id="ll-empty" class="empty-msg" style="display:none">Belum ada aktivitas login atau sudo untuk user ini.</div>
   <div id="ll-scroll" style="display:none;overflow-x:auto;border:1px solid var(--border);border-radius:6px">
-    <table id="ll-table">
-      <thead><tr><th>Waktu</th><th>Pengguna</th><th>Jenis</th><th>Dari</th><th>Metode / Perintah</th></tr></thead>
+    <table id="ll-table" style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr>
+          <th style="width:145px">Waktu</th>
+          <th style="width:100px">Pengguna</th>
+          <th style="width:120px">Jenis</th>
+          <th style="width:130px">Terminal / Sesi</th>
+          <th style="width:130px">Sumber (IP)</th>
+          <th style="width:170px">Direktori (PWD)</th>
+          <th>Detail / Perintah yang Dieksekusi</th>
+          <th style="width:85px;text-align:right">Aksi</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
-</div>
-
-<div class="card">
-  <div class="card-header"><h3>Riwayat Perintah (history)</h3>
-    <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
-      <div class="filter-col-search" title="Filter riwayat perintah" style="min-width:220px">
-        <label class="filter-col-label" for="hist-filter">Filter Perintah</label>
-        <div class="filter-search-box">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input id="hist-filter" type="search" placeholder="Cari perintah…">
-        </div>
-      </div>
-      <button id="hist-more" class="btn btn-ghost btn-sm" style="display:none;height:32px" onclick="historyLines=1000;loadActivity()">Muat lebih banyak</button>
-      <button class="btn btn-ghost btn-sm" style="height:32px" onclick="exportCsv()">Ekspor CSV</button>
-      <span id="hist-state" style="font-size:12px;color:var(--dim)"></span>
-    </div>
-  </div>
-  <div id="user-act-sub" style="font-size:11px;color:var(--dim);margin-bottom:8px">Riwayat perintah shell user {{ username }} di server ini, terbaru di atas. Waktu hanya tampil untuk perintah yang shellnya mencatat timestamp; selebihnya hanya urutan eksekusi.</div>
-  <div id="hist-loading" style="padding:28px 16px;text-align:center;color:var(--dim);font-size:12px;display:flex;align-items:center;justify-content:center;gap:8px">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:pantau-spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
-    <span>Mengambil riwayat perintah shell dari server…</span>
-  </div>
-  <pre id="hist-pre" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;max-height:52vh;overflow:auto;white-space:pre;color:var(--text);display:none"></pre>
-  <div id="hist-empty" class="empty-msg" style="display:none">Riwayat perintah tidak ditemukan atau belum ada perintah.</div>
 </div>
 {% endblock %}
 
@@ -143,6 +135,7 @@
 <script>
 const SID = {{ server.id }};
 const USERNAME = {{ username|tojson }};
+const IS_VIEWER = {{ 'true' if user and user.is_viewer() else 'false' }};
 
 function sleepMs(ms) { return new Promise(r => setTimeout(r, ms)); }
 function escapeHtml(s) {
@@ -150,28 +143,17 @@ function escapeHtml(s) {
     {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]
   ));
 }
-const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-function fmtTs(epoch) {
-  if (!epoch) return '';
-  try {
-    const d = new Date(epoch * 1000);
-    const p = n => String(n).padStart(2, '0');
-    return p(d.getDate()) + ' ' + BULAN[d.getMonth()] + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
-  } catch (e) { return ''; }
-}
 
 let activityBusy = false;
-let historyLines = 200;
 let llCount = 0;
-let cmdCount = 0;
 
-function renderChips(logins, history) {
-  const c = {aktif: 0, selesai: 0, sudo: 0, gagal: 0, sesi: 0, sukses: 0};
+function renderChips(logins) {
+  const c = {aktif: 0, selesai: 0, sudo: 0, sudo_gagal: 0, gagal: 0, sesi: 0, sukses: 0};
   for (const x of logins) {
     if (c.hasOwnProperty(x.type)) c[x.type]++;
     else if (x.type === 'sukses') c.selesai++;
   }
-  llCount = logins.length; cmdCount = history.length;
+  llCount = logins.length;
   const chip = document.getElementById('chip-row');
   chip.style.display = 'flex';
   const elAktif = document.getElementById('chip-aktif');
@@ -180,35 +162,12 @@ function renderChips(logins, history) {
   if (elSelesai) elSelesai.textContent = c.selesai + c.sukses;
   const elSudo = document.getElementById('chip-sudo');
   if (elSudo) elSudo.textContent = c.sudo;
+  const elSudoGagal = document.getElementById('chip-sudo-gagal');
+  if (elSudoGagal) elSudoGagal.textContent = c.sudo_gagal;
   const elGagal = document.getElementById('chip-gagal');
   if (elGagal) elGagal.textContent = c.gagal;
   const elSesi = document.getElementById('chip-sesi');
   if (elSesi) elSesi.textContent = c.sesi;
-  const elCmd = document.getElementById('chip-cmd');
-  if (elCmd) elCmd.textContent = history.length;
-}
-
-function renderHistory(history) {
-  const pre = document.getElementById('hist-pre');
-  const em2 = document.getElementById('hist-empty');
-  const filt = (document.getElementById('hist-filter').value || '').trim().toLowerCase();
-  const shown = history.filter(h => !filt || String(h.cmd).toLowerCase().includes(filt));
-  if (shown.length) {
-    pre.textContent = shown.map(h => {
-      const t = fmtTs(h.ts);
-      return (t ? '[' + t + '] ' : '') + h.cmd;
-    }).join('\n');
-    pre.style.display = 'block';
-    em2.style.display = 'none';
-  } else {
-    pre.style.display = 'none';
-    em2.style.display = 'block';
-  }
-  const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
-  document.getElementById('hist-state').textContent =
-    shown.length ? shown.length + (isEn ? ' commands (of ' : ' perintah (dari ') + history.length + ')' : '';
-  document.getElementById('hist-more').style.display =
-    history.length >= historyLines && historyLines < 1000 ? 'inline-flex' : 'none';
 }
 
 async function loadActivity(isBackground = false) {
@@ -216,21 +175,16 @@ async function loadActivity(isBackground = false) {
   activityBusy = true;
   const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
   const st1 = document.getElementById('ll-state');
-  const st2 = document.getElementById('hist-state');
   const loadEl1 = document.getElementById('ll-loading');
-  const loadEl2 = document.getElementById('hist-loading');
-  const hasExistingData = !!(window.__llLast || window.__hlLast);
+  const hasExistingData = !!window.__llLast;
 
-  // Hanya tampilkan banner/spinner pemuatan jika data belum ada sama sekali (initial load)
   if (!hasExistingData && !isBackground) {
     if (loadEl1) loadEl1.style.display = 'flex';
-    if (loadEl2) loadEl2.style.display = 'flex';
     if (st1) st1.textContent = isEn ? 'loading…' : 'memuat…';
-    if (st2) st2.textContent = isEn ? 'loading…' : 'memuat…';
   } else if (!isBackground) {
     if (st1) st1.textContent = isEn ? 'refreshing…' : 'menyegarkan…';
-    if (st2) st2.textContent = isEn ? 'refreshing…' : 'menyegarkan…';
   }
+
   let rid;
   try {
     const r = await fetch('/api/logs/request', {
@@ -239,7 +193,7 @@ async function loadActivity(isBackground = false) {
         'Content-Type': 'application/json',
         'X-CSRF-Token': getCsrf()
       },
-      body: JSON.stringify({server_id: SID, unit: 'USER_ACTIVITY', detail: USERNAME, lines: historyLines}),
+      body: JSON.stringify({server_id: SID, unit: 'USER_ACTIVITY', detail: USERNAME, lines: 100}),
     });
     const j = await r.json();
     if (!r.ok) throw new Error(j.detail || ('HTTP ' + r.status));
@@ -247,13 +201,12 @@ async function loadActivity(isBackground = false) {
   } catch (e) {
     activityBusy = false;
     if (loadEl1) loadEl1.style.display = 'none';
-    if (loadEl2) loadEl2.style.display = 'none';
     if (!hasExistingData) {
       if (st1) st1.textContent = 'gagal: ' + escapeHtml(e.message);
-      if (st2) st2.textContent = '';
     }
     return;
   }
+
   const start = Date.now();
   let firstPoll = true;
   while (Date.now() - start < 45000) {
@@ -264,34 +217,36 @@ async function loadActivity(isBackground = false) {
       const r = await fetch('/api/logs/request/' + rid, {credentials: 'same-origin'});
       j = await r.json();
     } catch (e) { continue; }
+
     if (j.status === 'success' || j.status === 'failed') {
       activityBusy = false;
       if (loadEl1) loadEl1.style.display = 'none';
-      if (loadEl2) loadEl2.style.display = 'none';
       if (j.status === 'failed') {
         if (!hasExistingData) {
           if (st1) st1.textContent = 'gagal: ' + escapeHtml(String(j.result || '').slice(0, 200));
         }
         return;
       }
+
       let data = null;
       try { data = JSON.parse(j.result); } catch (e) {}
       const logins = (data && data.logins) || [];
-      const history = (data && data.history) || [];
 
       const wrap = document.getElementById('ll-scroll');
       wrap.style.display = logins.length ? 'block' : 'none';
       document.getElementById('ll-empty').style.display = logins.length ? 'none' : 'block';
+
       if (logins.length) {
         document.getElementById('ll-table').querySelector('tbody').innerHTML = logins.map(x => {
           const isAktif = (x.type === 'aktif');
           const isSudo = (x.type === 'sudo');
+          const isSudoGagal = (x.type === 'sudo_gagal');
           const isGagal = (x.type === 'gagal');
           const isSelesai = (x.type === 'selesai' || x.type === 'sukses');
 
           const cls = isAktif ? 'badge-up'
                     : isSudo ? 'badge-warn'
-                    : isGagal ? 'badge-down' : 'badge-muted';
+                    : (isGagal || isSudoGagal) ? 'badge-down' : 'badge-muted';
 
           let typeLabel = '';
           if (isAktif) {
@@ -299,7 +254,9 @@ async function loadActivity(isBackground = false) {
           } else if (isSelesai) {
             typeLabel = 'Selesai';
           } else if (isSudo) {
-            typeLabel = 'Sudo';
+            typeLabel = 'Sudo' + (x.target_user ? ' (' + escapeHtml(x.target_user) + ')' : '');
+          } else if (isSudoGagal) {
+            typeLabel = 'Sudo Gagal';
           } else if (isGagal) {
             typeLabel = 'Login Gagal';
           } else if (x.type === 'sesi') {
@@ -308,23 +265,56 @@ async function loadActivity(isBackground = false) {
             typeLabel = escapeHtml(x.type || '-');
           }
 
-          let method = '';
+          let termInfo = escapeHtml(x.tty || '-');
+          if (isAktif) {
+            termInfo = '<span class="mono" style="font-weight:600;color:var(--green)">' + escapeHtml(x.tty || 'ssh') + '</span>'
+              + (x.pid ? ' <span style="font-size:10px;color:var(--dim)">(PID ' + escapeHtml(x.pid) + ')</span>' : '');
+          } else if (isSelesai && x.duration) {
+            termInfo = '<span class="mono">' + escapeHtml(x.tty || '-') + '</span>'
+              + '<div style="font-size:10px;color:var(--dim)">Durasi: ' + escapeHtml(x.duration) + '</div>';
+          }
+
+          let pwdCell = '<span style="color:var(--dim)">—</span>';
+          if (x.pwd) {
+            const shortPwd = x.pwd.length > 26 ? '…' + x.pwd.slice(-24) : x.pwd;
+            pwdCell = '<code class="mono" style="font-size:11px;background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:3px" title="' + escapeHtml(x.pwd) + '">'
+              + escapeHtml(shortPwd) + '</code>';
+          }
+
+          let methodCell = '';
           if (isSudo) {
-            method = '<code class="mono" style="font-size:11px;background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px" title="' + escapeHtml(x.method || '') + '">'
-              + escapeHtml((x.method || '').slice(0, 90)) + ((x.method || '').length > 90 ? '…' : '') + '</code>';
+            methodCell = '<code class="mono" style="font-size:11.5px;color:var(--text);font-weight:600;background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;word-break:break-all" title="' + escapeHtml(x.method || '') + '">'
+              + escapeHtml(x.method || '-') + '</code>';
+          } else if (isSudoGagal) {
+            methodCell = '<span style="color:var(--red);font-weight:600">' + escapeHtml(x.alert || 'Otentikasi Gagal') + ':</span> '
+              + '<code class="mono" style="font-size:11px;margin-left:4px">' + escapeHtml(x.method || '-') + '</code>';
           } else if (isAktif) {
-            method = '<strong style="color:var(--green)">' + escapeHtml(x.method || '-') + '</strong>';
+            methodCell = '<span style="color:var(--green);font-weight:500">Sesi terminal sedang terhubung dan aktif</span>';
+          } else if (isSelesai) {
+            methodCell = '<span style="color:var(--dim)">Sesi logout selesai' + (x.logout_time ? ' (' + escapeHtml(x.logout_time) + ')' : '') + '</span>';
+          } else if (isGagal) {
+            methodCell = '<span style="color:var(--red)">Percobaan autentikasi gagal: ' + escapeHtml(x.method || 'Password salah') + '</span>';
           } else {
-            method = escapeHtml(x.method || '-');
+            methodCell = escapeHtml(x.method || '-');
+          }
+
+          let actionCell = '<span style="color:var(--dim)">—</span>';
+          if (isAktif && x.tty && !IS_VIEWER) {
+            actionCell = '<button type="button" class="btn btn-danger btn-xs" style="padding:2px 6px;font-size:10px" onclick="terminateSession(\'' + escapeHtml(x.tty) + '\', this)" title="Putus paksa sesi terminal ini">Putus Sesi</button>';
           }
 
           const filterType = (x.type === 'sukses') ? 'selesai' : (x.type || '');
-          const rowSearch = `${x.ts || ''} ${x.user || ''} ${x.from || ''} ${x.method || ''} ${filterType} ${isAktif ? 'aktif' : ''} ${isSelesai ? 'selesai' : ''}`.toLowerCase();
-          return '<tr data-type="' + escapeHtml(filterType) + '" data-search="' + escapeHtml(rowSearch) + '"><td class="mono">' + escapeHtml(x.ts || '-') + '</td>'
+          const rowSearch = `${x.ts || ''} ${x.user || ''} ${x.from || ''} ${x.tty || ''} ${x.pwd || ''} ${x.method || ''} ${filterType} ${isAktif ? 'aktif' : ''} ${isSelesai ? 'selesai' : ''}`.toLowerCase();
+          return '<tr data-type="' + escapeHtml(filterType) + '" data-search="' + escapeHtml(rowSearch) + '">'
+            + '<td class="mono" style="font-size:11.5px">' + escapeHtml(x.ts || '-') + '</td>'
             + '<td><strong>' + escapeHtml(x.user || '-') + '</strong></td>'
             + '<td><span class="badge ' + cls + '">' + typeLabel + '</span></td>'
+            + '<td>' + termInfo + '</td>'
             + '<td class="mono">' + escapeHtml(x.from || '-') + '</td>'
-            + '<td>' + method + '</td></tr>';
+            + '<td>' + pwdCell + '</td>'
+            + '<td>' + methodCell + '</td>'
+            + '<td style="text-align:right">' + actionCell + '</td>'
+            + '</tr>';
         }).join('');
 
         if (!window._llPagination && typeof attachTablePagination === 'function') {
@@ -338,23 +328,21 @@ async function loadActivity(isBackground = false) {
         }
         filterLoginsTable();
       }
+
       const pgBar = document.querySelector('.table-pagination-bar[data-for-table="ll-table"]');
       if (pgBar) pgBar.style.display = (logins.length > 10) ? 'flex' : 'none';
       if (st1) st1.textContent = logins.length ? logins.length + ' aktivitas' : '';
 
-      renderChips(logins, history);
-      renderHistory(history);
+      renderChips(logins);
       window.__llLast = logins;
-      window.__hlLast = history;
       return;
     }
   }
+
   activityBusy = false;
   if (loadEl1) loadEl1.style.display = 'none';
-  if (loadEl2) loadEl2.style.display = 'none';
   if (!hasExistingData) {
     document.getElementById('ll-empty').style.display = 'block';
-    document.getElementById('hist-empty').style.display = 'block';
     if (st1) st1.textContent = isEn ? 'agent did not respond' : 'agen tidak merespons';
   }
 }
@@ -401,20 +389,23 @@ function exportCsv() {
     try { key = JSON.stringify(x); } catch (e) { key = String(x); }
     if (seenLogin.has(key)) continue;
     seenLogin.add(key);
-    rows.push({jenis: x.type || 'login', waktu: x.ts || '', user: x.user || '',
-               dari: x.from || '', metode: x.method || '', perintah: ''});
+    rows.push({
+      waktu: x.ts || '',
+      user: x.user || '',
+      jenis: x.type || 'login',
+      terminal: x.tty || '',
+      ip_asal: x.from || '',
+      direktori: x.pwd || '',
+      perintah_detail: x.method || '',
+      keterangan: x.alert || (x.duration ? 'Durasi: ' + x.duration : (x.active ? 'Sesi Aktif' : ''))
+    });
   }
-  for (const h of window.__hlLast || []) {
-    rows.push({jenis: 'history', waktu: fmtTs(h.ts), user: USERNAME,
-               dari: '', metode: '', perintah: h.cmd});
-  }
-  const csvRows = [['jenis', 'waktu', 'user', 'dari', 'metode', 'perintah']]
-    .concat(rows.map(r => [r.jenis, r.waktu, r.user, r.dari, r.metode, r.perintah]
-      .map(v => '"' + String(v).replace(/"/g, '""') + '"')));
-  const blob = new Blob(['\ufeff' + csvRows.join('\r\n')], {type: 'text/csv;charset=utf-8'});
+  const headers = ['waktu', 'user', 'jenis', 'terminal', 'ip_asal', 'direktori', 'perintah_detail', 'keterangan'];
+  const csvRows = [headers].concat(rows.map(r => headers.map(h => '"' + String(r[h] || '').replace(/"/g, '""') + '"')));
+  const blob = new Blob(['\ufeff' + csvRows.map(r => r.join(',')).join('\r\n')], {type: 'text/csv;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'aktivitas_' + USERNAME + '_' + SID + '.csv';
+  a.download = 'audit_aktivitas_' + USERNAME + '_' + SID + '.csv';
   document.body.appendChild(a);
   a.click();
   URL.revokeObjectURL(a.href);
@@ -488,10 +479,6 @@ async function terminateSession(tty, btn) {
     }
   }
 }
-
-document.getElementById('hist-filter').addEventListener('input', () => {
-  if (window.__hlLast) renderHistory(window.__hlLast);
-});
 
 loadActivity();
 setInterval(() => {

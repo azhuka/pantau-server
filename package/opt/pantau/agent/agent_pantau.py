@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.94"
+AGENT_VERSION = "4.8.95"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -2766,12 +2766,14 @@ def _parse_lastlog() -> dict[str, str]:
     return result
 
 
-_who_re = re.compile(r"^(\S+)\s+(\S+)\s+(.+?)(?:\s+\((.*?)\))?$")
+_who_re = re.compile(r"^(\S+)\s+(\S+)\s+(.+?)(?:\s+(\.|\d+:\d+|old))?\s*(?:(\d+))?\s*(?:\((.*?)\))?$")
 
 
 def _parse_who() -> list[dict]:
     sessions = []
-    res = _run_cmd(["who"], timeout=5)
+    res = _run_cmd(["who", "-u"], timeout=5)
+    if res is None:
+        res = _run_cmd(["who"], timeout=5)
     if res is None:
         return sessions
     for line in res.stdout.splitlines():
@@ -2780,11 +2782,13 @@ def _parse_who() -> list[dict]:
             continue
         m = _who_re.match(line)
         if m:
-            u, tty, t, src = m.groups()
+            u, tty, t, idle, pid, src = m.groups()
             sessions.append({
                 "user": u,
                 "tty": tty,
                 "time": re.sub(r"\s+", " ", t).strip(),
+                "idle": idle or "",
+                "pid": pid or "",
                 "from": (src or "").strip(),
             })
     return sessions
@@ -4501,11 +4505,17 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
             src = s.get("from") or "(lokal)"
             tty = s.get("tty", "ssh")
             t = s.get("time", "")
+            pid = s.get("pid", "")
+            idle = s.get("idle", "")
             ev = {
                 "ts": t,
                 "user": u,
                 "type": "aktif",
                 "from": src,
+                "tty": tty,
+                "pid": pid,
+                "idle": idle,
+                "pwd": "",
                 "method": f"{tty} (Sesi Aktif)",
                 "active": True,
             }
@@ -4542,8 +4552,21 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                         ts_str = raw_time
                     is_active = "still logged in" in status
                     ev_type = "aktif" if is_active else "selesai"
-                    method_desc = f"{tty} (Sesi Aktif)" if is_active else f"{tty} (Selesai)"
                     from_clean = src if (src and src != ":0" and not src.startswith(":")) else "(lokal)"
+
+                    logout_time = ""
+                    dur_str = ""
+                    m_dur = re.search(r"-\s+([A-Za-z]+\s+[A-Za-z]+\s+\d+\s+\d+:\d+:\d+\s+\d+)\s+\((.+?)\)", status)
+                    if m_dur:
+                        raw_end, dur_val = m_dur.groups()
+                        dur_str = dur_val
+                        try:
+                            end_dt = datetime.strptime(raw_end, "%a %b %d %H:%M:%S %Y")
+                            logout_time = end_dt.strftime("%Y-%m-%d %H:%M:%S")
+                        except Exception:
+                            logout_time = raw_end
+
+                    method_desc = f"{tty} (Sesi Aktif)" if is_active else f"{tty} (Selesai)"
                     k = f"{u}:{ts_str}:{from_clean}:{tty}:{ev_type}"
                     if k not in seen_keys:
                         seen_keys.add(k)
@@ -4552,6 +4575,10 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                             "user": u,
                             "type": ev_type,
                             "from": from_clean,
+                            "tty": tty,
+                            "duration": dur_str,
+                            "logout_time": logout_time,
+                            "pwd": "",
                             "method": method_desc,
                             "active": is_active,
                         })
@@ -4567,23 +4594,31 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
             res_sudo = _run_cmd(cmd_sudo, timeout=6)
             if res_sudo and res_sudo.stdout:
                 p_sudo = re.compile(
-                    r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+(?:TTY=(?P<tty>\S+)\s*;\s*)?.+?USER=\S+\s*;\s*"
-                    r"COMMAND=(?P<cmd>.+)$"
+                    r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+(?P<alert>[^;]+;\s*)?(?:TTY=(?P<tty>\S+)\s*;\s*)?(?:PWD=(?P<pwd>\S+)\s*;\s*)?(?:USER=(?P<target>\S+)\s*;\s*)?COMMAND=(?P<cmd>.+)$"
                 )
                 for line in res_sudo.stdout.splitlines():
                     m = p_sudo.search(line)
                     if m:
                         ts = line[:19].replace("T", " ") if len(line) >= 19 else ""
                         tty = m.group("tty") or "(lokal)"
+                        pwd_val = m.group("pwd") or ""
+                        target_val = m.group("target") or "root"
                         cmd_val = m.group("cmd")
-                        k = f"{target_user}:{ts}:{tty}:sudo:{cmd_val[:40]}"
+                        alert_raw = (m.group("alert") or "").strip().rstrip(";")
+                        is_failed = bool(alert_raw and ("incorrect" in alert_raw.lower() or "not in sudoers" in alert_raw.lower()))
+                        ev_type = "sudo_gagal" if is_failed else "sudo"
+                        k = f"{target_user}:{ts}:{tty}:{ev_type}:{cmd_val[:40]}"
                         if k not in seen_keys:
                             seen_keys.add(k)
                             events.append({
                                 "ts": ts,
                                 "user": target_user,
-                                "type": "sudo",
+                                "type": ev_type,
                                 "from": tty,
+                                "tty": tty,
+                                "pwd": pwd_val,
+                                "target_user": target_val,
+                                "alert": alert_raw,
                                 "method": cmd_val,
                             })
         except Exception:
@@ -5520,11 +5555,10 @@ def poll_log_requests(cfg: dict):
                     if e.get("user") == username
                     or e.get("user", "").endswith(" " + username)
                 ]
-                history = _collect_user_history(username, lines)
-                text = json.dumps({"logins": logins, "history": history})
+                text = json.dumps({"logins": logins})
                 result = {"status": "success", "result": text[:60000]}
                 print(f"[LOG] Aktivitas user '{username}' -> {result['status']} "
-                      f"({len(logins)} entri login/sudo, {len(history)} perintah)")
+                      f"({len(logins)} entri login/sudo)")
             except Exception as e:
                 result = {"status": "failed", "result": f"[error internal: {e}]"}
         else:

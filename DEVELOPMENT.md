@@ -354,6 +354,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.95
+
+- **Tipe Rilis:** Penghapusan Riwayat Perintah Shell & Pengayaan Informasi Detail Audit Aktivitas Login & Sudo (*Removal of Shell History & Deep NOC Audit Enrichment for Login & Sudo*)
+- **Fokus Utama:** Mengadopsi standar industri NOC/SOC dengan membuang tabel riwayat shell yang tidak reliabel dan memusatkan antarmuka pada audit keamanan level OS yang presisi, kaya informasi, dan berdensitas tinggi:
+  1. **Penghapusan Total Riwayat Perintah Shell (`history`):**
+     - Menghapus kartu `Riwayat Perintah (history)` dan pemrosesan `_collect_user_history` pada agen klien.
+     - Mengeliminasi *noise* perintah sepele dan ketergantungan pada buffer in-memory shell.
+  2. **Pengayaan Informasi Audit Login & Sudo (NOC Deep Audit):**
+     - **Direktori Kerja (*Working Directory* - PWD):** Menangkap dan menampilkan path direktori tempat perintah `sudo` dieksekusi (contoh: `/etc/nginx/sites-available`).
+     - **Deteksi Sudo Gagal:** Mendeteksi insiden kegagalan otentikasi atau pelanggaran hak (`incorrect password attempt` atau `not in sudoers`) dengan badge khusus `Sudo Gagal`.
+     - **Detail Sesi Lengkap:** Menampilkan PID proses shell untuk sesi aktif dan durasi koneksi (contoh: `Durasi: 09:35`) serta waktu logout untuk sesi selesai dari akuntansi `last -F`.
+     - **Aksi Cepat Putus Sesi Inline:** Menambahkan tombol putus sesi langsung di setiap baris sesi aktif pada tabel.
+     - **Tata Letak Lebar Penuh (*Full-Width NOC Layout*):** Memaksimalkan lebar layar untuk kenyamanan inspeksi audit log berdensitas tinggi.
+
 ## Versi 4.8.94
 
 - **Tipe Rilis:** Pembersihan Workaround Berlebih & Standardisasi Pembaruan Otomatis Aktivitas Pengguna (*Cleanup of Over-engineered Workarounds & Direct 10s Activity Polling*)
