@@ -354,6 +354,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.92
+
+- **Tipe Rilis:** Pembedaan Tegas Sesi Aktif/Selesai & Pelaporan Presisi Eksekusi Sudo Pengguna (*Active vs Closed Session Disambiguation & User-Specific Sudo Audit Logging*)
+- **Fokus Utama:** Menyelesaikan masalah ketiadaan pencatatan eksekusi `sudo` pada server tanpa rsyslog/file auth fisik serta ketidakjelasan status login aktif vs riwayat selesai:
+  1. **Ekstraksi Audit Sudo Berbasis Identitas UID (`agent_pantau.py`):**
+     - Mengatasi masalah di mana kueri jurnal sebelumnya terfilter salah (`-u sudo` yang mencari unit `sudo.service` tidak ada) serta terdorong keluar oleh aktivitas otomatis agen.
+     - Menambahkan kueri presisi `journalctl _COMM=sudo _UID=<target_uid> -o short-iso` yang memfilter langsung berdasarkan UID pengguna target tanpa noise dari agen pantau, sehingga seluruh perintah `sudo` terdeteksi seketika (< 0.05 detik).
+     - Menangkap terminal (`TTY`) pemanggil perintah langsung dari log (`pts/X`).
+  2. **Pembedaan Status Sesi Login Aktif vs Selesai:**
+     - Memperbaiki parser `_parse_who()` menggunakan ekspresi reguler robust untuk mengatasi variasi format tanggal pada berbagai distribusi Linux.
+     - Memisahkan status sesi secara eksplisit: `aktif` (sedang terhubung/masih login) vs `selesai` (riwayat logout/selesai) dari pembacaan `who` dan `last -F`.
+  3. **Visualisasi Antarmuka NOC Berdensitas Tinggi (`user_activity.html`):**
+     - Menampilkan badge visual tegas: `Sesi Aktif` (hijau terang berindikator aktif) vs `Selesai` (abu-abu netral) vs `Sudo` (oranye/kuning monospaced).
+     - Memperbarui chip agregator: `Sesi Aktif`, `Selesai`, `Sudo`, `Login Gagal`, dan `Sesi Baru`.
+     - Menyediakan filter interaktif multi-status untuk mempermudah audit operasional NOC.
+
 ## Versi 4.8.91
 
 - **Tipe Rilis:** Eliminasi Kedipan Status Pemuatan & Stabilisasi Penyegaran Aktivitas Pengguna (*Silent Background Refresh & Loading Banner Flicker Elimination*)

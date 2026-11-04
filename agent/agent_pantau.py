@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.91"
+AGENT_VERSION = "4.8.92"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -2766,21 +2766,27 @@ def _parse_lastlog() -> dict[str, str]:
     return result
 
 
+_who_re = re.compile(r"^(\S+)\s+(\S+)\s+(.+?)(?:\s+\((.*?)\))?$")
+
+
 def _parse_who() -> list[dict]:
     sessions = []
     res = _run_cmd(["who"], timeout=5)
     if res is None:
         return sessions
     for line in res.stdout.splitlines():
-        parts = line.split()
-        if not parts:
+        line = line.strip()
+        if not line:
             continue
-        entry = {"user": parts[0], "tty": parts[1] if len(parts) > 1 else ""}
-        if len(parts) >= 3:
-            entry["time"] = " ".join(parts[2:4])
-            src = " ".join(parts[4:]).strip("()")
-            entry["from"] = src or ""
-        sessions.append(entry)
+        m = _who_re.match(line)
+        if m:
+            u, tty, t, src = m.groups()
+            sessions.append({
+                "user": u,
+                "tty": tty,
+                "time": re.sub(r"\s+", " ", t).strip(),
+                "from": (src or "").strip(),
+            })
     return sessions
 
 
@@ -4473,11 +4479,12 @@ def fetch_log_lines(unit: str, lines: int) -> str:
     return out
 
 
-def collect_user_logins(max_events: int = 50) -> list:
-    """Aktivitas login user dari wtmp (last), utmp (who), dan auth log / journalctl.
+def collect_user_logins(max_events: int = 100, target_user: str | None = None) -> list:
+    """Mengumpulkan riwayat login dan eksekusi sudo untuk audit NOC & aktivitas pengguna.
 
     Mendukung penuh distribusi Linux modern tanpa rsyslog (Ubuntu 24.04 LTS Noble,
     Debian 12, RHEL 9) maupun sistem tradisional berbasis /var/log/auth.log atau secure.
+    Secara tegas membedakan 'aktif' (masih login) vs 'selesai' (sudah logout/selesai).
     """
     events: list[dict] = []
     seen_keys: set[str] = set()
@@ -4489,17 +4496,20 @@ def collect_user_logins(max_events: int = 50) -> list:
             u = s.get("user", "")
             if not u or u == "pantau":
                 continue
+            if target_user and u != target_user:
+                continue
             src = s.get("from") or "(lokal)"
             tty = s.get("tty", "ssh")
             t = s.get("time", "")
             ev = {
                 "ts": t,
                 "user": u,
-                "type": "sukses",
+                "type": "aktif",
                 "from": src,
-                "method": f"{tty} (aktif)",
+                "method": f"{tty} (Sesi Aktif)",
+                "active": True,
             }
-            k = f"{u}:{t}:{src}:{tty}"
+            k = f"{u}:{t}:{src}:{tty}:aktif"
             if k not in seen_keys:
                 seen_keys.add(k)
                 events.append(ev)
@@ -4508,13 +4518,18 @@ def collect_user_logins(max_events: int = 50) -> list:
 
     # 2. Riwayat Sesi dari Database Akuntansi Login Linux (last -F)
     try:
-        res_last = _run_cmd(["last", "-n", "80", "-F"], timeout=5)
+        cmd_last = ["last", "-n", "80", "-F"]
+        if target_user:
+            cmd_last.append(target_user)
+        res_last = _run_cmd(cmd_last, timeout=5)
         if res_last and res_last.stdout:
             for line in res_last.stdout.splitlines():
                 parts = line.split()
                 if len(parts) >= 8 and parts[0] not in ("reboot", "wtmp"):
                     u = parts[0]
                     if u == "pantau":
+                        continue
+                    if target_user and u != target_user:
                         continue
                     tty = parts[1]
                     src = parts[2]
@@ -4526,22 +4541,55 @@ def collect_user_logins(max_events: int = 50) -> list:
                     except Exception:
                         ts_str = raw_time
                     is_active = "still logged in" in status
-                    method_desc = f"{tty} (aktif)" if is_active else f"{tty} (selesai)"
+                    ev_type = "aktif" if is_active else "selesai"
+                    method_desc = f"{tty} (Sesi Aktif)" if is_active else f"{tty} (Selesai)"
                     from_clean = src if (src and src != ":0" and not src.startswith(":")) else "(lokal)"
-                    k = f"{u}:{ts_str}:{from_clean}:{tty}"
+                    k = f"{u}:{ts_str}:{from_clean}:{tty}:{ev_type}"
                     if k not in seen_keys:
                         seen_keys.add(k)
                         events.append({
                             "ts": ts_str,
                             "user": u,
-                            "type": "sukses",
+                            "type": ev_type,
                             "from": from_clean,
                             "method": method_desc,
+                            "active": is_active,
                         })
     except Exception:
         pass
 
-    # 3. Log Otentikasi Terperinci (auth.log, secure, atau systemd journalctl)
+    # 3. Kueri Khusus Sudo via Journalctl (Bebas dari polusi otomatis agen pantau)
+    if target_user:
+        try:
+            import pwd
+            target_uid = pwd.getpwnam(target_user).pw_uid
+            cmd_sudo = ["journalctl", "-q", "-o", "short-iso", "_COMM=sudo", f"_UID={target_uid}", "-n", "150", "--no-pager"]
+            res_sudo = _run_cmd(cmd_sudo, timeout=6)
+            if res_sudo and res_sudo.stdout:
+                p_sudo = re.compile(
+                    r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+(?:TTY=(?P<tty>\S+)\s*;\s*)?.+?USER=\S+\s*;\s*"
+                    r"COMMAND=(?P<cmd>.+)$"
+                )
+                for line in res_sudo.stdout.splitlines():
+                    m = p_sudo.search(line)
+                    if m:
+                        ts = line[:19].replace("T", " ") if len(line) >= 19 else ""
+                        tty = m.group("tty") or "(lokal)"
+                        cmd_val = m.group("cmd")
+                        k = f"{target_user}:{ts}:{tty}:sudo:{cmd_val[:40]}"
+                        if k not in seen_keys:
+                            seen_keys.add(k)
+                            events.append({
+                                "ts": ts,
+                                "user": target_user,
+                                "type": "sudo",
+                                "from": tty,
+                                "method": cmd_val,
+                            })
+        except Exception:
+            pass
+
+    # 4. Log Otentikasi Terperinci (auth.log, secure, atau systemd journalctl)
     patterns = [
         ("sukses", re.compile(
             r"Accepted (?P<method>password|publickey|keyboard-interactive|gssapi-with-mic) "
@@ -4555,7 +4603,7 @@ def collect_user_logins(max_events: int = 50) -> list:
             r"(?P<user>[\w.-]+) from (?P<from>[\da-fA-F:.]+)")),
         ("sesi", re.compile(r"New session \d+ of user (?P<user>[\w.-]+)\.")),
         ("sudo", re.compile(
-            r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+.+?USER=\S+\s*;\s*"
+            r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+(?:TTY=(?P<tty>\S+)\s*;\s*)?.+?USER=\S+\s*;\s*"
             r"COMMAND=(?P<cmd>.+)$")),
     ]
 
@@ -4577,7 +4625,10 @@ def collect_user_logins(max_events: int = 50) -> list:
     if not data:
         # Fallback journalctl untuk host tanpa file auth fisik
         res_j = _run_cmd(
-            ["journalctl", "-q", "-u", "ssh", "-u", "sshd", "-u", "sudo", "-u", "systemd-logind",
+            ["journalctl", "-q", "-o", "short-iso",
+             "_SYSTEMD_UNIT=ssh.service", "+",
+             "_SYSTEMD_UNIT=sshd.service", "+",
+             "_SYSTEMD_UNIT=systemd-logind.service",
              "-n", "200", "--no-pager"],
             timeout=10,
         )
@@ -4586,7 +4637,7 @@ def collect_user_logins(max_events: int = 50) -> list:
 
     if data:
         for line in data.splitlines():
-            ts = line[:19] if len(line) >= 19 else ""
+            ts = line[:19].replace("T", " ") if len(line) >= 19 else ""
             for kind, regex in patterns:
                 m = regex.search(line)
                 if not m:
@@ -4595,12 +4646,15 @@ def collect_user_logins(max_events: int = 50) -> list:
                 user = g.get("user", "?")
                 if user == "pantau":          # aktivitas agen sendiri = noise
                     break
+                if target_user and user != target_user and not user.endswith(" " + target_user):
+                    break
                 if "invalid user" in line and kind == "gagal":
                     user = "(invalid) " + user
-                src = g.get("from") or "(lokal)"
                 if kind == "sudo":
+                    src = g.get("tty") or g.get("from") or "(lokal)"
                     method = g.get("cmd", "")
                 else:
+                    src = g.get("from") or "(lokal)"
                     method = g.get("method") or ("ssh" if kind != "sesi" else "console")
                 k = f"{user}:{ts}:{src}:{kind}:{method[:40]}"
                 if k not in seen_keys:
@@ -5462,7 +5516,7 @@ def poll_log_requests(cfg: dict):
             try:
                 username = str(req.get("detail", "") or "")
                 logins = [
-                    e for e in collect_user_logins(500)
+                    e for e in collect_user_logins(500, target_user=username)
                     if e.get("user") == username
                     or e.get("user", "").endswith(" " + username)
                 ]
@@ -5470,7 +5524,7 @@ def poll_log_requests(cfg: dict):
                 text = json.dumps({"logins": logins, "history": history})
                 result = {"status": "success", "result": text[:60000]}
                 print(f"[LOG] Aktivitas user '{username}' -> {result['status']} "
-                      f"({len(logins)} login, {len(history)} perintah)")
+                      f"({len(logins)} entri login/sudo, {len(history)} perintah)")
             except Exception as e:
                 result = {"status": "failed", "result": f"[error internal: {e}]"}
         else:

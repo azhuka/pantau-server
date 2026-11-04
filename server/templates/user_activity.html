@@ -65,10 +65,11 @@
 </div>
 
 <div id="chip-row" style="display:none;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-  <span class="chip chip-up" style="cursor:pointer" onclick="setLlTypeFilter('sukses')" title="Klik untuk filter Login Sukses">Login Sukses: <b id="chip-sukses">0</b></span>
+  <span class="chip chip-up" style="cursor:pointer" onclick="setLlTypeFilter('aktif')" title="Klik untuk filter Sesi Aktif">Sesi Aktif: <b id="chip-aktif">0</b></span>
+  <span class="chip chip-inactive" style="cursor:pointer" onclick="setLlTypeFilter('selesai')" title="Klik untuk filter Sesi Selesai">Selesai: <b id="chip-selesai">0</b></span>
+  <span class="chip chip-warn" style="cursor:pointer" onclick="setLlTypeFilter('sudo')" title="Klik untuk filter Sudo">Sudo: <b id="chip-sudo">0</b></span>
   <span class="chip chip-down" style="cursor:pointer" onclick="setLlTypeFilter('gagal')" title="Klik untuk filter Login Gagal">Login Gagal: <b id="chip-gagal">0</b></span>
   <span class="chip chip-inactive" style="cursor:pointer" onclick="setLlTypeFilter('sesi')" title="Klik untuk filter Sesi Baru">Sesi Baru: <b id="chip-sesi">0</b></span>
-  <span class="chip chip-warn" style="cursor:pointer" onclick="setLlTypeFilter('sudo')" title="Klik untuk filter Sudo">Sudo: <b id="chip-sudo">0</b></span>
   <span class="chip chip-inactive" style="cursor:pointer" onclick="document.getElementById('hist-filter').focus()" title="Fokus ke riwayat perintah">Perintah: <b id="chip-cmd">0</b></span>
   <button type="button" class="btn btn-ghost btn-sm" id="btn-reset-ll-filter" onclick="setLlTypeFilter('')" style="display:none;padding:2px 8px;font-size:11px">Reset Filter</button>
 </div>
@@ -84,10 +85,11 @@
         <label class="filter-col-label" for="ll-type-filter">Jenis</label>
         <select id="ll-type-filter" class="filter-select" onchange="filterLoginsTable()">
           <option value="">Semua Jenis</option>
-          <option value="sukses">Login Sukses</option>
+          <option value="aktif">Sesi Aktif (Masih Login)</option>
+          <option value="selesai">Sesi Selesai (Logout)</option>
+          <option value="sudo">Sudo (Perintah Root)</option>
           <option value="gagal">Login Gagal</option>
           <option value="sesi">Sesi Baru</option>
-          <option value="sudo">Sudo</option>
         </select>
       </div>
       <div class="filter-col-search" title="Cari aktivitas login atau sudo" style="min-width:180px">
@@ -164,16 +166,26 @@ let llCount = 0;
 let cmdCount = 0;
 
 function renderChips(logins, history) {
-  const c = {sukses: 0, gagal: 0, sesi: 0, sudo: 0};
-  for (const x of logins) if (c.hasOwnProperty(x.type)) c[x.type]++;
+  const c = {aktif: 0, selesai: 0, sudo: 0, gagal: 0, sesi: 0, sukses: 0};
+  for (const x of logins) {
+    if (c.hasOwnProperty(x.type)) c[x.type]++;
+    else if (x.type === 'sukses') c.selesai++;
+  }
   llCount = logins.length; cmdCount = history.length;
   const chip = document.getElementById('chip-row');
   chip.style.display = 'flex';
-  document.getElementById('chip-sukses').textContent = c.sukses;
-  document.getElementById('chip-gagal').textContent = c.gagal;
-  document.getElementById('chip-sesi').textContent = c.sesi;
-  document.getElementById('chip-sudo').textContent = c.sudo;
-  document.getElementById('chip-cmd').textContent = history.length;
+  const elAktif = document.getElementById('chip-aktif');
+  if (elAktif) elAktif.textContent = c.aktif;
+  const elSelesai = document.getElementById('chip-selesai');
+  if (elSelesai) elSelesai.textContent = c.selesai + c.sukses;
+  const elSudo = document.getElementById('chip-sudo');
+  if (elSudo) elSudo.textContent = c.sudo;
+  const elGagal = document.getElementById('chip-gagal');
+  if (elGagal) elGagal.textContent = c.gagal;
+  const elSesi = document.getElementById('chip-sesi');
+  if (elSesi) elSesi.textContent = c.sesi;
+  const elCmd = document.getElementById('chip-cmd');
+  if (elCmd) elCmd.textContent = history.length;
 }
 
 function renderHistory(history) {
@@ -272,19 +284,45 @@ async function loadActivity(isBackground = false) {
       document.getElementById('ll-empty').style.display = logins.length ? 'none' : 'block';
       if (logins.length) {
         document.getElementById('ll-table').querySelector('tbody').innerHTML = logins.map(x => {
-          const cls = x.type === 'gagal' ? 'badge-down'
-                    : x.type === 'sukses' ? 'badge-up'
-                    : x.type === 'sudo' ? 'badge-warn' : 'badge-muted';
-          const method = x.type === 'sudo'
-            ? '<span title="' + escapeHtml(x.method || '') + '" style="max-width:70ch;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:bottom">'
-              + escapeHtml((x.method || '').slice(0, 90)) + ((x.method || '').length > 90 ? '…' : '') + '</span>'
-            : escapeHtml(x.method || '-');
-          const typeLabel = {sukses: 'Login sukses', gagal: 'Login gagal',
-                             sudo: 'Sudo', sesi: 'Sesi baru'}[x.type] || x.type || '-';
-          const rowSearch = `${x.ts || ''} ${x.user || ''} ${x.from || ''} ${x.method || ''} ${typeLabel}`.toLowerCase();
-          return '<tr data-type="' + escapeHtml(x.type || '') + '" data-search="' + escapeHtml(rowSearch) + '"><td class="mono">' + escapeHtml(x.ts || '-') + '</td>'
+          const isAktif = (x.type === 'aktif');
+          const isSudo = (x.type === 'sudo');
+          const isGagal = (x.type === 'gagal');
+          const isSelesai = (x.type === 'selesai' || x.type === 'sukses');
+
+          const cls = isAktif ? 'badge-up'
+                    : isSudo ? 'badge-warn'
+                    : isGagal ? 'badge-down' : 'badge-muted';
+
+          let typeLabel = '';
+          if (isAktif) {
+            typeLabel = '<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Sesi Aktif</span>';
+          } else if (isSelesai) {
+            typeLabel = 'Selesai';
+          } else if (isSudo) {
+            typeLabel = 'Sudo';
+          } else if (isGagal) {
+            typeLabel = 'Login Gagal';
+          } else if (x.type === 'sesi') {
+            typeLabel = 'Sesi Baru';
+          } else {
+            typeLabel = escapeHtml(x.type || '-');
+          }
+
+          let method = '';
+          if (isSudo) {
+            method = '<code class="mono" style="font-size:11px;background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px" title="' + escapeHtml(x.method || '') + '">'
+              + escapeHtml((x.method || '').slice(0, 90)) + ((x.method || '').length > 90 ? '…' : '') + '</code>';
+          } else if (isAktif) {
+            method = '<strong style="color:var(--green)">' + escapeHtml(x.method || '-') + '</strong>';
+          } else {
+            method = escapeHtml(x.method || '-');
+          }
+
+          const filterType = (x.type === 'sukses') ? 'selesai' : (x.type || '');
+          const rowSearch = `${x.ts || ''} ${x.user || ''} ${x.from || ''} ${x.method || ''} ${filterType} ${isAktif ? 'aktif' : ''} ${isSelesai ? 'selesai' : ''}`.toLowerCase();
+          return '<tr data-type="' + escapeHtml(filterType) + '" data-search="' + escapeHtml(rowSearch) + '"><td class="mono">' + escapeHtml(x.ts || '-') + '</td>'
             + '<td><strong>' + escapeHtml(x.user || '-') + '</strong></td>'
-            + '<td><span class="badge ' + cls + '">' + escapeHtml(typeLabel) + '</span></td>'
+            + '<td><span class="badge ' + cls + '">' + typeLabel + '</span></td>'
             + '<td class="mono">' + escapeHtml(x.from || '-') + '</td>'
             + '<td>' + method + '</td></tr>';
         }).join('');
@@ -341,7 +379,7 @@ function filterLoginsTable() {
     const search = tr.getAttribute('data-search') || tr.textContent.toLowerCase();
     const type = tr.getAttribute('data-type') || '';
     const matchQ = !q || search.includes(q);
-    const matchType = !typeF || type === typeF;
+    const matchType = !typeF || (typeF === 'selesai' ? (type === 'selesai' || type === 'sukses') : type === typeF);
     const show = matchQ && matchType;
     tr.dataset.filterHidden = show ? '0' : '1';
     if (show) count++;
