@@ -68,13 +68,82 @@
   </div>
 </div>
 
-<div id="chip-row" style="{% if initial_logins and initial_logins|length > 0 %}display:flex;{% else %}display:none;{% endif %}flex-wrap:wrap;gap:10px;margin-bottom:16px">
-  <span class="chip chip-up" style="cursor:pointer" onclick="setLlTypeFilter('aktif')" title="Klik untuk filter Sesi Aktif">Sesi Aktif: <b id="chip-aktif">0</b></span>
-  <span class="chip chip-inactive" style="cursor:pointer" onclick="setLlTypeFilter('selesai')" title="Klik untuk filter Sesi Selesai">Selesai: <b id="chip-selesai">0</b></span>
-  <span class="chip chip-warn" style="cursor:pointer" onclick="setLlTypeFilter('sudo')" title="Klik untuk filter Sudo">Sudo: <b id="chip-sudo">0</b></span>
-  <span class="chip chip-down" style="cursor:pointer" onclick="setLlTypeFilter('sudo_gagal')" title="Klik untuk filter Sudo Gagal">Sudo Gagal: <b id="chip-sudo-gagal">0</b></span>
-  <span class="chip chip-down" style="cursor:pointer" onclick="setLlTypeFilter('gagal')" title="Klik untuk filter Login Gagal">Login Gagal: <b id="chip-gagal">0</b></span>
-  <span class="chip chip-inactive" style="cursor:pointer" onclick="setLlTypeFilter('sesi')" title="Klik untuk filter Sesi Baru">Sesi Baru: <b id="chip-sesi">0</b></span>
+<style>
+  #ll-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+  }
+  #ll-table th {
+    padding: 6px 10px;
+    font-size: 10px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-subtle, rgba(255, 255, 255, 0.02));
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  #ll-table td {
+    padding: 5px 10px;
+    font-size: 11px;
+    border-bottom: 1px solid var(--border-subtle);
+    vertical-align: middle;
+    line-height: 1.35;
+    height: 32px;
+    box-sizing: border-box;
+  }
+  #ll-table tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+  }
+  #ll-table .badge {
+    font-size: 9.5px !important;
+    padding: 1px 6px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+    letter-spacing: 0.3px !important;
+    border-radius: 3px !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+  #ll-table td.col-detail {
+    max-width: 520px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #ll-table code.cmd-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 11px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  #ll-table .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+
+<div id="chip-row" style="{% if initial_logins and initial_logins|length > 0 %}display:flex;{% else %}display:none;{% endif %}flex-wrap:wrap;gap:8px;margin-bottom:14px">
+  <span class="chip chip-up" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('aktif')" title="Klik untuk filter Sesi Aktif">Sesi Aktif: <b id="chip-aktif">0</b></span>
+  <span class="chip chip-inactive" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('selesai')" title="Klik untuk filter Sesi Selesai">Selesai: <b id="chip-selesai">0</b></span>
+  <span class="chip chip-warn" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sudo')" title="Klik untuk filter Sudo">Sudo: <b id="chip-sudo">0</b></span>
+  <span class="chip chip-down" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sudo_gagal')" title="Klik untuk filter Sudo Gagal">Sudo Gagal: <b id="chip-sudo-gagal">0</b></span>
+  <span class="chip chip-down" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('gagal')" title="Klik untuk filter Login Gagal">Login Gagal: <b id="chip-gagal">0</b></span>
+  <span class="chip chip-inactive" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sesi')" title="Klik untuk filter Sesi Baru">Sesi Baru: <b id="chip-sesi">0</b></span>
   <button type="button" class="btn btn-ghost btn-sm" id="btn-reset-ll-filter" onclick="setLlTypeFilter('')" style="display:none;padding:2px 8px;font-size:11px">Reset Filter</button>
 </div>
 
@@ -112,17 +181,17 @@
   </div>
   <div id="ll-empty" class="empty-msg" style="display:none">Belum ada aktivitas login atau sudo untuk user ini.</div>
   <div id="ll-scroll" style="{% if initial_logins and initial_logins|length > 0 %}display:block;{% else %}display:none;{% endif %}overflow-x:auto;border:1px solid var(--border);border-radius:6px">
-    <table id="ll-table" style="width:100%;border-collapse:collapse">
+    <table id="ll-table">
       <thead>
         <tr>
-          <th style="width:145px">Waktu</th>
-          <th style="width:100px">Pengguna</th>
-          <th style="width:120px">Jenis</th>
-          <th style="width:130px">Terminal / Sesi</th>
-          <th style="width:130px">Sumber (IP)</th>
-          <th style="width:170px">Direktori (PWD)</th>
-          <th>Detail / Perintah yang Dieksekusi</th>
-          <th style="width:85px;text-align:right">Aksi</th>
+          <th style="width:140px;min-width:140px">Waktu</th>
+          <th style="width:85px;min-width:85px">Pengguna</th>
+          <th style="width:115px;min-width:115px">Jenis</th>
+          <th style="width:120px;min-width:120px">Terminal</th>
+          <th style="width:125px;min-width:125px">Sumber (IP)</th>
+          <th style="width:150px;min-width:150px">Direktori (PWD)</th>
+          <th style="min-width:240px">Detail Aktivitas / Perintah</th>
+          <th class="col-act" style="width:75px;min-width:75px;text-align:center">Aksi</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -142,6 +211,22 @@ function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, c => (
     {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]
   ));
+}
+
+function fmtTs(str) {
+  if (!str) return '—';
+  const s = String(str).trim();
+  if (!s || s === '-') return '—';
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) return s;
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s)) return s + ':00';
+  try {
+    const d = new Date(s.replace(' ', 'T'));
+    if (!isNaN(d.getTime())) {
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+  } catch (e) {}
+  return s;
 }
 
 let activityBusy = false;
@@ -204,7 +289,7 @@ function renderLoginsData(logins) {
 
       let typeLabel = '';
       if (isAktif) {
-        typeLabel = '<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>Sesi Aktif</span>';
+        typeLabel = '<span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;margin-right:4px"></span>Sesi Aktif';
       } else if (isSelesai) {
         typeLabel = 'Selesai';
       } else if (isSudo) {
@@ -219,55 +304,65 @@ function renderLoginsData(logins) {
         typeLabel = escapeHtml(x.type || '-');
       }
 
-      let termInfo = escapeHtml(x.tty || '-');
-      if (isAktif) {
-        termInfo = '<span class="mono" style="font-weight:600;color:var(--green)">' + escapeHtml(x.tty || 'ssh') + '</span>'
-          + (x.pid ? ' <span style="font-size:10px;color:var(--dim)">(PID ' + escapeHtml(x.pid) + ')</span>' : '');
-      } else if (isSelesai && x.duration) {
-        termInfo = '<span class="mono">' + escapeHtml(x.tty || '-') + '</span>'
-          + '<div style="font-size:10px;color:var(--dim)">Durasi: ' + escapeHtml(x.duration) + '</div>';
+      let termInfo = '<span style="color:var(--dim)">—</span>';
+      if (x.tty) {
+        const ttyClean = escapeHtml(x.tty);
+        if (isAktif) {
+          termInfo = '<span class="mono" style="font-weight:600;color:var(--green)">' + ttyClean + '</span>'
+            + (x.pid ? ' <span class="mono" style="font-size:10px;color:var(--dim)">(PID ' + escapeHtml(x.pid) + ')</span>' : '');
+        } else if (isSelesai && x.duration) {
+          termInfo = '<span class="mono">' + ttyClean + '</span>'
+            + ' <span class="mono" style="font-size:10px;color:var(--dim)" title="Durasi: ' + escapeHtml(x.duration) + '">(' + escapeHtml(x.duration) + ')</span>';
+        } else {
+          termInfo = '<span class="mono">' + ttyClean + '</span>';
+        }
+      }
+
+      let fromCell = '<span style="color:var(--dim)">(lokal)</span>';
+      const rawFrom = String(x.from || '').trim();
+      if (rawFrom && rawFrom !== '-' && rawFrom !== '(lokal)' && rawFrom !== x.tty && !rawFrom.startsWith('pts/') && !rawFrom.startsWith('tty')) {
+        fromCell = '<span class="mono">' + escapeHtml(rawFrom) + '</span>';
       }
 
       let pwdCell = '<span style="color:var(--dim)">—</span>';
       if (x.pwd) {
-        const shortPwd = x.pwd.length > 26 ? '…' + x.pwd.slice(-24) : x.pwd;
-        pwdCell = '<code class="mono" style="font-size:11px;background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:3px" title="' + escapeHtml(x.pwd) + '">'
+        const shortPwd = x.pwd.length > 22 ? '…' + x.pwd.slice(-20) : x.pwd;
+        pwdCell = '<code class="mono" style="font-size:10.5px;color:var(--dim);background:rgba(255,255,255,0.03);padding:1px 4px;border-radius:3px" title="' + escapeHtml(x.pwd) + '">'
           + escapeHtml(shortPwd) + '</code>';
       }
 
       let methodCell = '';
       if (isSudo) {
-        methodCell = '<code class="mono" style="font-size:11.5px;color:var(--text);font-weight:600;background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;word-break:break-all" title="' + escapeHtml(x.method || '') + '">'
-          + escapeHtml(x.method || '-') + '</code>';
+        methodCell = '<code class="cmd-code" title="' + escapeHtml(x.method || '') + '">' + escapeHtml(x.method || '—') + '</code>';
       } else if (isSudoGagal) {
-        methodCell = '<span style="color:var(--red);font-weight:600">' + escapeHtml(x.alert || 'Otentikasi Gagal') + ':</span> '
-          + '<code class="mono" style="font-size:11px;margin-left:4px">' + escapeHtml(x.method || '-') + '</code>';
+        methodCell = '<span style="color:var(--red);font-weight:600;font-size:10.5px">' + escapeHtml(x.alert || 'Otentikasi Gagal') + ':</span> '
+          + '<code class="cmd-code" style="border-color:rgba(248,113,113,0.3)">' + escapeHtml(x.method || '—') + '</code>';
       } else if (isAktif) {
-        methodCell = '<span style="color:var(--green);font-weight:500">Sesi terminal sedang terhubung dan aktif</span>';
+        methodCell = '<span style="color:var(--green)">Sesi terminal sedang terhubung dan aktif</span>';
       } else if (isSelesai) {
         methodCell = '<span style="color:var(--dim)">Sesi logout selesai' + (x.logout_time ? ' (' + escapeHtml(x.logout_time) + ')' : '') + '</span>';
       } else if (isGagal) {
         methodCell = '<span style="color:var(--red)">Percobaan autentikasi gagal: ' + escapeHtml(x.method || 'Password salah') + '</span>';
       } else {
-        methodCell = escapeHtml(x.method || '-');
+        methodCell = '<span style="color:var(--dim)">' + escapeHtml(x.method || '—') + '</span>';
       }
 
       let actionCell = '<span style="color:var(--dim)">—</span>';
       if (isAktif && x.tty && !IS_VIEWER) {
-        actionCell = '<button type="button" class="btn btn-danger btn-xs" style="padding:2px 6px;font-size:10px" onclick="terminateSession(\'' + escapeHtml(x.tty) + '\', this)" title="Putus paksa sesi terminal ini">Putus Sesi</button>';
+        actionCell = '<button type="button" class="btn btn-danger btn-xs" style="padding:1px 6px;font-size:9.5px;line-height:1.4" onclick="terminateSession(\'' + escapeHtml(x.tty) + '\', this)" title="Putus paksa sesi terminal ini">Putus</button>';
       }
 
       const filterType = (x.type === 'sukses') ? 'selesai' : (x.type || '');
-      const rowSearch = `${x.ts || ''} ${x.user || ''} ${x.from || ''} ${x.tty || ''} ${x.pwd || ''} ${x.method || ''} ${filterType} ${isAktif ? 'aktif' : ''} ${isSelesai ? 'selesai' : ''}`.toLowerCase();
+      const rowSearch = `${x.ts || ''} ${x.user || ''} ${rawFrom} ${x.tty || ''} ${x.pwd || ''} ${x.method || ''} ${filterType} ${isAktif ? 'aktif' : ''} ${isSelesai ? 'selesai' : ''}`.toLowerCase();
       return '<tr data-type="' + escapeHtml(filterType) + '" data-search="' + escapeHtml(rowSearch) + '">'
-        + '<td class="mono" style="font-size:11.5px">' + escapeHtml(x.ts || '-') + '</td>'
-        + '<td><strong>' + escapeHtml(x.user || '-') + '</strong></td>'
+        + '<td class="mono" style="font-size:10.5px;white-space:nowrap">' + fmtTs(x.ts) + '</td>'
+        + '<td><span class="mono" style="color:var(--text);font-weight:600">' + escapeHtml(x.user || '-') + '</span></td>'
         + '<td><span class="badge ' + cls + '">' + typeLabel + '</span></td>'
         + '<td>' + termInfo + '</td>'
-        + '<td class="mono">' + escapeHtml(x.from || '-') + '</td>'
+        + '<td>' + fromCell + '</td>'
         + '<td>' + pwdCell + '</td>'
-        + '<td>' + methodCell + '</td>'
-        + '<td style="text-align:right">' + actionCell + '</td>'
+        + '<td class="col-detail" title="' + escapeHtml(x.method || '') + '">' + methodCell + '</td>'
+        + '<td class="col-act" style="text-align:center">' + actionCell + '</td>'
         + '</tr>';
     }).join('');
   }
@@ -412,12 +507,14 @@ function exportCsv() {
     try { key = JSON.stringify(x); } catch (e) { key = String(x); }
     if (seenLogin.has(key)) continue;
     seenLogin.add(key);
+    const rawFrom = String(x.from || '').trim();
+    const cleanFrom = (!rawFrom || rawFrom === '-' || rawFrom === x.tty || rawFrom.startsWith('pts/')) ? '(lokal)' : rawFrom;
     rows.push({
-      waktu: x.ts || '',
+      waktu: fmtTs(x.ts) || '',
       user: x.user || '',
       jenis: x.type || 'login',
       terminal: x.tty || '',
-      ip_asal: x.from || '',
+      ip_asal: cleanFrom,
       direktori: x.pwd || '',
       perintah_detail: x.method || '',
       keterangan: x.alert || (x.duration ? 'Durasi: ' + x.duration : (x.active ? 'Sesi Aktif' : ''))

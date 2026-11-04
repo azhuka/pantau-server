@@ -354,6 +354,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.99
+
+- **Tipe Rilis:** Standardisasi Tata Letak Tabel Audit NOC, Eliminasi Duplikasi Kolom Sumber IP, dan Penyeragaman Format Waktu (*NOC Table Layout Standardization, IP Column De-duplication, & Uniform Timestamps*)
+- **Fokus Utama:** Menyempurnakan tata letak dan keterbacaan data pada tabel audit aktivitas pengguna (`/servers/{sid}/user/{username}`) sesuai standar kepadatan data NOC Pantau Server:
+  1. **Eliminasi Teks Duplikat TTY pada Kolom Sumber (IP):**
+     - Memperbaiki parser telemetri sudo pada agen (`agent_pantau.py`) yang sebelumnya menyalin *identifier* terminal TTY (misalnya `pts/3`) ke dalam atribut sumber host (`from`).
+     - Menetapkan sumber `(lokal)` secara baku untuk eksekusi perintah sudo internal, serta menyaring duplikasi TTY pada tampilan tabel dan ekspor CSV.
+  2. **Penyeragaman Format Waktu Tabular (*Uniform Tabular Timestamps*):**
+     - Menambahkan normalisasi format timestamp ke standar ISO `YYYY-MM-DD HH:MM:SS` dengan dukungan `font-variant-numeric: tabular-nums` agar seluruh angka sejajar rapi secara vertikal tanpa fluktuasi panjang teks.
+  3. **Standardisasi Kepadatan Data NOC & Tinggi Baris Rata (*Uniform Row Height*):**
+     - Menerapkan gaya CSS terisolasi untuk `#ll-table` dengan padding rapat (5px 10px), tinggi baris konsisten (~32px), dan badge proporsional (9.5px).
+     - Menghapus elemen pembatas baris `<div style="...">` pada durasi login agar seluruh baris tabel memiliki tinggi seragam tanpa lonjakan tinggi vertikal.
+  4. **Penyematan Kolom Aksi Berperekat (*Universal Sticky Action Column*):**
+     - Mengimplementasikan kelas `.col-act` pada *header* dan sel kolom Aksi sehingga tombol tindakan tetap terpaku di sisi kanan saat tabel digulir secara horizontal.
+
 ## Versi 4.8.98
 
 - **Tipe Rilis:** Perbaikan Kritis Eksekusi Skrip Frontend & Pemulihan Render Tabel Aktivitas Pengguna (*Critical Frontend Syntax Scope Fix & User Activity Table Rendering Restoration*)

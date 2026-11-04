@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.98"
+AGENT_VERSION = "4.8.99"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4504,7 +4504,19 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                 continue
             src = s.get("from") or "(lokal)"
             tty = s.get("tty", "ssh")
-            t = s.get("time", "")
+            t_raw = s.get("time", "")
+            t = t_raw
+            if t_raw:
+                try:
+                    dt = datetime.strptime(t_raw, "%Y-%m-%d %H:%M")
+                    t = dt.strftime("%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    try:
+                        cur_yr = datetime.now().year
+                        dt = datetime.strptime(f"{cur_yr} {t_raw}", "%Y %b %d %H:%M")
+                        t = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    except Exception:
+                        pass
             pid = s.get("pid", "")
             idle = s.get("idle", "")
             ev = {
@@ -4619,7 +4631,7 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                                 "ts": ts,
                                 "user": target_user,
                                 "type": ev_type,
-                                "from": tty,
+                                "from": "(lokal)",
                                 "tty": tty,
                                 "pwd": pwd_val,
                                 "target_user": target_val,
@@ -4691,15 +4703,17 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                 if "invalid user" in line and kind == "gagal":
                     user = "(invalid) " + user
                 if kind == "sudo":
-                    src = g.get("tty") or g.get("from") or "(lokal)"
+                    src = "(lokal)"
+                    tty_val = g.get("tty") or "(lokal)"
                     method = g.get("cmd", "")
                 else:
                     src = g.get("from") or "(lokal)"
+                    tty_val = ""
                     method = g.get("method") or ("ssh" if kind != "sesi" else "console")
                 k = f"{user}:{ts}:{src}:{kind}:{method[:40]}"
                 if k not in seen_keys:
                     seen_keys.add(k)
-                    events.append({"ts": ts, "user": user, "type": kind, "from": src, "method": method})
+                    events.append({"ts": ts, "user": user, "type": kind, "from": src, "tty": tty_val, "method": method})
                 break
 
     events.sort(key=lambda e: str(e.get("ts", "")), reverse=True)
