@@ -354,6 +354,13 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.94
+
+- **Tipe Rilis:** Pembersihan Workaround Berlebih & Standardisasi Pembaruan Otomatis Aktivitas Pengguna (*Cleanup of Over-engineered Workarounds & Direct 10s Activity Polling*)
+- **Fokus Utama:** Menghapus seluruh mekanisme *workaround* sampingan yang berlebih (*over-engineered*) pada halaman aktivitas pengguna (`user_activity.html`):
+  1. Menghapus seluruh pendengar kejadian peramban `visibilitychange`, `window.focus`, variabel pelacak waktu, serta badge indikator sampingan.
+  2. Menstandarkan mekanisme pembaruan antarmuka murni menggunakan siklus otomatis berkala sederhana (`setInterval(loadActivity, 10000)`), menjamin kepastian pembaruan data secara mandiri tanpa asumsi perilaku peramban tertentu.
+
 ## Versi 4.8.93
 
 - **Tipe Rilis:** Sinkronisasi Reaktif Instan & Akselerasi Pembaruan Otomatis Aktivitas Pengguna (*Instant Reactive Tab-Focus Synchronization & 10s Live Activity Refresh*)

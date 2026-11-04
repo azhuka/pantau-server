@@ -12,10 +12,6 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
       Segarkan
     </button>
-    <span id="act-live-badge" class="badge badge-muted" style="font-size:10px;padding:3px 7px;gap:5px;display:inline-flex;align-items:center;background:rgba(255,255,255,0.03)" title="Sinkronisasi otomatis latar belakang setiap 10 detik atau seketika saat beralih fokus ke tab ini">
-      <span id="act-live-dot" style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 4px var(--green)"></span>
-      <span id="act-live-text">Live 10d</span>
-    </span>
     {% if account and account.sessions and not user.is_viewer() %}
       {% for s in account.sessions %}
         {% if s.tty %}
@@ -165,7 +161,6 @@ function fmtTs(epoch) {
 }
 
 let activityBusy = false;
-let lastActivityFetchTime = Date.now();
 let historyLines = 200;
 let llCount = 0;
 let cmdCount = 0;
@@ -219,8 +214,6 @@ function renderHistory(history) {
 async function loadActivity(isBackground = false) {
   if (activityBusy) return;
   activityBusy = true;
-  const liveDot = document.getElementById('act-live-dot');
-  if (liveDot) liveDot.style.background = 'var(--yellow)';
   const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : (((localStorage.getItem('pantau_lang') || localStorage.getItem('app_lang') || 'id') === 'en'));
   const st1 = document.getElementById('ll-state');
   const st2 = document.getElementById('hist-state');
@@ -253,8 +246,6 @@ async function loadActivity(isBackground = false) {
     rid = j.id;
   } catch (e) {
     activityBusy = false;
-    lastActivityFetchTime = Date.now();
-    if (liveDot) liveDot.style.background = 'var(--green)';
     if (loadEl1) loadEl1.style.display = 'none';
     if (loadEl2) loadEl2.style.display = 'none';
     if (!hasExistingData) {
@@ -275,8 +266,6 @@ async function loadActivity(isBackground = false) {
     } catch (e) { continue; }
     if (j.status === 'success' || j.status === 'failed') {
       activityBusy = false;
-      lastActivityFetchTime = Date.now();
-      if (liveDot) liveDot.style.background = 'var(--green)';
       if (loadEl1) loadEl1.style.display = 'none';
       if (loadEl2) loadEl2.style.display = 'none';
       if (j.status === 'failed') {
@@ -361,8 +350,6 @@ async function loadActivity(isBackground = false) {
     }
   }
   activityBusy = false;
-  lastActivityFetchTime = Date.now();
-  if (liveDot) liveDot.style.background = 'var(--green)';
   if (loadEl1) loadEl1.style.display = 'none';
   if (loadEl2) loadEl2.style.display = 'none';
   if (!hasExistingData) {
@@ -506,23 +493,9 @@ document.getElementById('hist-filter').addEventListener('input', () => {
   if (window.__hlLast) renderHistory(window.__hlLast);
 });
 
-// Listener reaktif: Segera sinkronkan data begitu pengguna kembali ke tab browser ini
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && (Date.now() - lastActivityFetchTime >= 3000)) {
-    loadActivity(true);
-  }
-});
-window.addEventListener('focus', () => {
-  if (!document.hidden && (Date.now() - lastActivityFetchTime >= 3000)) {
-    loadActivity(true);
-  }
-});
-
 loadActivity();
 setInterval(() => {
-  if (!document.hidden && (Date.now() - lastActivityFetchTime >= 8000)) {
-    loadActivity(true);
-  }
+  loadActivity(true);
 }, 10000);
 </script>
 {% endblock %}
