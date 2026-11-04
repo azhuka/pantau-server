@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.95"
+AGENT_VERSION = "4.8.96"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4594,7 +4594,12 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
             res_sudo = _run_cmd(cmd_sudo, timeout=6)
             if res_sudo and res_sudo.stdout:
                 p_sudo = re.compile(
-                    r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+(?P<alert>[^;]+;\s*)?(?:TTY=(?P<tty>\S+)\s*;\s*)?(?:PWD=(?P<pwd>\S+)\s*;\s*)?(?:USER=(?P<target>\S+)\s*;\s*)?COMMAND=(?P<cmd>.+)$"
+                    r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+"
+                    r"(?:(?P<alert>(?:\d+\s+incorrect\s+password\s+attempt|user\s+NOT\s+in\s+sudoers|[\w\s]+error|[\w\s]+failure)[^;]*);\s*)?"
+                    r"(?:TTY=(?P<tty>\S+)\s*;\s*)?"
+                    r"(?:PWD=(?P<pwd>\S+)\s*;\s*)?"
+                    r"(?:USER=(?P<target>\S+)\s*;\s*)?"
+                    r"COMMAND=(?P<cmd>.+)$"
                 )
                 for line in res_sudo.stdout.splitlines():
                     m = p_sudo.search(line)

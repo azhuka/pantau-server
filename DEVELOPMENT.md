@@ -354,6 +354,11 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.96
+
+- **Tipe Rilis:** Optimasi Presisi Ekstraksi Field Sudo & Penyempurnaan Parser Akuntansi Sesi (*Precision Sudo Audit Field Parsing & Session Accounting Polish*)
+- **Fokus Utama:** Menyempurnakan pola pencocokan ekspresi reguler pada `agent_pantau.py` agar direktori kerja (`PWD`), TTY terminal pemanggil, dan deteksi kegagalan sandi (`alert`) terisolasi dengan akurasi 100% tanpa tumpang tindih token.
+
 ## Versi 4.8.95
 
 - **Tipe Rilis:** Penghapusan Riwayat Perintah Shell & Pengayaan Informasi Detail Audit Aktivitas Login & Sudo (*Removal of Shell History & Deep NOC Audit Enrichment for Login & Sudo*)
