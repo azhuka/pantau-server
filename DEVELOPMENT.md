@@ -354,6 +354,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.134
+
+- **Tipe Rilis:** Standardisasi Penuh Tabel Mengambang Rincian Server dan Eliminasi Gaya Hardcode Inline (*Full Server Details Floating Table Standardization & Inline Style Elimination*)
+- **Fokus Utama:** Menyelesaikan permasalahan kontainer tabel yang menempel dari tepi ke tepi (*edge-to-edge*) pada halaman Rincian Server (`/servers/{id}`), membungkus 19 tabel operasional ke dalam arsitektur kartu mengambang mandiri (*floating table cards*), serta mengganti puluhan gaya inline hardcode dengan kelas blueprint baku pada `pantau-components.css`:
+  1. **Standardisasi 19 Tabel Rincian Server (`services.html`):**
+     - Membungkus seluruh tabel operasional (Disk Hardware, Partisi Disk & IO, Antarmuka Jaringan, Insiden Aktif/Riwayat, Layanan Kunci, Unit Systemd, Paket APT/RPM, Manajer Tugas/Proses, Cron Jobs, Systemd Timers, Aturan & Blokir Firewall, Akun & Grup Pengguna, Riwayat Tindakan Akun, Port Terbuka, Sertifikat SSL, dan Log Sistem) ke dalam pembungkus `.pantau-table-wrap` dengan kelas `pantau-table`.
+     - Mengganti aturan CSS lama yang memaksa tabel menempel tepi (*edge-to-edge*) dengan aturan terpadu kartu mengambang berjarak margin 10px 12px dan lebar terkalkulasi presisi (`width: calc(100% - 24px)`).
+     - Menjadikan bilah paginasi tabel (`table-pagination-bar`) sebagai pulau kontrol mandiri mengambang dengan sudut melengkung dan pembatas border 1px yang serasi.
+  2. **Pembersihan & Pengayaan Desain Sistem (`pantau-components.css`):**
+     - Menambahkan kelas utilitas kanonikal: `.badge-tier-prod`, `.badge-tier-dev`, `.pantau-kpi-pill`, `.pantau-badge-xs`, `.pantau-badge-header`, `.pantau-tag-subtle`, `.pantau-truncate-sub`, serta kelas formulir modal (`.pantau-modal-input`, `.pantau-form-group`, `.pantau-form-row-2`, `.pantau-form-label`, `.pantau-form-sublabel`).
+     - Membersihkan deklarasi gaya inline berulang pada `servers.html`, `dashboard.html`, `probing.html`, dan modal ambang batas `problems.html`.
+  3. **Preservasi Kepadatan Data NOC:**
+     - Menjaga tinggi baris tabel tetap padat (30-34px), padding sel rapat (3px-6px), font monospaced untuk alamat IP/angka telemetri, dan tata letak responsif tanpa polusi visual.
+
 ## Versi 4.8.133
 
 - **Tipe Rilis:** Penyeragaman Menyeluruh Kontainer Tabel Mengambang dan Eliminasi Total Hardcode Gaya (*Universal Floating Table Container Standardization & Total Hardcode Style Elimination*)

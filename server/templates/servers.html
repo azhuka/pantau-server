@@ -267,17 +267,17 @@
           <span id="srv-dot-{{ srv.id }}" class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
           <a href="/servers/{{ srv.id }}" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</a>
           {% if s_tier == 1 %}
-            <span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px">
+            <span class="badge badge-tier-prod" title="Server level Produksi">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
             </span>
           {% else %}
-            <span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px">
+            <span class="badge badge-tier-dev" title="Server level Non-produksi">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
             </span>
           {% endif %}
         </div>
         {% if srv.notes %}
-        <div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;margin-top:1px" title="{{ srv.notes }}">{{ srv.notes }}</div>
+        <div class="pantau-truncate-sub" title="{{ srv.notes }}">{{ srv.notes }}</div>
         {% endif %}
       </td>
 
@@ -288,7 +288,7 @@
         </div>
         <div style="display:inline-flex;align-items:center;gap:3.5px;margin-top:1px">
           {% if srv._prim_iface %}
-          <span class="mono" style="font-size:8px;color:var(--dim);background:rgba(255,255,255,0.06);padding:0.5px 3.5px;border-radius:3px;border:1px solid rgba(255,255,255,0.08)" id="srv-iface-{{ srv.id }}" title="Antarmuka Primer">{{ srv._prim_iface }}</span>
+          <span class="mono pantau-tag-subtle" id="srv-iface-{{ srv.id }}" title="Antarmuka Primer">{{ srv._prim_iface }}</span>
           {% endif %}
           {% if srv.is_isolated_net %}
           <span class="badge" style="font-size:7.5px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:0.5px 3px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Jaringan Terisolasi">
@@ -594,9 +594,9 @@ function _srvEsc(s) {
 function getTierBadgeHtml(tier) {
   const t = parseInt(tier, 10) || 2;
   if (t === 1) {
-    return '<span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>';
+    return '<span class="badge badge-tier-prod" title="Server level Produksi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>';
   }
-  return '<span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>';
+  return '<span class="badge badge-tier-dev" title="Server level Non-produksi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>';
 }
 
 function getPlatformBadgeHtml(plat) {
@@ -638,14 +638,14 @@ function createAndAppendServersRow(srv, tbody) {
         <a href="/servers/${srv.id}" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-${srv.id}">${_srvEsc(srv.hostname || '')}</a>
         ${getTierBadgeHtml(srv.tier)}
       </div>
-      ${srv.notes ? `<div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;margin-top:1px" title="${_srvEsc(srv.notes)}">${_srvEsc(srv.notes)}</div>` : ''}
+      ${srv.notes ? `<div class="pantau-truncate-sub" title="${_srvEsc(srv.notes)}">${_srvEsc(srv.notes)}</div>` : ''}
     </td>
     <td>
       <div>
         <span class="copyable-ip mono" id="srv-ip-${srv.id}" style="font-size:9.5px;color:#58a6ff;font-weight:600" onclick="copyIp('${_srvEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_srvEsc(srv.ip_address || '-')}</span>
       </div>
       <div style="display:inline-flex;align-items:center;gap:3.5px;margin-top:1px">
-        ${srv.prim_iface ? `<span class="mono" style="font-size:8px;color:var(--dim);background:rgba(255,255,255,0.06);padding:0.5px 3.5px;border-radius:3px;border:1px solid rgba(255,255,255,0.08)" id="srv-iface-${srv.id}" title="Antarmuka Primer">${_srvEsc(srv.prim_iface)}</span>` : ''}
+        ${srv.prim_iface ? `<span class="mono pantau-tag-subtle" id="srv-iface-${srv.id}" title="Antarmuka Primer">${_srvEsc(srv.prim_iface)}</span>` : ''}
         ${srv.is_isolated_net ? `<span class="badge" style="font-size:7.5px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:0.5px 3px;font-weight:600">Lokal</span>` : ''}
       </div>
     </td>

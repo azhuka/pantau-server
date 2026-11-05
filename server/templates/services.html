@@ -903,34 +903,30 @@
   border-top: 1px solid var(--border) !important;
 }
 
-/* Standarisasi tabel dalam kartu agar pas dari tepi ke tepi (edge-to-edge) */
-.tab-body .card table th {
-  padding: 6px 10px !important;
-  font-size: 11px !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-  background: rgba(0, 0, 0, 0.18) !important;
-  font-weight: 600 !important;
-  text-transform: uppercase !important;
-  letter-spacing: .4px !important;
-  color: var(--dim) !important;
+/* Standarisasi tabel & toolbar mengambang dalam kartu rincian server */
+.tab-body .card .pantau-table-wrap,
+.tab-body .pantau-table-wrap {
+  margin: 10px 12px 10px 12px !important;
+  width: calc(100% - 24px) !important;
+  box-sizing: border-box !important;
 }
-.tab-body .card table td {
-  padding: 6px 10px !important;
-  font-size: 12px !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
-}
-.tab-body .card table tr:last-child td {
-  border-bottom: none !important;
+.tab-body .card .table-pagination-bar,
+.tab-body .table-pagination-bar {
+  margin: 0 12px 10px 12px !important;
+  width: calc(100% - 24px) !important;
+  box-sizing: border-box !important;
 }
 
 /* Toolbar dan filter dalam kartu */
 .tab-body .card > #prob-wrapper > div:first-child,
 .tab-body #tab-proses .card > div:nth-child(2) {
-  margin: 6px 8px !important;
-  padding: 5px 8px !important;
-  border-radius: 5px !important;
+  margin: 10px 12px 8px 12px !important;
+  width: calc(100% - 24px) !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   background: rgba(0, 0, 0, 0.14) !important;
+  box-sizing: border-box !important;
 }
 .tab-body #tab-layanan .card:first-child #svc-current,
 .tab-body #tab-layanan .card:first-child > div:nth-of-type(2) {
@@ -982,17 +978,6 @@
   margin: 14px 14px 8px 14px !important;
   font-size: 12.5px !important;
   font-weight: 600 !important;
-}
-.tab-body .table-pagination-bar {
-  display: flex;
-  justify-content: space-between !important;
-  align-items: center !important;
-  flex-wrap: wrap !important;
-  gap: 12px !important;
-  padding: 8px 14px !important;
-  margin: 0 !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
-  background: rgba(0, 0, 0, 0.12) !important;
 }
 .tab-body .empty-msg {
   padding: 14px 12px !important;
@@ -1165,34 +1150,12 @@ div[style*="position: fixed"] .card {
 [data-theme="light"] .tab-body #disk-charts-wrap {
   border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
-[data-theme="light"] .tab-body .card table th,
-[data-theme="light"] .tab-body table th {
-  background: #f1f5f9 !important;
-  color: #475569 !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
-}
-[data-theme="light"] .tab-body .card table td,
-[data-theme="light"] .tab-body table td {
-  color: #1e293b !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
-}
-[data-theme="light"] .tab-body .card table tr:hover td {
-  background: rgba(0, 0, 0, 0.02) !important;
-}
 [data-theme="light"] .tab-body .card > #prob-wrapper > div:first-child,
 [data-theme="light"] .tab-body #tab-proses .card > div:nth-child(2),
 [data-theme="light"] .tab-body #tab-layanan .card:first-child > div:nth-of-type(2),
 [data-theme="light"] .table-toolbar {
   background: #f8fafc !important;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
-}
-[data-theme="light"] .tab-body #tab-firewall .card:first-child .stat-card {
-  background: #f8fafc !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-}
-[data-theme="light"] .tab-body .table-pagination-bar {
-  background: #f8fafc !important;
-  border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 [data-theme="light"] #sublog-panel-sys > div:first-child {
   background: #f8fafc !important;
@@ -1297,11 +1260,11 @@ div[style*="position: fixed"] .card {
     <span>Rincian — {{ server.hostname }}</span>
     {% set s_tier = server.tier|default(2) %}
     {% if s_tier == 1 %}
-      <span id="hero-tier-badge" class="badge" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px;vertical-align:middle" title="Server level Produksi">
+      <span id="hero-tier-badge" class="badge badge-tier-prod" style="vertical-align:middle" title="Server level Produksi">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
       </span>
     {% else %}
-      <span id="hero-tier-badge" class="badge" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px;vertical-align:middle" title="Server level Non-produksi">
+      <span id="hero-tier-badge" class="badge badge-tier-dev" style="vertical-align:middle" title="Server level Non-produksi">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
       </span>
     {% endif %}
@@ -1866,8 +1829,8 @@ div[style*="position: fixed"] .card {
           </div>
           <span class="badge badge-info" id="spec-disk-count" style="font-size:8.5px">{{ hardware_specs.disks|length if hardware_specs and hardware_specs.disks else 0 }} Disks</span>
         </div>
-        <div style="overflow-x:auto">
-          <table style="width:100%;font-size:10px" id="spec-disks-table">
+        <div class="pantau-table-wrap">
+          <table class="pantau-table" id="spec-disks-table">
             <thead>
               <tr>
                 <th>Perangkat</th>
@@ -1938,8 +1901,8 @@ div[style*="position: fixed"] .card {
         <span style="font-size:12px;color:var(--dim)">Pemakaian ruang filesystem dan kecepatan baca/tulis disk secara real-time</span>
       </div>
     </div>
-    <div style="overflow-x:auto">
-      <table id="disks-table" style="width:100%">
+    <div class="pantau-table-wrap">
+      <table id="disks-table" class="pantau-table">
         <thead>
           <tr>
             <th>Mount</th>
@@ -1975,8 +1938,8 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
     <div id="net-empty" class="empty-msg" style="display:none">Belum ada data jaringan dari server ini.</div>
-    <div style="overflow-x:auto">
-      <table id="net-table" style="display:none;width:100%">
+    <div class="pantau-table-wrap">
+      <table id="net-table" class="pantau-table" style="display:none">
         <thead>
           <tr>
             <th>Antarmuka</th>
@@ -2102,7 +2065,8 @@ div[style*="position: fixed"] .card {
       </select>
     </div>
   </div>
-  <table id="probtable" style="width:100%">
+  <div class="pantau-table-wrap">
+  <table id="probtable" class="pantau-table" style="width:100%">
     <thead><tr>
       <th class="col-time-detailed" style="width:135px;min-width:125px">Waktu</th>
       <th class="col-sev" style="width:92px;min-width:86px;text-align:center">Keparahan</th>
@@ -2227,7 +2191,8 @@ div[style*="position: fixed"] .card {
     {% endfor %}
     </tbody>
   </table>
-  <div id="prob-pagination-footer" class="table-pagination-bar" style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;margin:0;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.12);font-size:11.5px;color:var(--dim);flex-wrap:wrap;gap:12px">
+  </div>
+  <div id="prob-pagination-footer" class="pantau-pagination-bar table-pagination-bar">
     <div style="display:flex;align-items:center;gap:12px">
       <span id="prob-showing-summary">Menampilkan 0 insiden</span>
     </div>
@@ -2276,8 +2241,8 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
   </div>
-  <div style="overflow-x:auto">
-    <table id="tbl-action-history">
+  <div class="pantau-table-wrap">
+    <table id="tbl-action-history" class="pantau-table">
       <thead>
         <tr>
           <th class="col-time-detailed" style="white-space:nowrap;width:135px;min-width:125px">Waktu</th>
@@ -2310,7 +2275,7 @@ div[style*="position: fixed"] .card {
       </tbody>
     </table>
   </div>
-  <div id="action-pagination-footer" class="table-pagination-bar" style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;margin:0;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.12);font-size:11.5px;color:var(--dim);flex-wrap:wrap;gap:12px">
+  <div id="action-pagination-footer" class="pantau-pagination-bar table-pagination-bar">
     <div style="display:flex;align-items:center;gap:12px">
       <span id="action-showing-summary">Menampilkan 0 tindakan</span>
     </div>
@@ -2406,7 +2371,8 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
   {% if services %}
-  <table id="tbl-services">
+  <div class="pantau-table-wrap">
+  <table id="tbl-services" class="pantau-table">
     <thead><tr>
       <th data-col-title="Layanan" style="width:140px;min-width:130px;max-width:160px" title="Nama layanan atau daemon yang dipantau">Layanan</th>
       <th data-col-title="Port" style="width:70px;min-width:65px;text-align:center" title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
@@ -2512,6 +2478,7 @@ div[style*="position: fixed"] .card {
     {% endfor %}
     </tbody>
   </table>
+  </div>
   {% else %}
   <div class="empty-msg">Belum ada service terdeteksi. Jalankan Agen Pantau di server ini.</div>
   {% endif %}
@@ -2581,8 +2548,8 @@ div[style*="position: fixed"] .card {
   </div>
 
   <!-- Tabel Unit Systemd -->
-  <div class="table-wrap" id="sysd-table-wrap" style="overflow-x:auto">
-    <table class="table" id="tbl-systemd" style="width:100%;margin:0">
+  <div class="pantau-table-wrap" id="sysd-table-wrap">
+    <table class="pantau-table" id="tbl-systemd" style="width:100%;margin:0">
       <thead>
         <tr>
           <th style="width:105px;text-align:center;cursor:pointer" onclick="toggleSysdSort('status')" title="Klik untuk mengurutkan Status">
@@ -2719,8 +2686,8 @@ div[style*="position: fixed"] .card {
     </div>
 
     <!-- Tabel Daftar Packages -->
-    <div class="table-wrap" id="pkg-table-wrap" style="overflow-x:auto">
-      <table class="table" id="tbl-packages" style="width:100%;margin:0">
+    <div class="pantau-table-wrap" id="pkg-table-wrap">
+      <table class="pantau-table" id="tbl-packages" style="width:100%;margin:0">
         <thead>
           <tr>
             <th data-col-title="Status" style="width:125px;text-align:center;cursor:pointer" onclick="togglePkgSort('status')" title="Klik untuk mengurutkan Status">
@@ -2806,8 +2773,8 @@ div[style*="position: fixed"] .card {
   </div>
 
   <!-- Tabel Utama Manajer Tugas dengan Kolom Urut Interaktif -->
-  <div style="overflow-x:auto">
-    <table id="tbl-task-manager" style="width:100%;font-size:10px">
+  <div class="pantau-table-wrap">
+    <table id="tbl-task-manager" class="pantau-table">
       <thead>
         <tr>
           <th style="width:80px;cursor:pointer" onclick="toggleProcSort('pid')" title="Klik untuk mengurutkan PID">
@@ -2858,8 +2825,8 @@ div[style*="position: fixed"] .card {
         {% endif %}
       </div>
     </div>
-    <div style="overflow-x:auto" id="cron-table-wrap" style="display:{{ 'block' if (cron_jobs and cron_jobs.jobs) else 'none' }}">
-      <table id="cron-table">
+    <div class="pantau-table-wrap" id="cron-table-wrap" style="display:{{ 'block' if (cron_jobs and cron_jobs.jobs) else 'none' }}">
+      <table id="cron-table" class="pantau-table">
         <thead>
           <tr>
             <th style="width:32px">Status</th>
@@ -2934,8 +2901,8 @@ div[style*="position: fixed"] .card {
       </div>
       <span class="badge badge-muted" id="timers-count-badge">{{ (cron_jobs.timers|length) if cron_jobs and cron_jobs.timers else 0 }} timer aktif</span>
     </div>
-    <div style="overflow-x:auto" id="timers-table-wrap" style="display:{{ 'block' if (cron_jobs and cron_jobs.timers) else 'none' }}">
-      <table id="systemd-timers-table">
+    <div class="pantau-table-wrap" id="timers-table-wrap" style="display:{{ 'block' if (cron_jobs and cron_jobs.timers) else 'none' }}">
+      <table id="systemd-timers-table" class="pantau-table">
         <thead>
           <tr>
             <th title="Nama unit timer systemd">Nama Timer</th>
@@ -3013,8 +2980,8 @@ div[style*="position: fixed"] .card {
     </div>
 
     <h4 style="margin:14px 14px 8px 14px;font-size:12.5px;font-weight:600;color:var(--text);letter-spacing:.3px">Aturan Port &amp; Kebijakan Akses (Rules)</h4>
-    <div style="overflow-x:auto" id="fw-rules-wrap" style="display:{{ 'block' if (firewall and firewall.rules) else 'none' }}">
-      <table id="fw-rules-table">
+    <div class="pantau-table-wrap" id="fw-rules-wrap" style="display:{{ 'block' if (firewall and firewall.rules) else 'none' }}">
+      <table id="fw-rules-table" class="pantau-table">
         <thead>
           <tr>
             <th style="width:40px">#</th>
@@ -3054,8 +3021,8 @@ div[style*="position: fixed"] .card {
       </div>
       {% endif %}
     </div>
-    <div style="overflow-x:auto" id="fw-blocked-wrap" style="display:{{ 'block' if (firewall and firewall.blocked_ips) else 'none' }}">
-      <table id="fw-blocked-table">
+    <div class="pantau-table-wrap" id="fw-blocked-wrap" style="display:{{ 'block' if (firewall and firewall.blocked_ips) else 'none' }}">
+      <table id="fw-blocked-table" class="pantau-table">
         <thead>
           <tr>
             <th>Baris</th>
@@ -3142,8 +3109,8 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
     <div id="acc-empty" class="empty-msg" style="{{ 'display:none' if accounts else 'display:block' }}">Belum ada data pengguna dari server ini.</div>
-    <div style="overflow-x:auto">
-      <table id="acc-table" style="min-width:850px;{{ 'display:table;width:100%' if accounts else 'display:none;width:100%' }}">
+    <div class="pantau-table-wrap" id="acc-table-wrap">
+      <table id="acc-table" class="pantau-table" style="min-width:850px;{{ 'display:table;width:100%' if accounts else 'display:none;width:100%' }}">
         <thead>
           <tr>
             <th style="min-width:140px">Pengguna</th>
@@ -3260,8 +3227,8 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
     <div id="groups-empty" class="empty-msg" style="{{ 'display:none' if system_groups else 'display:block' }}">Belum ada data grup dari server ini.</div>
-    <div style="overflow-x:auto">
-      <table id="groups-table" style="min-width:760px;{{ 'display:table;width:100%' if system_groups else 'display:none;width:100%' }}">
+    <div class="pantau-table-wrap" id="groups-table-wrap">
+      <table id="groups-table" class="pantau-table" style="min-width:760px;{{ 'display:table;width:100%' if system_groups else 'display:none;width:100%' }}">
         <thead>
           <tr>
             <th style="min-width:140px">Nama Grup</th>
@@ -3331,8 +3298,8 @@ div[style*="position: fixed"] .card {
       </div>
       <span class="badge badge-muted" id="acc-action-badge">{{ acc_acts|length }} tindakan</span>
     </div>
-    <div class="table-wrap" style="overflow-x:auto">
-      <table class="table" id="acc-action-table" style="margin:0;width:100%">
+    <div class="pantau-table-wrap">
+      <table class="pantau-table" id="acc-action-table" style="margin:0;width:100%">
         <thead>
           <tr>
             <th class="col-time-detailed" style="white-space:nowrap;width:195px;min-width:185px">Waktu</th>
@@ -3415,8 +3382,8 @@ div[style*="position: fixed"] .card {
         </div>
       </div>
     </div>
-    <div style="overflow-x:auto" id="ports-wrap" style="display:{{ 'block' if listening_ports else 'none' }}">
-      <table id="ports-table" style="min-width:750px;width:100%">
+    <div class="pantau-table-wrap" id="ports-wrap" style="display:{{ 'block' if listening_ports else 'none' }}">
+      <table id="ports-table" class="pantau-table" style="min-width:750px;width:100%">
         <thead>
           <tr>
             <th data-col-title="Protokol" style="width:75px;min-width:70px" title="Protokol jaringan (TCP atau UDP)">Protokol</th>
@@ -3500,8 +3467,8 @@ div[style*="position: fixed"] .card {
         {% endif %}
       </div>
     </div>
-    <div style="overflow-x:auto" id="ssl-wrap" style="display:{{ 'block' if ssl_certs else 'none' }}">
-      <table id="ssl-table">
+    <div class="pantau-table-wrap" id="ssl-wrap" style="display:{{ 'block' if ssl_certs else 'none' }}">
+      <table id="ssl-table" class="pantau-table">
         <thead>
           <tr>
             <th title="Domain atau Subdomain yang dilindungi oleh sertifikat">Domain / Subjek</th>
@@ -3622,8 +3589,8 @@ div[style*="position: fixed"] .card {
       <span style="font-size:11.5px;color:var(--dim)">Otomatis disinkronkan oleh Agen Pantau</span>
     </div>
     {% if system_logs %}
-    <div style="overflow-x:auto">
-      <table id="tbl-system-logs">
+    <div class="pantau-table-wrap">
+      <table id="tbl-system-logs" class="pantau-table">
         <thead>
           <tr>
             <th style="width:190px" title="Waktu kejadian tercatat di sistem">Waktu (Terbaru di Atas)</th>
@@ -8440,7 +8407,8 @@ function renderProblemsTab(level, openList, histList) {
       </select>
     </div>
   </div>
-  <table id="probtable" style="width:100%">
+  <div class="pantau-table-wrap">
+  <table id="probtable" class="pantau-table" style="width:100%">
     <thead><tr>
       <th class="col-time-detailed" style="width:135px;min-width:125px">${isEn ? 'Time' : 'Waktu'}</th>
       <th class="col-sev" style="width:92px;min-width:86px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
@@ -8563,8 +8531,8 @@ function renderProblemsTab(level, openList, histList) {
     </tr>`;
   }
 
-  html += `</tbody></table>
-  <div id="prob-pagination-footer" class="table-pagination-bar" style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;margin:0;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.12);font-size:11.5px;color:var(--dim);flex-wrap:wrap;gap:12px">
+  html += `</tbody></table></div>
+  <div id="prob-pagination-footer" class="pantau-pagination-bar table-pagination-bar">
     <div style="display:flex;align-items:center;gap:12px">
       <span id="prob-showing-summary">${isEn ? 'Showing 0 incidents' : 'Menampilkan 0 insiden'}</span>
     </div>
@@ -9113,9 +9081,7 @@ function patch(data) {
       const curTier = parseInt(data.tier, 10);
       const isTier1 = curTier === 1;
       tb.title = isTier1 ? 'Server level Produksi' : 'Server level Non-produksi';
-      tb.style.background = isTier1 ? 'rgba(16,185,129,0.12)' : 'rgba(148,163,184,0.12)';
-      tb.style.color = isTier1 ? '#10b981' : '#94a3b8';
-      tb.style.borderColor = isTier1 ? 'rgba(16,185,129,0.3)' : 'rgba(148,163,184,0.25)';
+      tb.className = 'badge ' + (isTier1 ? 'badge-tier-prod' : 'badge-tier-dev');
       tb.innerHTML = isTier1
         ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>'
         : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>';

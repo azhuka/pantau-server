@@ -389,11 +389,11 @@
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span id="prob-active-badge" class="badge {% if danger_open %}badge-danger{% elif average_open %}badge-orange{% elif warning_open or active_open %}badge-warn{% else %}badge-up{% endif %}" style="font-size:11.5px;padding:3px 8px;font-weight:600">
+      <span id="prob-active-badge" class="badge pantau-badge-header {% if danger_open %}badge-danger{% elif average_open %}badge-orange{% elif warning_open or active_open %}badge-warn{% else %}badge-up{% endif %}">
         {{ active_open|length }} Aktif
       </span>
       {% if ignored_open %}
-      <span id="prob-ignored-badge" class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Insiden yang diabaikan sementara oleh operator">{{ ignored_open }} Diabaikan</span>
+      <span id="prob-ignored-badge" class="badge badge-muted pantau-badge-header" title="Insiden yang diabaikan sementara oleh operator">{{ ignored_open }} Diabaikan</span>
       {% endif %}
     </div>
   </div>
@@ -645,12 +645,12 @@
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="prob-resolved-stats-badges">
-      <span class="badge badge-up" style="font-size:11.5px;padding:3px 8px" title="Total insiden yang berhasil dipulihkan">{{ recent_resolved|length }} Teratasi</span>
+      <span class="badge badge-up pantau-badge-header" title="Total insiden yang berhasil dipulihkan">{{ recent_resolved|length }} Teratasi</span>
       {% if resolved_stats and resolved_stats.avg_mttr != '—' %}
-      <span class="badge badge-info" style="font-size:11.5px;padding:3px 8px" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: {{ resolved_stats.avg_mttr }}</span>
+      <span class="badge badge-info pantau-badge-header" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: {{ resolved_stats.avg_mttr }}</span>
       {% endif %}
       {% if resolved_stats and resolved_stats.manual_count > 0 %}
-      <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Ditangani langsung oleh operator">{{ resolved_stats.manual_count }} ditangani operator</span>
+      <span class="badge badge-muted pantau-badge-header" title="Ditangani langsung oleh operator">{{ resolved_stats.manual_count }} ditangani operator</span>
       {% endif %}
     </div>
   </div>
@@ -855,82 +855,72 @@
         Konfigurasi ini berlaku sebagai standar global untuk semua server klien yang tidak memiliki ambang batas khusus (override).
       </p>
 
-      <div style="margin-bottom:16px">
-        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Beban Prosesor CPU (%)</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="pantau-form-group">
+        <label class="pantau-form-label">Beban Prosesor CPU (%)</label>
+        <div class="pantau-form-row-2">
           <div>
-            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-cpu-warn" name="cpu_warn" value="{{ global_thresholds.cpu_warn | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span class="pantau-form-sublabel pantau-text-warn">Warning Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-cpu-warn" name="cpu_warn" value="{{ global_thresholds.cpu_warn | int }}" required class="pantau-modal-input">
           </div>
           <div>
-            <span style="font-size:11px;color:var(--red)">Critical Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-cpu-danger" name="cpu_danger" value="{{ global_thresholds.cpu_danger | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span class="pantau-form-sublabel pantau-text-crit">Critical Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-cpu-danger" name="cpu_danger" value="{{ global_thresholds.cpu_danger | int }}" required class="pantau-modal-input">
           </div>
         </div>
       </div>
 
-      <div style="margin-bottom:16px">
-        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Penggunaan Memori RAM (%)</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="pantau-form-group">
+        <label class="pantau-form-label">Penggunaan Memori RAM (%)</label>
+        <div class="pantau-form-row-2">
           <div>
-            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-ram-warn" name="ram_warn" value="{{ global_thresholds.ram_warn | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span class="pantau-form-sublabel pantau-text-warn">Warning Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-ram-warn" name="ram_warn" value="{{ global_thresholds.ram_warn | int }}" required class="pantau-modal-input">
           </div>
           <div>
-            <span style="font-size:11px;color:var(--red)">Critical Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-ram-danger" name="ram_danger" value="{{ global_thresholds.ram_danger | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span class="pantau-form-sublabel pantau-text-crit">Critical Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-ram-danger" name="ram_danger" value="{{ global_thresholds.ram_danger | int }}" required class="pantau-modal-input">
           </div>
         </div>
       </div>
 
-      <div style="margin-bottom:16px">
-        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Kapasitas Partisi Disk (%)</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="pantau-form-group">
+        <label class="pantau-form-label">Kapasitas Partisi Disk (%)</label>
+        <div class="pantau-form-row-2">
           <div>
-            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-disk-warn" name="disk_warn" value="{{ global_thresholds.disk_warn | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span class="pantau-form-sublabel pantau-text-warn">Warning Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-disk-warn" name="disk_warn" value="{{ global_thresholds.disk_warn | int }}" required class="pantau-modal-input">
           </div>
           <div>
-            <span style="font-size:11px;color:var(--red)">Critical Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-disk-danger" name="disk_danger" value="{{ global_thresholds.disk_danger | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span class="pantau-form-sublabel pantau-text-crit">Critical Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-disk-danger" name="disk_danger" value="{{ global_thresholds.disk_danger | int }}" required class="pantau-modal-input">
           </div>
         </div>
       </div>
 
-      <div style="margin-bottom:16px">
-        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Kapasitas Swap Memory (%)</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="pantau-form-group">
+        <label class="pantau-form-label">Kapasitas Swap Memory (%)</label>
+        <div class="pantau-form-row-2">
           <div>
-            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-swap-warn" name="swap_warn" value="{{ global_thresholds.swap_warn | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span class="pantau-form-sublabel pantau-text-warn">Warning Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-swap-warn" name="swap_warn" value="{{ global_thresholds.swap_warn | int }}" required class="pantau-modal-input">
           </div>
           <div>
-            <span style="font-size:11px;color:var(--red)">Critical Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-swap-danger" name="swap_danger" value="{{ global_thresholds.swap_danger | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span class="pantau-form-sublabel pantau-text-crit">Critical Level</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-swap-danger" name="swap_danger" value="{{ global_thresholds.swap_danger | int }}" required class="pantau-modal-input">
           </div>
         </div>
       </div>
 
-      <div style="margin-bottom:20px">
-        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Percobaan Login Gagal SSH (kali)</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="pantau-form-group" style="margin-bottom:20px">
+        <label class="pantau-form-label">Percobaan Login Gagal SSH (kali)</label>
+        <div class="pantau-form-row-2">
           <div>
-            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
-            <input type="number" step="1" min="1" id="th-g-ssh-warn" name="ssh_fail_warn" value="{{ global_thresholds.ssh_fail_warn | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span class="pantau-form-sublabel pantau-text-warn">Warning Level</span>
+            <input type="number" step="1" min="1" id="th-g-ssh-warn" name="ssh_fail_warn" value="{{ global_thresholds.ssh_fail_warn | int }}" required class="pantau-modal-input">
           </div>
           <div>
-            <span style="font-size:11px;color:var(--red)">Critical Level</span>
-            <input type="number" step="1" min="1" id="th-g-ssh-danger" name="ssh_fail_danger" value="{{ global_thresholds.ssh_fail_danger | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span class="pantau-form-sublabel pantau-text-crit">Critical Level</span>
+            <input type="number" step="1" min="1" id="th-g-ssh-danger" name="ssh_fail_danger" value="{{ global_thresholds.ssh_fail_danger | int }}" required class="pantau-modal-input">
           </div>
         </div>
       </div>
@@ -1743,12 +1733,12 @@ window.poll = async function(opts = {}) {
     const resBadges = document.getElementById('prob-resolved-stats-badges');
     if (resBadges && data.summary) {
       const s = data.summary;
-      let rHtml = `<span class="badge badge-up" style="font-size:11.5px;padding:3px 8px" title="Total insiden yang berhasil dipulihkan">${s.total_resolved || 0} Teratasi</span>`;
+      let rHtml = `<span class="badge badge-up pantau-badge-header" title="Total insiden yang berhasil dipulihkan">${s.total_resolved || 0} Teratasi</span>`;
       if (s.avg_mttr && s.avg_mttr !== '—') {
-        rHtml += ` <span class="badge badge-info" style="font-size:11.5px;padding:3px 8px" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: ${_esc(s.avg_mttr)}</span>`;
+        rHtml += ` <span class="badge badge-info pantau-badge-header" title="Rata-rata waktu pemulihan (Mean Time to Resolve)">MTTR: ${_esc(s.avg_mttr)}</span>`;
       }
       if (s.manual_resolved && s.manual_resolved > 0) {
-        rHtml += ` <span class="badge badge-muted" style="font-size:11.5px;padding:3px 8px" title="Ditangani langsung oleh operator">${s.manual_resolved} ditangani operator</span>`;
+        rHtml += ` <span class="badge badge-muted pantau-badge-header" title="Ditangani langsung oleh operator">${s.manual_resolved} ditangani operator</span>`;
       }
       resBadges.innerHTML = rHtml;
     }

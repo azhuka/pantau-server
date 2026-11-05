@@ -17,6 +17,26 @@
   margin-bottom: 8px !important;
 }
 
+/* Floating Table Island di dalam Kartu & Kontainer Tab */
+.card > .pantau-table-wrap,
+.tab-body .card .pantau-table-wrap,
+.tab-body .pantau-table-wrap {
+  margin: 10px 12px 10px 12px !important;
+  width: calc(100% - 24px) !important;
+  box-sizing: border-box !important;
+}
+
+/* Floating Pagination Bar di dalam Kartu & Kontainer Tab */
+.card > .pantau-pagination-bar,
+.card > .table-pagination-bar,
+.tab-body .card .pantau-pagination-bar,
+.tab-body .card .table-pagination-bar,
+.tab-body .table-pagination-bar {
+  margin: 0 12px 10px 12px !important;
+  width: calc(100% - 24px) !important;
+  box-sizing: border-box !important;
+}
+
 .pantau-table {
   width: 100% !important;
   border-collapse: collapse !important;
@@ -575,4 +595,162 @@ span[data-pg-cur] {
   border-top: 1px solid var(--border, #30363d) !important;
   background: var(--bg-subtle, rgba(255, 255, 255, 0.015)) !important;
   flex-shrink: 0 !important;
+}
+
+.pantau-modal-input {
+  width: 100% !important;
+  background: rgba(9, 13, 22, 0.7) !important;
+  border: 1px solid var(--border, #30363d) !important;
+  border-radius: var(--radius-sm, 6px) !important;
+  color: var(--text, #e6edf3) !important;
+  padding: 8px 10px !important;
+  font-size: 13px !important;
+  outline: none !important;
+  margin-top: 4px !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease !important;
+}
+
+.pantau-modal-input:focus {
+  border-color: var(--blue, #38bdf8) !important;
+}
+
+.pantau-form-group {
+  margin-bottom: 16px !important;
+}
+
+.pantau-form-row-2 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+}
+
+.pantau-form-label {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  display: block !important;
+  margin-bottom: 6px !important;
+  color: var(--text, #e6edf3) !important;
+}
+
+.pantau-form-sublabel {
+  font-size: 11px !important;
+  display: block !important;
+  margin-bottom: 2px !important;
+}
+
+/* -----------------------------------------------------------------------------
+   7. UTILITAS TAMPILAN BAKU NOC (Typography, Colors, Spacing, & Flex Helpers)
+   ----------------------------------------------------------------------------- */
+.pantau-text-dim { color: var(--dim, #8b949e) !important; }
+.pantau-text-bright { color: var(--text-bright, #ffffff) !important; }
+.pantau-text-ok { color: var(--green, #22c55e) !important; }
+.pantau-text-warn { color: var(--yellow, #f59e0b) !important; }
+.pantau-text-crit { color: var(--red, #ef4444) !important; }
+.pantau-text-info { color: var(--blue, #38bdf8) !important; }
+
+.pantau-text-center { text-align: center !important; }
+.pantau-text-left { text-align: left !important; }
+.pantau-text-right { text-align: right !important; }
+.pantau-align-middle { vertical-align: middle !important; }
+
+.pantau-nowrap { white-space: nowrap !important; }
+.pantau-truncate {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.pantau-flex { display: flex !important; align-items: center !important; }
+.pantau-flex-between { display: flex !important; align-items: center !important; justify-content: space-between !important; }
+.pantau-flex-center { display: flex !important; align-items: center !important; justify-content: center !important; }
+.pantau-flex-col { display: flex !important; flex-direction: column !important; }
+.pantau-inline-flex { display: inline-flex !important; align-items: center !important; }
+
+.pantau-gap-2 { gap: 2px !important; }
+.pantau-gap-4 { gap: 4px !important; }
+.pantau-gap-6 { gap: 6px !important; }
+.pantau-gap-8 { gap: 8px !important; }
+.pantau-gap-10 { gap: 10px !important; }
+.pantau-gap-12 { gap: 12px !important; }
+
+/* Mini Tag & Badges */
+.pantau-tag-subtle {
+  font-size: 8px !important;
+  color: var(--dim, #8b949e) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  padding: 0.5px 3.5px !important;
+  border-radius: 3px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  line-height: 1.2 !important;
+}
+
+.pantau-truncate-sub {
+  font-size: 8.5px !important;
+  color: var(--dim, #8b949e) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 160px !important;
+  margin-top: 1px !important;
+  display: block !important;
+}
+
+.pantau-kpi-pill {
+  min-width: 20px !important;
+  text-align: center !important;
+  padding: 1px 5px !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  line-height: 1.2 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.pantau-badge-header {
+  font-size: 11.5px !important;
+  padding: 3px 8px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  border-radius: 4px !important;
+}
+
+.pantau-badge-xs {
+  font-size: 8.5px !important;
+  padding: 1px 6.5px !important;
+  letter-spacing: 0.3px !important;
+  font-weight: 700 !important;
+  border-radius: 3px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* Tier Badges */
+.badge-tier-prod {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 2px 5px !important;
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #10b981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  border-radius: 4px !important;
+  line-height: 1 !important;
+}
+
+.badge-tier-dev {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 2px 5px !important;
+  background: rgba(148, 163, 184, 0.12) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  border-radius: 4px !important;
+  line-height: 1 !important;
 }

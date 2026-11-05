@@ -1159,13 +1159,13 @@ body.popout-fleet_table #dash-fleet-card {
             {% set ack_op = 'master-admin' if p.acknowledged_by == 'admin' else (p.acknowledged_by or 'operator') %}
             {% set ign_op = 'master-admin' if p.ignored_by == 'admin' else (p.ignored_by or 'operator') %}
             {% if p.severity == 'danger' %}
-              {% set base_badge = '<span class="badge badge-danger" style="font-size:8.5px;padding:1px 6.5px;letter-spacing:0.3px;font-weight:700">KRITIS</span>' %}
+              {% set base_badge = '<span class="badge badge-danger pantau-badge-xs">KRITIS</span>' %}
             {% elif p.severity == 'average' %}
-              {% set base_badge = '<span class="badge badge-orange" style="font-size:8.5px;padding:1px 6.5px;letter-spacing:0.3px;font-weight:700">GAWAT</span>' %}
+              {% set base_badge = '<span class="badge badge-orange pantau-badge-xs">GAWAT</span>' %}
             {% elif p.severity == 'warning' %}
-              {% set base_badge = '<span class="badge badge-warn" style="font-size:8.5px;padding:1px 6.5px;letter-spacing:0.3px;font-weight:700">PERINGATAN</span>' %}
+              {% set base_badge = '<span class="badge badge-warn pantau-badge-xs">PERINGATAN</span>' %}
             {% else %}
-              {% set base_badge = '<span class="badge badge-info" style="font-size:8.5px;padding:1px 6.5px;letter-spacing:0.3px;font-weight:700">' ~ (p.severity | upper) ~ '</span>' %}
+              {% set base_badge = '<span class="badge badge-info pantau-badge-xs">' ~ (p.severity | upper) ~ '</span>' %}
             {% endif %}
             {% if p.is_ignored or p.acknowledged_by %}
               <div style="display:inline-flex;flex-direction:column;align-items:flex-start;gap:2.5px">
@@ -1359,11 +1359,11 @@ body.popout-fleet_table #dash-fleet-card {
           <!-- 2. Lingkungan (Level) -->
           <td data-sort-val="{{ s_tier }}" id="tbl-tier-{{ srv.id }}" style="text-align:left;vertical-align:middle">
             {% if s_tier == 1 %}
-              <span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px">
+              <span class="badge badge-tier-prod" title="Server level Produksi">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
               </span>
             {% else %}
-              <span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px">
+              <span class="badge badge-tier-dev" title="Server level Non-produksi">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
               </span>
             {% endif %}
@@ -1544,11 +1544,11 @@ body.popout-fleet_table #dash-fleet-card {
               {% set s_tier = srv.tier|default(2) %}
               <span id="card-tier-{{ srv.id }}">
               {% if s_tier == 1 %}
-                <span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px">
+                <span class="badge badge-tier-prod" title="Server level Produksi">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
                 </span>
               {% else %}
-                <span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px">
+                <span class="badge badge-tier-dev" title="Server level Non-produksi">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
                 </span>
               {% endif %}
@@ -1636,11 +1636,11 @@ body.popout-fleet_table #dash-fleet-card {
             {% elif tot_prob == 0 and ign_cnt == 0 %}
               <span class="badge badge-up" style="font-size:10.5px">Nihil</span>
             {% else %}
-              {% if d_cnt > 0 %}<span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>{% endif %}
-              {% if avg_cnt > 0 %}<span class="badge badge-orange" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>{% endif %}
-              {% if w_cnt > 0 %}<span class="badge badge-warn" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>{% endif %}
-              {% if i_cnt > 0 %}<span class="badge badge-info" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>{% endif %}
-              {% if ign_cnt > 0 %}<span class="badge badge-muted" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="{{ srv._ignored_msgs or 'Insiden diabaikan' }}">{{ ign_cnt }}</span>{% endif %}
+              {% if d_cnt > 0 %}<span class="badge badge-danger pantau-kpi-pill" title="{{ srv._danger_msgs or 'Bahaya / Kritis' }}">{{ d_cnt }}</span>{% endif %}
+              {% if avg_cnt > 0 %}<span class="badge badge-orange pantau-kpi-pill" title="{{ srv._average_msgs or 'Gawat' }}">{{ avg_cnt }}</span>{% endif %}
+              {% if w_cnt > 0 %}<span class="badge badge-warn pantau-kpi-pill" title="{{ srv._warning_msgs or 'Peringatan' }}">{{ w_cnt }}</span>{% endif %}
+              {% if i_cnt > 0 %}<span class="badge badge-info pantau-kpi-pill" title="{{ srv._info_msgs or 'Informasi' }}">{{ i_cnt }}</span>{% endif %}
+              {% if ign_cnt > 0 %}<span class="badge badge-muted pantau-kpi-pill" title="{{ srv._ignored_msgs or 'Insiden diabaikan' }}">{{ ign_cnt }}</span>{% endif %}
             {% endif %}
           </div>
         </div>
@@ -2161,9 +2161,9 @@ function _dashEsc(s) {
 function getTierBadgeHtml(tier) {
   const t = parseInt(tier, 10) || 2;
   if (t === 1) {
-    return '<span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>';
+    return '<span class="badge badge-tier-prod" title="Server level Produksi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>';
   }
-  return '<span class="badge" title="Server level Non-produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);border-radius:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>';
+  return '<span class="badge badge-tier-dev" title="Server level Non-produksi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>';
 }
 
 function getPlatformBadgeHtml(plat) {
@@ -2689,11 +2689,11 @@ async function pollNocDashboard() {
             cardProb.innerHTML = `<span class="badge badge-up" style="font-size:10.5px">${isEn ? 'None' : 'Nihil'}</span>`;
           } else {
             let html = '';
-            if (dCnt > 0) html += `<span class="badge badge-danger" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="${(srv.danger_msgs || (isEn ? 'Critical' : 'Kritis')).replace(/"/g, '&quot;')}">${dCnt}</span>`;
-            if (avgCnt > 0) html += `<span class="badge badge-orange" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="${(srv.average_msgs || (isEn ? 'High' : 'Gawat')).replace(/"/g, '&quot;')}">${avgCnt}</span>`;
-            if (wCnt > 0) html += `<span class="badge badge-warn" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="${(srv.warning_msgs || (isEn ? 'Warning' : 'Peringatan')).replace(/"/g, '&quot;')}">${wCnt}</span>`;
-            if (iCnt > 0) html += `<span class="badge badge-info" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="${(srv.info_msgs || 'Info').replace(/"/g, '&quot;')}">${iCnt}</span>`;
-            if (ignCnt > 0) html += `<span class="badge badge-muted" style="min-width:20px;text-align:center;padding:1px 5px;font-size:10.5px;font-weight:700;border-radius:10px" title="${(srv.ignored_msgs || (isEn ? 'Ignored' : 'Diabaikan')).replace(/"/g, '&quot;')}">${ignCnt}</span>`;
+            if (dCnt > 0) html += `<span class="badge badge-danger pantau-kpi-pill" title="${(srv.danger_msgs || (isEn ? 'Critical' : 'Kritis')).replace(/"/g, '&quot;')}">${dCnt}</span>`;
+            if (avgCnt > 0) html += `<span class="badge badge-orange pantau-kpi-pill" title="${(srv.average_msgs || (isEn ? 'High' : 'Gawat')).replace(/"/g, '&quot;')}">${avgCnt}</span>`;
+            if (wCnt > 0) html += `<span class="badge badge-warn pantau-kpi-pill" title="${(srv.warning_msgs || (isEn ? 'Warning' : 'Peringatan')).replace(/"/g, '&quot;')}">${wCnt}</span>`;
+            if (iCnt > 0) html += `<span class="badge badge-info pantau-kpi-pill" title="${(srv.info_msgs || 'Info').replace(/"/g, '&quot;')}">${iCnt}</span>`;
+            if (ignCnt > 0) html += `<span class="badge badge-muted pantau-kpi-pill" title="${(srv.ignored_msgs || (isEn ? 'Ignored' : 'Diabaikan')).replace(/"/g, '&quot;')}">${ignCnt}</span>`;
             cardProb.innerHTML = html;
           }
         }
@@ -2971,13 +2971,13 @@ async function pollNocDashboard() {
             const ignOp = (p.ignored_by === 'admin' ? 'master-admin' : (p.ignored_by || (isEn ? 'operator' : 'operator')));
             let rawSev = '';
             if (p.severity === 'danger') {
-              rawSev = `<span class="badge badge-danger" style="font-size:8.5px;padding:1px 6.5px;letter-spacing:0.3px;font-weight:700">${isEn ? 'CRITICAL' : 'KRITIS'}</span>`;
+              rawSev = `<span class="badge badge-danger pantau-badge-xs">${isEn ? 'CRITICAL' : 'KRITIS'}</span>`;
             } else if (p.severity === 'average') {
-              rawSev = `<span class="badge badge-orange" style="font-size:8.5px;padding:1px 6.5px;letter-spacing:0.3px;font-weight:700">${isEn ? 'HIGH' : 'GAWAT'}</span>`;
+              rawSev = `<span class="badge badge-orange pantau-badge-xs">${isEn ? 'HIGH' : 'GAWAT'}</span>`;
             } else if (p.severity === 'warning') {
-              rawSev = `<span class="badge badge-warn" style="font-size:8.5px;padding:1px 6.5px;letter-spacing:0.3px;font-weight:700">${isEn ? 'WARNING' : 'PERINGATAN'}</span>`;
+              rawSev = `<span class="badge badge-warn pantau-badge-xs">${isEn ? 'WARNING' : 'PERINGATAN'}</span>`;
             } else {
-              rawSev = `<span class="badge badge-info" style="font-size:8.5px;padding:1px 6.5px;letter-spacing:0.3px;font-weight:700">${(p.severity || 'INFO').toUpperCase()}</span>`;
+              rawSev = `<span class="badge badge-info pantau-badge-xs">${(p.severity || 'INFO').toUpperCase()}</span>`;
             }
 
             let sevBadge = '';
