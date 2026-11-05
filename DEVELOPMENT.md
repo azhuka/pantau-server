@@ -354,6 +354,14 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.129
+
+- **Tipe Rilis:** Pembersihan Elemen Tombol Redundan pada Kolom Server Dasbor (*Clean Dashboard Fleet Table & Server Column Redundancy Removal*)
+- **Fokus Utama:** Mencabut tombol ikon mata yang salah tempat pada kolom Server kartu Status & Kinerja Dasbor, mengembalikan keaslian tata letak bersih NOC di mana baris server secara utuh telah menjadi elemen navigasi interaktif:
+  1. **Pembersihan Kolom Server Dasbor (`dashboard.html`):**
+     - Menghapus elemen `<a class="pantau-btn-icon">` dengan ikon mata di samping teks nama host pada tabel Status & Kinerja armada server, baik pada SSR awal maupun pada fungsi pembaruan langsung JavaScript (`createAndAppendDashTableRow`).
+     - Mengembalikan perataan dan keterbacaan kolom nama server agar kembali bersih, proporsional, dan bebas dari polusi elemen visual yang tidak diperlukan.
+
 ## Versi 4.8.128
 
 - **Tipe Rilis:** Refaktor Menyeluruh Arsitektur Antarmuka & Standardisasi Pustaka Komponen Global (*Complete Unified Design System Overhaul, Global Component Adoption & Full Hardcode Elimination*)
