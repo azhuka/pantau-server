@@ -354,6 +354,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.135
+
+- **Tipe Rilis:** Perbaikan Tata Letak Panel Filter & Grup Pencarian Terpadu (*Filter Panel Responsive Layout Fix & Unified Search-Action Group*)
+- **Fokus Utama:** Menyelesaikan permasalahan tombol reset filter yang terdorong ke bawah (*orphan line wrap*) saat halaman diperbesar (*zoom in*) hingga skala 140% pada Riwayat Tindakan (`audit.html`) dan Riwayat Insiden (`problems.html`):
+  1. **Grup Pencarian & Aksi Filter Terpadu (`.filter-search-group`):**
+     - Menggabungkan elemen pencarian kata kunci dengan tombol aksi reset ke dalam kontainer terpadu `.filter-search-group` pada `pantau-components.css` (`flex: 1 1 220px`), menjamin tombol reset tidak pernah lagi terisolasi sendirian pada baris baru.
+  2. **Optimalisasi Densitas & Batas Lebar Maksimum Kontrol:**
+     - Menetapkan batas lebar maksimum (`max-width`) proporsional pada dropdown filter (`Pengguna` max 130px, `Server` max 130px, `Tindakan` max 165px, `Status` max 115px) dengan penanganan elipsis, memastikan seluruh kontrol filter tersusun rapi dalam 1 baris horizontal pada skala zoom 140% maupun layar laptop standar.
+  3. **Preservasi Kepadatan Data NOC:**
+     - Menjaga estetika antarmuka tetap bersih, rapi, dan simetris tanpa ruang kosong aneh di atas bilah preset periode waktu.
+
 ## Versi 4.8.134
 
 - **Tipe Rilis:** Standardisasi Penuh Tabel Mengambang Rincian Server dan Eliminasi Gaya Hardcode Inline (*Full Server Details Floating Table Standardization & Inline Style Elimination*)

@@ -27,9 +27,9 @@
     <!-- Baris 1: Filter Operasional Multi-Kriteria Berlabel Rapi & Presisi -->
     <div class="filter-row-main">
       <!-- 1. Filter Pengguna -->
-      <div class="filter-col" title="Filter menurut pengguna yang mengeksekusi">
+      <div class="filter-col" style="max-width:130px" title="Filter menurut pengguna yang mengeksekusi">
         <label class="filter-col-label" for="audit-user-filter">Pengguna</label>
-        <select name="user" id="audit-user-filter" class="filter-select" onchange="applyAuditFilters()">
+        <select name="user" id="audit-user-filter" class="filter-select" style="max-width:130px" onchange="applyAuditFilters()">
           <option value="">Semua Pengguna</option>
           {% for u_name in available_users %}
           <option value="{{ u_name }}" {% if selected_user == u_name %}selected{% endif %}>{{ u_name }}</option>
@@ -38,9 +38,9 @@
       </div>
 
       <!-- 2. Filter Server -->
-      <div class="filter-col" title="Filter menurut target server">
+      <div class="filter-col" style="max-width:130px" title="Filter menurut target server">
         <label class="filter-col-label" for="audit-server-filter">Server</label>
-        <select name="server" id="audit-server-filter" class="filter-select" onchange="applyAuditFilters()">
+        <select name="server" id="audit-server-filter" class="filter-select" style="max-width:130px" onchange="applyAuditFilters()">
           <option value="">Semua Server</option>
           {% for s in all_servers %}
           <option value="{{ s.id }}" {% if selected_server == s.id %}selected{% endif %}>{{ s.hostname }}</option>
@@ -49,9 +49,9 @@
       </div>
 
       <!-- 3. Filter Tindakan -->
-      <div class="filter-col" title="Filter jenis tindakan atau perintah">
+      <div class="filter-col" style="max-width:165px" title="Filter jenis tindakan atau perintah">
         <label class="filter-col-label" for="audit-action-filter">Tindakan</label>
-        <select name="action" id="audit-action-filter" class="filter-select" onchange="applyAuditFilters()">
+        <select name="action" id="audit-action-filter" class="filter-select" style="max-width:165px" onchange="applyAuditFilters()">
           <option value="" data-label-id="Semua Tindakan" data-label-en="All Actions">Semua Tindakan</option>
           {% for cat in categories %}
           <optgroup label="{{ cat.name }}" data-label-id="{{ cat.name }}" data-label-en="{{ cat.name_en }}">
@@ -65,9 +65,9 @@
       </div>
 
       <!-- 4. Filter Status -->
-      <div class="filter-col" title="Filter status hasil eksekusi">
+      <div class="filter-col" style="max-width:115px" title="Filter status hasil eksekusi">
         <label class="filter-col-label" for="audit-status-filter">Status</label>
-        <select name="status" id="audit-status-filter" class="filter-select" onchange="applyAuditFilters()">
+        <select name="status" id="audit-status-filter" class="filter-select" style="max-width:115px" onchange="applyAuditFilters()">
           <option value="">Semua Status</option>
           <option value="SUCCESS" {% if selected_status == 'SUCCESS' %}selected{% endif %}>Berhasil</option>
           <option value="FAILED" {% if selected_status == 'FAILED' %}selected{% endif %}>Gagal</option>
@@ -85,20 +85,21 @@
         </div>
       </div>
 
-      <!-- 6. Pencarian Kata Kunci -->
-      <div class="filter-col-search" title="Cari target atau hasil audit">
-        <label class="filter-col-label" for="audit-search-input">Cari Audit</label>
-        <div class="filter-search-box">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input type="search" name="q" id="audit-search-input" value="{{ q }}" oninput="debounceAuditFilter()" placeholder="Cari target, hasil, perintah…">
+      <!-- 6 & 7. Pencarian Terpadu & Tombol Reset Bersatu -->
+      <div class="filter-search-group">
+        <div class="filter-col-search" title="Cari target atau hasil audit">
+          <label class="filter-col-label" for="audit-search-input">Cari Audit</label>
+          <div class="filter-search-box">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="search" name="q" id="audit-search-input" value="{{ q }}" oninput="debounceAuditFilter()" placeholder="Cari target, hasil, perintah…">
+          </div>
         </div>
-      </div>
 
-      <!-- 7. Tombol Reset Filter -->
-      <button type="button" class="btn btn-ghost btn-sm" onclick="resetAuditFilters()" style="height:32px;padding:0 12px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px;flex-shrink:0" title="Hapus semua filter riwayat tindakan">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-        <span>Reset</span>
-      </button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="resetAuditFilters()" style="height:32px;padding:0 12px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px;flex-shrink:0" title="Hapus semua filter riwayat tindakan">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          <span>Reset</span>
+        </button>
+      </div>
     </div>
 
     <!-- Divider Pemisah Halus -->
