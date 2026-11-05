@@ -354,6 +354,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.124
+
+- **Tipe Rilis:** Eliminasi Duplikasi Menu Kustomisasi UI & Pemulihan Tombol Palet Tema pada Sidebar Diminimalkan (*UI Customization Menu Redundancy Elimination & Collapsed Sidebar Theme Palette Visibility*)
+- **Fokus Utama:** Menyempurnakan kerapian antarmuka bilah samping (sidebar) dengan menghilangkan entri duplikat kustomisasi tampilan pada daftar menu navigasi utama, seraya memastikan tombol ikon palet tetap hadir secara intuitif saat bilah samping diminimalkan:
+  1. **Peniadaan Entri Duplikat Kustomisasi UI pada Mode Normal (*Elimination of Redundant Nav Item*):**
+     - Menyembunyikan elemen `#nav-btn-theme` secara bawaan (`display: none;`) pada daftar tautan menu utama ketika bilah samping dalam keadaan terbuka normal.
+     - Kustomisasi antarmuka (tema, aksen warna, tipografi font, dan densitas NOC) pada mode normal tetap terpusat pada tombol ikon palet di bagian kaki bilah samping (`.sidebar-footer`), berdampingan dengan jam UTC dan versi sistem tanpa redundansi visual.
+  2. **Tampilan Dinamis Ikon Kustomisasi saat Sidebar Diminimalkan (*Dynamic Visibility on Sidebar Collapsed*):**
+     - Menetapkan deklarasi `body.sb-collapsed #nav-btn-theme { display: flex !important; }` pada stylesheet global `server/templates/base.html`.
+     - Ketika operator meminimalkan bilah samping (`sb-collapsed`) dan area kaki bilah samping (`.sidebar-footer`) disembunyikan untuk menghemat ruang kerja, ikon palet kustomisasi secara otomatis muncul pada barisan ikon navigasi (berdampingan dengan tombol keluar), sehingga modal kustomisasi antarmuka tetap dapat diakses secara cepat kapan saja (*zero friction*).
+
 ## Versi 4.8.123
 
 - **Tipe Rilis:** Pemulihan Status Restart Layanan Pasca-Pemberhentian Operator & Peniadaan Scroll Horizontal Filter pada Skala Zoom 150% (*Operator-Stopped Service Restart Status Restoration & Responsive Filter Wrap at 150% Zoom*)
