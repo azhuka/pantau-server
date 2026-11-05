@@ -1477,7 +1477,21 @@ def agent_report(
             Command.action.in_(["stop", "service_stop"]),
             Command.status.in_(["pending", "executing"]),
         ).first() is not None
-        is_op_stopped = bool(service.ignored_reason and "DIMATIKAN OLEH OPERATOR" in service.ignored_reason)
+        has_restart_or_start_in_flight = db.query(Command).filter(
+            Command.server_id == server.id,
+            Command.service_id == service.id,
+            Command.action.in_(["start", "restart", "service_start", "service_restart"]),
+            Command.status.in_(["pending", "executing"]),
+        ).first() is not None
+        is_op_stopped = bool(service.ignored_reason and ("DIMATIKAN OLEH OPERATOR" in service.ignored_reason or "DIHENTIKAN OLEH OPERATOR" in service.ignored_reason))
+
+        if (has_restart_or_start_in_flight or (status == "up" and not has_stop_in_flight)) and is_op_stopped:
+            # Perintah restart/start sedang berjalan atau layanan terbukti sudah UP, pulihkan flag operator stopped
+            is_op_stopped = False
+            service.is_ignored = 0
+            service.ignored_until = None
+            service.ignored_reason = None
+            service.ignore_mode = None
 
         if (has_stop_in_flight or is_op_stopped) and status == "up":
             status = "down"
@@ -5440,23 +5454,24 @@ def service_restart(
         server_id=sid, service_id=svc_id, action="restart", status="pending",
         issued_by=user.username,
     ))
-    # Otomatis aktifkan kembali pemantauan saat admin merestart layanan (hanya bila bukan mode permanen)
-    if getattr(svc, "ignore_mode", None) != "permanent":
-        svc.is_ignored = 0
-        svc.ignored_until = None
-        svc.ignored_reason = None
-        svc.ignore_mode = None
-        prob = db.query(ServerProblem).filter(
-            ServerProblem.server_id == sid,
-            ServerProblem.key == f"service_down:{svc.service_name}",
-            ServerProblem.resolved_at.is_(None),
-        ).first()
-        if prob:
-            prob.is_ignored = 0
-            prob.ignored_until = None
-            prob.ignored_reason = None
-            prob.ignore_mode = None
-            prob.updated_at = datetime.utcnow()
+    _audit(db, user.username, "service_restart",
+           f"{server.hostname if server else sid}:{svc.service_name}", "dikirim ke agen", server_id=sid)
+    # Otomatis aktifkan kembali pemantauan saat admin merestart layanan
+    svc.is_ignored = 0
+    svc.ignored_until = None
+    svc.ignored_reason = None
+    svc.ignore_mode = None
+    prob = db.query(ServerProblem).filter(
+        ServerProblem.server_id == sid,
+        ServerProblem.key == f"service_down:{svc.service_name}",
+        ServerProblem.resolved_at.is_(None),
+    ).first()
+    if prob:
+        prob.is_ignored = 0
+        prob.ignored_until = None
+        prob.ignored_reason = None
+        prob.ignore_mode = None
+        prob.updated_at = datetime.utcnow()
     db.commit()
     if is_json:
         return Response(json.dumps({"ok": True, "detail": f"Perintah restart {svc.service_name} telah dikirim ke Agen Pantau."}), media_type="application/json")

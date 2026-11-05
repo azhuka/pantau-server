@@ -354,6 +354,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.123
+
+- **Tipe Rilis:** Pemulihan Status Restart Layanan Pasca-Pemberhentian Operator & Peniadaan Scroll Horizontal Filter pada Skala Zoom 150% (*Operator-Stopped Service Restart Status Restoration & Responsive Filter Wrap at 150% Zoom*)
+- **Fokus Utama:** Menyelesaikan anomali status layanan yang tidak kembali UP saat direstart setelah dimatikan sengaja oleh operator, serta menyempurnakan responsivitas antarmuka filter pada skala pembesaran (zoom) 150%:
+  1. **Pemulihan Siklus Hidup Restart Layanan Operator (*Service Restart Life-Cycle & State Unlock*):**
+     - Memperbaiki `service_restart()` pada `server/main.py` agar secara mutlak menghapus status pengabaian (*clear ignore state*), alasan pengabaian (`ignored_reason`), dan mode pengabaian (`ignore_mode`) terlepas dari flag `permanent`, serta mengaktifkan kembali pemantauan insiden terkait (`ServerProblem`).
+     - Memperbarui `agent_report()` pada `server/main.py` sehingga ketika perintah restart/start sedang berjalan (*in-flight*) atau agen melaporkan layanan telah berstatus `up` (tanpa ada perintah stop yang sedang tertunda), flag penolakan `is_op_stopped` dibatalkan secara otomatis (`is_op_stopped = False`) dan `service.ignored_reason` dibersihkan. Hal ini mengeliminasi pemaksaan status `down` palsu dari server saat daemon sistem di Linux telah aktif kembali.
+     - Menambahkan audit log `service_restart` pada tabel audit sistem saat perintah restart diterbitkan oleh operator.
+  2. **Eliminasi Bilah Gulir Horizontal pada Panel Filter Skala Zoom 150% (*Zero Horizontal Scroll on Filter Panel at 150% Zoom*):**
+     - Mengubah deklarasi flexbox `.pantau-filter-panel .filter-row-main` pada stylesheet global `server/templates/base.html` menjadi `flex-wrap: wrap;` tanpa pembatasan kaku `overflow-x: auto;`.
+     - Seluruh kontrol filter (rentang waktu, filter server, aksi, target, status, dan tombol cari/reset) kini membungkus baris secara alami dan anggun (*graceful wrapping*) di layar resolusi standar dengan skala zoom browser 150% tanpa menimbulkan bilah gulir horizontal yang merusak kerapian tata letak NOC.
+  3. **Pengemasan Tabel Riwayat Tindakan Berdensitas Tinggi (*High-Density Audit Table Packaging*):**
+     - Membungkus tabel riwayat audit (`server/templates/audit.html`) dalam kontainer responsif `overflow-x: auto;` tersendiri dan merampingkan padding sel dari 7px 12px menjadi 5px 8px (padding data 4px 6px/8px), menjaga tinggi baris konsisten dengan standar densitas NOC Pantau Server.
+
 ## Versi 4.8.122
 
 - **Tipe Rilis:** Penyelarasan Jarak Kolom Server dan Keparahan pada Kartu Riwayat Insiden (*Resolved Incidents Card Server & Severity Column Gap Optimization*)
