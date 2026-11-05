@@ -354,6 +354,16 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.106
+
+- **Tipe Rilis:** Sinkronisasi Mandiri Wrapper Riwayat Remote, Interpolasi Waktu Berkas Realistis, dan Penempatan Puncak Perintah Shell (*Remote History Wrapper Self-Update, Guaranteed Mtime Fallback, & Page-One Shell Command Placement*)
+- **Fokus Utama:** Menyelesaikan kendala perintah shell non-sudo yang terlempar ke halaman belakang atau belum ter-flush pada agen armada jarak jauh:
+  1. **Sinkronisasi Mandiri Wrapper `pantau-history` Jarak Jauh (*Self-Updating Fleet History Wrapper*):**
+     - Agen kini otomatis memutakhirkan `/usr/local/sbin/pantau-history` dan memasang `/etc/profile.d/pantau-history.sh` secara otonom melalui `pantau-file` di seluruh server armada tanpa perlu instalasi ulang manual.
+  2. **Jaminan Stempel Waktu Kronologis (*Guaranteed Mtime Fallback*):**
+     - Mengatasi kendala stempel waktu kosong (`ts: ""`) pada sistem tanpa `HISTTIMEFORMAT` dengan secara otomatis mendeteksi waktu modifikasi berkas riwayat (`os.path.getmtime`) atau waktu aktivitas terkini.
+     - Menginterpolasi urutan detik kronologis mundur per perintah sehingga seluruh perintah shell non-sudo selalu memiliki stempel waktu valid dan langsung tersortir ke **halaman pertama (paling atas)** tabel audit.
+
 ## Versi 4.8.105
 
 - **Tipe Rilis:** Pelaporan Lengkap Perintah Shell Non-Sudo, Inspeksi Proses Aktif Terminal, & Sinkronisasi Instan Riwayat (*Non-Sudo Shell Command Logging, Active Terminal Process Inspection, & Instant Real-Time History Sync*)

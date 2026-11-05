@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.105"
+AGENT_VERSION = "4.8.106"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -5559,6 +5559,110 @@ def collect_kernel_events(syslogs=None) -> dict:
     return result
 
 
+PANTAU_HISTORY_SCRIPT_BODY = """#!/usr/bin/env bash
+#
+# pantau-history - Wrapper baca riwayat perintah untuk Agen Pantau.
+# Precedensi file: .bash_history -> .zsh_history -> .local/share/fish/fish_history
+# Output: isi mentah file terpilih (rc 0).
+set -u
+
+USER_="${1:-}"
+
+# --- Sanitasi nama user ---
+[ -n "$USER_" ] || { echo "nama user kosong" >&2; exit 2; }
+[ "${#USER_}" -le 32 ] || { echo "nama user terlalu panjang" >&2; exit 2; }
+case "$USER_" in
+    root) ;;
+    *[!a-z0-9_-]*) echo "nama user tidak valid: '$USER_'" >&2; exit 2 ;;
+esac
+
+# --- Validasi user dan direktori home dari database sistem ---
+USER_ENTRY="$(getent passwd "$USER_" 2>/dev/null || true)"
+[ -n "$USER_ENTRY" ] || { echo "user '$USER_' tidak ditemukan di sistem" >&2; exit 3; }
+HOME_DIR="$(echo "$USER_ENTRY" | cut -d: -f6)"
+TARGET_UID="$(echo "$USER_ENTRY" | cut -d: -f3)"
+[ -d "$HOME_DIR" ] || { echo "home tidak ditemukan" >&2; exit 3; }
+
+# --- Cari file history pertama yang ada & berisi (tolak symlink demi keamanan) ---
+SRC=""
+for p in \\
+    "$HOME_DIR/.bash_history" \\
+    "$HOME_DIR/.zsh_history" \\
+    "$HOME_DIR/.local/share/fish/fish_history"; do
+    if [ -f "$p" ] && [ ! -L "$p" ] && [ -s "$p" ] && [ -r "$p" ]; then
+        F_UID="$(stat -c "%u" "$p" 2>/dev/null || echo -1)"
+        if [ "$F_UID" -eq "$TARGET_UID" ] || [ "$F_UID" -eq 0 ]; then
+            SRC="$p"
+            break
+        fi
+    fi
+done
+[ -n "$SRC" ] || { echo "history tidak ditemukan atau tidak aman (symlink ditolak)" >&2; exit 3; }
+
+# Header metadata mtime (epoch detik) agar agen merekonstruksi waktu presisi
+MTIME="$(stat -c "%Y" "$SRC" 2>/dev/null || echo 0)"
+echo "#PANTAU_MTIME:${MTIME}"
+
+# Batasi ukuran agar agen tidak kewalahan memori (maks 512 KB).
+head -c 524288 "$SRC"
+"""
+
+
+def ensure_pantau_history_updated(force: bool = False) -> bool:
+    """Memastikan /usr/local/sbin/pantau-history dan profile hook real-time selalu mutakhir."""
+    try:
+        cur_content = ""
+        if not force and os.path.isfile(PANTAU_HISTORY_CMD):
+            try:
+                with open(PANTAU_HISTORY_CMD, "r", encoding="utf-8", errors="replace") as f:
+                    cur_content = f.read()
+            except Exception:
+                pass
+
+        need_update_wrapper = ("PANTAU_MTIME" not in cur_content)
+        profile_hook = "/etc/profile.d/pantau-history.sh"
+        need_update_profile = not os.path.isfile(profile_hook)
+
+        if not need_update_wrapper and not need_update_profile:
+            return True
+
+        content_to_write = PANTAU_HISTORY_SCRIPT_BODY.strip() + "\n"
+        profile_content = (
+            '# Pantau NOC Audit: Pencatatan waktu riwayat perintah shell & sinkronisasi instan\\n'
+            'export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "\\n'
+            'export PROMPT_COMMAND="history -a; $PROMPT_COMMAND"\\n'
+        )
+
+        if IS_ROOT:
+            if need_update_wrapper:
+                with open(PANTAU_HISTORY_CMD, "w", encoding="utf-8") as f:
+                    f.write(content_to_write)
+                os.chmod(PANTAU_HISTORY_CMD, 0o750)
+            if need_update_profile:
+                os.makedirs("/etc/profile.d", exist_ok=True)
+                with open(profile_hook, "w", encoding="utf-8") as f:
+                    f.write(profile_content)
+                os.chmod(profile_hook, 0o644)
+            return True
+
+        pantau_file = "/usr/local/sbin/pantau-file"
+        if os.path.isfile(pantau_file):
+            if need_update_wrapper:
+                pw = json.dumps({"action": "write", "params": {"path": PANTAU_HISTORY_CMD, "content": content_to_write, "make_backup": False}})
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=pw, text=True, capture_output=True, timeout=5)
+                pc = json.dumps({"action": "chmod", "params": {"path": PANTAU_HISTORY_CMD, "mode": "0750"}})
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=pc, text=True, capture_output=True, timeout=5)
+            if need_update_profile:
+                pw2 = json.dumps({"action": "write", "params": {"path": profile_hook, "content": profile_content, "make_backup": False}})
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=pw2, text=True, capture_output=True, timeout=5)
+                pc2 = json.dumps({"action": "chmod", "params": {"path": profile_hook, "mode": "0644"}})
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=pc2, text=True, capture_output=True, timeout=5)
+            return True
+    except Exception as e:
+        print(f"[HIST WARN] Gagal sinkronisasi pantau-history: {e}")
+    return False
+
+
 _HIST_EPOCH = re.compile(r"^#(\d{9,12})$")                      # bash: baris before command (#epoch)
 _HIST_MTIME = re.compile(r"^#PANTAU_MTIME:(\d{9,12})$")          # metadata mtime wrapper
 _HIST_ZSH = re.compile(r"^: (\d{9,12}):\d*;(.*)$")              # zsh: : <epoch>:<status>;<command>
@@ -5566,11 +5670,12 @@ _HIST_FISH_CMD = re.compile(r"^- cmd:\s*(.*)$")                 # fish: - cmd: <
 _HIST_FISH_WHEN = re.compile(r"^\s+when:\s*(\d{9,12})$")        # fish:   when: <epoch>
 
 
-def _parse_history_entries(raw: str) -> list:
+def _parse_history_entries(raw: str, fallback_mtime: int | None = None) -> list:
     """Parse konten file history (bash/zsh/fish) -> [(epoch|None, command)] urut waktu.
 
     epoch None = tidak ada timestamp (bash tanpa HISTTIMEFORMAT, atau baris bawaan
-    fish tanpa 'when'). Bila metadata mtime ada, diinterpolasi mundur per detik agar kronologis stabil.
+    fish tanpa 'when'). Bila metadata mtime ada atau fallback_mtime tersedia, diinterpolasi
+    mundur per detik agar urutan kronologis stabil dan tidak terlempar ke akhir audit.
     """
     entries: list = []
     pending_epoch = None
@@ -5614,13 +5719,14 @@ def _parse_history_entries(raw: str) -> list:
         else:
             entries.append((None, cmd))
 
-    # Rekonstruksi timestamp logis untuk entri tanpa epoch bila mtime_epoch tersedia
-    if mtime_epoch and mtime_epoch > 0:
+    # Gunakan mtime_epoch dari wrapper atau fallback_mtime
+    eff_mtime = mtime_epoch or fallback_mtime
+    if eff_mtime and eff_mtime > 0:
         total_len = len(entries)
         for idx in range(total_len):
             ep, cmd = entries[idx]
             if ep is None:
-                approx_ep = max(0, mtime_epoch - (total_len - 1 - idx))
+                approx_ep = max(0, eff_mtime - (total_len - 1 - idx))
                 entries[idx] = (approx_ep, cmd)
 
     return [e for e in entries if e and e[1]]
@@ -5634,11 +5740,28 @@ def _collect_user_history(user: str, max_lines: int) -> list:
     """
     if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,32}", str(user)):
         return []
+    try:
+        ensure_pantau_history_updated()
+    except Exception:
+        pass
     cmd = [PANTAU_HISTORY_CMD, str(user)] if IS_ROOT else ["/usr/bin/sudo", "-n", PANTAU_HISTORY_CMD, str(user)]
     res = _run_cmd(cmd, timeout=15)
     if res is None or res.returncode != 0:
         return []
-    entries = _parse_history_entries(res.stdout or "")
+
+    fallback_mtime = None
+    try:
+        home_dir = "/root" if user == "root" else f"/home/{user}"
+        for cand in (f"{home_dir}/.bash_history", f"{home_dir}/.zsh_history", f"{home_dir}/.local/share/fish/fish_history"):
+            if os.path.isfile(cand):
+                fallback_mtime = int(os.path.getmtime(cand))
+                break
+    except Exception:
+        pass
+    if not fallback_mtime:
+        fallback_mtime = int(time.time())
+
+    entries = _parse_history_entries(res.stdout or "", fallback_mtime=fallback_mtime)
     result = []
     for ep, c in reversed(entries):
         ts_str = ""
@@ -6163,6 +6286,7 @@ def main():
     print(f"[INFO] Mode        : {'root' if IS_ROOT else 'user pantau (sudo ss/wrapper)'}")
     ensure_pantau_apt_updated()
     ensure_pantau_user_updated()
+    ensure_pantau_history_updated()
     print()
 
     running = True
