@@ -228,7 +228,7 @@
 }
 #dash-server-table th {
   white-space: nowrap;
-  padding: 7px 8px;
+  padding: 5px 5px;
   font-size: 11.5px;
   line-height: 1.35;
   font-weight: 600;
@@ -238,16 +238,34 @@
   border-bottom: 1px solid var(--border);
   border-right: 1px solid rgba(255, 255, 255, 0.04);
   transition: color .15s ease;
+  text-align: left;
 }
 #dash-server-table td {
   white-space: nowrap;
-  padding: 5px 8px;
+  padding: 4px 5px;
   font-size: 12px;
   vertical-align: middle;
   border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.04));
   border-right: 1px solid rgba(255, 255, 255, 0.03);
   color: var(--text);
   transition: padding .15s ease;
+  text-align: left;
+}
+#dash-server-table .tbl-metric-box {
+  align-items: flex-start !important;
+}
+#dash-server-table .tbl-metric-box > div {
+  justify-content: flex-start !important;
+}
+#dash-server-table td strong.mono {
+  text-align: left !important;
+}
+#dash-server-table .tbl-metric-subline {
+  font-size: 9.5px !important;
+  letter-spacing: -0.2px;
+}
+#dash-server-table td div[id^="tbl-prob-"] {
+  justify-content: flex-start !important;
 }
 /* Mode Standar: Platform / IP ditata vertikal 2 baris (Baris 1: Platform, Baris 2: IP) */
 #dash-server-table:not(.tbl-compact) .th-plat-std {
@@ -283,11 +301,13 @@
 #dash-server-table.tbl-compact th {
   padding: 3px 6px !important;
   line-height: 1.25 !important;
+  text-align: left !important;
 }
 #dash-server-table.tbl-compact td {
   padding: 2px 6px !important;
   line-height: 1.2 !important;
   height: 25px !important;
+  text-align: left !important;
 }
 #dash-server-table.tbl-compact .tbl-metric-subline {
   display: none !important;
@@ -295,15 +315,18 @@
 #dash-server-table.tbl-compact .tbl-metric-box {
   gap: 0 !important;
   line-height: 1 !important;
+  align-items: flex-start !important;
 }
 #dash-server-table.tbl-compact .tbl-metric-box > div {
   gap: 4px !important;
   align-items: center !important;
+  justify-content: flex-start !important;
   line-height: 1 !important;
 }
 #dash-server-table.tbl-compact td strong.mono {
   line-height: 1 !important;
   min-width: 36px !important;
+  text-align: left !important;
 }
 #dash-server-table.tbl-compact .meter-mini-track {
   height: 3px !important;
@@ -1265,16 +1288,16 @@ body.popout-fleet_table #dash-fleet-card {
     <table id="dash-server-table">
       <thead>
         <tr>
-          <th class="sortable" data-col="0" data-col-title="Server" style="vertical-align:middle;cursor:pointer;width:115px;min-width:100px;text-align:left" title="Nama host server">Server <span class="sort-arrow">↕</span></th>
-          <th data-col-title="Status" style="vertical-align:middle;width:65px;min-width:60px;text-align:center" title="Status konektivitas server">Status</th>
-          <th data-col-title="Lingkungan" style="vertical-align:middle;width:75px;min-width:70px;text-align:center" title="Klasifikasi Lingkungan Operasional (Server level Produksi vs Server level Non-produksi)">Lingkungan</th>
-          <th data-col-title="Platform &amp; IP" style="vertical-align:middle;width:120px;min-width:110px;text-align:left" title="Platform virtualisasi dan alamat IP"><span class="th-plat-std">Platform / IP</span><span class="th-plat-cpt" style="display:none">IP &amp; Platform</span></th>
-          <th class="sortable" data-col="4" data-col-title="Uptime" style="vertical-align:middle;cursor:pointer;width:70px;min-width:65px;text-align:center" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="5" data-col-title="CPU (%)" style="vertical-align:middle;cursor:pointer;width:140px;min-width:130px;text-align:center" title="Persentase utilisasi CPU dan jumlah inti prosesor">CPU (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="6" data-col-title="RAM (%)" style="vertical-align:middle;cursor:pointer;width:165px;min-width:150px;text-align:center" title="Persentase utilisasi memori dan kapasitas total RAM">RAM (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="7" data-col-title="STORAGE (%)" style="vertical-align:middle;cursor:pointer;width:195px;min-width:180px;text-align:center" title="Persentase utilisasi penyimpanan dan kapasitas partisi utama">STORAGE (%) <span class="sort-arrow">↕</span></th>
-          <th data-col-title="Layanan" style="vertical-align:middle;width:65px;min-width:60px;text-align:center" title="Rasio layanan aktif terhadap total layanan terpantau">Layanan</th>
-          <th class="sortable" data-col="9" data-col-title="Insiden" style="vertical-align:middle;cursor:pointer;width:80px;min-width:75px;text-align:center" title="Jumlah insiden dan anomali aktif pada server">Insiden <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="0" data-col-title="Server" style="vertical-align:middle;cursor:pointer;width:110px;min-width:95px;text-align:left" title="Nama host server">Server <span class="sort-arrow">↕</span></th>
+          <th data-col-title="Status" style="vertical-align:middle;width:58px;min-width:52px;text-align:left" title="Status konektivitas server">Status</th>
+          <th data-col-title="Lingkungan" style="vertical-align:middle;width:70px;min-width:64px;text-align:left" title="Klasifikasi Lingkungan Operasional (Server level Produksi vs Server level Non-produksi)">Lingkungan</th>
+          <th data-col-title="Platform &amp; IP" style="vertical-align:middle;width:125px;min-width:110px;text-align:left" title="Platform virtualisasi dan alamat IP"><span class="th-plat-std">Platform / IP</span><span class="th-plat-cpt" style="display:none">IP &amp; Platform</span></th>
+          <th class="sortable" data-col="4" data-col-title="Uptime" style="vertical-align:middle;cursor:pointer;width:65px;min-width:55px;text-align:left" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="5" data-col-title="CPU (%)" style="vertical-align:middle;cursor:pointer;width:75px;min-width:68px;text-align:left" title="Persentase utilisasi CPU dan jumlah inti prosesor">CPU (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="6" data-col-title="RAM (%)" style="vertical-align:middle;cursor:pointer;width:85px;min-width:75px;text-align:left" title="Persentase utilisasi memori dan kapasitas total RAM">RAM (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="7" data-col-title="STORAGE (%)" style="vertical-align:middle;cursor:pointer;width:95px;min-width:88px;text-align:left" title="Persentase utilisasi penyimpanan dan kapasitas partisi utama">STORAGE (%) <span class="sort-arrow">↕</span></th>
+          <th data-col-title="Layanan" style="vertical-align:middle;width:58px;min-width:52px;text-align:left" title="Rasio layanan aktif terhadap total layanan terpantau">Layanan</th>
+          <th class="sortable" data-col="9" data-col-title="Insiden" style="vertical-align:middle;cursor:pointer;width:68px;min-width:60px;text-align:left" title="Jumlah insiden dan anomali aktif pada server">Insiden <span class="sort-arrow">↕</span></th>
         </tr>
       </thead>
       <tbody id="dash-servers-tbody">
@@ -1325,7 +1348,7 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 1. Status -->
-          <td data-sort-val="{{ srv._status_label }}" style="text-align:center;vertical-align:middle">
+          <td data-sort-val="{{ srv._status_label }}" style="text-align:left;vertical-align:middle">
             {% if not srv.last_seen or srv._status_label == '-' %}
               <span id="tbl-sts-{{ srv.id }}" style="color:var(--dim)">-</span>
             {% else %}
@@ -1334,7 +1357,7 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 2. Lingkungan (Level) -->
-          <td data-sort-val="{{ s_tier }}" id="tbl-tier-{{ srv.id }}" style="text-align:center;vertical-align:middle">
+          <td data-sort-val="{{ s_tier }}" id="tbl-tier-{{ srv.id }}" style="text-align:left;vertical-align:middle">
             {% if s_tier == 1 %}
               <span class="badge" title="Server level Produksi" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:4px">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
@@ -1372,16 +1395,16 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 4. Uptime -->
-          <td class="mono" id="tbl-uptime-{{ srv.id }}" data-sort-val="{{ srv._uptime_secs or 0 }}" style="font-size:11.5px;text-align:center;vertical-align:middle;color:var(--text)">
+          <td class="mono" id="tbl-uptime-{{ srv.id }}" data-sort-val="{{ srv._uptime_secs or 0 }}" style="font-size:11.5px;text-align:left;vertical-align:middle;color:var(--text)">
             {{ srv._uptime_str if srv._uptime_str and srv._uptime_str != '—' else '-' }}
           </td>
 
           <!-- 5. CPU (%) dengan Visual Mini Meter Bar Terbuka & Jelas -->
-          <td id="tbl-cpu-td-{{ srv.id }}" data-sort-val="{{ cpu_v }}" style="text-align:center;vertical-align:middle" title="CPU: {{ srv._cpu ~ '%' if srv._cpu is not none else '-' }} ({{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }})">
+          <td id="tbl-cpu-td-{{ srv.id }}" data-sort-val="{{ cpu_v }}" style="text-align:left;vertical-align:middle" title="CPU: {{ srv._cpu ~ '%' if srv._cpu is not none else '-' }} ({{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }})">
             {% if srv._cpu is not none %}
-              <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-                <div style="display:inline-flex;align-items:center;gap:7px">
-                  <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="font-size:12px;color:{{ cpu_color }};min-width:44px;text-align:right">{{ srv._cpu ~ '%' }}</strong>
+              <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">
+                <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:7px">
+                  <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="font-size:12px;color:{{ cpu_color }};min-width:36px;text-align:left">{{ srv._cpu ~ '%' }}</strong>
                   <div class="meter-mini-track" title="CPU: {{ srv._cpu }}%">
                     <div class="meter-mini-bar {{ cpu_cls }}" id="tbl-cpu-bar-{{ srv.id }}" style="width:{{ [srv._cpu or 0, 100]|min }}%"></div>
                   </div>
@@ -1397,11 +1420,11 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 6. RAM (%) dengan Visual Mini Meter Bar Terbuka & Jelas -->
-          <td id="tbl-mem-td-{{ srv.id }}" data-sort-val="{{ mem_v }}" style="text-align:center;vertical-align:middle" title="RAM: {{ srv._mem_pct ~ '%' if srv._mem_pct is not none else '-' }} ({{ srv._mem_used_str if srv._mem_used_str and srv._mem_used_str != '—' else '-' }} / {{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }})">
+          <td id="tbl-mem-td-{{ srv.id }}" data-sort-val="{{ mem_v }}" style="text-align:left;vertical-align:middle" title="RAM: {{ srv._mem_pct ~ '%' if srv._mem_pct is not none else '-' }} ({{ srv._mem_used_str if srv._mem_used_str and srv._mem_used_str != '—' else '-' }} / {{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }})">
             {% if srv._mem_pct is not none %}
-              <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-                <div style="display:inline-flex;align-items:center;gap:7px">
-                  <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="font-size:12px;color:{{ mem_color }};min-width:44px;text-align:right">{{ srv._mem_pct ~ '%' }}</strong>
+              <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">
+                <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:7px">
+                  <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="font-size:12px;color:{{ mem_color }};min-width:36px;text-align:left">{{ srv._mem_pct ~ '%' }}</strong>
                   <div class="meter-mini-track" title="RAM: {{ srv._mem_pct }}%">
                     <div class="meter-mini-bar {{ mem_cls }}" id="tbl-mem-bar-{{ srv.id }}" style="width:{{ [srv._mem_pct or 0, 100]|min }}%"></div>
                   </div>
@@ -1419,12 +1442,12 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 7. STORAGE (%) dengan Visual Mini Meter Bar Terbuka & Jelas -->
-          <td id="tbl-disk-td-{{ srv.id }}" data-sort-val="{{ disk_v }}" style="text-align:center;vertical-align:middle" title="Storage: {{ srv._disk_pct ~ '%' if srv._disk_pct is not none else '-' }} ({{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}, Sisa: {{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }})">
+          <td id="tbl-disk-td-{{ srv.id }}" data-sort-val="{{ disk_v }}" style="text-align:left;vertical-align:middle" title="Storage: {{ srv._disk_pct ~ '%' if srv._disk_pct is not none else '-' }} ({{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}, Sisa: {{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }})">
             {% if srv._disk_pct is not none %}
-              <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-                <div style="display:inline-flex;align-items:center;gap:7px">
-                  <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="font-size:12px;color:{{ disk_color }};min-width:44px;text-align:right">{{ srv._disk_pct ~ '%' }}</strong>
-                  <div class="meter-mini-track" style="width:68px" title="Storage: {{ srv._disk_pct }}%">
+              <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">
+                <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:7px">
+                  <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="font-size:12px;color:{{ disk_color }};min-width:36px;text-align:left">{{ srv._disk_pct ~ '%' }}</strong>
+                  <div class="meter-mini-track" title="Storage: {{ srv._disk_pct }}%">
                     <div class="meter-mini-bar {{ disk_cls }}" id="tbl-disk-bar-{{ srv.id }}" style="width:{{ [srv._disk_pct or 0, 100]|min }}%"></div>
                   </div>
                 </div>
@@ -1441,7 +1464,7 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 8. Layanan -->
-          <td class="mono" id="tbl-svc-td-{{ srv.id }}" data-sort-val="{{ up_svcs }}" style="text-align:center;vertical-align:middle;font-size:12px">
+          <td class="mono" id="tbl-svc-td-{{ srv.id }}" data-sort-val="{{ up_svcs }}" style="text-align:left;vertical-align:middle;font-size:12px">
             {% if not srv.last_seen or tot_svcs == 0 or srv._status_label == 'Offline' %}
               <span id="tbl-svc-{{ srv.id }}" style="color:var(--dim)">-</span>
             {% else %}
@@ -1453,8 +1476,8 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 9. Insiden -->
-          <td style="text-align:center;vertical-align:middle" data-sort-val="{{ 9999999 if srv._status_label == 'Offline' else (d_cnt * 1000000 + avg_cnt * 10000 + w_cnt * 100 + i_cnt * 10 + ign_cnt) }}">
-            <div id="tbl-prob-{{ srv.id }}" style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">
+          <td style="text-align:left;vertical-align:middle" data-sort-val="{{ 9999999 if srv._status_label == 'Offline' else (d_cnt * 1000000 + avg_cnt * 10000 + w_cnt * 100 + i_cnt * 10 + ign_cnt) }}">
+            <div id="tbl-prob-{{ srv.id }}" style="display:inline-flex;align-items:center;justify-content:flex-start;gap:3px;flex-wrap:wrap">
               {% if not srv.last_seen %}
                 <span style="color:var(--dim)">-</span>
               {% elif srv._status_label == 'Offline' %}
@@ -2173,10 +2196,10 @@ function createAndAppendDashTableRow(srv, tbody) {
         <strong style="color:var(--text-bright);font-size:12.5px" id="tbl-host-${srv.id}">${_dashEsc(srv.hostname || '')}</strong>
       </div>
     </td>
-    <td style="text-align:center;vertical-align:middle">
+    <td style="text-align:left;vertical-align:middle">
       <span id="tbl-sts-${srv.id}" style="color:var(--dim)">-</span>
     </td>
-    <td style="text-align:center;vertical-align:middle" id="tbl-tier-${srv.id}">
+    <td style="text-align:left;vertical-align:middle" id="tbl-tier-${srv.id}">
       ${getTierBadgeHtml(srv.tier)}
     </td>
     <td style="white-space:nowrap;vertical-align:middle">
@@ -2185,11 +2208,11 @@ function createAndAppendDashTableRow(srv, tbody) {
         <span class="copyable-ip mono tbl-ip-wrap" id="tbl-ip-${srv.id}" style="font-size:9.5px;color:var(--text)" onclick="copyIp('${_dashEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_dashEsc(srv.ip_address || '-')}</span>
       </div>
     </td>
-    <td class="mono" id="tbl-uptime-${srv.id}" style="font-size:11.5px;text-align:center;vertical-align:middle;color:var(--text)">-</td>
-    <td id="tbl-cpu-td-${srv.id}" style="text-align:center;vertical-align:middle">
-      <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-        <div style="display:inline-flex;align-items:center;gap:7px">
-          <strong class="mono" id="tbl-cpu-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:right">-</strong>
+    <td class="mono" id="tbl-uptime-${srv.id}" style="font-size:11.5px;text-align:left;vertical-align:middle;color:var(--text)">-</td>
+    <td id="tbl-cpu-td-${srv.id}" style="text-align:left;vertical-align:middle">
+      <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">
+        <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:7px">
+          <strong class="mono" id="tbl-cpu-val-${srv.id}" style="font-size:12px;min-width:36px;text-align:left">-</strong>
           <div class="meter-mini-track">
             <div class="meter-mini-bar green" id="tbl-cpu-bar-${srv.id}" style="width:0%"></div>
           </div>
@@ -2197,10 +2220,10 @@ function createAndAppendDashTableRow(srv, tbody) {
         <div class="mono tbl-metric-subline" id="tbl-cpu-core-${srv.id}" style="font-size:10px;color:var(--dim);line-height:1.15">-</div>
       </div>
     </td>
-    <td id="tbl-mem-td-${srv.id}" style="text-align:center;vertical-align:middle">
-      <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-        <div style="display:inline-flex;align-items:center;gap:7px">
-          <strong class="mono" id="tbl-mem-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:right">-</strong>
+    <td id="tbl-mem-td-${srv.id}" style="text-align:left;vertical-align:middle">
+      <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">
+        <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:7px">
+          <strong class="mono" id="tbl-mem-val-${srv.id}" style="font-size:12px;min-width:36px;text-align:left">-</strong>
           <div class="meter-mini-track">
             <div class="meter-mini-bar green" id="tbl-mem-bar-${srv.id}" style="width:0%"></div>
           </div>
@@ -2210,11 +2233,11 @@ function createAndAppendDashTableRow(srv, tbody) {
         </div>
       </div>
     </td>
-    <td id="tbl-disk-td-${srv.id}" style="text-align:center;vertical-align:middle">
-      <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-        <div style="display:inline-flex;align-items:center;gap:7px">
-          <strong class="mono" id="tbl-disk-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:right">-</strong>
-          <div class="meter-mini-track" style="width:68px">
+    <td id="tbl-disk-td-${srv.id}" style="text-align:left;vertical-align:middle">
+      <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:flex-start;gap:3px">
+        <div style="display:inline-flex;align-items:center;justify-content:flex-start;gap:7px">
+          <strong class="mono" id="tbl-disk-val-${srv.id}" style="font-size:12px;min-width:36px;text-align:left">-</strong>
+          <div class="meter-mini-track">
             <div class="meter-mini-bar green" id="tbl-disk-bar-${srv.id}" style="width:0%"></div>
           </div>
         </div>
@@ -2223,11 +2246,11 @@ function createAndAppendDashTableRow(srv, tbody) {
         </div>
       </div>
     </td>
-    <td class="mono" id="tbl-svc-td-${srv.id}" style="text-align:center;vertical-align:middle;font-size:12px">
+    <td class="mono" id="tbl-svc-td-${srv.id}" style="text-align:left;vertical-align:middle;font-size:12px">
       <span id="tbl-svc-${srv.id}" style="color:var(--dim)">-</span>
     </td>
-    <td style="text-align:center;vertical-align:middle">
-      <div id="tbl-prob-${srv.id}" style="display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:wrap">
+    <td style="text-align:left;vertical-align:middle">
+      <div id="tbl-prob-${srv.id}" style="display:inline-flex;align-items:center;justify-content:flex-start;gap:3px;flex-wrap:wrap">
         <span style="color:var(--dim)">-</span>
       </div>
     </td>

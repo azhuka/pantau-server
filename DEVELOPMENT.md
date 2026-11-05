@@ -354,6 +354,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.125
+
+- **Tipe Rilis:** Perataan Kiri Kolom Tabel Operasional & Peniadaan Scroll Horizontal pada Skala Zoom 150% (*Dashboard Fleet Table Left-Alignment & Zero Horizontal Scroll at 150% Zoom*)
+- **Fokus Utama:** Mengeliminasi bilah gulir horizontal pada kartu Status & Kinerja saat peramban diperbesar hingga skala zoom 150%, serta menyelaraskan seluruh kolom tabel agar rata kiri selurus dengan judul kolom:
+  1. **Perataan Kiri Seluruh Kolom & Header (*Full Column Left-Alignment*):**
+     - Mengubah perataan teks seluruh header `<th>` dan sel baris `<td>` pada tabel operasional dasbor (`#dash-server-table`) menjadi rata kiri (`text-align: left;`).
+     - Menyelaraskan kotak metrik CPU, RAM, Penyimpanan, durasi Uptime, rasio Layanan, lencana Lingkungan, status koneksi, dan lencana Insiden agar berbaris rapi secara vertikal tepat di bawah huruf pertama masing-masing nama kolom (`align-items: flex-start; justify-content: flex-start;`).
+  2. **Optimalisasi Lebar Kolom & Eliminasi Total Bilah Gulir Horizontal (*Zero Horizontal Scroll at 150% Zoom*):**
+     - Merampingkan lebar dan batas minimal (*min-width*) kolom CPU (dari 140px/130px menjadi 75px/68px), RAM (dari 165px/150px menjadi 85px/75px), Penyimpanan (dari 195px/180px menjadi 95px/88px), Status, Lingkungan, dan Insiden.
+     - Mengubah bantalan sel tabel (*cell padding*) menjadi 4px 5px untuk data dan 5px 5px untuk header (2px 6px pada mode kompak), serta menyelaraskan ukuran font subline metrik (9.5px, letter-spacing -0.2px).
+     - Menghapus pembesaran lebar meter track penyimpanan dari 68px menjadi 40px yang proporsional dan konsisten dengan bilah CPU serta RAM.
+     - Menghilangkan tuntas bilah gulir horizontal pada resolusi viewport 1280px (skala zoom peramban 150% pada layar Full HD 1080p), baik pada mode kompak maupun mode standar tanpa pemotongan data.
+
 ## Versi 4.8.124
 
 - **Tipe Rilis:** Eliminasi Duplikasi Menu Kustomisasi UI & Pemulihan Tombol Palet Tema pada Sidebar Diminimalkan (*UI Customization Menu Redundancy Elimination & Collapsed Sidebar Theme Palette Visibility*)
