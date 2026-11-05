@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""
-pantau-history - Wrapper pembaca riwayat terminal otonom untuk Agen Pantau.
-==========================================================================
-Dijalankan melalui sudo NOPASSWD oleh user 'pantau'.
-Mendukung auto-flush terminal aktif (TIOCSTI + legacy_tiocsti unlock), serta
-pemberian hook otomatis pada profil sistem dan pengguna sehingga perintah yang
-dieksekusi langsung tertulis ke disk tanpa menunggu logout atau 'history -a'.
-"""
+# pantau-history - Wrapper pembaca riwayat terminal otonom untuk Agen Pantau.
+# ==========================================================================
+# Dijalankan melalui sudo NOPASSWD oleh user 'pantau'.
+# Mendukung auto-flush terminal aktif (TIOCSTI + legacy_tiocsti unlock), serta
+# pemberian hook otomatis pada profil sistem dan pengguna sehingga perintah yang
+# dieksekusi langsung tertulis ke disk tanpa menunggu logout atau 'history -a'.
 import sys
 import os
 import re

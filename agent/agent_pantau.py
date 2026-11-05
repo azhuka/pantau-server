@@ -27,6 +27,7 @@ Environment variable (override config):
 """
 
 import fcntl
+import base64
 import glob
 import grp
 import hashlib
@@ -5600,142 +5601,7 @@ def collect_kernel_events(syslogs=None) -> dict:
     return result
 
 
-PANTAU_HISTORY_SCRIPT_BODY = """#!/usr/bin/env python3
-# pantau-history - Wrapper pembaca riwayat terminal otonom untuk Agen Pantau.
-# Mendukung auto-flush terminal aktif (TIOCSTI + legacy_tiocsti unlock), serta
-# pemberian hook otomatis pada profil sistem dan pengguna sehingga perintah yang
-# dieksekusi langsung tertulis ke disk tanpa menunggu logout atau 'history -a'.
-import sys
-import os
-import re
-import time
-import fcntl
-import termios
-import subprocess
-import pwd
-
-if len(sys.argv) < 2:
-    sys.exit(2)
-user = sys.argv[1].strip()
-if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,32}", user):
-    sys.exit(2)
-
-try:
-    u_entry = pwd.getpwnam(user)
-    home_dir = u_entry.pw_dir
-    target_uid = u_entry.pw_uid
-    target_gid = u_entry.pw_gid
-except Exception:
-    sys.exit(3)
-
-if not os.path.isdir(home_dir):
-    sys.exit(3)
-
-# 1. Pastikan kernel mengizinkan TIOCSTI jika sysctl legacy_tiocsti tersedia
-try:
-    tioc_path = "/proc/sys/dev/tty/legacy_tiocsti"
-    if os.path.exists(tioc_path):
-        with open(tioc_path, "r+") as f_tioc:
-            if f_tioc.read().strip() == "0":
-                f_tioc.seek(0)
-                f_tioc.write("1\\n")
-except Exception:
-    pass
-
-# 2. Pasang hook audit real-time pada profil sistem dan bashrc pengguna
-hook_content = (
-    "# Pantau NOC Audit Hook: Sinkronisasi instan riwayat perintah shell ke disk\\n"
-    'export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "\\n'
-    'shopt -s histappend 2>/dev/null || true\\n'
-    'export PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"\\n'
-)
-try:
-    prof_file = "/etc/profile.d/pantau-history.sh"
-    if not os.path.exists(prof_file):
-        with open(prof_file, "w", encoding="utf-8") as f:
-            f.write(hook_content)
-        os.chmod(prof_file, 0o644)
-except Exception:
-    pass
-
-try:
-    bashrc_sys = "/etc/bash.bashrc" if os.path.exists("/etc/bash.bashrc") else ("/etc/bashrc" if os.path.exists("/etc/bashrc") else "")
-    if bashrc_sys and os.path.exists(bashrc_sys):
-        with open(bashrc_sys, "r", encoding="utf-8", errors="replace") as f:
-            b_data = f.read()
-        if "pantau-history.sh" not in b_data:
-            with open(bashrc_sys, "a", encoding="utf-8") as f:
-                f.write("\\n# Pantau NOC Audit Hook\\n[ -f /etc/profile.d/pantau-history.sh ] && . /etc/profile.d/pantau-history.sh\\n")
-except Exception:
-    pass
-
-try:
-    u_bashrc = os.path.join(home_dir, ".bashrc")
-    if os.path.exists(u_bashrc):
-        with open(u_bashrc, "r", encoding="utf-8", errors="replace") as f:
-            u_data = f.read()
-        if "PROMPT_COMMAND" not in u_data and "pantau-history.sh" not in u_data:
-            with open(u_bashrc, "a", encoding="utf-8") as f:
-                f.write("\\n# Pantau NOC Audit Hook\\n[ -f /etc/profile.d/pantau-history.sh ] && . /etc/profile.d/pantau-history.sh\\n")
-            try:
-                os.chown(u_bashrc, target_uid, target_gid)
-            except Exception:
-                pass
-except Exception:
-    pass
-
-# 3. Bilas paksa buffer riwayat pada seluruh terminal sesi aktif pengguna via TIOCSTI
-try:
-    ps_res = subprocess.run(["ps", "-u", user, "-o", "pid,tty,stat,comm", "--no-headers"], capture_output=True, text=True, timeout=2)
-    if ps_res and ps_res.stdout:
-        tty_map = {}
-        for line in ps_res.stdout.splitlines():
-            parts = line.split()
-            if len(parts) >= 4 and parts[1].startswith("pts/"):
-                tty_map.setdefault(parts[1], []).append((parts[0], parts[2], parts[3]))
-        for tty, procs in tty_map.items():
-            fg_procs = [p for p in procs if "+" in p[1]]
-            if len(fg_procs) == 1 and fg_procs[0][2].lstrip("-") in ("bash", "sh", "zsh"):
-                pts_path = f"/dev/{tty}"
-                try:
-                    fd = os.open(pts_path, os.O_RDWR | os.O_NOCTTY)
-                    for ch in b" history -a\\r\\n":
-                        fcntl.ioctl(fd, termios.TIOCSTI, bytes([ch]))
-                    os.close(fd)
-                except Exception:
-                    pass
-        time.sleep(0.1)
-except Exception:
-    pass
-
-# 4. Baca berkas riwayat target
-src_file = None
-for p in (f"{home_dir}/.bash_history", f"{home_dir}/.zsh_history", f"{home_dir}/.local/share/fish/fish_history"):
-    if os.path.isfile(p) and not os.path.islink(p) and os.path.getsize(p) > 0:
-        try:
-            st = os.stat(p)
-            if st.st_uid == target_uid or st.st_uid == 0:
-                src_file = p
-                break
-        except Exception:
-            pass
-
-if not src_file:
-    sys.exit(3)
-
-try:
-    mtime = int(os.path.getmtime(src_file))
-    print(f"#PANTAU_MTIME:{mtime}")
-    sys.stdout.flush()
-    with open(src_file, "rb") as f:
-        size = os.path.getsize(src_file)
-        if size > 524288:
-            f.seek(size - 524288)
-        data = f.read(524288)
-        sys.stdout.buffer.write(data)
-except Exception:
-    sys.exit(1)
-"""
+PANTAU_HISTORY_SCRIPT_BODY = base64.b64decode("""IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwojIHBhbnRhdS1oaXN0b3J5IC0gV3JhcHBlciBwZW1iYWNhIHJpd2F5YXQgdGVybWluYWwgb3Rvbm9tIHVudHVrIEFnZW4gUGFudGF1LgojID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiMgRGlqYWxhbmthbiBtZWxhbHVpIHN1ZG8gTk9QQVNTV0Qgb2xlaCB1c2VyICdwYW50YXUnLgojIE1lbmR1a3VuZyBhdXRvLWZsdXNoIHRlcm1pbmFsIGFrdGlmIChUSU9DU1RJICsgbGVnYWN5X3Rpb2NzdGkgdW5sb2NrKSwgc2VydGEKIyBwZW1iZXJpYW4gaG9vayBvdG9tYXRpcyBwYWRhIHByb2ZpbCBzaXN0ZW0gZGFuIHBlbmdndW5hIHNlaGluZ2dhIHBlcmludGFoIHlhbmcKIyBkaWVrc2VrdXNpIGxhbmdzdW5nIHRlcnR1bGlzIGtlIGRpc2sgdGFucGEgbWVudW5nZ3UgbG9nb3V0IGF0YXUgJ2hpc3RvcnkgLWEnLgppbXBvcnQgc3lzCmltcG9ydCBvcwppbXBvcnQgcmUKaW1wb3J0IHRpbWUKaW1wb3J0IGZjbnRsCmltcG9ydCB0ZXJtaW9zCmltcG9ydCBzdWJwcm9jZXNzCmltcG9ydCBwd2QKCmlmIGxlbihzeXMuYXJndikgPCAyOgogICAgc3lzLmV4aXQoMikKdXNlciA9IHN5cy5hcmd2WzFdLnN0cmlwKCkKaWYgbm90IHJlLmZ1bGxtYXRjaChyIlthLXpBLVowLTlfLi1dezEsMzJ9IiwgdXNlcik6CiAgICBzeXMuZXhpdCgyKQoKdHJ5OgogICAgdV9lbnRyeSA9IHB3ZC5nZXRwd25hbSh1c2VyKQogICAgaG9tZV9kaXIgPSB1X2VudHJ5LnB3X2RpcgogICAgdGFyZ2V0X3VpZCA9IHVfZW50cnkucHdfdWlkCiAgICB0YXJnZXRfZ2lkID0gdV9lbnRyeS5wd19naWQKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHN5cy5leGl0KDMpCgppZiBub3Qgb3MucGF0aC5pc2Rpcihob21lX2Rpcik6CiAgICBzeXMuZXhpdCgzKQoKIyAxLiBQYXN0aWthbiBrZXJuZWwgbWVuZ2l6aW5rYW4gVElPQ1NUSSBqaWthIHN5c2N0bCBsZWdhY3lfdGlvY3N0aSB0ZXJzZWRpYQp0cnk6CiAgICB0aW9jX3BhdGggPSAiL3Byb2Mvc3lzL2Rldi90dHkvbGVnYWN5X3Rpb2NzdGkiCiAgICBpZiBvcy5wYXRoLmV4aXN0cyh0aW9jX3BhdGgpOgogICAgICAgIHdpdGggb3Blbih0aW9jX3BhdGgsICJyKyIpIGFzIGZfdGlvYzoKICAgICAgICAgICAgaWYgZl90aW9jLnJlYWQoKS5zdHJpcCgpID09ICIwIjoKICAgICAgICAgICAgICAgIGZfdGlvYy5zZWVrKDApCiAgICAgICAgICAgICAgICBmX3Rpb2Mud3JpdGUoIjFcbiIpCmV4Y2VwdCBFeGNlcHRpb246CiAgICBwYXNzCgojIDIuIFBhc2FuZyBob29rIGF1ZGl0IHJlYWwtdGltZSBwYWRhIHByb2ZpbCBzaXN0ZW0gZGFuIGJhc2hyYyBwZW5nZ3VuYQpob29rX2NvbnRlbnQgPSAoCiAgICAiIyBQYW50YXUgTk9DIEF1ZGl0IEhvb2s6IFNpbmtyb25pc2FzaSBpbnN0YW4gcml3YXlhdCBwZXJpbnRhaCBzaGVsbCBrZSBkaXNrXG4iCiAgICAnZXhwb3J0IEhJU1RUSU1FRk9STUFUPSIlWS0lbS0lZCAlSDolTTolUyAiXG4nCiAgICAnc2hvcHQgLXMgaGlzdGFwcGVuZCAyPi9kZXYvbnVsbCB8fCB0cnVlXG4nCiAgICAnZXhwb3J0IFBST01QVF9DT01NQU5EPSJoaXN0b3J5IC1hJHtQUk9NUFRfQ09NTUFORDorOyAkUFJPTVBUX0NPTU1BTkR9IlxuJwopCnRyeToKICAgIHByb2ZfZmlsZSA9ICIvZXRjL3Byb2ZpbGUuZC9wYW50YXUtaGlzdG9yeS5zaCIKICAgIGlmIG5vdCBvcy5wYXRoLmV4aXN0cyhwcm9mX2ZpbGUpOgogICAgICAgIHdpdGggb3Blbihwcm9mX2ZpbGUsICJ3IiwgZW5jb2Rpbmc9InV0Zi04IikgYXMgZjoKICAgICAgICAgICAgZi53cml0ZShob29rX2NvbnRlbnQpCiAgICAgICAgb3MuY2htb2QocHJvZl9maWxlLCAwbzY0NCkKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHBhc3MKCnRyeToKICAgIGJhc2hyY19zeXMgPSAiL2V0Yy9iYXNoLmJhc2hyYyIgaWYgb3MucGF0aC5leGlzdHMoIi9ldGMvYmFzaC5iYXNocmMiKSBlbHNlICgiL2V0Yy9iYXNocmMiIGlmIG9zLnBhdGguZXhpc3RzKCIvZXRjL2Jhc2hyYyIpIGVsc2UgIiIpCiAgICBpZiBiYXNocmNfc3lzIGFuZCBvcy5wYXRoLmV4aXN0cyhiYXNocmNfc3lzKToKICAgICAgICB3aXRoIG9wZW4oYmFzaHJjX3N5cywgInIiLCBlbmNvZGluZz0idXRmLTgiLCBlcnJvcnM9InJlcGxhY2UiKSBhcyBmOgogICAgICAgICAgICBiX2RhdGEgPSBmLnJlYWQoKQogICAgICAgIGlmICJwYW50YXUtaGlzdG9yeS5zaCIgbm90IGluIGJfZGF0YToKICAgICAgICAgICAgd2l0aCBvcGVuKGJhc2hyY19zeXMsICJhIiwgZW5jb2Rpbmc9InV0Zi04IikgYXMgZjoKICAgICAgICAgICAgICAgIGYud3JpdGUoIlxuIyBQYW50YXUgTk9DIEF1ZGl0IEhvb2tcblsgLWYgL2V0Yy9wcm9maWxlLmQvcGFudGF1LWhpc3Rvcnkuc2ggXSAmJiAuIC9ldGMvcHJvZmlsZS5kL3BhbnRhdS1oaXN0b3J5LnNoXG4iKQpleGNlcHQgRXhjZXB0aW9uOgogICAgcGFzcwoKdHJ5OgogICAgdV9iYXNocmMgPSBvcy5wYXRoLmpvaW4oaG9tZV9kaXIsICIuYmFzaHJjIikKICAgIGlmIG9zLnBhdGguZXhpc3RzKHVfYmFzaHJjKToKICAgICAgICB3aXRoIG9wZW4odV9iYXNocmMsICJyIiwgZW5jb2Rpbmc9InV0Zi04IiwgZXJyb3JzPSJyZXBsYWNlIikgYXMgZjoKICAgICAgICAgICAgdV9kYXRhID0gZi5yZWFkKCkKICAgICAgICBpZiAiUFJPTVBUX0NPTU1BTkQiIG5vdCBpbiB1X2RhdGEgYW5kICJwYW50YXUtaGlzdG9yeS5zaCIgbm90IGluIHVfZGF0YToKICAgICAgICAgICAgd2l0aCBvcGVuKHVfYmFzaHJjLCAiYSIsIGVuY29kaW5nPSJ1dGYtOCIpIGFzIGY6CiAgICAgICAgICAgICAgICBmLndyaXRlKCJcbiMgUGFudGF1IE5PQyBBdWRpdCBIb29rXG5bIC1mIC9ldGMvcHJvZmlsZS5kL3BhbnRhdS1oaXN0b3J5LnNoIF0gJiYgLiAvZXRjL3Byb2ZpbGUuZC9wYW50YXUtaGlzdG9yeS5zaFxuIikKICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgb3MuY2hvd24odV9iYXNocmMsIHRhcmdldF91aWQsIHRhcmdldF9naWQpCiAgICAgICAgICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgICAgICAgICBwYXNzCmV4Y2VwdCBFeGNlcHRpb246CiAgICBwYXNzCgojIDMuIEJpbGFzIHBha3NhIGJ1ZmZlciByaXdheWF0IHBhZGEgc2VsdXJ1aCB0ZXJtaW5hbCBzZXNpIGFrdGlmIHBlbmdndW5hIHZpYSBUSU9DU1RJCnRyeToKICAgIHBzX3JlcyA9IHN1YnByb2Nlc3MucnVuKFsicHMiLCAiLXUiLCB1c2VyLCAiLW8iLCAicGlkLHR0eSxzdGF0LGNvbW0iLCAiLS1uby1oZWFkZXJzIl0sIGNhcHR1cmVfb3V0cHV0PVRydWUsIHRleHQ9VHJ1ZSwgdGltZW91dD0yKQogICAgaWYgcHNfcmVzIGFuZCBwc19yZXMuc3Rkb3V0OgogICAgICAgIHR0eV9tYXAgPSB7fQogICAgICAgIGZvciBsaW5lIGluIHBzX3Jlcy5zdGRvdXQuc3BsaXRsaW5lcygpOgogICAgICAgICAgICBwYXJ0cyA9IGxpbmUuc3BsaXQoKQogICAgICAgICAgICBpZiBsZW4ocGFydHMpID49IDQgYW5kIHBhcnRzWzFdLnN0YXJ0c3dpdGgoInB0cy8iKToKICAgICAgICAgICAgICAgIHR0eV9tYXAuc2V0ZGVmYXVsdChwYXJ0c1sxXSwgW10pLmFwcGVuZCgocGFydHNbMF0sIHBhcnRzWzJdLCBwYXJ0c1szXSkpCiAgICAgICAgZm9yIHR0eSwgcHJvY3MgaW4gdHR5X21hcC5pdGVtcygpOgogICAgICAgICAgICBmZ19wcm9jcyA9IFtwIGZvciBwIGluIHByb2NzIGlmICIrIiBpbiBwWzFdXQogICAgICAgICAgICBpZiBsZW4oZmdfcHJvY3MpID09IDEgYW5kIGZnX3Byb2NzWzBdWzJdLmxzdHJpcCgiLSIpIGluICgiYmFzaCIsICJzaCIsICJ6c2giKToKICAgICAgICAgICAgICAgIHB0c19wYXRoID0gZiIvZGV2L3t0dHl9IgogICAgICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgICAgIGZkID0gb3Mub3BlbihwdHNfcGF0aCwgb3MuT19SRFdSIHwgb3MuT19OT0NUVFkpCiAgICAgICAgICAgICAgICAgICAgZm9yIGNoIGluIGIiIGhpc3RvcnkgLWFcclxuIjoKICAgICAgICAgICAgICAgICAgICAgICAgZmNudGwuaW9jdGwoZmQsIHRlcm1pb3MuVElPQ1NUSSwgYnl0ZXMoW2NoXSkpCiAgICAgICAgICAgICAgICAgICAgb3MuY2xvc2UoZmQpCiAgICAgICAgICAgICAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgICAgICAgICAgICAgIHBhc3MKICAgICAgICB0aW1lLnNsZWVwKDAuMSkKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHBhc3MKCiMgNC4gQmFjYSBiZXJrYXMgcml3YXlhdCB0YXJnZXQKc3JjX2ZpbGUgPSBOb25lCmZvciBwIGluIChmIntob21lX2Rpcn0vLmJhc2hfaGlzdG9yeSIsIGYie2hvbWVfZGlyfS8uenNoX2hpc3RvcnkiLCBmIntob21lX2Rpcn0vLmxvY2FsL3NoYXJlL2Zpc2gvZmlzaF9oaXN0b3J5Iik6CiAgICBpZiBvcy5wYXRoLmlzZmlsZShwKSBhbmQgbm90IG9zLnBhdGguaXNsaW5rKHApIGFuZCBvcy5wYXRoLmdldHNpemUocCkgPiAwOgogICAgICAgIHRyeToKICAgICAgICAgICAgc3QgPSBvcy5zdGF0KHApCiAgICAgICAgICAgIGlmIHN0LnN0X3VpZCA9PSB0YXJnZXRfdWlkIG9yIHN0LnN0X3VpZCA9PSAwOgogICAgICAgICAgICAgICAgc3JjX2ZpbGUgPSBwCiAgICAgICAgICAgICAgICBicmVhawogICAgICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgICAgIHBhc3MKCmlmIG5vdCBzcmNfZmlsZToKICAgIHN5cy5leGl0KDMpCgp0cnk6CiAgICBtdGltZSA9IGludChvcy5wYXRoLmdldG10aW1lKHNyY19maWxlKSkKICAgIHByaW50KGYiI1BBTlRBVV9NVElNRTp7bXRpbWV9IikKICAgIHN5cy5zdGRvdXQuZmx1c2goKQogICAgd2l0aCBvcGVuKHNyY19maWxlLCAicmIiKSBhcyBmOgogICAgICAgIHNpemUgPSBvcy5wYXRoLmdldHNpemUoc3JjX2ZpbGUpCiAgICAgICAgaWYgc2l6ZSA+IDUyNDI4ODoKICAgICAgICAgICAgZi5zZWVrKHNpemUgLSA1MjQyODgpCiAgICAgICAgZGF0YSA9IGYucmVhZCg1MjQyODgpCiAgICAgICAgc3lzLnN0ZG91dC5idWZmZXIud3JpdGUoZGF0YSkKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHN5cy5leGl0KDEpCg==""").decode("utf-8")
 
 
 def ensure_pantau_history_updated(force: bool = False) -> bool:
@@ -5774,16 +5640,16 @@ def ensure_pantau_history_updated(force: bool = False) -> bool:
         if not need_update_wrapper and not need_update_profile and not need_update_bashrc:
             return True
 
-        content_to_write = PANTAU_HISTORY_SCRIPT_BODY.strip() + "\\n"
+        content_to_write = PANTAU_HISTORY_SCRIPT_BODY.strip() + "\n"
         profile_content = (
-            "# Pantau NOC Audit Hook: Sinkronisasi instan riwayat perintah shell ke disk\\n"
-            'export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "\\n'
-            'shopt -s histappend 2>/dev/null || true\\n'
-            'export PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"\\n'
+            "# Pantau NOC Audit Hook: Sinkronisasi instan riwayat perintah shell ke disk\n"
+            'export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "\n'
+            'shopt -s histappend 2>/dev/null || true\n'
+            'export PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"\n'
         )
         bashrc_append = (
-            "\\n# Pantau NOC Audit Hook\\n"
-            "[ -f /etc/profile.d/pantau-history.sh ] && . /etc/profile.d/pantau-history.sh\\n"
+            "\n# Pantau NOC Audit Hook\n"
+            "[ -f /etc/profile.d/pantau-history.sh ] && . /etc/profile.d/pantau-history.sh\n"
         )
 
         if IS_ROOT:
