@@ -985,7 +985,7 @@ body.popout-fleet_table #dash-fleet-card {
 
 <!-- 1. Global KPI Banner (Asymmetric Layout: Compact Server Stat + Severity Strip) -->
 <div class="dash-kpi-grid">
-  <a href="/servers" id="kpi-card-total" class="card kpi-link-card" style="margin:0;padding:6px 12px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid var(--blue);text-decoration:none;color:inherit;cursor:pointer" title="Kelola Seluruh Server">
+  <a href="/servers" id="kpi-card-total" class="card kpi-link-card" style="margin:0;padding:6px 12px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid var(--blue);text-decoration:none;color:inherit;cursor:pointer" aria-label="Kelola Seluruh Server">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
       <div style="font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;display:flex;align-items:center;gap:5px">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--blue);flex-shrink:0"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
@@ -1112,7 +1112,7 @@ body.popout-fleet_table #dash-fleet-card {
     </div>
   </div>
 
-  <div class="pantau-table-wrap" style="margin:8px 12px;{{ '' if all_open_problems else 'display:none' }}" id="dash-problems-table-wrap">
+  <div class="pantau-table-wrap" style="{{ '' if all_open_problems else 'display:none' }}" id="dash-problems-table-wrap">
     <table class="dash-prob-table pantau-table" style="width:100%;margin:0;table-layout:fixed">
       <colgroup>
         <col style="width:115px">
@@ -1284,7 +1284,7 @@ body.popout-fleet_table #dash-fleet-card {
   </div>
 
   <!-- VIEW 1: TABEL OPERASIONAL REAL-TIME -->
-  <div id="dash-table-container" class="pantau-table-wrap" style="margin:8px 12px">
+  <div id="dash-table-container" class="pantau-table-wrap">
     <table id="dash-server-table" class="pantau-table">
       <thead>
         <tr>
@@ -1509,8 +1509,6 @@ body.popout-fleet_table #dash-fleet-card {
       </tbody>
     </table>
   </div>
-
-  <div id="dash-table-pagination" class="table-pagination-bar" data-for-table="dash-server-table" style="display:none !important"></div>
 
   <!-- VIEW 2: GRID KARTU (NOC TILES) -->
   <div id="dash-grid-container" style="display:none;padding:12px">

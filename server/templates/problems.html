@@ -418,7 +418,7 @@
       <span id="pill-label-ignored">Diabaikan</span> <span class="prob-pill-count" id="pill-count-ignored">{{ ignored_open }}</span>
     </button>
   </div>
-  <div class="pantau-filter-panel" style="margin-bottom:14px">
+  <div class="pantau-filter-panel">
     <div class="filter-row-main">
       <form method="get" action="/problems" style="display:contents">
         <div class="filter-col" title="Filter berdasarkan Server">
@@ -717,7 +717,7 @@
           </div>
         </div>
 
-        <button type="button" class="btn btn-ghost btn-sm" onclick="resetResFilters()" style="height:32px;padding:0 12px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px;flex-shrink:0" title="Hapus semua filter riwayat insiden">
+        <button type="button" class="btn btn-ghost btn-sm btn-reset-action" onclick="resetResFilters()" title="Hapus semua filter riwayat insiden">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
           <span>Reset</span>
         </button>

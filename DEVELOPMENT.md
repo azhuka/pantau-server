@@ -354,6 +354,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.136
+
+- **Tipe Rilis:** Eliminasi Total Hardcode Gaya Inline & Supresi Kontainer Paginasi Kosong (*Total Inline Style Elimination & Empty Pagination Container Suppression*)
+- **Fokus Utama:** Menyelesaikan permasalahan kontainer hitam kosong yang mengambang di bawah tabel dasbor, membersihkan sisa deklarasi gaya inline `style="..."` pada seluruh templat, serta membakukan subsistem desain panel filter modular:
+  1. **Supresi Kontainer Paginasi Kosong (`:empty`):**
+     - Memperbaiki aturan CSS `.card > .table-pagination-bar` yang sebelumnya memaksa `display: flex !important` tanpa memeriksa konten.
+     - Menerapkan selektor `:empty` dan `[style*="display: none"]` dengan aturan `display: none !important; margin: 0 !important; padding: 0 !important; border: none !important;` pada `.table-pagination-bar` dan `.pantau-pagination-bar` sehingga kontainer kosong tidak pernah ter-render atau meninggalkan kotak hitam mengambang.
+     - Menghapus kontainer paginasi mati dari `dashboard.html`.
+  2. **Standardisasi Sistem Desain Panel Filter Modular (Bagian 8 `pantau-components.css`):**
+     - Mengabstraksi seluruh pembatasan lebar dan perilaku flex ke dalam kelas blueprint modular: `.filter-col-user`, `.filter-col-server`, `.filter-col-action`, `.filter-col-status`, `.filter-col-date`, `.filter-search-group`, dan `.btn-reset-action`.
+     - Mengeliminasi seluruh gaya inline hardcode `style="max-width:..."` dan `style="padding:..."` dari `audit.html` dan `problems.html`.
+  3. **Pembersihan Total Sisa Gaya Inline pada Templat Operasional:**
+     - Membersihkan deklarasi `style="margin:8px 12px"` dan `style="margin:12px 16px"` dari `dashboard.html`, `probing.html`, dan `logs.html`.
+     - Menghapus deklarasi `style="margin-bottom:14px"` dari `servers.html` dan `maintenance.html`, menyerahkan tata letak sepenuhnya pada kelas `.pantau-filter-panel`.
+     - Menghapus atribut tooltip `title="Kelola Seluruh Server"` yang melayang canggung di atas kartu KPI dasbor dan menggantinya dengan `aria-label` yang ramah aksesibilitas.
+
 ## Versi 4.8.135
 
 - **Tipe Rilis:** Perbaikan Tata Letak Panel Filter & Grup Pencarian Terpadu (*Filter Panel Responsive Layout Fix & Unified Search-Action Group*)

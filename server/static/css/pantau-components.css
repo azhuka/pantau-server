@@ -19,6 +19,7 @@
 
 /* Floating Table Island di dalam Kartu & Kontainer Tab */
 .card > .pantau-table-wrap,
+.probe-table-card > .pantau-table-wrap,
 .tab-body .card .pantau-table-wrap,
 .tab-body .pantau-table-wrap {
   margin: 10px 12px 10px 12px !important;
@@ -26,12 +27,27 @@
   box-sizing: border-box !important;
 }
 
+/* Bilah Paginasi Tersembunyi atau Kosong (:empty) - Tidak boleh pernah tampil */
+.pantau-pagination-bar:empty,
+.table-pagination-bar:empty,
+.pantau-pagination-bar[style*="display: none"],
+.pantau-pagination-bar[style*="display:none"],
+.table-pagination-bar[style*="display: none"],
+.table-pagination-bar[style*="display:none"] {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+}
+
 /* Floating Pagination Bar di dalam Kartu & Kontainer Tab */
-.card > .pantau-pagination-bar,
-.card > .table-pagination-bar,
-.tab-body .card .pantau-pagination-bar,
-.tab-body .card .table-pagination-bar,
-.tab-body .table-pagination-bar {
+.card > .pantau-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]),
+.card > .table-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]),
+.tab-body .card .pantau-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]),
+.tab-body .card .table-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]),
+.tab-body .table-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]) {
   margin: 0 12px 10px 12px !important;
   width: calc(100% - 24px) !important;
   box-sizing: border-box !important;
@@ -126,8 +142,8 @@
 /* -----------------------------------------------------------------------------
    2. SISTEM PAGINASI TABEL BAKU (Universal Table Pagination Bar)
    ----------------------------------------------------------------------------- */
-.pantau-pagination-bar,
-.table-pagination-bar {
+.pantau-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]),
+.table-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]) {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -465,6 +481,12 @@ span[data-pg-cur] {
   box-sizing: border-box !important;
 }
 
+.card.pantau-card-compact,
+.card-table-card {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
 .pantau-card-header {
   display: flex !important;
   justify-content: space-between !important;
@@ -755,6 +777,42 @@ span[data-pg-cur] {
   line-height: 1 !important;
 }
 
+/* -----------------------------------------------------------------------------
+   8. SISTEM PANEL FILTER MODULAR BAKU (Filter Panel Modular Design System)
+   ----------------------------------------------------------------------------- */
+.filter-col-user {
+  max-width: 130px !important;
+}
+.filter-col-user .filter-select {
+  max-width: 130px !important;
+}
+
+.filter-col-server {
+  max-width: 130px !important;
+}
+.filter-col-server .filter-select {
+  max-width: 130px !important;
+}
+
+.filter-col-action {
+  max-width: 165px !important;
+}
+.filter-col-action .filter-select {
+  max-width: 165px !important;
+  text-overflow: ellipsis !important;
+}
+
+.filter-col-status {
+  max-width: 115px !important;
+}
+.filter-col-status .filter-select {
+  max-width: 115px !important;
+}
+
+.filter-col-date {
+  flex-shrink: 0 !important;
+}
+
 /* Grup Pencarian & Aksi Filter Terpadu (Mencegah tombol aksi/reset terisolasi pada baris baru saat zoom tinggi) */
 .filter-search-group {
   display: flex !important;
@@ -767,4 +825,13 @@ span[data-pg-cur] {
 .filter-search-group .filter-col-search {
   flex: 1 !important;
   min-width: 140px !important;
+}
+.filter-search-group .btn-reset-action {
+  height: 32px !important;
+  padding: 0 12px !important;
+  font-size: 11.5px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important;
 }
