@@ -354,6 +354,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.133
+
+- **Tipe Rilis:** Penyeragaman Menyeluruh Kontainer Tabel Mengambang dan Eliminasi Total Hardcode Gaya (*Universal Floating Table Container Standardization & Total Hardcode Style Elimination*)
+- **Fokus Utama:** Mengeliminasi seluruh gaya inline hardcode `border:none;border-radius:0` dan menyeragamkan seluruh kontainer tabel di semua halaman operasional agar berformat kartu mengambang (*floating table island container*) dengan pembungkus terpadu `.pantau-table-wrap`:
+  1. **Standardisasi Kontainer Tabel Mengambang (.pantau-table-wrap):**
+     - Menyelaraskan tabel Insiden Terbuka (`problems.html`) sehingga memiliki pembungkus berbingkai, sudut melengkung, dan batas tepi yang identik 100% dengan tabel Riwayat Insiden.
+     - Menghapus seluruh pengecualian hardcode `border:none;border-radius:0` pada dasbor (`dashboard.html`), daftar server (`servers.html`), jadwal pemeliharaan (`maintenance.html`), probing endpoint (`probing.html`), penjelajah berkas (`file_manager.html`), dan log sistem (`logs.html`).
+  2. **Harmonisasi Estetika & Kepadatan Data NOC:**
+     - Seluruh tabel kini berada di dalam kontainer `.pantau-table-wrap` dengan batas tepi 1px (`var(--border)`), radius 6px, latar belakang mandiri, serta padding kartu seragam.
+     - Kepadatan data operasional NOC dipertahankan tanpa gangguan tumpang tindih.
+
 ## Versi 4.8.132
 
 - **Tipe Rilis:** Pencabutan Total Dependensi Tabler dan Restorasi Desain Sistem Asli NOC (*Full Tabler Removal & Pure NOC Native Design System Restoration*)
