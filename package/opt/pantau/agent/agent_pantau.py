@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.108"
+AGENT_VERSION = "4.8.109"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -5600,52 +5600,84 @@ def collect_kernel_events(syslogs=None) -> dict:
     return result
 
 
-PANTAU_HISTORY_SCRIPT_BODY = """#!/usr/bin/env bash
-#
-# pantau-history - Wrapper baca riwayat perintah untuk Agen Pantau.
-# Precedensi file: .bash_history -> .zsh_history -> .local/share/fish/fish_history
-# Output: isi mentah file terpilih (rc 0).
-set -u
+PANTAU_HISTORY_SCRIPT_BODY = """#!/usr/bin/env python3
+# pantau-history - Wrapper pembaca riwayat terminal otonom untuk Agen Pantau.
+# Mendukung auto-flush terminal aktif (TIOCSTI) sehingga perintah yang baru
+# dieksekusi langsung tertulis ke disk tanpa menunggu logout atau 'history -a'.
+import sys
+import os
+import re
+import time
+import fcntl
+import termios
+import subprocess
+import pwd
 
-USER_="${1:-}"
+if len(sys.argv) < 2:
+    sys.exit(2)
+user = sys.argv[1].strip()
+if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,32}", user):
+    sys.exit(2)
 
-# --- Sanitasi nama user ---
-[ -n "$USER_" ] || { echo "nama user kosong" >&2; exit 2; }
-[ "${#USER_}" -le 32 ] || { echo "nama user terlalu panjang" >&2; exit 2; }
-case "$USER_" in
-    root) ;;
-    *[!a-z0-9_-]*) echo "nama user tidak valid: '$USER_'" >&2; exit 2 ;;
-esac
+try:
+    u_entry = pwd.getpwnam(user)
+    home_dir = u_entry.pw_dir
+    target_uid = u_entry.pw_uid
+except Exception:
+    sys.exit(3)
 
-# --- Validasi user dan direktori home dari database sistem ---
-USER_ENTRY="$(getent passwd "$USER_" 2>/dev/null || true)"
-[ -n "$USER_ENTRY" ] || { echo "user '$USER_' tidak ditemukan di sistem" >&2; exit 3; }
-HOME_DIR="$(echo "$USER_ENTRY" | cut -d: -f6)"
-TARGET_UID="$(echo "$USER_ENTRY" | cut -d: -f3)"
-[ -d "$HOME_DIR" ] || { echo "home tidak ditemukan" >&2; exit 3; }
+if not os.path.isdir(home_dir):
+    sys.exit(3)
 
-# --- Cari file history pertama yang ada & berisi (tolak symlink demi keamanan) ---
-SRC=""
-for p in \\
-    "$HOME_DIR/.bash_history" \\
-    "$HOME_DIR/.zsh_history" \\
-    "$HOME_DIR/.local/share/fish/fish_history"; do
-    if [ -f "$p" ] && [ ! -L "$p" ] && [ -s "$p" ] && [ -r "$p" ]; then
-        F_UID="$(stat -c "%u" "$p" 2>/dev/null || echo -1)"
-        if [ "$F_UID" -eq "$TARGET_UID" ] || [ "$F_UID" -eq 0 ]; then
-            SRC="$p"
-            break
-        fi
-    fi
-done
-[ -n "$SRC" ] || { echo "history tidak ditemukan atau tidak aman (symlink ditolak)" >&2; exit 3; }
+try:
+    ps_res = subprocess.run(["ps", "-u", user, "-o", "pid,tty,stat,comm", "--no-headers"], capture_output=True, text=True, timeout=2)
+    if ps_res and ps_res.stdout:
+        tty_map = {}
+        for line in ps_res.stdout.splitlines():
+            parts = line.split()
+            if len(parts) >= 4 and parts[1].startswith("pts/"):
+                tty_map.setdefault(parts[1], []).append((parts[0], parts[2], parts[3]))
+        for tty, procs in tty_map.items():
+            fg_procs = [p for p in procs if "+" in p[1]]
+            if len(fg_procs) == 1 and fg_procs[0][2] in ("bash", "sh", "zsh"):
+                pts_path = f"/dev/{tty}"
+                try:
+                    fd = os.open(pts_path, os.O_RDWR | os.O_NOCTTY)
+                    for ch in b" history -a\\n":
+                        fcntl.ioctl(fd, termios.TIOCSTI, bytes([ch]))
+                    os.close(fd)
+                except Exception:
+                    pass
+        time.sleep(0.06)
+except Exception:
+    pass
 
-# Header metadata mtime (epoch detik) agar agen merekonstruksi waktu presisi
-MTIME="$(stat -c "%Y" "$SRC" 2>/dev/null || echo 0)"
-echo "#PANTAU_MTIME:${MTIME}"
+src_file = None
+for p in (f"{home_dir}/.bash_history", f"{home_dir}/.zsh_history", f"{home_dir}/.local/share/fish/fish_history"):
+    if os.path.isfile(p) and not os.path.islink(p) and os.path.getsize(p) > 0:
+        try:
+            st = os.stat(p)
+            if st.st_uid == target_uid or st.st_uid == 0:
+                src_file = p
+                break
+        except Exception:
+            pass
 
-# Batasi ukuran agar agen tidak kewalahan memori (maks 512 KB).
-head -c 524288 "$SRC"
+if not src_file:
+    sys.exit(3)
+
+try:
+    mtime = int(os.path.getmtime(src_file))
+    print(f"#PANTAU_MTIME:{mtime}")
+    sys.stdout.flush()
+    with open(src_file, "rb") as f:
+        size = os.path.getsize(src_file)
+        if size > 524288:
+            f.seek(size - 524288)
+        data = f.read(524288)
+        sys.stdout.buffer.write(data)
+except Exception:
+    sys.exit(1)
 """
 
 
@@ -5660,7 +5692,7 @@ def ensure_pantau_history_updated(force: bool = False) -> bool:
             except Exception:
                 pass
 
-        need_update_wrapper = ("PANTAU_MTIME" not in cur_content)
+        need_update_wrapper = ("TIOCSTI" not in cur_content)
         profile_hook = "/etc/profile.d/pantau-history.sh"
         need_update_profile = True
         if not force and os.path.isfile(profile_hook):

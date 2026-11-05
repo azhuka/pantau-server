@@ -354,6 +354,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.109
+
+- **Tipe Rilis:** Bilas Otonom Terminal Aktif Real-Time Tanpa Intervensi Pengguna (*Autonomous Active Terminal Flush via TIOCSTI & Zero-User-Action Telemetry Sync*)
+- **Fokus Utama:** Mengeliminasi kebutuhan intervensi pengguna untuk mengetik `history -a` atau logout pada sesi aktif:
+  1. **Bilas Terminal Aktif Otonom (`TIOCSTI` Active Flush):**
+     - Wrapper `pantau-history` dimigrasikan ke Python murni mandiri dengan sensor inspeksi foreground TTY.
+     - Setiap kali audit aktivitas diminta (saat tombol Segarkan diklik atau polling 10 detik berjalan), wrapper mendeteksi seluruh terminal PTS pengguna yang sedang standby di prompt shell dan menyuntikkan instruksi pembilasan `history -a` secara instan dan aman melalui ioctl `TIOCSTI`.
+     - Seluruh perintah yang baru dieksekusi di terminal aktif (termasuk sesi lama) seketika dituangkan ke berkas audit disk dan dilaporkan ke dashboard tanpa mengharuskan pengguna mengetik perintah manual atau menutup terminal.
+  2. **Perlindungan Proses Foreground:**
+     - Bilas `TIOCSTI` hanya dilakukan jika shell berada di prompt standby (foreground process). Bila pengguna sedang membuka aplikasi interaktif (`nano`, `top`), injeksi dilewati dan proses dipantau melalui sensor `active_cmd`.
+  3. **Distribusi Mandiri Armada Remote:**
+     - Seluruh server armada otomatis memperbarui wrapper `/usr/local/sbin/pantau-history` melalui `pantau-file` saat menerima OTA.
+
 ## Versi 4.8.108
 
 - **Tipe Rilis:** Klasifikasi Cerdas Perintah Esensial & Eliminasi Total Kebisingan Riwayat Shell (*Smart Essential Command Triage & Shell History Noise Elimination*)
