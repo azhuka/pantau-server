@@ -5249,7 +5249,7 @@ def _deduplicate_user_logins(raw_list: list) -> list:
             seen_selesai.add(selesai_key)
             result.append(item)
         elif ev_type in ("sudo", "sudo_gagal", "polkit", "polkit_gagal"):
-            sudo_key = (ts, tty, method)
+            sudo_key = (ts, tty, method, str(item.get("alert") or ""), str(item.get("type") or ""))
             if sudo_key in seen_sudo:
                 for existing in result:
                     if (existing.get("type") in ("sudo", "sudo_gagal", "polkit", "polkit_gagal")) and (str(existing.get("ts") or "").strip(), str(existing.get("tty") or "").strip(), str(existing.get("method") or "").strip()) == sudo_key:

@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.115"
+AGENT_VERSION = "4.8.116"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4745,24 +4745,54 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                 sudo_handled_by_section_3 = True
                 p_sudo = re.compile(
                     r"sudo(?:\[\d+\])?:\s+(?P<user>[\w.-]+)\s*:\s+"
-                    r"(?:(?P<alert>(?:\d+\s+incorrect\s+password\s+attempt|user\s+NOT\s+in\s+sudoers|[\w\s]+error|[\w\s]+failure)[^;]*);\s*)?"
+                    r"(?:(?P<alert>(?:\d+\s+incorrect\s+password\s+attempt|user\s+NOT\s+in\s+sudoers|[\w\s]+error|[\w\s]+failure|conversation\s+failed)[^;]*);\s*)?"
                     r"(?:TTY=(?P<tty>\S+)\s*;\s*)?"
                     r"(?:PWD=(?P<pwd>\S+)\s*;\s*)?"
                     r"(?:USER=(?P<target>\S+)\s*;\s*)?"
-                    r"COMMAND=(?P<cmd>.+)$"
+                    r"(?:COMMAND=(?P<cmd>.+))?$"
+                )
+                p_pam_sudo = re.compile(
+                    r"pam_unix\(sudo(?::auth)?\):\s+authentication failure;\s*(?P<extra>.*)$"
                 )
                 for line in res_sudo.stdout.splitlines():
+                    ts = line[:19].replace("T", " ") if len(line) >= 19 else ""
+                    # 1. Tangkap kegagalan autentikasi PAM per percobaan password salah (Sorry, try again)
+                    m_pam = p_pam_sudo.search(line)
+                    if m_pam:
+                        extra = m_pam.group("extra") or ""
+                        m_tty = re.search(r"\btty=(?:/dev/)?(\S+)", extra)
+                        tty = m_tty.group(1) if m_tty else "(lokal)"
+                        m_u = re.search(r"\buser=([\w.-]+)", extra)
+                        u = m_u.group(1) if m_u else target_user
+                        m_pwd = re.search(r"\bpwd=(\S+)", extra)
+                        pwd_val = m_pwd.group(1) if m_pwd else "—"
+                        fail_key = (u, ts, tty, "sudo_gagal", line[-35:])
+                        if fail_key not in seen_sudo:
+                            seen_sudo.add(fail_key)
+                            events.append({
+                                "ts": ts,
+                                "user": u,
+                                "type": "sudo_gagal",
+                                "from": "(lokal)",
+                                "tty": tty,
+                                "pwd": pwd_val,
+                                "target_user": "root",
+                                "alert": "Password salah (Sorry, try again)",
+                                "method": "Otentikasi Sudo Gagal (Password Salah)",
+                            })
+                        continue
+
+                    # 2. Tangkap eksekusi perintah sudo atau alert sudo terminal
                     m = p_sudo.search(line)
                     if m:
-                        ts = line[:19].replace("T", " ") if len(line) >= 19 else ""
                         tty = m.group("tty") or "(lokal)"
                         pwd_val = m.group("pwd") or ""
                         target_val = m.group("target") or "root"
-                        cmd_val = (m.group("cmd") or "").strip()
+                        cmd_val = (m.group("cmd") or "").strip() or "Otentikasi Sudo Gagal"
                         alert_raw = (m.group("alert") or "").strip().rstrip(";")
-                        is_failed = bool(alert_raw and ("incorrect" in alert_raw.lower() or "not in sudoers" in alert_raw.lower()))
+                        is_failed = bool(alert_raw and ("incorrect" in alert_raw.lower() or "not in sudoers" in alert_raw.lower() or "failure" in alert_raw.lower() or "failed" in alert_raw.lower()))
                         ev_type = "sudo_gagal" if is_failed else "sudo"
-                        sudo_key = (target_user, ts, tty, cmd_val)
+                        sudo_key = (target_user, ts, tty, cmd_val, ev_type)
                         if sudo_key not in seen_sudo:
                             seen_sudo.add(sudo_key)
                             events.append({
@@ -4992,6 +5022,10 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                 cmd_raw = (h.get("cmd") or "").strip()
                 if not cmd_raw:
                     continue
+                ts_hist = h.get("ts") or ""
+                # Abaikan riwayat tanpa stempel waktu epoch sah agar tidak menginjeksi perintah usang ke sesi aktif terkini
+                if not ts_hist:
+                    continue
                 # Eliminasi noise navigasi & terminal bawaan non-esensial (cd, ls, clear, exit, dll)
                 if is_ignorable_shell_cmd(cmd_raw):
                     continue
@@ -5000,7 +5034,6 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                     cmd_core = cmd_raw[5:].strip()
                     if any(cmd_core in s[3] or s[3] in cmd_core for s in seen_sudo if len(s) >= 4):
                         continue
-                ts_hist = h.get("ts") or ""
                 # Jika sudah ada entri dengan perintah yang sama tercatat di seen_sudo baru-baru ini, hindari duplikasi
                 if any(cmd_raw == s[2] for s in seen_sudo if len(s) >= 4 and s[3] == "shell"):
                     continue
@@ -5881,23 +5914,18 @@ _HIST_FISH_CMD = re.compile(r"^- cmd:\s*(.*)$")                 # fish: - cmd: <
 _HIST_FISH_WHEN = re.compile(r"^\s+when:\s*(\d{9,12})$")        # fish:   when: <epoch>
 
 
-def _parse_history_entries(raw: str, fallback_mtime: int | None = None) -> list:
+def _parse_history_entries(raw: str) -> list:
     """Parse konten file history (bash/zsh/fish) -> [(epoch|None, command)] urut waktu.
 
-    epoch None = tidak ada timestamp (bash tanpa HISTTIMEFORMAT, atau baris bawaan
-    fish tanpa 'when'). Bila metadata mtime ada atau fallback_mtime tersedia, diinterpolasi
-    mundur per detik agar urutan kronologis stabil dan tidak terlempar ke akhir audit.
+    Hanya entri dengan stempel waktu epoch sah (#<epoch> pada bash atau zsh/fish) yang
+    diberi epoch integer. Entri tanpa epoch dibiarkan None agar tidak pernah menginjeksi
+    stempel waktu palsu (mtime file) ke dalam rentang sesi aktif terkini.
     """
     entries: list = []
     pending_epoch = None
-    mtime_epoch = None
     for ln in raw.splitlines():
         s = ln.rstrip("\r\n")
         if not s:
-            continue
-        m_mt = _HIST_MTIME.match(s)
-        if m_mt:
-            mtime_epoch = int(m_mt.group(1))
             continue
         m = _HIST_EPOCH.match(s)
         if m:
@@ -5930,16 +5958,6 @@ def _parse_history_entries(raw: str, fallback_mtime: int | None = None) -> list:
         else:
             entries.append((None, cmd))
 
-    # Gunakan mtime_epoch dari wrapper atau fallback_mtime
-    eff_mtime = mtime_epoch or fallback_mtime
-    if eff_mtime and eff_mtime > 0:
-        total_len = len(entries)
-        for idx in range(total_len):
-            ep, cmd = entries[idx]
-            if ep is None:
-                approx_ep = max(0, eff_mtime - (total_len - 1 - idx))
-                entries[idx] = (approx_ep, cmd)
-
     return [e for e in entries if e and e[1]]
 
 
@@ -5960,19 +5978,7 @@ def _collect_user_history(user: str, max_lines: int) -> list:
     if res is None or res.returncode != 0:
         return []
 
-    fallback_mtime = None
-    try:
-        home_dir = "/root" if user == "root" else f"/home/{user}"
-        for cand in (f"{home_dir}/.bash_history", f"{home_dir}/.zsh_history", f"{home_dir}/.local/share/fish/fish_history"):
-            if os.path.isfile(cand):
-                fallback_mtime = int(os.path.getmtime(cand))
-                break
-    except Exception:
-        pass
-    if not fallback_mtime:
-        fallback_mtime = int(time.time())
-
-    entries = _parse_history_entries(res.stdout or "", fallback_mtime=fallback_mtime)
+    entries = _parse_history_entries(res.stdout or "")
     result = []
     for ep, c in reversed(entries):
         ts_str = ""

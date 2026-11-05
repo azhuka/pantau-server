@@ -406,9 +406,9 @@ function deduplicateLogins(rawList) {
       seenSelesai.add(selesaiKey);
       result.push(item);
     } else if (isSudo) {
-      const sudoKey = `${ts}|${tty}|${method}`;
+      const sudoKey = `${ts}|${tty}|${method}|${item.alert || ''}|${item.type || ''}`;
       if (seenSudo.has(sudoKey)) {
-        const existingIdx = result.findIndex(r => (r.type === 'sudo' || r.type === 'sudo_gagal' || r.type === 'polkit' || r.type === 'polkit_gagal') && `${String(r.ts || '').trim()}|${String(r.tty || '').trim()}|${String(r.method || '').trim()}` === sudoKey);
+        const existingIdx = result.findIndex(r => (r.type === 'sudo' || r.type === 'sudo_gagal' || r.type === 'polkit' || r.type === 'polkit_gagal') && `${String(r.ts || '').trim()}|${String(r.tty || '').trim()}|${String(r.method || '').trim()}|${r.alert || ''}|${r.type || ''}` === sudoKey);
         if (existingIdx !== -1 && !result[existingIdx].pwd && item.pwd) {
           result[existingIdx].pwd = item.pwd;
           result[existingIdx].target_user = item.target_user || result[existingIdx].target_user;

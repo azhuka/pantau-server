@@ -354,6 +354,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.116
+
+- **Tipe Rilis:** Deteksi Presisi Otentikasi Sudo Gagal (PAM Authentication Failure) & Eliminasi Polusi Perintah Hantu dari Riwayat Shell (*Precision Sudo PAM Failure Detection & Ghost Shell History Injection Elimination*)
+- **Fokus Utama:** Menyelesaikan dua masalah mendasar pada audit terminal dan perintah pengguna:
+  1. **Deteksi Otentikasi Sudo Gagal (PAM Failure / 'Sorry, try again'):**
+     - Memperluas kueri audit sudo (`journalctl _COMM=sudo`) untuk mendeteksi `pam_unix(sudo:auth): authentication failure` secara langsung pada setiap percobaan kata sandi yang salah (sebelum batas 3 kali percobaan terlampaui).
+     - Menghilangkan asumsi bahwa sudo hanya mencatat kegagalan ketika baris `COMMAND=...` diterbitkan. Kini setiap kegagalan kata sandi (`Sorry, try again.`) tercatat presisi dengan badge merah `Sudo Gagal` dan meningkatkan indikator chip `Sudo Gagal`.
+  2. **Eliminasi Total Polusi Perintah Hantu (*Ghost Shell Commands*):**
+     - Menghapus logika interpolasi mundur `approx_ep` pada pembacaan `.bash_history` yang sebelumnya memalsukan stempel waktu perintah tanpa waktu menjadi stempel waktu `mtime` file (saat logout).
+     - Memastikan bahwa perintah shell historis yang tidak memiliki stempel waktu epoch resmi tidak akan pernah diinjeksi dengan stempel waktu palsu ke dalam rentang sesi aktif pengguna saat ini.
+
 ## Versi 4.8.115
 
 - **Tipe Rilis:** Sinkronisasi Stempel Waktu Sesi Aktif, Proteksi Selisih Zona Waktu (UTC vs Lokal), dan Penjaminan Posisi Teratas Siklus Hidup Sesi (*Active Session Timestamp Synchronization, Cross-Timezone Drift Protection & Top-Pinned Active Session Lifecycle Assurance*)
