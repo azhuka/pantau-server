@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.112"
+AGENT_VERSION = "4.8.113"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4562,18 +4562,35 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                         pass
             pid = s.get("pid", "")
             idle = s.get("idle", "")
+            now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             active_by_key[(u, tty)] = {
-                "ts": t,
+                "ts": now_ts,
                 "user": u,
                 "type": "aktif",
                 "from": src,
                 "tty": tty,
                 "pid": pid,
                 "idle": idle,
+                "login_time": t,
                 "pwd": "",
                 "method": f"{tty} (Sesi Aktif)",
                 "active": True,
             }
+            # Catat entri pendamping Sesi Login untuk sesi aktif ini pada waktu login t
+            sess_login_key = (u, tty, t, "login")
+            if sess_login_key not in seen_sessions:
+                seen_sessions.add(sess_login_key)
+                events.append({
+                    "ts": t,
+                    "user": u,
+                    "type": "login",
+                    "from": src,
+                    "tty": tty,
+                    "login_time": t,
+                    "pwd": "",
+                    "method": f"{tty} (Login)",
+                    "active": False,
+                })
         # Deteksi proses foreground aktif pada terminal sesi pengguna
         try:
             ps_cmd = ["ps", "-u", target_user, "-o", "tty,stat,args", "--no-headers"] if target_user else ["ps", "-eo", "user,tty,stat,args", "--no-headers"]
@@ -4588,7 +4605,8 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                         puser, ptty, pstat, pargs = pparts
                     else:
                         continue
-                    if "+" in pstat and ptty != "?" and not any(pargs.startswith(x) for x in ("-bash", "bash", "sshd", "-sh", "sh", "zsh", "su", "-su", "ps ", "logger ")):
+                    pbase = pargs.split()[0].split("/")[-1].lstrip("-") if pargs else ""
+                    if "+" in pstat and ptty != "?" and pbase not in ("bash", "sh", "zsh", "su", "sshd", "ps", "logger") and not any(pargs.startswith(x) for x in ("-bash", "bash", "sshd", "-sh", "sh", "zsh", "su", "-su", "ps ", "logger ")):
                         clean_tty = ptty if ptty.startswith("pts/") else f"pts/{ptty}"
                         for (u, t), act_dict in active_by_key.items():
                             if u == puser and (t == ptty or t == clean_tty or clean_tty.endswith(t) or t.endswith(ptty)):
@@ -4643,9 +4661,13 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                     from_clean = src if (src and src != ":0" and not src.startswith(":")) else "(lokal)"
 
                     if is_active:
-                        # Konsolidasi: bila sesi ini ada di active_by_key (who), perkaya dengan timestamp detik yang presisi
+                        # Konsolidasi: bila sesi ini ada di active_by_key (who), perkaya dengan login_time detik presisi
                         if (u, tty) in active_by_key:
-                            active_by_key[(u, tty)]["ts"] = ts_str
+                            active_by_key[(u, tty)]["login_time"] = ts_str
+                            for ev in events:
+                                if ev.get("type") == "login" and ev.get("user") == u and ev.get("tty") == tty and str(ev.get("login_time", ""))[:16] == ts_str[:16]:
+                                    ev["ts"] = ts_str
+                                    ev["login_time"] = ts_str
                             if from_clean != "(lokal)" and active_by_key[(u, tty)]["from"] == "(lokal)":
                                 active_by_key[(u, tty)]["from"] = from_clean
                         # Bila tidak terdaftar di who, merupakan entri wtmp usang/hang (abaikan agar tidak menduplikasi sesi aktif)
@@ -4663,19 +4685,41 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                         except Exception:
                             logout_time = raw_end
 
-                    sess_key = (u, tty, ts_str, "selesai")
+                    logout_ts = logout_time if logout_time else ts_str
+
+                    # 1. Sesi Selesai (Logout event) dengan timestamp logout_ts
+                    sess_key = (u, tty, logout_ts, "selesai")
                     if sess_key not in seen_sessions:
                         seen_sessions.add(sess_key)
                         events.append({
-                            "ts": ts_str,
+                            "ts": logout_ts,
                             "user": u,
                             "type": "selesai",
                             "from": from_clean,
                             "tty": tty,
                             "duration": dur_str,
+                            "login_time": ts_str,
                             "logout_time": logout_time,
                             "pwd": "",
                             "method": f"{tty} (Selesai)",
+                            "active": False,
+                        })
+
+                    # 2. Sesi Login (Login start event) dengan timestamp awal ts_str
+                    login_key = (u, tty, ts_str, "login")
+                    if login_key not in seen_sessions:
+                        seen_sessions.add(login_key)
+                        events.append({
+                            "ts": ts_str,
+                            "user": u,
+                            "type": "login",
+                            "from": from_clean,
+                            "tty": tty,
+                            "duration": dur_str,
+                            "login_time": ts_str,
+                            "logout_time": logout_time,
+                            "pwd": "",
+                            "method": f"{tty} (Login)",
                             "active": False,
                         })
     except Exception:
@@ -4795,7 +4839,7 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
 
     # 5. Log Otentikasi Terperinci (auth.log, secure, atau systemd journalctl)
     patterns = [
-        ("sukses", re.compile(
+        ("login", re.compile(
             r"Accepted (?P<method>password|publickey|keyboard-interactive|gssapi-with-mic) "
             r"for (?:invalid user )?(?P<user>[\w.-]+) from (?P<from>[\da-fA-F:.]+)")),
         ("gagal", re.compile(
@@ -4867,11 +4911,26 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                 else:
                     src = g.get("from") or "(lokal)"
                     tty_val = ""
-                    method = g.get("method") or ("ssh" if kind != "sesi" else "console")
-                auth_key = (user, ts, src, kind, method[:40])
+                    auth_m = g.get("method")
+                    if auth_m:
+                        method = f"ssh ({auth_m})"
+                    else:
+                        method = "ssh" if kind != "sesi" else "console"
+                auth_key = (user, ts[:16], src, kind)
                 if auth_key not in seen_auth:
                     seen_auth.add(auth_key)
-                    events.append({"ts": ts, "user": user, "type": kind, "from": src, "tty": tty_val, "method": method})
+                    enriched = False
+                    if kind == "login":
+                        for ev in events:
+                            if ev.get("type") == "login" and ev.get("user") == user and str(ev.get("ts", ""))[:16] == ts[:16]:
+                                if src != "(lokal)" and (not ev.get("from") or ev.get("from") == "(lokal)"):
+                                    ev["from"] = src
+                                if "ssh (" in method:
+                                    ev["method"] = method
+                                enriched = True
+                                break
+                    if not enriched:
+                        events.append({"ts": ts, "user": user, "type": kind, "from": src, "tty": tty_val, "method": method})
                 break
 
     # 6. Riwayat Perintah Shell Non-Sudo (Pengguna Umum & Sudoers tanpa awalan sudo)

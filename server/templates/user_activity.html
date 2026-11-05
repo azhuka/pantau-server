@@ -144,10 +144,12 @@
 
 <div id="chip-row" style="{% if initial_logins and initial_logins|length > 0 %}display:flex;{% else %}display:none;{% endif %}flex-wrap:wrap;gap:8px;margin-bottom:14px">
   <span class="chip chip-up" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('aktif')" title="Klik untuk filter Sesi Aktif">Sesi Aktif: <b id="chip-aktif">0</b></span>
-  <span class="chip chip-inactive" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('selesai')" title="Klik untuk filter Sesi Selesai">Selesai: <b id="chip-selesai">0</b></span>
-  <span class="chip chip-warn" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sudo')" title="Klik untuk filter Sudo">Sudo: <b id="chip-sudo">0</b></span>
+  <span class="chip chip-inactive" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('selesai')" title="Klik untuk filter Sesi Selesai">Sesi Selesai: <b id="chip-selesai">0</b></span>
+  <span class="chip chip-info" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('perintah')" title="Klik untuk filter Semua Perintah (Shell, Sudo, Polkit)">Perintah: <b id="chip-perintah">0</b></span>
   <span class="chip chip-info" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('shell')" title="Klik untuk filter Perintah Shell (Non-Sudo)">Shell: <b id="chip-shell">0</b></span>
+  <span class="chip chip-warn" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sudo')" title="Klik untuk filter Sudo">Sudo: <b id="chip-sudo">0</b></span>
   <span class="chip chip-warn" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('polkit')" title="Klik untuk filter Polkit">Polkit: <b id="chip-polkit">0</b></span>
+  <span class="chip" style="cursor:pointer;padding:3px 10px;font-size:11px;background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.3)" onclick="setLlTypeFilter('login')" title="Klik untuk filter Sesi Login Berhasil">Sesi Login: <b id="chip-login">0</b></span>
   <span class="chip chip-down" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sudo_gagal')" title="Klik untuk filter Sudo Gagal">Sudo Gagal: <b id="chip-sudo-gagal">0</b></span>
   <span class="chip chip-down" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('gagal')" title="Klik untuk filter Login Gagal">Login Gagal: <b id="chip-gagal">0</b></span>
   <span class="chip chip-inactive" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sesi')" title="Klik untuk filter Sesi Baru">Sesi Baru: <b id="chip-sesi">0</b></span>
@@ -167,9 +169,11 @@
           <option value="">Semua Jenis</option>
           <option value="aktif">Sesi Aktif (Masih Login)</option>
           <option value="selesai">Sesi Selesai (Logout)</option>
-          <option value="sudo">Eksekusi Sudo</option>
+          <option value="perintah">Semua Perintah (Shell &amp; Sudo)</option>
           <option value="shell">Perintah Shell (Non-Sudo)</option>
+          <option value="sudo">Eksekusi Sudo</option>
           <option value="polkit">Otorisasi Polkit</option>
+          <option value="login">Sesi Login (Berhasil)</option>
           <option value="sudo_gagal">Sudo Gagal / Ilegal</option>
           <option value="gagal">Login Gagal</option>
           <option value="sesi">Sesi Baru</option>
@@ -267,10 +271,10 @@ let activityBusy = false;
 let llCount = 0;
 
 function renderChips(logins) {
-  const c = {aktif: 0, selesai: 0, sudo: 0, sudo_gagal: 0, gagal: 0, sesi: 0, sukses: 0, polkit: 0, polkit_gagal: 0, shell: 0};
+  const c = {aktif: 0, selesai: 0, login: 0, sudo: 0, sudo_gagal: 0, gagal: 0, sesi: 0, polkit: 0, polkit_gagal: 0, shell: 0};
   for (const x of logins) {
-    if (c.hasOwnProperty(x.type)) c[x.type]++;
-    else if (x.type === 'sukses') c.selesai++;
+    if (x.type === 'login' || x.type === 'sukses') c.login++;
+    else if (c.hasOwnProperty(x.type)) c[x.type]++;
   }
   llCount = logins.length;
   const chip = document.getElementById('chip-row');
@@ -278,13 +282,17 @@ function renderChips(logins) {
   const elAktif = document.getElementById('chip-aktif');
   if (elAktif) elAktif.textContent = c.aktif;
   const elSelesai = document.getElementById('chip-selesai');
-  if (elSelesai) elSelesai.textContent = c.selesai + c.sukses;
-  const elSudo = document.getElementById('chip-sudo');
-  if (elSudo) elSudo.textContent = c.sudo;
+  if (elSelesai) elSelesai.textContent = c.selesai;
+  const elPerintah = document.getElementById('chip-perintah');
+  if (elPerintah) elPerintah.textContent = c.shell + c.sudo + c.polkit;
   const elShell = document.getElementById('chip-shell');
   if (elShell) elShell.textContent = c.shell;
+  const elSudo = document.getElementById('chip-sudo');
+  if (elSudo) elSudo.textContent = c.sudo;
   const elPolkit = document.getElementById('chip-polkit');
   if (elPolkit) elPolkit.textContent = c.polkit;
+  const elLogin = document.getElementById('chip-login');
+  if (elLogin) elLogin.textContent = c.login;
   const elSudoGagal = document.getElementById('chip-sudo-gagal');
   if (elSudoGagal) elSudoGagal.textContent = c.sudo_gagal + c.polkit_gagal;
   const elGagal = document.getElementById('chip-gagal');
@@ -334,34 +342,53 @@ function deduplicateLogins(rawList) {
   const seenActiveTty = new Set();
   const seenSudo = new Set();
   const seenShell = new Set();
+  const seenLogin = new Set();
+  const seenSelesai = new Set();
   const seenOther = new Set();
 
   for (const item of rawList) {
     if (!item) continue;
     const isAktif = (item.type === 'aktif');
+    const isLogin = (item.type === 'login' || item.type === 'sukses');
+    const isSelesai = (item.type === 'selesai');
     const isSudo = (item.type === 'sudo' || item.type === 'sudo_gagal' || item.type === 'polkit' || item.type === 'polkit_gagal');
     const isShell = (item.type === 'shell');
     const tty = String(item.tty || '').trim();
     const ts = String(item.ts || '').trim();
+    const user = String(item.user || '').trim();
+    const from = String(item.from || '').trim();
     const method = String(item.method || '').trim();
 
     if (isAktif) {
       if (tty && seenActiveTty.has(tty)) {
         const existingIdx = result.findIndex(r => r.type === 'aktif' && String(r.tty || '').trim() === tty);
         if (existingIdx !== -1) {
-          if (!result[existingIdx].pid && item.pid) {
-            result[existingIdx].pid = item.pid;
-          }
-          if (item.active_cmd) {
-            result[existingIdx].active_cmd = item.active_cmd;
-          }
-          if (ts.length > String(result[existingIdx].ts || '').length) {
-            result[existingIdx].ts = ts;
-          }
+          if (!result[existingIdx].pid && item.pid) result[existingIdx].pid = item.pid;
+          if (item.active_cmd) result[existingIdx].active_cmd = item.active_cmd;
+          if (item.login_time) result[existingIdx].login_time = item.login_time;
         }
         continue;
       }
       if (tty) seenActiveTty.add(tty);
+      result.push(item);
+    } else if (isLogin) {
+      const loginKey = `${user}|${ts.slice(0, 16)}`;
+      if (seenLogin.has(loginKey)) {
+        const existingIdx = result.findIndex(r => (r.type === 'login' || r.type === 'sukses') && String(r.user || '').trim() === user && String(r.ts || '').slice(0, 16) === ts.slice(0, 16));
+        if (existingIdx !== -1) {
+          if ((!result[existingIdx].tty || result[existingIdx].tty === '—') && tty) result[existingIdx].tty = tty;
+          if ((!result[existingIdx].from || result[existingIdx].from === '(lokal)') && from && from !== '(lokal)') result[existingIdx].from = from;
+          if (method.includes('ssh (') && !String(result[existingIdx].method || '').includes('ssh (')) result[existingIdx].method = method;
+        }
+        continue;
+      }
+      seenLogin.add(loginKey);
+      item.type = 'login';
+      result.push(item);
+    } else if (isSelesai) {
+      const selesaiKey = `${user}|${ts.slice(0, 19)}|${tty}`;
+      if (seenSelesai.has(selesaiKey)) continue;
+      seenSelesai.add(selesaiKey);
       result.push(item);
     } else if (isSudo) {
       const sudoKey = `${ts}|${tty}|${method}`;
@@ -389,6 +416,7 @@ function deduplicateLogins(rawList) {
       result.push(item);
     }
   }
+  result.sort((a, b) => String(b.ts || '').localeCompare(String(a.ts || '')));
   return result;
 }
 
@@ -422,7 +450,8 @@ function renderLoginsData(rawLogins) {
       const isPolkitGagal = (x.type === 'polkit_gagal');
       const isShell = (x.type === 'shell');
       const isGagal = (x.type === 'gagal');
-      const isSelesai = (x.type === 'selesai' || x.type === 'sukses');
+      const isSelesai = (x.type === 'selesai');
+      const isLogin = (x.type === 'login' || x.type === 'sukses');
 
       const cls = isAktif ? 'badge-up'
                 : (isShell && x.active) ? 'badge-up'
@@ -431,10 +460,14 @@ function renderLoginsData(rawLogins) {
                 : (isGagal || isSudoGagal || isPolkitGagal) ? 'badge-down' : 'badge-muted';
 
       let typeLabel = '';
+      let badgeStyle = '';
       if (isAktif) {
         typeLabel = '<span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;margin-right:4px"></span>Sesi Aktif';
       } else if (isSelesai) {
-        typeLabel = 'Selesai';
+        typeLabel = 'Sesi Selesai';
+      } else if (isLogin) {
+        typeLabel = 'Sesi Login';
+        badgeStyle = 'style="background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.25)"';
       } else if (isSudo) {
         typeLabel = 'Sudo' + (x.target_user ? ' (' + escapeHtml(x.target_user) + ')' : '');
       } else if (isSudoGagal) {
@@ -463,14 +496,13 @@ function renderLoginsData(rawLogins) {
       } else if (isShell) {
         timeTooltip = x.ts ? ('Waktu Eksekusi: ' + (detailedStart || x.ts)) : 'Waktu: Berurutan kronologis';
       } else if (isAktif) {
-        timeTooltip = 'Waktu Mulai: ' + detailedStart + ' (Sesi Masih Aktif)';
+        const dtLogin = parseDt(x.login_time);
+        timeTooltip = 'Sesi Aktif: Mulai sejak ' + (formatDetailed(dtLogin) || x.login_time || detailedStart) + ' (Masih Berlangsung)';
       } else if (isSelesai) {
-        const dtEnd = parseDt(x.logout_time);
-        if (dtEnd) {
-          timeTooltip = 'Mulai: ' + detailedStart + ' | Selesai: ' + formatDetailed(dtEnd) + (x.duration ? ' (Durasi: ' + escapeHtml(x.duration) + ')' : '');
-        } else {
-          timeTooltip = 'Waktu Mulai: ' + detailedStart + ' (Sesi Selesai)';
-        }
+        const dtLogin = parseDt(x.login_time);
+        timeTooltip = 'Logout: ' + detailedStart + (dtLogin ? ' | Login: ' + formatDetailed(dtLogin) : '') + (x.duration ? ' (Durasi: ' + escapeHtml(x.duration) + ')' : '');
+      } else if (isLogin) {
+        timeTooltip = 'Waktu Login: ' + detailedStart + (x.from ? ' dari ' + escapeHtml(x.from) : '');
       } else if (isGagal) {
         timeTooltip = 'Waktu Percobaan: ' + detailedStart;
       } else {
@@ -550,19 +582,36 @@ function renderLoginsData(rawLogins) {
           const activeClean = getActualCommand(x.active_cmd);
           methodCell = '<code class="cmd-code" style="border-color:rgba(74,222,128,0.35);color:var(--green);font-weight:600" title="Sedang Berjalan di ' + escapeHtml(x.tty || 'terminal') + ':\n' + escapeHtml(x.active_cmd) + '">▶ ' + escapeHtml(activeClean) + '</code>';
         } else {
-          methodCell = '<span style="color:var(--dim)" title="Sesi terminal aktif — prompt standby">—</span>';
+          const startStr = x.login_time ? ' · Sejak ' + (formatEssential(parseDt(x.login_time)) || x.login_time) : '';
+          methodCell = '<span style="color:var(--green);font-size:11px;font-weight:500" title="Sesi terminal aktif — prompt standby">Sesi Berlangsung' + escapeHtml(startStr) + '</span>';
         }
       } else if (isSelesai) {
-        methodCell = '<span style="color:var(--dim)" title="Sesi login selesai — tidak ada eksekusi perintah">—</span>';
+        const durText = x.duration ? ' · Durasi ' + escapeHtml(x.duration) : '';
+        methodCell = '<span style="color:var(--dim);font-size:11px" title="Sesi selesai' + (x.logout_time ? ' pada ' + escapeHtml(x.logout_time) : '') + (x.duration ? ' (durasi: ' + escapeHtml(x.duration) + ')' : '') + '">Sesi Ditutup' + durText + '</span>';
+      } else if (isLogin) {
+        const methText = x.method ? ' via ' + escapeHtml(x.method) : '';
+        methodCell = '<span style="color:#38bdf8;font-size:11px" title="Login berhasil' + (x.from ? ' dari ' + escapeHtml(x.from) : '') + '">Login Berhasil' + methText + '</span>';
       } else if (isGagal) {
-        methodCell = '<span style="color:var(--dim)" title="Percobaan login gagal: ' + escapeHtml(x.method || 'Password salah') + '">—</span>';
+        methodCell = '<span style="color:var(--red);font-size:11px" title="Percobaan login gagal: ' + escapeHtml(x.method || 'Password salah') + '">Login Gagal: ' + escapeHtml(x.method || 'Otentikasi ditolak') + '</span>';
       } else {
         methodCell = '<span style="color:var(--dim)">—</span>';
       }
 
-      const filterType = (x.type === 'sukses') ? 'selesai' : (x.type || '');
-      const rowSearch = `${x.ts || ''} ${x.user || ''} ${rawFrom} ${x.tty || ''} ${x.pwd || ''} ${x.method || ''} ${filterType} ${isAktif ? 'aktif' : ''} ${isSelesai ? 'selesai' : ''} ${isShell ? 'shell' : ''}`.toLowerCase();
-      return '<tr data-type="' + escapeHtml(filterType) + '" data-search="' + escapeHtml(rowSearch) + '">'
+      const isSessionBoundary = (isSelesai || isAktif);
+      const rowStyle = isSessionBoundary ? 'style="border-top:2px solid var(--border);background:rgba(255,255,255,0.01)"' : '';
+      const filterType = isLogin ? 'login' : (isSelesai ? 'selesai' : (x.type || ''));
+      const rowSearch = `${x.ts || ''} ${x.user || ''} ${rawFrom} ${x.tty || ''} ${x.pwd || ''} ${x.method || ''} ${filterType} ${isAktif ? 'aktif' : ''} ${isSelesai ? 'selesai' : ''} ${isLogin ? 'login' : ''} ${isShell ? 'shell' : ''} ${(isSudo || isPolkit || isShell) ? 'perintah' : ''}`.toLowerCase();
+      return '<tr ' + rowStyle + ' data-type="' + escapeHtml(filterType) + '" data-search="' + escapeHtml(rowSearch) + '">'
+        + '<td class="mono col-time" style="font-size:10.5px;white-space:nowrap" title="' + escapeHtml(timeTooltip) + '">'
+        + '<span class="mono" style="font-size:10.5px;color:var(--text);font-weight:600">' + escapeHtml(essentialTime) + '</span>'
+        + '</td>'
+        + '<td><span class="mono" style="color:var(--text);font-weight:600">' + escapeHtml(x.user || '-') + '</span></td>'
+        + '<td><span class="badge ' + cls + '" ' + badgeStyle + '>' + typeLabel + '</span></td>'
+        + '<td>' + termInfo + '</td>'
+        + '<td>' + fromCell + '</td>'
+        + '<td>' + pwdCell + '</td>'
+        + '<td class="col-detail">' + methodCell + '</td>'
+        + '</tr>';
         + '<td class="mono col-time" style="font-size:10.5px;white-space:nowrap" title="' + escapeHtml(timeTooltip) + '">'
         + '<span class="mono" style="font-size:10.5px;color:var(--text);font-weight:600">' + escapeHtml(essentialTime) + '</span>'
         + '</td>'
@@ -694,7 +743,13 @@ function filterLoginsTable() {
     const search = tr.getAttribute('data-search') || tr.textContent.toLowerCase();
     const type = tr.getAttribute('data-type') || '';
     const matchQ = !q || search.includes(q);
-    const matchType = !typeF || (typeF === 'selesai' ? (type === 'selesai' || type === 'sukses') : type === typeF);
+    const matchType = !typeF || (
+      typeF === 'selesai' ? (type === 'selesai') :
+      typeF === 'login' ? (type === 'login' || type === 'sukses') :
+      typeF === 'perintah' ? (type === 'shell' || type === 'sudo' || type === 'polkit' || type === 'sudo_gagal' || type === 'polkit_gagal') :
+      typeF === 'sudo_gagal' ? (type === 'sudo_gagal' || type === 'polkit_gagal') :
+      type === typeF
+    );
     const show = matchQ && matchType;
     tr.dataset.filterHidden = show ? '0' : '1';
     if (show) count++;

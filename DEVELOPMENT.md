@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.113
+
+- **Tipe Rilis:** Penataan Kronologis Baku Siklus Sesi (Sesi Selesai, Perintah, Sesi Login) & Konsolidasi Audit Aktivitas (*Structured Lifecycle Session Chronology: Session End, Commands, Session Start & Consolidated NOC Activity Audit*)
+- **Fokus Utama:** Menata ulang urutan tampilan baris pada tabel audit aktivitas pengguna (`/servers/{sid}/user/{username}`) agar terstruktur rapi dan mudah dibaca secara berurutan (*descending timeline*):
+  1. **Urutan Kronologis Baku Siklus Sesi (*Standard Session Lifecycle Sequence*):**
+     - Setiap blok sesi pengguna kini ditampilkan dalam urutan alami dari atas ke bawah:
+       - **Bagian Atas (`Sesi Selesai` / `Sesi Aktif`):** Menampilkan stempel waktu penutupan sesi (logout) dengan durasi sesi dan terminal (`pts/X`), atau stempel waktu terkini dengan badge hijau `Sesi Aktif` bila sesi terminal masih berlangsung.
+       - **Bagian Tengah (`Perintah`):** Seluruh perintah shell pengguna umum, sudo, dan otorisasi Polkit yang dieksekusi selama rentang sesi tersebut, terurut kronologis sesuai waktu eksekusi aktualnya.
+       - **Bagian Bawah (`Sesi Login`):** Menampilkan stempel waktu awal login, alamat IP asal (sumber), terminal TTY, dan metode autentikasi (`ssh (publickey)` atau `ssh (password)`).
+  2. **Perbaikan Stempel Waktu Logout pada `last -F`:**
+     - Mengatasi masalah di mana riwayat sesi `last -F` sebelumnya menggunakan waktu login sebagai stempel waktu entri `selesai` sehingga baris logout jatuh ke bawah perintah. Kini entri `selesai` menggunakan stempel waktu `logout_time` yang presisi.
+     - Setiap sesi tertutup memancarkan dua entri audit yang saling melengkapi: entri `selesai` pada waktu logout dan entri `login` pada waktu awal sesi dimulai.
+  3. **Badge & Filter Khusus `Sesi Login` serta Grup `Perintah`:**
+     - Menghadirkan badge cyan khusus `Sesi Login` dan label aksi `Login Berhasil via ssh (...)` yang terpisah tegas dari entri logout.
+     - Memperbarui deretan chip filter (`#chip-row`) dan menu dropdown jenis aktivitas dengan filter `Sesi Login` dan grup agregasi `Perintah` (menggabungkan seluruh perintah Shell, Sudo, dan Polkit).
+  4. **Pemisah Visual Antar-Sesi (*Visual Session Delimiter*):**
+     - Menambahkan garis pembatas atas halus pada baris batas sesi (`Sesi Selesai` dan `Sesi Aktif`) untuk memudahkan pemantauan visual oleh operator NOC.
+
 ## Versi 4.8.112
 
 - **Tipe Rilis:** Audit Perintah Shell Real-Time Tanpa Menunggu Logout via Systemd-Journald & Deteksi Proses Foreground Aktif (*Real-Time Non-Sudo Shell Audit via Journald & Foreground Process Detection Without Terminal Logout*)

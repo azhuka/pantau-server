@@ -5188,6 +5188,9 @@ def _deduplicate_user_logins(raw_list: list) -> list:
     result = []
     seen_active_tty = set()
     seen_sudo = set()
+    seen_shell = set()
+    seen_login = set()
+    seen_selesai = set()
     seen_other = set()
 
     for item in raw_list:
@@ -5197,6 +5200,8 @@ def _deduplicate_user_logins(raw_list: list) -> list:
         tty = str(item.get("tty") or "").strip()
         ts = str(item.get("ts") or "").strip()
         method = str(item.get("method") or "").strip()
+        user = str(item.get("user") or "").strip()
+        src = str(item.get("from") or "").strip()
 
         if ev_type == "aktif":
             if tty and tty in seen_active_tty:
@@ -5206,12 +5211,34 @@ def _deduplicate_user_logins(raw_list: list) -> list:
                             existing["pid"] = item["pid"]
                         if item.get("active_cmd"):
                             existing["active_cmd"] = item["active_cmd"]
-                        if len(ts) > len(str(existing.get("ts") or "")):
-                            existing["ts"] = ts
+                        if item.get("login_time"):
+                            existing["login_time"] = item["login_time"]
                         break
                 continue
             if tty:
                 seen_active_tty.add(tty)
+            result.append(item)
+        elif ev_type in ("login", "sukses"):
+            login_key = (user, ts[:16] if len(ts) >= 16 else ts)
+            if login_key in seen_login:
+                for existing in result:
+                    if existing.get("type") in ("login", "sukses") and (str(existing.get("user") or ""), str(existing.get("ts") or "")[:16]) == login_key:
+                        if (not existing.get("tty") or existing.get("tty") == "—") and tty:
+                            existing["tty"] = tty
+                        if (not existing.get("from") or existing.get("from") == "(lokal)") and src and src != "(lokal)":
+                            existing["from"] = src
+                        if "ssh (" in method and "ssh (" not in str(existing.get("method") or ""):
+                            existing["method"] = method
+                        break
+                continue
+            seen_login.add(login_key)
+            item["type"] = "login"
+            result.append(item)
+        elif ev_type == "selesai":
+            selesai_key = (user, ts[:19], tty)
+            if selesai_key in seen_selesai:
+                continue
+            seen_selesai.add(selesai_key)
             result.append(item)
         elif ev_type in ("sudo", "sudo_gagal", "polkit", "polkit_gagal"):
             sudo_key = (ts, tty, method)
@@ -5230,16 +5257,17 @@ def _deduplicate_user_logins(raw_list: list) -> list:
             if is_ignorable_shell_cmd(method):
                 continue
             sh_key = (ts, method, item.get("alert", ""))
-            if sh_key in seen_other:
+            if sh_key in seen_shell:
                 continue
-            seen_other.add(sh_key)
+            seen_shell.add(sh_key)
             result.append(item)
         else:
-            other_key = (ev_type, ts, tty, str(item.get("from") or "").strip(), method)
+            other_key = (ev_type, ts, tty, src, method)
             if other_key in seen_other:
                 continue
             seen_other.add(other_key)
             result.append(item)
+    result.sort(key=lambda e: str(e.get("ts", "")), reverse=True)
     return result
 
 
