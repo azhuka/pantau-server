@@ -4,7 +4,7 @@
    ============================================================================= #}
 
 {% macro table_container(id='', extra_class='') %}
-<div class="pantau-table-wrap table-responsive {{ extra_class }}" {% if id %}id="{{ id }}"{% endif %}>
+<div class="pantau-table-wrap {{ extra_class }}" {% if id %}id="{{ id }}"{% endif %}>
   {{ caller() }}
 </div>
 {% endmacro %}

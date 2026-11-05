@@ -1,124 +1,84 @@
 /* =============================================================================
    Pantau Server - Unified Component Design System (pantau-components.css)
-   Cetak Biru Antarmuka Modular Berstandar Framework & High-Density NOC
-   Sinkron dengan Tabler / Bootstrap 5 dan Palet Tema Pantau Server
+   Pondasi komponen antarmuka mandiri, bersih, baku, dan seragam di seluruh halaman.
    ============================================================================= */
 
 /* -----------------------------------------------------------------------------
-   1. SINKRONISASI VARIABEL & DESAIN TOKENS (Framework & NOC Token Bridge)
+   1. SISTEM TABEL OPERASIONAL NOC (High Density Table)
    ----------------------------------------------------------------------------- */
-:root,
-[data-bs-theme="dark"],
-[data-theme="dark"],
-body {
-  --tblr-body-bg: var(--bg, #111827);
-  --tblr-body-color: var(--text, #f8fafc);
-  --tblr-card-bg: var(--card, #1a2336);
-  --tblr-card-border-color: var(--border, rgba(255, 255, 255, 0.11));
-  --tblr-border-color: var(--border, rgba(255, 255, 255, 0.11));
-  --tblr-border-color-translucent: var(--border-subtle, rgba(255, 255, 255, 0.06));
-  --tblr-primary: var(--blue, #38bdf8);
-  --tblr-success: var(--green, #34d399);
-  --tblr-danger: var(--red, #f87171);
-  --tblr-warning: var(--yellow, #fbbf24);
-  --tblr-info: var(--blue, #38bdf8);
-  --tblr-font-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --tblr-font-monospace: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
-}
-
-/* -----------------------------------------------------------------------------
-   2. SISTEM TABEL OPERASIONAL NOC (High Density NOC Tables)
-   ----------------------------------------------------------------------------- */
-.pantau-table-wrap,
-.table-responsive {
+.pantau-table-wrap {
   width: 100% !important;
   overflow-x: auto !important;
   -webkit-overflow-scrolling: touch !important;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.11)) !important;
+  border: 1px solid var(--border, #30363d) !important;
   border-radius: 6px !important;
-  background: var(--card, #1a2336) !important;
+  background: var(--bg-card, #161b22) !important;
   box-sizing: border-box !important;
   margin-bottom: 8px !important;
 }
 
-.pantau-table,
-.table {
+.pantau-table {
   width: 100% !important;
   border-collapse: collapse !important;
   font-size: 11.5px !important;
   text-align: left !important;
   line-height: 1.35 !important;
   margin: 0 !important;
-  color: var(--text, #f8fafc) !important;
-  background-color: transparent !important;
 }
 
-.pantau-table thead tr,
-.table thead tr {
-  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.11)) !important;
+.pantau-table thead tr {
+  border-bottom: 1px solid var(--border, #30363d) !important;
   background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
 }
 
-.pantau-table thead th,
-.table thead th {
+.pantau-table thead th {
   padding: 6px 10px !important;
   font-size: 10px !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
-  color: var(--dim, #94a3b8) !important;
+  color: var(--dim, #8b949e) !important;
   white-space: nowrap !important;
   text-align: left !important;
   border: none !important;
-  vertical-align: middle !important;
 }
 
 .pantau-table thead th.th-center,
-.pantau-table thead th.col-act,
-.table thead th.th-center,
-.table thead th.col-act {
+.pantau-table thead th.col-act {
   text-align: center !important;
 }
 
-.pantau-table thead th.th-right,
-.table thead th.th-right {
+.pantau-table thead th.th-right {
   text-align: right !important;
 }
 
-.pantau-table tbody tr,
-.table tbody tr {
+.pantau-table tbody tr {
   border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.04)) !important;
   transition: background 0.12s ease !important;
-  background-color: transparent !important;
 }
 
-.pantau-table tbody tr:last-child,
-.table tbody tr:last-child {
+.pantau-table tbody tr:last-child {
   border-bottom: none !important;
 }
 
-.pantau-table tbody tr:hover,
-.table tbody tr:hover {
-  background: var(--hover, rgba(255, 255, 255, 0.04)) !important;
+.pantau-table tbody tr:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.03)) !important;
 }
 
-.pantau-table tbody td,
-.table tbody td {
+.pantau-table tbody td {
   padding: 5px 10px !important;
   vertical-align: middle !important;
   box-sizing: border-box !important;
-  color: var(--text, #f8fafc) !important;
+  color: var(--text, #e6edf3) !important;
   border: none !important;
 }
 
-.pantau-table tbody td.col-act,
-.table tbody td.col-act {
+.pantau-table tbody td.col-act {
   text-align: center !important;
   white-space: nowrap !important;
 }
 
 .pantau-table tbody td.mono,
-.table tbody td.mono,
 .pantau-mono {
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace) !important;
   font-size: 11px !important;
@@ -130,7 +90,7 @@ body {
 
 .pantau-empty-td {
   padding: 36px 16px !important;
-  color: var(--dim, #94a3b8) !important;
+  color: var(--dim, #8b949e) !important;
   font-size: 12px !important;
   text-align: center !important;
 }
@@ -144,124 +104,235 @@ body {
 }
 
 /* -----------------------------------------------------------------------------
-   3. SISTEM KARTU OPERASIONAL (Universal NOC Cards)
+   2. SISTEM PAGINASI TABEL BAKU (Universal Table Pagination Bar)
    ----------------------------------------------------------------------------- */
-.pantau-card,
-.card,
-.dash-card,
-.maint-card {
-  background: var(--card, #1a2336) !important;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.11)) !important;
-  border-radius: 8px !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-  margin-bottom: 12px !important;
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.3)) !important;
-}
-
-.pantau-card-header,
-.card-header,
-.dash-header,
-.maint-card-header {
+.pantau-pagination-bar,
+.table-pagination-bar {
   display: flex !important;
+  align-items: center !important;
   justify-content: space-between !important;
-  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
   padding: 8px 12px !important;
-  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.11)) !important;
-  background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
+  font-size: 11.5px !important;
+  color: var(--dim, #8b949e) !important;
+  background: var(--bg-card, #161b22) !important;
+  border: 1px solid var(--border, #30363d) !important;
+  border-radius: 6px !important;
+  margin-top: 8px !important;
   box-sizing: border-box !important;
 }
 
-.pantau-card-title-box,
-.card-title-box {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-}
-
-.pantau-card-title,
-.card-title,
-.dash-title {
-  margin: 0 !important;
-  font-size: 12.5px !important;
-  font-weight: 600 !important;
-  color: var(--text, #f8fafc) !important;
-}
-
-.pantau-card-subtitle,
-.card-subtitle {
-  margin: 1px 0 0 0 !important;
-  font-size: 10.5px !important;
-  color: var(--dim, #94a3b8) !important;
-}
-
-.pantau-card-tools,
-.card-actions,
-.dash-actions {
+.pantau-pg-limit,
+.table-pagination-limit {
   display: inline-flex !important;
   align-items: center !important;
   gap: 6px !important;
 }
 
-.pantau-card-body,
-.card-body,
-.dash-body {
-  padding: 10px 12px !important;
-  box-sizing: border-box !important;
+.pantau-pg-limit-label,
+.table-pagination-limit span {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: var(--dim, #8b949e) !important;
+}
+
+.pantau-pg-select,
+.table-pagination-limit select,
+select[data-pg-select] {
+  height: 24px !important;
+  padding: 0 6px !important;
+  font-size: 11px !important;
+  background: var(--input-bg, #0d1117) !important;
+  border: 1px solid var(--input-border, #30363d) !important;
+  border-radius: 4px !important;
+  color: var(--text, #e6edf3) !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+.pantau-pg-info,
+.table-pagination-info,
+div[data-pg-info] {
+  font-size: 11px !important;
+  color: var(--dim, #8b949e) !important;
+}
+
+.pantau-pg-nav,
+.table-pagination-nav {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.pantau-pg-btn,
+.btn-pg,
+button[data-pg-prev],
+button[data-pg-next] {
+  height: 24px !important;
+  padding: 0 8px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.04)) !important;
+  border: 1px solid var(--border, #30363d) !important;
+  border-radius: 4px !important;
+  color: var(--text, #e6edf3) !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+}
+
+.pantau-pg-btn:hover:not(:disabled),
+.btn-pg:hover:not(:disabled),
+button[data-pg-prev]:hover:not(:disabled),
+button[data-pg-next]:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--dim, #8b949e) !important;
+}
+
+.pantau-pg-btn:disabled,
+.btn-pg:disabled,
+button[data-pg-prev]:disabled,
+button[data-pg-next]:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+
+.pantau-pg-cur,
+.page-indicator,
+span[data-pg-cur] {
+  font-size: 11px !important;
+  font-family: var(--font-mono, ui-monospace, monospace) !important;
+  padding: 0 4px !important;
+  color: var(--text, #e6edf3) !important;
 }
 
 /* -----------------------------------------------------------------------------
-   4. SISTEM TOMBOL AKSI BAKU (Uniform Action Buttons & Icons)
+   3. SISTEM PRESET WAKTU & FILTER BAR (Universal Preset & Filter System)
    ----------------------------------------------------------------------------- */
-.pantau-btn,
-.btn {
+.pantau-preset-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+}
+
+.pantau-preset-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.6px !important;
+  color: var(--dim, #8b949e) !important;
+  text-transform: uppercase !important;
+  user-select: none !important;
+}
+
+.pantau-preset-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  background: var(--input-bg, #0d1117) !important;
+  border: 1px solid var(--border, #30363d) !important;
+  border-radius: 6px !important;
+  padding: 2px !important;
+  gap: 2px !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-preset-btn {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-family: inherit !important;
+  height: 24px !important;
+  padding: 0 9px !important;
   font-size: 11px !important;
   font-weight: 500 !important;
-  height: 26px !important;
-  padding: 0 9px !important;
+  border: none !important;
   border-radius: 4px !important;
-  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--dim, #8b949e) !important;
   cursor: pointer !important;
   transition: all 0.12s ease !important;
-  text-decoration: none !important;
-  box-sizing: border-box !important;
-  line-height: 1 !important;
   white-space: nowrap !important;
-  gap: 5px !important;
+  text-decoration: none !important;
+  line-height: 1 !important;
 }
 
-.pantau-btn-sm,
-.btn-sm {
-  height: 22px !important;
-  padding: 0 7px !important;
-  font-size: 10.5px !important;
-  gap: 4px !important;
+.pantau-preset-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text, #e6edf3) !important;
 }
 
-.pantau-btn-xs,
-.btn-xs {
-  height: 20px !important;
-  padding: 0 5px !important;
-  font-size: 10px !important;
-  gap: 3px !important;
+.pantau-preset-btn.is-active,
+.pantau-preset-btn.is-on {
+  background: var(--blue, #38bdf8) !important;
+  color: #0d1117 !important;
+  font-weight: 600 !important;
 }
 
-.pantau-btn-icon,
-.btn-icon {
+.pantau-filter-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+}
+
+.pantau-filter-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.pantau-select {
+  height: 28px !important;
+  padding: 0 8px !important;
+  font-size: 11.5px !important;
+  background: var(--input-bg, #0d1117) !important;
+  border: 1px solid var(--input-border, #30363d) !important;
+  border-radius: 5px !important;
+  color: var(--text, #e6edf3) !important;
+  outline: none !important;
+  cursor: pointer !important;
+  transition: border-color 0.12s ease !important;
+}
+
+.pantau-select:focus {
+  border-color: var(--blue, #38bdf8) !important;
+}
+
+.pantau-input-search {
+  height: 28px !important;
+  width: 100% !important;
+  padding: 0 10px 0 28px !important;
+  font-size: 11.5px !important;
+  background: var(--input-bg, #0d1117) !important;
+  border: 1px solid var(--input-border, #30363d) !important;
+  border-radius: 6px !important;
+  color: var(--text, #e6edf3) !important;
+  outline: none !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-input-search:focus {
+  border-color: var(--blue, #38bdf8) !important;
+  box-shadow: 0 0 0 2px var(--blue-bg, rgba(56,189,248,0.15)) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   4. SISTEM TOMBOL AKSI & IKON TERPADU (Action Buttons & Icons)
+   ----------------------------------------------------------------------------- */
+.pantau-btn-icon {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 24px !important;
-  height: 24px !important;
+  width: 26px !important;
+  height: 26px !important;
   padding: 0 !important;
   border: 1px solid transparent !important;
-  border-radius: 4px !important;
+  border-radius: 5px !important;
   background: transparent !important;
-  color: var(--dim, #94a3b8) !important;
+  color: var(--dim, #8b949e) !important;
   cursor: pointer !important;
   transition: all 0.12s ease !important;
   text-decoration: none !important;
@@ -270,11 +341,10 @@ body {
   line-height: 1 !important;
 }
 
-.pantau-btn-icon:hover,
-.btn-icon:hover {
+.pantau-btn-icon:hover {
   background: rgba(255, 255, 255, 0.08) !important;
   color: var(--text-bright, #fff) !important;
-  border-color: var(--border, rgba(255, 255, 255, 0.11)) !important;
+  border-color: var(--border, #30363d) !important;
 }
 
 .pantau-btn-icon-danger:hover {
@@ -297,346 +367,134 @@ body {
   justify-content: center !important;
 }
 
-.pantau-btn-ghost,
-.btn-ghost {
-  background: transparent !important;
-  color: var(--text, #f8fafc) !important;
-  border-color: var(--border, rgba(255, 255, 255, 0.11)) !important;
+.pantau-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: inherit !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+  text-decoration: none !important;
+  box-sizing: border-box !important;
+  line-height: 1 !important;
+  border-radius: 6px !important;
+  border: 1px solid transparent !important;
+  white-space: nowrap !important;
 }
 
-.pantau-btn-ghost:hover,
-.btn-ghost:hover {
+.pantau-btn-sm {
+  height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 11.5px !important;
+  gap: 6px !important;
+}
+
+.pantau-btn-xs {
+  height: 24px !important;
+  padding: 0 8px !important;
+  font-size: 10.5px !important;
+  gap: 4px !important;
+  border-radius: 4px !important;
+}
+
+.pantau-btn-ghost {
+  background: transparent !important;
+  color: var(--text, #e6edf3) !important;
+  border-color: var(--border, #30363d) !important;
+}
+
+.pantau-btn-ghost:hover {
   background: rgba(255, 255, 255, 0.08) !important;
   color: var(--text-bright, #fff) !important;
-  border-color: var(--dim, #94a3b8) !important;
+  border-color: var(--dim, #8b949e) !important;
 }
 
-.pantau-btn-primary,
-.btn-primary {
+.pantau-btn-primary {
   background: var(--blue, #38bdf8) !important;
-  color: #090d16 !important;
+  color: #0d1117 !important;
   border-color: var(--blue, #38bdf8) !important;
   font-weight: 600 !important;
 }
 
-.pantau-btn-primary:hover,
-.btn-primary:hover {
+.pantau-btn-primary:hover {
   background: #0284c7 !important;
   border-color: #0284c7 !important;
   color: #ffffff !important;
 }
 
-.pantau-btn-danger,
-.btn-danger {
+.pantau-btn-danger {
   background: rgba(239, 68, 68, 0.15) !important;
-  color: #f87171 !important;
+  color: #ef4444 !important;
   border-color: rgba(239, 68, 68, 0.3) !important;
 }
 
-.pantau-btn-danger:hover,
-.btn-danger:hover {
+.pantau-btn-danger:hover {
   background: #ef4444 !important;
   color: #ffffff !important;
-  border-color: #ef4444 !important;
 }
 
 /* -----------------------------------------------------------------------------
-   5. SISTEM BADGE & STATUS INDIKATOR NOC (Uniform Badges & Status Pills)
+   5. SISTEM KARTU BAKU (Universal Card System)
    ----------------------------------------------------------------------------- */
-.pantau-badge,
-.badge,
-.status-pill {
-  font-size: 9.5px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.3px !important;
-  padding: 2px 6px !important;
-  border-radius: 4px !important;
-  text-transform: uppercase !important;
-  display: inline-flex !important;
+.pantau-card {
+  background: var(--bg-card, #161b22) !important;
+  border: 1px solid var(--border, #30363d) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-card-header {
+  display: flex !important;
+  justify-content: space-between !important;
   align-items: center !important;
-  gap: 4px !important;
-  line-height: 1.2 !important;
-  border: 1px solid transparent !important;
+  padding: 10px 14px !important;
+  border-bottom: 1px solid var(--border, #30363d) !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
   box-sizing: border-box !important;
 }
 
-.badge-ok,
-.badge-success,
-.pantau-badge-ok {
-  background: var(--green-bg, rgba(52, 211, 153, 0.16)) !important;
-  color: var(--green, #34d399) !important;
-  border-color: rgba(52, 211, 153, 0.3) !important;
-}
-
-.badge-warn,
-.badge-warning,
-.pantau-badge-warn {
-  background: var(--yellow-bg, rgba(251, 191, 36, 0.16)) !important;
-  color: var(--yellow, #fbbf24) !important;
-  border-color: rgba(251, 191, 36, 0.3) !important;
-}
-
-.badge-crit,
-.badge-danger,
-.pantau-badge-crit {
-  background: var(--red-bg, rgba(248, 113, 113, 0.16)) !important;
-  color: var(--red, #f87171) !important;
-  border-color: rgba(248, 113, 113, 0.3) !important;
-}
-
-.badge-info,
-.pantau-badge-info {
-  background: var(--blue-bg, rgba(56, 189, 248, 0.16)) !important;
-  color: var(--blue, #38bdf8) !important;
-  border-color: rgba(56, 189, 248, 0.3) !important;
-}
-
-.badge-neutral,
-.badge-secondary,
-.pantau-badge-neutral {
-  background: rgba(255, 255, 255, 0.06) !important;
-  color: var(--dim, #94a3b8) !important;
-  border-color: var(--border, rgba(255, 255, 255, 0.11)) !important;
-}
-
-/* -----------------------------------------------------------------------------
-   6. SISTEM FORMULIR & KONTROL MASUKAN (Form Controls & Search)
-   ----------------------------------------------------------------------------- */
-.pantau-select,
-.pantau-input,
-.form-control,
-.form-select {
-  height: 26px !important;
-  padding: 0 8px !important;
-  font-size: 11px !important;
-  background: var(--input-bg, rgba(9, 13, 22, 0.75)) !important;
-  border: 1px solid var(--input-border, rgba(255, 255, 255, 0.14)) !important;
-  border-radius: 4px !important;
-  color: var(--input-text, #f8fafc) !important;
-  outline: none !important;
-  cursor: pointer !important;
-  transition: border-color 0.12s ease, box-shadow 0.12s ease !important;
-  box-sizing: border-box !important;
-}
-
-.pantau-select:focus,
-.pantau-input:focus,
-.form-control:focus,
-.form-select:focus {
-  border-color: var(--blue, #38bdf8) !important;
-  box-shadow: 0 0 0 2px var(--blue-bg, rgba(56, 189, 248, 0.16)) !important;
-}
-
-.pantau-input-search {
-  height: 26px !important;
-  width: 100% !important;
-  padding: 0 10px 0 26px !important;
-  font-size: 11px !important;
-  background: var(--input-bg, rgba(9, 13, 22, 0.75)) !important;
-  border: 1px solid var(--input-border, rgba(255, 255, 255, 0.14)) !important;
-  border-radius: 5px !important;
-  color: var(--input-text, #f8fafc) !important;
-  outline: none !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
-  box-sizing: border-box !important;
-}
-
-.pantau-input-search:focus {
-  border-color: var(--blue, #38bdf8) !important;
-  box-shadow: 0 0 0 2px var(--blue-bg, rgba(56, 189, 248, 0.16)) !important;
-}
-
-.pantau-toolbar {
+.pantau-card-title-box {
   display: flex !important;
   align-items: center !important;
-  justify-content: space-between !important;
-  flex-wrap: wrap !important;
   gap: 8px !important;
-  margin-bottom: 10px !important;
 }
 
-.pantau-toolbar-group {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  flex-wrap: wrap !important;
-}
-
-/* -----------------------------------------------------------------------------
-   7. SISTEM PAGINASI TABEL BAKU (Universal Table Pagination Bar)
-   ----------------------------------------------------------------------------- */
-.pantau-pagination-bar,
-.table-pagination-bar {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  flex-wrap: wrap !important;
-  gap: 10px !important;
-  padding: 6px 10px !important;
-  font-size: 11px !important;
-  color: var(--dim, #94a3b8) !important;
-  background: var(--card, #1a2336) !important;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.11)) !important;
-  border-radius: 6px !important;
-  margin-top: 8px !important;
-  box-sizing: border-box !important;
-}
-
-.pantau-pg-limit,
-.table-pagination-limit {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-}
-
-.pantau-pg-limit-label,
-.table-pagination-limit span {
-  font-size: 10.5px !important;
-  font-weight: 500 !important;
-  color: var(--dim, #94a3b8) !important;
-}
-
-.pantau-pg-select,
-.table-pagination-limit select,
-select[data-pg-select] {
-  height: 22px !important;
-  padding: 0 6px !important;
-  font-size: 10.5px !important;
-  background: var(--input-bg, rgba(9, 13, 22, 0.75)) !important;
-  border: 1px solid var(--input-border, rgba(255, 255, 255, 0.14)) !important;
-  border-radius: 4px !important;
-  color: var(--input-text, #f8fafc) !important;
-  cursor: pointer !important;
-  outline: none !important;
-}
-
-.pantau-pg-info,
-.table-pagination-info,
-div[data-pg-info] {
-  font-size: 10.5px !important;
-  color: var(--dim, #94a3b8) !important;
-}
-
-.pantau-pg-nav,
-.table-pagination-nav {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-}
-
-.pantau-pg-btn,
-.btn-pg,
-button[data-pg-prev],
-button[data-pg-next] {
-  height: 22px !important;
-  padding: 0 8px !important;
-  font-size: 10.5px !important;
-  font-weight: 500 !important;
-  background: var(--bg-subtle, rgba(255, 255, 255, 0.04)) !important;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.11)) !important;
-  border-radius: 4px !important;
-  color: var(--text, #f8fafc) !important;
-  cursor: pointer !important;
-  transition: all 0.12s ease !important;
-}
-
-.pantau-pg-btn:hover:not(:disabled),
-.btn-pg:hover:not(:disabled),
-button[data-pg-prev]:hover:not(:disabled),
-button[data-pg-next]:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-color: var(--dim, #94a3b8) !important;
-}
-
-.pantau-pg-btn:disabled,
-.btn-pg:disabled,
-button[data-pg-prev]:disabled,
-button[data-pg-next]:disabled {
-  opacity: 0.35 !important;
-  cursor: not-allowed !important;
-}
-
-.pantau-pg-cur,
-.page-indicator,
-span[data-pg-cur] {
-  font-size: 10.5px !important;
-  font-family: var(--font-mono, ui-monospace, monospace) !important;
-  padding: 0 4px !important;
-  color: var(--text, #f8fafc) !important;
-}
-
-/* -----------------------------------------------------------------------------
-   8. SISTEM PRESET WAKTU BAKU (Universal Time Preset Filter)
-   ----------------------------------------------------------------------------- */
-.pantau-preset-wrap {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  flex-wrap: nowrap !important;
-}
-
-.pantau-preset-label {
-  font-size: 9.5px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.6px !important;
-  color: var(--dim, #94a3b8) !important;
-  text-transform: uppercase !important;
-  user-select: none !important;
-}
-
-.pantau-preset-group {
-  display: inline-flex !important;
-  align-items: center !important;
-  background: var(--input-bg, rgba(9, 13, 22, 0.75)) !important;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.11)) !important;
-  border-radius: 5px !important;
-  padding: 2px !important;
-  gap: 2px !important;
-  box-sizing: border-box !important;
-}
-
-.pantau-preset-btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  height: 22px !important;
-  padding: 0 8px !important;
-  font-size: 10.5px !important;
-  font-weight: 500 !important;
-  border: none !important;
-  border-radius: 3px !important;
-  background: transparent !important;
-  color: var(--dim, #94a3b8) !important;
-  cursor: pointer !important;
-  transition: all 0.12s ease !important;
-  white-space: nowrap !important;
-  text-decoration: none !important;
-  line-height: 1 !important;
-}
-
-.pantau-preset-btn:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: var(--text-bright, #fff) !important;
-}
-
-.pantau-preset-btn.is-active,
-.pantau-preset-btn.is-on {
-  background: var(--blue, #38bdf8) !important;
-  color: #090d16 !important;
+.pantau-card-title {
+  margin: 0 !important;
+  font-size: 13.5px !important;
   font-weight: 600 !important;
+  color: var(--text, #e6edf3) !important;
+}
+
+.pantau-card-subtitle {
+  margin: 1px 0 0 0 !important;
+  font-size: 11px !important;
+  color: var(--dim, #8b949e) !important;
+}
+
+.pantau-card-tools {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.pantau-card-body {
+  padding: 12px 14px !important;
+  box-sizing: border-box !important;
 }
 
 /* -----------------------------------------------------------------------------
-   9. SISTEM MODAL / DIALOG UNIVERSAL (Modal with Backdrop, X SVG, Esc)
+   6. SISTEM MODAL / DIALOG UNIVERSAL (Modal System with Backdrop, X, Esc)
    ----------------------------------------------------------------------------- */
-.pantau-modal-backdrop,
-.modal-backdrop-custom {
+.pantau-modal-backdrop {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  background: rgba(0, 0, 0, 0.75) !important;
+  background: rgba(0, 0, 0, 0.72) !important;
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
   z-index: 9999 !important;
@@ -647,13 +505,12 @@ span[data-pg-cur] {
   box-sizing: border-box !important;
 }
 
-.pantau-modal-card,
-.modal-card {
+.pantau-modal-card {
   width: 100% !important;
-  background: var(--card, #1a2336) !important;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.14)) !important;
-  border-radius: 8px !important;
-  box-shadow: var(--shadow-lg, 0 16px 32px rgba(0, 0, 0, 0.5)) !important;
+  background: var(--bg-card, #161b22) !important;
+  border: 1px solid var(--border, #30363d) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45) !important;
   display: flex !important;
   flex-direction: column !important;
   max-height: 90vh !important;
@@ -661,67 +518,61 @@ span[data-pg-cur] {
   box-sizing: border-box !important;
 }
 
-.pantau-modal-header,
-.modal-header {
+.pantau-modal-header {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 10px 14px !important;
-  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.11)) !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--border, #30363d) !important;
   background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
   flex-shrink: 0 !important;
 }
 
-.pantau-modal-title,
-.modal-title {
+.pantau-modal-title {
   margin: 0 !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  color: var(--text, #f8fafc) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--text, #e6edf3) !important;
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
 }
 
-.pantau-modal-close,
-.btn-close-pantau {
+.pantau-modal-close {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 24px !important;
-  height: 24px !important;
+  width: 26px !important;
+  height: 26px !important;
   padding: 0 !important;
   border: 1px solid transparent !important;
-  border-radius: 4px !important;
+  border-radius: 5px !important;
   background: transparent !important;
-  color: var(--dim, #94a3b8) !important;
+  color: var(--dim, #8b949e) !important;
   cursor: pointer !important;
   transition: all 0.12s ease !important;
 }
 
-.pantau-modal-close:hover,
-.btn-close-pantau:hover {
+.pantau-modal-close:hover {
   background: rgba(255, 255, 255, 0.08) !important;
   color: var(--text-bright, #fff) !important;
-  border-color: var(--border, rgba(255, 255, 255, 0.11)) !important;
+  border-color: var(--border, #30363d) !important;
 }
 
-.pantau-modal-body,
-.modal-body {
-  padding: 12px 14px !important;
+.pantau-modal-body {
+  padding: 14px 16px !important;
   overflow-y: auto !important;
   flex: 1 !important;
   box-sizing: border-box !important;
 }
 
-.pantau-modal-footer,
-.modal-footer {
+.pantau-modal-footer {
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
-  gap: 8px !important;
-  padding: 10px 14px !important;
-  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.11)) !important;
+  gap: 10px !important;
+  padding: 12px 16px !important;
+  border-top: 1px solid var(--border, #30363d) !important;
   background: var(--bg-subtle, rgba(255, 255, 255, 0.015)) !important;
   flex-shrink: 0 !important;
 }

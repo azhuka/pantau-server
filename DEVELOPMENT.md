@@ -354,6 +354,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.132
+
+- **Tipe Rilis:** Pencabutan Total Dependensi Tabler dan Restorasi Desain Sistem Asli NOC (*Full Tabler Removal & Pure NOC Native Design System Restoration*)
+- **Fokus Utama:** Mencabut pustaka eksternal Tabler Core yang menyebabkan tabrakan tata letak (*layout collapse*) pada tabel insiden dan penumpukan header rincian server, mengembalikan integritas 100% arsitektur CSS mandiri Pantau Server yang terbukti stabil dan presisi:
+  1. **Pencabutan Tabler Core:**
+     - Menghapus sepenuhnya berkas CSS/JS Tabler vendor dan tautannya pada `base.html`.
+     - Mengeliminasi benturan global class Bootstrap (`.card`, `.table`, `.btn`, `.badge`) yang mengacaukan struktur flex dan kalkulasi ketinggian kontainer tabel dinamis.
+  2. **Restorasi Pustaka Mandiri `pantau-components.css`:**
+     - Mengembalikan fokus pustaka komponen mandiri murni pada kelas kanonikal `.pantau-*` tanpa mengganggu kelas bawaan halaman yang sudah ada.
+     - Memastikan seluruh tabel (Dasbor, Daftar Server, Insiden Terbuka, Riwayat Insiden, Audit, Pemeliharaan) dan rincian server kembali render 100% sempurna tanpa tumpang tindih.
+
 ## Versi 4.8.131
 
 - **Tipe Rilis:** Adopsi Cetak Biru Framework Dashboard Industri & Integrasi Tabler Core (*Industry-Standard Dashboard UI Blueprint, Tabler Core Framework Integration & NOC Density Preservation*)
