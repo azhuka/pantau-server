@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.109"
+AGENT_VERSION = "4.8.110"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -5639,7 +5639,7 @@ try:
                 tty_map.setdefault(parts[1], []).append((parts[0], parts[2], parts[3]))
         for tty, procs in tty_map.items():
             fg_procs = [p for p in procs if "+" in p[1]]
-            if len(fg_procs) == 1 and fg_procs[0][2] in ("bash", "sh", "zsh"):
+            if len(fg_procs) == 1 and fg_procs[0][2].lstrip("-") in ("bash", "sh", "zsh"):
                 pts_path = f"/dev/{tty}"
                 try:
                     fd = os.open(pts_path, os.O_RDWR | os.O_NOCTTY)
@@ -5648,7 +5648,7 @@ try:
                     os.close(fd)
                 except Exception:
                     pass
-        time.sleep(0.06)
+        time.sleep(0.1)
 except Exception:
     pass
 
@@ -5692,7 +5692,7 @@ def ensure_pantau_history_updated(force: bool = False) -> bool:
             except Exception:
                 pass
 
-        need_update_wrapper = ("TIOCSTI" not in cur_content)
+        need_update_wrapper = ("lstrip" not in cur_content)
         profile_hook = "/etc/profile.d/pantau-history.sh"
         need_update_profile = True
         if not force and os.path.isfile(profile_hook):

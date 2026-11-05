@@ -354,6 +354,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.110
+
+- **Tipe Rilis:** Deteksi Login Shell SSH (`-bash`) & Sinkronisasi Pembilasan Terminal Terbuka (*SSH Login Shell Detection & Open Terminal Auto-Flush*)
+- **Fokus Utama:** Menjamin pembilasan terminal aktif (`TIOCSTI`) berjalan sempurna pada seluruh sesi SSH login:
+  1. **Deteksi Login Shell SSH (`-bash`, `-sh`, `-zsh`):**
+     - Memperbaiki komparasi nama proses terminal pada `pantau-history` agar mengenali nama biner login shell dengan awalan tanda hubung (`comm.lstrip('-')`).
+     - Sesi SSH yang dibuka pengguna (`pts/3`) kini 100% teridentifikasi sebagai terminal aktif yang valid untuk dibasuh otomatis.
+  2. **Jeda Waktu Disk Flush:**
+     - Menyesuaikan jeda pembilasan berkas disk menjadi 100ms untuk memastikan buffer memori Bash telah sepenuhnya tersimpan sebelum dibaca oleh agen.
+  3. **Pemutakhiran Otonom Wrapper Armada:**
+     - Penanda deteksi wrapper (`lstrip`) memastikan seluruh armada server jarak jauh langsung mengganti skrip wrapper lama ke versi baru secara otonom saat OTA diterima.
+
 ## Versi 4.8.109
 
 - **Tipe Rilis:** Bilas Otonom Terminal Aktif Real-Time Tanpa Intervensi Pengguna (*Autonomous Active Terminal Flush via TIOCSTI & Zero-User-Action Telemetry Sync*)

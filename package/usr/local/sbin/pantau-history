@@ -41,7 +41,7 @@ try:
                 tty_map.setdefault(parts[1], []).append((parts[0], parts[2], parts[3]))
         for tty, procs in tty_map.items():
             fg_procs = [p for p in procs if "+" in p[1]]
-            if len(fg_procs) == 1 and fg_procs[0][2] in ("bash", "sh", "zsh"):
+            if len(fg_procs) == 1 and fg_procs[0][2].lstrip("-") in ("bash", "sh", "zsh"):
                 pts_path = f"/dev/{tty}"
                 try:
                     fd = os.open(pts_path, os.O_RDWR | os.O_NOCTTY)
@@ -50,7 +50,7 @@ try:
                     os.close(fd)
                 except Exception:
                     pass
-        time.sleep(0.06)
+        time.sleep(0.1)
 except Exception:
     pass
 
