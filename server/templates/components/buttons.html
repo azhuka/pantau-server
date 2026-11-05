@@ -20,7 +20,18 @@
 </a>
 {% endmacro %}
 
-{% macro btn(text='', icon_svg='', href='', on_click='', type='button', variant='ghost', size='sm', title='', extra_class='') %}
+{% macro btn_icon(icon_svg, href='', on_click='', type='button', variant='', title='', extra_class='') %}
+{% if href %}
+<a href="{{ href }}" class="pantau-btn-icon {% if variant %}pantau-btn-icon-{{ variant }}{% endif %} {{ extra_class }}" {% if title %}title="{{ title }}" aria-label="{{ title }}"{% endif %} {% if on_click %}onclick="{{ on_click }}"{% endif %}>
+  {{ icon_svg | safe }}
+</a>
+{% else %}
+<button type="{{ type }}" class="pantau-btn-icon {% if variant %}pantau-btn-icon-{{ variant }}{% endif %} {{ extra_class }}" {% if title %}title="{{ title }}" aria-label="{{ title }}"{% endif %} {% if on_click %}onclick="{{ on_click }}"{% endif %}>
+  {{ icon_svg | safe }}
+</button>
+{% endif %}
+{% endmacro %}
+
 {% if href %}
 <a href="{{ href }}" class="pantau-btn pantau-btn-{{ variant }} pantau-btn-{{ size }} {{ extra_class }}" {% if title %}title="{{ title }}"{% endif %} {% if on_click %}onclick="{{ on_click }}"{% endif %}>
   {% if icon_svg %}{{ icon_svg | safe }}{% endif %}

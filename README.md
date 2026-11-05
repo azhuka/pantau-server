@@ -1,6 +1,6 @@
 # Pantau-Server
 
-**Pantau-Server** (Versi 4.8.127) adalah platform pemantauan (*monitoring*) dan manajemen server Linux berbasis web yang dirancang khusus untuk Sysadmin, DevOps, dan tim operasional NOC. Menggabungkan telemetri performa berdensitas tinggi secara *real-time* dengan kemampuan eksekusi kontrol sistem langsung (*actionable dashboard*) dari satu antarmuka terpusat.
+**Pantau-Server** (Versi 4.8.128) adalah platform pemantauan (*monitoring*) dan manajemen server Linux berbasis web yang dirancang khusus untuk Sysadmin, DevOps, dan tim operasional NOC. Menggabungkan telemetri performa berdensitas tinggi secara *real-time* dengan kemampuan eksekusi kontrol sistem langsung (*actionable dashboard*) dari satu antarmuka terpusat.
 
 Arsitektur sistem dibangun menggunakan backend **FastAPI + MariaDB** pada server pusat serta **Daemon Agent Python mandiri (*Zero-Dependency*)** pada setiap server klien.
 

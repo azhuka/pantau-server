@@ -489,7 +489,7 @@
   
   <div id="prob-table-wrapper" style="overflow-x:auto">
     {% if open_problems %}
-    <table id="probtable" style="width:100%;border-collapse:collapse;table-layout:fixed">
+    <table id="probtable" class="pantau-table" style="width:100%;table-layout:fixed">
       <colgroup>
         <col style="width:135px">
         <col style="width:168px">
@@ -745,8 +745,8 @@
   </div>
 
   {% if recent_resolved %}
-  <div style="overflow-x:auto" id="prob-resolved-table-wrap">
-    <table style="width:100%;margin:0;border-collapse:collapse">
+  <div class="pantau-table-wrap" id="prob-resolved-table-wrap">
+    <table class="pantau-table">
       <thead>
         <tr style="border-bottom:1px solid var(--border)">
           <th class="col-time-detailed" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:145px;min-width:140px" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
@@ -1503,7 +1503,7 @@ window.poll = async function(opts = {}) {
       } else {
         let table = document.getElementById('probtable');
         if (!table) {
-          wrapper.innerHTML = `<table id="probtable" style="width:100%;border-collapse:collapse;table-layout:fixed">
+          wrapper.innerHTML = `<table id="probtable" class="pantau-table" style="width:100%;table-layout:fixed">
             <colgroup>
               <col style="width:135px">
               <col style="width:168px">

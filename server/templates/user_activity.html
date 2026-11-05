@@ -193,8 +193,8 @@
     <span>Memuat aktivitas login &amp; sudo dari server…</span>
   </div>
   <div id="ll-empty" class="empty-msg" style="display:none">Belum ada aktivitas login atau sudo untuk user ini.</div>
-  <div id="ll-scroll" style="{% if initial_logins and initial_logins|length > 0 %}display:block;{% else %}display:none;{% endif %}overflow-x:auto;border:1px solid var(--border);border-radius:6px">
-    <table id="ll-table">
+  <div id="ll-scroll" class="pantau-table-wrap" style="{% if initial_logins and initial_logins|length > 0 %}display:block;{% else %}display:none;{% endif %}">
+    <table id="ll-table" class="pantau-table">
       <thead>
         <tr>
           <th style="width:130px;min-width:125px" title="Waktu aktivitas (arahkan kursor untuk rincian lengkap)">Waktu</th>

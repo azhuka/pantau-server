@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.128
+
+- **Tipe Rilis:** Refaktor Menyeluruh Arsitektur Antarmuka & Standardisasi Pustaka Komponen Global (*Complete Unified Design System Overhaul, Global Component Adoption & Full Hardcode Elimination*)
+- **Fokus Utama:** Menuntaskan inkonsistensi antarmuka di seluruh halaman Pantau Server secara komprehensif, mengeliminasi gaya inline (*hardcoded styles*), serta menerapkan standarisasi pustaka komponen baku (Tabel, Paginasi, Preset Waktu, Badge Status, Kolom Aksi, dan Form Controls) di seluruh platform:
+  1. **Standardisasi Sistem Tabel Operasional (`.pantau-table` & `.pantau-table-wrap`):**
+     - Menerapkan pembungkus seragam `.pantau-table-wrap` dan kelas tabel `.pantau-table` di seluruh halaman utama (`/dashboard`, `/servers`, `/problems`, `/probing`, `/audit`, `/profile`, `/user_activity`).
+     - Menyatukan tipografi header (`th`), padding sel (`td`), perataan teks kiri/tengah/kanan yang presisi, serta status baris kosong (`.pantau-empty-tr`).
+  2. **Harmonisasi Sistem Paginasi Dinamis & Statis (`.pantau-pagination-bar`):**
+     - Menyatukan tata letak baris paginasi di seluruh aplikasi: pemilih baris `Tampilkan: [10 | 25 | 50 | 100 | Semua]` di sisi kiri, ringkasan informasi di tengah, dan navigasi halaman (`« Sebelumnya [Halaman X dari Y] Berikutnya »`) di sisi kanan.
+     - Menyinkronkan fungsi dinamis `attachTablePagination` agar menghasilkan struktur DOM, kelas CSS, dan opsi jumlah baris yang 100% identik dengan komponen server-side Jinja2.
+  3. **Standardisasi Kolom Aksi & Tombol Terpadu (`.pantau-col-act` & `.pantau-btn-icon`):**
+     - Memperluas penggunaan tombol aksi 26x26px terpadu di manajemen pengguna (`/users`, `/profile`), probing (`/probing`), servers (`/servers`), dan problems (`/problems`).
+     - Mengeliminasi tombol aksi inline berukuran tidak seragam pada kontrol kunci/buka akun, izin operator, dan hapus pengguna.
+  4. **Pembersihan Gaya Inline & Pemantapan Token Desain:**
+     - Membersihkan ratusan baris CSS inline acak pada tabel riwayat tindakan (`audit.html`), tabel pengguna (`users.html`, `profile.html`), dan endpoint probing (`probing.html`).
+     - Menyediakan kelas badge peran terpadu (`.pantau-badge-role-admin`, `.pantau-badge-role-operator`, `.pantau-badge-role-viewer`) dan kontrol form baku (`.pantau-select`, `.pantau-filter-bar`).
+
 ## Versi 4.8.127
 
 - **Tipe Rilis:** Penyeragaman Tombol Aksi Tabel Antar Halaman & Arsitektur UI Helper Terpadu (*Unified Table Action Buttons, PantauUI Helper & Cross-Page Interaction Consistency*)

@@ -2949,6 +2949,120 @@ span[data-pg-cur] {
   background: var(--bg-card, #161b22);
 }
 
+/* Pantau Universal Table Standard (High Density NOC) */
+.pantau-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 11.5px !important;
+  text-align: left !important;
+  line-height: 1.35 !important;
+  margin: 0 !important;
+}
+
+.pantau-table thead tr {
+  border-bottom: 1px solid var(--border, #30363d) !important;
+  background: var(--bg-subtle, rgba(255,255,255,0.02)) !important;
+}
+
+.pantau-table thead th {
+  padding: 6px 10px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  color: var(--dim, #8b949e) !important;
+  white-space: nowrap !important;
+  text-align: left !important;
+}
+
+.pantau-table thead th.th-center,
+.pantau-table thead th.col-act {
+  text-align: center !important;
+}
+
+.pantau-table thead th.th-right {
+  text-align: right !important;
+}
+
+.pantau-table tbody tr {
+  border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.04)) !important;
+  transition: background 0.12s ease !important;
+}
+
+.pantau-table tbody tr:hover {
+  background: var(--bg-hover, rgba(255,255,255,0.03)) !important;
+}
+
+.pantau-table tbody td {
+  padding: 5px 10px !important;
+  vertical-align: middle !important;
+  box-sizing: border-box !important;
+  color: var(--text, #e6edf3) !important;
+}
+
+.pantau-table tbody td.col-act {
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+.pantau-table tbody td.mono,
+.pantau-mono {
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 11px !important;
+}
+
+/* Form Controls & Filter Bars */
+.pantau-filter-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+}
+
+.pantau-filter-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.pantau-select {
+  height: 28px !important;
+  padding: 0 8px !important;
+  font-size: 11.5px !important;
+  background: var(--input-bg, #0d1117) !important;
+  border: 1px solid var(--input-border, #30363d) !important;
+  border-radius: 5px !important;
+  color: var(--text, #e6edf3) !important;
+  outline: none !important;
+  cursor: pointer !important;
+  transition: border-color 0.12s ease !important;
+}
+
+.pantau-select:focus {
+  border-color: var(--blue, #38bdf8) !important;
+}
+
+.pantau-badge-role-admin {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+.pantau-badge-role-operator {
+  background: rgba(56, 189, 248, 0.15) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+}
+
+.pantau-badge-role-viewer {
+  background: rgba(148, 163, 184, 0.15) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
 .pantau-empty-tr {
   text-align: center;
 }
@@ -3049,7 +3163,7 @@ span[data-pg-cur] {
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.127' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.128' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
       <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
       </button>
@@ -3128,7 +3242,10 @@ window.PantauUI = {
     history: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`,
     play: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
     pause: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`,
-    close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`
+    close: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+    check: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+    alert: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,
+    refresh: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>`
   },
   serverDetailBtn: function(serverId, title) {
     const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : false;
@@ -3139,6 +3256,20 @@ window.PantauUI = {
     const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : false;
     const t = title || (isEn ? 'Edit Configuration' : 'Edit Konfigurasi Server');
     return `<a href="/servers/${serverId}/edit" class="pantau-btn-icon" title="${t}" aria-label="${t}">${this.icons.edit}</a>`;
+  },
+  actionBtn: function(iconKey, options) {
+    const opt = options || {};
+    const icon = this.icons[iconKey] || '';
+    const title = opt.title || '';
+    const variantCls = opt.variant ? `pantau-btn-icon-${opt.variant}` : '';
+    if (opt.href) {
+      return `<a href="${opt.href}" class="pantau-btn-icon ${variantCls}" title="${title}" aria-label="${title}" ${opt.attr || ''}>${icon}</a>`;
+    }
+    return `<button type="${opt.type || 'button'}" class="pantau-btn-icon ${variantCls}" title="${title}" aria-label="${title}" ${opt.attr || ''}>${icon}</button>`;
+  },
+  badge: function(text, variant) {
+    const v = variant || 'muted';
+    return `<span class="badge badge-${v}">${text}</span>`;
   }
 };
 
@@ -5666,7 +5797,7 @@ function attachTablePagination(target, options = {}) {
       bar = existing;
     } else {
       bar = document.createElement('div');
-      bar.className = 'table-pagination-bar';
+      bar.className = 'pantau-pagination-bar table-pagination-bar';
       if (tableId) bar.dataset.forTable = tableId;
       const scrollParent = table.closest('div[style*="overflow"], .table-responsive') || table;
       if (scrollParent.nextSibling) {
@@ -5678,17 +5809,17 @@ function attachTablePagination(target, options = {}) {
   }
 
   bar.innerHTML = `
-    <div class="table-pagination-info" data-pg-info></div>
-    <div class="table-pagination-nav">
-      <button type="button" class="btn-pg" data-pg-prev>« Sebelumnya</button>
-      <span class="page-indicator" data-pg-cur>Hal 1 / 1</span>
-      <button type="button" class="btn-pg" data-pg-next>Berikutnya »</button>
-    </div>
-    <div class="table-pagination-limit">
-      <span data-i18n="show">Tampilkan:</span>
-      <select data-pg-select>
-        ${pageSizeOptions.map(opt => `<option value="${opt}" ${opt === pageSize ? 'selected' : ''}>${opt === 'all' ? 'Semua ' + unitLabel : opt + ' ' + unitLabel}</option>`).join('')}
+    <div class="pantau-pg-limit table-pagination-limit">
+      <span class="pantau-pg-limit-label" data-i18n="show">Tampilkan:</span>
+      <select class="pantau-pg-select" data-pg-select aria-label="Jumlah baris per halaman">
+        ${pageSizeOptions.map(opt => `<option value="${opt}" ${opt === pageSize ? 'selected' : ''}>${opt === 'all' ? 'Semua' : opt}</option>`).join('')}
       </select>
+    </div>
+    <div class="pantau-pg-info table-pagination-info" data-pg-info></div>
+    <div class="pantau-pg-nav table-pagination-nav">
+      <button type="button" class="pantau-pg-btn btn-pg" data-pg-prev aria-label="Halaman sebelumnya">« Sebelumnya</button>
+      <span class="pantau-pg-cur page-indicator" data-pg-cur>Halaman 1 dari 1</span>
+      <button type="button" class="pantau-pg-btn btn-pg" data-pg-next aria-label="Halaman berikutnya">Berikutnya »</button>
     </div>
   `;
 
@@ -5785,9 +5916,9 @@ function attachTablePagination(target, options = {}) {
     Array.from(selEl.options).forEach(opt => {
       const val = opt.value;
       if (val === 'all') {
-        opt.textContent = isEn ? ('All ' + displayUnit) : ('Semua ' + displayUnit);
+        opt.textContent = isEn ? 'All' : 'Semua';
       } else {
-        opt.textContent = val + ' ' + displayUnit;
+        opt.textContent = val;
       }
     });
 
