@@ -354,6 +354,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.118
+
+- **Tipe Rilis:** Perbaikan Kontras Notifikasi Toast Tema Terang, Normalisasi Rentang Riwayat Disk 24 Jam, & Perapian Padding Tab Logging (*Light Theme Toast Contrast Fix, 24-Hour Disk History Range Normalization & Logging Tab Control Padding Alignment*)
+- **Fokus Utama:** Menyelesaikan 3 anomali antarmuka dan konsistensi data telemetri yang teridentifikasi dari evaluasi tangkapan layar:
+  1. **Kontras dan Keterbacaan Notifikasi Toast Mengambang (`.pantau-bg-toast`):**
+     - Menyediakan adaptasi tema penuh (`[data-theme="light"]`, `[data-theme="obsidian"]`, `[data-theme="navy"]`) pada komponen notifikasi latar belakang `.pantau-bg-toast`.
+     - Pada tema terang, kartu notifikasi kini menggunakan latar belakang putih (`#ffffff`) dengan batas dan bayangan halus, serta warna tipografi yang berkontras tajam (`var(--text-heading)` dan `var(--dim)`), mengeliminasi anomali teks hitam di atas latar gelap pekat.
+  2. **Normalisasi Rentang Riwayat Penggunaan Disk 24 Jam (`api_server_perf`):**
+     - Memperbaiki logika pemilihan tabel pada endpoint `/api/servers/{sid}/perf` di mana rentang `<= 24 jam` (1 Jam, 6 Jam, Hari Ini, 24 Jam) sebelumnya keliru dipotong oleh batas 1 jam lalu ke tabel agregasi `SysSnapshotHour` (yang tidak menyimpan rincian partisi disk individual).
+     - Seluruh rentang hingga 24 jam kini langsung dilayani dari tabel `SystemSnapshot` yang menyimpan data telemetri partisi disk per mount point selama 24 jam penuh. Grafik utilisasi disk (`/`, `/boot`, dll.) kini menampilkan bentangan 24 jam utuh yang selaras sempurna dengan grafik CPU, Memori, Swap, dan Beban Sistem.
+  3. **Penataan Padding dan Margin Kontrol Tab Logging (`#tab-log`):**
+     - Menambahkan bantalan proporsional `padding: 10px 14px 14px` pada kontainer panel `#sublog-panel-svc` dan `#sublog-panel-sys`.
+     - Menghilangkan anomali kontrol selektor unit, kotak pencarian `log-filter`, dan jendela output terminal `<pre>` yang sebelumnya menempel langsung tanpa jarak (0px) pada garis batas kartu, menjaga keselarasan visual berstandar NOC.
+
 ## Versi 4.8.117
 
 - **Tipe Rilis:** Perapian Format Pesan Kegagalan Otentikasi Sudo & Standarisasi Deskripsi Audit (*Sudo Authentication Failure Message Formatting & Concise Audit Display Standard*)

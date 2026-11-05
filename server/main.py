@@ -12498,17 +12498,21 @@ def api_server_perf(
         if not span:
             raise HTTPException(status_code=400, detail="Rentang tidak dikenal")
         start = now - span
-    # Jam terakhir yang sudah selesai dipandu (anchor pemisah historis vs mentah)
-    anchor = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
+    # Rentang <= 24 jam (1h, 6h, today, 24h) membaca langsung dari SystemSnapshot
+    # yang memiliki sampel lengkap beserta telemetri disk seluruh mount point.
+    # Rentang > 24 jam (7d, 30d) membaca histori dari SysSnapshotHour dan jam terbaru dari SystemSnapshot.
     points: list[dict] = []
 
-    if start < anchor:
+    if span <= timedelta(hours=24):
+        raw_from = start
+    else:
+        cutoff_raw = now - timedelta(hours=24)
         hour_rows = (
             db.query(SysSnapshotHour)
             .filter(
                 SysSnapshotHour.server_id == sid,
                 SysSnapshotHour.bucket >= start,
-                SysSnapshotHour.bucket < anchor,
+                SysSnapshotHour.bucket < cutoff_raw,
             )
             .order_by(SysSnapshotHour.bucket)
             .all()
@@ -12526,9 +12530,7 @@ def api_server_perf(
             }
             for h in hour_rows
         ]
-        raw_from = anchor
-    else:
-        raw_from = start
+        raw_from = cutoff_raw
 
     # Snapshot mentalah terbaru, di-downsample per bucket waktu (SQL).
     step_secs = max(int(span.total_seconds() / 120), 30)
