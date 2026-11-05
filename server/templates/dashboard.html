@@ -1341,9 +1341,12 @@ body.popout-fleet_table #dash-fleet-card {
             title="Klik untuk buka rincian server {{ srv.hostname }}">
           <!-- 0. Server -->
           <td data-sort-val="{{ srv.hostname | lower }}" style="white-space:nowrap;vertical-align:middle">
-            <div style="display:inline-flex;align-items:center;gap:7px">
+            <div style="display:inline-flex;align-items:center;gap:6px">
               <span class="dot {{ 'warn' if srv.is_maintenance else ('down' if srv._status_cls == 'badge-danger' or srv._status_label == 'offline' else ('orange' if srv._status_cls == 'badge-orange' else ('warn' if srv._status_cls == 'badge-warn' else ('info' if srv._status_cls == 'badge-info' else ('up' if srv._status_cls == 'badge-up' else 'muted'))))) }}" id="tbl-dot-{{ srv.id }}"></span>
               <strong style="color:var(--text-bright);font-size:12.5px" id="tbl-host-{{ srv.id }}">{{ srv.hostname }}</strong>
+              <a href="/servers/{{ srv.id }}" class="pantau-btn-icon" title="Buka Rincian Server" aria-label="Rincian" onclick="event.stopPropagation()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </a>
             </div>
           </td>
 
@@ -2196,9 +2199,12 @@ function createAndAppendDashTableRow(srv, tbody) {
 
   tr.innerHTML = `
     <td style="white-space:nowrap;vertical-align:middle">
-      <div style="display:inline-flex;align-items:center;gap:7px">
+      <div style="display:inline-flex;align-items:center;gap:6px">
         <span class="dot unknown" id="tbl-dot-${srv.id}"></span>
         <strong style="color:var(--text-bright);font-size:12.5px" id="tbl-host-${srv.id}">${_dashEsc(srv.hostname || '')}</strong>
+        <a href="/servers/${srv.id}" class="pantau-btn-icon" title="${isEn ? 'Server Details' : 'Buka Rincian Server'}" aria-label="Rincian" onclick="event.stopPropagation()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        </a>
       </div>
     </td>
     <td style="text-align:left;vertical-align:middle">

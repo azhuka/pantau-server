@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.127
+
+- **Tipe Rilis:** Penyeragaman Tombol Aksi Tabel Antar Halaman & Arsitektur UI Helper Terpadu (*Unified Table Action Buttons, PantauUI Helper & Cross-Page Interaction Consistency*)
+- **Fokus Utama:** Mengeliminasi disparitas visual dan tata letak tombol aksi operasional (rincian server, edit, hapus, probing, dan status) di seluruh halaman Pantau Server, membangun satu sumber kebenaran (*single source of truth*) melalui pustaka UI Helper `window.PantauUI` dan komponen macro Jinja2:
+  1. **Standardisasi Tombol Ikon Aksi (*Unified Action Icon Button System*):**
+     - Membangun kelas baku `.pantau-btn-icon`, `.pantau-btn-icon-danger`, dan `.pantau-btn-icon-primary` dengan ukuran presisi 26x26px, padding 0, border-radius 5px, serta transisi hover terpadu.
+     - Menyediakan wadah kolom aksi baku `.pantau-col-act` dengan alignment presisi tengah dan jarak antar tombol 4px seragam.
+  2. **Penyeragaman Tombol Rincian Server (*Canonical Server Details Button*):**
+     - Menyatukan akses rincian server di Dasbor (`/dashboard`), Daftar Server (`/servers`), dan Daftar Masalah (`/problems`) menggunakan ikon Eye SVG kanonikal baku yang identik ukuran, visual, dan tooltip-nya (`Buka Rincian Server`).
+     - Menyediakan tombol pintasan rincian server langsung di samping nama host pada kartu Status & Kinerja Dasbor, baik saat SSR (Server-Side Rendering) maupun pembaruan live via JavaScript.
+     - Menggantikan variasi ikon tautan eksternal lama pada tabel Masalah Aktif dan Riwayat Insiden Teratasi dengan tombol rincian server kanonikal.
+  3. **Arsitektur Pustaka Antarmuka PantauUI (*Client-Side PantauUI Helper*):**
+     - Membangun objek global `window.PantauUI` pada `server/templates/base.html` yang menyediakan koleksi ikon SVG kanonikal (`eye`, `edit`, `trash`, `history`, `play`, `pause`, `close`) serta fungsi pembuat elemen (`serverDetailBtn`, `serverEditBtn`).
+     - Menghilangkan kode gaya inline (`style="padding: 4px 7px"`, dsb.) pada loop render JavaScript di tabel Dasbor, Server, Masalah, dan Probing.
+  4. **Pustaka Komponen Tombol Jinja2 (*Reusable Macro Buttons*):**
+     - Menyediakan modul komponen `server/templates/components/buttons.html` yang mencakup macro `btn_server_detail()`, `btn_server_edit()`, dan `btn()` untuk standarisasi render server-side yang konsisten dan modular.
+
 ## Versi 4.8.126
 
 - **Tipe Rilis:** Standardisasi Fondasi Komponen Frontend Terpadu & Penyeragaman Elemen Global Antarmuka (*Unified Frontend Component Foundation, Universal Modal Close Architecture & UI Preset/Pagination Standardization*)

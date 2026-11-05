@@ -1094,25 +1094,25 @@ function renderTable() {
           <div style="font-size:10px;color:var(--dim)">tiap ${p.interval_seconds}d</div>
         </td>
         <td class="td-actions">
-          <div style="display:inline-flex;gap:4px;align-items:center">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="testProbeNow(${p.id}, this)" title="Uji Sambungan" aria-label="Uji Sambungan">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--blue)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <div class="pantau-col-act">
+            <button type="button" class="pantau-btn-icon" onclick="testProbeNow(${p.id}, this)" title="Uji Sambungan" aria-label="Uji Sambungan">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--blue)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
             </button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="openHistoryModal(${p.id})" title="Grafik &amp; Riwayat" aria-label="Grafik &amp; Riwayat">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--green)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            <button type="button" class="pantau-btn-icon" onclick="openHistoryModal(${p.id})" title="Grafik &amp; Riwayat" aria-label="Grafik &amp; Riwayat">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--green)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
             </button>
             ${CAN_MANAGE_PROBING ? `
-            <button type="button" class="btn btn-ghost btn-sm" onclick="toggleProbeActive(${p.id})" title="${isPaused ? 'Lanjutkan Pemantauan' : 'Jeda Pemantauan'}" aria-label="Jeda/Lanjutkan">
+            <button type="button" class="pantau-btn-icon" onclick="toggleProbeActive(${p.id})" title="${isPaused ? 'Lanjutkan Pemantauan' : 'Jeda Pemantauan'}" aria-label="Jeda/Lanjutkan">
               ${isPaused 
-                ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--green)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>' 
-                : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--yellow)"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'
+                ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--green)"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>' 
+                : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--yellow)"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>'
               }
             </button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="openEditProbeModal(${p.id})" title="Sunting Endpoint" aria-label="Sunting">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            <button type="button" class="pantau-btn-icon" onclick="openEditProbeModal(${p.id})" title="Sunting Endpoint" aria-label="Sunting">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
             </button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="deleteProbe(${p.id})" title="Hapus Endpoint" aria-label="Hapus">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--red)"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <button type="button" class="pantau-btn-icon pantau-btn-icon-danger" onclick="deleteProbe(${p.id})" title="Hapus Endpoint" aria-label="Hapus">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--red)"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             </button>
             ` : ''}
           </div>
