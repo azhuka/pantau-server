@@ -354,6 +354,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.120
+
+- **Tipe Rilis:** Penyatuan Konfigurasi Gateway, DNS, & Statistik Lalu Lintas Jaringan serta Ekspansi Penuh Alokasi Penyimpanan (*Network Configuration & Traffic Statistics Card Unification with Full-Width Storage Allocation Expansion*)
+- **Fokus Utama:** Mengeliminasi fragmentasi informasi dan pemborosan ruang tampilan antarmuka spesifikasi serta lalu lintas jaringan:
+  1. **Penyatuan Kartu Jaringan Berdensitas Tinggi NOC (*Unified Network Configuration & Live Traffic Card*):**
+     - Mengintegrasikan kartu *Konfigurasi Gateway & Resolver DNS* dan *Statistik Lalu Lintas Jaringan* menjadi satu kartu terpadu: **"Konfigurasi & Lalu Lintas Jaringan"**.
+     - Header kartu menyematkan badge ringkas Default Gateway (`GW`), Resolver DNS (`DNS`), dan Alamat IP Utama (`IP`) yang diperbarui secara *real-time* via polling dinamis.
+     - Tabel `#net-table` diperluas menjadi 9 kolom komprehensif: `Antarmuka`, `Alamat IP`, `Alamat MAC`, `Kecepatan`, `Status`, `RX Total`, `TX Total`, `Laju Masuk (RX)`, dan `Laju Keluar (TX)`.
+     - Mengintegrasikan ekstraksi data MAC address dan kecepatan tautan (*link speed*) pada fungsi `collect_net()` agen klien, didukung *fallback* otomatis ke `hardware_specs.network.interfaces`.
+  2. **Ekspansi Lebar Penuh Tabel Penyimpanan (`specs-storage-block`):**
+     - Dengan dipindahkannya konfigurasi jaringan ke kartu jaringan tersendiri, blok alokasi penyimpanan (`spec-disks-table`) pada kartu spesifikasi kini memanfaatkan lebar penuh 100%.
+     - Mengeliminasi total bilah gulir horizontal (*horizontal scrollbar*) pada tabel perangkat penyimpanan / alokasi kontainer sehingga 7 kolom data disk tersaji proporsional dan mudah diobservasi.
+  3. **Penyempurnaan Sanitasi Jaringan & Eliminasi Entri Semu Kernel:**
+     - Menapis berkas kontrol modul kernel Linux (`bonding_masters`) agar tidak terdeteksi atau dilaporkan sebagai antarmuka jaringan pada spesifikasi perangkat keras klien.
+     - Menyesuaikan parser backend `_sanitize_net_list` untuk memvalidasi dan mempertahankan persistensi data `mac` dan `speed` antarmuka pada basis data `SystemSnapshot`.
+
 ## Versi 4.8.119
 
 - **Tipe Rilis:** Penataan Proporsi Visual Grafik Riwayat Kinerja & Eliminasi Pesan Audit Redundan (*Performance History Visual Proportion Alignment & Redundant Audit Notice Elimination*)

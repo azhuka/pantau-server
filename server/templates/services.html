@@ -843,7 +843,8 @@
   box-sizing: border-box;
 }
 .tab-body .specs-grid-4 > div,
-.tab-body .specs-grid-2 > div {
+.tab-body .specs-grid-2 > div,
+.tab-body .specs-storage-block > div {
   background: rgba(0, 0, 0, 0.16) !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   border-radius: 5px !important;
@@ -851,11 +852,13 @@
   box-sizing: border-box;
 }
 .tab-body .specs-grid-4 > div > div:first-child,
-.tab-body .specs-grid-2 > div > div:first-child {
+.tab-body .specs-grid-2 > div > div:first-child,
+.tab-body .specs-storage-block > div > div:first-child {
   margin-bottom: 4px !important;
 }
 .tab-body .specs-grid-4 > div strong,
-.tab-body .specs-grid-2 > div strong {
+.tab-body .specs-grid-2 > div strong,
+.tab-body .specs-storage-block > div strong {
   font-size: 11.5px !important;
 }
 .tab-body .table-compact td {
@@ -1119,12 +1122,14 @@ div[style*="position: fixed"] .card {
   background: #f8fafc !important;
 }
 [data-theme="light"] .tab-body .specs-grid-4 > div,
-[data-theme="light"] .tab-body .specs-grid-2 > div {
+[data-theme="light"] .tab-body .specs-grid-2 > div,
+[data-theme="light"] .tab-body .specs-storage-block > div {
   background: #f8fafc !important;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 [data-theme="light"] .tab-body .specs-grid-4 > div strong,
-[data-theme="light"] .tab-body .specs-grid-2 > div strong {
+[data-theme="light"] .tab-body .specs-grid-2 > div strong,
+[data-theme="light"] .tab-body .specs-storage-block > div strong {
   color: #0f172a !important;
 }
 [data-theme="light"] .tab-body .table-compact td {
@@ -1849,8 +1854,8 @@ div[style*="position: fixed"] .card {
 
     </div>
 
-    <!-- 2 Kolom Bawah: Disk Fisik & Jaringan/Gateway -->
-    <div class="specs-grid-2" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:14px">
+    <!-- Blok Penyimpanan Penuh (Lebar 100%) -->
+    <div class="specs-storage-block" style="padding:0 8px 6px 8px;box-sizing:border-box">
       
       <!-- Block Devices / Storage -->
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
@@ -1922,47 +1927,6 @@ div[style*="position: fixed"] .card {
         </div>
       </div>
 
-      <!-- Network Configuration -->
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:6px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-            <strong style="font-size:13px">Konfigurasi Gateway &amp; Resolver DNS</strong>
-          </div>
-          <span class="badge badge-info mono" style="font-size:8.5px">{{ server.ip_address }}</span>
-        </div>
-        <table class="table-compact" style="width:100%;font-size:10px;margin-bottom:10px">
-          <tbody>
-            <tr><td style="color:var(--dim);width:36%">Gateway</td><td class="mono" id="spec-net-gw">{{ hardware_specs.network.gateway if hardware_specs and hardware_specs.network and hardware_specs.network.gateway else '—' }}</td></tr>
-            <tr><td style="color:var(--dim)">DNS Server</td><td class="mono" id="spec-net-dns">{{ hardware_specs.network.dns|join(', ') if hardware_specs and hardware_specs.network and hardware_specs.network.dns else '—' }}</td></tr>
-          </tbody>
-        </table>
-        <div style="overflow-x:auto">
-          <table style="width:100%;font-size:10px" id="spec-ifaces-table">
-            <thead>
-              <tr>
-                <th>Antarmuka</th>
-                <th>Alamat MAC</th>
-                <th>Kecepatan</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% if hardware_specs and hardware_specs.network and hardware_specs.network.interfaces %}
-                {% for iface in hardware_specs.network.interfaces %}
-                <tr>
-                  <td class="mono"><strong>{{ iface.name }}</strong></td>
-                  <td class="mono" style="font-size:11px">{{ iface.mac or '—' }}</td>
-                  <td class="mono" style="font-size:11px;color:var(--dim)">{{ iface.speed or 'Auto / Virtual' }}</td>
-                </tr>
-                {% endfor %}
-              {% else %}
-                <tr><td colspan="3" class="empty-msg" style="padding:12px">Tidak ada data antarmuka jaringan.</td></tr>
-              {% endif %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
     </div>
   </div>
 
@@ -1991,12 +1955,23 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
 
-  <!-- 4. Statistik Antarmuka Jaringan (Live) -->
+  <!-- 4. Konfigurasi & Statistik Antarmuka Jaringan (Live) -->
   <div class="card">
-    <div class="card-header" style="align-items:center;justify-content:space-between">
+    <div class="card-header" style="align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div>
-        <h3 style="margin:0">Statistik Lalu Lintas Jaringan</h3>
-        <span style="font-size:12px;color:var(--dim)">Pemantauan lalu lintas data antarmuka, laju transfer, dan alamat IP</span>
+        <h3 style="margin:0">Konfigurasi &amp; Lalu Lintas Jaringan</h3>
+        <span style="font-size:12px;color:var(--dim)">Konfigurasi gateway, resolver DNS, dan statistik lalu lintas antarmuka secara real-time</span>
+      </div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">
+        <span class="badge badge-muted mono" style="font-size:9.5px;padding:2px 7px;display:inline-flex;align-items:center;gap:4px" title="Default Gateway Server">
+          <span style="color:var(--dim)">GW:</span> <strong id="spec-net-gw">{{ hardware_specs.network.gateway if hardware_specs and hardware_specs.network and hardware_specs.network.gateway else '—' }}</strong>
+        </span>
+        <span class="badge badge-muted mono" style="font-size:9.5px;padding:2px 7px;display:inline-flex;align-items:center;gap:4px" title="Resolver DNS">
+          <span style="color:var(--dim)">DNS:</span> <strong id="spec-net-dns">{{ hardware_specs.network.dns|join(', ') if hardware_specs and hardware_specs.network and hardware_specs.network.dns else '—' }}</strong>
+        </span>
+        <span class="badge badge-info mono" style="font-size:9.5px;padding:2px 7px;display:inline-flex;align-items:center;gap:4px" title="Alamat IP Utama Server">
+          <span style="opacity:0.85">IP:</span> <strong>{{ server.ip_address }}</strong>
+        </span>
       </div>
     </div>
     <div id="net-empty" class="empty-msg" style="display:none">Belum ada data jaringan dari server ini.</div>
@@ -2006,6 +1981,8 @@ div[style*="position: fixed"] .card {
           <tr>
             <th>Antarmuka</th>
             <th>Alamat IP</th>
+            <th>Alamat MAC</th>
+            <th>Kecepatan</th>
             <th>Status</th>
             <th title="Total akumulasi byte diterima sejak boot">RX Total</th>
             <th title="Total akumulasi byte dikirim sejak boot">TX Total</th>
@@ -4283,6 +4260,7 @@ let probCurrentPage = 1;
 let actionLimit = 10; // default 10 riwayat tindakan
 let actionCurrentPage = 1;
 let _cachedActions = [];
+let _lastHardwareSpecs = {{ (hardware_specs or {}) | tojson }};
 
 // State untuk tab Packages (dideklarasikan di awal untuk menghindari TDZ)
 var _packagesRawData = {{ (installed_packages or '[]') | tojson }};
@@ -4438,10 +4416,6 @@ function initServicesTabPagination() {
   // 14. Tab Spesifikasi (Perangkat Penyimpanan)
   if (document.getElementById('spec-disks-table') && !_servicesTabPagination['spec-disks']) {
     _servicesTabPagination['spec-disks'] = attachTablePagination('#spec-disks-table', { unitLabel: 'disk', defaultLimit: 10, pageSizeOptions: [10, 25, 'all'] });
-  }
-  // 15. Tab Spesifikasi (Antarmuka Jaringan - Konfigurasi Gateway & Resolver DNS)
-  if (document.getElementById('spec-ifaces-table') && !_servicesTabPagination['spec-ifaces']) {
-    _servicesTabPagination['spec-ifaces'] = attachTablePagination('#spec-ifaces-table', { unitLabel: 'antarmuka', defaultLimit: 5, pageSizeOptions: [5, 10, 25, 'all'], isDnsGw: true });
   }
 }
 
@@ -10097,10 +10071,17 @@ function renderSys(data) {
   const ne = document.getElementById('net-empty');
   nt.style.display = net.length ? 'table' : 'none';
   ne.style.display = net.length ? 'none' : 'block';
+
+  const hwIfaces = (_lastHardwareSpecs && _lastHardwareSpecs.network && Array.isArray(_lastHardwareSpecs.network.interfaces)) ? _lastHardwareSpecs.network.interfaces : [];
+  const hwIfaceMap = {};
+  hwIfaces.forEach(it => { if (it && it.name) hwIfaceMap[it.name] = it; });
+
   nt.querySelector('tbody').innerHTML = net.map(n => {
     const ips = (n.ip_addrs && n.ip_addrs.length)
       ? n.ip_addrs.map(ip => '<span class="mono copyable-ip" style="font-size:10px;cursor:pointer" onclick="copyIp(\'' + escHtml(ip) + '\', event)" title="Klik untuk salin">' + escHtml(ip) + '</span>').join('<br>')
       : '<span style="color:var(--dim)">—</span>';
+    const macVal = n.mac || (hwIfaceMap[n.iface] && hwIfaceMap[n.iface].mac) || '—';
+    const speedVal = n.speed || (hwIfaceMap[n.iface] && hwIfaceMap[n.iface].speed) || 'Auto / Virtual';
     const rxRateStr = (n.rx_rate > 0)
       ? '<span style="color:#38bdf8;font-weight:600">↓ ' + fmtBytes(n.rx_rate) + '/s</span>'
       : '<span style="color:var(--dim)">0 B/s</span>';
@@ -10112,6 +10093,8 @@ function renderSys(data) {
       : '<span class="badge badge-down" style="font-size:8.5px;padding:1px 5px"><span class="dot down" style="margin-right:3px"></span>DOWN</span>';
     return '<tr><td class="mono"><strong>' + escHtml(n.iface) + '</strong></td>'
       + '<td>' + ips + '</td>'
+      + '<td class="mono" style="font-size:10.5px">' + escHtml(macVal) + '</td>'
+      + '<td class="mono" style="font-size:10px;color:var(--dim)">' + escHtml(speedVal) + '</td>'
       + '<td>' + stateBadge + '</td>'
       + '<td class="mono">' + fmtBytes(n.rx) + '</td>'
       + '<td class="mono">' + fmtBytes(n.tx) + '</td>'

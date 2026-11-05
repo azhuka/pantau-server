@@ -1342,6 +1342,8 @@ def _sanitize_net_list(raw) -> str | None:
             "tx_rate": _clamp_float(n.get("tx_rate"), 0.0, 0.0, 1e12),
             "is_up": bool(n.get("is_up")),
             "ip_addrs": ip_addrs,
+            "mac": _clean_str(n.get("mac"), "", 32),
+            "speed": _clean_str(n.get("speed"), "", 32),
         })
     return json.dumps(cleaned) if cleaned else None
 
@@ -2294,6 +2296,11 @@ def _get_hardware_specs_dict(server: Server, extra: ServerExtras | None, latest:
                             "firmware": "",
                             "detail": "Virtual (Host Managed)" if is_disk_virt else "Normal",
                         }
+                if parsed.get("network") and isinstance(parsed["network"].get("interfaces"), list):
+                    parsed["network"]["interfaces"] = [
+                        it for it in parsed["network"]["interfaces"]
+                        if isinstance(it, dict) and it.get("name") not in ("lo", "bonding_masters")
+                    ]
                 return parsed
         except Exception:
             pass

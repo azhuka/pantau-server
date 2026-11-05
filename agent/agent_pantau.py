@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.119"
+AGENT_VERSION = "4.8.120"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -2440,7 +2440,7 @@ def collect_hardware_specs() -> dict:
         net_dir = "/sys/class/net"
         if os.path.exists(net_dir):
             for iface in sorted(os.listdir(net_dir)):
-                if iface == "lo":
+                if iface == "lo" or iface == "bonding_masters":
                     continue
                 mac_path = os.path.join(net_dir, iface, "address")
                 speed_path = os.path.join(net_dir, iface, "speed")
@@ -2460,6 +2460,8 @@ def collect_hardware_specs() -> dict:
                                 speed = f"{sp} Mbps"
                 except Exception:
                     pass
+                if not speed:
+                    speed = "Auto / Virtual"
                 specs["network"]["interfaces"].append({
                     "name": iface,
                     "mac": mac,
@@ -2657,10 +2659,28 @@ def collect_net() -> list[dict]:
                 is_up = 1 if f.read().strip() == "up" else 0
         except OSError:
             pass
+        mac = ""
+        try:
+            with open(f"/sys/class/net/{name}/address") as f:
+                mac = f.read().strip()
+        except OSError:
+            pass
+        speed = ""
+        try:
+            with open(f"/sys/class/net/{name}/speed") as f:
+                sp_val = f.read().strip()
+                if sp_val.isdigit() and int(sp_val) > 0:
+                    speed = f"{sp_val} Mbps"
+        except OSError:
+            pass
+        if not speed:
+            speed = "Auto / Virtual"
         ifaces.append({
             "iface": name, "rx": rx, "tx": tx,
             "rx_rate": int(rx_rate), "tx_rate": int(tx_rate), "is_up": is_up,
             "ip_addrs": _ip_map.get(name, [])[:4],
+            "mac": mac,
+            "speed": speed,
         })
         _net_prev[name] = (rx, tx)
     _net_prev_t = now
