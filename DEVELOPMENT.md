@@ -354,6 +354,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.111
+
+- **Tipe Rilis:** Sinkronisasi Instan Multi-Lapis Audit Shell, Pembukaan Kunci Kernel `legacy_tiocsti`, dan Eliminasi Typo Terminal (*Multi-Tier Real-Time Shell Audit Sync, Kernel TIOCSTI Unlock, & Typo Noise Elimination*)
+- **Fokus Utama:** Menyempurnakan pemantauan perintah non-sudo secara real-time pada seluruh sesi terminal aktif dan baru di berbagai distro Linux & container:
+  1. **Pembukaan Kunci Kernel `dev.tty.legacy_tiocsti` (*Kernel TIOCSTI Sysctl Unlock*):**
+     - Pada kernel Linux modern (Linux 6.2+ / Ubuntu 24.04 LTS / Proxmox VE 7+), pembilasan terminal via `TIOCSTI` sebelumnya diblokir oleh setelan kernel default (`legacy_tiocsti = 0`).
+     - Wrapper `pantau-history` yang berjalan sebagai root kini secara otonom mengaktifkan `legacy_tiocsti = 1` pada `/proc/sys/dev/tty/legacy_tiocsti`, mengembalikan kemampuan injeksi sinyal pembilasan instan `history -a\r\n` ke terminal aktif.
+  2. **Audit Shell Hook Multi-Lapis Permanen (*Multi-Tier Shell Hook Enforcement*):**
+     - Memastikan seluruh sesi pengguna baru, login SSH, subshell, maupun sesi interaktif langsung mengekspor `PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"` dan `HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "` dengan mode `shopt -s histappend`.
+     - Hook dipasang secara otomatis dan redundan pada `/etc/profile.d/pantau-history.sh`, `/etc/bash.bashrc`, dan berkas `.bashrc` personal pengguna target.
+  3. **Eliminasi Typo Keluar Terminal (`xit`):**
+     - Menambahkan filter untuk kesalahan ketik umum perintah keluar (`xit`) ke dalam `IGNORED_SHELL_BASE_COMMANDS` di agen, server, dan antarmuka web, sehingga hanya perintah operasional murni yang tampil di tabel audit NOC.
+  4. **Pembaruan Otonom Armada & Installer:**
+     - Skrip instalasi `package/install.sh` kini secara langsung mengintegrasikan hook `/etc/bash.bashrc` selain `/etc/profile.d/`, menjamin kesiapan audit shell seketika pasca instalasi agen baru.
+
 ## Versi 4.8.110
 
 - **Tipe Rilis:** Deteksi Login Shell SSH (`-bash`) & Sinkronisasi Pembilasan Terminal Terbuka (*SSH Login Shell Detection & Open Terminal Auto-Flush*)

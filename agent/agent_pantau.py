@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.110"
+AGENT_VERSION = "4.8.111"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4488,7 +4488,7 @@ IGNORED_SHELL_BASE_COMMANDS = {
     "ls", "ll", "la", "l", "dir", "vdir",
     "pwd",
     "clear", "cls", "reset",
-    "exit", "logout",
+    "exit", "xit", "logout",
     "history",
     "true", "false",
 }
@@ -5602,7 +5602,8 @@ def collect_kernel_events(syslogs=None) -> dict:
 
 PANTAU_HISTORY_SCRIPT_BODY = """#!/usr/bin/env python3
 # pantau-history - Wrapper pembaca riwayat terminal otonom untuk Agen Pantau.
-# Mendukung auto-flush terminal aktif (TIOCSTI) sehingga perintah yang baru
+# Mendukung auto-flush terminal aktif (TIOCSTI + legacy_tiocsti unlock), serta
+# pemberian hook otomatis pada profil sistem dan pengguna sehingga perintah yang
 # dieksekusi langsung tertulis ke disk tanpa menunggu logout atau 'history -a'.
 import sys
 import os
@@ -5623,12 +5624,67 @@ try:
     u_entry = pwd.getpwnam(user)
     home_dir = u_entry.pw_dir
     target_uid = u_entry.pw_uid
+    target_gid = u_entry.pw_gid
 except Exception:
     sys.exit(3)
 
 if not os.path.isdir(home_dir):
     sys.exit(3)
 
+# 1. Pastikan kernel mengizinkan TIOCSTI jika sysctl legacy_tiocsti tersedia
+try:
+    tioc_path = "/proc/sys/dev/tty/legacy_tiocsti"
+    if os.path.exists(tioc_path):
+        with open(tioc_path, "r+") as f_tioc:
+            if f_tioc.read().strip() == "0":
+                f_tioc.seek(0)
+                f_tioc.write("1\\n")
+except Exception:
+    pass
+
+# 2. Pasang hook audit real-time pada profil sistem dan bashrc pengguna
+hook_content = (
+    "# Pantau NOC Audit Hook: Sinkronisasi instan riwayat perintah shell ke disk\\n"
+    'export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "\\n'
+    'shopt -s histappend 2>/dev/null || true\\n'
+    'export PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"\\n'
+)
+try:
+    prof_file = "/etc/profile.d/pantau-history.sh"
+    if not os.path.exists(prof_file):
+        with open(prof_file, "w", encoding="utf-8") as f:
+            f.write(hook_content)
+        os.chmod(prof_file, 0o644)
+except Exception:
+    pass
+
+try:
+    bashrc_sys = "/etc/bash.bashrc" if os.path.exists("/etc/bash.bashrc") else ("/etc/bashrc" if os.path.exists("/etc/bashrc") else "")
+    if bashrc_sys and os.path.exists(bashrc_sys):
+        with open(bashrc_sys, "r", encoding="utf-8", errors="replace") as f:
+            b_data = f.read()
+        if "pantau-history.sh" not in b_data:
+            with open(bashrc_sys, "a", encoding="utf-8") as f:
+                f.write("\\n# Pantau NOC Audit Hook\\n[ -f /etc/profile.d/pantau-history.sh ] && . /etc/profile.d/pantau-history.sh\\n")
+except Exception:
+    pass
+
+try:
+    u_bashrc = os.path.join(home_dir, ".bashrc")
+    if os.path.exists(u_bashrc):
+        with open(u_bashrc, "r", encoding="utf-8", errors="replace") as f:
+            u_data = f.read()
+        if "PROMPT_COMMAND" not in u_data and "pantau-history.sh" not in u_data:
+            with open(u_bashrc, "a", encoding="utf-8") as f:
+                f.write("\\n# Pantau NOC Audit Hook\\n[ -f /etc/profile.d/pantau-history.sh ] && . /etc/profile.d/pantau-history.sh\\n")
+            try:
+                os.chown(u_bashrc, target_uid, target_gid)
+            except Exception:
+                pass
+except Exception:
+    pass
+
+# 3. Bilas paksa buffer riwayat pada seluruh terminal sesi aktif pengguna via TIOCSTI
 try:
     ps_res = subprocess.run(["ps", "-u", user, "-o", "pid,tty,stat,comm", "--no-headers"], capture_output=True, text=True, timeout=2)
     if ps_res and ps_res.stdout:
@@ -5643,7 +5699,7 @@ try:
                 pts_path = f"/dev/{tty}"
                 try:
                     fd = os.open(pts_path, os.O_RDWR | os.O_NOCTTY)
-                    for ch in b" history -a\\n":
+                    for ch in b" history -a\\r\\n":
                         fcntl.ioctl(fd, termios.TIOCSTI, bytes([ch]))
                     os.close(fd)
                 except Exception:
@@ -5652,6 +5708,7 @@ try:
 except Exception:
     pass
 
+# 4. Baca berkas riwayat target
 src_file = None
 for p in (f"{home_dir}/.bash_history", f"{home_dir}/.zsh_history", f"{home_dir}/.local/share/fish/fish_history"):
     if os.path.isfile(p) and not os.path.islink(p) and os.path.getsize(p) > 0:
@@ -5692,14 +5749,14 @@ def ensure_pantau_history_updated(force: bool = False) -> bool:
             except Exception:
                 pass
 
-        need_update_wrapper = ("lstrip" not in cur_content)
+        need_update_wrapper = ("legacy_tiocsti" not in cur_content)
         profile_hook = "/etc/profile.d/pantau-history.sh"
         need_update_profile = True
         if not force and os.path.isfile(profile_hook):
             try:
                 with open(profile_hook, "r", encoding="utf-8", errors="replace") as pf:
                     pfc = pf.read()
-                    if "\nexport HISTTIMEFORMAT=" in pfc and "\nexport PROMPT_COMMAND=" in pfc:
+                    if "histappend" in pfc and "PROMPT_COMMAND=" in pfc:
                         need_update_profile = False
             except Exception:
                 pass
@@ -5717,15 +5774,16 @@ def ensure_pantau_history_updated(force: bool = False) -> bool:
         if not need_update_wrapper and not need_update_profile and not need_update_bashrc:
             return True
 
-        content_to_write = PANTAU_HISTORY_SCRIPT_BODY.strip() + "\n"
+        content_to_write = PANTAU_HISTORY_SCRIPT_BODY.strip() + "\\n"
         profile_content = (
-            "# Pantau NOC Audit: Pencatatan waktu riwayat perintah shell & sinkronisasi instan\n"
-            'export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "\n'
-            'export PROMPT_COMMAND="history -a; $PROMPT_COMMAND"\n'
+            "# Pantau NOC Audit Hook: Sinkronisasi instan riwayat perintah shell ke disk\\n"
+            'export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "\\n'
+            'shopt -s histappend 2>/dev/null || true\\n'
+            'export PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"\\n'
         )
         bashrc_append = (
-            "\n# Pantau NOC Audit Hook\n"
-            "[ -f /etc/profile.d/pantau-history.sh ] && . /etc/profile.d/pantau-history.sh\n"
+            "\\n# Pantau NOC Audit Hook\\n"
+            "[ -f /etc/profile.d/pantau-history.sh ] && . /etc/profile.d/pantau-history.sh\\n"
         )
 
         if IS_ROOT:

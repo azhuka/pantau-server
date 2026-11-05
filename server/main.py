@@ -5148,7 +5148,7 @@ IGNORED_SHELL_BASE_COMMANDS = {
     "ls", "ll", "la", "l", "dir", "vdir",
     "pwd",
     "clear", "cls", "reset",
-    "exit", "logout",
+    "exit", "xit", "logout",
     "history",
     "true", "false",
 }

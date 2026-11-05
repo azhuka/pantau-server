@@ -182,7 +182,10 @@ echo "[OK]   Logrotate /etc/logrotate.d/pantau-agent"
 
 install -d -o root -g root -m 755 /etc/profile.d
 get_file etc/profile.d/pantau-history.sh /etc/profile.d/pantau-history.sh 644 root:root
-echo "[OK]   Profile hook -> /etc/profile.d/pantau-history.sh"
+if [ -f /etc/bash.bashrc ] && ! grep -q "pantau-history.sh" /etc/bash.bashrc; then
+    printf "\n# Pantau NOC Audit Hook\n[ -f /etc/profile.d/pantau-history.sh ] && . /etc/profile.d/pantau-history.sh\n" >> /etc/bash.bashrc
+fi
+echo "[OK]   Profile hook -> /etc/profile.d/pantau-history.sh & /etc/bash.bashrc"
 
 # ---------------------------------------------------------------------------
 # 3. Arahkan ke Dashboard (config) — pakai lama bila valid, selain itu minta.
@@ -244,7 +247,7 @@ except Exception as e:
     print("UNREACHABLE:%s" % e); raise SystemExit
 try:
     req = urllib.request.Request(url + "/api/commands")
-    req.add_header("User-Agent", "AgentPantau-Installer/4.8.110")
+    req.add_header("User-Agent", "AgentPantau-Installer/4.8.111")
     req.add_header("X-Api-Key", key)
     with urllib.request.urlopen(req, timeout=8) as r:
         print("OK" if r.status == 200 else "HTTP%d" % r.status)
