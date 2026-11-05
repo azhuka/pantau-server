@@ -425,6 +425,7 @@ function renderLoginsData(rawLogins) {
       const isSelesai = (x.type === 'selesai' || x.type === 'sukses');
 
       const cls = isAktif ? 'badge-up'
+                : (isShell && x.active) ? 'badge-up'
                 : (isSudo || isPolkit) ? 'badge-warn'
                 : isShell ? 'badge-info'
                 : (isGagal || isSudoGagal || isPolkitGagal) ? 'badge-down' : 'badge-muted';
@@ -443,7 +444,7 @@ function renderLoginsData(rawLogins) {
       } else if (isPolkitGagal) {
         typeLabel = 'Polkit Gagal';
       } else if (isShell) {
-        typeLabel = 'Shell';
+        typeLabel = x.active ? '<span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;margin-right:4px"></span>Aktif' : 'Shell';
       } else if (isGagal) {
         typeLabel = 'Login Gagal';
       } else if (x.type === 'sesi') {
@@ -538,6 +539,9 @@ function renderLoginsData(rawLogins) {
         if (isSudoGagal || isPolkitGagal) {
           methodCell = '<span style="color:var(--red);font-weight:600;font-size:10.5px">' + escapeHtml(x.alert || 'Otentikasi Gagal') + ':</span> '
             + '<code class="cmd-code" style="border-color:rgba(248,113,113,0.3)" title="' + escapeHtml(cmdTooltip) + '">' + escapeHtml(actualCmd || '—') + '</code>';
+        } else if (isShell && x.alert) {
+          methodCell = '<span style="color:var(--green);font-weight:600;font-size:10.5px">' + escapeHtml(x.alert) + ':</span> '
+            + '<code class="cmd-code" style="border-color:rgba(74,222,128,0.35);color:var(--green)" title="' + escapeHtml(cmdTooltip) + '">' + escapeHtml(actualCmd || '—') + '</code>';
         } else {
           methodCell = '<code class="cmd-code" title="' + escapeHtml(cmdTooltip) + '">' + escapeHtml(actualCmd || '—') + '</code>';
         }

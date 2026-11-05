@@ -354,6 +354,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.112
+
+- **Tipe Rilis:** Audit Perintah Shell Real-Time Tanpa Menunggu Logout via Systemd-Journald & Deteksi Proses Foreground Aktif (*Real-Time Non-Sudo Shell Audit via Journald & Foreground Process Detection Without Terminal Logout*)
+- **Fokus Utama:** Menyelesaikan permasalahan mendasar di mana perintah shell non-sudo sebelumnya hanya tertulis ke disk saat sesi terminal ditutup/logout (`exit`):
+  1. **Audit Perintah Shell Real-Time via `pantau-shell` di Systemd-Journald:**
+     - Mengimplementasikan fungsi audit berbasis shell prompt `__pantau_prompt_audit` yang berjalan secara instan pada setiap eksekusi perintah terminal melalui `PROMPT_COMMAND`.
+     - Perintah yang baru saja dieksekusi di prompt langsung dikirimkan ke `/dev/log` (systemd-journald) dengan tag `pantau-shell` menggunakan `logger`, mencatat stempel waktu presisi, nama pengguna (`USER`), direktori kerja (`PWD`), terminal (`TTY`), dan baris perintah penuh (`CMD: ...`).
+     - Pengiriman audit terjadi seketika (*instant zero-delay*) tanpa bergantung pada penutupan terminal atau perintah `history -a` manual oleh pengguna.
+  2. **Kueri Real-Time Agen Pantau via Journalctl:**
+     - Fungsi `collect_user_logins()` pada `agent_pantau.py` kini secara langsung mengueri log `pantau-shell` dari journalctl (`journalctl -q -o short-iso -t pantau-shell`).
+     - Entri perintah non-sudo langsung diurai dan ditampilkan pada tabel audit aktivitas pengguna dengan badge informasi biru `Shell`, stempel waktu aktual, dan direktori eksekusi tanpa menunggu pengguna keluar dari sesi SSH.
+  3. **Deteksi Proses Foreground Aktif Seketika:**
+     - Proses foreground yang sedang berjalan di terminal pengguna (seperti `nano`, `vim`, `systemctl status`, `ping`, `top`, dll.) kini langsung terdeteksi via inspeksi `ps` dan ditampilkan di tabel audit dengan penanda visual status `Sedang Berjalan` (badge hijau `Aktif`).
+  4. **Pembaruan Hook Otonom di Seluruh Profil Pengguna:**
+     - Wrapper `pantau-history` dan logika startup agen secara otomatis memastikan hook terpasang pada `/etc/profile.d/pantau-history.sh`, `/etc/bash.bashrc`, dan `.bashrc` pengguna lokal tanpa intervensi manual.
+
 ## Versi 4.8.111
 
 - **Tipe Rilis:** Sinkronisasi Instan Multi-Lapis Audit Shell, Pembukaan Kunci Kernel `legacy_tiocsti`, dan Eliminasi Typo Terminal (*Multi-Tier Real-Time Shell Audit Sync, Kernel TIOCSTI Unlock, & Typo Noise Elimination*)

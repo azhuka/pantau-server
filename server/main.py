@@ -5229,7 +5229,7 @@ def _deduplicate_user_logins(raw_list: list) -> list:
         elif ev_type == "shell":
             if is_ignorable_shell_cmd(method):
                 continue
-            sh_key = (ts, method)
+            sh_key = (ts, method, item.get("alert", ""))
             if sh_key in seen_other:
                 continue
             seen_other.add(sh_key)

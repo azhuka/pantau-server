@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.111"
+AGENT_VERSION = "4.8.112"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4588,11 +4588,28 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                         puser, ptty, pstat, pargs = pparts
                     else:
                         continue
-                    if "+" in pstat and ptty != "?" and not any(pargs.startswith(x) for x in ("-bash", "bash", "sshd", "-sh", "sh", "zsh", "su", "-su")):
+                    if "+" in pstat and ptty != "?" and not any(pargs.startswith(x) for x in ("-bash", "bash", "sshd", "-sh", "sh", "zsh", "su", "-su", "ps ", "logger ")):
                         clean_tty = ptty if ptty.startswith("pts/") else f"pts/{ptty}"
                         for (u, t), act_dict in active_by_key.items():
                             if u == puser and (t == ptty or t == clean_tty or clean_tty.endswith(t) or t.endswith(ptty)):
                                 act_dict["active_cmd"] = pargs
+                        if not is_ignorable_shell_cmd(pargs):
+                            now_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            fg_key = (puser, clean_tty, pargs, "shell_aktif")
+                            if fg_key not in seen_sudo:
+                                seen_sudo.add(fg_key)
+                                events.append({
+                                    "ts": now_ts,
+                                    "user": puser,
+                                    "type": "shell",
+                                    "from": "(lokal)",
+                                    "tty": clean_tty,
+                                    "pwd": "—",
+                                    "target_user": puser,
+                                    "alert": "Sedang Berjalan",
+                                    "method": pargs,
+                                    "active": True,
+                                })
         except Exception:
             pass
     except Exception:
@@ -4859,6 +4876,54 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
 
     # 6. Riwayat Perintah Shell Non-Sudo (Pengguna Umum & Sudoers tanpa awalan sudo)
     if target_user:
+        # 6a. Prioritas Utama: Audit Real-Time Perintah Shell via Journalctl (pantau-shell)
+        try:
+            cmd_sh = ["journalctl", "-q", "-o", "short-iso", "-t", "pantau-shell", "-n", "300", "--no-pager"]
+            res_sh = _run_cmd(cmd_sh, timeout=6)
+            if res_sh and res_sh.stdout:
+                p_sh = re.compile(
+                    r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})\S*\s+\S+\s+pantau-shell(?:\[\d+\])?:\s+"
+                    r"\[USER=(?P<user>[^\]]+)\]\s+"
+                    r"\[PWD=(?P<pwd>[^\]]+)\]\s+"
+                    r"\[TTY=(?P<tty>[^\]]+)\]\s+"
+                    r"CMD:\s+(?P<cmd>.+)$"
+                )
+                for line in res_sh.stdout.splitlines():
+                    m = p_sh.match(line.strip())
+                    if not m:
+                        continue
+                    u = m.group("user").strip()
+                    if target_user and u != target_user:
+                        continue
+                    cmd_val = (m.group("cmd") or "").strip()
+                    if not cmd_val or is_ignorable_shell_cmd(cmd_val):
+                        continue
+                    # Hindari duplikasi jika perintah diawali sudo dan sudah ada di audit sudo
+                    if cmd_val.startswith("sudo ") or cmd_val.startswith("sudo\t"):
+                        cmd_core = cmd_val[5:].strip()
+                        if any(cmd_core in s[3] or s[3] in cmd_core for s in seen_sudo if len(s) >= 4):
+                            continue
+                    ts_iso = m.group(1).replace("T", " ")
+                    pwd_val = m.group("pwd").strip()
+                    tty_val = m.group("tty").strip()
+                    sh_key = (u, ts_iso, cmd_val, "shell")
+                    if sh_key not in seen_sudo:
+                        seen_sudo.add(sh_key)
+                        events.append({
+                            "ts": ts_iso,
+                            "user": u,
+                            "type": "shell",
+                            "from": "(lokal)",
+                            "tty": tty_val,
+                            "pwd": pwd_val,
+                            "target_user": u,
+                            "alert": "",
+                            "method": cmd_val,
+                        })
+        except Exception:
+            pass
+
+        # 6b. Riwayat Cadangan dari Berkas Riwayat Shell (.bash_history, dll)
         try:
             hist_list = _collect_user_history(target_user, max_lines=250)
             for h in hist_list:
@@ -4874,6 +4939,9 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                     if any(cmd_core in s[3] or s[3] in cmd_core for s in seen_sudo if len(s) >= 4):
                         continue
                 ts_hist = h.get("ts") or ""
+                # Jika sudah ada entri dengan perintah yang sama tercatat di seen_sudo baru-baru ini, hindari duplikasi
+                if any(cmd_raw == s[2] for s in seen_sudo if len(s) >= 4 and s[3] == "shell"):
+                    continue
                 sh_key = (target_user, ts_hist, cmd_raw, "shell")
                 if sh_key not in seen_sudo:
                     seen_sudo.add(sh_key)
@@ -5601,7 +5669,7 @@ def collect_kernel_events(syslogs=None) -> dict:
     return result
 
 
-PANTAU_HISTORY_SCRIPT_BODY = base64.b64decode("""IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwojIHBhbnRhdS1oaXN0b3J5IC0gV3JhcHBlciBwZW1iYWNhIHJpd2F5YXQgdGVybWluYWwgb3Rvbm9tIHVudHVrIEFnZW4gUGFudGF1LgojID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiMgRGlqYWxhbmthbiBtZWxhbHVpIHN1ZG8gTk9QQVNTV0Qgb2xlaCB1c2VyICdwYW50YXUnLgojIE1lbmR1a3VuZyBhdXRvLWZsdXNoIHRlcm1pbmFsIGFrdGlmIChUSU9DU1RJICsgbGVnYWN5X3Rpb2NzdGkgdW5sb2NrKSwgc2VydGEKIyBwZW1iZXJpYW4gaG9vayBvdG9tYXRpcyBwYWRhIHByb2ZpbCBzaXN0ZW0gZGFuIHBlbmdndW5hIHNlaGluZ2dhIHBlcmludGFoIHlhbmcKIyBkaWVrc2VrdXNpIGxhbmdzdW5nIHRlcnR1bGlzIGtlIGRpc2sgdGFucGEgbWVudW5nZ3UgbG9nb3V0IGF0YXUgJ2hpc3RvcnkgLWEnLgppbXBvcnQgc3lzCmltcG9ydCBvcwppbXBvcnQgcmUKaW1wb3J0IHRpbWUKaW1wb3J0IGZjbnRsCmltcG9ydCB0ZXJtaW9zCmltcG9ydCBzdWJwcm9jZXNzCmltcG9ydCBwd2QKCmlmIGxlbihzeXMuYXJndikgPCAyOgogICAgc3lzLmV4aXQoMikKdXNlciA9IHN5cy5hcmd2WzFdLnN0cmlwKCkKaWYgbm90IHJlLmZ1bGxtYXRjaChyIlthLXpBLVowLTlfLi1dezEsMzJ9IiwgdXNlcik6CiAgICBzeXMuZXhpdCgyKQoKdHJ5OgogICAgdV9lbnRyeSA9IHB3ZC5nZXRwd25hbSh1c2VyKQogICAgaG9tZV9kaXIgPSB1X2VudHJ5LnB3X2RpcgogICAgdGFyZ2V0X3VpZCA9IHVfZW50cnkucHdfdWlkCiAgICB0YXJnZXRfZ2lkID0gdV9lbnRyeS5wd19naWQKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHN5cy5leGl0KDMpCgppZiBub3Qgb3MucGF0aC5pc2Rpcihob21lX2Rpcik6CiAgICBzeXMuZXhpdCgzKQoKIyAxLiBQYXN0aWthbiBrZXJuZWwgbWVuZ2l6aW5rYW4gVElPQ1NUSSBqaWthIHN5c2N0bCBsZWdhY3lfdGlvY3N0aSB0ZXJzZWRpYQp0cnk6CiAgICB0aW9jX3BhdGggPSAiL3Byb2Mvc3lzL2Rldi90dHkvbGVnYWN5X3Rpb2NzdGkiCiAgICBpZiBvcy5wYXRoLmV4aXN0cyh0aW9jX3BhdGgpOgogICAgICAgIHdpdGggb3Blbih0aW9jX3BhdGgsICJyKyIpIGFzIGZfdGlvYzoKICAgICAgICAgICAgaWYgZl90aW9jLnJlYWQoKS5zdHJpcCgpID09ICIwIjoKICAgICAgICAgICAgICAgIGZfdGlvYy5zZWVrKDApCiAgICAgICAgICAgICAgICBmX3Rpb2Mud3JpdGUoIjFcbiIpCmV4Y2VwdCBFeGNlcHRpb246CiAgICBwYXNzCgojIDIuIFBhc2FuZyBob29rIGF1ZGl0IHJlYWwtdGltZSBwYWRhIHByb2ZpbCBzaXN0ZW0gZGFuIGJhc2hyYyBwZW5nZ3VuYQpob29rX2NvbnRlbnQgPSAoCiAgICAiIyBQYW50YXUgTk9DIEF1ZGl0IEhvb2s6IFNpbmtyb25pc2FzaSBpbnN0YW4gcml3YXlhdCBwZXJpbnRhaCBzaGVsbCBrZSBkaXNrXG4iCiAgICAnZXhwb3J0IEhJU1RUSU1FRk9STUFUPSIlWS0lbS0lZCAlSDolTTolUyAiXG4nCiAgICAnc2hvcHQgLXMgaGlzdGFwcGVuZCAyPi9kZXYvbnVsbCB8fCB0cnVlXG4nCiAgICAnZXhwb3J0IFBST01QVF9DT01NQU5EPSJoaXN0b3J5IC1hJHtQUk9NUFRfQ09NTUFORDorOyAkUFJPTVBUX0NPTU1BTkR9IlxuJwopCnRyeToKICAgIHByb2ZfZmlsZSA9ICIvZXRjL3Byb2ZpbGUuZC9wYW50YXUtaGlzdG9yeS5zaCIKICAgIGlmIG5vdCBvcy5wYXRoLmV4aXN0cyhwcm9mX2ZpbGUpOgogICAgICAgIHdpdGggb3Blbihwcm9mX2ZpbGUsICJ3IiwgZW5jb2Rpbmc9InV0Zi04IikgYXMgZjoKICAgICAgICAgICAgZi53cml0ZShob29rX2NvbnRlbnQpCiAgICAgICAgb3MuY2htb2QocHJvZl9maWxlLCAwbzY0NCkKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHBhc3MKCnRyeToKICAgIGJhc2hyY19zeXMgPSAiL2V0Yy9iYXNoLmJhc2hyYyIgaWYgb3MucGF0aC5leGlzdHMoIi9ldGMvYmFzaC5iYXNocmMiKSBlbHNlICgiL2V0Yy9iYXNocmMiIGlmIG9zLnBhdGguZXhpc3RzKCIvZXRjL2Jhc2hyYyIpIGVsc2UgIiIpCiAgICBpZiBiYXNocmNfc3lzIGFuZCBvcy5wYXRoLmV4aXN0cyhiYXNocmNfc3lzKToKICAgICAgICB3aXRoIG9wZW4oYmFzaHJjX3N5cywgInIiLCBlbmNvZGluZz0idXRmLTgiLCBlcnJvcnM9InJlcGxhY2UiKSBhcyBmOgogICAgICAgICAgICBiX2RhdGEgPSBmLnJlYWQoKQogICAgICAgIGlmICJwYW50YXUtaGlzdG9yeS5zaCIgbm90IGluIGJfZGF0YToKICAgICAgICAgICAgd2l0aCBvcGVuKGJhc2hyY19zeXMsICJhIiwgZW5jb2Rpbmc9InV0Zi04IikgYXMgZjoKICAgICAgICAgICAgICAgIGYud3JpdGUoIlxuIyBQYW50YXUgTk9DIEF1ZGl0IEhvb2tcblsgLWYgL2V0Yy9wcm9maWxlLmQvcGFudGF1LWhpc3Rvcnkuc2ggXSAmJiAuIC9ldGMvcHJvZmlsZS5kL3BhbnRhdS1oaXN0b3J5LnNoXG4iKQpleGNlcHQgRXhjZXB0aW9uOgogICAgcGFzcwoKdHJ5OgogICAgdV9iYXNocmMgPSBvcy5wYXRoLmpvaW4oaG9tZV9kaXIsICIuYmFzaHJjIikKICAgIGlmIG9zLnBhdGguZXhpc3RzKHVfYmFzaHJjKToKICAgICAgICB3aXRoIG9wZW4odV9iYXNocmMsICJyIiwgZW5jb2Rpbmc9InV0Zi04IiwgZXJyb3JzPSJyZXBsYWNlIikgYXMgZjoKICAgICAgICAgICAgdV9kYXRhID0gZi5yZWFkKCkKICAgICAgICBpZiAiUFJPTVBUX0NPTU1BTkQiIG5vdCBpbiB1X2RhdGEgYW5kICJwYW50YXUtaGlzdG9yeS5zaCIgbm90IGluIHVfZGF0YToKICAgICAgICAgICAgd2l0aCBvcGVuKHVfYmFzaHJjLCAiYSIsIGVuY29kaW5nPSJ1dGYtOCIpIGFzIGY6CiAgICAgICAgICAgICAgICBmLndyaXRlKCJcbiMgUGFudGF1IE5PQyBBdWRpdCBIb29rXG5bIC1mIC9ldGMvcHJvZmlsZS5kL3BhbnRhdS1oaXN0b3J5LnNoIF0gJiYgLiAvZXRjL3Byb2ZpbGUuZC9wYW50YXUtaGlzdG9yeS5zaFxuIikKICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgb3MuY2hvd24odV9iYXNocmMsIHRhcmdldF91aWQsIHRhcmdldF9naWQpCiAgICAgICAgICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgICAgICAgICBwYXNzCmV4Y2VwdCBFeGNlcHRpb246CiAgICBwYXNzCgojIDMuIEJpbGFzIHBha3NhIGJ1ZmZlciByaXdheWF0IHBhZGEgc2VsdXJ1aCB0ZXJtaW5hbCBzZXNpIGFrdGlmIHBlbmdndW5hIHZpYSBUSU9DU1RJCnRyeToKICAgIHBzX3JlcyA9IHN1YnByb2Nlc3MucnVuKFsicHMiLCAiLXUiLCB1c2VyLCAiLW8iLCAicGlkLHR0eSxzdGF0LGNvbW0iLCAiLS1uby1oZWFkZXJzIl0sIGNhcHR1cmVfb3V0cHV0PVRydWUsIHRleHQ9VHJ1ZSwgdGltZW91dD0yKQogICAgaWYgcHNfcmVzIGFuZCBwc19yZXMuc3Rkb3V0OgogICAgICAgIHR0eV9tYXAgPSB7fQogICAgICAgIGZvciBsaW5lIGluIHBzX3Jlcy5zdGRvdXQuc3BsaXRsaW5lcygpOgogICAgICAgICAgICBwYXJ0cyA9IGxpbmUuc3BsaXQoKQogICAgICAgICAgICBpZiBsZW4ocGFydHMpID49IDQgYW5kIHBhcnRzWzFdLnN0YXJ0c3dpdGgoInB0cy8iKToKICAgICAgICAgICAgICAgIHR0eV9tYXAuc2V0ZGVmYXVsdChwYXJ0c1sxXSwgW10pLmFwcGVuZCgocGFydHNbMF0sIHBhcnRzWzJdLCBwYXJ0c1szXSkpCiAgICAgICAgZm9yIHR0eSwgcHJvY3MgaW4gdHR5X21hcC5pdGVtcygpOgogICAgICAgICAgICBmZ19wcm9jcyA9IFtwIGZvciBwIGluIHByb2NzIGlmICIrIiBpbiBwWzFdXQogICAgICAgICAgICBpZiBsZW4oZmdfcHJvY3MpID09IDEgYW5kIGZnX3Byb2NzWzBdWzJdLmxzdHJpcCgiLSIpIGluICgiYmFzaCIsICJzaCIsICJ6c2giKToKICAgICAgICAgICAgICAgIHB0c19wYXRoID0gZiIvZGV2L3t0dHl9IgogICAgICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgICAgIGZkID0gb3Mub3BlbihwdHNfcGF0aCwgb3MuT19SRFdSIHwgb3MuT19OT0NUVFkpCiAgICAgICAgICAgICAgICAgICAgZm9yIGNoIGluIGIiIGhpc3RvcnkgLWFcclxuIjoKICAgICAgICAgICAgICAgICAgICAgICAgZmNudGwuaW9jdGwoZmQsIHRlcm1pb3MuVElPQ1NUSSwgYnl0ZXMoW2NoXSkpCiAgICAgICAgICAgICAgICAgICAgb3MuY2xvc2UoZmQpCiAgICAgICAgICAgICAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgICAgICAgICAgICAgIHBhc3MKICAgICAgICB0aW1lLnNsZWVwKDAuMSkKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHBhc3MKCiMgNC4gQmFjYSBiZXJrYXMgcml3YXlhdCB0YXJnZXQKc3JjX2ZpbGUgPSBOb25lCmZvciBwIGluIChmIntob21lX2Rpcn0vLmJhc2hfaGlzdG9yeSIsIGYie2hvbWVfZGlyfS8uenNoX2hpc3RvcnkiLCBmIntob21lX2Rpcn0vLmxvY2FsL3NoYXJlL2Zpc2gvZmlzaF9oaXN0b3J5Iik6CiAgICBpZiBvcy5wYXRoLmlzZmlsZShwKSBhbmQgbm90IG9zLnBhdGguaXNsaW5rKHApIGFuZCBvcy5wYXRoLmdldHNpemUocCkgPiAwOgogICAgICAgIHRyeToKICAgICAgICAgICAgc3QgPSBvcy5zdGF0KHApCiAgICAgICAgICAgIGlmIHN0LnN0X3VpZCA9PSB0YXJnZXRfdWlkIG9yIHN0LnN0X3VpZCA9PSAwOgogICAgICAgICAgICAgICAgc3JjX2ZpbGUgPSBwCiAgICAgICAgICAgICAgICBicmVhawogICAgICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgICAgIHBhc3MKCmlmIG5vdCBzcmNfZmlsZToKICAgIHN5cy5leGl0KDMpCgp0cnk6CiAgICBtdGltZSA9IGludChvcy5wYXRoLmdldG10aW1lKHNyY19maWxlKSkKICAgIHByaW50KGYiI1BBTlRBVV9NVElNRTp7bXRpbWV9IikKICAgIHN5cy5zdGRvdXQuZmx1c2goKQogICAgd2l0aCBvcGVuKHNyY19maWxlLCAicmIiKSBhcyBmOgogICAgICAgIHNpemUgPSBvcy5wYXRoLmdldHNpemUoc3JjX2ZpbGUpCiAgICAgICAgaWYgc2l6ZSA+IDUyNDI4ODoKICAgICAgICAgICAgZi5zZWVrKHNpemUgLSA1MjQyODgpCiAgICAgICAgZGF0YSA9IGYucmVhZCg1MjQyODgpCiAgICAgICAgc3lzLnN0ZG91dC5idWZmZXIud3JpdGUoZGF0YSkKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHN5cy5leGl0KDEpCg==""").decode("utf-8")
+PANTAU_HISTORY_SCRIPT_BODY = base64.b64decode("""IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwojIHBhbnRhdS1oaXN0b3J5IC0gV3JhcHBlciBwZW1iYWNhIHJpd2F5YXQgdGVybWluYWwgb3Rvbm9tIHVudHVrIEFnZW4gUGFudGF1LgojID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiMgRGlqYWxhbmthbiBtZWxhbHVpIHN1ZG8gTk9QQVNTV0Qgb2xlaCB1c2VyICdwYW50YXUnLgojIE1lbmR1a3VuZyBhdXRvLWZsdXNoIHRlcm1pbmFsIGFrdGlmIChUSU9DU1RJICsgbGVnYWN5X3Rpb2NzdGkgdW5sb2NrKSwgc2VydGEKIyBwZW1iZXJpYW4gaG9vayBvdG9tYXRpcyBwYWRhIHByb2ZpbCBzaXN0ZW0gZGFuIHBlbmdndW5hIHNlaGluZ2dhIHBlcmludGFoIHlhbmcKIyBkaWVrc2VrdXNpIGxhbmdzdW5nIHRlcnR1bGlzIGtlIGRpc2sgdGFucGEgbWVudW5nZ3UgbG9nb3V0IGF0YXUgJ2hpc3RvcnkgLWEnLgppbXBvcnQgc3lzCmltcG9ydCBvcwppbXBvcnQgcmUKaW1wb3J0IHRpbWUKaW1wb3J0IGZjbnRsCmltcG9ydCB0ZXJtaW9zCmltcG9ydCBzdWJwcm9jZXNzCmltcG9ydCBwd2QKCmlmIGxlbihzeXMuYXJndikgPCAyOgogICAgc3lzLmV4aXQoMikKdXNlciA9IHN5cy5hcmd2WzFdLnN0cmlwKCkKaWYgbm90IHJlLmZ1bGxtYXRjaChyIlthLXpBLVowLTlfLi1dezEsMzJ9IiwgdXNlcik6CiAgICBzeXMuZXhpdCgyKQoKdHJ5OgogICAgdV9lbnRyeSA9IHB3ZC5nZXRwd25hbSh1c2VyKQogICAgaG9tZV9kaXIgPSB1X2VudHJ5LnB3X2RpcgogICAgdGFyZ2V0X3VpZCA9IHVfZW50cnkucHdfdWlkCiAgICB0YXJnZXRfZ2lkID0gdV9lbnRyeS5wd19naWQKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHN5cy5leGl0KDMpCgppZiBub3Qgb3MucGF0aC5pc2Rpcihob21lX2Rpcik6CiAgICBzeXMuZXhpdCgzKQoKIyAxLiBQYXN0aWthbiBrZXJuZWwgbWVuZ2l6aW5rYW4gVElPQ1NUSSBqaWthIHN5c2N0bCBsZWdhY3lfdGlvY3N0aSB0ZXJzZWRpYQp0cnk6CiAgICB0aW9jX3BhdGggPSAiL3Byb2Mvc3lzL2Rldi90dHkvbGVnYWN5X3Rpb2NzdGkiCiAgICBpZiBvcy5wYXRoLmV4aXN0cyh0aW9jX3BhdGgpOgogICAgICAgIHdpdGggb3Blbih0aW9jX3BhdGgsICJyKyIpIGFzIGZfdGlvYzoKICAgICAgICAgICAgaWYgZl90aW9jLnJlYWQoKS5zdHJpcCgpID09ICIwIjoKICAgICAgICAgICAgICAgIGZfdGlvYy5zZWVrKDApCiAgICAgICAgICAgICAgICBmX3Rpb2Mud3JpdGUoIjFcbiIpCmV4Y2VwdCBFeGNlcHRpb246CiAgICBwYXNzCgojIDIuIFBhc2FuZyBob29rIGF1ZGl0IHJlYWwtdGltZSBwYWRhIHByb2ZpbCBzaXN0ZW0gZGFuIGJhc2hyYyBwZW5nZ3VuYQpob29rX2NvbnRlbnQgPSAoCiAgICAiIyBQYW50YXUgTk9DIEF1ZGl0IEhvb2s6IFNpbmtyb25pc2FzaSBpbnN0YW4gJiBhdWRpdCByZWFsLXRpbWUgcGVyaW50YWggc2hlbGxcbiIKICAgICJfX3BhbnRhdV9wcm9tcHRfYXVkaXQoKSB7XG4iCiAgICAiICAgIGxvY2FsIGhcbiIKICAgICIgICAgaD0kKGhpc3RvcnkgMSAyPi9kZXYvbnVsbClcbiIKICAgICIgICAgWyAteiBcIiRoXCIgXSAmJiByZXR1cm5cbiIKICAgICIgICAgaD1cIiR7aCNcIiR7aCUlWyEgXSp9XCJ9XCJcbiIKICAgICIgICAgaD1cIiR7aCMqWzAtOV0gfVwiXG4iCiAgICAiICAgIGg9XCIke2gjXCIke2glJVshIF0qfVwifVwiXG4iCiAgICAiICAgIGxvY2FsIGNtZFxuIgogICAgIiAgICBpZiBbWyBcIiRoXCIgPX4gXlswLTldezR9LVswLTldezJ9LVswLTldezJ9W1s6c3BhY2U6XV1bMC05XXsyfTpbMC05XXsyfTpbMC05XXsyfVtbOnNwYWNlOl1dKyguKikkIF1dOyB0aGVuXG4iCiAgICAiICAgICAgICBjbWQ9XCIke0JBU0hfUkVNQVRDSFsxXX1cIlxuIgogICAgIiAgICBlbHNlXG4iCiAgICAiICAgICAgICBjbWQ9XCIkaFwiXG4iCiAgICAiICAgIGZpXG4iCiAgICAiICAgIFsgLXogXCIkY21kXCIgXSAmJiByZXR1cm5cbiIKICAgICIgICAgaWYgWyBcIiRjbWRcIiAhPSBcIiRfX1BBTlRBVV9MQVNUX0NNRFwiIF07IHRoZW5cbiIKICAgICIgICAgICAgIF9fUEFOVEFVX0xBU1RfQ01EPVwiJGNtZFwiXG4iCiAgICAiICAgICAgICBjYXNlIFwiJGNtZFwiIGluXG4iCiAgICAiICAgICAgICAgICAgKl9fcGFudGF1KnwqbG9nZ2VyKnxcImhpc3RvcnkgLWFcIiopIDs7XG4iCiAgICAiICAgICAgICAgICAgKilcbiIKICAgICIgICAgICAgICAgICAgICAgbG9jYWwgdFxuIgogICAgIiAgICAgICAgICAgICAgICB0PSQodHR5IDI+L2Rldi9udWxsIHx8IGVjaG8gXCJsb2thbFwiKVxuIgogICAgIiAgICAgICAgICAgICAgICB0PSR7dCMvZGV2L31cbiIKICAgICIgICAgICAgICAgICAgICAgbG9nZ2VyIC10IHBhbnRhdS1zaGVsbCAtcCBhdXRoLm5vdGljZSAtLSBcIltVU0VSPSRVU0VSXSBbUFdEPSRQV0RdIFtUVFk9JHRdIENNRDogJGNtZFwiIDI+L2Rldi9udWxsIHx8IHRydWVcbiIKICAgICIgICAgICAgICAgICAgICAgOztcbiIKICAgICIgICAgICAgIGVzYWNcbiIKICAgICIgICAgZmlcbiIKICAgICIgICAgaGlzdG9yeSAtYSAyPi9kZXYvbnVsbCB8fCB0cnVlXG4iCiAgICAifVxuXG4iCiAgICAiaWYgWyAtbiBcIiRCQVNIX1ZFUlNJT05cIiBdOyB0aGVuXG4iCiAgICAiICAgIGV4cG9ydCBISVNUVElNRUZPUk1BVD1cIiVZLSVtLSVkICVIOiVNOiVTIFwiXG4iCiAgICAiICAgIHNob3B0IC1zIGhpc3RhcHBlbmQgMj4vZGV2L251bGwgfHwgdHJ1ZVxuIgogICAgIiAgICBjYXNlIFwiJFBST01QVF9DT01NQU5EXCIgaW5cbiIKICAgICIgICAgICAgICpfX3BhbnRhdV9wcm9tcHRfYXVkaXQqKSA7O1xuIgogICAgIiAgICAgICAgKikgZXhwb3J0IFBST01QVF9DT01NQU5EPVwiX19wYW50YXVfcHJvbXB0X2F1ZGl0JHtQUk9NUFRfQ09NTUFORDorOyAkUFJPTVBUX0NPTU1BTkR9XCIgOztcbiIKICAgICIgICAgZXNhY1xuIgogICAgImZpXG4iCikKdHJ5OgogICAgcHJvZl9maWxlID0gIi9ldGMvcHJvZmlsZS5kL3BhbnRhdS1oaXN0b3J5LnNoIgogICAgbmVlZF93cml0ZV9wcm9mID0gVHJ1ZQogICAgaWYgb3MucGF0aC5leGlzdHMocHJvZl9maWxlKToKICAgICAgICB3aXRoIG9wZW4ocHJvZl9maWxlLCAiciIsIGVuY29kaW5nPSJ1dGYtOCIsIGVycm9ycz0icmVwbGFjZSIpIGFzIGZfcDoKICAgICAgICAgICAgaWYgInBhbnRhdS1zaGVsbCIgaW4gZl9wLnJlYWQoKToKICAgICAgICAgICAgICAgIG5lZWRfd3JpdGVfcHJvZiA9IEZhbHNlCiAgICBpZiBuZWVkX3dyaXRlX3Byb2Y6CiAgICAgICAgd2l0aCBvcGVuKHByb2ZfZmlsZSwgInciLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgICAgICAgICBmLndyaXRlKGhvb2tfY29udGVudCkKICAgICAgICBvcy5jaG1vZChwcm9mX2ZpbGUsIDBvNjQ0KQpleGNlcHQgRXhjZXB0aW9uOgogICAgcGFzcwoKdHJ5OgogICAgYmFzaHJjX3N5cyA9ICIvZXRjL2Jhc2guYmFzaHJjIiBpZiBvcy5wYXRoLmV4aXN0cygiL2V0Yy9iYXNoLmJhc2hyYyIpIGVsc2UgKCIvZXRjL2Jhc2hyYyIgaWYgb3MucGF0aC5leGlzdHMoIi9ldGMvYmFzaHJjIikgZWxzZSAiIikKICAgIGlmIGJhc2hyY19zeXMgYW5kIG9zLnBhdGguZXhpc3RzKGJhc2hyY19zeXMpOgogICAgICAgIHdpdGggb3BlbihiYXNocmNfc3lzLCAiciIsIGVuY29kaW5nPSJ1dGYtOCIsIGVycm9ycz0icmVwbGFjZSIpIGFzIGY6CiAgICAgICAgICAgIGJfZGF0YSA9IGYucmVhZCgpCiAgICAgICAgaWYgInBhbnRhdS1oaXN0b3J5LnNoIiBub3QgaW4gYl9kYXRhOgogICAgICAgICAgICB3aXRoIG9wZW4oYmFzaHJjX3N5cywgImEiLCBlbmNvZGluZz0idXRmLTgiKSBhcyBmOgogICAgICAgICAgICAgICAgZi53cml0ZSgiXG4jIFBhbnRhdSBOT0MgQXVkaXQgSG9va1xuWyAtZiAvZXRjL3Byb2ZpbGUuZC9wYW50YXUtaGlzdG9yeS5zaCBdICYmIC4gL2V0Yy9wcm9maWxlLmQvcGFudGF1LWhpc3Rvcnkuc2hcbiIpCmV4Y2VwdCBFeGNlcHRpb246CiAgICBwYXNzCgp0cnk6CiAgICB1X2Jhc2hyYyA9IG9zLnBhdGguam9pbihob21lX2RpciwgIi5iYXNocmMiKQogICAgaWYgb3MucGF0aC5leGlzdHModV9iYXNocmMpOgogICAgICAgIHdpdGggb3Blbih1X2Jhc2hyYywgInIiLCBlbmNvZGluZz0idXRmLTgiLCBlcnJvcnM9InJlcGxhY2UiKSBhcyBmOgogICAgICAgICAgICB1X2RhdGEgPSBmLnJlYWQoKQogICAgICAgIGlmICJwYW50YXUtaGlzdG9yeS5zaCIgbm90IGluIHVfZGF0YToKICAgICAgICAgICAgd2l0aCBvcGVuKHVfYmFzaHJjLCAiYSIsIGVuY29kaW5nPSJ1dGYtOCIpIGFzIGY6CiAgICAgICAgICAgICAgICBmLndyaXRlKCJcbiMgUGFudGF1IE5PQyBBdWRpdCBIb29rXG5bIC1mIC9ldGMvcHJvZmlsZS5kL3BhbnRhdS1oaXN0b3J5LnNoIF0gJiYgLiAvZXRjL3Byb2ZpbGUuZC9wYW50YXUtaGlzdG9yeS5zaFxuIikKICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgb3MuY2hvd24odV9iYXNocmMsIHRhcmdldF91aWQsIHRhcmdldF9naWQpCiAgICAgICAgICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgICAgICAgICBwYXNzCmV4Y2VwdCBFeGNlcHRpb246CiAgICBwYXNzCgojIDMuIEJpbGFzIHBha3NhIGJ1ZmZlciByaXdheWF0IHBhZGEgc2VsdXJ1aCB0ZXJtaW5hbCBzZXNpIGFrdGlmIHBlbmdndW5hIHZpYSBUSU9DU1RJCnRyeToKICAgIHBzX3JlcyA9IHN1YnByb2Nlc3MucnVuKFsicHMiLCAiLXUiLCB1c2VyLCAiLW8iLCAicGlkLHR0eSxzdGF0LGNvbW0iLCAiLS1uby1oZWFkZXJzIl0sIGNhcHR1cmVfb3V0cHV0PVRydWUsIHRleHQ9VHJ1ZSwgdGltZW91dD0yKQogICAgaWYgcHNfcmVzIGFuZCBwc19yZXMuc3Rkb3V0OgogICAgICAgIHR0eV9tYXAgPSB7fQogICAgICAgIGZvciBsaW5lIGluIHBzX3Jlcy5zdGRvdXQuc3BsaXRsaW5lcygpOgogICAgICAgICAgICBwYXJ0cyA9IGxpbmUuc3BsaXQoKQogICAgICAgICAgICBpZiBsZW4ocGFydHMpID49IDQgYW5kIHBhcnRzWzFdLnN0YXJ0c3dpdGgoInB0cy8iKToKICAgICAgICAgICAgICAgIHR0eV9tYXAuc2V0ZGVmYXVsdChwYXJ0c1sxXSwgW10pLmFwcGVuZCgocGFydHNbMF0sIHBhcnRzWzJdLCBwYXJ0c1szXSkpCiAgICAgICAgZm9yIHR0eSwgcHJvY3MgaW4gdHR5X21hcC5pdGVtcygpOgogICAgICAgICAgICBmZ19wcm9jcyA9IFtwIGZvciBwIGluIHByb2NzIGlmICIrIiBpbiBwWzFdXQogICAgICAgICAgICBpZiBsZW4oZmdfcHJvY3MpID09IDEgYW5kIGZnX3Byb2NzWzBdWzJdLmxzdHJpcCgiLSIpIGluICgiYmFzaCIsICJzaCIsICJ6c2giKToKICAgICAgICAgICAgICAgIHB0c19wYXRoID0gZiIvZGV2L3t0dHl9IgogICAgICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgICAgIGZkID0gb3Mub3BlbihwdHNfcGF0aCwgb3MuT19SRFdSIHwgb3MuT19OT0NUVFkpCiAgICAgICAgICAgICAgICAgICAgZm9yIGNoIGluIGIiIGhpc3RvcnkgLWFcclxuIjoKICAgICAgICAgICAgICAgICAgICAgICAgZmNudGwuaW9jdGwoZmQsIHRlcm1pb3MuVElPQ1NUSSwgYnl0ZXMoW2NoXSkpCiAgICAgICAgICAgICAgICAgICAgb3MuY2xvc2UoZmQpCiAgICAgICAgICAgICAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgICAgICAgICAgICAgIHBhc3MKICAgICAgICB0aW1lLnNsZWVwKDAuMSkKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHBhc3MKCiMgNC4gQmFjYSBiZXJrYXMgcml3YXlhdCB0YXJnZXQKc3JjX2ZpbGUgPSBOb25lCmZvciBwIGluIChmIntob21lX2Rpcn0vLmJhc2hfaGlzdG9yeSIsIGYie2hvbWVfZGlyfS8uenNoX2hpc3RvcnkiLCBmIntob21lX2Rpcn0vLmxvY2FsL3NoYXJlL2Zpc2gvZmlzaF9oaXN0b3J5Iik6CiAgICBpZiBvcy5wYXRoLmlzZmlsZShwKSBhbmQgbm90IG9zLnBhdGguaXNsaW5rKHApIGFuZCBvcy5wYXRoLmdldHNpemUocCkgPiAwOgogICAgICAgIHRyeToKICAgICAgICAgICAgc3QgPSBvcy5zdGF0KHApCiAgICAgICAgICAgIGlmIHN0LnN0X3VpZCA9PSB0YXJnZXRfdWlkIG9yIHN0LnN0X3VpZCA9PSAwOgogICAgICAgICAgICAgICAgc3JjX2ZpbGUgPSBwCiAgICAgICAgICAgICAgICBicmVhawogICAgICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgICAgIHBhc3MKCmlmIG5vdCBzcmNfZmlsZToKICAgIHN5cy5leGl0KDMpCgp0cnk6CiAgICBtdGltZSA9IGludChvcy5wYXRoLmdldG10aW1lKHNyY19maWxlKSkKICAgIHByaW50KGYiI1BBTlRBVV9NVElNRTp7bXRpbWV9IikKICAgIHN5cy5zdGRvdXQuZmx1c2goKQogICAgd2l0aCBvcGVuKHNyY19maWxlLCAicmIiKSBhcyBmOgogICAgICAgIHNpemUgPSBvcy5wYXRoLmdldHNpemUoc3JjX2ZpbGUpCiAgICAgICAgaWYgc2l6ZSA+IDUyNDI4ODoKICAgICAgICAgICAgZi5zZWVrKHNpemUgLSA1MjQyODgpCiAgICAgICAgZGF0YSA9IGYucmVhZCg1MjQyODgpCiAgICAgICAgc3lzLnN0ZG91dC5idWZmZXIud3JpdGUoZGF0YSkKZXhjZXB0IEV4Y2VwdGlvbjoKICAgIHN5cy5leGl0KDEpCg==""").decode("utf-8")
 
 
 def ensure_pantau_history_updated(force: bool = False) -> bool:
@@ -5615,14 +5683,14 @@ def ensure_pantau_history_updated(force: bool = False) -> bool:
             except Exception:
                 pass
 
-        need_update_wrapper = ("legacy_tiocsti" not in cur_content)
+        need_update_wrapper = ("pantau-shell" not in cur_content)
         profile_hook = "/etc/profile.d/pantau-history.sh"
         need_update_profile = True
         if not force and os.path.isfile(profile_hook):
             try:
                 with open(profile_hook, "r", encoding="utf-8", errors="replace") as pf:
                     pfc = pf.read()
-                    if "histappend" in pfc and "PROMPT_COMMAND=" in pfc:
+                    if "pantau-shell" in pfc and "__pantau_prompt_audit" in pfc:
                         need_update_profile = False
             except Exception:
                 pass
@@ -5642,10 +5710,43 @@ def ensure_pantau_history_updated(force: bool = False) -> bool:
 
         content_to_write = PANTAU_HISTORY_SCRIPT_BODY.strip() + "\n"
         profile_content = (
-            "# Pantau NOC Audit Hook: Sinkronisasi instan riwayat perintah shell ke disk\n"
-            'export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "\n'
-            'shopt -s histappend 2>/dev/null || true\n'
-            'export PROMPT_COMMAND="history -a${PROMPT_COMMAND:+; $PROMPT_COMMAND}"\n'
+            "# Pantau NOC Audit Hook: Sinkronisasi instan & audit real-time perintah shell\n"
+            "__pantau_prompt_audit() {\n"
+            "    local h\n"
+            "    h=$(history 1 2>/dev/null)\n"
+            "    [ -z \"$h\" ] && return\n"
+            "    h=\"${h#\"${h%%[! ]*}\"}\"\n"
+            "    h=\"${h#*[0-9] }\"\n"
+            "    h=\"${h#\"${h%%[! ]*}\"}\"\n"
+            "    local cmd\n"
+            "    if [[ \"$h\" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]][0-9]{2}:[0-9]{2}:[0-9]{2}[[:space:]]+(.*)$ ]]; then\n"
+            "        cmd=\"${BASH_REMATCH[1]}\"\n"
+            "    else\n"
+            "        cmd=\"$h\"\n"
+            "    fi\n"
+            "    [ -z \"$cmd\" ] && return\n"
+            "    if [ \"$cmd\" != \"$__PANTAU_LAST_CMD\" ]; then\n"
+            "        __PANTAU_LAST_CMD=\"$cmd\"\n"
+            "        case \"$cmd\" in\n"
+            "            *__pantau*|*logger*|\"history -a\"*) ;;\n"
+            "            *)\n"
+            "                local t\n"
+            "                t=$(tty 2>/dev/null || echo \"lokal\")\n"
+            "                t=${t#/dev/}\n"
+            "                logger -t pantau-shell -p auth.notice -- \"[USER=$USER] [PWD=$PWD] [TTY=$t] CMD: $cmd\" 2>/dev/null || true\n"
+            "                ;;\n"
+            "        esac\n"
+            "    fi\n"
+            "    history -a 2>/dev/null || true\n"
+            "}\n\n"
+            "if [ -n \"$BASH_VERSION\" ]; then\n"
+            "    export HISTTIMEFORMAT=\"%Y-%m-%d %H:%M:%S \"\n"
+            "    shopt -s histappend 2>/dev/null || true\n"
+            "    case \"$PROMPT_COMMAND\" in\n"
+            "        *__pantau_prompt_audit*) ;;\n"
+            "        *) export PROMPT_COMMAND=\"__pantau_prompt_audit${PROMPT_COMMAND:+; $PROMPT_COMMAND}\" ;;\n"
+            "    esac\n"
+            "fi\n"
         )
         bashrc_append = (
             "\n# Pantau NOC Audit Hook\n"
