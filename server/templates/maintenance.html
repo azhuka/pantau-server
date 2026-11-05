@@ -342,8 +342,8 @@
 
 <!-- Card Tabel Jendela Pemeliharaan -->
 <div class="card" style="padding:0;overflow:hidden">
-  <div style="overflow-x:auto">
-    <table class="table-compact" id="maintenanceTable" style="width:100%;font-size:11.5px;table-layout:fixed">
+  <div class="pantau-table-wrap" style="border:none;border-radius:0">
+    <table class="pantau-table table-compact" id="maintenanceTable" style="width:100%;table-layout:fixed">
       <colgroup>
         <col style="width:115px" />
         <col style="width:auto" />
@@ -378,7 +378,12 @@
   <div class="modal-window">
     <div class="modal-header">
       <h3 style="margin:0;font-size:14px" id="modalTitle">Tambah Jendela Pemeliharaan Terjadwal</h3>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal()" style="padding:2px 6px">✕</button>
+      <button type="button" class="pantau-modal-close" onclick="closeModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <form id="maintenanceForm" onsubmit="submitMaintenanceForm(event)">
       <div class="modal-body">

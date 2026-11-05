@@ -354,6 +354,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.130
+
+- **Tipe Rilis:** Peluncuran Pustaka Aset Mandiri & Integrasi Global Design System (*Standalone Static Asset Pipeline, Pantau-Components CSS & PantauUI Library Integration*)
+- **Fokus Utama:** Menyediakan fondasi stylesheet dan pustaka antarmuka klien mandiri berstandar framework di direktori statis (`server/static/css/pantau-components.css` dan `server/static/js/pantau-ui.js`), menautkannya ke seluruh tata letak aplikasi via `base.html`, serta memperluas standarisasi ke halaman Pemeliharaan (`maintenance.html`), Log Sistem (`logs.html`), dan File Manager (`file_manager.html`):
+  1. **Pustaka Stylesheet Mandiri (`server/static/css/pantau-components.css`):**
+     - Membangun berkas CSS terpusat yang merangkum spesifikasi lengkap seluruh komponen: Tabel NOC berdensitas tinggi, Baris Paginasi Baku, Grup Preset Waktu, Kartu, Dialog Modal, serta Tombol Ikon Aksi.
+     - Menghilangkan ketergantungan pada injeksi CSS monolitik dan memastikan aset di-cache secara efisien oleh browser dengan query string versi aplikasi.
+  2. **Pustaka JavaScript Klien Terpadu (`server/static/js/pantau-ui.js`):**
+     - Menyediakan objek kanonikal `PantauUI` berisi aset vektor SVG baku dan helper interaksi modal/tombol yang dapat diakses di seluruh template secara konsisten.
+  3. **Ekspansi Standarisasi ke Halaman Operasional Tambahan:**
+     - Menstandarisasi tabel jadwal pemeliharaan (`maintenance.html`), tabel proses/disk server pusat (`logs.html`), dan tabel penjelajah berkas (`file_manager.html`) dengan `.pantau-table` dan `.pantau-table-wrap`.
+     - Mengganti entitas silang mentah pada modal jadwal pemeliharaan dengan komponen SVG `.pantau-modal-close` universal.
+
 ## Versi 4.8.129
 
 - **Tipe Rilis:** Pembersihan Elemen Tombol Redundan pada Kolom Server Dasbor (*Clean Dashboard Fleet Table & Server Column Redundancy Removal*)
