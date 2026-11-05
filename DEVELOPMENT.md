@@ -354,6 +354,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.122
+
+- **Tipe Rilis:** Penyelarasan Jarak Kolom Server dan Keparahan pada Kartu Riwayat Insiden (*Resolved Incidents Card Server & Severity Column Gap Optimization*)
+- **Fokus Utama:** Mengeliminasi celah visual berlebih antara nama host server dan lencana tingkat keparahan pada tabel kartu Riwayat Insiden Teratasi (`prob-resolved-card`):
+  1. **Perataan Kiri & Perampingan Kolom Keparahan (`col-sev`):**
+     - Mengubah perataan teks dan badge dari tengah (*center*) menjadi rata kiri (*left*) pada header `<th>` dan sel baris `<td>`.
+     - Menyesuaikan lebar kolom keparahan dari 115px/92px menjadi 85px (min-width 80px, max-width 95px, padding rapat 5px 8px), menghapus ruang kosong hingga ~90px di antara nama server dan lencana keparahan.
+  2. **Optimalisasi Kolom Host Server (`col-server`):**
+     - Menyesuaikan lebar kolom server dari 165px/105px menjadi 130px (min-width 115px, max-width 155px, padding 5px 8px).
+     - Memastikan seluruh nama server, baik pendek (`barrukab`, `rj45`) maupun panjang (`server-singgah`, `monitoring-backup`, `barrukab-clone`), tertampung sempurna tanpa terpotong (*zero truncation*).
+  3. **Konsistensi Penataan Antara Template Jinja2 dan Polling Javascript:**
+     - Menyelaraskan aturan stylesheet CSS (`#prob-resolved-table-wrap`), inline style baris awal Jinja2, serta generator baris polling dinamis Javascript (`prob-resolved-tbody`).
+
 ## Versi 4.8.121
 
 - **Tipe Rilis:** Penyelarasan Proporsi Jarak Kolom Server dan Keparahan Insiden (*Incident Table Server & Severity Column Proportions & Gap Refinement*)
