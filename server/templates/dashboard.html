@@ -1140,7 +1140,7 @@ body.popout-fleet_table #dash-fleet-card {
             title="Klik untuk buka {{ 'menu Endpoint' if (p.probe_id or not p.server_id) else 'rincian server ' ~ p.hostname }}"
             style="border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s ease;cursor:pointer">
           <td class="dash-col-time" style="padding:5px 12px;white-space:nowrap">
-            <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px">{{ p.started_at_str }}</span>
+            <span class="mono dash-incident-time" data-utc="{{ p.started_at }}" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px">{{ p.started_at_str }}</span>
           </td>
           <td class="dash-col-server" style="padding:5px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
             <div style="display:inline-flex;align-items:center;gap:4px;max-width:100%">
@@ -1247,8 +1247,7 @@ body.popout-fleet_table #dash-fleet-card {
 
       <!-- Grup filter -->
       {% if all_groups and all_groups|length > 0 %}
-      <select id="dash-group-filter" onchange="dashFilterAll()"
-              style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;font-size:11.5px;outline:none;cursor:pointer">
+      <select id="dash-group-filter" onchange="dashFilterAll()" class="dash-group-select">
         <option value="">Semua Grup</option>
         {% for grp in all_groups %}
         <option value="{{ grp }}">❖ {{ grp }}</option>
@@ -1259,8 +1258,7 @@ body.popout-fleet_table #dash-fleet-card {
 
       <!-- Search input -->
       <div class="dash-search-box" style="position:relative;display:flex;align-items:center">
-        <input type="search" id="dash-search" placeholder="Cari host…" oninput="dashFilterAll()"
-               style="background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:11.5px;width:160px;outline:none">
+        <input type="search" id="dash-search" placeholder="Cari host…" oninput="dashFilterAll()" class="dash-search-input">
       </div>
 
       <!-- Tombol Penyesuai Kolom Dasbor -->
@@ -1667,9 +1665,9 @@ body.popout-fleet_table #dash-fleet-card {
 
 <!-- Modal Detail Insiden Berdasarkan Severity (Zabbix-Style In-Page Detail Modal) -->
 <div id="sev-detail-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeSevDetailModal()">
-  <div class="card" style="width:min(880px,96vw);max-height:86vh;display:flex;flex-direction:column;background:#161b22;border:1px solid #30363d;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.85);color:var(--text);padding:0;overflow:hidden" onclick="event.stopPropagation()">
+  <div class="card" style="width:min(880px,96vw);max-height:86vh;display:flex;flex-direction:column;background:var(--modal-bg);border:1px solid var(--modal-border);border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.85);color:var(--text);padding:0;overflow:hidden" onclick="event.stopPropagation()">
     <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #30363d;background:rgba(255,255,255,0.02)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg-subtle)">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span id="sdm-icon" style="display:inline-flex;align-items:center"></span>
         <h3 id="sdm-title" style="margin:0;font-size:15.5px;font-weight:600;color:var(--text)">Rincian Insiden</h3>
@@ -1696,7 +1694,7 @@ body.popout-fleet_table #dash-fleet-card {
       <div id="sdm-table-wrap" class="pantau-table-wrap" style="display:none;width:100%;overflow-x:auto">
         <table id="sdm-table" class="pantau-table" style="width:100%;margin:0">
           <thead>
-            <tr style="border-bottom:1px solid #30363d;background:rgba(255,255,255,0.02)">
+            <tr style="border-bottom:1px solid var(--border);background:var(--bg-subtle)">
               <th style="padding:10px 12px;font-size:11px;width:115px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">WAKTU</th>
               <th style="padding:10px 12px;font-size:11px;width:150px;color:var(--dim);text-align:left;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">SERVER</th>
               <th style="padding:10px 10px;font-size:11px;width:115px;color:var(--dim);text-align:center;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap">KEPARAHAN</th>
@@ -1711,7 +1709,7 @@ body.popout-fleet_table #dash-fleet-card {
     </div>
 
     <!-- Footer -->
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-top:1px solid #30363d;background:rgba(255,255,255,0.015);gap:10px;flex-wrap:wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-top:1px solid var(--border);background:var(--bg-subtle);gap:10px;flex-wrap:wrap">
       <div style="font-size:12px;color:var(--dim)" id="sdm-footer-info">
         Menampilkan insiden berdasarkan keparahan
       </div>
@@ -1832,7 +1830,7 @@ function renderSevDetailModal(sev) {
       const globeIcon = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`;
       const hostDisplay = (p.probe_id || p.is_probe) ? `<span style="display:inline-flex;align-items:center;gap:4px">${globeIcon}<span>${escHost}</span></span>` : escHost;
       const grpHtml = escGrp ? `<span style="font-size:11px;color:var(--dim);margin-left:4px">(${escGrp})</span>` : '';
-      const startedStr = p.started_at_str || (p.started_at ? relTime(p.started_at) : '—');
+      const startedStr = p.started_at ? formatLocalShortDt(p.started_at) : (p.started_at_str || (p.started_at ? relTime(p.started_at) : '—'));
       const durStr = p.durasi || (p.started_at ? relTime(p.started_at).replace(' lalu', '').replace(' ago', '') : '—');
 
       // 1. Kolom Keparahan
@@ -1882,7 +1880,7 @@ function renderSevDetailModal(sev) {
 
       const rowHref = p.server_id ? `/servers/${p.server_id}` : '/probing';
       html += `
-        <tr style="border-bottom:1px solid #30363d;transition:background .12s ease">
+        <tr style="border-bottom:1px solid var(--border);transition:background .12s ease">
           <td style="padding:10px 12px;white-space:nowrap;vertical-align:middle;width:115px">
             <span class="mono" style="font-size:12px;font-weight:600;color:var(--text)">${startedStr}</span>
           </td>
@@ -2130,7 +2128,24 @@ document.querySelectorAll('#dash-server-table th.sortable').forEach(th => {
   });
 });
 
-// 5. Relative Time Helper
+// 5. Relative Time & Local Short Time Helper
+function formatLocalShortDt(isoStr) {
+  if (!isoStr) return '—';
+  try {
+    const s = isoStr.endsWith('Z') ? isoStr : isoStr + 'Z';
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return isoStr;
+    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    const day = String(d.getDate()).padStart(2, '0');
+    const mon = months[d.getMonth()];
+    const hr = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${day} ${mon} ${hr}:${min}`;
+  } catch(e) {
+    return isoStr;
+  }
+}
+
 function relTime(isoStr) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   if (!isoStr) return '-';
@@ -2146,6 +2161,10 @@ function updateRelTimes() {
   document.querySelectorAll('[id^="card-seen-"]').forEach(el => {
     const ts = el.dataset.ts;
     if (ts) el.textContent = relTime(ts);
+  });
+  document.querySelectorAll('.dash-incident-time[data-utc]').forEach(el => {
+    const utc = el.getAttribute('data-utc');
+    if (utc) el.textContent = formatLocalShortDt(utc);
   });
 }
 updateRelTimes();
@@ -3004,7 +3023,7 @@ async function pollNocDashboard() {
               : `<span class="dot ${dotCls}" style="flex-shrink:0"></span>`;
             const grpHtml = p.group_name ? `<span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:500;flex-shrink:0">${(p.group_name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>` : '';
             
-            const startedStr = p.started_at_str || '—';
+            const startedStr = p.started_at ? formatLocalShortDt(p.started_at) : (p.started_at_str || '—');
             let durStr = '—';
             let isoStart = '';
             if (p.started_at) {

@@ -6,7 +6,7 @@
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
 {% block extra_head %}{% endblock %}
-<link rel="stylesheet" href="/static/css/pantau-components.css?v={{ app_version or '4.8.136' }}">
+<link rel="stylesheet" href="/static/css/pantau-components.css?v={{ app_version or '4.8.137' }}">
 <script>
 (function() {
   try {
@@ -71,6 +71,7 @@
   --col-act-hover:#141e30;
   --modal-bg:#161b22;
   --modal-border:#30363d;
+  --bg-card:var(--card, #1a2336);
   --shadow-sm:0 1px 3px 0 rgba(0,0,0,0.3), 0 1px 2px -1px rgba(0,0,0,0.25);
   --shadow-md:0 6px 16px -2px rgba(0,0,0,0.4), 0 2px 6px -1px rgba(0,0,0,0.28);
   --shadow-lg:0 16px 32px -4px rgba(0,0,0,0.5), 0 8px 14px -3px rgba(0,0,0,0.35);
@@ -90,6 +91,7 @@
   --card-hover:#222f47;
   --card-bg:linear-gradient(180deg, rgba(26, 35, 54, 0.95) 0%, rgba(20, 27, 43, 0.98) 100%);
   --stat-card-bg:linear-gradient(180deg, rgba(26, 35, 54, 0.9) 0%, rgba(18, 25, 40, 0.95) 100%);
+  --bg-card:#1a2336;
   --border:rgba(255,255,255,0.11);
   --border-subtle:rgba(255,255,255,0.06);
   --bg-subtle:rgba(255,255,255,0.02);
@@ -120,6 +122,7 @@
   --card-hover:#16161c;
   --card-bg:#0d0d10;
   --stat-card-bg:#0d0d10;
+  --bg-card:#0d0d10;
   --border:rgba(255,255,255,0.14);
   --border-subtle:rgba(255,255,255,0.08);
   --text:#f4f4f5;
@@ -139,7 +142,10 @@
   --modal-border:#27272a;
 }
 [data-theme="obsidian"] .card,
-[data-theme="obsidian"] .stat-card {
+[data-theme="obsidian"] .stat-card,
+[data-theme="obsidian"] .pantau-card,
+[data-theme="obsidian"] .pantau-table-wrap,
+[data-theme="obsidian"] .pantau-modal-card {
   background:#0d0d10 !important;
   border-color:rgba(255,255,255,0.14) !important;
 }
@@ -154,6 +160,7 @@
   --card-hover:#1b2642;
   --card-bg:linear-gradient(180deg, rgba(19, 28, 49, 0.95) 0%, rgba(14, 21, 38, 0.98) 100%);
   --stat-card-bg:linear-gradient(180deg, rgba(19, 28, 49, 0.9) 0%, rgba(13, 20, 36, 0.95) 100%);
+  --bg-card:#131c31;
   --border:rgba(59, 130, 246, 0.18);
   --border-subtle:rgba(59, 130, 246, 0.10);
   --text:#f1f5f9;
@@ -172,6 +179,14 @@
   --modal-bg:#0f172a;
   --modal-border:rgba(59, 130, 246, 0.3);
 }
+[data-theme="navy"] .card,
+[data-theme="navy"] .stat-card,
+[data-theme="navy"] .pantau-card,
+[data-theme="navy"] .pantau-table-wrap,
+[data-theme="navy"] .pantau-modal-card {
+  background:#131c31 !important;
+  border-color:rgba(59, 130, 246, 0.18) !important;
+}
 
 /* 4. Tema Terang (Light Clean / White Modern) */
 [data-theme="light"] {
@@ -183,6 +198,7 @@
   --card-hover:#f8fafc;
   --card-bg:#ffffff;
   --stat-card-bg:#ffffff;
+  --bg-card:#ffffff;
   --bg-subtle:#f8fafc;
   --border:rgba(0, 0, 0, 0.10);
   --border-subtle:rgba(0, 0, 0, 0.05);
@@ -228,6 +244,9 @@
 [data-theme="light"] .hero-card.card,
 [data-theme="light"] .tab-body .card,
 [data-theme="light"] .probe-stat-card,
+[data-theme="light"] .pantau-card,
+[data-theme="light"] .pantau-table-wrap,
+[data-theme="light"] .pantau-modal-card,
 [data-theme="light"] .perf-overview-card {
   background:#ffffff !important;
   color:#0f172a !important;
@@ -1095,7 +1114,7 @@ div[style*="overflow-x:auto"] > table:not(.dash-prob-table):not(#dash-server-tab
   pointer-events: auto;
   max-width: 360px;
   min-width: 60px;
-  background: var(--modal-bg, #161b22);
+  background: var(--modal-bg);
   color: var(--text, #f8fafc);
   border: 1px solid var(--border-focus, #38bdf8);
   border-radius: 4px;
@@ -2039,8 +2058,8 @@ body.kiosk-mode .main {
 .theme-modal-card {
   width: 100%;
   max-width: 560px;
-  background: var(--modal-bg, #161b22);
-  border: 1px solid var(--modal-border, #30363d);
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
   border-radius: 12px;
   padding: 22px 24px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
@@ -2366,8 +2385,8 @@ body.show-alert-banner .main{padding-top:72px}
   z-index: 1050;
   min-width: 200px;
   max-width: 260px;
-  background: var(--modal-bg, #161b22);
-  border: 1px solid var(--border, #30363d);
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
   border-radius: 6px;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65);
   padding: 6px 0;
@@ -2388,7 +2407,7 @@ body.show-alert-banner .main{padding-top:72px}
   align-items: center;
   justify-content: space-between;
   padding: 5px 10px 7px 10px;
-  border-bottom: 1px solid var(--border, #30363d);
+  border-bottom: 1px solid var(--border);
   font-size: 11px;
 }
 .pantau-col-menu-title {
@@ -2424,7 +2443,7 @@ body.show-alert-banner .main{padding-top:72px}
   width: 4px;
 }
 .pantau-col-menu-list::-webkit-scrollbar-thumb {
-  background: var(--border, #30363d);
+  background: var(--border);
   border-radius: 4px;
 }
 .pantau-col-item {
@@ -2476,8 +2495,8 @@ body.show-alert-banner .main{padding-top:72px}
 
 .pantau-modal-card {
   width: 100%;
-  background: var(--modal-bg, var(--bg-card, #161b22));
-  border: 1px solid var(--modal-border, var(--border, #30363d));
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
   border-radius: 10px;
   box-shadow: var(--shadow-lg, 0 16px 36px rgba(0,0,0,0.5));
   color: var(--text, #e6edf3);
@@ -2491,7 +2510,7 @@ body.show-alert-banner .main{padding-top:72px}
   justify-content: space-between;
   align-items: center;
   padding: 14px 18px;
-  border-bottom: 1px solid var(--border, #30363d);
+  border-bottom: 1px solid var(--border);
   background: var(--bg-subtle, rgba(255,255,255,0.02));
 }
 
@@ -2556,7 +2575,7 @@ body.show-alert-banner .main{padding-top:72px}
 .probe-modal-close:hover {
   background: rgba(255, 255, 255, 0.08) !important;
   color: var(--text-bright, #fff) !important;
-  border-color: var(--border, #30363d) !important;
+  border-color: var(--border) !important;
 }
 
 /* Standarisasi Tombol Ikon Aksi (Action Icon Buttons) */
@@ -2581,7 +2600,7 @@ body.show-alert-banner .main{padding-top:72px}
 .pantau-btn-icon:hover {
   background: rgba(255, 255, 255, 0.08) !important;
   color: var(--text-bright, #fff) !important;
-  border-color: var(--border, #30363d) !important;
+  border-color: var(--border) !important;
 }
 .pantau-btn-icon-danger:hover {
   background: rgba(239, 68, 68, 0.15) !important;
@@ -2632,7 +2651,7 @@ body.show-alert-banner .main{padding-top:72px}
 .pantau-btn-ghost {
   background: transparent !important;
   color: var(--text, #e6edf3) !important;
-  border-color: var(--border, #30363d) !important;
+  border-color: var(--border) !important;
 }
 .pantau-btn-ghost:hover {
   background: rgba(255, 255, 255, 0.08) !important;
@@ -2697,7 +2716,7 @@ body.show-alert-banner .main{padding-top:72px}
   align-items: center;
   gap: 8px;
   padding: 12px 18px;
-  border-top: 1px solid var(--border, #30363d);
+  border-top: 1px solid var(--border);
   background: var(--bg-subtle, rgba(255,255,255,0.02));
 }
 
@@ -2713,7 +2732,7 @@ body.show-alert-banner .main{padding-top:72px}
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: var(--dim, #8b949e);
+  color: var(--dim);
   text-transform: uppercase;
   user-select: none;
 }
@@ -2721,8 +2740,8 @@ body.show-alert-banner .main{padding-top:72px}
 .pantau-preset-group {
   display: inline-flex;
   align-items: center;
-  background: var(--bg-card, #161b22);
-  border: 1px solid var(--border, #30363d);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 2px;
   gap: 2px;
@@ -2736,7 +2755,7 @@ body.show-alert-banner .main{padding-top:72px}
   padding: 0 9px;
   font-size: 11px;
   font-weight: 500;
-  color: var(--dim, #8b949e);
+  color: var(--dim);
   background: transparent;
   border: none;
   border-radius: 4px;
@@ -2746,7 +2765,7 @@ body.show-alert-banner .main{padding-top:72px}
 }
 
 .pantau-preset-btn:hover {
-  color: var(--text, #e6edf3);
+  color: var(--text);
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -2754,7 +2773,7 @@ body.show-alert-banner .main{padding-top:72px}
 .pantau-preset-btn.is-on,
 .pantau-preset-btn.active {
   background: var(--blue, #38bdf8) !important;
-  color: #0d1117 !important;
+  color: var(--bg) !important;
   font-weight: 700 !important;
 }
 
@@ -2772,7 +2791,7 @@ body.show-alert-banner .main{padding-top:72px}
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  color: var(--dim, #8b949e);
+  color: var(--dim);
   display: inline-flex;
 }
 
@@ -2781,10 +2800,10 @@ body.show-alert-banner .main{padding-top:72px}
   width: 100%;
   padding: 0 10px 0 28px;
   font-size: 11.5px;
-  background: var(--input-bg, #0d1117);
-  border: 1px solid var(--input-border, #30363d);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border, var(--border));
   border-radius: 6px;
-  color: var(--text, #e6edf3);
+  color: var(--text);
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   box-sizing: border-box;
@@ -2805,9 +2824,9 @@ body.show-alert-banner .main{padding-top:72px}
   gap: 10px !important;
   padding: 8px 12px !important;
   font-size: 11.5px !important;
-  color: var(--dim, #8b949e) !important;
-  background: var(--bg-card, #161b22) !important;
-  border: 1px solid var(--border, #30363d) !important;
+  color: var(--dim) !important;
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 6px !important;
   margin-top: 8px !important;
   box-sizing: border-box !important;
@@ -2824,7 +2843,7 @@ body.show-alert-banner .main{padding-top:72px}
 .table-pagination-limit span {
   font-size: 11px !important;
   font-weight: 500 !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
 }
 
 .pantau-pg-select,
@@ -2833,10 +2852,10 @@ select[data-pg-select] {
   height: 24px !important;
   padding: 0 6px !important;
   font-size: 11px !important;
-  background: var(--input-bg, #0d1117) !important;
-  border: 1px solid var(--input-border, #30363d) !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--input-border, var(--border)) !important;
   border-radius: 4px !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
   cursor: pointer !important;
   outline: none !important;
 }
@@ -2845,7 +2864,7 @@ select[data-pg-select] {
 .table-pagination-info,
 div[data-pg-info] {
   font-size: 11px !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
 }
 
 .pantau-pg-nav,
@@ -2864,9 +2883,9 @@ button[data-pg-next] {
   font-size: 11px !important;
   font-weight: 500 !important;
   background: var(--bg-subtle, rgba(255,255,255,0.04)) !important;
-  border: 1px solid var(--border, #30363d) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 4px !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
   cursor: pointer !important;
   transition: all 0.12s ease !important;
 }
@@ -2876,7 +2895,7 @@ button[data-pg-next] {
 button[data-pg-prev]:hover:not(:disabled),
 button[data-pg-next]:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08) !important;
-  border-color: var(--dim, #8b949e) !important;
+  border-color: var(--dim) !important;
 }
 
 .pantau-pg-btn:disabled,
@@ -2893,13 +2912,13 @@ span[data-pg-cur] {
   font-size: 11px !important;
   font-family: var(--font-mono, monospace) !important;
   padding: 0 4px !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
 }
 
 /* Card & Table Standard Components */
 .pantau-card {
-  background: var(--bg-card, #161b22);
-  border: 1px solid var(--border, #30363d);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -2909,7 +2928,7 @@ span[data-pg-cur] {
   justify-content: space-between;
   align-items: center;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--border, #30363d);
+  border-bottom: 1px solid var(--border);
   background: var(--bg-subtle, rgba(255,255,255,0.02));
 }
 
@@ -2923,13 +2942,13 @@ span[data-pg-cur] {
   margin: 0;
   font-size: 13.5px;
   font-weight: 600;
-  color: var(--text, #e6edf3);
+  color: var(--text);
 }
 
 .pantau-card-subtitle {
   margin: 1px 0 0 0;
   font-size: 11px;
-  color: var(--dim, #8b949e);
+  color: var(--dim);
 }
 
 .pantau-card-tools {
@@ -2945,9 +2964,9 @@ span[data-pg-cur] {
 .pantau-table-wrap {
   width: 100%;
   overflow-x: auto;
-  border: 1px solid var(--border, #30363d);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--bg-card, #161b22);
+  background: var(--card);
 }
 
 /* Pantau Universal Table Standard (High Density NOC) */
@@ -2961,7 +2980,7 @@ span[data-pg-cur] {
 }
 
 .pantau-table thead tr {
-  border-bottom: 1px solid var(--border, #30363d) !important;
+  border-bottom: 1px solid var(--border) !important;
   background: var(--bg-subtle, rgba(255,255,255,0.02)) !important;
 }
 
@@ -3033,8 +3052,8 @@ span[data-pg-cur] {
   height: 28px !important;
   padding: 0 8px !important;
   font-size: 11.5px !important;
-  background: var(--input-bg, #0d1117) !important;
-  border: 1px solid var(--input-border, #30363d) !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--input-border, var(--border)) !important;
   border-radius: 5px !important;
   color: var(--text, #e6edf3) !important;
   outline: none !important;
@@ -3164,7 +3183,7 @@ span[data-pg-cur] {
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.136' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.137' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
       <button type="button" onclick="openThemeModal()" class="btn btn-ghost btn-sm" style="padding:2px 6px;font-size:10px;line-height:1" title="Kustomisasi Tema, Warna &amp; Font" aria-label="Tema">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10a10 10 0 0 0 10-10c0-5.51-4.49-10-10-10zM3.47 12.6c0-.2.03-.4.07-.6A8.53 8.53 0 0 1 12 3.5a8.5 8.5 0 0 1 8.5 8.5c0 1.25-.46 2.4-1.23 3.32-.45.54-1.12.88-1.87.88H15a2 2 0 0 0-2 2v.4c0 .88-.72 1.6-1.6 1.6-.74 0-1.4-.41-1.72-1.07A6.47 6.47 0 0 1 9.4 17.5c-3.27 0-5.93-2.66-5.93-4.9z"/></svg>
       </button>
@@ -5096,7 +5115,7 @@ function renderProblemDetailModal(p) {
       const copyBtnText = isEn ? 'Copy' : 'Salin';
       const copyBtnTitle = isEn ? 'Copy command' : 'Salin perintah';
       cmdsEl.innerHTML = cmdList.filter(c => !!c).map(cmd => {
-        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--input-bg, #0d1117);border:1px solid var(--border, #30363d);border-radius:6px;padding:7px 12px;margin-bottom:6px">
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;padding:7px 12px;margin-bottom:6px">
           <code class="mono" style="font-size:12.5px;color:var(--green, #7ee787);word-break:break-all">${_esc(cmd)}</code>
           <button type="button" class="btn btn-ghost btn-sm" onclick="copyCommandText(this, '${cmd.replace(/'/g, "\\'")}')" style="font-size:11px;padding:3px 8px;flex-shrink:0" title="${copyBtnTitle}">${copyBtnText}</button>
         </div>`;
@@ -5145,7 +5164,7 @@ setInterval(alertFetch, 5000);
 
 <!-- Modal Konfirmasi Operasional Universal (Enterprise Confirmation Dialog) -->
 <div id="app-confirm-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:10005;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px" onclick="if(event.target===this)closeAppConfirmModal(false)">
-  <div class="card" style="width:100%;max-width:440px;background:var(--modal-bg, #161b22);border:1px solid var(--modal-border, #30363d);border-radius:10px;padding:20px;box-shadow:var(--shadow-lg);color:var(--text)" onclick="event.stopPropagation()">
+  <div class="card" style="width:100%;max-width:440px;background:var(--modal-bg);border:1px solid var(--modal-border);border-radius:10px;padding:20px;box-shadow:var(--shadow-lg);color:var(--text)" onclick="event.stopPropagation()">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:10px">
         <div id="app-confirm-icon-wrap" style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(239,68,68,0.15);color:#ef4444">
@@ -5182,7 +5201,7 @@ setInterval(alertFetch, 5000);
 
 <!-- Modal Guardrail Dialog untuk Tindakan Berdampak Tinggi / Produksi SLA -->
 <div id="guardrail-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeGuardrailModal()">
-  <div class="card" style="width:100%;max-width:460px;background:var(--modal-bg, #161b22);border:1px solid var(--modal-border, #30363d);border-radius:10px;padding:20px;box-shadow:var(--shadow-lg);color:var(--text)">
+  <div class="card" style="width:100%;max-width:460px;background:var(--modal-bg);border:1px solid var(--modal-border);border-radius:10px;padding:20px;box-shadow:var(--shadow-lg);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:8px">
         <svg id="guardrail-modal-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#ef4444;flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -5204,7 +5223,7 @@ setInterval(alertFetch, 5000);
       <strong id="guardrail-modal-target" style="font-size:12.5px;font-family:var(--font-mono)"></strong>
     </div>
 
-    <div id="guardrail-modal-msg" style="font-size:12px;color:var(--dim);margin:0 0 12px 0;padding:10px 12px;background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:6px;line-height:1.45;word-break:break-word"></div>
+    <div id="guardrail-modal-msg" style="font-size:12px;color:var(--dim);margin:0 0 12px 0;padding:10px 12px;background:var(--input-bg);border:1px solid var(--modal-border);border-radius:6px;line-height:1.45;word-break:break-word"></div>
 
     <div id="guardrail-modal-error" style="display:none;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:6px;padding:8px 10px;margin-bottom:12px"></div>
 
@@ -5213,7 +5232,7 @@ setInterval(alertFetch, 5000);
       <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);margin-bottom:4px">
         Ketik nama host untuk konfirmasi: <code id="guardrail-name-to-match" style="color:#ef4444;background:rgba(239,68,68,0.1);padding:1px 4px;border-radius:4px"></code>
       </label>
-      <input type="text" id="guardrail-name-input" class="form-control" autocomplete="off" placeholder="Ketik persis nama host" style="width:100%;padding:7px 10px;font-size:12.5px;background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:6px;color:var(--input-text, #fff);font-family:var(--font-mono)">
+      <input type="text" id="guardrail-name-input" class="form-control" autocomplete="off" placeholder="Ketik persis nama host" style="width:100%;padding:7px 10px;font-size:12.5px;background:var(--input-bg);border:1px solid var(--modal-border);border-radius:6px;color:var(--text);font-family:var(--font-mono)">
     </div>
 
     <!-- Input Verifikasi Kata Sandi Akun Operator -->
@@ -5221,7 +5240,7 @@ setInterval(alertFetch, 5000);
       <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);margin-bottom:4px">
         Kata Sandi Akun Operator
       </label>
-      <input type="password" id="guardrail-pwd-input" class="form-control" placeholder="Masukkan kata sandi akun Anda" autocomplete="current-password" style="width:100%;padding:7px 10px;font-size:12.5px;background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:6px;color:var(--input-text, #fff)">
+      <input type="password" id="guardrail-pwd-input" class="form-control" placeholder="Masukkan kata sandi akun Anda" autocomplete="current-password" style="width:100%;padding:7px 10px;font-size:12.5px;background:var(--input-bg);border:1px solid var(--modal-border);border-radius:6px;color:var(--text)">
     </div>
 
     <!-- Input Kode 2FA TOTP (Jika Akun Aktif 2FA) -->
@@ -5229,7 +5248,7 @@ setInterval(alertFetch, 5000);
       <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);margin-bottom:4px">
         Kode Otentikasi 2FA (TOTP)
       </label>
-      <input type="text" id="guardrail-totp-input" class="form-control" inputmode="numeric" maxlength="8" placeholder="6 digit kode authenticator" style="width:100%;padding:7px 10px;font-size:12.5px;background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:6px;color:var(--input-text, #fff);letter-spacing:2px;font-family:var(--font-mono)">
+      <input type="text" id="guardrail-totp-input" class="form-control" inputmode="numeric" maxlength="8" placeholder="6 digit kode authenticator" style="width:100%;padding:7px 10px;font-size:12.5px;background:var(--input-bg);border:1px solid var(--modal-border);border-radius:6px;color:var(--text);letter-spacing:2px;font-family:var(--font-mono)">
     </div>
 
     <!-- Checkbox Konfirmasi Pemahaman Risiko (Hanya ditampilkan jika BUKAN mode password) -->
@@ -5518,7 +5537,7 @@ document.addEventListener('keydown', (e) => {
 
 <!-- Modal Abaikan Insiden -->
 <div id="ignore-problem-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px);padding:16px" onclick="if(event.target===this)closeIgnoreModal()">
-  <div class="card" style="width:100%;max-width:440px;background:var(--modal-bg, #161b22);border:1px solid var(--modal-border, #30363d);border-radius:10px;padding:20px;box-shadow:var(--shadow-lg);color:var(--text)">
+  <div class="card" style="width:100%;max-width:440px;background:var(--modal-bg);border:1px solid var(--modal-border);border-radius:10px;padding:20px;box-shadow:var(--shadow-lg);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <h3 style="margin:0;font-size:15px;display:flex;align-items:center;gap:8px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -5531,7 +5550,7 @@ document.addEventListener('keydown', (e) => {
         </svg>
       </button>
     </div>
-    <div id="ignore-modal-msg" style="font-size:13px;color:var(--text);margin:0 0 14px 0;padding:10px 12px;background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:6px;word-break:break-word"></div>
+    <div id="ignore-modal-msg" style="font-size:13px;color:var(--text);margin:0 0 14px 0;padding:10px 12px;background:var(--input-bg);border:1px solid var(--modal-border);border-radius:6px;word-break:break-word"></div>
     <div style="margin-bottom:14px">
       <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Abaikan Selama:</label>
       <select id="ignore-duration" class="filter-select" style="width:100%;height:34px;box-sizing:border-box">
@@ -5556,7 +5575,7 @@ document.addEventListener('keydown', (e) => {
 
 <!-- Modal Diagnosa & Rincian Akar Insiden -->
 <div id="problem-detail-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeProblemDetailModal()">
-  <div class="card" style="width:min(660px,94vw);max-height:88vh;display:flex;flex-direction:column;background:var(--modal-bg, #161b22);border:1px solid var(--modal-border, #30363d);border-radius:12px;box-shadow:var(--shadow-lg);color:var(--text);padding:0;overflow:hidden">
+  <div class="card" style="width:min(660px,94vw);max-height:88vh;display:flex;flex-direction:column;background:var(--modal-bg);border:1px solid var(--modal-border);border-radius:12px;box-shadow:var(--shadow-lg);color:var(--text);padding:0;overflow:hidden">
     <!-- Header -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px;border-bottom:1px solid var(--border);background:var(--bg-subtle)">
       <div>
@@ -5580,7 +5599,7 @@ document.addEventListener('keydown', (e) => {
       <div id="pdm-status-box"></div>
 
       <!-- Analisis Akar Insiden -->
-      <div style="background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:8px;padding:14px 16px">
+      <div style="background:var(--input-bg);border:1px solid var(--modal-border);border-radius:8px;padding:14px 16px">
         <div style="font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent,#3b82f6)"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> <span id="pdm-sec-cause">Analisis Penyebab (Root Cause)</span>
         </div>
@@ -5591,7 +5610,7 @@ document.addEventListener('keydown', (e) => {
       </div>
 
       <!-- Data Teknis Telemetri -->
-      <div style="background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:8px;padding:14px 16px">
+      <div style="background:var(--input-bg);border:1px solid var(--modal-border);border-radius:8px;padding:14px 16px">
         <div style="font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent,#3b82f6)"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> <span id="pdm-sec-tech">Data Teknis &amp; Snapshot Insiden</span>
         </div>
@@ -5599,7 +5618,7 @@ document.addEventListener('keydown', (e) => {
       </div>
 
       <!-- Rekomendasi Solusi -->
-      <div style="background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:8px;padding:14px 16px">
+      <div style="background:var(--input-bg);border:1px solid var(--modal-border);border-radius:8px;padding:14px 16px">
         <div style="font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent,#3b82f6)"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg> <span id="pdm-sec-reco">Langkah Penanganan Terverifikasi</span>
         </div>
@@ -5607,7 +5626,7 @@ document.addEventListener('keydown', (e) => {
       </div>
 
       <!-- Perintah Terminal -->
-      <div style="background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:8px;padding:14px 16px">
+      <div style="background:var(--input-bg);border:1px solid var(--modal-border);border-radius:8px;padding:14px 16px">
         <div style="font-size:12px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent,#3b82f6)"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg> <span id="pdm-sec-cmds">Perintah Diagnostik &amp; Pemulihan di Server</span>
         </div>
@@ -6368,7 +6387,7 @@ window.PantauColManager = (function() {
   setTimeout(checkServerVersion, 3000);
 })();
 </script>
-<script src="/static/js/pantau-ui.js?v={{ app_version or '4.8.136' }}"></script>
+<script src="/static/js/pantau-ui.js?v={{ app_version or '4.8.137' }}"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

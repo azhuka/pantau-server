@@ -354,6 +354,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.137
+
+- **Tipe Rilis:** Standardisasi Pewarisan Tema, Eliminasi Total Hardcode Warna, dan Sinkronisasi Zona Waktu Insiden (*Theme Inheritance Standardization, Total Hardcoded Color Elimination & Incident Timezone Synchronization*)
+- **Fokus Utama:** Menyelesaikan permasalahan rusaknya pewarisan tema saat berpindah antara Obsidian, Deep Space Navy, dan Midnight NOC, mengeliminasi puluhan warna fallback hardcode (`#161b22`, `#30363d`, `#0d1117`, `rgba(9,13,22,0.7)`), serta menyelaraskan tampilan waktu insiden dengan jam lokal browser:
+  1. **Standardisasi Pewarisan Variabel Tema (`--bg-card` & `--card`):**
+     - Menambahkan definisi resmi `--bg-card` pada `:root` dan seluruh preset tema (`dark`, `obsidian`, `navy`, `light`) pada `base.html`.
+     - Mengeliminasi fallback hardcode `#161b22` pada `.pantau-table-wrap`, `.pantau-card`, dan `.pantau-modal-card` di `pantau-components.css`, sehingga pada tema Obsidian kontainer menjadi hitam pekat OLED (`#0d0d10`), dan pada tema Navy menjadi biru pekat (`#131c31`) secara murni tanpa kotak abu-abu janggal.
+  2. **Eliminasi Total Sisa Hardcode Warna pada Formulir & Modal:**
+     - Mengganti gaya inline hardcode `background:rgba(9,13,22,0.7)` pada dropdown grup dan kolom pencarian dasbor dengan kelas modular `.dash-group-select` dan `.dash-search-input` berbasis `var(--input-bg)` dan `var(--border)`.
+     - Membersihkan seluruh hardcode `#161b22` dan `#30363d` dari modal pada `dashboard.html`, `file_manager.html`, `profile.html`, dan `services.html`.
+  3. **Sinkronisasi Zona Waktu Insiden Lokal (*Timezone Harmonization*):**
+     - Menerapkan helper `formatLocalShortDt()` pada `dashboard.html` untuk mengonversi timestamp UTC dari backend ke zona waktu lokal pengguna (WITA / UTC+8).
+     - Menyelaraskan catatan waktu insiden (`DD Mon HH:MM`) dengan jam sistem dan durasi aktif, menghilangkan kebingungan selisih waktu 8 jam pada kartu Insiden Terkini.
+
 ## Versi 4.8.136
 
 - **Tipe Rilis:** Eliminasi Total Hardcode Gaya Inline & Supresi Kontainer Paginasi Kosong (*Total Inline Style Elimination & Empty Pagination Container Suppression*)

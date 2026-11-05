@@ -10,9 +10,9 @@
   width: 100% !important;
   overflow-x: auto !important;
   -webkit-overflow-scrolling: touch !important;
-  border: 1px solid var(--border, #30363d) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 6px !important;
-  background: var(--bg-card, #161b22) !important;
+  background: var(--bg-card, var(--card)) !important;
   box-sizing: border-box !important;
   margin-bottom: 8px !important;
 }
@@ -63,7 +63,7 @@
 }
 
 .pantau-table thead tr {
-  border-bottom: 1px solid var(--border, #30363d) !important;
+  border-bottom: 1px solid var(--border) !important;
   background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
 }
 
@@ -73,7 +73,7 @@
   font-weight: 600 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
   white-space: nowrap !important;
   text-align: left !important;
   border: none !important;
@@ -105,7 +105,7 @@
   padding: 5px 10px !important;
   vertical-align: middle !important;
   box-sizing: border-box !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
   border: none !important;
 }
 
@@ -126,7 +126,7 @@
 
 .pantau-empty-td {
   padding: 36px 16px !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
   font-size: 12px !important;
   text-align: center !important;
 }
@@ -151,9 +151,9 @@
   gap: 10px !important;
   padding: 8px 12px !important;
   font-size: 11.5px !important;
-  color: var(--dim, #8b949e) !important;
-  background: var(--bg-card, #161b22) !important;
-  border: 1px solid var(--border, #30363d) !important;
+  color: var(--dim) !important;
+  background: var(--bg-card, var(--card)) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 6px !important;
   margin-top: 8px !important;
   box-sizing: border-box !important;
@@ -170,7 +170,7 @@
 .table-pagination-limit span {
   font-size: 11px !important;
   font-weight: 500 !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
 }
 
 .pantau-pg-select,
@@ -179,10 +179,10 @@ select[data-pg-select] {
   height: 24px !important;
   padding: 0 6px !important;
   font-size: 11px !important;
-  background: var(--input-bg, #0d1117) !important;
-  border: 1px solid var(--input-border, #30363d) !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--input-border, var(--border)) !important;
   border-radius: 4px !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
   cursor: pointer !important;
   outline: none !important;
 }
@@ -191,7 +191,7 @@ select[data-pg-select] {
 .table-pagination-info,
 div[data-pg-info] {
   font-size: 11px !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
 }
 
 .pantau-pg-nav,
@@ -210,9 +210,9 @@ button[data-pg-next] {
   font-size: 11px !important;
   font-weight: 500 !important;
   background: var(--bg-subtle, rgba(255, 255, 255, 0.04)) !important;
-  border: 1px solid var(--border, #30363d) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 4px !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
   cursor: pointer !important;
   transition: all 0.12s ease !important;
 }
@@ -222,7 +222,7 @@ button[data-pg-next] {
 button[data-pg-prev]:hover:not(:disabled),
 button[data-pg-next]:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08) !important;
-  border-color: var(--dim, #8b949e) !important;
+  border-color: var(--dim) !important;
 }
 
 .pantau-pg-btn:disabled,
@@ -239,7 +239,7 @@ span[data-pg-cur] {
   font-size: 11px !important;
   font-family: var(--font-mono, ui-monospace, monospace) !important;
   padding: 0 4px !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
 }
 
 /* -----------------------------------------------------------------------------
@@ -256,7 +256,7 @@ span[data-pg-cur] {
   font-size: 10px !important;
   font-weight: 700 !important;
   letter-spacing: 0.6px !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
   text-transform: uppercase !important;
   user-select: none !important;
 }
@@ -264,8 +264,8 @@ span[data-pg-cur] {
 .pantau-preset-group {
   display: inline-flex !important;
   align-items: center !important;
-  background: var(--input-bg, #0d1117) !important;
-  border: 1px solid var(--border, #30363d) !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 6px !important;
   padding: 2px !important;
   gap: 2px !important;
@@ -283,7 +283,7 @@ span[data-pg-cur] {
   border: none !important;
   border-radius: 4px !important;
   background: transparent !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
   cursor: pointer !important;
   transition: all 0.12s ease !important;
   white-space: nowrap !important;
@@ -293,13 +293,13 @@ span[data-pg-cur] {
 
 .pantau-preset-btn:hover {
   background: rgba(255, 255, 255, 0.08) !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
 }
 
 .pantau-preset-btn.is-active,
 .pantau-preset-btn.is-on {
   background: var(--blue, #38bdf8) !important;
-  color: #0d1117 !important;
+  color: var(--bg) !important;
   font-weight: 600 !important;
 }
 
@@ -323,10 +323,10 @@ span[data-pg-cur] {
   height: 28px !important;
   padding: 0 8px !important;
   font-size: 11.5px !important;
-  background: var(--input-bg, #0d1117) !important;
-  border: 1px solid var(--input-border, #30363d) !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--input-border, var(--border)) !important;
   border-radius: 5px !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
   outline: none !important;
   cursor: pointer !important;
   transition: border-color 0.12s ease !important;
@@ -341,10 +341,10 @@ span[data-pg-cur] {
   width: 100% !important;
   padding: 0 10px 0 28px !important;
   font-size: 11.5px !important;
-  background: var(--input-bg, #0d1117) !important;
-  border: 1px solid var(--input-border, #30363d) !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--input-border, var(--border)) !important;
   border-radius: 6px !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
   outline: none !important;
   transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
   box-sizing: border-box !important;
@@ -368,7 +368,7 @@ span[data-pg-cur] {
   border: 1px solid transparent !important;
   border-radius: 5px !important;
   background: transparent !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
   cursor: pointer !important;
   transition: all 0.12s ease !important;
   text-decoration: none !important;
@@ -379,8 +379,8 @@ span[data-pg-cur] {
 
 .pantau-btn-icon:hover {
   background: rgba(255, 255, 255, 0.08) !important;
-  color: var(--text-bright, #fff) !important;
-  border-color: var(--border, #30363d) !important;
+  color: var(--text-heading, #ffffff) !important;
+  border-color: var(--border) !important;
 }
 
 .pantau-btn-icon-danger:hover {
@@ -436,19 +436,19 @@ span[data-pg-cur] {
 
 .pantau-btn-ghost {
   background: transparent !important;
-  color: var(--text, #e6edf3) !important;
-  border-color: var(--border, #30363d) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
 }
 
 .pantau-btn-ghost:hover {
   background: rgba(255, 255, 255, 0.08) !important;
-  color: var(--text-bright, #fff) !important;
-  border-color: var(--dim, #8b949e) !important;
+  color: var(--text-heading, #ffffff) !important;
+  border-color: var(--dim) !important;
 }
 
 .pantau-btn-primary {
   background: var(--blue, #38bdf8) !important;
-  color: #0d1117 !important;
+  color: var(--bg) !important;
   border-color: var(--blue, #38bdf8) !important;
   font-weight: 600 !important;
 }
@@ -474,8 +474,8 @@ span[data-pg-cur] {
    5. SISTEM KARTU BAKU (Universal Card System)
    ----------------------------------------------------------------------------- */
 .pantau-card {
-  background: var(--bg-card, #161b22) !important;
-  border: 1px solid var(--border, #30363d) !important;
+  background: var(--bg-card, var(--card)) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 8px !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
@@ -492,7 +492,7 @@ span[data-pg-cur] {
   justify-content: space-between !important;
   align-items: center !important;
   padding: 10px 14px !important;
-  border-bottom: 1px solid var(--border, #30363d) !important;
+  border-bottom: 1px solid var(--border) !important;
   background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
   box-sizing: border-box !important;
 }
@@ -507,13 +507,13 @@ span[data-pg-cur] {
   margin: 0 !important;
   font-size: 13.5px !important;
   font-weight: 600 !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
 }
 
 .pantau-card-subtitle {
   margin: 1px 0 0 0 !important;
   font-size: 11px !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
 }
 
 .pantau-card-tools {
@@ -549,8 +549,8 @@ span[data-pg-cur] {
 
 .pantau-modal-card {
   width: 100% !important;
-  background: var(--bg-card, #161b22) !important;
-  border: 1px solid var(--border, #30363d) !important;
+  background: var(--bg-card, var(--card)) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 10px !important;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45) !important;
   display: flex !important;
@@ -565,7 +565,7 @@ span[data-pg-cur] {
   align-items: center !important;
   justify-content: space-between !important;
   padding: 12px 16px !important;
-  border-bottom: 1px solid var(--border, #30363d) !important;
+  border-bottom: 1px solid var(--border) !important;
   background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
   flex-shrink: 0 !important;
 }
@@ -574,7 +574,7 @@ span[data-pg-cur] {
   margin: 0 !important;
   font-size: 14px !important;
   font-weight: 700 !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
@@ -590,15 +590,15 @@ span[data-pg-cur] {
   border: 1px solid transparent !important;
   border-radius: 5px !important;
   background: transparent !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
   cursor: pointer !important;
   transition: all 0.12s ease !important;
 }
 
 .pantau-modal-close:hover {
   background: rgba(255, 255, 255, 0.08) !important;
-  color: var(--text-bright, #fff) !important;
-  border-color: var(--border, #30363d) !important;
+  color: var(--text-heading, #ffffff) !important;
+  border-color: var(--border) !important;
 }
 
 .pantau-modal-body {
@@ -614,17 +614,17 @@ span[data-pg-cur] {
   justify-content: flex-end !important;
   gap: 10px !important;
   padding: 12px 16px !important;
-  border-top: 1px solid var(--border, #30363d) !important;
+  border-top: 1px solid var(--border) !important;
   background: var(--bg-subtle, rgba(255, 255, 255, 0.015)) !important;
   flex-shrink: 0 !important;
 }
 
 .pantau-modal-input {
   width: 100% !important;
-  background: rgba(9, 13, 22, 0.7) !important;
-  border: 1px solid var(--border, #30363d) !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--border) !important;
   border-radius: var(--radius-sm, 6px) !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
   padding: 8px 10px !important;
   font-size: 13px !important;
   outline: none !important;
@@ -652,7 +652,7 @@ span[data-pg-cur] {
   font-weight: 600 !important;
   display: block !important;
   margin-bottom: 6px !important;
-  color: var(--text, #e6edf3) !important;
+  color: var(--text) !important;
 }
 
 .pantau-form-sublabel {
@@ -664,7 +664,7 @@ span[data-pg-cur] {
 /* -----------------------------------------------------------------------------
    7. UTILITAS TAMPILAN BAKU NOC (Typography, Colors, Spacing, & Flex Helpers)
    ----------------------------------------------------------------------------- */
-.pantau-text-dim { color: var(--dim, #8b949e) !important; }
+.pantau-text-dim { color: var(--dim) !important; }
 .pantau-text-bright { color: var(--text-bright, #ffffff) !important; }
 .pantau-text-ok { color: var(--green, #22c55e) !important; }
 .pantau-text-warn { color: var(--yellow, #f59e0b) !important; }
@@ -699,7 +699,7 @@ span[data-pg-cur] {
 /* Mini Tag & Badges */
 .pantau-tag-subtle {
   font-size: 8px !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
   background: rgba(255, 255, 255, 0.06) !important;
   padding: 0.5px 3.5px !important;
   border-radius: 3px !important;
@@ -711,7 +711,7 @@ span[data-pg-cur] {
 
 .pantau-truncate-sub {
   font-size: 8.5px !important;
-  color: var(--dim, #8b949e) !important;
+  color: var(--dim) !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -834,4 +834,33 @@ span[data-pg-cur] {
   align-items: center !important;
   gap: 4px !important;
   flex-shrink: 0 !important;
+}
+
+
+/* -----------------------------------------------------------------------------
+   9. KONTROL BILAH ALAT DASBOR (Dashboard Toolbar Controls)
+   ----------------------------------------------------------------------------- */
+.dash-group-select {
+  height: 28px !important;
+  padding: 0 8px !important;
+  font-size: 11.5px !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  color: var(--text) !important;
+  outline: none !important;
+  cursor: pointer !important;
+}
+
+.dash-search-input {
+  height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 11.5px !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  color: var(--text) !important;
+  width: 160px !important;
+  outline: none !important;
+  box-sizing: border-box !important;
 }

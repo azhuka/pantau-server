@@ -9,8 +9,8 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0,0,0,0.45);
-  border: 1px solid #30363d;
-  background: #0d1117;
+  border: 1px solid var(--border);
+  background: var(--bg);
   transition: all .2s ease;
 }
 .terminal-titlebar {
@@ -19,8 +19,8 @@
   justify-content: space-between;
   gap: 10px;
   padding: 8px 14px;
-  background: #161b22;
-  border-bottom: 1px solid #30363d;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
 }
 .terminal-dots {
   display: flex;
@@ -54,9 +54,9 @@
   gap: 6px;
 }
 .terminal-btn-icon {
-  background: #21262d;
-  border: 1px solid #30363d;
-  color: #c9d1d9;
+  background: var(--bg-subtle, rgba(255,255,255,0.04));
+  border: 1px solid var(--border);
+  color: var(--text);
   font-size: 11px;
   padding: 4px 9px;
   border-radius: 5px;
@@ -69,9 +69,9 @@
   font-family: inherit;
 }
 .terminal-btn-icon:hover {
-  background: #30363d;
-  color: #fff;
-  border-color: #484f58;
+  background: var(--hover);
+  color: var(--text-bright);
+  border-color: var(--dim);
 }
 .terminal-btn-icon.is-active {
   background: rgba(56, 189, 248, 0.16);
@@ -130,18 +130,18 @@
 }
 #xterm-container .xterm-viewport::-webkit-scrollbar-thumb,
 #apt-task-xterm-container .xterm-viewport::-webkit-scrollbar-thumb {
-  background: #30363d;
+  background: var(--border);
   border-radius: 4px;
 }
 #xterm-container .xterm-viewport::-webkit-scrollbar-thumb:hover,
 #apt-task-xterm-container .xterm-viewport::-webkit-scrollbar-thumb:hover {
-  background: #484f58;
+  background: var(--dim);
 }
 
 .terminal-resize-handle {
   height: 10px;
-  background: #161b22;
-  border-top: 1px solid #30363d;
+  background: var(--card);
+  border-top: 1px solid var(--border);
   border-radius: 0 0 10px 10px;
   cursor: ns-resize;
   display: flex;
@@ -191,8 +191,8 @@
   flex: 0 0 44px !important;
   height: 44px !important;
   padding: 0 16px !important;
-  background: #161b22 !important;
-  border-bottom: 1px solid #30363d !important;
+  background: var(--card) !important;
+  border-bottom: 1px solid var(--border) !important;
   border-radius: 0 !important;
   box-sizing: border-box !important;
 }
