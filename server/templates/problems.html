@@ -200,19 +200,19 @@
 }
 #probtable th.col-server,
 #probtable td.col-server {
-  width: 175px !important;
-  min-width: 160px !important;
-  max-width: 210px !important;
+  width: 168px !important;
+  min-width: 155px !important;
+  max-width: 185px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  padding: 5px 10px !important;
+  padding: 5px 8px !important;
 }
 #probtable th.col-sev,
 #probtable td.col-sev {
-  width: 165px !important;
-  min-width: 155px !important;
-  max-width: 180px !important;
+  width: 125px !important;
+  min-width: 115px !important;
+  max-width: 140px !important;
   text-align: left !important;
   padding: 4px 8px !important;
   white-space: nowrap !important;
@@ -492,8 +492,8 @@
     <table id="probtable" style="width:100%;border-collapse:collapse;table-layout:fixed">
       <colgroup>
         <col style="width:135px">
-        <col style="width:175px">
-        <col style="width:165px">
+        <col style="width:168px">
+        <col style="width:125px">
         <col>
         <col style="width:120px">
         <col style="width:260px">
@@ -502,7 +502,7 @@
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
           <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Waktu saat insiden mulai terdeteksi">WAKTU MULAI</th>
-          <th class="col-server" data-col-title="Server" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Mesin server tempat anomali atau gangguan terjadi">SERVER</th>
+          <th class="col-server" data-col-title="Server" style="padding:5px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Mesin server tempat anomali atau gangguan terjadi">SERVER</th>
           <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">KEPARAHAN</th>
           <th class="col-event" data-col-title="Kejadian" style="padding:5px 14px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="Deskripsi ringkas mengenai anomali yang terjadi">KEJADIAN</th>
           <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Lama waktu insiden berlangsung hingga sekarang">DURASI</th>
@@ -532,8 +532,8 @@
         <td class="col-time" style="padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
           <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px" title="Waktu Mulai: {{ p.started_at.strftime('%d %b %Y %H:%M:%S') if p.started_at else '—' }}">{{ p.started_at.strftime('%d %b %H:%M:%S') if p.started_at else '—' }}</span>
         </td>
-        <td class="col-server" style="padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-          <div style="display:inline-flex;align-items:center;gap:6px;max-width:100%">
+        <td class="col-server" style="padding:5px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          <div style="display:inline-flex;align-items:center;gap:4px;max-width:100%">
             {% if p.probe_id or not p.server_id %}
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
             {% else %}
@@ -541,7 +541,7 @@
             {% endif %}
             <span style="font-size:11.5px;font-weight:600;color:var(--text-bright);overflow:hidden;text-overflow:ellipsis">{{ p.hostname }}</span>
             {% if p.group_name %}
-            <span class="badge badge-muted" style="font-size:8px;padding:0.5px 4.5px;font-weight:500;flex-shrink:0">{{ p.group_name }}</span>
+            <span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:500;flex-shrink:0">{{ p.group_name }}</span>
             {% endif %}
           </div>
         </td>
@@ -1499,8 +1499,8 @@ window.poll = async function(opts = {}) {
           wrapper.innerHTML = `<table id="probtable" style="width:100%;border-collapse:collapse;table-layout:fixed">
             <colgroup>
               <col style="width:135px">
-              <col style="width:175px">
-              <col style="width:165px">
+              <col style="width:168px">
+              <col style="width:125px">
               <col>
               <col style="width:120px">
               <col style="width:260px">
@@ -1509,7 +1509,7 @@ window.poll = async function(opts = {}) {
             <thead>
               <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
                 <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden mulai terdeteksi'}">${isEn ? 'START TIME' : 'WAKTU MULAI'}</th>
-                <th class="col-server" data-col-title="Server" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">SERVER</th>
+                <th class="col-server" data-col-title="Server" style="padding:5px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">SERVER</th>
                 <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'SEVERITY' : 'KEPARAHAN'}</th>
                 <th class="col-event" data-col-title="Kejadian" style="padding:5px 14px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'EVENT' : 'KEJADIAN'}</th>
                 <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'DURATION' : 'DURASI'}</th>
@@ -1565,7 +1565,7 @@ window.poll = async function(opts = {}) {
             const srvDot = (p.probe_id || !p.server_id)
               ? globeIcon
               : `<span class="dot ${p.is_offline ? 'down' : 'up'}" style="flex-shrink:0"></span>`;
-            const grpBadge = p.group_name ? `<span class="badge badge-muted" style="font-size:8px;padding:0.5px 4.5px;font-weight:500;flex-shrink:0">${_esc(p.group_name)}</span>` : '';
+            const grpBadge = p.group_name ? `<span class="badge badge-muted" style="font-size:7.5px;padding:0.5px 3.5px;font-weight:500;flex-shrink:0">${_esc(p.group_name)}</span>` : '';
 
             const svgLink = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`;
             const svgCheck = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red)"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
@@ -1607,8 +1607,8 @@ window.poll = async function(opts = {}) {
               <td class="col-time" style="padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                 <span class="mono" style="font-size:11px;font-weight:600;color:var(--text);letter-spacing:0.2px" title="${(isEn ? 'Started: ' : 'Mulai: ') + _esc(p.started_at_str || '')}">${_esc((p.started_at_str || '').replace(/\s*\d{4}\s*/, ' '))}</span>
               </td>
-              <td class="col-server" style="padding:5px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                <div style="display:inline-flex;align-items:center;gap:6px;max-width:100%">
+              <td class="col-server" style="padding:5px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                <div style="display:inline-flex;align-items:center;gap:4px;max-width:100%">
                   ${srvDot}
                   <span style="font-size:11.5px;font-weight:600;color:var(--text-bright);overflow:hidden;text-overflow:ellipsis">${_esc(p.hostname)}</span>
                   ${grpBadge}

@@ -354,6 +354,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.121
+
+- **Tipe Rilis:** Penyelarasan Proporsi Jarak Kolom Server dan Keparahan Insiden (*Incident Table Server & Severity Column Proportions & Gap Refinement*)
+- **Fokus Utama:** Mengeliminasi ruang kosong berlebih antara kolom host server dengan kolom tingkat keparahan pada tabel insiden terbuka tanpa memotong nama server yang panjang:
+  1. **Penyelarasan Lebar Kolom dan Perataan Tingkat Keparahan (*Left-Aligned Severity Badge*):**
+     - Mengubah perataan teks dan lencana keparahan (`dash-col-sev` pada Dasbor dan `col-sev` pada menu Insiden) dari perataan tengah (*center*) menjadi perataan kiri (*left*), sehingga lencana keparahan (`KRITIS`, `GAWAT`, `PERINGATAN`, `INFO`) berdampingan secara proporsional di samping nama host server.
+     - Merampingkan lebar kolom keparahan di Dasbor dari 165px menjadi 120px, dan di tabel Insiden Terbuka dari 165px menjadi 125px (memberikan ruang lega hingga 120px untuk kombinasi sub-badge `DIABAIKAN` + `✓ DITANGANI`).
+  2. **Optimalisasi Kolom Host Server & Akomodasi Nama Server Panjang:**
+     - Menyesuaikan lebar kolom server (`dash-col-server` dan `col-server`) dari 180px/175px menjadi 168px dengan bantalan sel rapat (*cell padding* 5px 8px, celah elemen horizontal 4px).
+     - Menyesuaikan proporsi bantalan lencana nama grup server (`badge-muted`) menjadi `font-size: 7.5px; padding: 0.5px 3.5px`, memastikan nama server panjang beserta lencana grupnya (seperti `server-singgah [PRODUKSI]` dan `barrukab-clone [CLONE]`) tertampung penuh tanpa terpotong elipsis (*zero truncation*).
+  3. **Konsistensi Rendering Dinamis Tabel (*Dynamic DOM Re-render Integrity*):**
+     - Menyinkronkan seluruh definisi lebar kolom pada elemen `<colgroup>`, header `<th>`, baris awal Jinja2 `<td>`, serta blok manipulasi Javascript (`probTbody` pada Dasbor dan `probtable.innerHTML` pada polling dinamis `problems.html`).
+
 ## Versi 4.8.120
 
 - **Tipe Rilis:** Penyatuan Konfigurasi Gateway, DNS, & Statistik Lalu Lintas Jaringan serta Ekspansi Penuh Alokasi Penyimpanan (*Network Configuration & Traffic Statistics Card Unification with Full-Width Storage Allocation Expansion*)
