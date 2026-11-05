@@ -354,6 +354,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.119
+
+- **Tipe Rilis:** Penataan Proporsi Visual Grafik Riwayat Kinerja & Eliminasi Pesan Audit Redundan (*Performance History Visual Proportion Alignment & Redundant Audit Notice Elimination*)
+- **Fokus Utama:** Menyelesaikan anomali visual pada kartu riwayat performa dan merapikan halaman audit tindakan:
+  1. **Penyelarasan Proporsi Kartu Metrik Riwayat Kinerja (`.perf-metric-card`):**
+     - Memperbaiki ketidaksesuaian tinggi wadah grafik (`.perf-chart-box`) yang sebelumnya dipaksa 135px sedangkan elemen grafik SVG dirender setinggi 150px dengan bantalan bawah kartu hanya 6px, menyebabkan label waktu sumbu X (`18:48 02:48 10:48 ...`) meluap keluar dan terpotong oleh garis batas bawah kartu.
+     - Menyesuaikan tinggi `.tab-body .perf-chart-box` menjadi `150px !important`, SVG diatur `height: 100%`, dan bantalan kartu ditingkatkan menjadi `padding: 10px 12px 14px 12px !important` dengan `overflow: hidden`. Seluruh angka waktu dan label sumbu Y kini tersimpan utuh dan rapi di dalam kartu dengan ruang batas yang presisi.
+     - Memberikan jarak pemisah yang proporsional (`margin-top: 12px; border-top: 1px solid var(--border)`) di atas bagian `Riwayat Penggunaan Disk (%)` sehingga tidak menempel langsung pada baris grafik beban sistem di atasnya.
+  2. **Eliminasi Pesan Footer Redundan pada Halaman Audit (`audit.html`):**
+     - Menghapus paragraf catatan batas catatan *"Menampilkan maksimal 500 catatan terbaru. Status perintah remote diperbarui otomatis setelah agen selesai mengeksekusinya."* pada halaman `server/templates/audit.html`, menjadikan tampilan riwayat tindakan lebih bersih, terstruktur, dan berstandar NOC profesional.
+
 ## Versi 4.8.118
 
 - **Tipe Rilis:** Perbaikan Kontras Notifikasi Toast Tema Terang, Normalisasi Rentang Riwayat Disk 24 Jam, & Perapian Padding Tab Logging (*Light Theme Toast Contrast Fix, 24-Hour Disk History Range Normalization & Logging Tab Control Padding Alignment*)
