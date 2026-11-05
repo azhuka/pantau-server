@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.113"
+AGENT_VERSION = "4.8.114"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4849,7 +4849,6 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
         ("gagal", re.compile(
             r"Maximum authentication attempts exceeded for (?:invalid user )?"
             r"(?P<user>[\w.-]+) from (?P<from>[\da-fA-F:.]+)")),
-        ("sesi", re.compile(r"New session \d+ of user (?P<user>[\w.-]+)\.")),
     ]
     # Hanya sertakan pola regex sudo jika kueri journalctl khusus sudo (Langkah 3) tidak dijalankan
     if not sudo_handled_by_section_3:

@@ -142,18 +142,19 @@
   }
 </style>
 
-<div id="chip-row" style="{% if initial_logins and initial_logins|length > 0 %}display:flex;{% else %}display:none;{% endif %}flex-wrap:wrap;gap:8px;margin-bottom:14px">
+<div id="chip-row" style="{% if initial_logins and initial_logins|length > 0 %}display:flex;{% else %}display:none;{% endif %}flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px">
   <span class="chip chip-up" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('aktif')" title="Klik untuk filter Sesi Aktif">Sesi Aktif: <b id="chip-aktif">0</b></span>
   <span class="chip chip-inactive" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('selesai')" title="Klik untuk filter Sesi Selesai">Sesi Selesai: <b id="chip-selesai">0</b></span>
-  <span class="chip chip-info" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('perintah')" title="Klik untuk filter Semua Perintah (Shell, Sudo, Polkit)">Perintah: <b id="chip-perintah">0</b></span>
-  <span class="chip chip-info" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('shell')" title="Klik untuk filter Perintah Shell (Non-Sudo)">Shell: <b id="chip-shell">0</b></span>
-  <span class="chip chip-warn" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sudo')" title="Klik untuk filter Sudo">Sudo: <b id="chip-sudo">0</b></span>
-  <span class="chip chip-warn" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('polkit')" title="Klik untuk filter Polkit">Polkit: <b id="chip-polkit">0</b></span>
   <span class="chip" style="cursor:pointer;padding:3px 10px;font-size:11px;background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.3)" onclick="setLlTypeFilter('login')" title="Klik untuk filter Sesi Login Berhasil">Sesi Login: <b id="chip-login">0</b></span>
-  <span class="chip chip-down" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sudo_gagal')" title="Klik untuk filter Sudo Gagal">Sudo Gagal: <b id="chip-sudo-gagal">0</b></span>
+  <span style="display:inline-block;width:1px;height:18px;background:var(--border);margin:0 4px"></span>
+  <span class="chip chip-info" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('perintah')" title="Klik untuk filter Semua Perintah (Shell, Sudo, Polkit)">Perintah: <b id="chip-perintah">0</b></span>
+  <span class="chip chip-info" style="cursor:pointer;padding:3px 10px;font-size:11px;opacity:0.85" onclick="setLlTypeFilter('shell')" title="Klik untuk filter Perintah Shell (Non-Sudo)">Shell: <b id="chip-shell">0</b></span>
+  <span class="chip chip-warn" style="cursor:pointer;padding:3px 10px;font-size:11px;opacity:0.85" onclick="setLlTypeFilter('sudo')" title="Klik untuk filter Sudo">Sudo: <b id="chip-sudo">0</b></span>
+  <span class="chip chip-warn" style="cursor:pointer;padding:3px 10px;font-size:11px;opacity:0.85" onclick="setLlTypeFilter('polkit')" title="Klik untuk filter Polkit">Polkit: <b id="chip-polkit">0</b></span>
+  <span style="display:inline-block;width:1px;height:18px;background:var(--border);margin:0 4px"></span>
   <span class="chip chip-down" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('gagal')" title="Klik untuk filter Login Gagal">Login Gagal: <b id="chip-gagal">0</b></span>
-  <span class="chip chip-inactive" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sesi')" title="Klik untuk filter Sesi Baru">Sesi Baru: <b id="chip-sesi">0</b></span>
-  <button type="button" class="btn btn-ghost btn-sm" id="btn-reset-ll-filter" onclick="setLlTypeFilter('')" style="display:none;padding:2px 8px;font-size:11px">Reset Filter</button>
+  <span class="chip chip-down" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('sudo_gagal')" title="Klik untuk filter Sudo Gagal">Sudo Gagal: <b id="chip-sudo-gagal">0</b></span>
+  <button type="button" class="btn btn-ghost btn-sm" id="btn-reset-ll-filter" onclick="setLlTypeFilter('')" style="display:none;padding:2px 8px;font-size:11px;margin-left:auto">Reset Filter</button>
 </div>
 
 <div class="card">
@@ -169,14 +170,13 @@
           <option value="">Semua Jenis</option>
           <option value="aktif">Sesi Aktif (Masih Login)</option>
           <option value="selesai">Sesi Selesai (Logout)</option>
+          <option value="login">Sesi Login (Berhasil)</option>
           <option value="perintah">Semua Perintah (Shell &amp; Sudo)</option>
           <option value="shell">Perintah Shell (Non-Sudo)</option>
           <option value="sudo">Eksekusi Sudo</option>
           <option value="polkit">Otorisasi Polkit</option>
-          <option value="login">Sesi Login (Berhasil)</option>
-          <option value="sudo_gagal">Sudo Gagal / Ilegal</option>
           <option value="gagal">Login Gagal</option>
-          <option value="sesi">Sesi Baru</option>
+          <option value="sudo_gagal">Sudo Gagal / Ilegal</option>
         </select>
       </div>
       <div class="filter-col-search" title="Cari aktivitas login atau sudo" style="min-width:220px">
@@ -271,7 +271,7 @@ let activityBusy = false;
 let llCount = 0;
 
 function renderChips(logins) {
-  const c = {aktif: 0, selesai: 0, login: 0, sudo: 0, sudo_gagal: 0, gagal: 0, sesi: 0, polkit: 0, polkit_gagal: 0, shell: 0};
+  const c = {aktif: 0, selesai: 0, login: 0, sudo: 0, sudo_gagal: 0, gagal: 0, polkit: 0, polkit_gagal: 0, shell: 0};
   for (const x of logins) {
     if (x.type === 'login' || x.type === 'sukses') c.login++;
     else if (c.hasOwnProperty(x.type)) c[x.type]++;
@@ -283,6 +283,8 @@ function renderChips(logins) {
   if (elAktif) elAktif.textContent = c.aktif;
   const elSelesai = document.getElementById('chip-selesai');
   if (elSelesai) elSelesai.textContent = c.selesai;
+  const elLogin = document.getElementById('chip-login');
+  if (elLogin) elLogin.textContent = c.login;
   const elPerintah = document.getElementById('chip-perintah');
   if (elPerintah) elPerintah.textContent = c.shell + c.sudo + c.polkit;
   const elShell = document.getElementById('chip-shell');
@@ -291,14 +293,10 @@ function renderChips(logins) {
   if (elSudo) elSudo.textContent = c.sudo;
   const elPolkit = document.getElementById('chip-polkit');
   if (elPolkit) elPolkit.textContent = c.polkit;
-  const elLogin = document.getElementById('chip-login');
-  if (elLogin) elLogin.textContent = c.login;
+  const elLoginGagal = document.getElementById('chip-gagal');
+  if (elLoginGagal) elLoginGagal.textContent = c.gagal;
   const elSudoGagal = document.getElementById('chip-sudo-gagal');
   if (elSudoGagal) elSudoGagal.textContent = c.sudo_gagal + c.polkit_gagal;
-  const elGagal = document.getElementById('chip-gagal');
-  if (elGagal) elGagal.textContent = c.gagal;
-  const elSesi = document.getElementById('chip-sesi');
-  if (elSesi) elSesi.textContent = c.sesi;
 }
 
 function getActualCommand(cmd) {
@@ -372,19 +370,31 @@ function deduplicateLogins(rawList) {
       if (tty) seenActiveTty.add(tty);
       result.push(item);
     } else if (isLogin) {
-      const loginKey = `${user}|${ts.slice(0, 16)}`;
-      if (seenLogin.has(loginKey)) {
-        const existingIdx = result.findIndex(r => (r.type === 'login' || r.type === 'sukses') && String(r.user || '').trim() === user && String(r.ts || '').slice(0, 16) === ts.slice(0, 16));
-        if (existingIdx !== -1) {
-          if ((!result[existingIdx].tty || result[existingIdx].tty === '—') && tty) result[existingIdx].tty = tty;
-          if ((!result[existingIdx].from || result[existingIdx].from === '(lokal)') && from && from !== '(lokal)') result[existingIdx].from = from;
-          if (method.includes('ssh (') && !String(result[existingIdx].method || '').includes('ssh (')) result[existingIdx].method = method;
+      if (tty && tty !== '—') {
+        const loginKey = `${user}|${ts.slice(0, 19)}|${tty}`;
+        if (seenLogin.has(loginKey)) continue;
+        seenLogin.add(loginKey);
+        item.type = 'login';
+        result.push(item);
+      } else {
+        let matched = false;
+        for (let k = 0; k < result.length; k++) {
+          if (result[k].type === 'login' && String(result[k].user || '').trim() === user && String(result[k].ts || '').slice(0, 16) === ts.slice(0, 16)) {
+            if ((!result[k].tty || result[k].tty === '—') && tty) result[k].tty = tty;
+            if ((!result[k].from || result[k].from === '(lokal)') && from && from !== '(lokal)') result[k].from = from;
+            if (method.includes('ssh (') && !String(result[k].method || '').includes('ssh (')) result[k].method = method;
+            matched = true;
+            break;
+          }
         }
-        continue;
+        if (!matched) {
+          const loginKey = `${user}|${ts.slice(0, 19)}|(auth)`;
+          if (seenLogin.has(loginKey)) continue;
+          seenLogin.add(loginKey);
+          item.type = 'login';
+          result.push(item);
+        }
       }
-      seenLogin.add(loginKey);
-      item.type = 'login';
-      result.push(item);
     } else if (isSelesai) {
       const selesaiKey = `${user}|${ts.slice(0, 19)}|${tty}`;
       if (seenSelesai.has(selesaiKey)) continue;
@@ -480,8 +490,6 @@ function renderLoginsData(rawLogins) {
         typeLabel = x.active ? '<span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;margin-right:4px"></span>Aktif' : 'Shell';
       } else if (isGagal) {
         typeLabel = 'Login Gagal';
-      } else if (x.type === 'sesi') {
-        typeLabel = 'Sesi Baru';
       } else {
         typeLabel = escapeHtml(x.type || '-');
       }

@@ -354,6 +354,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.114
+
+- **Tipe Rilis:** Sinkronisasi Kunci Deduplikasi Login Presisi Detik-TTY, Penghapusan Residu Logind, dan Pengelompokan Hierarkis Chip Audit (*Second-TTY Precise Login Deduplication, Logind Noise Elimination & Hierarchical Audit Chip Grouping*)
+- **Fokus Utama:** Menyempurnakan konsistensi matematis dan kemudahan observasi (*readability*) pada ringkasan aktivitas pengguna:
+  1. **Presisi Deduplikasi Sesi Login (Eliminasi Ketidakkonsistenan 44 vs 43):**
+     - Memperbaiki logika kunci deduplikasi login di backend (`_deduplicate_user_logins`) dan frontend (`deduplicateLogins`) agar menyertakan stempel detik dan terminal TTY `(user, ts[:19], tty)`.
+     - Menyelesaikan masalah di mana dua sesi login sah yang dibuka pada menit yang sama di terminal berbeda (misal `pts/4` dan `pts/5` pada detik berbeda) sebelumnya salah dianggap duplikat dan dieliminasi salah satunya. Kini jumlah `Sesi Login` dan `Sesi Selesai` sinkron sempurna 1:1 (44 vs 44).
+  2. **Eliminasi Total Residu `Sesi Baru` PAM Logind:**
+     - Menghapus pola regex audit `New session ... of user` dan chip kosong `Sesi Baru` yang sebelumnya menimbulkan ambiguitas istilah bagi operator NOC.
+  3. **Penataan Ulang Chip Filter dalam 3 Kelompok Terstruktur:**
+     - Mengelompokkan deretan chip menjadi 3 blok visual yang dipisahkan oleh pembatas vertikal halus:
+       - **Blok Siklus Sesi:** `Sesi Aktif`, `Sesi Selesai`, dan `Sesi Login` (tersusun berurutan dengan angka sinkron).
+       - **Blok Perintah:** Agregasi `Perintah` utama diikuti rincian transparan `Shell`, `Sudo`, dan `Polkit`.
+       - **Blok Keamanan:** `Login Gagal` dan `Sudo Gagal`.
+
 ## Versi 4.8.113
 
 - **Tipe Rilis:** Penataan Kronologis Baku Siklus Sesi (Sesi Selesai, Perintah, Sesi Login) & Konsolidasi Audit Aktivitas (*Structured Lifecycle Session Chronology: Session End, Commands, Session Start & Consolidated NOC Activity Audit*)

@@ -5219,21 +5219,29 @@ def _deduplicate_user_logins(raw_list: list) -> list:
                 seen_active_tty.add(tty)
             result.append(item)
         elif ev_type in ("login", "sukses"):
-            login_key = (user, ts[:16] if len(ts) >= 16 else ts)
-            if login_key in seen_login:
+            if tty and tty != "—":
+                login_key = (user, ts[:19], tty)
+                if login_key in seen_login:
+                    continue
+                seen_login.add(login_key)
+                item["type"] = "login"
+                result.append(item)
+            else:
+                matched = False
                 for existing in result:
-                    if existing.get("type") in ("login", "sukses") and (str(existing.get("user") or ""), str(existing.get("ts") or "")[:16]) == login_key:
-                        if (not existing.get("tty") or existing.get("tty") == "—") and tty:
-                            existing["tty"] = tty
+                    if existing.get("type") in ("login", "sukses") and str(existing.get("user") or "") == user and str(existing.get("ts") or "")[:16] == ts[:16]:
                         if (not existing.get("from") or existing.get("from") == "(lokal)") and src and src != "(lokal)":
                             existing["from"] = src
                         if "ssh (" in method and "ssh (" not in str(existing.get("method") or ""):
                             existing["method"] = method
+                        matched = True
                         break
-                continue
-            seen_login.add(login_key)
-            item["type"] = "login"
-            result.append(item)
+                if not matched:
+                    login_key = (user, ts[:19], "(auth)")
+                    if login_key not in seen_login:
+                        seen_login.add(login_key)
+                        item["type"] = "login"
+                        result.append(item)
         elif ev_type == "selesai":
             selesai_key = (user, ts[:19], tty)
             if selesai_key in seen_selesai:
