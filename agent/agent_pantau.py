@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.107"
+AGENT_VERSION = "4.8.108"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4483,6 +4483,44 @@ def fetch_log_lines(unit: str, lines: int) -> str:
     return out
 
 
+IGNORED_SHELL_BASE_COMMANDS = {
+    "cd",
+    "ls", "ll", "la", "l", "dir", "vdir",
+    "pwd",
+    "clear", "cls", "reset",
+    "exit", "logout",
+    "history",
+    "true", "false",
+}
+
+
+def is_ignorable_shell_cmd(cmd: str) -> bool:
+    """Menentukan apakah baris perintah shell adalah perintah navigasi/noise non-esensial."""
+    if not cmd:
+        return True
+    s = cmd.strip()
+    if not s:
+        return True
+    if ">" in s:
+        return False
+    sub_cmds = re.split(r"&&|\|\||[;|]", s)
+    for sub in sub_cmds:
+        sub = sub.strip()
+        if not sub:
+            continue
+        tokens = sub.split()
+        idx = 0
+        while idx < len(tokens) and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=.*", tokens[idx]):
+            idx += 1
+        if idx >= len(tokens):
+            continue
+        token = tokens[idx].strip().lstrip("\\")
+        base = os.path.basename(token)
+        if base not in IGNORED_SHELL_BASE_COMMANDS:
+            return False
+    return True
+
+
 def collect_user_logins(max_events: int = 100, target_user: str | None = None) -> list:
     """Mengumpulkan riwayat login dan eksekusi sudo untuk audit NOC & aktivitas pengguna.
 
@@ -4821,10 +4859,13 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
     # 6. Riwayat Perintah Shell Non-Sudo (Pengguna Umum & Sudoers tanpa awalan sudo)
     if target_user:
         try:
-            hist_list = _collect_user_history(target_user, max_lines=100)
+            hist_list = _collect_user_history(target_user, max_lines=250)
             for h in hist_list:
                 cmd_raw = (h.get("cmd") or "").strip()
                 if not cmd_raw:
+                    continue
+                # Eliminasi noise navigasi & terminal bawaan non-esensial (cd, ls, clear, exit, dll)
+                if is_ignorable_shell_cmd(cmd_raw):
                     continue
                 # Jangan duplikasi bila perintah diawali sudo dan sudah ada di audit sudo
                 if cmd_raw.startswith("sudo ") or cmd_raw.startswith("sudo\t"):

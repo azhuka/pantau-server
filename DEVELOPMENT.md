@@ -354,6 +354,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.108
+
+- **Tipe Rilis:** Klasifikasi Cerdas Perintah Esensial & Eliminasi Total Kebisingan Riwayat Shell (*Smart Essential Command Triage & Shell History Noise Elimination*)
+- **Fokus Utama:** Memfilter perintah riwayat terminal secara cerdas agar tabel audit NOC hanya menampilkan aksi operasional nyata yang esensial, kritis, dan layak dipantau:
+  1. **Mesin Klasifikasi Perintah Cerdas (*Smart Command Triage Engine*):**
+     - Mengeliminasi secara otomatis perintah non-esensial/kebisingan (*noise*) seperti navigasi direktori (`cd`, `ls`, `ll`, `pwd`) dan kontrol terminal sepele (`clear`, `reset`, `exit`, `logout`, `history`).
+     - Mempertahankan dan memprioritaskan perintah aksi nyata (*actionable commands*): pembuatan/modifikasi berkas (`mkdir`, `touch`, `rm`, `cp`, `mv`, `chmod`, `chown`), penyuntingan konfigurasi (`nano`, `vim`, `cat`), kontrol daemon/sistem (`systemctl`, `service`, `reboot`), transfer jaringan & eksekusi skrip (`curl`, `wget`, `python`, `git`, `agy`, `bash`), serta seluruh perintah dengan pengalihan berkas (`>`, `>>`).
+  2. **Dukungan Rantai Perintah Majemuk (*Compound Pipeline Awareness*):**
+     - Mampu mendeteksi perintah komposit (`&&`, `||`, `;`, `|`). Bila terdapat perintah penting di dalam rantai (contoh: `cd /var/www && rm -rf html`), perintah tetap dianggap esensial dan WAJIB dilaporkan ke dashboard.
+  3. **Penyaringan Berlapis (*Defense-in-Depth Filtering*):**
+     - Diterapkan secara sinkron pada agen telemetri (`agent_pantau.py`), backend agregasi (`server/main.py`), dan antarmuka web pengguna (`user_activity.html`).
+
 ## Versi 4.8.107
 
 - **Tipe Rilis:** Injeksi Hook Profil Shell Interaktif Global & Sinkronisasi Presisi Format Riwayat (*Global Interactive Shell Profile Hook & Multi-Line History Format Ingestion*)

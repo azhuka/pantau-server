@@ -5143,6 +5143,44 @@ def server_services_alias(request: Request, sid: int, db: Session = Depends(get_
 server_detail_page = services_page
 
 
+IGNORED_SHELL_BASE_COMMANDS = {
+    "cd",
+    "ls", "ll", "la", "l", "dir", "vdir",
+    "pwd",
+    "clear", "cls", "reset",
+    "exit", "logout",
+    "history",
+    "true", "false",
+}
+
+
+def is_ignorable_shell_cmd(cmd: str) -> bool:
+    """Menentukan apakah baris perintah shell adalah perintah navigasi/noise non-esensial."""
+    if not cmd:
+        return True
+    s = cmd.strip()
+    if not s:
+        return True
+    if ">" in s:
+        return False
+    sub_cmds = re.split(r"&&|\|\||[;|]", s)
+    for sub in sub_cmds:
+        sub = sub.strip()
+        if not sub:
+            continue
+        tokens = sub.split()
+        idx = 0
+        while idx < len(tokens) and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=.*", tokens[idx]):
+            idx += 1
+        if idx >= len(tokens):
+            continue
+        token = tokens[idx].strip().lstrip("\\")
+        base = os.path.basename(token)
+        if base not in IGNORED_SHELL_BASE_COMMANDS:
+            return False
+    return True
+
+
 def _deduplicate_user_logins(raw_list: list) -> list:
     """Menjamin konsolidasi murni dan eliminasi total duplikasi entri sesi dan sudo."""
     if not isinstance(raw_list, list):
@@ -5189,6 +5227,8 @@ def _deduplicate_user_logins(raw_list: list) -> list:
             seen_sudo.add(sudo_key)
             result.append(item)
         elif ev_type == "shell":
+            if is_ignorable_shell_cmd(method):
+                continue
             sh_key = (ts, method)
             if sh_key in seen_other:
                 continue

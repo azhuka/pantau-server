@@ -299,6 +299,35 @@ function getActualCommand(cmd) {
   return s.replace(/^\/(?:usr\/(?:local\/)?)?(?:s?bin)\//, '');
 }
 
+const IGNORED_SHELL_BASE = new Set([
+  'cd', 'ls', 'll', 'la', 'l', 'dir', 'vdir',
+  'pwd', 'clear', 'cls', 'reset', 'exit', 'logout',
+  'history', 'true', 'false'
+]);
+
+function isIgnorableShellCmd(cmd) {
+  if (!cmd) return true;
+  const s = String(cmd).trim();
+  if (!s) return true;
+  if (s.includes('>')) return false;
+  const parts = s.split(/&&|\|\||[;|]/);
+  for (let part of parts) {
+    part = part.trim();
+    if (!part) continue;
+    const tokens = part.split(/\s+/);
+    let idx = 0;
+    while (idx < tokens.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[idx])) {
+      idx++;
+    }
+    if (idx >= tokens.length) continue;
+    let t = tokens[idx].replace(/^\\/, '');
+    const slashIdx = t.lastIndexOf('/');
+    if (slashIdx !== -1) t = t.slice(slashIdx + 1);
+    if (!IGNORED_SHELL_BASE.has(t)) return false;
+  }
+  return true;
+}
+
 function deduplicateLogins(rawList) {
   if (!Array.isArray(rawList)) return [];
   const result = [];
@@ -348,6 +377,7 @@ function deduplicateLogins(rawList) {
       seenSudo.add(sudoKey);
       result.push(item);
     } else if (isShell) {
+      if (isIgnorableShellCmd(item.method)) continue;
       const shellKey = `${ts}|${method}`;
       if (seenShell.has(shellKey)) continue;
       seenShell.add(shellKey);
