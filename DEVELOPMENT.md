@@ -354,6 +354,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.131
+
+- **Tipe Rilis:** Adopsi Cetak Biru Framework Dashboard Industri & Integrasi Tabler Core (*Industry-Standard Dashboard UI Blueprint, Tabler Core Framework Integration & NOC Density Preservation*)
+- **Fokus Utama:** Mengadopsi cetak biru (*blueprint*) antarmuka berstandar industri dengan mengintegrasikan pustaka resmi Tabler Core (CSS & JS) ke dalam arsitektur Pantau Server, membangun jembatan token desain terpadu (*NOC design token bridge*) di `pantau-components.css`, serta merestrukturisasi makro komponen modular Jinja2:
+  1. **Integrasi Cetak Biru Tabler Core (`server/static/vendor/tabler/`):**
+     - Memasang pustaka resmi Tabler Core (`tabler.min.css` dan `tabler.min.js`) sebagai fondasi framework UI berbasis Bootstrap 5 yang merupakan standar industri untuk panel admin dan sistem monitoring NOC modern.
+     - Mengaktifkan tema gelap bawaan (`data-bs-theme="dark"`) pada elemen root dokumen antarmuka `base.html`.
+  2. **Jembatan Token Desain & Preservasi Kepadatan Data NOC (`server/static/css/pantau-components.css`):**
+     - Memetakan variabel tema framework (`--tblr-*`) secara harmonis dengan palet NOC Pantau Server (`--bg`, `--card`, `--border`, `--text`, `--dim`, `--blue`, `--green`, `--red`, `--yellow`).
+     - Menerapkan aturan presisi kepadatan data NOC (*high-density rules*): tinggi baris rapat 30–34px, padding sel 5px 10px, tipografi monospace pada metrik/IP, dan eliminasi whitespace berlebih pada seluruh elemen tabel, kartu, tombol, badge, serta formulir masukan.
+  3. **Penyempurnaan Pustaka Komponen Modular Jinja2 (`server/templates/components/`):**
+     - Menstandarisasi makro `buttons.html`, `card.html`, `table.html`, `modal.html`, `pagination.html`, dan `filter_bar.html` agar menghasilkan markup kelas ganda yang kompatibel penuh dengan cetak biru Tabler dan kelas kanonikal Pantau UI.
+  4. **Pembersihan Arsitektur & Peningkatan Performa Rendering:**
+     - Mengurangi fragmentasi dan ketergantungan pada styling ad-hoc, memastikan setiap tombol, kartu, tabel, dan badge di seluruh halaman memiliki spesifikasi visual yang identik dan konsisten.
+
 ## Versi 4.8.130
 
 - **Tipe Rilis:** Peluncuran Pustaka Aset Mandiri & Integrasi Global Design System (*Standalone Static Asset Pipeline, Pantau-Components CSS & PantauUI Library Integration*)

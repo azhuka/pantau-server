@@ -4,28 +4,28 @@
    ============================================================================= #}
 
 {% macro card_container(id='', title='', subtitle='', icon_svg='', extra_class='') %}
-<div {% if id %}id="{{ id }}"{% endif %} class="pantau-card {{ extra_class }}">
+<div {% if id %}id="{{ id }}"{% endif %} class="card pantau-card {{ extra_class }}">
   {% if title or icon_svg %}
-  <div class="pantau-card-header">
-    <div class="pantau-card-title-box">
+  <div class="card-header pantau-card-header">
+    <div class="card-title-box pantau-card-title-box">
       {% if icon_svg %}
       <span class="pantau-card-icon">{{ icon_svg | safe }}</span>
       {% endif %}
       <div>
-        <h2 class="pantau-card-title">{{ title }}</h2>
+        <h2 class="card-title pantau-card-title">{{ title }}</h2>
         {% if subtitle %}
-        <p class="pantau-card-subtitle">{{ subtitle }}</p>
+        <p class="card-subtitle pantau-card-subtitle">{{ subtitle }}</p>
         {% endif %}
       </div>
     </div>
     {% if caller is defined %}
-    <div class="pantau-card-tools">
+    <div class="card-actions pantau-card-tools">
       {{ caller('tools') }}
     </div>
     {% endif %}
   </div>
   {% endif %}
-  <div class="pantau-card-body">
+  <div class="card-body pantau-card-body">
     {% if caller is defined %}
       {{ caller('body') if caller is callable else caller() }}
     {% endif %}
