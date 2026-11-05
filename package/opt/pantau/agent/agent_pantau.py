@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.116"
+AGENT_VERSION = "4.8.117"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4777,8 +4777,8 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                                 "tty": tty,
                                 "pwd": pwd_val,
                                 "target_user": "root",
-                                "alert": "Password salah (Sorry, try again)",
-                                "method": "Otentikasi Sudo Gagal (Password Salah)",
+                                "alert": "Kata Sandi Salah",
+                                "method": "Percobaan Otentikasi Ditolak",
                             })
                         continue
 
@@ -4792,6 +4792,16 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                         alert_raw = (m.group("alert") or "").strip().rstrip(";")
                         is_failed = bool(alert_raw and ("incorrect" in alert_raw.lower() or "not in sudoers" in alert_raw.lower() or "failure" in alert_raw.lower() or "failed" in alert_raw.lower()))
                         ev_type = "sudo_gagal" if is_failed else "sudo"
+                        clean_alert = alert_raw
+                        if is_failed:
+                            if "not in sudoers" in alert_raw.lower():
+                                clean_alert = "Pengguna Tidak Berhak Sudo"
+                            elif "incorrect" in alert_raw.lower():
+                                clean_alert = "Kata Sandi Salah"
+                            elif "conversation" in alert_raw.lower():
+                                clean_alert = "Sesi Prompt Dibatalkan"
+                            else:
+                                clean_alert = "Kata Sandi Salah"
                         sudo_key = (target_user, ts, tty, cmd_val, ev_type)
                         if sudo_key not in seen_sudo:
                             seen_sudo.add(sudo_key)
@@ -4803,7 +4813,7 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
                                 "tty": tty,
                                 "pwd": pwd_val,
                                 "target_user": target_val,
-                                "alert": alert_raw,
+                                "alert": clean_alert if is_failed else (alert_raw if alert_raw else ""),
                                 "method": cmd_val,
                             })
         except Exception:

@@ -354,6 +354,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.117
+
+- **Tipe Rilis:** Perapian Format Pesan Kegagalan Otentikasi Sudo & Standarisasi Deskripsi Audit (*Sudo Authentication Failure Message Formatting & Concise Audit Display Standard*)
+- **Fokus Utama:** Merapikan kalimat audit kegagalan kata sandi sudo agar bersih, lugas, dan bebas dari pengulangan frasa berlebih:
+  1. **Penyajian Pesan Sudo Gagal yang Rapi dan Terstruktur:**
+     - Mengeliminasi penggabungan teks mentah yang redundan (`Password salah (Sorry, try again): Otentikasi Sudo Gagal (Password Salah)`).
+     - Jika kegagalan terjadi pada prompt kata sandi (tanpa perintah terikat), baris audit kini menyajikan label bersih: `Kata Sandi Salah · Percobaan Otentikasi Ditolak`.
+     - Jika kegagalan terjadi pada eksekusi perintah sudo spesifik (misal 3 kali salah pada perintah tertentu), disajikan rapi: `Kata Sandi Salah: <perintah>`.
+  2. **Konsistensi Label Sistem Operasi:**
+     - Menstandardisasi istilah pesan kesalahan otentikasi di agen klien (`agent_pantau.py`) dan template dashboard (`user_activity.html`) dengan Bahasa Indonesia sysadmin baku.
+
 ## Versi 4.8.116
 
 - **Tipe Rilis:** Deteksi Presisi Otentikasi Sudo Gagal (PAM Authentication Failure) & Eliminasi Polusi Perintah Hantu dari Riwayat Shell (*Precision Sudo PAM Failure Detection & Ghost Shell History Injection Elimination*)
