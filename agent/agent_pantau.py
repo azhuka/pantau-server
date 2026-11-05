@@ -478,7 +478,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.106"
+AGENT_VERSION = "4.8.107"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -5609,7 +5609,7 @@ head -c 524288 "$SRC"
 
 
 def ensure_pantau_history_updated(force: bool = False) -> bool:
-    """Memastikan /usr/local/sbin/pantau-history dan profile hook real-time selalu mutakhir."""
+    """Memastikan /usr/local/sbin/pantau-history, /etc/profile.d/pantau-history.sh, dan hook bashrc selalu mutakhir."""
     try:
         cur_content = ""
         if not force and os.path.isfile(PANTAU_HISTORY_CMD):
@@ -5621,16 +5621,38 @@ def ensure_pantau_history_updated(force: bool = False) -> bool:
 
         need_update_wrapper = ("PANTAU_MTIME" not in cur_content)
         profile_hook = "/etc/profile.d/pantau-history.sh"
-        need_update_profile = not os.path.isfile(profile_hook)
+        need_update_profile = True
+        if not force and os.path.isfile(profile_hook):
+            try:
+                with open(profile_hook, "r", encoding="utf-8", errors="replace") as pf:
+                    pfc = pf.read()
+                    if "\nexport HISTTIMEFORMAT=" in pfc and "\nexport PROMPT_COMMAND=" in pfc:
+                        need_update_profile = False
+            except Exception:
+                pass
 
-        if not need_update_wrapper and not need_update_profile:
+        bashrc_hook = "/etc/bash.bashrc" if os.path.isfile("/etc/bash.bashrc") else ("/etc/bashrc" if os.path.isfile("/etc/bashrc") else "")
+        need_update_bashrc = False
+        if bashrc_hook and os.path.isfile(bashrc_hook):
+            try:
+                with open(bashrc_hook, "r", encoding="utf-8", errors="replace") as bf:
+                    if "pantau-history.sh" not in bf.read():
+                        need_update_bashrc = True
+            except Exception:
+                pass
+
+        if not need_update_wrapper and not need_update_profile and not need_update_bashrc:
             return True
 
         content_to_write = PANTAU_HISTORY_SCRIPT_BODY.strip() + "\n"
         profile_content = (
-            '# Pantau NOC Audit: Pencatatan waktu riwayat perintah shell & sinkronisasi instan\\n'
-            'export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "\\n'
-            'export PROMPT_COMMAND="history -a; $PROMPT_COMMAND"\\n'
+            "# Pantau NOC Audit: Pencatatan waktu riwayat perintah shell & sinkronisasi instan\n"
+            'export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "\n'
+            'export PROMPT_COMMAND="history -a; $PROMPT_COMMAND"\n'
+        )
+        bashrc_append = (
+            "\n# Pantau NOC Audit Hook\n"
+            "[ -f /etc/profile.d/pantau-history.sh ] && . /etc/profile.d/pantau-history.sh\n"
         )
 
         if IS_ROOT:
@@ -5643,6 +5665,9 @@ def ensure_pantau_history_updated(force: bool = False) -> bool:
                 with open(profile_hook, "w", encoding="utf-8") as f:
                     f.write(profile_content)
                 os.chmod(profile_hook, 0o644)
+            if need_update_bashrc and bashrc_hook:
+                with open(bashrc_hook, "a", encoding="utf-8") as f:
+                    f.write(bashrc_append)
             return True
 
         pantau_file = "/usr/local/sbin/pantau-file"
@@ -5657,6 +5682,14 @@ def ensure_pantau_history_updated(force: bool = False) -> bool:
                 subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=pw2, text=True, capture_output=True, timeout=5)
                 pc2 = json.dumps({"action": "chmod", "params": {"path": profile_hook, "mode": "0644"}})
                 subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=pc2, text=True, capture_output=True, timeout=5)
+            if need_update_bashrc and bashrc_hook:
+                try:
+                    with open(bashrc_hook, "r", encoding="utf-8", errors="replace") as cur_bf:
+                        existing_bashrc = cur_bf.read()
+                    pw3 = json.dumps({"action": "write", "params": {"path": bashrc_hook, "content": existing_bashrc + bashrc_append, "make_backup": False}})
+                    subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=pw3, text=True, capture_output=True, timeout=5)
+                except Exception:
+                    pass
             return True
     except Exception as e:
         print(f"[HIST WARN] Gagal sinkronisasi pantau-history: {e}")

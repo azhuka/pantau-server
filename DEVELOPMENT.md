@@ -354,6 +354,17 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.107
+
+- **Tipe Rilis:** Injeksi Hook Profil Shell Interaktif Global & Sinkronisasi Presisi Format Riwayat (*Global Interactive Shell Profile Hook & Multi-Line History Format Ingestion*)
+- **Fokus Utama:** Menyempurnakan pemutakhiran riwayat otomatis pada shell interaktif dan perbaikan pemformatan hook profil:
+  1. **Injeksi Hook Bashrc Global (`/etc/bash.bashrc`):**
+     - Memastikan hook `pantau-history.sh` disuntikkan ke `/etc/bash.bashrc` (dan `/etc/bashrc`) agar sesi interaktif non-login maupun subshell langsung mengaktifkan `PROMPT_COMMAND="history -a"` pada setiap ketukan Enter.
+  2. **Perbaikan Multi-Line Profile Hook:**
+     - Menjamin penulisan file `/etc/profile.d/pantau-history.sh` menggunakan baris terpisah secara presisi (bukan single line string literal).
+  3. **Verifikasi Penempatan Puncak Perintah Shell:**
+     - Memastikan seluruh perintah shell non-sudo langsung tersortir kronologis ke halaman 1 audit log dan sinkron dengan armada server jarak jauh.
+
 ## Versi 4.8.106
 
 - **Tipe Rilis:** Sinkronisasi Mandiri Wrapper Riwayat Remote, Interpolasi Waktu Berkas Realistis, dan Penempatan Puncak Perintah Shell (*Remote History Wrapper Self-Update, Guaranteed Mtime Fallback, & Page-One Shell Command Placement*)
