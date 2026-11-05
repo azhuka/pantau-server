@@ -1677,7 +1677,12 @@ body.popout-fleet_table #dash-fleet-card {
         <h3 id="sdm-title" style="margin:0;font-size:15.5px;font-weight:600;color:var(--text)">Rincian Insiden</h3>
         <span id="sdm-badge" class="badge">0 Insiden</span>
       </div>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeSevDetailModal()" style="font-size:20px;line-height:1;padding:2px 8px;cursor:pointer;color:var(--dim)" title="Tutup (Esc)">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeSevDetailModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
 
     <!-- Body Scrollable -->

@@ -1,0 +1,33 @@
+{# =============================================================================
+   Pantau UI Components: Modal Standar Universal (components/modal.html)
+   Menyediakan komponen dialog/modal baku dengan penutupan otomatis (X, Esc, Backdrop)
+   ============================================================================= #}
+
+{% macro modal_dialog(id, title='', subtitle='', icon_svg='', max_width='460px', on_close='', extra_class='') %}
+<div id="{{ id }}" class="pantau-modal-backdrop {{ extra_class }}" style="display:none" data-modal-id="{{ id }}" onclick="if(event.target===this){{ on_close }};">
+  <div class="pantau-modal-card" style="max-width:{{ max_width }}" onclick="event.stopPropagation()">
+    <div class="pantau-modal-header">
+      <div class="pantau-modal-title-box">
+        {% if icon_svg %}
+        <span class="pantau-modal-icon">{{ icon_svg | safe }}</span>
+        {% endif %}
+        <div>
+          <h3 class="pantau-modal-title">{{ title }}</h3>
+          {% if subtitle %}
+          <p class="pantau-modal-subtitle">{{ subtitle }}</p>
+          {% endif %}
+        </div>
+      </div>
+      <button type="button" class="pantau-modal-close" onclick="{{ on_close }}" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="pantau-modal-body">
+      {{ caller() }}
+    </div>
+  </div>
+</div>
+{% endmacro %}

@@ -1,0 +1,24 @@
+{# =============================================================================
+   Pantau UI Components: Tabel Operasional NOC Standar Baku (components/table.html)
+   Menyediakan pembungkus dan header tabel terstandarisasi dengan perataan kiri rapi
+   ============================================================================= #}
+
+{% macro table_container(id='', extra_class='') %}
+<div class="pantau-table-wrap {{ extra_class }}" {% if id %}id="{{ id }}"{% endif %}>
+  {{ caller() }}
+</div>
+{% endmacro %}
+
+{% macro empty_row(colspan=10, message="Tidak ada data yang cocok dengan kriteria filter.") %}
+<tr class="pantau-empty-tr">
+  <td colspan="{{ colspan }}" class="pantau-empty-td">
+    <div class="pantau-empty-box">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;margin-bottom:6px">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="8" y1="12" x2="16" y2="12"></line>
+      </svg>
+      <span>{{ message }}</span>
+    </div>
+  </td>
+</tr>
+{% endmacro %}

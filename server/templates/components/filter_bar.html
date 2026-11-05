@@ -1,0 +1,44 @@
+{# =============================================================================
+   Pantau UI Components: Panel Filter & Preset Waktu Baku (components/filter_bar.html)
+   Menyediakan komponen filter fluida dan barisan tombol preset dengan format 100% seragam
+   ============================================================================= #}
+
+{% macro preset_bar(group_id, active_period='24h', on_click_fn='setPeriod', show_all=true, show_custom=true, custom_active=false) %}
+<div class="pantau-preset-wrap" id="{{ group_id }}-wrap">
+  <span class="pantau-preset-label">PRESET:</span>
+  <div class="pantau-preset-group" id="{{ group_id }}">
+    {% if show_all %}
+    <button type="button" class="pantau-preset-btn {% if not active_period or active_period == 'all' %}is-active{% endif %}" onclick="{{ on_click_fn }}('', this)" title="Tampilkan seluruh catatan">Semua</button>
+    {% endif %}
+    <button type="button" class="pantau-preset-btn {% if active_period == 'today' %}is-active{% endif %}" onclick="{{ on_click_fn }}('today', this)" title="Catatan sejak jam 00:00 UTC hari ini">Hari Ini</button>
+    <button type="button" class="pantau-preset-btn {% if active_period == '24h' %}is-active{% endif %}" onclick="{{ on_click_fn }}('24h', this)" title="Catatan 24 jam terakhir">24 Jam</button>
+    <button type="button" class="pantau-preset-btn {% if active_period == '7d' %}is-active{% endif %}" onclick="{{ on_click_fn }}('7d', this)" title="Catatan 7 hari terakhir">7 Hari</button>
+    <button type="button" class="pantau-preset-btn {% if active_period == '30d' %}is-active{% endif %}" onclick="{{ on_click_fn }}('30d', this)" title="Catatan 30 hari terakhir">30 Hari</button>
+    {% if show_custom %}
+    <button type="button" class="pantau-preset-btn {% if active_period == 'custom' or custom_active %}is-active{% endif %}" onclick="{{ on_click_fn }}('custom', this)" style="{% if active_period != 'custom' and not custom_active %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro search_box(id, placeholder='Cari…', on_input='', width='160px') %}
+<div class="pantau-search-box" style="width:{{ width }}">
+  <span class="pantau-search-icon">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
+  </span>
+  <input type="search" id="{{ id }}" class="pantau-input-search" placeholder="{{ placeholder }}" {% if on_input %}oninput="{{ on_input }}"{% endif %} autocomplete="off">
+</div>
+{% endmacro %}
+
+{% macro reset_btn(on_click='', title='Bersihkan filter pencarian') %}
+<button type="button" class="pantau-btn pantau-btn-ghost pantau-btn-sm" {% if on_click %}onclick="{{ on_click }}"{% endif %} title="{{ title }}">
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+    <path d="M3 3v5h5"></path>
+  </svg>
+  <span>Reset</span>
+</button>
+{% endmacro %}

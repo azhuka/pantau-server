@@ -1,0 +1,34 @@
+{# =============================================================================
+   Pantau UI Components: Kartu Standar Universal (components/card.html)
+   Menyediakan komponen kontainer kartu dengan header, toolbar, dan body baku
+   ============================================================================= #}
+
+{% macro card_container(id='', title='', subtitle='', icon_svg='', extra_class='') %}
+<div {% if id %}id="{{ id }}"{% endif %} class="pantau-card {{ extra_class }}">
+  {% if title or icon_svg %}
+  <div class="pantau-card-header">
+    <div class="pantau-card-title-box">
+      {% if icon_svg %}
+      <span class="pantau-card-icon">{{ icon_svg | safe }}</span>
+      {% endif %}
+      <div>
+        <h2 class="pantau-card-title">{{ title }}</h2>
+        {% if subtitle %}
+        <p class="pantau-card-subtitle">{{ subtitle }}</p>
+        {% endif %}
+      </div>
+    </div>
+    {% if caller is defined %}
+    <div class="pantau-card-tools">
+      {{ caller('tools') }}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+  <div class="pantau-card-body">
+    {% if caller is defined %}
+      {{ caller('body') if caller is callable else caller() }}
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}

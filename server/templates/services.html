@@ -3680,7 +3680,12 @@ div[style*="position: fixed"] .card {
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h3 style="margin:0">Tambah Layanan</h3>
-      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeAddSvcModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeAddSvcModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <form method="post" action="/servers/{{ server.id }}/services/add" id="add-svc-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -3721,7 +3726,12 @@ div[style*="position: fixed"] .card {
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--red)"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         <span>Kelola Sinyal Proses</span>
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeKillProcModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeKillProcModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <p style="font-size:12px;color:var(--dim);margin:0 0 16px;line-height:1.5">
       Kirimkan sinyal kendali ke proses <strong id="kill-proc-name" style="color:var(--text)"></strong> (PID: <span id="kill-proc-pid-label" class="mono" style="color:var(--blue);font-weight:700"></span>).
@@ -3781,7 +3791,12 @@ div[style*="position: fixed"] .card {
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(420px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
       <h3 id="block-ip-title" style="margin:0;color:var(--red)">Blokir Alamat IP (DROP)</h3>
-      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeBlockIpModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeBlockIpModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <p id="block-ip-desc" style="font-size:12px;color:var(--dim);margin:0 0 16px;line-height:1.5">
       Masukkan alamat IP yang ingin diblok.
@@ -3813,7 +3828,12 @@ div[style*="position: fixed"] .card {
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(480px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
       <h3 id="create-user-title" style="margin:0;color:var(--neon)">Buat Pengguna Sistem Baru</h3>
-      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeCreateUserModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeCreateUserModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <p id="create-user-desc" style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
       Membuat akun baru pada server ini.
@@ -3869,7 +3889,12 @@ div[style*="position: fixed"] .card {
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(560px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
       <h3 style="margin:0;color:var(--neon)">Tambah Tugas Terjadwal (Cron Job)</h3>
-      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeAddCronModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeAddCronModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
       Tugas cron akan disimpan di <code class="mono">/etc/cron.d/pantau-&lt;nama&gt;</code>.
@@ -3930,7 +3955,12 @@ div[style*="position: fixed"] .card {
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;width:min(500px,94vw);box-shadow:0 12px 40px rgba(0,0,0,.4)">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
       <h3 style="margin:0;color:var(--neon)">Tambah Lokasi Sertifikat SSL Kustom</h3>
-      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeAddSslPathModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeAddSslPathModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
       Path berkas sertifikat akan disimpan di <code class="mono">/etc/pantau/custom_ssl.conf</code>.
@@ -3962,7 +3992,12 @@ div[style*="position: fixed"] .card {
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--yellow)"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
         <span>Mode Pemeliharaan</span>
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeMaintenanceModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeMaintenanceModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     
     <p style="font-size:13px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
@@ -4011,7 +4046,12 @@ div[style*="position: fixed"] .card {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         <span>Otentikasi Akses Terminal Root</span>
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeTerminalUnlockModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeTerminalUnlockModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     
     <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
@@ -4064,7 +4104,12 @@ div[style*="position: fixed"] .card {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         <span>Otentikasi Akses File Manager</span>
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeFileManagerUnlockModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeFileManagerUnlockModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     
     <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
@@ -4117,7 +4162,12 @@ div[style*="position: fixed"] .card {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--yellow)"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
         <span>Konfirmasi Penutupan Terminal</span>
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeTerminalCloseConfirmModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeTerminalCloseConfirmModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     
     <p style="font-size:13px;color:var(--text);margin:0 0 10px 0;line-height:1.5">
@@ -4144,7 +4194,12 @@ div[style*="position: fixed"] .card {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <span>Kunci Terminal &amp; Putus Sesi?</span>
       </h3>
-      <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeTerminalLockConfirmModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeTerminalLockConfirmModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     
     <p style="font-size:13px;color:var(--text);margin:0 0 10px 0;line-height:1.5">
@@ -4183,7 +4238,12 @@ div[style*="position: fixed"] .card {
           <span>Berjalan</span>
         </span>
         <span id="apt-task-elapsed" class="badge badge-muted mono" style="font-size:11px;padding:3px 8px" title="Waktu berjalan">00:00</span>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="closeAptTaskModal()" style="font-size:20px;line-height:1;padding:2px 8px;cursor:pointer;color:var(--dim)" title="Tutup Jendela (Proses tetap berjalan)">&times;</button>
+        <button type="button" class="pantau-modal-close modal-close" onclick="closeAptTaskModal()" aria-label="Tutup Jendela" title="Tutup Jendela (Proses tetap berjalan)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
     </div>
     
@@ -4217,7 +4277,12 @@ div[style*="position: fixed"] .card {
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
         <h3 id="pkg-log-title" style="margin:0;font-size:14px;font-weight:600">Log Riwayat Paket</h3>
       </div>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closePkgLogModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closePkgLogModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <div style="flex:1;overflow:auto;background:#0d1117;padding:14px;color:#c9d1d9;font-family:monospace;font-size:12px;line-height:1.5;white-space:pre-wrap" id="pkg-log-body">
       Memuat riwayat log paket...

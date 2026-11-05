@@ -104,17 +104,17 @@
     <!-- Divider Pemisah Halus -->
     <div class="filter-divider"></div>
 
-    <!-- Baris 2: Tombol Kecil Quick Presets (Dibawahnya) & Status Periode -->
+    <!-- Baris 2: Preset Waktu Standar Baku (PRESET: ...) & Status Periode -->
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <div style="display:inline-flex;align-items:center;gap:8px">
-        <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.4px;text-transform:uppercase">Preset:</span>
-        <div class="segmented-control" id="audit-period-pills" style="display:inline-flex;gap:3px">
-          <button type="button" class="btn btn-sm {% if not period and not start_date and not end_date %}is-on{% endif %}" onclick="setAuditPeriod('', this)" style="padding:2px 10px;font-size:11px" title="Tampilkan seluruh catatan">Semua</button>
-          <button type="button" class="btn btn-sm {% if period == 'today' %}is-on{% endif %}" onclick="setAuditPeriod('today', this)" style="padding:2px 10px;font-size:11px" title="Catatan aktivitas sejak jam 00:00 UTC hari ini">Hari Ini</button>
-          <button type="button" class="btn btn-sm {% if period == '24h' %}is-on{% endif %}" onclick="setAuditPeriod('24h', this)" style="padding:2px 10px;font-size:11px" title="Catatan aktivitas 24 jam terakhir">24 Jam</button>
-          <button type="button" class="btn btn-sm {% if period == '7d' %}is-on{% endif %}" onclick="setAuditPeriod('7d', this)" style="padding:2px 10px;font-size:11px" title="Catatan aktivitas 7 hari terakhir">7 Hari</button>
-          <button type="button" class="btn btn-sm {% if period == '30d' %}is-on{% endif %}" onclick="setAuditPeriod('30d', this)" style="padding:2px 10px;font-size:11px" title="Catatan aktivitas 30 hari terakhir">30 Hari</button>
-          <button type="button" id="btn-audit-custom" class="btn btn-sm {% if period == 'custom' or start_date or end_date %}is-on{% endif %}" onclick="setAuditPeriod('custom', this)" style="padding:2px 10px;font-size:11px;{% if period != 'custom' and not start_date and not end_date %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
+      <div class="pantau-preset-wrap" id="audit-period-wrap">
+        <span class="pantau-preset-label">PRESET:</span>
+        <div class="pantau-preset-group" id="audit-period-pills">
+          <button type="button" class="pantau-preset-btn {% if not period and not start_date and not end_date %}is-active{% endif %}" onclick="setAuditPeriod('', this)" title="Tampilkan seluruh catatan">Semua</button>
+          <button type="button" class="pantau-preset-btn {% if period == 'today' %}is-active{% endif %}" onclick="setAuditPeriod('today', this)" title="Catatan aktivitas sejak jam 00:00 UTC hari ini">Hari Ini</button>
+          <button type="button" class="pantau-preset-btn {% if period == '24h' %}is-active{% endif %}" onclick="setAuditPeriod('24h', this)" title="Catatan aktivitas 24 jam terakhir">24 Jam</button>
+          <button type="button" class="pantau-preset-btn {% if period == '7d' %}is-active{% endif %}" onclick="setAuditPeriod('7d', this)" title="Catatan aktivitas 7 hari terakhir">7 Hari</button>
+          <button type="button" class="pantau-preset-btn {% if period == '30d' %}is-active{% endif %}" onclick="setAuditPeriod('30d', this)" title="Catatan aktivitas 30 hari terakhir">30 Hari</button>
+          <button type="button" id="btn-audit-custom" class="pantau-preset-btn {% if period == 'custom' or start_date or end_date %}is-active{% endif %}" onclick="setAuditPeriod('custom', this)" style="{% if period != 'custom' and not start_date and not end_date %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
         </div>
       </div>
       <span style="color:var(--border);font-size:11px;opacity:0.6">|</span>
@@ -316,8 +316,10 @@ function setAuditPeriod(p, btn) {
   const customBtn = document.getElementById('btn-audit-custom');
   if (customBtn && p !== 'custom') customBtn.style.display = 'none';
 
-  document.querySelectorAll('#audit-period-pills .btn').forEach(b => b.classList.remove('is-on'));
-  if (btn) btn.classList.add('is-on');
+  document.querySelectorAll('#audit-period-pills button').forEach(b => {
+    b.classList.remove('is-on', 'is-active');
+  });
+  if (btn) btn.classList.add('is-active', 'is-on');
 
   let txt = 'seluruh catatan';
   if (p === 'today') txt = 'hari ini';
@@ -352,9 +354,11 @@ function resetAuditFilters() {
   const customBtn = document.getElementById('btn-audit-custom');
   if (customBtn) customBtn.style.display = 'none';
 
-  document.querySelectorAll('#audit-period-pills .btn').forEach(b => b.classList.remove('is-on'));
-  const allBtn = document.querySelector('#audit-period-pills .btn');
-  if (allBtn) allBtn.classList.add('is-on');
+  document.querySelectorAll('#audit-period-pills button').forEach(b => {
+    b.classList.remove('is-on', 'is-active');
+  });
+  const allBtn = document.querySelector('#audit-period-pills button');
+  if (allBtn) allBtn.classList.add('is-active', 'is-on');
 
   applyAuditFilters();
 }

@@ -266,7 +266,12 @@
   <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:520px;width:90%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.6)">
     <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
       <h3 style="font-size:16px;font-weight:700;margin:0" id="modal-operator-title">Atur Izin Operator</h3>
-      <button type="button" onclick="closeEditPermsModal()" style="background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeEditPermsModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
 
     <form id="edit-perms-form" method="POST" action="" style="display:flex;flex-direction:column;flex:1;overflow:hidden">

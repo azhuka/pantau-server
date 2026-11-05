@@ -245,7 +245,12 @@
         <button type="button" id="fm-editor-fs-btn" class="btn btn-ghost btn-sm" onclick="fmToggleEditorFullscreen()" title="Layar Penuh (Toggle Fullscreen)" aria-label="Fullscreen">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
         </button>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="fmCloseEditor()" title="Tutup">&times;</button>
+        <button type="button" class="pantau-modal-close modal-close" onclick="fmCloseEditor()" aria-label="Tutup modal" title="Tutup (Esc)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
     </div>
     <div class="fm-modal-body" style="padding:12px;display:flex;flex-direction:column;gap:8px;flex:1">
@@ -279,7 +284,12 @@
   <div class="fm-modal-card">
     <div class="fm-modal-header">
       <span>Ganti Nama</span>
-      <button type="button" class="btn btn-ghost" onclick="fmCloseRename()">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="fmCloseRename()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <form id="fm-rename-form" onsubmit="fmSubmitRename(event)">
       <div class="fm-modal-body">
@@ -303,7 +313,12 @@
   <div class="fm-modal-card">
     <div class="fm-modal-header">
       <span id="fm-upload-modal-title">Unggah Berkas ke Server</span>
-      <button type="button" class="btn btn-ghost" onclick="fmCloseUpload()">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="fmCloseUpload()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <form id="fm-upload-form" onsubmit="fmSubmitUpload(event)">
       <div class="fm-modal-body">
@@ -336,7 +351,12 @@
   <div class="fm-modal-card">
     <div class="fm-modal-header">
       <span>Ubah Hak Akses & Pemilik</span>
-      <button type="button" class="btn btn-ghost" onclick="fmCloseChmod()">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="fmCloseChmod()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <form id="fm-chmod-form" onsubmit="fmSubmitChmod(event)">
       <div class="fm-modal-body">
@@ -382,7 +402,12 @@
   <div class="fm-modal-card" style="border-color:rgba(239,68,68,0.4)">
     <div class="fm-modal-header" style="color:var(--red)">
       <span>Konfirmasi Hapus</span>
-      <button type="button" class="btn btn-ghost" onclick="fmCloseDelete()">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="fmCloseDelete()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <div class="fm-modal-body">
       <p style="font-size:14px;margin-bottom:10px">Apakah Anda yakin ingin menghapus <span id="fm-delete-type">berkas</span> berikut secara permanen?</p>
@@ -406,7 +431,12 @@
   <div class="fm-modal-card">
     <div class="fm-modal-header">
       <span id="fm-prompt-title">Buat Baru</span>
-      <button type="button" class="btn btn-ghost" onclick="fmClosePrompt()">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="fmClosePrompt()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <form id="fm-prompt-form" onsubmit="fmSubmitPrompt(event)">
       <div class="fm-modal-body">
@@ -430,7 +460,12 @@
   <div class="fm-modal-card" style="border-color:rgba(239,68,68,0.4)">
     <div class="fm-modal-header" style="color:var(--red)">
       <span>Konfirmasi Hapus Massal</span>
-      <button type="button" class="btn btn-ghost" onclick="fmCloseBulkDelete()">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="fmCloseBulkDelete()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <div class="fm-modal-body">
       <p style="font-size:14px;margin-bottom:10px">
@@ -455,7 +490,12 @@
   <div class="fm-modal-card">
     <div class="fm-modal-header">
       <span>⚙ Ubah Hak Akses Massal</span>
-      <button type="button" class="btn btn-ghost" onclick="fmCloseBulkChmod()">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="fmCloseBulkChmod()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <form id="fm-bulk-chmod-form" onsubmit="fmSubmitBulkChmod(event)">
       <div class="fm-modal-body">

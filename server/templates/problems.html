@@ -728,16 +728,16 @@
     <!-- Divider Pemisah Halus -->
     <div class="filter-divider"></div>
 
-    <!-- Baris 2: Tombol Kecil Quick Presets (Dibawahnya) & Info Data -->
+    <!-- Baris 2: Preset Waktu Standar Baku (PRESET: ...) & Info Data -->
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div style="display:inline-flex;align-items:center;gap:8px">
-        <span style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:0.4px;text-transform:uppercase">Preset:</span>
-        <div class="segmented-control" id="prob-res-ranges" style="display:inline-flex;gap:3px">
-          <button type="button" class="btn btn-sm {% if res_period == 'today' %}is-on{% endif %}" onclick="setResolvedPeriod('today', this)" style="padding:2px 10px;font-size:11px" title="Insiden teratasi sejak jam 00:00 UTC hari ini">Hari Ini</button>
-          <button type="button" class="btn btn-sm {% if res_period == '24h' or not res_period %}is-on{% endif %}" onclick="setResolvedPeriod('24h', this)" style="padding:2px 10px;font-size:11px" title="Insiden teratasi dalam 24 jam terakhir">24 Jam</button>
-          <button type="button" class="btn btn-sm {% if res_period == '7d' %}is-on{% endif %}" onclick="setResolvedPeriod('7d', this)" style="padding:2px 10px;font-size:11px" title="Insiden teratasi dalam 7 hari terakhir">7 Hari</button>
-          <button type="button" class="btn btn-sm {% if res_period == '30d' %}is-on{% endif %}" onclick="setResolvedPeriod('30d', this)" style="padding:2px 10px;font-size:11px" title="Insiden teratasi dalam 30 hari terakhir">30 Hari</button>
-          <button type="button" id="btn-res-custom" class="btn btn-sm {% if res_period == 'custom' or res_start or res_end %}is-on{% endif %}" onclick="setResolvedPeriod('custom', this)" style="padding:2px 10px;font-size:11px;{% if res_period != 'custom' and not res_start and not res_end %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
+      <div class="pantau-preset-wrap" id="prob-res-ranges-wrap">
+        <span class="pantau-preset-label">PRESET:</span>
+        <div class="pantau-preset-group" id="prob-res-ranges">
+          <button type="button" class="pantau-preset-btn {% if res_period == 'today' %}is-active{% endif %}" onclick="setResolvedPeriod('today', this)" title="Insiden teratasi sejak jam 00:00 UTC hari ini">Hari Ini</button>
+          <button type="button" class="pantau-preset-btn {% if res_period == '24h' or not res_period %}is-active{% endif %}" onclick="setResolvedPeriod('24h', this)" title="Insiden teratasi dalam 24 jam terakhir">24 Jam</button>
+          <button type="button" class="pantau-preset-btn {% if res_period == '7d' %}is-active{% endif %}" onclick="setResolvedPeriod('7d', this)" title="Insiden teratasi dalam 7 hari terakhir">7 Hari</button>
+          <button type="button" class="pantau-preset-btn {% if res_period == '30d' %}is-active{% endif %}" onclick="setResolvedPeriod('30d', this)" title="Insiden teratasi dalam 30 hari terakhir">30 Hari</button>
+          <button type="button" id="btn-res-custom" class="pantau-preset-btn {% if res_period == 'custom' or res_start or res_end %}is-active{% endif %}" onclick="setResolvedPeriod('custom', this)" style="{% if res_period != 'custom' and not res_start and not res_end %}display:none;{% endif %}" title="Rentang tanggal kustom aktif">Kustom</button>
         </div>
       </div>
       <div id="res-filter-summary-info" style="font-size:11.5px;color:var(--dim)">
@@ -843,7 +843,12 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         <span>Ambang Batas Insiden Global</span>
       </h3>
-      <button type="button" onclick="closeThresholdModal()" style="background:none;border:0;color:var(--dim);font-size:20px;cursor:pointer">&times;</button>
+      <button type="button" class="pantau-modal-close modal-close" onclick="closeThresholdModal()" aria-label="Tutup modal" title="Tutup (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <form id="threshold-form" onsubmit="submitThresholds(event)" style="padding:20px">
       <p style="font-size:12px;color:var(--dim);margin-top:0;margin-bottom:16px">
@@ -1297,8 +1302,10 @@ function setResolvedPeriod(period, btn) {
   currentResEndDate = '';
   _lastResFingerprint = null;
 
-  document.querySelectorAll('#prob-res-ranges .btn').forEach(b => b.classList.remove('is-on'));
-  if (btn) btn.classList.add('is-on');
+  document.querySelectorAll('#prob-res-ranges button').forEach(b => {
+    b.classList.remove('is-on', 'is-active');
+  });
+  if (btn) btn.classList.add('is-active', 'is-on');
 
   const startInp = document.getElementById('res-date-start');
   const endInp = document.getElementById('res-date-end');
@@ -1356,7 +1363,7 @@ function resetResFilters() {
   currentResStartDate = '';
   currentResEndDate = '';
 
-  const btn24 = document.querySelector('#prob-res-ranges .btn[onclick*="24h"]');
+  const btn24 = document.querySelector('#prob-res-ranges button[onclick*="24h"]');
   setResolvedPeriod('24h', btn24);
   filterResolvedTable();
 }

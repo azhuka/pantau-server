@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.126
+
+- **Tipe Rilis:** Standardisasi Fondasi Komponen Frontend Terpadu & Penyeragaman Elemen Global Antarmuka (*Unified Frontend Component Foundation, Universal Modal Close Architecture & UI Preset/Pagination Standardization*)
+- **Fokus Utama:** Membangun fondasi pustaka komponen modular (*design system components*) yang seragam, bersih, dan konsisten di seluruh lapisan aplikasi Pantau Server tanpa mengubah alur kerja (*workflow*), algoritma, maupun densitas informasi NOC:
+  1. **Standardisasi Universal Tombol Tutup (*Universal Close / X / Exit Button*):**
+     - Mengganti seluruh karakter teks entitas mentah `&times;` yang tidak seragam pada seluruh modal aplikasi dengan komponen tombol baku `.pantau-modal-close` berbasis ikon vektor SVG (14x14px, stroke 2.2px).
+     - Menyatukan posisi, ukuran bantalan (*padding*), radius sudut (6px), transisi hover, dan atribut aksesibilitas (`aria-label`, `title="Tutup (Esc)"`) di seluruh dialog: konfirmasi operasional, guardrail produksi SLA, kustomisasi tema visual, abaikan insiden, rincian akar masalah, rincian insiden dasbor, konfigurasi ambang batas, endpoint probing, riwayat paket, terminal unlock, hingga file manager.
+     - Memperluas mekanisme penutupan universal (`dismissActiveModal`) agar seluruh modal dapat ditutup secara konsisten dan responsif melalui penekanan tombol `Escape`, klik tombol [X], maupun klik pada latar belakang (*backdrop click*).
+  2. **Penyeragaman Format Preset Waktu (*Standardized Time Presets Format*):**
+     - Menyeragamkan label awalan preset menjadi huruf kapital baku `PRESET:` dengan penataan spasi dan tipografi proporsional di seluruh halaman pelaporan.
+     - Menyusun pil filter waktu menggunakan kelas komponen baku `.pantau-preset-wrap`, `.pantau-preset-group`, dan `.pantau-preset-btn` dengan gaya aktif terpadu (`is-active`).
+  3. **Penyeragaman Sistem Paginasi Tabel (*Unified Table Pagination System*):**
+     - Menyelaraskan teks pemilih baris per halaman menjadi format baku `Tampilkan: [10 | 25 | 50 | 100 | Semua]` di seluruh tabel data.
+     - Menyinkronkan tata letak, ukuran tombol navigasi halaman (« Sebelumnya / Berikutnya »), dan status ringkasan baris data menggunakan kelas komponen `.pantau-pagination-bar` dan `.table-pagination-bar`.
+  4. **Pondasi Komponen Modular Jinja2 (*Reusable Component Library*):**
+     - Menyiapkan modul komponen terpadu pada direktori `server/templates/components/` (`modal.html`, `card.html`, `filter_bar.html`, `pagination.html`, dan `table.html`) untuk memudahkan pemeliharaan frontend berkelanjutan dengan standar industri.
+
 ## Versi 4.8.125
 
 - **Tipe Rilis:** Perataan Kiri Kolom Tabel Operasional & Peniadaan Scroll Horizontal pada Skala Zoom 150% (*Dashboard Fleet Table Left-Alignment & Zero Horizontal Scroll at 150% Zoom*)

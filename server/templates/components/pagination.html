@@ -1,0 +1,27 @@
+{# =============================================================================
+   Pantau UI Components: Paginasi Tabel Standar Baku (components/pagination.html)
+   Menyediakan baris paginasi 100% seragam dengan teks "Tampilkan: 10", navigasi, dan info baris
+   ============================================================================= #}
+
+{% macro pagination_bar(table_id='', initial_limit=10, extra_class='') %}
+<div class="pantau-pagination-bar {{ extra_class }}" {% if table_id %}data-for-table="{{ table_id }}"{% endif %}>
+  <div class="pantau-pg-limit">
+    <span class="pantau-pg-limit-label">Tampilkan:</span>
+    <select class="pantau-pg-select" data-pg-select aria-label="Jumlah baris per halaman">
+      <option value="10" {% if initial_limit == 10 %}selected{% endif %}>10</option>
+      <option value="25" {% if initial_limit == 25 %}selected{% endif %}>25</option>
+      <option value="50" {% if initial_limit == 50 %}selected{% endif %}>50</option>
+      <option value="100" {% if initial_limit == 100 %}selected{% endif %}>100</option>
+      <option value="all" {% if initial_limit == 'all' %}selected{% endif %}>Semua</option>
+    </select>
+  </div>
+  <div class="pantau-pg-info" data-pg-info>
+    Memuat data…
+  </div>
+  <div class="pantau-pg-nav">
+    <button type="button" class="pantau-pg-btn" data-pg-prev disabled aria-label="Halaman sebelumnya">« Sebelumnya</button>
+    <span class="pantau-pg-cur" data-pg-cur>Hal 1 / 1</span>
+    <button type="button" class="pantau-pg-btn" data-pg-next disabled aria-label="Halaman berikutnya">Berikutnya »</button>
+  </div>
+</div>
+{% endmacro %}
