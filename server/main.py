@@ -5275,7 +5275,24 @@ def _deduplicate_user_logins(raw_list: list) -> list:
                 continue
             seen_other.add(other_key)
             result.append(item)
-    result.sort(key=lambda e: str(e.get("ts", "")), reverse=True)
+    # Sinkronisasi timestamp sesi aktif agar selalu di atas riwayat perintah dalam sesi tersebut
+    max_ts = max((str(r.get("ts", "")) for r in result if r.get("type") != "aktif" and len(str(r.get("ts", ""))) >= 19), default="")
+    for r in result:
+        if r.get("type") == "aktif":
+            login_t = str(r.get("login_time", ""))
+            cur_ts = str(r.get("ts", ""))
+            if login_t and cur_ts < login_t:
+                r["ts"] = login_t
+            if max_ts and str(r.get("ts", "")) < max_ts:
+                r["ts"] = max_ts
+
+    def _sort_key(e):
+        t = str(e.get("ts", ""))
+        typ = e.get("type", "")
+        prio = 4 if typ == "aktif" else (3 if typ == "selesai" else (1 if typ in ("login", "sukses") else 2))
+        return (t, prio)
+
+    result.sort(key=_sort_key, reverse=True)
     return result
 
 

@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.114"
+AGENT_VERSION = "4.8.115"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -4529,6 +4529,10 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
     Debian 12, RHEL 9) maupun sistem tradisional berbasis /var/log/auth.log atau secure.
     Secara tegas membedakan 'aktif' (masih login) vs 'selesai' (sudah logout/selesai).
     """
+    try:
+        time.tzset()
+    except Exception:
+        pass
     events: list[dict] = []
     seen_sessions: set[tuple] = set()
     seen_sudo: set[tuple] = set()
@@ -5017,7 +5021,25 @@ def collect_user_logins(max_events: int = 100, target_user: str | None = None) -
         except Exception:
             pass
 
-    events.sort(key=lambda e: str(e.get("ts", "")), reverse=True)
+    # Sinkronisasi timestamp sesi aktif agar konsisten dan tidak tertinggal di bawah perintah yang terjadi di dalamnya
+    max_ev_ts = max((str(e.get("ts", "")) for e in events if e.get("type") != "aktif" and len(str(e.get("ts", ""))) >= 19), default="")
+    for e in events:
+        if e.get("type") == "aktif":
+            login_t = str(e.get("login_time", ""))
+            cur_ts = str(e.get("ts", ""))
+            if login_t and cur_ts < login_t:
+                e["ts"] = login_t
+            if max_ev_ts and str(e.get("ts", "")) < max_ev_ts:
+                e["ts"] = max_ev_ts
+
+    def _sort_key(ev):
+        t = str(ev.get("ts", ""))
+        typ = ev.get("type", "")
+        # Sesi Aktif selalu di atas perintah yang terjadi dalam sesi tersebut
+        prio = 4 if typ == "aktif" else (3 if typ == "selesai" else (1 if typ in ("login", "sukses") else 2))
+        return (t, prio)
+
+    events.sort(key=_sort_key, reverse=True)
     return events[: max(0, max_events)]
 
 

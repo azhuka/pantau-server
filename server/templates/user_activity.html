@@ -54,7 +54,7 @@
   </div>
   <div class="stat-card">
     <div class="label">Sesi Aktif &amp; Terakhir</div>
-    <div class="value" style="font-size:15px">
+    <div class="value" id="stat-sessions-value" style="font-size:15px">
       {{ account.sessions|length if account and account.sessions else 0 }} Sesi
       {% if account and account.sessions %}
         <span style="font-size:11px;color:var(--green);font-weight:normal;margin-left:4px">
@@ -297,6 +297,11 @@ function renderChips(logins) {
   if (elLoginGagal) elLoginGagal.textContent = c.gagal;
   const elSudoGagal = document.getElementById('chip-sudo-gagal');
   if (elSudoGagal) elSudoGagal.textContent = c.sudo_gagal + c.polkit_gagal;
+  const elStatSessions = document.getElementById('stat-sessions-value');
+  if (elStatSessions && c.aktif > 0) {
+    const actTtys = logins.filter(x => x.type === 'aktif').map(x => x.tty + (x.from && x.from !== '(lokal)' ? ' @ ' + x.from : '')).join(', ');
+    elStatSessions.innerHTML = `${c.aktif} Sesi <span style="font-size:11px;color:var(--green);font-weight:normal;margin-left:4px">(${escapeHtml(actTtys)})</span>`;
+  }
 }
 
 function getActualCommand(cmd) {
@@ -426,7 +431,40 @@ function deduplicateLogins(rawList) {
       result.push(item);
     }
   }
-  result.sort((a, b) => String(b.ts || '').localeCompare(String(a.ts || '')));
+  // Sinkronisasi timestamp sesi aktif agar tidak pernah tertinggal di bawah riwayat perintah
+  let maxTs = '';
+  for (const r of result) {
+    if (r.type !== 'aktif' && r.ts && r.ts > maxTs) {
+      maxTs = r.ts;
+    }
+  }
+
+  for (const r of result) {
+    if (r.type === 'aktif') {
+      if (maxTs && (!r.ts || r.ts < maxTs)) {
+        r.ts = maxTs;
+      }
+      if (r.login_time && (!r.ts || r.ts < r.login_time)) {
+        r.ts = r.login_time;
+      }
+    }
+  }
+
+  result.sort((a, b) => {
+    const tsA = String(a.ts || '');
+    const tsB = String(b.ts || '');
+    if (tsA !== tsB) {
+      return tsB.localeCompare(tsA);
+    }
+    const priority = (type) => {
+      if (type === 'aktif') return 4;
+      if (type === 'selesai') return 3;
+      if (type === 'sudo' || type === 'polkit' || type === 'shell') return 2;
+      if (type === 'login' || type === 'sukses') return 1;
+      return 0;
+    };
+    return priority(b.type) - priority(a.type);
+  });
   return result;
 }
 

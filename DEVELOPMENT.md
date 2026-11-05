@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.115
+
+- **Tipe Rilis:** Sinkronisasi Stempel Waktu Sesi Aktif, Proteksi Selisih Zona Waktu (UTC vs Lokal), dan Penjaminan Posisi Teratas Siklus Hidup Sesi (*Active Session Timestamp Synchronization, Cross-Timezone Drift Protection & Top-Pinned Active Session Lifecycle Assurance*)
+- **Fokus Utama:** Memperbaiki anomali urutan di mana baris `Sesi Aktif` terlempar ke bawah riwayat perintah akibat ketidakcocokan zona waktu antara runtime Python agen (UTC) dan catatan jurnal sistem (lokal/WITA):
+  1. **Sinkronisasi Zona Waktu Runtime Agen (`time.tzset`):**
+     - Memanggil `time.tzset()` secara preventif pada agen klien (`agent_pantau.py`) sebelum pengumpulan log sesi agar runtime Python selalu membaca konfigurasi zona waktu terbaru `/etc/localtime` (menghindari keterjebakan pada UTC pasca perubahan zona waktu server).
+  2. **Penjaminan Stempel Waktu Sesi Aktif Terhadap Riwayat Perintah:**
+     - Sesi aktif secara definisi merupakan sesi yang sedang berlangsung saat ini (*live session*). Stempel waktu `Sesi Aktif` kini dijamin selalu lebih baru atau sama dengan (`>=`) perintah terbaru yang dieksekusi di dalam sesi tersebut serta stempel waktu login (`login_time`).
+     - Diterapkan secara berlapis pada agen klien (`agent_pantau.py`), backend server (`_deduplicate_user_logins`), dan antarmuka web klien (`deduplicateLogins`).
+  3. **Pengurutan Siklus Hidup Sesi dengan Penentu Prioritas (*Tie-Breaker Priority Sorting*):**
+     - Menyematkan bobot prioritas hierarkis saat stempel waktu bertepatan: `Sesi Aktif` (prioritas 4) selalu menempati puncak tabel di atas riwayat perintah (prioritas 2) dan awal sesi `Sesi Login` (prioritas 1).
+     - Menjadikan urutan siklus sesi terminal yang sedang terbuka selalu berurutan sempurna:
+       - **Atas:** `Sesi Aktif` (indikator terminal aktif / berlangsung).
+       - **Tengah:** Seluruh perintah yang dieksekusi di sesi tersebut.
+       - **Bawah:** `Sesi Login` (waktu autentikasi awal sesi dibuka).
+  4. **Penyelarasan Dinamis Kartu Statistik `Sesi Aktif & Terakhir`:**
+     - Menghubungkan kartu ringkasan di panel atas (`stat-sessions-value`) dengan jumlah dan rincian terminal sesi aktif hasil evaluasi real-time.
+
 ## Versi 4.8.114
 
 - **Tipe Rilis:** Sinkronisasi Kunci Deduplikasi Login Presisi Detik-TTY, Penghapusan Residu Logind, dan Pengelompokan Hierarkis Chip Audit (*Second-TTY Precise Login Deduplication, Logind Noise Elimination & Hierarchical Audit Chip Grouping*)
