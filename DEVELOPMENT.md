@@ -354,6 +354,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.144
+
+- **Tipe Rilis:** Standardisasi Mutlak Seluruh Tabel Frontend, Eliminasi Tuntas Hardcoded Inline Styles, dan Penyatuan Cetak Biru Visual Berdensitas Tinggi (*Universal Frontend Table Standardization, Complete Elimination of Hardcoded Inline Styles & High-Density Unified Visual Blueprint*)
+- **Fokus Utama:** Menyelesaikan inkonsistensi visual di seluruh 48 tampilan antarmuka Pantau Server, mengeliminasi seluruh atribut style inline pada header tabel (`<th>`) dan sel data (`<td>`), serta mengonsolidasikan tata letak tabel ke dalam cetak biru tunggal (*single source of truth*) pada Bagian 14 `pantau-components.css`:
+  1. **Eliminasi 100% Hardcoded Inline Styles Tabel di Seluruh Template:**
+     - Menghapus seluruh atribut `style="width:...;min-width:...;text-align:..."` pada seluruh tag `<th>` dan `<td>` di berkas template (`audit.html`, `user_activity.html`, `file_manager.html`, `profile.html`, `maintenance.html`, `probing.html`, `servers.html`, `problems.html`, `dashboard.html`, `services.html`, dan `base.html`).
+     - Memastikan verifikasi `grep -rn '<th[^>]*style=' server/templates/*.html` menghasilkan 0 kemunculan (nihil atribut style).
+  2. **Penerapan Cetak Biru Universal (Bagian 14 `pantau-components.css`):**
+     - Memperkenalkan kelas-kelas semantik baku berdensitas tinggi untuk setiap tabel: `#tbl-audit`, `#ll-table`, `#fm-table`, `#maintenanceTable`, `.probe-history-table`, `#users-table`, `#servers-table`, `#probtable`, `#prob-resolved-table`, `.dash-prob-table`, `#dash-server-table`, `#sdm-table`, `#disks-table`, `#tbl-packages`, `#tbl-task-manager`, `#cron-table`, `#systemd-timers-table`, `#fw-rules-table`, `#fw-blocked-table`, `#acc-table`, `#groups-table`, `#tbl-action-history`, `#acc-action-table`, `#ssl-table`, `#tbl-system-logs`, dan `.pantau-table-kv`.
+     - Seluruh tabel mengadopsi `table-layout: fixed; width: 100%`, alokasi kolom proporsional, serta pemotongan teks (*ellipsis text-overflow*) yang terstruktur tanpa memicu horizontal scrollbar yang tidak diinginkan.
+  3. **Penegakan Kontrak Rata Kiri Universal (*Universal Left-Align Contract*):**
+     - Menjamin seluruh kolom header dan sel data pada seluruh tabel berorientasi rata kiri (`text-align: left !important`) dan grup tombol aksi rata kiri (`justify-content: flex-start !important`), dengan pengecualian pesan baris kosong (*empty state*) yang terpusat rapi.
+  4. **Audit Visual Komprehensif Lintas Tema (Gelap & Terang):**
+     - Pengujian otomatis headless Chromium pada 48 rute dan tab antarmuka (Dashboard, Daftar Server, Tambah/Edit Server, 11 Tab Detail Server, File Manager, Insiden, Probing, Pemeliharaan, Profil Pengguna, Aktivitas Pengguna, Log Audit) mencapai skor 100% bebas overflow horizontal dan 0 galat konsol browser.
+
 ## Versi 4.8.143
 
 - **Tipe Rilis:** Eliminasi Menyeluruh Hardcoded Inline Styles Tabel Layanan, Perbaikan Drop Shadow Kolom Aksi di Tema Terang, dan Penyelarasan Ikon Kontrol Sistem (*Elimination of Table Hardcoded Inline Styles, Action Column Drop-Shadow Neutralization & Unified System Control Icons*)

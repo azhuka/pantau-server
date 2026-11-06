@@ -1249,6 +1249,16 @@ span[data-pg-cur] {
 .table-compact td,
 .fm-table th,
 .fm-table td,
+#tbl-audit th,
+#tbl-audit td,
+#ll-table th,
+#ll-table td,
+#maintenanceTable th,
+#maintenanceTable td,
+.probe-history-table th,
+.probe-history-table td,
+#users-table th,
+#users-table td,
 #servers-table th,
 #servers-table td,
 #probtable th,
@@ -1542,6 +1552,1512 @@ table td.empty-msg {
   white-space: nowrap !important;
   padding: 4px 6px !important;
 }
+
+/* -----------------------------------------------------------------------------
+   14. UNIFORM HIGH-DENSITY TABLE SPECIFICATIONS (UNIVERSAL NOC BLUEPRINT)
+   ----------------------------------------------------------------------------- */
+
+/* Tabel Audit Log (#tbl-audit) */
+#tbl-audit {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#tbl-audit th,
+#tbl-audit td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+  line-height: 1.35 !important;
+}
+
+#tbl-audit th.col-aud-time,
+#tbl-audit td.col-aud-time {
+  width: 130px !important;
+  min-width: 115px !important;
+  max-width: 140px !important;
+  white-space: nowrap !important;
+  letter-spacing: -0.025em !important;
+}
+
+#tbl-audit th.col-aud-user,
+#tbl-audit td.col-aud-user {
+  width: 100px !important;
+  min-width: 85px !important;
+  max-width: 110px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#tbl-audit th.col-aud-srv,
+#tbl-audit td.col-aud-srv {
+  width: 110px !important;
+  min-width: 95px !important;
+  max-width: 120px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#tbl-audit th.col-aud-act,
+#tbl-audit td.col-aud-act {
+  width: 120px !important;
+  min-width: 100px !important;
+  max-width: 130px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-audit th.col-aud-tgt,
+#tbl-audit td.col-aud-tgt {
+  width: auto !important;
+  min-width: 130px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-audit th.col-aud-st,
+#tbl-audit td.col-aud-st {
+  width: 90px !important;
+  min-width: 85px !important;
+  max-width: 95px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-audit th.col-aud-res,
+#tbl-audit td.col-aud-res {
+  width: auto !important;
+  min-width: 170px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  color: var(--dim) !important;
+}
+
+#tbl-audit td .audit-user-name {
+  color: var(--text-bright) !important;
+  font-weight: 600 !important;
+}
+
+#tbl-audit td .audit-srv-cell {
+  font-weight: 600 !important;
+}
+
+/* Tabel Aktivitas Pengguna (#ll-table) */
+#ll-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#ll-table th {
+  padding: 6px 10px !important;
+  font-size: 10px !important;
+  color: var(--dim) !important;
+  text-transform: uppercase !important;
+  letter-spacing: .5px !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+
+#ll-table td {
+  padding: 5px 10px !important;
+  font-size: 11px !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  vertical-align: middle !important;
+  line-height: 1.35 !important;
+  height: 32px !important;
+  box-sizing: border-box !important;
+}
+
+#ll-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+#ll-table th.col-ll-time,
+#ll-table td.col-ll-time {
+  width: 130px !important;
+  min-width: 125px !important;
+  max-width: 140px !important;
+  white-space: nowrap !important;
+}
+
+#ll-table th.col-ll-user,
+#ll-table td.col-ll-user {
+  width: 85px !important;
+  min-width: 80px !important;
+  max-width: 95px !important;
+  white-space: nowrap !important;
+}
+
+#ll-table th.col-ll-type,
+#ll-table td.col-ll-type {
+  width: 115px !important;
+  min-width: 110px !important;
+  max-width: 125px !important;
+  white-space: nowrap !important;
+}
+
+#ll-table th.col-ll-term,
+#ll-table td.col-ll-term {
+  width: 120px !important;
+  min-width: 110px !important;
+  max-width: 130px !important;
+  white-space: nowrap !important;
+}
+
+#ll-table th.col-ll-ip,
+#ll-table td.col-ll-ip {
+  width: 125px !important;
+  min-width: 115px !important;
+  max-width: 135px !important;
+  white-space: nowrap !important;
+}
+
+#ll-table th.col-ll-pwd,
+#ll-table td.col-ll-pwd {
+  width: 150px !important;
+  min-width: 130px !important;
+  max-width: 170px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ll-table th.col-ll-cmd,
+#ll-table td.col-ll-cmd {
+  width: auto !important;
+  min-width: 180px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ll-table code.cmd-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-size: 11px !important;
+  color: var(--text) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 1px 5px !important;
+  border-radius: 3px !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+
+.chip-info {
+  background: var(--blue-bg) !important;
+  color: var(--blue) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+}
+
+/* Tabel File Manager (#fm-table) */
+#fm-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  font-size: 11.5px !important;
+}
+
+#fm-table th {
+  padding: 6px 10px !important;
+  text-align: left !important;
+  color: var(--dim) !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--bg) !important;
+  position: sticky !important;
+  top: 0 !important;
+  white-space: nowrap !important;
+}
+
+#fm-table td {
+  padding: 5px 10px !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  vertical-align: middle !important;
+  font-size: 11px !important;
+  height: 32px !important;
+  box-sizing: border-box !important;
+}
+
+#fm-table th.col-fm-check,
+#fm-table td.col-fm-check {
+  width: 36px !important;
+  text-align: left !important;
+}
+
+#fm-table th.col-fm-name,
+#fm-table td.col-fm-name {
+  width: auto !important;
+  min-width: 200px !important;
+}
+
+#fm-table th.col-fm-size,
+#fm-table td.col-fm-size {
+  width: 100px !important;
+  min-width: 90px !important;
+  max-width: 115px !important;
+  white-space: nowrap !important;
+}
+
+#fm-table th.col-fm-mode,
+#fm-table td.col-fm-mode {
+  width: 95px !important;
+  min-width: 85px !important;
+  max-width: 105px !important;
+  white-space: nowrap !important;
+}
+
+#fm-table th.col-fm-owner,
+#fm-table td.col-fm-owner {
+  width: 130px !important;
+  min-width: 115px !important;
+  max-width: 145px !important;
+  white-space: nowrap !important;
+}
+
+#fm-table th.col-fm-mtime,
+#fm-table td.col-fm-mtime {
+  width: 135px !important;
+  min-width: 120px !important;
+  max-width: 150px !important;
+  white-space: nowrap !important;
+}
+
+#fm-table th.col-fm-act,
+#fm-table td.col-fm-act {
+  width: 130px !important;
+  min-width: 120px !important;
+  max-width: 140px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Pemeliharaan (#maintenanceTable) */
+#maintenanceTable {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#maintenanceTable th,
+#maintenanceTable td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#maintenanceTable th.col-mnt-st,
+#maintenanceTable td.col-mnt-st {
+  width: 115px !important;
+  min-width: 105px !important;
+}
+
+#maintenanceTable th.col-mnt-title,
+#maintenanceTable td.col-mnt-title {
+  width: auto !important;
+  min-width: 180px !important;
+}
+
+#maintenanceTable th.col-mnt-scope,
+#maintenanceTable td.col-mnt-scope {
+  width: 160px !important;
+  min-width: 140px !important;
+}
+
+#maintenanceTable th.col-mnt-sched,
+#maintenanceTable td.col-mnt-sched {
+  width: 145px !important;
+  min-width: 130px !important;
+}
+
+#maintenanceTable th.col-mnt-time,
+#maintenanceTable td.col-mnt-time {
+  width: 230px !important;
+  min-width: 210px !important;
+}
+
+#maintenanceTable th.col-mnt-author,
+#maintenanceTable td.col-mnt-author {
+  width: 110px !important;
+  min-width: 95px !important;
+}
+
+#maintenanceTable th.col-mnt-act,
+#maintenanceTable td.col-mnt-act {
+  width: 125px !important;
+  min-width: 115px !important;
+}
+
+/* Tabel Modal Riwayat Probing (.probe-history-table) */
+.probe-history-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  font-size: 11px !important;
+}
+
+.probe-history-table th,
+.probe-history-table td {
+  padding: 5px 8px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+.probe-history-table th.col-ph-time,
+.probe-history-table td.col-ph-time {
+  width: 130px !important;
+  min-width: 120px !important;
+  white-space: nowrap !important;
+}
+
+.probe-history-table th.col-ph-status,
+.probe-history-table td.col-ph-status {
+  width: 75px !important;
+  min-width: 70px !important;
+  white-space: nowrap !important;
+}
+
+.probe-history-table th.col-ph-latency,
+.probe-history-table td.col-ph-latency {
+  width: 90px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
+}
+
+.probe-history-table th.col-ph-code,
+.probe-history-table td.col-ph-code {
+  width: 120px !important;
+  min-width: 110px !important;
+  white-space: nowrap !important;
+}
+
+.probe-history-table th.col-ph-desc,
+.probe-history-table td.col-ph-desc {
+  width: auto !important;
+  min-width: 150px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Manajemen Pengguna (#users-table) */
+#users-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#users-table thead tr {
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--dim) !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  font-weight: 600 !important;
+}
+
+#users-table th,
+#users-table td {
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#users-table th.col-usr-name,
+#users-table td.col-usr-name {
+  width: auto !important;
+  min-width: 160px !important;
+}
+
+#users-table th.col-usr-role,
+#users-table td.col-usr-role {
+  width: 150px !important;
+  min-width: 130px !important;
+  white-space: nowrap !important;
+}
+
+#users-table th.col-usr-st,
+#users-table td.col-usr-st {
+  width: 160px !important;
+  min-width: 140px !important;
+  white-space: nowrap !important;
+}
+
+#users-table th.col-usr-last,
+#users-table td.col-usr-last {
+  width: 160px !important;
+  min-width: 140px !important;
+  white-space: nowrap !important;
+}
+
+#users-table th.col-usr-act,
+#users-table td.col-usr-act {
+  width: 110px !important;
+  min-width: 100px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Ringkasan Spesifikasi Kunci/Nilai (.pantau-table-kv) */
+.pantau-table-kv {
+  width: 100% !important;
+  font-size: 10px !important;
+  border-collapse: collapse !important;
+}
+
+.pantau-table-kv td {
+  padding: 3px 0 !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+}
+
+.pantau-table-kv td:first-child {
+  color: var(--dim) !important;
+  width: 40% !important;
+}
+
+/* Tabel Daftar Server (#servers-table) */
+#servers-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#servers-table th {
+  white-space: nowrap !important;
+  padding: 6px 6px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--dim) !important;
+  text-transform: uppercase !important;
+  letter-spacing: .5px !important;
+}
+
+#servers-table td {
+  white-space: nowrap !important;
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#servers-table th.col-srv-host,
+#servers-table td.col-srv-host {
+  width: 130px !important;
+  min-width: 125px !important;
+  max-width: 135px !important;
+  padding-left: 10px !important;
+}
+
+#servers-table th.col-srv-ip,
+#servers-table td.col-srv-ip {
+  width: 95px !important;
+  min-width: 90px !important;
+  max-width: 100px !important;
+}
+
+#servers-table th.col-srv-plat,
+#servers-table td.col-srv-plat {
+  width: 100px !important;
+  min-width: 95px !important;
+  max-width: 105px !important;
+}
+
+#servers-table th.col-srv-os,
+#servers-table td.col-srv-os {
+  width: 120px !important;
+  min-width: 115px !important;
+  max-width: 125px !important;
+}
+
+#servers-table th.col-srv-cpu,
+#servers-table td.col-srv-cpu {
+  width: 95px !important;
+  min-width: 90px !important;
+  max-width: 100px !important;
+}
+
+#servers-table th.col-srv-mem,
+#servers-table td.col-srv-mem {
+  width: 70px !important;
+  min-width: 65px !important;
+  max-width: 75px !important;
+}
+
+#servers-table th.col-srv-disk,
+#servers-table td.col-srv-disk {
+  width: 80px !important;
+  min-width: 75px !important;
+  max-width: 85px !important;
+}
+
+#servers-table th.col-srv-up,
+#servers-table td.col-srv-up {
+  width: 105px !important;
+  min-width: 100px !important;
+  max-width: 110px !important;
+}
+
+#servers-table th.col-srv-agent,
+#servers-table td.col-srv-agent {
+  width: 80px !important;
+  min-width: 75px !important;
+  max-width: 85px !important;
+}
+
+#servers-table th.col-srv-tag,
+#servers-table td.col-srv-tag {
+  min-width: 45px !important;
+}
+
+#servers-table th.col-srv-st,
+#servers-table td.col-srv-st {
+  width: 80px !important;
+  min-width: 75px !important;
+  max-width: 85px !important;
+}
+
+#servers-table th.col-srv-act,
+#servers-table td.col-srv-act {
+  width: 86px !important;
+  min-width: 86px !important;
+  max-width: 88px !important;
+  padding: 4px 6px !important;
+}
+
+#servers-table th .sort-arrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-left: 3px !important;
+  vertical-align: middle !important;
+  color: var(--dim) !important;
+  opacity: 0.45 !important;
+}
+
+/* Tabel Masalah / Insiden (#probtable, .dash-prob-table) */
+#probtable,
+.dash-prob-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#probtable thead tr,
+.dash-prob-table thead tr {
+  border-bottom: 1px solid var(--border) !important;
+  background: rgba(255, 255, 255, 0.015) !important;
+}
+
+#probtable th,
+.dash-prob-table th {
+  font-size: 10px !important;
+  color: var(--dim) !important;
+  text-align: left !important;
+  letter-spacing: 0.6px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+}
+
+#probtable td,
+.dash-prob-table td {
+  font-size: 11px !important;
+  vertical-align: middle !important;
+  line-height: 1.35 !important;
+}
+
+#probtable th.col-time,
+#probtable td.col-time,
+#probtable th.col-time-detailed,
+#probtable td.col-time-detailed,
+.dash-prob-table th.dash-col-time,
+.dash-prob-table td.dash-col-time {
+  padding: 5px 10px !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-time-detailed,
+#probtable td.col-time-detailed {
+  width: 135px !important;
+  min-width: 125px !important;
+}
+
+#probtable th.col-server,
+#probtable td.col-server,
+.dash-prob-table th.dash-col-server,
+.dash-prob-table td.dash-col-server {
+  padding: 5px 8px !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-sev,
+#probtable td.col-sev,
+.dash-prob-table th.dash-col-sev,
+.dash-prob-table td.dash-col-sev {
+  padding: 4px 8px !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-event,
+#probtable td.col-event,
+.dash-prob-table th.dash-col-desc,
+.dash-prob-table td.dash-col-desc {
+  padding: 5px 14px !important;
+}
+
+#probtable th.col-durasi,
+#probtable td.col-durasi,
+.dash-prob-table th.dash-col-dur,
+.dash-prob-table td.dash-col-dur {
+  padding: 5px 10px !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-tips,
+#probtable td.col-tips {
+  padding: 5px 12px !important;
+}
+
+#probtable th.col-act,
+#probtable td.col-act,
+.dash-prob-table th.dash-col-act,
+.dash-prob-table td.dash-col-act {
+  padding: 5px 6px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Dashboard Server Operasional (#dash-server-table) */
+#dash-server-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#dash-server-table th {
+  vertical-align: middle !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--dim) !important;
+  text-transform: uppercase !important;
+  letter-spacing: .5px !important;
+  padding: 6px 6px !important;
+}
+
+#dash-server-table td {
+  vertical-align: middle !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  font-size: 11px !important;
+  padding: 5px 6px !important;
+}
+
+#dash-server-table th.col-dsh-srv,
+#dash-server-table td.col-dsh-srv {
+  width: 110px !important;
+  min-width: 95px !important;
+}
+
+#dash-server-table th.col-dsh-st,
+#dash-server-table td.col-dsh-st {
+  width: 58px !important;
+  min-width: 52px !important;
+}
+
+#dash-server-table th.col-dsh-env,
+#dash-server-table td.col-dsh-env {
+  width: 70px !important;
+  min-width: 64px !important;
+}
+
+#dash-server-table th.col-dsh-plat,
+#dash-server-table td.col-dsh-plat {
+  width: 125px !important;
+  min-width: 110px !important;
+}
+
+#dash-server-table th.col-dsh-up,
+#dash-server-table td.col-dsh-up {
+  width: 65px !important;
+  min-width: 55px !important;
+}
+
+#dash-server-table th.col-dsh-cpu,
+#dash-server-table td.col-dsh-cpu {
+  width: 75px !important;
+  min-width: 68px !important;
+}
+
+#dash-server-table th.col-dsh-ram,
+#dash-server-table td.col-dsh-ram {
+  width: 85px !important;
+  min-width: 75px !important;
+}
+
+#dash-server-table th.col-dsh-disk,
+#dash-server-table td.col-dsh-disk {
+  width: 95px !important;
+  min-width: 88px !important;
+}
+
+#dash-server-table th.col-dsh-svc,
+#dash-server-table td.col-dsh-svc {
+  width: 58px !important;
+  min-width: 52px !important;
+}
+
+#dash-server-table th.col-dsh-inc,
+#dash-server-table td.col-dsh-inc {
+  width: 68px !important;
+  min-width: 60px !important;
+}
+
+#dash-server-table th .sort-arrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-left: 3px !important;
+  vertical-align: middle !important;
+  color: var(--dim) !important;
+  opacity: 0.45 !important;
+}
+
+/* Tabel Modal Detail Insiden (#sdm-table) */
+#sdm-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#sdm-table thead tr {
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--bg-subtle) !important;
+}
+
+#sdm-table th {
+  padding: 8px 10px !important;
+  font-size: 10px !important;
+  color: var(--dim) !important;
+  text-align: left !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  white-space: nowrap !important;
+}
+
+#sdm-table td {
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#sdm-table th.col-sdm-time,
+#sdm-table td.col-sdm-time {
+  width: 115px !important;
+  min-width: 105px !important;
+}
+
+#sdm-table th.col-sdm-srv,
+#sdm-table td.col-sdm-srv {
+  width: 150px !important;
+  min-width: 130px !important;
+}
+
+#sdm-table th.col-sdm-sev,
+#sdm-table td.col-sdm-sev {
+  width: 115px !important;
+  min-width: 105px !important;
+}
+
+#sdm-table th.col-sdm-desc,
+#sdm-table td.col-sdm-desc {
+  width: auto !important;
+  min-width: 180px !important;
+}
+
+#sdm-table th.col-sdm-dur,
+#sdm-table td.col-sdm-dur {
+  width: 120px !important;
+  min-width: 105px !important;
+}
+
+#sdm-table th.col-sdm-act,
+#sdm-table td.col-sdm-act {
+  width: 140px !important;
+  min-width: 125px !important;
+}
+
+/* Tabel Riwayat Insiden Teratasi (#prob-resolved-table) */
+#prob-resolved-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#prob-resolved-table thead tr {
+  border-bottom: 1px solid var(--border) !important;
+}
+
+#prob-resolved-table th {
+  color: var(--dim) !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .5px !important;
+  padding: 6px 6px !important;
+  vertical-align: middle !important;
+}
+
+#prob-resolved-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#prob-resolved-table th.col-time-detailed,
+#prob-resolved-table td.col-time-detailed {
+  width: 145px !important;
+  min-width: 135px !important;
+  white-space: nowrap !important;
+}
+
+#prob-resolved-table th.col-server,
+#prob-resolved-table td.col-server {
+  width: 130px !important;
+  min-width: 115px !important;
+  max-width: 155px !important;
+  white-space: nowrap !important;
+}
+
+#prob-resolved-table th.col-sev,
+#prob-resolved-table td.col-sev {
+  width: 85px !important;
+  min-width: 80px !important;
+  max-width: 95px !important;
+  white-space: nowrap !important;
+}
+
+#prob-resolved-table th.col-component,
+#prob-resolved-table td.col-component {
+  width: 110px !important;
+  min-width: 95px !important;
+  white-space: nowrap !important;
+}
+
+#prob-resolved-table th.col-desc,
+#prob-resolved-table td.col-desc {
+  width: auto !important;
+  min-width: 260px !important;
+}
+
+#prob-resolved-table th.col-durasi,
+#prob-resolved-table td.col-durasi {
+  width: 85px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
+}
+
+#prob-resolved-table th.col-res,
+#prob-resolved-table td.col-res {
+  width: 165px !important;
+  min-width: 150px !important;
+  white-space: nowrap !important;
+}
+
+#prob-resolved-table th.col-act,
+#prob-resolved-table td.col-act {
+  width: 55px !important;
+  min-width: 50px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Paket Terpasang (#tbl-packages) */
+#tbl-packages {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#tbl-packages th,
+#tbl-packages td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#tbl-packages th.col-pkg-st,
+#tbl-packages td.col-pkg-st {
+  width: 125px !important;
+  min-width: 115px !important;
+}
+
+#tbl-packages th.col-pkg-name,
+#tbl-packages td.col-pkg-name {
+  width: auto !important;
+  min-width: 180px !important;
+}
+
+#tbl-packages th.col-pkg-type,
+#tbl-packages td.col-pkg-type {
+  width: 105px !important;
+  min-width: 95px !important;
+}
+
+#tbl-packages th.col-pkg-ver,
+#tbl-packages td.col-pkg-ver {
+  width: 170px !important;
+  min-width: 150px !important;
+}
+
+#tbl-packages th.col-pkg-size,
+#tbl-packages td.col-pkg-size {
+  width: 105px !important;
+  min-width: 95px !important;
+}
+
+#tbl-packages th.col-pkg-desc,
+#tbl-packages td.col-pkg-desc {
+  width: auto !important;
+  min-width: 240px !important;
+}
+
+#tbl-packages th.col-pkg-act,
+#tbl-packages td.col-pkg-act {
+  width: 95px !important;
+  min-width: 85px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Manajer Proses / Tugas (#tbl-task-manager) */
+#tbl-task-manager {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#tbl-task-manager th,
+#tbl-task-manager td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#tbl-task-manager th.col-proc-pid,
+#tbl-task-manager td.col-proc-pid {
+  width: 80px !important;
+  min-width: 70px !important;
+}
+
+#tbl-task-manager th.col-proc-user,
+#tbl-task-manager td.col-proc-user {
+  width: 110px !important;
+  min-width: 95px !important;
+}
+
+#tbl-task-manager th.col-proc-comm,
+#tbl-task-manager td.col-proc-comm {
+  width: auto !important;
+  min-width: 220px !important;
+}
+
+#tbl-task-manager th.col-proc-st,
+#tbl-task-manager td.col-proc-st {
+  width: 100px !important;
+  min-width: 90px !important;
+}
+
+#tbl-task-manager th.col-proc-cpu,
+#tbl-task-manager td.col-proc-cpu {
+  width: 95px !important;
+  min-width: 90px !important;
+}
+
+#tbl-task-manager th.col-proc-mem,
+#tbl-task-manager td.col-proc-mem {
+  width: 95px !important;
+  min-width: 90px !important;
+}
+
+#tbl-task-manager th.col-proc-act,
+#tbl-task-manager td.col-proc-act {
+  width: 170px !important;
+  min-width: 160px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Cron Jobs (#cron-table) & Timers (#systemd-timers-table) */
+#cron-table,
+#systemd-timers-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#cron-table th,
+#cron-table td,
+#systemd-timers-table th,
+#systemd-timers-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#cron-table th.col-cron-st,
+#cron-table td.col-cron-st {
+  width: 45px !important;
+}
+
+#cron-table th.col-cron-user,
+#cron-table td.col-cron-user {
+  width: 100px !important;
+}
+
+#cron-table th.col-cron-sched,
+#cron-table td.col-cron-sched {
+  width: 140px !important;
+}
+
+#cron-table th.col-cron-cmd,
+#cron-table td.col-cron-cmd {
+  width: auto !important;
+  min-width: 250px !important;
+}
+
+#cron-table th.col-cron-act,
+#cron-table td.col-cron-act {
+  width: 120px !important;
+  white-space: nowrap !important;
+}
+
+#systemd-timers-table th.col-timer-unit,
+#systemd-timers-table td.col-timer-unit {
+  width: 220px !important;
+}
+
+#systemd-timers-table th.col-timer-next,
+#systemd-timers-table td.col-timer-next {
+  width: 160px !important;
+}
+
+#systemd-timers-table th.col-timer-left,
+#systemd-timers-table td.col-timer-left {
+  width: 130px !important;
+}
+
+#systemd-timers-table th.col-timer-last,
+#systemd-timers-table td.col-timer-last {
+  width: 160px !important;
+}
+
+#systemd-timers-table th.col-timer-passed,
+#systemd-timers-table td.col-timer-passed {
+  width: 130px !important;
+}
+
+#systemd-timers-table th.col-timer-act,
+#systemd-timers-table td.col-timer-act {
+  width: 120px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Firewall (#fw-rules-table, #fw-blocked-table) */
+#fw-rules-table,
+#fw-blocked-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#fw-rules-table th,
+#fw-rules-table td,
+#fw-blocked-table th,
+#fw-blocked-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#fw-rules-table th.col-fw-num,
+#fw-rules-table td.col-fw-num {
+  width: 40px !important;
+}
+
+#fw-rules-table th.col-fw-to,
+#fw-rules-table td.col-fw-to {
+  width: 140px !important;
+}
+
+#fw-rules-table th.col-fw-action,
+#fw-rules-table td.col-fw-action {
+  width: 100px !important;
+}
+
+#fw-rules-table th.col-fw-from,
+#fw-rules-table td.col-fw-from {
+  width: 160px !important;
+}
+
+#fw-rules-table th.col-fw-comment,
+#fw-rules-table td.col-fw-comment {
+  width: auto !important;
+  min-width: 180px !important;
+}
+
+#fw-rules-table th.col-fw-act,
+#fw-rules-table td.col-fw-act {
+  width: 100px !important;
+  white-space: nowrap !important;
+}
+
+#fw-blocked-table th.col-fwb-ip,
+#fw-blocked-table td.col-fwb-ip {
+  width: 180px !important;
+}
+
+#fw-blocked-table th.col-fwb-jail,
+#fw-blocked-table td.col-fwb-jail {
+  width: 140px !important;
+}
+
+#fw-blocked-table th.col-fwb-act,
+#fw-blocked-table td.col-fwb-act {
+  width: 120px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Akun & Grup Pengguna Server (#acc-table, #groups-table) */
+#acc-table,
+#groups-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#acc-table th,
+#acc-table td,
+#groups-table th,
+#groups-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#acc-table th.col-acc-user,
+#acc-table td.col-acc-user {
+  width: auto !important;
+  min-width: 140px !important;
+}
+
+#acc-table th.col-acc-id,
+#acc-table td.col-acc-id {
+  width: 90px !important;
+  min-width: 80px !important;
+}
+
+#acc-table th.col-acc-grp,
+#acc-table td.col-acc-grp {
+  width: auto !important;
+  min-width: 160px !important;
+}
+
+#acc-table th.col-acc-home,
+#acc-table td.col-acc-home {
+  width: auto !important;
+  min-width: 160px !important;
+}
+
+#acc-table th.col-acc-login,
+#acc-table td.col-acc-login {
+  width: auto !important;
+  min-width: 140px !important;
+}
+
+#acc-table th.col-acc-act,
+#acc-table td.col-acc-act {
+  width: 130px !important;
+  min-width: 120px !important;
+  white-space: nowrap !important;
+}
+
+#groups-table th.col-grp-name,
+#groups-table td.col-grp-name {
+  width: auto !important;
+  min-width: 140px !important;
+}
+
+#groups-table th.col-grp-gid,
+#groups-table td.col-grp-gid {
+  width: 80px !important;
+  min-width: 75px !important;
+}
+
+#groups-table th.col-grp-type,
+#groups-table td.col-grp-type {
+  width: 120px !important;
+  min-width: 100px !important;
+}
+
+#groups-table th.col-grp-members,
+#groups-table td.col-grp-members {
+  width: auto !important;
+  min-width: 240px !important;
+}
+
+#groups-table th.col-grp-count,
+#groups-table td.col-grp-count {
+  width: 90px !important;
+  min-width: 85px !important;
+}
+
+/* Tabel Riwayat Tindakan Akun (#tbl-action-history, #acc-action-table) */
+#tbl-action-history,
+#acc-action-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#tbl-action-history th,
+#tbl-action-history td,
+#acc-action-table th,
+#acc-action-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#tbl-action-history th.col-his-time,
+#tbl-action-history td.col-his-time,
+#acc-action-table th.col-aact-time,
+#acc-action-table td.col-aact-time {
+  width: 145px !important;
+  min-width: 135px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-action-history th.col-his-user,
+#tbl-action-history td.col-his-user,
+#acc-action-table th.col-aact-user,
+#acc-action-table td.col-aact-user {
+  width: 100px !important;
+  min-width: 90px !important;
+}
+
+#tbl-action-history th.col-his-act,
+#tbl-action-history td.col-his-act,
+#acc-action-table th.col-aact-act,
+#acc-action-table td.col-aact-act {
+  width: 160px !important;
+  min-width: 140px !important;
+}
+
+#tbl-action-history th.col-his-tgt,
+#tbl-action-history td.col-his-tgt,
+#acc-action-table th.col-aact-tgt,
+#acc-action-table td.col-aact-tgt {
+  width: auto !important;
+  min-width: 150px !important;
+}
+
+#tbl-action-history th.col-his-st,
+#tbl-action-history td.col-his-st,
+#acc-action-table th.col-aact-st,
+#acc-action-table td.col-aact-st {
+  width: 110px !important;
+  min-width: 95px !important;
+}
+
+#tbl-action-history th.col-his-res,
+#tbl-action-history td.col-his-res,
+#acc-action-table th.col-aact-res,
+#acc-action-table td.col-aact-res {
+  width: auto !important;
+  min-width: 180px !important;
+}
+
+/* Tabel Sertifikat SSL/TLS (#ssl-table) */
+#ssl-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#ssl-table th,
+#ssl-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#ssl-table th.col-ssl-dom,
+#ssl-table td.col-ssl-dom {
+  width: auto !important;
+  min-width: 180px !important;
+}
+
+#ssl-table th.col-ssl-iss,
+#ssl-table td.col-ssl-iss {
+  width: 150px !important;
+  min-width: 130px !important;
+}
+
+#ssl-table th.col-ssl-exp,
+#ssl-table td.col-ssl-exp {
+  width: 140px !important;
+  min-width: 125px !important;
+}
+
+#ssl-table th.col-ssl-rem,
+#ssl-table td.col-ssl-rem {
+  width: 100px !important;
+  min-width: 90px !important;
+}
+
+#ssl-table th.col-ssl-file,
+#ssl-table td.col-ssl-file {
+  width: auto !important;
+  min-width: 180px !important;
+}
+
+#ssl-table th.col-ssl-act,
+#ssl-table td.col-ssl-act {
+  width: 105px !important;
+  min-width: 95px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Log Sistem Journald (#tbl-system-logs) */
+#tbl-system-logs {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#tbl-system-logs th,
+#tbl-system-logs td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#tbl-system-logs th.col-slog-time,
+#tbl-system-logs td.col-slog-time {
+  width: 190px !important;
+  min-width: 175px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-system-logs th.col-slog-pri,
+#tbl-system-logs td.col-slog-pri {
+  width: 125px !important;
+  min-width: 110px !important;
+}
+
+#tbl-system-logs th.col-slog-unit,
+#tbl-system-logs td.col-slog-unit {
+  width: 200px !important;
+  min-width: 180px !important;
+}
+
+#tbl-system-logs th.col-slog-msg,
+#tbl-system-logs td.col-slog-msg {
+  width: auto !important;
+  min-width: 300px !important;
+}
+
+/* Tabel Partisi Disk (#disks-table, #spec-disks-table) */
+#disks-table,
+#spec-disks-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#disks-table th,
+#disks-table td,
+#spec-disks-table th,
+#spec-disks-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#disks-table th.col-disk-dev,
+#disks-table td.col-disk-dev,
+#spec-disks-table th.col-disk-dev,
+#spec-disks-table td.col-disk-dev {
+  width: 120px !important;
+}
+
+#disks-table th.col-disk-mnt,
+#disks-table td.col-disk-mnt,
+#spec-disks-table th.col-disk-mnt,
+#spec-disks-table td.col-disk-mnt {
+  width: 140px !important;
+}
+
+#disks-table th.col-disk-fs,
+#disks-table td.col-disk-fs,
+#spec-disks-table th.col-disk-fs,
+#spec-disks-table td.col-disk-fs {
+  width: 90px !important;
+}
+
+#disks-table th.col-disk-total,
+#disks-table td.col-disk-total,
+#spec-disks-table th.col-disk-total,
+#spec-disks-table td.col-disk-total {
+  width: 80px !important;
+}
+
+#disks-table th.col-disk-used,
+#disks-table td.col-disk-used,
+#spec-disks-table th.col-disk-used,
+#spec-disks-table td.col-disk-used {
+  width: 80px !important;
+}
+
+#disks-table th.col-disk-avail,
+#disks-table td.col-disk-avail,
+#spec-disks-table th.col-disk-avail,
+#spec-disks-table td.col-disk-avail {
+  width: 80px !important;
+}
+
+#disks-table th.col-disk-pct,
+#disks-table td.col-disk-pct,
+#spec-disks-table th.col-disk-pct,
+#spec-disks-table td.col-disk-pct {
+  width: 28% !important;
+  min-width: 180px !important;
+}
+
 
 
 

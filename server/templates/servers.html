@@ -191,21 +191,21 @@
 <div class="card" style="padding:8px;overflow:hidden">
   {% if servers %}
   <div class="pantau-table-wrap">
-  <table id="servers-table" class="pantau-table" style="width:100%;margin:0">
+  <table id="servers-table" class="pantau-table">
     <thead>
       <tr>
-        <th class="sortable" data-sort-key="server" data-col-title="Server" style="cursor:pointer;width:130px;min-width:125px;max-width:135px;white-space:nowrap" title="Nama host server dan klasifikasi lingkungan">Server <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="IP &amp; Interface" style="width:95px;min-width:90px;max-width:100px" title="Alamat IP utama dan antarmuka jaringan server">IP &amp; Interface</th>
-        <th data-col-title="Platform" style="width:100px;min-width:95px;max-width:105px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform</th>
-        <th data-col-title="Sistem Operasi" style="width:120px;min-width:115px;max-width:125px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
-        <th data-col-title="Prosesor" style="width:95px;min-width:90px;max-width:100px" title="Model prosesor (CPU) dan jumlah inti">Prosesor</th>
-        <th class="sortable" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer;width:70px;min-width:65px;max-width:75px" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="Storage" style="width:80px;min-width:75px;max-width:85px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Storage</th>
-        <th class="sortable" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer;width:105px;min-width:100px;max-width:110px" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="Agen &amp; APT" style="width:80px;min-width:75px;max-width:85px;text-align:left" title="Versi agen pemantau dan ketersediaan pembaruan paket">Agen &amp; APT</th>
-        <th data-col-title="Tag" data-default-hidden="true" style="min-width:45px" title="Label kategori dan pengelompokan server">Tag</th>
-        <th data-col-title="Status" style="width:80px;min-width:75px;max-width:85px;text-align:left" title="Status konektivitas dan waktu laporan data terakhir">Status</th>
-        <th class="col-act" data-col-title="Tindakan" style="width:86px;min-width:86px;max-width:88px;text-align:left" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
+        <th class="sortable col-srv-host" data-sort-key="server" data-col-title="Server" title="Nama host server dan klasifikasi lingkungan">Server <span class="sort-arrow"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th class="col-srv-ip" data-col-title="IP &amp; Interface" title="Alamat IP utama dan antarmuka jaringan server">IP &amp; Interface</th>
+        <th class="col-srv-plat" data-col-title="Platform" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform</th>
+        <th class="col-srv-os" data-col-title="Sistem Operasi" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
+        <th class="col-srv-cpu" data-col-title="Prosesor" title="Model prosesor (CPU) dan jumlah inti">Prosesor</th>
+        <th class="sortable col-srv-mem" data-sort-key="mem" data-col-title="Memori" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th class="col-srv-disk" data-col-title="Storage" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Storage</th>
+        <th class="sortable col-srv-up" data-sort-key="uptime" data-col-title="Uptime" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th class="col-srv-agent" data-col-title="Agen &amp; APT" title="Versi agen pemantau dan ketersediaan pembaruan paket">Agen &amp; APT</th>
+        <th class="col-srv-tag" data-col-title="Tag" data-default-hidden="true" title="Label kategori dan pengelompokan server">Tag</th>
+        <th class="col-srv-st" data-col-title="Status" title="Status konektivitas dan waktu laporan data terakhir">Status</th>
+        <th class="col-srv-act col-act" data-col-title="Tindakan" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
       </tr>
     </thead>
     <tbody>

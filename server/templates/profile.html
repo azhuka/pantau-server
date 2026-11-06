@@ -315,19 +315,19 @@
       <div class="pantau-table-wrap">
         <table id="users-table" class="pantau-table">
           <thead>
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:var(--dim);text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">
-              <th style="padding:7px 12px;font-weight:600;white-space:nowrap">Pengguna</th>
-              <th style="padding:7px 12px;font-weight:600;white-space:nowrap">Peran</th>
-              <th style="padding:7px 12px;font-weight:600;white-space:nowrap">Status &amp; 2FA</th>
-              <th style="padding:7px 12px;font-weight:600;white-space:nowrap">Login Terakhir</th>
-              <th class="col-act" style="padding:7px 12px;text-align:left;font-weight:600;white-space:nowrap">Tindakan</th>
+            <tr>
+              <th class="col-usr-name">Pengguna</th>
+              <th class="col-usr-role">Peran</th>
+              <th class="col-usr-st">Status &amp; 2FA</th>
+              <th class="col-usr-last">Login Terakhir</th>
+              <th class="col-usr-act col-act">Tindakan</th>
             </tr>
           </thead>
           <tbody>
             {% for u in users %}
             {% set uperms = u.get_permissions() %}
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-              <td style="padding:6px 12px;white-space:nowrap">
+            <tr>
+              <td class="col-usr-name">
                 <div style="display:flex;align-items:center;gap:6px">
                   <span style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ u.username }}</span>
                   {% if u.id == user.id %}
@@ -346,7 +346,7 @@
                   </div>
                 {% endif %}
               </td>
-              <td style="padding:6px 12px;white-space:nowrap">
+              <td class="col-usr-role">
                 {% if u.is_master_admin() %}
                 <span class="badge badge-role-master">Master Admin</span>
                 {% elif u.is_operator() %}
@@ -355,7 +355,7 @@
                 <span class="badge badge-role-viewer">Viewer</span>
                 {% endif %}
               </td>
-              <td style="padding:6px 12px;white-space:nowrap">
+              <td class="col-usr-st">
                 <div style="display:inline-flex;align-items:center;gap:5px">
                   {% if u.is_active %}
                   <span class="text-ok" style="font-size:11px;font-weight:600" title="Akun aktif">● Aktif</span>
@@ -370,14 +370,14 @@
                   {% endif %}
                 </div>
               </td>
-              <td style="padding:6px 12px;font-size:11px;letter-spacing:-0.025em;color:var(--dim);white-space:nowrap" class="mono">
+              <td class="col-usr-last mono">
                 {% if u.last_login_at %}
                 <span title="{{ u.last_login_at.strftime('%d %b %Y %H:%M:%S UTC') }}">{{ u.last_login_at.strftime('%d %b %Y %H:%M') }}</span>
                 {% else %}
                 <span style="color:var(--dim);opacity:0.6">-</span>
                 {% endif %}
               </td>
-              <td class="col-act" style="padding:6px 12px;text-align:left;white-space:nowrap">
+              <td class="col-usr-act col-act">
                 <div style="display:inline-flex;gap:3px;align-items:center;justify-content:flex-start;flex-wrap:nowrap">
                   <!-- Tombol 1: LIHAT Seluruh Informasi Akun -->
                   {% set u_created_at = _fmt_dt(u.created_at, with_sec=False) if u.created_at else '-' %}

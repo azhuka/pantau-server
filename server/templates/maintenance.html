@@ -343,30 +343,21 @@
 <!-- Card Tabel Jendela Pemeliharaan -->
 <div class="card" style="padding:12px;overflow:hidden">
   <div class="pantau-table-wrap">
-    <table class="pantau-table table-compact" id="maintenanceTable" style="width:100%;table-layout:fixed">
-      <colgroup>
-        <col style="width:115px" />
-        <col style="width:auto" />
-        <col style="width:160px" />
-        <col style="width:145px" />
-        <col style="width:230px" />
-        <col style="width:110px" />
-        <col style="width:125px" />
-      </colgroup>
+    <table class="pantau-table table-compact" id="maintenanceTable">
       <thead>
         <tr>
-          <th>STATUS</th>
-          <th>JUDUL &amp; KETERANGAN</th>
-          <th>CAKUPAN SERVER</th>
-          <th>POLA JADWAL</th>
-          <th>WAKTU &amp; HITUNG MUNDUR</th>
-          <th>PEMBUAT</th>
-          <th style="text-align:left">AKSI</th>
+          <th class="col-mnt-st">STATUS</th>
+          <th class="col-mnt-title">JUDUL &amp; KETERANGAN</th>
+          <th class="col-mnt-scope">CAKUPAN SERVER</th>
+          <th class="col-mnt-sched">POLA JADWAL</th>
+          <th class="col-mnt-time">WAKTU &amp; HITUNG MUNDUR</th>
+          <th class="col-mnt-author">PEMBUAT</th>
+          <th class="col-mnt-act col-act">AKSI</th>
         </tr>
       </thead>
       <tbody id="maintenanceTbody">
-        <tr>
-          <td colspan="7" style="text-align:center;padding:24px;color:var(--dim)">Memuat jadwal pemeliharaan…</td>
+        <tr class="pantau-empty-tr">
+          <td colspan="7" class="pantau-empty-td empty-msg">Memuat jadwal pemeliharaan…</td>
         </tr>
       </tbody>
     </table>
@@ -802,7 +793,7 @@ function filterWindows() {
 function renderTable(list) {
   const tb = document.getElementById('maintenanceTbody');
   if (!list.length) {
-    tb.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--dim)">Tidak ada jadwal pemeliharaan yang cocok dengan filter.</td></tr>`;
+    tb.innerHTML = `<tr class="pantau-empty-tr"><td colspan="7" class="pantau-empty-td empty-msg">Tidak ada jadwal pemeliharaan yang cocok dengan filter.</td></tr>`;
     return;
   }
 
@@ -859,7 +850,7 @@ function renderTable(list) {
     }
 
     // Tombol Aksi
-    let actionBtns = '<div style="display:inline-flex;gap:4px;align-items:center;justify-content:flex-end;width:100%">';
+    let actionBtns = '<div class="pantau-col-act">';
     if (w.status === 'active') {
       actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="padding:2px 6px;font-size:10px;color:var(--green)" onclick="completeWindow(${w.id})" title="Selesaikan masa pemeliharaan sekarang">Selesai</button>`;
     }
@@ -871,16 +862,16 @@ function renderTable(list) {
 
     html += `
       <tr>
-        <td style="vertical-align:middle">${statusBadge}</td>
-        <td style="vertical-align:middle">
+        <td class="col-mnt-st">${statusBadge}</td>
+        <td class="col-mnt-title">
           <div style="font-weight:700;color:var(--text-bright);font-size:12.5px">${escapeHtml(w.title)}</div>
           ${w.description ? `<div style="font-size:10.5px;color:var(--dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(w.description)}</div>` : ''}
         </td>
-        <td style="vertical-align:middle">${scopeBadge}</td>
-        <td style="vertical-align:middle">${scheduleDesc}</td>
-        <td style="vertical-align:middle">${timeCol}</td>
-        <td style="vertical-align:middle;color:var(--dim);font-size:11px">${escapeHtml(w.created_by || 'SISTEM')}</td>
-        <td style="vertical-align:middle;text-align:left">${actionBtns}</td>
+        <td class="col-mnt-scope">${scopeBadge}</td>
+        <td class="col-mnt-sched">${scheduleDesc}</td>
+        <td class="col-mnt-time">${timeCol}</td>
+        <td class="col-mnt-author" style="color:var(--dim);font-size:11px">${escapeHtml(w.created_by || 'SISTEM')}</td>
+        <td class="col-mnt-act col-act">${actionBtns}</td>
       </tr>
     `;
   });

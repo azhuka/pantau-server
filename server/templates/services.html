@@ -1607,12 +1607,12 @@ div[style*="position: fixed"] .card {
           </div>
           <span class="badge badge-info mono" id="spec-cpu-cores" style="font-size:10px">{{ (hardware_specs.cpu.cores ~ ' Cores') if (server.last_seen and hardware_specs and hardware_specs.cpu and hardware_specs.cpu.cores) else '-' }}</span>
         </div>
-        <table class="table-compact" style="width:100%;font-size:10px">
+        <table class="pantau-table-kv">
           <tbody>
-            <tr><td style="color:var(--dim);width:40%">Model</td><td><strong id="spec-cpu-model">{{ hardware_specs.cpu.model if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.model else '—' }}</strong></td></tr>
-            <tr><td style="color:var(--dim)">Arsitektur</td><td class="mono" id="spec-cpu-arch">{{ hardware_specs.cpu.arch if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.arch else 'x86_64' }}</td></tr>
-            <tr><td style="color:var(--dim)">Clock</td><td class="mono" id="spec-cpu-mhz">{{ (hardware_specs.cpu.mhz ~ ' MHz') if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.mhz else '—' }}</td></tr>
-            <tr><td style="color:var(--dim)">Cache</td><td class="mono" id="spec-cpu-cache">{{ hardware_specs.cpu.cache if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.cache else '—' }}</td></tr>
+            <tr><td>Model</td><td><strong id="spec-cpu-model">{{ hardware_specs.cpu.model if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.model else '—' }}</strong></td></tr>
+            <tr><td>Arsitektur</td><td class="mono" id="spec-cpu-arch">{{ hardware_specs.cpu.arch if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.arch else 'x86_64' }}</td></tr>
+            <tr><td>Clock</td><td class="mono" id="spec-cpu-mhz">{{ (hardware_specs.cpu.mhz ~ ' MHz') if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.mhz else '—' }}</td></tr>
+            <tr><td>Cache</td><td class="mono" id="spec-cpu-cache">{{ hardware_specs.cpu.cache if hardware_specs and hardware_specs.cpu and hardware_specs.cpu.cache else '—' }}</td></tr>
           </tbody>
         </table>
       </div>
@@ -1626,12 +1626,12 @@ div[style*="position: fixed"] .card {
           </div>
           <span class="badge badge-success mono" style="font-size:8.5px">RAM</span>
         </div>
-        <table class="table-compact" style="width:100%;font-size:10px">
+        <table class="pantau-table-kv">
           <tbody>
-            <tr><td style="color:var(--dim);width:40%">Total RAM</td><td><strong id="spec-ram-total">{{ ((hardware_specs.memory.ram_total / (1024**3))|round(2)) ~ ' GB' if hardware_specs and hardware_specs.memory and hardware_specs.memory.ram_total else '0 GB' }}</strong></td></tr>
-            <tr><td style="color:var(--dim)">Total Swap</td><td class="mono" id="spec-swap-total">{{ ((hardware_specs.memory.swap_total / (1024**3))|round(2)) ~ ' GB' if hardware_specs and hardware_specs.memory and hardware_specs.memory.swap_total else '0 GB' }}</td></tr>
-            <tr><td style="color:var(--dim)">OOM Kills</td><td><span id="spec-oom-count" class="badge badge-{{ 'danger' if (oom_kill_count or 0) > 0 else 'success' }} mono" style="font-size:8.5px">{{ oom_kill_count or 0 }} {{ 'Kejadian' if (oom_kill_count or 0) > 0 else '(Nihil)' }}</span></td></tr>
-            <tr><td style="color:var(--dim)">Alokasi</td><td><span class="badge badge-muted" style="font-size:8.5px">Dinamis (Kernel)</span></td></tr>
+            <tr><td>Total RAM</td><td><strong id="spec-ram-total">{{ ((hardware_specs.memory.ram_total / (1024**3))|round(2)) ~ ' GB' if hardware_specs and hardware_specs.memory and hardware_specs.memory.ram_total else '0 GB' }}</strong></td></tr>
+            <tr><td>Total Swap</td><td class="mono" id="spec-swap-total">{{ ((hardware_specs.memory.swap_total / (1024**3))|round(2)) ~ ' GB' if hardware_specs and hardware_specs.memory and hardware_specs.memory.swap_total else '0 GB' }}</td></tr>
+            <tr><td>OOM Kills</td><td><span id="spec-oom-count" class="badge badge-{{ 'danger' if (oom_kill_count or 0) > 0 else 'success' }} mono" style="font-size:8.5px">{{ oom_kill_count or 0 }} {{ 'Kejadian' if (oom_kill_count or 0) > 0 else '(Nihil)' }}</span></td></tr>
+            <tr><td>Alokasi</td><td><span class="badge badge-muted" style="font-size:8.5px">Dinamis (Kernel)</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -1644,12 +1644,12 @@ div[style*="position: fixed"] .card {
             <strong style="font-size:13px">Platform &amp; Mesin</strong>
           </div>
         </div>
-        <table class="table-compact" style="width:100%;font-size:10px">
+        <table class="pantau-table-kv">
           <tbody>
-            <tr><td style="color:var(--dim);width:40%">Platform / Tipe</td><td><strong id="spec-virt-type">{{ platform_info.label if platform_info else (hardware_specs.platform.virt if hardware_specs and hardware_specs.platform and hardware_specs.platform.virt else 'Bare Metal / Physical') }}</strong></td></tr>
-            <tr><td style="color:var(--dim)">Vendor</td><td class="mono" id="spec-board-vendor">{{ hardware_specs.platform.vendor if hardware_specs and hardware_specs.platform and hardware_specs.platform.vendor else '—' }}</td></tr>
-            <tr><td style="color:var(--dim)">Model</td><td class="mono" id="spec-board-product">{{ hardware_specs.platform.product if hardware_specs and hardware_specs.platform and hardware_specs.platform.product else '—' }}</td></tr>
-            <tr><td style="color:var(--dim)">BIOS</td><td class="mono" id="spec-bios-ver" style="font-size:9.5px">{{ hardware_specs.platform.bios_version if hardware_specs and hardware_specs.platform and hardware_specs.platform.bios_version else '—' }}</td></tr>
+            <tr><td>Platform / Tipe</td><td><strong id="spec-virt-type">{{ platform_info.label if platform_info else (hardware_specs.platform.virt if hardware_specs and hardware_specs.platform and hardware_specs.platform.virt else 'Bare Metal / Physical') }}</strong></td></tr>
+            <tr><td>Vendor</td><td class="mono" id="spec-board-vendor">{{ hardware_specs.platform.vendor if hardware_specs and hardware_specs.platform and hardware_specs.platform.vendor else '—' }}</td></tr>
+            <tr><td>Model</td><td class="mono" id="spec-board-product">{{ hardware_specs.platform.product if hardware_specs and hardware_specs.platform and hardware_specs.platform.product else '—' }}</td></tr>
+            <tr><td>BIOS</td><td class="mono" id="spec-bios-ver" style="font-size:9.5px">{{ hardware_specs.platform.bios_version if hardware_specs and hardware_specs.platform and hardware_specs.platform.bios_version else '—' }}</td></tr>
           </tbody>
         </table>
       </div>
@@ -1662,12 +1662,12 @@ div[style*="position: fixed"] .card {
             <strong style="font-size:13px">Sistem Operasi</strong>
           </div>
         </div>
-        <table class="table-compact" style="width:100%;font-size:10px">
+        <table class="pantau-table-kv">
           <tbody>
-            <tr><td style="color:var(--dim);width:40%">Distro</td><td><strong id="spec-os-name">{{ hardware_specs.os.os_name if hardware_specs and hardware_specs.os and hardware_specs.os.os_name else (os_label or 'Linux') }}</strong></td></tr>
-            <tr><td style="color:var(--dim)">Kernel</td><td class="mono" id="spec-kernel-ver">{{ hardware_specs.os.kernel if hardware_specs and hardware_specs.os and hardware_specs.os.kernel else (kernel or '—') }}</td></tr>
-            <tr><td style="color:var(--dim)">Hostname</td><td class="mono" id="spec-hostname">{{ hardware_specs.os.hostname if hardware_specs and hardware_specs.os and hardware_specs.os.hostname else server.hostname }}</td></tr>
-            <tr><td style="color:var(--dim)">Boot Time</td><td class="mono" id="spec-boot-time" style="font-size:9.5px">{{ hardware_specs.os.boot_time if hardware_specs and hardware_specs.os and hardware_specs.os.boot_time else '—' }}</td></tr>
+            <tr><td>Distro</td><td><strong id="spec-os-name">{{ hardware_specs.os.os_name if hardware_specs and hardware_specs.os and hardware_specs.os.os_name else (os_label or 'Linux') }}</strong></td></tr>
+            <tr><td>Kernel</td><td class="mono" id="spec-kernel-ver">{{ hardware_specs.os.kernel if hardware_specs and hardware_specs.os and hardware_specs.os.kernel else (kernel or '—') }}</td></tr>
+            <tr><td>Hostname</td><td class="mono" id="spec-hostname">{{ hardware_specs.os.hostname if hardware_specs and hardware_specs.os and hardware_specs.os.hostname else server.hostname }}</td></tr>
+            <tr><td>Boot Time</td><td class="mono" id="spec-boot-time" style="font-size:9.5px">{{ hardware_specs.os.boot_time if hardware_specs and hardware_specs.os and hardware_specs.os.boot_time else '—' }}</td></tr>
           </tbody>
         </table>
       </div>
@@ -1765,7 +1765,7 @@ div[style*="position: fixed"] .card {
             <th>Mount</th>
             <th>Tipe</th>
             <th>Terpakai</th>
-            <th style="width:28%" title="Persentase pemakaian ruang dan proyeksi kapasitas penyimpanan (Runway 24j)">Pemakaian &amp; Estimasi Laju</th>
+            <th class="col-disk-pct" title="Persentase pemakaian ruang dan proyeksi kapasitas penyimpanan (Runway 24j)">Pemakaian &amp; Estimasi Laju</th>
             <th title="Kecepatan baca dan tulis disk saat ini">Laju I/O (R / W)</th>
             <th title="Persentase utilisasi waktu aktif disk (I/O util)">Util I/O</th>
           </tr>
@@ -1923,14 +1923,14 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
   <div class="pantau-table-wrap">
-  <table id="probtable" class="pantau-table" style="width:100%">
+  <table id="probtable" class="pantau-table">
     <thead><tr>
-      <th class="col-time-detailed" style="width:135px;min-width:125px">Waktu</th>
-      <th class="col-sev" style="width:92px;min-width:86px;text-align:left">Keparahan</th>
-      <th class="col-event" style="min-width:240px;max-width:500px">Kejadian</th>
-      <th class="col-durasi" style="width:85px;min-width:78px;text-align:left">Durasi</th>
-      <th class="col-act" style="width:125px;min-width:120px;text-align:left">Tindakan</th>
-      <th class="col-tips" style="min-width:220px">Saran</th>
+      <th class="col-time-detailed">Waktu</th>
+      <th class="col-sev">Keparahan</th>
+      <th class="col-event">Kejadian</th>
+      <th class="col-durasi">Durasi</th>
+      <th class="col-act">Tindakan</th>
+      <th class="col-tips">Saran</th>
     </tr></thead>
     <tbody>
     {% for p in rows %}
@@ -2102,12 +2102,12 @@ div[style*="position: fixed"] .card {
     <table id="tbl-action-history" class="pantau-table">
       <thead>
         <tr>
-          <th class="col-time-detailed" style="white-space:nowrap;width:135px;min-width:125px">Waktu</th>
-          <th style="width:100px">Pengguna</th>
-          <th style="width:160px">Tindakan</th>
-          <th>Sasaran</th>
-          <th style="width:110px">Status</th>
-          <th>Keterangan / Hasil</th>
+          <th class="col-his-time">Waktu</th>
+          <th class="col-his-user">Pengguna</th>
+          <th class="col-his-act">Tindakan</th>
+          <th class="col-his-tgt">Sasaran</th>
+          <th class="col-his-st">Status</th>
+          <th class="col-his-res">Keterangan / Hasil</th>
         </tr>
       </thead>
       <tbody id="action-history-tbody">
@@ -2407,7 +2407,7 @@ div[style*="position: fixed"] .card {
 
   <!-- Tabel Unit Systemd -->
   <div class="pantau-table-wrap" id="sysd-table-wrap">
-    <table class="pantau-table" id="tbl-systemd" style="width:100%;margin:0">
+    <table class="pantau-table" id="tbl-systemd">
       <thead>
         <tr>
           <th class="col-sysd-status" onclick="toggleSysdSort('status')" title="Klik untuk mengurutkan Status">
@@ -2545,26 +2545,26 @@ div[style*="position: fixed"] .card {
 
     <!-- Tabel Daftar Packages -->
     <div class="pantau-table-wrap" id="pkg-table-wrap">
-      <table class="pantau-table" id="tbl-packages" style="width:100%;margin:0">
+      <table class="pantau-table" id="tbl-packages">
         <thead>
           <tr>
-            <th data-col-title="Status" style="width:125px;text-align:left;cursor:pointer" onclick="togglePkgSort('status')" title="Klik untuk mengurutkan Status">
+            <th class="col-pkg-st" data-col-title="Status" onclick="togglePkgSort('status')" title="Klik untuk mengurutkan Status">
               Status <span id="pkg-sort-status"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
             </th>
-            <th data-col-title="Nama Paket" style="min-width:180px;cursor:pointer" onclick="togglePkgSort('name')" title="Klik untuk mengurutkan Nama Paket">
+            <th class="col-pkg-name" data-col-title="Nama Paket" onclick="togglePkgSort('name')" title="Klik untuk mengurutkan Nama Paket">
               Nama Paket <span id="pkg-sort-name"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
             </th>
-            <th data-col-title="Tipe" style="width:105px;text-align:left;cursor:pointer" onclick="togglePkgSort('is_user')" title="Klik untuk mengurutkan Tipe Paket (Pengguna/Sistem)">
+            <th class="col-pkg-type" data-col-title="Tipe" onclick="togglePkgSort('is_user')" title="Klik untuk mengurutkan Tipe Paket (Pengguna/Sistem)">
               Tipe <span id="pkg-sort-is_user"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
             </th>
-            <th data-col-title="Versi" style="width:170px;cursor:pointer" onclick="togglePkgSort('version')" title="Klik untuk mengurutkan Versi">
+            <th class="col-pkg-ver" data-col-title="Versi" onclick="togglePkgSort('version')" title="Klik untuk mengurutkan Versi">
               Versi <span id="pkg-sort-version"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
             </th>
-            <th data-col-title="Ukuran" style="width:105px;text-align:left;cursor:pointer" onclick="togglePkgSort('size_kb')" title="Klik untuk mengurutkan Ukuran">
+            <th class="col-pkg-size" data-col-title="Ukuran" onclick="togglePkgSort('size_kb')" title="Klik untuk mengurutkan Ukuran">
               Ukuran <span id="pkg-sort-size_kb"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
             </th>
-            <th data-col-title="Deskripsi" style="min-width:240px" title="Deskripsi singkat fungsi paket">Deskripsi</th>
-            <th class="col-act" data-col-title="Tindakan" style="width:95px;min-width:85px;white-space:nowrap;text-align:left" title="Tindakan kontrol paket: Bersihkan cache, Lihat log, Upgrade paket">Tindakan</th>
+            <th class="col-pkg-desc" data-col-title="Deskripsi" title="Deskripsi singkat fungsi paket">Deskripsi</th>
+            <th class="col-pkg-act col-act" data-col-title="Tindakan" title="Tindakan kontrol paket: Bersihkan cache, Lihat log, Upgrade paket">Tindakan</th>
           </tr>
         </thead>
         <tbody id="pkg-tbody">
@@ -2635,26 +2635,26 @@ div[style*="position: fixed"] .card {
     <table id="tbl-task-manager" class="pantau-table">
       <thead>
         <tr>
-          <th style="width:80px;cursor:pointer" onclick="toggleProcSort('pid')" title="Klik untuk mengurutkan PID">
+          <th class="col-proc-pid" onclick="toggleProcSort('pid')" title="Klik untuk mengurutkan PID">
             PID <span id="sort-icon-pid"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
           </th>
-          <th style="width:110px;cursor:pointer" onclick="toggleProcSort('user')" title="Klik untuk mengurutkan Pengguna">
+          <th class="col-proc-user" onclick="toggleProcSort('user')" title="Klik untuk mengurutkan Pengguna">
             Pengguna <span id="sort-icon-user"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
           </th>
-          <th style="cursor:pointer" onclick="toggleProcSort('comm')" title="Klik untuk mengurutkan Nama Perintah">
+          <th class="col-proc-comm" onclick="toggleProcSort('comm')" title="Klik untuk mengurutkan Nama Perintah">
             Nama Perintah / Proses <span id="sort-icon-comm"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
           </th>
-          <th style="width:100px;text-align:left;cursor:pointer" onclick="toggleProcSort('state')" title="Klik untuk mengurutkan Status">
+          <th class="col-proc-st" onclick="toggleProcSort('state')" title="Klik untuk mengurutkan Status">
             Status <span id="sort-icon-state"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
           </th>
-          <th style="width:95px;min-width:90px;text-align:left;cursor:pointer" onclick="toggleProcSort('cpu')" title="Klik untuk mengurutkan penggunaan CPU">
+          <th class="col-proc-cpu" onclick="toggleProcSort('cpu')" title="Klik untuk mengurutkan penggunaan CPU">
             %CPU <span id="sort-icon-cpu"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);vertical-align:middle;margin-left:3px"><path d="m6 9 6 6 6-6"/></svg></span>
           </th>
-          <th style="width:95px;min-width:90px;text-align:left;cursor:pointer" onclick="toggleProcSort('mem')" title="Klik untuk mengurutkan penggunaan Memori">
+          <th class="col-proc-mem" onclick="toggleProcSort('mem')" title="Klik untuk mengurutkan penggunaan Memori">
             %Memori <span id="sort-icon-mem"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
           </th>
           {% if user.has_perm('can_processes') %}
-          <th class="col-act" style="width:170px;text-align:left">Tindakan</th>
+          <th class="col-proc-act col-act">Tindakan</th>
           {% endif %}
         </tr>
       </thead>
@@ -2688,12 +2688,12 @@ div[style*="position: fixed"] .card {
       <table id="cron-table" class="pantau-table">
         <thead>
           <tr>
-            <th style="width:32px">Status</th>
-            <th title="Jadwal waktu eksekusi dalam format cron (menit jam tgl bln hari)">Jadwal (Cron Expression)</th>
-            <th title="Pengguna Linux yang menjalankan perintah">Pengguna</th>
-            <th title="Perintah atau skrip yang dieksekusi">Perintah (Command)</th>
+            <th class="col-cron-st">Status</th>
+            <th class="col-cron-sched" title="Jadwal waktu eksekusi dalam format cron (menit jam tgl bln hari)">Jadwal (Cron Expression)</th>
+            <th class="col-cron-user" title="Pengguna Linux yang menjalankan perintah">Pengguna</th>
+            <th class="col-cron-cmd" title="Perintah atau skrip yang dieksekusi">Perintah (Command)</th>
             <th title="Lokasi berkas konfigurasi cron pada server">Sumber Berkas</th>
-            <th class="col-act" style="width:120px;text-align:left">Tindakan</th>
+            <th class="col-cron-act col-act">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -2843,7 +2843,7 @@ div[style*="position: fixed"] .card {
       <table id="fw-rules-table" class="pantau-table">
         <thead>
           <tr>
-            <th style="width:40px">#</th>
+            <th class="col-fw-num">#</th>
             <th>Aturan / Deskripsi Akses Port</th>
           </tr>
         </thead>
@@ -2889,7 +2889,7 @@ div[style*="position: fixed"] .card {
             <th>Packet Terblokir</th>
             <th>Total Byte</th>
             {% if user.has_perm('can_firewall') %}
-            <th class="col-act" style="width:120px;text-align:left">Tindakan</th>
+            <th class="col-fwb-act col-act">Tindakan</th>
             {% endif %}
           </tr>
         </thead>
@@ -2968,16 +2968,16 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
     <div id="acc-empty" class="empty-msg" style="{{ 'display:none' if accounts else 'display:block' }}">Belum ada data pengguna dari server ini.</div>
-    <div class="pantau-table-wrap" id="acc-table-wrap">
-      <table id="acc-table" class="pantau-table" style="min-width:850px;{{ 'display:table;width:100%' if accounts else 'display:none;width:100%' }}">
+    <div class="pantau-table-wrap" id="acc-table-wrap" style="{{ 'display:block' if accounts else 'display:none' }}">
+      <table id="acc-table" class="pantau-table">
         <thead>
           <tr>
-            <th style="min-width:140px">Pengguna</th>
-            <th style="width:90px;min-width:80px">UID / GID</th>
-            <th style="min-width:160px">Grup Utama &amp; Sekunder</th>
-            <th style="min-width:160px">Direktori Home &amp; Shell</th>
-            <th style="min-width:140px">Login Terakhir &amp; Sesi</th>
-            <th class="col-act" style="width:130px;min-width:120px;text-align:left">Tindakan</th>
+            <th class="col-acc-user">Pengguna</th>
+            <th class="col-acc-id">UID / GID</th>
+            <th class="col-acc-grp">Grup Utama &amp; Sekunder</th>
+            <th class="col-acc-home">Direktori Home &amp; Shell</th>
+            <th class="col-acc-login">Login Terakhir &amp; Sesi</th>
+            <th class="col-acc-act col-act">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -3086,15 +3086,15 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
     <div id="groups-empty" class="empty-msg" style="{{ 'display:none' if system_groups else 'display:block' }}">Belum ada data grup dari server ini.</div>
-    <div class="pantau-table-wrap" id="groups-table-wrap">
-      <table id="groups-table" class="pantau-table" style="min-width:760px;{{ 'display:table;width:100%' if system_groups else 'display:none;width:100%' }}">
+    <div class="pantau-table-wrap" id="groups-table-wrap" style="{{ 'display:block' if system_groups else 'display:none' }}">
+      <table id="groups-table" class="pantau-table">
         <thead>
           <tr>
-            <th style="min-width:140px">Nama Grup</th>
-            <th style="width:80px;min-width:75px">GID</th>
-            <th style="width:120px;min-width:100px">Tipe</th>
-            <th style="min-width:240px">Anggota (Members)</th>
-            <th style="width:90px;min-width:85px;text-align:left">Jumlah</th>
+            <th class="col-grp-name">Nama Grup</th>
+            <th class="col-grp-gid">GID</th>
+            <th class="col-grp-type">Tipe</th>
+            <th class="col-grp-members">Anggota (Members)</th>
+            <th class="col-grp-count">Jumlah</th>
           </tr>
         </thead>
         <tbody>
@@ -3158,15 +3158,15 @@ div[style*="position: fixed"] .card {
       <span class="badge badge-muted" id="acc-action-badge">{{ acc_acts|length }} tindakan</span>
     </div>
     <div class="pantau-table-wrap">
-      <table class="pantau-table" id="acc-action-table" style="margin:0;width:100%">
+      <table class="pantau-table" id="acc-action-table">
         <thead>
           <tr>
-            <th class="col-time-detailed" style="white-space:nowrap;width:195px;min-width:185px">Waktu</th>
-            <th>Pengguna (Admin)</th>
-            <th>Tindakan</th>
-            <th>Target Akun</th>
-            <th>Status</th>
-            <th>Keterangan / Hasil</th>
+            <th class="col-aact-time">Waktu</th>
+            <th class="col-aact-user">Pengguna (Admin)</th>
+            <th class="col-aact-act">Tindakan</th>
+            <th class="col-aact-tgt">Target Akun</th>
+            <th class="col-aact-st">Status</th>
+            <th class="col-aact-res">Keterangan / Hasil</th>
           </tr>
         </thead>
         <tbody id="acc-action-tbody">
@@ -3331,13 +3331,13 @@ div[style*="position: fixed"] .card {
       <table id="ssl-table" class="pantau-table">
         <thead>
           <tr>
-            <th title="Domain atau Subdomain yang dilindungi oleh sertifikat">Domain / Subjek</th>
-            <th title="Otoritas penerbit sertifikat (Certificate Authority)">Penerbit (CA)</th>
-            <th title="Batas waktu akhir masa berlaku sertifikat">Kedaluwarsa Pada</th>
-            <th title="Sisa hari sebelum sertifikat habis masa berlakunya">Sisa Hari</th>
+            <th class="col-ssl-dom" title="Domain atau Subdomain yang dilindungi oleh sertifikat">Domain / Subjek</th>
+            <th class="col-ssl-iss" title="Otoritas penerbit sertifikat (Certificate Authority)">Penerbit (CA)</th>
+            <th class="col-ssl-exp" title="Batas waktu akhir masa berlaku sertifikat">Kedaluwarsa Pada</th>
+            <th class="col-ssl-rem" title="Sisa hari sebelum sertifikat habis masa berlakunya">Sisa Hari</th>
             <th title="Status kesehatan sertifikat">Status</th>
-            <th title="Lokasi berkas sertifikat di filesystem server">Lokasi Berkas</th>
-            <th class="col-act" style="width:105px;text-align:left">Tindakan</th>
+            <th class="col-ssl-file" title="Lokasi berkas sertifikat di filesystem server">Lokasi Berkas</th>
+            <th class="col-ssl-act col-act">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -3453,10 +3453,10 @@ div[style*="position: fixed"] .card {
       <table id="tbl-system-logs" class="pantau-table">
         <thead>
           <tr>
-            <th style="width:190px" title="Waktu kejadian tercatat di sistem">Waktu (Terbaru di Atas)</th>
-            <th style="width:125px" title="Tingkat keparahan event journald">Prioritas</th>
-            <th style="width:200px" title="Unit layanan atau proses penghasil log">Unit / Identitas</th>
-            <th title="Pesan rincian galat">Pesan Galat</th>
+            <th class="col-slog-time" title="Waktu kejadian tercatat di sistem">Waktu (Terbaru di Atas)</th>
+            <th class="col-slog-pri" title="Tingkat keparahan event journald">Prioritas</th>
+            <th class="col-slog-unit" title="Unit layanan atau proses penghasil log">Unit / Identitas</th>
+            <th class="col-slog-msg" title="Pesan rincian galat">Pesan Galat</th>
           </tr>
         </thead>
         <tbody>
@@ -8311,14 +8311,14 @@ function renderProblemsTab(level, openList, histList) {
     </div>
   </div>
   <div class="pantau-table-wrap">
-  <table id="probtable" class="pantau-table" style="width:100%">
+  <table id="probtable" class="pantau-table">
     <thead><tr>
-      <th class="col-time-detailed" style="width:135px;min-width:125px">${isEn ? 'Time' : 'Waktu'}</th>
-      <th class="col-sev" style="width:92px;min-width:86px;text-align:left">${isEn ? 'Severity' : 'Keparahan'}</th>
-      <th class="col-event" style="min-width:240px;max-width:500px">${isEn ? 'Event' : 'Kejadian'}</th>
-      <th class="col-durasi" style="width:85px;min-width:78px;text-align:left">${isEn ? 'Duration' : 'Durasi'}</th>
-      <th class="col-act" style="width:125px;min-width:120px;text-align:left">${isEn ? 'Action' : 'Tindakan'}</th>
-      <th class="col-tips" style="min-width:220px">${isEn ? 'Advice' : 'Saran'}</th>
+      <th class="col-time-detailed">${isEn ? 'Time' : 'Waktu'}</th>
+      <th class="col-sev">${isEn ? 'Severity' : 'Keparahan'}</th>
+      <th class="col-event">${isEn ? 'Event' : 'Kejadian'}</th>
+      <th class="col-durasi">${isEn ? 'Duration' : 'Durasi'}</th>
+      <th class="col-act">${isEn ? 'Action' : 'Tindakan'}</th>
+      <th class="col-tips">${isEn ? 'Advice' : 'Saran'}</th>
     </tr></thead>
     <tbody>`;
 

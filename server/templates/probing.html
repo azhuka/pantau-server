@@ -831,17 +831,17 @@
         Log Riwayat Pemeriksaan Terkini
       </div>
       <div style="max-height:220px;overflow-y:auto;border:1px solid var(--border-subtle);border-radius:var(--radius-sm)">
-        <table class="probe-table" style="font-size:11px">
+        <table class="pantau-table probe-history-table">
           <thead>
             <tr>
-              <th style="width:130px">Waktu</th>
-              <th style="width:75px;text-align:left">Status</th>
-              <th style="width:90px">Latensi</th>
-              <th>Respons / Keterangan</th>
+              <th class="col-ph-time">Waktu</th>
+              <th class="col-ph-status">Status</th>
+              <th class="col-ph-latency">Latensi</th>
+              <th class="col-ph-desc">Respons / Keterangan</th>
             </tr>
           </thead>
           <tbody id="histLogsTbody">
-            <tr><td colspan="4" style="text-align:center;padding:16px;color:var(--dim)">Memuat log…</td></tr>
+            <tr class="pantau-empty-tr"><td colspan="4" class="pantau-empty-td empty-msg">Memuat log…</td></tr>
           </tbody>
         </table>
       </div>
@@ -1538,7 +1538,7 @@ function renderHistoryLogsTable(logs) {
   if (!tbody) return;
 
   if (logs.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--dim)">Belum ada catatan log pemeriksaan</td></tr>`;
+    tbody.innerHTML = `<tr class="pantau-empty-tr"><td colspan="4" class="pantau-empty-td empty-msg">Belum ada catatan log pemeriksaan</td></tr>`;
     return;
   }
 
@@ -1551,10 +1551,10 @@ function renderHistoryLogsTable(logs) {
 
     html += `
       <tr>
-        <td style="font-family:ui-monospace,monospace;color:var(--dim)">${timeStr}</td>
-        <td style="text-align:left"><span class="status-pill ${pillCol}" style="font-size:8.5px;padding:1px 5px">${l.status.toUpperCase()}</span></td>
-        <td style="font-family:ui-monospace,monospace">${latStr}</td>
-        <td style="color:${l.status === 'down' ? 'var(--red)' : 'var(--text)'};max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(detailStr)}</td>
+        <td class="col-ph-time mono">${timeStr}</td>
+        <td class="col-ph-status"><span class="status-pill ${pillCol}" style="font-size:8.5px;padding:1px 5px">${l.status.toUpperCase()}</span></td>
+        <td class="col-ph-latency mono">${latStr}</td>
+        <td class="col-ph-desc" style="color:${l.status === 'down' ? 'var(--red)' : 'var(--text)'}">${escapeHtml(detailStr)}</td>
       </tr>
     `;
   });

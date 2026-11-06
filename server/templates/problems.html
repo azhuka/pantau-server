@@ -413,7 +413,7 @@
   
   <div class="pantau-table-wrap" id="prob-table-wrapper">
     {% if open_problems %}
-    <table id="probtable" class="pantau-table" style="width:100%;table-layout:fixed">
+    <table id="probtable" class="pantau-table">
       <colgroup>
         <col style="width:128px">
         <col style="width:150px">
@@ -424,14 +424,14 @@
         <col style="width:100px">
       </colgroup>
       <thead>
-        <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
-          <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Waktu saat insiden mulai terdeteksi">WAKTU MULAI</th>
-          <th class="col-server" data-col-title="Server" style="padding:5px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Mesin server tempat anomali atau gangguan terjadi">SERVER</th>
-          <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">KEPARAHAN</th>
-          <th class="col-event" data-col-title="Kejadian" style="padding:5px 14px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="Deskripsi ringkas mengenai anomali yang terjadi">KEJADIAN</th>
-          <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Lama waktu insiden berlangsung hingga sekarang">DURASI</th>
-          <th class="col-tips" data-col-title="Panduan Solusi" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">PANDUAN SOLUSI</th>
-          <th class="col-act" data-col-title="Tindakan" style="padding:5px 6px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Tindakan penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">TINDAKAN</th>
+        <tr>
+          <th class="col-time" data-col-title="Waktu Mulai" title="Waktu saat insiden mulai terdeteksi">WAKTU MULAI</th>
+          <th class="col-server" data-col-title="Server" title="Mesin server tempat anomali atau gangguan terjadi">SERVER</th>
+          <th class="col-sev" data-col-title="Keparahan" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">KEPARAHAN</th>
+          <th class="col-event" data-col-title="Kejadian" title="Deskripsi ringkas mengenai anomali yang terjadi">KEJADIAN</th>
+          <th class="col-durasi" data-col-title="Durasi" title="Lama waktu insiden berlangsung hingga sekarang">DURASI</th>
+          <th class="col-tips" data-col-title="Panduan Solusi" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">PANDUAN SOLUSI</th>
+          <th class="col-act" data-col-title="Tindakan" title="Tindakan penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">TINDAKAN</th>
         </tr>
       </thead>
       <tbody>
@@ -671,17 +671,17 @@
 
   {% if recent_resolved %}
   <div class="pantau-table-wrap" id="prob-resolved-table-wrap">
-    <table class="pantau-table">
+    <table class="pantau-table" id="prob-resolved-table">
       <thead>
-        <tr style="border-bottom:1px solid var(--border)">
-          <th class="col-time-detailed" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:145px;min-width:140px" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
-          <th class="col-server" style="color:var(--dim);text-align:left;white-space:nowrap;padding:5px 8px;width:130px;min-width:115px;max-width:155px" title="Nama host dan grup server">Server</th>
-          <th class="col-sev" style="color:var(--dim);text-align:left;white-space:nowrap;padding:5px 8px;width:85px;min-width:80px;max-width:95px" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
-          <th class="col-component" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:110px;min-width:95px" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
-          <th class="col-desc" style="color:var(--dim);text-align:left;padding:7px 14px;min-width:280px" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
-          <th class="col-durasi" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:85px;min-width:80px" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
-          <th class="col-res" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:165px;min-width:155px" title="Catatan status penanganan atau pemulihan">Resolusi</th>
-          <th class="col-act" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:55px;min-width:50px" title="Tindakan ke rincian server">Tindakan</th>
+        <tr>
+          <th class="col-time-detailed" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
+          <th class="col-server" title="Nama host dan grup server">Server</th>
+          <th class="col-sev" title="Tingkat keparahan insiden saat terjadi">Keparahan</th>
+          <th class="col-component" title="Komponen yang terdampak (layanan, host/agen, processor, dll.)">Komponen</th>
+          <th class="col-desc" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
+          <th class="col-durasi" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
+          <th class="col-res" title="Catatan status penanganan atau pemulihan">Resolusi</th>
+          <th class="col-act" title="Tindakan ke rincian server">Tindakan</th>
         </tr>
       </thead>
       <tbody id="prob-resolved-tbody">
@@ -1418,7 +1418,7 @@ window.poll = async function(opts = {}) {
       } else {
         let table = document.getElementById('probtable');
         if (!table) {
-          wrapper.innerHTML = `<table id="probtable" class="pantau-table" style="width:100%;table-layout:fixed">
+          wrapper.innerHTML = `<table id="probtable" class="pantau-table">
             <colgroup>
               <col style="width:128px">
               <col style="width:150px">
@@ -1429,14 +1429,14 @@ window.poll = async function(opts = {}) {
               <col style="width:100px">
             </colgroup>
             <thead>
-              <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
-                <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden mulai terdeteksi'}">${isEn ? 'START TIME' : 'WAKTU MULAI'}</th>
-                <th class="col-server" data-col-title="Server" style="padding:5px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">SERVER</th>
-                <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'SEVERITY' : 'KEPARAHAN'}</th>
-                <th class="col-event" data-col-title="Kejadian" style="padding:5px 14px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'EVENT' : 'KEJADIAN'}</th>
-                <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'DURATION' : 'DURASI'}</th>
-                <th class="col-tips" data-col-title="Panduan Solusi" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'SOLUTION GUIDE' : 'PANDUAN SOLUSI'}</th>
-                <th class="col-act" data-col-title="Tindakan" style="padding:5px 6px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Insiden'}">${isEn ? 'ACTIONS' : 'TINDAKAN'}</th>
+              <tr>
+                <th class="col-time" data-col-title="Waktu Mulai" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden mulai terdeteksi'}">${isEn ? 'START TIME' : 'WAKTU MULAI'}</th>
+                <th class="col-server" data-col-title="Server" title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">SERVER</th>
+                <th class="col-sev" data-col-title="Keparahan" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'SEVERITY' : 'KEPARAHAN'}</th>
+                <th class="col-event" data-col-title="Kejadian" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'EVENT' : 'KEJADIAN'}</th>
+                <th class="col-durasi" data-col-title="Durasi" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'DURATION' : 'DURASI'}</th>
+                <th class="col-tips" data-col-title="Panduan Solusi" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'SOLUTION GUIDE' : 'PANDUAN SOLUSI'}</th>
+                <th class="col-act" data-col-title="Tindakan" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Insiden'}">${isEn ? 'ACTIONS' : 'TINDAKAN'}</th>
               </tr>
             </thead>
             <tbody></tbody>

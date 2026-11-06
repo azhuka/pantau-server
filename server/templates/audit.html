@@ -131,38 +131,38 @@
   </form>
 
   <div class="pantau-table-wrap" id="audit-table-wrap">
-    <table class="pantau-table">
+    <table class="pantau-table" id="tbl-audit">
       <thead>
         <tr>
-          <th style="width:130px;min-width:115px" title="Waktu eksekusi atau pencatatan tindakan">Waktu</th>
-          <th style="width:95px;min-width:80px" title="Nama akun pengguna yang menjalankan tindakan">Pengguna</th>
-          <th style="width:110px;min-width:95px" title="Server yang dituju">Server</th>
-          <th style="width:110px;min-width:95px" title="Jenis operasi atau perintah yang dijalankan">Tindakan</th>
-          <th style="min-width:120px" title="Entitas sasaran spesifik (layanan, IP, akun, file, atau parameter)">Target</th>
-          <th style="width:85px;min-width:75px" class="th-center" title="Status hasil eksekusi perintah">Status</th>
-          <th style="min-width:160px" title="Pesan respons atau keluaran perintah">Hasil / Respons</th>
+          <th class="col-aud-time" title="Waktu eksekusi atau pencatatan tindakan">Waktu</th>
+          <th class="col-aud-user" title="Nama akun pengguna yang menjalankan tindakan">Pengguna</th>
+          <th class="col-aud-srv" title="Server yang dituju">Server</th>
+          <th class="col-aud-act" title="Jenis operasi atau perintah yang dijalankan">Tindakan</th>
+          <th class="col-aud-tgt" title="Entitas sasaran spesifik (layanan, IP, akun, file, atau parameter)">Target</th>
+          <th class="col-aud-st col-act" title="Status hasil eksekusi perintah">Status</th>
+          <th class="col-aud-res" title="Pesan respons atau keluaran perintah">Hasil / Respons</th>
         </tr>
       </thead>
       <tbody id="audit-tbody">
         {% for r in rows %}
         <tr>
-          <td class="mono" style="white-space:nowrap;letter-spacing:-0.025em" title="Waktu Eksekusi: {{ r.t.strftime('%d %b %Y %H:%M:%S') }}">{{ r.t.strftime('%d %b %H:%M:%S') }}</td>
-          <td style="white-space:nowrap"><span class="mono" style="color:var(--text-bright);font-weight:600">{{ r.user }}</span></td>
-          <td style="white-space:nowrap"><span class="audit-srv-cell" style="font-weight:600">{{ r.server or '-' }}</span></td>
-          <td style="white-space:nowrap">
+          <td class="col-aud-time mono" title="Waktu Eksekusi: {{ r.t.strftime('%d %b %Y %H:%M:%S') }}">{{ r.t.strftime('%d %b %H:%M:%S') }}</td>
+          <td class="col-aud-user"><span class="mono audit-user-name">{{ r.user }}</span></td>
+          <td class="col-aud-srv"><span class="audit-srv-cell">{{ r.server or '-' }}</span></td>
+          <td class="col-aud-act">
             {% if r.kind == 'cmd' %}
               <span class="badge badge-muted audit-act-cell" data-label="{{ r.label }}">{{ r.label }}</span>
             {% else %}
               <span class="audit-act-cell" data-label="{{ r.label }}">{{ r.label }}</span>
             {% endif %}
           </td>
-          <td class="audit-tgt-cell" data-raw="{{ r.target }}">{{ r.target }}</td>
-          <td class="col-act">
+          <td class="col-aud-tgt audit-tgt-cell" data-raw="{{ r.target }}">{{ r.target }}</td>
+          <td class="col-aud-st col-act">
             {% if r.status %}
               <span class="badge badge-{{ st_cls.get(r.status, 'inactive') }} audit-st-cell" data-st="{{ r.status }}">{{ st_label.get(r.status, r.status) }}</span>
-            {% else %}<span style="color:var(--dim)">—</span>{% endif %}
+            {% else %}<span class="text-dim">—</span>{% endif %}
           </td>
-          <td style="color:var(--dim)" class="audit-res-cell" data-raw="{{ r.result }}">{{ r.result }}</td>
+          <td class="col-aud-res audit-res-cell" data-raw="{{ r.result }}">{{ r.result }}</td>
         </tr>
         {% else %}
         <tr class="pantau-empty-tr"><td colspan="7" class="pantau-empty-td empty-msg" data-i18n="audit_empty">Belum ada riwayat tindakan pengguna.</td></tr>
