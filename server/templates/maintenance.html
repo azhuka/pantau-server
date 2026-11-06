@@ -361,7 +361,7 @@
           <th>POLA JADWAL</th>
           <th>WAKTU &amp; HITUNG MUNDUR</th>
           <th>PEMBUAT</th>
-          <th style="text-align:right">AKSI</th>
+          <th style="text-align:left">AKSI</th>
         </tr>
       </thead>
       <tbody id="maintenanceTbody">
@@ -880,7 +880,7 @@ function renderTable(list) {
         <td style="vertical-align:middle">${scheduleDesc}</td>
         <td style="vertical-align:middle">${timeCol}</td>
         <td style="vertical-align:middle;color:var(--dim);font-size:11px">${escapeHtml(w.created_by || 'SISTEM')}</td>
-        <td style="vertical-align:middle;text-align:right">${actionBtns}</td>
+        <td style="vertical-align:middle;text-align:left">${actionBtns}</td>
       </tr>
     `;
   });

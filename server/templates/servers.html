@@ -61,7 +61,7 @@
   background: var(--col-act-bg, var(--bg-card, var(--card)));
   box-shadow: -4px 0 8px rgba(0,0,0,0.45);
   z-index: 2;
-  text-align: center !important;
+  text-align: left !important;
   width: 76px !important;
   min-width: 76px !important;
   padding-right: 10px !important;
@@ -201,10 +201,10 @@
         <th class="sortable" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer;min-width:70px" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
         <th data-col-title="Penyimpanan" style="min-width:75px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan</th>
         <th class="sortable" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer;min-width:70px" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="Agen &amp; APT" style="min-width:65px;text-align:center" title="Versi agen pemantau dan ketersediaan pembaruan paket">Agen &amp; APT</th>
+        <th data-col-title="Agen &amp; APT" style="min-width:65px;text-align:left" title="Versi agen pemantau dan ketersediaan pembaruan paket">Agen &amp; APT</th>
         <th data-col-title="Tag" style="min-width:45px" title="Label kategori dan pengelompokan server">Tag</th>
-        <th data-col-title="Status &amp; Lapor" style="min-width:65px;text-align:center" title="Status konektivitas dan waktu laporan data terakhir">Status &amp; Lapor</th>
-        <th class="col-act" data-col-title="Tindakan" style="width:76px;min-width:76px;text-align:center" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
+        <th data-col-title="Status &amp; Lapor" style="min-width:65px;text-align:left" title="Status konektivitas dan waktu laporan data terakhir">Status &amp; Lapor</th>
+        <th class="col-act" data-col-title="Tindakan" style="width:76px;min-width:76px;text-align:left" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
       </tr>
     </thead>
     <tbody>
@@ -356,7 +356,7 @@
       </td>
 
       <!-- Col 8: Agen & APT -->
-      <td style="text-align:center">
+      <td style="text-align:left">
         <div>
           {% if srv._agent_version %}
             {% if srv._agent_outdated %}
@@ -399,7 +399,7 @@
       </td>
 
       <!-- Col 10: Status & Lapor -->
-      <td style="text-align:center">
+      <td style="text-align:left">
         <div>
           <span class="badge {{ srv._status_cls }}" id="srv-sts-{{ srv.id }}" style="font-size:8px;padding:0.5px 4.5px;font-weight:700;letter-spacing:0.25px">{{ srv._status_label }}</span>
           {% if srv.is_maintenance and srv.maintenance_reason %}
@@ -412,7 +412,7 @@
       </td>
 
       <!-- Col 11: Tindakan -->
-      <td class="col-act" style="text-align:center;white-space:nowrap">
+      <td class="col-act" style="text-align:left;white-space:nowrap">
         <div class="action-btn-group">
           <a href="/servers/{{ srv.id }}" class="btn-act" title="Buka Rincian Server" aria-label="Rincian">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
@@ -676,7 +676,7 @@ function createAndAppendServersRow(srv, tbody) {
       <div class="mono" style="font-weight:600;font-size:9.5px" id="srv-uptime-${srv.id}">${_srvEsc(srv.uptime_str || '—')}</div>
       <div class="mono" style="font-size:8px;color:var(--dim);white-space:nowrap" id="srv-boot-${srv.id}" title="Boot Time">${_srvEsc(srv.boot_time || '—')}</div>
     </td>
-    <td style="text-align:center">
+    <td style="text-align:left">
       <div>
         <span class="badge badge-agent-ver ${srv.agent_outdated ? 'is-outdated' : 'is-current'}" id="srv-agent-${srv.id}" title="${srv.agent_outdated ? 'Perlu pembaruan agen' : 'Versi agen mutakhir'}">
           v${_srvEsc(srv.agent_version || '—')}${srv.agent_outdated ? ' ↑' : ''}
@@ -689,7 +689,7 @@ function createAndAppendServersRow(srv, tbody) {
     <td>
       ${srv.tags ? `<div style="display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap">${srv.tags.split(',').filter(t => t.trim()).map(t => `<span class="badge" style="font-size:7.5px;padding:0.5px 3.5px;background:rgba(255,255,255,0.06);color:var(--dim)">${_srvEsc(t.trim())}</span>`).join('')}</div>` : `<span style="color:var(--dim-subtle);font-size:9px">—</span>`}
     </td>
-    <td style="text-align:center">
+    <td style="text-align:left">
       <div>
         <span id="srv-sts-${srv.id}" class="badge badge-muted" style="font-size:8px;padding:0.5px 4.5px;font-weight:700">-</span>
       </div>
@@ -697,7 +697,7 @@ function createAndAppendServersRow(srv, tbody) {
         ${relTime(srv.last_seen)}
       </div>
     </td>
-    <td class="col-act" style="text-align:center;white-space:nowrap">
+    <td class="col-act" style="text-align:left;white-space:nowrap">
       <div class="pantau-col-act">
         ${PantauUI.serverDetailBtn(srv.id)}
         ${CAN_MANAGE_SERVERS ? `

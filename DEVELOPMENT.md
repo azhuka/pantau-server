@@ -354,6 +354,27 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.141
+
+- **Tipe Rilis:** Standardisasi Mutlak Kolom Tabel Rata Kiri & Eliminasi Hardcode Alignment Antarmuka (*Universal Left-Align Table Contract & Frontend Hardcode Alignment Elimination*)
+- **Fokus Utama:** Menstandarkan seluruh kolom tabel di seluruh halaman web aplikasi Pantau Server agar 100% rata kiri secara seragam, mengeliminasi seluruh inkonsistensi penjajaran kolom (*center* dan *right*) yang sebelumnya ter-hardcode di berkas template dan perulangan renderer JavaScript dinamis:
+  1. **Kontrak Universal Kolom Tabel Rata Kiri (*Universal Left-Align Table Contract*):**
+     - Menegaskan aturan baku pada Bagian 12 `pantau-components.css` dan `base.html` bahwa seluruh kolom tabel tanpa kecuali—termasuk header kolom (`th`), sel data (`td`), kolom keparahan insiden (`.col-sev`), durasi (`.col-durasi`), dan tombol aksi (`.col-act`)—diatur rata kiri mutlak (`text-align: left !important`).
+     - Mengeliminasi aturan penjajaran tengah (`.th-center`, `text-align: center`) dan penjajaran kanan (`.th-right`, `text-align: right`) yang sebelumnya menyebabkan efek zig-zag yang tidak serasi pada kepadatan tinggi layar NOC.
+  2. **Eliminasi Menyeluruh Hardcode Inline Alignment pada Seluruh Berkas Template:**
+     - Membersihkan seluruh hardcoded style `text-align: center` dan `text-align: right` dari tabel statis maupun template literal JavaScript perender tabel dinamis di seluruh template aplikasi:
+       - `dashboard.html`: Kolom keparahan, durasi, dan tindakan pada modal detail server (`#sdm-table`), tabel ringkasan server (`#dash-servers-table`), dan tabel masalah dasbor (`#dash-problems-table`).
+       - `servers.html`: Kolom status koneksi, versi agen/APT, dan kelompok tombol aksi baris server.
+       - `problems.html`: Header dan sel kolom keparahan, durasi insiden, serta tombol aksi pada tabel insiden aktif dan tabel riwayat insiden teratasi.
+       - `services.html`: Kolom status, keparahan, durasi, memori, CPU, dan tindakan pada tabel Layanan Jaringan, Unit Systemd, Paket Software, Manajer Proses / Top Procs, Cron Jobs, Firewall Rules & Blocked IPs, Akun & Grup Pengguna, Port Listening, dan Sertifikat SSL.
+       - `probing.html`: Kolom status, durasi respons, dan tombol aksi pada modal log riwayat uji endpoint probing.
+       - `maintenance.html`: Kolom aksi pada tabel jadwal jendela pemeliharaan server.
+       - `file_manager.html`: Kolom checkbox dan kolom baris folder induk (`..`) pada penjelajah berkas.
+  3. **Penyelarasan Wadah Tombol Aksi (`.action-btn-group` & `.col-act`):**
+     - Mengubah perataan wadah fleksibel tombol aksi baris dari `justify-content: center` menjadi `justify-content: flex-start` secara konsisten, sehingga ikon tombol aksi selalu tertata rapi sejajar dari batas kiri kolom.
+  4. **Pengecualian Eksklusif Baris Pesan Kosong (*Empty State Row*):**
+     - Mempertahankan perataan tengah khusus hanya untuk baris tunggal pemberitahuan pesan kosong atau status pemuatan data yang merentang melintasi seluruh kolom (`colspan`), menjaga estetika keterbacaan pesan ketika tidak ada entri data yang tersedia.
+
 ## Versi 4.8.140
 
 - **Tipe Rilis:** Standardisasi Menyeluruh Sistem Tabel, Kontrol Bilah Aksi, dan Perbaikan Komponen Visual (*Comprehensive Table System Standardization, Action Toolbar Control & Visual Component Polish*)

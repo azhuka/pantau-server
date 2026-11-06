@@ -201,7 +201,7 @@
   max-width: 130px !important;
   white-space: nowrap !important;
   font-size: 10px !important;
-  text-align: right !important;
+  text-align: left !important;
   padding: 5px 10px !important;
 }
 #probtable th.col-act,
@@ -210,7 +210,7 @@
   min-width: 90px !important;
   max-width: 105px !important;
   white-space: nowrap !important;
-  text-align: center !important;
+  text-align: left !important;
   padding: 5px 6px !important;
 }
 #probtable th.col-tips,
@@ -443,9 +443,9 @@
           <th class="col-server" data-col-title="Server" style="padding:5px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Mesin server tempat anomali atau gangguan terjadi">SERVER</th>
           <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info">KEPARAHAN</th>
           <th class="col-event" data-col-title="Kejadian" style="padding:5px 14px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="Deskripsi ringkas mengenai anomali yang terjadi">KEJADIAN</th>
-          <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Lama waktu insiden berlangsung hingga sekarang">DURASI</th>
+          <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Lama waktu insiden berlangsung hingga sekarang">DURASI</th>
           <th class="col-tips" data-col-title="Panduan Solusi" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="Saran langkah penanganan praktis untuk menyelesaikan insiden">PANDUAN SOLUSI</th>
-          <th class="col-act" data-col-title="Tindakan" style="padding:5px 6px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Tindakan penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">TINDAKAN</th>
+          <th class="col-act" data-col-title="Tindakan" style="padding:5px 6px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Tindakan penanganan: Rincian, Tangani Insiden, atau Abaikan Insiden">TINDAKAN</th>
         </tr>
       </thead>
       <tbody>
@@ -515,7 +515,7 @@
           {% endif %}
           {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4px;font-weight:500;color:var(--dim)" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
         </td>
-        <td class="col-durasi" style="padding:5px 10px;white-space:nowrap;text-align:right" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">
+        <td class="col-durasi" style="padding:5px 10px;white-space:nowrap;text-align:left" data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z">
           <span class="mono" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">{{ p.durasi }}</span>
         </td>
         <td class="col-tips" style="padding:5px 12px;line-height:1.35">
@@ -525,7 +525,7 @@
             <span style="color:var(--dim);font-size:11px">—</span>
           {% endif %}
         </td>
-        <td class="prob-act-cell col-act" style="padding:5px 6px;text-align:center;white-space:nowrap">
+        <td class="prob-act-cell col-act" style="padding:5px 6px;text-align:left;white-space:nowrap">
           <div class="pantau-col-act">
             <a href="/servers/{{ p.server_id }}" class="pantau-btn-icon" title="Buka Rincian Server" aria-label="Rincian">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
@@ -695,7 +695,7 @@
           <th class="col-desc" style="color:var(--dim);text-align:left;padding:7px 14px;min-width:280px" title="Deskripsi anomali yang telah selesai">Deskripsi Insiden</th>
           <th class="col-durasi" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:85px;min-width:80px" title="Total durasi downtime hingga sistem pulih kembali">Durasi</th>
           <th class="col-res" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:165px;min-width:155px" title="Catatan status penanganan atau pemulihan">Resolusi</th>
-          <th class="col-act" style="color:var(--dim);text-align:center;white-space:nowrap;padding:7px 12px;width:55px;min-width:50px" title="Tindakan ke rincian server">Tindakan</th>
+          <th class="col-act" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px;width:55px;min-width:50px" title="Tindakan ke rincian server">Tindakan</th>
         </tr>
       </thead>
       <tbody id="prob-resolved-tbody">
@@ -754,7 +754,7 @@
         <td style="padding:4px 6px;white-space:nowrap" class="col-res">
           <span class="badge {{ p.res_badge_cls or 'badge-up' }}" style="font-size:10px;padding:1px 5px" title="{{ p.res_tip }}">{{ p.res_label }}</span>
         </td>
-        <td style="padding:4px 6px;white-space:nowrap;text-align:center;width:55px" class="col-act">
+        <td style="padding:4px 6px;white-space:nowrap;text-align:left;width:55px" class="col-act">
           <div class="pantau-col-act">
             <a href="/servers/{{ p.server_id }}" class="pantau-btn-icon" title="Buka Rincian Server" aria-label="Rincian">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
@@ -1448,9 +1448,9 @@ window.poll = async function(opts = {}) {
                 <th class="col-server" data-col-title="Server" style="padding:5px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Server machine where anomaly occurred' : 'Mesin server tempat anomali atau gangguan terjadi'}">SERVER</th>
                 <th class="col-sev" data-col-title="Keparahan" style="padding:4px 8px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Urgency level: Critical, High, Warning, or Info' : 'Tingkat keparahan: Kritis, Gawat, Peringatan, atau Info'}">${isEn ? 'SEVERITY' : 'KEPARAHAN'}</th>
                 <th class="col-event" data-col-title="Kejadian" style="padding:5px 14px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Brief description of the anomaly' : 'Deskripsi ringkas mengenai anomali yang terjadi'}">${isEn ? 'EVENT' : 'KEJADIAN'}</th>
-                <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'DURATION' : 'DURASI'}</th>
+                <th class="col-durasi" data-col-title="Durasi" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Duration of incident up to now' : 'Lama waktu insiden berlangsung hingga sekarang'}">${isEn ? 'DURATION' : 'DURASI'}</th>
                 <th class="col-tips" data-col-title="Panduan Solusi" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:left;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Practical solution guidance' : 'Saran langkah penanganan praktis untuk menyelesaikan insiden'}">${isEn ? 'SOLUTION GUIDE' : 'PANDUAN SOLUSI'}</th>
-                <th class="col-act" data-col-title="Tindakan" style="padding:5px 6px;font-size:10px;color:var(--dim);text-align:center;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Insiden'}">${isEn ? 'ACTIONS' : 'TINDAKAN'}</th>
+                <th class="col-act" data-col-title="Tindakan" style="padding:5px 6px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Action: Details, Mark Acknowledged, or Ignore' : 'Tindakan penanganan: Rincian, Tandai Ditangani, atau Abaikan Insiden'}">${isEn ? 'ACTIONS' : 'TINDAKAN'}</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -1557,13 +1557,13 @@ window.poll = async function(opts = {}) {
                 ${ignUntilBadge}
                 ${count24}
               </td>
-              <td class="col-durasi" style="padding:5px 10px;white-space:nowrap;text-align:right" data-start="${_esc(p.started_at_iso || '')}">
+              <td class="col-durasi" style="padding:5px 10px;white-space:nowrap;text-align:left" data-start="${_esc(p.started_at_iso || '')}">
                 <span class="mono" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">${_esc(p.durasi || '')}</span>
               </td>
               <td class="col-tips" style="padding:5px 12px;line-height:1.35">
                 ${pTip && pTip !== '—' ? `<div class="prob-tip-text" style="font-size:11px;color:var(--dim);line-height:1.35" title="${_esc(pTip)}">${_esc(pTip)}</div>` : '<span style="color:var(--dim);font-size:11px">—</span>'}
               </td>
-              <td class="prob-act-cell col-act" style="padding:5px 6px;text-align:center;white-space:nowrap">
+              <td class="prob-act-cell col-act" style="padding:5px 6px;text-align:left;white-space:nowrap">
                 <div class="pantau-col-act">
                   ${PantauUI.serverDetailBtn(p.server_id)}
                   ${(ignBtn || ackBtn) ? `<div class="prob-act-row prob-act-ops" style="display:inline-flex;align-items:center;gap:4px">${ackBtn}${ignBtn}</div>` : ''}
@@ -1657,7 +1657,7 @@ window.poll = async function(opts = {}) {
               <span style="font-size:11px;color:var(--dim);letter-spacing:-0.02em" title="${isEn ? 'Duration' : 'Durasi'}">${_esc(p.durasi || '—')}</span>
             </td>
             <td style="padding:4px 6px;white-space:nowrap" class="col-res">${resBadge}</td>
-            <td style="padding:4px 6px;white-space:nowrap;text-align:center" class="col-act">
+            <td style="padding:4px 6px;white-space:nowrap;text-align:left" class="col-act">
               <div class="pantau-col-act">
                 ${PantauUI.serverDetailBtn(p.server_id)}
               </div>
