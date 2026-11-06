@@ -1065,7 +1065,7 @@ _SECURITY_HEADERS = {
     "Referrer-Policy": "same-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
     "Content-Security-Policy": (
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; "
         "font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' ws: wss:; form-action 'self'; "
         "base-uri 'self'; frame-ancestors 'self'; object-src 'none'"
@@ -3755,7 +3755,7 @@ def _latest_metrics(db: Session, service_ids) -> dict[int, Metric]:
 # ---------------------------------------------------------------------------
 # LOGIN / LOGOUT
 # ---------------------------------------------------------------------------
-@app.get("/login", response_class=HTMLResponse)
+@app.get("/api/login-legacy", response_class=HTMLResponse)
 def login_page(request: Request):
     return tpl(request, "login.html", {"error": None})
 
@@ -3863,7 +3863,7 @@ def login_submit(
     if _lock_remaining(row) > 0:
         wait = int((row.lock_until - datetime.utcnow()).total_seconds())
         db.rollback()  # buang baris baru bila belum pernah ada
-        return tpl(request, "login.html", {"error": f"Terlalu banyak percobaan. Coba lagi dalam {wait} detik."})
+        return RedirectResponse(f"/login?error=Terlalu+banyak+percobaan.+Coba+lagi+dalam+{wait}+detik.", status_code=303)
 
     user = db.query(User).filter(User.username == username).first()
     if not user or not pwd_ctx.verify(password, user.password_hash):
@@ -3881,10 +3881,10 @@ def login_submit(
             row.fails = -(lock_count + 1)
             logger.warning("[AUTH] Login gagal terlalu banyak dari IP %s — kunci %d detik", request.client.host if request.client else "unknown", lock_secs)
         db.commit()
-        return tpl(request, "login.html", {"error": "Username atau password salah"})
+        return RedirectResponse("/login?error=Username+atau+password+salah", status_code=303)
 
     if not user.is_active:
-        return tpl(request, "login.html", {"error": "Akun Anda telah dinonaktifkan oleh Administrator."})
+        return RedirectResponse("/login?error=Akun+Anda+telah+dinonaktifkan+oleh+Administrator.", status_code=303)
 
     # Cek apakah akun mewajibkan verifikasi dua langkah (2FA / TOTP)
     if user.totp_enabled and user.totp_secret:
@@ -4003,8 +4003,7 @@ def logout(request: Request, db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 # DASHBOARD
 # ---------------------------------------------------------------------------
-@app.get("/", response_class=HTMLResponse)
-@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/api/dashboard-legacy", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
@@ -4321,7 +4320,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 # SERVERS
 # ---------------------------------------------------------------------------
-@app.get("/servers", response_class=HTMLResponse)
+@app.get("/api/servers-legacy", response_class=HTMLResponse)
 def servers_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
@@ -4790,7 +4789,7 @@ def api_reset_platform_auto(
 # ---------------------------------------------------------------------------
 # SERVER DETAILS (CANONICAL) & SERVICES ALIAS
 # ---------------------------------------------------------------------------
-@app.get("/servers/{sid}", response_class=HTMLResponse)
+@app.get("/api/servers-detail-legacy/{sid}", response_class=HTMLResponse)
 def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
@@ -6619,7 +6618,7 @@ def service_toggle_core(
 # ---------------------------------------------------------------------------
 # PROBLEMS (agregat semua server)
 # ---------------------------------------------------------------------------
-@app.get("/problems", response_class=HTMLResponse)
+@app.get("/api/problems-legacy", response_class=HTMLResponse)
 def problems_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
@@ -6734,8 +6733,7 @@ async def _run_initial_probe_background(probe_id: int, p_data: dict):
         logger.warning("[prober] Initial probe check failed: %s", exc)
 
 
-@app.get("/probing", response_class=HTMLResponse)
-@app.get("/probes", response_class=HTMLResponse)
+@app.get("/api/probing-legacy", response_class=HTMLResponse)
 def probing_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
@@ -7432,7 +7430,7 @@ def _parse_iso_datetime(dt_str: Optional[str]) -> Optional[datetime]:
             return None
 
 
-@app.get("/maintenance", response_class=HTMLResponse)
+@app.get("/api/maintenance-legacy", response_class=HTMLResponse)
 def maintenance_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
@@ -11176,7 +11174,7 @@ def _audit_rows(
     return rows[:limit]
 
 
-@app.get("/audit", response_class=HTMLResponse)
+@app.get("/api/audit-legacy", response_class=HTMLResponse)
 def audit_page(
     request: Request, db: Session = Depends(get_db),
     q: str = "", action: str = "", user: str = "", period: str = "",
@@ -14558,7 +14556,7 @@ async def profile_update_branding(
 # ---------------------------------------------------------------------------
 # USERS (RBAC 3-TIER: MASTER ADMIN, OPERATOR, VIEWER)
 # ---------------------------------------------------------------------------
-@app.get("/users")
+@app.get("/api/users-legacy")
 def users_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     if not user:
@@ -15093,3 +15091,12 @@ def _retention_loop() -> None:
                 _retention_prune(sess)
         except Exception as exc:  # noqa: BLE001 -- jangan matikan thread
             logger.error("[retention] error: %s", exc)
+
+
+# ---------------------------------------------------------------------------
+# NICEGUI PURE PYTHON NOC INTERFACE (Jalan 1)
+# ---------------------------------------------------------------------------
+from ui_nicegui import setup_nicegui
+
+setup_nicegui(app, SessionLocal)
+

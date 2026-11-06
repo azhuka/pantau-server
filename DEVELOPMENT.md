@@ -354,6 +354,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.150
+
+- **Tipe Rilis:** Implementasi Antarmuka Baru NOC Mandiri Berbasis NiceGUI (Python Murni + Quasar UI) pada Port Utama 8400 (*Pure Python NiceGUI NOC Frontend Architecture directly on Port 8400*)
+- **Fokus Utama:** Mewujudkan arsitektur antarmuka baru berbasis **NiceGUI (Jalan 1)** sesuai instruksi, menggantikan total sistem template Jinja dan CSS manual yang telah didekomisioning, tanpa mengubah stabilitas endpoint backend REST API maupun telemetri agen klien:
+  1. **Antarmuka Penuh Python Murni (*Zero Jinja Templates, Zero Custom CSS Clutter*):**
+     - Membangun modul antarmuka terdedikasi `server/ui_nicegui.py` terintegrasi langsung dengan FastAPI via `ui.run_with(mount_path="/")`.
+     - Seluruh komponen antarmuka dikonstruksi secara programatis menggunakan Python murni berlandaskan komponen Quasar dan Vue yang modern dan reaktif.
+  2. **Kelengkapan Fitur & Halaman NOC Mandiri Berdensitas Tinggi:**
+     - **Otentikasi Aman (`/login`):** Kartu login gelap modern dengan validasi kredensial langsung ke basis data MySQL, manajemen sesi cookie HTTP-only, dan penanganan proteksi brute force.
+     - **Dashboard Utama (`/` dan `/dashboard`):** Menampilkan 4 kartu ringkasan metrik (Total Server, Server Online, Insiden Aktif, Target Probing), grid status cepat armada server, dan tabel insiden aktif dengan lencana tingkat keparahan (*DANGER, WARNING, INFO*).
+     - **Daftar Server Terpadu (`/servers`):** Tabel kepadatan tinggi NOC dengan pencarian langsung terikat reaktif (*debounced filter*), status titik lampu online/offline, label lingkungan (*PROD/DEV*), sistem operasi & kernel lengkap, prosesor, dan versi agen.
+     - **Detail Server Mendalam (`/servers/{id}`):** Visualisasi telemetri CPU load, memori, waktu aktif sistem (*uptime*), spesifikasi perangkat keras lengkap, dan tabel pengawasan kesehatan layanan sistem (*services*) dengan status UP/DOWN serta waktu respons.
+     - **Insiden & Masalah (`/problems`):** Jejak agregat masalah sistem terdeteksi dengan durasi insiden dan status terbuka/selesai.
+     - **Riwayat Tindakan Operator (`/audit`):** Log jejak audit tindakan operator dan sistem secara terstruktur.
+     - **Synthetic Probing Endpoint (`/probing`):** Pengawasan endpoint eksternal HTTP/HTTPS, TCP, dan latensi ICMP Ping.
+     - **Manajemen Pengguna (`/users`):** Pengelolaan akun operator, hak akses, dan status verifikasi 2FA TOTP.
+  3. **Penyesuaian Keamanan Header CSP & Pengujian Browser Nyata:**
+     - Mengonfigurasi header *Content-Security-Policy* (`unsafe-eval`) agar kompiler templat reaktif Vue/Quasar berjalan optimal di browser tanpa kendala *EvalError*.
+     - Verifikasi tangkapan layar penuh menggunakan *headless Chrome* membuktikan antarmuka beroperasi secara mulus dan berdensitas tinggi di port 8400.
+
 ## Versi 4.8.149
 
 - **Tipe Rilis:** Penghapusan Total Frontend Monolitik & Transisi ke Arsitektur Headless API (*Total Legacy Frontend Decommissioning & Pure Headless API Transition*)
