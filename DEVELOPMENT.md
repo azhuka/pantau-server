@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.139
+
+- **Tipe Rilis:** Standardisasi Arsitektur CSS Framework & Pembersihan Menyeluruh Hardcode Warna (*CSS Framework Architecture Standardization & Universal Color Hardcode Purge*)
+- **Fokus Utama:** Melakukan refaktorisasi arsitektur frontend tingkat framework pada `pantau-components.css` dan `base.html`, mengeliminasi ratusan deklarasi warna heksadesimal (`#hex`) dan gaya inline manual di seluruh templat antarmuka, serta memastikan adaptasi multi-tema (Dark, Light, Obsidian, Navy) dan skalabilitas zoom (100%–150%) konsisten tanpa perpecahan tata letak:
+  1. **Standardisasi Sistem Warna Semantik Universal (`base.html` & `pantau-components.css`):**
+     - Memperluas definisi token warna semantik di `:root` dan `[data-theme="light"]` dengan menambahkan `--orange` (`#f97316` / `#ea580c`), `--orange-hover`, dan `--orange-bg`.
+     - Menyediakan pustaka komponen framework baku pada Bagian 10 `pantau-components.css` meliputi `.alert-banner` (`-success`, `-danger`, `-warning`, `-info`), `.btn-ghost-*`, `.btn-outline-*`, `.badge-role-*`, `.badge-perm`, `.qr-code-box`, serta kelas utilitas tipografi semantik (`.text-ok`, `.text-warn`, `.text-danger`, `.text-info`, `.text-orange`, `.text-dim`, `.text-mono`).
+  2. **Pembersihan Total Hardcode Warna di Seluruh Templat Inti:**
+     - **Profil & Keamanan Akun (`profile.html`):** Mengeliminasi 58 kemunculan heksadesimal menjadi 0 hex murni. Mengganti seluruh badge role, alert flash, tombol aksi sesi, QR 2FA, dan indikator kekuatan kata sandi JS menggunakan kelas framework baku.
+     - **Rincian Layanan (`services.html`):** Menghapus 144 baris duplikasi override tema yang rapuh, menstandarkan bilah tab pengguna, bilah filter kelompok, dan ikon stroke hardware ke variabel CSS.
+     - **Manajemen Masalah (`problems.html`):** Menghapus 87 baris override tema redundant, mengonversi tombol pill filter `.prob-pill-btn` dan lencana severity murni ke variabel CSS.
+     - **Probing Jaringan (`probing.html`):** Mengonversi seluruh gaya modal, form input, badge tipe probe, kartu metrik KPI, dan grafik latensi SVG ke variabel CSS.
+     - **Dasbor Pusat (`dashboard.html`):** Membersihkan seluruh fallback hex manual (`var(--orange, #f97316)`, `var(--text-bright, #fff)`) dan warna dinamis renderer JS.
+     - **Manajemen Pemeliharaan & Pengguna (`maintenance.html`, `users.html`, `server_form.html`, `user_activity.html`):** Mengganti gaya inline heksadesimal pada badge status, alert flash, highlight filter tag, dan pill login dengan kelas utilitas dan variabel CSS.
+  3. **Integritas Multi-Tema & Kepadatan Data NOC:**
+     - Seluruh komponen antarmuka kini otomatis beradaptasi mulus saat beralih antara tema Gelap, Terang, Obsidian, maupun Navy tanpa memerlukan kode styling per-halaman.
+     - Mempertahankan kepadatan informasi NOC (*high-density grid*) dan stabilitas antarmuka saat browser dizoom hingga skala 140%–150%.
+
 ## Versi 4.8.138
 
 - **Tipe Rilis:** Perombakan Tata Letak Aksi Tombol, Resolusi Bug TDZ Systemd, dan Standardisasi Semantik UI (*Button Action Placement Overhaul, Systemd TDZ Bug Resolution & Semantic UI Standardization*)

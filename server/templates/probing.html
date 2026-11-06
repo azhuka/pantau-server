@@ -142,28 +142,28 @@
   line-height: 1.2;
 }
 .status-pill-up {
-  background: rgba(52, 211, 153, 0.16);
-  color: #34d399;
+  background: var(--green-bg);
+  color: var(--green);
   border: 1px solid rgba(52, 211, 153, 0.35);
   box-shadow: 0 0 8px rgba(52, 211, 153, 0.15);
 }
 .status-pill-down {
-  background: rgba(248, 113, 113, 0.18);
-  color: #f87171;
+  background: var(--red-bg);
+  color: var(--red);
   border: 1px solid rgba(248, 113, 113, 0.4);
   box-shadow: 0 0 8px rgba(248, 113, 113, 0.2);
   animation: pulseGlow 1.8s infinite;
 }
 .status-pill-degraded {
-  background: rgba(251, 191, 36, 0.16);
-  color: #fbbf24;
+  background: var(--yellow-bg);
+  color: var(--yellow);
   border: 1px solid rgba(251, 191, 36, 0.35);
   box-shadow: 0 0 8px rgba(251, 191, 36, 0.15);
 }
 .status-pill-paused {
   background: rgba(148, 163, 184, 0.12);
-  color: #94a3b8;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: var(--dim);
+  border: 1px solid var(--border);
 }
 .status-pill-unknown {
   background: rgba(255, 255, 255, 0.06);
@@ -187,15 +187,15 @@
   font-weight: 700;
   font-family: ui-monospace, monospace;
 }
-.type-badge-http { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
-.type-badge-https { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
-.type-badge-ping { background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
-.type-badge-tcp { background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+.type-badge-http { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(56, 189, 248, 0.3); }
+.type-badge-https { background: var(--purple-bg); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.3); }
+.type-badge-ping { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.3); }
+.type-badge-tcp { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(251, 191, 36, 0.3); }
 
 /* Warna Latensi */
-.lat-good { color: #34d399; font-weight: 600; }
-.lat-medium { color: #fbbf24; font-weight: 600; }
-.lat-bad { color: #f87171; font-weight: 600; }
+.lat-good { color: var(--green); font-weight: 600; }
+.lat-medium { color: var(--yellow); font-weight: 600; }
+.lat-bad { color: var(--red); font-weight: 600; }
 
 /* Modals Responsif Penuh Terhadap Zoom & Viewport */
 .probe-modal-backdrop {
@@ -212,8 +212,8 @@
   box-sizing: border-box;
 }
 .probe-modal-panel {
-  background: linear-gradient(180deg, #151f33 0%, #0f172a 100%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 680px;
@@ -239,7 +239,7 @@
 }
 .probe-modal-head {
   padding: 16px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -249,7 +249,7 @@
 .probe-modal-head h3 {
   font-size: 15.5px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-heading);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -265,7 +265,7 @@
   border-radius: 4px;
   transition: all 0.15s ease;
 }
-.probe-modal-close:hover { color: #fff; background: var(--hover); }
+.probe-modal-close:hover { color: var(--text-heading); background: var(--hover); }
 .probe-modal-body {
   padding: 20px 24px;
   overflow-y: auto;
@@ -314,7 +314,7 @@
 .probe-field-help {
   display: block;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--dim);
   line-height: 1.4;
   margin-top: 3px;
   font-weight: 400;
@@ -330,7 +330,7 @@
   justify-content: space-between;
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--dim);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -339,44 +339,33 @@
 .probe-form-group textarea {
   width: 100%;
   box-sizing: border-box;
-  background: #0d1527;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 7px;
   padding: 9px 13px;
   font-size: 13px;
-  color: #f8fafc;
+  color: var(--input-text);
   outline: none;
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
-  color-scheme: dark;
 }
 .probe-form-group input:focus,
 .probe-form-group select:focus,
 .probe-form-group textarea:focus {
   border-color: var(--blue);
-  background: #111c33;
+  background: var(--input-bg);
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
 }
 .probe-form-group select option,
 .probe-form-group select optgroup {
-  background-color: #111a2e !important;
-  color: #f8fafc !important;
+  background-color: var(--card) !important;
+  color: var(--text) !important;
   padding: 8px 12px;
 }
 .probe-form-group select option:checked,
 .probe-form-group select option:hover {
-  background-color: #2563eb !important;
-  color: #ffffff !important;
-}
-[data-theme="light"] .probe-form-group select option,
-[data-theme="light"] .probe-form-group select optgroup {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-}
-[data-theme="light"] .probe-form-group select option:checked,
-[data-theme="light"] .probe-form-group select option:hover {
-  background-color: #e0f2fe !important;
-  color: #0284c7 !important;
+  background-color: var(--blue) !important;
+  color: var(--text-heading) !important;
 }
 
 .type-tabs {
@@ -409,9 +398,9 @@
   background: rgba(255, 255, 255, 0.04);
 }
 .type-tab-btn.active {
-  background: rgba(56, 189, 248, 0.18);
+  background: var(--blue-bg);
   border-color: rgba(56, 189, 248, 0.4);
-  color: #fff;
+  color: var(--text-heading);
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
 }
 .adhoc-test-box {
@@ -424,14 +413,14 @@
   line-height: 1.4;
 }
 .adhoc-test-box.success {
-  background: rgba(52, 211, 153, 0.12);
+  background: var(--green-bg);
   border: 1px solid rgba(52, 211, 153, 0.35);
-  color: #6ee7b7;
+  color: var(--green);
 }
 .adhoc-test-box.error {
-  background: rgba(248, 113, 113, 0.12);
+  background: var(--red-bg);
   border: 1px solid rgba(248, 113, 113, 0.35);
-  color: #fca5a5;
+  color: var(--red);
 }
 
 /* Grafik Riwayat SVG */
@@ -550,12 +539,12 @@
     </div>
     <div class="probe-kpi-val" id="kpi-lat">0<span style="font-size:14px;color:var(--dim);font-weight:600;margin-left:2px">ms</span></div>
   </div>
-  <div class="probe-kpi-card" style="border-left: 3px solid #38bdf8">
+  <div class="probe-kpi-card" style="border-left: 3px solid var(--blue)">
     <div class="probe-kpi-label">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
       Ketersediaan (24 Jam)
     </div>
-    <div class="probe-kpi-val" id="kpi-uptime" style="color:#38bdf8">100<span style="font-size:14px;color:var(--dim);font-weight:600;margin-left:2px">%</span></div>
+    <div class="probe-kpi-val" id="kpi-uptime" style="color:var(--blue)">100<span style="font-size:14px;color:var(--dim);font-weight:600;margin-left:2px">%</span></div>
   </div>
 </div>
 
@@ -813,7 +802,7 @@
         </div>
         <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;text-align:center">
           <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Rata-rata Latensi</div>
-          <div id="hist-avg-lat" style="font-size:16px;font-weight:700;color:var(--text-heading, #fff);margin-top:2px;font-family:ui-monospace,monospace">—</div>
+          <div id="hist-avg-lat" style="font-size:16px;font-weight:700;color:var(--text-heading);margin-top:2px;font-family:ui-monospace,monospace">—</div>
         </div>
         <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;text-align:center">
           <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Ketersediaan 24 Jam</div>
@@ -821,7 +810,7 @@
         </div>
         <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;text-align:center">
           <div style="font-size:10px;color:var(--dim);text-transform:uppercase">Ketersediaan 30 Hari</div>
-          <div id="hist-up-30" style="font-size:16px;font-weight:700;color:#38bdf8;margin-top:2px;font-family:ui-monospace,monospace">—</div>
+          <div id="hist-up-30" style="font-size:16px;font-weight:700;color:var(--blue);margin-top:2px;font-family:ui-monospace,monospace">—</div>
         </div>
       </div>
 
@@ -831,7 +820,7 @@
       </div>
       <div class="chart-container">
         <svg class="chart-svg" id="historySvgChart" viewBox="0 0 680 160" preserveAspectRatio="none">
-          <text x="340" y="80" text-anchor="middle" fill="#64748b" font-size="12">Memuat grafik…</text>
+          <text x="340" y="80" text-anchor="middle" fill="var(--dim)" font-size="12">Memuat grafik…</text>
         </svg>
       </div>
 
@@ -925,7 +914,7 @@ function renderKpi(sum) {
   document.getElementById('kpi-lat').innerHTML = (sum.avg_latency_ms || 0) + '<span style="font-size:14px;color:var(--dim);font-weight:600;margin-left:2px">ms</span>';
   const avgUpVal = (sum.avg_uptime_24h !== undefined && sum.avg_uptime_24h !== null) ? Number(sum.avg_uptime_24h) : 100.0;
   const avgUpStr = avgUpVal.toFixed(1);
-  const avgUpCol = avgUpVal >= 99.0 ? '#38bdf8' : (avgUpVal >= 95.0 ? 'var(--yellow)' : 'var(--red)');
+  const avgUpCol = avgUpVal >= 99.0 ? 'var(--blue)' : (avgUpVal >= 95.0 ? 'var(--yellow)' : 'var(--red)');
   const kpiUpEl = document.getElementById('kpi-uptime');
   if (kpiUpEl) {
     kpiUpEl.style.color = avgUpCol;
@@ -1068,7 +1057,7 @@ function renderTable() {
         <td class="td-target">
           <div style="display:flex;align-items:center;gap:6px">
             <span class="type-badge ${typeClass}">${typeLabel}</span>
-            <strong style="color:var(--text-heading, #fff);font-size:12px">${escapeHtml(p.name)}</strong>
+            <strong style="color:var(--text-heading);font-size:12px">${escapeHtml(p.name)}</strong>
             ${tierBadge}
           </div>
           <div style="margin-top:2px;font-family:ui-monospace,monospace;font-size:11px;color:var(--dim);word-break:break-all">
@@ -1480,7 +1469,7 @@ function renderLatencySvgChart(chartData) {
   if (!svg) return;
 
   if (chartData.length < 2) {
-    svg.innerHTML = `<text x="340" y="80" text-anchor="middle" fill="#64748b" font-size="12">Belum cukup data riwayat untuk menampilkan grafik latensi</text>`;
+    svg.innerHTML = `<text x="340" y="80" text-anchor="middle" fill="var(--dim)" font-size="12">Belum cukup data riwayat untuk menampilkan grafik latensi</text>`;
     return;
   }
 
@@ -1506,9 +1495,9 @@ function renderLatencySvgChart(chartData) {
     <line x1="${padL}" y1="${padT}" x2="${W - padR}" y2="${padT}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2" />
     <line x1="${padL}" y1="${padT + chartH / 2}" x2="${W - padR}" y2="${padT + chartH / 2}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,2" />
     <line x1="${padL}" y1="${padT + chartH}" x2="${W - padR}" y2="${padT + chartH}" stroke="rgba(255,255,255,0.12)" />
-    <text x="${padL - 6}" y="${padT + 4}" text-anchor="end" fill="#64748b" font-size="9">${Math.round(maxLat)}ms</text>
-    <text x="${padL - 6}" y="${padT + chartH / 2 + 3}" text-anchor="end" fill="#64748b" font-size="9">${Math.round(maxLat / 2)}ms</text>
-    <text x="${padL - 6}" y="${padT + chartH + 3}" text-anchor="end" fill="#64748b" font-size="9">0ms</text>
+    <text x="${padL - 6}" y="${padT + 4}" text-anchor="end" fill="var(--dim)" font-size="9">${Math.round(maxLat)}ms</text>
+    <text x="${padL - 6}" y="${padT + chartH / 2 + 3}" text-anchor="end" fill="var(--dim)" font-size="9">${Math.round(maxLat / 2)}ms</text>
+    <text x="${padL - 6}" y="${padT + chartH + 3}" text-anchor="end" fill="var(--dim)" font-size="9">0ms</text>
   `;
 
   // Plot Titik Data
@@ -1523,20 +1512,20 @@ function renderLatencySvgChart(chartData) {
 
   let dotsSvg = '';
   coords.forEach(c => {
-    const dotCol = c.status === 'down' ? '#f87171' : (c.status === 'degraded' ? '#fbbf24' : '#38bdf8');
+    const dotCol = c.status === 'down' ? 'var(--red)' : (c.status === 'degraded' ? 'var(--yellow)' : 'var(--blue)');
     dotsSvg += `<circle cx="${c.x}" cy="${c.y}" r="3" fill="${dotCol}"><title>${c.lat.toFixed(1)} ms (${c.status.toUpperCase()})</title></circle>`;
   });
 
   svg.innerHTML = `
     <defs>
       <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>
-        <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0"/>
+        <stop offset="0%" stop-color="var(--blue)" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="var(--blue)" stop-opacity="0.0"/>
       </linearGradient>
     </defs>
     ${gridSvg}
     <path d="${areaD}" fill="url(#chartGrad)" />
-    <path d="${pathD}" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" />
+    <path d="${pathD}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" />
     ${dotsSvg}
   `;
 }

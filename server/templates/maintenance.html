@@ -69,7 +69,7 @@
   padding: 16px;
 }
 .modal-window {
-  background: var(--modal-bg, #0f172a);
+  background: var(--modal-bg);
   border: 1px solid var(--modal-border, var(--border));
   border-radius: 10px;
   width: 100%;
@@ -170,7 +170,7 @@
 }
 .day-btn.is-selected {
   background: var(--blue);
-  color: #fff;
+  color: var(--text-heading);
   border-color: var(--blue);
 }
 /* Pulse animation untuk maintenance aktif */
@@ -184,7 +184,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--yellow, #eab308);
+  background: var(--yellow);
   animation: pulseWarn 1.8s infinite ease-in-out;
   box-shadow: 0 0 8px rgba(234, 179, 8, 0.6);
 }
@@ -390,7 +390,7 @@
         <input type="hidden" id="formWindowId" value="" />
 
         <div class="form-group">
-          <label for="formTitle">Judul Pemeliharaan <span style="color:#ef4444">*</span></label>
+          <label for="formTitle">Judul Pemeliharaan <span style="color:var(--red)">*</span></label>
           <input type="text" id="formTitle" class="form-control" placeholder="Contoh: Pembaruan Rutin Kernel &amp; Patch OS" required maxlength="150" />
         </div>
 
@@ -400,7 +400,7 @@
         </div>
 
         <div class="form-group">
-          <label>Cakupan Target Pemeliharaan <span style="color:#ef4444">*</span></label>
+          <label>Cakupan Target Pemeliharaan <span style="color:var(--red)">*</span></label>
           <div class="radio-group">
             <label class="radio-label">
               <input type="radio" name="scope_type" value="server" checked onchange="onScopeTypeChange()" />
@@ -447,7 +447,7 @@
           </div>
 
           <!-- Floating Dropdown Panel -->
-          <div id="multiSelectMenu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#131d31;border:1px solid rgba(56,189,248,0.3);border-radius:6px;box-shadow:0 14px 32px rgba(0,0,0,0.7);z-index:1100;padding:8px" onclick="event.stopPropagation()">
+          <div id="multiSelectMenu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--modal-bg);border:1px solid var(--modal-border);border-radius:6px;box-shadow:0 14px 32px rgba(0,0,0,0.7);z-index:1100;padding:8px" onclick="event.stopPropagation()">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
               <input type="text" id="multiServerSearch" class="form-control" style="font-size:11.5px;padding:4px 8px;flex:1" placeholder="Cari nama, IP, atau grup..." oninput="filterMultiServerList()" />
               <button type="button" class="btn btn-ghost btn-sm" style="font-size:10.5px;padding:3px 8px;white-space:nowrap;color:var(--blue)" onclick="toggleAllMultiServers(true)">Semua</button>
@@ -480,7 +480,7 @@
         </div>
 
         <div class="form-group">
-          <label>Tipe Penjadwalan <span style="color:#ef4444">*</span></label>
+          <label>Tipe Penjadwalan <span style="color:var(--red)">*</span></label>
           <div class="radio-group">
             <label class="radio-label">
               <input type="radio" name="schedule_type" value="once" checked onchange="onScheduleTypeChange()" />
@@ -500,12 +500,12 @@
         <!-- Input Waktu untuk Sekali Jalan -->
         <div id="wrapOnceSchedule">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px">
-            <label style="margin:0">Rentang Waktu Pelaksanaan <span style="color:#ef4444">*</span></label>
+            <label style="margin:0">Rentang Waktu Pelaksanaan <span style="color:var(--red)">*</span></label>
             <div style="display:inline-flex;gap:4px;flex-wrap:wrap">
               <button type="button" class="btn btn-sm btn-ghost" style="font-size:10px;padding:1px 6px;color:var(--blue)" onclick="applyTimePreset(60)">+1 Jam Sekarang</button>
               <button type="button" class="btn btn-sm btn-ghost" style="font-size:10px;padding:1px 6px;color:var(--blue)" onclick="applyTimePreset(120)">+2 Jam</button>
               <button type="button" class="btn btn-sm btn-ghost" style="font-size:10px;padding:1px 6px;color:var(--blue)" onclick="applyTimePreset(240)">+4 Jam</button>
-              <button type="button" class="btn btn-sm btn-ghost" style="font-size:10px;padding:1px 6px;color:#facc15" onclick="applyTimePreset('tonight')">Malam Ini (23:00 - 04:00)</button>
+              <button type="button" class="btn btn-sm btn-ghost btn-ghost-warning" style="font-size:10px;padding:1px 6px" onclick="applyTimePreset('tonight')">Malam Ini (23:00 - 04:00)</button>
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -765,7 +765,7 @@ async function fetchWindows() {
     filterWindows();
   } catch (err) {
     document.getElementById('maintenanceTbody').innerHTML = `
-      <tr><td colspan="7" style="text-align:center;padding:24px;color:#ef4444">
+      <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--red)">
         Gagal memuat jadwal: ${escapeHtml(err.message)}
       </td></tr>
     `;

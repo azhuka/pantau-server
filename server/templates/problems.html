@@ -43,46 +43,46 @@
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.04));
   border: 1px solid var(--border);
   color: var(--dim);
   transition: all 0.15s ease;
 }
 .prob-pill-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover);
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--border-focus, rgba(255, 255, 255, 0.2));
 }
 .prob-pill-btn.active {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: #3b82f6;
-  color: #93c5fd;
+  background: var(--blue-bg);
+  border-color: var(--blue);
+  color: var(--blue);
   font-weight: 600;
 }
 .prob-pill-btn.active.pill-danger {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
-  color: #fca5a5;
+  background: var(--red-bg);
+  border-color: var(--red);
+  color: var(--red);
 }
 .prob-pill-btn.active.pill-average {
-  background: rgba(249, 115, 22, 0.15);
-  border-color: #f97316;
-  color: #fdba74;
+  background: var(--orange-bg);
+  border-color: var(--orange);
+  color: var(--orange);
 }
 .prob-pill-btn.active.pill-warning {
-  background: rgba(234, 179, 8, 0.15);
-  border-color: #eab308;
-  color: #fde047;
+  background: var(--yellow-bg);
+  border-color: var(--yellow);
+  color: var(--yellow);
 }
 .prob-pill-btn.active.pill-info {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: #3b82f6;
-  color: #93c5fd;
+  background: var(--blue-bg);
+  border-color: var(--blue);
+  color: var(--blue);
 }
 .prob-pill-btn.active.pill-ignored {
-  background: rgba(148, 163, 184, 0.15);
-  border-color: #94a3b8;
-  color: #cbd5e1;
+  background: var(--card-hover, rgba(148, 163, 184, 0.15));
+  border-color: var(--border);
+  color: var(--dim);
 }
 .prob-pill-count {
   padding: 1px 6px;
@@ -91,76 +91,14 @@
   font-weight: 700;
   background: rgba(255, 255, 255, 0.08);
 }
+[data-theme="light"] .prob-pill-count {
+  background: rgba(0, 0, 0, 0.08);
+}
 .prob-pill-btn.active .prob-pill-count {
   background: rgba(255, 255, 255, 0.2);
 }
-
-/* Dukungan Multi-Tema Tombol Pil Triage */
-[data-theme="light"] .prob-pill-btn {
-  background: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
-  color: #475569 !important;
-}
-[data-theme="light"] .prob-pill-btn:hover {
-  background: #f1f5f9 !important;
-  color: #0f172a !important;
-  border-color: rgba(0, 0, 0, 0.25) !important;
-}
-[data-theme="light"] .prob-pill-btn.active {
-  background: rgba(2, 132, 199, 0.12) !important;
-  border-color: #0284c7 !important;
-  color: #0369a1 !important;
-}
-[data-theme="light"] .prob-pill-btn.active.pill-danger {
-  background: rgba(220, 38, 38, 0.12) !important;
-  border-color: #dc2626 !important;
-  color: #b91c1c !important;
-}
-[data-theme="light"] .prob-pill-btn.active.pill-average {
-  background: rgba(234, 88, 12, 0.12) !important;
-  border-color: #ea580c !important;
-  color: #c2410c !important;
-}
-[data-theme="light"] .prob-pill-btn.active.pill-warning {
-  background: rgba(217, 119, 6, 0.12) !important;
-  border-color: #d97706 !important;
-  color: #b45309 !important;
-}
-[data-theme="light"] .prob-pill-btn.active.pill-info {
-  background: rgba(2, 132, 199, 0.12) !important;
-  border-color: #0284c7 !important;
-  color: #0369a1 !important;
-}
-[data-theme="light"] .prob-pill-btn.active.pill-ignored {
-  background: rgba(100, 116, 139, 0.12) !important;
-  border-color: #64748b !important;
-  color: #334155 !important;
-}
-[data-theme="light"] .prob-pill-count {
-  background: rgba(0, 0, 0, 0.08) !important;
-}
 [data-theme="light"] .prob-pill-btn.active .prob-pill-count {
-  background: rgba(0, 0, 0, 0.14) !important;
-}
-
-[data-theme="obsidian"] .prob-pill-btn {
-  background: #09090b !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  color: #a1a1aa !important;
-}
-[data-theme="obsidian"] .prob-pill-btn:hover {
-  background: #18181b !important;
-  color: #ffffff !important;
-}
-
-[data-theme="navy"] .prob-pill-btn {
-  background: #0b1122 !important;
-  border-color: rgba(59, 130, 246, 0.22) !important;
-  color: #94a3b8 !important;
-}
-[data-theme="navy"] .prob-pill-btn:hover {
-  background: #131c31 !important;
-  color: #f1f5f9 !important;
+  background: rgba(0, 0, 0, 0.12);
 }
 @media (max-width: 640px) {
   .prob-filters-row {
@@ -376,7 +314,7 @@
   <div class="card-header" style="flex-wrap:wrap;gap:10px">
     <div style="display:flex;align-items:center;gap:10px">
       {% set active_open = open_problems | rejectattr('is_ignored') | list %}
-      <span id="prob-active-icon" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:{% if danger_open %}rgba(239,68,68,0.15){% elif average_open %}rgba(249,115,22,0.15){% elif warning_open or active_open %}rgba(245,158,11,0.15){% else %}rgba(16,185,129,0.12){% endif %};color:{% if danger_open %}var(--red){% elif average_open %}#f97316{% elif warning_open or active_open %}var(--yellow){% else %}var(--green){% endif %}">
+      <span id="prob-active-icon" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:{% if danger_open %}var(--red-bg){% elif average_open %}var(--orange-bg){% elif warning_open or active_open %}var(--yellow-bg){% else %}var(--green-bg){% endif %};color:{% if danger_open %}var(--red){% elif average_open %}var(--orange){% elif warning_open or active_open %}var(--yellow){% else %}var(--green){% endif %}">
         {% if danger_open or average_open or warning_open or active_open %}
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         {% else %}
@@ -1429,8 +1367,8 @@ window.poll = async function(opts = {}) {
           actIcon.style.color = 'var(--red)';
           actIcon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
         } else if (s.average_open) {
-          actIcon.style.background = 'rgba(249,115,22,0.15)';
-          actIcon.style.color = '#f97316';
+          actIcon.style.background = 'var(--orange-bg)';
+          actIcon.style.color = 'var(--orange)';
           actIcon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
         } else if (s.warning_open || act > 0) {
           actIcon.style.background = 'rgba(245,158,11,0.15)';

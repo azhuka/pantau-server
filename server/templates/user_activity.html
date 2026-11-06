@@ -145,7 +145,7 @@
 <div id="chip-row" style="{% if initial_logins and initial_logins|length > 0 %}display:flex;{% else %}display:none;{% endif %}flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px">
   <span class="chip chip-up" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('aktif')" title="Klik untuk filter Sesi Aktif">Sesi Aktif: <b id="chip-aktif">0</b></span>
   <span class="chip chip-inactive" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('selesai')" title="Klik untuk filter Sesi Selesai">Sesi Selesai: <b id="chip-selesai">0</b></span>
-  <span class="chip" style="cursor:pointer;padding:3px 10px;font-size:11px;background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.3)" onclick="setLlTypeFilter('login')" title="Klik untuk filter Sesi Login Berhasil">Sesi Login: <b id="chip-login">0</b></span>
+  <span class="chip" style="cursor:pointer;padding:3px 10px;font-size:11px;background:var(--blue-bg);color:var(--blue);border:1px solid rgba(56,189,248,0.3)" onclick="setLlTypeFilter('login')" title="Klik untuk filter Sesi Login Berhasil">Sesi Login: <b id="chip-login">0</b></span>
   <span style="display:inline-block;width:1px;height:18px;background:var(--border);margin:0 4px"></span>
   <span class="chip chip-info" style="cursor:pointer;padding:3px 10px;font-size:11px" onclick="setLlTypeFilter('perintah')" title="Klik untuk filter Semua Perintah (Shell, Sudo, Polkit)">Perintah: <b id="chip-perintah">0</b></span>
   <span class="chip chip-info" style="cursor:pointer;padding:3px 10px;font-size:11px;opacity:0.85" onclick="setLlTypeFilter('shell')" title="Klik untuk filter Perintah Shell (Non-Sudo)">Shell: <b id="chip-shell">0</b></span>
@@ -515,7 +515,7 @@ function renderLoginsData(rawLogins) {
         typeLabel = 'Sesi Selesai';
       } else if (isLogin) {
         typeLabel = 'Sesi Login';
-        badgeStyle = 'style="background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.25)"';
+        badgeStyle = 'style="background:var(--blue-bg);color:var(--blue);border:1px solid rgba(56,189,248,0.25)"';
       } else if (isSudo) {
         typeLabel = 'Sudo' + (x.target_user ? ' (' + escapeHtml(x.target_user) + ')' : '');
       } else if (isSudoGagal) {
@@ -648,7 +648,7 @@ function renderLoginsData(rawLogins) {
         methodCell = '<span style="color:var(--dim);font-size:11px" title="Sesi selesai' + (x.logout_time ? ' pada ' + escapeHtml(x.logout_time) : '') + (x.duration ? ' (durasi: ' + escapeHtml(x.duration) + ')' : '') + '">Sesi Ditutup' + durText + '</span>';
       } else if (isLogin) {
         const methText = x.method ? ' via ' + escapeHtml(x.method) : '';
-        methodCell = '<span style="color:#38bdf8;font-size:11px" title="Login berhasil' + (x.from ? ' dari ' + escapeHtml(x.from) : '') + '">Login Berhasil' + methText + '</span>';
+        methodCell = '<span style="color:var(--blue);font-size:11px" title="Login berhasil' + (x.from ? ' dari ' + escapeHtml(x.from) : '') + '">Login Berhasil' + methText + '</span>';
       } else if (isGagal) {
         methodCell = '<span style="color:var(--red);font-size:11px" title="Percobaan login gagal: ' + escapeHtml(x.method || 'Password salah') + '">Login Gagal: ' + escapeHtml(x.method || 'Otentikasi ditolak') + '</span>';
       } else {

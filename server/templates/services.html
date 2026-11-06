@@ -74,9 +74,9 @@
   border-color: var(--dim);
 }
 .terminal-btn-icon.is-active {
-  background: rgba(56, 189, 248, 0.16);
+  background: var(--blue-bg);
   border-color: rgba(56, 189, 248, 0.45);
-  color: #38bdf8;
+  color: var(--blue);
 }
 .terminal-status-badge {
   font-size: 11px;
@@ -222,9 +222,9 @@
   font-weight: 600;
   padding: 1px 9px;
   border-radius: 999px;
-  background: rgba(234, 179, 8, 0.16);
-  border: 1px solid rgba(234, 179, 8, 0.5);
-  color: #facc15;
+  background: var(--yellow-bg);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  color: var(--yellow);
   cursor: pointer;
   margin-left: 6px;
   vertical-align: middle;
@@ -232,9 +232,9 @@
   line-height: 1.5;
 }
 .hero-maint-badge:hover {
-  background: rgba(234, 179, 8, 0.3);
-  border-color: #facc15;
-  color: #fff;
+  background: rgba(251, 191, 36, 0.28);
+  border-color: var(--yellow);
+  color: var(--text-heading);
   transform: translateY(-1px);
 }
 /* Header Hero & Toolbar Presisi Terpadu */
@@ -262,7 +262,7 @@
   font-size: 17px !important;
   font-weight: 700 !important;
   letter-spacing: -0.015em !important;
-  color: var(--text-heading, #fff) !important;
+  color: var(--text-heading) !important;
   white-space: nowrap !important;
   max-width: 250px !important;
   overflow: hidden !important;
@@ -319,50 +319,50 @@
   justify-content: center !important;
 }
 .toolbar-group .btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: #fff !important;
+  background: var(--hover) !important;
+  color: var(--text-heading) !important;
 }
 .toolbar-group .btn svg {
   vertical-align: middle;
   flex-shrink: 0;
 }
 .toolbar-group .btn-success:not(:disabled) {
-  color: #34d399 !important;
+  color: var(--green) !important;
 }
 .toolbar-group .btn-success:not(:disabled):hover {
-  background: rgba(16, 185, 129, 0.2) !important;
-  color: #a7f3d0 !important;
+  background: var(--green-bg) !important;
+  color: var(--green-hover, var(--green)) !important;
 }
 .toolbar-group .btn-danger:not(:disabled) {
-  color: #f87171 !important;
+  color: var(--red) !important;
 }
 .toolbar-group .btn-danger:not(:disabled):hover {
-  background: rgba(239, 68, 68, 0.2) !important;
-  color: #fca5a5 !important;
+  background: var(--red-bg) !important;
+  color: var(--red-hover, var(--red)) !important;
 }
 .toolbar-group #apt-term-toggle-btn {
-  color: #38bdf8 !important;
+  color: var(--blue) !important;
 }
 .toolbar-group #apt-term-toggle-btn:hover {
-  background: rgba(56, 189, 248, 0.18) !important;
-  color: #bae6fd !important;
+  background: var(--blue-bg) !important;
+  color: var(--blue-hover, var(--blue)) !important;
 }
 .toolbar-group .btn-fm {
-  color: #c084fc !important;
+  color: var(--purple) !important;
 }
 .toolbar-group .btn-fm:hover {
   background: rgba(192, 132, 252, 0.18) !important;
-  color: #f3e8ff !important;
+  color: var(--purple) !important;
 }
 .toolbar-group .btn-maint-active-state {
-  color: #facc15 !important;
-  background: rgba(234, 179, 8, 0.2) !important;
+  color: var(--yellow) !important;
+  background: var(--yellow-bg) !important;
   font-weight: 600 !important;
-  border: 1px solid rgba(234, 179, 8, 0.4) !important;
+  border: 1px solid rgba(251, 191, 36, 0.4) !important;
 }
 .toolbar-group .btn-maint-active-state:hover {
-  background: rgba(234, 179, 8, 0.32) !important;
-  color: #fef08a !important;
+  background: rgba(251, 191, 36, 0.28) !important;
+  color: var(--yellow) !important;
 }
 .toolbar-group .btn:disabled {
   opacity: .35 !important;
@@ -692,8 +692,8 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 5px rgba(34, 197, 94, 0.6);
+  background: var(--green);
+  box-shadow: 0 0 5px rgba(52, 211, 153, 0.6);
 }
 .perf-notes-textarea {
   width: 100%;
@@ -726,9 +726,9 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(167, 139, 250, 0.12);
-  color: #c4b5fd;
-  border: 1px solid rgba(167, 139, 250, 0.28);
+  background: var(--purple-bg);
+  color: var(--purple);
+  border: 1px solid rgba(192, 132, 252, 0.28);
   border-radius: 12px;
   padding: 1px 7px;
   font-size: 11px;
@@ -737,9 +737,9 @@
   max-width: 280px;
 }
 .hero-notes-chip:hover {
-  background: rgba(167, 139, 250, 0.22);
-  border-color: #a78bfa;
-  color: #fff;
+  background: rgba(192, 132, 252, 0.22);
+  border-color: var(--purple);
+  color: var(--text-heading);
 }
 .hero-notes-text {
   overflow: hidden;
@@ -817,7 +817,7 @@
   margin: 0 !important;
   font-size: 12.5px !important;
   font-weight: 600 !important;
-  color: var(--text-heading, #0f172a) !important;
+  color: var(--text-heading) !important;
   letter-spacing: -0.01em;
   line-height: 1.3;
 }
@@ -1016,7 +1016,7 @@ div[style*="position: fixed"] .card {
 }
 
 .shell-interactive {
-  color: #38bdf8;
+  color: var(--blue);
   font-weight: 600;
 }
 .shell-disabled {
@@ -1025,150 +1025,7 @@ div[style*="position: fixed"] .card {
 }
 .user-subnav-btn.is-active {
   background: var(--primary) !important;
-  color: #fff !important;
-}
-
-/* Penyesuaian Presisi Tema Terang (Light Mode Overrides) */
-[data-theme="light"] .toolbar-group {
-  background: #f8fafc !important;
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-}
-[data-theme="light"] .toolbar-group .btn {
-  color: #475569 !important;
-}
-[data-theme="light"] .toolbar-group .btn:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.06) !important;
-  color: #0f172a !important;
-}
-[data-theme="light"] .toolbar-group .btn-success:not(:disabled) {
-  color: #059669 !important;
-}
-[data-theme="light"] .toolbar-group .btn-success:not(:disabled):hover {
-  background: rgba(16, 185, 129, 0.15) !important;
-  color: #047857 !important;
-}
-[data-theme="light"] .toolbar-group .btn-danger:not(:disabled) {
-  color: #dc2626 !important;
-}
-[data-theme="light"] .toolbar-group .btn-danger:not(:disabled):hover {
-  background: rgba(239, 68, 68, 0.15) !important;
-  color: #b91c1c !important;
-}
-[data-theme="light"] .toolbar-group #apt-term-toggle-btn {
-  color: #0284c7 !important;
-}
-[data-theme="light"] .toolbar-group #apt-term-toggle-btn:hover {
-  background: rgba(2, 132, 199, 0.12) !important;
-  color: #0369a1 !important;
-}
-[data-theme="light"] .toolbar-group .btn-fm {
-  color: #7c3aed !important;
-}
-[data-theme="light"] .toolbar-group .btn-fm:hover {
-  background: rgba(124, 58, 237, 0.12) !important;
-  color: #6d28d9 !important;
-}
-[data-theme="light"] .toolbar-group .btn-maint-active-state {
-  color: #b45309 !important;
-  background: rgba(245, 158, 11, 0.15) !important;
-  border: 1px solid rgba(245, 158, 11, 0.4) !important;
-}
-[data-theme="light"] .toolbar-group .btn-maint-active-state:hover {
-  background: rgba(245, 158, 11, 0.25) !important;
-  color: #92400e !important;
-}
-[data-theme="light"] .toolbar-divider {
-  background: rgba(0, 0, 0, 0.12) !important;
-}
-[data-theme="light"] .hero-maint-badge {
-  background: rgba(245, 158, 11, 0.12) !important;
-  border: 1px solid rgba(245, 158, 11, 0.3) !important;
-  color: #b45309 !important;
-}
-[data-theme="light"] .hero-maint-badge:hover {
-  background: rgba(245, 158, 11, 0.2) !important;
-  border-color: #d97706 !important;
-  color: #92400e !important;
-}
-[data-theme="light"] .hero-notes-chip {
-  background: rgba(124, 58, 237, 0.08) !important;
-  border: 1px solid rgba(124, 58, 237, 0.25) !important;
-  color: #6d28d9 !important;
-}
-[data-theme="light"] .hero-notes-chip:hover {
-  background: rgba(124, 58, 237, 0.15) !important;
-  border-color: #6d28d9 !important;
-  color: #5b21b6 !important;
-}
-[data-theme="light"] .tab-body .card > .card-header,
-[data-theme="light"] .tab-body .card-header:not(.perf-card-header) {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
-  background: #f8fafc !important;
-}
-[data-theme="light"] .tab-body .specs-grid-4 > div,
-[data-theme="light"] .tab-body .specs-grid-2 > div,
-[data-theme="light"] .tab-body .specs-storage-block > div {
-  background: #f8fafc !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-}
-[data-theme="light"] .tab-body .specs-grid-4 > div strong,
-[data-theme="light"] .tab-body .specs-grid-2 > div strong,
-[data-theme="light"] .tab-body .specs-storage-block > div strong {
-  color: #0f172a !important;
-}
-[data-theme="light"] .tab-body .table-compact td {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
-  color: #1e293b !important;
-}
-[data-theme="light"] .tab-body .perf-metric-card,
-[data-theme="light"] .perf-metric-card {
-  background: #f8fafc !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-}
-[data-theme="light"] .perf-chip {
-  background: #ffffff !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-}
-[data-theme="light"] .perf-chip-val {
-  color: #0f172a !important;
-}
-[data-theme="light"] .perf-chip-meter {
-  background: rgba(0, 0, 0, 0.08) !important;
-}
-[data-theme="light"] .perf-spark-row {
-  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
-}
-[data-theme="light"] .perf-spark-box {
-  background: #ffffff !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-}
-[data-theme="light"] .perf-stat-badge {
-  background: #ffffff !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-}
-[data-theme="light"] .tab-body #disk-charts-wrap {
-  border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
-}
-[data-theme="light"] .tab-body .card > #prob-wrapper > div:first-child,
-[data-theme="light"] .tab-body #tab-proses .card > div:nth-child(2),
-[data-theme="light"] .tab-body #tab-layanan .card:first-child > div:nth-of-type(2),
-[data-theme="light"] .table-toolbar {
-  background: #f8fafc !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-}
-[data-theme="light"] #sublog-panel-sys > div:first-child {
-  background: #f8fafc !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-}
-[data-theme="light"] #log-pre {
-  background: #f8fafc !important;
-  color: #0f172a !important;
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
-}
-[data-theme="light"] .svc-timeline-card {
-  background: #f8fafc !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: var(--text-heading) !important;
 }
 
 /* Segmented Controls & Subnav Pill Switchers */
@@ -1203,7 +1060,7 @@ div[style*="position: fixed"] .card {
 .user-subnav-bar .user-subnav-btn.is-active,
 .user-subnav-bar .user-subnav-btn.btn-primary {
   background: var(--blue) !important;
-  color: #ffffff !important;
+  color: var(--text-bright) !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
 }
 .user-subnav-count {
@@ -1219,7 +1076,7 @@ div[style*="position: fixed"] .card {
 .user-subnav-btn.is-active .user-subnav-count,
 .user-subnav-btn.btn-primary .user-subnav-count {
   background: rgba(255, 255, 255, 0.25) !important;
-  color: #ffffff !important;
+  color: var(--text-bright) !important;
 }
 
 /* Toolbar Filter Segmented Buttons (Users & Groups filters) */
@@ -1248,7 +1105,7 @@ div[style*="position: fixed"] .card {
 .table-toolbar .btn-group .btn.btn-primary,
 .table-toolbar .btn-group .btn.is-active {
   background: var(--blue) !important;
-  color: #ffffff !important;
+  color: var(--text-bright) !important;
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
 }
@@ -1302,7 +1159,7 @@ div[style*="position: fixed"] .card {
 </div>
 
 {% set pmeta = {'ok': ('OK', 'up', 'green'), 'info': ('Info', 'info', 'var(--blue)'),
-                'average': ('Gawat', 'orange', '#f97316'),
+                'average': ('Gawat', 'orange', 'var(--orange)'),
                 'warning': ('Warning', 'warn', 'var(--yellow)'),
                 'danger': ('Critical', 'danger', 'var(--red)')} %}
 {% set act = request.query_params.get('action') %}
@@ -1559,8 +1416,8 @@ div[style*="position: fixed"] .card {
         <span id="term-title">Terminal Bawaan &middot; shell root</span>
       </div>
       <div class="terminal-actions">
-        <span id="term-active-banner" class="terminal-status-badge" style="display:none;color:#86efac;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.35);font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px" title="Sesi terminal sedang aktif di server klien. Proses tetap berjalan di latar belakang jika jendela ditutup.">
-          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;margin-right:5px;box-shadow:0 0 6px #22c55e"></span>
+        <span id="term-active-banner" class="terminal-status-badge" style="display:none;color:var(--green);background:var(--green-bg);border:1px solid rgba(52,211,153,0.35);font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px" title="Sesi terminal sedang aktif di server klien. Proses tetap berjalan di latar belakang jika jendela ditutup.">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:5px;box-shadow:0 0 6px var(--green)"></span>
           <span>Sesi sedang aktif</span>
         </span>
         <span id="term-lease-badge" class="terminal-status-badge" style="display:none;color:var(--yellow);border:1px solid rgba(234,179,8,0.3);background:rgba(234,179,8,0.08);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:11px" title="Sisa durasi otentikasi terminal">
@@ -1616,7 +1473,7 @@ div[style*="position: fixed"] .card {
     <div class="card perf-overview-card">
       <div class="card-header perf-header-compact">
         <div style="display:flex;align-items:center;gap:6px">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           <strong style="margin:0;font-size:12.5px;font-weight:600">
             Performa Sekarang — Beban &amp; Utilisasi
           </strong>
@@ -1706,7 +1563,7 @@ div[style*="position: fixed"] .card {
     <div class="card perf-notes-card" id="server-notes-card">
       <div class="card-header perf-header-compact">
         <div style="display:flex;align-items:center;gap:6px">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
           <strong style="margin:0;font-size:12.5px;font-weight:600">
             Deskripsi &amp; Catatan Server
           </strong>
@@ -1734,7 +1591,7 @@ div[style*="position: fixed"] .card {
       {% if platform_info %}
       <span class="badge mono" id="spec-virt-badge" style="background:{{ platform_info.badge_bg }};color:{{ platform_info.badge_color }};border:1px solid {{ platform_info.badge_border }}">{{ platform_info.label }}</span>
       {% else %}
-      <span class="badge badge-purple mono" id="spec-virt-badge" style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.3)">{{ hardware_specs.platform.virt if hardware_specs and hardware_specs.platform and hardware_specs.platform.virt else 'Host' }}</span>
+      <span class="badge badge-purple mono" id="spec-virt-badge" style="background:var(--purple-bg);color:var(--purple);border:1px solid rgba(192,132,252,0.3)">{{ hardware_specs.platform.virt if hardware_specs and hardware_specs.platform and hardware_specs.platform.virt else 'Host' }}</span>
       {% endif %}
     </div>
     
@@ -1745,7 +1602,7 @@ div[style*="position: fixed"] .card {
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:6px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
             <strong style="font-size:13px">Prosesor (CPU)</strong>
           </div>
           <span class="badge badge-info mono" id="spec-cpu-cores" style="font-size:10px">{{ (hardware_specs.cpu.cores ~ ' Cores') if (server.last_seen and hardware_specs and hardware_specs.cpu and hardware_specs.cpu.cores) else '-' }}</span>
@@ -1764,7 +1621,7 @@ div[style*="position: fixed"] .card {
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:6px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
             <strong style="font-size:13px">Kapasitas Memori</strong>
           </div>
           <span class="badge badge-success mono" style="font-size:8.5px">RAM</span>
@@ -1783,7 +1640,7 @@ div[style*="position: fixed"] .card {
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:6px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             <strong style="font-size:13px">Platform &amp; Mesin</strong>
           </div>
         </div>
@@ -1801,7 +1658,7 @@ div[style*="position: fixed"] .card {
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:6px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--yellow-hover)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
             <strong style="font-size:13px">Sistem Operasi</strong>
           </div>
         </div>
@@ -1824,7 +1681,7 @@ div[style*="position: fixed"] .card {
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:6px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
             <strong style="font-size:13px">Perangkat Penyimpanan ({% if platform_info and platform_info.type == 'lxc' %}Alokasi Kontainer{% else %}Block Devices{% endif %})</strong>
           </div>
           <span class="badge badge-info" id="spec-disk-count" style="font-size:8.5px">{{ hardware_specs.disks|length if hardware_specs and hardware_specs.disks else 0 }} Disks</span>
@@ -1865,14 +1722,14 @@ div[style*="position: fixed"] .card {
                   </td>
                   <td class="mono">
                     {% if sm.temp_c %}
-                      <span style="{{ 'color:var(--danger,#ef4444);font-weight:bold' if sm.temp_c >= 65 else ('color:var(--warning,#f59e0b)' if sm.temp_c >= 55 else '') }}">{{ sm.temp_c }}°C</span>
+                      <span style="{{ 'color:var(--red);font-weight:bold' if sm.temp_c >= 65 else ('color:var(--yellow)' if sm.temp_c >= 55 else '') }}">{{ sm.temp_c }}°C</span>
                     {% else %}
                       <span style="color:var(--dim)">—</span>
                     {% endif %}
                   </td>
                   <td class="mono">
                     {% if sm.wearout_remaining is not none %}
-                      <span style="{{ 'color:var(--danger,#ef4444);font-weight:bold' if sm.wearout_remaining <= 10 else ('color:var(--warning,#f59e0b)' if sm.wearout_remaining <= 25 else '') }}">{{ sm.wearout_remaining }}%</span>
+                      <span style="{{ 'color:var(--red);font-weight:bold' if sm.wearout_remaining <= 10 else ('color:var(--yellow)' if sm.wearout_remaining <= 25 else '') }}">{{ sm.wearout_remaining }}%</span>
                     {% else %}
                       <span style="color:var(--dim)">—</span>
                     {% endif %}
@@ -1981,7 +1838,7 @@ div[style*="position: fixed"] .card {
       <div class="perf-metric-card">
         <div class="perf-card-header">
           <div class="perf-card-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" style="vertical-align:middle"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="vertical-align:middle"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
             <span>CPU</span>
           </div>
           <div class="perf-card-stats" id="stats-cpu"></div>
@@ -1991,7 +1848,7 @@ div[style*="position: fixed"] .card {
       <div class="perf-metric-card">
         <div class="perf-card-header">
           <div class="perf-card-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" style="vertical-align:middle"><path d="M6 19v-3"/><path d="M10 19v-3"/><path d="M14 19v-3"/><path d="M18 19v-3"/><path d="M6 5v3"/><path d="M10 5v3"/><path d="M14 5v3"/><path d="M18 5v3"/><rect x="2" y="8" width="20" height="8" rx="2"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" style="vertical-align:middle"><path d="M6 19v-3"/><path d="M10 19v-3"/><path d="M14 19v-3"/><path d="M18 19v-3"/><path d="M6 5v3"/><path d="M10 5v3"/><path d="M14 5v3"/><path d="M18 5v3"/><rect x="2" y="8" width="20" height="8" rx="2"/></svg>
             <span>Memori Terpakai</span>
           </div>
           <div class="perf-card-stats" id="stats-mem"></div>
@@ -2001,7 +1858,7 @@ div[style*="position: fixed"] .card {
       <div class="perf-metric-card">
         <div class="perf-card-header">
           <div class="perf-card-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" style="vertical-align:middle"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" style="vertical-align:middle"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             <span>Swap Terpakai</span>
           </div>
           <div class="perf-card-stats" id="stats-swap"></div>
@@ -2011,7 +1868,7 @@ div[style*="position: fixed"] .card {
       <div class="perf-metric-card">
         <div class="perf-card-header">
           <div class="perf-card-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2" style="vertical-align:middle"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" style="vertical-align:middle"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             <span>Beban Sistem (Load 1)</span>
           </div>
           <div class="perf-card-stats" id="stats-load"></div>
@@ -2951,7 +2808,7 @@ div[style*="position: fixed"] .card {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
             </button>
           {% else %}
-            <button type="button" class="btn btn-primary btn-sm" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" style="background:#16a34a;border-color:#22c55e{% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan UFW (otomatis allow SSH)"{% endif %} aria-label="Aktifkan Firewall">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" style="background:var(--green);border-color:var(--green){% if not is_online %};opacity:0.35;cursor:not-allowed{% endif %}" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan UFW (otomatis allow SSH)"{% endif %} aria-label="Aktifkan Firewall">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
             </button>
           {% endif %}
@@ -3975,7 +3832,7 @@ div[style*="position: fixed"] .card {
     </p>
 
     <div style="margin-bottom:16px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:13px">
-      Status saat ini: <strong style="color:{% if server.is_maintenance %}#facc15{% else %}#22c55e{% endif %}">{% if server.is_maintenance %}Aktif (Dalam Pemeliharaan){% else %}Tidak Aktif (Normal){% endif %}</strong>
+      Status saat ini: <strong style="color:{% if server.is_maintenance %}var(--yellow){% else %}var(--green){% endif %}">{% if server.is_maintenance %}Aktif (Dalam Pemeliharaan){% else %}Tidak Aktif (Normal){% endif %}</strong>
       {% if server.maintenance_reason %}<div style="color:var(--dim);font-size:12px;margin-top:4px">Alasan: {{ server.maintenance_reason }}</div>{% endif %}
       {% if server.maintenance_until %}<div style="color:var(--dim);font-size:12px;margin-top:2px">Berakhir: {{ server.maintenance_until.strftime('%H:%M %d/%m/%Y UTC') }}</div>{% endif %}
     </div>
@@ -4160,7 +4017,7 @@ div[style*="position: fixed"] .card {
 <div id="term-lock-confirm-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px" onclick="if(event.target===this)closeTerminalLockConfirmModal()">
   <div class="card" style="width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:22px;box-shadow:0 20px 48px rgba(0,0,0,0.8);color:var(--text)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;color:#f87171">
+      <h3 style="margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--red)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <span>Kunci Terminal &amp; Putus Sesi?</span>
       </h3>
@@ -4774,15 +4631,15 @@ function renderTopProcs(data) {
       stateBadge = `<span class="badge badge-up" style="font-weight:700" title="${isEn ? 'Running / Active' : 'Running / Sedang Berjalan'}">R</span>`;
     } else if (stateChar === 'T') {
       isPaused = true;
-      stateBadge = `<span class="badge badge-warn" style="font-weight:700;background:rgba(234,179,8,0.2);color:#eab308" title="${isEn ? 'Stopped / Suspended (Paused)' : 'Stopped / Ditangguhkan (Paused)'}">T (${isEn ? 'Pause' : 'Pause'})</span>`;
+      stateBadge = `<span class="badge badge-warn" style="font-weight:700" title="${isEn ? 'Stopped / Suspended (Paused)' : 'Stopped / Ditangguhkan (Paused)'}">T (${isEn ? 'Pause' : 'Pause'})</span>`;
     } else if (stateChar === 'Z') {
       stateBadge = `<span class="badge badge-danger" title="${isEn ? 'Zombie Process' : 'Zombie Process'}">Z (Zombie)</span>`;
     }
 
     const cpuVal = (p.cpu !== undefined ? p.cpu : 0);
     const memVal = (p.mem !== undefined ? p.mem : 0);
-    const cpuColor = cpuVal > 50 ? '#ef4444' : (cpuVal > 20 ? '#eab308' : 'var(--text)');
-    const memColor = memVal > 50 ? '#3b82f6' : (memVal > 20 ? '#06b6d4' : 'var(--text)');
+    const cpuColor = cpuVal > 50 ? 'var(--red)' : (cpuVal > 20 ? 'var(--yellow)' : 'var(--text)');
+    const memColor = memVal > 50 ? 'var(--blue)' : (memVal > 20 ? 'var(--blue)' : 'var(--text)');
 
     let actionBtns = '';
     if (CAN_PROCESSES) {
@@ -4947,7 +4804,7 @@ async function triggerAgentUpdate(sid) {
     btn.disabled = true;
     btn.style.opacity = '0.7';
     btn.style.cursor = 'wait';
-    btn.innerHTML = `<span class="spinner" style="display:inline-block;width:11px;height:11px;border:2px solid #18181b;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></span> ` + (isEn ? "Pushing OTA update…" : "Mengirim Push OTA…");
+    btn.innerHTML = `<span class="spinner" style="display:inline-block;width:11px;height:11px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></span> ` + (isEn ? "Pushing OTA update…" : "Mengirim Push OTA…");
   }
 
   const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || "";
@@ -9597,7 +9454,7 @@ function renderFirewall(fw) {
       btns = `<button type="button" class="btn btn-ghost btn-sm" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Reload UFW rules' : 'Muat ulang aturan UFW tanpa memutus koneksi'}" aria-label="Reload Aturan">${svgFwReload}</button>
       <button type="button" class="btn btn-ghost btn-sm" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" style="color:var(--yellow);border-color:rgba(234,179,8,0.3)${!IS_ONLINE ? ';opacity:0.35;cursor:not-allowed' : ''}" ${!IS_ONLINE ? 'disabled' : ''} title="${isEn ? 'Disable UFW' : 'Nonaktifkan UFW'}" aria-label="Nonaktifkan Firewall">${svgFwDisable}</button>`;
     } else {
-      btns = `<button type="button" class="btn btn-primary btn-sm" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" style="background:#16a34a;border-color:#22c55e${!IS_ONLINE ? ';opacity:0.35;cursor:not-allowed' : ''}" ${!IS_ONLINE ? 'disabled' : ''} title="${isEn ? 'Enable UFW (auto allows SSH)' : 'Aktifkan UFW (otomatis allow SSH)'}" aria-label="Aktifkan Firewall">${svgFwEnable}</button>`;
+      btns = `<button type="button" class="btn btn-primary btn-sm" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" style="background:var(--green);border-color:var(--green)${!IS_ONLINE ? ';opacity:0.35;cursor:not-allowed' : ''}" ${!IS_ONLINE ? 'disabled' : ''} title="${isEn ? 'Enable UFW (auto allows SSH)' : 'Aktifkan UFW (otomatis allow SSH)'}" aria-label="Aktifkan Firewall">${svgFwEnable}</button>`;
     }
     const badgesHtml = `<span class="badge ${isActive ? 'badge-up' : 'badge-warn'}" id="fw-status-badge">${isActive ? (isEn ? 'Active (Protecting)' : 'Aktif (Melindungi)') : (isEn ? 'Inactive (Open)' : 'Nonaktif (Terbuka)')}</span> <span class="badge badge-info" id="fw-backend-badge">${(f.backend || 'unknown').toUpperCase()}</span> `;
     actWrap.innerHTML = badgesHtml + btns;
@@ -10045,13 +9902,13 @@ function renderSys(data) {
 
               let tempHtml = '<span style="color:var(--dim)">—</span>';
               if (sm.temp_c !== null && sm.temp_c !== undefined) {
-                const tempColor = sm.temp_c >= 65 ? 'color:var(--danger,#ef4444);font-weight:bold' : (sm.temp_c >= 55 ? 'color:var(--warning,#f59e0b)' : '');
+                const tempColor = sm.temp_c >= 65 ? 'color:var(--red);font-weight:bold' : (sm.temp_c >= 55 ? 'color:var(--yellow)' : '');
                 tempHtml = `<span style="${tempColor}">${sm.temp_c}°C</span>`;
               }
 
               let wearHtml = '<span style="color:var(--dim)">—</span>';
               if (sm.wearout_remaining !== null && sm.wearout_remaining !== undefined) {
-                const wearColor = sm.wearout_remaining <= 10 ? 'color:var(--danger,#ef4444);font-weight:bold' : (sm.wearout_remaining <= 25 ? 'color:var(--warning,#f59e0b)' : '');
+                const wearColor = sm.wearout_remaining <= 10 ? 'color:var(--red);font-weight:bold' : (sm.wearout_remaining <= 25 ? 'color:var(--yellow)' : '');
                 wearHtml = `<span style="${wearColor}">${sm.wearout_remaining}%</span>`;
               }
 
@@ -10159,10 +10016,10 @@ function renderSys(data) {
     const macVal = n.mac || (hwIfaceMap[n.iface] && hwIfaceMap[n.iface].mac) || '—';
     const speedVal = n.speed || (hwIfaceMap[n.iface] && hwIfaceMap[n.iface].speed) || 'Auto / Virtual';
     const rxRateStr = (n.rx_rate > 0)
-      ? '<span style="color:#38bdf8;font-weight:600">↓ ' + fmtBytes(n.rx_rate) + '/s</span>'
+      ? '<span style="color:var(--blue);font-weight:600">↓ ' + fmtBytes(n.rx_rate) + '/s</span>'
       : '<span style="color:var(--dim)">0 B/s</span>';
     const txRateStr = (n.tx_rate > 0)
-      ? '<span style="color:#34d399;font-weight:600">↑ ' + fmtBytes(n.tx_rate) + '/s</span>'
+      ? '<span style="color:var(--green);font-weight:600">↑ ' + fmtBytes(n.tx_rate) + '/s</span>'
       : '<span style="color:var(--dim)">0 B/s</span>';
     const stateBadge = n.is_up
       ? '<span class="badge badge-up" style="font-size:8.5px;padding:1px 5px"><span class="dot up" style="margin-right:3px"></span>UP</span>'
@@ -10345,7 +10202,7 @@ function renderSys(data) {
 }
 
 // ---------- grafik kinerja (riwayat) ----------
-const PERF_COLORS = {cpu: '#38bdf8', mem: '#22c55e', swap: '#eab308', load: '#f43f5e'};
+const PERF_COLORS = {cpu: 'var(--blue)', mem: 'var(--green)', swap: 'var(--yellow)', load: 'var(--red)'};
 let perfRange = '24h';
 
 function fmtAxisTime(t) {
@@ -10438,7 +10295,7 @@ function renderLineChart(elId, points, valueOf, yfmt, colorHex, fixedMax, statId
   const lastX = X(lastItem.p.t).toFixed(1);
   const lastY = Y(lastItem.v).toFixed(1);
   svg += '<circle cx="' + lastX + '" cy="' + lastY + '" r="5.5" fill="' + colorHex + '" opacity="0.35"/>';
-  svg += '<circle cx="' + lastX + '" cy="' + lastY + '" r="3" fill="#fff" stroke="' + colorHex + '" stroke-width="2"/>';
+  svg += '<circle cx="' + lastX + '" cy="' + lastY + '" r="3" fill="var(--card)" stroke="' + colorHex + '" stroke-width="2"/>';
 
   svg += '</svg>';
   el.innerHTML = svg;
@@ -10858,7 +10715,7 @@ function renderDiskCharts(pts) {
         return '<div class="perf-metric-card">'
           + '<div class="perf-card-header">'
           + '  <div class="perf-card-title">'
-          + '    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" style="vertical-align:middle"><path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><line x1="6" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="18" y2="12"/></svg>'
+          + '    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2" style="vertical-align:middle"><path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><line x1="6" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="18" y2="12"/></svg>'
           + '    <span class="mono">' + escHtml(mount) + '</span>'
           + '  </div>'
           + '  <div class="perf-card-stats" id="' + statId + '"></div>'
@@ -10879,7 +10736,7 @@ function renderDiskCharts(pts) {
         return {t: p.t, v: d ? d.pct : null};
       }).filter(x => x.v !== null).map(x => ({t: x.t, disk_pct: x.v}));
       if (diskPts.length < 2) return;
-      renderLineChart(elId, diskPts, p => p.disk_pct, v => v.toFixed(0) + '%', '#a855f7', 100, statId);
+      renderLineChart(elId, diskPts, p => p.disk_pct, v => v.toFixed(0) + '%', 'var(--purple)', 100, statId);
     });
   }, 0);
 }
@@ -11042,7 +10899,7 @@ function saveServerNotesAuto() {
 
   const statusEl = document.getElementById('server-notes-status');
   if (statusEl) {
-    statusEl.innerHTML = '<span style="color:#60a5fa;font-size:11px">Menyimpan…</span>';
+    statusEl.innerHTML = '<span class="text-info" style="font-size:11px">Menyimpan…</span>';
   }
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
@@ -11062,9 +10919,9 @@ function saveServerNotesAuto() {
       updateHeroNotes(savedText);
       if (statusEl) {
         if (!savedText) {
-          statusEl.innerHTML = '<span style="color:#94a3b8;font-size:11px">Catatan dihapus</span>';
+          statusEl.innerHTML = '<span class="text-dim" style="font-size:11px">Catatan dihapus</span>';
         } else {
-          statusEl.innerHTML = '<span style="color:#22c55e;font-size:11px">✓ Tersimpan</span>';
+          statusEl.innerHTML = '<span class="text-ok" style="font-size:11px">✓ Tersimpan</span>';
         }
         setTimeout(() => {
           if (statusEl && (statusEl.textContent.includes('Tersimpan') || statusEl.textContent.includes('dihapus'))) {
@@ -11074,13 +10931,13 @@ function saveServerNotesAuto() {
       }
     } else {
       if (statusEl) {
-        statusEl.innerHTML = '<span style="color:#ef4444;font-size:11px">Gagal menyimpan</span>';
+        statusEl.innerHTML = '<span class="text-danger" style="font-size:11px">Gagal menyimpan</span>';
       }
     }
   })
   .catch(() => {
     if (statusEl) {
-      statusEl.innerHTML = '<span style="color:#ef4444;font-size:11px">Kesalahan jaringan</span>';
+      statusEl.innerHTML = '<span class="text-danger" style="font-size:11px">Kesalahan jaringan</span>';
     }
   });
 }

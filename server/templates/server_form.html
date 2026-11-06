@@ -124,11 +124,11 @@
           <option value="lxc" {% if server and server.platform_override == 'lxc' %}selected{% endif %}>Kontainer (LXC / Proxmox CT)</option>
         </select>
         {% if detected_platform and detected_platform.label %}
-        <span id="detected-platform-hint" style="font-size:11px;color:#38bdf8;margin-top:4px;display:flex;align-items:center;gap:4px">
+        <span id="detected-platform-hint" style="font-size:11px;color:var(--blue);margin-top:4px;display:flex;align-items:center;gap:4px">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
           (Server ini terdeteksi sebagai platform {{ detected_platform.label }})
         </span>
-        <div id="platform-mismatch-warn" style="display:none;margin-top:6px;padding:6px 10px;border-radius:6px;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);color:#fbbf24;font-size:11px;line-height:1.4">
+        <div id="platform-mismatch-warn" style="display:none;margin-top:6px;padding:6px 10px;border-radius:6px;background:var(--yellow-bg);border:1px solid rgba(251,191,36,0.3);color:var(--yellow);font-size:11px;line-height:1.4">
           <strong style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
             Perhatian: Potensi Ketidaksesuaian Konfigurasi
@@ -144,7 +144,7 @@
       <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid rgba(255,255,255,0.05);padding-top:12px">
         <!-- Proxmox HA toggle (dinamis: otomatis disembunyikan bila platform Baremetal) -->
         <div id="row-proxmox-ha" style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:6px;background:rgba(234,179,8,0.03);border:1px solid rgba(234,179,8,0.18)">
-          <input type="checkbox" id="f-proxmox-ha" name="is_proxmox_ha" value="1" {% if server and server.is_proxmox_ha %}checked{% endif %} style="margin-top:2px;accent-color:#eab308;cursor:pointer;width:15px;height:15px">
+          <input type="checkbox" id="f-proxmox-ha" name="is_proxmox_ha" value="1" {% if server and server.is_proxmox_ha %}checked{% endif %} style="margin-top:2px;accent-color:var(--yellow);cursor:pointer;width:15px;height:15px">
           <label for="f-proxmox-ha" style="cursor:pointer;margin:0;flex:1">
             <strong style="color:var(--text);font-size:12.5px;display:flex;align-items:center;gap:5px">
               Terproteksi Proxmox HA (High Availability)
@@ -284,8 +284,8 @@ function updateGroupHighlight() {
     const bGrp = (btn.dataset.grp || '').trim().toLowerCase();
     if (cur && bGrp === cur) {
       btn.style.borderColor = 'var(--blue)';
-      btn.style.background = 'rgba(59,130,246,0.18)';
-      btn.style.color = '#fff';
+      btn.style.background = 'var(--blue-bg)';
+      btn.style.color = 'var(--text-bright)';
       btn.style.fontWeight = '600';
     } else {
       btn.style.borderColor = 'var(--border)';
@@ -317,8 +317,8 @@ function updateTagHighlight() {
     const tg = (btn.dataset.tag || '').trim().toLowerCase();
     if (tags.includes(tg)) {
       btn.style.borderColor = 'var(--blue)';
-      btn.style.background = 'rgba(59,130,246,0.18)';
-      btn.style.color = '#fff';
+      btn.style.background = 'var(--blue-bg)';
+      btn.style.color = 'var(--text-bright)';
       btn.style.fontWeight = '600';
     } else {
       btn.style.borderColor = 'var(--border)';

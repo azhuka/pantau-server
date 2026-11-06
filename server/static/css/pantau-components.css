@@ -929,3 +929,164 @@ span[data-pg-cur] {
   outline: none !important;
   box-sizing: border-box !important;
 }
+
+/* -----------------------------------------------------------------------------
+   10. SISTEM KOMPONEN & UTILITAS ARSITEKTUR FRAMEWORK (Framework Component Library)
+   ----------------------------------------------------------------------------- */
+
+/* Alert Banners */
+.alert-banner {
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  margin-bottom: 20px !important;
+  font-size: 13.5px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+.alert-banner-success {
+  background: var(--green-bg) !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+  color: var(--green) !important;
+}
+.alert-banner-danger {
+  background: var(--red-bg) !important;
+  border: 1px solid rgba(248, 113, 113, 0.35) !important;
+  color: var(--red) !important;
+}
+.alert-banner-warning {
+  background: var(--yellow-bg) !important;
+  border: 1px solid rgba(251, 191, 36, 0.35) !important;
+  color: var(--yellow) !important;
+}
+.alert-banner-info {
+  background: var(--blue-bg) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  color: var(--blue) !important;
+}
+
+/* Tombol Aksi Ghost & Outline NOC */
+.btn-ghost-danger {
+  color: var(--red) !important;
+}
+.btn-ghost-danger:hover {
+  background: var(--red-bg) !important;
+  color: var(--red) !important;
+}
+
+.btn-ghost-warning {
+  color: var(--yellow) !important;
+}
+.btn-ghost-warning:hover {
+  background: var(--yellow-bg) !important;
+  color: var(--yellow) !important;
+}
+
+.btn-ghost-info {
+  color: var(--blue) !important;
+}
+.btn-ghost-info:hover {
+  background: var(--blue-bg) !important;
+  color: var(--blue) !important;
+}
+
+.btn-ghost-success {
+  color: var(--green) !important;
+}
+.btn-ghost-success:hover {
+  background: var(--green-bg) !important;
+  color: var(--green) !important;
+}
+
+.btn-outline-warning {
+  color: var(--yellow) !important;
+  border: 1px solid rgba(251, 191, 36, 0.4) !important;
+}
+.btn-outline-warning:hover {
+  background: var(--yellow-bg) !important;
+  border-color: var(--yellow) !important;
+  color: var(--yellow) !important;
+}
+
+.btn-outline-info {
+  color: var(--blue) !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+}
+.btn-outline-info:hover {
+  background: var(--blue-bg) !important;
+  border-color: var(--blue) !important;
+  color: var(--blue) !important;
+}
+
+/* Tombol Aksi Tabel Manajemen Pengguna */
+.user-act-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3.5px !important;
+  font-size: 11px !important;
+  padding: 3px 6px !important;
+  border-radius: 5px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+.user-act-icon-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 3px 6px !important;
+  border-radius: 5px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+/* Badge Peran Pengguna & Wewenang */
+.badge-role-master {
+  background: var(--red-bg) !important;
+  color: var(--red) !important;
+  border: 1px solid rgba(248, 113, 113, 0.35) !important;
+  font-size: 8.5px !important;
+  padding: 1px 5px !important;
+  font-weight: 700 !important;
+}
+.badge-role-op {
+  background: var(--blue-bg) !important;
+  color: var(--blue) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  font-size: 8.5px !important;
+  padding: 1px 5px !important;
+  font-weight: 700 !important;
+}
+.badge-role-viewer {
+  background: var(--card-hover, rgba(255, 255, 255, 0.05)) !important;
+  color: var(--dim) !important;
+  border: 1px solid var(--border) !important;
+  font-size: 8.5px !important;
+  padding: 1px 5px !important;
+}
+.badge-perm {
+  background: var(--blue-bg) !important;
+  color: var(--blue) !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  font-size: 10px !important;
+  padding: 2px 6px !important;
+}
+
+/* Wadah QR Code & Kode Rahasia (Teruji bersih di seluruh tema) */
+.qr-code-box {
+  background: #ffffff !important;
+  padding: 8px !important;
+  border-radius: 8px !important;
+  display: inline-block !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Utilitas Teks Semantik Framework */
+.text-ok { color: var(--green) !important; }
+.text-warn { color: var(--yellow) !important; }
+.text-danger { color: var(--red) !important; }
+.text-info { color: var(--blue) !important; }
+.text-orange { color: var(--orange) !important; }
+.text-dim { color: var(--dim) !important; }
+.text-dim-subtle { color: var(--dim-subtle) !important; }
+.text-mono { font-family: var(--font-mono, ui-monospace, monospace) !important; }
+

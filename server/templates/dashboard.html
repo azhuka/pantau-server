@@ -101,8 +101,8 @@
   background: rgba(255, 255, 255, 0.05);
 }
 .view-btn.active {
-  background: var(--blue, #3b82f6);
-  color: #fff;
+  background: var(--blue);
+  color: var(--text-heading);
   font-weight: 600;
 }
 
@@ -164,14 +164,14 @@
 
 /* Gawat (Orange) */
 .zbx-sev-tile.zbx-tile-average.is-active {
-  background: rgba(249, 115, 22, 0.18);
+  background: var(--orange-bg);
   border-color: rgba(249, 115, 22, 0.65);
 }
 .zbx-sev-tile.zbx-tile-average.is-active .zbx-sev-count {
-  color: var(--orange, #f97316);
+  color: var(--orange);
 }
 .zbx-sev-tile.zbx-tile-average.is-active .zbx-sev-label {
-  color: var(--orange, #f97316);
+  color: var(--orange);
 }
 
 /* Warning (Yellow) */
@@ -450,7 +450,7 @@
   color: var(--text);
 }
 #dash-server-table th.sortable.is-sorted {
-  color: var(--text-bright, #fff);
+  color: var(--text-bright);
 }
 .sort-arrow {
   display: inline-block;
@@ -460,7 +460,7 @@
 }
 #dash-server-table th.sortable:hover .sort-arrow,
 #dash-server-table th.sortable.is-sorted .sort-arrow {
-  color: var(--text-bright, #fff);
+  color: var(--text-bright);
 }
 
 /* Dedicated Styling for UP & Down Sub-Columns (Preserved on Sort) */
@@ -549,8 +549,8 @@
   background: linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%);
 }
 .server-card.is-average {
-  border-left: 4px solid var(--orange, #f97316);
-  background: linear-gradient(90deg, rgba(249, 115, 22, 0.05) 0%, transparent 100%);
+  border-left: 4px solid var(--orange);
+  background: linear-gradient(90deg, var(--orange-bg) 0%, transparent 100%);
 }
 .server-card.is-warn {
   border-left: 4px solid var(--yellow);
@@ -661,7 +661,7 @@
   user-select: none;
 }
 .kiosk-toggle-btn:hover {
-  color: #fff;
+  color: var(--text-heading);
   background: rgba(37, 99, 235, 0.88);
   border-color: rgba(59, 130, 246, 0.6);
   box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
@@ -682,7 +682,7 @@ body.kiosk-mode .kiosk-toggle-btn:hover {
   opacity: 1;
   background: rgba(239, 68, 68, 0.88);
   border-color: rgba(239, 68, 68, 0.6);
-  color: #fff;
+  color: var(--text-heading);
   box-shadow: 0 0 16px rgba(239, 68, 68, 0.5);
 }
 body.kiosk-mode .topbar {
@@ -717,7 +717,7 @@ body.show-alert-banner .kiosk-toggle-btn {
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--dim, #94a3b8);
+  color: var(--dim);
   cursor: pointer;
   transition: all .15s ease;
   flex-shrink: 0;
@@ -730,7 +730,7 @@ body.show-alert-banner .kiosk-toggle-btn {
 .widget-popout-btn:hover {
   background: rgba(56, 189, 248, 0.16);
   border-color: rgba(56, 189, 248, 0.45);
-  color: #38bdf8;
+  color: var(--blue);
   transform: translateY(-1px);
 }
 .widget-popout-btn:active {
@@ -739,7 +739,7 @@ body.show-alert-banner .kiosk-toggle-btn {
 
 /* Tampilan Pop-out Standalone Window */
 body.popout-window {
-  background: #0f172a !important;
+  background: var(--bg) !important;
   background-image: none !important;
   min-height: 100vh !important;
 }
@@ -839,8 +839,8 @@ body.popout-fleet_table #dash-fleet-card {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: var(--green, #10b981);
-  box-shadow: 0 0 8px var(--green, #10b981);
+  background-color: var(--green);
+  box-shadow: 0 0 8px var(--green);
   animation: clockPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   flex-shrink: 0;
 }
@@ -851,14 +851,14 @@ body.popout-fleet_table #dash-fleet-card {
 .dash-clock-day {
   font-size: 11.5px;
   font-weight: 700;
-  color: var(--text-heading, #f1f5f9);
+  color: var(--text-heading);
   letter-spacing: -0.01em;
   text-transform: capitalize;
 }
 .dash-clock-date {
   font-size: 10px;
   font-weight: 500;
-  color: var(--dim, #94a3b8);
+  color: var(--dim);
   margin-top: 1px;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -876,7 +876,7 @@ body.popout-fleet_table #dash-fleet-card {
   font-size: 16px;
   font-weight: 700;
   line-height: 1;
-  color: var(--text-heading, #ffffff);
+  color: var(--text-heading);
   letter-spacing: 0.5px;
   display: flex;
   align-items: baseline;
@@ -903,7 +903,7 @@ body.popout-fleet_table #dash-fleet-card {
   font-weight: 500;
 }
 .dash-clock-sec {
-  color: var(--blue, #38bdf8);
+  color: var(--blue);
   font-size: 12.5px;
   font-weight: 600;
 }
@@ -914,7 +914,7 @@ body.popout-fleet_table #dash-fleet-card {
   padding: 2px 6px;
   border-radius: 4px;
   background: rgba(16, 185, 129, 0.12);
-  color: var(--green, #10b981);
+  color: var(--green);
   border: 1px solid rgba(16, 185, 129, 0.3);
   text-transform: uppercase;
   line-height: 1;
@@ -935,7 +935,7 @@ body.popout-fleet_table #dash-fleet-card {
       </svg>
       {% endif %}
     </div>
-    <div class="dash-brand-title" style="font-size:20px;font-weight:800;letter-spacing:1.5px;color:var(--text-heading, #fff);text-transform:uppercase;line-height:1;margin:0">PANTAU SERVER</div>
+    <div class="dash-brand-title" style="font-size:20px;font-weight:800;letter-spacing:1.5px;color:var(--text-heading);text-transform:uppercase;line-height:1;margin:0">PANTAU SERVER</div>
     <div style="font-size:14.5px;font-weight:700;color:var(--text-bright);letter-spacing:0.2px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ brand.org_name }}</div>
     {% if brand.org_unit %}
     <div style="font-size:12.5px;color:var(--dim);font-style:italic;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding-bottom:1px">{{ brand.org_unit }}</div>
@@ -1011,10 +1011,10 @@ body.popout-fleet_table #dash-fleet-card {
 
   {% set total_active = danger_total + average_total + warning_total + info_total %}
   {% set total_all = total_active + ignored_total %}
-  <div class="card" id="kpi-card-prob" style="margin:0;padding:6px 12px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid {% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% elif ignored_total > 0 %}rgba(148,163,184,0.45){% else %}var(--border){% endif %}">
+  <div class="card" id="kpi-card-prob" style="margin:0;padding:6px 12px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid {% if danger_total > 0 %}var(--red){% elif average_total > 0 %}var(--orange){% elif warning_total > 0 %}var(--yellow){% elif info_total > 0 %}var(--blue){% elif ignored_total > 0 %}rgba(148,163,184,0.45){% else %}var(--border){% endif %}">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
       <div style="font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:0.04em;font-weight:700;display:flex;align-items:center;gap:5px">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}#f97316{% elif warning_total > 0 %}var(--yellow){% else %}var(--green){% endif %};flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:{% if danger_total > 0 %}var(--red){% elif average_total > 0 %}var(--orange){% elif warning_total > 0 %}var(--yellow){% else %}var(--green){% endif %};flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         <span>Insiden Aktif</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
@@ -1087,7 +1087,7 @@ body.popout-fleet_table #dash-fleet-card {
 <div class="card" id="dash-problems-card" style="margin-bottom:8px;padding:0;overflow:hidden">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:center;gap:8px">
-      <span id="dash-inc-icon" data-state="{{ inc_state }}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:{% if inc_state == 'danger' %}rgba(239,68,68,0.15){% elif inc_state == 'avg' %}rgba(249,115,22,0.15){% elif inc_state == 'warn' %}rgba(245,158,11,0.15){% elif inc_state == 'info' %}rgba(59,130,246,0.15){% else %}rgba(16,185,129,0.12){% endif %};color:{% if inc_state == 'danger' %}var(--red){% elif inc_state == 'avg' %}#f97316{% elif inc_state == 'warn' %}var(--yellow){% elif inc_state == 'info' %}var(--blue){% else %}var(--green){% endif %}">
+      <span id="dash-inc-icon" data-state="{{ inc_state }}" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:{% if inc_state == 'danger' %}var(--red-bg){% elif inc_state == 'avg' %}var(--orange-bg){% elif inc_state == 'warn' %}var(--yellow-bg){% elif inc_state == 'info' %}var(--blue-bg){% else %}var(--green-bg){% endif %};color:{% if inc_state == 'danger' %}var(--red){% elif inc_state == 'avg' %}var(--orange){% elif inc_state == 'warn' %}var(--yellow){% elif inc_state == 'info' %}var(--blue){% else %}var(--green){% endif %}">
         {% if inc_state in ('danger', 'avg', 'warn') %}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         {% elif inc_state == 'info' %}
@@ -1738,7 +1738,7 @@ const SEV_CONFIG = {
   average: {
     label: 'Gawat',
     badgeCls: 'badge-orange',
-    iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+    iconHtml: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
     emptyMsg: 'Tidak ada insiden Gawat saat ini.'
   },
   warning: {
@@ -2188,7 +2188,7 @@ function getPlatformBadgeHtml(plat) {
   let label = (plat.short_label || plat.label || '').toUpperCase();
   if (label === 'FISIK') label = 'BAREMETAL';
   const bg = plat.badge_bg || 'rgba(100,116,139,0.15)';
-  const col = plat.badge_color || '#94a3b8';
+  const col = plat.badge_color || 'var(--dim)';
   const bor = plat.badge_border || 'rgba(100,116,139,0.25)';
   const pType = plat.type || '';
   let iconSvg = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>';
@@ -2852,8 +2852,8 @@ async function pollNocDashboard() {
       kpiColor = 'var(--red)';
       kpiTextColor = 'var(--red)';
     } else if (avgTot > 0) {
-      kpiColor = '#f97316';
-      kpiTextColor = '#f97316';
+      kpiColor = 'var(--orange)';
+      kpiTextColor = 'var(--orange)';
     } else if (warnTot > 0) {
       kpiColor = 'var(--yellow)';
       kpiTextColor = 'var(--yellow)';
@@ -2931,8 +2931,8 @@ async function pollNocDashboard() {
           incIcon.style.color = 'var(--red)';
           incIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
         } else if (curIconState === 'avg') {
-          incIcon.style.background = 'rgba(249,115,22,0.15)';
-          incIcon.style.color = '#f97316';
+          incIcon.style.background = 'var(--orange-bg)';
+          incIcon.style.color = 'var(--orange)';
           incIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
         } else if (curIconState === 'warn') {
           incIcon.style.background = 'rgba(245,158,11,0.15)';
