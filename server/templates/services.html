@@ -1979,8 +1979,8 @@ div[style*="position: fixed"] .card {
       <th class="col-sev">Keparahan</th>
       <th class="col-event">Kejadian</th>
       <th class="col-durasi">Durasi</th>
+      <th class="col-tips">Panduan Solusi</th>
       <th class="col-act">Tindakan</th>
-      <th class="col-tips">Saran</th>
     </tr></thead>
     <tbody>
     {% for p in rows %}
@@ -2020,6 +2020,7 @@ div[style*="position: fixed"] .card {
         {% if p.count_24h and p.count_24h > 1 %}<span class="badge badge-muted" style="margin-left:5px;font-size:7.5px;padding:0.5px 3px;font-weight:normal" title="Kejadian berulang dalam 24 jam terakhir">kambuh {{ p.count_24h }}×</span>{% endif %}
       </td>
       <td class="mono col-durasi" style="white-space:nowrap"{% if p.is_open %} data-start="{{ p.started_at.replace(tzinfo=None).isoformat() }}Z"{% endif %}>{{ p.durasi }}</td>
+      <td class="col-tips" style="font-size:11px;line-height:1.35;color:var(--dim)">{{ p.tip or '—' }}</td>
       <td class="col-act prob-act-cell">
         <div class="prob-act-wrap">
           <div class="prob-act-row prob-act-tools">
@@ -2093,7 +2094,6 @@ div[style*="position: fixed"] .card {
           {% endif %}
         </div>
       </td>
-      <td class="col-tips" style="font-size:11px;line-height:1.35;color:var(--dim)">{{ p.tip or '—' }}</td>
     </tr>
     {% endfor %}
     </tbody>
@@ -2164,14 +2164,14 @@ div[style*="position: fixed"] .card {
       {% if actions %}
         {% for a in actions %}
         <tr id="act-row-{{ a.id }}">
-          <td class="mono col-time-detailed" style="white-space:nowrap" title="Waktu Eksekusi: {{ a.time.strftime('%d %b %Y %H:%M:%S') if a.time else '—' }}">{{ a.time.strftime('%d %b %H:%M:%S') if a.time else '—' }}</td>
-          <td><span class="mono">{{ a.user }}</span></td>
-          <td><span class="badge badge-muted">{{ a.action_label }}</span></td>
-          <td style="font-size:13px"><strong>{{ a.target }}</strong></td>
-          <td>
+          <td class="col-his-time mono" style="white-space:nowrap" title="Waktu Eksekusi: {{ a.time.strftime('%d %b %Y %H:%M:%S') if a.time else '—' }}">{{ a.time.strftime('%d %b %H:%M:%S') if a.time else '—' }}</td>
+          <td class="col-his-user"><span class="mono">{{ a.user }}</span></td>
+          <td class="col-his-act"><span class="badge badge-muted">{{ a.action_label }}</span></td>
+          <td class="col-his-tgt" style="font-size:11.5px" title="{{ a.target }}"><strong>{{ a.target }}</strong></td>
+          <td class="col-his-st">
             <span class="badge badge-{{ a.status_cls }}">{{ a.status_label }}</span>
           </td>
-          <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">{{ a.result }}</td>
+          <td class="col-his-res mono" style="font-size:11px;color:var(--dim)" title="{{ a.result }}">{{ a.result }}</td>
         </tr>
         {% endfor %}
       {% else %}
@@ -2546,11 +2546,11 @@ div[style*="position: fixed"] .card {
           <label class="filter-col-label" for="pkg-status-filter">Status</label>
           <select id="pkg-status-filter" class="filter-select" onchange="filterPackagesTable()">
             <option value="all">Semua Status</option>
-            <option value="running">running</option>
-            <option value="exited">exited (active)</option>
-            <option value="failed">failed</option>
-            <option value="inactive">inactive</option>
-            <option value="installed">installed</option>
+            <option value="running">Berjalan</option>
+            <option value="exited">Aktif</option>
+            <option value="failed">Gagal</option>
+            <option value="inactive">Nonaktif</option>
+            <option value="installed">Terpasang</option>
             <option value="upgradable">Pembaruan tersedia</option>
           </select>
         </div>
@@ -2814,17 +2814,26 @@ div[style*="position: fixed"] .card {
       <table id="systemd-timers-table" class="pantau-table">
         <thead>
           <tr>
-            <th title="Nama unit timer systemd">Nama Timer</th>
-            <th title="Unit service yang dipicu saat timer berjalan">Layanan Yang Diaktifkan</th>
-            <th title="Rincian jadwal jadwal terakhir dan selanjutnya">Jadwal &amp; Status</th>
+            <th class="col-timer-st" title="Status keaktifan timer">Status</th>
+            <th class="col-timer-unit" title="Nama unit timer systemd">Nama Timer</th>
+            <th class="col-timer-act" title="Unit service yang dipicu saat timer berjalan">Layanan Dipicu</th>
+            <th class="col-timer-next" title="Waktu eksekusi timer berikutnya">Jadwal Berikutnya</th>
+            <th class="col-timer-left" title="Sisa durasi waktu sebelum eksekusi berikutnya">Sisa Waktu</th>
+            <th class="col-timer-last" title="Waktu eksekusi timer terakhir">Eksekusi Terakhir</th>
           </tr>
         </thead>
         <tbody>
           {% for t in ((cron_jobs.timers if cron_jobs and cron_jobs.timers else [])) %}
+          {% set is_act = (t.status == 'active') or (t.next and t.next != '—') or (t.raw and not t.raw.startswith('-')) %}
           <tr>
-            <td class="mono" style="font-weight:600;color:var(--text);white-space:nowrap">{{ t.timer }}</td>
-            <td class="mono" style="color:var(--green)">{{ t.activates }}</td>
-            <td class="mono" style="font-size:11px;color:var(--dim)">{{ t.raw }}</td>
+            <td class="col-timer-st">
+              <span class="badge {{ 'badge-up' if is_act else 'badge-muted' }}" title="{{ 'Aktif' if is_act else 'Nonaktif / Idle' }}">{{ '●' if is_act else '○' }}</span>
+            </td>
+            <td class="col-timer-unit mono" style="font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ t.timer }}">{{ t.timer }}</td>
+            <td class="col-timer-act mono" style="color:var(--green);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ t.activates }}">{{ t.activates }}</td>
+            <td class="col-timer-next mono" style="font-size:10px">{{ t.next if t.next else (t.raw.split()[0:3]|join(' ') if t.raw and not t.raw.startswith('-') else '—') }}</td>
+            <td class="col-timer-left mono" style="font-size:10px;font-weight:600;color:{{ 'var(--blue)' if is_act else 'var(--dim)' }}">{{ t.left if t.left else (t.raw.split()[3] if t.raw and t.raw.split()|length > 3 and not t.raw.startswith('-') else '—') }}</td>
+            <td class="col-timer-last mono" style="font-size:10px;color:var(--dim)">{{ t.last if t.last else '—' }}{{ ' (' ~ t.passed ~ ')' if t.passed and t.passed != '—' else '' }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -3398,7 +3407,7 @@ div[style*="position: fixed"] .card {
               {% if c.is_custom %}<span class="badge badge-muted" title="Ditambahkan secara manual via Pantau" style="font-size:10px;margin-left:4px">Kustom</span>{% endif %}
             </td>
             <td class="col-ssl-iss" style="font-size:11px;color:var(--dim)" title="{{ c.issuer }}">{{ c.issuer }}</td>
-            <td class="col-ssl-exp mono" style="font-size:11px">{{ c.not_after }}</td>
+            <td class="col-ssl-exp mono" style="font-size:11px" title="{{ c.not_after }}">{{ c.not_after.split('T')[0] if ('T' in c.not_after) else c.not_after }}</td>
             <td class="col-ssl-rem mono" style="font-weight:700;color:{{ 'var(--red)' if c.is_expired or c.is_critical else ('var(--yellow)' if c.is_warning else 'var(--green)') }}">
               {% if c.is_expired %}
                 Kedaluwarsa
@@ -8367,8 +8376,8 @@ function renderProblemsTab(level, openList, histList) {
       <th class="col-sev">${isEn ? 'Severity' : 'Keparahan'}</th>
       <th class="col-event">${isEn ? 'Event' : 'Kejadian'}</th>
       <th class="col-durasi">${isEn ? 'Duration' : 'Durasi'}</th>
+      <th class="col-tips">${isEn ? 'Advice' : 'Panduan Solusi'}</th>
       <th class="col-act">${isEn ? 'Action' : 'Tindakan'}</th>
-      <th class="col-tips">${isEn ? 'Advice' : 'Saran'}</th>
     </tr></thead>
     <tbody>`;
 
@@ -8479,8 +8488,8 @@ function renderProblemsTab(level, openList, histList) {
       <td class="col-sev" style="text-align:left">${sevCellHtml}</td>
       <td class="col-event">${checkMark}<span${msgStyle}>${escapeHtml(pMsg || '')}</span> ${ignoredBadge} ${kambuhBadge}</td>
       <td class="mono col-durasi" style="white-space:nowrap"${dataStart}>${escapeHtml(p.durasi || '')}</td>
-      <td class="col-act prob-act-cell">${actHtml}</td>
       <td class="col-tips" style="font-size:11px;line-height:1.35;color:var(--dim)">${escapeHtml(pTip || '—')}</td>
+      <td class="col-act prob-act-cell">${actHtml}</td>
     </tr>`;
   }
 
@@ -9634,11 +9643,34 @@ function renderCron(cron_jobs) {
   if (timersTable && timers.length) {
     const tbody = timersTable.querySelector('tbody');
     if (tbody) {
-      tbody.innerHTML = timers.map(t => `<tr>
-        <td class="mono" style="font-weight:600;color:var(--text);white-space:nowrap">${escHtml(t.timer || '')}</td>
-        <td class="mono" style="color:var(--green)">${escHtml(t.activates || '')}</td>
-        <td class="mono" style="font-size:11px;color:var(--dim)">${escHtml(t.raw || '')}</td>
-      </tr>`).join('');
+      tbody.innerHTML = timers.map(t => {
+        let isAct = (t.status === 'active') || (t.next && t.next !== '—');
+        let nextStr = t.next || '—';
+        let leftStr = t.left || '—';
+        let lastStr = t.last || '—';
+        let passedStr = t.passed || '—';
+        if (!t.next && t.raw) {
+          const parts = t.raw.split(/\s+/);
+          if (parts[0] === '-') {
+            isAct = false;
+          } else {
+            isAct = true;
+            nextStr = parts.slice(0, 3).join(' ');
+            leftStr = parts[3] || '—';
+          }
+        }
+        const stBadge = isAct
+          ? '<span class="badge badge-up" title="Aktif">●</span>'
+          : '<span class="badge badge-muted" title="Nonaktif / Idle">○</span>';
+        return `<tr>
+          <td class="col-timer-st">${stBadge}</td>
+          <td class="col-timer-unit mono" style="font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(t.timer || '')}">${escHtml(t.timer || '')}</td>
+          <td class="col-timer-act mono" style="color:var(--green);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(t.activates || '')}">${escHtml(t.activates || '')}</td>
+          <td class="col-timer-next mono" style="font-size:10px">${escHtml(nextStr)}</td>
+          <td class="col-timer-left mono" style="font-size:10px;font-weight:600;color:${isAct ? 'var(--blue)' : 'var(--dim)'}">${escHtml(leftStr)}</td>
+          <td class="col-timer-last mono" style="font-size:10px;color:var(--dim)">${escHtml(lastStr)}${passedStr && passedStr !== '—' ? ' (' + escHtml(passedStr) + ')' : ''}</td>
+        </tr>`;
+      }).join('');
       if (_servicesTabPagination['timers']) _servicesTabPagination['timers'].update();
     }
   }
@@ -9685,10 +9717,12 @@ function renderSsl(sslList) {
       actHtml = `<button type="button" class="btn btn-sm btn-danger" title="${isEn ? 'Remove from SSL monitoring' : 'Hapus dari pengawasan SSL kustom'}" aria-label="${isEn ? 'Delete' : 'Hapus'}" onclick="submitSslRemovePath('${pathArg}', this)">${svgDelSsl}</button>`;
     }
 
+    const notAfterDisplay = (c.not_after && c.not_after.includes('T')) ? c.not_after.split('T')[0] : notAfterStr;
+
     return `<tr>
       <td class="col-ssl-dom"><strong>${domStr}</strong>${customBadge}</td>
       <td class="col-ssl-iss" style="font-size:10px;color:var(--dim)" title="${issuerStr}">${issuerStr}</td>
-      <td class="col-ssl-exp mono" style="font-size:10px">${notAfterStr}</td>
+      <td class="col-ssl-exp mono" style="font-size:10px" title="${notAfterStr}">${notAfterDisplay}</td>
       <td class="col-ssl-rem mono" style="font-weight:700;color:${daysColor}">${daysStr}</td>
       <td class="col-ssl-st">${statusBadge}</td>
       <td class="col-ssl-file mono" style="font-size:9.5px;color:var(--dim)" title="${pathClean}">${pathClean}</td>
@@ -11345,7 +11379,9 @@ function filterPackagesTable() {
       const matchVer = (pkg.version || '').toLowerCase().includes(q);
       const matchSum = (pkg.summary || '').toLowerCase().includes(q);
       const matchArch = (pkg.arch || '').toLowerCase().includes(q);
-      const matchSt = st.includes(q);
+      const stMap = {'running': 'berjalan', 'exited': 'aktif', 'failed': 'gagal', 'inactive': 'nonaktif', 'installed': 'terpasang'};
+      const stTranslated = stMap[st] || st;
+      const matchSt = st.includes(q) || stTranslated.includes(q);
       if (!matchName && !matchVer && !matchSum && !matchArch && !matchSt) return false;
     }
     return true;
@@ -11382,7 +11418,7 @@ function renderPackagesTable() {
   const lastBtn = document.getElementById('pkg-last-btn');
   const paginationWrap = document.getElementById('pkg-pagination-wrap');
 
-  if (totalBadge) totalBadge.textContent = `${_packagesList.length} packages`;
+  if (totalBadge) totalBadge.textContent = `${_packagesList.length} paket`;
   if (upgBadge) {
     if (_upgMap.size > 0) {
       upgBadge.textContent = `${_upgMap.size} pembaruan`;
@@ -11413,8 +11449,8 @@ function renderPackagesTable() {
 
   if (pageInfo) {
     pageInfo.textContent = totalFiltered === 0
-      ? 'Tidak ada packages yang sesuai kriteria filter'
-      : `Menampilkan ${startIdx + 1} - ${endIdx} dari ${totalFiltered} packages${totalFiltered !== _packagesList.length ? ' (terfilter)' : ''}`;
+      ? 'Tidak ada paket yang sesuai kriteria filter'
+      : `Menampilkan ${startIdx + 1} - ${endIdx} dari ${totalFiltered} paket${totalFiltered !== _packagesList.length ? ' (terfilter)' : ''}`;
   }
   if (pageNum) pageNum.textContent = `Halaman ${_pkgCurrentPage} / ${maxPage}`;
   if (firstBtn) firstBtn.disabled = (_pkgCurrentPage <= 1);
@@ -11425,7 +11461,7 @@ function renderPackagesTable() {
   if (!tbody) return;
 
   if (pageItems.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--dim)">Tidak ada packages yang cocok dengan pencarian / filter.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--dim)">Tidak ada paket yang cocok dengan pencarian / filter.</td></tr>';
     return;
   }
 
@@ -11442,15 +11478,15 @@ function renderPackagesTable() {
 
     // Badge runtime status (running, exited (active), inactive, installed, failed)
     const stRaw = (pkg.status || 'installed').toLowerCase();
-    let statusBadge = '<span class="badge badge-muted">installed</span>';
+    let statusBadge = '<span class="badge badge-muted">Terpasang</span>';
     if (stRaw === 'running') {
-      statusBadge = '<span class="badge badge-up" style="font-weight:600">running</span>';
+      statusBadge = '<span class="badge badge-up" style="font-weight:600">Berjalan</span>';
     } else if (stRaw.startsWith('exited')) {
-      statusBadge = '<span class="badge badge-info" style="font-weight:600">exited (active)</span>';
+      statusBadge = '<span class="badge badge-info" style="font-weight:600">Aktif</span>';
     } else if (stRaw === 'failed') {
-      statusBadge = '<span class="badge badge-danger" style="font-weight:600">failed</span>';
+      statusBadge = '<span class="badge badge-danger" style="font-weight:600">Gagal</span>';
     } else if (stRaw === 'inactive') {
-      statusBadge = '<span class="badge badge-warn" style="font-weight:600">inactive</span>';
+      statusBadge = '<span class="badge badge-warn" style="font-weight:600">Nonaktif</span>';
     }
 
     // Badge Tipe Packages (Aplikasi Manual vs Sistem Dependensi)

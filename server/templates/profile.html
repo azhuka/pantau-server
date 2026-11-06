@@ -270,11 +270,11 @@
   <style>
     .users-mgmt-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 330px;
-      gap: 20px;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 16px;
       align-items: start;
     }
-    @media (max-width: 1080px) {
+    @media (max-width: 1260px) {
       .users-mgmt-grid {
         grid-template-columns: 1fr;
         gap: 16px;
@@ -285,8 +285,8 @@
       align-items: center;
       gap: 3.5px;
       font-size: 11px;
-      padding: 3px 6px;
-      border-radius: 5px;
+      padding: 2px 5px;
+      border-radius: 4px;
       line-height: 1.2;
       white-space: nowrap;
     }
@@ -294,10 +294,13 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 3px 6px;
-      border-radius: 5px;
+      padding: 2px 5px;
+      border-radius: 4px;
       line-height: 1.2;
       white-space: nowrap;
+      min-width: 24px;
+      height: 24px;
+      border: 1px solid transparent;
     }
   </style>
 

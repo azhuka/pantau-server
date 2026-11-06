@@ -139,7 +139,7 @@
           <th class="col-aud-srv" title="Server yang dituju">Server</th>
           <th class="col-aud-act" title="Jenis operasi atau perintah yang dijalankan">Tindakan</th>
           <th class="col-aud-tgt" title="Entitas sasaran spesifik (layanan, IP, akun, file, atau parameter)">Target</th>
-          <th class="col-aud-st col-act" title="Status hasil eksekusi perintah">Status</th>
+          <th class="col-aud-st" title="Status hasil eksekusi perintah">Status</th>
           <th class="col-aud-res" title="Pesan respons atau keluaran perintah">Hasil / Respons</th>
         </tr>
       </thead>
@@ -157,7 +157,7 @@
             {% endif %}
           </td>
           <td class="col-aud-tgt audit-tgt-cell" data-raw="{{ r.target }}">{{ r.target }}</td>
-          <td class="col-aud-st col-act">
+          <td class="col-aud-st">
             {% if r.status %}
               <span class="badge badge-{{ st_cls.get(r.status, 'inactive') }} audit-st-cell" data-st="{{ r.status }}">{{ st_label.get(r.status, r.status) }}</span>
             {% else %}<span class="text-dim">—</span>{% endif %}

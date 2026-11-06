@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.145"
+AGENT_VERSION = "4.8.146"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -5270,21 +5270,51 @@ def collect_cron_jobs() -> dict:
     # 3. Systemd Timers (Modern Linux schedulers)
     timers: list[dict] = []
     try:
-        res = _run_cmd(["systemctl", "list-timers", "--all", "--no-pager"], timeout=5)
+        res = _run_cmd(["systemctl", "list-timers", "--all", "--full", "--no-legend"], timeout=5)
         if res and res.returncode == 0:
             lines = [l.strip() for l in res.stdout.splitlines() if l.strip()]
-            for l in lines[1:]:
-                if "ACTIVATES" in l or "timers listed" in l:
+            for l in lines:
+                if "timers listed" in l or "ACTIVATES" in l:
                     continue
                 parts = l.split()
                 timer_unit = [p for p in parts if p.endswith(".timer")]
                 svc_unit = [p for p in parts if p.endswith(".service") or p.endswith(".target")]
                 if timer_unit and svc_unit:
-                    timers.append({
-                        "timer": timer_unit[0],
-                        "activates": svc_unit[0],
-                        "raw": l,
-                    })
+                    t_u = timer_unit[0]
+                    s_u = svc_unit[0]
+                    t_idx = parts.index(t_u)
+                    meta = parts[:t_idx]
+                    if not meta or meta[0] == "-":
+                        timers.append({
+                            "timer": t_u,
+                            "activates": s_u,
+                            "next": "—",
+                            "left": "—",
+                            "last": "—",
+                            "passed": "—",
+                            "status": "inactive",
+                            "raw": l,
+                        })
+                    else:
+                        meta_str = " ".join(meta)
+                        m = re.match(r"^([A-Za-z]{3}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\s+[A-Za-z0-9_+-]+)?)\s+(.+?)\s+([A-Za-z]{3}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\s+[A-Za-z0-9_+-]+)?)\s+(.+)$", meta_str)
+                        if m:
+                            n_dt, n_lft, l_dt, l_psd = m.groups()
+                        else:
+                            n_dt = meta[0]
+                            n_lft = meta[1] if len(meta) > 1 else "—"
+                            l_dt = "—"
+                            l_psd = "—"
+                        timers.append({
+                            "timer": t_u,
+                            "activates": s_u,
+                            "next": n_dt,
+                            "left": n_lft,
+                            "last": l_dt,
+                            "passed": l_psd,
+                            "status": "active",
+                            "raw": l,
+                        })
     except Exception:
         pass
 

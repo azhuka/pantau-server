@@ -1398,9 +1398,11 @@ table td.empty-msg {
 
 #tbl-services th.col-svc-resp,
 #tbl-services td.col-svc-resp {
-  width: 75px !important;
-  min-width: 65px !important;
+  width: 90px !important;
+  min-width: 85px !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #tbl-services th.col-svc-desc,
@@ -1414,15 +1416,15 @@ table td.empty-msg {
 
 #tbl-services th.col-svc-uptime,
 #tbl-services td.col-svc-uptime {
-  width: 100px !important;
+  width: 95px !important;
   min-width: 90px !important;
   white-space: nowrap !important;
 }
 
 #tbl-services th.col-svc-act,
 #tbl-services td.col-svc-act {
-  width: 148px !important;
-  min-width: 142px !important;
+  width: 175px !important;
+  min-width: 170px !important;
   white-space: nowrap !important;
   padding: 4px 6px !important;
 }
@@ -1800,53 +1802,52 @@ table td.empty-msg {
 
 #fm-table th.col-fm-check,
 #fm-table td.col-fm-check {
-  width: 36px !important;
+  width: 34px !important;
   text-align: left !important;
 }
 
 #fm-table th.col-fm-name,
 #fm-table td.col-fm-name {
   width: auto !important;
-  min-width: 200px !important;
+  min-width: 180px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #fm-table th.col-fm-size,
 #fm-table td.col-fm-size {
-  width: 100px !important;
-  min-width: 90px !important;
-  max-width: 115px !important;
+  width: 75px !important;
+  min-width: 70px !important;
   white-space: nowrap !important;
 }
 
 #fm-table th.col-fm-mode,
 #fm-table td.col-fm-mode {
-  width: 95px !important;
-  min-width: 85px !important;
-  max-width: 105px !important;
+  width: 75px !important;
+  min-width: 70px !important;
   white-space: nowrap !important;
 }
 
 #fm-table th.col-fm-owner,
 #fm-table td.col-fm-owner {
-  width: 130px !important;
-  min-width: 115px !important;
-  max-width: 145px !important;
+  width: 110px !important;
+  min-width: 100px !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #fm-table th.col-fm-mtime,
 #fm-table td.col-fm-mtime {
-  width: 135px !important;
-  min-width: 120px !important;
-  max-width: 150px !important;
+  width: 145px !important;
+  min-width: 140px !important;
   white-space: nowrap !important;
 }
 
 #fm-table th.col-fm-act,
 #fm-table td.col-fm-act {
-  width: 130px !important;
-  min-width: 120px !important;
-  max-width: 140px !important;
+  width: 195px !important;
+  min-width: 190px !important;
   white-space: nowrap !important;
 }
 
@@ -1976,7 +1977,7 @@ table td.empty-msg {
 
 #users-table th,
 #users-table td {
-  padding: 6px 10px !important;
+  padding: 5px 6px !important;
   font-size: 11px !important;
   vertical-align: middle !important;
 }
@@ -1984,34 +1985,34 @@ table td.empty-msg {
 #users-table th.col-usr-name,
 #users-table td.col-usr-name {
   width: auto !important;
-  min-width: 140px !important;
+  min-width: 120px !important;
 }
 
 #users-table th.col-usr-role,
 #users-table td.col-usr-role {
-  width: 110px !important;
-  min-width: 95px !important;
+  width: 100px !important;
+  min-width: 90px !important;
   white-space: nowrap !important;
 }
 
 #users-table th.col-usr-st,
 #users-table td.col-usr-st {
-  width: 140px !important;
-  min-width: 130px !important;
+  width: 135px !important;
+  min-width: 125px !important;
   white-space: nowrap !important;
 }
 
 #users-table th.col-usr-last,
 #users-table td.col-usr-last {
-  width: 130px !important;
+  width: 125px !important;
   min-width: 115px !important;
   white-space: nowrap !important;
 }
 
 #users-table th.col-usr-act,
 #users-table td.col-usr-act {
-  width: 110px !important;
-  min-width: 100px !important;
+  width: 175px !important;
+  min-width: 170px !important;
   white-space: nowrap !important;
 }
 
@@ -2224,33 +2225,82 @@ table td.empty-msg {
   padding: 5px 14px !important;
 }
 
-#probtable th.col-durasi,
-#probtable td.col-durasi {
+#probtable th.col-time,
+#probtable td.col-time {
   width: 125px !important;
   min-width: 120px !important;
-  padding: 5px 10px !important;
+  padding: 5px 8px !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-time-detailed,
+#probtable td.col-time-detailed {
+  width: 125px !important;
+  min-width: 120px !important;
+  padding: 5px 8px !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-server,
+#probtable td.col-server {
+  width: 145px !important;
+  min-width: 140px !important;
+  padding: 5px 8px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
 
-.dash-prob-table th.dash-col-dur,
-.dash-prob-table td.dash-col-dur {
-  padding: 5px 10px !important;
+#probtable th.col-sev,
+#probtable td.col-sev {
+  width: 120px !important;
+  min-width: 115px !important;
+  padding: 4px 8px !important;
   white-space: nowrap !important;
+}
+
+#probtable th.col-event,
+#probtable td.col-event {
+  width: auto !important;
+  min-width: 160px !important;
+  padding: 5px 10px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-durasi,
+#probtable td.col-durasi {
+  width: 95px !important;
+  min-width: 90px !important;
+  padding: 5px 8px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #probtable th.col-tips,
 #probtable td.col-tips {
   width: auto !important;
-  min-width: 200px !important;
-  padding: 5px 12px !important;
+  min-width: 160px !important;
+  padding: 5px 10px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.prob-tip-text {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+  display: block !important;
 }
 
 #probtable th.col-act,
-#probtable td.col-act,
-.dash-prob-table th.dash-col-act,
-.dash-prob-table td.dash-col-act {
+#probtable td.col-act {
+  width: 140px !important;
+  min-width: 135px !important;
   padding: 5px 6px !important;
   white-space: nowrap !important;
 }
@@ -2521,7 +2571,7 @@ table td.empty-msg {
 
 #tbl-packages th.col-pkg-st,
 #tbl-packages td.col-pkg-st {
-  width: 95px !important;
+  width: 90px !important;
   min-width: 85px !important;
   white-space: nowrap !important;
 }
@@ -2537,15 +2587,15 @@ table td.empty-msg {
 
 #tbl-packages th.col-pkg-type,
 #tbl-packages td.col-pkg-type {
-  width: 75px !important;
+  width: 70px !important;
   min-width: 65px !important;
   white-space: nowrap !important;
 }
 
 #tbl-packages th.col-pkg-ver,
 #tbl-packages td.col-pkg-ver {
-  width: 135px !important;
-  min-width: 120px !important;
+  width: 140px !important;
+  min-width: 125px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -2553,15 +2603,15 @@ table td.empty-msg {
 
 #tbl-packages th.col-pkg-size,
 #tbl-packages td.col-pkg-size {
-  width: 80px !important;
-  min-width: 70px !important;
+  width: 75px !important;
+  min-width: 65px !important;
   white-space: nowrap !important;
 }
 
 #tbl-packages th.col-pkg-desc,
 #tbl-packages td.col-pkg-desc {
   width: auto !important;
-  min-width: 180px !important;
+  min-width: 150px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -2569,8 +2619,8 @@ table td.empty-msg {
 
 #tbl-packages th.col-pkg-act,
 #tbl-packages td.col-pkg-act {
-  width: 85px !important;
-  min-width: 80px !important;
+  width: 95px !important;
+  min-width: 90px !important;
   white-space: nowrap !important;
 }
 
@@ -2691,34 +2741,49 @@ table td.empty-msg {
   white-space: nowrap !important;
 }
 
+#systemd-timers-table th.col-timer-st,
+#systemd-timers-table td.col-timer-st {
+  width: 55px !important;
+  min-width: 50px !important;
+  text-align: left !important;
+}
+
 #systemd-timers-table th.col-timer-unit,
 #systemd-timers-table td.col-timer-unit {
-  width: 220px !important;
-}
-
-#systemd-timers-table th.col-timer-next,
-#systemd-timers-table td.col-timer-next {
-  width: 160px !important;
-}
-
-#systemd-timers-table th.col-timer-left,
-#systemd-timers-table td.col-timer-left {
-  width: 130px !important;
-}
-
-#systemd-timers-table th.col-timer-last,
-#systemd-timers-table td.col-timer-last {
-  width: 160px !important;
-}
-
-#systemd-timers-table th.col-timer-passed,
-#systemd-timers-table td.col-timer-passed {
-  width: 130px !important;
+  width: auto !important;
+  min-width: 170px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 #systemd-timers-table th.col-timer-act,
 #systemd-timers-table td.col-timer-act {
-  width: 120px !important;
+  width: 180px !important;
+  min-width: 160px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#systemd-timers-table th.col-timer-next,
+#systemd-timers-table td.col-timer-next {
+  width: 180px !important;
+  min-width: 170px !important;
+  white-space: nowrap !important;
+}
+
+#systemd-timers-table th.col-timer-left,
+#systemd-timers-table td.col-timer-left {
+  width: 110px !important;
+  min-width: 100px !important;
+  white-space: nowrap !important;
+}
+
+#systemd-timers-table th.col-timer-last,
+#systemd-timers-table td.col-timer-last {
+  width: 180px !important;
+  min-width: 170px !important;
   white-space: nowrap !important;
 }
 
@@ -2921,15 +2986,19 @@ table td.empty-msg {
 #acc-action-table th.col-aact-tgt,
 #acc-action-table td.col-aact-tgt {
   width: auto !important;
-  min-width: 150px !important;
+  min-width: 130px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 #tbl-action-history th.col-his-st,
 #tbl-action-history td.col-his-st,
 #acc-action-table th.col-aact-st,
 #acc-action-table td.col-aact-st {
-  width: 110px !important;
-  min-width: 95px !important;
+  width: 95px !important;
+  min-width: 90px !important;
+  white-space: nowrap !important;
 }
 
 #tbl-action-history th.col-his-res,
@@ -2937,7 +3006,10 @@ table td.empty-msg {
 #acc-action-table th.col-aact-res,
 #acc-action-table td.col-aact-res {
   width: auto !important;
-  min-width: 180px !important;
+  min-width: 170px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 /* Tabel Sertifikat SSL/TLS (#ssl-table) */
@@ -2975,22 +3047,28 @@ table td.empty-msg {
 
 #ssl-table th.col-ssl-exp,
 #ssl-table td.col-ssl-exp {
-  width: 135px !important;
-  min-width: 125px !important;
+  width: 130px !important;
+  min-width: 120px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
   white-space: nowrap !important;
 }
 
 #ssl-table th.col-ssl-rem,
 #ssl-table td.col-ssl-rem {
-  width: 80px !important;
-  min-width: 75px !important;
+  width: 95px !important;
+  min-width: 90px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
   white-space: nowrap !important;
 }
 
 #ssl-table th.col-ssl-st,
 #ssl-table td.col-ssl-st {
-  width: 115px !important;
-  min-width: 105px !important;
+  width: 130px !important;
+  min-width: 120px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
   white-space: nowrap !important;
 }
 

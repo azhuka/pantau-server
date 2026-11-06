@@ -354,6 +354,38 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.146
+
+- **Tipe Rilis:** Rekonstruksi Total Cetak Biru Frontend, Eliminasi Lubang Header Transparan, Penuntasan Bug Tanggal Epoch, dan Perbaikan 12 Cacat Antarmuka (*Comprehensive Frontend Blueprint Reconstruction, Header Transparent Hole Rectification, Unix Epoch Date Bug Elimination & 12 Interface Defect Rectifications*)
+- **Fokus Utama:** Menyelesaikan secara tuntas 12 cacat visual, struktural, dan fungsional yang ditemukan pada pengujian visual NOC, menyingkirkan tambal-sulam parsial demi penerapan cetak biru baku satu pintu (*single source of truth*) pada antarmuka:
+  1. **Eliminasi Cacat Lubang Header Transparan & Notch Baris Grup (`th.col-act` & `.group-header-row td.col-act`):**
+     - Menghapus aturan `background: transparent !important` warisan di `base.html` dan `servers.html` yang menimbulkan lubang putih tembus pandang pada kolom tindakan dan notch di baris pengelompokan server tema terang.
+     - Seluruh sel `<th>` kini seragam mewarisi warna latar `var(--bg-subtle)` (`#f1f5f9` pada tema terang) dan baris grup server menyatu sempurna tanpa celah geometris.
+  2. **Eliminasi Bug Tanggal Unix Epoch 21 Jan 1970 pada File Manager (`file_manager.html`):**
+     - Mengoreksi penanganan timestamp pada fungsi `formatDate` dengan deteksi nilai detik (< 10000000000) dan pengalian otomatis ke milidetik, menuntaskan tuntas tampilan salah era 1970.
+     - Menata ulang arsitektur kolom `#fm-table` dalam `pantau-components.css` (`col-fm-check`, `col-fm-name`, `col-fm-size`, `col-fm-mode`, `col-fm-owner`, `col-fm-mtime`, `col-fm-act`) sehingga bebas scrollbar horizontal dan bebas jeda kosong 1000px sebelum tombol aksi.
+  3. **Restrukturisasi Penuh Timer Systemd dari Baris Mentah Menjadi Tabel Semantik 6 Kolom:**
+     - Memperbarui kolektor agen klien `collect_cron()` di `agent/agent_pantau.py` dan `package/opt/pantau/agent/agent_pantau.py` dengan parser terstruktur perintah `systemctl list-timers --all --full --no-legend`.
+     - Merender tabel `#systemd-timers-table` berdensitas tinggi dengan 6 kolom terstruktur: Status (`●` Aktif / `○` Nonaktif), Unit Timer, Layanan Dipicu, Jadwal Berikutnya, Sisa Waktu, dan Eksekusi Terakhir.
+  4. **Koreksi Urutan Kolom Insiden pada Detail Server (`services.html`):**
+     - Memperbaiki urutan kolom pada header Jinja, baris data Jinja, dan fungsi rendering JS `renderProblems` sehingga kolom `Panduan Solusi` berada sebelum `Tindakan`, mengembalikan posisi baku kolom Tindakan di ujung paling kanan tabel.
+  5. **Eliminasi Tabrakan Header & Tombol Terpotong pada Tabel Layanan (`#tbl-services`):**
+     - Memperlebar kolom Respons (MS) menjadi 90px dengan pemangkasan ellipsis sehingga judul kolom tidak lagi menabrak label `KETERANGAN`.
+     - Memperlebar kolom Tindakan menjadi 175px sehingga seluruh 6 tombol aksi muat sempurna tanpa memotong tombol hapus merah di ujung kanan tabel.
+  6. **Eliminasi Tabrakan Teks Tiga Lapis pada Tabel Sertifikat SSL (`#ssl-table`):**
+     - Memisahkan stempel waktu kedaluwarsa ISO menjadi tanggal ringkas (`YYYY-MM-DD`) pada teks utama dengan stempel waktu lengkap pada atribut `title`.
+     - Menerapkan batasan pemangkasan teks ellipsis dan penyesuaian lebar proporsional pada kolom sisa hari (`col-ssl-rem`) dan badge status (`col-ssl-st`).
+  7. **Eliminasi Scrollbar Horizontal & Overflow Riwayat Tindakan (`#tbl-action-history`):**
+     - Menetapkan kelas kolom semantik `.col-his-*` secara presisi dan menerapkan pemangkasan teks ellipsis pada kolom target dan hasil eksekusi OTA panjang.
+  8. **Standarisasi Bahasa Indonesia Baku pada Tabel Paket Sistem (`#tbl-packages`):**
+     - Menerjemahkan status runtime systemd pada badge tabel (`installed` -> `Terpasang`, `running` -> `Berjalan`, `exited (active)` -> `Aktif`, `failed` -> `Gagal`, `inactive` -> `Nonaktif`).
+     - Menstandarisasi opsi filter status dan teks counter paket ke Bahasa Indonesia baku, serta menyeimbangkan lebar kolom aksi paket menjadi 95px.
+  9. **Optimalisasi Tata Letak Tabel Pengguna (`#users-table`):**
+     - Memperlebar kolom tindakan hingga 175px untuk menampung seluruh tombol wewenang akun tanpa pemotongan.
+     - Menormalkan padding sel ke standar densitas tinggi NOC (5px 6px) dan menyesuaikan breakpoint responsive grid menjadi 1-kolom pada layar <= 1260px untuk mengeliminasi scrollbar horizontal.
+  10. **Pencegahan Tooltip Liar Terdampar di Sudut Kiri Layar:**
+      - Menambahkan validasi batas geometri elemen `positionTooltip(target)` pada `base.html` agar tooltip tidak pernah muncul di koordinat statis `(8px, 8px)` saat target berada di luar viewport atau belum selesai dirender.
+
 ## Versi 4.8.145
 
 - **Tipe Rilis:** Rekonstruksi Total Fondasi Visual, Eliminasi Tabrakan Teks & Cacat Antarmuka, dan Penyatuan Standar Desain Sistem Enterprise (*Comprehensive Visual Foundation Reconstruction, Text Collision Elimination & Enterprise UI Defect Rectification*)
