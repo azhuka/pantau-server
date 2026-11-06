@@ -2759,7 +2759,7 @@ div[style*="position: fixed"] .card {
             <td class="col-cron-sched mono" style="font-weight:700;color:{{ 'var(--blue)' if c.get('is_enabled', True) else 'var(--dim)' }};white-space:nowrap">{{ c.schedule }}</td>
             <td class="col-cron-user"><span class="mono">{{ c.user }}</span></td>
             <td class="col-cron-cmd mono" style="font-size:12px;color:var(--text);word-break:break-all">{{ c.command }}</td>
-            <td class="col-cron-src mono" style="font-size:11px;color:var(--dim)">
+            <td class="col-cron-src mono" style="font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ c.source }}{% if c.line %}:{{ c.line }}{% endif %}">
               {{ c.source }}{% if c.line %}:{{ c.line }}{% endif %}
               {% if c.get('is_managed') %}<span class="badge badge-info" style="font-size:10px;margin-left:4px">Dikelola</span>{% endif %}
             </td>
@@ -3042,7 +3042,7 @@ div[style*="position: fixed"] .card {
         <tbody>
           {% for a in accounts %}
           <tr data-user="{{ a.user|lower }}" data-is-system="{{ '1' if a.is_system else '0' }}" data-is-active="{{ '1' if (a.sessions and a.sessions|length > 0) else '0' }}">
-            <td style="white-space:nowrap">
+            <td class="col-acc-user" style="white-space:nowrap">
               <strong>{{ a.user }}</strong>
               {% if a.is_sudo %}
                 <span class="badge badge-info" style="font-size:9.5px;padding:1px 5px" title="Pengguna memiliki hak istimewa sudo/root">Sudoer</span>
@@ -3056,10 +3056,10 @@ div[style*="position: fixed"] .card {
                 <span class="badge badge-warn" style="font-size:9.5px;padding:1px 5px" title="Akun saat ini terkunci">Terkunci</span>
               {% endif %}
             </td>
-            <td class="mono" style="white-space:nowrap;font-size:12px">
+            <td class="col-acc-id mono" style="white-space:nowrap;font-size:12px">
               <strong>{{ a.uid }}</strong> <span style="color:var(--dim)">/</span> {{ a.gid or '-' }}
             </td>
-            <td style="font-size:12px">
+            <td class="col-acc-grp" style="font-size:12px">
               <strong class="mono" style="color:var(--text)">{{ a.group or '-' }}</strong>
               {% if a.groups %}
                 <div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:2px">
@@ -3072,21 +3072,21 @@ div[style*="position: fixed"] .card {
                 </div>
               {% endif %}
             </td>
-            <td style="font-size:12px">
+            <td class="col-acc-home" style="font-size:12px">
               <div class="mono" style="font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px" title="{{ a.home or '-' }}">{{ a.home or '-' }}</div>
               <div class="mono {{ 'shell-interactive' if (a.shell and ('sh' in a.shell or 'bash' in a.shell or 'zsh' in a.shell)) else 'shell-disabled' }}" style="font-size:11px;margin-top:2px">{{ a.shell or '-' }}</div>
             </td>
-            <td style="font-size:12px;color:var(--dim);white-space:nowrap">
+            <td class="col-acc-login" style="font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
               {% if a.sessions %}
-                <div style="margin-bottom:2px">
+                <div style="margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                   {% for s in a.sessions %}
                     <span class="badge badge-up" style="font-size:9.5px;font-family:monospace;padding:1px 5px"><span class="dot up" style="margin-right:3px"></span>{{ s.tty }}{% if s.from %} @ {{ s.from }}{% endif %}</span>{% if not loop.last %} {% endif %}
                   {% endfor %}
                 </div>
               {% endif %}
-              <div style="font-size:11px;color:var(--dim)">{{ a.last_login or '-' }}</div>
+              <div class="mono" style="font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ a.last_login or '-' }}">{{ a.last_login or '-' }}</div>
             </td>
-            <td class="col-act" style="white-space:nowrap;text-align:left">
+            <td class="col-acc-act col-act" style="white-space:nowrap;text-align:left">
               <div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">
                 <a href="/servers/{{ server.id }}/user/{{ a.user }}" class="btn btn-ghost btn-sm" title="Rincian" aria-label="Rincian">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
@@ -3159,21 +3159,21 @@ div[style*="position: fixed"] .card {
         <tbody>
           {% for g in system_groups %}
           <tr data-group="{{ g.group|lower }}" data-is-system="{{ '1' if g.is_system else '0' }}" data-is-privileged="{{ '1' if g.is_privileged else '0' }}" data-members="{{ g.members|join(' ')|lower if g.members else '' }}">
-            <td style="white-space:nowrap">
+            <td class="col-grp-name" style="white-space:nowrap">
               <strong class="mono" style="font-size:13px">{{ g.group }}</strong>
               {% if g.is_privileged %}
                 <span class="badge badge-info" style="font-size:9.5px;padding:1px 5px" title="Grup administratif dengan hak akses khusus sistem">Privileged</span>
               {% endif %}
             </td>
-            <td class="mono" style="white-space:nowrap">{{ g.gid }}</td>
-            <td style="white-space:nowrap">
+            <td class="col-grp-gid mono" style="white-space:nowrap">{{ g.gid }}</td>
+            <td class="col-grp-type" style="white-space:nowrap">
               {% if g.is_system %}
                 <span class="badge badge-muted" style="font-size:9.5px" title="Grup sistem (GID < 1000)">Sistem</span>
               {% else %}
                 <span class="badge badge-up" style="font-size:9.5px" title="Grup pengguna biasa (GID ≥ 1000)">Reguler</span>
               {% endif %}
             </td>
-            <td>
+            <td class="col-grp-members">
               {% if g.members %}
                 <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
                   {% for m in g.members[:8] %}
@@ -3187,7 +3187,7 @@ div[style*="position: fixed"] .card {
                 <span style="color:var(--dim);font-size:12px">—</span>
               {% endif %}
             </td>
-            <td class="mono" style="text-align:left">
+            <td class="col-grp-count mono" style="text-align:left">
               <span class="badge badge-{{ 'info' if (g.member_count or (g.members|length if g.members else 0)) > 0 else 'muted' }}" style="font-size:10px;padding:1px 6px">
                 {{ g.member_count or (g.members|length if g.members else 0) }}
               </span>
@@ -3232,12 +3232,12 @@ div[style*="position: fixed"] .card {
           {% if acc_acts %}
             {% for a in acc_acts %}
             <tr>
-              <td class="mono col-time-detailed" style="white-space:nowrap">{{ _fmt_dt(a.time) if a.time and a.time.strftime is defined else (a.time or '—') }}</td>
-              <td><span class="mono">{{ a.user or '-' }}</span></td>
-              <td><span class="badge badge-muted">{{ a.action_label or a.action or '—' }}</span></td>
-              <td style="font-size:13px"><strong>{{ a.target or '—' }}</strong></td>
-              <td><span class="badge badge-{{ a.status_cls or 'muted' }}">{{ a.status_label or a.status or '—' }}</span></td>
-              <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">{{ a.result or '—' }}</td>
+              <td class="col-aact-time mono col-time-detailed" style="white-space:nowrap">{{ _fmt_dt(a.time) if a.time and a.time.strftime is defined else (a.time or '—') }}</td>
+              <td class="col-aact-user"><span class="mono">{{ a.user or '-' }}</span></td>
+              <td class="col-aact-act"><span class="badge badge-muted">{{ a.action_label or a.action or '—' }}</span></td>
+              <td class="col-aact-tgt" style="font-size:13px"><strong>{{ a.target or '—' }}</strong></td>
+              <td class="col-aact-st"><span class="badge badge-{{ a.status_cls or 'muted' }}">{{ a.status_label or a.status or '—' }}</span></td>
+              <td class="col-aact-res mono" style="font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.result or '—' }}</td>
             </tr>
             {% endfor %}
           {% else %}
@@ -8864,12 +8864,12 @@ function renderActionHistory(actions) {
       accTbody.innerHTML = accActions.map(a => {
         const f = formatActionRowI18n(a, isEn);
         return `<tr>
-          <td class="mono col-time-detailed" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
-          <td><span class="mono">${escHtml(a.user || '-')}</span></td>
-          <td><span class="badge badge-muted">${escHtml(f.act)}</span></td>
-          <td style="font-size:13px"><strong>${escHtml(f.tgt)}</strong></td>
-          <td><span class="badge badge-${escHtml(a.status_cls || 'muted')}">${escHtml(f.st)}</span></td>
-          <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">${escHtml(f.res)}</td>
+          <td class="col-aact-time mono col-time-detailed" style="white-space:nowrap">${escHtml(a.time || '—')}</td>
+          <td class="col-aact-user"><span class="mono">${escHtml(a.user || '-')}</span></td>
+          <td class="col-aact-act"><span class="badge badge-muted">${escHtml(f.act)}</span></td>
+          <td class="col-aact-tgt" style="font-size:13px"><strong>${escHtml(f.tgt)}</strong></td>
+          <td class="col-aact-st"><span class="badge badge-${escHtml(a.status_cls || 'muted')}">${escHtml(f.st)}</span></td>
+          <td class="col-aact-res mono" style="font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(f.res)}</td>
         </tr>`;
       }).join('');
     }
@@ -9624,7 +9624,7 @@ function renderCron(cron_jobs) {
           <td class="col-cron-sched mono" style="font-weight:700;color:${isEnabled ? 'var(--blue)' : 'var(--dim)'};white-space:nowrap">${escHtml(c.schedule || '')}</td>
           <td class="col-cron-user"><span class="mono">${userClean}</span></td>
           <td class="col-cron-cmd mono" style="font-size:10px;color:var(--text);word-break:break-all">${cmdClean}</td>
-          <td class="col-cron-src mono" style="font-size:9.5px;color:var(--dim)">${escHtml(c.source || '')}${c.line ? ':' + c.line : ''}${isManaged ? ` <span class="badge badge-info" style="font-size:8.5px;margin-left:4px">${isEn ? 'Managed' : 'Dikelola'}</span>` : ''}</td>
+          <td class="col-cron-src mono" style="font-size:9.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(c.source || '')}${c.line ? ':' + c.line : ''}">${escHtml(c.source || '')}${c.line ? ':' + c.line : ''}${isManaged ? ` <span class="badge badge-info" style="font-size:8.5px;margin-left:4px">${isEn ? 'Managed' : 'Dikelola'}</span>` : ''}</td>
           <td class="col-cron-act col-act" style="white-space:nowrap;text-align:left"><div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">${actHtml}</div></td>
         </tr>`;
       }).join('');
@@ -12077,7 +12077,7 @@ function renderSystemdTable() {
       <td class="col-sysd-name">
         <span class="mono" style="font-size:10px;font-weight:600;color:var(--text-bright)">${nameEsc}</span>${portBadge}
       </td>
-      <td class="col-sysd-boot">${bootBadge}</td>
+      <td class="col-sysd-boot" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(u.boot || '-')}">${bootBadge}</td>
       <td class="col-sysd-sub mono">${subEsc}</td>
       <td class="col-sysd-mem">${memHtml}</td>
       <td class="col-sysd-desc">${descEsc}</td>

@@ -257,17 +257,17 @@
         data-last-seen="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
       
       <!-- Col 0: Server / Hostname -->
-      <td style="white-space:nowrap">
-        <div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap">
+      <td class="col-srv-host" style="white-space:nowrap">
+        <div style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;max-width:100%">
           <span id="srv-dot-{{ srv.id }}" class="dot {{ 'warn' if srv.is_maintenance else ('up' if srv._status_cls == 'badge-up' else 'down') }}" style="flex-shrink:0" title="{{ srv._status_label }}"></span>
-          <a href="/servers/{{ srv.id }}" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</a>
+          <a href="/servers/{{ srv.id }}" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle" class="hover-underline" id="srv-host-{{ srv.id }}" title="{{ srv.hostname }}">{{ srv.hostname }}</a>
           {% if s_tier == 1 %}
-            <span class="badge badge-tier-prod" title="Server level Produksi">
+            <span class="badge badge-tier-prod" style="flex-shrink:0" title="Server level Produksi">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
               <span>PROD</span>
             </span>
           {% else %}
-            <span class="badge badge-tier-dev" title="Server level Non-produksi">
+            <span class="badge badge-tier-dev" style="flex-shrink:0" title="Server level Non-produksi">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
               <span>DEV</span>
             </span>
@@ -279,7 +279,7 @@
       </td>
 
       <!-- Col 1: IP & Interface -->
-      <td>
+      <td class="col-srv-ip">
         <div>
           <span class="copyable-ip mono" id="srv-ip-{{ srv.id }}" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
         </div>
@@ -296,7 +296,7 @@
       </td>
 
       <!-- Col 2: Platform & Mesin -->
-      <td>
+      <td class="col-srv-plat">
         <div style="display:inline-flex;align-items:center;gap:3px">
           {% if srv._platform %}
             <span class="badge" style="font-size:8px;background:{{ srv._platform.badge_bg }};color:{{ srv._platform.badge_color }};border:1px solid {{ srv._platform.badge_border }};padding:0.5px 4px;display:inline-flex;align-items:center;gap:2.5px;font-weight:600" title="Platform: {{ srv._platform.label }}">
@@ -323,36 +323,36 @@
       </td>
 
       <!-- Col 3: Sistem Operasi -->
-      <td>
+      <td class="col-srv-os">
         <div style="font-weight:600;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px" id="srv-os-{{ srv.id }}">{{ srv._os_name }}</div>
         <div class="mono" style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px" id="srv-kernel-{{ srv.id }}" title="Kernel: {{ srv._kernel }} ({{ srv._arch }})">{{ srv._kernel }} <span style="opacity:0.7">({{ srv._arch }})</span></div>
       </td>
 
       <!-- Col 4: Prosesor -->
-      <td>
+      <td class="col-srv-cpu">
         <div style="font-weight:600;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:105px" id="srv-cpumodel-{{ srv.id }}" title="{{ srv._cpu_model }}">{{ srv._cpu_model }}</div>
         <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-cpucores-{{ srv.id }}">{{ srv._cpu_cores }} Cores</div>
       </td>
 
       <!-- Col 5: Memori -->
-      <td>
+      <td class="col-srv-mem">
         <div class="mono" style="font-weight:600;font-size:9.5px" id="srv-ramtot-{{ srv.id }}">{{ srv._ram_total_str }}</div>
         <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-swaptot-{{ srv.id }}">Swap: {{ srv._swap_total_str }}</div>
       </td>
 
       <!-- Col 6: Penyimpanan -->
-      <td>
+      <td class="col-srv-disk">
         <div class="mono" style="font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:85px" id="srv-disk-{{ srv.id }}" title="{{ srv._disk_str }}">{{ srv._disk_str }}</div>
       </td>
 
       <!-- Col 7: Uptime & Boot -->
-      <td>
+      <td class="col-srv-up">
         <div class="mono" style="font-weight:600;font-size:9.5px" id="srv-uptime-{{ srv.id }}">{{ srv._uptime_str }}</div>
         <div class="mono" style="font-size:8px;color:var(--dim);white-space:nowrap" id="srv-boot-{{ srv.id }}" title="Boot Time">{{ srv._boot_time }}</div>
       </td>
 
       <!-- Col 8: Agen & APT -->
-      <td style="text-align:left">
+      <td class="col-srv-agent" style="text-align:left">
         <div>
           {% if srv._agent_version %}
             {% if srv._agent_outdated %}
@@ -378,7 +378,7 @@
       </td>
 
       <!-- Col 9: Tag -->
-      <td>
+      <td class="col-srv-tag">
         {% if srv.tags %}
         <div style="display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap">
           {% for tag in (srv.tags or '').split(',') %}
@@ -395,11 +395,11 @@
       </td>
 
       <!-- Col 10: Status & Lapor -->
-      <td style="text-align:left">
+      <td class="col-srv-st" style="text-align:left">
         <div>
           <span class="badge {{ srv._status_cls }}" id="srv-sts-{{ srv.id }}" style="font-size:8px;padding:0.5px 4.5px;font-weight:700;letter-spacing:0.25px">{{ srv._status_label }}</span>
           {% if srv.is_maintenance and srv.maintenance_reason %}
-          <span style="display:inline-flex;align-items:center;vertical-align:middle;color:var(--yellow);margin-left:3px" title="{{ srv.maintenance_reason }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
+          <span style="display:inline-flex;align-items:center;vertical-align:middle;color:var(--yellow);margin-left:3px" title="{{ srv.maintenance_reason }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>
           {% endif %}
         </div>
         <div class="mono" style="font-size:8.5px;color:var(--dim);margin-top:2px" id="srv-seen-{{ srv.id }}" data-ts="{{ srv.last_seen.isoformat() if srv.last_seen else '' }}">
@@ -408,7 +408,7 @@
       </td>
 
       <!-- Col 11: Tindakan -->
-      <td class="col-act" style="text-align:left;white-space:nowrap">
+      <td class="col-srv-act col-act" style="text-align:left;white-space:nowrap">
         <div class="action-btn-group">
           <a href="/servers/{{ srv.id }}" class="btn-act" title="Buka Rincian Server" aria-label="Rincian">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>

@@ -1462,29 +1462,31 @@ table td.empty-msg {
 
 #tbl-systemd th.col-sysd-boot,
 #tbl-systemd td.col-sysd-boot {
-  width: 75px !important;
-  min-width: 70px !important;
-  max-width: 80px !important;
+  width: 125px !important;
+  min-width: 115px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #tbl-systemd th.col-sysd-sub,
 #tbl-systemd td.col-sysd-sub {
   width: 85px !important;
-  min-width: 80px !important;
-  max-width: 90px !important;
+  min-width: 75px !important;
+  white-space: nowrap !important;
 }
 
 #tbl-systemd th.col-sysd-mem,
 #tbl-systemd td.col-sysd-mem {
-  width: 90px !important;
+  width: 95px !important;
   min-width: 85px !important;
-  max-width: 95px !important;
+  white-space: nowrap !important;
 }
 
 #tbl-systemd th.col-sysd-desc,
 #tbl-systemd td.col-sysd-desc {
   width: auto !important;
-  min-width: 160px !important;
+  min-width: 180px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -1494,7 +1496,6 @@ table td.empty-msg {
 #tbl-systemd td.col-sysd-act {
   width: 175px !important;
   min-width: 170px !important;
-  max-width: 180px !important;
   white-space: nowrap !important;
   padding: 4px 6px !important;
 }
@@ -2061,66 +2062,66 @@ table td.empty-msg {
 
 #servers-table th.col-srv-host,
 #servers-table td.col-srv-host {
-  width: 130px !important;
-  min-width: 125px !important;
-  max-width: 135px !important;
+  width: 160px !important;
+  min-width: 155px !important;
   padding-left: 10px !important;
+  white-space: nowrap !important;
 }
 
 #servers-table th.col-srv-ip,
 #servers-table td.col-srv-ip {
-  width: 95px !important;
-  min-width: 90px !important;
-  max-width: 100px !important;
+  width: 105px !important;
+  min-width: 100px !important;
+  white-space: nowrap !important;
 }
 
 #servers-table th.col-srv-plat,
 #servers-table td.col-srv-plat {
-  width: 100px !important;
-  min-width: 95px !important;
-  max-width: 105px !important;
+  width: 95px !important;
+  min-width: 90px !important;
+  white-space: nowrap !important;
 }
 
 #servers-table th.col-srv-os,
 #servers-table td.col-srv-os {
   width: 120px !important;
   min-width: 115px !important;
-  max-width: 125px !important;
+  white-space: nowrap !important;
 }
 
 #servers-table th.col-srv-cpu,
 #servers-table td.col-srv-cpu {
-  width: 95px !important;
-  min-width: 90px !important;
-  max-width: 100px !important;
+  width: 100px !important;
+  min-width: 95px !important;
+  white-space: nowrap !important;
 }
 
 #servers-table th.col-srv-mem,
 #servers-table td.col-srv-mem {
-  width: 70px !important;
-  min-width: 65px !important;
-  max-width: 75px !important;
+  width: 75px !important;
+  min-width: 70px !important;
+  white-space: nowrap !important;
 }
 
 #servers-table th.col-srv-disk,
 #servers-table td.col-srv-disk {
   width: 80px !important;
   min-width: 75px !important;
-  max-width: 85px !important;
+  white-space: nowrap !important;
 }
 
 #servers-table th.col-srv-up,
 #servers-table td.col-srv-up {
   width: 105px !important;
   min-width: 100px !important;
-  max-width: 110px !important;
+  white-space: nowrap !important;
 }
 
 #servers-table th.col-srv-agent,
 #servers-table td.col-srv-agent {
   width: 80px !important;
   min-width: 75px !important;
-  max-width: 85px !important;
+  white-space: nowrap !important;
 }
 
 #servers-table th.col-srv-tag,
@@ -2132,14 +2133,14 @@ table td.empty-msg {
 #servers-table td.col-srv-st {
   width: 80px !important;
   min-width: 75px !important;
-  max-width: 85px !important;
+  white-space: nowrap !important;
 }
 
 #servers-table th.col-srv-act,
 #servers-table td.col-srv-act {
   width: 86px !important;
   min-width: 86px !important;
-  max-width: 88px !important;
+  white-space: nowrap !important;
   padding: 4px 6px !important;
 }
 
@@ -2253,9 +2254,9 @@ table td.empty-msg {
 
 #probtable th.col-sev,
 #probtable td.col-sev {
-  width: 120px !important;
-  min-width: 115px !important;
-  padding: 4px 8px !important;
+  width: 80px !important;
+  min-width: 75px !important;
+  padding: 4px 6px !important;
   white-space: nowrap !important;
 }
 
@@ -2702,42 +2703,44 @@ table td.empty-msg {
 
 #cron-table th.col-cron-st,
 #cron-table td.col-cron-st {
-  width: 55px !important;
-  min-width: 50px !important;
+  width: 45px !important;
+  min-width: 40px !important;
   text-align: left !important;
 }
 
 #cron-table th.col-cron-sched,
 #cron-table td.col-cron-sched {
-  width: 155px !important;
-  min-width: 140px !important;
+  width: 110px !important;
+  min-width: 100px !important;
   white-space: nowrap !important;
 }
 
 #cron-table th.col-cron-user,
 #cron-table td.col-cron-user {
-  width: 90px !important;
-  min-width: 80px !important;
+  width: 75px !important;
+  min-width: 70px !important;
   white-space: nowrap !important;
 }
 
 #cron-table th.col-cron-cmd,
 #cron-table td.col-cron-cmd {
   width: auto !important;
-  min-width: 220px !important;
+  min-width: 200px !important;
 }
 
 #cron-table th.col-cron-src,
 #cron-table td.col-cron-src {
-  width: 140px !important;
-  min-width: 120px !important;
+  width: 185px !important;
+  min-width: 170px !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #cron-table th.col-cron-act,
 #cron-table td.col-cron-act {
-  width: 90px !important;
-  min-width: 85px !important;
+  width: 80px !important;
+  min-width: 75px !important;
   white-space: nowrap !important;
 }
 
@@ -2873,57 +2876,71 @@ table td.empty-msg {
 
 #acc-table th.col-acc-user,
 #acc-table td.col-acc-user {
-  width: auto !important;
-  min-width: 140px !important;
+  width: 195px !important;
+  min-width: 180px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #acc-table th.col-acc-id,
 #acc-table td.col-acc-id {
-  width: 90px !important;
-  min-width: 80px !important;
+  width: 80px !important;
+  min-width: 75px !important;
+  white-space: nowrap !important;
 }
 
 #acc-table th.col-acc-grp,
 #acc-table td.col-acc-grp {
-  width: auto !important;
-  min-width: 160px !important;
+  width: 175px !important;
+  min-width: 165px !important;
+  white-space: nowrap !important;
 }
 
 #acc-table th.col-acc-home,
 #acc-table td.col-acc-home {
-  width: auto !important;
-  min-width: 160px !important;
+  width: 160px !important;
+  min-width: 145px !important;
+  white-space: nowrap !important;
 }
 
 #acc-table th.col-acc-login,
 #acc-table td.col-acc-login {
   width: auto !important;
-  min-width: 140px !important;
+  min-width: 180px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 #acc-table th.col-acc-act,
 #acc-table td.col-acc-act {
-  width: 130px !important;
-  min-width: 120px !important;
+  width: 165px !important;
+  min-width: 155px !important;
   white-space: nowrap !important;
 }
 
 #groups-table th.col-grp-name,
 #groups-table td.col-grp-name {
-  width: auto !important;
-  min-width: 140px !important;
+  width: 180px !important;
+  min-width: 160px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #groups-table th.col-grp-gid,
 #groups-table td.col-grp-gid {
-  width: 80px !important;
-  min-width: 75px !important;
+  width: 75px !important;
+  min-width: 70px !important;
+  white-space: nowrap !important;
 }
 
 #groups-table th.col-grp-type,
 #groups-table td.col-grp-type {
-  width: 120px !important;
-  min-width: 100px !important;
+  width: 100px !important;
+  min-width: 90px !important;
+  white-space: nowrap !important;
 }
 
 #groups-table th.col-grp-members,
@@ -2934,8 +2951,9 @@ table td.empty-msg {
 
 #groups-table th.col-grp-count,
 #groups-table td.col-grp-count {
-  width: 90px !important;
-  min-width: 85px !important;
+  width: 85px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
 }
 
 /* Tabel Riwayat Tindakan Akun (#tbl-action-history, #acc-action-table) */
@@ -2966,38 +2984,61 @@ table td.empty-msg {
 }
 
 #tbl-action-history th.col-his-user,
-#tbl-action-history td.col-his-user,
-#acc-action-table th.col-aact-user,
-#acc-action-table td.col-aact-user {
+#tbl-action-history td.col-his-user {
   width: 100px !important;
   min-width: 90px !important;
 }
 
+#acc-action-table th.col-aact-user,
+#acc-action-table td.col-aact-user {
+  width: 135px !important;
+  min-width: 125px !important;
+  white-space: nowrap !important;
+}
+
 #tbl-action-history th.col-his-act,
-#tbl-action-history td.col-his-act,
-#acc-action-table th.col-aact-act,
-#acc-action-table td.col-aact-act {
+#tbl-action-history td.col-his-act {
   width: 160px !important;
   min-width: 140px !important;
 }
 
+#acc-action-table th.col-aact-act,
+#acc-action-table td.col-aact-act {
+  width: 140px !important;
+  min-width: 130px !important;
+}
+
 #tbl-action-history th.col-his-tgt,
-#tbl-action-history td.col-his-tgt,
+#tbl-action-history td.col-his-tgt {
+  width: 155px !important;
+  min-width: 140px !important;
+  max-width: 175px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
 #acc-action-table th.col-aact-tgt,
 #acc-action-table td.col-aact-tgt {
-  width: auto !important;
-  min-width: 130px !important;
+  width: 150px !important;
+  min-width: 135px !important;
+  max-width: 170px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
 }
 
 #tbl-action-history th.col-his-st,
-#tbl-action-history td.col-his-st,
+#tbl-action-history td.col-his-st {
+  width: 90px !important;
+  min-width: 85px !important;
+  white-space: nowrap !important;
+}
+
 #acc-action-table th.col-aact-st,
 #acc-action-table td.col-aact-st {
-  width: 95px !important;
-  min-width: 90px !important;
+  width: 85px !important;
+  min-width: 80px !important;
   white-space: nowrap !important;
 }
 
@@ -3006,7 +3047,7 @@ table td.empty-msg {
 #acc-action-table th.col-aact-res,
 #acc-action-table td.col-aact-res {
   width: auto !important;
-  min-width: 170px !important;
+  min-width: 220px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -3029,8 +3070,9 @@ table td.empty-msg {
 
 #ssl-table th.col-ssl-dom,
 #ssl-table td.col-ssl-dom {
-  width: auto !important;
-  min-width: 150px !important;
+  width: 200px !important;
+  min-width: 175px !important;
+  max-width: 220px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -3047,8 +3089,8 @@ table td.empty-msg {
 
 #ssl-table th.col-ssl-exp,
 #ssl-table td.col-ssl-exp {
-  width: 130px !important;
-  min-width: 120px !important;
+  width: 145px !important;
+  min-width: 135px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -3056,8 +3098,8 @@ table td.empty-msg {
 
 #ssl-table th.col-ssl-rem,
 #ssl-table td.col-ssl-rem {
-  width: 95px !important;
-  min-width: 90px !important;
+  width: 120px !important;
+  min-width: 110px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -3075,7 +3117,7 @@ table td.empty-msg {
 #ssl-table th.col-ssl-file,
 #ssl-table td.col-ssl-file {
   width: auto !important;
-  min-width: 160px !important;
+  min-width: 180px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;

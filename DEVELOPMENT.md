@@ -354,6 +354,33 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.147
+
+- **Tipe Rilis:** Standarisasi Arsitektur Dinamis Tabel, Eliminasi Total Tabrakan Teks & Penyeimbangan Ruang Kosong Lintas Halaman (*Dynamic Table Architecture Standardization, Zero Text Collision & Whitespace Normalization Across All Views*)
+- **Fokus Utama:** Menyelesaikan secara tuntas 6 cacat visual struktural pada tabel-tabel utama yang disebabkan oleh penentuan lebar piksel statis kaku (*hardcoded pixel bounds*), menghapus jurang ruang kosong (*whitespace deserts*) dan tabrakan teks (*text collisions*) antar-kolom demi arsitektur tabel yang bernapas secara proporsional:
+  1. **Rekonstruksi Dinamis Tabel Server (`#servers-table` & `servers.html`):**
+     - Menghapus seluruh pembatasan kaku `max-width` yang sebelumnya mengunci lebar tabel pada 1.060px dan meninggalkan kekosongan putih masif di sisi kanan layar.
+     - Menyematkan kelas semantik `col-srv-*` pada seluruh sel `<td>` dan memberikan kolom Server lebar fleksibel dinamis (`width: auto !important; min-width: 175px !important;`) dengan pemangkasan teks ellipsis pada nama host server.
+     - Memastikan nama host panjang dan badge lingkungan (`e-kinerja-clone [DEV]`, `barrukab-clone [DEV]`) tidak lagi menabrak atau meluber ke kolom alamat IP.
+  2. **Eliminasi Jurang Kosong Kolom Keparahan pada Tabel Insiden Server (`#probtable`):**
+     - Mengurangi alokasi lebar kolom keparahan (`col-sev`) dari 120px menjadi 80px (min 75px) yang proporsional dengan ukuran badge status, mengeliminasi jurang kosong 50px antara label keparahan dan deskripsi kejadian.
+     - Mengalokasikan ruang yang dibebaskan ke kolom Kejadian dan Panduan Solusi secara seimbang.
+  3. **Penyeimbangan Proporsi & Eliminasi Scrollbar Riwayat Tindakan (`#tbl-action-history`):**
+     - Mengubah kolom Sasaran (`col-his-tgt`) dari `width: auto` menjadi lebar presisi 155px (min 140px, max 175px) dengan pemangkasan teks ellipsis, meniadakan ruang kosong masif sebelum kolom Status.
+     - Menjadikan kolom Keterangan / Hasil (`col-his-res`) sebagai satu-satunya kolom fleksibel (`width: auto !important; min-width: 220px !important;`) dengan pemangkasan ellipsis yang rapi, melenyapkan scrollbar horizontal pada kartu riwayat tindakan.
+  4. **Penuntasan Tabrakan Teks Status Boot Unit Systemd (`#tbl-systemd`):**
+     - Memperlebar kolom Boot (`col-sysd-boot`) dari 75px menjadi 125px (min 115px) dengan proteksi ellipsis sehingga badge panjang seperti `ENABLED-RUNTIME` memiliki ruang penuh dan tidak lagi bertabrakan dengan teks `running` pada kolom Sub-State.
+  5. **Penuntasan Tabrakan Teks Sesi Login pada Tabel Akun Linux (`#acc-table`, `#groups-table`, `#acc-action-table` & `services.html`):**
+     - Menyematkan kelas semantik `col-acc-*`, `col-grp-*`, dan `col-aact-*` pada seluruh sel data tabel akun, grup, dan riwayat tindakan akun pengguna.
+     - Menyeimbangkan kolom nama pengguna (`col-acc-user`: 195px, min 180px), UID/GID (80px), grup utama & sekunder (`col-acc-grp`: 175px, min 165px sehingga teks header tidak bertubrukan), direktori home (160px), dan aksi (`col-acc-act`: 165px, min 155px menampung 4 tombol aksi lengkap), serta memberikan kolom login terakhir (`col-acc-login`) lebar dinamis fleksibel (`width: auto`) dengan pemangkasan ellipsis dan tooltip penuh.
+     - Menata ulang `#groups-table` dengan kolom nama grup (`col-grp-name`: 180px), GID (75px), tipe (100px), anggota (`col-grp-members`: `width: auto !important; min-width: 240px !important;`), dan jumlah (85px), mengeliminasi persaingan lebar antar kolom teks.
+     - Menata ulang `#acc-action-table` dengan kolom Waktu (145px), Pengguna Admin (`col-aact-user`: 135px, min 125px sehingga teks header 'Pengguna (Admin)' tidak bertubrukan dengan Tindakan), Tindakan (140px), Sasaran (150px), Status (85px), dan Hasil (`col-aact-res`: `width: auto`).
+     - Menjamin string sesi panjang (52 karakter) tidak lagi meluber atau menimpa tombol aksi di sisi kanan, serta meniadakan seluruh scrollbar horizontal yang tidak diinginkan.
+  6. **Penuntasan Tabrakan Teks Sumber Berkas Cron & Sertifikat SSL (`#cron-table`, `#ssl-table` & `services.html`):**
+     - Menata ulang alokasi kolom status (45px), jadwal (110px), pengguna (75px), dan memperlebar kolom sumber berkas (`col-cron-src`) menjadi 185px (min 170px) dengan pemangkasan ellipsis baik pada template Jinja maupun fungsi JavaScript `renderCron`.
+     - Mengeliminasi ruang kosong di sisi kiri sekaligus menghentikan tuntas peluberan path berkas (`/etc/cron.d/e2scrub_all:1`) ke atas badge Sistem.
+     - Mengoptimalkan alokasi kolom `#ssl-table` (Domain: 200px, Penerbit: 170px, Kedaluwarsa: 145px, Sisa Hari: 120px, Status: 130px, Lokasi Berkas: `width: auto`, Tindakan: 70px) guna mencegah pemangkasan prematur pada label tanggal dan sisa hari.
+
 ## Versi 4.8.146
 
 - **Tipe Rilis:** Rekonstruksi Total Cetak Biru Frontend, Eliminasi Lubang Header Transparan, Penuntasan Bug Tanggal Epoch, dan Perbaikan 12 Cacat Antarmuka (*Comprehensive Frontend Blueprint Reconstruction, Header Transparent Hole Rectification, Unix Epoch Date Bug Elimination & 12 Interface Defect Rectifications*)
