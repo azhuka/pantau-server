@@ -2232,25 +2232,25 @@ div[style*="position: fixed"] .card {
   <div class="pantau-table-wrap">
   <table id="tbl-services" class="pantau-table">
     <thead><tr>
-      <th data-col-title="Layanan" style="width:140px;min-width:130px;max-width:160px;text-align:left" title="Nama layanan atau daemon yang dipantau">Layanan</th>
-      <th data-col-title="Port" style="width:70px;min-width:65px;text-align:left" title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
-      <th data-col-title="Proses" style="width:110px;min-width:100px;text-align:left" title="Nama proses sistem operasi yang dieksekusi">Proses</th>
-      <th data-col-title="Status" style="width:80px;min-width:75px;text-align:left" title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
-      <th data-col-title="Koneksi" style="width:80px;min-width:75px;text-align:left" title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
-      <th data-col-title="Respons" style="width:105px;min-width:95px;text-align:left" title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
-      <th data-col-title="Keterangan" style="text-align:left" title="Keterangan atau hasil pemeriksaan status layanan">Keterangan</th>
-      <th data-col-title="Uptime 24j" style="width:95px;min-width:90px;text-align:left" title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
-      <th class="col-act" data-col-title="Tindakan" style="width:300px;min-width:280px;text-align:left" title="Kontrol layanan: Restart, Mulai, Berhenti, Log, Abaikan/Pantau, atau Hapus">Tindakan</th>
+      <th class="col-svc-name" data-col-title="Layanan" title="Nama layanan atau daemon yang dipantau">Layanan</th>
+      <th class="col-svc-port" data-col-title="Port" title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
+      <th class="col-svc-proc" data-col-title="Proses" title="Nama proses sistem operasi yang dieksekusi">Proses</th>
+      <th class="col-svc-status" data-col-title="Status" title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
+      <th class="col-svc-conns" data-col-title="Koneksi" title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
+      <th class="col-svc-resp" data-col-title="Respons" title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
+      <th class="col-svc-desc" data-col-title="Keterangan" title="Keterangan atau hasil pemeriksaan status layanan">Keterangan</th>
+      <th class="col-svc-uptime" data-col-title="Uptime 24j" title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
+      <th class="col-svc-act col-act" data-col-title="Tindakan" title="Kontrol layanan: Restart, Mulai, Berhenti, Log, Abaikan/Pantau, atau Hapus">Tindakan</th>
     </tr></thead>
     <tbody>
     {% for svc in services %}
     <tr>
-      <td>
+      <td class="col-svc-name" title="{{ svc.service_name }}">
         <strong>{{ svc.service_name }}</strong>
       </td>
-      <td class="mono">{{ svc.port }}</td>
-      <td class="mono">{{ svc.process_name }}</td>
-      <td id="sts-{{ svc.id }}">
+      <td class="col-svc-port mono">{{ svc.port }}</td>
+      <td class="col-svc-proc mono" title="{{ svc.process_name }}">{{ svc.process_name }}</td>
+      <td class="col-svc-status" id="sts-{{ svc.id }}">
         {% if svc._status == 'down' and svc._is_ignored %}
           <span class="badge badge-muted" title="Layanan berhenti (diabaikan)">down</span>
         {% elif svc._status == 'up' and svc._is_ignored %}
@@ -2263,22 +2263,22 @@ div[style*="position: fixed"] .card {
           <span class="badge badge-{{ svc._status }}">{{ svc._status }}</span>
         {% endif %}
       </td>
-      <td id="conns-{{ svc.id }}">{{ svc._conns }}</td>
-      <td id="resp-{{ svc.id }}" class="mono">{{ svc._response_time if svc._response_time is not none else '-' }}</td>
-      <td id="health-{{ svc.id }}" style="font-size:12px;color:var(--dim)">{{ svc._health_msg or 'no data' }}</td>
-      <td>
+      <td class="col-svc-conns" id="conns-{{ svc.id }}">{{ svc._conns }}</td>
+      <td class="col-svc-resp mono" id="resp-{{ svc.id }}">{{ svc._response_time if svc._response_time is not none else '-' }}</td>
+      <td class="col-svc-desc" id="health-{{ svc.id }}" title="{{ svc._health_msg or 'no data' }}">{{ svc._health_msg or 'no data' }}</td>
+      <td class="col-svc-uptime">
         {% if svc._uptime.uptime_pct is not none %}
           {{ svc._uptime.uptime_pct }}%
           {% if svc._uptime.downtime_seconds > 0 %}
-            <span style="font-size:11px;color:var(--red)">(down {{ svc._uptime.downtime_seconds }}s)</span>
+            <span style="font-size:10px;color:var(--red)">(down {{ svc._uptime.downtime_seconds }}s)</span>
           {% endif %}
         {% else %}
           <span style="color:var(--dim)">-</span>
         {% endif %}
       </td>
-      <td class="col-act" style="white-space:nowrap;text-align:left">
+      <td class="col-svc-act col-act">
         <div class="action-btn-group">
-          <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}" style="display:inline-flex;align-items:center;gap:2px">
+          <span id="act-{{ svc.id }}" data-sid="{{ server.id }}" data-svc="{{ svc.id }}" data-name="{{ svc.service_name }}">
             {% if user.is_viewer() or not user.has_perm('can_services') %}
               <button type="button" class="btn-act" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}" aria-label="Log">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
@@ -2291,21 +2291,21 @@ div[style*="position: fixed"] .card {
                       title="{% if not is_online %}Server offline — aksi dinonaktifkan{% else %}Mulai ulang (restart) layanan {{ svc.service_name }}{% endif %}"
                       aria-label="Restart"
                       onclick="restartService({{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
               </button>
               <button type="button" class="btn-act btn-svc-start"
                       {% if is_pending or is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
                       onclick="svcAction('start', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
                       title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif is_up %}Layanan sudah dalam kondisi aktif{% else %}Nyalakan / jalankan layanan {{ svc.service_name }}{% endif %}"
                       aria-label="Start">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
               </button>
               <button type="button" class="btn-act btn-svc-stop"
                       {% if is_pending or not is_up or not is_online %}disabled style="opacity:0.35;cursor:not-allowed"{% endif %}
                       onclick="svcAction('stop', {{ server.id }}, {{ svc.id }}, '{{ svc.service_name }}', this)"
                       title="{% if not is_online %}Server offline — aksi dinonaktifkan{% elif not is_up %}Layanan sudah dalam kondisi berhenti{% else %}Hentikan layanan {{ svc.service_name }}{% endif %}"
                       aria-label="Stop">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
               </button>
               <button type="button" class="btn-act" onclick='jumpToLog({{ svc.service_name|tojson }})' title="Lihat log layanan {{ svc.service_name }}" aria-label="Log">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
@@ -2410,23 +2410,23 @@ div[style*="position: fixed"] .card {
     <table class="pantau-table" id="tbl-systemd" style="width:100%;margin:0">
       <thead>
         <tr>
-          <th style="width:105px;text-align:left;cursor:pointer" onclick="toggleSysdSort('status')" title="Klik untuk mengurutkan Status">
+          <th class="col-sysd-status" onclick="toggleSysdSort('status')" title="Klik untuk mengurutkan Status">
             Status <span id="sysd-sort-status"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
           </th>
-          <th style="min-width:200px;cursor:pointer" onclick="toggleSysdSort('name')" title="Klik untuk mengurutkan Nama Unit">
+          <th class="col-sysd-name" onclick="toggleSysdSort('name')" title="Klik untuk mengurutkan Nama Unit">
             Nama Unit <span id="sysd-sort-name"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
           </th>
-          <th style="width:100px;text-align:left;cursor:pointer" onclick="toggleSysdSort('boot')" title="Klik untuk mengurutkan Status Boot">
+          <th class="col-sysd-boot" onclick="toggleSysdSort('boot')" title="Klik untuk mengurutkan Status Boot">
             Boot <span id="sysd-sort-boot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
           </th>
-          <th style="width:90px;text-align:left;cursor:pointer" onclick="toggleSysdSort('sub')" title="Klik untuk mengurutkan Sub-State">
+          <th class="col-sysd-sub" onclick="toggleSysdSort('sub')" title="Klik untuk mengurutkan Sub-State">
             Sub-State <span id="sysd-sort-sub"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
           </th>
-          <th style="width:105px;text-align:left;cursor:pointer" onclick="toggleSysdSort('memory')" title="Klik untuk mengurutkan Penggunaan Memori">
+          <th class="col-sysd-mem" onclick="toggleSysdSort('memory')" title="Klik untuk mengurutkan Penggunaan Memori">
             Memori <span id="sysd-sort-memory"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:3px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span>
           </th>
-          <th style="min-width:240px">Deskripsi</th>
-          <th class="col-act" style="width:130px;text-align:left">Tindakan</th>
+          <th class="col-sysd-desc">Deskripsi</th>
+          <th class="col-sysd-act col-act">Tindakan</th>
         </tr>
       </thead>
       <tbody id="sysd-tbody">
@@ -3242,32 +3242,32 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
     <div class="pantau-table-wrap" id="ports-wrap" style="display:{{ 'block' if listening_ports else 'none' }}">
-      <table id="ports-table" class="pantau-table" style="min-width:750px;width:100%">
+      <table id="ports-table" class="pantau-table">
         <thead>
           <tr>
-            <th data-col-title="Protokol" style="width:75px;min-width:70px" title="Protokol jaringan (TCP atau UDP)">Protokol</th>
-            <th data-col-title="Port" style="width:85px;min-width:75px" title="Nomor port jaringan yang terbuka">Port</th>
-            <th data-col-title="Bind IP" style="width:130px;min-width:115px" title="Alamat IP yang di-bind oleh socket">Bind IP</th>
-            <th data-col-title="Akses" style="width:150px;min-width:135px" title="Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)">Akses</th>
-            <th data-col-title="Proses &amp; PID" style="min-width:180px" title="Nama proses sistem dan PID yang membuka port ini">Proses &amp; PID</th>
-            <th class="col-act" data-col-title="Tindakan" style="width:125px;min-width:115px;text-align:left" title="Tindakan yang dapat dilakukan pada port ini">Tindakan</th>
+            <th class="col-port-proto" data-col-title="Protokol" title="Protokol jaringan (TCP atau UDP)">Protokol</th>
+            <th class="col-port-num" data-col-title="Port" title="Nomor port jaringan yang terbuka">Port</th>
+            <th class="col-port-ip" data-col-title="Bind IP" title="Alamat IP yang di-bind oleh socket">Bind IP</th>
+            <th class="col-port-access" data-col-title="Akses" title="Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)">Akses</th>
+            <th class="col-port-proc" data-col-title="Proses &amp; PID" title="Nama proses sistem dan PID yang membuka port ini">Proses &amp; PID</th>
+            <th class="col-port-act col-act" data-col-title="Tindakan" title="Tindakan yang dapat dilakukan pada port ini">Tindakan</th>
           </tr>
         </thead>
         <tbody>
           {% for p in (listening_ports if listening_ports else []) %}
           <tr data-proto="{{ p.proto|lower }}" data-is-public="{{ '1' if p.is_public else '0' }}" data-search="{{ (p.proto ~ ' ' ~ p.port ~ ' ' ~ p.ip ~ ' ' ~ (p.proc or ''))|lower }}">
-            <td><span class="badge {{ 'badge-info' if p.proto == 'tcp' else 'badge-warn' }}">{{ p.proto | upper }}</span></td>
-            <td class="mono" style="font-weight:700;font-size:13px;color:var(--text)">{{ p.port }}</td>
-            <td class="mono" style="color:var(--dim)">{{ p.ip }}</td>
-            <td>
+            <td class="col-port-proto"><span class="badge {{ 'badge-info' if p.proto == 'tcp' else 'badge-warn' }}">{{ p.proto | upper }}</span></td>
+            <td class="col-port-num mono" style="font-weight:700;font-size:13px;color:var(--text)">{{ p.port }}</td>
+            <td class="col-port-ip mono" style="color:var(--dim)" title="{{ p.ip }}">{{ p.ip }}</td>
+            <td class="col-port-access">
               {% if p.is_public %}
                 <span class="badge badge-danger" title="Port terbuka untuk koneksi publik/luar">Publik (0.0.0.0 / ::)</span>
               {% else %}
                 <span class="badge badge-up" title="Hanya dapat diakses secara lokal dari dalam server">Lokal (Loopback)</span>
               {% endif %}
             </td>
-            <td class="mono" style="font-size:12px;color:var(--text)">{{ p.proc or '—' }}</td>
-            <td class="col-act" style="white-space:nowrap;text-align:left">
+            <td class="col-port-proc mono" title="{{ p.proc or '—' }}">{{ p.proc or '—' }}</td>
+            <td class="col-port-act col-act">
               <div class="action-btn-group">
                 {% if user.has_perm('can_processes') and p.pid and p.port not in (22, 8400) %}
                 <button type="button" class="btn-act btn-act-danger"
@@ -4947,12 +4947,11 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
     pendingBadge = ' <span class="badge badge-warn" style="font-size:10px">' + pLabel + '</span>';
   }
 
-  const svgRst = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>';
-  const svgStart = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>';
-  const svgStop = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>';
+  const svgRst = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>';
+  const svgStart = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+  const svgStop = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>';
 
-  return '<div class="action-btn-group" style="display:inline-flex;align-items:center;gap:3px">'
-    + '<button type="button" class="btn-act btn-act-primary btn-svc-restart" '
+  return '<button type="button" class="btn-act btn-act-primary btn-svc-restart" '
     + disStyle
     + (rstDis ? 'disabled ' : '')
     + 'title="' + rstTitle + '" '
@@ -4970,8 +4969,7 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
     + 'title="' + stopTitle + '">' + svgStop + '</button>'
     + logBtn
     + ignoreBtn
-    + pendingBadge
-    + '</div>';
+    + pendingBadge;
 }
 
 function showSvcConfirmModal(opts) {
@@ -11964,15 +11962,15 @@ function renderSystemdTable() {
     const disAttr = (!isOnline || !canSvc || isViewer) ? 'disabled style="opacity:0.35;cursor:not-allowed"' : '';
 
     const restartBtn = `<button type="button" class="btn-act btn-act-primary" ${disAttr} onclick="systemdAction('restart', '${nameEsc}', this)" title="Restart unit service ${nameEsc}" aria-label="Restart">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
     </button>`;
 
     const startBtn = `<button type="button" class="btn-act" ${disAttr} ${isRunning ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('start', '${nameEsc}', this)" title="${isRunning ? 'Layanan sudah aktif' : 'Nyalakan unit service ' + nameEsc}" aria-label="Start">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
     </button>`;
 
     const stopBtn = `<button type="button" class="btn-act btn-act-danger" ${disAttr} ${(!isRunning || isAgent) ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('stop', '${nameEsc}', this)" title="${isAgent ? 'Agen Pantau dilindungi dan tidak boleh dihentikan' : (!isRunning ? 'Layanan sudah berhenti' : 'Hentikan unit service ' + nameEsc)}" aria-label="Stop">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
     </button>`;
 
     const reloadBtn = `<button type="button" class="btn-act" ${disAttr} ${!isRunning ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="systemdAction('reload', '${nameEsc}', this)" title="${!isRunning ? 'Layanan tidak aktif' : 'Reload konfigurasi ' + nameEsc}" aria-label="Reload">
@@ -11989,15 +11987,15 @@ function renderSystemdTable() {
     </button>`;
 
     return `<tr style="${isFailed ? 'background:rgba(239,68,68,0.06);' : ''}">
-      <td style="text-align:left;padding:5px 8px;white-space:nowrap">${statusBadge}</td>
-      <td style="padding:4px 8px;white-space:nowrap">
+      <td class="col-sysd-status">${statusBadge}</td>
+      <td class="col-sysd-name">
         <span class="mono" style="font-size:10px;font-weight:600;color:var(--text-bright)">${nameEsc}</span>${portBadge}
       </td>
-      <td style="text-align:left;padding:4px 6px;white-space:nowrap">${bootBadge}</td>
-      <td style="text-align:left;padding:4px 6px;white-space:nowrap;font-size:9.5px;color:var(--dim)" class="mono">${subEsc}</td>
-      <td style="text-align:left;padding:4px 8px;white-space:nowrap">${memHtml}</td>
-      <td style="padding:4px 8px;font-size:10px;color:var(--dim);line-height:1.3">${descEsc}</td>
-      <td class="col-act" style="text-align:left;padding:5px 8px;white-space:nowrap">
+      <td class="col-sysd-boot">${bootBadge}</td>
+      <td class="col-sysd-sub mono">${subEsc}</td>
+      <td class="col-sysd-mem">${memHtml}</td>
+      <td class="col-sysd-desc">${descEsc}</td>
+      <td class="col-sysd-act col-act">
         <div class="action-btn-group">
           ${restartBtn}
           ${startBtn}

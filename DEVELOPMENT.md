@@ -354,6 +354,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.143
+
+- **Tipe Rilis:** Eliminasi Menyeluruh Hardcoded Inline Styles Tabel Layanan, Perbaikan Drop Shadow Kolom Aksi di Tema Terang, dan Penyelarasan Ikon Kontrol Sistem (*Elimination of Table Hardcoded Inline Styles, Action Column Drop-Shadow Neutralization & Unified System Control Icons*)
+- **Fokus Utama:** Menyelesaikan inkonsistensi visual pada tabel Daftar Layanan (`#tbl-services`), Unit Systemd (`#tbl-systemd`), dan Audit Port (`#ports-table`) di halaman detail server:
+  1. **Eliminasi Hardcode Inline Styles Kolom Tabel Layanan & Systemd:**
+     - Menghapus seluruh hardcoded `style="width:...;min-width:...;text-align:left"` pada tag `<th>` dan `<td>` di berkas template dan perender dinamis JavaScript.
+     - Memperkenalkan kelas spesifikasi baku Bagian 13 pada `pantau-components.css` (`#tbl-services`, `#tbl-systemd`, `#ports-table`) dengan alokasi lebar proporsional presisi dan konfigurasi `table-layout: fixed; width: 100%`.
+     - Memberikan perlakuan *ellipsis text-overflow* pada kolom keterangan dan deskripsi, mencegah pemuaian tabel ke 1400px serta mengeliminasi horizontal scrollbar.
+  2. **Netralisasi Drop Shadow Kolom Tindakan Tema Terang (*Light Theme Drop-Shadow Elimination*):**
+     - Menghapus aturan `box-shadow: -4px 0 8px rgba(0, 0, 0, 0.08)` pada `[data-theme="light"] td.col-act` di `base.html` yang sebelumnya menimbulkan bayangan terputus pada sisi kiri kolom tindakan.
+     - Memastikan seluruh kolom aksi statis menyatu mulus (*seamless background*) dengan warna latar baris di semua tema.
+  3. **Standardisasi Ikon Kontrol Layanan & Unit Systemd:**
+     - Menggantikan bentuk geometris hitam pekat (*solid black polygon/rect*) pada tombol Nyalakan (Start/Play) dan Hentikan (Stop) dengan ikon SVG vektor garis (*outline stroke* 2px) berdimensi seragam 12x12px yang selaras dengan tombol Mulai Ulang (Restart), Log, dan Hapus.
+  4. **Penyelarasan Wadah Grup Tombol Aksi (*Action Button Group Nesting Fix*):**
+     - Memperbaiki hierarki DOM wadah tombol aksi pada pembaruan polling dinamis agar tidak menyisipkan elemen `.action-btn-group` ganda di dalam span `#act-{id}`.
+
 ## Versi 4.8.142
 
 - **Tipe Rilis:** Eliminasi Horizontal Scrollbar, Optimalisasi Lebar Tabel Server & Insiden, Standardisasi Bahasa Tab Navigasi, dan Blueprint Komponen Antarmuka (*Table Layout Optimization, Horizontal Scrollbar Elimination, Indonesian Tab Navigation & UI Component Engine Blueprint*)

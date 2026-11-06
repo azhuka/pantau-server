@@ -1301,5 +1301,247 @@ table td.empty-msg {
   text-align: center !important;
 }
 
+.action-btn-group > span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+/* -----------------------------------------------------------------------------
+   13. SPESIFIKASI TABEL KONTROL NOC (HIGH-DENSITY COMPONENT ENGINE)
+   ----------------------------------------------------------------------------- */
+
+/* Tabel Layanan Terpantau (#tbl-services) */
+#tbl-services {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#tbl-services th,
+#tbl-services td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#tbl-services th:first-child,
+#tbl-services td:first-child {
+  padding-left: 10px !important;
+}
+
+#tbl-services th.col-svc-name,
+#tbl-services td.col-svc-name {
+  width: 120px !important;
+  min-width: 110px !important;
+  max-width: 130px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-services th.col-svc-port,
+#tbl-services td.col-svc-port {
+  width: 65px !important;
+  min-width: 60px !important;
+  max-width: 70px !important;
+}
+
+#tbl-services th.col-svc-proc,
+#tbl-services td.col-svc-proc {
+  width: 110px !important;
+  min-width: 95px !important;
+  max-width: 120px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-services th.col-svc-status,
+#tbl-services td.col-svc-status {
+  width: 75px !important;
+  min-width: 70px !important;
+  max-width: 80px !important;
+}
+
+#tbl-services th.col-svc-conns,
+#tbl-services td.col-svc-conns {
+  width: 60px !important;
+  min-width: 55px !important;
+  max-width: 65px !important;
+}
+
+#tbl-services th.col-svc-resp,
+#tbl-services td.col-svc-resp {
+  width: 95px !important;
+  min-width: 90px !important;
+  max-width: 100px !important;
+}
+
+#tbl-services th.col-svc-desc,
+#tbl-services td.col-svc-desc {
+  width: auto !important;
+  min-width: 150px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-services th.col-svc-uptime,
+#tbl-services td.col-svc-uptime {
+  width: 115px !important;
+  min-width: 110px !important;
+  max-width: 125px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-services th.col-svc-act,
+#tbl-services td.col-svc-act {
+  width: 175px !important;
+  min-width: 170px !important;
+  max-width: 180px !important;
+  white-space: nowrap !important;
+  padding: 4px 6px !important;
+}
+
+/* Tabel Unit Layanan Systemd (#tbl-systemd) */
+#tbl-systemd {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#tbl-systemd th,
+#tbl-systemd td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#tbl-systemd th.col-sysd-status,
+#tbl-systemd td.col-sysd-status {
+  width: 85px !important;
+  min-width: 80px !important;
+  max-width: 90px !important;
+}
+
+#tbl-systemd th.col-sysd-name,
+#tbl-systemd td.col-sysd-name {
+  width: 190px !important;
+  min-width: 170px !important;
+  max-width: 210px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-systemd th.col-sysd-boot,
+#tbl-systemd td.col-sysd-boot {
+  width: 75px !important;
+  min-width: 70px !important;
+  max-width: 80px !important;
+}
+
+#tbl-systemd th.col-sysd-sub,
+#tbl-systemd td.col-sysd-sub {
+  width: 85px !important;
+  min-width: 80px !important;
+  max-width: 90px !important;
+}
+
+#tbl-systemd th.col-sysd-mem,
+#tbl-systemd td.col-sysd-mem {
+  width: 90px !important;
+  min-width: 85px !important;
+  max-width: 95px !important;
+}
+
+#tbl-systemd th.col-sysd-desc,
+#tbl-systemd td.col-sysd-desc {
+  width: auto !important;
+  min-width: 160px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-systemd th.col-sysd-act,
+#tbl-systemd td.col-sysd-act {
+  width: 175px !important;
+  min-width: 170px !important;
+  max-width: 180px !important;
+  white-space: nowrap !important;
+  padding: 4px 6px !important;
+}
+
+/* Tabel Audit Port Terbuka (#ports-table) */
+#ports-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#ports-table th,
+#ports-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#ports-table th.col-port-proto,
+#ports-table td.col-port-proto {
+  width: 85px !important;
+  min-width: 80px !important;
+  max-width: 90px !important;
+}
+
+#ports-table th.col-port-num,
+#ports-table td.col-port-num {
+  width: 70px !important;
+  min-width: 65px !important;
+  max-width: 75px !important;
+}
+
+#ports-table th.col-port-ip,
+#ports-table td.col-port-ip {
+  width: 135px !important;
+  min-width: 120px !important;
+  max-width: 145px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ports-table th.col-port-access,
+#ports-table td.col-port-access {
+  width: 145px !important;
+  min-width: 135px !important;
+  max-width: 155px !important;
+  white-space: nowrap !important;
+}
+
+#ports-table th.col-port-proc,
+#ports-table td.col-port-proc {
+  width: auto !important;
+  min-width: 180px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ports-table th.col-port-act,
+#ports-table td.col-port-act {
+  width: 115px !important;
+  min-width: 110px !important;
+  max-width: 120px !important;
+  white-space: nowrap !important;
+  padding: 4px 6px !important;
+}
+
 
 
