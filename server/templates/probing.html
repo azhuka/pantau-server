@@ -132,14 +132,16 @@
 .status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2.5px 8px;
-  border-radius: 999px;
+  justify-content: center;
+  height: 20px;
+  padding: 1px 7px;
+  border-radius: 4px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
-  line-height: 1.2;
+  line-height: 18px;
+  box-sizing: border-box;
 }
 .status-pill-up {
   background: var(--green-bg);
@@ -1044,9 +1046,9 @@ function renderTable() {
     const pTier = parseInt(p.tier, 10) || 2;
     let tierBadge = '';
     if (pTier === 1) {
-      tierBadge = `<span class="badge badge-tier-prod" title="Server level Produksi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>`;
+      tierBadge = `<span class="badge badge-tier-prod" title="Server level Produksi"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>PROD</span></span>`;
     } else {
-      tierBadge = `<span class="badge badge-tier-dev" title="Server level Non-produksi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>`;
+      tierBadge = `<span class="badge badge-tier-dev" title="Server level Non-produksi"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg><span>DEV</span></span>`;
     }
 
     html += `

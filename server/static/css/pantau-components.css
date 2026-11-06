@@ -22,8 +22,8 @@
 .probe-table-card > .pantau-table-wrap,
 .tab-body .card .pantau-table-wrap,
 .tab-body .pantau-table-wrap {
-  margin: 10px 12px 10px 12px !important;
-  width: calc(100% - 24px) !important;
+  margin: 6px 8px 6px 8px !important;
+  width: calc(100% - 16px) !important;
   box-sizing: border-box !important;
 }
 
@@ -362,11 +362,11 @@ span[data-pg-cur] {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 26px !important;
-  height: 26px !important;
+  width: 24px !important;
+  height: 24px !important;
   padding: 0 !important;
   border: 1px solid transparent !important;
-  border-radius: 5px !important;
+  border-radius: 4px !important;
   background: transparent !important;
   color: var(--dim) !important;
   cursor: pointer !important;
@@ -379,28 +379,32 @@ span[data-pg-cur] {
 
 .pantau-btn-icon:hover {
   background: rgba(255, 255, 255, 0.08) !important;
-  color: var(--text-heading, #ffffff) !important;
-  border-color: var(--border) !important;
+  color: var(--text-bright) !important;
+  border-color: var(--border-subtle) !important;
 }
 
 .pantau-btn-icon-danger:hover {
-  background: rgba(239, 68, 68, 0.15) !important;
-  color: #ef4444 !important;
-  border-color: rgba(239, 68, 68, 0.3) !important;
+  background: var(--red-bg) !important;
+  color: var(--red) !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
 }
 
 .pantau-btn-icon-primary:hover {
-  background: rgba(56, 189, 248, 0.15) !important;
-  color: var(--blue, #38bdf8) !important;
-  border-color: rgba(56, 189, 248, 0.3) !important;
+  background: var(--blue-bg) !important;
+  color: var(--blue) !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
 }
 
 .pantau-col-act {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 4px !important;
+  gap: 2px !important;
   white-space: nowrap !important;
   justify-content: center !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.03)) !important;
+  padding: 2px 4px !important;
+  border-radius: 5px !important;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08)) !important;
 }
 
 .pantau-btn {
@@ -752,29 +756,35 @@ span[data-pg-cur] {
   align-items: center !important;
 }
 
-/* Tier Badges */
+/* Tier Badges (PROD vs DEV) */
 .badge-tier-prod {
   display: inline-flex !important;
   align-items: center !important;
-  justify-content: center !important;
-  padding: 2px 5px !important;
-  background: rgba(16, 185, 129, 0.12) !important;
+  gap: 3.5px !important;
+  padding: 1.5px 6px !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  background: var(--green-bg) !important;
   color: var(--green) !important;
-  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
   border-radius: 4px !important;
-  line-height: 1 !important;
+  line-height: 1.2 !important;
 }
 
 .badge-tier-dev {
   display: inline-flex !important;
   align-items: center !important;
-  justify-content: center !important;
-  padding: 2px 5px !important;
+  gap: 3.5px !important;
+  padding: 1.5px 6px !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
   background: rgba(148, 163, 184, 0.12) !important;
   color: var(--dim) !important;
   border: 1px solid rgba(148, 163, 184, 0.25) !important;
   border-radius: 4px !important;
-  line-height: 1 !important;
+  line-height: 1.2 !important;
 }
 
 /* Badge & Text Utilitas Operasional Server */
@@ -892,8 +902,8 @@ span[data-pg-cur] {
   min-width: 140px !important;
 }
 .filter-search-group .btn-reset-action {
-  height: 32px !important;
-  padding: 0 12px !important;
+  height: 30px !important;
+  padding: 0 10px !important;
   font-size: 11.5px !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -934,8 +944,8 @@ span[data-pg-cur] {
    10. SISTEM KOMPONEN & UTILITAS ARSITEKTUR FRAMEWORK (Framework Component Library)
    ----------------------------------------------------------------------------- */
 
-/* Alert Banners */
-.alert-banner {
+/* Flash & In-Page Alerts (Terisolasi dari #alertBanner darurat sistem) */
+.pantau-alert {
   padding: 12px 16px !important;
   border-radius: 8px !important;
   margin-bottom: 20px !important;
@@ -944,22 +954,22 @@ span[data-pg-cur] {
   align-items: center !important;
   gap: 10px !important;
 }
-.alert-banner-success {
+.pantau-alert-success {
   background: var(--green-bg) !important;
   border: 1px solid rgba(52, 211, 153, 0.35) !important;
   color: var(--green) !important;
 }
-.alert-banner-danger {
+.pantau-alert-danger {
   background: var(--red-bg) !important;
   border: 1px solid rgba(248, 113, 113, 0.35) !important;
   color: var(--red) !important;
 }
-.alert-banner-warning {
+.pantau-alert-warning {
   background: var(--yellow-bg) !important;
   border: 1px solid rgba(251, 191, 36, 0.35) !important;
   color: var(--yellow) !important;
 }
-.alert-banner-info {
+.pantau-alert-info {
   background: var(--blue-bg) !important;
   border: 1px solid rgba(56, 189, 248, 0.35) !important;
   color: var(--blue) !important;
@@ -1089,4 +1099,124 @@ span[data-pg-cur] {
 .text-dim { color: var(--dim) !important; }
 .text-dim-subtle { color: var(--dim-subtle) !important; }
 .text-mono { font-family: var(--font-mono, ui-monospace, monospace) !important; }
+
+/* -----------------------------------------------------------------------------
+   11. SISTEM KONTROL & WADAH TOMBOL AKSI BAKU (Framework Action & Toolbar Controls)
+   ----------------------------------------------------------------------------- */
+
+/* Bilah Kontrol Terpadu Tabel (Toolbar) */
+.pantau-toolbar,
+.table-toolbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-toolbar-left,
+.table-toolbar-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.pantau-toolbar-right,
+.table-toolbar-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+/* Standarisasi Tinggi Kontrol Input, Select, & Button pada Bilah Kontrol (Terkunci 30px) */
+.pantau-toolbar input,
+.pantau-toolbar select,
+.pantau-toolbar .btn,
+.table-toolbar input,
+.table-toolbar select,
+.table-toolbar .btn,
+.filter-search-box input,
+.dash-search-input,
+.dash-group-select,
+.filter-select,
+.pantau-col-btn,
+.pantau-date-range,
+.btn-reset-action {
+  height: 30px !important;
+  line-height: 28px !important;
+  box-sizing: border-box !important;
+  border-radius: 5px !important;
+  font-size: 11.5px !important;
+}
+
+.pantau-date-range input[type="date"] {
+  height: 26px !important;
+  line-height: 26px !important;
+}
+
+/* Wadah Grup Tombol Aksi di Sel Tabel (Action Button Group) */
+.action-btn-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
+  padding: 2px 3px !important;
+  border-radius: 5px !important;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08)) !important;
+  vertical-align: middle !important;
+}
+
+.action-btn-group .btn-act,
+.action-btn-group .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  border-radius: 3px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--dim) !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+  box-shadow: none !important;
+}
+
+.action-btn-group .btn-act:hover:not(:disabled),
+.action-btn-group .btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-bright) !important;
+}
+
+.action-btn-group .btn-act.btn-act-primary,
+.action-btn-group .btn.btn-primary {
+  background: var(--blue-bg) !important;
+  color: var(--blue) !important;
+  border-color: rgba(56, 189, 248, 0.25) !important;
+}
+.action-btn-group .btn-act.btn-act-primary:hover:not(:disabled),
+.action-btn-group .btn.btn-primary:hover:not(:disabled) {
+  background: var(--blue) !important;
+  color: #fff !important;
+}
+
+.action-btn-group .btn-act.btn-act-danger,
+.action-btn-group .btn.btn-danger {
+  background: transparent !important;
+  color: var(--red) !important;
+}
+.action-btn-group .btn-act.btn-act-danger:hover:not(:disabled),
+.action-btn-group .btn.btn-danger:hover:not(:disabled) {
+  background: var(--red-bg) !important;
+  color: var(--red) !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
 

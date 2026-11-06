@@ -299,14 +299,15 @@
   border-spacing: 0;
 }
 #dash-server-table.tbl-compact th {
-  padding: 3px 6px !important;
+  padding: 6px 8px !important;
   line-height: 1.25 !important;
   text-align: left !important;
+  height: 32px !important;
 }
 #dash-server-table.tbl-compact td {
-  padding: 2px 6px !important;
-  line-height: 1.2 !important;
-  height: 25px !important;
+  padding: 4px 8px !important;
+  line-height: 1.25 !important;
+  height: 32px !important;
   text-align: left !important;
 }
 #dash-server-table.tbl-compact .tbl-metric-subline {
@@ -329,21 +330,22 @@
   text-align: left !important;
 }
 #dash-server-table.tbl-compact .meter-mini-track {
-  height: 3px !important;
-  width: 40px !important;
-  border-width: 0.5px !important;
+  height: 6px !important;
+  width: 46px !important;
+  border-radius: 3px !important;
 }
 #dash-server-table.tbl-compact td:first-child strong {
   line-height: 1.2 !important;
 }
 #dash-server-table.tbl-compact .dot {
-  width: 6px !important;
-  height: 6px !important;
+  width: 7px !important;
+  height: 7px !important;
 }
 #dash-server-table.tbl-compact .badge {
-  padding: 0 4px !important;
-  line-height: 15px !important;
-  height: 16px !important;
+  padding: 1px 6px !important;
+  line-height: 16px !important;
+  height: 18px !important;
+  font-size: 9.5px !important;
 }
 #dash-server-table.tbl-compact .copyable-ip {
   line-height: 1 !important;
@@ -1286,16 +1288,16 @@ body.popout-fleet_table #dash-fleet-card {
     <table id="dash-server-table" class="pantau-table">
       <thead>
         <tr>
-          <th class="sortable" data-col="0" data-col-title="Server" style="vertical-align:middle;cursor:pointer;width:110px;min-width:95px;text-align:left" title="Nama host server">Server <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="0" data-col-title="Server" style="vertical-align:middle;cursor:pointer;width:110px;min-width:95px;text-align:left" title="Nama host server">Server <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
           <th data-col-title="Status" style="vertical-align:middle;width:58px;min-width:52px;text-align:left" title="Status konektivitas server">Status</th>
           <th data-col-title="Lingkungan" style="vertical-align:middle;width:70px;min-width:64px;text-align:left" title="Klasifikasi Lingkungan Operasional (Server level Produksi vs Server level Non-produksi)">Lingkungan</th>
           <th data-col-title="Platform &amp; IP" style="vertical-align:middle;width:125px;min-width:110px;text-align:left" title="Platform virtualisasi dan alamat IP"><span class="th-plat-std">Platform / IP</span><span class="th-plat-cpt" style="display:none">IP &amp; Platform</span></th>
-          <th class="sortable" data-col="4" data-col-title="Uptime" style="vertical-align:middle;cursor:pointer;width:65px;min-width:55px;text-align:left" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="5" data-col-title="CPU (%)" style="vertical-align:middle;cursor:pointer;width:75px;min-width:68px;text-align:left" title="Persentase utilisasi CPU dan jumlah inti prosesor">CPU (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="6" data-col-title="RAM (%)" style="vertical-align:middle;cursor:pointer;width:85px;min-width:75px;text-align:left" title="Persentase utilisasi memori dan kapasitas total RAM">RAM (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="7" data-col-title="STORAGE (%)" style="vertical-align:middle;cursor:pointer;width:95px;min-width:88px;text-align:left" title="Persentase utilisasi penyimpanan dan kapasitas partisi utama">STORAGE (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="4" data-col-title="Uptime" style="vertical-align:middle;cursor:pointer;width:65px;min-width:55px;text-align:left" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+          <th class="sortable" data-col="5" data-col-title="CPU (%)" style="vertical-align:middle;cursor:pointer;width:75px;min-width:68px;text-align:left" title="Persentase utilisasi CPU dan jumlah inti prosesor">CPU (%) <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+          <th class="sortable" data-col="6" data-col-title="RAM (%)" style="vertical-align:middle;cursor:pointer;width:85px;min-width:75px;text-align:left" title="Persentase utilisasi memori dan kapasitas total RAM">RAM (%) <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+          <th class="sortable" data-col="7" data-col-title="STORAGE (%)" style="vertical-align:middle;cursor:pointer;width:95px;min-width:88px;text-align:left" title="Persentase utilisasi penyimpanan dan kapasitas partisi utama">STORAGE (%) <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
           <th data-col-title="Layanan" style="vertical-align:middle;width:58px;min-width:52px;text-align:left" title="Rasio layanan aktif terhadap total layanan terpantau">Layanan</th>
-          <th class="sortable" data-col="9" data-col-title="Insiden" style="vertical-align:middle;cursor:pointer;width:68px;min-width:60px;text-align:left" title="Jumlah insiden dan anomali aktif pada server">Insiden <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="9" data-col-title="Insiden" style="vertical-align:middle;cursor:pointer;width:68px;min-width:60px;text-align:left" title="Jumlah insiden dan anomali aktif pada server">Insiden <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
         </tr>
       </thead>
       <tbody id="dash-servers-tbody">
@@ -1358,11 +1360,13 @@ body.popout-fleet_table #dash-fleet-card {
           <td data-sort-val="{{ s_tier }}" id="tbl-tier-{{ srv.id }}" style="text-align:left;vertical-align:middle">
             {% if s_tier == 1 %}
               <span class="badge badge-tier-prod" title="Server level Produksi">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                <span>PROD</span>
               </span>
             {% else %}
               <span class="badge badge-tier-dev" title="Server level Non-produksi">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
+                <span>DEV</span>
               </span>
             {% endif %}
           </td>
@@ -2091,10 +2095,18 @@ document.querySelectorAll('#dash-server-table th.sortable').forEach(th => {
       dashSortAsc = true;
     }
 
+    const SVG_SORT_NONE = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>`;
+    const SVG_SORT_ASC  = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><path d="m18 15-6-6-6 6"/></svg>`;
+    const SVG_SORT_DESC = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><path d="m6 9 6 6 6-6"/></svg>`;
+
     document.querySelectorAll('#dash-server-table th.sortable').forEach(h => {
       h.classList.remove('is-sorted');
       const arrow = h.querySelector('.sort-arrow');
-      if (arrow) arrow.textContent = '↕';
+      if (arrow) {
+        arrow.innerHTML = SVG_SORT_NONE;
+        arrow.style.opacity = '0.45';
+        arrow.style.color = 'var(--dim)';
+      }
     });
 
     if (dashSortCol === -1) {
@@ -2102,7 +2114,11 @@ document.querySelectorAll('#dash-server-table th.sortable').forEach(th => {
     } else {
       th.classList.add('is-sorted');
       const arrow = th.querySelector('.sort-arrow');
-      if (arrow) arrow.textContent = dashSortAsc ? '↑' : '↓';
+      if (arrow) {
+        arrow.innerHTML = dashSortAsc ? SVG_SORT_ASC : SVG_SORT_DESC;
+        arrow.style.opacity = '1';
+        arrow.style.color = 'var(--blue)';
+      }
 
       const rows = Array.from(tbody.querySelectorAll('tr'));
       rows.sort((a, b) => {
@@ -2178,9 +2194,9 @@ function _dashEsc(s) {
 function getTierBadgeHtml(tier) {
   const t = parseInt(tier, 10) || 2;
   if (t === 1) {
-    return '<span class="badge badge-tier-prod" title="Server level Produksi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>';
+    return '<span class="badge badge-tier-prod" title="Server level Produksi"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>PROD</span></span>';
   }
-  return '<span class="badge badge-tier-dev" title="Server level Non-produksi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>';
+  return '<span class="badge badge-tier-dev" title="Server level Non-produksi"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg><span>DEV</span></span>';
 }
 
 function getPlatformBadgeHtml(plat) {

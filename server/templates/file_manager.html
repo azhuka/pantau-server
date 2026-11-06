@@ -215,7 +215,7 @@
           <th style="width:36px;text-align:center">
             <input type="checkbox" id="fm-select-all" class="fm-checkbox" onclick="fmToggleSelectAll(this.checked)" title="Pilih Semua (Ctrl+A)">
           </th>
-          <th class="sortable" style="width:36%" onclick="fmSortBy('name')">Nama <span id="fm-sort-name">↕</span></th>
+          <th class="sortable" style="width:36%" onclick="fmSortBy('name')">Nama <span id="fm-sort-name"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.4;vertical-align:middle;margin-left:4px"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
           <th class="sortable" style="width:12%" onclick="fmSortBy('size')">Ukuran <span id="fm-sort-size"></span></th>
           <th class="sortable" style="width:12%" onclick="fmSortBy('mode')">Izin <span id="fm-sort-mode"></span></th>
           <th class="sortable" style="width:14%" onclick="fmSortBy('owner')">Pemilik : Grup <span id="fm-sort-owner"></span></th>
@@ -952,13 +952,15 @@ function fmSortBy(column) {
     fmSortColumn = column;
     fmSortAsc = true;
   }
+  const SVG_SORT_ASC  = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);vertical-align:middle;margin-left:4px"><path d="m18 15-6-6-6 6"/></svg>`;
+  const SVG_SORT_DESC = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);vertical-align:middle;margin-left:4px"><path d="m6 9 6 6 6-6"/></svg>`;
   ['name', 'size', 'mode', 'owner', 'mtime'].forEach(col => {
     const el = document.getElementById('fm-sort-' + col);
     if (!el) return;
     if (col === fmSortColumn) {
-      el.textContent = fmSortAsc ? '↑' : '↓';
+      el.innerHTML = fmSortAsc ? SVG_SORT_ASC : SVG_SORT_DESC;
     } else {
-      el.textContent = '';
+      el.innerHTML = '';
     }
   });
   const filterVal = document.getElementById('fm-filter').value;

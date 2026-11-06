@@ -354,6 +354,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.140
+
+- **Tipe Rilis:** Standardisasi Menyeluruh Sistem Tabel, Kontrol Bilah Aksi, dan Perbaikan Komponen Visual (*Comprehensive Table System Standardization, Action Toolbar Control & Visual Component Polish*)
+- **Fokus Utama:** Melakukan standardisasi menyeluruh pada sistem tabel antarmuka pengguna, bilah kontrol pencarian dan filter, wadah tombol aksi (action button group), perbaikan glif panah pengurutan, penegasan label lingkungan operasional, serta resolusi benturan kelas banner peringatan:
+  1. **Standardisasi Wadah Aksi Tabel (`.action-btn-group` & `.btn-act`):**
+     - Memperkenalkan kelas baku `.action-btn-group` pada Bagian 11 `pantau-components.css` sebagai wadah kapsul terpadu bagi seluruh tombol aksi baris tabel di seluruh antarmuka.
+     - Menstandarkan dimensi tombol aksi tabel berukuran presisi 24x24px dengan transisi halus (`.btn-act`, `.btn-act-primary`, `.btn-act-danger`).
+     - Mengimplementasikan `.action-btn-group` secara menyeluruh pada tabel Daftar Server (`servers.html`), tabel Daftar Layanan (`services.html`), tabel Audit Port Terbuka (`services.html`), tabel Unit Layanan Systemd (`services.html`), dan tabel Akun Pengguna (`users.html`).
+     - Memperbarui renderer JavaScript dinamis (`renderServiceActions`, `renderSystemdTable`, `renderPorts`) agar tetap mempertahankan kelas `.btn-act` saat polling data langsung berjalan.
+  2. **Eliminasi Glif Pengurutan Samar & Penggantian Panah SVG Vektor:**
+     - Mengganti seluruh karakter unicode `↕` yang sebelumnya tampak menyerupai tanda titik dua ganda (`:`) pada font sistem dengan panah SVG chevron vektor modern yang tajam di seluruh tabel: Dasbor (`dashboard.html`), Unit Layanan Systemd (`services.html`), Paket Software (`services.html`), Manajer Tugas (`services.html`), dan Manajer Berkas (`file_manager.html`).
+     - Menyediakan status siklus pengurutan 3 arah (Netral/Ascending/Descending) yang konsisten secara visual dengan warna indikator biru terang (`var(--blue)`).
+  3. **Penguncian Standar Tinggi Kontrol Bilah Aksi (30px NOC Contract):**
+     - Menyelaraskan seluruh elemen kontrol bilah alat (input pencarian, dropdown filter grup/status, rentang tanggal kustom, tombol pemilih kolom, dan tombol reset filter) pada ketinggian tetap 30px (`line-height: 28px; border-radius: 5px; font-size: 11.5px;`).
+     - Menghilangkan perbedaan ketinggian 2px antara tombol reset, pemilih tanggal (`.pantau-date-range`), dan kolom dropdown di `problems.html`, `dashboard.html`, dan `services.html`.
+  4. **Penyempurnaan Indikator Visual Lingkungan & Komponen:**
+     - Menambahkan teks label eksplisit `PROD` dan `DEV` di samping ikon labu/perisai pada kolom Lingkungan di Dasbor dan Daftar Server.
+     - Memperbaiki ketebalan meter progres CPU, RAM, dan Storage dari garis gepeng 3px menjadi kapsul melengkung 6px yang elegan dan mudah dibaca pada tabel dasbor ringkas.
+     - Mengganti ikon tambah generik yang ambigu pada tabel port listening dengan ikon monitor detak jantung (*activity pulse*) dengan aksi bermakna jelas untuk mendaftarkan socket ke pemantauan layanan.
+  5. **Resolusi Benturan Nama Kelas Alert Banner:**
+     - Mengubah kelas peringatan kontekstual dalam halaman dari `.alert-banner` menjadi `.pantau-alert` (`.pantau-alert-success`, `.pantau-alert-danger`, `.pantau-alert-warning`, `.pantau-alert-info`) di `pantau-components.css`, `profile.html`, dan `users.html` guna mencegah konflik CSS dengan banner insiden kritis global `#alertBanner` di `base.html`.
+
 ## Versi 4.8.139
 
 - **Tipe Rilis:** Standardisasi Arsitektur CSS Framework & Pembersihan Menyeluruh Hardcode Warna (*CSS Framework Architecture Standardization & Universal Color Hardcode Purge*)

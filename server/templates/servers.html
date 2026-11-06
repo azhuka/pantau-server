@@ -37,7 +37,7 @@
 }
 #servers-table th {
   white-space: nowrap;
-  padding: 7px 12px;
+  padding: 6px 8px;
   font-size: 10px;
   font-weight: 600;
   color: var(--dim);
@@ -46,13 +46,13 @@
 }
 #servers-table td {
   white-space: nowrap;
-  padding: 6px 12px;
+  padding: 5px 8px;
   font-size: 11px;
   vertical-align: middle;
 }
 #servers-table th:first-child,
 #servers-table td:first-child {
-  padding-left: 16px !important;
+  padding-left: 10px !important;
 }
 #servers-table th.col-act,
 #servers-table td.col-act {
@@ -62,9 +62,9 @@
   box-shadow: -4px 0 8px rgba(0,0,0,0.45);
   z-index: 2;
   text-align: center !important;
-  width: 88px !important;
-  min-width: 88px !important;
-  padding-right: 16px !important;
+  width: 76px !important;
+  min-width: 76px !important;
+  padding-right: 10px !important;
 }
 #servers-table tbody tr:hover td.col-act {
   background: var(--col-act-hover, var(--border));
@@ -187,24 +187,24 @@
   </div>
 </div>
 
-<div class="card" style="padding:12px;overflow:hidden">
+<div class="card" style="padding:8px;overflow:hidden">
   {% if servers %}
   <div class="pantau-table-wrap">
   <table id="servers-table" class="pantau-table" style="width:100%;margin:0">
     <thead>
       <tr>
-        <th class="sortable" data-sort-key="server" data-col-title="Server" style="cursor:pointer;min-width:120px;white-space:nowrap" title="Nama host server dan klasifikasi lingkungan">Server <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="IP &amp; Interface" style="min-width:95px" title="Alamat IP utama dan antarmuka jaringan server">IP &amp; Interface</th>
-        <th data-col-title="Platform &amp; Mesin" style="min-width:110px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform &amp; Mesin</th>
-        <th data-col-title="Sistem Operasi" style="min-width:115px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
-        <th data-col-title="Prosesor" style="min-width:105px" title="Model prosesor (CPU) dan jumlah inti">Prosesor</th>
-        <th class="sortable" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer;min-width:80px" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="Penyimpanan" style="min-width:90px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan</th>
-        <th class="sortable" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer;min-width:80px" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="Agen &amp; APT" style="min-width:75px;text-align:center" title="Versi agen pemantau dan ketersediaan pembaruan paket">Agen &amp; APT</th>
-        <th data-col-title="Tag" style="min-width:55px" title="Label kategori dan pengelompokan server">Tag</th>
-        <th data-col-title="Status &amp; Lapor" style="min-width:75px;text-align:center" title="Status konektivitas dan waktu laporan data terakhir">Status &amp; Lapor</th>
-        <th class="col-act" data-col-title="Tindakan" style="width:88px;min-width:88px;text-align:center" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
+        <th class="sortable" data-sort-key="server" data-col-title="Server" style="cursor:pointer;min-width:110px;white-space:nowrap" title="Nama host server dan klasifikasi lingkungan">Server <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th data-col-title="IP &amp; Interface" style="min-width:90px" title="Alamat IP utama dan antarmuka jaringan server">IP &amp; Interface</th>
+        <th data-col-title="Platform &amp; Mesin" style="min-width:95px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform &amp; Mesin</th>
+        <th data-col-title="Sistem Operasi" style="min-width:95px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
+        <th data-col-title="Prosesor" style="min-width:95px" title="Model prosesor (CPU) dan jumlah inti">Prosesor</th>
+        <th class="sortable" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer;min-width:70px" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th data-col-title="Penyimpanan" style="min-width:75px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan</th>
+        <th class="sortable" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer;min-width:70px" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th data-col-title="Agen &amp; APT" style="min-width:65px;text-align:center" title="Versi agen pemantau dan ketersediaan pembaruan paket">Agen &amp; APT</th>
+        <th data-col-title="Tag" style="min-width:45px" title="Label kategori dan pengelompokan server">Tag</th>
+        <th data-col-title="Status &amp; Lapor" style="min-width:65px;text-align:center" title="Status konektivitas dan waktu laporan data terakhir">Status &amp; Lapor</th>
+        <th class="col-act" data-col-title="Tindakan" style="width:76px;min-width:76px;text-align:center" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
       </tr>
     </thead>
     <tbody>
@@ -267,11 +267,13 @@
           <a href="/servers/{{ srv.id }}" style="color:var(--text);font-weight:700;font-size:11px;text-decoration:none" class="hover-underline" id="srv-host-{{ srv.id }}">{{ srv.hostname }}</a>
           {% if s_tier == 1 %}
             <span class="badge badge-tier-prod" title="Server level Produksi">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+              <span>PROD</span>
             </span>
           {% else %}
             <span class="badge badge-tier-dev" title="Server level Non-produksi">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
+              <span>DEV</span>
             </span>
           {% endif %}
         </div>
@@ -411,12 +413,12 @@
 
       <!-- Col 11: Tindakan -->
       <td class="col-act" style="text-align:center;white-space:nowrap">
-        <div class="pantau-col-act">
-          <a href="/servers/{{ srv.id }}" class="pantau-btn-icon" title="Buka Rincian Server" aria-label="Rincian">
+        <div class="action-btn-group">
+          <a href="/servers/{{ srv.id }}" class="btn-act" title="Buka Rincian Server" aria-label="Rincian">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           </a>
           {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-          <a href="/servers/{{ srv.id }}/edit" class="pantau-btn-icon" title="Edit Konfigurasi Server" aria-label="Edit">
+          <a href="/servers/{{ srv.id }}/edit" class="btn-act" title="Edit Konfigurasi Server" aria-label="Edit">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
           </a>
           <form method="POST" action="/servers/{{ srv.id }}/delete" style="display:inline;margin:0"
@@ -430,7 +432,7 @@
                 data-guardrail-btn="Hapus Server"
                 data-guardrail-color="danger">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button class="pantau-btn-icon pantau-btn-icon-danger" type="submit" title="Hapus Server" aria-label="Hapus">
+            <button class="btn-act btn-act-danger" type="submit" title="Hapus Server" aria-label="Hapus">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             </button>
           </form>
@@ -593,9 +595,9 @@ function _srvEsc(s) {
 function getTierBadgeHtml(tier) {
   const t = parseInt(tier, 10) || 2;
   if (t === 1) {
-    return '<span class="badge badge-tier-prod" title="Server level Produksi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>';
+    return '<span class="badge badge-tier-prod" title="Server level Produksi"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>PROD</span></span>';
   }
-  return '<span class="badge badge-tier-dev" title="Server level Non-produksi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg></span>';
+  return '<span class="badge badge-tier-dev" title="Server level Non-produksi"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg><span>DEV</span></span>';
 }
 
 function getPlatformBadgeHtml(plat) {

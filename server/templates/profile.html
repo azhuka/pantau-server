@@ -18,7 +18,7 @@
 </div>
 
 {% if flash_msg %}
-<div class="alert-banner {% if flash_ok %}alert-banner-success{% else %}alert-banner-danger{% endif %}">
+<div class="pantau-alert {% if flash_ok %}pantau-alert-success{% else %}pantau-alert-danger{% endif %}">
   <span>{% if flash_ok %}✔{% else %}⚠{% endif %}</span>
   <span>{{ flash_msg }}</span>
 </div>
