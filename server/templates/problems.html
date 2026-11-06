@@ -188,27 +188,32 @@
 }
 #probtable th.col-durasi,
 #probtable td.col-durasi {
-  width: 75px !important;
+  width: 125px !important;
+  min-width: 120px !important;
   white-space: nowrap !important;
   font-size: 10px !important;
   text-align: left !important;
   padding: 5px 8px !important;
-}
-#probtable th.col-act,
-#probtable td.col-act {
-  width: 100px !important;
-  white-space: nowrap !important;
-  text-align: left !important;
-  padding: 5px 6px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 #probtable th.col-tips,
 #probtable td.col-tips {
-  width: 180px !important;
+  width: auto !important;
+  min-width: 200px !important;
   font-size: 11px !important;
   color: var(--text-muted) !important;
   line-height: 1.35 !important;
   vertical-align: middle !important;
-  padding: 5px 10px !important;
+  padding: 5px 12px !important;
+}
+#probtable th.col-act,
+#probtable td.col-act {
+  width: 90px !important;
+  min-width: 85px !important;
+  white-space: nowrap !important;
+  text-align: left !important;
+  padding: 5px 6px !important;
 }
 #probtable tbody tr {
   border-bottom: 1px solid rgba(255, 255, 255, 0.035);
@@ -415,13 +420,13 @@
     {% if open_problems %}
     <table id="probtable" class="pantau-table">
       <colgroup>
-        <col style="width:128px">
-        <col style="width:150px">
-        <col style="width:128px">
+        <col style="width:115px">
+        <col style="width:130px">
+        <col style="width:105px">
         <col>
-        <col style="width:75px">
-        <col style="width:180px">
-        <col style="width:100px">
+        <col style="width:125px">
+        <col style="width:220px">
+        <col style="width:90px">
       </colgroup>
       <thead>
         <tr>
@@ -1420,13 +1425,13 @@ window.poll = async function(opts = {}) {
         if (!table) {
           wrapper.innerHTML = `<table id="probtable" class="pantau-table">
             <colgroup>
-              <col style="width:128px">
-              <col style="width:150px">
-              <col style="width:128px">
+              <col style="width:115px">
+              <col style="width:130px">
+              <col style="width:105px">
               <col>
-              <col style="width:75px">
-              <col style="width:180px">
-              <col style="width:100px">
+              <col style="width:125px">
+              <col style="width:220px">
+              <col style="width:90px">
             </colgroup>
             <thead>
               <tr>

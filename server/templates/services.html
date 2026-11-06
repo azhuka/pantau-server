@@ -302,6 +302,18 @@
   -webkit-backdrop-filter: blur(8px);
   flex-shrink: 0;
 }
+[data-theme="light"] .toolbar-group {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+[data-theme="light"] .toolbar-group .btn {
+  color: #475569 !important;
+}
+[data-theme="light"] .toolbar-group .btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+}
 .toolbar-group .btn {
   border: none !important;
   background: transparent !important;
@@ -674,6 +686,10 @@
   border-radius: 4px;
   padding: 3px 5px;
 }
+[data-theme="light"] .perf-spark-box {
+  background: #f8fafc !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
 .perf-spark-label {
   font-size: 9.5px;
   color: var(--dim);
@@ -719,8 +735,21 @@
 }
 .perf-notes-textarea::placeholder {
   color: rgba(255, 255, 255, 0.22);
-  font-style: italic;
+  font-style: normal;
   font-size: 11px;
+}
+[data-theme="light"] .perf-notes-textarea {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .perf-notes-textarea:focus {
+  background: #ffffff !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15) !important;
+}
+[data-theme="light"] .perf-notes-textarea::placeholder {
+  color: #94a3b8 !important;
 }
 .hero-notes-chip {
   display: inline-flex;
@@ -851,6 +880,13 @@
   padding: 6px 8px !important;
   box-sizing: border-box;
 }
+[data-theme="light"] .tab-body .specs-grid-4 > div,
+[data-theme="light"] .tab-body .specs-grid-2 > div,
+[data-theme="light"] .tab-body .specs-storage-block > div {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
 .tab-body .specs-grid-4 > div > div:first-child,
 .tab-body .specs-grid-2 > div > div:first-child,
 .tab-body .specs-storage-block > div > div:first-child {
@@ -886,6 +922,11 @@
   padding: 10px 12px 14px 12px !important;
   box-sizing: border-box;
   overflow: hidden;
+}
+[data-theme="light"] .tab-body .perf-metric-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
 }
 .tab-body .perf-card-header {
   margin-bottom: 6px !important;
@@ -942,6 +983,10 @@
   padding: 10px 14px !important;
   border-radius: 6px !important;
 }
+[data-theme="light"] .svc-timeline-card {
+  background: #f8fafc !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
 .tab-body #tab-layanan .card:first-child {
   padding: 0 0 10px 0 !important;
 }
@@ -960,6 +1005,11 @@
   background: rgba(0, 0, 0, 0.16) !important;
   position: relative !important;
   overflow: hidden !important;
+}
+[data-theme="light"] .tab-body #tab-firewall .card:first-child .stat-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
 }
 .tab-body #tab-firewall .card:first-child .stat-card > div[style*="position:absolute"],
 .tab-body #tab-firewall .card:first-child .stat-card > div[style*="position: absolute"],
@@ -1858,7 +1908,7 @@ div[style*="position: fixed"] .card {
       <div class="perf-metric-card">
         <div class="perf-card-header">
           <div class="perf-card-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" style="vertical-align:middle"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="m16 3 4 4-4 4"></path><path d="M20 7H4"></path><path d="m8 21-4-4 4-4"></path><path d="M4 17h16"></path></svg>
             <span>Swap Terpakai</span>
           </div>
           <div class="perf-card-stats" id="stats-swap"></div>
@@ -2464,20 +2514,20 @@ div[style*="position: fixed"] .card {
       <div>
         <h3 style="margin:0;display:flex;align-items:center;gap:8px">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><path d="M16.5 9.4 7.55 4.24"></path><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22" x2="12" y2="12"></line></svg>
-          <span>Packages</span>
-          <span class="badge badge-info" id="pkg-total-badge" style="font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('all')" title="Tampilkan semua packages">0 packages</span>
+          <span>Paket</span>
+          <span class="badge badge-info" id="pkg-total-badge" style="font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('all')" title="Tampilkan semua paket">0 paket</span>
           <span class="badge badge-warn" id="pkg-upg-badge" style="display:none;font-size:11px;cursor:pointer" onclick="setPkgStatusFilter('upgradable')" title="Filter pembaruan tersedia (klik ulang untuk reset)">0 pembaruan</span>
         </h3>
-        <span style="font-size:12px;color:var(--dim)">Daftar packages perangkat lunak sistem operasi dan pustaka terpasang</span>
+        <span style="font-size:12px;color:var(--dim)">Daftar paket perangkat lunak sistem operasi dan pustaka terpasang</span>
       </div>
       
       <!-- Toolbar Tombol Kontrol: Hanya Ikon + Tooltip -->
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-        <div class="filter-col-search" title="Cari packages, fungsi, versi" style="min-width:170px">
-          <label class="filter-col-label" for="pkg-search-input">Cari Packages</label>
+        <div class="filter-col-search" title="Cari paket, fungsi, versi" style="min-width:170px">
+          <label class="filter-col-label" for="pkg-search-input">Cari Paket</label>
           <div class="filter-search-box">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="search" id="pkg-search-input" placeholder="Cari packages, fungsi, versi…" oninput="filterPackagesTable()">
+            <input type="search" id="pkg-search-input" placeholder="Cari paket, fungsi, versi…" oninput="filterPackagesTable()">
           </div>
         </div>
         
@@ -2689,31 +2739,31 @@ div[style*="position: fixed"] .card {
         <thead>
           <tr>
             <th class="col-cron-st">Status</th>
-            <th class="col-cron-sched" title="Jadwal waktu eksekusi dalam format cron (menit jam tgl bln hari)">Jadwal (Cron Expression)</th>
+            <th class="col-cron-sched" title="Jadwal waktu eksekusi dalam format cron (menit jam tgl bln hari)">Jadwal (Cron)</th>
             <th class="col-cron-user" title="Pengguna Linux yang menjalankan perintah">Pengguna</th>
             <th class="col-cron-cmd" title="Perintah atau skrip yang dieksekusi">Perintah (Command)</th>
-            <th title="Lokasi berkas konfigurasi cron pada server">Sumber Berkas</th>
+            <th class="col-cron-src" title="Lokasi berkas konfigurasi cron pada server">Sumber Berkas</th>
             <th class="col-cron-act col-act">Tindakan</th>
           </tr>
         </thead>
         <tbody>
           {% for c in ((cron_jobs.jobs if cron_jobs and cron_jobs.jobs else [])) %}
           <tr style="{{ 'opacity:0.5' if not c.get('is_enabled', True) else '' }}">
-            <td>
+            <td class="col-cron-st">
               {% if c.get('is_enabled', True) %}
                 <span class="badge badge-up" title="Aktif">●</span>
               {% else %}
                 <span class="badge badge-muted" title="Dinonaktifkan">○</span>
               {% endif %}
             </td>
-            <td class="mono" style="font-weight:700;color:{{ 'var(--blue)' if c.get('is_enabled', True) else 'var(--dim)' }};white-space:nowrap">{{ c.schedule }}</td>
-            <td><span class="mono">{{ c.user }}</span></td>
-            <td class="mono" style="font-size:12px;color:var(--text);word-break:break-all">{{ c.command }}</td>
-            <td class="mono" style="font-size:11px;color:var(--dim)">
+            <td class="col-cron-sched mono" style="font-weight:700;color:{{ 'var(--blue)' if c.get('is_enabled', True) else 'var(--dim)' }};white-space:nowrap">{{ c.schedule }}</td>
+            <td class="col-cron-user"><span class="mono">{{ c.user }}</span></td>
+            <td class="col-cron-cmd mono" style="font-size:12px;color:var(--text);word-break:break-all">{{ c.command }}</td>
+            <td class="col-cron-src mono" style="font-size:11px;color:var(--dim)">
               {{ c.source }}{% if c.line %}:{{ c.line }}{% endif %}
               {% if c.get('is_managed') %}<span class="badge badge-info" style="font-size:10px;margin-left:4px">Dikelola</span>{% endif %}
             </td>
-            <td class="col-act" style="white-space:nowrap;text-align:left">
+            <td class="col-cron-act col-act" style="white-space:nowrap;text-align:left">
               <div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">
                 {% if user.has_perm('can_cron') and c.get('is_managed') %}
                   {% set cron_ident = c.get('ident', '') %}
@@ -3335,7 +3385,7 @@ div[style*="position: fixed"] .card {
             <th class="col-ssl-iss" title="Otoritas penerbit sertifikat (Certificate Authority)">Penerbit (CA)</th>
             <th class="col-ssl-exp" title="Batas waktu akhir masa berlaku sertifikat">Kedaluwarsa Pada</th>
             <th class="col-ssl-rem" title="Sisa hari sebelum sertifikat habis masa berlakunya">Sisa Hari</th>
-            <th title="Status kesehatan sertifikat">Status</th>
+            <th class="col-ssl-st" title="Status kesehatan sertifikat">Status</th>
             <th class="col-ssl-file" title="Lokasi berkas sertifikat di filesystem server">Lokasi Berkas</th>
             <th class="col-ssl-act col-act">Tindakan</th>
           </tr>
@@ -3343,20 +3393,20 @@ div[style*="position: fixed"] .card {
         <tbody>
           {% for c in (ssl_certs if ssl_certs else []) %}
           <tr>
-            <td>
-              <strong>{{ c.domains | join(', ') if c.domains else c.subject }}</strong>
+            <td class="col-ssl-dom">
+              <strong title="{{ c.domains | join(', ') if c.domains else c.subject }}">{{ c.domains | join(', ') if c.domains else c.subject }}</strong>
               {% if c.is_custom %}<span class="badge badge-muted" title="Ditambahkan secara manual via Pantau" style="font-size:10px;margin-left:4px">Kustom</span>{% endif %}
             </td>
-            <td style="font-size:12px;color:var(--dim)">{{ c.issuer }}</td>
-            <td class="mono" style="font-size:12px">{{ c.not_after }}</td>
-            <td class="mono" style="font-weight:700;color:{{ 'var(--red)' if c.is_expired or c.is_critical else ('var(--yellow)' if c.is_warning else 'var(--green)') }}">
+            <td class="col-ssl-iss" style="font-size:11px;color:var(--dim)" title="{{ c.issuer }}">{{ c.issuer }}</td>
+            <td class="col-ssl-exp mono" style="font-size:11px">{{ c.not_after }}</td>
+            <td class="col-ssl-rem mono" style="font-weight:700;color:{{ 'var(--red)' if c.is_expired or c.is_critical else ('var(--yellow)' if c.is_warning else 'var(--green)') }}">
               {% if c.is_expired %}
                 Kedaluwarsa
               {% else %}
-                {{ c.days_left }} hari lagi
+                {{ c.days_left }} hr
               {% endif %}
             </td>
-            <td>
+            <td class="col-ssl-st">
               {% if c.is_expired %}
                 <span class="badge badge-danger">Expired</span>
               {% elif c.is_critical %}
@@ -3367,8 +3417,8 @@ div[style*="position: fixed"] .card {
                 <span class="badge badge-up">Aktif Normal</span>
               {% endif %}
             </td>
-            <td class="mono" style="font-size:11px;color:var(--dim)">{{ c.path }}</td>
-            <td class="col-act" style="text-align:left;white-space:nowrap">
+            <td class="col-ssl-file mono" style="font-size:11px;color:var(--dim)" title="{{ c.path }}">{{ c.path }}</td>
+            <td class="col-ssl-act col-act" style="text-align:left;white-space:nowrap">
               {% if user.has_perm('can_ssl') and c.is_custom %}
               <button type="button" class="btn btn-sm btn-danger" title="Hapus dari pengawasan SSL kustom" aria-label="Hapus" onclick="submitSslRemovePath('{{ c.path | replace('\\', '\\\\') | replace('\'', '\\\'') }}', this)">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -9561,12 +9611,12 @@ function renderCron(cron_jobs) {
         }
 
         return `<tr style="${!isEnabled ? 'opacity:0.5' : ''}">
-          <td><span class="badge ${isEnabled ? 'badge-up' : 'badge-muted'}" title="${isEnabled ? (isEn ? 'Active' : 'Aktif') : (isEn ? 'Disabled' : 'Dinonaktifkan')}">${isEnabled ? '●' : '○'}</span></td>
-          <td class="mono" style="font-weight:700;color:${isEnabled ? 'var(--blue)' : 'var(--dim)'};white-space:nowrap">${escHtml(c.schedule || '')}</td>
-          <td><span class="mono">${userClean}</span></td>
-          <td class="mono" style="font-size:10px;color:var(--text);word-break:break-all">${cmdClean}</td>
-          <td class="mono" style="font-size:9.5px;color:var(--dim)">${escHtml(c.source || '')}${c.line ? ':' + c.line : ''}${isManaged ? ` <span class="badge badge-info" style="font-size:8.5px;margin-left:4px">${isEn ? 'Managed' : 'Dikelola'}</span>` : ''}</td>
-          <td class="col-act" style="white-space:nowrap;text-align:left"><div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">${actHtml}</div></td>
+          <td class="col-cron-st"><span class="badge ${isEnabled ? 'badge-up' : 'badge-muted'}" title="${isEnabled ? (isEn ? 'Active' : 'Aktif') : (isEn ? 'Disabled' : 'Dinonaktifkan')}">${isEnabled ? '●' : '○'}</span></td>
+          <td class="col-cron-sched mono" style="font-weight:700;color:${isEnabled ? 'var(--blue)' : 'var(--dim)'};white-space:nowrap">${escHtml(c.schedule || '')}</td>
+          <td class="col-cron-user"><span class="mono">${userClean}</span></td>
+          <td class="col-cron-cmd mono" style="font-size:10px;color:var(--text);word-break:break-all">${cmdClean}</td>
+          <td class="col-cron-src mono" style="font-size:9.5px;color:var(--dim)">${escHtml(c.source || '')}${c.line ? ':' + c.line : ''}${isManaged ? ` <span class="badge badge-info" style="font-size:8.5px;margin-left:4px">${isEn ? 'Managed' : 'Dikelola'}</span>` : ''}</td>
+          <td class="col-cron-act col-act" style="white-space:nowrap;text-align:left"><div style="display:inline-flex;gap:4px;flex-wrap:nowrap;align-items:center">${actHtml}</div></td>
         </tr>`;
       }).join('');
       if (_servicesTabPagination['cron']) _servicesTabPagination['cron'].update();
@@ -9636,13 +9686,13 @@ function renderSsl(sslList) {
     }
 
     return `<tr>
-      <td><strong>${domStr}</strong>${customBadge}</td>
-      <td style="font-size:10px;color:var(--dim)">${issuerStr}</td>
-      <td class="mono" style="font-size:10px">${notAfterStr}</td>
-      <td class="mono" style="font-weight:700;color:${daysColor}">${daysStr}</td>
-      <td>${statusBadge}</td>
-      <td class="mono" style="font-size:9.5px;color:var(--dim)">${pathClean}</td>
-      <td class="col-act" style="white-space:nowrap;text-align:left">${actHtml}</td>
+      <td class="col-ssl-dom"><strong>${domStr}</strong>${customBadge}</td>
+      <td class="col-ssl-iss" style="font-size:10px;color:var(--dim)" title="${issuerStr}">${issuerStr}</td>
+      <td class="col-ssl-exp mono" style="font-size:10px">${notAfterStr}</td>
+      <td class="col-ssl-rem mono" style="font-weight:700;color:${daysColor}">${daysStr}</td>
+      <td class="col-ssl-st">${statusBadge}</td>
+      <td class="col-ssl-file mono" style="font-size:9.5px;color:var(--dim)" title="${pathClean}">${pathClean}</td>
+      <td class="col-ssl-act col-act" style="white-space:nowrap;text-align:left">${actHtml}</td>
     </tr>`;
   }).join('');
 
@@ -11435,14 +11485,14 @@ function renderPackagesTable() {
     </button>`;
 
     return `<tr>
-      <td style="text-align:left">${statusBadge}</td>
-      <td><strong>${safeName}</strong>${safeArch}</td>
-      <td style="text-align:left">${typeBadge}</td>
-      <td>${verHtml}</td>
-      <td class="mono" style="font-size:10px;text-align:left">${sizeStr}</td>
-      <td style="font-size:10px;color:var(--text);line-height:1.4">${summaryStr}</td>
-      <td class="col-act" style="width:95px;white-space:nowrap;text-align:left">
-        <div style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-wrap:nowrap">
+      <td class="col-pkg-st" style="text-align:left">${statusBadge}</td>
+      <td class="col-pkg-name"><strong>${safeName}</strong>${safeArch}</td>
+      <td class="col-pkg-type" style="text-align:left">${typeBadge}</td>
+      <td class="col-pkg-ver mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${safeVer}">${verHtml}</td>
+      <td class="col-pkg-size mono" style="font-size:10px;text-align:left">${sizeStr}</td>
+      <td class="col-pkg-desc" style="font-size:10px;color:var(--text);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${summaryStr}">${summaryStr}</td>
+      <td class="col-pkg-act col-act" style="white-space:nowrap;text-align:left">
+        <div style="display:inline-flex;align-items:center;gap:3px;white-space:nowrap;flex-wrap:nowrap">
           ${clearCacheBtn}
           ${showLogsBtn}
           ${upgradeBtn}

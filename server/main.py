@@ -10723,6 +10723,8 @@ AUDIT_ACTION_LABELS = {
     "restart_agent": "Restart Agen",
     "cmd:restart_agent": "Restart Agen",
     "agent_update": "Pembaruan Agen (OTA)",
+    "service_recovered": "Layanan Pulih",
+    "incident_warning": "Peringatan Insiden",
     "cmd:update_agent": "Pembaruan Agen (OTA)",
     "reboot_host": "Reboot Server",
     "cmd:reboot_host": "Reboot Server",
@@ -11032,7 +11034,7 @@ def _audit_rows(
 
         rows.append({
             "t": a.created_at, "user": a.username, "kind": "log",
-            "label": AUDIT_ACTION_LABELS.get(a.action, a.action),
+            "label": AUDIT_ACTION_LABELS.get(a.action, a.action.replace("_", " ").title()),
             "key": a.action,
             "server": srv_name or "-",
             "server_id": a.server_id,

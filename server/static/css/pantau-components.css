@@ -1168,15 +1168,16 @@ span[data-pg-cur] {
   line-height: 26px !important;
 }
 
-/* Wadah Grup Tombol Aksi di Sel Tabel (Action Button Group) */
+/* Wadah Grup Tombol Aksi di Sel Tabel (Action Button Group - Seamless NOC Toolbar) */
 .action-btn-group {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 2px !important;
-  background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
-  padding: 2px 3px !important;
-  border-radius: 5px !important;
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08)) !important;
+  gap: 3px !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 4px !important;
+  border: none !important;
+  box-shadow: none !important;
   vertical-align: middle !important;
 }
 
@@ -1188,43 +1189,54 @@ span[data-pg-cur] {
   width: 24px !important;
   height: 24px !important;
   padding: 0 !important;
-  border-radius: 3px !important;
+  border-radius: 4px !important;
   border: 1px solid transparent !important;
   background: transparent !important;
-  color: var(--dim) !important;
+  color: var(--dim, #64748b) !important;
   cursor: pointer !important;
-  transition: all 0.12s ease !important;
+  transition: all 0.15s ease !important;
   box-shadow: none !important;
+  flex-shrink: 0 !important;
 }
 
 .action-btn-group .btn-act:hover:not(:disabled),
 .action-btn-group .btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: var(--text-bright) !important;
+  background: rgba(148, 163, 184, 0.15) !important;
+  color: var(--text-heading, #0f172a) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+}
+
+[data-theme="dark"] .action-btn-group .btn-act:hover:not(:disabled),
+[data-theme="dark"] .action-btn-group .btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 .action-btn-group .btn-act.btn-act-primary,
 .action-btn-group .btn.btn-primary {
-  background: var(--blue-bg) !important;
-  color: var(--blue) !important;
-  border-color: rgba(56, 189, 248, 0.25) !important;
+  background: transparent !important;
+  color: var(--blue, #0284c7) !important;
+  border-color: transparent !important;
 }
 .action-btn-group .btn-act.btn-act-primary:hover:not(:disabled),
 .action-btn-group .btn.btn-primary:hover:not(:disabled) {
-  background: var(--blue) !important;
-  color: #fff !important;
+  background: var(--blue-bg, rgba(2, 132, 199, 0.12)) !important;
+  color: var(--blue, #0284c7) !important;
+  border-color: rgba(2, 132, 199, 0.3) !important;
 }
 
 .action-btn-group .btn-act.btn-act-danger,
 .action-btn-group .btn.btn-danger {
   background: transparent !important;
-  color: var(--red) !important;
+  color: var(--red, #ef4444) !important;
+  border-color: transparent !important;
 }
 .action-btn-group .btn-act.btn-act-danger:hover:not(:disabled),
 .action-btn-group .btn.btn-danger:hover:not(:disabled) {
-  background: var(--red-bg) !important;
-  color: var(--red) !important;
-  border-color: rgba(248, 113, 113, 0.35) !important;
+  background: var(--red-bg, rgba(239, 68, 68, 0.12)) !important;
+  color: var(--red, #ef4444) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
 }
 
 /* -----------------------------------------------------------------------------
@@ -1347,9 +1359,8 @@ table td.empty-msg {
 
 #tbl-services th.col-svc-name,
 #tbl-services td.col-svc-name {
-  width: 120px !important;
-  min-width: 110px !important;
-  max-width: 130px !important;
+  width: 110px !important;
+  min-width: 95px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -1357,16 +1368,15 @@ table td.empty-msg {
 
 #tbl-services th.col-svc-port,
 #tbl-services td.col-svc-port {
-  width: 65px !important;
-  min-width: 60px !important;
-  max-width: 70px !important;
+  width: 55px !important;
+  min-width: 50px !important;
+  white-space: nowrap !important;
 }
 
 #tbl-services th.col-svc-proc,
 #tbl-services td.col-svc-proc {
-  width: 110px !important;
-  min-width: 95px !important;
-  max-width: 120px !important;
+  width: 95px !important;
+  min-width: 85px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -1374,29 +1384,29 @@ table td.empty-msg {
 
 #tbl-services th.col-svc-status,
 #tbl-services td.col-svc-status {
-  width: 75px !important;
-  min-width: 70px !important;
-  max-width: 80px !important;
+  width: 65px !important;
+  min-width: 60px !important;
+  white-space: nowrap !important;
 }
 
 #tbl-services th.col-svc-conns,
 #tbl-services td.col-svc-conns {
-  width: 60px !important;
-  min-width: 55px !important;
-  max-width: 65px !important;
+  width: 55px !important;
+  min-width: 50px !important;
+  white-space: nowrap !important;
 }
 
 #tbl-services th.col-svc-resp,
 #tbl-services td.col-svc-resp {
-  width: 95px !important;
-  min-width: 90px !important;
-  max-width: 100px !important;
+  width: 75px !important;
+  min-width: 65px !important;
+  white-space: nowrap !important;
 }
 
 #tbl-services th.col-svc-desc,
 #tbl-services td.col-svc-desc {
   width: auto !important;
-  min-width: 150px !important;
+  min-width: 130px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -1404,17 +1414,15 @@ table td.empty-msg {
 
 #tbl-services th.col-svc-uptime,
 #tbl-services td.col-svc-uptime {
-  width: 115px !important;
-  min-width: 110px !important;
-  max-width: 125px !important;
+  width: 100px !important;
+  min-width: 90px !important;
   white-space: nowrap !important;
 }
 
 #tbl-services th.col-svc-act,
 #tbl-services td.col-svc-act {
-  width: 175px !important;
-  min-width: 170px !important;
-  max-width: 180px !important;
+  width: 148px !important;
+  min-width: 142px !important;
   white-space: nowrap !important;
   padding: 4px 6px !important;
 }
@@ -1583,9 +1591,8 @@ table td.empty-msg {
 
 #tbl-audit th.col-aud-user,
 #tbl-audit td.col-aud-user {
-  width: 100px !important;
-  min-width: 85px !important;
-  max-width: 110px !important;
+  width: 140px !important;
+  min-width: 130px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -1603,9 +1610,8 @@ table td.empty-msg {
 
 #tbl-audit th.col-aud-act,
 #tbl-audit td.col-aud-act {
-  width: 120px !important;
-  min-width: 100px !important;
-  max-width: 130px !important;
+  width: 150px !important;
+  min-width: 140px !important;
   white-space: nowrap !important;
 }
 
@@ -1978,27 +1984,27 @@ table td.empty-msg {
 #users-table th.col-usr-name,
 #users-table td.col-usr-name {
   width: auto !important;
-  min-width: 160px !important;
+  min-width: 140px !important;
 }
 
 #users-table th.col-usr-role,
 #users-table td.col-usr-role {
-  width: 150px !important;
-  min-width: 130px !important;
+  width: 110px !important;
+  min-width: 95px !important;
   white-space: nowrap !important;
 }
 
 #users-table th.col-usr-st,
 #users-table td.col-usr-st {
-  width: 160px !important;
-  min-width: 140px !important;
+  width: 140px !important;
+  min-width: 130px !important;
   white-space: nowrap !important;
 }
 
 #users-table th.col-usr-last,
 #users-table td.col-usr-last {
-  width: 160px !important;
-  min-width: 140px !important;
+  width: 130px !important;
+  min-width: 115px !important;
   white-space: nowrap !important;
 }
 
@@ -2219,7 +2225,15 @@ table td.empty-msg {
 }
 
 #probtable th.col-durasi,
-#probtable td.col-durasi,
+#probtable td.col-durasi {
+  width: 125px !important;
+  min-width: 120px !important;
+  padding: 5px 10px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
 .dash-prob-table th.dash-col-dur,
 .dash-prob-table td.dash-col-dur {
   padding: 5px 10px !important;
@@ -2228,6 +2242,8 @@ table td.empty-msg {
 
 #probtable th.col-tips,
 #probtable td.col-tips {
+  width: auto !important;
+  min-width: 200px !important;
   padding: 5px 12px !important;
 }
 
@@ -2505,44 +2521,56 @@ table td.empty-msg {
 
 #tbl-packages th.col-pkg-st,
 #tbl-packages td.col-pkg-st {
-  width: 125px !important;
-  min-width: 115px !important;
+  width: 95px !important;
+  min-width: 85px !important;
+  white-space: nowrap !important;
 }
 
 #tbl-packages th.col-pkg-name,
 #tbl-packages td.col-pkg-name {
   width: auto !important;
-  min-width: 180px !important;
+  min-width: 140px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #tbl-packages th.col-pkg-type,
 #tbl-packages td.col-pkg-type {
-  width: 105px !important;
-  min-width: 95px !important;
+  width: 75px !important;
+  min-width: 65px !important;
+  white-space: nowrap !important;
 }
 
 #tbl-packages th.col-pkg-ver,
 #tbl-packages td.col-pkg-ver {
-  width: 170px !important;
-  min-width: 150px !important;
+  width: 135px !important;
+  min-width: 120px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #tbl-packages th.col-pkg-size,
 #tbl-packages td.col-pkg-size {
-  width: 105px !important;
-  min-width: 95px !important;
+  width: 80px !important;
+  min-width: 70px !important;
+  white-space: nowrap !important;
 }
 
 #tbl-packages th.col-pkg-desc,
 #tbl-packages td.col-pkg-desc {
   width: auto !important;
-  min-width: 240px !important;
+  min-width: 180px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #tbl-packages th.col-pkg-act,
 #tbl-packages td.col-pkg-act {
-  width: 95px !important;
-  min-width: 85px !important;
+  width: 85px !important;
+  min-width: 80px !important;
   white-space: nowrap !important;
 }
 
@@ -2624,28 +2652,42 @@ table td.empty-msg {
 
 #cron-table th.col-cron-st,
 #cron-table td.col-cron-st {
-  width: 45px !important;
-}
-
-#cron-table th.col-cron-user,
-#cron-table td.col-cron-user {
-  width: 100px !important;
+  width: 55px !important;
+  min-width: 50px !important;
+  text-align: left !important;
 }
 
 #cron-table th.col-cron-sched,
 #cron-table td.col-cron-sched {
-  width: 140px !important;
+  width: 155px !important;
+  min-width: 140px !important;
+  white-space: nowrap !important;
+}
+
+#cron-table th.col-cron-user,
+#cron-table td.col-cron-user {
+  width: 90px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
 }
 
 #cron-table th.col-cron-cmd,
 #cron-table td.col-cron-cmd {
   width: auto !important;
-  min-width: 250px !important;
+  min-width: 220px !important;
+}
+
+#cron-table th.col-cron-src,
+#cron-table td.col-cron-src {
+  width: 140px !important;
+  min-width: 120px !important;
+  white-space: nowrap !important;
 }
 
 #cron-table th.col-cron-act,
 #cron-table td.col-cron-act {
-  width: 120px !important;
+  width: 90px !important;
+  min-width: 85px !important;
   white-space: nowrap !important;
 }
 
@@ -2916,37 +2958,55 @@ table td.empty-msg {
 #ssl-table th.col-ssl-dom,
 #ssl-table td.col-ssl-dom {
   width: auto !important;
-  min-width: 180px !important;
+  min-width: 150px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 #ssl-table th.col-ssl-iss,
 #ssl-table td.col-ssl-iss {
-  width: 150px !important;
-  min-width: 130px !important;
+  width: 170px !important;
+  min-width: 150px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 #ssl-table th.col-ssl-exp,
 #ssl-table td.col-ssl-exp {
-  width: 140px !important;
+  width: 135px !important;
   min-width: 125px !important;
+  white-space: nowrap !important;
 }
 
 #ssl-table th.col-ssl-rem,
 #ssl-table td.col-ssl-rem {
-  width: 100px !important;
-  min-width: 90px !important;
+  width: 80px !important;
+  min-width: 75px !important;
+  white-space: nowrap !important;
+}
+
+#ssl-table th.col-ssl-st,
+#ssl-table td.col-ssl-st {
+  width: 115px !important;
+  min-width: 105px !important;
+  white-space: nowrap !important;
 }
 
 #ssl-table th.col-ssl-file,
 #ssl-table td.col-ssl-file {
   width: auto !important;
-  min-width: 180px !important;
+  min-width: 160px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 #ssl-table th.col-ssl-act,
 #ssl-table td.col-ssl-act {
-  width: 105px !important;
-  min-width: 95px !important;
+  width: 70px !important;
+  min-width: 65px !important;
   white-space: nowrap !important;
 }
 

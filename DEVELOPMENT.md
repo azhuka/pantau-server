@@ -354,6 +354,44 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.145
+
+- **Tipe Rilis:** Rekonstruksi Total Fondasi Visual, Eliminasi Tabrakan Teks & Cacat Antarmuka, dan Penyatuan Standar Desain Sistem Enterprise (*Comprehensive Visual Foundation Reconstruction, Text Collision Elimination & Enterprise UI Defect Rectification*)
+- **Fokus Utama:** Menyelesaikan 14 cacat visual dan struktural yang ditemukan pada pengujian mendalam lintas halaman dan tema, mengeliminasi tabrakan teks, menghapus elemen antarmuka usang/kaku, dan menyatukan seluruh tata letak tabel ke standar baku NOC berdensitas tinggi:
+  1. **Eliminasi Bingkai Kaku Wadah Tombol Aksi Tabel (`.action-btn-group`):**
+     - Mengubah `.action-btn-group` dari wadah berkapsul abu-abu dengan border menjadi kontainer transparan (*seamless toolbar*) tanpa border dan tanpa shadow.
+     - Mengonfigurasi tombol `.btn-act` menjadi tombol ikon *ghost* 24x24px berdensitas tinggi dengan ikon proporsional 12x12px dan efek *hover* yang lembut serta kontras di tema terang maupun gelap.
+  2. **Eliminasi Tabrakan Indikator Tab Ganda (`.tab.is-on::after`):**
+     - Menghapus pseudo-elemen garis bawah tebal (`.tab::after` dan `.tab.is-on::after`) yang bertabrakan dengan desain tab kapsul *pill*, menghasilkan visual tab navigasi modern yang bersih, konsisten, dan bebas cacat geometris.
+  3. **Penggantian Ikon Mata Uang Dolar (`$`) pada Telemetri Memori Swap:**
+     - Mengganti ikon tanda dolar SVG pada metrik memori Swap dengan ikon panah bolak-balik pertukaran memori standar sysadmin (*directional memory exchange arrows*).
+  4. **Pembersihan Lempengan Semen Abu-abu pada Tema Terang (*Light Mode Cement Slabs Elimination*):**
+     - Menghilangkan kontras kusam `rgba(0,0,0,0.16)` / `#e0e0e0` pada toolbar tab server, kartu sparkline metrik performa, kartu firewall, dan timeline riwayat layanan.
+     - Mengalihkan seluruh kontainer tersebut ke latar putih bersih (`#ffffff` / `#f8fafc`) dengan border halus terstandarisasi.
+  5. **Perbaikan Overflow Judul Modal Pemeliharaan (`.modal-window`):**
+     - Memperbaiki tata letak modal dengan `display: flex; flex-direction: column; overflow: hidden;` serta memindahkan scrollbar vertikal secara eksklusif ke `.modal-body`.
+     - Memastikan judul modal (`.modal-header`) dan tombol footer tidak pernah terpotong atau tergulung hilang saat konten formulir memanjang.
+  6. **Pencegahan Tabrakan Teks Durasi & Panduan Solusi Insiden (`col-durasi` vs `col-tips`):**
+     - Memperlebar alokasi kolom durasi pada `#probtable` dan `#prob-resolved-table` menjadi 125px (min-width 120px) dengan `overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`.
+     - Memperlebar kolom panduan solusi menjadi auto (min 200px), mengeliminasi tabrakan fisik teks badge durasi di atas teks saran solusi.
+  7. **Perbaikan Tabrakan Tiga Header pada Tabel Jadwal Cron (`#cron-table`):**
+     - Menyinkronkan kelas semantik `col-cron-*` dari tag `<th>` ke seluruh sel `<td>` pada perender dinamis JavaScript (`renderCron`).
+     - Mengalokasikan ulang proporsi kolom: Status (55px), Jadwal (155px), Pengguna (90px), Perintah (auto), Sumber (140px), Aksi (75px), menghilangkan tumpang-tindih teks judul.
+  8. **Perbaikan Teks Menimpa pada Tabel Sertifikat SSL (`#ssl-table`):**
+     - Menambahkan kelas semantik `col-ssl-*` ke seluruh sel `<td>` pada Jinja template dan JavaScript `renderSsl`.
+     - Menerapkan pemotongan teks rapi (*ellipsis text-overflow*) pada nama domain dan penerbit CA (*Issuer*), mencegah teks tanggal kadaluarsa tertulis di atas teks penerbit.
+  9. **Optimalisasi Tabel Pengguna Profil & Tombol Aksi (`#users-table`):**
+     - Mengubah tombol teks berlebih (`Lihat`, `+2FA`, `Reset`, `Audit`, `Edit`) menjadi ikon tombol ghost 24x24px dengan *tooltip* deskriptif.
+     - Menyeimbangkan proporsi lebar kolom dan mengeliminasi scrollbar horizontal pada tabel manajemen pengguna.
+  10. **Penyelarasan Baku Tabel Paket Perangkat Lunak (`#tbl-packages`):**
+      - Menerjemahkan istilah dan pencarian ke Bahasa Indonesia baku (`Paket`, `Cari Paket`, `Cari paket, fungsi, versi…`).
+      - Menyinkronkan kelas semantik `col-pkg-*` pada seluruh sel perender JavaScript `renderPackagesTable`, menambahkan batas pemotongan teks pada versi dan deskripsi, serta mengeliminasi scrollbar horizontal.
+  11. **Pencegahan Kolom Tindakan Terpotong pada Tabel Layanan (`#tbl-services`):**
+      - Menyesuaikan proporsi kolom layanan agar kolom TINDAKAN dan tombol tambah layanan selalu tampil penuh dan dapat diakses tanpa tergeser keluar layar.
+  12. **Perbaikan Format Teks Log Audit & Label Tindakan Baku (`server/main.py`):**
+      - Menambahkan label Bahasa Indonesia baku untuk aksi audit `service_recovered` ("Layanan Pulih") dan `incident_warning` ("Peringatan Insiden").
+      - Menambahkan fallback otomatis konversi snake_case menjadi Title Case yang rapi, serta memperlebar kolom pengguna (`140px`) sehingga string `system (auto-ota)` tidak terpotong prematur.
+
 ## Versi 4.8.144
 
 - **Tipe Rilis:** Standardisasi Mutlak Seluruh Tabel Frontend, Eliminasi Tuntas Hardcoded Inline Styles, dan Penyatuan Cetak Biru Visual Berdensitas Tinggi (*Universal Frontend Table Standardization, Complete Elimination of Hardcoded Inline Styles & High-Density Unified Visual Blueprint*)
