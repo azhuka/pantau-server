@@ -36,13 +36,13 @@
   transition: opacity .15s, transform .1s;
 }
 .t-dot:hover { opacity: 1; transform: scale(1.15); }
-.t-dot-red { background: #ff5f56; }
-.t-dot-yellow { background: #ffbd2e; }
-.t-dot-green { background: #27c93f; }
+.t-dot-red { background: var(--red); }
+.t-dot-yellow { background: var(--yellow); }
+.t-dot-green { background: var(--green); }
 .terminal-title {
   font-size: 12px;
   font-family: monospace;
-  color: #c9d1d9;
+  color: var(--dim);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -92,16 +92,16 @@
   border-radius: 50%;
   display: inline-block;
 }
-.t-status-dot.active { background: #27c93f; box-shadow: 0 0 6px rgba(39,201,63,0.6); }
-.t-status-dot.busy { background: #ffbd2e; animation: pulseBusy 1s infinite alternate; }
-.t-status-dot.closed { background: #ff5f56; }
+.t-status-dot.active { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,0.6); }
+.t-status-dot.busy { background: var(--yellow); animation: pulseBusy 1s infinite alternate; }
+.t-status-dot.closed { background: var(--red); }
 @keyframes pulseBusy {
   from { opacity: 0.4; }
   to { opacity: 1; }
 }
 .real-terminal-screen {
   padding: 10px 14px !important;
-  background: #0d1117 !important;
+  background: var(--bg-card, var(--card)) !important;
   height: 480px;
   max-height: 65vh;
   box-sizing: border-box;
@@ -126,7 +126,7 @@
 }
 #xterm-container .xterm-viewport::-webkit-scrollbar-track,
 #apt-task-xterm-container .xterm-viewport::-webkit-scrollbar-track {
-  background: #0d1117;
+  background: var(--bg);
 }
 #xterm-container .xterm-viewport::-webkit-scrollbar-thumb,
 #apt-task-xterm-container .xterm-viewport::-webkit-scrollbar-thumb {
@@ -150,17 +150,17 @@
   transition: background .15s;
 }
 .terminal-resize-handle:hover, .terminal-resize-handle.is-resizing {
-  background: #21262d;
-  border-color: #58a6ff;
+  background: var(--border);
+  border-color: var(--blue);
 }
 .resize-grip {
   width: 36px;
   height: 3px;
   border-radius: 2px;
-  background: #484f58;
+  background: var(--dim);
 }
 .terminal-resize-handle:hover .resize-grip, .terminal-resize-handle.is-resizing .resize-grip {
-  background: #58a6ff;
+  background: var(--blue);
 }
 .terminal-window.is-fullscreen .terminal-resize-handle {
   display: none !important;
@@ -185,7 +185,7 @@
   display: flex !important;
   flex-direction: column !important;
   box-shadow: none !important;
-  background: #0d1117 !important;
+  background: var(--bg-card, var(--card)) !important;
 }
 .terminal-window.is-fullscreen .terminal-titlebar {
   flex: 0 0 44px !important;
@@ -209,7 +209,7 @@
   border-radius: 0 !important;
   padding: 12px 16px !important;
   box-sizing: border-box !important;
-  background: #0d1117 !important;
+  background: var(--bg-card, var(--card)) !important;
   overflow: hidden !important;
 }
 
@@ -1398,13 +1398,13 @@ div[style*="position: fixed"] .card {
         </span>
         {% endif %}
         {% if server.is_proxmox_ha %}
-        <span class="badge" style="font-size:8.5px !important;padding:1px 4.5px !important;background:rgba(234,179,8,0.15);color:#eab308;border:1px solid rgba(234,179,8,0.3);display:inline-flex;align-items:center;gap:4px" title="Server terproteksi Proxmox HA">
+        <span class="badge badge-proxmox-ha" title="Server terproteksi Proxmox HA">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
           Proxmox HA
         </span>
         {% endif %}
         {% if server.is_isolated_net %}
-        <span class="badge" style="font-size:8.5px !important;padding:1px 4.5px !important;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);display:inline-flex;align-items:center;gap:4px" title="Jaringan Terisolasi">
+        <span class="badge badge-local-net" title="Jaringan Terisolasi">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
           Jaringan Terisolasi
         </span>
@@ -1510,11 +1510,11 @@ div[style*="position: fixed"] .card {
       <span data-i18n="agent_outdated_banner">Versi Agen Pantau di server ini (v{{ agent_version }}) lebih lama dari dashboard (v{{ app_version }}). Perbarui agen untuk mengaktifkan fitur snapshot proses dan kestabilan sistem.</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap">
-      <button class="btn btn-primary btn-sm" id="btn-update-agent" onclick="triggerAgentUpdate({{ server.id }})" style="background:#eab308;border-color:#ca8a04;color:#18181b;font-weight:600;padding:4px 12px;font-size:11px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer" title="Kirim pembaruan Over-The-Air (OTA) dengan verifikasi hash SHA-256 ke agen di server ini" data-i18n-title="push_update_tooltip" data-i18n="push_update_ota">
+      <button class="btn btn-warn btn-sm" id="btn-update-agent" onclick="triggerAgentUpdate({{ server.id }})" title="Kirim pembaruan Over-The-Air (OTA) dengan verifikasi hash SHA-256 ke agen di server ini" data-i18n-title="push_update_tooltip" data-i18n="push_update_ota">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
         Push Update (OTA)
       </button>
-      <button class="btn btn-ghost btn-sm" onclick="copyAgentUpdateCmd(event)" style="border:1px solid rgba(234,179,8,.4);color:var(--yellow);padding:4px 10px;font-size:11px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px" title="Salin perintah update agen ke clipboard" data-i18n-title="copy_update_tooltip" data-i18n="copy_update_cmd">
+      <button class="btn btn-ghost btn-sm pantau-btn-yellow" onclick="copyAgentUpdateCmd(event)" title="Salin perintah update agen ke clipboard" data-i18n-title="copy_update_tooltip" data-i18n="copy_update_cmd">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
         Salin Perintah Update
       </button>
@@ -2351,6 +2351,12 @@ div[style*="position: fixed"] .card {
   <div class="card-header">
     <h3>Daftar Layanan</h3>
     <div style="display:flex;align-items:center;gap:8px">
+      {% if user.has_perm('can_services') %}
+      <button type="button" class="btn btn-primary btn-sm" id="btn-add-svc-modal" onclick="openAddSvcModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah layanan baru yang akan dipantau" aria-label="Tambah Layanan"{% endif %}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <span>Tambah Layanan</span>
+      </button>
+      {% endif %}
       <div class="pantau-col-dropdown" data-table-id="tbl-services">
         <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('tbl-services', this)" title="Sesuaikan kolom daftar layanan">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2363,11 +2369,6 @@ div[style*="position: fixed"] .card {
         </button>
         <div class="pantau-col-menu" style="display:none"></div>
       </div>
-      {% if user.has_perm('can_services') %}
-      <button type="button" class="btn btn-primary btn-sm" id="btn-add-svc-modal" onclick="openAddSvcModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah layanan baru" aria-label="Tambah Layanan"{% endif %}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-      </button>
-      {% endif %}
     </div>
   </div>
   {% if services %}
@@ -2819,8 +2820,9 @@ div[style*="position: fixed"] .card {
       <div style="display:flex;gap:8px;align-items:center">
         <span class="badge badge-info" id="cron-jobs-count">{{ (cron_jobs.jobs|length) if cron_jobs and cron_jobs.jobs else 0 }} tugas aktif</span>
         {% if user.has_perm('can_cron') %}
-        <button class="btn btn-primary btn-sm" id="btn-add-cron-modal" onclick="openAddCronModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah tugas cron baru" aria-label="Tambah Tugas"{% endif %}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+        <button class="btn btn-primary btn-sm" id="btn-add-cron-modal" onclick="openAddCronModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tambah tugas cron baru" aria-label="Tambah Tugas Cron"{% endif %}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>Tambah Tugas Cron</span>
         </button>
         {% endif %}
       </div>
@@ -3461,8 +3463,9 @@ div[style*="position: fixed"] .card {
       <div style="display:flex;gap:8px;align-items:center">
         <span class="badge badge-info" id="ssl-count-badge">{{ (ssl_certs|length) if ssl_certs else 0 }} sertifikat terdeteksi</span>
         {% if user.has_perm('can_ssl') %}
-        <button class="btn btn-primary btn-sm" id="btn-add-ssl-path-modal" onclick="openAddSslPathModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tentukan folder sertifikat" aria-label="Tentukan folder sertifikat"{% endif %}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+        <button class="btn btn-primary btn-sm" id="btn-add-ssl-path-modal" onclick="openAddSslPathModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Tentukan folder sertifikat kustom" aria-label="Tambah Lokasi SSL"{% endif %}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>Tambah Lokasi SSL</span>
         </button>
         {% endif %}
       </div>
@@ -4317,6 +4320,48 @@ var _sysdSortCol = 'status';
 var _sysdSortDir = 'asc';
 var _sysdLoading = false;
 var _sysdInitialized = false;
+
+// Peta layanan jaringan terpantau (dideklarasikan di awal untuk menghindari ReferenceError TDZ)
+const _netSvcMap = new Map();
+function _registerNetSvc(key, port) {
+  if (!key) return;
+  const k = key.toLowerCase();
+  _netSvcMap.set(k, port);
+  if (k.includes('_')) _netSvcMap.set(k.replace(/_/g, '-'), port);
+  if (k.includes('-')) _netSvcMap.set(k.replace(/-/g, '_'), port);
+  if (k === 'mysql' || k === 'mysqld') _netSvcMap.set('mariadb', port);
+  if (k === 'mariadb' || k === 'mariadbd') { _netSvcMap.set('mysql', port); _netSvcMap.set('mysqld', port); }
+  if (k === 'ssh') _netSvcMap.set('sshd', port);
+  if (k === 'sshd') _netSvcMap.set('ssh', port);
+  if (k === 'cron') _netSvcMap.set('crond', port);
+  if (k === 'crond') _netSvcMap.set('cron', port);
+}
+{% for s in services %}
+_registerNetSvc({{ s.service_name|tojson }}, {{ s.port|tojson }});
+{% if s.process_name %}
+_registerNetSvc({{ s.process_name|tojson }}, {{ s.port|tojson }});
+{% endif %}
+{% endfor %}
+
+const _opStoppedSvcMap = new Map();
+{% for s in services %}
+{% if s.ignored_reason and ('DIMATIKAN OLEH OPERATOR' in s.ignored_reason or 'DIHENTIKAN OLEH OPERATOR' in s.ignored_reason) %}
+_opStoppedSvcMap.set({{ s.service_name|lower|tojson }}, {{ (s.ignored_by or 'OPERATOR')|upper|tojson }});
+{% if s.process_name %}
+_opStoppedSvcMap.set({{ s.process_name|lower|tojson }}, {{ (s.ignored_by or 'OPERATOR')|upper|tojson }});
+{% endif %}
+{% endif %}
+{% endfor %}
+
+const _oomKilledSvcMap = new Map();
+{% if kernel_events and kernel_events.events %}
+  {% for ev in kernel_events.events %}
+    {% if ev.type == 'oom_kill' %}
+      {% if ev.proc %}_oomKilledSvcMap.set({{ ev.proc|lower|tojson }}, true);{% endif %}
+      {% if ev.unit %}_oomKilledSvcMap.set({{ ev.unit|lower|tojson }}, true);{% endif %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
 
 
 // ---------- tab ringkasan ----------
@@ -9454,14 +9499,14 @@ function renderPorts(ports) {
     const svgKillPort = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
     const svgBlockPort = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>';
     const svgAllowPort = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
-    const svgAddSvc = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>';
+    const svgAddSvc = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
 
     const monitoredPortSet = new Set(Array.from(document.querySelectorAll('#tbl-services tbody td.mono:nth-child(2)')).map(td => td.textContent.trim()));
     const isMonitored = monitoredPortSet.has(String(portInt));
 
     if (!isMonitored && !isProtected && CAN_SERVICES) {
       const cleanProc = escHtml(p.pname || p.proc || '');
-      actions += `<button type="button" class="btn btn-sm btn-ghost" onclick="openAddSvcModal('${cleanProc}', '${portNum}', '${cleanProc}')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Add this active socket to Monitored Services' : 'Tambahkan socket/daemon ini ke Layanan Terpantau'}" aria-label="Pantau">${svgAddSvc}</button> `;
+      actions += `<button type="button" class="btn btn-sm btn-ghost" onclick="openAddSvcModal('${cleanProc}', '${portNum}', '${cleanProc}')" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Add this active socket to Monitored Services' : 'Tambahkan socket/daemon ini ke Layanan Terpantau'}" aria-label="Tambah ke Pantauan">${svgAddSvc}</button> `;
     }
 
     if (CAN_PROCESSES && p.pid && !isProtected) {
@@ -11769,48 +11814,6 @@ async function upgradeSinglePkg(pkgName) {
 // ===================================================================
 // SYSTEMD SERVICES MANAGEMENT (Unit Services OS & Daemon)
 // ===================================================================
-
-// Peta layanan jaringan yang sedang dipantau (untuk menghubungkan info port)
-const _netSvcMap = new Map();
-function _registerNetSvc(key, port) {
-  if (!key) return;
-  const k = key.toLowerCase();
-  _netSvcMap.set(k, port);
-  if (k.includes('_')) _netSvcMap.set(k.replace(/_/g, '-'), port);
-  if (k.includes('-')) _netSvcMap.set(k.replace(/-/g, '_'), port);
-  if (k === 'mysql' || k === 'mysqld') _netSvcMap.set('mariadb', port);
-  if (k === 'mariadb' || k === 'mariadbd') { _netSvcMap.set('mysql', port); _netSvcMap.set('mysqld', port); }
-  if (k === 'ssh') _netSvcMap.set('sshd', port);
-  if (k === 'sshd') _netSvcMap.set('ssh', port);
-  if (k === 'cron') _netSvcMap.set('crond', port);
-  if (k === 'crond') _netSvcMap.set('cron', port);
-}
-{% for s in services %}
-_registerNetSvc({{ s.service_name|tojson }}, {{ s.port|tojson }});
-{% if s.process_name %}
-_registerNetSvc({{ s.process_name|tojson }}, {{ s.port|tojson }});
-{% endif %}
-{% endfor %}
-
-const _opStoppedSvcMap = new Map();
-{% for s in services %}
-{% if s.ignored_reason and ('DIMATIKAN OLEH OPERATOR' in s.ignored_reason or 'DIHENTIKAN OLEH OPERATOR' in s.ignored_reason) %}
-_opStoppedSvcMap.set({{ s.service_name|lower|tojson }}, {{ (s.ignored_by or 'OPERATOR')|upper|tojson }});
-{% if s.process_name %}
-_opStoppedSvcMap.set({{ s.process_name|lower|tojson }}, {{ (s.ignored_by or 'OPERATOR')|upper|tojson }});
-{% endif %}
-{% endif %}
-{% endfor %}
-
-const _oomKilledSvcMap = new Map();
-{% if kernel_events and kernel_events.events %}
-  {% for ev in kernel_events.events %}
-    {% if ev.type == 'oom_kill' %}
-      {% if ev.proc %}_oomKilledSvcMap.set({{ ev.proc|lower|tojson }}, true);{% endif %}
-      {% if ev.unit %}_oomKilledSvcMap.set({{ ev.unit|lower|tojson }}, true);{% endif %}
-    {% endif %}
-  {% endfor %}
-{% endif %}
 
 function _initSystemdData() {
   try {

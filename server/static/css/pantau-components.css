@@ -759,7 +759,7 @@ span[data-pg-cur] {
   justify-content: center !important;
   padding: 2px 5px !important;
   background: rgba(16, 185, 129, 0.12) !important;
-  color: #10b981 !important;
+  color: var(--green) !important;
   border: 1px solid rgba(16, 185, 129, 0.3) !important;
   border-radius: 4px !important;
   line-height: 1 !important;
@@ -771,10 +771,75 @@ span[data-pg-cur] {
   justify-content: center !important;
   padding: 2px 5px !important;
   background: rgba(148, 163, 184, 0.12) !important;
-  color: #94a3b8 !important;
+  color: var(--dim) !important;
   border: 1px solid rgba(148, 163, 184, 0.25) !important;
   border-radius: 4px !important;
   line-height: 1 !important;
+}
+
+/* Badge & Text Utilitas Operasional Server */
+.copyable-ip {
+  color: var(--blue) !important;
+  font-weight: 600 !important;
+  font-size: 9.5px !important;
+  cursor: pointer !important;
+}
+
+.badge-local-net {
+  font-size: 7.5px !important;
+  background: rgba(148, 163, 184, 0.12) !important;
+  color: var(--dim) !important;
+  border: 1px solid var(--border) !important;
+  padding: 0.5px 3px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  font-weight: 600 !important;
+  border-radius: 3px !important;
+}
+
+.badge-proxmox-ha {
+  font-size: 7.5px !important;
+  background: rgba(234, 179, 8, 0.12) !important;
+  color: var(--yellow) !important;
+  border: 1px solid rgba(234, 179, 8, 0.25) !important;
+  padding: 0.5px 3px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  font-weight: 600 !important;
+  border-radius: 3px !important;
+}
+
+.badge-agent-ver {
+  font-size: 7.5px !important;
+  padding: 0.5px 3.5px !important;
+  font-family: var(--font-mono) !important;
+  border-radius: 3px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+.badge-agent-ver.is-outdated {
+  background: rgba(217, 119, 6, 0.15) !important;
+  color: var(--yellow) !important;
+  border: 1px solid rgba(217, 119, 6, 0.3) !important;
+  font-weight: 600 !important;
+}
+.badge-agent-ver.is-current {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: var(--blue) !important;
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+  font-weight: 400 !important;
+}
+
+.pantau-btn-yellow {
+  border: 1px solid rgba(234, 179, 8, 0.4) !important;
+  color: var(--yellow) !important;
+}
+.pantau-btn-yellow:hover {
+  background: rgba(234, 179, 8, 0.15) !important;
+  color: var(--yellow) !important;
+  border-color: var(--yellow) !important;
 }
 
 /* -----------------------------------------------------------------------------

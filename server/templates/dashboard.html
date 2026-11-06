@@ -156,10 +156,10 @@
   border-color: rgba(239, 68, 68, 0.65);
 }
 .zbx-sev-tile.zbx-tile-danger.is-active .zbx-sev-count {
-  color: #ef4444;
+  color: var(--red);
 }
 .zbx-sev-tile.zbx-tile-danger.is-active .zbx-sev-label {
-  color: #fca5a5;
+  color: var(--red);
 }
 
 /* Gawat (Orange) */
@@ -168,10 +168,10 @@
   border-color: rgba(249, 115, 22, 0.65);
 }
 .zbx-sev-tile.zbx-tile-average.is-active .zbx-sev-count {
-  color: #f97316;
+  color: var(--orange, #f97316);
 }
 .zbx-sev-tile.zbx-tile-average.is-active .zbx-sev-label {
-  color: #fdba74;
+  color: var(--orange, #f97316);
 }
 
 /* Warning (Yellow) */
@@ -180,10 +180,10 @@
   border-color: rgba(234, 179, 8, 0.65);
 }
 .zbx-sev-tile.zbx-tile-warning.is-active .zbx-sev-count {
-  color: #eab308;
+  color: var(--yellow);
 }
 .zbx-sev-tile.zbx-tile-warning.is-active .zbx-sev-label {
-  color: #fde047;
+  color: var(--yellow);
 }
 
 /* Info (Blue) */
@@ -192,10 +192,10 @@
   border-color: rgba(59, 130, 246, 0.65);
 }
 .zbx-sev-tile.zbx-tile-info.is-active .zbx-sev-count {
-  color: #3b82f6;
+  color: var(--blue);
 }
 .zbx-sev-tile.zbx-tile-info.is-active .zbx-sev-label {
-  color: #93c5fd;
+  color: var(--blue);
 }
 
 /* Diabaikan (Netral Slate - Low Distraction!) */
@@ -204,10 +204,10 @@
   border-color: rgba(148, 163, 184, 0.4);
 }
 .zbx-sev-tile.zbx-tile-ignored.is-active .zbx-sev-count {
-  color: #cbd5e1;
+  color: var(--dim);
 }
 .zbx-sev-tile.zbx-tile-ignored.is-active .zbx-sev-label {
-  color: #94a3b8;
+  color: var(--dim);
 }
 
 @media (max-width: 600px) {
@@ -467,22 +467,22 @@
 #dash-server-table th.th-up,
 #dash-server-table th.th-up:hover,
 #dash-server-table th.th-up.is-sorted {
-  color: var(--green, #10b981) !important;
+  color: var(--green) !important;
 }
 #dash-server-table th.th-up .sort-arrow {
-  color: var(--green, #10b981) !important;
+  color: var(--green) !important;
 }
 #dash-server-table th.th-down,
 #dash-server-table th.th-down:hover,
 #dash-server-table th.th-down.is-sorted {
-  color: var(--red, #ef4444) !important;
+  color: var(--red) !important;
 }
 #dash-server-table th.th-down .sort-arrow {
-  color: var(--red, #ef4444) !important;
+  color: var(--red) !important;
 }
 
 .cell-svc-up {
-  color: var(--green, #10b981);
+  color: var(--green);
   font-weight: 700;
   font-family: var(--font-mono, monospace);
   font-size: 12px;
@@ -494,7 +494,7 @@
   text-align: center;
 }
 .cell-svc-down.has-down {
-  color: var(--red, #ef4444);
+  color: var(--red);
   font-weight: 700;
 }
 .cell-svc-down.no-down {
@@ -518,9 +518,9 @@
   border-radius: 2px;
   transition: width .3s ease, background-color .3s ease;
 }
-.meter-mini-bar.green { background: #10b981; box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
-.meter-mini-bar.yellow { background: #f59e0b; box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
-.meter-mini-bar.red { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.6); }
+.meter-mini-bar.green { background: var(--green); box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
+.meter-mini-bar.yellow { background: var(--yellow); box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
+.meter-mini-bar.red { background: var(--red); box-shadow: 0 0 6px rgba(239, 68, 68, 0.6); }
 
 /* Grid View NOC Tile Styles */
 .noc-grid {
@@ -529,7 +529,7 @@
   gap: 8px;
 }
 .server-card {
-  background: var(--card-bg, #111827);
+  background: var(--card-bg, var(--card));
   border: 1px solid var(--border);
   border-radius: var(--radius-sm, 6px);
   padding: 8px 10px;
@@ -549,7 +549,7 @@
   background: linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%);
 }
 .server-card.is-average {
-  border-left: 4px solid #f97316;
+  border-left: 4px solid var(--orange, #f97316);
   background: linear-gradient(90deg, rgba(249, 115, 22, 0.05) 0%, transparent 100%);
 }
 .server-card.is-warn {
@@ -560,7 +560,7 @@
   border-left: 4px solid var(--green);
 }
 .server-card.is-offline {
-  border-left: 4px solid #64748b;
+  border-left: 4px solid var(--dim);
   opacity: .85;
 }
 .meter-track {
@@ -576,9 +576,9 @@
   border-radius: 999px;
   transition: width .4s ease, background-color .4s ease;
 }
-.meter-bar.green { background: var(--green, #10b981); }
-.meter-bar.yellow { background: var(--yellow, #f59e0b); }
-.meter-bar.red { background: var(--red, #ef4444); }
+.meter-bar.green { background: var(--green); }
+.meter-bar.yellow { background: var(--yellow); }
+.meter-bar.red { background: var(--red); }
 
 @media (max-width: 1040px) {
   .dash-kpi-grid {
@@ -974,10 +974,10 @@ body.popout-fleet_table #dash-fleet-card {
       <span class="dot-pulse-warn" style="width:6px;height:6px"></span>PEMELIHARAAN
     </span>
     <span style="font-size:12px;color:var(--text-bright)">
-      Terdapat <strong>{{ active_maintenance_count }} jendela pemeliharaan aktif</strong>{% if active_maintenance_titles %}: <span style="color:#fde047">{{ active_maintenance_titles | join(', ') }}</span>{% endif %}. Notifikasi dan alarm server terkait ditekan secara terencana.
+      Terdapat <strong>{{ active_maintenance_count }} jendela pemeliharaan aktif</strong>{% if active_maintenance_titles %}: <span style="color:var(--yellow)">{{ active_maintenance_titles | join(', ') }}</span>{% endif %}. Notifikasi dan alarm server terkait ditekan secara terencana.
     </span>
   </div>
-  <a href="/maintenance" class="btn btn-sm btn-ghost" style="font-size:11px;padding:2px 8px;color:#facc15;border-color:rgba(234,179,8,0.3);text-decoration:none">
+  <a href="/maintenance" class="btn btn-sm btn-ghost pantau-btn-yellow">
     Kelola Jadwal &rarr;
   </a>
 </div>

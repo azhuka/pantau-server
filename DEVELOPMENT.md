@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.138
+
+- **Tipe Rilis:** Perombakan Tata Letak Aksi Tombol, Resolusi Bug TDZ Systemd, dan Standardisasi Semantik UI (*Button Action Placement Overhaul, Systemd TDZ Bug Resolution & Semantic UI Standardization*)
+- **Fokus Utama:** Menyelesaikan error runtime JavaScript systemd saat inisialisasi tab layanan, menata ulang penempatan tombol aksi "Tambah" agar intuitif dan bermakna secara visual, serta mengeliminasi hardcode warna dan gaya inline pada tabel daftar server dan rincian layanan:
+  1. **Resolusi Bug TDZ Systemd (`_netSvcMap` ReferenceError):**
+     - Memindahkan inisialisasi peta layanan jaringan (`_netSvcMap`, `_registerNetSvc()`, `_opStoppedSvcMap`, `_oomKilledSvcMap`) ke blok deklarasi variabel state teratas di `server/templates/services.html` bersama `_systemdRawData`.
+     - Mengeliminasi error kritis `Gagal memuat unit systemd: Cannot access '_netSvcMap' before initialization` yang sebelumnya terpicu akibat pemanggilan fungsi rendering sebelum evaluasi variabel di urutan skrip.
+  2. **Penataan Ulang Tombol Aksi & Ikon Semantik Baku:**
+     - **Daftar Server (`servers.html`):** Memindahkan tombol utama `+ Tambah Server` dari dalam bilah filter pencarian ke posisi header baku `.topbar` di samping judul halaman, mengganti ikon server lama dengan ikon plus (`+`) standar, serta membersihkan bilah filter agar berfokus murni pada filtering data.
+     - **Daftar Layanan (`services.html`):** Menambahkan teks label eksplisit `Tambah Layanan` dan ikon plus standar pada `btn-add-svc-modal` di samping tombol Kolom, menggantikan ikon tumpukan layer lama yang tidak bermakna.
+     - **Daftar Socket/Port Terbuka (`services.html`):** Mengganti ikon heartbeat (`polyline`) pada aksi port yang belum terpantau menjadi ikon plus-lingkaran (`+`) yang merepresentasikan aksi "Tambahkan ke Layanan Terpantau" secara akurat.
+     - **Tugas Cron & Lokasi SSL (`services.html`):** Menambahkan label teks dan ikon plus standar pada tombol `Tambah Tugas Cron` dan `Tambah Lokasi SSL`.
+  3. **Standardisasi Utilitas Komponen & Eliminasi Hardcode Warna:**
+     - Menambahkan kelas utilitas baku `.copyable-ip`, `.badge-local-net`, `.badge-proxmox-ha`, `.badge-agent-ver`, dan `.pantau-btn-yellow` pada `pantau-components.css` berbasis variabel CSS (`var(--blue)`, `var(--dim)`, `var(--yellow)`, `var(--green)`).
+     - Mengeliminasi seluruh gaya inline hardcode (`#58a6ff`, `#94a3b8`, `#d97706`, `rgba(100,116,139,0.15)`, `#0b111e`, `#141e30`) pada `servers.html` baik pada templat Jinja maupun skrip renderer JS.
+     - Membersihkan hardcode warna pada bilah Zabbix, meter mini bar, dan banner pemeliharaan di `dashboard.html`.
+
 ## Versi 4.8.137
 
 - **Tipe Rilis:** Standardisasi Pewarisan Tema, Eliminasi Total Hardcode Warna, dan Sinkronisasi Zona Waktu Insiden (*Theme Inheritance Standardization, Total Hardcoded Color Elimination & Incident Timezone Synchronization*)

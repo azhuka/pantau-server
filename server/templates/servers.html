@@ -58,7 +58,7 @@
 #servers-table td.col-act {
   position: sticky;
   right: 0;
-  background: var(--col-act-bg, #0b111e);
+  background: var(--col-act-bg, var(--bg-card, var(--card)));
   box-shadow: -4px 0 8px rgba(0,0,0,0.45);
   z-index: 2;
   text-align: center !important;
@@ -67,7 +67,7 @@
   padding-right: 16px !important;
 }
 #servers-table tbody tr:hover td.col-act {
-  background: var(--col-act-hover, #141e30);
+  background: var(--col-act-hover, var(--border));
 }
 .group-header-row td.col-act {
   background: transparent !important;
@@ -104,6 +104,12 @@
 
 <div class="topbar">
   <h2>Daftar Server</h2>
+  {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
+  <a href="/servers/add" class="btn btn-primary btn-sm" title="Tambah Server Baru" aria-label="Tambah Server">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <span data-i18n="add_server">Tambah Server</span>
+  </a>
+  {% endif %}
 </div>
 
 <div class="pantau-filter-panel">
@@ -162,7 +168,7 @@
       Reset
     </button>
 
-    <div class="filter-divider" style="width:1px;height:24px;background:rgba(255,255,255,0.1);margin:0 2px;flex-shrink:0"></div>
+    <div class="filter-divider"></div>
 
     <!-- Kolom Toggler -->
     <div class="pantau-col-dropdown" data-table-id="servers-table" style="flex-shrink:0">
@@ -177,13 +183,6 @@
       </button>
       <div class="pantau-col-menu" style="display:none"></div>
     </div>
-    {% endif %}
-
-    {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
-    <a href="/servers/add" class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;font-size:11.5px;flex-shrink:0">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
-      <span data-i18n="add_server">Tambah Server</span>
-    </a>
     {% endif %}
   </div>
 </div>
@@ -284,14 +283,14 @@
       <!-- Col 1: IP & Interface -->
       <td>
         <div>
-          <span class="copyable-ip mono" id="srv-ip-{{ srv.id }}" style="font-size:9.5px;color:#58a6ff;font-weight:600" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
+          <span class="copyable-ip mono" id="srv-ip-{{ srv.id }}" onclick="copyIp('{{ srv.ip_address }}', event)" title="Klik untuk salin IP">{{ srv.ip_address }}</span>
         </div>
         <div style="display:inline-flex;align-items:center;gap:3.5px;margin-top:1px">
           {% if srv._prim_iface %}
           <span class="mono pantau-tag-subtle" id="srv-iface-{{ srv.id }}" title="Antarmuka Primer">{{ srv._prim_iface }}</span>
           {% endif %}
           {% if srv.is_isolated_net %}
-          <span class="badge" style="font-size:7.5px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:0.5px 3px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Jaringan Terisolasi">
+          <span class="badge badge-local-net" title="Jaringan Terisolasi">
             Lokal
           </span>
           {% endif %}
@@ -316,7 +315,7 @@
             </span>
           {% endif %}
           {% if srv.is_proxmox_ha %}
-            <span class="badge" style="font-size:7.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:0.5px 3px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Server terproteksi Proxmox HA">
+            <span class="badge badge-proxmox-ha" title="Server terproteksi Proxmox HA">
               <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
               HA
             </span>
@@ -359,9 +358,9 @@
         <div>
           {% if srv._agent_version %}
             {% if srv._agent_outdated %}
-              <span class="badge" style="font-size:7.5px;background:rgba(217,119,6,0.15);color:#d97706;border:1px solid rgba(217,119,6,0.3);padding:0.5px 3.5px;font-family:var(--font-mono);font-weight:600" id="srv-agent-{{ srv.id }}" title="Perlu pembaruan agen">v{{ srv._agent_version }} ↑</span>
+              <span class="badge badge-agent-ver is-outdated" id="srv-agent-{{ srv.id }}" title="Perlu pembaruan agen">v{{ srv._agent_version }} ↑</span>
             {% else %}
-              <span class="badge" style="font-size:7.5px;background:rgba(59,130,246,0.12);color:var(--blue);border:1px solid rgba(59,130,246,0.25);padding:0.5px 3.5px;font-family:var(--font-mono)" id="srv-agent-{{ srv.id }}" title="Versi agen mutakhir">v{{ srv._agent_version }}</span>
+              <span class="badge badge-agent-ver is-current" id="srv-agent-{{ srv.id }}" title="Versi agen mutakhir">v{{ srv._agent_version }}</span>
             {% endif %}
           {% else %}
             <span style="color:var(--dim);font-size:8px" id="srv-agent-{{ srv.id }}">—</span>
@@ -604,7 +603,7 @@ function getPlatformBadgeHtml(plat) {
   let label = (plat.short_label || plat.label || '').toUpperCase();
   if (label === 'FISIK') label = 'BAREMETAL';
   const bg = plat.badge_bg || 'rgba(100,116,139,0.15)';
-  const col = plat.badge_color || '#94a3b8';
+  const col = plat.badge_color || 'var(--dim)';
   const bor = plat.badge_border || 'rgba(100,116,139,0.25)';
   const pType = plat.type || '';
   let iconSvg = '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>';
@@ -642,17 +641,17 @@ function createAndAppendServersRow(srv, tbody) {
     </td>
     <td>
       <div>
-        <span class="copyable-ip mono" id="srv-ip-${srv.id}" style="font-size:9.5px;color:#58a6ff;font-weight:600" onclick="copyIp('${_srvEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_srvEsc(srv.ip_address || '-')}</span>
+        <span class="copyable-ip mono" id="srv-ip-${srv.id}" onclick="copyIp('${_srvEsc(srv.ip_address || '')}', event)" title="Klik untuk salin IP">${_srvEsc(srv.ip_address || '-')}</span>
       </div>
       <div style="display:inline-flex;align-items:center;gap:3.5px;margin-top:1px">
         ${srv.prim_iface ? `<span class="mono pantau-tag-subtle" id="srv-iface-${srv.id}" title="Antarmuka Primer">${_srvEsc(srv.prim_iface)}</span>` : ''}
-        ${srv.is_isolated_net ? `<span class="badge" style="font-size:7.5px;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:0.5px 3px;font-weight:600">Lokal</span>` : ''}
+        ${srv.is_isolated_net ? `<span class="badge badge-local-net" title="Jaringan Terisolasi">Lokal</span>` : ''}
       </div>
     </td>
     <td>
       <div style="display:inline-flex;align-items:center;gap:3px">
         ${getPlatformBadgeHtml(srv.platform)}
-        ${srv.is_proxmox_ha ? `<span class="badge" style="font-size:7.5px;background:rgba(234,179,8,0.12);color:#d97706;border:1px solid rgba(234,179,8,0.25);padding:0.5px 3px;display:inline-flex;align-items:center;gap:2px;font-weight:600" title="Server terproteksi Proxmox HA"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> HA</span>` : ''}
+        ${srv.is_proxmox_ha ? `<span class="badge badge-proxmox-ha" title="Server terproteksi Proxmox HA"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> HA</span>` : ''}
       </div>
       <div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;margin-top:1px" id="srv-hw-${srv.id}" title="${_srvEsc(srv.hw_model || '—')}">${_srvEsc(srv.hw_model || '—')}</div>
     </td>
@@ -677,7 +676,7 @@ function createAndAppendServersRow(srv, tbody) {
     </td>
     <td style="text-align:center">
       <div>
-        <span class="badge" style="font-size:7.5px;background:${srv.agent_outdated ? 'rgba(217,119,6,0.15)' : 'rgba(59,130,246,0.12)'};color:${srv.agent_outdated ? '#d97706' : 'var(--blue)'};border:1px solid ${srv.agent_outdated ? 'rgba(217,119,6,0.3)' : 'rgba(59,130,246,0.25)'};padding:0.5px 3.5px;font-family:var(--font-mono);font-weight:${srv.agent_outdated ? '600' : '400'}" id="srv-agent-${srv.id}">
+        <span class="badge badge-agent-ver ${srv.agent_outdated ? 'is-outdated' : 'is-current'}" id="srv-agent-${srv.id}" title="${srv.agent_outdated ? 'Perlu pembaruan agen' : 'Versi agen mutakhir'}">
           v${_srvEsc(srv.agent_version || '—')}${srv.agent_outdated ? ' ↑' : ''}
         </span>
       </div>
