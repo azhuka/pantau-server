@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.142
+
+- **Tipe Rilis:** Eliminasi Horizontal Scrollbar, Optimalisasi Lebar Tabel Server & Insiden, Standardisasi Bahasa Tab Navigasi, dan Blueprint Komponen Antarmuka (*Table Layout Optimization, Horizontal Scrollbar Elimination, Indonesian Tab Navigation & UI Component Engine Blueprint*)
+- **Fokus Utama:** Menyelesaikan masalah visual overflow dan tumpang tindih kolom pada layar desktop beresolusi 1440x900, menghapus floating sticky action column yang menutupi data timestamp, menstandarkan bahasa navigasi tab server detail ke Bahasa Indonesia baku, serta menyediakan blueprint registri komponen antarmuka mandiri:
+  1. **Eliminasi Horizontal Scrollbar & Tumpang Tindih Kolom (`servers.html` & `base.html`):**
+     - Mengubah `#servers-table` menggunakan aturan `table-layout: fixed; width: 100%` dengan alokasi lebar kolom proporsional (Server 130px, IP 95px, Platform 100px, OS 120px, CPU 95px, Memori 70px, Storage 80px, Uptime 105px, Agen 80px, Status 80px, Tindakan 86px).
+     - Menghapus aturan CSS global `position: sticky !important; right: 0 !important;` pada kolom aksi (`.col-act`, `.th-actions`, `.td-actions`) di `base.html` yang sebelumnya mengambang dan menutupi teks waktu aktif (*Uptime*) saat terjadi pergeseran horizontal.
+     - Menyembunyikan kolom `Tag` secara default melalui atribut `data-default-hidden="true"` pada pengelola kolom (`PantauColManager`), sehingga tabel fit 100% pada viewport (1087px / 1087px, 0px overflow).
+  2. **Eliminasi Overflow Tabel Insiden (`problems.html`):**
+     - Mengalokasikan ulang `<colgroup>` dan lebar kolom CSS pada `#problems-table` dan `#problems-history-table` sehingga total lebar pas 1059px (Waktu Mulai 128px, Server 150px, Keparahan 128px, Kejadian fluid, Durasi 75px, Panduan Solusi 180px, Tindakan 100px), meniadakan kelebihan 4px yang sebelumnya memicu horizontal scrollbar.
+  3. **Standardisasi Bahasa Tab Navigasi Detail Server (`services.html`):**
+     - Mengubah seluruh label tab navigasi di halaman detail server (`/servers/{id}`) menjadi Bahasa Indonesia yang baku dan terstruktur: `Layanan`, `Paket`, `Proses`, `Pengguna`, `Port`, `Firewall`, `SSL/TLS`, `Cron`, `Log`.
+  4. **Penyempurnaan Kelompok Tombol Aksi (`services.html`):**
+     - Membungkus output kontrol layanan pada fungsi `renderServiceActions` ke dalam kontainer `.action-btn-group` dengan tata letak `inline-flex` berjarak 3px yang seragam dan rapi.
+  5. **Mesin Registri Komponen Antarmuka Mandiri (`pantau-ui.js`):**
+     - Memperkenalkan modul blueprint frontend `PantauUI` yang menyediakan registri ikon SVG NOC, pembuat lencana status (*badge generator*), grup tombol aksi, bilah progres, dan pembuat sel tabel berkinerja tinggi tanpa dependensi eksternal.
+
 ## Versi 4.8.141
 
 - **Tipe Rilis:** Standardisasi Mutlak Kolom Tabel Rata Kiri & Eliminasi Hardcode Alignment Antarmuka (*Universal Left-Align Table Contract & Frontend Hardcode Alignment Elimination*)

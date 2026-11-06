@@ -1453,15 +1453,15 @@ div[style*="position: fixed"] .card {
   {% set active_open = open_problems | rejectattr('is_ignored') | list %}
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
   <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Insiden</span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}{{ ignored_open|length }}{% else %}0{% endif %}</span></button>
-  <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Services</span></button>
-  <button class="tab" data-tab="packages" role="tab" id="tab-packages-btn"><span class="tab-text">Packages</span>{% if apt_upgradable and apt_upgradable > 0 %} <span class="badge badge-warn" id="tab-packages-badge" style="margin-left:4px;font-size:10px;padding:1px 5px">{{ apt_upgradable }}</span>{% endif %}</button>
-  <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Tasks</span></button>
-  <button class="tab" data-tab="akun" role="tab" id="tab-akun-btn" data-i18n="tab_akun"><span class="tab-text">Users</span></button>
-  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn" data-i18n="tab_ports"><span class="tab-text">Ports</span></button>
+  <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Layanan</span></button>
+  <button class="tab" data-tab="packages" role="tab" id="tab-packages-btn"><span class="tab-text">Paket</span>{% if apt_upgradable and apt_upgradable > 0 %} <span class="badge badge-warn" id="tab-packages-badge" style="margin-left:4px;font-size:10px;padding:1px 5px">{{ apt_upgradable }}</span>{% endif %}</button>
+  <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Proses</span></button>
+  <button class="tab" data-tab="akun" role="tab" id="tab-akun-btn" data-i18n="tab_akun"><span class="tab-text">Pengguna</span></button>
+  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn" data-i18n="tab_ports"><span class="tab-text">Port</span></button>
   <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn" data-i18n="tab_firewall"><span class="tab-text">Firewall</span></button>
   <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn" data-i18n="tab_ssl"><span class="tab-text">SSL/TLS</span></button>
-  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn" data-i18n="tab_cron"><span class="tab-text">Cron Jobs</span></button>
-  <button class="tab" data-tab="log" role="tab" id="tab-log-btn" data-i18n="tab_logging"><span class="tab-text">Logs</span></button>
+  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn" data-i18n="tab_cron"><span class="tab-text">Cron</span></button>
+  <button class="tab" data-tab="log" role="tab" id="tab-log-btn" data-i18n="tab_logging"><span class="tab-text">Log</span></button>
 </div>
 
 <div class="tab-body" id="tab-perf">
@@ -4951,7 +4951,8 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
   const svgStart = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>';
   const svgStop = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>';
 
-  return '<button type="button" class="btn-act btn-act-primary btn-svc-restart" '
+  return '<div class="action-btn-group" style="display:inline-flex;align-items:center;gap:3px">'
+    + '<button type="button" class="btn-act btn-act-primary btn-svc-restart" '
     + disStyle
     + (rstDis ? 'disabled ' : '')
     + 'title="' + rstTitle + '" '
@@ -4969,7 +4970,8 @@ function renderServiceActions(sid, svcId, name, status, isPending, problem, isSe
     + 'title="' + stopTitle + '">' + svgStop + '</button>'
     + logBtn
     + ignoreBtn
-    + pendingBadge;
+    + pendingBadge
+    + '</div>';
 }
 
 function showSvcConfirmModal(opts) {

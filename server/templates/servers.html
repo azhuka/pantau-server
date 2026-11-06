@@ -35,9 +35,13 @@
 [data-theme="light"] .group-header-row:hover td {
   filter: brightness(0.96);
 }
+#servers-table {
+  width: 100%;
+  table-layout: fixed;
+}
 #servers-table th {
   white-space: nowrap;
-  padding: 6px 8px;
+  padding: 6px 6px;
   font-size: 10px;
   font-weight: 600;
   color: var(--dim);
@@ -46,7 +50,7 @@
 }
 #servers-table td {
   white-space: nowrap;
-  padding: 5px 8px;
+  padding: 5px 6px;
   font-size: 11px;
   vertical-align: middle;
 }
@@ -56,18 +60,15 @@
 }
 #servers-table th.col-act,
 #servers-table td.col-act {
-  position: sticky;
-  right: 0;
-  background: var(--col-act-bg, var(--bg-card, var(--card)));
-  box-shadow: -4px 0 8px rgba(0,0,0,0.45);
-  z-index: 2;
+  background: transparent;
   text-align: left !important;
-  width: 76px !important;
-  min-width: 76px !important;
-  padding-right: 10px !important;
+  width: 86px !important;
+  min-width: 86px !important;
+  max-width: 88px !important;
+  padding: 4px 6px !important;
 }
 #servers-table tbody tr:hover td.col-act {
-  background: var(--col-act-hover, var(--border));
+  background: transparent;
 }
 .group-header-row td.col-act {
   background: transparent !important;
@@ -164,7 +165,7 @@
 
     <!-- Tombol Reset -->
     <button type="button" class="btn btn-ghost btn-sm" id="servers-filter-reset" onclick="resetServersFilters()" title="Reset semua filter ke default"
-            style="display:none;height:32px;padding:0 12px;font-size:11.5px;border-radius:var(--radius-sm);flex-shrink:0">
+            style="display:none;height:30px;padding:0 10px;font-size:11px;border-radius:var(--radius-sm);flex-shrink:0">
       Reset
     </button>
 
@@ -172,7 +173,7 @@
 
     <!-- Kolom Toggler -->
     <div class="pantau-col-dropdown" data-table-id="servers-table" style="flex-shrink:0">
-      <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('servers-table', this)" title="Sesuaikan kolom tabel server" style="height:32px">
+      <button type="button" class="pantau-col-btn" onclick="PantauColManager.toggleDropdown('servers-table', this)" title="Sesuaikan kolom tabel server" style="height:30px">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
           <line x1="9" y1="3" x2="9" y2="21"></line>
@@ -193,18 +194,18 @@
   <table id="servers-table" class="pantau-table" style="width:100%;margin:0">
     <thead>
       <tr>
-        <th class="sortable" data-sort-key="server" data-col-title="Server" style="cursor:pointer;min-width:110px;white-space:nowrap" title="Nama host server dan klasifikasi lingkungan">Server <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="IP &amp; Interface" style="min-width:90px" title="Alamat IP utama dan antarmuka jaringan server">IP &amp; Interface</th>
-        <th data-col-title="Platform &amp; Mesin" style="min-width:95px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform &amp; Mesin</th>
-        <th data-col-title="Sistem Operasi" style="min-width:95px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
-        <th data-col-title="Prosesor" style="min-width:95px" title="Model prosesor (CPU) dan jumlah inti">Prosesor</th>
-        <th class="sortable" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer;min-width:70px" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="Penyimpanan" style="min-width:75px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan</th>
-        <th class="sortable" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer;min-width:70px" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="Agen &amp; APT" style="min-width:65px;text-align:left" title="Versi agen pemantau dan ketersediaan pembaruan paket">Agen &amp; APT</th>
-        <th data-col-title="Tag" style="min-width:45px" title="Label kategori dan pengelompokan server">Tag</th>
-        <th data-col-title="Status &amp; Lapor" style="min-width:65px;text-align:left" title="Status konektivitas dan waktu laporan data terakhir">Status &amp; Lapor</th>
-        <th class="col-act" data-col-title="Tindakan" style="width:76px;min-width:76px;text-align:left" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
+        <th class="sortable" data-sort-key="server" data-col-title="Server" style="cursor:pointer;width:130px;min-width:125px;max-width:135px;white-space:nowrap" title="Nama host server dan klasifikasi lingkungan">Server <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th data-col-title="IP &amp; Interface" style="width:95px;min-width:90px;max-width:100px" title="Alamat IP utama dan antarmuka jaringan server">IP &amp; Interface</th>
+        <th data-col-title="Platform" style="width:100px;min-width:95px;max-width:105px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform</th>
+        <th data-col-title="Sistem Operasi" style="width:120px;min-width:115px;max-width:125px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
+        <th data-col-title="Prosesor" style="width:95px;min-width:90px;max-width:100px" title="Model prosesor (CPU) dan jumlah inti">Prosesor</th>
+        <th class="sortable" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer;width:70px;min-width:65px;max-width:75px" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th data-col-title="Storage" style="width:80px;min-width:75px;max-width:85px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Storage</th>
+        <th class="sortable" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer;width:105px;min-width:100px;max-width:110px" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th data-col-title="Agen &amp; APT" style="width:80px;min-width:75px;max-width:85px;text-align:left" title="Versi agen pemantau dan ketersediaan pembaruan paket">Agen &amp; APT</th>
+        <th data-col-title="Tag" data-default-hidden="true" style="min-width:45px" title="Label kategori dan pengelompokan server">Tag</th>
+        <th data-col-title="Status" style="width:80px;min-width:75px;max-width:85px;text-align:left" title="Status konektivitas dan waktu laporan data terakhir">Status</th>
+        <th class="col-act" data-col-title="Tindakan" style="width:86px;min-width:86px;max-width:88px;text-align:left" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
       </tr>
     </thead>
     <tbody>
@@ -323,18 +324,18 @@
             </span>
           {% endif %}
         </div>
-        <div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;margin-top:1px" id="srv-hw-{{ srv.id }}" title="{{ srv._hw_model }}">{{ srv._hw_model }}</div>
+        <div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;margin-top:1px" id="srv-hw-{{ srv.id }}" title="{{ srv._hw_model }}">{{ srv._hw_model }}</div>
       </td>
 
       <!-- Col 3: Sistem Operasi -->
       <td>
-        <div style="font-weight:600;font-size:9.5px;white-space:nowrap" id="srv-os-{{ srv.id }}">{{ srv._os_name }}</div>
-        <div class="mono" style="font-size:8.5px;color:var(--dim);white-space:nowrap" id="srv-kernel-{{ srv.id }}" title="Kernel: {{ srv._kernel }} ({{ srv._arch }})">{{ srv._kernel }} <span style="opacity:0.7">({{ srv._arch }})</span></div>
+        <div style="font-weight:600;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px" id="srv-os-{{ srv.id }}">{{ srv._os_name }}</div>
+        <div class="mono" style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px" id="srv-kernel-{{ srv.id }}" title="Kernel: {{ srv._kernel }} ({{ srv._arch }})">{{ srv._kernel }} <span style="opacity:0.7">({{ srv._arch }})</span></div>
       </td>
 
       <!-- Col 4: Prosesor -->
       <td>
-        <div style="font-weight:600;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px" id="srv-cpumodel-{{ srv.id }}" title="{{ srv._cpu_model }}">{{ srv._cpu_model }}</div>
+        <div style="font-weight:600;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:105px" id="srv-cpumodel-{{ srv.id }}" title="{{ srv._cpu_model }}">{{ srv._cpu_model }}</div>
         <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-cpucores-{{ srv.id }}">{{ srv._cpu_cores }} Cores</div>
       </td>
 
@@ -346,7 +347,7 @@
 
       <!-- Col 6: Penyimpanan -->
       <td>
-        <div class="mono" style="font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px" id="srv-disk-{{ srv.id }}" title="{{ srv._disk_str }}">{{ srv._disk_str }}</div>
+        <div class="mono" style="font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:85px" id="srv-disk-{{ srv.id }}" title="{{ srv._disk_str }}">{{ srv._disk_str }}</div>
       </td>
 
       <!-- Col 7: Uptime & Boot -->
@@ -655,14 +656,14 @@ function createAndAppendServersRow(srv, tbody) {
         ${getPlatformBadgeHtml(srv.platform)}
         ${srv.is_proxmox_ha ? `<span class="badge badge-proxmox-ha" title="Server terproteksi Proxmox HA"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> HA</span>` : ''}
       </div>
-      <div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;margin-top:1px" id="srv-hw-${srv.id}" title="${_srvEsc(srv.hw_model || '—')}">${_srvEsc(srv.hw_model || '—')}</div>
+      <div style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;margin-top:1px" id="srv-hw-${srv.id}" title="${_srvEsc(srv.hw_model || '—')}">${_srvEsc(srv.hw_model || '—')}</div>
     </td>
     <td>
-      <div style="font-weight:600;font-size:9.5px;white-space:nowrap" id="srv-os-${srv.id}">${_srvEsc(srv.os_name || srv.os_label || 'Linux')}</div>
-      <div class="mono" style="font-size:8.5px;color:var(--dim);white-space:nowrap" id="srv-kernel-${srv.id}">${_srvEsc(srv.kernel || '—')} <span style="opacity:0.7">(${_srvEsc(srv.arch || 'x86_64')})</span></div>
+      <div style="font-weight:600;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px" id="srv-os-${srv.id}">${_srvEsc(srv.os_name || srv.os_label || 'Linux')}</div>
+      <div class="mono" style="font-size:8.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px" id="srv-kernel-${srv.id}">${_srvEsc(srv.kernel || '—')} <span style="opacity:0.7">(${_srvEsc(srv.arch || 'x86_64')})</span></div>
     </td>
     <td>
-      <div style="font-weight:600;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px" id="srv-cpumodel-${srv.id}" title="${_srvEsc(srv.cpu_model || '—')}">${_srvEsc(srv.cpu_model || '—')}</div>
+      <div style="font-weight:600;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:105px" id="srv-cpumodel-${srv.id}" title="${_srvEsc(srv.cpu_model || '—')}">${_srvEsc(srv.cpu_model || '—')}</div>
       <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-cpucores-${srv.id}">${srv.cpu_cores_num || 0} Cores</div>
     </td>
     <td>
@@ -670,7 +671,7 @@ function createAndAppendServersRow(srv, tbody) {
       <div class="mono" style="font-size:8.5px;color:var(--dim)" id="srv-swaptot-${srv.id}">Swap: ${_srvEsc(srv.swap_total_str || '—')}</div>
     </td>
     <td>
-      <div class="mono" style="font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px" id="srv-disk-${srv.id}" title="${_srvEsc(srv.disk_str || '—')}">${_srvEsc(srv.disk_str || '—')}</div>
+      <div class="mono" style="font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:85px" id="srv-disk-${srv.id}" title="${_srvEsc(srv.disk_str || '—')}">${_srvEsc(srv.disk_str || '—')}</div>
     </td>
     <td>
       <div class="mono" style="font-weight:600;font-size:9.5px" id="srv-uptime-${srv.id}">${_srvEsc(srv.uptime_str || '—')}</div>

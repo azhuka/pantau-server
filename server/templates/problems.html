@@ -129,18 +129,14 @@
 }
 #probtable th.col-time,
 #probtable td.col-time {
-  width: 115px !important;
-  min-width: 110px !important;
-  max-width: 125px !important;
+  width: 128px !important;
   white-space: nowrap !important;
   font-size: 10px !important;
-  padding: 5px 10px !important;
+  padding: 5px 8px !important;
 }
 #probtable th.col-server,
 #probtable td.col-server {
-  width: 168px !important;
-  min-width: 155px !important;
-  max-width: 185px !important;
+  width: 150px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -148,11 +144,9 @@
 }
 #probtable th.col-sev,
 #probtable td.col-sev {
-  width: 125px !important;
-  min-width: 115px !important;
-  max-width: 140px !important;
+  width: 128px !important;
   text-align: left !important;
-  padding: 4px 8px !important;
+  padding: 4px 6px !important;
   white-space: nowrap !important;
 }
 #probtable th.col-sev .badge,
@@ -183,12 +177,10 @@
 }
 #probtable th.col-event,
 #probtable td.col-event {
-  /* Kolom Kejadian: Hero content dengan ruang fleksibel terluas & keterbacaan optimal */
   width: auto !important;
-  min-width: 220px !important;
   font-size: 11px !important;
   line-height: 1.35 !important;
-  padding: 5px 14px !important;
+  padding: 5px 10px !important;
 }
 #probtable td.col-event .badge {
   font-size: 8px !important;
@@ -196,33 +188,27 @@
 }
 #probtable th.col-durasi,
 #probtable td.col-durasi {
-  width: 120px !important;
-  min-width: 110px !important;
-  max-width: 130px !important;
+  width: 75px !important;
   white-space: nowrap !important;
   font-size: 10px !important;
   text-align: left !important;
-  padding: 5px 10px !important;
+  padding: 5px 8px !important;
 }
 #probtable th.col-act,
 #probtable td.col-act {
-  width: 95px !important;
-  min-width: 90px !important;
-  max-width: 105px !important;
+  width: 100px !important;
   white-space: nowrap !important;
   text-align: left !important;
   padding: 5px 6px !important;
 }
 #probtable th.col-tips,
 #probtable td.col-tips {
-  width: 260px !important;
-  min-width: 200px !important;
-  max-width: 320px !important;
+  width: 180px !important;
   font-size: 11px !important;
   color: var(--text-muted) !important;
   line-height: 1.35 !important;
   vertical-align: middle !important;
-  padding: 5px 12px !important;
+  padding: 5px 10px !important;
 }
 #probtable tbody tr {
   border-bottom: 1px solid rgba(255, 255, 255, 0.035);
@@ -429,13 +415,13 @@
     {% if open_problems %}
     <table id="probtable" class="pantau-table" style="width:100%;table-layout:fixed">
       <colgroup>
-        <col style="width:135px">
-        <col style="width:168px">
-        <col style="width:125px">
+        <col style="width:128px">
+        <col style="width:150px">
+        <col style="width:128px">
         <col>
-        <col style="width:120px">
-        <col style="width:260px">
-        <col style="width:95px">
+        <col style="width:75px">
+        <col style="width:180px">
+        <col style="width:100px">
       </colgroup>
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
@@ -1434,13 +1420,13 @@ window.poll = async function(opts = {}) {
         if (!table) {
           wrapper.innerHTML = `<table id="probtable" class="pantau-table" style="width:100%;table-layout:fixed">
             <colgroup>
-              <col style="width:135px">
-              <col style="width:168px">
-              <col style="width:125px">
+              <col style="width:128px">
+              <col style="width:150px">
+              <col style="width:128px">
               <col>
-              <col style="width:120px">
-              <col style="width:260px">
-              <col style="width:95px">
+              <col style="width:75px">
+              <col style="width:180px">
+              <col style="width:100px">
             </colgroup>
             <thead>
               <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
