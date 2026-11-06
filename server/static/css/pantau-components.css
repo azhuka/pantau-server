@@ -1359,8 +1359,8 @@ table td.empty-msg {
 
 #tbl-services th.col-svc-name,
 #tbl-services td.col-svc-name {
-  width: 110px !important;
-  min-width: 95px !important;
+  width: 120px !important;
+  min-width: 105px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -1368,15 +1368,15 @@ table td.empty-msg {
 
 #tbl-services th.col-svc-port,
 #tbl-services td.col-svc-port {
-  width: 55px !important;
+  width: 60px !important;
   min-width: 50px !important;
   white-space: nowrap !important;
 }
 
 #tbl-services th.col-svc-proc,
 #tbl-services td.col-svc-proc {
-  width: 95px !important;
-  min-width: 85px !important;
+  width: 140px !important;
+  min-width: 125px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -1391,15 +1391,15 @@ table td.empty-msg {
 
 #tbl-services th.col-svc-conns,
 #tbl-services td.col-svc-conns {
-  width: 55px !important;
+  width: 60px !important;
   min-width: 50px !important;
   white-space: nowrap !important;
 }
 
 #tbl-services th.col-svc-resp,
 #tbl-services td.col-svc-resp {
-  width: 90px !important;
-  min-width: 85px !important;
+  width: 105px !important;
+  min-width: 95px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -1408,7 +1408,7 @@ table td.empty-msg {
 #tbl-services th.col-svc-desc,
 #tbl-services td.col-svc-desc {
   width: auto !important;
-  min-width: 130px !important;
+  min-width: 140px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -1416,8 +1416,8 @@ table td.empty-msg {
 
 #tbl-services th.col-svc-uptime,
 #tbl-services td.col-svc-uptime {
-  width: 95px !important;
-  min-width: 90px !important;
+  width: 115px !important;
+  min-width: 105px !important;
   white-space: nowrap !important;
 }
 
@@ -1447,14 +1447,13 @@ table td.empty-msg {
 #tbl-systemd td.col-sysd-status {
   width: 85px !important;
   min-width: 80px !important;
-  max-width: 90px !important;
+  white-space: nowrap !important;
 }
 
 #tbl-systemd th.col-sysd-name,
 #tbl-systemd td.col-sysd-name {
-  width: 190px !important;
-  min-width: 170px !important;
-  max-width: 210px !important;
+  width: 220px !important;
+  min-width: 190px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -1462,8 +1461,8 @@ table td.empty-msg {
 
 #tbl-systemd th.col-sysd-boot,
 #tbl-systemd td.col-sysd-boot {
-  width: 125px !important;
-  min-width: 115px !important;
+  width: 115px !important;
+  min-width: 105px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -1471,15 +1470,15 @@ table td.empty-msg {
 
 #tbl-systemd th.col-sysd-sub,
 #tbl-systemd td.col-sysd-sub {
-  width: 85px !important;
-  min-width: 75px !important;
+  width: 95px !important;
+  min-width: 90px !important;
   white-space: nowrap !important;
 }
 
 #tbl-systemd th.col-sysd-mem,
 #tbl-systemd td.col-sysd-mem {
-  width: 95px !important;
-  min-width: 85px !important;
+  width: 130px !important;
+  min-width: 120px !important;
   white-space: nowrap !important;
 }
 
@@ -1585,17 +1584,16 @@ table td.empty-msg {
 
 #tbl-audit th.col-aud-time,
 #tbl-audit td.col-aud-time {
-  width: 130px !important;
-  min-width: 115px !important;
-  max-width: 140px !important;
+  width: 125px !important;
+  min-width: 120px !important;
   white-space: nowrap !important;
   letter-spacing: -0.025em !important;
 }
 
 #tbl-audit th.col-aud-user,
 #tbl-audit td.col-aud-user {
-  width: 140px !important;
-  min-width: 130px !important;
+  width: 100px !important;
+  min-width: 90px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -1603,9 +1601,8 @@ table td.empty-msg {
 
 #tbl-audit th.col-aud-srv,
 #tbl-audit td.col-aud-srv {
-  width: 110px !important;
-  min-width: 95px !important;
-  max-width: 120px !important;
+  width: 120px !important;
+  min-width: 105px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -1613,15 +1610,15 @@ table td.empty-msg {
 
 #tbl-audit th.col-aud-act,
 #tbl-audit td.col-aud-act {
-  width: 150px !important;
-  min-width: 140px !important;
+  width: 135px !important;
+  min-width: 125px !important;
   white-space: nowrap !important;
 }
 
 #tbl-audit th.col-aud-tgt,
 #tbl-audit td.col-aud-tgt {
   width: auto !important;
-  min-width: 130px !important;
+  min-width: 280px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -1629,16 +1626,16 @@ table td.empty-msg {
 
 #tbl-audit th.col-aud-st,
 #tbl-audit td.col-aud-st {
-  width: 90px !important;
-  min-width: 85px !important;
-  max-width: 95px !important;
+  width: 85px !important;
+  min-width: 80px !important;
   white-space: nowrap !important;
 }
 
 #tbl-audit th.col-aud-res,
 #tbl-audit td.col-aud-res {
-  width: auto !important;
-  min-width: 170px !important;
+  width: 180px !important;
+  min-width: 150px !important;
+  max-width: 220px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -2062,10 +2059,12 @@ table td.empty-msg {
 
 #servers-table th.col-srv-host,
 #servers-table td.col-srv-host {
-  width: 160px !important;
+  width: 18% !important;
   min-width: 155px !important;
   padding-left: 10px !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #servers-table th.col-srv-ip,
@@ -2077,23 +2076,29 @@ table td.empty-msg {
 
 #servers-table th.col-srv-plat,
 #servers-table td.col-srv-plat {
-  width: 95px !important;
-  min-width: 90px !important;
+  width: 15% !important;
+  min-width: 105px !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #servers-table th.col-srv-os,
 #servers-table td.col-srv-os {
-  width: 120px !important;
-  min-width: 115px !important;
+  width: 18% !important;
+  min-width: 125px !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #servers-table th.col-srv-cpu,
 #servers-table td.col-srv-cpu {
-  width: 100px !important;
-  min-width: 95px !important;
+  width: 17% !important;
+  min-width: 110px !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #servers-table th.col-srv-mem,
@@ -2105,15 +2110,17 @@ table td.empty-msg {
 
 #servers-table th.col-srv-disk,
 #servers-table td.col-srv-disk {
-  width: 80px !important;
-  min-width: 75px !important;
+  width: 12% !important;
+  min-width: 90px !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #servers-table th.col-srv-up,
 #servers-table td.col-srv-up {
   width: 105px !important;
-  min-width: 100px !important;
+  min-width: 95px !important;
   white-space: nowrap !important;
 }
 
@@ -2228,24 +2235,24 @@ table td.empty-msg {
 
 #probtable th.col-time,
 #probtable td.col-time {
-  width: 125px !important;
-  min-width: 120px !important;
+  width: 140px !important;
+  min-width: 135px !important;
   padding: 5px 8px !important;
   white-space: nowrap !important;
 }
 
 #probtable th.col-time-detailed,
 #probtable td.col-time-detailed {
-  width: 125px !important;
-  min-width: 120px !important;
+  width: 140px !important;
+  min-width: 135px !important;
   padding: 5px 8px !important;
   white-space: nowrap !important;
 }
 
 #probtable th.col-server,
 #probtable td.col-server {
-  width: 145px !important;
-  min-width: 140px !important;
+  width: 175px !important;
+  min-width: 155px !important;
   padding: 5px 8px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
@@ -2254,8 +2261,8 @@ table td.empty-msg {
 
 #probtable th.col-sev,
 #probtable td.col-sev {
-  width: 80px !important;
-  min-width: 75px !important;
+  width: 145px !important;
+  min-width: 135px !important;
   padding: 4px 6px !important;
   white-space: nowrap !important;
 }
@@ -2263,7 +2270,7 @@ table td.empty-msg {
 #probtable th.col-event,
 #probtable td.col-event {
   width: auto !important;
-  min-width: 160px !important;
+  min-width: 180px !important;
   padding: 5px 10px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -2272,8 +2279,8 @@ table td.empty-msg {
 
 #probtable th.col-durasi,
 #probtable td.col-durasi {
-  width: 95px !important;
-  min-width: 90px !important;
+  width: 125px !important;
+  min-width: 115px !important;
   padding: 5px 8px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
@@ -2283,7 +2290,7 @@ table td.empty-msg {
 #probtable th.col-tips,
 #probtable td.col-tips {
   width: auto !important;
-  min-width: 160px !important;
+  min-width: 200px !important;
   padding: 5px 10px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -2300,8 +2307,8 @@ table td.empty-msg {
 
 #probtable th.col-act,
 #probtable td.col-act {
-  width: 140px !important;
-  min-width: 135px !important;
+  width: 110px !important;
+  min-width: 105px !important;
   padding: 5px 6px !important;
   white-space: nowrap !important;
 }
@@ -2354,8 +2361,8 @@ table td.empty-msg {
 
 #dash-server-table th.col-dsh-plat,
 #dash-server-table td.col-dsh-plat {
-  width: 125px !important;
-  min-width: 110px !important;
+  width: auto !important;
+  min-width: 120px !important;
 }
 
 #dash-server-table th.col-dsh-up,
@@ -2500,24 +2507,24 @@ table td.empty-msg {
 
 #prob-resolved-table th.col-time-detailed,
 #prob-resolved-table td.col-time-detailed {
-  width: 145px !important;
-  min-width: 135px !important;
+  width: 140px !important;
+  min-width: 130px !important;
   white-space: nowrap !important;
 }
 
 #prob-resolved-table th.col-server,
 #prob-resolved-table td.col-server {
-  width: 130px !important;
-  min-width: 115px !important;
-  max-width: 155px !important;
+  width: 150px !important;
+  min-width: 130px !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #prob-resolved-table th.col-sev,
 #prob-resolved-table td.col-sev {
-  width: 85px !important;
+  width: 90px !important;
   min-width: 80px !important;
-  max-width: 95px !important;
   white-space: nowrap !important;
 }
 
@@ -2531,7 +2538,7 @@ table td.empty-msg {
 #prob-resolved-table th.col-desc,
 #prob-resolved-table td.col-desc {
   width: auto !important;
-  min-width: 260px !important;
+  min-width: 240px !important;
 }
 
 #prob-resolved-table th.col-durasi,
@@ -2550,8 +2557,8 @@ table td.empty-msg {
 
 #prob-resolved-table th.col-act,
 #prob-resolved-table td.col-act {
-  width: 55px !important;
-  min-width: 50px !important;
+  width: 75px !important;
+  min-width: 70px !important;
   white-space: nowrap !important;
 }
 
@@ -2572,15 +2579,15 @@ table td.empty-msg {
 
 #tbl-packages th.col-pkg-st,
 #tbl-packages td.col-pkg-st {
-  width: 90px !important;
-  min-width: 85px !important;
+  width: 85px !important;
+  min-width: 80px !important;
   white-space: nowrap !important;
 }
 
 #tbl-packages th.col-pkg-name,
 #tbl-packages td.col-pkg-name {
-  width: auto !important;
-  min-width: 140px !important;
+  width: 200px !important;
+  min-width: 175px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -2595,8 +2602,8 @@ table td.empty-msg {
 
 #tbl-packages th.col-pkg-ver,
 #tbl-packages td.col-pkg-ver {
-  width: 140px !important;
-  min-width: 125px !important;
+  width: 215px !important;
+  min-width: 185px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -2612,7 +2619,7 @@ table td.empty-msg {
 #tbl-packages th.col-pkg-desc,
 #tbl-packages td.col-pkg-desc {
   width: auto !important;
-  min-width: 150px !important;
+  min-width: 200px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -2620,8 +2627,8 @@ table td.empty-msg {
 
 #tbl-packages th.col-pkg-act,
 #tbl-packages td.col-pkg-act {
-  width: 95px !important;
-  min-width: 90px !important;
+  width: 120px !important;
+  min-width: 115px !important;
   white-space: nowrap !important;
 }
 
@@ -2703,35 +2710,35 @@ table td.empty-msg {
 
 #cron-table th.col-cron-st,
 #cron-table td.col-cron-st {
-  width: 45px !important;
-  min-width: 40px !important;
+  width: 70px !important;
+  min-width: 65px !important;
   text-align: left !important;
 }
 
 #cron-table th.col-cron-sched,
 #cron-table td.col-cron-sched {
-  width: 110px !important;
-  min-width: 100px !important;
+  width: 115px !important;
+  min-width: 105px !important;
   white-space: nowrap !important;
 }
 
 #cron-table th.col-cron-user,
 #cron-table td.col-cron-user {
-  width: 75px !important;
-  min-width: 70px !important;
+  width: 80px !important;
+  min-width: 75px !important;
   white-space: nowrap !important;
 }
 
 #cron-table th.col-cron-cmd,
 #cron-table td.col-cron-cmd {
   width: auto !important;
-  min-width: 200px !important;
+  min-width: 250px !important;
 }
 
 #cron-table th.col-cron-src,
 #cron-table td.col-cron-src {
   width: 185px !important;
-  min-width: 170px !important;
+  min-width: 165px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -2746,15 +2753,15 @@ table td.empty-msg {
 
 #systemd-timers-table th.col-timer-st,
 #systemd-timers-table td.col-timer-st {
-  width: 55px !important;
-  min-width: 50px !important;
+  width: 70px !important;
+  min-width: 65px !important;
   text-align: left !important;
 }
 
 #systemd-timers-table th.col-timer-unit,
 #systemd-timers-table td.col-timer-unit {
-  width: auto !important;
-  min-width: 170px !important;
+  width: 200px !important;
+  min-width: 175px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -2762,8 +2769,8 @@ table td.empty-msg {
 
 #systemd-timers-table th.col-timer-act,
 #systemd-timers-table td.col-timer-act {
-  width: 180px !important;
-  min-width: 160px !important;
+  width: auto !important;
+  min-width: 200px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -2771,23 +2778,25 @@ table td.empty-msg {
 
 #systemd-timers-table th.col-timer-next,
 #systemd-timers-table td.col-timer-next {
-  width: 180px !important;
-  min-width: 170px !important;
+  width: 195px !important;
+  min-width: 185px !important;
   white-space: nowrap !important;
 }
 
 #systemd-timers-table th.col-timer-left,
 #systemd-timers-table td.col-timer-left {
-  width: 110px !important;
-  min-width: 100px !important;
+  width: 95px !important;
+  min-width: 85px !important;
   white-space: nowrap !important;
 }
 
 #systemd-timers-table th.col-timer-last,
 #systemd-timers-table td.col-timer-last {
-  width: 180px !important;
-  min-width: 170px !important;
+  width: 250px !important;
+  min-width: 220px !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 /* Tabel Firewall (#fw-rules-table, #fw-blocked-table) */
@@ -2899,8 +2908,8 @@ table td.empty-msg {
 
 #acc-table th.col-acc-home,
 #acc-table td.col-acc-home {
-  width: 160px !important;
-  min-width: 145px !important;
+  width: 175px !important;
+  min-width: 165px !important;
   white-space: nowrap !important;
 }
 

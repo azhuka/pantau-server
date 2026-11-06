@@ -354,6 +354,36 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.148
+
+- **Tipe Rilis:** Rekonstruksi Total Fleksibilitas Tabel, Eliminasi Pemotongan Teks Prematur & Peniadaan Scrollbar Horizontal Lintas Tampilan (*Fluid Proportional Table Architecture, Zero Text Clipping & Horizontal Scrollbar Elimination Across NOC Views*)
+- **Fokus Utama:** Menyelesaikan secara tuntas cacat visual yang teridentifikasi pada peninjauan komprehensif antarmuka tabel, mengeliminasi lebar piksel kaku (*rigid pixel clamping*), tumpang tindih teks (*header collision*), pemotongan string panjang prematur, dan kekosongan sisi kanan kartu (*widescreen desert*) melalui arsitektur proporsional berbasis persentase dinamis dan penyesuaian min-width terukur:
+  1. **Rekonstruksi Responsif Penuh Tabel Server (`#servers-table` & `servers.html`):**
+     - Mengubah alokasi kolom konten dari lebar piksel statis menjadi sistem persentase proporsional: Server (18%, min 155px), Platform (15%, min 105px), Sistem Operasi (18%, min 125px), Prosesor (17%, min 110px), dan Penyimpanan (12%, min 90px).
+     - Menjamin tabel membentang 100% penuh mengisi lebar kontainer monitor *ultrawide* dan *widescreen* tanpa kekosongan gelap di sisi kanan kartu.
+     - Menghilangkan pemotongan teks (*ellipsis prematur*) sehingga spesifikasi lengkap CPU (`Intel Xeon Gold 6430 128 Cores`), platform (`HPE ProLiant DL380 Gen11`), OS, dan partisi disk ditampilkan secara utuh.
+  2. **Harmonisasi & Sentralisasi Tabel Insiden Terbuka (`#probtable` & `problems.html`):**
+     - Menghapus 182 baris blok `<style>` lokal dan tag `<colgroup>` statis yang menimpa aturan stylesheet global dan memaksakan font kecil 11px pada header PANDUAN SOLUSI.
+     - Memperluas kolom Waktu (140px), Server (175px), Keparahan (145px), Durasi (125px), dan Tindakan (110px) dengan alokasi fleksibel pada kolom Kejadian dan Panduan Solusi.
+     - Memastikan seluruh timestamp tanggal (`06 Nov 14:41:28`) dan nama host kloning (`barrukab-clone [CLONE]`) tampil utuh tanpa memicu scrollbar horizontal.
+  3. **Penyempurnaan Tabel Riwayat Insiden Teratasi (`#prob-resolved-table`):**
+     - Memperlebar kolom Tindakan dari 55px menjadi 75px (min 70px) sehingga teks header `TINDAKAN` tidak terpotong menjadi `TINDAKA...`.
+     - Menghilangkan scrollbar horizontal pada kartu riwayat insiden secara permanen.
+  4. **Optimasi Alokasi Kolom Sasaran Riwayat Audit (`#tbl-audit` & `audit.html`):**
+     - Menjadikan kolom Target (`col-aud-tgt`) sebagai satu-satunya kolom fleksibel utama (`width: auto !important; min-width: 280px !important;`) guna menampung rincian pesan insiden dan probe endpoint yang panjang.
+     - Membatasi kolom Hasil / Respons pada 180px (min 150px, max 220px), mengeliminasi jurang ruang kosong 300px di sebelah kanan tabel.
+  5. **Penataan Ulang Tabel Layanan & Unit Systemd (`#tbl-services`, `#tbl-systemd` & `services.html`):**
+     - Memperlebar kolom Proses pada `#tbl-services` dari 95px menjadi 140px (min 125px) agar nama proses panjang seperti `systemd-resolve` dan `pantau-server` tidak terpotong.
+     - Memperlebar kolom Respons (ms) dari 90px menjadi 105px (min 95px) untuk mencegah pemotongan header menjadi `RESPONS (...`.
+     - Memperlebar kolom Nama Unit Systemd menjadi 220px, kolom Memori menjadi 130px (min 120px), serta Sub-State menjadi 95px (min 90px), mengeliminasi tabrakan teks antara metrik memori (`• 5th`) dan deskripsi layanan serta peluberan header `SUB-STATE`.
+  6. **Penyempurnaan Tabel Paket Terpasang (`#tbl-packages`):**
+     - Memperlebar kolom Versi (`col-pkg-ver`) dari 165px menjadi 215px (min 185px) untuk menampilkan nomor versi panjang sistem paket Ubuntu (`4.0.1really4.0.1-0ubuntu0.24.04.9`) tanpa pemotongan teks.
+     - Memperlebar kolom Tindakan (`col-pkg-act`) dari 80px menjadi 120px (min 115px), menampung kedua tombol aksi kontrol paket dan melenyapkan kelebihan lebar yang memicu scrollbar horizontal.
+  7. **Perbaikan Tuntas Header Bertubrukan & Parsing Data Systemd Timers (`#cron-table`, `#systemd-timers-table` & `server/main.py`):**
+     - Memperlebar kolom Status pada kedua tabel dari 45px menjadi 70px (min 65px), mengeliminasi tumpang tindih teks `STATUS` dengan `JADWAL (CRON)` dan `NAMA TIMER`.
+     - Memperlebar kolom Eksekusi Terakhir pada `#systemd-timers-table` menjadi 250px (min 220px) dengan proteksi ellipsis, mencegah pemotongan teks header `EKSEKUSI TERAKHIR` dan melenyapkan scrollbar horizontal.
+     - Memperbaiki parser backend `server/main.py` agar menyimpan metadata timer secara lengkap (`next`, `left`, `last`, `passed`, `status`) dan melakukan pengayaan otomatis dari field `raw` jika data durasi lama tertulis timezone (`WITA`).
+
 ## Versi 4.8.147
 
 - **Tipe Rilis:** Standarisasi Arsitektur Dinamis Tabel, Eliminasi Total Tabrakan Teks & Penyeimbangan Ruang Kosong Lintas Halaman (*Dynamic Table Architecture Standardization, Zero Text Collision & Whitespace Normalization Across All Views*)

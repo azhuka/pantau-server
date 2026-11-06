@@ -2831,9 +2831,9 @@ div[style*="position: fixed"] .card {
             </td>
             <td class="col-timer-unit mono" style="font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ t.timer }}">{{ t.timer }}</td>
             <td class="col-timer-act mono" style="color:var(--green);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ t.activates }}">{{ t.activates }}</td>
-            <td class="col-timer-next mono" style="font-size:10px">{{ t.next if t.next else (t.raw.split()[0:3]|join(' ') if t.raw and not t.raw.startswith('-') else '—') }}</td>
-            <td class="col-timer-left mono" style="font-size:10px;font-weight:600;color:{{ 'var(--blue)' if is_act else 'var(--dim)' }}">{{ t.left if t.left else (t.raw.split()[3] if t.raw and t.raw.split()|length > 3 and not t.raw.startswith('-') else '—') }}</td>
-            <td class="col-timer-last mono" style="font-size:10px;color:var(--dim)">{{ t.last if t.last else '—' }}{{ ' (' ~ t.passed ~ ')' if t.passed and t.passed != '—' else '' }}</td>
+            <td class="col-timer-next mono" style="font-size:10px;white-space:nowrap">{{ t.next if t.next else '—' }}</td>
+            <td class="col-timer-left mono" style="font-size:10px;font-weight:600;color:{{ 'var(--blue)' if is_act else 'var(--dim)' }};white-space:nowrap">{{ t.left if t.left else '—' }}</td>
+            <td class="col-timer-last mono" style="font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ t.last }}{% if t.passed and t.passed != '—' %} ({{ t.passed }}){% endif %}">{{ t.last if t.last else '—' }}{% if t.passed and t.passed != '—' %} <span style="font-size:9.5px;color:var(--dim)">({{ t.passed }})</span>{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>

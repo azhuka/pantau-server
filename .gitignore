@@ -15,6 +15,7 @@ env/
 # System & editor
 .DS_Store
 *.swp
+.vscode/
 
 # Legacy / prototype files (tetap di disk, tidak di-commit)
 /agent/*

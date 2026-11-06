@@ -1880,6 +1880,11 @@ def agent_report(
                 {
                     "timer": _clean_str(t.get("timer"), "", 100),
                     "activates": _clean_str(t.get("activates"), "", 100),
+                    "next": _clean_str(t.get("next"), "", 60),
+                    "left": _clean_str(t.get("left"), "", 60),
+                    "last": _clean_str(t.get("last"), "", 60),
+                    "passed": _clean_str(t.get("passed"), "", 60),
+                    "status": _clean_str(t.get("status"), "active", 20),
                     "raw": _clean_str(t.get("raw"), "", 200),
                 }
                 for t in (cj.get("timers") or [])[:50]
@@ -4896,6 +4901,20 @@ def services_page(request: Request, sid: int, db: Session = Depends(get_db)):
     if extra and extra.cron_jobs:
         try:
             cron_data = json.loads(extra.cron_jobs)
+            for t in cron_data.get("timers") or []:
+                if isinstance(t, dict):
+                    cur_left = t.get("left")
+                    if not cur_left or cur_left == "—" or cur_left in ("WITA", "WIB", "WIT", "UTC"):
+                        raw = t.get("raw") or ""
+                        parts = raw.split()
+                        timer_unit = [p for p in parts if p.endswith(".timer")]
+                        if timer_unit:
+                            t_idx = parts.index(timer_unit[0])
+                            meta_str = " ".join(parts[:t_idx])
+                            m = re.match(r"^([A-Za-z]{3}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\s+[A-Za-z0-9_+-]+)?)\s+(.+?)\s+([A-Za-z]{3}\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\s+[A-Za-z0-9_+-]+)?)\s+(.+)$", meta_str)
+                            if m:
+                                t["next"], t["left"], t["last"], t["passed"] = m.groups()
+                                t["status"] = "active"
         except Exception:
             pass
 

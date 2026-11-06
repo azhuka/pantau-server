@@ -117,188 +117,6 @@
   }
 }
 
-/* ---------- Tata Letak & Proporsi Kolom Tabel Insiden (Enterprise Best Practice) ---------- */
-#probtable {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-#probtable th,
-#probtable td {
-  box-sizing: border-box;
-}
-#probtable th.col-time,
-#probtable td.col-time {
-  width: 128px !important;
-  white-space: nowrap !important;
-  font-size: 10px !important;
-  padding: 5px 8px !important;
-}
-#probtable th.col-server,
-#probtable td.col-server {
-  width: 150px !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  padding: 5px 8px !important;
-}
-#probtable th.col-sev,
-#probtable td.col-sev {
-  width: 128px !important;
-  text-align: left !important;
-  padding: 4px 6px !important;
-  white-space: nowrap !important;
-}
-#probtable th.col-sev .badge,
-#probtable td.col-sev .badge {
-  font-size: 8.5px !important;
-  padding: 1px 6.5px !important;
-  border-radius: 3px !important;
-  line-height: 1.2 !important;
-  letter-spacing: 0.3px !important;
-  font-weight: 700 !important;
-}
-#probtable th.col-sev .badge-sub,
-#probtable td.col-sev .badge-sub {
-  font-size: 7.5px !important;
-  padding: 0.5px 4.5px !important;
-  font-weight: 600 !important;
-  line-height: 1.2 !important;
-  letter-spacing: 0.2px !important;
-}
-#probtable td.col-sev .col-sev-sub-text {
-  font-size: 7.5px;
-  color: var(--dim);
-  margin-top: 1.5px;
-  white-space: nowrap;
-  line-height: 1.2;
-  display: block;
-  text-align: left;
-}
-#probtable th.col-event,
-#probtable td.col-event {
-  width: auto !important;
-  font-size: 11px !important;
-  line-height: 1.35 !important;
-  padding: 5px 10px !important;
-}
-#probtable td.col-event .badge {
-  font-size: 8px !important;
-  padding: 0.5px 4.5px !important;
-}
-#probtable th.col-durasi,
-#probtable td.col-durasi {
-  width: 125px !important;
-  min-width: 120px !important;
-  white-space: nowrap !important;
-  font-size: 10px !important;
-  text-align: left !important;
-  padding: 5px 8px !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-#probtable th.col-tips,
-#probtable td.col-tips {
-  width: auto !important;
-  min-width: 200px !important;
-  font-size: 11px !important;
-  color: var(--text-muted) !important;
-  line-height: 1.35 !important;
-  vertical-align: middle !important;
-  padding: 5px 12px !important;
-}
-#probtable th.col-act,
-#probtable td.col-act {
-  width: 90px !important;
-  min-width: 85px !important;
-  white-space: nowrap !important;
-  text-align: left !important;
-  padding: 5px 6px !important;
-}
-#probtable tbody tr {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.035);
-  transition: background 0.12s ease;
-}
-#probtable tbody tr:hover {
-  background: rgba(255, 255, 255, 0.035) !important;
-}
-#probtable tbody tr:last-child {
-  border-bottom: none !important;
-}
-
-/* Riwayat Insiden Teratasi Proportions */
-#prob-resolved-table-wrap th.col-time-detailed,
-#prob-resolved-table-wrap td.col-time-detailed {
-  width: 145px;
-  min-width: 135px;
-  white-space: nowrap;
-  font-size: 9.5px;
-  padding: 4px 6px;
-}
-#prob-resolved-table-wrap th.col-server,
-#prob-resolved-table-wrap td.col-server {
-  width: 130px;
-  min-width: 115px;
-  max-width: 155px;
-  font-size: 10px;
-  padding: 5px 8px;
-}
-#prob-resolved-table-wrap th.col-sev,
-#prob-resolved-table-wrap td.col-sev {
-  width: 85px;
-  min-width: 80px;
-  max-width: 95px;
-  text-align: left;
-  padding: 5px 8px;
-}
-#prob-resolved-table-wrap th.col-sev .badge,
-#prob-resolved-table-wrap td.col-sev .badge {
-  font-size: 8px;
-  padding: 1px 4.5px;
-  border-radius: 3px;
-  font-weight: 700;
-}
-#prob-resolved-table-wrap th.col-component,
-#prob-resolved-table-wrap td.col-component {
-  width: 90px;
-  min-width: 80px;
-  white-space: nowrap;
-  font-size: 9.5px;
-  padding: 4px 6px;
-}
-#prob-resolved-table-wrap th.col-desc,
-#prob-resolved-table-wrap td.col-desc {
-  max-width: 240px;
-  word-break: break-word;
-  font-size: 10px;
-  line-height: 1.35;
-  padding: 4px 6px;
-}
-#prob-resolved-table-wrap th.col-durasi,
-#prob-resolved-table-wrap td.col-durasi {
-  width: 75px;
-  min-width: 70px;
-  white-space: nowrap;
-  font-size: 9.5px;
-  letter-spacing: -0.025em;
-  word-spacing: -1px;
-  padding: 4px 6px;
-}
-#prob-resolved-table-wrap th.col-res,
-#prob-resolved-table-wrap td.col-res {
-  width: 135px;
-  min-width: 125px;
-  white-space: nowrap;
-  font-size: 9.5px;
-  padding: 4px 6px;
-}
-#prob-resolved-table-wrap th.col-act,
-#prob-resolved-table-wrap td.col-act {
-  width: 75px;
-  min-width: 70px;
-  text-align: left;
-  padding: 4px 6px;
-}
 </style>
 
 <div class="card" id="prob-active-card">
@@ -419,15 +237,6 @@
   <div class="pantau-table-wrap" id="prob-table-wrapper">
     {% if open_problems %}
     <table id="probtable" class="pantau-table">
-      <colgroup>
-        <col style="width:125px">
-        <col style="width:145px">
-        <col style="width:120px">
-        <col>
-        <col style="width:120px">
-        <col>
-        <col style="width:95px">
-      </colgroup>
       <thead>
         <tr>
           <th class="col-time" data-col-title="Waktu Mulai" title="Waktu saat insiden mulai terdeteksi">WAKTU MULAI</th>
@@ -496,7 +305,7 @@
             {{ base_badge | safe }}
           {% endif %}
         </td>
-        <td class="col-event" style="padding:5px 14px;line-height:1.35">
+        <td class="col-event" style="padding:5px 14px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
           <span style="font-size:11.5px;font-weight:500;line-height:1.35;color:var(--text-bright)">{{ p.message }}</span>
           {% if p.is_ignored and p.ignored_reason and p.ignored_reason != p.message and ('DIMATIKAN OLEH OPERATOR' not in p.ignored_reason and 'DIHENTIKAN OLEH OPERATOR' not in p.ignored_reason and 'DI-REBOOT OLEH OPERATOR' not in p.ignored_reason and 'DI-RESTART OLEH OPERATOR' not in p.ignored_reason) %}
             <span class="badge badge-muted" style="margin-left:5px;font-size:8px;padding:0.5px 4.5px" title="Alasan: {{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
@@ -1424,15 +1233,6 @@ window.poll = async function(opts = {}) {
         let table = document.getElementById('probtable');
         if (!table) {
           wrapper.innerHTML = `<table id="probtable" class="pantau-table">
-            <colgroup>
-              <col style="width:115px">
-              <col style="width:130px">
-              <col style="width:105px">
-              <col>
-              <col style="width:125px">
-              <col style="width:220px">
-              <col style="width:90px">
-            </colgroup>
             <thead>
               <tr>
                 <th class="col-time" data-col-title="Waktu Mulai" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden mulai terdeteksi'}">${isEn ? 'START TIME' : 'WAKTU MULAI'}</th>
@@ -1542,7 +1342,7 @@ window.poll = async function(opts = {}) {
                 </div>
               </td>
               <td class="col-sev" style="padding:4px 8px;white-space:nowrap;text-align:left">${sevCellHtml}</td>
-              <td class="col-event" style="padding:5px 14px;line-height:1.35">
+              <td class="col-event" style="padding:5px 14px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
                 <span style="font-size:11.5px;font-weight:500;line-height:1.35;color:var(--text-bright)">${_esc(pMsg)}</span>
                 ${ignReasonBadge}
                 ${ignUntilBadge}
