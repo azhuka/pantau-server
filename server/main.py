@@ -32,7 +32,6 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
 from sqlalchemy import create_engine, desc, func, text, or_
 from sqlalchemy.orm import Session, sessionmaker
@@ -1024,7 +1023,7 @@ async def lifespan(app: FastAPI):
 # App & templates
 # ---------------------------------------------------------------------------
 app = FastAPI(title="Pantau Server", docs_url=None, redoc_url=None, lifespan=lifespan)
-templates = Jinja2Templates(directory=settings.templates_dir)
+templates = None
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -1053,10 +1052,7 @@ def _fmt_short_dt(dt: datetime | None) -> str:
     return f"{dt.day:02d} {mon} {dt.hour:02d}:{dt.minute:02d}"
 
 
-templates.env.globals["_fmt_dt"] = _fmt_dt
-templates.env.globals["_fmt_short_dt"] = _fmt_short_dt
-templates.env.globals["getattr"] = getattr
-templates.env.globals["bool"] = bool
+# Template environment globals dinonaktifkan (mode headless)
 
 static_dir = Path(__file__).resolve().parent / "static"
 if static_dir.exists():
@@ -1149,9 +1145,18 @@ def invalidate_branding_cache() -> None:
     _BRANDING_CACHE["expires_at"] = 0.0
 
 
-def tpl(request: Request, name: str, context: dict, status_code: int = 200) -> HTMLResponse:
+def _headless_json_default(obj):
+    if hasattr(obj, "to_dict"):
+        return obj.to_dict()
+    if hasattr(obj, "__dict__"):
+        d = dict(obj.__dict__)
+        d.pop("_sa_instance_state", None)
+        return d
+    return str(obj)
+
+
+def tpl(request: Request, name: str, context: dict, status_code: int = 200) -> Response:
     ctx = dict(context) if context else {}
-    # Injeksi CSRF token otomatis, app_version, dan identitas organisasi ke semua template
     sid = request.cookies.get(SESSION_COOKIE, "")
     ctx.setdefault("csrf_token", _csrf_token(sid) if sid else "")
     ctx.setdefault("app_version", settings.APP_VERSION)
@@ -1159,7 +1164,18 @@ def tpl(request: Request, name: str, context: dict, status_code: int = 200) -> H
     active_m_count, active_m_titles = get_active_maintenance_info()
     ctx.setdefault("active_maintenance_count", active_m_count)
     ctx.setdefault("active_maintenance_titles", active_m_titles)
-    resp = templates.TemplateResponse(request, name, ctx, status_code=status_code)
+
+    body = {
+        "ok": True,
+        "service": "Pantau Server (Headless API)",
+        "version": settings.APP_VERSION,
+        "mode": "headless",
+        "message": "Frontend antarmuka web dinonaktifkan / dihapus. Sistem beroperasi dalam mode Headless API.",
+        "template": name,
+        "data": ctx,
+    }
+    raw_json = json.dumps(body, default=_headless_json_default)
+    resp = Response(content=raw_json, media_type="application/json", status_code=status_code)
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     resp.headers["Pragma"] = "no-cache"
     resp.headers["Expires"] = "0"
@@ -9766,7 +9782,7 @@ def _rel_dt(dt: datetime, now: datetime | None = None) -> str:
     return f"{s // 86400} h lalu"
 
 
-templates.env.globals["_rel_dt"] = _rel_dt
+# templates.env.globals["_rel_dt"] = _rel_dt
 
 
 def _problem_component(key: str) -> str:

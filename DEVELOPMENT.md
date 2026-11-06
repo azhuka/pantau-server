@@ -354,6 +354,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.149
+
+- **Tipe Rilis:** Penghapusan Total Frontend Monolitik & Transisi ke Arsitektur Headless API (*Total Legacy Frontend Decommissioning & Pure Headless API Transition*)
+- **Fokus Utama:** Menindaklanjuti instruksi dekomisioning total antarmuka frontend berbasis Jinja dan CSS/JS monolitik lama untuk menghentikan siklus tambal-sulam dan mempersiapkan arsitektur baru yang bersih:
+  1. **Penghapusan Seluruh Berkas Template Monolitik (`server/templates/`):**
+     - Menghapus seluruh berkas HTML Jinja (`audit.html`, `dashboard.html`, `servers.html`, `problems.html`, `services.html`, dll.).
+     - Menghapus seluruh aset frontend statis CSS dan JS (`server/static/css/`, `server/static/js/`, `server/static/vendor/`).
+  2. **Transisi Bersih Backend FastAPI ke Mode Headless API:**
+     - Menghapus ketergantungan `Jinja2Templates` dari backend `server/main.py`.
+     - Mengubah fungsi `tpl(...)` menjadi pengembalian murni `JSONResponse` terstruktur sehingga rute lama tetap melayani payload data secara aman tanpa kegagalan sistem.
+     - Seluruh endpoint REST API (`/api/*`), WebSocket terminal (`/ws/*`), dan telemetri agen klien (`/api/report`) tetap aktif dan berfungsi 100%.
+
 ## Versi 4.8.148
 
 - **Tipe Rilis:** Rekonstruksi Total Fleksibilitas Tabel, Eliminasi Pemotongan Teks Prematur & Peniadaan Scrollbar Horizontal Lintas Tampilan (*Fluid Proportional Table Architecture, Zero Text Clipping & Horizontal Scrollbar Elimination Across NOC Views*)
