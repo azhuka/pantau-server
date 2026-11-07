@@ -340,13 +340,13 @@ def setup_dashboard_routes(session_factory):
                             """)
                             p_table.add_slot("body-cell-action", """
                                 <q-td :props="props">
-                                    <button class="btn btn-sm btn-ghost" style="color:var(--green);padding:1px 8px;font-size:11px"
-                                            @click="() => $parent.$emit('resolve', props.row.id)">
-                                        ✓ Selesaikan
-                                    </button>
+                                    <a :href="'/servers/' + props.row.sid + '?tab=prob'"
+                                       class="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-400 hover:text-sky-300 px-2 py-0.5 rounded hover:bg-sky-500/10 transition">
+                                        <span>Detail</span>
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    </a>
                                 </q-td>
                             """)
-                            p_table.on("resolve", lambda e: _resolve_problem(e.args))
 
                     # ---------------------------------------------------------
                     # 5. Kartu Armada Server (Tabel / Grid NOC)

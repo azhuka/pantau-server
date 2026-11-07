@@ -136,8 +136,7 @@ def setup_logs_server_routes(session_factory):
                 return RedirectResponse("/login")
 
         with render_layout(request, user, active_tab="logs"):
-            container = ui.column().classes("w-full gap-3")
-            container = ui.column().classes("w-full max-w-7xl mx-auto p-6 gap-6")
+            container = ui.column().classes("w-full max-w-full min-w-0 p-2 gap-4")
 
             with container:
                 # Header

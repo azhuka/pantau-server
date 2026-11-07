@@ -38,16 +38,16 @@ def setup_probing_routes(session_factory):
                 ui.label("Tambah Target Probing Endpoint").classes("text-base font-bold text-white")
 
                 with ui.column().classes("w-full gap-3"):
-                    inp_name = ui.input("Nama Target (misal: Portal Web Dinas)").classes("w-full").props("dense outlined dark")
+                    inp_name = ui.input("Nama Target (misal: Portal Web Dinas)").classes("w-full").props("dense outlined dark stack-label")
                     sel_type = ui.select(
                         {"https": "HTTPS Endpoint", "http": "HTTP Endpoint", "ping": "ICMP Ping", "tcp": "TCP Port"},
                         value="https", label="Tipe Probing"
-                    ).classes("w-full").props("dense outlined dark")
-                    inp_target = ui.input("Target Host / URL (misal: https://barrukab.go.id)").classes("w-full").props("dense outlined dark")
-                    inp_port = ui.number("Port Khusus (Opsional)", value=None).classes("w-full").props("dense outlined dark")
+                    ).classes("w-full").props("dense outlined dark stack-label")
+                    inp_target = ui.input("Target Host / URL (misal: https://barrukab.go.id)").classes("w-full").props("dense outlined dark stack-label")
+                    inp_port = ui.number("Port Khusus (Opsional)", value=None).classes("w-full").props("dense outlined dark stack-label")
                     with ui.row().classes("w-full grid grid-cols-2 gap-2"):
-                        inp_interval = ui.number("Interval (Detik)", value=60, min=10).classes("w-full").props("dense outlined dark")
-                        inp_timeout = ui.number("Timeout (Detik)", value=5, min=1).classes("w-full").props("dense outlined dark")
+                        inp_interval = ui.number("Interval (Detik)", value=60, min=10).classes("w-full").props("dense outlined dark stack-label")
+                        inp_timeout = ui.number("Timeout (Detik)", value=5, min=1).classes("w-full").props("dense outlined dark stack-label")
 
                 def _save_probe_target():
                     name = inp_name.value.strip()

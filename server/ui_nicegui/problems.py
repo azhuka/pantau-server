@@ -85,32 +85,32 @@ def setup_problems_routes(session_factory):
                     # CPU
                     with ui.row().classes("w-full items-center justify-between"):
                         ui.label("CPU Utilisation (%)").classes("font-semibold text-slate-300 w-44")
-                        in_cpu_w = ui.number(label="Peringatan (Warn)", value=cur_th.get("cpu_warn", 85.0), min=10, max=99, step=1).props("dense outlined dark").classes("w-36")
-                        in_cpu_d = ui.number(label="Bahaya (Danger)", value=cur_th.get("cpu_danger", 95.0), min=10, max=100, step=1).props("dense outlined dark").classes("w-36")
+                        in_cpu_w = ui.number(label="Peringatan (Warn)", value=cur_th.get("cpu_warn", 85.0), min=10, max=99, step=1).props("dense outlined dark stack-label").classes("w-36")
+                        in_cpu_d = ui.number(label="Bahaya (Danger)", value=cur_th.get("cpu_danger", 95.0), min=10, max=100, step=1).props("dense outlined dark stack-label").classes("w-36")
 
                     # RAM
                     with ui.row().classes("w-full items-center justify-between"):
                         ui.label("Memori RAM (%)").classes("font-semibold text-slate-300 w-44")
-                        in_ram_w = ui.number(label="Peringatan (Warn)", value=cur_th.get("ram_warn", 85.0), min=10, max=99, step=1).props("dense outlined dark").classes("w-36")
-                        in_ram_d = ui.number(label="Bahaya (Danger)", value=cur_th.get("ram_danger", 95.0), min=10, max=100, step=1).props("dense outlined dark").classes("w-36")
+                        in_ram_w = ui.number(label="Peringatan (Warn)", value=cur_th.get("ram_warn", 85.0), min=10, max=99, step=1).props("dense outlined dark stack-label").classes("w-36")
+                        in_ram_d = ui.number(label="Bahaya (Danger)", value=cur_th.get("ram_danger", 95.0), min=10, max=100, step=1).props("dense outlined dark stack-label").classes("w-36")
 
                     # Disk
                     with ui.row().classes("w-full items-center justify-between"):
                         ui.label("Partisi Disk (%)").classes("font-semibold text-slate-300 w-44")
-                        in_disk_w = ui.number(label="Peringatan (Warn)", value=cur_th.get("disk_warn", 90.0), min=10, max=99, step=1).props("dense outlined dark").classes("w-36")
-                        in_disk_d = ui.number(label="Bahaya (Danger)", value=cur_th.get("disk_danger", 95.0), min=10, max=100, step=1).props("dense outlined dark").classes("w-36")
+                        in_disk_w = ui.number(label="Peringatan (Warn)", value=cur_th.get("disk_warn", 90.0), min=10, max=99, step=1).props("dense outlined dark stack-label").classes("w-36")
+                        in_disk_d = ui.number(label="Bahaya (Danger)", value=cur_th.get("disk_danger", 95.0), min=10, max=100, step=1).props("dense outlined dark stack-label").classes("w-36")
 
                     # Swap
                     with ui.row().classes("w-full items-center justify-between"):
                         ui.label("Swap Memory (%)").classes("font-semibold text-slate-300 w-44")
-                        in_swap_w = ui.number(label="Peringatan (Warn)", value=cur_th.get("swap_warn", 80.0), min=10, max=99, step=1).props("dense outlined dark").classes("w-36")
-                        in_swap_d = ui.number(label="Bahaya (Danger)", value=cur_th.get("swap_danger", 92.0), min=10, max=100, step=1).props("dense outlined dark").classes("w-36")
+                        in_swap_w = ui.number(label="Peringatan (Warn)", value=cur_th.get("swap_warn", 80.0), min=10, max=99, step=1).props("dense outlined dark stack-label").classes("w-36")
+                        in_swap_d = ui.number(label="Bahaya (Danger)", value=cur_th.get("swap_danger", 92.0), min=10, max=100, step=1).props("dense outlined dark stack-label").classes("w-36")
 
                     # SSH Fail
                     with ui.row().classes("w-full items-center justify-between"):
                         ui.label("Gagal SSH (kali/mnt)").classes("font-semibold text-slate-300 w-44")
-                        in_ssh_w = ui.number(label="Peringatan (Warn)", value=cur_th.get("ssh_fail_warn", 5), min=1, max=50, step=1).props("dense outlined dark").classes("w-36")
-                        in_ssh_d = ui.number(label="Bahaya (Danger)", value=cur_th.get("ssh_fail_danger", 12), min=2, max=100, step=1).props("dense outlined dark").classes("w-36")
+                        in_ssh_w = ui.number(label="Peringatan (Warn)", value=cur_th.get("ssh_fail_warn", 5), min=1, max=50, step=1).props("dense outlined dark stack-label").classes("w-36")
+                        in_ssh_d = ui.number(label="Bahaya (Danger)", value=cur_th.get("ssh_fail_danger", 12), min=2, max=100, step=1).props("dense outlined dark stack-label").classes("w-36")
 
                 def _save_thresholds():
                     if in_cpu_w.value >= in_cpu_d.value:

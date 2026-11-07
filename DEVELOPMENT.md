@@ -354,6 +354,35 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.156
+
+- **Tipe Rilis:** Restorasi Penuh Tata Letak Fluid Widescreen, Koreksi Penarikan Data Sub-Tab Telemetri, Eliminasi Jam Ganda, Serta Penyempurnaan Modal Dialog & RBAC Enterprise (*Full Restoration of Fluid Widescreen Layout, Telemetry Sub-Tab Data Extraction Fixes, Double-Clock Elimination, Enterprise RBAC & Modal Dialog Polish*)
+- **Fokus Utama:** Menyelesaikan tuntas seluruh isu tata letak visual, parsing data metrik, dan alur operasional sysadmin di seluruh viewport monitor widescreen (1080p/2K/4K) pasca-migrasi NiceGUI:
+  1. **Restorasi Penuh Tata Letak 100% Fluid Widescreen (`common.py`, `logs_server.py`):**
+     - Mengatasi kendala ruang hitam kosong 40% (*black abyss*) di sisi kanan dan bawah pada resolusi monitor 1920x1080 yang dipicu oleh aturan warisan `body { display: flex; }` di CSS tema pre-migrasi.
+     - Menginjeksi penimpaan gaya mutlak `body { display: block !important; width: 100% !important; max-width: 100vw !important; }` serta `#app, #q-app { width: 100% !important; max-width: 100% !important; display: block !important; }`.
+     - Menghapus batas `max-w-7xl` pada halaman log server pusat agar seluruh halaman aplikasi membentang secara konsisten ke seluruh lebar layar.
+  2. **Eliminasi Jam Ganda & Penataan Header yang Ramping (`layout.py`):**
+     - Menghapus jam ganda di bilah navigasi atas (header) yang redundan dengan jam digital master pada ubin KPI dasbor (`dashClockWidget`).
+     - Menghilangkan lencana `NOC` yang tergeser dan memberikan margin kanan aman (`mr-1`) pada elemen navigasi atas agar tombol keluar tidak tertabrak atau terpotong oleh bilah scroll peramban.
+     - Menyempurnakan penamaan menu bilah samping (sidebar) menjadi `Manajemen Pengguna` (RBAC) dan `Profil Akun`.
+  3. **Koreksi Lengkap Penarikan Data Sub-Tab Telemetri Rincian Server (`server_detail.py`):**
+     - **Sub-Tab Proses**: Memperbaiki pemetaan kolom `PERINTAH / PROSES` yang sebelumnya menampilkan tanda pisah `—` dengan membaca field kanonikal database `comm` (`pr.get("comm") or pr.get("cmd") or pr.get("name")`).
+     - **Sub-Tab Port Jaringan**: Memperbaiki pemetaan kolom `PROSES / DAEMON` yang sebelumnya kosong dengan membaca field `pname` dan `proc` (`p.get("pname") or p.get("proc") or p.get("process")`).
+     - **Sub-Tab Paket OS**: Memetakan versi terpasang (*installed version*) dan arsitektur paket dengan menggabungkan relasi data `ServerExtras.installed_packages` terhadap daftar pembaruan `apt_packages`, menghilangkan seluruh tanda pisah kosong.
+     - **Sub-Tab Sertifikat SSL**: Menerapkan regex parser cerdas untuk menyaring string mentah LDAP X.509 menjadi nama domain/Common Name (`clean_dom`) dan nama penerbit CA yang ringkas dan ramah pembaca (`clean_iss`).
+     - **Grafik Riwayat Kinerja ECharts**: Memindahkan legenda metrik ke posisi atas kanan (`top: 0, right: 4%`) dan menyetel margin kisi (`top: 38, bottom: 36`) sehingga legenda tidak lagi bertabrakan dengan label sumbu waktu di bagian bawah.
+     - **Tombol Aksi Hero**: Mengimplementasikan `flex-wrap gap-1.5` pada tombol kontrol server agar tombol tidak terpotong saat jendela diperkecil.
+  4. **Pewarnaan Semantik Status Riwayat Audit (`audit.py`):**
+     - Memperbaiki pengelompokan badge hasil audit agar status `ONLINE`, `AKTIF`, `BERHASIL`, dan `SELESAI` diwarnai hijau zamrud / amber yang sesuai dengan semantik operasional NOC, alih-alih warna merah kegagalan.
+  5. **Pengembangan Modal RBAC Manajemen Pengguna Enterprise (`users.py`):**
+     - Menambahkan dialog interaktif untuk **Ubah Peran** (Viewer, Operator, Master Admin) dengan validasi izin least-privilege.
+     - Menambahkan dialog interaktif untuk **Reset Kata Sandi** dengan konfirmasi masukan sandi baru.
+     - Menambahkan dialog interaktif untuk **Hapus Akun Pengguna** dengan proteksi ketat anti-self-lockout pada akun Master Admin / sesi aktif.
+  6. **Pencegahan Benturan Label Terapung Modal Dialog (`common.py`, dialogs):**
+     - Menyematkan atribut `stack-label` pada seluruh input dialog modal (tambah server, edit metadata, pemeliharaan, probing, profil, dan ambang batas).
+     - Menambahkan plat latar kontras pada `.q-field--float .q-field__label` untuk menjamin keterbacaan teks tanpa tumpang-tindih teks label dengan nilai masukan.
+
 ## Versi 4.8.155
 
 - **Tipe Rilis:** Resolusi Komprehensif Pemotongan Header, Eliminasi Rute Legacy Penyekat NiceGUI, Cache-Busting Tema Dinamis, Restorasi Menyeluruh Triage Insiden & Ambang Batas Global (*Comprehensive Resolution of Header Clipping, Elimination of Legacy Routes Shadowing NiceGUI, Dynamic Theme Cache-Busting, Full Restoration of Incident Triage & Global Thresholds*)

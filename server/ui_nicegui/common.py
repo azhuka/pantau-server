@@ -163,22 +163,45 @@ def apply_noc_head_styles():
         .meter-mini-bar.yellow { background: #eab308 !important; }
         .meter-mini-bar.red { background: #ef4444 !important; }
 
-        /* Penyesuaian Quasar & NiceGUI dengan Pantau Theme */
+        /* Penyesuaian Quasar & NiceGUI dengan Pantau Theme - 100% Fluid Full Width NOC */
         html, body {
             overflow-x: hidden !important;
             max-width: 100vw !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+        }
+        body {
+            display: block !important;
+            background: var(--bg, #111827) !important;
+            color: var(--text, #f8fafc) !important;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, monospace;
+        }
+        #app, #q-app {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            display: block !important;
+            box-sizing: border-box !important;
         }
         .q-layout {
             background: transparent !important;
             min-height: 100vh;
-            max-width: 100vw !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
             overflow-x: hidden !important;
+            box-sizing: border-box !important;
         }
         .q-page-container {
             background: transparent !important;
             min-height: 100vh;
-            box-sizing: border-box;
-            max-width: 100vw !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
         }
         .q-drawer {
             background: var(--sidebar, #0e1526) !important;
@@ -191,14 +214,7 @@ def apply_noc_head_styles():
             min-width: 0 !important;
             min-height: 100%;
             display: block !important;
-        }
-        body {
-            background: var(--bg, #111827) !important;
-            color: var(--text, #f8fafc) !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, monospace;
+            box-sizing: border-box !important;
         }
         .main {
             margin-left: 0 !important;
@@ -212,12 +228,43 @@ def apply_noc_head_styles():
             border: 1px solid var(--border);
             border-radius: var(--radius-md, 11px);
         }
-        /* NiceGUI dialog fix */
+        /* NiceGUI dialog modal high-contrast styling */
         .q-dialog__inner > div {
-            background: var(--card, #1a2336) !important;
-            border: 1px solid var(--border) !important;
-            border-radius: var(--radius-md, 11px) !important;
+            background: #141c2e !important;
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            border-radius: 12px !important;
             color: var(--text, #f8fafc) !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75) !important;
+        }
+        /* Quasar Fields & Floating Labels Polish (Mencegah teks bertabrakan) */
+        .q-field--outlined .q-field__control {
+            padding: 0 10px !important;
+            background: rgba(9, 13, 22, 0.6) !important;
+            border-radius: 6px !important;
+        }
+        .q-field--outlined.q-field--dense .q-field__control {
+            height: 38px !important;
+            min-height: 38px !important;
+        }
+        .q-field--float .q-field__label {
+            transform: translateY(-115%) scale(0.82) !important;
+            background: #141c2e !important;
+            padding: 0 6px !important;
+            border-radius: 3px !important;
+            color: #93c5fd !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.3px !important;
+            z-index: 3 !important;
+        }
+        .q-field__native, .q-field__input {
+            color: #f8fafc !important;
+            font-size: 13px !important;
+        }
+        .q-tab {
+            min-height: 36px !important;
+            padding: 0 12px !important;
+            font-size: 11.5px !important;
+            text-transform: none !important;
         }
         /* ECharts container transparency */
         .echarts {

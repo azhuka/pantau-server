@@ -44,33 +44,9 @@ def render_layout(request: Request, user: User, active_tab: str = "servers"):
             with ui.column().classes("gap-0 justify-center"):
                 ui.label("PANTAU SERVER").classes("text-sm font-extrabold tracking-wider leading-snug text-white")
                 ui.label("NOC MANDIRI · DINAS KOMINFO BARRU").classes("text-[10px] text-slate-400 font-mono leading-none")
-            ui.badge("NOC", color="blue-9").classes("text-[9.5px] font-bold px-1.5 py-0.5 ml-1")
-
-        # Sisi Tengah: Jam Digital Real-Time Dinamis (WITA/WIB)
-        with ui.row().classes(
-            "items-center gap-2 bg-slate-950/70 px-3 py-1 rounded border border-slate-800 font-mono text-xs flex"
-        ):
-            ui.icon("schedule", size="16px").classes("text-emerald-400")
-            lbl_time = ui.label("--:--:--").classes("font-bold text-emerald-400 text-sm")
-            lbl_tz = ui.badge(tz_label, color="slate-800").classes(
-                "text-[9px] text-slate-400 border border-slate-700 font-bold"
-            )
-            lbl_date = ui.label("---, -- --- ----").classes("text-[11px] text-slate-400 ml-1")
-
-            def _tick_clock():
-                now = get_now_local()
-                lbl_time.set_text(now.strftime("%H:%M:%S"))
-                days_id = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
-                months_id = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
-                d_name = days_id[now.weekday()]
-                m_name = months_id[now.month - 1]
-                lbl_date.set_text(f"{d_name}, {now.day:02d} {m_name} {now.year}")
-
-            ui.timer(1.0, _tick_clock)
-            _tick_clock()
 
         # Sisi Kanan: Versi Sistem, Profil Pengguna, & Logout
-        with ui.row().classes("items-center gap-3"):
+        with ui.row().classes("items-center gap-3 mr-1"):
             ui.badge(f"v{settings.APP_VERSION}", color="slate-800").classes(
                 "text-slate-400 text-[11px] font-mono border border-slate-700"
             )
@@ -83,7 +59,7 @@ def render_layout(request: Request, user: User, active_tab: str = "servers"):
                     ui.badge(user.role_display().upper(), color="slate-700").classes(
                         "text-[9.5px] font-bold text-slate-300 ml-1"
                     )
-                    ui.tooltip("Kelola Profil & Keamanan 2FA").classes("bg-slate-900 border border-slate-700 text-xs")
+                    ui.tooltip("Kelola Profil Akun & Keamanan 2FA").classes("bg-slate-900 border border-slate-700 text-xs")
 
                 ui.button("Keluar", icon="logout", on_click=lambda: ui.navigate.to("/logout")).props(
                     "dense flat no-caps size=sm color=negative"
@@ -102,9 +78,9 @@ def render_layout(request: Request, user: User, active_tab: str = "servers"):
             return "active" if active_tab == tab_name else ""
 
         users_item_html = f"""
-        <a href="/users" class="nav-link {_act('users')}" title="Manajemen Pengguna">
+        <a href="/users" class="nav-link {_act('users')}" title="Manajemen Pengguna &amp; Hak Akses (RBAC)">
           <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span>
-          <span class="nav-label">Pengguna</span>
+          <span class="nav-label">Manajemen Pengguna</span>
         </a>
         """ if is_admin else ""
 
@@ -156,9 +132,9 @@ def render_layout(request: Request, user: User, active_tab: str = "servers"):
 
             {users_item_html}
 
-            <a href="/profile" class="nav-link {_act('profile')}" title="Akun Pengguna &amp; Keamanan">
+            <a href="/profile" class="nav-link {_act('profile')}" title="Profil Akun &amp; Keamanan">
               <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span>
-              <span class="nav-label">Akun Pengguna</span>
+              <span class="nav-label">Profil Akun</span>
             </a>
 
             <a href="/logout" class="nav-link" title="Keluar dari Sistem">

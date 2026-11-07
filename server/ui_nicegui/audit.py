@@ -88,8 +88,13 @@ def setup_audit_routes(session_factory):
                         atbl = ui.table(columns=cols, rows=rows, row_key="id").classes("w-full bg-slate-900")
                         atbl.add_slot("body-cell-result", """
                             <q-td :props="props">
-                                <q-badge :color="props.row.result === 'BERHASIL' ? 'emerald-9' : (props.row.result === 'PENDING' ? 'blue-9' : 'rose-9')"
-                                         class="text-[9px] font-bold px-1.5 py-0.5">
+                                <q-badge :color="
+                                    ['BERHASIL', 'ONLINE', 'SELESAI', 'SUKSES', 'SUCCESS'].includes(props.row.result) ? 'emerald-9' : (
+                                    ['AKTIF', 'PERINGATAN', 'WARNING', 'GAWAT'].includes(props.row.result) ? 'amber-9' : (
+                                    ['DIABAIKAN'].includes(props.row.result) ? 'slate-7' : (
+                                    ['PENDING', 'MENUNGGU'].includes(props.row.result) ? 'blue-9' : 'rose-9'
+                                    )))"
+                                    class="text-[9.5px] font-bold px-2 py-0.5">
                                     {{ props.row.result }}
                                 </q-badge>
                             </q-td>

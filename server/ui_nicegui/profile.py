@@ -170,7 +170,7 @@ def setup_profile_routes(session_factory):
             with disable_2fa_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4 border border-rose-500/40"):
                 ui.label("Nonaktifkan Autentikasi Dua Langkah (2FA)").classes("text-base font-bold text-white")
                 ui.label("Masukkan kata sandi akun Anda untuk mengonfirmasi penonaktifan perlindungan 2FA:").classes("text-xs text-slate-300")
-                inp_dis_pwd = ui.input("Kata Sandi Akun", password=True).classes("w-full").props("dense outlined dark")
+                inp_dis_pwd = ui.input("Kata Sandi Akun", password=True).classes("w-full").props("dense outlined dark stack-label")
 
                 def _confirm_disable_2fa():
                     pwd_val = inp_dis_pwd.value.strip()
@@ -209,7 +209,7 @@ def setup_profile_routes(session_factory):
             with regen_codes_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                 ui.label("Regenerasi Kode Pemulihan 2FA").classes("text-base font-bold text-white")
                 ui.label("Kode pemulihan lama akan seketika hangus. Masukkan kata sandi akun Anda untuk melanjutkan:").classes("text-xs text-slate-300")
-                inp_reg_pwd = ui.input("Kata Sandi Akun", password=True).classes("w-full").props("dense outlined dark")
+                inp_reg_pwd = ui.input("Kata Sandi Akun", password=True).classes("w-full").props("dense outlined dark stack-label")
 
                 def _confirm_regen_codes():
                     pwd_val = inp_reg_pwd.value.strip()
@@ -301,9 +301,9 @@ def setup_profile_routes(session_factory):
                                     ui.label("Perbarui Kata Sandi (NIST SP 800-63B)").classes("text-sm font-bold text-white")
 
                                 with ui.column().classes("w-full gap-3"):
-                                    inp_cur_pwd = ui.input("Kata Sandi Saat Ini *", password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark")
-                                    inp_new_pwd = ui.input("Kata Sandi Baru *", password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark")
-                                    inp_cf_pwd = ui.input("Konfirmasi Kata Sandi Baru *", password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark")
+                                    inp_cur_pwd = ui.input("Kata Sandi Saat Ini *", password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark stack-label")
+                                    inp_new_pwd = ui.input("Kata Sandi Baru *", password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark stack-label")
+                                    inp_cf_pwd = ui.input("Konfirmasi Kata Sandi Baru *", password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark stack-label")
 
                                 def _change_password():
                                     c_pwd = inp_cur_pwd.value.strip()
@@ -346,8 +346,8 @@ def setup_profile_routes(session_factory):
                                     inp_cf_pwd.set_value("")
                                     notify_success("Kata sandi akun Anda berhasil diperbarui.")
 
-                                with ui.row().classes("w-full justify-end mt-2"):
-                                    ui.button("Perbarui Kata Sandi", icon="save", on_click=_change_password).props("dense unelevated color=primary no-caps")
+                                with ui.row().classes("w-full justify-end mt-3 pr-2"):
+                                    ui.button("Perbarui Kata Sandi", icon="save", on_click=_change_password).props("dense unelevated color=primary no-caps").classes("px-3")
 
                     # Tab 2: Keamanan 2FA
                     with ui.tab_panel("security").classes("p-0 pt-3"):
@@ -382,9 +382,9 @@ def setup_profile_routes(session_factory):
 
                                 ui.label("Sesuaikan nama organisasi, unit kerja, serta logo resmi yang ditampilkan pada header dashboard.").classes("text-xs text-slate-400")
 
-                                inp_org_name = ui.input("Nama Organisasi", value=brand_data.get("org_name", "")).classes("w-full").props("dense outlined dark")
-                                inp_org_unit = ui.input("Unit Kerja / Bidang", value=brand_data.get("org_unit", "")).classes("w-full").props("dense outlined dark")
-                                inp_motd = ui.textarea("Pesan Operasional / Pengumuman (MOTD)", value=brand_data.get("dash_motd", "")).classes("w-full").props("dense outlined dark rows=2")
+                                inp_org_name = ui.input("Nama Organisasi", value=brand_data.get("org_name", "")).classes("w-full").props("dense outlined dark stack-label")
+                                inp_org_unit = ui.input("Unit Kerja / Bidang", value=brand_data.get("org_unit", "")).classes("w-full").props("dense outlined dark stack-label")
+                                inp_motd = ui.textarea("Pesan Operasional / Pengumuman (MOTD)", value=brand_data.get("dash_motd", "")).classes("w-full").props("dense outlined dark stack-label rows=2")
                                 cb_motd = ui.checkbox("Tampilkan Pesan Pengumuman pada Dashboard", value=brand_data.get("show_motd", False)).props("dense dark")
 
                                 def _save_branding():

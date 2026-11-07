@@ -96,13 +96,13 @@ def setup_servers_routes(session_factory):
                     ui.label("Tambah Server Baru").classes("text-base font-bold text-white")
 
                 with ui.column().classes("w-full gap-3"):
-                    add_hostname = ui.input("Nama Host (Hostname) *", placeholder="mis. srv-prod-db01").classes("w-full").props("dense outlined dark")
-                    add_ip = ui.input("Alamat IP Server *", placeholder="mis. 192.168.10.50").classes("w-full").props("dense outlined dark")
-                    add_group = ui.input("Nama Grup", placeholder="mis. Database, Produksi, Staging (Opsional)").classes("w-full").props("dense outlined dark")
-                    add_tier = ui.select({1: "Produksi (Tier 1 - Kritis & Vital)", 2: "Non-Produksi (Tier 2 - Standar / Dev)"}, value=2, label="Lingkungan / Tier").classes("w-full").props("dense outlined dark")
-                    add_platform = ui.select({"auto": "Deteksi Otomatis", "baremetal": "Baremetal Host", "vm": "Virtual Machine (KVM/QEMU)", "lxc": "LXC Container"}, value="auto", label="Override Platform").classes("w-full").props("dense outlined dark")
+                    add_hostname = ui.input("Nama Host (Hostname) *", placeholder="mis. srv-prod-db01").classes("w-full").props("dense outlined dark stack-label")
+                    add_ip = ui.input("Alamat IP Server *", placeholder="mis. 192.168.10.50").classes("w-full").props("dense outlined dark stack-label")
+                    add_group = ui.input("Nama Grup", placeholder="mis. Database, Produksi, Staging (Opsional)").classes("w-full").props("dense outlined dark stack-label")
+                    add_tier = ui.select({1: "Produksi (Tier 1 - Kritis & Vital)", 2: "Non-Produksi (Tier 2 - Standar / Dev)"}, value=2, label="Lingkungan / Tier").classes("w-full").props("dense outlined dark stack-label")
+                    add_platform = ui.select({"auto": "Deteksi Otomatis", "baremetal": "Baremetal Host", "vm": "Virtual Machine (KVM/QEMU)", "lxc": "LXC Container"}, value="auto", label="Override Platform").classes("w-full").props("dense outlined dark stack-label")
                     add_terminal = ui.checkbox("Izinkan Akses Terminal Root Web (Bawaan)").props("dense dark")
-                    add_notes = ui.textarea("Catatan Operasional", placeholder="Keterangan server, lokasi rak, dll.").classes("w-full").props("dense outlined dark rows=2")
+                    add_notes = ui.textarea("Catatan Operasional", placeholder="Keterangan server, lokasi rak, dll.").classes("w-full").props("dense outlined dark stack-label rows=2")
 
                 def _submit_new_server():
                     host_val = add_hostname.value.strip()
@@ -287,13 +287,13 @@ def setup_servers_routes(session_factory):
                 sel_server_id = {"id": None}
 
                 with ui.column().classes("w-full gap-3"):
-                    inp_hostname = ui.input("Nama Host (Hostname)").classes("w-full").props("dense outlined dark")
-                    inp_ip = ui.input("Alamat IP").classes("w-full").props("dense outlined dark")
-                    inp_group = ui.input("Nama Grup").classes("w-full").props("dense outlined dark")
-                    sel_tier = ui.select({1: "Produksi (Tier 1 - Kritis)", 2: "Non-Produksi (Tier 2 - Standar)"}, label="Lingkungan / Tier").classes("w-full").props("dense outlined dark")
-                    sel_platform = ui.select({"auto": "Deteksi Otomatis", "baremetal": "Baremetal Host", "vm": "Virtual Machine (KVM/QEMU)", "lxc": "LXC Container"}, label="Override Platform").classes("w-full").props("dense outlined dark")
+                    inp_hostname = ui.input("Nama Host (Hostname)").classes("w-full").props("dense outlined dark stack-label")
+                    inp_ip = ui.input("Alamat IP").classes("w-full").props("dense outlined dark stack-label")
+                    inp_group = ui.input("Nama Grup").classes("w-full").props("dense outlined dark stack-label")
+                    sel_tier = ui.select({1: "Produksi (Tier 1 - Kritis)", 2: "Non-Produksi (Tier 2 - Standar)"}, label="Lingkungan / Tier").classes("w-full").props("dense outlined dark stack-label")
+                    sel_platform = ui.select({"auto": "Deteksi Otomatis", "baremetal": "Baremetal Host", "vm": "Virtual Machine (KVM/QEMU)", "lxc": "LXC Container"}, label="Override Platform").classes("w-full").props("dense outlined dark stack-label")
                     cb_terminal = ui.checkbox("Izinkan Akses Terminal Root Web (Bawaan)").props("dense dark")
-                    inp_notes = ui.textarea("Catatan Operasional").classes("w-full").props("dense outlined dark rows=2")
+                    inp_notes = ui.textarea("Catatan Operasional").classes("w-full").props("dense outlined dark stack-label rows=2")
 
                 def _save_server_metadata():
                     sid = sel_server_id["id"]

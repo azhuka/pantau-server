@@ -18,6 +18,7 @@ kontrol operasional (Reboot, Poweroff, OTA Update), dan 11 sub-tab komprehensif:
 
 from datetime import datetime
 import json
+import re
 from nicegui import ui
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
@@ -154,6 +155,14 @@ def setup_server_detail_routes(session_factory):
                 except Exception:
                     pass
 
+            installed_packages = []
+            if ext and ext.installed_packages:
+                try:
+                    installed_packages = json.loads(ext.installed_packages) if isinstance(ext.installed_packages, str) else ext.installed_packages
+                except Exception:
+                    pass
+            inst_pkg_map = {p.get("name"): p for p in installed_packages if isinstance(p, dict) and p.get("name")}
+
             ssl_certs = []
             if ext and ext.ssl_certs:
                 try:
@@ -258,9 +267,9 @@ def setup_server_detail_routes(session_factory):
             with add_svc_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                 ui.label("Tambah Layanan Baru Untuk Dipantau").classes("text-base font-bold text-white")
                 with ui.column().classes("w-full gap-3"):
-                    inp_svc_name = ui.input("Nama Layanan (Systemd)", placeholder="mis. nginx, mariadb, redis-server").classes("w-full").props("dense outlined dark")
-                    inp_svc_port = ui.number("Port Listening", value=80, min=1, max=65535).classes("w-full").props("dense outlined dark")
-                    inp_svc_proc = ui.input("Nama Proses", placeholder="mis. nginx, mysqld, redis-server").classes("w-full").props("dense outlined dark")
+                    inp_svc_name = ui.input("Nama Layanan (Systemd)", placeholder="mis. nginx, mariadb, redis-server").classes("w-full").props("dense outlined dark stack-label")
+                    inp_svc_port = ui.number("Port Listening", value=80, min=1, max=65535).classes("w-full").props("dense outlined dark stack-label")
+                    inp_svc_proc = ui.input("Nama Proses", placeholder="mis. nginx, mysqld, redis-server").classes("w-full").props("dense outlined dark stack-label")
                     cb_svc_core = ui.checkbox("Layanan Utama / Kritis (Core Service)", value=True).props("dense dark")
 
                 def _submit_new_service():
@@ -336,11 +345,11 @@ def setup_server_detail_routes(session_factory):
             with add_user_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                 ui.label("Buat Pengguna Linux Baru").classes("text-base font-bold text-white")
                 with ui.column().classes("w-full gap-3"):
-                    inp_u_name = ui.input("Nama Pengguna (Username) *", placeholder="mis. sysadmin2").classes("w-full").props("dense outlined dark")
-                    inp_u_pwd = ui.input("Kata Sandi Akun", password=True, password_toggle_button=True, placeholder="Minimal 8 karakter").classes("w-full").props("dense outlined dark")
-                    inp_u_shell = ui.select(["/bin/bash", "/bin/sh", "/bin/zsh", "/usr/sbin/nologin"], value="/bin/bash", label="Default Shell").classes("w-full").props("dense outlined dark")
+                    inp_u_name = ui.input("Nama Pengguna (Username) *", placeholder="mis. sysadmin2").classes("w-full").props("dense outlined dark stack-label")
+                    inp_u_pwd = ui.input("Kata Sandi Akun", password=True, password_toggle_button=True, placeholder="Minimal 8 karakter").classes("w-full").props("dense outlined dark stack-label")
+                    inp_u_shell = ui.select(["/bin/bash", "/bin/sh", "/bin/zsh", "/usr/sbin/nologin"], value="/bin/bash", label="Default Shell").classes("w-full").props("dense outlined dark stack-label")
                     cb_u_sudo = ui.checkbox("Berikan Hak Akses Sudo (Root/Administrator)").props("dense dark")
-                    inp_u_comm = ui.input("Deskripsi / Keterangan", placeholder="Nama Lengkap / Unit Kerja").classes("w-full").props("dense outlined dark")
+                    inp_u_comm = ui.input("Deskripsi / Keterangan", placeholder="Nama Lengkap / Unit Kerja").classes("w-full").props("dense outlined dark stack-label")
 
                 def _submit_new_user():
                     u_name = inp_u_name.value.strip().lower()
@@ -365,7 +374,7 @@ def setup_server_detail_routes(session_factory):
             block_ip_dlg = ui.dialog()
             with block_ip_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                 ui.label("Blokir Alamat IP Sumber").classes("text-base font-bold text-white")
-                inp_block_ip = ui.input("Alamat IPv4", placeholder="mis. 198.51.100.25").classes("w-full").props("dense outlined dark")
+                inp_block_ip = ui.input("Alamat IPv4", placeholder="mis. 198.51.100.25").classes("w-full").props("dense outlined dark stack-label")
 
                 def _submit_block_ip():
                     ip_target = inp_block_ip.value.strip()
@@ -384,15 +393,15 @@ def setup_server_detail_routes(session_factory):
             with add_cron_dlg, ui.card().classes("w-full max-w-lg p-6 custom-card flex flex-col gap-4"):
                 ui.label("Tambah Tugas Terjadwal (Cron Job)").classes("text-base font-bold text-white")
                 with ui.column().classes("w-full gap-3"):
-                    inp_c_ident = ui.input("Identitas Tugas (ID) *", placeholder="mis. backup-database").classes("w-full").props("dense outlined dark")
+                    inp_c_ident = ui.input("Identitas Tugas (ID) *", placeholder="mis. backup-database").classes("w-full").props("dense outlined dark stack-label")
                     with ui.row().classes("w-full gap-2"):
-                        inp_c_min = ui.input("Menit", value="0").classes("flex-1").props("dense outlined dark")
-                        inp_c_hour = ui.input("Jam", value="2").classes("flex-1").props("dense outlined dark")
-                        inp_c_dom = ui.input("Tanggal", value="*").classes("flex-1").props("dense outlined dark")
-                        inp_c_mon = ui.input("Bulan", value="*").classes("flex-1").props("dense outlined dark")
-                        inp_c_dow = ui.input("Hari", value="*").classes("flex-1").props("dense outlined dark")
-                    inp_c_user = ui.input("Eksekusi Sebagai Pengguna", value="root").classes("w-full").props("dense outlined dark")
-                    inp_c_cmd = ui.input("Perintah Shell / Skrip *", placeholder="mis. /opt/scripts/backup.sh").classes("w-full").props("dense outlined dark")
+                        inp_c_min = ui.input("Menit", value="0").classes("flex-1").props("dense outlined dark stack-label")
+                        inp_c_hour = ui.input("Jam", value="2").classes("flex-1").props("dense outlined dark stack-label")
+                        inp_c_dom = ui.input("Tanggal", value="*").classes("flex-1").props("dense outlined dark stack-label")
+                        inp_c_mon = ui.input("Bulan", value="*").classes("flex-1").props("dense outlined dark stack-label")
+                        inp_c_dow = ui.input("Hari", value="*").classes("flex-1").props("dense outlined dark stack-label")
+                    inp_c_user = ui.input("Eksekusi Sebagai Pengguna", value="root").classes("w-full").props("dense outlined dark stack-label")
+                    inp_c_cmd = ui.input("Perintah Shell / Skrip *", placeholder="mis. /opt/scripts/backup.sh").classes("w-full").props("dense outlined dark stack-label")
 
                 def _submit_new_cron():
                     ident = inp_c_ident.value.strip()
@@ -420,7 +429,7 @@ def setup_server_detail_routes(session_factory):
             add_ssl_dlg = ui.dialog()
             with add_ssl_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                 ui.label("Tambah Path Sertifikat SSL/TLS").classes("text-base font-bold text-white")
-                inp_ssl_path = ui.input("Path Berkas Sertifikat (CRT/PEM)", placeholder="mis. /etc/letsencrypt/live/domain/fullchain.pem").classes("w-full").props("dense outlined dark")
+                inp_ssl_path = ui.input("Path Berkas Sertifikat (CRT/PEM)", placeholder="mis. /etc/letsencrypt/live/domain/fullchain.pem").classes("w-full").props("dense outlined dark stack-label")
 
                 def _submit_ssl_path():
                     p = inp_ssl_path.value.strip()
@@ -459,7 +468,7 @@ def setup_server_detail_routes(session_factory):
                                 ui.label(f"IP: {srv_ip} · Platform: {srv_platform} · Terakhir terlihat: {srv_last_seen.strftime('%d %b %Y %H:%M:%S') if srv_last_seen else '—'}").classes("text-[11px] text-slate-400 font-mono")
 
                         # Tombol Aksi Hero Header (Kompak NOC)
-                        with ui.row().classes("items-center gap-1.5"):
+                        with ui.row().classes("items-center gap-1.5 flex-wrap"):
                             ui.button("Segarkan", icon="refresh", on_click=lambda: ui.navigate.to(f"/servers/{srv_id}")).props("dense outline no-caps size=sm color=slate-4").classes("text-xs")
 
                             if ext and ext.agent_version and ext.agent_version != settings.APP_VERSION:
@@ -476,8 +485,8 @@ def setup_server_detail_routes(session_factory):
                             maint_dlg = ui.dialog()
                             with maint_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                                 ui.label(f"Mode Pemeliharaan: {srv_host}").classes("text-base font-bold text-white")
-                                maint_dur = ui.number("Durasi Pemeliharaan (Menit)", value=60, min=5, max=1440).props("dense outlined dark")
-                                maint_reason = ui.input("Alasan Pemeliharaan", value=srv_maint_reason or "Perawatan rutin server").props("dense outlined dark")
+                                maint_dur = ui.number("Durasi Pemeliharaan (Menit)", value=60, min=5, max=1440).classes("w-full").props("dense outlined dark stack-label")
+                                maint_reason = ui.input("Alasan Pemeliharaan", value=srv_maint_reason or "Perawatan rutin server").classes("w-full").props("dense outlined dark stack-label")
 
                                 def _toggle_maintenance(enable: bool):
                                     with get_db(session_factory) as db:
@@ -597,8 +606,8 @@ def setup_server_detail_routes(session_factory):
                                 echart_opts = {
                                     "backgroundColor": "transparent",
                                     "tooltip": {"trigger": "axis", "axisPointer": {"type": "cross"}},
-                                    "legend": {"data": ["CPU (%)", "RAM (%)", "Load 1m"], "textStyle": {"color": "#94a3b8"}},
-                                    "grid": {"left": "3%", "right": "3%", "bottom": "8%", "top": "15%", "containLabel": True},
+                                    "legend": {"top": 0, "right": "4%", "data": ["CPU (%)", "RAM (%)", "Load 1m"], "textStyle": {"color": "#94a3b8", "fontSize": 11}},
+                                    "grid": {"left": "3%", "right": "3%", "bottom": 36, "top": 38, "containLabel": True},
                                     "xAxis": {
                                         "type": "category",
                                         "data": t_labels,
@@ -890,14 +899,26 @@ def setup_server_detail_routes(session_factory):
                                 pkg_rows = []
                                 for itm in apt_packages:
                                     if isinstance(itm, dict):
+                                        pkg_name = itm.get("name", "—")
+                                        inst_info = inst_pkg_map.get(pkg_name, {})
+                                        cur_ver = itm.get("current_version") or inst_info.get("version") or "—"
+                                        new_ver = itm.get("new_version") or itm.get("version") or "Tersedia"
+                                        arch_val = itm.get("arch") or inst_info.get("arch") or "amd64"
                                         pkg_rows.append({
-                                            "pkg": itm.get("name", "—"),
-                                            "cur": itm.get("current_version", "—"),
-                                            "new": itm.get("new_version", "—"),
-                                            "arch": itm.get("arch", "—"),
+                                            "pkg": pkg_name,
+                                            "cur": cur_ver,
+                                            "new": new_ver,
+                                            "arch": arch_val,
                                         })
                                     else:
-                                        pkg_rows.append({"pkg": str(itm), "cur": "—", "new": "Tersedia", "arch": "—"})
+                                        p_str = str(itm)
+                                        inst_info = inst_pkg_map.get(p_str, {})
+                                        pkg_rows.append({
+                                            "pkg": p_str,
+                                            "cur": inst_info.get("version") or "—",
+                                            "new": "Tersedia",
+                                            "arch": inst_info.get("arch") or "amd64"
+                                        })
 
                                 pk_tbl = ui.table(columns=pkg_cols, rows=pkg_rows, row_key="pkg").classes("w-full bg-slate-900")
                                 pk_tbl.add_slot("body-cell-actions", """
@@ -935,7 +956,7 @@ def setup_server_detail_routes(session_factory):
                                             "pid": pr.get("pid", "—"),
                                             "user": pr.get("user", "—"),
                                             "cpu": f"{pr.get('cpu', 0)}%",
-                                            "cmd": pr.get("cmd", pr.get("name", "—")),
+                                            "cmd": pr.get("comm") or pr.get("cmd") or pr.get("name") or "—",
                                         })
                                     cp_tbl = ui.table(columns=cp_cols, rows=cp_rows, row_key="pid").classes("w-full bg-slate-900")
                                     cp_tbl.add_slot("body-cell-actions", """
@@ -968,7 +989,7 @@ def setup_server_detail_routes(session_factory):
                                             "pid": pr.get("pid", "—"),
                                             "user": pr.get("user", "—"),
                                             "mem": f"{pr.get('mem', 0)}%",
-                                            "cmd": pr.get("cmd", pr.get("name", "—")),
+                                            "cmd": pr.get("comm") or pr.get("cmd") or pr.get("name") or "—",
                                         })
                                     mp_tbl = ui.table(columns=mp_cols, rows=mp_rows, row_key="pid").classes("w-full bg-slate-900")
                                     mp_tbl.add_slot("body-cell-actions", """
@@ -1003,7 +1024,7 @@ def setup_server_detail_routes(session_factory):
                                         "proto": p.get("proto", "—").upper(),
                                         "port": p.get("port", "—"),
                                         "addr": p.get("address", p.get("ip", "—")),
-                                        "proc": p.get("process", "—"),
+                                        "proc": p.get("pname") or p.get("proc") or p.get("process") or "—",
                                         "pid": p.get("pid", "—"),
                                     })
                                 ui.table(columns=port_cols, rows=port_rows, row_key="port").classes("w-full bg-slate-900")
@@ -1235,10 +1256,35 @@ def setup_server_detail_routes(session_factory):
                                 ssl_rows = []
                                 for c in ssl_certs:
                                     days_val = c.get("days_left", 0)
+                                    # Ekstrak domain bersih
+                                    dom_list = c.get("domains")
+                                    if dom_list and isinstance(dom_list, list):
+                                        clean_dom = ", ".join(str(d) for d in dom_list)
+                                    else:
+                                        sub_str = c.get("subject", "")
+                                        m_cn = re.search(r'(?:CN|commonName)\s*=\s*([^,]+)', sub_str, re.IGNORECASE) if isinstance(sub_str, str) else None
+                                        clean_dom = m_cn.group(1).strip() if m_cn else (c.get("domain") or sub_str[:40] or "—")
+
+                                    # Ekstrak penerbit (issuer) bersih
+                                    iss_str = c.get("issuer", "")
+                                    if isinstance(iss_str, str) and iss_str:
+                                        m_o = re.search(r'(?:O|organizationName)\s*=\s*([^,]+)', iss_str, re.IGNORECASE)
+                                        m_icn = re.search(r'(?:CN|commonName)\s*=\s*([^,]+)', iss_str, re.IGNORECASE)
+                                        if m_o and m_icn:
+                                            clean_iss = f"{m_o.group(1).strip()} ({m_icn.group(1).strip()})"
+                                        elif m_icn:
+                                            clean_iss = m_icn.group(1).strip()
+                                        elif m_o:
+                                            clean_iss = m_o.group(1).strip()
+                                        else:
+                                            clean_iss = iss_str[:40]
+                                    else:
+                                        clean_iss = "—"
+
                                     ssl_rows.append({
-                                        "domain": c.get("domain", c.get("subject", "—")),
+                                        "domain": clean_dom,
                                         "path": c.get("path", "—"),
-                                        "issuer": c.get("issuer", "—"),
+                                        "issuer": clean_iss,
                                         "expiry": c.get("not_after", c.get("expiry", "—")),
                                         "days": days_val,
                                         "is_warn": days_val <= 14,
