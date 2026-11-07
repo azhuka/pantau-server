@@ -108,14 +108,21 @@ def apply_noc_head_styles():
     </script>
     <style>
         /* Penyesuaian Quasar & NiceGUI dengan Pantau Theme */
+        html, body {
+            overflow-x: hidden !important;
+            max-width: 100vw !important;
+        }
         .q-layout {
             background: transparent !important;
             min-height: 100vh;
+            max-width: 100vw !important;
+            overflow-x: hidden !important;
         }
         .q-page-container {
             background: transparent !important;
             min-height: 100vh;
             box-sizing: border-box;
+            max-width: 100vw !important;
         }
         .q-drawer {
             background: var(--sidebar, #0e1526) !important;
@@ -125,6 +132,7 @@ def apply_noc_head_styles():
             margin: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
+            min-width: 0 !important;
             min-height: 100%;
             display: block !important;
         }

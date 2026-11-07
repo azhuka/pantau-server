@@ -169,7 +169,7 @@ def setup_dashboard_routes(session_factory):
                           </div>
                           {motd_html}
                         </div>
-                        """)
+                        """).classes("w-full")
                     else:
                         ui.html("""
                         <div class="topbar">
@@ -178,7 +178,7 @@ def setup_dashboard_routes(session_factory):
                             <div style="font-size:12px;color:var(--dim);margin-top:2px">Ringkasan kondisi kesehatan seluruh server klien &amp; telemetri operasional NOC terpusat.</div>
                           </div>
                         </div>
-                        """)
+                        """).classes("w-full")
 
                     # ---------------------------------------------------------
                     # 2. Banner Pemeliharaan Terencana Aktif (Bila Ada)
@@ -193,7 +193,7 @@ def setup_dashboard_routes(session_factory):
                           </div>
                           <a href="/maintenance" class="btn btn-sm btn-ghost" style="color:var(--yellow);text-decoration:none">Kelola Jadwal &rarr;</a>
                         </div>
-                        """)
+                        """).classes("w-full")
 
                     # ---------------------------------------------------------
                     # 3. Bilah 3-Kolom Operasi Asimetris (dash-kpi-grid)
@@ -284,7 +284,7 @@ def setup_dashboard_routes(session_factory):
                         </div>
                       </div>
                     </div>
-                    """)
+                    """).classes("w-full")
 
                     # ---------------------------------------------------------
                     # 4. Kartu Insiden Terkini (Masalah Terbuka)

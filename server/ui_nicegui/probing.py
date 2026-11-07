@@ -29,7 +29,6 @@ def setup_probing_routes(session_factory):
             current_user_id = user.id
             current_username = user.username
 
-        render_layout(request, user, active_tab="probing")
         with render_layout(request, user, active_tab="probing"):
             container = ui.column().classes("w-full gap-3")
 

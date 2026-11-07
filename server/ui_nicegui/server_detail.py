@@ -80,9 +80,8 @@ def setup_server_detail_routes(session_factory):
                 .all()
             )
 
-        render_layout(request, user, active_tab="servers")
         with render_layout(request, user, active_tab="servers"):
-            container = ui.column().classes("w-full gap-4")
+            container = ui.column().classes("w-full max-w-full min-w-0 gap-4")
 
             # Parsing data JSON telemetri extras & snapshots
             disks_data = []
@@ -445,68 +444,65 @@ def setup_server_detail_routes(session_factory):
                 open_problems = [p for p in problems if p.resolved_at is None]
                 apt_cnt = ext.apt_upgradable if ext and ext.apt_upgradable is not None else 0
 
-                with ui.card().classes("w-full p-6 custom-card flex flex-col md:flex-row items-start md:items-center justify-between gap-4"):
-                    with ui.row().classes("items-center gap-4"):
-                        ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/servers")).props("dense flat round color=slate-4")
-                        ui.icon("dns", size="36px").classes("text-blue-400")
-                        with ui.column().classes("gap-1"):
-                            with ui.row().classes("items-center gap-2"):
-                                ui.label(srv_host).classes("text-2xl font-bold text-white")
-                                ui.badge("ONLINE" if is_online else "OFFLINE", color="emerald-9" if is_online else "rose-9").classes("text-[10px] font-bold px-2 py-0.5")
-                                ui.badge(tier_label, color="slate-800").classes("text-[10px] font-mono border border-slate-700")
-                                if srv_is_maint:
-                                    ui.badge("PEMELIHARAAN", color="amber-9").classes("text-[10px] font-bold px-2 py-0.5")
-                            ui.label(f"IP: {srv_ip} · Platform: {srv_platform} · Terakhir terlihat: {srv_last_seen.strftime('%d %b %Y %H:%M:%S') if srv_last_seen else '—'}").classes("text-xs text-slate-400 font-mono")
+                with ui.card().classes("w-full p-3.5 custom-card"):
+                    with ui.row().classes("w-full items-center justify-between gap-4"):
+                        with ui.row().classes("items-center gap-3"):
+                            ui.button(icon="arrow_back", on_click=lambda: ui.navigate.to("/servers")).props("dense flat round size=sm color=slate-4").tooltip("Kembali ke Daftar Server")
+                            ui.icon("dns", size="28px").classes("text-blue-400")
+                            with ui.column().classes("gap-0"):
+                                with ui.row().classes("items-center gap-2"):
+                                    ui.label(srv_host).classes("text-lg font-bold text-white leading-tight")
+                                    ui.badge("ONLINE" if is_online else "OFFLINE", color="emerald-9" if is_online else "rose-9").classes("text-[9px] font-bold px-1.5 py-0.5")
+                                    ui.badge(tier_label, color="slate-800").classes("text-[9px] font-mono border border-slate-700 px-1.5 py-0.5")
+                                    if srv_is_maint:
+                                        ui.badge("PEMELIHARAAN", color="amber-9").classes("text-[9px] font-bold px-1.5 py-0.5")
+                                ui.label(f"IP: {srv_ip} · Platform: {srv_platform} · Terakhir terlihat: {srv_last_seen.strftime('%d %b %Y %H:%M:%S') if srv_last_seen else '—'}").classes("text-[11px] text-slate-400 font-mono")
 
-                    # Tombol Aksi Hero Header
-                    with ui.row().classes("items-center gap-2 flex-wrap"):
-                        ui.button("Segarkan", icon="refresh", on_click=lambda: ui.navigate.to(f"/servers/{srv_id}")).props("dense outline no-caps size=sm color=slate-4").classes("text-xs")
+                        # Tombol Aksi Hero Header (Kompak NOC)
+                        with ui.row().classes("items-center gap-1.5"):
+                            ui.button("Segarkan", icon="refresh", on_click=lambda: ui.navigate.to(f"/servers/{srv_id}")).props("dense outline no-caps size=sm color=slate-4").classes("text-xs")
 
-                        # Tombol Perbarui Agen (OTA Update) jika agen lama
-                        if ext and ext.agent_version and ext.agent_version != settings.APP_VERSION:
-                            ui.button(
-                                f"Update Agen ({ext.agent_version} → {settings.APP_VERSION})",
-                                icon="system_update_alt",
-                                on_click=lambda: _queue_command("update_agent", params={"version": settings.APP_VERSION}, note="Enterprise OTA Update"),
-                            ).props("dense unelevated no-caps size=sm color=primary").classes("text-xs font-semibold")
+                            if ext and ext.agent_version and ext.agent_version != settings.APP_VERSION:
+                                ui.button(
+                                    f"OTA v{settings.APP_VERSION}",
+                                    icon="system_update_alt",
+                                    on_click=lambda: _queue_command("update_agent", params={"version": settings.APP_VERSION}, note="Enterprise OTA Update"),
+                                ).props("dense unelevated no-caps size=sm color=primary").classes("text-xs font-semibold")
 
-                        # Tombol Reboot Host
-                        ui.button("Reboot Host", icon="restart_alt", on_click=lambda: _open_host_dialog("reboot_host")).props("dense outline no-caps size=sm color=amber-4").classes("text-xs")
+                            ui.button("Reboot Host", icon="restart_alt", on_click=lambda: _open_host_dialog("reboot_host")).props("dense outline no-caps size=sm color=amber-4").classes("text-xs")
+                            ui.button("Poweroff", icon="power_settings_new", on_click=lambda: _open_host_dialog("poweroff_host")).props("dense outline no-caps size=sm color=rose-4").classes("text-xs")
 
-                        # Tombol Poweroff Host
-                        ui.button("Poweroff", icon="power_settings_new", on_click=lambda: _open_host_dialog("poweroff_host")).props("dense outline no-caps size=sm color=rose-4").classes("text-xs")
+                            # Dialog Mode Pemeliharaan
+                            maint_dlg = ui.dialog()
+                            with maint_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
+                                ui.label(f"Mode Pemeliharaan: {srv_host}").classes("text-base font-bold text-white")
+                                maint_dur = ui.number("Durasi Pemeliharaan (Menit)", value=60, min=5, max=1440).props("dense outlined dark")
+                                maint_reason = ui.input("Alasan Pemeliharaan", value=srv_maint_reason or "Perawatan rutin server").props("dense outlined dark")
 
-                        # Dialog Mode Pemeliharaan
-                        maint_dlg = ui.dialog()
-                        with maint_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
-                            ui.label(f"Mode Pemeliharaan: {srv_host}").classes("text-base font-bold text-white")
-                            maint_dur = ui.number("Durasi Pemeliharaan (Menit)", value=60, min=5, max=1440).props("dense outlined dark")
-                            maint_reason = ui.input("Alasan Pemeliharaan", value=srv_maint_reason or "Perawatan rutin server").props("dense outlined dark")
+                                def _toggle_maintenance(enable: bool):
+                                    with get_db(session_factory) as db:
+                                        s = db.query(Server).filter(Server.id == srv_id).first()
+                                        if s:
+                                            s.is_maintenance = 1 if enable else 0
+                                            s.maintenance_reason = maint_reason.value if enable else None
+                                            db.commit()
+                                            notify_success(f"Mode pemeliharaan {'diaktifkan' if enable else 'dinonaktifkan'}.")
+                                    maint_dlg.close()
+                                    ui.navigate.to(f"/servers/{srv_id}")
 
-                            def _toggle_maintenance(enable: bool):
-                                with get_db(session_factory) as db:
-                                    s = db.query(Server).filter(Server.id == srv_id).first()
-                                    if s:
-                                        s.is_maintenance = 1 if enable else 0
-                                        s.maintenance_reason = maint_reason.value if enable else None
-                                        db.commit()
-                                        notify_success(f"Mode pemeliharaan {'diaktifkan' if enable else 'dinonaktifkan'}.")
-                                maint_dlg.close()
-                                ui.navigate.to(f"/servers/{srv_id}")
+                                with ui.row().classes("w-full justify-end gap-2 mt-2"):
+                                    ui.button("Batal", on_click=maint_dlg.close).props("dense flat no-caps color=grey-5")
+                                    if srv_is_maint:
+                                        ui.button("Nonaktifkan Pemeliharaan", on_click=lambda: _toggle_maintenance(False)).props("dense unelevated color=emerald-7 no-caps")
+                                    else:
+                                        ui.button("Aktifkan Pemeliharaan", on_click=lambda: _toggle_maintenance(True)).props("dense unelevated color=amber-7 no-caps")
 
-                            with ui.row().classes("w-full justify-end gap-2 mt-2"):
-                                ui.button("Batal", on_click=maint_dlg.close).props("dense flat no-caps color=grey-5")
-                                if srv_is_maint:
-                                    ui.button("Nonaktifkan Pemeliharaan", on_click=lambda: _toggle_maintenance(False)).props("dense unelevated color=emerald-7 no-caps")
-                                else:
-                                    ui.button("Aktifkan Pemeliharaan", on_click=lambda: _toggle_maintenance(True)).props("dense unelevated color=amber-7 no-caps")
-
-                        ui.button("Pemeliharaan", icon="build", on_click=maint_dlg.open).props("dense outline no-caps size=sm color=primary").classes("text-xs")
+                            ui.button("Pemeliharaan", icon="build", on_click=maint_dlg.open).props("dense outline no-caps size=sm color=primary").classes("text-xs")
 
                 # -----------------------------------------------------------------
                 # 11 SUB-TAB NAVIGASI DETAIL SERVER
                 # -----------------------------------------------------------------
-                with ui.tabs().classes("w-full bg-slate-900 border-b border-slate-800 text-slate-400") as tabs:
+                with ui.tabs().props("dense inline-label outside-arrows mobile-arrows active-color=primary indicator-color=primary align=left").classes("w-full max-w-full min-w-0 bg-slate-900 border-b border-slate-800 text-slate-400") as tabs:
                     t_perf = ui.tab("perf", label="Performa", icon="speed")
                     t_svc = ui.tab("svc", label=f"Layanan ({len(services)})", icon="dns")
                     t_prob = ui.tab("prob", label=f"Insiden ({len(open_problems)})", icon="warning")
@@ -533,7 +529,7 @@ def setup_server_detail_routes(session_factory):
                                 cpu_val = f"{snap.cpu:.1f}%" if snap and snap.cpu is not None else "—"
                                 ui.label(cpu_val).classes("text-2xl font-bold text-sky-400")
                                 cpu_pct = (snap.cpu / 100.0) if snap and snap.cpu is not None else 0.0
-                                ui.linear_progress(value=cpu_pct, color="primary").classes("w-full h-1.5 rounded")
+                                ui.linear_progress(value=cpu_pct, color="primary", show_value=False).classes("w-full h-1.5 rounded")
 
                             # RAM
                             with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
@@ -546,7 +542,7 @@ def setup_server_detail_routes(session_factory):
                                     ram_pct = snap.mem_used / snap.mem_total
                                     ram_str = f"{used_gb:.1f} GB / {tot_gb:.1f} GB ({ram_pct*100:.1f}%)"
                                 ui.label(ram_str).classes("text-base font-bold text-emerald-400")
-                                ui.linear_progress(value=ram_pct, color="positive").classes("w-full h-1.5 rounded")
+                                ui.linear_progress(value=ram_pct, color="positive", show_value=False).classes("w-full h-1.5 rounded")
 
                             # Load Average
                             with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
@@ -567,7 +563,7 @@ def setup_server_detail_routes(session_factory):
                                 else:
                                     swap_str = "0 GB (Nonaktif)"
                                 ui.label(swap_str).classes("text-base font-bold text-purple-400")
-                                ui.linear_progress(value=swap_pct, color="purple").classes("w-full h-1.5 rounded")
+                                ui.linear_progress(value=swap_pct, color="purple", show_value=False).classes("w-full h-1.5 rounded")
 
                         # Riwayat Kinerja ECharts (CPU, RAM, Load)
                         with ui.card().classes("w-full p-4 custom-card flex flex-col gap-2"):
@@ -632,19 +628,30 @@ def setup_server_detail_routes(session_factory):
                                     {"name": "fs", "label": "SISTEM BERKAS", "field": "fs", "align": "center"},
                                     {"name": "used", "label": "TERPAKAI", "field": "used", "align": "left"},
                                     {"name": "total", "label": "TOTAL", "field": "total", "align": "left"},
-                                    {"name": "pct", "label": "PERSENTASE", "field": "pct", "align": "center"},
+                                    {"name": "pct", "label": "PERSENTASE", "field": "pct_num", "align": "center"},
                                 ]
                                 disk_rows = []
                                 for d in disks_data:
+                                    pct_val = float(d.get("pct", 0))
                                     disk_rows.append({
                                         "mount": d.get("mount", "—"),
-                                        "dev": d.get("dev", "—"),
-                                        "fs": d.get("fs", "—"),
+                                        "dev": d.get("dev") or d.get("device") or ("rootfs" if d.get("mount") == "/" else d.get("mount", "—")),
+                                        "fs": d.get("type") or d.get("fs", "—"),
                                         "used": format_bytes(d.get("used", 0)),
                                         "total": format_bytes(d.get("total", 0)),
-                                        "pct": f"{d.get('pct', 0)}%",
+                                        "pct_num": pct_val,
                                     })
-                                ui.table(columns=disk_cols, rows=disk_rows, row_key="mount").classes("w-full bg-slate-900")
+                                dtbl = ui.table(columns=disk_cols, rows=disk_rows, row_key="mount").classes("w-full bg-slate-900")
+                                dtbl.add_slot("body-cell-pct", """
+                                    <q-td :props="props">
+                                        <div class="flex items-center gap-1.5 justify-center">
+                                            <span class="font-mono text-[11px] w-9 text-slate-200">{{ props.row.pct_num.toFixed(1) }}%</span>
+                                            <div class="meter-mini-track">
+                                                <div class="meter-mini-bar" :class="props.row.pct_num < 70 ? 'green' : (props.row.pct_num < 90 ? 'yellow' : 'red')" :style="'width:' + Math.min(props.row.pct_num, 100) + '%'"></div>
+                                            </div>
+                                        </div>
+                                    </q-td>
+                                """)
 
                     # =============================================================
                     # SUB-TAB 2: DAFTAR LAYANAN TERPANTAU

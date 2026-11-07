@@ -29,7 +29,6 @@ def setup_problems_routes(session_factory):
             current_user_id = user.id
             current_username = user.username
 
-        render_layout(request, user, active_tab="problems")
         with render_layout(request, user, active_tab="problems"):
             container = ui.column().classes("w-full gap-3")
 
@@ -147,11 +146,11 @@ def setup_problems_routes(session_factory):
                             </q-td>
                         """)
                         ptbl.add_slot("body-cell-action", """
-                            <q-td :props="props">
+                            <q-td :props="props" style="white-space: nowrap; min-width: 120px; text-align: center;">
                                 <q-badge v-if="!props.row.is_open" color="slate-8" class="text-[9px] font-mono text-slate-400">
                                     Terselesaikan
                                 </q-badge>
-                                <q-btn v-else dense outline size="xs" color="emerald-4" icon="check" label="Tandai Selesai" no-caps
+                                <q-btn v-else dense outline size="xs" color="emerald-4" icon="check" label="Tandai Selesai" no-caps class="px-2 font-semibold" style="white-space: nowrap"
                                        @click="() => $parent.$emit('resolve', props.row.id)" />
                             </q-td>
                         """)

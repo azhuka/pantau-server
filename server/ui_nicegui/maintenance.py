@@ -28,7 +28,6 @@ def setup_maintenance_routes(session_factory):
             current_user_id = user.id
             current_username = user.username
 
-        render_layout(request, user, active_tab="maintenance")
         with render_layout(request, user, active_tab="maintenance"):
             container = ui.column().classes("w-full gap-3")
 

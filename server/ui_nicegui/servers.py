@@ -444,21 +444,25 @@ def setup_servers_routes(session_factory):
                             continue
 
                         # Format CPU & RAM
-                        mem_str = "—"
+                        cpu_pct_val = round(snap.cpu, 1) if (snap and snap.cpu is not None) else None
+                        mem_pct_val = None
+                        mem_used_str = "—"
+                        mem_tot_str = "—"
                         if snap and snap.mem_total:
                             used_gb = snap.mem_used / (1024**3)
                             tot_gb = snap.mem_total / (1024**3)
-                            pct = round(snap.mem_used / snap.mem_total * 100, 1)
-                            mem_str = f"{used_gb:.1f}G / {tot_gb:.1f}G\n({pct}%)"
+                            mem_pct_val = round(snap.mem_used / snap.mem_total * 100, 1)
+                            mem_used_str = f"{used_gb:.1f}G"
+                            mem_tot_str = f"{tot_gb:.1f}G"
 
                         # Disk Persen
-                        disk_pct_str = "—"
+                        disk_pct_val = None
                         if snap and snap.disks:
                             try:
                                 d_list = json.loads(snap.disks)
                                 if d_list and isinstance(d_list, list):
                                     root_d = next((d for d in d_list if d.get("mount") == "/"), d_list[0])
-                                    disk_pct_str = f"{root_d.get('pct', '—')}%"
+                                    disk_pct_val = float(root_d.get('pct', 0))
                             except Exception:
                                 pass
 
@@ -473,9 +477,12 @@ def setup_servers_routes(session_factory):
                             "notes": s.notes or "",
                             "platform": s.platform_override or "Linux",
                             "os": f"{ext.os_label or 'Linux'} {ext.kernel or ''}" if ext else "Linux",
-                            "cpu": f"{snap.cpu:.1f}%" if snap and snap.cpu is not None else "—",
-                            "memory": mem_str,
-                            "disk": disk_pct_str,
+                            "cpu": f"{cpu_pct_val:.1f}%" if cpu_pct_val is not None else "—",
+                            "cpu_pct": cpu_pct_val,
+                            "mem_pct": mem_pct_val,
+                            "mem_used_str": mem_used_str,
+                            "mem_tot_str": mem_tot_str,
+                            "disk_pct": disk_pct_val,
                             "uptime": upt_str,
                             "agent": f"v{ext.agent_version}" if ext and ext.agent_version else "—",
                             "is_online": is_online,
@@ -487,9 +494,9 @@ def setup_servers_routes(session_factory):
                     {"name": "ip", "label": "IP & ANTARMUKA", "field": "ip", "align": "left"},
                     {"name": "platform", "label": "PLATFORM / HARDWARE", "field": "platform", "align": "left"},
                     {"name": "os", "label": "SISTEM OPERASI", "field": "os", "align": "left"},
-                    {"name": "cpu", "label": "PROSESOR", "field": "cpu", "align": "center"},
-                    {"name": "memory", "label": "MEMORI", "field": "memory", "align": "left"},
-                    {"name": "disk", "label": "DISK", "field": "disk", "align": "center"},
+                    {"name": "cpu", "label": "PROSESOR", "field": "cpu", "align": "left"},
+                    {"name": "memory", "label": "MEMORI", "field": "mem_pct", "align": "left"},
+                    {"name": "disk", "label": "DISK", "field": "disk_pct", "align": "left"},
                     {"name": "uptime", "label": "UPTIME", "field": "uptime", "align": "left"},
                     {"name": "agent", "label": "AGEN", "field": "agent", "align": "center"},
                     {"name": "status", "label": "STATUS", "field": "status", "align": "center"},
@@ -528,6 +535,48 @@ def setup_servers_routes(session_factory):
                         </q-td>
                     """)
 
+                    # Custom Slot CPU Cell (With Meter Bar)
+                    tbl.add_slot("body-cell-cpu", """
+                        <q-td :props="props">
+                            <div v-if="props.row.cpu_pct !== null" class="flex items-center gap-1.5 justify-start">
+                                <span class="font-mono text-[11px] w-9 text-slate-200">{{ props.row.cpu_pct.toFixed(1) }}%</span>
+                                <div class="meter-mini-track">
+                                    <div class="meter-mini-bar" :class="props.row.cpu_pct < 70 ? 'green' : (props.row.cpu_pct < 90 ? 'yellow' : 'red')" :style="'width:' + Math.min(props.row.cpu_pct, 100) + '%'"></div>
+                                </div>
+                            </div>
+                            <span v-else class="text-slate-500">—</span>
+                        </q-td>
+                    """)
+
+                    # Custom Slot Memory Cell (With Meter Bar & Fractions)
+                    tbl.add_slot("body-cell-memory", """
+                        <q-td :props="props">
+                            <div v-if="props.row.mem_pct !== null" class="flex flex-col gap-0.5 justify-start">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-mono text-[11px] w-9 text-slate-200">{{ props.row.mem_pct.toFixed(1) }}%</span>
+                                    <div class="meter-mini-track">
+                                        <div class="meter-mini-bar" :class="props.row.mem_pct < 70 ? 'green' : (props.row.mem_pct < 90 ? 'yellow' : 'red')" :style="'width:' + Math.min(props.row.mem_pct, 100) + '%'"></div>
+                                    </div>
+                                </div>
+                                <span class="font-mono text-[9.5px] text-slate-400">{{ props.row.mem_used_str }} / {{ props.row.mem_tot_str }}</span>
+                            </div>
+                            <span v-else class="text-slate-500">—</span>
+                        </q-td>
+                    """)
+
+                    # Custom Slot Disk Cell (With Meter Bar)
+                    tbl.add_slot("body-cell-disk", """
+                        <q-td :props="props">
+                            <div v-if="props.row.disk_pct !== null" class="flex items-center gap-1.5 justify-start">
+                                <span class="font-mono text-[11px] w-9 text-slate-200">{{ props.row.disk_pct.toFixed(1) }}%</span>
+                                <div class="meter-mini-track">
+                                    <div class="meter-mini-bar" :class="props.row.disk_pct < 70 ? 'green' : (props.row.disk_pct < 90 ? 'yellow' : 'red')" :style="'width:' + Math.min(props.row.disk_pct, 100) + '%'"></div>
+                                </div>
+                            </div>
+                            <span v-else class="text-slate-500">—</span>
+                        </q-td>
+                    """)
+
                     # Custom Slot Status Cell
                     tbl.add_slot("body-cell-status", """
                         <q-td :props="props">
@@ -537,10 +586,10 @@ def setup_servers_routes(session_factory):
                         </q-td>
                     """)
 
-                    # Custom Slot Actions Cell
+                    # Custom Slot Actions Cell (Single Non-Wrapping Row)
                     tbl.add_slot("body-cell-actions", """
-                        <q-td :props="props">
-                            <div class="row items-center justify-center gap-1">
+                        <q-td :props="props" style="white-space: nowrap; min-width: 130px; text-align: center;">
+                            <div class="action-btn-group justify-center">
                                 <q-btn dense flat round size="sm" icon="visibility" color="blue-4"
                                        @click="() => $parent.$emit('view_detail', props.row.id)">
                                     <q-tooltip class="bg-slate-900 text-[10px]">Rincian Server</q-tooltip>

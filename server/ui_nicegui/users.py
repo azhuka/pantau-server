@@ -33,7 +33,6 @@ def setup_users_routes(session_factory):
             current_user_id = user.id
             current_username = user.username
 
-        render_layout(request, user, active_tab="users")
         with render_layout(request, user, active_tab="users"):
             container = ui.column().classes("w-full gap-3")
 

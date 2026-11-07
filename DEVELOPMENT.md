@@ -354,6 +354,30 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.154
+
+- **Tipe Rilis:** Rekonstruksi Total Estetika Visual NOC, Konsolidasi Menyeluruh 9.249 Baris CSS Pre-Migrasi, Eliminasi Duplikasi Header & Penyempurnaan Tata Letak Multi-Halaman (*Comprehensive NOC Visual Aesthetics Reconstruction, Full Consolidation of 9,249 CSS Lines from Pre-Migration System, Total Double-Header Elimination & Multi-Page Layout Refinement*)
+- **Fokus Utama:** Menyelesaikan dan menuntaskan secara tuntas seluruh cacat tata letak visual pasca-migrasi, mengembalikan 100% cetak biru desain matang era v4.8.x pre-migrasi tanpa kompromi, tanpa workaround, dan menjaga kepadatan informasi NOC yang elegan dan teruji:
+  1. **Konsolidasi Menyeluruh 9.249 Baris CSS Asli Era v4.8.x (`pantau-theme.css`):**
+     - Menggabungkan seluruh gaya CSS otentik dari 12 berkas template dan pustaka komponen pre-migrasi (`dashboard.html`, `servers.html`, `services.html`, `problems.html`, `probing.html`, `maintenance.html`, `logs.html`, `audit.html`, `users.html`, `profile.html`, `base.html`, dan `pantau-components.css`) dengan total ukuran 271 KB.
+     - Menyematkan jembatan styling khusus Quasar/NiceGUI (`.q-tab`, `.q-tabs`, `.q-table`, `.custom-card`, modal dialog, dan meter bar) sehingga seluruh komponen antarmuka merender gaya kanonikal Pusat Operasi Jaringan.
+  2. **Eliminasi Total Duplikasi Header Atas Lintas Halaman:**
+     - Menghapus pemanggilan ganda `render_layout(...)` yang sebelumnya memicu penumpukan dua bilah header atas pada halaman: Pusat Insiden & Gangguan (`problems.py`), Probing Endpoint (`probing.py`), Pemeliharaan (`maintenance.py`), Riwayat Tindakan (`audit.py`), Detail Server (`server_detail.py`), dan Pengguna (`users.py`).
+     - Seluruh halaman kini menampilkan tepat satu header sticky interaktif yang rapi, profesional, dan melayang kokoh pada bagian teratas.
+  3. **Restorasi Sempurna Bilah 3-Kolom KPI Dasbor (`dash-kpi-grid`):**
+     - Menjamin ekspansi horizontal penuh (`w-full`) sehingga tata letak 3 kolom asimetris membentang sempurna:
+       - Kolom 1: Total Server (`minmax(190px, 220px)`) dengan counter host besar dan badge up/down.
+       - Kolom 2: Insiden Aktif (`1fr`) dengan strip 5-ubin keparahan Zabbix (`zbx-severity-strip`) interaktif (Bencana, Tinggi, Peringatan, Info, Diabaikan).
+       - Kolom 3: Waktu Sistem (`minmax(260px, 290px)`) dengan indikator denyut hijau real-time, badge zona waktu, hari/tanggal kalender, serta jam digital format monospace.
+  4. **Penyempurnaan 11 Sub-Tab & Metrik Detail Server (`server_detail.py`):**
+     - Mengonfigurasi `ui.tabs()` dengan properti `dense inline-label outside-arrows mobile-arrows active-color=primary indicator-color=primary align=left` dan merender tab berbentuk pil horizontal elegan, mengeliminasi masalah teks bertumpuk atau terhimpit.
+     - Memperbaiki kartu metrik CPU, RAM, dan Swap dengan menyematkan `show_value=False` pada `ui.linear_progress(...)`, melenyapkan tabrakan teks angka mentah float yang tumpang-tindih.
+     - Mengaktifkan bilah meter mini persentase pada tabel partisi media penyimpanan (Disks) serta memetakan tipe sistem berkas (`ext4`/`xfs`) dan perangkat blok secara akurat.
+     - Mengoptimalkan bilah aksi hero atas server (Segarkan, Reboot Host, Poweroff, Pemeliharaan) agar pas dan tidak terpotong di tepi kanan layar.
+  5. **Pengayaan Visual Tabel Armada Server (`servers.py`):**
+     - Menambahkan bilah meter progres mini multi-warna (hijau, kuning, merah) pada kolom Prosesor, Memori, dan Disk.
+     - Menata ulang kolom Tindakan menjadi satu baris horizontal tanpa wrapping berantakan menggunakan `.action-btn-group` dengan tooltip informatif Bahasa Indonesia baku.
+
 ## Versi 4.8.153
 
 - **Tipe Rilis:** Restorasi Penuh Menu Model Sidebar, Header Sticky Interaktif, Desain Kanonikal, & Setel Organisasi (Branding) pada Mesin NiceGUI (*Full Restoration of Sidebar Model Menu, Interactive Sticky Header, Canonical Design System, & Organization Branding onto NiceGUI Engine*)

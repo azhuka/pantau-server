@@ -183,4 +183,4 @@ def render_layout(request: Request, user: User, active_tab: str = "servers"):
         ui.html(sidebar_content_html)
 
     # Mengembalikan kontainer halaman utama
-    return ui.column().classes("w-full px-6 py-4 gap-4")
+    return ui.column().classes("w-full max-w-full min-w-0 px-6 py-4 gap-4")

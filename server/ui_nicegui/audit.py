@@ -26,7 +26,6 @@ def setup_audit_routes(session_factory):
             if not user:
                 return RedirectResponse("/login")
 
-        render_layout(request, user, active_tab="audit")
         with render_layout(request, user, active_tab="audit"):
             container = ui.column().classes("w-full gap-3")
 
