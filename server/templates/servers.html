@@ -53,6 +53,23 @@
 #servers-table th:first-child,
 #servers-table td:first-child {
   padding-left: 16px !important;
+  position: sticky;
+  left: 0;
+  background: var(--card, #131c31);
+  z-index: 3;
+  box-shadow: 3px 0 8px rgba(0,0,0,0.35);
+}
+#servers-table thead th:first-child {
+  background: var(--col-act-th-bg, #141e30);
+  z-index: 4;
+}
+#servers-table tbody tr:hover td:first-child {
+  background: var(--card-hover, #1b2642);
+}
+.group-header-row td:first-child {
+  position: static !important;
+  box-shadow: none !important;
+  background: linear-gradient(90deg, rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.02) 100%) !important;
 }
 #servers-table th.col-act,
 #servers-table td.col-act {

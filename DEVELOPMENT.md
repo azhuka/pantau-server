@@ -354,6 +354,30 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.123
+
+- **Tipe Rilis:** Penyempurnaan Visual & Perbaikan Layout Tabel Kejadian, Kolom Sticky, Dialog Modal, serta Filter Panel NOC (*Visual Polish, Table Event Column Overflow Fix, Sticky Columns, Safe Modal Clearance & NOC Filter Panel Refinement*)
+- **Fokus Utama:** Menyelesaikan anomali visual dan ketidaksempurnaan tata letak CSS pada seluruh halaman operasional tanpa mengubah identitas orisinal NOC:
+  1. **Perbaikan Kolom Kejadian Insiden (`server/templates/problems.html`):**
+     - Mengatasi masalah kolom "KEJADIAN" yang kolaps menjadi selebar 10px dan menyebabkan teks membungkus vertikal satu huruf per baris pada layar berskala kecil/menengah.
+     - Menetapkan lebar minimum terjamin (`min-width: 1160px`) pada tabel `#probtable` dan alokasi eksplisit pada `<colgroup>` (`col width: 320px; min-width: 240px`) baik pada template Jinja2 awal maupun rendering dinamis JavaScript.
+  2. **Implementasi Kolom Pertama Menempel (*Sticky First Column*) pada Tabel Data:**
+     - **Daftar Server (`server/templates/servers.html`):** Menjadikan kolom pertama nama server menempel di kiri (`position: sticky; left: 0; z-index: 3`) saat pengguna menggulir tabel secara horizontal untuk memeriksa spesifikasi perangkat, sehingga nama host tidak lagi terpotong di tepi kartu.
+     - **Pemantauan Endpoint (`server/templates/probing.html`):** Kolom status badge menempel di kiri (`left: 0`) dan tombol tindakan menempel di kanan (`right: 0`), mencegah terpotongnya label status saat scroll horizontal.
+     - **Akun Pengguna (`server/templates/profile.html`):** Kolom username pengguna menempel di kiri (`left: 0`) dan tombol aksi operasional menempel di kanan (`right: 0`), menjamin nama akun tetap terbaca utuh.
+     - **Dashboard Status & Kinerja (`server/templates/dashboard.html`):** Kolom server menempel di kiri (`left: 0`) pada `#dash-server-table` dan perbaikan `<colgroup>` pada tabel insiden terkini (`min-width: 980px`).
+  3. **Penyempurnaan Posisi Dialog Modal Pemeliharaan (`server/templates/maintenance.html`):**
+     - Mengubah alignment backdrop dari `align-items: center` menjadi `align-items: flex-start` dengan `padding: 24px 16px; overflow-y: auto`, serta `margin: auto` pada kontainer jendela modal.
+     - Mengisolasi gulir konten ke dalam `.modal-body`, memastikan header judul modal dan tombol simpan di footer selalu berada dalam batas viewport yang aman tanpa terpotong di tepi atas layar.
+  4. **Eliminasi Scrollbar Horizontal Ganda pada Panel Filter (`server/templates/base.html`):**
+     - Menghapus aturan `overflow-x: auto` dan `flex-wrap: nowrap` pada `.pantau-filter-panel .filter-row-main`.
+     - Menggantinya dengan `flex-wrap: wrap; overflow-x: visible`, sehingga elemen-elemen filter (Pengguna, Server, Tindakan, Status, Rentang Tanggal, Pencarian) membungkus secara rapi dan menghilangkan scrollbar horizontal yang bertumpuk dengan scrollbar tabel di bawahnya (`/audit`).
+  5. **Penyesuaian Jarak Aman Header Branding Organisasi (`server/templates/dashboard.html`):**
+     - Menambahkan margin dan padding atas yang proporsional pada `.dash-org-header` dan kontainer brand untuk mencegah teks nama instansi terpotong di tepi atas peramban web.
+  6. **Sinkronisasi SemVer 7 Berkas & Verifikasi Stabilitas:**
+     - Sinkronisasi versi SemVer `4.8.123` secara konsisten pada 7 berkas inti proyek.
+     - Lolos uji sintaksis `py_compile` dan `bash -n`. Layanan `pantau-server.service` dan `agent_pantau.service` aktif beroperasi normal.
+
 ## Versi 4.8.122
 
 - **Tipe Rilis:** Preservasi Total UI/UX Orisinal NOC, Stabilisasi Backend Modular 3-Tier, dan Otomasi Proteksi CSRF (*Full Preservation of Mature NOC UI/UX, 3-Tier Modular Backend Stabilization & Automated CSRF Protection*)

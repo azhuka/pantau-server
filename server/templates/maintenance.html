@@ -60,25 +60,30 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(4px);
   display: none;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 1050;
-  padding: 16px;
+  padding: 24px 16px;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 .modal-window {
   background: var(--modal-bg, #0f172a);
+  color: var(--text, #f8fafc);
   border: 1px solid var(--modal-border, var(--border));
   border-radius: 10px;
   width: 100%;
   max-width: 580px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
   display: flex;
   flex-direction: column;
+  margin: auto;
+  overflow: hidden;
 }
 .modal-header {
   padding: 14px 18px;
@@ -86,12 +91,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.12);
+}
+.modal-window form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 .modal-body {
   padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  overflow-y: auto;
+  flex: 1;
 }
 .modal-footer {
   padding: 12px 18px;
@@ -100,6 +116,7 @@
   justify-content: flex-end;
   gap: 10px;
   background: rgba(0,0,0,0.15);
+  flex-shrink: 0;
 }
 .form-group {
   display: flex;

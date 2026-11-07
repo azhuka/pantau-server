@@ -12,6 +12,7 @@
 /* Insiden Terkini Table Polish */
 #dash-problems-table-wrap table.dash-prob-table {
   width: 100%;
+  min-width: 980px;
   margin: 0;
   border-collapse: collapse;
   table-layout: fixed;
@@ -41,6 +42,7 @@
 }
 #dash-problems-table-wrap .dash-col-desc {
   width: auto !important;
+  min-width: 220px !important;
   padding: 5px 18px !important;
 }
 #dash-problems-table-wrap .dash-col-durasi {
@@ -248,6 +250,21 @@
   border-right: 1px solid rgba(255, 255, 255, 0.03);
   color: var(--text);
   transition: padding .15s ease;
+}
+#dash-server-table th:first-child,
+#dash-server-table td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--card, #131c31);
+  z-index: 3;
+  box-shadow: 3px 0 8px rgba(0,0,0,0.35);
+}
+#dash-server-table thead th:first-child {
+  background: var(--col-act-th-bg, #141e30);
+  z-index: 4;
+}
+#dash-server-table tbody tr:hover td:first-child {
+  background: var(--card-hover, #1b2642);
 }
 /* Mode Standar: Platform / IP ditata vertikal 2 baris (Baris 1: Platform, Baris 2: IP) */
 #dash-server-table:not(.tbl-compact) .th-plat-std {
@@ -899,8 +916,8 @@ body.popout-fleet_table #dash-fleet-card {
 </style>
 
 {% if brand and brand.org_name %}
-<div class="dash-org-header" style="text-align:center;margin:0 auto 20px auto;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%">
-  <div class="dash-brand-wrap" style="position:relative;display:inline-flex;flex-direction:column;justify-content:center;gap:3px;text-align:center;min-height:64px;height:auto;max-width:calc(100% - 240px);padding:2px 0">
+<div class="dash-org-header" style="text-align:center;margin:8px auto 20px auto;padding-top:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%">
+  <div class="dash-brand-wrap" style="position:relative;display:inline-flex;flex-direction:column;justify-content:center;gap:4px;text-align:center;min-height:68px;height:auto;max-width:calc(100% - 240px);padding:4px 0">
     <div class="dash-brand-logo-box" style="position:absolute;right:calc(100% + 18px);top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:flex-end;flex-shrink:0">
       {% if brand.logo_url %}
       <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name }}" style="max-height:64px;max-width:130px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4))">
@@ -1090,12 +1107,12 @@ body.popout-fleet_table #dash-fleet-card {
   </div>
 
   <div style="overflow-x:auto;{{ '' if all_open_problems else 'display:none' }}" id="dash-problems-table-wrap">
-    <table class="dash-prob-table" style="width:100%;margin:0;border-collapse:collapse;table-layout:fixed">
+    <table class="dash-prob-table" style="width:100%;min-width:980px;margin:0;border-collapse:collapse;table-layout:fixed">
       <colgroup>
         <col style="width:115px">
         <col style="width:180px">
         <col style="width:165px">
-        <col>
+        <col style="width:300px;min-width:220px">
         <col style="width:120px">
         <col style="width:36px">
       </colgroup>

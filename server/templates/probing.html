@@ -97,9 +97,21 @@
 
 /* Kolom Proporsional */
 .th-status, .td-status {
-  width: 85px !important;
-  min-width: 80px !important;
+  width: 95px !important;
+  min-width: 90px !important;
   text-align: center !important;
+  position: sticky;
+  left: 0;
+  background: var(--card, #131c31);
+  z-index: 3;
+  box-shadow: 3px 0 8px rgba(0,0,0,0.35);
+}
+.probe-table thead .th-status {
+  background: var(--col-act-th-bg, #141e30);
+  z-index: 4;
+}
+.probe-table tbody tr:hover .td-status {
+  background: var(--card-hover, #1b2642);
 }
 .th-target, .td-target {
   width: auto !important;
@@ -126,6 +138,18 @@
   min-width: 150px !important;
   white-space: nowrap !important;
   text-align: left !important;
+  position: sticky;
+  right: 0;
+  background: var(--col-act-bg, #0b111e);
+  box-shadow: -4px 0 8px rgba(0,0,0,0.45);
+  z-index: 2;
+}
+.probe-table thead .th-actions {
+  background: var(--col-act-th-bg, #141e30);
+  z-index: 3;
+}
+.probe-table tbody tr:hover .td-actions {
+  background: var(--col-act-hover, #141e30);
 }
 
 /* Status Pills */

@@ -489,14 +489,14 @@
   
   <div id="prob-table-wrapper" style="overflow-x:auto">
     {% if open_problems %}
-    <table id="probtable" style="width:100%;border-collapse:collapse;table-layout:fixed">
+    <table id="probtable" style="width:100%;min-width:1160px;border-collapse:collapse;table-layout:fixed">
       <colgroup>
-        <col style="width:135px">
-        <col style="width:175px">
-        <col style="width:165px">
-        <col>
-        <col style="width:120px">
-        <col style="width:260px">
+        <col style="width:130px">
+        <col style="width:160px">
+        <col style="width:140px">
+        <col style="width:320px;min-width:240px">
+        <col style="width:110px">
+        <col style="width:280px;min-width:200px">
         <col style="width:95px">
       </colgroup>
       <thead>
@@ -1496,14 +1496,14 @@ window.poll = async function(opts = {}) {
       } else {
         let table = document.getElementById('probtable');
         if (!table) {
-          wrapper.innerHTML = `<table id="probtable" style="width:100%;border-collapse:collapse;table-layout:fixed">
+          wrapper.innerHTML = `<table id="probtable" style="width:100%;min-width:1160px;border-collapse:collapse;table-layout:fixed">
             <colgroup>
-              <col style="width:135px">
-              <col style="width:175px">
-              <col style="width:165px">
-              <col>
-              <col style="width:120px">
-              <col style="width:260px">
+              <col style="width:130px">
+              <col style="width:160px">
+              <col style="width:140px">
+              <col style="width:320px;min-width:240px">
+              <col style="width:110px">
+              <col style="width:280px;min-width:200px">
               <col style="width:95px">
             </colgroup>
             <thead>
