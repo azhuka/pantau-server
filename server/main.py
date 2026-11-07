@@ -3916,7 +3916,7 @@ def login_submit(
     return resp
 
 
-@app.get("/login/2fa", response_class=HTMLResponse)
+@app.get("/api/login-2fa-legacy", response_class=HTMLResponse)
 def login_2fa_page(request: Request, db: Session = Depends(get_db)):
     preauth_tok = request.cookies.get("preauth_session")
     uid = security_auth.verify_preauth_token(preauth_tok, _SECRET_KEY) if preauth_tok else None
@@ -3955,10 +3955,7 @@ def login_2fa_submit(
             user.recovery_codes = updated_hashes
 
     if not is_valid:
-        return tpl(request, "login_2fa.html", {
-            "user": user,
-            "error": "Kode verifikasi 2FA atau kode cadangan darurat tidak cocok.",
-        })
+        return RedirectResponse("/login/2fa?error=Kode+verifikasi+2FA+atau+kode+cadangan+darurat+tidak+cocok.", status_code=303)
 
     user.last_login_at = datetime.utcnow()
     user.last_login_ip = ip

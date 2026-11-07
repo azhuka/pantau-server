@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.151
+
+- **Tipe Rilis:** Modularisasi Penuh Arsitektur Antarmuka NiceGUI Python Murni & Restorasi Konsep Operasional NOC Lengkap (*Full Modularization of Pure Python NiceGUI NOC Frontend Architecture & Complete Operational Depth Restoration*)
+- **Fokus Utama:** Menindaklanjuti arahan arsitektur tingkat tinggi tanpa jalan pintas (*zero workaround*) untuk memisahkan antarmuka menjadi modul-modul independen yang terstruktur, aman, efisien, dan berstandar enterprise kelas dunia (*enterprise-grade*):
+  1. **Modularisasi Total Antarmuka NiceGUI (`server/ui_nicegui/`):**
+     - Memecah berkas monolitik menjadi paket terstruktur: `common.py` (utilitas & format biner), `layout.py` (tata letak induk & jam digital), `auth.py` (otentikasi & 2FA), `dashboard.py` (ikhtisar eksekutif), `servers.py` (inventaris armada & multi-filter), `server_detail.py` (pusat operasi 10 sub-tab), `problems.py` (resolusi insiden), `probing.py` (pemantauan sintetis), `maintenance.py` (jendela pemeliharaan), `audit.py` (jejak kepatuhan), dan `users.py` (RBAC).
+  2. **Penghapusan Total Data Hardcode & Deteksi Dinamis:**
+     - Jam digital real-time header secara otomatis mendeteksi zona waktu host server (`WITA`, `WIB`, `WIT`, `UTC`) secara dinamis tanpa nilai statis.
+     - Seluruh metrik CPU, memori, partisi disk, antarmuka jaringan, inventaris paket APT, firewall, port listening, tugas cron, timer systemd, dan log journalctl diambil secara murni dari telemetri agen dan basis data.
+  3. **Optimasi Kueri Bebas N+1 & Kinerja Enterprise:**
+     - Pengambilan metrik ringkasan dashboard dan daftar server memanfaatkan subkueri indeks agregat SQL tunggal untuk mencegah pemborosan koneksi basis data.
+     - Manajemen sesi basis data menggunakan context manager terstandarisasi yang menjamin penutupan koneksi secara mutlak.
+  4. **Pusat Operasi Server Mendalam (10 Sub-Tab Lengkap):**
+     - Mengimplementasikan seluruh tab: Performa (termasuk partisi disk, jaringan, dan spek hardware), Layanan (restart & prioritas), Insiden, Paket OS (update cache & upgrade), Proses (Top CPU & Top RAM), Port Jaringan (ss -tulpn), Pengguna & Sesi Aktif, Firewall (UFW/iptables), Cron & Timer Systemd, serta Log Kesalahan Sistem Journalctl.
+  5. **Verifikasi Browser Nyata Bebas Galat:**
+     - Seluruh halaman dan sub-tab diverifikasi secara langsung menggunakan headless Chrome tanpa adanya kesalahan sintaksis maupun galat runtime.
+
 ## Versi 4.8.150
 
 - **Tipe Rilis:** Implementasi Antarmuka Baru NOC Mandiri Berbasis NiceGUI (Python Murni + Quasar UI) pada Port Utama 8400 (*Pure Python NiceGUI NOC Frontend Architecture directly on Port 8400*)
