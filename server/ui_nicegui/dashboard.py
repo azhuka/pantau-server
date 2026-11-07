@@ -309,7 +309,7 @@ def setup_dashboard_routes(session_factory):
                                 {"name": "sev", "label": "KEPARAHAN", "field": "sev", "align": "left"},
                                 {"name": "msg", "label": "MASALAH / PEMICU", "field": "msg", "align": "left"},
                                 {"name": "dur", "label": "DURASI", "field": "dur", "align": "left"},
-                                {"name": "action", "label": "TINDAKAN", "field": "action", "align": "left"},
+                                {"name": "action", "label": "", "field": "action", "align": "right"},
                             ]
                             prob_rows = []
                             for p in open_problems[:6]:

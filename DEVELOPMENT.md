@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.157
+
+- **Tipe Rilis:** Restorasi Alur Kerja Pemantauan Otentik NOC, Pembersihan Tuntas Puing Repositori Root, Serta Integrasi Tabel Riwayat Insiden Teratasi & Analitik MTTR (*Authentic NOC Monitoring Workflow Restoration, Complete Root Workspace Debris Cleanup, Integrated Resolved Incidents Table & MTTR Analytics*)
+- **Fokus Utama:** Menuntaskan keselarasan arsitektur visual dan alur operasional sysadmin sesuai cetak biru matang pre-migrasi tanpa kompromi, mengembalikan siklus hidup insiden sejati, serta merapikan direktori kerja proyek:
+  1. **Restorasi Alur Kerja Pemantauan Sejati di Pusat Insiden (`problems.py`):**
+     - Mengeliminasi tombol palsu `✓ Selesaikan` yang melanggar esensi pemantauan otomatis telemetri.
+     - Mengembalikan alur tindakan kanonikal operator NOC: **Buka Rincian Server** (Ikon Mata), **Tangani Insiden** (ACK toggle dengan status `✓ DITANGANI` per operator), dan **Abaikan / Pulihkan** (Silence/Unsilence toggle).
+     - Mengintegrasikan fungsi agregasi inti `problems_aggregate(db)` dari backend untuk menyajikan telemetri anomali secara presisi.
+  2. **Restorasi Kartu Riwayat Insiden Teratasi & Metrik MTTR (`problems.py`):**
+     - Menghadirkan kembali tabel kedua di bawah insiden terbuka: **Riwayat Insiden Teratasi** lengkap dengan rentang waktu deteksi hingga pemulihan, penanda komponen sistem, durasi henti (*downtime*), dan tipe resolusi (*Pulih Otomatis* vs *Ditangani Operator*).
+     - Menghitung dan menyajikan metrik KPI operasional: Total Insiden Teratasi, MTTR (*Mean Time to Resolve*), dan total insiden yang ditangani langsung oleh operator.
+  3. **Penataan Minimalis Aksi Insiden Dasbor (`dashboard.py`):**
+     - Menyelaraskan tabel Insiden Terkini di dasbor dengan kolom tindakan bersih `Detail ›` yang langsung mengarahkan operator ke tab masalah server terkait tanpa tombol aksi palsu.
+  4. **Pembersihan Menyeluruh Puing Repositori Root (`rj45`):**
+     - Menghapus berkas-berkas sampah, prototipe usang, dan sisa eksperimen lawas yang membuat sesak ruang direktori proyek: `app_ui.py`, `app_ui.py.V1`, `pantau.db` (0-byte), `build.sh`, `server-monitor.service.example`, `setup_db.sh`, `database/monitor.db`, `server/pantau.db`, berkas agen Go usang (`agent/*.go`, `go.mod`, `config.json`), folder kosong `templates/`, `uploads/`, dan folder tes usang `verification/`.
+     - Merampingkan berkas `.gitignore` agar repositori tetap bersih, ringan, dan teratur.
+
 ## Versi 4.8.156
 
 - **Tipe Rilis:** Restorasi Penuh Tata Letak Fluid Widescreen, Koreksi Penarikan Data Sub-Tab Telemetri, Eliminasi Jam Ganda, Serta Penyempurnaan Modal Dialog & RBAC Enterprise (*Full Restoration of Fluid Widescreen Layout, Telemetry Sub-Tab Data Extraction Fixes, Double-Clock Elimination, Enterprise RBAC & Modal Dialog Polish*)

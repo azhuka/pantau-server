@@ -17,19 +17,9 @@ env/
 *.swp
 .vscode/
 
-# Legacy / prototype files (tetap di disk, tidak di-commit)
-/agent/*
-!/agent/agent_pantau.py
-/app_ui.py
-/app_ui.py.V1
-/build.sh
-/setup_db.sh
-/server-monitor.service.example
-/templates/
-/uploads/
+# Scratch & Temporary
 scratch/
 screenshots/
 /server/static/uploads/*
 !/server/static/uploads/.gitkeep
-verification/
 
