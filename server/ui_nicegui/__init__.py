@@ -5,6 +5,8 @@ Arsitektur modular frontend murni Python berbasis NiceGUI + Quasar UI
 yang mengadaptasi seluruh konsep desain matang Pusat Operasi Jaringan (NOC).
 """
 
+import os
+from fastapi.staticfiles import StaticFiles
 from nicegui import ui
 
 from config import settings
@@ -23,6 +25,10 @@ from .users import setup_users_routes
 
 def setup_nicegui(fastapi_app, session_factory):
     """Menginisialisasi seluruh modul antarmuka NiceGUI dan mengaitkannya ke FastAPI."""
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    if os.path.isdir(static_dir):
+        fastapi_app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
     setup_auth_routes(session_factory)
     setup_dashboard_routes(session_factory)
     setup_servers_routes(session_factory)

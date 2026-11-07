@@ -1,0 +1,3252 @@
+/* =============================================================================
+   Pantau Server - Unified Component Design System (pantau-components.css)
+   Pondasi komponen antarmuka mandiri, bersih, baku, dan seragam di seluruh halaman.
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   1. SISTEM TABEL OPERASIONAL NOC (High Density Table)
+   ----------------------------------------------------------------------------- */
+.pantau-table-wrap {
+  width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  background: var(--bg-card, var(--card)) !important;
+  box-sizing: border-box !important;
+  margin-bottom: 8px !important;
+}
+
+/* Floating Table Island di dalam Kartu & Kontainer Tab */
+.card > .pantau-table-wrap,
+.probe-table-card > .pantau-table-wrap,
+.tab-body .card .pantau-table-wrap,
+.tab-body .pantau-table-wrap {
+  margin: 6px 8px 6px 8px !important;
+  width: calc(100% - 16px) !important;
+  box-sizing: border-box !important;
+}
+
+/* Bilah Paginasi Tersembunyi atau Kosong (:empty) - Tidak boleh pernah tampil */
+.pantau-pagination-bar:empty,
+.table-pagination-bar:empty,
+.pantau-pagination-bar[style*="display: none"],
+.pantau-pagination-bar[style*="display:none"],
+.table-pagination-bar[style*="display: none"],
+.table-pagination-bar[style*="display:none"] {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+}
+
+/* Floating Pagination Bar di dalam Kartu & Kontainer Tab */
+.card > .pantau-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]),
+.card > .table-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]),
+.tab-body .card .pantau-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]),
+.tab-body .card .table-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]),
+.tab-body .table-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]) {
+  margin: 0 12px 10px 12px !important;
+  width: calc(100% - 24px) !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-table,
+table.pantau-table,
+.table-compact,
+table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 11.5px !important;
+  text-align: left !important;
+  line-height: 1.35 !important;
+  margin: 0 !important;
+}
+
+.pantau-table thead tr,
+table thead tr {
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
+}
+
+.pantau-table thead th,
+.pantau-table th,
+table th,
+.pantau-table thead th.th-center,
+.pantau-table thead th.th-right,
+.pantau-table thead th.col-act,
+.pantau-table thead th.col-sev,
+.pantau-table thead th.col-durasi {
+  padding: 6px 10px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  color: var(--dim) !important;
+  white-space: nowrap !important;
+  text-align: left !important;
+  border: none !important;
+}
+
+.pantau-table tbody tr,
+table tbody tr {
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.04)) !important;
+  transition: background 0.12s ease !important;
+}
+
+.pantau-table tbody tr:last-child,
+table tbody tr:last-child {
+  border-bottom: none !important;
+}
+
+.pantau-table tbody tr:hover,
+table tbody tr:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.03)) !important;
+}
+
+.pantau-table tbody td,
+.pantau-table td,
+table td,
+.pantau-table tbody td.col-act,
+.pantau-table tbody td.th-center,
+.pantau-table tbody td.th-right,
+.pantau-table tbody td.col-sev,
+.pantau-table tbody td.col-durasi {
+  padding: 5px 10px !important;
+  vertical-align: middle !important;
+  box-sizing: border-box !important;
+  color: var(--text) !important;
+  border: none !important;
+  text-align: left !important;
+}
+
+.pantau-table tbody td.mono,
+.pantau-mono {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace) !important;
+  font-size: 11px !important;
+}
+
+.pantau-empty-tr {
+  text-align: center !important;
+}
+
+.pantau-empty-td {
+  padding: 36px 16px !important;
+  color: var(--dim) !important;
+  font-size: 12px !important;
+  text-align: center !important;
+}
+
+.pantau-empty-box {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+}
+
+/* -----------------------------------------------------------------------------
+   2. SISTEM PAGINASI TABEL BAKU (Universal Table Pagination Bar)
+   ----------------------------------------------------------------------------- */
+.pantau-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]),
+.table-pagination-bar:not(:empty):not([style*="display: none"]):not([style*="display:none"]) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  padding: 8px 12px !important;
+  font-size: 11.5px !important;
+  color: var(--dim) !important;
+  background: var(--bg-card, var(--card)) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  margin-top: 8px !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-pg-limit,
+.table-pagination-limit {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.pantau-pg-limit-label,
+.table-pagination-limit span {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: var(--dim) !important;
+}
+
+.pantau-pg-select,
+.table-pagination-limit select,
+select[data-pg-select] {
+  height: 24px !important;
+  padding: 0 6px !important;
+  font-size: 11px !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--input-border, var(--border)) !important;
+  border-radius: 4px !important;
+  color: var(--text) !important;
+  cursor: pointer !important;
+  outline: none !important;
+}
+
+.pantau-pg-info,
+.table-pagination-info,
+div[data-pg-info] {
+  font-size: 11px !important;
+  color: var(--dim) !important;
+}
+
+.pantau-pg-nav,
+.table-pagination-nav {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.pantau-pg-btn,
+.btn-pg,
+button[data-pg-prev],
+button[data-pg-next] {
+  height: 24px !important;
+  padding: 0 8px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.04)) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 4px !important;
+  color: var(--text) !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+}
+
+.pantau-pg-btn:hover:not(:disabled),
+.btn-pg:hover:not(:disabled),
+button[data-pg-prev]:hover:not(:disabled),
+button[data-pg-next]:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--dim) !important;
+}
+
+.pantau-pg-btn:disabled,
+.btn-pg:disabled,
+button[data-pg-prev]:disabled,
+button[data-pg-next]:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+
+.pantau-pg-cur,
+.page-indicator,
+span[data-pg-cur] {
+  font-size: 11px !important;
+  font-family: var(--font-mono, ui-monospace, monospace) !important;
+  padding: 0 4px !important;
+  color: var(--text) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   3. SISTEM PRESET WAKTU & FILTER BAR (Universal Preset & Filter System)
+   ----------------------------------------------------------------------------- */
+.pantau-preset-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+}
+
+.pantau-preset-label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.6px !important;
+  color: var(--dim) !important;
+  text-transform: uppercase !important;
+  user-select: none !important;
+}
+
+.pantau-preset-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  padding: 2px !important;
+  gap: 2px !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-preset-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 24px !important;
+  padding: 0 9px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  border: none !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  color: var(--dim) !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+  white-space: nowrap !important;
+  text-decoration: none !important;
+  line-height: 1 !important;
+}
+
+.pantau-preset-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text) !important;
+}
+
+.pantau-preset-btn.is-active,
+.pantau-preset-btn.is-on {
+  background: var(--blue, #38bdf8) !important;
+  color: var(--bg) !important;
+  font-weight: 600 !important;
+}
+
+.pantau-filter-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-bottom: 12px !important;
+}
+
+.pantau-filter-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.pantau-select {
+  height: 28px !important;
+  padding: 0 8px !important;
+  font-size: 11.5px !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--input-border, var(--border)) !important;
+  border-radius: 5px !important;
+  color: var(--text) !important;
+  outline: none !important;
+  cursor: pointer !important;
+  transition: border-color 0.12s ease !important;
+}
+
+.pantau-select:focus {
+  border-color: var(--blue, #38bdf8) !important;
+}
+
+.pantau-input-search {
+  height: 28px !important;
+  width: 100% !important;
+  padding: 0 10px 0 28px !important;
+  font-size: 11.5px !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--input-border, var(--border)) !important;
+  border-radius: 6px !important;
+  color: var(--text) !important;
+  outline: none !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-input-search:focus {
+  border-color: var(--blue, #38bdf8) !important;
+  box-shadow: 0 0 0 2px var(--blue-bg, rgba(56,189,248,0.15)) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   4. SISTEM TOMBOL AKSI & IKON TERPADU (Action Buttons & Icons)
+   ----------------------------------------------------------------------------- */
+.pantau-btn-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  border: 1px solid transparent !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  color: var(--dim) !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+  text-decoration: none !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  line-height: 1 !important;
+}
+
+.pantau-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-bright) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+.pantau-btn-icon-danger:hover {
+  background: var(--red-bg) !important;
+  color: var(--red) !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
+.pantau-btn-icon-primary:hover {
+  background: var(--blue-bg) !important;
+  color: var(--blue) !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+}
+
+.pantau-col-act {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  white-space: nowrap !important;
+  justify-content: center !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.03)) !important;
+  padding: 2px 4px !important;
+  border-radius: 5px !important;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08)) !important;
+}
+
+.pantau-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: inherit !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+  text-decoration: none !important;
+  box-sizing: border-box !important;
+  line-height: 1 !important;
+  border-radius: 6px !important;
+  border: 1px solid transparent !important;
+  white-space: nowrap !important;
+}
+
+.pantau-btn-sm {
+  height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 11.5px !important;
+  gap: 6px !important;
+}
+
+.pantau-btn-xs {
+  height: 24px !important;
+  padding: 0 8px !important;
+  font-size: 10.5px !important;
+  gap: 4px !important;
+  border-radius: 4px !important;
+}
+
+.pantau-btn-ghost {
+  background: transparent !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.pantau-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-heading, #ffffff) !important;
+  border-color: var(--dim) !important;
+}
+
+.pantau-btn-primary {
+  background: var(--blue, #38bdf8) !important;
+  color: var(--bg) !important;
+  border-color: var(--blue, #38bdf8) !important;
+  font-weight: 600 !important;
+}
+
+.pantau-btn-primary:hover {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+.pantau-btn-danger {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.pantau-btn-danger:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+/* -----------------------------------------------------------------------------
+   5. SISTEM KARTU BAKU (Universal Card System)
+   ----------------------------------------------------------------------------- */
+.pantau-card {
+  background: var(--bg-card, var(--card)) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.card.pantau-card-compact,
+.card-table-card {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.pantau-card-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 10px 14px !important;
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-card-title-box {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.pantau-card-title {
+  margin: 0 !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: var(--text) !important;
+}
+
+.pantau-card-subtitle {
+  margin: 1px 0 0 0 !important;
+  font-size: 11px !important;
+  color: var(--dim) !important;
+}
+
+.pantau-card-tools {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.pantau-card-body {
+  padding: 12px 14px !important;
+  box-sizing: border-box !important;
+}
+
+/* -----------------------------------------------------------------------------
+   6. SISTEM MODAL / DIALOG UNIVERSAL (Modal System with Backdrop, X, Esc)
+   ----------------------------------------------------------------------------- */
+.pantau-modal-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.72) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-modal-card {
+  width: 100% !important;
+  background: var(--bg-card, var(--card)) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 90vh !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-modal-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
+  flex-shrink: 0 !important;
+}
+
+.pantau-modal-title {
+  margin: 0 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--text) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.pantau-modal-close {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 26px !important;
+  height: 26px !important;
+  padding: 0 !important;
+  border: 1px solid transparent !important;
+  border-radius: 5px !important;
+  background: transparent !important;
+  color: var(--dim) !important;
+  cursor: pointer !important;
+  transition: all 0.12s ease !important;
+}
+
+.pantau-modal-close:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-heading, #ffffff) !important;
+  border-color: var(--border) !important;
+}
+
+.pantau-modal-body {
+  padding: 14px 16px !important;
+  overflow-y: auto !important;
+  flex: 1 !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-modal-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  padding: 12px 16px !important;
+  border-top: 1px solid var(--border) !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.015)) !important;
+  flex-shrink: 0 !important;
+}
+
+.pantau-modal-input {
+  width: 100% !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-sm, 6px) !important;
+  color: var(--text) !important;
+  padding: 8px 10px !important;
+  font-size: 13px !important;
+  outline: none !important;
+  margin-top: 4px !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease !important;
+}
+
+.pantau-modal-input:focus {
+  border-color: var(--blue, #38bdf8) !important;
+}
+
+.pantau-form-group {
+  margin-bottom: 16px !important;
+}
+
+.pantau-form-row-2 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+}
+
+.pantau-form-label {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  display: block !important;
+  margin-bottom: 6px !important;
+  color: var(--text) !important;
+}
+
+.pantau-form-sublabel {
+  font-size: 11px !important;
+  display: block !important;
+  margin-bottom: 2px !important;
+}
+
+/* -----------------------------------------------------------------------------
+   7. UTILITAS TAMPILAN BAKU NOC (Typography, Colors, Spacing, & Flex Helpers)
+   ----------------------------------------------------------------------------- */
+.pantau-text-dim { color: var(--dim) !important; }
+.pantau-text-bright { color: var(--text-bright, #ffffff) !important; }
+.pantau-text-ok { color: var(--green, #22c55e) !important; }
+.pantau-text-warn { color: var(--yellow, #f59e0b) !important; }
+.pantau-text-crit { color: var(--red, #ef4444) !important; }
+.pantau-text-info { color: var(--blue, #38bdf8) !important; }
+
+.pantau-text-center { text-align: center !important; }
+.pantau-text-left { text-align: left !important; }
+.pantau-text-right { text-align: right !important; }
+.pantau-align-middle { vertical-align: middle !important; }
+
+.pantau-nowrap { white-space: nowrap !important; }
+.pantau-truncate {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.pantau-flex { display: flex !important; align-items: center !important; }
+.pantau-flex-between { display: flex !important; align-items: center !important; justify-content: space-between !important; }
+.pantau-flex-center { display: flex !important; align-items: center !important; justify-content: center !important; }
+.pantau-flex-col { display: flex !important; flex-direction: column !important; }
+.pantau-inline-flex { display: inline-flex !important; align-items: center !important; }
+
+.pantau-gap-2 { gap: 2px !important; }
+.pantau-gap-4 { gap: 4px !important; }
+.pantau-gap-6 { gap: 6px !important; }
+.pantau-gap-8 { gap: 8px !important; }
+.pantau-gap-10 { gap: 10px !important; }
+.pantau-gap-12 { gap: 12px !important; }
+
+/* Mini Tag & Badges */
+.pantau-tag-subtle {
+  font-size: 8px !important;
+  color: var(--dim) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  padding: 0.5px 3.5px !important;
+  border-radius: 3px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  line-height: 1.2 !important;
+}
+
+.pantau-truncate-sub {
+  font-size: 8.5px !important;
+  color: var(--dim) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 160px !important;
+  margin-top: 1px !important;
+  display: block !important;
+}
+
+.pantau-kpi-pill {
+  min-width: 20px !important;
+  text-align: center !important;
+  padding: 1px 5px !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  line-height: 1.2 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.pantau-badge-header {
+  font-size: 11.5px !important;
+  padding: 3px 8px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  border-radius: 4px !important;
+}
+
+.pantau-badge-xs {
+  font-size: 8.5px !important;
+  padding: 1px 6.5px !important;
+  letter-spacing: 0.3px !important;
+  font-weight: 700 !important;
+  border-radius: 3px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* Tier Badges (PROD vs DEV) */
+.badge-tier-prod {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3.5px !important;
+  padding: 1.5px 6px !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  background: var(--green-bg) !important;
+  color: var(--green) !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+  border-radius: 4px !important;
+  line-height: 1.2 !important;
+}
+
+.badge-tier-dev {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3.5px !important;
+  padding: 1.5px 6px !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  background: rgba(148, 163, 184, 0.12) !important;
+  color: var(--dim) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  border-radius: 4px !important;
+  line-height: 1.2 !important;
+}
+
+/* Badge & Text Utilitas Operasional Server */
+.copyable-ip {
+  color: var(--blue) !important;
+  font-weight: 600 !important;
+  font-size: 9.5px !important;
+  cursor: pointer !important;
+}
+
+.badge-local-net {
+  font-size: 7.5px !important;
+  background: rgba(148, 163, 184, 0.12) !important;
+  color: var(--dim) !important;
+  border: 1px solid var(--border) !important;
+  padding: 0.5px 3px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  font-weight: 600 !important;
+  border-radius: 3px !important;
+}
+
+.badge-proxmox-ha {
+  font-size: 7.5px !important;
+  background: rgba(234, 179, 8, 0.12) !important;
+  color: var(--yellow) !important;
+  border: 1px solid rgba(234, 179, 8, 0.25) !important;
+  padding: 0.5px 3px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  font-weight: 600 !important;
+  border-radius: 3px !important;
+}
+
+.badge-agent-ver {
+  font-size: 7.5px !important;
+  padding: 0.5px 3.5px !important;
+  font-family: var(--font-mono) !important;
+  border-radius: 3px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+.badge-agent-ver.is-outdated {
+  background: rgba(217, 119, 6, 0.15) !important;
+  color: var(--yellow) !important;
+  border: 1px solid rgba(217, 119, 6, 0.3) !important;
+  font-weight: 600 !important;
+}
+.badge-agent-ver.is-current {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: var(--blue) !important;
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+  font-weight: 400 !important;
+}
+
+.pantau-btn-yellow {
+  border: 1px solid rgba(234, 179, 8, 0.4) !important;
+  color: var(--yellow) !important;
+}
+.pantau-btn-yellow:hover {
+  background: rgba(234, 179, 8, 0.15) !important;
+  color: var(--yellow) !important;
+  border-color: var(--yellow) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   8. SISTEM PANEL FILTER MODULAR BAKU (Filter Panel Modular Design System)
+   ----------------------------------------------------------------------------- */
+.filter-col-user {
+  max-width: 130px !important;
+}
+.filter-col-user .filter-select {
+  max-width: 130px !important;
+}
+
+.filter-col-server {
+  max-width: 130px !important;
+}
+.filter-col-server .filter-select {
+  max-width: 130px !important;
+}
+
+.filter-col-action {
+  max-width: 165px !important;
+}
+.filter-col-action .filter-select {
+  max-width: 165px !important;
+  text-overflow: ellipsis !important;
+}
+
+.filter-col-status {
+  max-width: 115px !important;
+}
+.filter-col-status .filter-select {
+  max-width: 115px !important;
+}
+
+.filter-col-date {
+  flex-shrink: 0 !important;
+}
+
+/* Grup Pencarian & Aksi Filter Terpadu (Mencegah tombol aksi/reset terisolasi pada baris baru saat zoom tinggi) */
+.filter-search-group {
+  display: flex !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  flex: 1 1 220px !important;
+  min-width: 220px !important;
+  box-sizing: border-box !important;
+}
+.filter-search-group .filter-col-search {
+  flex: 1 !important;
+  min-width: 140px !important;
+}
+.filter-search-group .btn-reset-action {
+  height: 30px !important;
+  padding: 0 10px !important;
+  font-size: 11.5px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important;
+}
+
+
+/* -----------------------------------------------------------------------------
+   9. KONTROL BILAH ALAT DASBOR (Dashboard Toolbar Controls)
+   ----------------------------------------------------------------------------- */
+.dash-group-select {
+  height: 28px !important;
+  padding: 0 8px !important;
+  font-size: 11.5px !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  color: var(--text) !important;
+  outline: none !important;
+  cursor: pointer !important;
+}
+
+.dash-search-input {
+  height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 11.5px !important;
+  background: var(--input-bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  color: var(--text) !important;
+  width: 160px !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+}
+
+/* -----------------------------------------------------------------------------
+   10. SISTEM KOMPONEN & UTILITAS ARSITEKTUR FRAMEWORK (Framework Component Library)
+   ----------------------------------------------------------------------------- */
+
+/* Flash & In-Page Alerts (Terisolasi dari #alertBanner darurat sistem) */
+.pantau-alert {
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  margin-bottom: 20px !important;
+  font-size: 13.5px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+.pantau-alert-success {
+  background: var(--green-bg) !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+  color: var(--green) !important;
+}
+.pantau-alert-danger {
+  background: var(--red-bg) !important;
+  border: 1px solid rgba(248, 113, 113, 0.35) !important;
+  color: var(--red) !important;
+}
+.pantau-alert-warning {
+  background: var(--yellow-bg) !important;
+  border: 1px solid rgba(251, 191, 36, 0.35) !important;
+  color: var(--yellow) !important;
+}
+.pantau-alert-info {
+  background: var(--blue-bg) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  color: var(--blue) !important;
+}
+
+/* Tombol Aksi Ghost & Outline NOC */
+.btn-ghost-danger {
+  color: var(--red) !important;
+}
+.btn-ghost-danger:hover {
+  background: var(--red-bg) !important;
+  color: var(--red) !important;
+}
+
+.btn-ghost-warning {
+  color: var(--yellow) !important;
+}
+.btn-ghost-warning:hover {
+  background: var(--yellow-bg) !important;
+  color: var(--yellow) !important;
+}
+
+.btn-ghost-info {
+  color: var(--blue) !important;
+}
+.btn-ghost-info:hover {
+  background: var(--blue-bg) !important;
+  color: var(--blue) !important;
+}
+
+.btn-ghost-success {
+  color: var(--green) !important;
+}
+.btn-ghost-success:hover {
+  background: var(--green-bg) !important;
+  color: var(--green) !important;
+}
+
+.btn-outline-warning {
+  color: var(--yellow) !important;
+  border: 1px solid rgba(251, 191, 36, 0.4) !important;
+}
+.btn-outline-warning:hover {
+  background: var(--yellow-bg) !important;
+  border-color: var(--yellow) !important;
+  color: var(--yellow) !important;
+}
+
+.btn-outline-info {
+  color: var(--blue) !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+}
+.btn-outline-info:hover {
+  background: var(--blue-bg) !important;
+  border-color: var(--blue) !important;
+  color: var(--blue) !important;
+}
+
+/* Tombol Aksi Tabel Manajemen Pengguna */
+.user-act-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3.5px !important;
+  font-size: 11px !important;
+  padding: 3px 6px !important;
+  border-radius: 5px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+.user-act-icon-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 3px 6px !important;
+  border-radius: 5px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+/* Badge Peran Pengguna & Wewenang */
+.badge-role-master {
+  background: var(--red-bg) !important;
+  color: var(--red) !important;
+  border: 1px solid rgba(248, 113, 113, 0.35) !important;
+  font-size: 8.5px !important;
+  padding: 1px 5px !important;
+  font-weight: 700 !important;
+}
+.badge-role-op {
+  background: var(--blue-bg) !important;
+  color: var(--blue) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  font-size: 8.5px !important;
+  padding: 1px 5px !important;
+  font-weight: 700 !important;
+}
+.badge-role-viewer {
+  background: var(--card-hover, rgba(255, 255, 255, 0.05)) !important;
+  color: var(--dim) !important;
+  border: 1px solid var(--border) !important;
+  font-size: 8.5px !important;
+  padding: 1px 5px !important;
+}
+.badge-perm {
+  background: var(--blue-bg) !important;
+  color: var(--blue) !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  font-size: 10px !important;
+  padding: 2px 6px !important;
+}
+
+/* Wadah QR Code & Kode Rahasia (Teruji bersih di seluruh tema) */
+.qr-code-box {
+  background: #ffffff !important;
+  padding: 8px !important;
+  border-radius: 8px !important;
+  display: inline-block !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Utilitas Teks Semantik Framework */
+.text-ok { color: var(--green) !important; }
+.text-warn { color: var(--yellow) !important; }
+.text-danger { color: var(--red) !important; }
+.text-info { color: var(--blue) !important; }
+.text-orange { color: var(--orange) !important; }
+.text-dim { color: var(--dim) !important; }
+.text-dim-subtle { color: var(--dim-subtle) !important; }
+.text-mono { font-family: var(--font-mono, ui-monospace, monospace) !important; }
+
+/* -----------------------------------------------------------------------------
+   11. SISTEM KONTROL & WADAH TOMBOL AKSI BAKU (Framework Action & Toolbar Controls)
+   ----------------------------------------------------------------------------- */
+
+/* Bilah Kontrol Terpadu Tabel (Toolbar) */
+.pantau-toolbar,
+.table-toolbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-sizing: border-box !important;
+}
+
+.pantau-toolbar-left,
+.table-toolbar-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.pantau-toolbar-right,
+.table-toolbar-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+/* Standarisasi Tinggi Kontrol Input, Select, & Button pada Bilah Kontrol (Terkunci 30px) */
+.pantau-toolbar input,
+.pantau-toolbar select,
+.pantau-toolbar .btn,
+.table-toolbar input,
+.table-toolbar select,
+.table-toolbar .btn,
+.filter-search-box input,
+.dash-search-input,
+.dash-group-select,
+.filter-select,
+.pantau-col-btn,
+.pantau-date-range,
+.btn-reset-action {
+  height: 30px !important;
+  line-height: 28px !important;
+  box-sizing: border-box !important;
+  border-radius: 5px !important;
+  font-size: 11.5px !important;
+}
+
+.pantau-date-range input[type="date"] {
+  height: 26px !important;
+  line-height: 26px !important;
+}
+
+/* Wadah Grup Tombol Aksi di Sel Tabel (Action Button Group - Seamless NOC Toolbar) */
+.action-btn-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 4px !important;
+  border: none !important;
+  box-shadow: none !important;
+  vertical-align: middle !important;
+}
+
+.action-btn-group .btn-act,
+.action-btn-group .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  border-radius: 4px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--dim, #64748b) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  box-shadow: none !important;
+  flex-shrink: 0 !important;
+}
+
+.action-btn-group .btn-act:hover:not(:disabled),
+.action-btn-group .btn:hover:not(:disabled) {
+  background: rgba(148, 163, 184, 0.15) !important;
+  color: var(--text-heading, #0f172a) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+}
+
+[data-theme="dark"] .action-btn-group .btn-act:hover:not(:disabled),
+[data-theme="dark"] .action-btn-group .btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.action-btn-group .btn-act.btn-act-primary,
+.action-btn-group .btn.btn-primary {
+  background: transparent !important;
+  color: var(--blue, #0284c7) !important;
+  border-color: transparent !important;
+}
+.action-btn-group .btn-act.btn-act-primary:hover:not(:disabled),
+.action-btn-group .btn.btn-primary:hover:not(:disabled) {
+  background: var(--blue-bg, rgba(2, 132, 199, 0.12)) !important;
+  color: var(--blue, #0284c7) !important;
+  border-color: rgba(2, 132, 199, 0.3) !important;
+}
+
+.action-btn-group .btn-act.btn-act-danger,
+.action-btn-group .btn.btn-danger {
+  background: transparent !important;
+  color: var(--red, #ef4444) !important;
+  border-color: transparent !important;
+}
+.action-btn-group .btn-act.btn-act-danger:hover:not(:disabled),
+.action-btn-group .btn.btn-danger:hover:not(:disabled) {
+  background: var(--red-bg, rgba(239, 68, 68, 0.12)) !important;
+  color: var(--red, #ef4444) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* -----------------------------------------------------------------------------
+   12. ENFORCEMENT PENJAJARAN TABEL: 100% RATA KIRI (UNIVERSAL LEFT-ALIGN CONTRACT)
+   ----------------------------------------------------------------------------- */
+.pantau-table th,
+.pantau-table td,
+.pantau-table thead th,
+.pantau-table tbody td,
+.pantau-table tfoot td,
+.pantau-table th.col-act,
+.pantau-table td.col-act,
+.pantau-table th.th-center,
+.pantau-table td.th-center,
+.pantau-table th.th-right,
+.pantau-table td.th-right,
+.pantau-table th.col-sev,
+.pantau-table td.col-sev,
+.pantau-table th.col-durasi,
+.pantau-table td.col-durasi,
+.table-compact th,
+.table-compact td,
+.fm-table th,
+.fm-table td,
+#tbl-audit th,
+#tbl-audit td,
+#ll-table th,
+#ll-table td,
+#maintenanceTable th,
+#maintenanceTable td,
+.probe-history-table th,
+.probe-history-table td,
+#users-table th,
+#users-table td,
+#servers-table th,
+#servers-table td,
+#probtable th,
+#probtable td,
+#tbl-services th,
+#tbl-services td,
+#tbl-systemd th,
+#tbl-systemd td,
+#tbl-packages th,
+#tbl-packages td,
+#tbl-task-manager th,
+#tbl-task-manager td,
+#ports-table th,
+#ports-table td,
+#cron-table th,
+#cron-table td,
+#fw-rules-table th,
+#fw-rules-table td,
+#acc-table th,
+#acc-table td,
+#ssl-table th,
+#ssl-table td,
+#probes-table th,
+#probes-table td,
+#dash-servers-table th,
+#dash-servers-table td,
+#dash-problems-table th,
+#dash-problems-table td,
+#sdm-table th,
+#sdm-table td {
+  text-align: left !important;
+}
+
+/* Penjajaran tombol aksi dan indikator dalam sel tabel ke kiri */
+.pantau-table td.col-act > div,
+.pantau-table td.col-act .action-btn-group,
+.pantau-table td.col-act .pantau-col-act,
+#servers-table td.col-act .action-btn-group,
+#servers-table td.col-act .pantau-col-act {
+  display: inline-flex !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+/* Pengecualian hanya untuk baris pesan kosong (empty-msg / colspan) */
+.pantau-table td.empty-msg,
+.pantau-table td.pantau-empty-td,
+.pantau-empty-tr td,
+table td.empty-msg {
+  text-align: center !important;
+}
+
+.action-btn-group > span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+/* -----------------------------------------------------------------------------
+   13. SPESIFIKASI TABEL KONTROL NOC (HIGH-DENSITY COMPONENT ENGINE)
+   ----------------------------------------------------------------------------- */
+
+/* Tabel Layanan Terpantau (#tbl-services) */
+#tbl-services {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#tbl-services th,
+#tbl-services td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#tbl-services th:first-child,
+#tbl-services td:first-child {
+  padding-left: 10px !important;
+}
+
+#tbl-services th.col-svc-name,
+#tbl-services td.col-svc-name {
+  width: 120px !important;
+  min-width: 105px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-services th.col-svc-port,
+#tbl-services td.col-svc-port {
+  width: 60px !important;
+  min-width: 50px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-services th.col-svc-proc,
+#tbl-services td.col-svc-proc {
+  width: 140px !important;
+  min-width: 125px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-services th.col-svc-status,
+#tbl-services td.col-svc-status {
+  width: 65px !important;
+  min-width: 60px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-services th.col-svc-conns,
+#tbl-services td.col-svc-conns {
+  width: 60px !important;
+  min-width: 50px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-services th.col-svc-resp,
+#tbl-services td.col-svc-resp {
+  width: 105px !important;
+  min-width: 95px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#tbl-services th.col-svc-desc,
+#tbl-services td.col-svc-desc {
+  width: auto !important;
+  min-width: 140px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-services th.col-svc-uptime,
+#tbl-services td.col-svc-uptime {
+  width: 115px !important;
+  min-width: 105px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-services th.col-svc-act,
+#tbl-services td.col-svc-act {
+  width: 175px !important;
+  min-width: 170px !important;
+  white-space: nowrap !important;
+  padding: 4px 6px !important;
+}
+
+/* Tabel Unit Layanan Systemd (#tbl-systemd) */
+#tbl-systemd {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#tbl-systemd th,
+#tbl-systemd td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#tbl-systemd th.col-sysd-status,
+#tbl-systemd td.col-sysd-status {
+  width: 85px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-systemd th.col-sysd-name,
+#tbl-systemd td.col-sysd-name {
+  width: 220px !important;
+  min-width: 190px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-systemd th.col-sysd-boot,
+#tbl-systemd td.col-sysd-boot {
+  width: 115px !important;
+  min-width: 105px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#tbl-systemd th.col-sysd-sub,
+#tbl-systemd td.col-sysd-sub {
+  width: 95px !important;
+  min-width: 90px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-systemd th.col-sysd-mem,
+#tbl-systemd td.col-sysd-mem {
+  width: 130px !important;
+  min-width: 120px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-systemd th.col-sysd-desc,
+#tbl-systemd td.col-sysd-desc {
+  width: auto !important;
+  min-width: 180px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-systemd th.col-sysd-act,
+#tbl-systemd td.col-sysd-act {
+  width: 175px !important;
+  min-width: 170px !important;
+  white-space: nowrap !important;
+  padding: 4px 6px !important;
+}
+
+/* Tabel Audit Port Terbuka (#ports-table) */
+#ports-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#ports-table th,
+#ports-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#ports-table th.col-port-proto,
+#ports-table td.col-port-proto {
+  width: 85px !important;
+  min-width: 80px !important;
+  max-width: 90px !important;
+}
+
+#ports-table th.col-port-num,
+#ports-table td.col-port-num {
+  width: 70px !important;
+  min-width: 65px !important;
+  max-width: 75px !important;
+}
+
+#ports-table th.col-port-ip,
+#ports-table td.col-port-ip {
+  width: 135px !important;
+  min-width: 120px !important;
+  max-width: 145px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ports-table th.col-port-access,
+#ports-table td.col-port-access {
+  width: 145px !important;
+  min-width: 135px !important;
+  max-width: 155px !important;
+  white-space: nowrap !important;
+}
+
+#ports-table th.col-port-proc,
+#ports-table td.col-port-proc {
+  width: auto !important;
+  min-width: 180px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ports-table th.col-port-act,
+#ports-table td.col-port-act {
+  width: 115px !important;
+  min-width: 110px !important;
+  max-width: 120px !important;
+  white-space: nowrap !important;
+  padding: 4px 6px !important;
+}
+
+/* -----------------------------------------------------------------------------
+   14. UNIFORM HIGH-DENSITY TABLE SPECIFICATIONS (UNIVERSAL NOC BLUEPRINT)
+   ----------------------------------------------------------------------------- */
+
+/* Tabel Audit Log (#tbl-audit) */
+#tbl-audit {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#tbl-audit th,
+#tbl-audit td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+  line-height: 1.35 !important;
+}
+
+#tbl-audit th.col-aud-time,
+#tbl-audit td.col-aud-time {
+  width: 125px !important;
+  min-width: 120px !important;
+  white-space: nowrap !important;
+  letter-spacing: -0.025em !important;
+}
+
+#tbl-audit th.col-aud-user,
+#tbl-audit td.col-aud-user {
+  width: 100px !important;
+  min-width: 90px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#tbl-audit th.col-aud-srv,
+#tbl-audit td.col-aud-srv {
+  width: 120px !important;
+  min-width: 105px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#tbl-audit th.col-aud-act,
+#tbl-audit td.col-aud-act {
+  width: 135px !important;
+  min-width: 125px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-audit th.col-aud-tgt,
+#tbl-audit td.col-aud-tgt {
+  width: auto !important;
+  min-width: 280px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-audit th.col-aud-st,
+#tbl-audit td.col-aud-st {
+  width: 85px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-audit th.col-aud-res,
+#tbl-audit td.col-aud-res {
+  width: 180px !important;
+  min-width: 150px !important;
+  max-width: 220px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  color: var(--dim) !important;
+}
+
+#tbl-audit td .audit-user-name {
+  color: var(--text-bright) !important;
+  font-weight: 600 !important;
+}
+
+#tbl-audit td .audit-srv-cell {
+  font-weight: 600 !important;
+}
+
+/* Tabel Aktivitas Pengguna (#ll-table) */
+#ll-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#ll-table th {
+  padding: 6px 10px !important;
+  font-size: 10px !important;
+  color: var(--dim) !important;
+  text-transform: uppercase !important;
+  letter-spacing: .5px !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.02)) !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+
+#ll-table td {
+  padding: 5px 10px !important;
+  font-size: 11px !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  vertical-align: middle !important;
+  line-height: 1.35 !important;
+  height: 32px !important;
+  box-sizing: border-box !important;
+}
+
+#ll-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+#ll-table th.col-ll-time,
+#ll-table td.col-ll-time {
+  width: 130px !important;
+  min-width: 125px !important;
+  max-width: 140px !important;
+  white-space: nowrap !important;
+}
+
+#ll-table th.col-ll-user,
+#ll-table td.col-ll-user {
+  width: 85px !important;
+  min-width: 80px !important;
+  max-width: 95px !important;
+  white-space: nowrap !important;
+}
+
+#ll-table th.col-ll-type,
+#ll-table td.col-ll-type {
+  width: 115px !important;
+  min-width: 110px !important;
+  max-width: 125px !important;
+  white-space: nowrap !important;
+}
+
+#ll-table th.col-ll-term,
+#ll-table td.col-ll-term {
+  width: 120px !important;
+  min-width: 110px !important;
+  max-width: 130px !important;
+  white-space: nowrap !important;
+}
+
+#ll-table th.col-ll-ip,
+#ll-table td.col-ll-ip {
+  width: 125px !important;
+  min-width: 115px !important;
+  max-width: 135px !important;
+  white-space: nowrap !important;
+}
+
+#ll-table th.col-ll-pwd,
+#ll-table td.col-ll-pwd {
+  width: 150px !important;
+  min-width: 130px !important;
+  max-width: 170px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ll-table th.col-ll-cmd,
+#ll-table td.col-ll-cmd {
+  width: auto !important;
+  min-width: 180px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ll-table code.cmd-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-size: 11px !important;
+  color: var(--text) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 1px 5px !important;
+  border-radius: 3px !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+
+.chip-info {
+  background: var(--blue-bg) !important;
+  color: var(--blue) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+}
+
+/* Tabel File Manager (#fm-table) */
+#fm-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  font-size: 11.5px !important;
+}
+
+#fm-table th {
+  padding: 6px 10px !important;
+  text-align: left !important;
+  color: var(--dim) !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--bg) !important;
+  position: sticky !important;
+  top: 0 !important;
+  white-space: nowrap !important;
+}
+
+#fm-table td {
+  padding: 5px 10px !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  vertical-align: middle !important;
+  font-size: 11px !important;
+  height: 32px !important;
+  box-sizing: border-box !important;
+}
+
+#fm-table th.col-fm-check,
+#fm-table td.col-fm-check {
+  width: 34px !important;
+  text-align: left !important;
+}
+
+#fm-table th.col-fm-name,
+#fm-table td.col-fm-name {
+  width: auto !important;
+  min-width: 180px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#fm-table th.col-fm-size,
+#fm-table td.col-fm-size {
+  width: 75px !important;
+  min-width: 70px !important;
+  white-space: nowrap !important;
+}
+
+#fm-table th.col-fm-mode,
+#fm-table td.col-fm-mode {
+  width: 75px !important;
+  min-width: 70px !important;
+  white-space: nowrap !important;
+}
+
+#fm-table th.col-fm-owner,
+#fm-table td.col-fm-owner {
+  width: 110px !important;
+  min-width: 100px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#fm-table th.col-fm-mtime,
+#fm-table td.col-fm-mtime {
+  width: 145px !important;
+  min-width: 140px !important;
+  white-space: nowrap !important;
+}
+
+#fm-table th.col-fm-act,
+#fm-table td.col-fm-act {
+  width: 195px !important;
+  min-width: 190px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Pemeliharaan (#maintenanceTable) */
+#maintenanceTable {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#maintenanceTable th,
+#maintenanceTable td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#maintenanceTable th.col-mnt-st,
+#maintenanceTable td.col-mnt-st {
+  width: 115px !important;
+  min-width: 105px !important;
+}
+
+#maintenanceTable th.col-mnt-title,
+#maintenanceTable td.col-mnt-title {
+  width: auto !important;
+  min-width: 180px !important;
+}
+
+#maintenanceTable th.col-mnt-scope,
+#maintenanceTable td.col-mnt-scope {
+  width: 160px !important;
+  min-width: 140px !important;
+}
+
+#maintenanceTable th.col-mnt-sched,
+#maintenanceTable td.col-mnt-sched {
+  width: 145px !important;
+  min-width: 130px !important;
+}
+
+#maintenanceTable th.col-mnt-time,
+#maintenanceTable td.col-mnt-time {
+  width: 230px !important;
+  min-width: 210px !important;
+}
+
+#maintenanceTable th.col-mnt-author,
+#maintenanceTable td.col-mnt-author {
+  width: 110px !important;
+  min-width: 95px !important;
+}
+
+#maintenanceTable th.col-mnt-act,
+#maintenanceTable td.col-mnt-act {
+  width: 125px !important;
+  min-width: 115px !important;
+}
+
+/* Tabel Modal Riwayat Probing (.probe-history-table) */
+.probe-history-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  font-size: 11px !important;
+}
+
+.probe-history-table th,
+.probe-history-table td {
+  padding: 5px 8px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+.probe-history-table th.col-ph-time,
+.probe-history-table td.col-ph-time {
+  width: 130px !important;
+  min-width: 120px !important;
+  white-space: nowrap !important;
+}
+
+.probe-history-table th.col-ph-status,
+.probe-history-table td.col-ph-status {
+  width: 75px !important;
+  min-width: 70px !important;
+  white-space: nowrap !important;
+}
+
+.probe-history-table th.col-ph-latency,
+.probe-history-table td.col-ph-latency {
+  width: 90px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
+}
+
+.probe-history-table th.col-ph-code,
+.probe-history-table td.col-ph-code {
+  width: 120px !important;
+  min-width: 110px !important;
+  white-space: nowrap !important;
+}
+
+.probe-history-table th.col-ph-desc,
+.probe-history-table td.col-ph-desc {
+  width: auto !important;
+  min-width: 150px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Manajemen Pengguna (#users-table) */
+#users-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#users-table thead tr {
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--dim) !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  font-weight: 600 !important;
+}
+
+#users-table th,
+#users-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#users-table th.col-usr-name,
+#users-table td.col-usr-name {
+  width: auto !important;
+  min-width: 120px !important;
+}
+
+#users-table th.col-usr-role,
+#users-table td.col-usr-role {
+  width: 100px !important;
+  min-width: 90px !important;
+  white-space: nowrap !important;
+}
+
+#users-table th.col-usr-st,
+#users-table td.col-usr-st {
+  width: 135px !important;
+  min-width: 125px !important;
+  white-space: nowrap !important;
+}
+
+#users-table th.col-usr-last,
+#users-table td.col-usr-last {
+  width: 125px !important;
+  min-width: 115px !important;
+  white-space: nowrap !important;
+}
+
+#users-table th.col-usr-act,
+#users-table td.col-usr-act {
+  width: 175px !important;
+  min-width: 170px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Ringkasan Spesifikasi Kunci/Nilai (.pantau-table-kv) */
+.pantau-table-kv {
+  width: 100% !important;
+  font-size: 10px !important;
+  border-collapse: collapse !important;
+}
+
+.pantau-table-kv td {
+  padding: 3px 0 !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+}
+
+.pantau-table-kv td:first-child {
+  color: var(--dim) !important;
+  width: 40% !important;
+}
+
+/* Tabel Daftar Server (#servers-table) */
+#servers-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#servers-table th {
+  white-space: nowrap !important;
+  padding: 6px 6px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--dim) !important;
+  text-transform: uppercase !important;
+  letter-spacing: .5px !important;
+}
+
+#servers-table td {
+  white-space: nowrap !important;
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#servers-table th.col-srv-host,
+#servers-table td.col-srv-host {
+  width: 18% !important;
+  min-width: 155px !important;
+  padding-left: 10px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#servers-table th.col-srv-ip,
+#servers-table td.col-srv-ip {
+  width: 105px !important;
+  min-width: 100px !important;
+  white-space: nowrap !important;
+}
+
+#servers-table th.col-srv-plat,
+#servers-table td.col-srv-plat {
+  width: 15% !important;
+  min-width: 105px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#servers-table th.col-srv-os,
+#servers-table td.col-srv-os {
+  width: 18% !important;
+  min-width: 125px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#servers-table th.col-srv-cpu,
+#servers-table td.col-srv-cpu {
+  width: 17% !important;
+  min-width: 110px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#servers-table th.col-srv-mem,
+#servers-table td.col-srv-mem {
+  width: 75px !important;
+  min-width: 70px !important;
+  white-space: nowrap !important;
+}
+
+#servers-table th.col-srv-disk,
+#servers-table td.col-srv-disk {
+  width: 12% !important;
+  min-width: 90px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#servers-table th.col-srv-up,
+#servers-table td.col-srv-up {
+  width: 105px !important;
+  min-width: 95px !important;
+  white-space: nowrap !important;
+}
+
+#servers-table th.col-srv-agent,
+#servers-table td.col-srv-agent {
+  width: 80px !important;
+  min-width: 75px !important;
+  white-space: nowrap !important;
+}
+
+#servers-table th.col-srv-tag,
+#servers-table td.col-srv-tag {
+  min-width: 45px !important;
+}
+
+#servers-table th.col-srv-st,
+#servers-table td.col-srv-st {
+  width: 80px !important;
+  min-width: 75px !important;
+  white-space: nowrap !important;
+}
+
+#servers-table th.col-srv-act,
+#servers-table td.col-srv-act {
+  width: 86px !important;
+  min-width: 86px !important;
+  white-space: nowrap !important;
+  padding: 4px 6px !important;
+}
+
+#servers-table th .sort-arrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-left: 3px !important;
+  vertical-align: middle !important;
+  color: var(--dim) !important;
+  opacity: 0.45 !important;
+}
+
+/* Tabel Masalah / Insiden (#probtable, .dash-prob-table) */
+#probtable,
+.dash-prob-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#probtable thead tr,
+.dash-prob-table thead tr {
+  border-bottom: 1px solid var(--border) !important;
+  background: rgba(255, 255, 255, 0.015) !important;
+}
+
+#probtable th,
+.dash-prob-table th {
+  font-size: 10px !important;
+  color: var(--dim) !important;
+  text-align: left !important;
+  letter-spacing: 0.6px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+}
+
+#probtable td,
+.dash-prob-table td {
+  font-size: 11px !important;
+  vertical-align: middle !important;
+  line-height: 1.35 !important;
+}
+
+#probtable th.col-time,
+#probtable td.col-time,
+#probtable th.col-time-detailed,
+#probtable td.col-time-detailed,
+.dash-prob-table th.dash-col-time,
+.dash-prob-table td.dash-col-time {
+  padding: 5px 10px !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-time-detailed,
+#probtable td.col-time-detailed {
+  width: 135px !important;
+  min-width: 125px !important;
+}
+
+#probtable th.col-server,
+#probtable td.col-server,
+.dash-prob-table th.dash-col-server,
+.dash-prob-table td.dash-col-server {
+  padding: 5px 8px !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-sev,
+#probtable td.col-sev,
+.dash-prob-table th.dash-col-sev,
+.dash-prob-table td.dash-col-sev {
+  padding: 4px 8px !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-event,
+#probtable td.col-event,
+.dash-prob-table th.dash-col-desc,
+.dash-prob-table td.dash-col-desc {
+  padding: 5px 14px !important;
+}
+
+#probtable th.col-time,
+#probtable td.col-time {
+  width: 140px !important;
+  min-width: 135px !important;
+  padding: 5px 8px !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-time-detailed,
+#probtable td.col-time-detailed {
+  width: 140px !important;
+  min-width: 135px !important;
+  padding: 5px 8px !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-server,
+#probtable td.col-server {
+  width: 175px !important;
+  min-width: 155px !important;
+  padding: 5px 8px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#probtable th.col-sev,
+#probtable td.col-sev {
+  width: 145px !important;
+  min-width: 135px !important;
+  padding: 4px 6px !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-event,
+#probtable td.col-event {
+  width: auto !important;
+  min-width: 180px !important;
+  padding: 5px 10px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#probtable th.col-durasi,
+#probtable td.col-durasi {
+  width: 125px !important;
+  min-width: 115px !important;
+  padding: 5px 8px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#probtable th.col-tips,
+#probtable td.col-tips {
+  width: auto !important;
+  min-width: 200px !important;
+  padding: 5px 10px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.prob-tip-text {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+  display: block !important;
+}
+
+#probtable th.col-act,
+#probtable td.col-act {
+  width: 110px !important;
+  min-width: 105px !important;
+  padding: 5px 6px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Dashboard Server Operasional (#dash-server-table) */
+#dash-server-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#dash-server-table th {
+  vertical-align: middle !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--dim) !important;
+  text-transform: uppercase !important;
+  letter-spacing: .5px !important;
+  padding: 6px 6px !important;
+}
+
+#dash-server-table td {
+  vertical-align: middle !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  font-size: 11px !important;
+  padding: 5px 6px !important;
+}
+
+#dash-server-table th.col-dsh-srv,
+#dash-server-table td.col-dsh-srv {
+  width: 110px !important;
+  min-width: 95px !important;
+}
+
+#dash-server-table th.col-dsh-st,
+#dash-server-table td.col-dsh-st {
+  width: 58px !important;
+  min-width: 52px !important;
+}
+
+#dash-server-table th.col-dsh-env,
+#dash-server-table td.col-dsh-env {
+  width: 70px !important;
+  min-width: 64px !important;
+}
+
+#dash-server-table th.col-dsh-plat,
+#dash-server-table td.col-dsh-plat {
+  width: auto !important;
+  min-width: 120px !important;
+}
+
+#dash-server-table th.col-dsh-up,
+#dash-server-table td.col-dsh-up {
+  width: 65px !important;
+  min-width: 55px !important;
+}
+
+#dash-server-table th.col-dsh-cpu,
+#dash-server-table td.col-dsh-cpu {
+  width: 75px !important;
+  min-width: 68px !important;
+}
+
+#dash-server-table th.col-dsh-ram,
+#dash-server-table td.col-dsh-ram {
+  width: 85px !important;
+  min-width: 75px !important;
+}
+
+#dash-server-table th.col-dsh-disk,
+#dash-server-table td.col-dsh-disk {
+  width: 95px !important;
+  min-width: 88px !important;
+}
+
+#dash-server-table th.col-dsh-svc,
+#dash-server-table td.col-dsh-svc {
+  width: 58px !important;
+  min-width: 52px !important;
+}
+
+#dash-server-table th.col-dsh-inc,
+#dash-server-table td.col-dsh-inc {
+  width: 68px !important;
+  min-width: 60px !important;
+}
+
+#dash-server-table th .sort-arrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-left: 3px !important;
+  vertical-align: middle !important;
+  color: var(--dim) !important;
+  opacity: 0.45 !important;
+}
+
+/* Tabel Modal Detail Insiden (#sdm-table) */
+#sdm-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#sdm-table thead tr {
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--bg-subtle) !important;
+}
+
+#sdm-table th {
+  padding: 8px 10px !important;
+  font-size: 10px !important;
+  color: var(--dim) !important;
+  text-align: left !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  white-space: nowrap !important;
+}
+
+#sdm-table td {
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#sdm-table th.col-sdm-time,
+#sdm-table td.col-sdm-time {
+  width: 115px !important;
+  min-width: 105px !important;
+}
+
+#sdm-table th.col-sdm-srv,
+#sdm-table td.col-sdm-srv {
+  width: 150px !important;
+  min-width: 130px !important;
+}
+
+#sdm-table th.col-sdm-sev,
+#sdm-table td.col-sdm-sev {
+  width: 115px !important;
+  min-width: 105px !important;
+}
+
+#sdm-table th.col-sdm-desc,
+#sdm-table td.col-sdm-desc {
+  width: auto !important;
+  min-width: 180px !important;
+}
+
+#sdm-table th.col-sdm-dur,
+#sdm-table td.col-sdm-dur {
+  width: 120px !important;
+  min-width: 105px !important;
+}
+
+#sdm-table th.col-sdm-act,
+#sdm-table td.col-sdm-act {
+  width: 140px !important;
+  min-width: 125px !important;
+}
+
+/* Tabel Riwayat Insiden Teratasi (#prob-resolved-table) */
+#prob-resolved-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#prob-resolved-table thead tr {
+  border-bottom: 1px solid var(--border) !important;
+}
+
+#prob-resolved-table th {
+  color: var(--dim) !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .5px !important;
+  padding: 6px 6px !important;
+  vertical-align: middle !important;
+}
+
+#prob-resolved-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#prob-resolved-table th.col-time-detailed,
+#prob-resolved-table td.col-time-detailed {
+  width: 140px !important;
+  min-width: 130px !important;
+  white-space: nowrap !important;
+}
+
+#prob-resolved-table th.col-server,
+#prob-resolved-table td.col-server {
+  width: 150px !important;
+  min-width: 130px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#prob-resolved-table th.col-sev,
+#prob-resolved-table td.col-sev {
+  width: 90px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
+}
+
+#prob-resolved-table th.col-component,
+#prob-resolved-table td.col-component {
+  width: 110px !important;
+  min-width: 95px !important;
+  white-space: nowrap !important;
+}
+
+#prob-resolved-table th.col-desc,
+#prob-resolved-table td.col-desc {
+  width: auto !important;
+  min-width: 240px !important;
+}
+
+#prob-resolved-table th.col-durasi,
+#prob-resolved-table td.col-durasi {
+  width: 85px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
+}
+
+#prob-resolved-table th.col-res,
+#prob-resolved-table td.col-res {
+  width: 165px !important;
+  min-width: 150px !important;
+  white-space: nowrap !important;
+}
+
+#prob-resolved-table th.col-act,
+#prob-resolved-table td.col-act {
+  width: 75px !important;
+  min-width: 70px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Paket Terpasang (#tbl-packages) */
+#tbl-packages {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#tbl-packages th,
+#tbl-packages td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#tbl-packages th.col-pkg-st,
+#tbl-packages td.col-pkg-st {
+  width: 85px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-packages th.col-pkg-name,
+#tbl-packages td.col-pkg-name {
+  width: 200px !important;
+  min-width: 175px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#tbl-packages th.col-pkg-type,
+#tbl-packages td.col-pkg-type {
+  width: 70px !important;
+  min-width: 65px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-packages th.col-pkg-ver,
+#tbl-packages td.col-pkg-ver {
+  width: 215px !important;
+  min-width: 185px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#tbl-packages th.col-pkg-size,
+#tbl-packages td.col-pkg-size {
+  width: 75px !important;
+  min-width: 65px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-packages th.col-pkg-desc,
+#tbl-packages td.col-pkg-desc {
+  width: auto !important;
+  min-width: 200px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#tbl-packages th.col-pkg-act,
+#tbl-packages td.col-pkg-act {
+  width: 120px !important;
+  min-width: 115px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Manajer Proses / Tugas (#tbl-task-manager) */
+#tbl-task-manager {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#tbl-task-manager th,
+#tbl-task-manager td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#tbl-task-manager th.col-proc-pid,
+#tbl-task-manager td.col-proc-pid {
+  width: 80px !important;
+  min-width: 70px !important;
+}
+
+#tbl-task-manager th.col-proc-user,
+#tbl-task-manager td.col-proc-user {
+  width: 110px !important;
+  min-width: 95px !important;
+}
+
+#tbl-task-manager th.col-proc-comm,
+#tbl-task-manager td.col-proc-comm {
+  width: auto !important;
+  min-width: 220px !important;
+}
+
+#tbl-task-manager th.col-proc-st,
+#tbl-task-manager td.col-proc-st {
+  width: 100px !important;
+  min-width: 90px !important;
+}
+
+#tbl-task-manager th.col-proc-cpu,
+#tbl-task-manager td.col-proc-cpu {
+  width: 95px !important;
+  min-width: 90px !important;
+}
+
+#tbl-task-manager th.col-proc-mem,
+#tbl-task-manager td.col-proc-mem {
+  width: 95px !important;
+  min-width: 90px !important;
+}
+
+#tbl-task-manager th.col-proc-act,
+#tbl-task-manager td.col-proc-act {
+  width: 170px !important;
+  min-width: 160px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Cron Jobs (#cron-table) & Timers (#systemd-timers-table) */
+#cron-table,
+#systemd-timers-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#cron-table th,
+#cron-table td,
+#systemd-timers-table th,
+#systemd-timers-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#cron-table th.col-cron-st,
+#cron-table td.col-cron-st {
+  width: 70px !important;
+  min-width: 65px !important;
+  text-align: left !important;
+}
+
+#cron-table th.col-cron-sched,
+#cron-table td.col-cron-sched {
+  width: 115px !important;
+  min-width: 105px !important;
+  white-space: nowrap !important;
+}
+
+#cron-table th.col-cron-user,
+#cron-table td.col-cron-user {
+  width: 80px !important;
+  min-width: 75px !important;
+  white-space: nowrap !important;
+}
+
+#cron-table th.col-cron-cmd,
+#cron-table td.col-cron-cmd {
+  width: auto !important;
+  min-width: 250px !important;
+}
+
+#cron-table th.col-cron-src,
+#cron-table td.col-cron-src {
+  width: 185px !important;
+  min-width: 165px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#cron-table th.col-cron-act,
+#cron-table td.col-cron-act {
+  width: 80px !important;
+  min-width: 75px !important;
+  white-space: nowrap !important;
+}
+
+#systemd-timers-table th.col-timer-st,
+#systemd-timers-table td.col-timer-st {
+  width: 70px !important;
+  min-width: 65px !important;
+  text-align: left !important;
+}
+
+#systemd-timers-table th.col-timer-unit,
+#systemd-timers-table td.col-timer-unit {
+  width: 200px !important;
+  min-width: 175px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#systemd-timers-table th.col-timer-act,
+#systemd-timers-table td.col-timer-act {
+  width: auto !important;
+  min-width: 200px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#systemd-timers-table th.col-timer-next,
+#systemd-timers-table td.col-timer-next {
+  width: 195px !important;
+  min-width: 185px !important;
+  white-space: nowrap !important;
+}
+
+#systemd-timers-table th.col-timer-left,
+#systemd-timers-table td.col-timer-left {
+  width: 95px !important;
+  min-width: 85px !important;
+  white-space: nowrap !important;
+}
+
+#systemd-timers-table th.col-timer-last,
+#systemd-timers-table td.col-timer-last {
+  width: 250px !important;
+  min-width: 220px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Tabel Firewall (#fw-rules-table, #fw-blocked-table) */
+#fw-rules-table,
+#fw-blocked-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#fw-rules-table th,
+#fw-rules-table td,
+#fw-blocked-table th,
+#fw-blocked-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#fw-rules-table th.col-fw-num,
+#fw-rules-table td.col-fw-num {
+  width: 40px !important;
+}
+
+#fw-rules-table th.col-fw-to,
+#fw-rules-table td.col-fw-to {
+  width: 140px !important;
+}
+
+#fw-rules-table th.col-fw-action,
+#fw-rules-table td.col-fw-action {
+  width: 100px !important;
+}
+
+#fw-rules-table th.col-fw-from,
+#fw-rules-table td.col-fw-from {
+  width: 160px !important;
+}
+
+#fw-rules-table th.col-fw-comment,
+#fw-rules-table td.col-fw-comment {
+  width: auto !important;
+  min-width: 180px !important;
+}
+
+#fw-rules-table th.col-fw-act,
+#fw-rules-table td.col-fw-act {
+  width: 100px !important;
+  white-space: nowrap !important;
+}
+
+#fw-blocked-table th.col-fwb-ip,
+#fw-blocked-table td.col-fwb-ip {
+  width: 180px !important;
+}
+
+#fw-blocked-table th.col-fwb-jail,
+#fw-blocked-table td.col-fwb-jail {
+  width: 140px !important;
+}
+
+#fw-blocked-table th.col-fwb-act,
+#fw-blocked-table td.col-fwb-act {
+  width: 120px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Akun & Grup Pengguna Server (#acc-table, #groups-table) */
+#acc-table,
+#groups-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#acc-table th,
+#acc-table td,
+#groups-table th,
+#groups-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#acc-table th.col-acc-user,
+#acc-table td.col-acc-user {
+  width: 195px !important;
+  min-width: 180px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#acc-table th.col-acc-id,
+#acc-table td.col-acc-id {
+  width: 80px !important;
+  min-width: 75px !important;
+  white-space: nowrap !important;
+}
+
+#acc-table th.col-acc-grp,
+#acc-table td.col-acc-grp {
+  width: 175px !important;
+  min-width: 165px !important;
+  white-space: nowrap !important;
+}
+
+#acc-table th.col-acc-home,
+#acc-table td.col-acc-home {
+  width: 175px !important;
+  min-width: 165px !important;
+  white-space: nowrap !important;
+}
+
+#acc-table th.col-acc-login,
+#acc-table td.col-acc-login {
+  width: auto !important;
+  min-width: 180px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#acc-table th.col-acc-act,
+#acc-table td.col-acc-act {
+  width: 165px !important;
+  min-width: 155px !important;
+  white-space: nowrap !important;
+}
+
+#groups-table th.col-grp-name,
+#groups-table td.col-grp-name {
+  width: 180px !important;
+  min-width: 160px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#groups-table th.col-grp-gid,
+#groups-table td.col-grp-gid {
+  width: 75px !important;
+  min-width: 70px !important;
+  white-space: nowrap !important;
+}
+
+#groups-table th.col-grp-type,
+#groups-table td.col-grp-type {
+  width: 100px !important;
+  min-width: 90px !important;
+  white-space: nowrap !important;
+}
+
+#groups-table th.col-grp-members,
+#groups-table td.col-grp-members {
+  width: auto !important;
+  min-width: 240px !important;
+}
+
+#groups-table th.col-grp-count,
+#groups-table td.col-grp-count {
+  width: 85px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Riwayat Tindakan Akun (#tbl-action-history, #acc-action-table) */
+#tbl-action-history,
+#acc-action-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#tbl-action-history th,
+#tbl-action-history td,
+#acc-action-table th,
+#acc-action-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#tbl-action-history th.col-his-time,
+#tbl-action-history td.col-his-time,
+#acc-action-table th.col-aact-time,
+#acc-action-table td.col-aact-time {
+  width: 145px !important;
+  min-width: 135px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-action-history th.col-his-user,
+#tbl-action-history td.col-his-user {
+  width: 100px !important;
+  min-width: 90px !important;
+}
+
+#acc-action-table th.col-aact-user,
+#acc-action-table td.col-aact-user {
+  width: 135px !important;
+  min-width: 125px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-action-history th.col-his-act,
+#tbl-action-history td.col-his-act {
+  width: 160px !important;
+  min-width: 140px !important;
+}
+
+#acc-action-table th.col-aact-act,
+#acc-action-table td.col-aact-act {
+  width: 140px !important;
+  min-width: 130px !important;
+}
+
+#tbl-action-history th.col-his-tgt,
+#tbl-action-history td.col-his-tgt {
+  width: 155px !important;
+  min-width: 140px !important;
+  max-width: 175px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#acc-action-table th.col-aact-tgt,
+#acc-action-table td.col-aact-tgt {
+  width: 150px !important;
+  min-width: 135px !important;
+  max-width: 170px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tbl-action-history th.col-his-st,
+#tbl-action-history td.col-his-st {
+  width: 90px !important;
+  min-width: 85px !important;
+  white-space: nowrap !important;
+}
+
+#acc-action-table th.col-aact-st,
+#acc-action-table td.col-aact-st {
+  width: 85px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-action-history th.col-his-res,
+#tbl-action-history td.col-his-res,
+#acc-action-table th.col-aact-res,
+#acc-action-table td.col-aact-res {
+  width: auto !important;
+  min-width: 220px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Sertifikat SSL/TLS (#ssl-table) */
+#ssl-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#ssl-table th,
+#ssl-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#ssl-table th.col-ssl-dom,
+#ssl-table td.col-ssl-dom {
+  width: 200px !important;
+  min-width: 175px !important;
+  max-width: 220px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ssl-table th.col-ssl-iss,
+#ssl-table td.col-ssl-iss {
+  width: 170px !important;
+  min-width: 150px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ssl-table th.col-ssl-exp,
+#ssl-table td.col-ssl-exp {
+  width: 145px !important;
+  min-width: 135px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ssl-table th.col-ssl-rem,
+#ssl-table td.col-ssl-rem {
+  width: 120px !important;
+  min-width: 110px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ssl-table th.col-ssl-st,
+#ssl-table td.col-ssl-st {
+  width: 130px !important;
+  min-width: 120px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ssl-table th.col-ssl-file,
+#ssl-table td.col-ssl-file {
+  width: auto !important;
+  min-width: 180px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#ssl-table th.col-ssl-act,
+#ssl-table td.col-ssl-act {
+  width: 70px !important;
+  min-width: 65px !important;
+  white-space: nowrap !important;
+}
+
+/* Tabel Log Sistem Journald (#tbl-system-logs) */
+#tbl-system-logs {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#tbl-system-logs th,
+#tbl-system-logs td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#tbl-system-logs th.col-slog-time,
+#tbl-system-logs td.col-slog-time {
+  width: 190px !important;
+  min-width: 175px !important;
+  white-space: nowrap !important;
+}
+
+#tbl-system-logs th.col-slog-pri,
+#tbl-system-logs td.col-slog-pri {
+  width: 125px !important;
+  min-width: 110px !important;
+}
+
+#tbl-system-logs th.col-slog-unit,
+#tbl-system-logs td.col-slog-unit {
+  width: 200px !important;
+  min-width: 180px !important;
+}
+
+#tbl-system-logs th.col-slog-msg,
+#tbl-system-logs td.col-slog-msg {
+  width: auto !important;
+  min-width: 300px !important;
+}
+
+/* Tabel Partisi Disk (#disks-table, #spec-disks-table) */
+#disks-table,
+#spec-disks-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  margin: 0 !important;
+}
+
+#disks-table th,
+#disks-table td,
+#spec-disks-table th,
+#spec-disks-table td {
+  padding: 5px 6px !important;
+  font-size: 11px !important;
+  vertical-align: middle !important;
+}
+
+#disks-table th.col-disk-dev,
+#disks-table td.col-disk-dev,
+#spec-disks-table th.col-disk-dev,
+#spec-disks-table td.col-disk-dev {
+  width: 120px !important;
+}
+
+#disks-table th.col-disk-mnt,
+#disks-table td.col-disk-mnt,
+#spec-disks-table th.col-disk-mnt,
+#spec-disks-table td.col-disk-mnt {
+  width: 140px !important;
+}
+
+#disks-table th.col-disk-fs,
+#disks-table td.col-disk-fs,
+#spec-disks-table th.col-disk-fs,
+#spec-disks-table td.col-disk-fs {
+  width: 90px !important;
+}
+
+#disks-table th.col-disk-total,
+#disks-table td.col-disk-total,
+#spec-disks-table th.col-disk-total,
+#spec-disks-table td.col-disk-total {
+  width: 80px !important;
+}
+
+#disks-table th.col-disk-used,
+#disks-table td.col-disk-used,
+#spec-disks-table th.col-disk-used,
+#spec-disks-table td.col-disk-used {
+  width: 80px !important;
+}
+
+#disks-table th.col-disk-avail,
+#disks-table td.col-disk-avail,
+#spec-disks-table th.col-disk-avail,
+#spec-disks-table td.col-disk-avail {
+  width: 80px !important;
+}
+
+#disks-table th.col-disk-pct,
+#disks-table td.col-disk-pct,
+#spec-disks-table th.col-disk-pct,
+#spec-disks-table td.col-disk-pct {
+  width: 28% !important;
+  min-width: 180px !important;
+}
+
+
+
+

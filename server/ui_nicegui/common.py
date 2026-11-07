@@ -6,9 +6,9 @@ dan injeksi gaya CSS standar kepadatan tinggi (High Density NOC).
 """
 
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime
 import time
-from typing import Any, Generator, Optional
+from typing import Generator
 from nicegui import ui
 from sqlalchemy.orm import Session
 
@@ -88,71 +88,115 @@ def notify_info(msg: str):
 
 
 def apply_noc_head_styles():
-    """Terapkan CSS global standar NOC (kepadatan tinggi, dark mode, scrollbar tipis)."""
+    """Terapkan CSS global kanonikal Pantau Server (pantau-theme.css)."""
     ui.add_head_html("""
+    <link rel="stylesheet" href="/static/pantau-theme.css">
+    <script>
+    function toggleSb() {
+        document.body.classList.toggle('sb-collapsed');
+        try {
+            localStorage.setItem('sb', document.body.classList.contains('sb-collapsed') ? '1' : '0');
+        } catch(e) {}
+    }
+    (function() {
+        try {
+            if (localStorage.getItem('sb') === '1') {
+                document.body.classList.add('sb-collapsed');
+            }
+        } catch(e) {}
+    })();
+    </script>
     <style>
+        /* Penyesuaian Quasar & NiceGUI dengan Pantau Theme */
+        .q-layout {
+            background: transparent !important;
+            min-height: 100vh;
+        }
+        .q-page-container {
+            background: transparent !important;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .q-drawer {
+            background: var(--sidebar, #0e1526) !important;
+        }
+        .nicegui-content {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: 100%;
+            display: block !important;
+        }
         body {
-            background-color: #0b1120;
-            color: #f1f5f9;
+            background: var(--bg, #111827) !important;
+            color: var(--text, #f8fafc) !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, monospace;
         }
+        .main {
+            margin-left: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        /* Custom card bridge */
+        .custom-card {
+            background: var(--card-bg, #1a2336);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md, 11px);
+        }
+        /* NiceGUI dialog fix */
+        .q-dialog__inner > div {
+            background: var(--card, #1a2336) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: var(--radius-md, 11px) !important;
+            color: var(--text, #f8fafc) !important;
+        }
+        /* ECharts container transparency */
+        .echarts {
+            background: transparent !important;
+        }
+        /* Quasar Table High Density NOC Bridge */
         .q-table__container {
-            background-color: #0f172a !important;
-            border: 1px solid #1e293b !important;
-            border-radius: 8px;
+            background: var(--card, #1a2336) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 6px !important;
+            box-shadow: none !important;
+        }
+        .q-table thead tr {
+            background: rgba(255, 255, 255, 0.02) !important;
+            border-bottom: 1px solid var(--border) !important;
         }
         .q-table thead th {
-            font-size: 11px !important;
-            font-weight: 700 !important;
-            color: #94a3b8 !important;
-            text-transform: uppercase;
-            background-color: #0f172a !important;
-            padding: 7px 12px !important;
-            letter-spacing: 0.05em;
+            font-size: 10px !important;
+            font-weight: 600 !important;
+            color: var(--dim, #94a3b8) !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            padding: 6px 10px !important;
+            text-align: left !important;
+            white-space: nowrap !important;
         }
         .q-table tbody td {
             font-size: 11.5px !important;
-            padding: 6px 12px !important;
-            border-color: #1e293b !important;
-            color: #e2e8f0;
+            padding: 5px 10px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+            color: var(--text, #e2e8f0) !important;
+            text-align: left !important;
+            line-height: 1.35 !important;
         }
         .q-table tbody tr:hover {
-            background-color: rgba(30, 41, 59, 0.75) !important;
+            background-color: rgba(255, 255, 255, 0.035) !important;
         }
         .q-table__bottom {
             font-size: 11px !important;
-            color: #94a3b8 !important;
-            border-top: 1px solid #1e293b !important;
+            color: var(--dim, #94a3b8) !important;
+            border-top: 1px solid var(--border) !important;
             padding: 4px 12px !important;
-        }
-        .custom-card {
-            background-color: #0f172a;
-            border: 1px solid #1e293b;
-            border-radius: 8px;
-        }
-        .zbx-strip-tile {
-            cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 6px;
-            padding: 6px 12px;
-        }
-        .zbx-strip-tile:hover {
-            filter: brightness(1.2);
-            transform: translateY(-1px);
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0b1120;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #334155;
+            background: rgba(0, 0, 0, 0.15) !important;
         }
     </style>
     """)

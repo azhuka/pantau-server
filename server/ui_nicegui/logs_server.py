@@ -135,101 +135,101 @@ def setup_logs_server_routes(session_factory):
             if not user:
                 return RedirectResponse("/login")
 
-        render_layout(request, user, active_tab="logs")
+        with render_layout(request, user, active_tab="logs"):
+            container = ui.column().classes("w-full gap-3")
+            container = ui.column().classes("w-full max-w-7xl mx-auto p-6 gap-6")
 
-        container = ui.column().classes("w-full max-w-7xl mx-auto p-6 gap-6")
-
-        with container:
-            # Header
-            with ui.row().classes("w-full items-center justify-between"):
-                with ui.column().classes("gap-0.5"):
-                    ui.label("Log & Kesehatan Server Pusat").classes("text-xl font-bold text-white")
-                    host_name = socket.gethostname()
-                    upt = int(_get_master_uptime())
-                    upt_str = f"{upt // 86400} hari, {(upt % 86400) // 3600} jam, {(upt % 3600) // 60} menit"
-                    ui.label(f"Node Pusat: {host_name} · Uptime: {upt_str}").classes("text-xs text-slate-400 font-mono")
-
-                ui.button("Segarkan", icon="refresh", on_click=lambda: _refresh_data()).props("dense outline no-caps size=sm color=primary").classes("text-xs")
-
-            # 4 Kartu Metrik Server Pusat
-            mem_data = _get_master_mem()
-            load_data = _get_master_loadavg()
-            cpu_val = _get_master_cpu()
-
-            with ui.row().classes("w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"):
-                with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
-                    ui.label("CPU Server Pusat").classes("text-xs text-slate-400 font-medium")
-                    lbl_cpu = ui.label(f"{cpu_val:.1f}%").classes("text-2xl font-bold text-sky-400")
-                    bar_cpu = ui.linear_progress(value=cpu_val / 100.0, color="primary").classes("w-full h-1.5 rounded")
-
-                with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
-                    ui.label("Memori RAM").classes("text-xs text-slate-400 font-medium")
-                    lbl_mem = ui.label(f"{format_bytes(mem_data['used'])} / {format_bytes(mem_data['total'])} ({mem_data['pct']}%)").classes("text-base font-bold text-emerald-400")
-                    bar_mem = ui.linear_progress(value=mem_data["pct"] / 100.0, color="positive").classes("w-full h-1.5 rounded")
-
-                with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
-                    ui.label("Beban Rata-Rata (1/5/15m)").classes("text-xs text-slate-400 font-medium")
-                    lbl_load = ui.label(f"{load_data[0]:.2f} / {load_data[1]:.2f} / {load_data[2]:.2f}").classes("text-lg font-bold text-amber-400")
-
-                with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
-                    ui.label("Memori Virtual (Swap)").classes("text-xs text-slate-400 font-medium")
-                    lbl_swap = ui.label(f"{format_bytes(mem_data['swap_used'])} / {format_bytes(mem_data['swap_total'])} ({mem_data['swap_pct']}%)").classes("text-base font-bold text-purple-400")
-                    bar_swap = ui.linear_progress(value=mem_data["swap_pct"] / 100.0, color="purple").classes("w-full h-1.5 rounded")
-
-            # Tabel Proses Terbesar Server Pusat
-            with ui.card().classes("w-full p-4 custom-card"):
-                ui.label("Proses Penggunaan Memori Terbesar (Server Pusat)").classes("text-sm font-bold text-white mb-2")
-                procs = _get_master_top_processes(10)
-                p_cols = [
-                    {"name": "pid", "label": "PID", "field": "pid", "align": "center"},
-                    {"name": "comm", "label": "NAMA PROSES", "field": "comm", "align": "left"},
-                    {"name": "rss", "label": "MEMORI (RSS)", "field": "rss", "align": "left"},
-                    {"name": "uid", "label": "UID PENGGUNA", "field": "uid", "align": "center"},
-                ]
-                p_rows = []
-                for pr in procs:
-                    p_rows.append({
-                        "pid": pr["pid"],
-                        "comm": pr["comm"],
-                        "rss": format_bytes(pr["rss"]),
-                        "uid": pr["uid"],
-                    })
-                proc_table = ui.table(columns=p_cols, rows=p_rows, row_key="pid").classes("w-full bg-slate-900")
-
-            # Log Layanan Journalctl (pantau-server.service)
-            with ui.card().classes("w-full p-4 custom-card flex flex-col gap-2"):
+            with container:
+                # Header
                 with ui.row().classes("w-full items-center justify-between"):
-                    ui.label("Log Layanan Pantau Server (systemd journal)").classes("text-sm font-bold text-white")
-                    ui.button("Segarkan Log", icon="refresh", on_click=lambda: _load_journal_logs()).props("dense outline size=xs color=slate-4 no-caps")
+                    with ui.column().classes("gap-0.5"):
+                        ui.label("Log & Kesehatan Server Pusat").classes("text-xl font-bold text-white")
+                        host_name = socket.gethostname()
+                        upt = int(_get_master_uptime())
+                        upt_str = f"{upt // 86400} hari, {(upt % 86400) // 3600} jam, {(upt % 3600) // 60} menit"
+                        ui.label(f"Node Pusat: {host_name} · Uptime: {upt_str}").classes("text-xs text-slate-400 font-mono")
 
-                log_area = ui.code(content="Memuat log...", language="bash").classes("w-full bg-slate-950 p-4 rounded text-xs font-mono text-slate-300 max-h-96 overflow-y-auto")
+                    ui.button("Segarkan", icon="refresh", on_click=lambda: _refresh_data()).props("dense outline no-caps size=sm color=primary").classes("text-xs")
 
-        def _load_journal_logs():
-            try:
-                res = subprocess.run(
-                    ["journalctl", "-u", "pantau-server.service", "-n", "80", "--no-pager"],
-                    capture_output=True,
-                    text=True,
-                    timeout=5,
-                    check=False,
-                )
-                log_txt = res.stdout.strip() or res.stderr.strip() or "Tidak ada baris log tersedia."
-                log_area.set_content(log_txt)
-            except Exception as e:
-                log_area.set_content(f"Gagal membaca journal log: {e}")
+                # 4 Kartu Metrik Server Pusat
+                mem_data = _get_master_mem()
+                load_data = _get_master_loadavg()
+                cpu_val = _get_master_cpu()
 
-        def _refresh_data():
-            c = _get_master_cpu()
-            m = _get_master_mem()
-            ld = _get_master_loadavg()
-            lbl_cpu.set_text(f"{c:.1f}%")
-            bar_cpu.set_value(c / 100.0)
-            lbl_mem.set_text(f"{format_bytes(m['used'])} / {format_bytes(m['total'])} ({m['pct']}%)")
-            bar_mem.set_value(m["pct"] / 100.0)
-            lbl_load.set_text(f"{ld[0]:.2f} / {ld[1]:.2f} / {ld[2]:.2f}")
-            lbl_swap.set_text(f"{format_bytes(m['swap_used'])} / {format_bytes(m['swap_total'])} ({m['swap_pct']}%)")
-            bar_swap.set_value(m["swap_pct"] / 100.0)
+                with ui.row().classes("w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"):
+                    with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
+                        ui.label("CPU Server Pusat").classes("text-xs text-slate-400 font-medium")
+                        lbl_cpu = ui.label(f"{cpu_val:.1f}%").classes("text-2xl font-bold text-sky-400")
+                        bar_cpu = ui.linear_progress(value=cpu_val / 100.0, color="primary").classes("w-full h-1.5 rounded")
+
+                    with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
+                        ui.label("Memori RAM").classes("text-xs text-slate-400 font-medium")
+                        lbl_mem = ui.label(f"{format_bytes(mem_data['used'])} / {format_bytes(mem_data['total'])} ({mem_data['pct']}%)").classes("text-base font-bold text-emerald-400")
+                        bar_mem = ui.linear_progress(value=mem_data["pct"] / 100.0, color="positive").classes("w-full h-1.5 rounded")
+
+                    with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
+                        ui.label("Beban Rata-Rata (1/5/15m)").classes("text-xs text-slate-400 font-medium")
+                        lbl_load = ui.label(f"{load_data[0]:.2f} / {load_data[1]:.2f} / {load_data[2]:.2f}").classes("text-lg font-bold text-amber-400")
+
+                    with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
+                        ui.label("Memori Virtual (Swap)").classes("text-xs text-slate-400 font-medium")
+                        lbl_swap = ui.label(f"{format_bytes(mem_data['swap_used'])} / {format_bytes(mem_data['swap_total'])} ({mem_data['swap_pct']}%)").classes("text-base font-bold text-purple-400")
+                        bar_swap = ui.linear_progress(value=mem_data["swap_pct"] / 100.0, color="purple").classes("w-full h-1.5 rounded")
+
+                # Tabel Proses Terbesar Server Pusat
+                with ui.card().classes("w-full p-4 custom-card"):
+                    ui.label("Proses Penggunaan Memori Terbesar (Server Pusat)").classes("text-sm font-bold text-white mb-2")
+                    procs = _get_master_top_processes(10)
+                    p_cols = [
+                        {"name": "pid", "label": "PID", "field": "pid", "align": "center"},
+                        {"name": "comm", "label": "NAMA PROSES", "field": "comm", "align": "left"},
+                        {"name": "rss", "label": "MEMORI (RSS)", "field": "rss", "align": "left"},
+                        {"name": "uid", "label": "UID PENGGUNA", "field": "uid", "align": "center"},
+                    ]
+                    p_rows = []
+                    for pr in procs:
+                        p_rows.append({
+                            "pid": pr["pid"],
+                            "comm": pr["comm"],
+                            "rss": format_bytes(pr["rss"]),
+                            "uid": pr["uid"],
+                        })
+                    proc_table = ui.table(columns=p_cols, rows=p_rows, row_key="pid").classes("w-full bg-slate-900")
+
+                # Log Layanan Journalctl (pantau-server.service)
+                with ui.card().classes("w-full p-4 custom-card flex flex-col gap-2"):
+                    with ui.row().classes("w-full items-center justify-between"):
+                        ui.label("Log Layanan Pantau Server (systemd journal)").classes("text-sm font-bold text-white")
+                        ui.button("Segarkan Log", icon="refresh", on_click=lambda: _load_journal_logs()).props("dense outline size=xs color=slate-4 no-caps")
+
+                    log_area = ui.code(content="Memuat log...", language="bash").classes("w-full bg-slate-950 p-4 rounded text-xs font-mono text-slate-300 max-h-96 overflow-y-auto")
+
+            def _load_journal_logs():
+                try:
+                    res = subprocess.run(
+                        ["journalctl", "-u", "pantau-server.service", "-n", "80", "--no-pager"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
+                        check=False,
+                    )
+                    log_txt = res.stdout.strip() or res.stderr.strip() or "Tidak ada baris log tersedia."
+                    log_area.set_content(log_txt)
+                except Exception as e:
+                    log_area.set_content(f"Gagal membaca journal log: {e}")
+
+            def _refresh_data():
+                c = _get_master_cpu()
+                m = _get_master_mem()
+                ld = _get_master_loadavg()
+                lbl_cpu.set_text(f"{c:.1f}%")
+                bar_cpu.set_value(c / 100.0)
+                lbl_mem.set_text(f"{format_bytes(m['used'])} / {format_bytes(m['total'])} ({m['pct']}%)")
+                bar_mem.set_value(m["pct"] / 100.0)
+                lbl_load.set_text(f"{ld[0]:.2f} / {ld[1]:.2f} / {ld[2]:.2f}")
+                lbl_swap.set_text(f"{format_bytes(m['swap_used'])} / {format_bytes(m['swap_total'])} ({m['swap_pct']}%)")
+                bar_swap.set_value(m["swap_pct"] / 100.0)
+                _load_journal_logs()
+                notify_info("Data metrik server pusat diperbarui.")
+
             _load_journal_logs()
-            notify_info("Data metrik server pusat diperbarui.")
-
-        _load_journal_logs()

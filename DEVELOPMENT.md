@@ -354,6 +354,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.153
+
+- **Tipe Rilis:** Restorasi Penuh Menu Model Sidebar, Header Sticky Interaktif, Desain Kanonikal, & Setel Organisasi (Branding) pada Mesin NiceGUI (*Full Restoration of Sidebar Model Menu, Interactive Sticky Header, Canonical Design System, & Organization Branding onto NiceGUI Engine*)
+- **Fokus Utama:** Mewujudkan adaptasi sempurna dari konsep desain matang, workflow operasional, dan kepadatan data tinggi NOC terdahulu ke atas mesin frontend murni Python NiceGUI tanpa kompromi, tanpa workaround, dan tanpa data hardcoded:
+  1. **Menu Model Sidebar Kanonikal 230px (`ui.left_drawer`):**
+     - Mengimplementasikan bilah navigasi sisi (Sidebar Left Drawer) berarsitektur kanonikal selebar 230px yang responsif dengan tombol toggle hamburger pada header.
+     - Struktur menu terbagi menjadi kelompok "Menu Utama" (Dashboard, Daftar Server, Insiden & Masalah, Probing Endpoint, Pemeliharaan, Log Server, Riwayat Tindakan) dan "Pengaturan" (Pengguna, Akun Pengguna, Keluar) dilengkapi ikon vektor SVG, penanda rute aktif yang berpendar (*active glow*), dan footer status pengguna/versi.
+  2. **Header Sticky Interaktif NOC Mandiri (`ui.header`):**
+     - Header atas tetap melayang di posisi teratas (*sticky top-0 z-50*) dan tidak hilang saat pengguna melakukan scroll pada tabel data yang panjang.
+     - Menyematkan jam digital real-time dinamis sinkron zona waktu lokal (WITA/WIB) dengan detak per-detik halus, identitas brand "NOC MANDIRI · DINAS KOMINFO BARRU", badge versi sistem, badge peran pengguna, serta tombol navigasi profil dan logout.
+  3. **Integrasi Penuh Desain Kanonikal CSS (`pantau-theme.css`):**
+     - Memasang 6.252 baris CSS murni dari sistem desain baku pre-migrasi ke endpoint statis `/static/pantau-theme.css`.
+     - Mengadaptasi komponen kartu (`.card`), kartu KPI (`.kpi-link-card`, `.dash-clock-card`), bilah keparahan Zabbix (`.zbx-severity-strip`, `.zbx-sev-tile`), mini progress meter (`.meter-mini-track`, `.meter-mini-bar`), serta tabel densitas tinggi NOC.
+  4. **Restorasi Identitas Organisasi Resmi & Setel Organisasi (Branding):**
+     - Menyajikan header organisasi resmi (`dash-org-header`) pada dasbor utama lengkap dengan logo instansi, nama organisasi resmi, unit kerja, serta pesan operasional MOTD dinamis dari database.
+     - Menambahkan tab khusus "Setel Organisasi" pada halaman Akun Pengguna (`/profile`) bagi Master Admin dan Operator untuk mengonfigurasi identitas organisasi dan pesan MOTD secara fleksibel.
+  5. **Pengoptimalan Dasbor Pemantauan Pusat & Bilah Operasi 3-Kolom:**
+     - Menghadirkan bilah 3-kolom operasi asimetris terpadu: Total Server (host, up, down), Zabbix Severity Strip (Bencana, Gawat/Tinggi, Peringatan, Info, Diabaikan), dan Waktu Sistem.
+     - Menghadirkan banner pemeliharaan terencana aktif, kartu insiden terkini, serta kartu armada server dengan toggle tampilan Tabel / Grid NOC.
+
 ## Versi 4.8.152
 
 - **Tipe Rilis:** Restorasi Menyeluruh Konsep Operasional Matang & Kontrol Lengkap Node ke Arsitektur Modular NiceGUI (*Full Restoration of Mature Operational Concepts & Complete Node Control into Modular NiceGUI Architecture*)
