@@ -515,7 +515,23 @@ def setup_server_detail_routes(session_factory):
                     t_ssl = ui.tab("ssl", label=f"SSL & Cadangan ({len(ssl_certs)})", icon="lock")
                     t_log = ui.tab("log", label="Log Sistem", icon="receipt_long")
 
-                with ui.tab_panels(tabs, value=t_perf).classes("w-full bg-transparent p-0"):
+                tab_map = {
+                    "perf": t_perf, "performa": t_perf,
+                    "svc": t_svc, "layanan": t_svc, "services": t_svc,
+                    "prob": t_prob, "insiden": t_prob, "problems": t_prob,
+                    "pkg": t_pkg, "paket": t_pkg, "packages": t_pkg,
+                    "proc": t_proc, "proses": t_proc, "processes": t_proc,
+                    "port": t_port, "ports": t_port, "jaringan": t_port,
+                    "user": t_user, "users": t_user, "pengguna": t_user, "akun": t_user,
+                    "fw": t_fw, "firewall": t_fw,
+                    "cron": t_cron, "timer": t_cron,
+                    "ssl": t_ssl, "cadangan": t_ssl,
+                    "log": t_log, "logs": t_log,
+                }
+                req_tab = request.query_params.get("tab", "").lower()
+                init_tab = tab_map.get(req_tab, t_perf)
+
+                with ui.tab_panels(tabs, value=init_tab).classes("w-full bg-transparent p-0"):
 
                     # =============================================================
                     # SUB-TAB 1: PERFORMA (METRIK & GRAFIK TREN ECHARTS)

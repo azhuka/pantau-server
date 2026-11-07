@@ -354,6 +354,31 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.155
+
+- **Tipe Rilis:** Resolusi Komprehensif Pemotongan Header, Eliminasi Rute Legacy Penyekat NiceGUI, Cache-Busting Tema Dinamis, Restorasi Menyeluruh Triage Insiden & Ambang Batas Global (*Comprehensive Resolution of Header Clipping, Elimination of Legacy Routes Shadowing NiceGUI, Dynamic Theme Cache-Busting, Full Restoration of Incident Triage & Global Thresholds*)
+- **Fokus Utama:** Menyelesaikan secara tuntas seluruh cacat tata letak, perutean, dan pengalaman pengguna di seluruh halaman aplikasi, memastikan standar estetika dan fungsionalitas Pusat Operasi Jaringan (NOC) enterprise setara era pre-migrasi tanpa workaround:
+  1. **Resolusi Tuntas Pemotongan Header di Tepi Atas Layar (`layout.py`):**
+     - Menghilangkan benturan styling `sticky top-0 z-50` pada `ui.header()` yang sebelumnya membatalkan properti `fixed-top` native Quasar dan menyebabkan offset negatif sehingga logo dan teks "PANTAU SERVER" terpotong 15px di langit-langit viewport peramban pengguna.
+     - Mengatur padding dan tinggi header secara proporsional (`px-5 py-2.5`) dengan vertikal centering sempurna.
+  2. **Eliminasi Rute Legacy FastAPI yang Memblokir Halaman NiceGUI (`server/main.py`):**
+     - Menghapus rute `@app.get("/logs")` dan `@app.get("/profile")` pada instans FastAPI `app` yang sebelumnya mencegat peramban dan mengembalikan keluaran mentah JSON Headless API alih-alih merender antarmuka NiceGUI.
+     - Mengubah rute legacy `/servers/add` menjadi pengalihan kanonikal ke `/servers?add=1` yang secara otomatis membuka dialog modal onboarding server baru.
+     - Mengubah rute legacy `/servers/{sid}/edit`, `/servers/{sid}/user/{username}`, dan `/servers/{sid}/files` menjadi pengalihan semantik kanonikal ke rincian server `/servers/{sid}` dengan tab terkait.
+  3. **Pemberian Cache-Busting Dinamis & Injeksi Gaya Fallback Kritis (`common.py`):**
+     - Menambahkan query parameter versi `?v={settings.APP_VERSION}` pada tautan `/static/pantau-theme.css` di `apply_noc_head_styles()` sehingga peramban klien tidak lagi terjebak memakai CSS usang dari cache lokal.
+     - Menginjeksikan blok CSS fallback inline langsung ke dokumen head untuk menjamin `.dash-kpi-grid`, `.zbx-severity-strip`, `.zbx-sev-tile`, `.meter-mini-track`, dan `.meter-mini-bar` selalu tampil secara grid dan flex horizontal bahkan sebelum atau tanpa pemuatan berkas CSS eksternal.
+  4. **Rekonstruksi Penuh Pusat Insiden & Masalah (`problems.py`):**
+     - Merestorasi alur kerja NOC kanonikal dari era pre-migrasi v4.8.x:
+       - Bilah lencana ringkasan status di topbar: Kritis, Gawat, Peringatan, Info, Diabaikan, dan Server Normal.
+       - Modal dialog interaktif "Ambang Batas Insiden Global" untuk mengubah ambang CPU, RAM, Disk, Swap, dan SSH Fail secara langsung ke tabel `system_settings` dengan jejak audit log.
+       - Pil triage interaktif (`Semua`, `Kritis`, `Gawat`, `Peringatan`, `Info`, `Diabaikan`) dengan counter lencana dinamis untuk penyaringan 1-klik instan.
+       - Tombol tindakan langsung pada setiap baris: "✓ Selesaikan" dan toggle "⊘ Abaikan" / "↺ Pulihkan".
+  5. **Penyempurnaan Tampilan Log & Metrik Server Pusat (`logs_server.py`):**
+     - Menyematkan `show_value=False` pada seluruh `ui.linear_progress(...)` kartu telemetri server master (CPU, RAM, Swap) agar tidak ada tabrakan teks angka desimal di atas garis meter.
+  6. **Dukungan Routing Parameter Tab pada Rincian Server (`server_detail.py`):**
+     - Mendukung parameter URL `?tab=` (mis. `?tab=layanan`, `?tab=users`, `?tab=pkg`, dll.) sehingga navigasi langsung mengaktifkan sub-tab yang dituju secara mulus.
+
 ## Versi 4.8.154
 
 - **Tipe Rilis:** Rekonstruksi Total Estetika Visual NOC, Konsolidasi Menyeluruh 9.249 Baris CSS Pre-Migrasi, Eliminasi Duplikasi Header & Penyempurnaan Tata Letak Multi-Halaman (*Comprehensive NOC Visual Aesthetics Reconstruction, Full Consolidation of 9,249 CSS Lines from Pre-Migration System, Total Double-Header Elimination & Multi-Page Layout Refinement*)

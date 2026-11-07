@@ -209,7 +209,7 @@ def setup_dashboard_routes(session_factory):
                     prob_border = "var(--red)" if danger_cnt > 0 else ("var(--orange)" if avg_cnt > 0 else ("var(--yellow)" if warn_cnt > 0 else "var(--green)"))
 
                     ui.html(f"""
-                    <div class="dash-kpi-grid">
+                    <div class="dash-kpi-grid" style="display:grid;grid-template-columns:minmax(190px, 220px) 1fr minmax(260px, 290px);gap:8px;width:100%;margin-bottom:8px;align-items:stretch">
                       <!-- Card 1: Total Server -->
                       <a href="/servers" id="kpi-card-total" class="card kpi-link-card" style="margin:0;padding:8px 14px;display:flex;flex-direction:column;justify-content:space-between;border-left:3px solid var(--blue);text-decoration:none;color:inherit;cursor:pointer">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
@@ -239,24 +239,24 @@ def setup_dashboard_routes(session_factory):
                           </div>
                           <span style="font-size:10px;color:var(--dim)">{total_active} insiden</span>
                         </div>
-                        <div class="zbx-severity-strip">
-                          <div class="zbx-sev-tile zbx-tile-danger {'is-active' if danger_cnt > 0 else ''}" onclick="window.location.href='/problems'">
+                        <div class="zbx-severity-strip" style="display:flex;flex-direction:row;gap:4px;width:100%;align-items:stretch">
+                          <div class="zbx-sev-tile zbx-tile-danger {'is-active' if danger_cnt > 0 else ''}" onclick="window.location.href='/problems'" style="flex:1;min-width:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;cursor:pointer">
                             <span class="zbx-sev-count">{danger_cnt}</span>
-                            <span class="zbx-sev-label">Bencana</span>
+                            <span class="zbx-sev-label">Kritis</span>
                           </div>
-                          <div class="zbx-sev-tile zbx-tile-average {'is-active' if avg_cnt > 0 else ''}" onclick="window.location.href='/problems'">
+                          <div class="zbx-sev-tile zbx-tile-average {'is-active' if avg_cnt > 0 else ''}" onclick="window.location.href='/problems'" style="flex:1;min-width:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;cursor:pointer">
                             <span class="zbx-sev-count">{avg_cnt}</span>
-                            <span class="zbx-sev-label">Tinggi</span>
+                            <span class="zbx-sev-label">Gawat</span>
                           </div>
-                          <div class="zbx-sev-tile zbx-tile-warning {'is-active' if warn_cnt > 0 else ''}" onclick="window.location.href='/problems'">
+                          <div class="zbx-sev-tile zbx-tile-warning {'is-active' if warn_cnt > 0 else ''}" onclick="window.location.href='/problems'" style="flex:1;min-width:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;cursor:pointer">
                             <span class="zbx-sev-count">{warn_cnt}</span>
                             <span class="zbx-sev-label">Peringatan</span>
                           </div>
-                          <div class="zbx-sev-tile zbx-tile-info {'is-active' if info_cnt > 0 else ''}" onclick="window.location.href='/problems'">
+                          <div class="zbx-sev-tile zbx-tile-info {'is-active' if info_cnt > 0 else ''}" onclick="window.location.href='/problems'" style="flex:1;min-width:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;cursor:pointer">
                             <span class="zbx-sev-count">{info_cnt}</span>
                             <span class="zbx-sev-label">Info</span>
                           </div>
-                          <div class="zbx-sev-tile zbx-tile-ignored {'is-active' if ign_cnt > 0 else ''}" onclick="window.location.href='/problems'">
+                          <div class="zbx-sev-tile zbx-tile-ignored {'is-active' if ign_cnt > 0 else ''}" onclick="window.location.href='/problems'" style="flex:1;min-width:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;cursor:pointer">
                             <span class="zbx-sev-count">{ign_cnt}</span>
                             <span class="zbx-sev-label">Diabaikan</span>
                           </div>

@@ -12,6 +12,8 @@ from typing import Generator
 from nicegui import ui
 from sqlalchemy.orm import Session
 
+from config import settings
+
 
 def get_system_tz_label() -> str:
     """Mengambil nama zona waktu sistem operasi host secara dinamis (WITA, WIB, WIT, UTC, dll.)."""
@@ -88,9 +90,10 @@ def notify_info(msg: str):
 
 
 def apply_noc_head_styles():
-    """Terapkan CSS global kanonikal Pantau Server (pantau-theme.css)."""
+    """Terapkan CSS global kanonikal Pantau Server (pantau-theme.css) dengan cache-busting dinamis."""
+    v_str = getattr(settings, "APP_VERSION", "latest")
+    ui.add_head_html(f'<link rel="stylesheet" href="/static/pantau-theme.css?v={v_str}">')
     ui.add_head_html("""
-    <link rel="stylesheet" href="/static/pantau-theme.css">
     <script>
     function toggleSb() {
         document.body.classList.toggle('sb-collapsed');
@@ -107,6 +110,59 @@ def apply_noc_head_styles():
     })();
     </script>
     <style>
+        /* Injeksi Fallback Kritis: Menjamin Layout Dashboard & Severity Strip Selalu Horizontal */
+        .dash-kpi-grid {
+            display: grid !important;
+            grid-template-columns: minmax(190px, 220px) 1fr minmax(260px, 290px) !important;
+            gap: 8px !important;
+            width: 100% !important;
+            margin-bottom: 8px !important;
+            align-items: stretch !important;
+        }
+        @media (max-width: 900px) {
+            .dash-kpi-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+        .zbx-severity-strip {
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 4px !important;
+            width: 100% !important;
+            align-items: stretch !important;
+        }
+        .zbx-sev-tile {
+            flex: 1 !important;
+            min-width: 42px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 4px 2px !important;
+            border-radius: 6px !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            background: rgba(255, 255, 255, 0.03) !important;
+            text-align: center !important;
+            cursor: pointer !important;
+        }
+        .meter-mini-track {
+            width: 50px !important;
+            height: 5px !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border-radius: 3px !important;
+            overflow: hidden !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+        }
+        .meter-mini-bar {
+            height: 100% !important;
+            border-radius: 3px !important;
+            transition: width 0.3s ease !important;
+        }
+        .meter-mini-bar.green { background: #22c55e !important; }
+        .meter-mini-bar.yellow { background: #eab308 !important; }
+        .meter-mini-bar.red { background: #ef4444 !important; }
+
         /* Penyesuaian Quasar & NiceGUI dengan Pantau Theme */
         html, body {
             overflow-x: hidden !important;

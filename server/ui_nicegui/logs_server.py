@@ -160,12 +160,12 @@ def setup_logs_server_routes(session_factory):
                     with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
                         ui.label("CPU Server Pusat").classes("text-xs text-slate-400 font-medium")
                         lbl_cpu = ui.label(f"{cpu_val:.1f}%").classes("text-2xl font-bold text-sky-400")
-                        bar_cpu = ui.linear_progress(value=cpu_val / 100.0, color="primary").classes("w-full h-1.5 rounded")
+                        bar_cpu = ui.linear_progress(value=cpu_val / 100.0, color="primary", show_value=False).classes("w-full h-1.5 rounded")
 
                     with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
                         ui.label("Memori RAM").classes("text-xs text-slate-400 font-medium")
                         lbl_mem = ui.label(f"{format_bytes(mem_data['used'])} / {format_bytes(mem_data['total'])} ({mem_data['pct']}%)").classes("text-base font-bold text-emerald-400")
-                        bar_mem = ui.linear_progress(value=mem_data["pct"] / 100.0, color="positive").classes("w-full h-1.5 rounded")
+                        bar_mem = ui.linear_progress(value=mem_data["pct"] / 100.0, color="positive", show_value=False).classes("w-full h-1.5 rounded")
 
                     with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
                         ui.label("Beban Rata-Rata (1/5/15m)").classes("text-xs text-slate-400 font-medium")
@@ -174,7 +174,7 @@ def setup_logs_server_routes(session_factory):
                     with ui.card().classes("p-4 custom-card flex flex-col gap-1"):
                         ui.label("Memori Virtual (Swap)").classes("text-xs text-slate-400 font-medium")
                         lbl_swap = ui.label(f"{format_bytes(mem_data['swap_used'])} / {format_bytes(mem_data['swap_total'])} ({mem_data['swap_pct']}%)").classes("text-base font-bold text-purple-400")
-                        bar_swap = ui.linear_progress(value=mem_data["swap_pct"] / 100.0, color="purple").classes("w-full h-1.5 rounded")
+                        bar_swap = ui.linear_progress(value=mem_data["swap_pct"] / 100.0, color="purple", show_value=False).classes("w-full h-1.5 rounded")
 
                 # Tabel Proses Terbesar Server Pusat
                 with ui.card().classes("w-full p-4 custom-card"):

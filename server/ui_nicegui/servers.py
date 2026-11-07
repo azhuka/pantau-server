@@ -616,3 +616,6 @@ def setup_servers_routes(session_factory):
                     tbl.on("del_server", lambda e: _open_delete_dialog(e.args))
 
             _reload_table()
+
+            if request.query_params.get("add") == "1" and can_manage:
+                ui.timer(0.2, add_dlg.open, once=True)

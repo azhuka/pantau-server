@@ -4450,19 +4450,11 @@ def servers_page(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/servers/add", response_class=HTMLResponse)
 def server_add_page(request: Request, db: Session = Depends(get_db)):
+    """Pengalihan kanonikal ke antarmuka terpadu daftar server dengan dialog tambah terbuka."""
     user = get_current_user(request, db)
-    if not user or not (user.is_master_admin() or user.has_perm("can_manage_servers")):
-        return RedirectResponse("/", status_code=303)
-    existing_groups, existing_tags = get_existing_groups_and_tags(db)
-    global_th = get_global_thresholds(db)
-    return tpl(request, "server_form.html", {
-        "user": user, "server": None, "mode": "add",
-        "existing_groups": existing_groups,
-        "existing_tags": existing_tags,
-        "global_thresholds": global_th,
-        "custom_thresholds": {},
-        "detected_platform": None,
-    })
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    return RedirectResponse("/servers?add=1", status_code=303)
 
 
 @app.post("/servers/add")
@@ -4558,38 +4550,11 @@ def server_add_submit(
 
 @app.get("/servers/{sid}/edit", response_class=HTMLResponse)
 def server_edit_page(request: Request, sid: int, db: Session = Depends(get_db)):
+    """Pengalihan kanonikal ke rincian server dengan dialog edit modal terbuka."""
     user = get_current_user(request, db)
-    if not user or not (user.is_master_admin() or user.has_perm("can_manage_servers")):
-        return RedirectResponse("/", status_code=303)
-    server = db.query(Server).filter(Server.id == sid).first()
-    if not server:
-        return RedirectResponse("/servers", status_code=303)
-    server._key_fp = api_key_fingerprint(server.api_key)
-    existing_groups, existing_tags = get_existing_groups_and_tags(db)
-    global_th = get_global_thresholds(db)
-    custom_th = {}
-    if server.custom_thresholds:
-        try:
-            custom_th = json.loads(server.custom_thresholds)
-        except Exception:
-            pass
-    extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
-    detected_platform = None
-    if extra and extra.hardware_specs:
-        try:
-            hw = json.loads(extra.hardware_specs) if isinstance(extra.hardware_specs, str) else extra.hardware_specs
-            plat_dict = hw.get("platform", {}) if isinstance(hw, dict) else {}
-            detected_platform = _classify_platform(plat_dict, override=None)
-        except Exception:
-            pass
-    return tpl(request, "server_form.html", {
-        "user": user, "server": server, "mode": "edit",
-        "existing_groups": existing_groups,
-        "existing_tags": existing_tags,
-        "global_thresholds": global_th,
-        "custom_thresholds": custom_th,
-        "detected_platform": detected_platform,
-    })
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?edit=1", status_code=303)
 
 
 @app.post("/servers/{sid}/edit")
@@ -5350,51 +5315,11 @@ def _deduplicate_user_logins(raw_list: list) -> list:
 
 @app.get("/servers/{sid}/user/{username}", response_class=HTMLResponse)
 def user_activity_page(request: Request, sid: int, username: str, db: Session = Depends(get_db)):
-    """Detail aktivitas seorang user: info akun, aktivitas login, riwayat perintah."""
+    """Pengalihan ke sub-tab Pengguna & Sesi di rincian server."""
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse("/login", status_code=303)
-    server = db.query(Server).filter(Server.id == sid).first()
-    if not server:
-        return RedirectResponse("/servers", status_code=303)
-    if not VALID_UNIT_RE.match(username) or len(username) > 64:
-        return RedirectResponse(f"/servers/{sid}?tab=akun", status_code=303)
-    account = None
-    extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
-    if extra and extra.accounts:
-        try:
-            accounts = json.loads(extra.accounts)
-        except (TypeError, ValueError):
-            accounts = []
-        for a in (accounts if isinstance(accounts, list) else []):
-            if a.get("user") == username:
-                account = a
-                break
-
-    last_log = (
-        db.query(LogRequest)
-        .filter(
-            LogRequest.server_id == sid,
-            LogRequest.unit == "USER_ACTIVITY",
-            LogRequest.detail == username,
-            LogRequest.status == "success",
-        )
-        .order_by(LogRequest.id.desc())
-        .first()
-    )
-    initial_logins = []
-    if last_log and last_log.result:
-        try:
-            parsed = json.loads(last_log.result)
-            raw_logins = parsed.get("logins", []) if isinstance(parsed, dict) else []
-            initial_logins = _deduplicate_user_logins(raw_logins)
-        except Exception:
-            initial_logins = []
-
-    return tpl(request, "user_activity.html", {
-        "user": user, "server": server, "username": username, "account": account,
-        "initial_logins": initial_logins,
-    })
+    return RedirectResponse(f"/servers/{sid}?tab=user", status_code=303)
 
 
 @app.post("/servers/{sid}/services/add")
@@ -7796,13 +7721,6 @@ def tail_lines(path: str, n: int = 300) -> list[str]:
     except OSError:
         return []
 
-
-@app.get("/logs", response_class=HTMLResponse)
-def logs_page(request: Request, db: Session = Depends(get_db)):
-    user = get_current_user(request, db)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    return tpl(request, "logs.html", {"user": user, "log_file": settings.LOG_FILE})
 
 
 @app.get("/api/logs/dashboard")
@@ -13728,25 +13646,11 @@ def _get_active_online_server(db: Session, sid: int) -> Server:
 
 @app.get("/servers/{sid}/files", response_class=HTMLResponse)
 def page_server_files(request: Request, sid: int, db: Session = Depends(get_db)):
-    """Halaman antarmuka dedicated File Manager untuk server klien."""
+    """Pengalihan ke rincian server."""
     user = get_current_user(request, db)
     if not user:
         return RedirectResponse("/login", status_code=303)
-    if not user.has_perm("can_file_manager"):
-        raise HTTPException(status_code=403, detail="Akses ditolak: Anda tidak memiliki wewenang File Manager")
-    server = db.query(Server).filter(Server.id == sid, Server.is_active == 1).first()
-    if not server:
-        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
-
-    remaining = get_file_manager_lease_remaining(user.id, sid)
-    return tpl(request, "file_manager.html", {
-        "server": server,
-        "user": user,
-        "is_online": not _server_stale(server),
-        "is_unlocked": remaining > 0,
-        "remaining_seconds": remaining,
-        "user_has_totp": bool(user.totp_enabled and user.totp_secret),
-    })
+    return RedirectResponse(f"/servers/{sid}", status_code=303)
 
 
 @app.get("/api/servers/{sid}/files/status")
@@ -14287,38 +14191,6 @@ def _render_profile_page(
         "active_tab": active_tab,
     })
 
-
-@app.get("/profile", response_class=HTMLResponse)
-def profile_page(request: Request, db: Session = Depends(get_db)):
-    user = get_current_user(request, db)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    if user.is_viewer():
-        return RedirectResponse("/", status_code=303)
-
-    flash_ok = request.query_params.get("ok")
-    flash_msg = request.query_params.get("msg")
-    flash_err = request.query_params.get("err")
-    if flash_err:
-        flash_ok = False
-        flash_msg = flash_err
-    elif flash_msg is not None:
-        flash_ok = True
-    elif flash_ok is not None:
-        flash_ok = flash_ok == "1"
-
-    active_tab = request.query_params.get("tab", "users")
-    if active_tab == "me":
-        active_tab = "users"
-
-    return _render_profile_page(
-        request=request,
-        user=user,
-        db=db,
-        flash_ok=flash_ok,
-        flash_msg=flash_msg,
-        active_tab=active_tab,
-    )
 
 
 @app.post("/profile/password")

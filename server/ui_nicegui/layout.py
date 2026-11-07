@@ -29,10 +29,10 @@ def render_layout(request: Request, user: User, active_tab: str = "servers"):
     curr_time = get_now_local().strftime("%H:%M:%S")
 
     # -------------------------------------------------------------------------
-    # 1. Top Header NOC Sticky (Tetap Berada di Atas Saat di-Scroll)
+    # 1. Top Header NOC (Fixed Pinned Top Bar Tanpa Offset Konflik)
     # -------------------------------------------------------------------------
-    with ui.header().classes(
-        "bg-slate-900/95 backdrop-blur border-b border-slate-800 text-white px-5 py-2 flex items-center justify-between sticky top-0 z-50 shadow-md"
+    with ui.header(elevated=False, bordered=True).classes(
+        "bg-slate-900 border-b border-slate-800 text-white px-5 py-2.5 flex items-center justify-between shadow-md"
     ):
         # Sisi Kiri: Tombol Toggle Sidebar & Brand
         with ui.row().classes("items-center gap-3"):
@@ -41,10 +41,10 @@ def render_layout(request: Request, user: User, active_tab: str = "servers"):
             btn_toggle.tooltip("Tampilkan / Sembunyikan Menu Sidebar")
 
             ui.icon("dns", size="22px").classes("text-blue-400")
-            with ui.column().classes("gap-0"):
-                ui.label("PANTAU SERVER").classes("text-base font-bold tracking-wider leading-tight text-white")
-                ui.label("NOC MANDIRI · DINAS KOMINFO BARRU").classes("text-[10px] text-slate-400 font-mono")
-            ui.badge("NOC", color="blue-9").classes("text-[10px] font-bold px-1.5 py-0.5 ml-1")
+            with ui.column().classes("gap-0 justify-center"):
+                ui.label("PANTAU SERVER").classes("text-sm font-extrabold tracking-wider leading-snug text-white")
+                ui.label("NOC MANDIRI · DINAS KOMINFO BARRU").classes("text-[10px] text-slate-400 font-mono leading-none")
+            ui.badge("NOC", color="blue-9").classes("text-[9.5px] font-bold px-1.5 py-0.5 ml-1")
 
         # Sisi Tengah: Jam Digital Real-Time Dinamis (WITA/WIB)
         with ui.row().classes(
