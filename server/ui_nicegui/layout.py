@@ -63,13 +63,14 @@ def render_layout(request: Request, user: User, active_tab: str = "servers"):
             )
             if user:
                 with ui.row().classes(
-                    "items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded border border-slate-700"
-                ):
+                    "items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 cursor-pointer px-2.5 py-1 rounded border border-slate-700 transition"
+                ).on("click", lambda: ui.navigate.to("/profile")):
                     ui.icon("account_circle", size="18px").classes("text-slate-300")
                     ui.label(user.username).classes("text-xs font-semibold text-slate-200")
                     ui.badge(user.role_display().upper(), color="slate-700").classes(
                         "text-[9.5px] font-bold text-slate-300 ml-1"
                     )
+                    ui.tooltip("Kelola Profil & Keamanan 2FA").classes("bg-slate-900 border border-slate-700 text-xs")
 
                 ui.button("Keluar", icon="logout", on_click=lambda: ui.navigate.to("/logout")).props(
                     "dense flat no-caps size=sm color=negative"
@@ -86,6 +87,7 @@ def render_layout(request: Request, user: User, active_tab: str = "servers"):
             ("audit", "Riwayat Tindakan", "history", "/audit"),
             ("probing", "Probing Endpoint", "wifi_tethering", "/probing"),
             ("maintenance", "Pemeliharaan", "build", "/maintenance"),
+            ("logs", "Log Server", "receipt_long", "/logs"),
         ]
         if user and (user.is_master_admin() or user.has_perm("can_manage_users")):
             nav_items.append(("users", "Pengguna", "group", "/users"))

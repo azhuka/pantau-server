@@ -354,6 +354,30 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.152
+
+- **Tipe Rilis:** Restorasi Menyeluruh Konsep Operasional Matang & Kontrol Lengkap Node ke Arsitektur Modular NiceGUI (*Full Restoration of Mature Operational Concepts & Complete Node Control into Modular NiceGUI Architecture*)
+- **Fokus Utama:** Menyempurnakan dan mengembalikan seluruh kedalaman fitur operasional, alur kerja onboarding, modal interaktif, dan kontrol sistem dari versi matang terdahulu dengan adaptasi penuh pada mesin modular NiceGUI murni Python tanpa jalan pintas (*zero workaround*) dan tanpa data statis:
+  1. **Restorasi Alur Kerja Onboarding & Siklus Hidup Node (`/servers`):**
+     - **Modal Tambah Server Baru:** Pendaftaran node server baru lengkap dengan form Hostname, Alamat IP, Grup Server, Lingkungan/Tier (1=Produksi, 2=Non-Produksi), Override Platform (`auto`, `baremetal`, `vm`, `lxc`), Izinkan Akses Terminal Root Web, dan Catatan Operasional.
+     - **Modal Pengungkapan Kunci API & Perintah Instalasi Sekali Pakai (*Key Reveal*):** Otomatis menghasilkan token kriptografi 32-byte acak, mengamankan hash SHA-256 pada database, serta menyajikan perintah instalasi agen satu baris (*one-line curl bash*) dengan tombol salin instan.
+     - **Aksi Regenerasi Kunci API & Hapus Server:** Dialog konfirmasi berperingkat bahaya dengan pembatalan token aktif, pencetakan kunci baru, atau pembersihan data permanen disertai pencatatan jejak audit komprehensif.
+  2. **Pusat Operasi Server Mendalam & 11 Sub-Tab Interaktif (`/servers/{id}`):**
+     - **Hero Header Operasional:** Ditambahkan kontrol langsung Reboot Host OS, Poweroff Host OS (dengan konfirmasi keamanan), dan pembaruan agen otomatis Enterprise OTA Update.
+     - **Sub-Tab 1 (Performa & ECharts):** Integrasi grafik tren riwayat performa interaktif berbasis Apache ECharts (`ui.echart`) yang memetakan utilisasi CPU (%), Memori RAM (%), dan Beban Sistem (Load 1m) pada 30 snapshot terakhir secara mulus.
+     - **Sub-Tab 2 (Layanan):** Modal tambah layanan baru terpantau, kontrol start, stop, restart daemon systemd, pengubahan prioritas Utama/Pendukung (*Core/Secondary*), pengabaian masalah, serta penghapusan layanan.
+     - **Sub-Tab 4 (Paket OS):** Penambahan aksi upgrade mandiri per-baris paket (`PKG_UPGRADE`), perbarui cache APT (`APT_UPDATE`), dan upgrade seluruh paket (`APT_UPGRADE`).
+     - **Sub-Tab 5 (Proses):** Penambahan aksi penghentian proses (*Kill Process*) dengan pemilihan sinyal `SIGTERM (15)` atau `SIGKILL (9)`.
+     - **Sub-Tab 7 (Pengguna & Sesi):** Modal pembuatan akun Linux baru, penguncian akun (*lock/unlock*), penghapusan pengguna, dan pemutusan sesi terminal aktif SSH/TTY (*terminate session*).
+     - **Sub-Tab 8 (Firewall):** Modal blokir alamat IP, buka blokir IP, serta kontrol aktifkan/matikan/reload firewall.
+     - **Sub-Tab 9 (Cron & Timer):** Modal pembuatan tugas cron terstruktur, eksekusi langsung (*run now*), dan penghapusan tugas.
+     - **Sub-Tab 10 (SSL/TLS & Cadangan):** Monitoring masa kedaluwarsa sertifikat SSL/TLS dengan peringatan visual sisa hari, modal tambah/hapus path sertifikat, serta visualisasi telemetri berkas cadangan database & sistem.
+  3. **Halaman Profil Akun Pribadi & Wizard 2FA TOTP (`/profile`):**
+     - Formulir pembaruan kata sandi berstandar ketat NIST SP 800-63B dengan verifikasi hash bcrypt.
+     - Wizard aktivasi 2FA TOTP lengkap dengan visualisasi QR Code autentikator, verifikasi kode 6-digit, serta pencetakan 8 kode pemulihan darurat (*Emergency Recovery Codes*) sekali pakai.
+  4. **Dasbor Pemantauan Server Pusat / Master Node (`/logs`):**
+     - Telemetri performa host pusat (CPU, RAM, Swap, Load Average, Uptime), tabel proses pemakaian memori tertinggi, dan penampil log layanan systemd (*journalctl*) secara real-time.
+
 ## Versi 4.8.151
 
 - **Tipe Rilis:** Modularisasi Penuh Arsitektur Antarmuka NiceGUI Python Murni & Restorasi Konsep Operasional NOC Lengkap (*Full Modularization of Pure Python NiceGUI NOC Frontend Architecture & Complete Operational Depth Restoration*)
