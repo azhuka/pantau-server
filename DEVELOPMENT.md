@@ -354,6 +354,27 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.124
+
+- **Tipe Rilis:** Fondasi Arsitektur Desain Sistem Terpusat & Eliminasi Kerapuhan Tata Letak (*Centralized NOC Design System, Layout Engine Primitives & Structural Resilience*)
+- **Fokus Utama:** Menghentikan pendekatan tambal-sulam sporadis dengan menghadirkan lapisan desain sistem terpadu berstandar industri (`server/static/css/pantau-noc.css`), memperkokoh stabilitas antarmuka tanpa mengubah sedikitpun rasa, densitas, atau alur kerja operasional NOC yang telah matang:
+  1. **Infrastruktur Desain Sistem Mandiri (`pantau-noc.css`):**
+     - Membangun *Single Source of Truth* untuk tata letak tabel, modal dialog, panel filter, dan kartu metrik yang tersaji langsung dari aset statis FastAPI ber-cache.
+  2. **Primitif Tabel NOC Baku (*NOC Data Table Engine*):**
+     - Menyediakan aturan baku bagi kontainer tabel dengan pelindung batas lebar minimum otomatis (`noc-table-wrap`, `noc-table`).
+     - Standardisasi kolom *sticky left* (identitas host/server/pengguna) dan *sticky right* (tombol aksi tindakan).
+     - Perlindungan mutlak kolom deskripsi dan kejadian insiden (`noc-col-event`, `noc-col-desc`) dengan batas minimal 240px dan pelipatan kata otomatis, mencegah kolaps karakter vertikal di semua tingkatan resolusi.
+  3. **Primitif Modal Terkunci Viewport (*NOC Viewport-Safe Modal*):**
+     - Menstandarisasi seluruh dialog modal menggunakan formula matematis `align-items: flex-start`, padding 24px, dan `margin: auto` dengan scrollbar form terisolasi pada body modal.
+     - Judul modal dan tombol simpan di footer dijamin selalu terlihat di dalam layar (*100% viewport clearance*).
+  4. **Primitif Panel Filter Terpadu (*NOC Filter Panel*):**
+     - Penataan filter berbasis `flex-wrap: wrap` dengan label kecil di atas kontrol dan `overflow-x: visible`, membasmi bilah gulir internal ganda yang mengganggu.
+  5. **Bilah Gulir Sistematis (*Discreet NOC Scrollbars*):**
+     - Mengganti bilah gulir bawaan OS yang kasar dengan scrollbar minimalis berukuran 6px yang adaptif terhadap seluruh varian tema gelap dan terang.
+  6. **Sinkronisasi SemVer 7 Berkas & Verifikasi Stabilitas:**
+     - Sinkronisasi versi SemVer `4.8.124` pada seluruh 7 berkas inti sistem.
+     - Lolos pengujian sintaksis Python `py_compile` dan Bash `bash -n`. Layanan `pantau-server.service` dan `agent_pantau.service` aktif beroperasi normal.
+
 ## Versi 4.8.123
 
 - **Tipe Rilis:** Penyempurnaan Visual & Perbaikan Layout Tabel Kejadian, Kolom Sticky, Dialog Modal, serta Filter Panel NOC (*Visual Polish, Table Event Column Overflow Fix, Sticky Columns, Safe Modal Clearance & NOC Filter Panel Refinement*)
