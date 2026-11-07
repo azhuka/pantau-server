@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Master Control Center — Pantau Server{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+  <div>
+    <h1 style="font-size:1.35rem;font-weight:700;margin:0 0 4px;color:var(--text);display:flex;align-items:center;gap:8px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+        <line x1="8" y1="21" x2="16" y2="21"></line>
+        <line x1="12" y1="17" x2="12" y2="21"></line>
+      </svg>
+      Master Control Center
+    </h1>
+    <p style="font-size:11.5px;color:var(--text-muted);margin:0;">
+      Pusat kendali arsitektur proyek, inspeksi basis data, sumber daya host internal, dan tata kelola ambang batas sistem.
+    </p>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <button onclick="optimizeDatabase()" id="btnOptDb" class="btn btn-sm btn-outline" style="font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+      Optimalkan Basis Data
+    </button>
+    <a href="/profile?tab=users" class="btn btn-sm btn-ghost" style="font-size:11px;">Manajemen Operator</a>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:12px;margin-bottom:16px;">
+  <div class="card" style="padding:12px 14px;background:var(--stat-card-bg);">
+    <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Ukuran Basis Data</div>
+    <div style="display:flex;align-items:baseline;gap:6px;">
+      <span style="font-size:1.6rem;font-weight:700;color:var(--text);font-family:var(--font-mono);">{{ db_status.total_size_mb }}</span>
+      <span style="font-size:11px;color:var(--text-muted);">MB</span>
+    </div>
+    <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">{{ db_status.tables|length }} tabel terdaftar di MySQL</div>
+  </div>
+
+  <div class="card" style="padding:12px 14px;background:var(--stat-card-bg);">
+    <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Server &amp; Agen Aktif</div>
+    <div style="display:flex;align-items:baseline;gap:6px;">
+      <span style="font-size:1.6rem;font-weight:700;color:var(--text);font-family:var(--font-mono);">{{ servers_count }}</span>
+      <span style="font-size:11px;color:var(--text-muted);">Unit Server</span>
+    </div>
+    <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">Versi Aplikasi v{{ app_version }}</div>
+  </div>
+
+  <div class="card" style="padding:12px 14px;background:var(--stat-card-bg);">
+    <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Operator &amp; Sesi</div>
+    <div style="display:flex;align-items:baseline;gap:6px;">
+      <span style="font-size:1.6rem;font-weight:700;color:var(--text);font-family:var(--font-mono);">{{ users_count }}</span>
+      <span style="font-size:11px;color:var(--text-muted);">Pengguna ({{ active_sessions }} sesi aktif)</span>
+    </div>
+    <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">Otentikasi RBAC 3-Tier Aktif</div>
+  </div>
+
+  <div class="card" style="padding:12px 14px;background:var(--stat-card-bg);">
+    <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Host RAM Terpakai</div>
+    <div style="display:flex;align-items:baseline;gap:6px;">
+      <span style="font-size:1.6rem;font-weight:700;color:var(--text);font-family:var(--font-mono);">{{ (host_mem.used / 1024 / 1024 / 1024)|round(1) }}</span>
+      <span style="font-size:11px;color:var(--text-muted);">/ {{ (host_mem.total / 1024 / 1024 / 1024)|round(1) }} GB</span>
+    </div>
+    <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">Penyimpanan mentalah otomatis dipangkas</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:16px;">
+  <!-- Database Tables Density -->
+  <div class="card" style="padding:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <h3 style="font-size:12.5px;font-weight:700;margin:0;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;">
+        Alokasi Penyimpanan Tabel Basis Data
+      </h3>
+      <span class="badge badge-muted" style="font-size:10px;">Engine: InnoDB (UTF8MB4)</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="table table-dense" style="width:100%;font-size:11.5px;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="text-align:left;padding:6px 8px;">Nama Tabel</th>
+            <th style="text-align:right;padding:6px 8px;">Estimasi Baris</th>
+            <th style="text-align:right;padding:6px 8px;">Ukuran (Data + Indeks)</th>
+            <th style="text-align:right;padding:6px 8px;">Persentase</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in db_status.tables %}
+          <tr style="border-bottom:1px solid var(--border-subtle);">
+            <td style="padding:5px 8px;font-family:var(--font-mono);font-weight:600;color:var(--text);">{{ t.table }}</td>
+            <td style="padding:5px 8px;text-align:right;font-family:var(--font-mono);color:var(--text-muted);">{{ "{:,}".format(t.rows) }}</td>
+            <td style="padding:5px 8px;text-align:right;font-family:var(--font-mono);font-weight:600;color:var(--text);">{{ t.size_mb }} MB</td>
+            <td style="padding:5px 8px;text-align:right;font-family:var(--font-mono);color:var(--text-muted);">
+              {% if db_status.total_size_mb > 0 %}
+                {{ ((t.size_mb / db_status.total_size_mb) * 100)|round(1) }}%
+              {% else %}
+                0%
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Retention Policies & Archival Engine -->
+  <div class="card" style="padding:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <h3 style="font-size:12.5px;font-weight:700;margin:0;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;">
+        Retensi Data Otomatis &amp; Pemangkasan
+      </h3>
+      <span class="badge badge-up" style="font-size:10px;">Background Daemon Aktif</span>
+    </div>
+    <p style="font-size:11px;color:var(--text-muted);margin:0 0 10px;line-height:1.4;">
+      Sistem memangkas data historis yang telah melewati batas usia secara otomatis setiap siklus agar basis data tetap ringan dan kencang.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for item, days in retention_limits.items() %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-subtle);border:1px solid var(--border-subtle);border-radius:4px;font-size:11px;">
+        <span style="font-family:var(--font-mono);color:var(--text);">{{ item }}</span>
+        <span class="badge badge-muted" style="font-family:var(--font-mono);font-size:10px;">{{ days }} Hari</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div style="margin-top:14px;padding:10px;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.2);border-radius:4px;">
+      <div style="font-size:11px;font-weight:600;color:var(--primary);margin-bottom:2px;">Arsitektur Bersih FastAPI + SQLAlchemy 2.0</div>
+      <div style="font-size:10.5px;color:var(--text-muted);line-height:1.4;">
+        Seluruh endpoint telah dipartisi ke dalam router domain (auth, dashboard, servers, services, terminal, files, probes, audit, maintenance, system_ops, settings) dengan latensi sub-millisecond.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function optimizeDatabase() {
+  if (!confirm("Jalankan perintah SQL OPTIMIZE TABLE untuk defragmentasi dan reklamasi ruang disk basis data?")) return;
+  const btn = document.getElementById('btnOptDb');
+  btn.disabled = true;
+  btn.innerText = "Mengoptimasi...";
+  try {
+    const res = await fetch("/api/master-control/optimize-db", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content
+      }
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert("Optimasi basis data berhasil dijalankan!");
+      location.reload();
+    } else {
+      alert("Gagal: " + (data.detail || data.error));
+    }
+  } catch(e) {
+    alert("Terjadi kesalahan jaringan: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "Optimalkan Basis Data";
+  }
+}
+</script>
+{% endblock %}
