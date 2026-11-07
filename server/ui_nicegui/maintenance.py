@@ -43,10 +43,21 @@ def setup_maintenance_routes(session_factory):
                         server_options[s.id] = f"{s.hostname} ({s.ip_address})"
 
                 with ui.column().classes("w-full gap-3"):
-                    inp_title = ui.input("Judul / Alasan Pemeliharaan").classes("w-full").props("dense outlined dark stack-label")
-                    sel_server = ui.select(server_options, value=0, label="Cakupan Server Target").classes("w-full").props("dense outlined dark stack-label")
-                    inp_dur = ui.number("Durasi Pemeliharaan (Menit)", value=60, min=5, max=10080).classes("w-full").props("dense outlined dark stack-label")
-                    inp_desc = ui.textarea("Deskripsi / Rencana Tindakan").classes("w-full").props("dense outlined dark stack-label rows=2")
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("JUDUL / ALASAN PEMELIHARAAN *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_title = ui.input(placeholder="mis. Pemeliharaan Rutin Server & Jaringan").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("CAKUPAN SERVER TARGET").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        sel_server = ui.select(server_options, value=0).classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("DURASI PEMELIHARAAN (MENIT)").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_dur = ui.number(value=60, min=5, max=10080).classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("DESKRIPSI / RENCANA TINDAKAN (OPSIONAL)").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_desc = ui.textarea(placeholder="Detail tindakan yang dilakukan...").classes("w-full").props("dense outlined dark rows=2")
 
                 def _save_maintenance_window():
                     title = inp_title.value.strip()

@@ -170,7 +170,9 @@ def setup_profile_routes(session_factory):
             with disable_2fa_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4 border border-rose-500/40"):
                 ui.label("Nonaktifkan Autentikasi Dua Langkah (2FA)").classes("text-base font-bold text-white")
                 ui.label("Masukkan kata sandi akun Anda untuk mengonfirmasi penonaktifan perlindungan 2FA:").classes("text-xs text-slate-300")
-                inp_dis_pwd = ui.input("Kata Sandi Akun", password=True).classes("w-full").props("dense outlined dark stack-label")
+                with ui.column().classes("w-full gap-1"):
+                    ui.label("KATA SANDI AKUN *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                    inp_dis_pwd = ui.input(password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark")
 
                 def _confirm_disable_2fa():
                     pwd_val = inp_dis_pwd.value.strip()
@@ -209,7 +211,9 @@ def setup_profile_routes(session_factory):
             with regen_codes_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                 ui.label("Regenerasi Kode Pemulihan 2FA").classes("text-base font-bold text-white")
                 ui.label("Kode pemulihan lama akan seketika hangus. Masukkan kata sandi akun Anda untuk melanjutkan:").classes("text-xs text-slate-300")
-                inp_reg_pwd = ui.input("Kata Sandi Akun", password=True).classes("w-full").props("dense outlined dark stack-label")
+                with ui.column().classes("w-full gap-1"):
+                    ui.label("KATA SANDI AKUN *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                    inp_reg_pwd = ui.input(password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark")
 
                 def _confirm_regen_codes():
                     pwd_val = inp_reg_pwd.value.strip()
@@ -249,19 +253,25 @@ def setup_profile_routes(session_factory):
                 <div class="topbar">
                   <div>
                     <h2 style="font-size:18px;margin:0">Akun Pengguna &amp; Keamanan Sistem</h2>
-                    <div style="font-size:12px;color:var(--dim);margin-top:2px">Kelola kredensial login, autentikasi dua langkah (2FA), serta identitas resmi organisasi.</div>
+                    <div style="font-size:12px;color:var(--dim);margin-top:2px">Kelola kredensial login, autentikasi dua langkah (2FA), pengguna NOC, serta identitas resmi organisasi.</div>
                   </div>
                 </div>
                 """)
 
+                req_tab = request.query_params.get("tab", "account").lower()
+                can_manage_users = user.is_master_admin() or user.has_perm("can_manage_users")
+
                 # Tab Navigation
-                with ui.tabs().classes("w-full bg-slate-900 border border-slate-800 rounded") as tabs:
+                with ui.tabs().classes("w-full bg-slate-900 border border-slate-800 rounded").props("dense inline-label active-color=primary indicator-color=primary align=left") as tabs:
                     tab_acc = ui.tab("account", label="Profil & Kredensial", icon="account_circle")
                     tab_sec = ui.tab("security", label="Keamanan & 2FA", icon="security")
+                    if can_manage_users:
+                        tab_users = ui.tab("users", label="Manajemen Pengguna", icon="people")
                     if can_manage_branding:
                         tab_brand = ui.tab("branding", label="Setel Organisasi", icon="corporate_fare")
 
-                with ui.tab_panels(tabs, value="account").classes("w-full bg-transparent p-0"):
+                init_val = req_tab if req_tab in ("account", "security", "users", "branding") else "account"
+                with ui.tab_panels(tabs, value=init_val).classes("w-full bg-transparent p-0"):
 
                     # Tab 1: Akun & Kredensial
                     with ui.tab_panel("account").classes("p-0 pt-3"):
@@ -301,9 +311,17 @@ def setup_profile_routes(session_factory):
                                     ui.label("Perbarui Kata Sandi (NIST SP 800-63B)").classes("text-sm font-bold text-white")
 
                                 with ui.column().classes("w-full gap-3"):
-                                    inp_cur_pwd = ui.input("Kata Sandi Saat Ini *", password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark stack-label")
-                                    inp_new_pwd = ui.input("Kata Sandi Baru *", password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark stack-label")
-                                    inp_cf_pwd = ui.input("Konfirmasi Kata Sandi Baru *", password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark stack-label")
+                                    with ui.column().classes("w-full gap-1"):
+                                        ui.label("KATA SANDI SAAT INI *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                                        inp_cur_pwd = ui.input(password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark")
+
+                                    with ui.column().classes("w-full gap-1"):
+                                        ui.label("KATA SANDI BARU *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                                        inp_new_pwd = ui.input(password=True, password_toggle_button=True, placeholder="Minimal 8 karakter").classes("w-full").props("dense outlined dark")
+
+                                    with ui.column().classes("w-full gap-1"):
+                                        ui.label("KONFIRMASI KATA SANDI BARU *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                                        inp_cf_pwd = ui.input(password=True, password_toggle_button=True).classes("w-full").props("dense outlined dark")
 
                                 def _change_password():
                                     c_pwd = inp_cur_pwd.value.strip()
@@ -372,7 +390,47 @@ def setup_profile_routes(session_factory):
                                 with ui.row().classes("mt-2"):
                                     ui.button("Aktifkan 2FA TOTP Sekarang", icon="verified_user", on_click=_open_setup_2fa_dialog).props("dense unelevated size=sm color=primary no-caps").classes("text-xs font-semibold")
 
-                    # Tab 3: Setel Organisasi (Branding)
+                    # Tab 3: Manajemen Pengguna (Admin / Operator)
+                    if can_manage_users:
+                        with ui.tab_panel("users").classes("p-0 pt-3"):
+                            with ui.card().classes("w-full p-5 custom-card flex flex-col gap-4"):
+                                with ui.row().classes("w-full items-center justify-between"):
+                                    with ui.column().classes("gap-0"):
+                                        ui.label("Manajemen Akun Pengguna & Hak Akses (RBAC)").classes("text-sm font-bold text-white")
+                                        ui.label("Kelola pengguna terdaftar, peran akses, dan status operasional").classes("text-xs text-slate-400")
+
+                                    ui.button("Buka Kelola Pengguna Lengkap", icon="manage_accounts", on_click=lambda: ui.navigate.to("/users")).props("dense unelevated size=sm color=primary no-caps").classes("text-xs font-semibold")
+
+                                with get_db(session_factory) as db:
+                                    all_u = db.query(User).order_by(User.id.asc()).all()
+                                    u_rows = []
+                                    for item in all_u:
+                                        u_rows.append({
+                                            "id": item.id,
+                                            "username": item.username,
+                                            "role": item.role_display(),
+                                            "is_active": "Aktif" if item.is_active else "Nonaktif",
+                                            "totp": "Aktif" if item.totp_enabled else "Nonaktif",
+                                            "created_at": item.created_at.strftime("%d %b %Y") if item.created_at else "—",
+                                        })
+
+                                u_cols = [
+                                    {"name": "username", "label": "PENGGUNA", "field": "username", "align": "left"},
+                                    {"name": "role", "label": "PERAN", "field": "role", "align": "center"},
+                                    {"name": "is_active", "label": "STATUS", "field": "is_active", "align": "center"},
+                                    {"name": "totp", "label": "2FA", "field": "totp", "align": "center"},
+                                    {"name": "created_at", "label": "TERDAFTAR", "field": "created_at", "align": "center"},
+                                ]
+                                utbl = ui.table(columns=u_cols, rows=u_rows, row_key="id").classes("w-full bg-slate-900").props("dense")
+                                utbl.add_slot("body-cell-role", """
+                                    <q-td :props="props">
+                                        <q-badge :color="props.row.role === 'Master Admin' ? 'rose-9' : (props.row.role === 'Operator' ? 'blue-9' : 'slate-7')" class="text-[9px] font-bold px-1.5 py-0.5">
+                                            {{ props.row.role }}
+                                        </q-badge>
+                                    </q-td>
+                                """)
+
+                    # Tab 4: Setel Organisasi (Branding)
                     if can_manage_branding:
                         with ui.tab_panel("branding").classes("p-0 pt-3"):
                             with ui.card().classes("w-full max-w-2xl p-5 custom-card flex flex-col gap-4"):
@@ -382,10 +440,20 @@ def setup_profile_routes(session_factory):
 
                                 ui.label("Sesuaikan nama organisasi, unit kerja, serta logo resmi yang ditampilkan pada header dashboard.").classes("text-xs text-slate-400")
 
-                                inp_org_name = ui.input("Nama Organisasi", value=brand_data.get("org_name", "")).classes("w-full").props("dense outlined dark stack-label")
-                                inp_org_unit = ui.input("Unit Kerja / Bidang", value=brand_data.get("org_unit", "")).classes("w-full").props("dense outlined dark stack-label")
-                                inp_motd = ui.textarea("Pesan Operasional / Pengumuman (MOTD)", value=brand_data.get("dash_motd", "")).classes("w-full").props("dense outlined dark stack-label rows=2")
-                                cb_motd = ui.checkbox("Tampilkan Pesan Pengumuman pada Dashboard", value=brand_data.get("show_motd", False)).props("dense dark")
+                                with ui.column().classes("w-full gap-3"):
+                                    with ui.column().classes("w-full gap-1"):
+                                        ui.label("NAMA ORGANISASI *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                                        inp_org_name = ui.input(value=brand_data.get("org_name", "")).classes("w-full").props("dense outlined dark")
+
+                                    with ui.column().classes("w-full gap-1"):
+                                        ui.label("UNIT KERJA / BIDANG").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                                        inp_org_unit = ui.input(value=brand_data.get("org_unit", "")).classes("w-full").props("dense outlined dark")
+
+                                    with ui.column().classes("w-full gap-1"):
+                                        ui.label("PESAN OPERASIONAL / PENGUMUMAN (MOTD)").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                                        inp_motd = ui.textarea(value=brand_data.get("dash_motd", "")).classes("w-full").props("dense outlined dark rows=2")
+
+                                    cb_motd = ui.checkbox("Tampilkan Pesan Pengumuman pada Dashboard", value=brand_data.get("show_motd", False)).props("dense dark")
 
                                 def _save_branding():
                                     with get_db(session_factory) as db:

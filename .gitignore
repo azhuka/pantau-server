@@ -20,6 +20,7 @@ env/
 # Scratch & Temporary
 scratch/
 screenshots/
+verification/
 /server/static/uploads/*
 !/server/static/uploads/.gitkeep
 

@@ -101,8 +101,60 @@ def apply_noc_head_styles():
             localStorage.setItem('sb', document.body.classList.contains('sb-collapsed') ? '1' : '0');
         } catch(e) {}
     }
+    function getThemeSettings() {
+        return {
+            theme: localStorage.getItem('pantau_theme') || 'dark',
+            accent: localStorage.getItem('pantau_accent') || 'cyan',
+            fontUi: localStorage.getItem('pantau_font_ui') || 'system',
+            fontMono: localStorage.getItem('pantau_font_mono') || 'system',
+            density: localStorage.getItem('pantau_density') || 'compact'
+        };
+    }
+    function applyThemeSettings(s) {
+        const doc = document.documentElement;
+        doc.setAttribute('data-theme', s.theme);
+        doc.setAttribute('data-accent', s.accent);
+        doc.setAttribute('data-font-ui', s.fontUi);
+        doc.setAttribute('data-font-mono', s.fontMono);
+        doc.setAttribute('data-density', s.density);
+        try {
+            localStorage.setItem('pantau_theme', s.theme);
+            localStorage.setItem('pantau_accent', s.accent);
+            localStorage.setItem('pantau_font_ui', s.fontUi);
+            localStorage.setItem('pantau_font_mono', s.fontMono);
+            localStorage.setItem('pantau_density', s.density);
+        } catch(e) {}
+        updateThemeModalUI(s);
+    }
+    function updateThemeModalUI(s) {
+        ['dark', 'obsidian', 'navy', 'light'].forEach(t => {
+            const el = document.getElementById('theme-card-' + t);
+            if (el) el.classList.toggle('active', s.theme === t);
+        });
+        ['cyan', 'emerald', 'amber', 'indigo', 'violet'].forEach(a => {
+            const el = document.getElementById('accent-pill-' + a);
+            if (el) el.classList.toggle('active', s.accent === a);
+        });
+        const dComp = document.getElementById('density-opt-compact');
+        if (dComp) dComp.classList.toggle('active', s.density === 'compact');
+        const dComf = document.getElementById('density-opt-comfortable');
+        if (dComf) dComf.classList.toggle('active', s.density === 'comfortable');
+    }
+    function onThemeModeSelect(t) { const s = getThemeSettings(); s.theme = t; applyThemeSettings(s); }
+    function onAccentSelect(a) { const s = getThemeSettings(); s.accent = a; applyThemeSettings(s); }
+    function onThemeDensityChange(d) { const s = getThemeSettings(); s.density = d; applyThemeSettings(s); }
+    function resetThemeDefaults() {
+        applyThemeSettings({theme: 'dark', accent: 'cyan', fontUi: 'system', fontMono: 'system', density: 'compact'});
+    }
     (function() {
         try {
+            var s = getThemeSettings();
+            var doc = document.documentElement;
+            doc.setAttribute('data-theme', s.theme);
+            doc.setAttribute('data-accent', s.accent);
+            doc.setAttribute('data-font-ui', s.fontUi);
+            doc.setAttribute('data-font-mono', s.fontMono);
+            doc.setAttribute('data-density', s.density);
             if (localStorage.getItem('sb') === '1') {
                 document.body.classList.add('sb-collapsed');
             }
@@ -110,7 +162,25 @@ def apply_noc_head_styles():
     })();
     </script>
     <style>
-        /* Injeksi Fallback Kritis: Menjamin Layout Dashboard & Severity Strip Selalu Horizontal */
+        @media (min-width: 641px) {
+            .mob-header { display: none !important; }
+        }
+        @media (max-width: 640px) {
+            .mob-header {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                height: 48px !important;
+                padding: 0 14px !important;
+                background: var(--sidebar, #162032) !important;
+                border-bottom: 1px solid var(--border) !important;
+                position: sticky !important;
+                top: 0 !important;
+                z-index: 999 !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+        }
         .dash-kpi-grid {
             display: grid !important;
             grid-template-columns: minmax(190px, 220px) 1fr minmax(260px, 290px) !important;
@@ -204,7 +274,7 @@ def apply_noc_head_styles():
             box-sizing: border-box !important;
         }
         .q-drawer {
-            background: var(--sidebar, #0e1526) !important;
+            background: var(--sidebar, #162032) !important;
         }
         .nicegui-content {
             padding: 0 !important;
@@ -215,6 +285,11 @@ def apply_noc_head_styles():
             min-height: 100%;
             display: block !important;
             box-sizing: border-box !important;
+        }
+        .nicegui-content > div {
+            width: 100% !important;
+            max-width: 100% !important;
+            align-items: stretch !important;
         }
         .main {
             margin-left: 0 !important;

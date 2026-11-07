@@ -267,9 +267,18 @@ def setup_server_detail_routes(session_factory):
             with add_svc_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                 ui.label("Tambah Layanan Baru Untuk Dipantau").classes("text-base font-bold text-white")
                 with ui.column().classes("w-full gap-3"):
-                    inp_svc_name = ui.input("Nama Layanan (Systemd)", placeholder="mis. nginx, mariadb, redis-server").classes("w-full").props("dense outlined dark stack-label")
-                    inp_svc_port = ui.number("Port Listening", value=80, min=1, max=65535).classes("w-full").props("dense outlined dark stack-label")
-                    inp_svc_proc = ui.input("Nama Proses", placeholder="mis. nginx, mysqld, redis-server").classes("w-full").props("dense outlined dark stack-label")
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("NAMA LAYANAN (SYSTEMD) *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_svc_name = ui.input(placeholder="mis. nginx, mariadb, redis-server").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("PORT LISTENING").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_svc_port = ui.number(value=80, min=1, max=65535).classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("NAMA PROSES *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_svc_proc = ui.input(placeholder="mis. nginx, mysqld, redis-server").classes("w-full").props("dense outlined dark")
+
                     cb_svc_core = ui.checkbox("Layanan Utama / Kritis (Core Service)", value=True).props("dense dark")
 
                 def _submit_new_service():
@@ -316,10 +325,12 @@ def setup_server_detail_routes(session_factory):
             with kill_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4 border border-rose-500/40"):
                 ui.label("Hentikan Proses (Kill Process)").classes("text-base font-bold text-white")
                 kill_info_label = ui.label("").classes("text-xs text-slate-300 font-mono")
-                sel_signal = ui.select({
-                    "TERM": "SIGTERM (15) - Penghentian Teratur (Graceful)",
-                    "KILL": "SIGKILL (9) - Paksa Berhenti Seketika (Force Kill)",
-                }, value="TERM", label="Sinyal Proses").classes("w-full").props("dense outlined dark")
+                with ui.column().classes("w-full gap-1"):
+                    ui.label("SINYAL PROSES").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                    sel_signal = ui.select({
+                        "TERM": "SIGTERM (15) - Penghentian Teratur (Graceful)",
+                        "KILL": "SIGKILL (9) - Paksa Berhenti Seketika (Force Kill)",
+                    }, value="TERM").classes("w-full").props("dense outlined dark")
 
                 def _confirm_kill():
                     pid = kill_state["pid"]
@@ -345,11 +356,23 @@ def setup_server_detail_routes(session_factory):
             with add_user_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                 ui.label("Buat Pengguna Linux Baru").classes("text-base font-bold text-white")
                 with ui.column().classes("w-full gap-3"):
-                    inp_u_name = ui.input("Nama Pengguna (Username) *", placeholder="mis. sysadmin2").classes("w-full").props("dense outlined dark stack-label")
-                    inp_u_pwd = ui.input("Kata Sandi Akun", password=True, password_toggle_button=True, placeholder="Minimal 8 karakter").classes("w-full").props("dense outlined dark stack-label")
-                    inp_u_shell = ui.select(["/bin/bash", "/bin/sh", "/bin/zsh", "/usr/sbin/nologin"], value="/bin/bash", label="Default Shell").classes("w-full").props("dense outlined dark stack-label")
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("NAMA PENGGUNA (USERNAME) *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_u_name = ui.input(placeholder="mis. sysadmin2").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("KATA SANDI AKUN").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_u_pwd = ui.input(password=True, password_toggle_button=True, placeholder="Minimal 8 karakter").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("DEFAULT SHELL").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_u_shell = ui.select(["/bin/bash", "/bin/sh", "/bin/zsh", "/usr/sbin/nologin"], value="/bin/bash").classes("w-full").props("dense outlined dark")
+
                     cb_u_sudo = ui.checkbox("Berikan Hak Akses Sudo (Root/Administrator)").props("dense dark")
-                    inp_u_comm = ui.input("Deskripsi / Keterangan", placeholder="Nama Lengkap / Unit Kerja").classes("w-full").props("dense outlined dark stack-label")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("DESKRIPSI / KETERANGAN").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_u_comm = ui.input(placeholder="Nama Lengkap / Unit Kerja").classes("w-full").props("dense outlined dark")
 
                 def _submit_new_user():
                     u_name = inp_u_name.value.strip().lower()
@@ -374,7 +397,9 @@ def setup_server_detail_routes(session_factory):
             block_ip_dlg = ui.dialog()
             with block_ip_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                 ui.label("Blokir Alamat IP Sumber").classes("text-base font-bold text-white")
-                inp_block_ip = ui.input("Alamat IPv4", placeholder="mis. 198.51.100.25").classes("w-full").props("dense outlined dark stack-label")
+                with ui.column().classes("w-full gap-1"):
+                    ui.label("ALAMAT IPV4 *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                    inp_block_ip = ui.input(placeholder="mis. 198.51.100.25").classes("w-full").props("dense outlined dark")
 
                 def _submit_block_ip():
                     ip_target = inp_block_ip.value.strip()
@@ -393,15 +418,26 @@ def setup_server_detail_routes(session_factory):
             with add_cron_dlg, ui.card().classes("w-full max-w-lg p-6 custom-card flex flex-col gap-4"):
                 ui.label("Tambah Tugas Terjadwal (Cron Job)").classes("text-base font-bold text-white")
                 with ui.column().classes("w-full gap-3"):
-                    inp_c_ident = ui.input("Identitas Tugas (ID) *", placeholder="mis. backup-database").classes("w-full").props("dense outlined dark stack-label")
-                    with ui.row().classes("w-full gap-2"):
-                        inp_c_min = ui.input("Menit", value="0").classes("flex-1").props("dense outlined dark stack-label")
-                        inp_c_hour = ui.input("Jam", value="2").classes("flex-1").props("dense outlined dark stack-label")
-                        inp_c_dom = ui.input("Tanggal", value="*").classes("flex-1").props("dense outlined dark stack-label")
-                        inp_c_mon = ui.input("Bulan", value="*").classes("flex-1").props("dense outlined dark stack-label")
-                        inp_c_dow = ui.input("Hari", value="*").classes("flex-1").props("dense outlined dark stack-label")
-                    inp_c_user = ui.input("Eksekusi Sebagai Pengguna", value="root").classes("w-full").props("dense outlined dark stack-label")
-                    inp_c_cmd = ui.input("Perintah Shell / Skrip *", placeholder="mis. /opt/scripts/backup.sh").classes("w-full").props("dense outlined dark stack-label")
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("IDENTITAS TUGAS (ID) *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_c_ident = ui.input(placeholder="mis. backup-database").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("JADWAL CRON (M H DOM MON DOW)").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        with ui.row().classes("w-full gap-2"):
+                            inp_c_min = ui.input(value="0").classes("flex-1").props("dense outlined dark")
+                            inp_c_hour = ui.input(value="2").classes("flex-1").props("dense outlined dark")
+                            inp_c_dom = ui.input(value="*").classes("flex-1").props("dense outlined dark")
+                            inp_c_mon = ui.input(value="*").classes("flex-1").props("dense outlined dark")
+                            inp_c_dow = ui.input(value="*").classes("flex-1").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("EKSEKUSI SEBAGAI PENGGUNA").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_c_user = ui.input(value="root").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("PERINTAH SHELL / SKRIP *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_c_cmd = ui.input(placeholder="mis. /opt/scripts/backup.sh").classes("w-full").props("dense outlined dark")
 
                 def _submit_new_cron():
                     ident = inp_c_ident.value.strip()
@@ -429,7 +465,9 @@ def setup_server_detail_routes(session_factory):
             add_ssl_dlg = ui.dialog()
             with add_ssl_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                 ui.label("Tambah Path Sertifikat SSL/TLS").classes("text-base font-bold text-white")
-                inp_ssl_path = ui.input("Path Berkas Sertifikat (CRT/PEM)", placeholder="mis. /etc/letsencrypt/live/domain/fullchain.pem").classes("w-full").props("dense outlined dark stack-label")
+                with ui.column().classes("w-full gap-1"):
+                    ui.label("PATH BERKAS SERTIFIKAT (CRT/PEM) *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                    inp_ssl_path = ui.input(placeholder="mis. /etc/letsencrypt/live/domain/fullchain.pem").classes("w-full").props("dense outlined dark")
 
                 def _submit_ssl_path():
                     p = inp_ssl_path.value.strip()
@@ -453,6 +491,37 @@ def setup_server_detail_routes(session_factory):
                 open_problems = [p for p in problems if p.resolved_at is None]
                 apt_cnt = ext.apt_upgradable if ext and ext.apt_upgradable is not None else 0
 
+                # Dialog Mode Pemeliharaan
+                maint_dlg = ui.dialog()
+                with maint_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
+                    ui.label(f"Mode Pemeliharaan: {srv_host}").classes("text-base font-bold text-white")
+                    with ui.column().classes("w-full gap-3"):
+                        with ui.column().classes("w-full gap-1"):
+                            ui.label("DURASI PEMELIHARAAN (MENIT)").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                            maint_dur = ui.number(value=60, min=5, max=1440).classes("w-full").props("dense outlined dark")
+
+                        with ui.column().classes("w-full gap-1"):
+                            ui.label("ALASAN PEMELIHARAAN").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                            maint_reason = ui.input(value=srv_maint_reason or "Perawatan rutin server").classes("w-full").props("dense outlined dark")
+
+                    def _toggle_maintenance(enable: bool):
+                        with get_db(session_factory) as db:
+                            s = db.query(Server).filter(Server.id == srv_id).first()
+                            if s:
+                                s.is_maintenance = 1 if enable else 0
+                                s.maintenance_reason = maint_reason.value if enable else None
+                                db.commit()
+                                notify_success(f"Mode pemeliharaan {'diaktifkan' if enable else 'dinonaktifkan'}.")
+                        maint_dlg.close()
+                        ui.navigate.to(f"/servers/{srv_id}")
+
+                    with ui.row().classes("w-full justify-end gap-2 mt-2"):
+                        ui.button("Batal", on_click=maint_dlg.close).props("dense flat no-caps color=grey-5")
+                        if srv_is_maint:
+                            ui.button("Nonaktifkan Pemeliharaan", on_click=lambda: _toggle_maintenance(False)).props("dense unelevated color=emerald-7 no-caps")
+                        else:
+                            ui.button("Aktifkan Pemeliharaan", on_click=lambda: _toggle_maintenance(True)).props("dense unelevated color=amber-7 no-caps")
+
                 with ui.card().classes("w-full p-3.5 custom-card"):
                     with ui.row().classes("w-full items-center justify-between gap-4"):
                         with ui.row().classes("items-center gap-3"):
@@ -467,46 +536,34 @@ def setup_server_detail_routes(session_factory):
                                         ui.badge("PEMELIHARAAN", color="amber-9").classes("text-[9px] font-bold px-1.5 py-0.5")
                                 ui.label(f"IP: {srv_ip} · Platform: {srv_platform} · Terakhir terlihat: {srv_last_seen.strftime('%d %b %Y %H:%M:%S') if srv_last_seen else '—'}").classes("text-[11px] text-slate-400 font-mono")
 
-                        # Tombol Aksi Hero Header (Kompak NOC)
-                        with ui.row().classes("items-center gap-1.5 flex-wrap"):
-                            ui.button("Segarkan", icon="refresh", on_click=lambda: ui.navigate.to(f"/servers/{srv_id}")).props("dense outline no-caps size=sm color=slate-4").classes("text-xs")
+                        # Tombol Aksi Hero Header (.toolbar-group Kanonikal)
+                        with ui.row().classes("items-center gap-2 flex-wrap"):
+                            # Grup 1: Utilitas Server & Pemeliharaan
+                            with ui.row().classes("toolbar-group items-center"):
+                                ui.button("File Manager", icon="folder_open", on_click=lambda: ui.navigate.to(f"/servers/{srv_id}/files")).props("dense flat no-caps size=sm color=purple-4").classes("text-xs px-2").tooltip("File Manager")
+                                ui.element("span").classes("toolbar-divider")
+                                ui.button("Pemeliharaan", icon="build", on_click=maint_dlg.open).props(f"dense flat no-caps size=sm {'color=amber-4' if srv_is_maint else 'color=slate-3'}").classes("text-xs px-2").tooltip("Mode Pemeliharaan")
 
-                            if ext and ext.agent_version and ext.agent_version != settings.APP_VERSION:
-                                ui.button(
-                                    f"OTA v{settings.APP_VERSION}",
-                                    icon="system_update_alt",
-                                    on_click=lambda: _queue_command("update_agent", params={"version": settings.APP_VERSION}, note="Enterprise OTA Update"),
-                                ).props("dense unelevated no-caps size=sm color=primary").classes("text-xs font-semibold")
+                            # Grup 2: Pembaruan & Kontrol Host
+                            with ui.row().classes("toolbar-group items-center"):
+                                ui.button("Update OS", icon="sync", on_click=lambda: _queue_apt_request("APT_UPDATE", note="Update OS")).props("dense flat no-caps size=sm color=emerald-4").classes("text-xs px-2").tooltip("Perbarui Indeks APT")
+                                ui.element("span").classes("toolbar-divider")
+                                ui.button("Upgrade OS", icon="system_update_alt", on_click=lambda: _queue_apt_request("APT_UPGRADE", note="Upgrade OS")).props(f"dense flat no-caps size=sm {'color=rose-4' if apt_cnt > 0 else 'color=slate-4'}").classes("text-xs px-2").tooltip(f"Tingkatkan Paket OS ({apt_cnt} pembaruan)")
+                                ui.element("span").classes("toolbar-divider")
+                                ui.button("Reboot Host", icon="restart_alt", on_click=lambda: _open_host_dialog("reboot_host")).props("dense flat no-caps size=sm color=amber-4").classes("text-xs px-2").tooltip("Reboot Host")
+                                ui.element("span").classes("toolbar-divider")
+                                ui.button("Poweroff", icon="power_settings_new", on_click=lambda: _open_host_dialog("poweroff_host")).props("dense flat no-caps size=sm color=rose-4").classes("text-xs px-2").tooltip("Matikan Host")
 
-                            ui.button("Reboot Host", icon="restart_alt", on_click=lambda: _open_host_dialog("reboot_host")).props("dense outline no-caps size=sm color=amber-4").classes("text-xs")
-                            ui.button("Poweroff", icon="power_settings_new", on_click=lambda: _open_host_dialog("poweroff_host")).props("dense outline no-caps size=sm color=rose-4").classes("text-xs")
+                            # Grup 3: OTA & Segarkan
+                            with ui.row().classes("items-center gap-1.5"):
+                                if ext and ext.agent_version and ext.agent_version != settings.APP_VERSION:
+                                    ui.button(
+                                        f"OTA v{settings.APP_VERSION}",
+                                        icon="system_update_alt",
+                                        on_click=lambda: _queue_command("update_agent", params={"version": settings.APP_VERSION}, note="Enterprise OTA Update"),
+                                    ).props("dense unelevated no-caps size=sm color=primary").classes("text-xs font-semibold")
 
-                            # Dialog Mode Pemeliharaan
-                            maint_dlg = ui.dialog()
-                            with maint_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
-                                ui.label(f"Mode Pemeliharaan: {srv_host}").classes("text-base font-bold text-white")
-                                maint_dur = ui.number("Durasi Pemeliharaan (Menit)", value=60, min=5, max=1440).classes("w-full").props("dense outlined dark stack-label")
-                                maint_reason = ui.input("Alasan Pemeliharaan", value=srv_maint_reason or "Perawatan rutin server").classes("w-full").props("dense outlined dark stack-label")
-
-                                def _toggle_maintenance(enable: bool):
-                                    with get_db(session_factory) as db:
-                                        s = db.query(Server).filter(Server.id == srv_id).first()
-                                        if s:
-                                            s.is_maintenance = 1 if enable else 0
-                                            s.maintenance_reason = maint_reason.value if enable else None
-                                            db.commit()
-                                            notify_success(f"Mode pemeliharaan {'diaktifkan' if enable else 'dinonaktifkan'}.")
-                                    maint_dlg.close()
-                                    ui.navigate.to(f"/servers/{srv_id}")
-
-                                with ui.row().classes("w-full justify-end gap-2 mt-2"):
-                                    ui.button("Batal", on_click=maint_dlg.close).props("dense flat no-caps color=grey-5")
-                                    if srv_is_maint:
-                                        ui.button("Nonaktifkan Pemeliharaan", on_click=lambda: _toggle_maintenance(False)).props("dense unelevated color=emerald-7 no-caps")
-                                    else:
-                                        ui.button("Aktifkan Pemeliharaan", on_click=lambda: _toggle_maintenance(True)).props("dense unelevated color=amber-7 no-caps")
-
-                            ui.button("Pemeliharaan", icon="build", on_click=maint_dlg.open).props("dense outline no-caps size=sm color=primary").classes("text-xs")
+                                ui.button("Segarkan", icon="refresh", on_click=lambda: ui.navigate.to(f"/servers/{srv_id}")).props("dense outline no-caps size=sm color=slate-4").classes("text-xs").tooltip("Muat Ulang Data Server")
 
                 # -----------------------------------------------------------------
                 # 11 SUB-TAB NAVIGASI DETAIL SERVER
@@ -819,57 +876,182 @@ def setup_server_detail_routes(session_factory):
                     # SUB-TAB 3: RIWAYAT INSIDEN & GANGGUAN SERVER
                     # =============================================================
                     with ui.tab_panel(t_prob).classes("gap-4 flex flex-col p-0"):
+                        # Modal Diagnosa Detail Insiden
+                        diag_dlg = ui.dialog()
+                        diag_data = {"p": None}
+                        with diag_dlg, ui.card().classes("w-full max-w-lg p-6 custom-card flex flex-col gap-4 border border-slate-700"):
+                            with ui.row().classes("w-full items-center justify-between"):
+                                ui.label("Diagnosa Insiden Sistem").classes("text-base font-bold text-white")
+                                ui.button(icon="close", on_click=diag_dlg.close).props("dense flat round size=sm color=slate-4")
+
+                            diag_msg_lbl = ui.label("").classes("text-sm font-semibold text-white")
+                            diag_info_wrap = ui.column().classes("w-full gap-2 text-xs text-slate-300")
+
+                            with ui.row().classes("w-full justify-end mt-2"):
+                                ui.button("Tutup", on_click=diag_dlg.close).props("dense flat no-caps color=grey-5")
+
+                        def _open_diag(p_data: dict):
+                            diag_msg_lbl.set_text(f"[{p_data.get('sev_label')}] {p_data.get('msg')}")
+                            diag_info_wrap.clear()
+                            with diag_info_wrap:
+                                with ui.row().classes("items-center gap-2"):
+                                    ui.label("Waktu Kejadian:").classes("text-slate-400 font-mono")
+                                    ui.label(f"{p_data.get('started')} (Durasi: {p_data.get('dur')})").classes("font-mono text-white")
+                                if p_data.get("resolved") and p_data.get("resolved") != "—":
+                                    with ui.row().classes("items-center gap-2"):
+                                        ui.label("Waktu Penyelesaian:").classes("text-slate-400 font-mono")
+                                        ui.label(str(p_data.get("resolved"))).classes("font-mono text-emerald-400")
+                                if p_data.get("tip"):
+                                    with ui.column().classes("gap-1 p-2.5 bg-blue-950/40 border border-blue-800/40 rounded"):
+                                        ui.label("Panduan Solusi:").classes("text-blue-400 font-bold")
+                                        ui.label(str(p_data.get("tip"))).classes("text-slate-200")
+                                if p_data.get("context"):
+                                    with ui.column().classes("gap-1 p-2.5 bg-slate-950 border border-slate-800 rounded font-mono text-[11px]"):
+                                        ui.label("Konteks / Snapshot Data:").classes("text-slate-400 font-bold")
+                                        ui.label(str(p_data.get("context"))).classes("text-slate-300 break-all")
+                            diag_dlg.open()
+
+                        def _toggle_ack(prob_id: int):
+                            with get_db(session_factory) as db:
+                                prob = db.query(ServerProblem).filter(ServerProblem.id == prob_id).first()
+                                if prob:
+                                    if prob.acknowledged_by:
+                                        prob.acknowledged_by = None
+                                        prob.acknowledged_at = None
+                                        msg = "Status penanganan insiden dibatalkan."
+                                    else:
+                                        prob.acknowledged_by = current_username
+                                        prob.acknowledged_at = datetime.utcnow()
+                                        msg = f"Insiden ditandai ditangani oleh {current_username}."
+                                    audit = AuditLog(
+                                        user_id=current_user_id,
+                                        username=current_username,
+                                        server_id=prob.server_id,
+                                        action="ack_problem",
+                                        target=f"Insiden #{prob.id} ({prob.message or prob.key})",
+                                        result="ditangani" if prob.acknowledged_by else "batal",
+                                    )
+                                    db.add(audit)
+                                    db.commit()
+                                    notify_info(msg)
+                            ui.navigate.to(f"/servers/{srv_id}?tab=prob")
+
+                        def _toggle_ignore(prob_id: int):
+                            with get_db(session_factory) as db:
+                                prob = db.query(ServerProblem).filter(ServerProblem.id == prob_id).first()
+                                if prob:
+                                    new_state = 0 if prob.is_ignored else 1
+                                    prob.is_ignored = new_state
+                                    prob.ignored_by = current_username if new_state else None
+                                    prob.ignored_reason = f"Diabaikan oleh {current_username}" if new_state else None
+                                    if new_state and not prob.acknowledged_by:
+                                        prob.acknowledged_by = current_username
+                                        prob.acknowledged_at = datetime.utcnow()
+                                    audit = AuditLog(
+                                        user_id=current_user_id,
+                                        username=current_username,
+                                        server_id=prob.server_id,
+                                        action="ignore_problem" if new_state else "unignore_problem",
+                                        target=f"Insiden #{prob.id} ({prob.message or prob.key})",
+                                        result="diabaikan" if new_state else "dipulihkan",
+                                    )
+                                    db.add(audit)
+                                    db.commit()
+                                    msg = "Insiden diabaikan (alarm dibisukan)." if new_state else "Insiden dipulihkan dari daftar abaikan."
+                                    notify_info(msg)
+                            ui.navigate.to(f"/servers/{srv_id}?tab=prob")
+
                         with ui.card().classes("w-full p-4 custom-card"):
                             ui.label("Riwayat Insiden & Gangguan Server").classes("text-sm font-bold text-white mb-2")
                             if not problems:
                                 ui.label("Tidak ada catatan insiden pada server ini.").classes("text-xs text-slate-500")
                             else:
                                 p_cols = [
-                                    {"name": "sev", "label": "KEPARAHAN", "field": "sev", "align": "center"},
-                                    {"name": "msg", "label": "MASALAH / PESAN", "field": "msg", "align": "left"},
-                                    {"name": "started", "label": "MULAI", "field": "started", "align": "left"},
-                                    {"name": "resolved", "label": "SELESAI", "field": "resolved", "align": "left"},
-                                    {"name": "dur", "label": "DURASI", "field": "dur", "align": "left"},
-                                    {"name": "action", "label": "STATUS / AKSI", "field": "action", "align": "center"},
+                                    {"name": "sev", "label": "KEPARAHAN", "field": "sev_label", "align": "center"},
+                                    {"name": "msg", "label": "MASALAH / KEJADIAN", "field": "msg", "align": "left"},
+                                    {"name": "status", "label": "STATUS TRIAGE", "field": "status", "align": "center"},
+                                    {"name": "started", "label": "WAKTU MULAI", "field": "started", "align": "left"},
+                                    {"name": "dur", "label": "DURASI", "field": "dur", "align": "center"},
+                                    {"name": "actions", "label": "TRIAGE & AKSI", "field": "actions", "align": "center"},
                                 ]
                                 p_rows = []
                                 for p in problems:
+                                    p_open = p.resolved_at is None
+                                    p_ack = bool(p.acknowledged_by)
+                                    p_ign = bool(p.is_ignored)
+                                    if not p_open:
+                                        st_txt = "SELESAI (OTOMATIS)"
+                                    elif p_ign:
+                                        st_txt = "DIABAIKAN"
+                                    elif p_ack:
+                                        st_txt = f"DITANGANI ({p.acknowledged_by})"
+                                    else:
+                                        st_txt = "AKTIF"
+
                                     p_rows.append({
                                         "id": p.id,
-                                        "sev": p.severity.upper() if p.severity else "PERINGATAN",
+                                        "sev": (p.severity or "info").lower(),
+                                        "sev_label": "CRITICAL" if p.severity in ("danger", "critical") else ("GAWAT" if p.severity in ("average", "gawat") else ("PERINGATAN" if p.severity in ("warning", "peringatan") else "INFO")),
                                         "msg": p.message or p.service_name or "Gangguan terdeteksi",
+                                        "status": st_txt,
                                         "started": p.started_at.strftime("%Y-%m-%d %H:%M:%S") if p.started_at else "—",
                                         "resolved": p.resolved_at.strftime("%Y-%m-%d %H:%M:%S") if p.resolved_at else "—",
                                         "dur": format_duration(p.started_at, p.resolved_at or now),
-                                        "is_open": p.resolved_at is None,
+                                        "is_open": p_open,
+                                        "is_ack": p_ack,
+                                        "ack_by": p.acknowledged_by or "",
+                                        "is_ignored": p_ign,
+                                        "tip": p.tip or "",
+                                        "context": p.context or "",
                                     })
 
                                 ptbl = ui.table(columns=p_cols, rows=p_rows, row_key="id").classes("w-full bg-slate-900")
                                 ptbl.add_slot("body-cell-sev", """
                                     <q-td :props="props">
-                                        <q-badge :color="props.row.sev === 'DANGER' || props.row.sev === 'CRITICAL' ? 'rose-9' : 'amber-9'" class="text-[9px] font-bold px-1.5 py-0.5">
-                                            {{ props.row.sev }}
+                                        <q-badge :color="props.row.sev === 'danger' || props.row.sev === 'critical' ? 'rose-9' : (props.row.sev === 'average' || props.row.sev === 'gawat' ? 'amber-9' : (props.row.sev === 'warning' || props.row.sev === 'peringatan' ? 'yellow-9' : 'blue-9'))" class="text-[9px] font-bold px-1.5 py-0.5">
+                                            {{ props.row.sev_label }}
                                         </q-badge>
                                     </q-td>
                                 """)
-                                ptbl.add_slot("body-cell-action", """
+                                ptbl.add_slot("body-cell-status", """
                                     <q-td :props="props">
-                                        <span v-if="!props.row.is_open" class="text-xs text-slate-500 font-mono">Terselesaikan</span>
-                                        <q-btn v-else dense outline size="xs" color="emerald-4" icon="check" label="Tandai Selesai" no-caps
-                                               @click="() => $parent.$emit('resolve_prob', props.row.id)" />
+                                        <q-badge v-if="!props.row.is_open" color="emerald-9" class="text-[9px] font-bold px-1.5 py-0.5">
+                                            ✓ SELESAI
+                                        </q-badge>
+                                        <q-badge v-else-if="props.row.is_ignored" color="slate-7" class="text-[9px] font-bold px-1.5 py-0.5">
+                                            DIABAIKAN
+                                        </q-badge>
+                                        <q-badge v-else-if="props.row.is_ack" color="cyan-9" class="text-[9px] font-bold px-1.5 py-0.5">
+                                            {{ props.row.status }}
+                                        </q-badge>
+                                        <q-badge v-else color="rose-9" class="text-[9px] font-bold px-1.5 py-0.5">
+                                            AKTIF
+                                        </q-badge>
                                     </q-td>
                                 """)
-
-                                def _resolve_one_problem(prob_id: int):
-                                    with get_db(session_factory) as db:
-                                        prob = db.query(ServerProblem).filter(ServerProblem.id == prob_id).first()
-                                        if prob:
-                                            prob.resolved_at = datetime.utcnow()
-                                            db.commit()
-                                            notify_success("Insiden ditandai selesai.")
-                                    ui.navigate.to(f"/servers/{srv_id}")
-
-                                ptbl.on("resolve_prob", lambda e: _resolve_one_problem(e.args))
+                                ptbl.add_slot("body-cell-actions", """
+                                    <q-td :props="props">
+                                        <div class="row items-center justify-center q-gutter-xs no-wrap">
+                                            <q-btn dense flat round size="xs" color="sky-4" icon="search"
+                                                   @click="() => $parent.$emit('diag_prob', props.row)">
+                                                <q-tooltip class="bg-slate-900 text-[10px]">Diagnosa & Panduan Solusi</q-tooltip>
+                                            </q-btn>
+                                            <template v-if="props.row.is_open">
+                                                <q-btn dense flat round size="xs" :color="props.row.is_ack ? 'emerald-4' : 'grey-5'" icon="check_circle"
+                                                       @click="() => $parent.$emit('ack_prob', props.row.id)">
+                                                    <q-tooltip class="bg-slate-900 text-[10px]">{{ props.row.is_ack ? 'Batalkan Status Penanganan' : 'Tandai Ditangani (ACK)' }}</q-tooltip>
+                                                </q-btn>
+                                                <q-btn dense flat round size="xs" :color="props.row.is_ignored ? 'amber-4' : 'grey-5'" :icon="props.row.is_ignored ? 'notifications_active' : 'notifications_off'"
+                                                       @click="() => $parent.$emit('ignore_prob', props.row.id)">
+                                                    <q-tooltip class="bg-slate-900 text-[10px]">{{ props.row.is_ignored ? 'Pantau Kembali' : 'Abaikan Insiden' }}</q-tooltip>
+                                                </q-btn>
+                                            </template>
+                                        </div>
+                                    </q-td>
+                                """)
+                                ptbl.on("diag_prob", lambda e: _open_diag(e.args))
+                                ptbl.on("ack_prob", lambda e: _toggle_ack(e.args))
+                                ptbl.on("ignore_prob", lambda e: _toggle_ignore(e.args))
 
                     # =============================================================
                     # SUB-TAB 4: INVENTARIS PAKET & PEMBARUAN APT
@@ -930,6 +1112,31 @@ def setup_server_detail_routes(session_factory):
                                     </q-td>
                                 """)
                                 pk_tbl.on("upgrade_pkg", lambda e: _queue_apt_request("PKG_UPGRADE", detail_val=e.args, note=f"Upgrade paket {e.args}"))
+
+                        if installed_packages:
+                            with ui.card().classes("w-full p-4 custom-card mt-3"):
+                                with ui.row().classes("w-full items-center justify-between mb-3"):
+                                    ui.label(f"Pustaka & Paket Terpasang ({len(installed_packages)} paket)").classes("text-sm font-bold text-white")
+                                    inst_search = ui.input(placeholder="Cari paket terpasang…").props("dense outlined dark").classes("w-64 text-xs")
+
+                                inst_cols = [
+                                    {"name": "name", "label": "NAMA PAKET", "field": "name", "align": "left", "sortable": True},
+                                    {"name": "version", "label": "VERSI TERPASANG", "field": "version", "align": "left"},
+                                    {"name": "arch", "label": "ARSITEKTUR", "field": "arch", "align": "center"},
+                                    {"name": "summary", "label": "RINGKASAN", "field": "summary", "align": "left"},
+                                ]
+                                inst_rows = []
+                                for ipkg in installed_packages:
+                                    if isinstance(ipkg, dict):
+                                        inst_rows.append({
+                                            "name": ipkg.get("name", "—"),
+                                            "version": ipkg.get("version", "—"),
+                                            "arch": ipkg.get("arch", "amd64"),
+                                            "summary": ipkg.get("summary", "—"),
+                                        })
+
+                                inst_tbl = ui.table(columns=inst_cols, rows=inst_rows, row_key="name", pagination={"rowsPerPage": 15}).classes("w-full bg-slate-900").props("dense")
+                                inst_search.bind_value_to(inst_tbl, "filter")
 
                     # =============================================================
                     # SUB-TAB 5: PROSES SISTEM TERATAS (TOP PROCESSES)

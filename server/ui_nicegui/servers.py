@@ -96,13 +96,31 @@ def setup_servers_routes(session_factory):
                     ui.label("Tambah Server Baru").classes("text-base font-bold text-white")
 
                 with ui.column().classes("w-full gap-3"):
-                    add_hostname = ui.input("Nama Host (Hostname) *", placeholder="mis. srv-prod-db01").classes("w-full").props("dense outlined dark stack-label")
-                    add_ip = ui.input("Alamat IP Server *", placeholder="mis. 192.168.10.50").classes("w-full").props("dense outlined dark stack-label")
-                    add_group = ui.input("Nama Grup", placeholder="mis. Database, Produksi, Staging (Opsional)").classes("w-full").props("dense outlined dark stack-label")
-                    add_tier = ui.select({1: "Produksi (Tier 1 - Kritis & Vital)", 2: "Non-Produksi (Tier 2 - Standar / Dev)"}, value=2, label="Lingkungan / Tier").classes("w-full").props("dense outlined dark stack-label")
-                    add_platform = ui.select({"auto": "Deteksi Otomatis", "baremetal": "Baremetal Host", "vm": "Virtual Machine (KVM/QEMU)", "lxc": "LXC Container"}, value="auto", label="Override Platform").classes("w-full").props("dense outlined dark stack-label")
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("Nama Host (Hostname) *").classes("text-[11px] font-bold text-slate-300 uppercase tracking-wide")
+                        add_hostname = ui.input(placeholder="mis. srv-prod-db01").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("Alamat IP Server *").classes("text-[11px] font-bold text-slate-300 uppercase tracking-wide")
+                        add_ip = ui.input(placeholder="mis. 192.168.10.50").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("Nama Grup").classes("text-[11px] font-bold text-slate-300 uppercase tracking-wide")
+                        add_group = ui.input(placeholder="mis. Database, Produksi, Staging (Opsional)").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("Lingkungan / Tier").classes("text-[11px] font-bold text-slate-300 uppercase tracking-wide")
+                        add_tier = ui.select({1: "Produksi (Tier 1 - Kritis & Vital)", 2: "Non-Produksi (Tier 2 - Standar / Dev)"}, value=2).classes("w-full").props("dense outlined dark options-dense")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("Override Platform").classes("text-[11px] font-bold text-slate-300 uppercase tracking-wide")
+                        add_platform = ui.select({"auto": "Deteksi Otomatis", "baremetal": "Baremetal Host", "vm": "Virtual Machine (KVM/QEMU)", "lxc": "LXC Container"}, value="auto").classes("w-full").props("dense outlined dark options-dense")
+
                     add_terminal = ui.checkbox("Izinkan Akses Terminal Root Web (Bawaan)").props("dense dark")
-                    add_notes = ui.textarea("Catatan Operasional", placeholder="Keterangan server, lokasi rak, dll.").classes("w-full").props("dense outlined dark stack-label rows=2")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("Catatan Operasional").classes("text-[11px] font-bold text-slate-300 uppercase tracking-wide")
+                        add_notes = ui.textarea(placeholder="Keterangan server, lokasi rak, dll.").classes("w-full").props("dense outlined dark rows=2")
 
                 def _submit_new_server():
                     host_val = add_hostname.value.strip()
@@ -287,13 +305,31 @@ def setup_servers_routes(session_factory):
                 sel_server_id = {"id": None}
 
                 with ui.column().classes("w-full gap-3"):
-                    inp_hostname = ui.input("Nama Host (Hostname)").classes("w-full").props("dense outlined dark stack-label")
-                    inp_ip = ui.input("Alamat IP").classes("w-full").props("dense outlined dark stack-label")
-                    inp_group = ui.input("Nama Grup").classes("w-full").props("dense outlined dark stack-label")
-                    sel_tier = ui.select({1: "Produksi (Tier 1 - Kritis)", 2: "Non-Produksi (Tier 2 - Standar)"}, label="Lingkungan / Tier").classes("w-full").props("dense outlined dark stack-label")
-                    sel_platform = ui.select({"auto": "Deteksi Otomatis", "baremetal": "Baremetal Host", "vm": "Virtual Machine (KVM/QEMU)", "lxc": "LXC Container"}, label="Override Platform").classes("w-full").props("dense outlined dark stack-label")
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("Nama Host (Hostname)").classes("text-[11px] font-bold text-slate-300 uppercase tracking-wide")
+                        inp_hostname = ui.input(placeholder="Hostname").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("Alamat IP").classes("text-[11px] font-bold text-slate-300 uppercase tracking-wide")
+                        inp_ip = ui.input(placeholder="Alamat IP").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("Nama Grup").classes("text-[11px] font-bold text-slate-300 uppercase tracking-wide")
+                        inp_group = ui.input(placeholder="Grup Server").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("Lingkungan / Tier").classes("text-[11px] font-bold text-slate-300 uppercase tracking-wide")
+                        sel_tier = ui.select({1: "Produksi (Tier 1 - Kritis)", 2: "Non-Produksi (Tier 2 - Standar)"}).classes("w-full").props("dense outlined dark options-dense")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("Override Platform").classes("text-[11px] font-bold text-slate-300 uppercase tracking-wide")
+                        sel_platform = ui.select({"auto": "Deteksi Otomatis", "baremetal": "Baremetal Host", "vm": "Virtual Machine (KVM/QEMU)", "lxc": "LXC Container"}).classes("w-full").props("dense outlined dark options-dense")
+
                     cb_terminal = ui.checkbox("Izinkan Akses Terminal Root Web (Bawaan)").props("dense dark")
-                    inp_notes = ui.textarea("Catatan Operasional").classes("w-full").props("dense outlined dark stack-label rows=2")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("Catatan Operasional").classes("text-[11px] font-bold text-slate-300 uppercase tracking-wide")
+                        inp_notes = ui.textarea(placeholder="Keterangan server").classes("w-full").props("dense outlined dark rows=2")
 
                 def _save_server_metadata():
                     sid = sel_server_id["id"]
@@ -360,16 +396,26 @@ def setup_servers_routes(session_factory):
                             ui.button("Tambah Server", icon="add", on_click=add_dlg.open).props("dense unelevated no-caps size=sm color=primary").classes("text-xs font-semibold")
                         ui.button("Segarkan", icon="refresh", on_click=lambda: _reload_table()).props("dense outline no-caps size=sm color=slate-4").classes("text-xs")
 
-                # Bilah Multi-Filter Terpadu
+                # Bilah Multi-Filter Terpadu (Format Pantau Klasik Tanpa Penyekat Garis)
                 with ui.card().classes("w-full p-3 custom-card"):
-                    with ui.row().classes("w-full items-center gap-3"):
-                        search_box = ui.input(placeholder="Cari server, IP, spek, tag, OS...").props("dense outlined dark clearable").classes("flex-grow")
-                        with ui.row().classes("items-center gap-2"):
-                            ui.label("Filter:").classes("text-xs text-slate-400 font-medium")
-                            status_filter = ui.select(["Semua Status", "Online", "Offline"], value="Semua Status").props("dense outlined dark options-dense").classes("w-36")
-                            tier_filter = ui.select(["Semua Lingkungan", "Produksi", "Non-Produksi"], value="Semua Lingkungan").props("dense outlined dark options-dense").classes("w-40")
-                            group_filter = ui.select(["Semua Grup"], value="Semua Grup").props("dense outlined dark options-dense").classes("w-36")
-                            ui.button("Reset", icon="filter_alt_off", on_click=lambda: _reset_filters()).props("dense flat no-caps size=sm color=grey-4")
+                    with ui.row().classes("w-full items-end gap-3 flex-wrap"):
+                        with ui.column().classes("gap-1 min-w-[140px]"):
+                            ui.label("Grup").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wide")
+                            group_filter = ui.select(["Semua Grup"], value="Semua Grup").props("dense outlined dark options-dense").classes("w-full")
+
+                        with ui.column().classes("gap-1 min-w-[130px]"):
+                            ui.label("Status").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wide")
+                            status_filter = ui.select(["Semua Status", "Online", "Offline"], value="Semua Status").props("dense outlined dark options-dense").classes("w-full")
+
+                        with ui.column().classes("gap-1 min-w-[150px]"):
+                            ui.label("Lingkungan").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wide")
+                            tier_filter = ui.select(["Semua Lingkungan", "Produksi", "Non-Produksi"], value="Semua Lingkungan").props("dense outlined dark options-dense").classes("w-full")
+
+                        with ui.column().classes("gap-1 flex-grow min-w-[200px]"):
+                            ui.label("Pencarian").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wide")
+                            search_box = ui.input(placeholder="Cari server, IP, spek, tag, OS...").props("dense outlined dark clearable").classes("w-full")
+
+                        ui.button("Reset", icon="filter_alt_off", on_click=lambda: _reset_filters()).props("dense flat no-caps size=sm color=grey-4").classes("mb-1")
 
                 table_container = ui.column().classes("w-full")
 
@@ -487,7 +533,12 @@ def setup_servers_routes(session_factory):
                             "agent": f"v{ext.agent_version}" if ext and ext.agent_version else "—",
                             "is_online": is_online,
                             "status": "ONLINE" if is_online else "OFFLINE",
+                            "last_seen_str": s.last_seen.strftime('%d %b %H:%M') if s.last_seen else 'belum pernah',
                         })
+
+                # Perbarui opsi grup secara dinamis
+                avail_groups = sorted(list({s.group_name for s in servers if s.group_name}))
+                group_filter.set_options(["Semua Grup"] + avail_groups)
 
                 columns = [
                     {"name": "server", "label": "SERVER", "field": "hostname", "align": "left"},
@@ -579,17 +630,22 @@ def setup_servers_routes(session_factory):
 
                     # Custom Slot Status Cell
                     tbl.add_slot("body-cell-status", """
-                        <q-td :props="props">
-                            <q-badge :color="props.row.is_online ? 'emerald-9' : 'rose-9'" class="text-[9.5px] font-bold px-2 py-0.5">
-                                {{ props.row.status }}
-                            </q-badge>
+                        <q-td :props="props" style="text-align:left">
+                            <div>
+                                <span class="badge" :class="props.row.is_online ? 'badge-up' : 'badge-danger'" style="font-size:8.5px;padding:1px 5.5px;font-weight:700">
+                                    {{ props.row.status }}
+                                </span>
+                            </div>
+                            <div class="font-mono text-[9px] text-slate-400 mt-0.5">
+                                {{ props.row.last_seen_str }}
+                            </div>
                         </q-td>
                     """)
 
-                    # Custom Slot Actions Cell (Single Non-Wrapping Row)
+                    # Custom Slot Actions Cell (Aksi Klasik: Rincian, Edit, Hapus)
                     tbl.add_slot("body-cell-actions", """
-                        <q-td :props="props" style="white-space: nowrap; min-width: 130px; text-align: center;">
-                            <div class="action-btn-group justify-center">
+                        <q-td :props="props" style="white-space: nowrap; width: 95px; text-align: center;">
+                            <div class="action-btn-group justify-center gap-1">
                                 <q-btn dense flat round size="sm" icon="visibility" color="blue-4"
                                        @click="() => $parent.$emit('view_detail', props.row.id)">
                                     <q-tooltip class="bg-slate-900 text-[10px]">Rincian Server</q-tooltip>
@@ -597,10 +653,6 @@ def setup_servers_routes(session_factory):
                                 <q-btn dense flat round size="sm" icon="edit" color="slate-4"
                                        @click="() => $parent.$emit('edit_meta', props.row.id)">
                                     <q-tooltip class="bg-slate-900 text-[10px]">Edit Metadata</q-tooltip>
-                                </q-btn>
-                                <q-btn dense flat round size="sm" icon="vpn_key" color="amber-4"
-                                       @click="() => $parent.$emit('regen_key', props.row.id)">
-                                    <q-tooltip class="bg-slate-900 text-[10px]">Regenerasi Kunci API</q-tooltip>
                                 </q-btn>
                                 <q-btn dense flat round size="sm" icon="delete" color="rose-4"
                                        @click="() => $parent.$emit('del_server', props.row.id)">

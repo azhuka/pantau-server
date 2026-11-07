@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.158
+
+- **Tipe Rilis:** Restorasi Penuh Cetak Biru Kanonikal Antarmuka NOC Mandiri 1:1, Eliminasi Tabrakan Label Dialog, Presisi Grid KPI Probing & Inventaris Lengkap Paket OS (*Full Restoration of Canonical NOC Independent Blueprint 1:1, Modal Dialog Label Collision Elimination, Precise Probing KPI Grid & Complete OS Package Inventory*)
+- **Fokus Utama:** Menyempurnakan transisi mesin antarmuka NiceGUI agar mereplikasi konsep matang pre-migrasi secara 100% identik tanpa mengubah alur kerja (*workflow*) otentik maupun tata letak densitas tinggi khas ruang kendali NOC:
+  1. **Eliminasi Tabrakan Visual Label Input Dialog Modal (`maintenance.py`, `server_detail.py`, `users.py`, `profile.py`):**
+     - Menata ulang seluruh elemen formulir modal dialog dengan memisahkan label teks kapital (*separated uppercase labels*) di atas kolom isian, mengeliminasi penuh artefak tabrakan teks `stack-label` bawaan Quasar.
+  2. **Restorasi Kisi (*Grid*) 5 Kartu KPI Endpoint Probing Melintang Penuh (`probing.py`):**
+     - Menyusun ulang 5 kartu ringkasan status (`TOTAL TARGET`, `TARGET ONLINE`, `DEGRADASI`, `OFFLINE / GAGAL`, `RATA-RATA LATENSI`) menjadi baris horizontal responsif melintang selebar 100% monitor widescreen.
+  3. **Pengelompokan Toolbar Hero & Pemurnian Tindakan Rincian Server (`server_detail.py`):**
+     - Mengelompokkan tombol aksi hero ke dalam wadah pil (*pill containers* `.toolbar-group`): Berkas & Pemeliharaan, Aksi OS/Daya (Update, Upgrade, Reboot, Poweroff), dan Operasional (OTA & Segarkan).
+     - Menghapus tombol palsu `Tandai Selesai` pada Sub-tab Insiden dan mengembalikan alur diagnosa telemetri kanonikal (*Diagnosa, Tangani ACK, Abaikan/Pulihkan*) dengan lencana triage otentik.
+  4. **Restorasi Inventaris Penuh Paket Terpasang (*Installed Packages*) OS (`server_detail.py`):**
+     - Menghadirkan kembali tabel inventaris seluruh 979+ paket terpasang pada host Linux klien lengkap dengan fitur pencarian instan, rincian versi riil, arsitektur, dan ringkasan paket mendampingi tabel paket yang memerlukan pembaruan.
+  5. **Integrasi Tab Manajemen Pengguna RBAC Terpadu pada Halaman Profil (`profile.py`):**
+     - Mengembalikan aksesibilitas langsung ke tabel manajemen hak akses pengguna bagi Administrator dan Operator di dalam navigasi tab profil akun.
+  6. **Koreksi Penanganan Data Model Server & Injeksi Skrip Aman (`dashboard.py`, `layout.py`):**
+     - Mengoreksi penanganan model server agar mencegah galat `AttributeError` pada penarikan distribusi OS.
+     - Memindahkan penambahan skrip JavaScript modal ke `ui.add_body_html` sesuai konvensi keamanan NiceGUI.
+
 ## Versi 4.8.157
 
 - **Tipe Rilis:** Restorasi Alur Kerja Pemantauan Otentik NOC, Pembersihan Tuntas Puing Repositori Root, Serta Integrasi Tabel Riwayat Insiden Teratasi & Analitik MTTR (*Authentic NOC Monitoring Workflow Restoration, Complete Root Workspace Debris Cleanup, Integrated Resolved Incidents Table & MTTR Analytics*)

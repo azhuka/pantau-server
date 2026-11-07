@@ -42,12 +42,20 @@ def setup_users_routes(session_factory):
                 ui.label("Tambah Pengguna NOC Baru").classes("text-base font-bold text-white")
 
                 with ui.column().classes("w-full gap-3"):
-                    inp_uname = ui.input("Nama Pengguna (Username)").classes("w-full").props("dense outlined dark stack-label")
-                    inp_pwd = ui.input("Kata Sandi Awal", password=True).classes("w-full").props("dense outlined dark stack-label")
-                    sel_role = ui.select(
-                        {"viewer": "Viewer (Hanya Baca)", "operator": "Operator NOC", "master_admin": "Master Admin"},
-                        value="viewer", label="Peran / Hak Akses"
-                    ).classes("w-full").props("dense outlined dark stack-label")
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("NAMA PENGGUNA (USERNAME) *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_uname = ui.input(placeholder="mis. operator_noc").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("KATA SANDI AWAL *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        inp_pwd = ui.input(password=True, password_toggle_button=True, placeholder="Minimal 8 karakter").classes("w-full").props("dense outlined dark")
+
+                    with ui.column().classes("w-full gap-1"):
+                        ui.label("PERAN / HAK AKSES").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                        sel_role = ui.select(
+                            {"viewer": "Viewer (Hanya Baca)", "operator": "Operator NOC", "master_admin": "Master Admin"},
+                            value="viewer"
+                        ).classes("w-full").props("dense outlined dark")
 
                 def _save_new_user():
                     uname = inp_uname.value.strip()
@@ -95,11 +103,11 @@ def setup_users_routes(session_factory):
             edit_user_target = {"id": None, "uname": ""}
             with edit_role_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                 edit_role_title = ui.label("Ubah Peran Akses Pengguna").classes("text-base font-bold text-white")
-                with ui.column().classes("w-full gap-3"):
+                with ui.column().classes("w-full gap-1"):
+                    ui.label("PILIH PERAN BARU").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
                     role_sel_edit = ui.select(
-                        {"viewer": "Viewer (Hanya Baca)", "operator": "Operator NOC", "master_admin": "Master Admin"},
-                        label="Pilih Peran Baru"
-                    ).classes("w-full").props("dense outlined dark stack-label")
+                        {"viewer": "Viewer (Hanya Baca)", "operator": "Operator NOC", "master_admin": "Master Admin"}
+                    ).classes("w-full").props("dense outlined dark")
 
                 def _save_role_change():
                     uid = edit_user_target["id"]
@@ -132,8 +140,9 @@ def setup_users_routes(session_factory):
             reset_user_target = {"id": None, "uname": ""}
             with reset_pwd_dlg, ui.card().classes("w-full max-w-md p-6 custom-card flex flex-col gap-4"):
                 reset_pwd_title = ui.label("Reset Kata Sandi Pengguna").classes("text-base font-bold text-white")
-                with ui.column().classes("w-full gap-3"):
-                    new_pwd_inp = ui.input("Kata Sandi Baru", password=True).classes("w-full").props("dense outlined dark stack-label")
+                with ui.column().classes("w-full gap-1"):
+                    ui.label("KATA SANDI BARU *").classes("text-[10px] font-bold text-slate-400 uppercase tracking-wider")
+                    new_pwd_inp = ui.input(password=True, password_toggle_button=True, placeholder="Minimal 8 karakter").classes("w-full").props("dense outlined dark")
 
                 def _save_password_reset():
                     uid = reset_user_target["id"]
