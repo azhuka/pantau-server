@@ -356,25 +356,22 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 ## Versi 4.8.122
 
-- **Tipe Rilis:** Rekonstruksi Total Arsitektur Frontend Terintegrasi Modern (Vue 3 + Vite + Tailwind CSS + Pinia) & Otomasi Proteksi CSRF (*Complete Integrated Modern SPA Frontend Rebuild & Automated Full-Stack CSRF Protection*)
-- **Fokus Utama:** Mengeliminasi seluruh tumpukan template server-side HTML/Jinja2 (33.745 baris) yang terfragmentasi, dan mentransformasikannya menjadi aplikasi satu halaman terintegrasi (*Single-Page Application / SPA*) kelas dunia yang reaktif, elegan, dan berdensitas tinggi:
-  1. **Arsitektur Frontend Modern Single-Page Application (`frontend/`):**
-     - Mengembangkan frontend terpadu berbasis **Vue 3 (Composition API)**, **Vite 8**, **Tailwind CSS 3.4**, **Pinia Store**, **Vue Router 5 (HTML5 History Mode)**, serta **Lucide Vue Icons**.
-     - Mengintegrasikan antarmuka konsol PTY interaktif berbasis **XTerm.js** langsung dalam komponen tab terminal Vue.
-     - Menyediakan palet tema gelap NOC profesional (*NOC Dark Palette*) berdensitas data tinggi tanpa whitespace berlebihan sesuai standar operasional *Network Operation Center*.
-  2. **Dekomposisi Komponen Antarmuka Lengkap Tanpa Regresi (*Zero Regression*):**
-     - **Dasbor Utama (`DashboardView.vue`):** Visualisasi KPI telemetri host, matriks status armada, feed insiden real-time, serta sakelar tampilan *grid* vs *high-density table*.
-     - **Armada Server & Kendali Detail (`ServersView.vue` & `ServerDetailView.vue`):** 11 tab operasional terpadu: Ikhtisar Telemetri (*Gauges & Top Processes*), Manajemen Layanan Systemd, Terminal Web PTY, Manajer Berkas Jarak Jauh (*Remote File Explorer*), Diagnostik Perangkat Keras & S.M.A.R.T., Antarmuka Jaringan & Port Listening, Keamanan Akun Linux & Terminasi Sesi TTY, Crontab & Systemd Timers, Inspeksi Sertifikat SSL/TLS, Manajemen Paket OS (APT Update/Upgrade dengan modal stream log), serta Catatan Operasional Operator.
-     - **Modul Tambahan:** Pemantauan *Synthetic Probing* (`ProbingView.vue`), Jendela Pemeliharaan Terjadwal (`MaintenanceView.vue`), Jurnal & Log Audit Terpadu (`AuditView.vue`), Pusat Kendali Master (`MasterControlView.vue`), Manajemen Pengguna RBAC (`UsersView.vue`), serta Profil Pengguna & Keamanan 2FA TOTP (`ProfileView.vue`).
-  3. **Penyajian Distribusi Produksi Mandiri (*Zero Node.js Daemon Overhead*):**
-     - Bundel frontend dikompilasi langsung ke direktori distribusi backend (`server/dist/`) via `vite build` berkecepatan tinggi (~769ms).
-     - Seluruh aset statis dan rute navigasi SPA disajikan langsung oleh engine FastAPI (*Starlette StaticFiles & HTML5 History Fallback*), tanpa memerlukan proses daemon Node.js terpisah pada server produksi.
-  4. **Otomasi Proteksi Keamanan CSRF & Multi-Format Otentikasi:**
-     - Penambahan injeksi otomatis cookie `pantau_csrf_token` pada seluruh sesi terotentikasi dan verifikasi header `X-CSRF-Token` pada setiap mutasi REST API.
-     - Dukungan penuh respons ganda (JSON API untuk SPA fetch serta HTML Form untuk kompatibilitas klasik) pada rute login, 2FA, dan logout.
-  5. **Pengujian & Validasi Mutu Penuh:**
-     - Seluruh berkas Python dan skrip shell lulus uji kompilasi sintaksis `py_compile` dan `bash -n`.
-     - Validasi end-to-end pada API endpoint utama: `/api/system/status`, `/api/servers`, `/api/servers/{id}/overview`, `/api/problems`, `/api/probes`, `/api/users`, dan `/api/master-control/status` beroperasi dengan status HTTP 200 berlatensi sub-20ms.
+- **Tipe Rilis:** Preservasi Total UI/UX Orisinal NOC, Stabilisasi Backend Modular 3-Tier, dan Otomasi Proteksi CSRF (*Full Preservation of Mature NOC UI/UX, 3-Tier Modular Backend Stabilization & Automated CSRF Protection*)
+- **Fokus Utama:** Menjaga komitmen integritas desain antarmuka orisinal yang telah matang secara absolut (1:1 tanpa sedikitpun perubahan visual atau perombakan konsep) sembari menyempurnakan keandalan backend modular dan stabilitas seluruh modul operasional:
+  1. **Preservasi 100% Konsep & Tampilan UI/UX Orisinal (*Zero Visual Drift*):**
+     - Mempertahankan penuh seluruh tata letak (*layout*), sidebar NOC, kartu metrik, densitas tabel rapat (3px-6px padding), modal kendali sistem, palet warna, tipografi, dan tema yang telah matang.
+     - Menyajikan seluruh halaman operasional secara native melalui mesin template `server/templates/` (`dashboard.html`, `services.html`, `probing.html`, `maintenance.html`, `master_control.html`, `profile.html`, `file_manager.html`, dll.).
+  2. **Resolusi & Stabilisasi Logika Backend Domain (*Bugfixes & Robustness*):**
+     - **Modul Perangkat Keras (`server/services/hardware_service.py`):** Memperbaiki dependensi impor modul ekspresi reguler (`re`) pada pembersihan model CPU (`_clean_cpu_model`).
+     - **Modul Insiden (`server/services/problem_service.py`):** Menyempurnakan pemanggilan utilitas format tanggal dan waktu (`_fmt_dt`) pada serialisasi daftar insiden (`_serialize_problem_list`).
+     - **Modul Armada Server (`server/routers/servers.py`):** Memperbaiki penanganan klasifikasi platform server (`_classify_platform`) pada endpoint ikhtisar server `/api/servers/{sid}/overview`.
+     - **Manajemen Sesi Linux (`server/routers/system_ops.py`):** Menambahkan fleksibilitas penanganan payload JSON dan Form-data pada pemutusan paksa sesi terminal TTY jarak jauh.
+  3. **Otomasi Proteksi Keamanan CSRF Berkelanjutan:**
+     - Penambahan sinkronisasi otomatis cookie `pantau_csrf_token` pada seluruh sesi pengguna aktif melalui middleware keamanan FastAPI.
+     - Verifikasi ganda header `X-CSRF-Token` pada seluruh mutasi REST API untuk mencegah serangan pemalsuan permintaan antar-situs.
+  4. **Pengujian Sintaksis & Stabilitas Layanan:**
+     - Seluruh berkas Python lulus uji kompilasi `py_compile` dan seluruh skrip shell lulus uji `bash -n`.
+     - Layanan `pantau-server.service` dan `agent_pantau.service` aktif beroperasi normal dengan latensi sub-20ms.
 
 ## Versi 4.8.121
 

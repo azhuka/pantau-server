@@ -114,15 +114,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Mounting Berkas Statis & Bundel Frontend Dist
+# Mounting Berkas Statis
 static_dir = Path(__file__).resolve().parent / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-
-dist_dir = Path(__file__).resolve().parent / "dist"
-dist_assets = dist_dir / "assets"
-if dist_assets.exists():
-    app.mount("/assets", StaticFiles(directory=str(dist_assets)), name="dist_assets")
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -273,18 +268,3 @@ app.include_router(system_ops.router)
 app.include_router(users.router)
 app.include_router(settings_router.router)
 app.include_router(api_agent.router)
-
-
-# SPA Fallback Handler untuk Vue Router HTML5 History Mode
-@app.get("/{full_path:path}", include_in_schema=False)
-async def spa_fallback(request: Request, full_path: str):
-    index_file = dist_dir / "index.html"
-    if index_file.is_file():
-        accept = request.headers.get("accept", "")
-        if "text/html" in accept or "*/*" in accept or not accept:
-            resp = FileResponse(str(index_file))
-            resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-            resp.headers["Pragma"] = "no-cache"
-            resp.headers["Expires"] = "0"
-            return resp
-    raise StarletteHTTPException(status_code=404, detail="Halaman tidak ditemukan")
