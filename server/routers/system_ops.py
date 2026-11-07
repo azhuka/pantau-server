@@ -848,22 +848,37 @@ def server_user_delete(
 
 @router.post("/servers/{sid}/system-users/terminate-session")
 @router.post("/api/servers/{sid}/sessions/terminate")
-def server_session_terminate(
+@router.post("/servers/{sid}/sessions/terminate")
+async def server_session_terminate(
     request: Request,
     sid: int,
-    tty: str = Form(...),
-    username: str = Form(default=""),
-    csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     user = get_current_user(request, db)
-    is_json = "application/json" in request.headers.get("accept", "")
+    is_json = "application/json" in request.headers.get("accept", "") or "application/json" in request.headers.get("content-type", "")
     if not user or not (
         user.has_perm("can_users_sys") or user.has_perm("can_manage_servers") or user.is_master_admin()
     ):
         if is_json:
             return JSONResponse({"ok": False, "detail": "Akses ditolak"}, status_code=403)
         return RedirectResponse("/", status_code=303)
+
+    tty = ""
+    username = ""
+    csrf_token = ""
+    if "application/json" in request.headers.get("content-type", ""):
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        tty = str(body.get("tty", ""))
+        username = str(body.get("user") or body.get("username", ""))
+    else:
+        form = await request.form()
+        tty = str(form.get("tty", ""))
+        username = str(form.get("username", ""))
+        csrf_token = str(form.get("csrf_token", ""))
+
     token = csrf_token or request.headers.get("X-CSRF-Token", "")
     _verify_csrf_form(request, token)
     server, err_resp = _check_server_online(db, sid, is_json=is_json, redirect_tab="akun")

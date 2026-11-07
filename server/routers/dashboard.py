@@ -1083,4 +1083,15 @@ def api_system_status(user: User = Depends(require_user), db: Session = Depends(
         "memory": _proc_memory(),
         "disks": _proc_disks(),
         "processes": _proc_top(),
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "role": user.role,
+            "is_active": user.is_active,
+            "permissions": {
+                "can_terminal": user.has_perm("can_terminal"),
+                "can_apt": user.has_perm("can_apt"),
+                "can_files": user.has_perm("can_files"),
+            },
+        },
     }

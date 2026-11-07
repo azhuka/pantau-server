@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 try:
@@ -20,6 +20,7 @@ try:
         get_current_user,
         get_secret_key,
         pwd_ctx,
+        _csrf_token,
         _prune_expired_sessions,
     )
     from core.templates import tpl
@@ -28,6 +29,21 @@ try:
 except ImportError:
     from server.config import settings
     from server.models import AppSession, LoginAttempt, User
+    import server.security_auth as security_auth
+    from server.core.database import get_db
+    from server.core.security import (
+        SESSION_COOKIE,
+        SESSION_TTL,
+        create_session,
+        get_current_user,
+        get_secret_key,
+        pwd_ctx,
+        _csrf_token,
+        _prune_expired_sessions,
+    )
+    from server.core.templates import tpl
+    from server.core.utils import _clean_ua, _client_ip
+    from server.services.audit_service import _audit
     from server import security_auth
     from server.core.database import get_db
     from server.core.security import (
@@ -78,12 +94,16 @@ def login_submit(
     password: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    is_json = "application/json" in request.headers.get("accept", "") or request.headers.get("x-requested-with") == "XMLHttpRequest"
     ip = _client_ip(request)
     row = _login_trial(db, ip)
     if _lock_remaining(row) > 0:
         wait = int((row.lock_until - datetime.utcnow()).total_seconds())
         db.rollback()
-        return tpl(request, "login.html", {"error": f"Terlalu banyak percobaan. Coba lagi dalam {wait} detik."})
+        msg = f"Terlalu banyak percobaan. Coba lagi dalam {wait} detik."
+        if is_json:
+            return JSONResponse(status_code=429, content={"detail": msg})
+        return tpl(request, "login.html", {"error": msg})
 
     user = db.query(User).filter(User.username == username).first()
     if not user or not pwd_ctx.verify(password, user.password_hash):
@@ -100,14 +120,21 @@ def login_submit(
             row.fails = -(lock_count + 1)
             logger.warning("[AUTH] Login gagal terlalu banyak dari IP %s — kunci %d detik", ip, lock_secs)
         db.commit()
+        if is_json:
+            return JSONResponse(status_code=400, content={"detail": "Username atau kata sandi salah."})
         return tpl(request, "login.html", {"error": "Username atau password salah"})
 
     if not user.is_active:
+        if is_json:
+            return JSONResponse(status_code=403, content={"detail": "Akun Anda telah dinonaktifkan oleh Administrator."})
         return tpl(request, "login.html", {"error": "Akun Anda telah dinonaktifkan oleh Administrator."})
 
     if user.totp_enabled and user.totp_secret:
         preauth_tok = security_auth.create_preauth_token(user.id, get_secret_key())
-        resp = RedirectResponse("/login/2fa", status_code=303)
+        if is_json:
+            resp = JSONResponse({"ok": True, "requires_2fa": True, "redirect": "/login/2fa"})
+        else:
+            resp = RedirectResponse("/login/2fa", status_code=303)
         resp.set_cookie(
             "preauth_session",
             preauth_tok,
@@ -137,11 +164,24 @@ def login_submit(
         meta={"ip": ip, "ua": request.headers.get("user-agent", ""), "browser": ua_summary},
     )
     db.commit()
-    resp = RedirectResponse("/", status_code=303)
+    csrf_val = _csrf_token(sid)
+    if is_json:
+        resp = JSONResponse({"ok": True, "redirect": "/dashboard", "csrf_token": csrf_val})
+    else:
+        resp = RedirectResponse("/", status_code=303)
     resp.set_cookie(
         SESSION_COOKIE,
         sid,
         httponly=True,
+        samesite="lax",
+        secure=settings.SESSION_COOKIE_SECURE,
+        max_age=int(SESSION_TTL.total_seconds()),
+        path="/",
+    )
+    resp.set_cookie(
+        "pantau_csrf_token",
+        csrf_val,
+        httponly=False,
         samesite="lax",
         secure=settings.SESSION_COOKIE_SECURE,
         max_age=int(SESSION_TTL.total_seconds()),
@@ -168,13 +208,18 @@ def login_2fa_submit(
     code: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    is_json = "application/json" in request.headers.get("accept", "") or request.headers.get("x-requested-with") == "XMLHttpRequest"
     ip = _client_ip(request)
     preauth_tok = request.cookies.get("preauth_session")
     uid = security_auth.verify_preauth_token(preauth_tok, get_secret_key()) if preauth_tok else None
     if not uid:
+        if is_json:
+            return JSONResponse(status_code=401, content={"detail": "Sesi pra-otentikasi 2FA telah kedaluwarsa. Silakan masuk kembali."})
         return RedirectResponse("/login", status_code=303)
     user = db.query(User).filter(User.id == uid).first()
     if not user or not user.is_active or not user.totp_enabled:
+        if is_json:
+            return JSONResponse(status_code=401, content={"detail": "Pengguna tidak valid atau 2FA belum diaktifkan."})
         return RedirectResponse("/login", status_code=303)
 
     code_str = code.strip()
@@ -189,12 +234,15 @@ def login_2fa_submit(
             user.recovery_codes = updated_hashes
 
     if not is_valid:
+        msg = "Kode verifikasi 2FA atau kode cadangan darurat tidak cocok."
+        if is_json:
+            return JSONResponse(status_code=400, content={"detail": msg})
         return tpl(
             request,
             "login_2fa.html",
             {
                 "user": user,
-                "error": "Kode verifikasi 2FA atau kode cadangan darurat tidak cocok.",
+                "error": msg,
             },
         )
 
@@ -215,12 +263,25 @@ def login_2fa_submit(
     )
     db.commit()
 
-    resp = RedirectResponse("/", status_code=303)
+    csrf_val = _csrf_token(sid)
+    if is_json:
+        resp = JSONResponse({"ok": True, "redirect": "/dashboard", "csrf_token": csrf_val})
+    else:
+        resp = RedirectResponse("/", status_code=303)
     resp.delete_cookie("preauth_session", path="/")
     resp.set_cookie(
         SESSION_COOKIE,
         sid,
         httponly=True,
+        samesite="lax",
+        secure=settings.SESSION_COOKIE_SECURE,
+        max_age=int(SESSION_TTL.total_seconds()),
+        path="/",
+    )
+    resp.set_cookie(
+        "pantau_csrf_token",
+        csrf_val,
+        httponly=False,
         samesite="lax",
         secure=settings.SESSION_COOKIE_SECURE,
         max_age=int(SESSION_TTL.total_seconds()),
@@ -232,6 +293,7 @@ def login_2fa_submit(
 @router.get("/logout")
 @router.post("/logout")
 def logout(request: Request, db: Session = Depends(get_db)):
+    is_json = "application/json" in request.headers.get("accept", "") or request.headers.get("x-requested-with") == "XMLHttpRequest"
     user = get_current_user(request, db)
     if user:
         ip = _client_ip(request)
@@ -250,7 +312,11 @@ def logout(request: Request, db: Session = Depends(get_db)):
     if sid:
         db.query(AppSession).filter(AppSession.sid == sid).delete(synchronize_session=False)
         db.commit()
-    resp = RedirectResponse("/login", status_code=303)
+    if is_json:
+        resp = JSONResponse({"ok": True, "redirect": "/login"})
+    else:
+        resp = RedirectResponse("/login", status_code=303)
     resp.delete_cookie(SESSION_COOKIE, path="/")
     resp.delete_cookie("preauth_session", path="/")
+    resp.delete_cookie("pantau_csrf_token", path="/")
     return resp

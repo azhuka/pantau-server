@@ -354,6 +354,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.122
+
+- **Tipe Rilis:** Rekonstruksi Total Arsitektur Frontend Terintegrasi Modern (Vue 3 + Vite + Tailwind CSS + Pinia) & Otomasi Proteksi CSRF (*Complete Integrated Modern SPA Frontend Rebuild & Automated Full-Stack CSRF Protection*)
+- **Fokus Utama:** Mengeliminasi seluruh tumpukan template server-side HTML/Jinja2 (33.745 baris) yang terfragmentasi, dan mentransformasikannya menjadi aplikasi satu halaman terintegrasi (*Single-Page Application / SPA*) kelas dunia yang reaktif, elegan, dan berdensitas tinggi:
+  1. **Arsitektur Frontend Modern Single-Page Application (`frontend/`):**
+     - Mengembangkan frontend terpadu berbasis **Vue 3 (Composition API)**, **Vite 8**, **Tailwind CSS 3.4**, **Pinia Store**, **Vue Router 5 (HTML5 History Mode)**, serta **Lucide Vue Icons**.
+     - Mengintegrasikan antarmuka konsol PTY interaktif berbasis **XTerm.js** langsung dalam komponen tab terminal Vue.
+     - Menyediakan palet tema gelap NOC profesional (*NOC Dark Palette*) berdensitas data tinggi tanpa whitespace berlebihan sesuai standar operasional *Network Operation Center*.
+  2. **Dekomposisi Komponen Antarmuka Lengkap Tanpa Regresi (*Zero Regression*):**
+     - **Dasbor Utama (`DashboardView.vue`):** Visualisasi KPI telemetri host, matriks status armada, feed insiden real-time, serta sakelar tampilan *grid* vs *high-density table*.
+     - **Armada Server & Kendali Detail (`ServersView.vue` & `ServerDetailView.vue`):** 11 tab operasional terpadu: Ikhtisar Telemetri (*Gauges & Top Processes*), Manajemen Layanan Systemd, Terminal Web PTY, Manajer Berkas Jarak Jauh (*Remote File Explorer*), Diagnostik Perangkat Keras & S.M.A.R.T., Antarmuka Jaringan & Port Listening, Keamanan Akun Linux & Terminasi Sesi TTY, Crontab & Systemd Timers, Inspeksi Sertifikat SSL/TLS, Manajemen Paket OS (APT Update/Upgrade dengan modal stream log), serta Catatan Operasional Operator.
+     - **Modul Tambahan:** Pemantauan *Synthetic Probing* (`ProbingView.vue`), Jendela Pemeliharaan Terjadwal (`MaintenanceView.vue`), Jurnal & Log Audit Terpadu (`AuditView.vue`), Pusat Kendali Master (`MasterControlView.vue`), Manajemen Pengguna RBAC (`UsersView.vue`), serta Profil Pengguna & Keamanan 2FA TOTP (`ProfileView.vue`).
+  3. **Penyajian Distribusi Produksi Mandiri (*Zero Node.js Daemon Overhead*):**
+     - Bundel frontend dikompilasi langsung ke direktori distribusi backend (`server/dist/`) via `vite build` berkecepatan tinggi (~769ms).
+     - Seluruh aset statis dan rute navigasi SPA disajikan langsung oleh engine FastAPI (*Starlette StaticFiles & HTML5 History Fallback*), tanpa memerlukan proses daemon Node.js terpisah pada server produksi.
+  4. **Otomasi Proteksi Keamanan CSRF & Multi-Format Otentikasi:**
+     - Penambahan injeksi otomatis cookie `pantau_csrf_token` pada seluruh sesi terotentikasi dan verifikasi header `X-CSRF-Token` pada setiap mutasi REST API.
+     - Dukungan penuh respons ganda (JSON API untuk SPA fetch serta HTML Form untuk kompatibilitas klasik) pada rute login, 2FA, dan logout.
+  5. **Pengujian & Validasi Mutu Penuh:**
+     - Seluruh berkas Python dan skrip shell lulus uji kompilasi sintaksis `py_compile` dan `bash -n`.
+     - Validasi end-to-end pada API endpoint utama: `/api/system/status`, `/api/servers`, `/api/servers/{id}/overview`, `/api/problems`, `/api/probes`, `/api/users`, dan `/api/master-control/status` beroperasi dengan status HTTP 200 berlatensi sub-20ms.
+
 ## Versi 4.8.121
 
 - **Tipe Rilis:** Rekonstruksi Arsitektur Modular Domain-Driven, Dekomposisi Monolit 15.000 Baris, dan Master Control Center (*Domain-Driven Modular Architectural Rebuild, 15,000-Line Monolith Decomposition & Master Control Center*)

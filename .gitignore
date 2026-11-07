@@ -8,6 +8,10 @@ env/
 # Secrets
 .env
 
+# Node.js
+node_modules/
+frontend/node_modules/
+
 # Logs
 *.log
 /tmp/*.log

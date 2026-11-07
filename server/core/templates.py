@@ -1,10 +1,11 @@
 """Jinja2 Templates engine, globals, branding injection, and HTML response helper."""
 
 import json
+from pathlib import Path
 import time
 from typing import Optional
 from fastapi import Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -87,8 +88,23 @@ def invalidate_branding_cache() -> None:
     _BRANDING_CACHE["expires_at"] = 0.0
 
 
-def tpl(request: Request, name: str, context: Optional[dict] = None, status_code: int = 200) -> HTMLResponse:
-    """Render template dengan CSRF token, versi aplikasi, dan branding otomatis."""
+_DIST_DIR = Path(__file__).resolve().parent.parent / "dist"
+_DIST_INDEX = _DIST_DIR / "index.html"
+
+
+def tpl(request: Request, name: str, context: Optional[dict] = None, status_code: int = 200) -> Response:
+    """Render template dengan CSRF token, versi aplikasi, dan branding otomatis.
+
+    Jika bundel Single-Page Application (SPA) modern terkompilasi pada dist/index.html,
+    sajikan index.html untuk halaman non-error agar pengalaman pengguna optimal.
+    """
+    if _DIST_INDEX.is_file() and name != "error.html":
+        resp = FileResponse(str(_DIST_INDEX), status_code=status_code)
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
+
     ctx = dict(context) if context else {}
     sid = request.cookies.get(SESSION_COOKIE, "")
     ctx.setdefault("csrf_token", _csrf_token(sid) if sid else "")

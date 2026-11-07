@@ -432,7 +432,33 @@ def users_page(request: Request, db: Session = Depends(get_db)):
         user.is_master_admin() or user.has_perm("can_manage_users") or user.has_perm("can_manage_viewers")
     ):
         return RedirectResponse("/", status_code=303)
-    return RedirectResponse("/profile?tab=users", status_code=303)
+    return tpl(request, "profile.html", {"user": user})
+
+
+@router.get("/api/users")
+def api_users_list(user: User = Depends(require_user), db: Session = Depends(get_db)):
+    """API inventaris pengguna untuk Frontend SPA (khusus wewenang manajemen pengguna)."""
+    if not (user.is_master_admin() or user.has_perm("can_manage_users") or user.has_perm("can_manage_viewers")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: wewenang tidak mencukupi")
+    users = db.query(User).order_by(User.id).all()
+    out = []
+    for u in users:
+        perms = {}
+        try:
+            perms = json.loads(u.permissions) if u.permissions else {}
+        except Exception:
+            pass
+        out.append({
+            "id": u.id,
+            "username": u.username,
+            "role": u.role,
+            "is_active": u.is_active,
+            "totp_enabled": bool(u.totp_enabled),
+            "last_login_at": u.last_login_at.isoformat() if u.last_login_at else None,
+            "last_login_ip": u.last_login_ip,
+            "permissions": perms,
+        })
+    return {"users": out}
 
 
 @router.post("/users/add")

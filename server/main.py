@@ -13,14 +13,14 @@ import threading
 from typing import Optional
 
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 try:
     from config import settings
     from core.database import engine, SessionLocal, Base
-    from core.security import _prune_expired_sessions, get_current_user
+    from core.security import _prune_expired_sessions, get_current_user, SESSION_COOKIE, _csrf_token
     from core.templates import render_template
     from prober import ProbeScheduler
     from services.migration_service import run_all_migrations
@@ -43,7 +43,7 @@ try:
 except ImportError:
     from server.config import settings
     from server.core.database import engine, SessionLocal, Base
-    from server.core.security import _prune_expired_sessions, get_current_user
+    from server.core.security import _prune_expired_sessions, get_current_user, SESSION_COOKIE, _csrf_token
     from server.core.templates import render_template
     from server.prober import ProbeScheduler
     from server.services.migration_service import run_all_migrations
@@ -114,10 +114,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Mounting Berkas Statis
+# Mounting Berkas Statis & Bundel Frontend Dist
 static_dir = Path(__file__).resolve().parent / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+dist_dir = Path(__file__).resolve().parent / "dist"
+dist_assets = dist_dir / "assets"
+if dist_assets.exists():
+    app.mount("/assets", StaticFiles(directory=str(dist_assets)), name="dist_assets")
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -153,6 +158,19 @@ async def security_headers(request: Request, call_next):
         resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         resp.headers["Pragma"] = "no-cache"
         resp.headers["Expires"] = "0"
+
+    sid = request.cookies.get(SESSION_COOKIE)
+    if sid:
+        expected_csrf = _csrf_token(sid)
+        if expected_csrf and request.cookies.get("pantau_csrf_token") != expected_csrf:
+            resp.set_cookie(
+                "pantau_csrf_token",
+                expected_csrf,
+                httponly=False,
+                samesite="lax",
+                secure=getattr(settings, "SESSION_COOKIE_SECURE", False),
+                path="/",
+            )
     return resp
 
 
@@ -255,3 +273,18 @@ app.include_router(system_ops.router)
 app.include_router(users.router)
 app.include_router(settings_router.router)
 app.include_router(api_agent.router)
+
+
+# SPA Fallback Handler untuk Vue Router HTML5 History Mode
+@app.get("/{full_path:path}", include_in_schema=False)
+async def spa_fallback(request: Request, full_path: str):
+    index_file = dist_dir / "index.html"
+    if index_file.is_file():
+        accept = request.headers.get("accept", "")
+        if "text/html" in accept or "*/*" in accept or not accept:
+            resp = FileResponse(str(index_file))
+            resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            resp.headers["Pragma"] = "no-cache"
+            resp.headers["Expires"] = "0"
+            return resp
+    raise StarletteHTTPException(status_code=404, detail="Halaman tidak ditemukan")

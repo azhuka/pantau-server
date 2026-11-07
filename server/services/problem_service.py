@@ -18,7 +18,7 @@ try:
     )
     from core.database import SessionLocal
     from core.security import _prune_expired_sessions, _agent_ip_tracker, _agent_tracker_lock
-    from core.utils import _fmt_short_dt, _is_agent_outdated
+    from core.utils import _fmt_dt, _fmt_short_dt, _is_agent_outdated
     from services.maintenance_service import _evaluate_maintenance_windows
     from services.server_service import _server_stale, _latest_metrics, _server_status
 except ImportError:
@@ -30,7 +30,7 @@ except ImportError:
     )
     from server.core.database import SessionLocal
     from server.core.security import _prune_expired_sessions, _agent_ip_tracker, _agent_tracker_lock
-    from server.core.utils import _fmt_short_dt, _is_agent_outdated
+    from server.core.utils import _fmt_dt, _fmt_short_dt, _is_agent_outdated
     from server.services.maintenance_service import _evaluate_maintenance_windows
     from server.services.server_service import _server_stale, _latest_metrics, _server_status
 

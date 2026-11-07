@@ -1777,7 +1777,60 @@ def api_server_overview(sid: int, user: User = Depends(require_user), db: Sessio
             db.commit()
             shell_run = None
 
+    latest_snap = (
+        db.query(SystemSnapshot)
+        .filter(SystemSnapshot.server_id == sid)
+        .order_by(desc(SystemSnapshot.timestamp))
+        .first()
+    )
+
+    def _safe_json_loads(val, default):
+        if not val:
+            return default
+        if isinstance(val, (dict, list)):
+            return val
+        try:
+            return json.loads(val)
+        except Exception:
+            return default
+
+    hw_specs = _get_hardware_specs_dict(server, extras, latest_snap) if extras else {}
+
     return {
+        "server": {
+            "id": server.id,
+            "hostname": server.hostname,
+            "ip_address": server.ip_address,
+            "platform": _classify_platform(hw_specs.get("platform", {}), getattr(server, "platform_override", None)),
+            "tier": getattr(server, "tier", 2),
+            "is_active": bool(server.is_active),
+            "status": "stale" if _server_stale(server) else "up",
+            "is_maintenance": bool(server.is_maintenance),
+            "os_label": extras.os_label if extras else "Linux",
+            "uptime_str": _format_uptime_str(latest_snap.uptime_secs if latest_snap else None),
+            "agent_version": extras.agent_version if extras else None,
+            "agent_outdated": _is_agent_outdated(extras.agent_version if extras else None, settings.APP_VERSION),
+        },
+        "cpu": latest_snap.cpu if latest_snap else 0.0,
+        "load1": latest_snap.load1 if latest_snap else 0.0,
+        "load5": latest_snap.load5 if latest_snap else 0.0,
+        "load15": latest_snap.load15 if latest_snap else 0.0,
+        "mem_total": latest_snap.mem_total if latest_snap else 0,
+        "mem_used": latest_snap.mem_used if latest_snap else 0,
+        "mem_avail": latest_snap.mem_avail if latest_snap else 0,
+        "swap_total": latest_snap.swap_total if latest_snap else 0,
+        "swap_used": latest_snap.swap_used if latest_snap else 0,
+        "disks": _safe_json_loads(latest_snap.disks, []) if latest_snap else [],
+        "net": _safe_json_loads(latest_snap.net, []) if latest_snap else [],
+        "top_procs": _safe_json_loads(extras.top_procs if extras else None, {}),
+        "hardware_specs": hw_specs,
+        "listening_ports": _safe_json_loads(extras.listening_ports if extras else None, []),
+        "firewall": _safe_json_loads(extras.firewall if extras else None, {}),
+        "accounts": _safe_json_loads(extras.accounts if extras else None, []),
+        "cron_jobs": _safe_json_loads(extras.cron_jobs if extras else None, []),
+        "ssl_certs": _safe_json_loads(extras.ssl_certs if extras else None, []),
+        "installed_packages": _safe_json_loads(extras.installed_packages if extras else None, []),
+        "systemd_units": _safe_json_loads(extras.systemd_units if extras else None, []),
         "services": svc_list,
         "commands": cmd_list,
         "actions": actions_list,
