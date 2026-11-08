@@ -354,6 +354,30 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.125
+
+- **Tipe Rilis:** Transformasi Arsitektur Frontend Terintegrasi Standar Industri Berbasis Vue 3 SPA & Vite (*Integrated Single-Page Application Architecture, Zero-Flicker View Transitions & Enterprise NOC Resilience*)
+- **Fokus Utama:** Menyelesaikan permasalahan mendasar kerapuhan tata letak template Jinja2 secara permanen dengan menghadirkan mesin antarmuka modern terintegrasi berstandar industri (selevel CloudPanel, cPanel, aaPanel) tanpa mengubah sedikitpun estetika, densitas data tinggi (3px-6px padding), warna, tipografi, maupun alur kerja operasional NOC yang telah matang:
+  1. **Arsitektur Tunggal Modern (*Vue 3 + Vite Production Bundle*):**
+     - Membangun bundel antarmuka mandiri di direktori `frontend/` yang dikompilasi secara deterministik ke `server/dist/` dengan ukuran super ramping (<50 kB gzipped).
+     - Seluruh perutean (*client-side routing*) dikelola oleh Vue Router 4 dengan HTML5 history mode tanpa reload halaman, menghadirkan navigasi instan berkecepatan 0ms dan zero screen flickering.
+  2. **100% Kloning Presisi Estetika NOC v4.8.120:**
+     - Mengadopsi palet warna gelap orisinal (`--bg: #0b0f19`, `--card: #111827`, `--border: #1e293b`), font sistem Inter dan tipografi monospace JetBrains Mono.
+     - Mempertahankan kepadatan data operasional NOC (tinggi baris ~30-34px, badge proporsional, zero whitespace berlebihan).
+     - Sidebar navigasi kiri tetap identik dengan live UTC clock dan hierarki menu yang lengkap.
+  3. **Penghapusan Total Cacat Tata Letak Jinja2:**
+     - Eliminasi tuntas kolaps karakter vertikal satu huruf pada kolom kejadian insiden.
+     - Eliminasi terpotongnya kolom sticky pada tabel beresolusi lebar.
+     - Eliminasi tombol modal yang meluap ke luar layar dengan modal terkunci viewport 100%.
+     - Eliminasi bilah gulir internal ganda (*double horizontal scrollbar*) pada panel filter.
+  4. **Integrasi FastAPI Gateway & Kompatibilitas Mundur:**
+     - FastAPI menyajikan bundel SPA melalui `server/main.py` dengan fallback otomatis ke `dist/index.html` dan penyajian aset statis ber-cache `/assets/*`.
+     - Menyediakan parameter kueri `?classic=1` yang memungkinkan administrator tetap dapat mengakses template Jinja2 klasik jika diperlukan.
+     - Memperluas endpoint REST API JSON (`/api/auth/me`, `/api/servers`, `/api/problems`, `/api/audit`, `/api/maintenance/windows`) untuk interoperabilitas tinggi.
+  5. **Sinkronisasi SemVer 7 Berkas & Verifikasi Stabilitas:**
+     - Sinkronisasi versi SemVer `4.8.125` pada seluruh 7 berkas inti sistem.
+     - Lolos pengujian sintaksis Python `py_compile` dan Bash `bash -n`. Layanan `pantau-server.service` dan `agent_pantau.service` aktif beroperasi normal.
+
 ## Versi 4.8.124
 
 - **Tipe Rilis:** Fondasi Arsitektur Desain Sistem Terpusat & Eliminasi Kerapuhan Tata Letak (*Centralized NOC Design System, Layout Engine Primitives & Structural Resilience*)

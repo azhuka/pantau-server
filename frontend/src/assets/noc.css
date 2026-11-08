@@ -1,0 +1,682 @@
+/* =============================================================================
+   PANTAU SERVER - CORE NOC DESIGN SYSTEM & INTEGRATED ARCHITECTURE
+   ============================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg: #111827;
+  --bg-gradient: radial-gradient(ellipse at 50% 0%, rgba(37, 99, 235, 0.22) 0%, rgba(17, 24, 39, 1) 72%);
+  --sidebar: #162032;
+  --sidebar-hover: rgba(255, 255, 255, 0.07);
+  --card: #1a2336;
+  --card-hover: #222f47;
+  --card-bg: linear-gradient(180deg, rgba(26, 35, 54, 0.95) 0%, rgba(20, 27, 43, 0.98) 100%);
+  --stat-card-bg: linear-gradient(180deg, rgba(26, 35, 54, 0.9) 0%, rgba(18, 25, 40, 0.95) 100%);
+  --border: rgba(255, 255, 255, 0.11);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --bg-subtle: rgba(255, 255, 255, 0.02);
+  --border-focus: rgba(56, 189, 248, 0.7);
+  --text: #f8fafc;
+  --text-heading: #ffffff;
+  --text-bright: #ffffff;
+  color-scheme: dark;
+  --dim: #94a3b8;
+  --dim-subtle: #64748b;
+  --blue: #38bdf8;
+  --blue-hover: #0ea5e9;
+  --blue-bg: rgba(56, 189, 248, 0.16);
+  --green: #34d399;
+  --green-hover: #10b981;
+  --green-bg: rgba(52, 211, 153, 0.16);
+  --red: #f87171;
+  --red-hover: #ef4444;
+  --red-bg: rgba(248, 113, 113, 0.16);
+  --yellow: #fbbf24;
+  --yellow-hover: #f59e0b;
+  --yellow-bg: rgba(251, 191, 36, 0.16);
+  --purple: #c084fc;
+  --hover: rgba(255, 255, 255, 0.06);
+  --input-bg: rgba(9, 13, 22, 0.75);
+  --input-border: rgba(255, 255, 255, 0.14);
+  --input-text: #f8fafc;
+  --filter-panel-bg: rgba(13, 19, 33, 0.72);
+  --filter-panel-border: rgba(255, 255, 255, 0.08);
+  --filter-divider: rgba(255, 255, 255, 0.06);
+  --col-act-bg: #0b111e;
+  --col-act-th-bg: #141e30;
+  --col-act-hover: #141e30;
+  --modal-bg: #161b22;
+  --modal-border: #30363d;
+  --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.3), 0 1px 2px -1px rgba(0,0,0,0.25);
+  --shadow-md: 0 6px 16px -2px rgba(0,0,0,0.4), 0 2px 6px -1px rgba(0,0,0,0.28);
+  --shadow-lg: 0 16px 32px -4px rgba(0,0,0,0.5), 0 8px 14px -3px rgba(0,0,0,0.35);
+  --radius-sm: 7px;
+  --radius-md: 11px;
+  --radius-lg: 14px;
+  --density-card-p: 20px;
+}
+
+/* 1. Tema Obsidian (Pitch Black OLED) */
+[data-theme="obsidian"] {
+  --bg: #000000;
+  --bg-gradient: none;
+  --sidebar: #09090b;
+  --sidebar-hover: rgba(255,255,255,0.08);
+  --card: #0d0d10;
+  --card-hover: #16161c;
+  --card-bg: #0d0d10;
+  --stat-card-bg: #0d0d10;
+  --border: rgba(255,255,255,0.14);
+  --border-subtle: rgba(255,255,255,0.08);
+  --text: #f4f4f5;
+  --text-heading: #ffffff;
+  --dim: #a1a1aa;
+  --dim-subtle: #71717a;
+  --hover: rgba(255,255,255,0.08);
+  --input-bg: #000000;
+  --input-border: rgba(255, 255, 255, 0.18);
+  --input-text: #ffffff;
+  --filter-panel-bg: #09090c;
+  --filter-panel-border: rgba(255, 255, 255, 0.12);
+  --filter-divider: rgba(255, 255, 255, 0.08);
+  --col-act-bg: #0d0d10;
+  --col-act-hover: #17171f;
+  --modal-bg: #0c0c0f;
+  --modal-border: #27272a;
+}
+
+/* 2. Tema Navy Slate */
+[data-theme="navy"] {
+  --bg: #0a0f1d;
+  --bg-gradient: radial-gradient(ellipse at 50% 0%, rgba(30, 64, 175, 0.3) 0%, rgba(10, 15, 29, 1) 75%);
+  --sidebar: #0f172a;
+  --sidebar-hover: rgba(255,255,255,0.07);
+  --card: #131c31;
+  --card-hover: #1b2642;
+  --card-bg: linear-gradient(180deg, rgba(19, 28, 49, 0.95) 0%, rgba(14, 21, 38, 0.98) 100%);
+  --stat-card-bg: linear-gradient(180deg, rgba(19, 28, 49, 0.9) 0%, rgba(13, 20, 36, 0.95) 100%);
+  --border: rgba(59, 130, 246, 0.18);
+  --border-subtle: rgba(59, 130, 246, 0.10);
+  --text: #f1f5f9;
+  --text-heading: #ffffff;
+  --dim: #94a3b8;
+  --dim-subtle: #64748b;
+  --hover: rgba(59, 130, 246, 0.10);
+  --input-bg: #0b1122;
+  --input-border: rgba(59, 130, 246, 0.25);
+  --input-text: #f1f5f9;
+  --filter-panel-bg: rgba(11, 17, 34, 0.85);
+  --filter-panel-border: rgba(59, 130, 246, 0.20);
+  --filter-divider: rgba(59, 130, 246, 0.12);
+  --col-act-bg: #131c31;
+  --col-act-hover: #1b2642;
+  --modal-bg: #0f172a;
+  --modal-border: rgba(59, 130, 246, 0.3);
+}
+
+/* 3. Tema Terang (Light Modern) */
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --bg-gradient: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  --sidebar: #ffffff;
+  --sidebar-hover: rgba(0, 0, 0, 0.05);
+  --card: #ffffff;
+  --card-hover: #f8fafc;
+  --card-bg: #ffffff;
+  --stat-card-bg: #ffffff;
+  --border: rgba(0, 0, 0, 0.10);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --text: #0f172a;
+  --text-heading: #020617;
+  --text-bright: #020617;
+  color-scheme: light;
+  --dim: #475569;
+  --dim-subtle: #64748b;
+  --blue: #0284c7;
+  --blue-hover: #0369a1;
+  --blue-bg: rgba(2, 132, 199, 0.12);
+  --green: #16a34a;
+  --green-hover: #15803d;
+  --green-bg: rgba(22, 163, 74, 0.12);
+  --red: #dc2626;
+  --red-hover: #b91c1c;
+  --red-bg: rgba(220, 38, 38, 0.12);
+  --yellow: #d97706;
+  --yellow-hover: #b45309;
+  --yellow-bg: rgba(217, 119, 6, 0.12);
+  --purple: #7c3aed;
+  --input-bg: #ffffff;
+  --input-border: rgba(0, 0, 0, 0.18);
+  --input-text: #0f172a;
+  --filter-panel-bg: #f1f5f9;
+  --filter-panel-border: rgba(0, 0, 0, 0.10);
+  --filter-divider: rgba(0, 0, 0, 0.08);
+  --col-act-bg: #ffffff;
+  --col-act-th-bg: #f1f5f9;
+  --col-act-hover: #f1f5f9;
+  --modal-bg: #ffffff;
+  --modal-border: rgba(0, 0, 0, 0.15);
+}
+
+/* =============================================================================
+   RESET & DASAR
+   ============================================================================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: var(--bg);
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Minimalist Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+/* =============================================================================
+   APP LAYOUT (SIDEBAR & MAIN VIEWPORT)
+   ============================================================================= */
+#app {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.sidebar {
+  width: 230px;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 20;
+  box-shadow: var(--shadow-md);
+  user-select: none;
+}
+
+.sidebar-brand {
+  padding: 18px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-heading);
+}
+.sidebar-brand .brand-dot {
+  color: var(--blue);
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 14px 10px;
+  overflow-y: auto;
+}
+
+.nav-section {
+  padding: 10px 14px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--dim-subtle);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  color: var(--dim);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  transition: all .15s ease;
+  margin-bottom: 2px;
+}
+.nav-link:hover {
+  background: var(--sidebar-hover);
+  color: var(--text);
+}
+.nav-link.router-link-active,
+.nav-link.active {
+  color: var(--text-heading, #fff);
+  background: var(--blue-bg);
+  border: 1px solid var(--blue);
+  font-weight: 600;
+  box-shadow: 0 0 10px var(--blue-bg);
+}
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--dim);
+  background: rgba(0,0,0,0.15);
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  margin-left: 230px;
+  padding: 24px 36px 36px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+  gap: 12px;
+}
+.topbar h2 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-heading, #fff);
+}
+
+/* =============================================================================
+   KARTU & GRID METRIK NOC
+   ============================================================================= */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--density-card-p, 20px);
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.card-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--stat-card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  box-shadow: var(--shadow-sm);
+  transition: transform .15s ease, border-color .15s ease;
+  position: relative;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.stat-card .label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 4px;
+}
+.stat-card .value {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* =============================================================================
+   TABEL BERDENSITAS TINGGI NOC
+   ============================================================================= */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  position: relative;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+  text-align: left;
+}
+
+th {
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--dim);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.12);
+  user-select: none;
+}
+
+td {
+  padding: 5px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text);
+  line-height: 1.35;
+}
+
+tbody tr:hover td {
+  background: var(--card-hover);
+}
+
+/* Sticky First Column */
+th.sticky-left,
+td.sticky-left {
+  position: sticky;
+  left: 0;
+  background: var(--card);
+  z-index: 3;
+  box-shadow: 3px 0 8px rgba(0, 0, 0, 0.35);
+}
+thead th.sticky-left {
+  background: var(--col-act-th-bg);
+  z-index: 4;
+}
+tbody tr:hover td.sticky-left {
+  background: var(--card-hover);
+}
+
+/* Sticky Action Column */
+th.col-act,
+td.col-act {
+  position: sticky;
+  right: 0;
+  background: var(--col-act-bg);
+  z-index: 2;
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+thead th.col-act {
+  background: var(--col-act-th-bg);
+  z-index: 3;
+}
+tbody tr:hover td.col-act {
+  background: var(--col-act-hover);
+}
+
+/* =============================================================================
+   BADGE & STATUS PILLS
+   ============================================================================= */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+table .badge, td .badge {
+  font-size: 8.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.badge-up, .badge-success {
+  background: var(--green-bg);
+  color: var(--green);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+}
+.badge-down, .badge-danger {
+  background: var(--red-bg);
+  color: var(--red);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+}
+.badge-warn, .badge-warning {
+  background: var(--yellow-bg);
+  color: var(--yellow);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+.badge-info {
+  background: var(--blue-bg);
+  color: var(--blue);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+.badge-muted {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--dim);
+  border: 1px solid var(--border);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.dot.up { background: var(--green); }
+.dot.down { background: var(--red); }
+.dot.warn { background: var(--yellow); }
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* =============================================================================
+   TOMBOL & KONTROL FORM
+   ============================================================================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all .15s ease;
+  white-space: nowrap;
+}
+.btn:hover { filter: brightness(1.12); }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--blue);
+  color: #0b1120;
+  border-color: rgba(56, 189, 248, 0.7);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.28);
+}
+.btn-primary:hover {
+  background: var(--blue-hover);
+  color: #fff;
+}
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+.btn-danger {
+  background: rgba(248, 113, 113, 0.18);
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+.btn-danger:hover {
+  background: var(--red);
+  color: #fff;
+}
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+/* =============================================================================
+   PANEL FILTER NOC
+   ============================================================================= */
+.filter-panel {
+  background: var(--filter-panel-bg);
+  border: 1px solid var(--filter-panel-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.filter-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.filter-select,
+.filter-input {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  color: var(--input-text);
+  font-size: 11.5px;
+  height: 32px;
+  padding: 0 10px;
+  outline: none;
+}
+.filter-select:focus,
+.filter-input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 6px var(--blue-bg);
+}
+
+/* =============================================================================
+   DIALOG MODAL TERKUNCI VIEWPORT
+   ============================================================================= */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 1050;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+}
+.modal-window {
+  background: var(--modal-bg);
+  color: var(--text);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--radius-md);
+  width: 100%;
+  max-width: 600px;
+  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+.modal-header {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+.modal-header h3 {
+  font-size: 14.5px;
+  font-weight: 700;
+  margin: 0;
+}
+.modal-body {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+.modal-footer {
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+}

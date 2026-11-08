@@ -461,6 +461,58 @@ def api_users_list(user: User = Depends(require_user), db: Session = Depends(get
     return {"users": out}
 
 
+@router.post("/api/users")
+async def api_user_add(
+    payload: dict = Body(...),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Pendaftaran pengguna baru via API."""
+    if not (user.is_master_admin() or user.has_perm("can_manage_users")):
+        raise HTTPException(status_code=403, detail="Akses ditolak")
+    username = _clean_str(payload.get("username", ""), "", 64).strip()
+    password = str(payload.get("password", "")).strip()
+    role = payload.get("role", "operator")
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="Username dan password wajib diisi")
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password minimal 8 karakter")
+    existing = db.query(User).filter(User.username == username).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Username {username} sudah digunakan")
+    new_user = User(
+        username=username,
+        password_hash=pwd_ctx.hash(password),
+        role=role,
+        is_active=True,
+    )
+    db.add(new_user)
+    db.commit()
+    _audit(db, user.username, "user_add", f"{username} ({role})", "berhasil")
+    return {"ok": True, "id": new_user.id, "username": username}
+
+
+@router.delete("/api/users/{uid}")
+def api_user_delete(
+    uid: int,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Penghapusan akun pengguna via API."""
+    if not (user.is_master_admin() or user.has_perm("can_manage_users")):
+        raise HTTPException(status_code=403, detail="Akses ditolak")
+    target = db.query(User).filter(User.id == uid).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Pengguna tidak ditemukan")
+    if target.id == user.id:
+        raise HTTPException(status_code=400, detail="Tidak dapat menghapus akun sendiri")
+    uname = target.username
+    db.delete(target)
+    db.commit()
+    _audit(db, user.username, "user_delete", uname, "berhasil")
+    return {"ok": True}
+
+
 @router.post("/users/add")
 async def user_add_submit(
     request: Request,

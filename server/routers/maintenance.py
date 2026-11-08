@@ -63,6 +63,7 @@ def maintenance_page(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/api/maintenance-windows")
+@router.get("/api/maintenance/windows")
 def api_maintenance_windows_list(
     request: Request,
     status: Optional[str] = None,
@@ -134,6 +135,7 @@ def api_maintenance_windows_list(
 
 
 @router.post("/api/maintenance-windows")
+@router.post("/api/maintenance/windows")
 async def api_maintenance_windows_create(
     request: Request,
     db: Session = Depends(get_db),
@@ -341,6 +343,7 @@ async def api_maintenance_windows_complete(
 
 
 @router.delete("/api/maintenance-windows/{wid}")
+@router.delete("/api/maintenance/windows/{wid}")
 async def api_maintenance_windows_delete(
     wid: int,
     request: Request,

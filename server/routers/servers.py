@@ -14,7 +14,7 @@ import re
 import secrets
 import time
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
+from fastapi import APIRouter, Body, Depends, Form, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
@@ -1335,6 +1335,66 @@ def metrics_page(request: Request, sid: int, db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 # API SERVERS & OVERVIEW
 # ---------------------------------------------------------------------------
+@router.post("/api/servers")
+def api_server_add(
+    payload: dict = Body(...),
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Pendaftaran server baru via API JSON."""
+    if not (user.is_master_admin() or user.has_perm("can_manage_servers")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin kelola server diperlukan")
+    hostname = _clean_str(payload.get("hostname", ""), "", 255).strip()
+    ip_address = _clean_str(payload.get("ip_address", ""), "", 45).strip()
+    group_name = _clean_str(payload.get("group_name", ""), "", 64).strip() or None
+    if not hostname or not ip_address:
+        raise HTTPException(status_code=400, detail="Hostname dan IP Address wajib diisi")
+
+    raw = secrets.token_hex(32)
+    srv = Server(
+        hostname=hostname,
+        ip_address=ip_address,
+        group_name=group_name,
+        api_key=hash_api_key(raw),
+    )
+    db.add(srv)
+    _audit(
+        db,
+        user.username,
+        "server_add",
+        f"{hostname} ({ip_address})" + (f" [Grup: {group_name}]" if group_name else ""),
+        "berhasil",
+    )
+    db.commit()
+    db.refresh(srv)
+    return {"ok": True, "server": {"id": srv.id, "hostname": srv.hostname, "ip_address": srv.ip_address, "api_key": raw}}
+
+
+@router.delete("/api/servers/{sid}")
+def api_server_delete(
+    sid: int,
+    user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Penghapusan server via API JSON."""
+    if not (user.is_master_admin() or user.has_perm("can_manage_servers")):
+        raise HTTPException(status_code=403, detail="Akses ditolak: izin kelola server diperlukan")
+    server = db.query(Server).filter(Server.id == sid).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server tidak ditemukan")
+    target_info = f"{server.hostname} ({server.ip_address}) id={server.id}"
+    _audit(
+        db,
+        user.username,
+        "server_delete",
+        target_info,
+        "berhasil",
+    )
+    db.delete(server)
+    db.commit()
+    return {"ok": True, "message": f"Server {server.hostname} berhasil dihapus"}
+
+
 @router.get("/api/servers")
 def api_servers(user: User = Depends(require_user), db: Session = Depends(get_db)):
     servers = db.query(Server).order_by(desc(Server.last_seen)).all()

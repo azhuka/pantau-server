@@ -200,6 +200,7 @@ def master_control_page(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/api/master-control/status")
+@router.get("/api/master-control/metrics")
 def api_master_control_status(
     user: User = Depends(require_master_admin),
     db: Session = Depends(get_db),
@@ -210,14 +211,17 @@ def api_master_control_status(
     users_count = db.query(User).count()
     active_sessions = db.query(AppSession).filter(AppSession.expires_at > datetime.utcnow()).count()
 
+    mem_data = _proc_memory()
     return {
         "ok": True,
         "database": db_status,
+        "db_stats": db_status,
         "servers_count": servers_count,
         "users_count": users_count,
         "active_sessions": active_sessions,
         "cpu": _proc_cpu(),
-        "memory": _proc_memory(),
+        "memory": mem_data,
+        "mem": mem_data,
         "disks": _proc_disks(),
         "uptime": _proc_uptime(),
     }

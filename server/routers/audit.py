@@ -42,6 +42,7 @@ def logs_page(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/api/logs/dashboard")
+@router.get("/api/system/logs")
 def api_logs_dashboard(
     user: User = Depends(require_user),
     db: Session = Depends(get_db),
@@ -55,6 +56,47 @@ def api_logs_dashboard(
         "exists": os.path.exists(path),
         "count": min(lines, len(last_lines)),
         "lines": last_lines,
+    }
+
+
+@router.get("/api/audit")
+def api_audit(
+    q: str = "",
+    action: str = "",
+    user: str = "",
+    period: str = "24h",
+    server: str = "",
+    status: str = "",
+    limit: int = 500,
+    user_actor: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Endpoint JSON audit untuk SPA."""
+    user_clean = user.strip()
+    period_clean = period.strip().lower()
+    server_id = int(server.strip()) if server.strip().isdigit() else None
+    status_clean = status.strip().upper()
+
+    rows = _audit_rows(
+        db,
+        limit=min(limit, 1000),
+        q=q,
+        action=action,
+        user_filter=user_clean,
+        period=period_clean,
+        server_id=server_id,
+        status_filter=status_clean,
+    )
+    for r in rows:
+        if hasattr(r.get("created_at"), "strftime"):
+            r["time_str"] = r["created_at"].strftime("%Y-%m-%d %H:%M:%S")
+        elif "created_at" in r:
+            r["time_str"] = str(r["created_at"])
+
+    available_users = [u.username for u in db.query(User).order_by(User.username).all()]
+    return {
+        "rows": rows,
+        "users": available_users,
     }
 
 

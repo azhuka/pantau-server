@@ -732,6 +732,7 @@ def api_alerts(
 
 
 @router.get("/api/problems")
+@router.get("/api/problems/open")
 def api_problems(
     server: int | None = None,
     group: str | None = None,
@@ -831,6 +832,7 @@ def api_problems(
 
 
 @router.post("/api/alerts/{pid}/ack")
+@router.post("/api/problems/{pid}/ack")
 def api_alert_ack(
     pid: int,
     request: Request,
@@ -865,6 +867,7 @@ def api_alert_ack(
 
 
 @router.post("/api/alerts/{pid}/resolve")
+@router.post("/api/problems/{pid}/resolve")
 def api_alert_resolve(
     pid: int,
     request: Request,
@@ -902,6 +905,7 @@ def api_alert_resolve(
 
 
 @router.post("/api/alerts/{pid}/ignore")
+@router.post("/api/problems/{pid}/ignore")
 def api_alert_ignore(
     pid: int,
     request: Request,
@@ -1073,6 +1077,7 @@ def api_system_version():
 
 
 @router.get("/api/system/status")
+@router.get("/api/system/overview")
 def api_system_status(user: User = Depends(require_user), db: Session = Depends(get_db)):
     """Status sumber daya internal host server Pantau."""
     return {

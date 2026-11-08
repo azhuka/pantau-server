@@ -292,6 +292,7 @@ def login_2fa_submit(
 
 @router.get("/logout")
 @router.post("/logout")
+@router.post("/api/auth/logout")
 def logout(request: Request, db: Session = Depends(get_db)):
     is_json = "application/json" in request.headers.get("accept", "") or request.headers.get("x-requested-with") == "XMLHttpRequest"
     user = get_current_user(request, db)
@@ -320,3 +321,19 @@ def logout(request: Request, db: Session = Depends(get_db)):
     resp.delete_cookie("preauth_session", path="/")
     resp.delete_cookie("pantau_csrf_token", path="/")
     return resp
+
+
+@router.get("/api/auth/me")
+def api_auth_me(request: Request, db: Session = Depends(get_db)):
+    """Mendapatkan data identitas pengguna saat ini untuk SPA."""
+    user = get_current_user(request, db)
+    if not user:
+        return JSONResponse(status_code=401, content={"detail": "Belum terautentikasi"})
+    return {
+        "id": user.id,
+        "username": user.username,
+        "role": user.role,
+        "role_display": "MASTER ADMIN" if user.role == "master_admin" else ("OPERATOR" if user.role == "operator" else "VIEWER"),
+        "is_master_admin": getattr(user, "is_master_admin", lambda: False)(),
+        "is_operator": getattr(user, "is_operator", lambda: False)(),
+    }
