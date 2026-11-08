@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.126
+
+- **Tipe Rilis:** Pemulihan Penuh Fitur Lengkap Enterprise & Konsolidasi Desain Sistem NOC Baku (*Full Enterprise Feature Restoration, Server Detail Recovery & Pure NOC CSS Integration*)
+- **Fokus Utama:** Membatalkan eksperimen SPA minimalis yang menyebabkan tereduksinya fungsi-fungsi kritis sistem (seperti halaman rincian server `/servers/{sid}`, terminal web, manajemen berkas, telemetri real-time, dan metrik master control), serta memulihkan 100% arsitektur matang Pantau Server yang diperkaya dengan lapisan CSS sistem `pantau-noc.css`:
+  1. **Pemulihan Menyeluruh Halaman Rincian Server (`/servers/{sid}`):**
+     - Memulihkan seluruh fungsionalitas manajemen host terlengkap (tab Layanan, Akun, Cron, Port Jaringan, Sertifikat SSL, Firewall UFW, Paket Sistem, Web Terminal interaktif, dan Manajemen Berkas).
+     - Menghilangkan dialog pop-up `alert()` browser yang sempat menggantikan tombol navigasi rincian server.
+  2. **Pemulihan Status Armada Telemetri & Master Control:**
+     - Mengembalikan kalkulasi online/offline armada server yang akurat sesuai denyut heartbeat agent (bukan mock statis).
+     - Memulihkan penyajian badge platform mesin (LXC, KVM, Baremetal) tanpa kebocoran payload JSON mentah.
+     - Memulihkan dashboard Master Control dengan inspeksi komprehensif tabel MariaDB, penggunaan RAM host, dan defragmentasi basis data.
+  3. **Konsolidasi CSS Tata Letak Mandiri (`pantau-noc.css`):**
+     - Menerapkan pelindung anti-kolaps karakter vertikal pada kolom insiden tabel Jinja2 orisinal.
+     - Bilah gulir ramping 6px dan modal dialog terkunci viewport tetap aktif tanpa merusak struktur halaman.
+  4. **Sinkronisasi SemVer 7 Berkas & Verifikasi Stabilitas:**
+     - Sinkronisasi versi SemVer `4.8.126` pada seluruh 7 berkas inti sistem.
+     - Lolos pengujian sintaksis Python `py_compile` dan Bash `bash -n`. Layanan `pantau-server.service` dan `agent_pantau.service` aktif beroperasi normal.
+
 ## Versi 4.8.125
 
 - **Tipe Rilis:** Transformasi Arsitektur Frontend Terintegrasi Standar Industri Berbasis Vue 3 SPA & Vite (*Integrated Single-Page Application Architecture, Zero-Flicker View Transitions & Enterprise NOC Resilience*)

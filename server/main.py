@@ -114,30 +114,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Mounting Berkas Statis & Bundel SPA
+# Mounting Berkas Statis
 static_dir = Path(__file__).resolve().parent / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-
-dist_dir = Path(__file__).resolve().parent / "dist"
-if (dist_dir / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=str(dist_dir / "assets")), name="spa-assets")
-
-
-SPA_PATHS = {
-    "/",
-    "/dashboard",
-    "/servers",
-    "/problems",
-    "/probing",
-    "/maintenance",
-    "/audit",
-    "/profile",
-    "/master-control",
-    "/settings",
-    "/logs",
-    "/login",
-}
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -187,29 +167,6 @@ async def security_headers(request: Request, call_next):
                 path="/",
             )
     return resp
-
-
-@app.middleware("http")
-async def spa_middleware(request: Request, call_next):
-    """Penyajian otomatis Single Page Application (Vue 3 SPA) berdensitas tinggi NOC."""
-    if request.method in ("GET", "HEAD") and (dist_dir / "index.html").exists():
-        path = request.url.path
-        accept = request.headers.get("accept", "")
-        if (
-            "text/html" in accept
-            and not path.startswith(("/api/", "/static/", "/assets/", "/ws/"))
-            and request.query_params.get("classic") != "1"
-        ):
-            if path in SPA_PATHS:
-                sid = request.cookies.get(SESSION_COOKIE)
-                if not sid and path != "/login":
-                    return RedirectResponse("/login", status_code=303)
-
-                resp = FileResponse(dist_dir / "index.html", media_type="text/html")
-                for k, v in _SECURITY_HEADERS.items():
-                    resp.headers[k] = v
-                return resp
-    return await call_next(request)
 
 
 # Penanganan Kendala (Exception Handlers)
