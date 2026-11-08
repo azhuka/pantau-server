@@ -2211,6 +2211,13 @@ def api_server_system(
             obj = None
         return obj if isinstance(obj, list) else []
 
+    def parse_dict(raw):
+        try:
+            obj = json.loads(raw) if raw else None
+        except (TypeError, ValueError):
+            obj = None
+        return obj if isinstance(obj, dict) else None
+
     acc_list = parse_list(extra.accounts if extra else None)
     net_list = parse_list(latest.net) if latest else []
     if net_list and server.ip_address:
@@ -2252,6 +2259,13 @@ def api_server_system(
             "disks": disks_enriched,
             "net": net_list,
         },
+        "accounts": acc_list if (extra and extra.accounts) else None,
+        "system_groups": parse_list(extra.system_groups if extra else None) if (extra and extra.system_groups) else None,
+        "listening_ports": parse_list(extra.listening_ports if extra else None) if (extra and extra.listening_ports) else None,
+        "cron_jobs": parse_dict(extra.cron_jobs if extra else None) if (extra and extra.cron_jobs) else None,
+        "firewall": parse_dict(extra.firewall if extra else None) if (extra and extra.firewall) else None,
+        "ssl_certs": parse_list(extra.ssl_certs if extra else None) if (extra and extra.ssl_certs) else None,
+        "systemd_units": parse_list(extra.systemd_units if extra else None) if (extra and extra.systemd_units) else None,
         "series": [
             {
                 "ts": s.timestamp.isoformat(),

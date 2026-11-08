@@ -79,51 +79,122 @@ table.noc-table tbody tr:hover td,
   background: var(--card-hover, rgba(255, 255, 255, 0.025));
 }
 
-/* Sticky First Column (Kolom Pertama Menempel di Kiri) */
+/* Sticky First Column (Kolom Pertama Menempel di Kiri - 100% Opaque Solid Anti-Collision) */
 table.noc-table th.noc-sticky-left,
 table.noc-table td.noc-sticky-left,
 .noc-table-wrap table th:first-child.noc-sticky,
-.noc-table-wrap table td:first-child.noc-sticky {
-  position: sticky;
-  left: 0;
-  background: var(--card, #131c31);
-  z-index: 3;
-  box-shadow: 3px 0 8px rgba(0, 0, 0, 0.35);
+.noc-table-wrap table td:first-child.noc-sticky,
+#servers-table th:first-child,
+#servers-table td:first-child,
+#dash-server-table th:first-child,
+#dash-server-table td:first-child {
+  position: sticky !important;
+  left: 0 !important;
+  background: var(--card, #131c31) !important;
+  z-index: 10 !important;
+  box-shadow: 3px 0 8px rgba(0, 0, 0, 0.35) !important;
+  border-right: 1px solid var(--border, rgba(255, 255, 255, 0.08));
 }
 
 table.noc-table thead th.noc-sticky-left,
-.noc-table-wrap table thead th:first-child.noc-sticky {
-  background: var(--col-act-th-bg, #141e30);
-  z-index: 4;
+.noc-table-wrap table thead th:first-child.noc-sticky,
+#servers-table thead th:first-child,
+#dash-server-table thead th:first-child {
+  background: var(--col-act-th-bg, #141e30) !important;
+  z-index: 12 !important;
 }
 
 table.noc-table tbody tr:hover td.noc-sticky-left,
-.noc-table-wrap table tbody tr:hover td:first-child.noc-sticky {
-  background: var(--card-hover, #1b2642);
+.noc-table-wrap table tbody tr:hover td:first-child.noc-sticky,
+#servers-table tbody tr:hover td:first-child,
+#dash-server-table tbody tr:hover td:first-child {
+  background: var(--card-hover, #1b2642) !important;
+}
+
+/* Dukungan Light Theme Baku Tanpa Tembus Pandang (Zero Transparency Overlap) */
+[data-theme="light"] table.noc-table th.noc-sticky-left,
+[data-theme="light"] table.noc-table td.noc-sticky-left,
+[data-theme="light"] .noc-table-wrap table th:first-child.noc-sticky,
+[data-theme="light"] .noc-table-wrap table td:first-child.noc-sticky,
+[data-theme="light"] #servers-table th:first-child,
+[data-theme="light"] #servers-table td:first-child,
+[data-theme="light"] #dash-server-table th:first-child,
+[data-theme="light"] #dash-server-table td:first-child {
+  background: #ffffff !important;
+  box-shadow: 3px 0 8px rgba(0, 0, 0, 0.08) !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] table.noc-table thead th.noc-sticky-left,
+[data-theme="light"] .noc-table-wrap table thead th:first-child.noc-sticky,
+[data-theme="light"] #servers-table thead th:first-child,
+[data-theme="light"] #dash-server-table thead th:first-child {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] table.noc-table tbody tr:hover td.noc-sticky-left,
+[data-theme="light"] .noc-table-wrap table tbody tr:hover td:first-child.noc-sticky,
+[data-theme="light"] #servers-table tbody tr:hover td:first-child,
+[data-theme="light"] #dash-server-table tbody tr:hover td:first-child {
+  background: #f8fafc !important;
 }
 
 /* Sticky Action Column (Kolom Tindakan Menempel di Kanan) */
 table.noc-table th.noc-sticky-right,
 table.noc-table td.noc-sticky-right,
 table.noc-table th.col-act,
-table.noc-table td.col-act {
-  position: sticky;
-  right: 0;
-  background: var(--col-act-bg, #0b111e);
-  z-index: 2;
-  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.45);
+table.noc-table td.col-act,
+#servers-table th.col-act,
+#servers-table td.col-act,
+#dash-server-table th.col-act,
+#dash-server-table td.col-act {
+  position: sticky !important;
+  right: 0 !important;
+  background: var(--col-act-bg, #0b111e) !important;
+  z-index: 9 !important;
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.45) !important;
   text-align: center;
 }
 
 table.noc-table thead th.noc-sticky-right,
-table.noc-table thead th.col-act {
-  background: var(--col-act-th-bg, #141e30);
-  z-index: 3;
+table.noc-table thead th.col-act,
+#servers-table thead th.col-act,
+#dash-server-table thead th.col-act {
+  background: var(--col-act-th-bg, #141e30) !important;
+  z-index: 11 !important;
 }
 
 table.noc-table tbody tr:hover td.noc-sticky-right,
-table.noc-table tbody tr:hover td.col-act {
-  background: var(--col-act-hover, #141e30);
+table.noc-table tbody tr:hover td.col-act,
+#servers-table tbody tr:hover td.col-act,
+#dash-server-table tbody tr:hover td.col-act {
+  background: var(--col-act-hover, #141e30) !important;
+}
+
+[data-theme="light"] table.noc-table th.noc-sticky-right,
+[data-theme="light"] table.noc-table td.noc-sticky-right,
+[data-theme="light"] table.noc-table th.col-act,
+[data-theme="light"] table.noc-table td.col-act,
+[data-theme="light"] #servers-table th.col-act,
+[data-theme="light"] #servers-table td.col-act,
+[data-theme="light"] #dash-server-table th.col-act,
+[data-theme="light"] #dash-server-table td.col-act {
+  background: #ffffff !important;
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] table.noc-table thead th.noc-sticky-right,
+[data-theme="light"] table.noc-table thead th.col-act,
+[data-theme="light"] #servers-table thead th.col-act,
+[data-theme="light"] #dash-server-table thead th.col-act {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] table.noc-table tbody tr:hover td.noc-sticky-right,
+[data-theme="light"] table.noc-table tbody tr:hover td.col-act,
+[data-theme="light"] #servers-table tbody tr:hover td.col-act,
+[data-theme="light"] #dash-server-table tbody tr:hover td.col-act {
+  background: #f8fafc !important;
 }
 
 /* Pelindung Kolom Kejadian & Deskripsi Insiden (Anti Kolaps Vertikal) */
@@ -308,4 +379,41 @@ table.noc-table tbody tr:hover td.col-act {
 .maint-stat-card {
   min-height: 76px;
   box-sizing: border-box;
+}
+
+/* =============================================================================
+   7. NOC CHART SKELETON & ASYNC LOADING STATES
+   ============================================================================= */
+.perf-chart-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 140px;
+  color: var(--dim, #94a3b8);
+  font-size: 11px;
+  font-weight: 500;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.015);
+  border-radius: 6px;
+  user-select: none;
+}
+
+.perf-chart-skeleton .spinner-sm {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border, rgba(255, 255, 255, 0.15));
+  border-top-color: var(--blue, #38bdf8);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Fluid Table Container Zoom Support */
+.table-wrap,
+.noc-table-wrap,
+#dash-table-container {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }

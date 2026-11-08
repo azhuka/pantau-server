@@ -354,6 +354,29 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.127
+
+- **Tipe Rilis:** Resolusi Komprehensif Antarmuka NOC, Preservasi Telemetri Polling Sistem & Penyempurnaan Grafik Riwayat (*Comprehensive NOC UI Defect Resolution, Sticky Anti-Collision, Live Poll State Persistence & Performance Chart Skeleton*)
+- **Fokus Utama:** Menyelesaikan secara tuntas dan sistemik seluruh anomali antarmuka yang tertangkap pada inspeksi tangkapan layar (tanpa tambal sulam parsial), memastikan kestabilan data dinamis, dan menyempurnakan ergonomi operasional:
+  1. **Resolusi Tabrakan Teks & Kolom Sticky (Anti-Collision Sticky Cells):**
+     - Mengubah latar kolom sticky pertama (identitas server/layanan) dan kolom sticky tindakan menjadi 100% solid opaq (`#121827` pada tema gelap, `#ffffff` pada tema terang) dengan z-index terstruktur (10 untuk sticky kiri, 9 untuk sticky kanan, 12 untuk thead), menghilangkan fenomena teks tembus pandang atau saling tumpuk saat tabel digulir secara horizontal.
+     - Menata ulang tabel profil pengguna lokal (`profile.html` `#users-table`) dengan menonaktifkan dual sticky (`sticky left` + `sticky right`) yang saling berhimpit pada panel form yang sempit, serta menetapkan batas lebar minimum (`min-width`) yang proporsional.
+  2. **Persistensi Data Polling Sistem & Pencegahan Reset DOM:**
+     - Memperbaiki endpoint backend `/api/servers/{sid}/system` (`server/routers/servers.py`) agar mengembalikan data `accounts`, `system_groups`, `listening_ports`, `cron_jobs`, `firewall`, dan `ssl_certs` dari `ServerExtras`.
+     - Mengamankan fungsi render di frontend (`services.html`) agar tidak mereset DOM atau menampilkan status kosong saat polling periodik dieksekusi tanpa payload penuh.
+  3. **Penyempurnaan Grafik Riwayat Kinerja & Indikator Pemuatan (Loading Skeleton):**
+     - Menghadirkan animasi indikator pemuatan interaktif (`.perf-chart-skeleton` dengan spinner NOC) saat grafik pertama kali dimuat maupun ketika operator mengganti rentang waktu (Hari Ini, 1 Jam, 6 Jam, 24 Jam, 7 Hari, 30 Hari).
+     - Memperbaiki target efek visual peredupan (`dimmer`) tepat pada kartu Riwayat Kinerja, memberikan umpan balik visual yang jelas bagi operator.
+  4. **Optimalisasi Proporsi Kolom & Tombol Tindakan Systemd:**
+     - Memperlebar kolom tindakan pada tabel Systemd (`#tbl-systemd`) dari 130px menjadi 220px sehingga seluruh tombol operasional (Restart, Start, Stop, Mask, Reload, Logs) tersusun rapi tanpa menumpuk pada teks deskripsi unit.
+     - Menambahkan pembatasan lebar dan *ellipsis* elegan pada kolom deskripsi unit systemd.
+  5. **Pembersihan Redundansi Antarmuka (Tooltip & Tombol Ganda):**
+     - Menghilangkan atribut tooltip `title` berlebih yang menduplikasi isi teks sel yang terlihat (`.prob-tip-text`, status penanganan insiden).
+     - Menghilangkan tombol pemilih tema ganda pada footer sidebar, mempertahankan satu titik akses resmi di menu navigasi `Kustomisasi UI`.
+  6. **Sinkronisasi SemVer 7 Berkas & Pengujian Sistem:**
+     - Menaikkan versi sistem menjadi `v4.8.127` secara sinkron dan identik pada seluruh 7 berkas inti sistem.
+     - Lolos pengujian sintaksis Python `py_compile` dan skrip Bash `bash -n`, serta layanan daemon monitoring berstatus aktif normal.
+
 ## Versi 4.8.126
 
 - **Tipe Rilis:** Pemulihan Penuh Fitur Lengkap Enterprise & Konsolidasi Desain Sistem NOC Baku (*Full Enterprise Feature Restoration, Server Detail Recovery & Pure NOC CSS Integration*)

@@ -1282,16 +1282,16 @@ body.popout-fleet_table #dash-fleet-card {
     <table id="dash-server-table">
       <thead>
         <tr>
-          <th class="sortable" data-col="0" data-col-title="Server" style="vertical-align:middle;cursor:pointer;width:115px;min-width:100px;text-align:left" title="Nama host server">Server <span class="sort-arrow">↕</span></th>
-          <th data-col-title="Status" style="vertical-align:middle;width:65px;min-width:60px;text-align:center" title="Status konektivitas server">Status</th>
-          <th data-col-title="Lingkungan" style="vertical-align:middle;width:75px;min-width:70px;text-align:center" title="Klasifikasi Lingkungan Operasional (Server level Produksi vs Server level Non-produksi)">Lingkungan</th>
-          <th data-col-title="Platform &amp; IP" style="vertical-align:middle;width:120px;min-width:110px;text-align:left" title="Platform virtualisasi dan alamat IP"><span class="th-plat-std">Platform / IP</span><span class="th-plat-cpt" style="display:none">IP &amp; Platform</span></th>
-          <th class="sortable" data-col="4" data-col-title="Uptime" style="vertical-align:middle;cursor:pointer;width:70px;min-width:65px;text-align:center" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="5" data-col-title="CPU (%)" style="vertical-align:middle;cursor:pointer;width:140px;min-width:130px;text-align:center" title="Persentase utilisasi CPU dan jumlah inti prosesor">CPU (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="6" data-col-title="RAM (%)" style="vertical-align:middle;cursor:pointer;width:165px;min-width:150px;text-align:center" title="Persentase utilisasi memori dan kapasitas total RAM">RAM (%) <span class="sort-arrow">↕</span></th>
-          <th class="sortable" data-col="7" data-col-title="STORAGE (%)" style="vertical-align:middle;cursor:pointer;width:195px;min-width:180px;text-align:center" title="Persentase utilisasi penyimpanan dan kapasitas partisi utama">STORAGE (%) <span class="sort-arrow">↕</span></th>
-          <th data-col-title="Layanan" style="vertical-align:middle;width:65px;min-width:60px;text-align:center" title="Rasio layanan aktif terhadap total layanan terpantau">Layanan</th>
-          <th class="sortable" data-col="9" data-col-title="Insiden" style="vertical-align:middle;cursor:pointer;width:80px;min-width:75px;text-align:center" title="Jumlah insiden dan anomali aktif pada server">Insiden <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="0" data-col-title="Server" style="vertical-align:middle;cursor:pointer;min-width:140px;text-align:left">Server <span class="sort-arrow">↕</span></th>
+          <th data-col-title="Status" style="vertical-align:middle;width:65px;min-width:60px;text-align:center">Status</th>
+          <th data-col-title="Lingkungan" style="vertical-align:middle;width:75px;min-width:70px;text-align:center">Lingkungan</th>
+          <th data-col-title="Platform &amp; IP" style="vertical-align:middle;min-width:130px;text-align:left"><span class="th-plat-std">Platform / IP</span><span class="th-plat-cpt" style="display:none">IP &amp; Platform</span></th>
+          <th class="sortable" data-col="4" data-col-title="Uptime" style="vertical-align:middle;cursor:pointer;width:70px;min-width:65px;text-align:center">Uptime <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="5" data-col-title="CPU (%)" style="vertical-align:middle;cursor:pointer;width:105px;min-width:95px;text-align:center">CPU (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="6" data-col-title="RAM (%)" style="vertical-align:middle;cursor:pointer;width:125px;min-width:115px;text-align:center">RAM (%) <span class="sort-arrow">↕</span></th>
+          <th class="sortable" data-col="7" data-col-title="STORAGE (%)" style="vertical-align:middle;cursor:pointer;width:145px;min-width:130px;text-align:center">STORAGE (%) <span class="sort-arrow">↕</span></th>
+          <th data-col-title="Layanan" style="vertical-align:middle;width:65px;min-width:60px;text-align:center">Layanan</th>
+          <th class="sortable" data-col="9" data-col-title="Insiden" style="vertical-align:middle;cursor:pointer;width:75px;min-width:70px;text-align:center">Insiden <span class="sort-arrow">↕</span></th>
         </tr>
       </thead>
       <tbody id="dash-servers-tbody">
@@ -1331,8 +1331,7 @@ body.popout-fleet_table #dash-fleet-card {
             data-srv-id="{{ srv.id }}"
             data-row-group="{{ srv.group_name or '' }}"
             data-row-text="{{ (srv.hostname ~ ' ' ~ (srv.ip_address or '') ~ ' ' ~ (srv.group_name or '') ~ ' ' ~ (srv.tags or '') ~ (' prod' if s_tier == 1 else ' non-prod') ~ ' tier-' ~ s_tier) | lower }}"
-            onclick="window.location.href='/servers/{{ srv.id }}'"
-            title="Klik untuk buka rincian server {{ srv.hostname }}">
+            onclick="window.location.href='/servers/{{ srv.id }}'">
           <!-- 0. Server -->
           <td data-sort-val="{{ srv.hostname | lower }}" style="white-space:nowrap;vertical-align:middle">
             <div style="display:inline-flex;align-items:center;gap:7px">
@@ -2181,7 +2180,6 @@ function createAndAppendDashTableRow(srv, tbody) {
   tr.dataset.rowGroup = srv.group_name || '';
   tr.dataset.rowText = ((srv.hostname || '') + ' ' + (srv.ip_address || '') + ' ' + (srv.group_name || '') + (srv.tier == 1 ? ' prod' : ' non-prod') + ' tier-' + (srv.tier || 2)).toLowerCase();
   tr.onclick = () => { window.location.href = '/servers/' + srv.id; };
-  tr.title = 'Klik untuk buka rincian server ' + (srv.hostname || '');
 
   tr.innerHTML = `
     <td style="white-space:nowrap;vertical-align:middle">

@@ -280,35 +280,16 @@
         gap: 16px;
       }
     }
-    #users-table th:first-child,
-    #users-table td:first-child {
-      position: sticky;
-      left: 0;
-      background: var(--card, #131c31);
-      z-index: 3;
-      box-shadow: 3px 0 8px rgba(0, 0, 0, 0.35);
-    }
-    #users-table thead th:first-child {
-      background: var(--col-act-th-bg, #141e30);
-      z-index: 4;
-    }
-    #users-table tbody tr:hover td:first-child {
-      background: var(--card-hover, #1b2642);
+    #users-table th,
+    #users-table td {
+      white-space: nowrap;
+      vertical-align: middle;
     }
     #users-table th.col-act,
     #users-table td.col-act {
-      position: sticky;
-      right: 0;
-      background: var(--col-act-bg, #0b111e);
-      box-shadow: -4px 0 8px rgba(0,0,0,0.45);
-      z-index: 2;
-    }
-    #users-table thead th.col-act {
-      background: var(--col-act-th-bg, #141e30);
-      z-index: 3;
-    }
-    #users-table tbody tr:hover td.col-act {
-      background: var(--col-act-hover, #141e30);
+      text-align: right;
+      width: 240px;
+      min-width: 220px;
     }
     .user-act-btn {
       display: inline-flex;
@@ -346,11 +327,11 @@
         <table id="users-table" style="width:100%;border-collapse:collapse;font-size:11px">
           <thead>
             <tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:var(--dim);text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">
-              <th style="padding:7px 12px;font-weight:600;white-space:nowrap">Pengguna</th>
-              <th style="padding:7px 12px;font-weight:600;white-space:nowrap">Peran</th>
-              <th style="padding:7px 12px;font-weight:600;white-space:nowrap">Status &amp; 2FA</th>
-              <th style="padding:7px 12px;font-weight:600;white-space:nowrap">Login Terakhir</th>
-              <th class="col-act" style="padding:7px 12px;text-align:left;font-weight:600;white-space:nowrap">Tindakan</th>
+              <th style="padding:7px 12px;font-weight:600;white-space:nowrap;min-width:120px">Pengguna</th>
+              <th style="padding:7px 12px;font-weight:600;white-space:nowrap;min-width:90px">Peran</th>
+              <th style="padding:7px 12px;font-weight:600;white-space:nowrap;min-width:110px">Status &amp; 2FA</th>
+              <th style="padding:7px 12px;font-weight:600;white-space:nowrap;min-width:120px">Login Terakhir</th>
+              <th class="col-act" style="padding:7px 12px;text-align:right;font-weight:600;white-space:nowrap;min-width:200px">Tindakan</th>
             </tr>
           </thead>
           <tbody>

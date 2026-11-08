@@ -53,38 +53,66 @@
 #servers-table th:first-child,
 #servers-table td:first-child {
   padding-left: 16px !important;
-  position: sticky;
-  left: 0;
-  background: var(--card, #131c31);
-  z-index: 3;
-  box-shadow: 3px 0 8px rgba(0,0,0,0.35);
+  position: sticky !important;
+  left: 0 !important;
+  background: var(--card, #131c31) !important;
+  z-index: 10 !important;
+  box-shadow: 3px 0 8px rgba(0,0,0,0.35) !important;
+  border-right: 1px solid var(--border, rgba(255, 255, 255, 0.08));
 }
 #servers-table thead th:first-child {
-  background: var(--col-act-th-bg, #141e30);
-  z-index: 4;
+  background: var(--col-act-th-bg, #141e30) !important;
+  z-index: 12 !important;
 }
 #servers-table tbody tr:hover td:first-child {
-  background: var(--card-hover, #1b2642);
+  background: var(--card-hover, #1b2642) !important;
+}
+[data-theme="light"] #servers-table th:first-child,
+[data-theme="light"] #servers-table td:first-child {
+  background: #ffffff !important;
+  box-shadow: 3px 0 8px rgba(0,0,0,0.08) !important;
+  border-right: 1px solid rgba(0,0,0,0.08) !important;
+}
+[data-theme="light"] #servers-table thead th:first-child {
+  background: #f1f5f9 !important;
+}
+[data-theme="light"] #servers-table tbody tr:hover td:first-child {
+  background: #f8fafc !important;
 }
 .group-header-row td:first-child {
   position: static !important;
   box-shadow: none !important;
-  background: linear-gradient(90deg, rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.02) 100%) !important;
+  background: var(--card, #131c31) !important;
 }
 #servers-table th.col-act,
 #servers-table td.col-act {
-  position: sticky;
-  right: 0;
-  background: var(--col-act-bg, #0b111e);
-  box-shadow: -4px 0 8px rgba(0,0,0,0.45);
-  z-index: 2;
+  position: sticky !important;
+  right: 0 !important;
+  background: var(--col-act-bg, #0b111e) !important;
+  box-shadow: -4px 0 8px rgba(0,0,0,0.45) !important;
+  z-index: 9 !important;
   text-align: center !important;
   width: 88px !important;
   min-width: 88px !important;
   padding-right: 16px !important;
 }
+#servers-table thead th.col-act {
+  background: var(--col-act-th-bg, #141e30) !important;
+  z-index: 11 !important;
+}
 #servers-table tbody tr:hover td.col-act {
-  background: var(--col-act-hover, #141e30);
+  background: var(--col-act-hover, #141e30) !important;
+}
+[data-theme="light"] #servers-table th.col-act,
+[data-theme="light"] #servers-table td.col-act {
+  background: #ffffff !important;
+  box-shadow: -4px 0 8px rgba(0,0,0,0.08) !important;
+}
+[data-theme="light"] #servers-table thead th.col-act {
+  background: #f1f5f9 !important;
+}
+[data-theme="light"] #servers-table tbody tr:hover td.col-act {
+  background: #f8fafc !important;
 }
 .group-header-row td.col-act {
   background: transparent !important;
@@ -211,17 +239,17 @@
   <table id="servers-table" style="width:100%;margin:0">
     <thead>
       <tr>
-        <th class="sortable" data-sort-key="server" data-col-title="Server" style="cursor:pointer;min-width:120px;white-space:nowrap" title="Nama host server dan klasifikasi lingkungan">Server <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="IP &amp; Interface" style="min-width:95px" title="Alamat IP utama dan antarmuka jaringan server">IP &amp; Interface</th>
-        <th data-col-title="Platform &amp; Mesin" style="min-width:110px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform &amp; Mesin</th>
-        <th data-col-title="Sistem Operasi" style="min-width:115px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
-        <th data-col-title="Prosesor" style="min-width:105px" title="Model prosesor (CPU) dan jumlah inti">Prosesor</th>
-        <th class="sortable" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer;min-width:80px" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="Penyimpanan" style="min-width:90px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan</th>
-        <th class="sortable" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer;min-width:80px" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th data-col-title="Agen &amp; APT" style="min-width:75px;text-align:center" title="Versi agen pemantau dan ketersediaan pembaruan paket">Agen &amp; APT</th>
-        <th data-col-title="Tag" style="min-width:55px" title="Label kategori dan pengelompokan server">Tag</th>
-        <th data-col-title="Status &amp; Lapor" style="min-width:75px;text-align:center" title="Status konektivitas dan waktu laporan data terakhir">Status &amp; Lapor</th>
+        <th class="sortable" data-sort-key="server" data-col-title="Server" style="cursor:pointer;min-width:130px;white-space:nowrap" title="Nama host server dan klasifikasi lingkungan">Server <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th data-col-title="IP &amp; Interface" style="min-width:105px" title="Alamat IP utama dan antarmuka jaringan server">IP &amp; Interface</th>
+        <th data-col-title="Platform &amp; Mesin" style="min-width:130px" title="Platform virtualisasi atau mesin fisik dan model perangkat">Platform &amp; Mesin</th>
+        <th data-col-title="Sistem Operasi" style="min-width:120px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
+        <th data-col-title="Prosesor" style="min-width:110px" title="Model prosesor (CPU) dan jumlah inti">Prosesor</th>
+        <th class="sortable" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer;min-width:85px" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th data-col-title="Penyimpanan" style="min-width:95px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan</th>
+        <th class="sortable" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer;min-width:90px" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
+        <th data-col-title="Agen &amp; APT" style="min-width:80px;text-align:center" title="Versi agen pemantau dan ketersediaan pembaruan paket">Agen &amp; APT</th>
+        <th data-col-title="Tag" style="min-width:60px" title="Label kategori dan pengelompokan server">Tag</th>
+        <th data-col-title="Status &amp; Lapor" style="min-width:80px;text-align:center" title="Status konektivitas dan waktu laporan data terakhir">Status &amp; Lapor</th>
         <th class="col-act" data-col-title="Tindakan" style="width:88px;min-width:88px;text-align:center" title="Aksi operasional: rincian, edit, atau hapus server">Tindakan</th>
       </tr>
     </thead>
