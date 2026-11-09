@@ -354,6 +354,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.129
+
+- **Tipe Rilis:** Eliminasi Tabel Kaku Jendela Pemeliharaan & Pembersihan Redundansi CSS Sticky Server (*Maintenance Auto-Layout Standardization & Server Sticky CSS Redundancy Cleanup*)
+- **Fokus Utama:** Melanjutkan pembersihan struktural sasis antarmuka (Fase B) tanpa metode tambal sulam dan tanpa mengubah konsep, identitas, maupun tata letak operasional:
+  1. **Standarisasi Auto-Layout Tabel Pemeliharaan (`maintenance.html`):**
+     - Membongkar atribut kaku `table-layout: fixed;` dan elemen `<colgroup>` statis pada `#maintenanceTable`.
+     - Mengonfigurasi auto-layout browser solid: kolom fixed (Status, Cakupan Server, Pola Jadwal, Waktu & Hitung Mundur, Pembuat, Aksi) menggunakan `width: 1%; white-space: nowrap;`.
+     - Mengonfigurasi kolom Judul & Keterangan (`.col-maint-title`) menjadi auto-expand fleksibel (`width: auto; min-width: 220px;`) dengan pemenggalan kata alami (`word-break: break-word;` dan `line-height: 1.35;`), sehingga catatan teknis dan deskripsi SOP pemeliharaan tidak lagi terpotong paksa oleh ellipsis.
+  2. **Pembersihan Redundansi Spesifisitas CSS pada Halaman Server (`servers.html`):**
+     - Menghapus 50+ baris deklarasi CSS sticky sel lokal yang menduplikasi aturan terpusat di `pantau-noc.css`.
+     - Menghilangkan puluhan deklarasi `!important` berlebih yang memicu perang spesifisitas CSS (*specificity war*), menyerahkan kendali penataan sel menempel secara konsisten kepada sasis utama.
+  3. **Sinkronisasi SemVer 7 Berkas & Integritas Daemon:**
+     - Menaikkan versi sistem menjadi `v4.8.129` secara sinkron pada seluruh 7 berkas inti sistem.
+     - Memastikan seluruh modul lolos kompilasi sintaksis `py_compile` dan `bash -n`, serta kedua layanan daemon monitoring aktif beroperasi normal.
+
 ## Versi 4.8.128
 
 - **Tipe Rilis:** Standarisasi Auto-Layout Tabel Insiden, Perapian Header Branding & Ergonomi Visual NOC (*Incident Table Auto-Layout Standardization, Compact Branding Header, Icon Semantics & NOC Visual Ergonomics*)

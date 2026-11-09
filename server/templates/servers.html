@@ -52,75 +52,22 @@
 }
 #servers-table th:first-child,
 #servers-table td:first-child {
-  padding-left: 16px !important;
-  position: sticky !important;
-  left: 0 !important;
-  background: var(--card, #131c31) !important;
-  z-index: 10 !important;
-  box-shadow: 3px 0 8px rgba(0,0,0,0.35) !important;
-  border-right: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-}
-#servers-table thead th:first-child {
-  background: var(--col-act-th-bg, #141e30) !important;
-  z-index: 12 !important;
-}
-#servers-table tbody tr:hover td:first-child {
-  background: var(--card-hover, #1b2642) !important;
-}
-[data-theme="light"] #servers-table th:first-child,
-[data-theme="light"] #servers-table td:first-child {
-  background: #ffffff !important;
-  box-shadow: 3px 0 8px rgba(0,0,0,0.08) !important;
-  border-right: 1px solid rgba(0,0,0,0.08) !important;
-}
-[data-theme="light"] #servers-table thead th:first-child {
-  background: #f1f5f9 !important;
-}
-[data-theme="light"] #servers-table tbody tr:hover td:first-child {
-  background: #f8fafc !important;
-}
-.group-header-row td:first-child {
-  position: static !important;
-  box-shadow: none !important;
-  background: var(--card, #131c31) !important;
+  padding-left: 16px;
 }
 #servers-table th.col-act,
 #servers-table td.col-act {
-  position: sticky !important;
-  right: 0 !important;
-  background: var(--col-act-bg, #0b111e) !important;
-  box-shadow: -4px 0 8px rgba(0,0,0,0.45) !important;
-  z-index: 9 !important;
-  text-align: center !important;
-  width: 88px !important;
-  min-width: 88px !important;
-  padding-right: 16px !important;
+  width: 88px;
+  min-width: 88px;
+  padding-right: 16px;
 }
-#servers-table thead th.col-act {
-  background: var(--col-act-th-bg, #141e30) !important;
-  z-index: 11 !important;
-}
-#servers-table tbody tr:hover td.col-act {
-  background: var(--col-act-hover, #141e30) !important;
-}
-[data-theme="light"] #servers-table th.col-act,
-[data-theme="light"] #servers-table td.col-act {
-  background: #ffffff !important;
-  box-shadow: -4px 0 8px rgba(0,0,0,0.08) !important;
-}
-[data-theme="light"] #servers-table thead th.col-act {
-  background: #f1f5f9 !important;
-}
-[data-theme="light"] #servers-table tbody tr:hover td.col-act {
-  background: #f8fafc !important;
-}
+.group-header-row td:first-child,
 .group-header-row td.col-act {
-  background: transparent !important;
+  position: static !important;
   box-shadow: none !important;
 }
 .hover-underline:hover {
-  text-decoration: underline !important;
-  color: var(--blue) !important;
+  text-decoration: underline;
+  color: var(--blue);
 }
 @media (max-width: 640px) {
   .servers-controls-wrap {
