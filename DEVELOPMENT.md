@@ -354,6 +354,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.135
+
+- **Tipe Rilis:** Resolusi Modal Ambang Batas Tembus Pandang, Label Baku & Integrasi Tier Gawat (*Transparent Threshold Modal Resolution, Standard Indonesian Labels & Gawat Severity Tier Integration*)
+- **Fokus Utama:** Mengatasi masalah latar belakang modal "Ambang Batas Insiden Global" yang tembus pandang (*transparent bleed-through*) pada tema terang maupun gelap, merestrukturisasi judul modal yang terpotong, mengganti label berbahasa Inggris menjadi Bahasa Indonesia baku, serta mengintegrasikan parameter ambang batas tingkat "Gawat" (Oranye / Average) ke dalam modal, API pengaturan, dan mesin deteksi insiden backend:
+  1. **Resolusi Modal Ambang Batas Tembus Pandang (`problems.html`):**
+     - Memperbaiki deklarasi `background: var(--bg-card)` yang sebelumnya tidak terdefinisi (sehingga jatuh ke `transparent`) dengan menetapkan kontainer `modal-card` berlatar belakang solid opaque (`var(--card, #131c31)` di tema gelap dan `#ffffff !important` di tema terang), menghilangkan efek tembus pandang tabel di baliknya.
+     - Memperbaiki pemotongan visual (*clipping*) pada header modal dengan padding proporsional dan wadah ikon terstruktur.
+     - Menstandarisasi elemen input form modal dengan kelas `.th-input` agar kontras, jelas, dan seragam di tema terang maupun gelap.
+  2. **Integrasi Parameter Tingkat Keparahan "Gawat" (Oranye / Average):**
+     - Menambahkan parameter `cpu_average` (90%), `ram_average` (90%), `disk_average` (92.5%), dan `swap_average` (86%) ke dalam `DEFAULT_THRESHOLDS` dan fungsi `get_global_thresholds()`.
+     - Memperluas modal konfigurasi global di `problems.html` menjadi 3 kolom terstruktur: Peringatan (Kuning), Gawat (Oranye), dan Kritis (Merah).
+     - Memperbarui API backend (`server/routers/settings.py`) untuk memvalidasi urutan ambang batas secara berjenjang: Peringatan ≤ Gawat ≤ Kritis dengan pesan galat berbahasa Indonesia yang lugas.
+     - Menghubungkan pembacaan konfigurasi dinamis `*_average` pada mesin insiden `_problem_instances` di `server/services/problem_service.py` menggantikan nilai *hardcoded*.
+  3. **Standardisasi Bahasa Indonesia Baku & Formulir Kustom Server (`server_form.html` & `servers.py`):**
+     - Mengganti seluruh label modal dan formulir server yang sebelumnya berbahasa Inggris (`Warning Level`, `Critical Level`, `CPU Usage Danger`, dsb.) menjadi Bahasa Indonesia baku (`Peringatan`, `Gawat`, `Kritis`, `Beban Prosesor CPU (%)`, `Penggunaan Memori RAM (%)`, dsb.).
+     - Menambahkan dukungan konfigurasi tingkat *Gawat* pada opsi ambang batas kustom per server (`server_form.html` dan `server/routers/servers.py`).
+  4. **Harmonisasi Skala Ambang Batas Dasbor (`dashboard.html`):**
+     - Menyesuaikan kalkulasi `getThreshold()` dan Jinja dasbor agar memprioritaskan nilai konfigurasi `cpu_average`, `ram_average`, dan `disk_average` dari sistem.
+  5. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Menaikkan versi sistem menjadi `v4.8.135` secara serentak pada seluruh 7 berkas inti sistem.
+     - Lolos pengujian kompilasi Python `py_compile`, verifikasi 19 template Jinja, dan skrip Bash `bash -n`.
+
 ## Versi 4.8.134
 
 - **Tipe Rilis:** Rekonstruksi Indikator Meter Baterai LED 10-Segmen (Ala Zabbix) & Resolusi Kontras Tema Terang (*10-Segment LED Battery Gauge Reconstruction & Light Theme Contrast Resolution*)

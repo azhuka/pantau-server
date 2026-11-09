@@ -39,12 +39,16 @@ logger = logging.getLogger('pantau.problems')
 # Ambang batas masalah default (Bawaan Pabrik)
 DEFAULT_THRESHOLDS = {
     "cpu_warn": 85.0,
+    "cpu_average": 90.0,
     "cpu_danger": 95.0,
     "ram_warn": 85.0,
+    "ram_average": 90.0,
     "ram_danger": 95.0,
     "disk_warn": 90.0,
+    "disk_average": 92.5,
     "disk_danger": 95.0,
     "swap_warn": 80.0,
+    "swap_average": 86.0,
     "swap_danger": 92.0,
     "ssh_fail_warn": 5,
     "ssh_fail_danger": 12,
@@ -1023,7 +1027,7 @@ def _resource_problem_instances(db, srv) -> list:
             if cur_ram >= th["ram_danger"]:
                 should_emit_ram = True
                 ram_sev = "danger" if is_prod else "warning"
-            elif is_prod and cur_ram >= 90.0:
+            elif is_prod and cur_ram >= th.get("ram_average", 90.0):
                 should_emit_ram = True
                 ram_sev = "average"
             elif cur_ram >= th["ram_warn"]:
@@ -1035,20 +1039,20 @@ def _resource_problem_instances(db, srv) -> list:
                 ram_avg = sum(recent_mems) / len(recent_mems)
                 if cur_ram >= th["ram_danger"] and ram_avg >= th["ram_danger"]:
                     ram_sev = "danger" if is_prod else "warning"
-                elif is_prod and (cur_ram >= 90.0 or ram_avg >= 90.0):
+                elif is_prod and (cur_ram >= th.get("ram_average", 90.0) or ram_avg >= th.get("ram_average", 90.0)):
                     ram_sev = "average"
                 else:
                     ram_sev = "warning"
 
         if should_emit_ram:
-            active_th = th["ram_danger"] if ram_sev == "danger" else (90.0 if ram_sev == "average" else th["ram_warn"])
+            active_th = th["ram_danger"] if ram_sev == "danger" else (th.get("ram_average", 90.0) if ram_sev == "average" else th["ram_warn"])
             label_text = f"RAM HAMPIR PENUH: {cur_ram:.0f}% (ambang {active_th:.0f}%)" if ram_sev == "danger" else (f"RAM sangat tinggi: {cur_ram:.0f}% (ambang {active_th:.0f}%)" if ram_sev == "average" else f"RAM tinggi: {cur_ram:.0f}% (ambang {active_th:.0f}%)")
             inst.append({
                 "key": "ram_usage",
                 "severity": ram_sev,
                 "message": f"{label_text} ({_fmt_size(mem_used)} / {_fmt_size(mem_total)})",
                 "tip": RAM_TIP,
-                "event_at": snaps[min(len(snaps) - 1, 2)].timestamp if not is_ram_open else None,
+                "event_at": snaps[min(len(snaps) - 1, 2)].timestamp if not is_cpu_open else None,
                 "context": _build_problem_context("ram_usage", srv, pct=cur_ram, used=mem_used, total=mem_total, threshold=active_th, severity=ram_sev),
             })
 
@@ -1069,7 +1073,7 @@ def _resource_problem_instances(db, srv) -> list:
             if cur_swap >= th["swap_danger"]:
                 should_emit_swap = True
                 swap_sev = "danger" if is_prod else "warning"
-            elif is_prod and cur_swap >= 90.0:
+            elif is_prod and cur_swap >= th.get("swap_average", 86.0):
                 should_emit_swap = True
                 swap_sev = "average"
             elif cur_swap >= th["swap_warn"]:
@@ -1081,13 +1085,13 @@ def _resource_problem_instances(db, srv) -> list:
                 swap_avg = sum(recent_swaps) / len(recent_swaps)
                 if cur_swap >= th["swap_danger"] and swap_avg >= th["swap_danger"]:
                     swap_sev = "danger" if is_prod else "warning"
-                elif is_prod and (cur_swap >= 90.0 or swap_avg >= 90.0):
+                elif is_prod and (cur_swap >= th.get("swap_average", 86.0) or swap_avg >= th.get("swap_average", 86.0)):
                     swap_sev = "average"
                 else:
                     swap_sev = "warning"
 
         if should_emit_swap:
-            active_th = th["swap_danger"] if swap_sev == "danger" else (90.0 if swap_sev == "average" else th["swap_warn"])
+            active_th = th["swap_danger"] if swap_sev == "danger" else (th.get("swap_average", 86.0) if swap_sev == "average" else th["swap_warn"])
             label_text = f"Swap hampir penuh: {cur_swap:.0f}% (ambang {active_th:.0f}%) — RAM menipis" if swap_sev == "danger" else (f"Swap sangat tinggi: {cur_swap:.0f}% (ambang {active_th:.0f}%)" if swap_sev == "average" else f"Swap terpakai tinggi: {cur_swap:.0f}% (ambang {active_th:.0f}%)")
             inst.append({
                 "key": "swap_usage",
@@ -1111,7 +1115,7 @@ def _resource_problem_instances(db, srv) -> list:
             if cur_cpu >= th["cpu_danger"] or recent_avg >= th["cpu_danger"]:
                 should_emit_cpu = True
                 cpu_sev = "danger" if is_prod else "warning"
-            elif is_prod and (cur_cpu >= 90.0 or recent_avg >= 90.0):
+            elif is_prod and (cur_cpu >= th.get("cpu_average", 90.0) or recent_avg >= th.get("cpu_average", 90.0)):
                 should_emit_cpu = True
                 cpu_sev = "average"
             elif cur_cpu >= th["cpu_warn"] or recent_avg >= th["cpu_warn"]:
@@ -1122,13 +1126,13 @@ def _resource_problem_instances(db, srv) -> list:
                 should_emit_cpu = True
                 if recent_avg >= th["cpu_danger"] and cur_cpu >= th["cpu_danger"]:
                     cpu_sev = "danger" if is_prod else "warning"
-                elif is_prod and (recent_avg >= 90.0 or cur_cpu >= 90.0):
+                elif is_prod and (recent_avg >= th.get("cpu_average", 90.0) or cur_cpu >= th.get("cpu_average", 90.0)):
                     cpu_sev = "average"
                 else:
                     cpu_sev = "warning"
 
         if should_emit_cpu:
-            active_th = th["cpu_danger"] if cpu_sev == "danger" else (90.0 if cpu_sev == "average" else th["cpu_warn"])
+            active_th = th["cpu_danger"] if cpu_sev == "danger" else (th.get("cpu_average", 90.0) if cpu_sev == "average" else th["cpu_warn"])
             label_text = f"CPU jenuh/saturasi: {cur_cpu:.0f}% (ambang {active_th:.0f}%) (rata-rata {recent_avg:.0f}%)" if cpu_sev == "danger" else (f"CPU sangat tinggi: {cur_cpu:.0f}% (ambang {active_th:.0f}%) (rata-rata {recent_avg:.0f}%)" if cpu_sev == "average" else f"CPU tinggi: {cur_cpu:.0f}% (ambang {active_th:.0f}%) (rata-rata {recent_avg:.0f}%)")
             inst.append({
                 "key": "cpu_usage",
@@ -1167,12 +1171,14 @@ def _resource_problem_instances(db, srv) -> list:
                 "tip": DISK_TIP,
                 "context": _build_problem_context(f"disk_usage:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=th["disk_danger"], severity=disk_sev),
             })
-        elif is_prod and dpct >= 90.0:
+        elif is_prod and dpct >= th.get("disk_average", 92.5):
+            disk_sev = "average"
+            active_th = th.get("disk_average", 92.5)
             inst.append({
                 "key": f"disk_usage:{mount}", "severity": "average",
-                "message": f"Disk {mount} terisi sangat tinggi: {dpct:.0f}% ({_fmt_size(used)} / {_fmt_size(total)})",
+                "message": f"Disk {mount} terisi sangat tinggi: {dpct:.0f}% (ambang {active_th:.0f}%) ({_fmt_size(used)} / {_fmt_size(total)})",
                 "tip": DISK_TIP,
-                "context": _build_problem_context(f"disk_usage:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=90.0, severity="average"),
+                "context": _build_problem_context(f"disk_usage:{mount}", srv, mount=mount, used=used, total=total, pct=dpct, threshold=active_th, severity="average"),
             })
         elif dpct >= th["disk_warn"]:
             inst.append({

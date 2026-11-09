@@ -1435,14 +1435,14 @@ body.popout-fleet_table #dash-fleet-card {
         {% for srv in servers %}
         {% set g_th = global_thresholds or {} %}
         {% set cpu_w = g_th.cpu_warn if g_th.cpu_warn is defined else 85.0 %}
+        {% set cpu_a = g_th.cpu_average if g_th.cpu_average is defined else 90.0 %}
         {% set cpu_d = g_th.cpu_danger if g_th.cpu_danger is defined else 95.0 %}
-        {% set cpu_a = (cpu_w + cpu_d) / 2 %}
         {% set ram_w = g_th.ram_warn if g_th.ram_warn is defined else 85.0 %}
+        {% set ram_a = g_th.ram_average if g_th.ram_average is defined else 90.0 %}
         {% set ram_d = g_th.ram_danger if g_th.ram_danger is defined else 95.0 %}
-        {% set ram_a = (ram_w + ram_d) / 2 %}
         {% set disk_w = g_th.disk_warn if g_th.disk_warn is defined else 90.0 %}
+        {% set disk_a = g_th.disk_average if g_th.disk_average is defined else 92.5 %}
         {% set disk_d = g_th.disk_danger if g_th.disk_danger is defined else 95.0 %}
-        {% set disk_a = (disk_w + disk_d) / 2 %}
 
         {% set cpu_v = srv._cpu if srv._cpu is not none else -1 %}
         {% set cpu_cls = 'red' if cpu_v >= cpu_d else ('orange' if cpu_v >= cpu_a else ('yellow' if cpu_v >= cpu_w else 'green')) %}
@@ -2084,18 +2084,21 @@ document.addEventListener('keydown', function(e) {
 function getThreshold(val, type) {
   if (val == null || isNaN(val)) return { cls: 'green', color: 'var(--dim)' };
   let w = 85;
+  let a = 90;
   let d = 95;
   if (type === 'cpu') {
     w = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.cpu_warn != null) ? GLOBAL_THRESHOLDS.cpu_warn : 85;
+    a = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.cpu_average != null) ? GLOBAL_THRESHOLDS.cpu_average : 90;
     d = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.cpu_danger != null) ? GLOBAL_THRESHOLDS.cpu_danger : 95;
   } else if (type === 'mem') {
     w = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.ram_warn != null) ? GLOBAL_THRESHOLDS.ram_warn : 85;
+    a = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.ram_average != null) ? GLOBAL_THRESHOLDS.ram_average : 90;
     d = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.ram_danger != null) ? GLOBAL_THRESHOLDS.ram_danger : 95;
   } else if (type === 'disk') {
     w = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.disk_warn != null) ? GLOBAL_THRESHOLDS.disk_warn : 90;
+    a = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.disk_average != null) ? GLOBAL_THRESHOLDS.disk_average : 92.5;
     d = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.disk_danger != null) ? GLOBAL_THRESHOLDS.disk_danger : 95;
   }
-  const a = (w + d) / 2;
   if (val >= d) return { cls: 'red', color: 'var(--red)' };
   if (val >= a) return { cls: 'orange', color: 'var(--orange, #f97316)' };
   if (val >= w) return { cls: 'yellow', color: 'var(--yellow)' };

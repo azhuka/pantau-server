@@ -67,12 +67,16 @@ def api_update_thresholds(
     new_th = {}
     float_keys = [
         "cpu_warn",
+        "cpu_average",
         "cpu_danger",
         "ram_warn",
+        "ram_average",
         "ram_danger",
         "disk_warn",
+        "disk_average",
         "disk_danger",
         "swap_warn",
+        "swap_average",
         "swap_danger",
     ]
     int_keys = ["ssh_fail_warn", "ssh_fail_danger"]
@@ -95,21 +99,28 @@ def api_update_thresholds(
             except (ValueError, TypeError):
                 pass
 
-    pairs = [
-        ("cpu_warn", "cpu_danger"),
-        ("ram_warn", "ram_danger"),
-        ("disk_warn", "disk_danger"),
-        ("swap_warn", "swap_danger"),
-        ("ssh_fail_warn", "ssh_fail_danger"),
+    trios = [
+        ("cpu_warn", "cpu_average", "cpu_danger", "Beban Prosesor CPU"),
+        ("ram_warn", "ram_average", "ram_danger", "Penggunaan Memori RAM"),
+        ("disk_warn", "disk_average", "disk_danger", "Kapasitas Partisi Disk"),
+        ("swap_warn", "swap_average", "swap_danger", "Kapasitas Swap Memory"),
     ]
-    for w_k, d_k in pairs:
+    for w_k, a_k, d_k, lbl in trios:
         w_val = new_th.get(w_k, DEFAULT_THRESHOLDS[w_k])
+        a_val = new_th.get(a_k, DEFAULT_THRESHOLDS[a_k])
         d_val = new_th.get(d_k, DEFAULT_THRESHOLDS[d_k])
-        if w_val > d_val:
+        if not (w_val <= a_val <= d_val):
             raise HTTPException(
                 status_code=400,
-                detail=f"Nilai Warning ({w_k}) tidak boleh lebih besar dari Danger ({d_k})",
+                detail=f"Urutan ambang batas {lbl} tidak valid: Peringatan ({w_val:.0f}%) ≤ Gawat ({a_val:.0f}%) ≤ Kritis ({d_val:.0f}%)",
             )
+    ssh_w = new_th.get("ssh_fail_warn", DEFAULT_THRESHOLDS["ssh_fail_warn"])
+    ssh_d = new_th.get("ssh_fail_danger", DEFAULT_THRESHOLDS["ssh_fail_danger"])
+    if ssh_w > ssh_d:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Urutan ambang batas Login SSH tidak valid: Peringatan ({ssh_w}) ≤ Kritis ({ssh_d})",
+        )
 
     current_th = get_global_thresholds(db)
     current_th.update(new_th)

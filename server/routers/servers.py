@@ -278,12 +278,16 @@ def server_add_submit(
     is_isolated_net: int = Form(0),
     allow_web_terminal: int = Form(0),
     th_cpu_warn: str = Form(default=""),
+    th_cpu_average: str = Form(default=""),
     th_cpu_danger: str = Form(default=""),
     th_ram_warn: str = Form(default=""),
+    th_ram_average: str = Form(default=""),
     th_ram_danger: str = Form(default=""),
     th_disk_warn: str = Form(default=""),
+    th_disk_average: str = Form(default=""),
     th_disk_danger: str = Form(default=""),
     th_swap_warn: str = Form(default=""),
+    th_swap_average: str = Form(default=""),
     th_swap_danger: str = Form(default=""),
     th_ssh_fail_warn: str = Form(default=""),
     th_ssh_fail_danger: str = Form(default=""),
@@ -322,12 +326,16 @@ def server_add_submit(
     custom_th = {}
     for k, val in [
         ("cpu_warn", th_cpu_warn),
+        ("cpu_average", th_cpu_average),
         ("cpu_danger", th_cpu_danger),
         ("ram_warn", th_ram_warn),
+        ("ram_average", th_ram_average),
         ("ram_danger", th_ram_danger),
         ("disk_warn", th_disk_warn),
+        ("disk_average", th_disk_average),
         ("disk_danger", th_disk_danger),
         ("swap_warn", th_swap_warn),
+        ("swap_average", th_swap_average),
         ("swap_danger", th_swap_danger),
         ("ssh_fail_warn", th_ssh_fail_warn),
         ("ssh_fail_danger", th_ssh_fail_danger),
@@ -337,11 +345,26 @@ def server_add_submit(
                 custom_th[k] = int(val) if "fail" in k else float(val)
             except ValueError:
                 pass
-    for metric in ("cpu", "ram", "disk", "swap", "ssh_fail"):
+    for metric in ("cpu", "ram", "disk", "swap"):
         w = custom_th.get(f"{metric}_warn")
+        a = custom_th.get(f"{metric}_average")
         d = custom_th.get(f"{metric}_danger")
-        if w is not None and d is not None and w > d:
-            custom_th[f"{metric}_warn"], custom_th[f"{metric}_danger"] = d, w
+        vals = [v for v in (w, a, d) if v is not None]
+        if vals != sorted(vals):
+            s_vals = sorted(vals)
+            idx = 0
+            if w is not None:
+                custom_th[f"{metric}_warn"] = s_vals[idx]
+                idx += 1
+            if a is not None:
+                custom_th[f"{metric}_average"] = s_vals[idx]
+                idx += 1
+            if d is not None:
+                custom_th[f"{metric}_danger"] = s_vals[idx]
+    w_ssh = custom_th.get("ssh_fail_warn")
+    d_ssh = custom_th.get("ssh_fail_danger")
+    if w_ssh is not None and d_ssh is not None and w_ssh > d_ssh:
+        custom_th["ssh_fail_warn"], custom_th["ssh_fail_danger"] = d_ssh, w_ssh
     custom_th_json = json.dumps(custom_th) if custom_th else None
 
     plat_override_clean = (platform_override or "").strip().lower()
@@ -436,12 +459,16 @@ def server_edit_submit(
     is_isolated_net: int = Form(0),
     allow_web_terminal: int = Form(0),
     th_cpu_warn: str = Form(default=""),
+    th_cpu_average: str = Form(default=""),
     th_cpu_danger: str = Form(default=""),
     th_ram_warn: str = Form(default=""),
+    th_ram_average: str = Form(default=""),
     th_ram_danger: str = Form(default=""),
     th_disk_warn: str = Form(default=""),
+    th_disk_average: str = Form(default=""),
     th_disk_danger: str = Form(default=""),
     th_swap_warn: str = Form(default=""),
+    th_swap_average: str = Form(default=""),
     th_swap_danger: str = Form(default=""),
     th_ssh_fail_warn: str = Form(default=""),
     th_ssh_fail_danger: str = Form(default=""),
@@ -482,12 +509,16 @@ def server_edit_submit(
         custom_th = {}
         for k, val in [
             ("cpu_warn", th_cpu_warn),
+            ("cpu_average", th_cpu_average),
             ("cpu_danger", th_cpu_danger),
             ("ram_warn", th_ram_warn),
+            ("ram_average", th_ram_average),
             ("ram_danger", th_ram_danger),
             ("disk_warn", th_disk_warn),
+            ("disk_average", th_disk_average),
             ("disk_danger", th_disk_danger),
             ("swap_warn", th_swap_warn),
+            ("swap_average", th_swap_average),
             ("swap_danger", th_swap_danger),
             ("ssh_fail_warn", th_ssh_fail_warn),
             ("ssh_fail_danger", th_ssh_fail_danger),
@@ -497,11 +528,26 @@ def server_edit_submit(
                     custom_th[k] = int(val) if "fail" in k else float(val)
                 except ValueError:
                     pass
-        for metric in ("cpu", "ram", "disk", "swap", "ssh_fail"):
+        for metric in ("cpu", "ram", "disk", "swap"):
             w = custom_th.get(f"{metric}_warn")
+            a = custom_th.get(f"{metric}_average")
             d = custom_th.get(f"{metric}_danger")
-            if w is not None and d is not None and w > d:
-                custom_th[f"{metric}_warn"], custom_th[f"{metric}_danger"] = d, w
+            vals = [v for v in (w, a, d) if v is not None]
+            if vals != sorted(vals):
+                s_vals = sorted(vals)
+                idx = 0
+                if w is not None:
+                    custom_th[f"{metric}_warn"] = s_vals[idx]
+                    idx += 1
+                if a is not None:
+                    custom_th[f"{metric}_average"] = s_vals[idx]
+                    idx += 1
+                if d is not None:
+                    custom_th[f"{metric}_danger"] = s_vals[idx]
+        w_ssh = custom_th.get("ssh_fail_warn")
+        d_ssh = custom_th.get("ssh_fail_danger")
+        if w_ssh is not None and d_ssh is not None and w_ssh > d_ssh:
+            custom_th["ssh_fail_warn"], custom_th["ssh_fail_danger"] = d_ssh, w_ssh
         custom_th_json = json.dumps(custom_th) if custom_th else None
 
         plat_override_clean = (platform_override or "").strip().lower()

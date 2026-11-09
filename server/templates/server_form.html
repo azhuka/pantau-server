@@ -193,56 +193,92 @@
       </div>
       <div id="th-section-body" style="padding:16px;display:{% if custom_thresholds %}block{% else %}none{% endif %};">
         <div style="font-size:12px;color:var(--dim);margin-bottom:14px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);padding:8px 12px;border-radius:6px">
-          Angka di placeholder (abu-abu) adalah nilai global aktif. Isi jika ingin menentukan batas khusus server ini.
+          Angka pada placeholder abu-abu merupakan nilai ambang batas global aktif. Isi jika Anda ingin menerapkan aturan khusus untuk server ini.
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>CPU Usage Warning (%)</label>
-            <input type="number" step="1" min="1" max="100" name="th_cpu_warn" value="{{ custom_thresholds.cpu_warn if custom_thresholds.get('cpu_warn') is not none else '' }}" placeholder="{{ (global_thresholds.cpu_warn | int) if global_thresholds else 85 }}">
-          </div>
-          <div class="form-group">
-            <label>CPU Usage Danger (%)</label>
-            <input type="number" step="1" min="1" max="100" name="th_cpu_danger" value="{{ custom_thresholds.cpu_danger if custom_thresholds.get('cpu_danger') is not none else '' }}" placeholder="{{ (global_thresholds.cpu_danger | int) if global_thresholds else 95 }}">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>RAM Usage Warning (%)</label>
-            <input type="number" step="1" min="1" max="100" name="th_ram_warn" value="{{ custom_thresholds.ram_warn if custom_thresholds.get('ram_warn') is not none else '' }}" placeholder="{{ (global_thresholds.ram_warn | int) if global_thresholds else 85 }}">
-          </div>
-          <div class="form-group">
-            <label>RAM Usage Danger (%)</label>
-            <input type="number" step="1" min="1" max="100" name="th_ram_danger" value="{{ custom_thresholds.ram_danger if custom_thresholds.get('ram_danger') is not none else '' }}" placeholder="{{ (global_thresholds.ram_danger | int) if global_thresholds else 95 }}">
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Beban Prosesor CPU (%)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--yellow)">Peringatan</span>
+              <input type="number" step="1" min="1" max="100" name="th_cpu_warn" value="{{ custom_thresholds.cpu_warn if custom_thresholds.get('cpu_warn') is not none else '' }}" placeholder="{{ (global_thresholds.cpu_warn | int) if global_thresholds else 85 }}">
+            </div>
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--orange, #f97316)">Gawat</span>
+              <input type="number" step="1" min="1" max="100" name="th_cpu_average" value="{{ custom_thresholds.cpu_average if custom_thresholds.get('cpu_average') is not none else '' }}" placeholder="{{ (global_thresholds.cpu_average | int) if (global_thresholds and global_thresholds.get('cpu_average')) else 90 }}">
+            </div>
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--red)">Kritis</span>
+              <input type="number" step="1" min="1" max="100" name="th_cpu_danger" value="{{ custom_thresholds.cpu_danger if custom_thresholds.get('cpu_danger') is not none else '' }}" placeholder="{{ (global_thresholds.cpu_danger | int) if global_thresholds else 95 }}">
+            </div>
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Disk Usage Warning (%)</label>
-            <input type="number" step="1" min="1" max="100" name="th_disk_warn" value="{{ custom_thresholds.disk_warn if custom_thresholds.get('disk_warn') is not none else '' }}" placeholder="{{ (global_thresholds.disk_warn | int) if global_thresholds else 90 }}">
-          </div>
-          <div class="form-group">
-            <label>Disk Usage Danger (%)</label>
-            <input type="number" step="1" min="1" max="100" name="th_disk_danger" value="{{ custom_thresholds.disk_danger if custom_thresholds.get('disk_danger') is not none else '' }}" placeholder="{{ (global_thresholds.disk_danger | int) if global_thresholds else 95 }}">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Swap Usage Warning (%)</label>
-            <input type="number" step="1" min="1" max="100" name="th_swap_warn" value="{{ custom_thresholds.swap_warn if custom_thresholds.get('swap_warn') is not none else '' }}" placeholder="{{ (global_thresholds.swap_warn | int) if global_thresholds else 80 }}">
-          </div>
-          <div class="form-group">
-            <label>Swap Usage Danger (%)</label>
-            <input type="number" step="1" min="1" max="100" name="th_swap_danger" value="{{ custom_thresholds.swap_danger if custom_thresholds.get('swap_danger') is not none else '' }}" placeholder="{{ (global_thresholds.swap_danger | int) if global_thresholds else 92 }}">
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Penggunaan Memori RAM (%)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--yellow)">Peringatan</span>
+              <input type="number" step="1" min="1" max="100" name="th_ram_warn" value="{{ custom_thresholds.ram_warn if custom_thresholds.get('ram_warn') is not none else '' }}" placeholder="{{ (global_thresholds.ram_warn | int) if global_thresholds else 85 }}">
+            </div>
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--orange, #f97316)">Gawat</span>
+              <input type="number" step="1" min="1" max="100" name="th_ram_average" value="{{ custom_thresholds.ram_average if custom_thresholds.get('ram_average') is not none else '' }}" placeholder="{{ (global_thresholds.ram_average | int) if (global_thresholds and global_thresholds.get('ram_average')) else 90 }}">
+            </div>
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--red)">Kritis</span>
+              <input type="number" step="1" min="1" max="100" name="th_ram_danger" value="{{ custom_thresholds.ram_danger if custom_thresholds.get('ram_danger') is not none else '' }}" placeholder="{{ (global_thresholds.ram_danger | int) if global_thresholds else 95 }}">
+            </div>
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>SSH Login Gagal Warning (kali)</label>
-            <input type="number" step="1" min="1" name="th_ssh_fail_warn" value="{{ custom_thresholds.ssh_fail_warn if custom_thresholds.get('ssh_fail_warn') is not none else '' }}" placeholder="{{ (global_thresholds.ssh_fail_warn | int) if global_thresholds else 5 }}">
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Kapasitas Partisi Disk (%)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--yellow)">Peringatan</span>
+              <input type="number" step="1" min="1" max="100" name="th_disk_warn" value="{{ custom_thresholds.disk_warn if custom_thresholds.get('disk_warn') is not none else '' }}" placeholder="{{ (global_thresholds.disk_warn | int) if global_thresholds else 90 }}">
+            </div>
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--orange, #f97316)">Gawat</span>
+              <input type="number" step="1" min="1" max="100" name="th_disk_average" value="{{ custom_thresholds.disk_average if custom_thresholds.get('disk_average') is not none else '' }}" placeholder="{{ (global_thresholds.disk_average | int) if (global_thresholds and global_thresholds.get('disk_average')) else 92 }}">
+            </div>
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--red)">Kritis</span>
+              <input type="number" step="1" min="1" max="100" name="th_disk_danger" value="{{ custom_thresholds.disk_danger if custom_thresholds.get('disk_danger') is not none else '' }}" placeholder="{{ (global_thresholds.disk_danger | int) if global_thresholds else 95 }}">
+            </div>
           </div>
-          <div class="form-group">
-            <label>SSH Login Gagal Danger (kali)</label>
-            <input type="number" step="1" min="1" name="th_ssh_fail_danger" value="{{ custom_thresholds.ssh_fail_danger if custom_thresholds.get('ssh_fail_danger') is not none else '' }}" placeholder="{{ (global_thresholds.ssh_fail_danger | int) if global_thresholds else 12 }}">
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Kapasitas Swap Memory (%)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--yellow)">Peringatan</span>
+              <input type="number" step="1" min="1" max="100" name="th_swap_warn" value="{{ custom_thresholds.swap_warn if custom_thresholds.get('swap_warn') is not none else '' }}" placeholder="{{ (global_thresholds.swap_warn | int) if global_thresholds else 80 }}">
+            </div>
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--orange, #f97316)">Gawat</span>
+              <input type="number" step="1" min="1" max="100" name="th_swap_average" value="{{ custom_thresholds.swap_average if custom_thresholds.get('swap_average') is not none else '' }}" placeholder="{{ (global_thresholds.swap_average | int) if (global_thresholds and global_thresholds.get('swap_average')) else 86 }}">
+            </div>
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--red)">Kritis</span>
+              <input type="number" step="1" min="1" max="100" name="th_swap_danger" value="{{ custom_thresholds.swap_danger if custom_thresholds.get('swap_danger') is not none else '' }}" placeholder="{{ (global_thresholds.swap_danger | int) if global_thresholds else 92 }}">
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Percobaan Login Gagal SSH (kali)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--yellow)">Peringatan</span>
+              <input type="number" step="1" min="1" name="th_ssh_fail_warn" value="{{ custom_thresholds.ssh_fail_warn if custom_thresholds.get('ssh_fail_warn') is not none else '' }}" placeholder="{{ (global_thresholds.ssh_fail_warn | int) if global_thresholds else 5 }}">
+            </div>
+            <div class="form-group" style="margin:0">
+              <span style="font-size:11px;font-weight:600;color:var(--red)">Kritis</span>
+              <input type="number" step="1" min="1" name="th_ssh_fail_danger" value="{{ custom_thresholds.ssh_fail_danger if custom_thresholds.get('ssh_fail_danger') is not none else '' }}" placeholder="{{ (global_thresholds.ssh_fail_danger | int) if global_thresholds else 12 }}">
+            </div>
           </div>
         </div>
       </div>

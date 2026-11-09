@@ -817,101 +817,147 @@
 
 {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
 <!-- Modal Ambang Batas Insiden Global -->
-<div id="threshold-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)" onclick="if(event.target===this)closeThresholdModal()">
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
-    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-      <h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:8px">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-        <span>Ambang Batas Insiden Global</span>
-      </h3>
-      <button type="button" onclick="closeThresholdModal()" style="background:none;border:0;color:var(--dim);font-size:20px;cursor:pointer">&times;</button>
+<style>
+  #threshold-modal .modal-card {
+    background: var(--card, #131c31) !important;
+    border: 1px solid var(--border, rgba(255,255,255,0.1)) !important;
+    color: var(--text, #f8fafc) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
+  }
+  [data-theme="light"] #threshold-modal .modal-card {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18) !important;
+  }
+  #threshold-modal .th-input {
+    width: 100%;
+    background: var(--bg-subtle, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+    border-radius: var(--radius-sm, 6px);
+    color: var(--text);
+    padding: 7px 10px;
+    font-size: 13px;
+    outline: none;
+    margin-top: 4px;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+  }
+  [data-theme="light"] #threshold-modal .th-input {
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+  }
+  #threshold-modal .th-input:focus {
+    border-color: var(--accent, #3b82f6) !important;
+  }
+</style>
+<div id="threshold-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)" onclick="if(event.target===this)closeThresholdModal()">
+  <div class="card modal-card" style="border-radius:10px;max-width:620px;width:100%;max-height:90vh;overflow-y:auto;overflow-x:hidden" onclick="event.stopPropagation()">
+    <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg-subtle, rgba(255,255,255,0.02))">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:8px;background:rgba(59,130,246,0.12);color:var(--accent,#3b82f6);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </div>
+        <div>
+          <h3 style="margin:0;font-size:15px;font-weight:600;line-height:1.3;color:var(--text-bright, var(--text))">Ambang Batas Insiden Global</h3>
+          <div style="font-size:11px;color:var(--dim);margin-top:2px">Konfigurasi parameter pemicu tingkat keparahan insiden</div>
+        </div>
+      </div>
+      <button type="button" onclick="closeThresholdModal()" class="btn btn-ghost btn-sm" style="font-size:18px;line-height:1;padding:4px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
     </div>
-    <form id="threshold-form" onsubmit="submitThresholds(event)" style="padding:20px">
-      <p style="font-size:12px;color:var(--dim);margin-top:0;margin-bottom:16px">
-        Konfigurasi ini berlaku sebagai standar global untuk semua server klien yang tidak memiliki ambang batas khusus (override).
-      </p>
+    <form id="threshold-form" onsubmit="submitThresholds(event)" style="padding:18px 20px">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:16px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);padding:8px 12px;border-radius:6px;line-height:1.4">
+        Konfigurasi ini berlaku sebagai standar global untuk semua server klien yang tidak memiliki konfigurasi batas khusus (override).
+      </div>
 
-      <div style="margin-bottom:16px">
+      <div style="margin-bottom:14px">
         <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Beban Prosesor CPU (%)</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div>
-            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-cpu-warn" name="cpu_warn" value="{{ global_thresholds.cpu_warn | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--yellow)">Peringatan</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-cpu-warn" name="cpu_warn" value="{{ global_thresholds.cpu_warn | int }}" required class="th-input">
           </div>
           <div>
-            <span style="font-size:11px;color:var(--red)">Critical Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-cpu-danger" name="cpu_danger" value="{{ global_thresholds.cpu_danger | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--orange, #f97316)">Gawat</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-cpu-average" name="cpu_average" value="{{ (global_thresholds.cpu_average | int) if global_thresholds.cpu_average is defined else 90 }}" required class="th-input">
+          </div>
+          <div>
+            <span style="font-size:11px;font-weight:600;color:var(--red)">Kritis</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-cpu-danger" name="cpu_danger" value="{{ global_thresholds.cpu_danger | int }}" required class="th-input">
           </div>
         </div>
       </div>
 
-      <div style="margin-bottom:16px">
+      <div style="margin-bottom:14px">
         <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Penggunaan Memori RAM (%)</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div>
-            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-ram-warn" name="ram_warn" value="{{ global_thresholds.ram_warn | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--yellow)">Peringatan</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-ram-warn" name="ram_warn" value="{{ global_thresholds.ram_warn | int }}" required class="th-input">
           </div>
           <div>
-            <span style="font-size:11px;color:var(--red)">Critical Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-ram-danger" name="ram_danger" value="{{ global_thresholds.ram_danger | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--orange, #f97316)">Gawat</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-ram-average" name="ram_average" value="{{ (global_thresholds.ram_average | int) if global_thresholds.ram_average is defined else 90 }}" required class="th-input">
+          </div>
+          <div>
+            <span style="font-size:11px;font-weight:600;color:var(--red)">Kritis</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-ram-danger" name="ram_danger" value="{{ global_thresholds.ram_danger | int }}" required class="th-input">
           </div>
         </div>
       </div>
 
-      <div style="margin-bottom:16px">
+      <div style="margin-bottom:14px">
         <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Kapasitas Partisi Disk (%)</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div>
-            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-disk-warn" name="disk_warn" value="{{ global_thresholds.disk_warn | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--yellow)">Peringatan</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-disk-warn" name="disk_warn" value="{{ global_thresholds.disk_warn | int }}" required class="th-input">
           </div>
           <div>
-            <span style="font-size:11px;color:var(--red)">Critical Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-disk-danger" name="disk_danger" value="{{ global_thresholds.disk_danger | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--orange, #f97316)">Gawat</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-disk-average" name="disk_average" value="{{ (global_thresholds.disk_average | int) if global_thresholds.disk_average is defined else 92 }}" required class="th-input">
+          </div>
+          <div>
+            <span style="font-size:11px;font-weight:600;color:var(--red)">Kritis</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-disk-danger" name="disk_danger" value="{{ global_thresholds.disk_danger | int }}" required class="th-input">
           </div>
         </div>
       </div>
 
-      <div style="margin-bottom:16px">
+      <div style="margin-bottom:14px">
         <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Kapasitas Swap Memory (%)</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div>
-            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-swap-warn" name="swap_warn" value="{{ global_thresholds.swap_warn | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--yellow)">Peringatan</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-swap-warn" name="swap_warn" value="{{ global_thresholds.swap_warn | int }}" required class="th-input">
           </div>
           <div>
-            <span style="font-size:11px;color:var(--red)">Critical Level</span>
-            <input type="number" step="1" min="1" max="100" id="th-g-swap-danger" name="swap_danger" value="{{ global_thresholds.swap_danger | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--orange, #f97316)">Gawat</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-swap-average" name="swap_average" value="{{ (global_thresholds.swap_average | int) if global_thresholds.swap_average is defined else 86 }}" required class="th-input">
+          </div>
+          <div>
+            <span style="font-size:11px;font-weight:600;color:var(--red)">Kritis</span>
+            <input type="number" step="1" min="1" max="100" id="th-g-swap-danger" name="swap_danger" value="{{ global_thresholds.swap_danger | int }}" required class="th-input">
           </div>
         </div>
       </div>
 
       <div style="margin-bottom:20px">
         <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">Percobaan Login Gagal SSH (kali)</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div>
-            <span style="font-size:11px;color:var(--yellow)">Warning Level</span>
-            <input type="number" step="1" min="1" id="th-g-ssh-warn" name="ssh_fail_warn" value="{{ global_thresholds.ssh_fail_warn | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--yellow)">Peringatan</span>
+            <input type="number" step="1" min="1" id="th-g-ssh-warn" name="ssh_fail_warn" value="{{ global_thresholds.ssh_fail_warn | int }}" required class="th-input">
           </div>
           <div>
-            <span style="font-size:11px;color:var(--red)">Critical Level</span>
-            <input type="number" step="1" min="1" id="th-g-ssh-danger" name="ssh_fail_danger" value="{{ global_thresholds.ssh_fail_danger | int }}" required
-                   style="width:100%;background:rgba(9,13,22,0.7);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px 10px;font-size:13px;outline:none;margin-top:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--red)">Kritis</span>
+            <input type="number" step="1" min="1" id="th-g-ssh-danger" name="ssh_fail_danger" value="{{ global_thresholds.ssh_fail_danger | int }}" required class="th-input">
           </div>
         </div>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid var(--border)">
         <button type="button" class="btn btn-ghost btn-sm" onclick="resetThresholds()" style="color:var(--red)" title="Kembalikan semua nilai ke bawaan instalasi awal">↺ Reset ke Bawaan</button>
         <div style="display:flex;gap:8px">
           <button type="button" class="btn btn-ghost btn-sm" onclick="closeThresholdModal()">Batal</button>
@@ -944,12 +990,16 @@ async function submitThresholds(e) {
   btn.textContent = 'Menyimpan…';
   const payload = {
     cpu_warn: parseFloat(document.getElementById('th-g-cpu-warn').value),
+    cpu_average: parseFloat(document.getElementById('th-g-cpu-average').value),
     cpu_danger: parseFloat(document.getElementById('th-g-cpu-danger').value),
     ram_warn: parseFloat(document.getElementById('th-g-ram-warn').value),
+    ram_average: parseFloat(document.getElementById('th-g-ram-average').value),
     ram_danger: parseFloat(document.getElementById('th-g-ram-danger').value),
     disk_warn: parseFloat(document.getElementById('th-g-disk-warn').value),
+    disk_average: parseFloat(document.getElementById('th-g-disk-average').value),
     disk_danger: parseFloat(document.getElementById('th-g-disk-danger').value),
     swap_warn: parseFloat(document.getElementById('th-g-swap-warn').value),
+    swap_average: parseFloat(document.getElementById('th-g-swap-average').value),
     swap_danger: parseFloat(document.getElementById('th-g-swap-danger').value),
     ssh_fail_warn: parseInt(document.getElementById('th-g-ssh-warn').value),
     ssh_fail_danger: parseInt(document.getElementById('th-g-ssh-danger').value),
@@ -982,9 +1032,9 @@ async function submitThresholds(e) {
 async function resetThresholds() {
   const ok = await showConfirmModal({
     title: 'Reset Ambang Batas Global',
-    target: 'Ambang Batas Peringatan',
-    message: 'Kembalikan seluruh parameter ambang batas peringatan ke nilai standar bawaan.',
-    btnText: 'Reset ke Standar',
+    target: 'Ambang Batas Insiden',
+    message: 'Kembalikan seluruh parameter ambang batas peringatan ke nilai standar bawaan pabrik.',
+    btnText: 'Reset ke Bawaan',
     btnClass: 'btn-warning',
     iconType: 'warning',
     badge: 'AMBANG BATAS'
@@ -998,12 +1048,29 @@ async function resetThresholds() {
       },
       credentials: 'same-origin',
     });
+    const data = await res.json();
     if (res.ok) {
       showToast('Ambang batas berhasil direset ke bawaan.', true);
+      if (data && data.thresholds) {
+        const th = data.thresholds;
+        if (document.getElementById('th-g-cpu-warn')) document.getElementById('th-g-cpu-warn').value = th.cpu_warn || 85;
+        if (document.getElementById('th-g-cpu-average')) document.getElementById('th-g-cpu-average').value = th.cpu_average || 90;
+        if (document.getElementById('th-g-cpu-danger')) document.getElementById('th-g-cpu-danger').value = th.cpu_danger || 95;
+        if (document.getElementById('th-g-ram-warn')) document.getElementById('th-g-ram-warn').value = th.ram_warn || 85;
+        if (document.getElementById('th-g-ram-average')) document.getElementById('th-g-ram-average').value = th.ram_average || 90;
+        if (document.getElementById('th-g-ram-danger')) document.getElementById('th-g-ram-danger').value = th.ram_danger || 95;
+        if (document.getElementById('th-g-disk-warn')) document.getElementById('th-g-disk-warn').value = th.disk_warn || 90;
+        if (document.getElementById('th-g-disk-average')) document.getElementById('th-g-disk-average').value = th.disk_average || 92;
+        if (document.getElementById('th-g-disk-danger')) document.getElementById('th-g-disk-danger').value = th.disk_danger || 95;
+        if (document.getElementById('th-g-swap-warn')) document.getElementById('th-g-swap-warn').value = th.swap_warn || 80;
+        if (document.getElementById('th-g-swap-average')) document.getElementById('th-g-swap-average').value = th.swap_average || 86;
+        if (document.getElementById('th-g-swap-danger')) document.getElementById('th-g-swap-danger').value = th.swap_danger || 92;
+        if (document.getElementById('th-g-ssh-warn')) document.getElementById('th-g-ssh-warn').value = th.ssh_fail_warn || 5;
+        if (document.getElementById('th-g-ssh-danger')) document.getElementById('th-g-ssh-danger').value = th.ssh_fail_danger || 12;
+      }
       closeThresholdModal();
       if (typeof window.poll === 'function') window.poll();
     } else {
-      const data = await res.json();
       showToast('Gagal: ' + (data.detail || 'Terjadi kesalahan'), false);
     }
   } catch (err) {
