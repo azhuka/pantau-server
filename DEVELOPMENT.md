@@ -354,6 +354,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.136
+
+- **Tipe Rilis:** Standardisasi Jendela Mengambang Interaktif & Migrasi Detail Metrik Sel ke Tooltip Informatif (*Interactive Modal Architecture Standardization & Table Metric Subline Migration to Informative Tooltips*)
+- **Fokus Utama:** Menyelesaikan permasalahan baris tabel dasbor yang terlalu tinggi akibat penumpukan sub-teks metrik serta merealisasikan arsitektur jendela mengambang interaktif (*floating modal*) standar baku NOC di seluruh aplikasi sesuai referensi modul probe:
+  1. **Migrasi Sub-teks Sel ke Tooltip Informatif Baris Tabel Dasbor (`dashboard.html`):**
+     - Menghapus elemen sub-baris teks sekunder (`.tbl-metric-subline`) yang menumpuk di bawah bilah meter CPU (`Core`), RAM (`Used / Total`), dan Disk (`Total / Sisa`), yang sebelumnya menyebabkan tinggi baris tabel membengkak hingga ~50px.
+     - Mengubah penyajian data sekunder tersebut menjadi tooltip informatif bawaan peramban (`title="..."`) pada kolom CPU, RAM, dan Disk, baik pada rendering awal Jinja maupun pembaruan polling langsung (*real-time WebSocket / fetch JS*).
+     - Menjadikan wadah `.tbl-metric-box` berupa baris sejajar fleksibel tunggal (*single-line inline-flex*), menghasilkan tinggi baris tabel NOC berdensitas tinggi yang sangat ramping, proporsional (~30-32px), dan rapi.
+  2. **Standardisasi Mesin Jendela Mengambang Interaktif Universal (`pantau-noc.css` & `base.html`):**
+     - Memperluas arsitektur modal dari `probing.html` (`.probe-modal-backdrop`, `.probe-modal-panel`, `.probe-modal-head`, `.probe-modal-body`, `.probe-modal-foot`, `.probe-modal-close`, `.probe-form-group`) ke tingkat global di `pantau-noc.css` dan `base.html`.
+     - Mengunci struktur modal secara matematis: Header (`flex-shrink: 0`) selalu terkunci di atas dengan tombol tutup bundar rapi, Area Formulir (`overflow-y: auto; flex: 1; min-height: 0;`) bebas digulir tanpa menggeser header/footer, dan Footer aksi (`flex-shrink: 0`) selalu terkunci di dasar jendela.
+     - Menjamin kestabilan tampilan pada kondisi perbesaran peramban (*browser zoom* 100% hingga 175%) dan tema terang (*light mode*) dengan warna latar belakang solid opaque (`#ffffff` / `#f8fafc`), batas kontras tinggi, dan teks yang mudah dibaca.
+  3. **Rekonstruksi Jendela Ambang Batas Insiden Global (`problems.html`):**
+     - Mengubah total jendela mengambang "Ambang Batas Insiden Global" dari struktur kartu lama yang mudah terpotong (*clipped*) menjadi arsitektur baku `.probe-modal-panel`.
+     - Memastikan tombol batal, reset ke bawaan, dan simpan tetap terlihat permanen di footer tanpa tergulung hilang saat pengguna menyetel nilai ambang batas.
+  4. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Sinkronisasi versi SemVer `4.8.136` secara ketat pada 7 berkas inti repositori.
+     - Pengujian kompilasi sintaksis Python (`py_compile`), validasi Jinja2, serta verifikasi skrip shell (`bash -n`).
+     - Penyebaran agen ke `/opt/pantau/agent/agent_pantau.py` dan *restart* daemon sistem.
+
 ## Versi 4.8.135
 
 - **Tipe Rilis:** Resolusi Modal Ambang Batas Tembus Pandang, Label Baku & Integrasi Tier Gawat (*Transparent Threshold Modal Resolution, Standard Indonesian Labels & Gawat Severity Tier Integration*)

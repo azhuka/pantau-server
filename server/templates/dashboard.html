@@ -1539,71 +1539,55 @@ body.popout-fleet_table #dash-fleet-card {
           </td>
 
           <!-- 5. CPU (%) dengan Visual 10-Segment LED Battery Gauge (Ala Zabbix) -->
-          <td class="col-dash-cpu" id="tbl-cpu-td-{{ srv.id }}" data-sort-val="{{ cpu_v }}" style="text-align:center;vertical-align:middle" title="CPU: {{ srv._cpu ~ '%' if srv._cpu is not none else '-' }} ({{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }})">
+          <td class="col-dash-cpu" id="tbl-cpu-td-{{ srv.id }}" data-sort-val="{{ cpu_v }}" style="text-align:center;vertical-align:middle" title="Beban CPU: {{ srv._cpu ~ '%' if srv._cpu is not none else '-' }} ({{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else 'Core tidak tersedia' }})">
             {% if srv._cpu is not none %}
-              <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-                <div style="display:inline-flex;align-items:center;gap:7px">
-                  <div class="meter-led-track" id="tbl-cpu-track-{{ srv.id }}" title="CPU: {{ srv._cpu }}%">
-                    {% for i in range(10) %}
-                      <span class="meter-led-seg{% if i < cpu_lit %} on-{{ cpu_cls }}{% endif %}"></span>
-                    {% endfor %}
-                  </div>
-                  <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="font-size:12px;color:{{ cpu_color }};min-width:44px;text-align:left">{{ srv._cpu ~ '%' }}</strong>
+              <div class="tbl-metric-box" style="display:inline-flex;align-items:center;justify-content:center;gap:7px">
+                <div class="meter-led-track" id="tbl-cpu-track-{{ srv.id }}" title="CPU: {{ srv._cpu }}%">
+                  {% for i in range(10) %}
+                    <span class="meter-led-seg{% if i < cpu_lit %} on-{{ cpu_cls }}{% endif %}"></span>
+                  {% endfor %}
                 </div>
-                <div class="mono tbl-metric-subline" id="tbl-cpu-core-{{ srv.id }}" style="font-size:10px;color:var(--dim);line-height:1.15">
-                  {{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }}
-                </div>
+                <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="font-size:12px;color:{{ cpu_color }};min-width:44px;text-align:left">{{ srv._cpu ~ '%' }}</strong>
               </div>
             {% else %}
-              <div id="tbl-cpu-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2;font-size:12px">-</div>
-              <div class="mono tbl-metric-subline" id="tbl-cpu-core-{{ srv.id }}" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:2px">-</div>
+              <div class="tbl-metric-box" style="display:inline-flex;align-items:center;justify-content:center">
+                <span id="tbl-cpu-val-{{ srv.id }}" style="color:var(--dim);font-size:12px">-</span>
+              </div>
             {% endif %}
           </td>
 
           <!-- 6. RAM (%) dengan Visual 10-Segment LED Battery Gauge (Ala Zabbix) -->
-          <td class="col-dash-ram" id="tbl-mem-td-{{ srv.id }}" data-sort-val="{{ mem_v }}" style="text-align:center;vertical-align:middle" title="RAM: {{ srv._mem_pct ~ '%' if srv._mem_pct is not none else '-' }} ({{ srv._mem_used_str if srv._mem_used_str and srv._mem_used_str != '—' else '-' }} / {{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }})">
+          <td class="col-dash-ram" id="tbl-mem-td-{{ srv.id }}" data-sort-val="{{ mem_v }}" style="text-align:center;vertical-align:middle" title="Penggunaan RAM: {{ srv._mem_pct ~ '%' if srv._mem_pct is not none else '-' }} ({{ srv._mem_used_str if srv._mem_used_str and srv._mem_used_str != '—' else '-' }} / {{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }})">
             {% if srv._mem_pct is not none %}
-              <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-                <div style="display:inline-flex;align-items:center;gap:7px">
-                  <div class="meter-led-track" id="tbl-mem-track-{{ srv.id }}" title="RAM: {{ srv._mem_pct }}%">
-                    {% for i in range(10) %}
-                      <span class="meter-led-seg{% if i < mem_lit %} on-{{ mem_cls }}{% endif %}"></span>
-                    {% endfor %}
-                  </div>
-                  <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="font-size:12px;color:{{ mem_color }};min-width:44px;text-align:left">{{ srv._mem_pct ~ '%' }}</strong>
+              <div class="tbl-metric-box" style="display:inline-flex;align-items:center;justify-content:center;gap:7px">
+                <div class="meter-led-track" id="tbl-mem-track-{{ srv.id }}" title="RAM: {{ srv._mem_pct }}%">
+                  {% for i in range(10) %}
+                    <span class="meter-led-seg{% if i < mem_lit %} on-{{ mem_cls }}{% endif %}"></span>
+                  {% endfor %}
                 </div>
-                <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
-                  <span id="tbl-mem-used-{{ srv.id }}">{{ srv._mem_used_str if srv._mem_used_str and srv._mem_used_str != '—' else '-' }}</span> / <span id="tbl-mem-tot-{{ srv.id }}">{{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }}</span>
-                </div>
+                <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="font-size:12px;color:{{ mem_color }};min-width:44px;text-align:left">{{ srv._mem_pct ~ '%' }}</strong>
               </div>
             {% else %}
-              <div id="tbl-mem-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2;font-size:12px">-</div>
-              <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:2px">
-                <span id="tbl-mem-used-{{ srv.id }}">-</span> / <span id="tbl-mem-tot-{{ srv.id }}">-</span>
+              <div class="tbl-metric-box" style="display:inline-flex;align-items:center;justify-content:center">
+                <span id="tbl-mem-val-{{ srv.id }}" style="color:var(--dim);font-size:12px">-</span>
               </div>
             {% endif %}
           </td>
 
           <!-- 7. STORAGE (%) dengan Visual 10-Segment LED Battery Gauge (Ala Zabbix) -->
-          <td class="col-dash-disk" id="tbl-disk-td-{{ srv.id }}" data-sort-val="{{ disk_v }}" style="text-align:center;vertical-align:middle" title="Storage: {{ srv._disk_pct ~ '%' if srv._disk_pct is not none else '-' }} ({{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}, Sisa: {{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }})">
+          <td class="col-dash-disk" id="tbl-disk-td-{{ srv.id }}" data-sort-val="{{ disk_v }}" style="text-align:center;vertical-align:middle" title="Kapasitas Disk: {{ srv._disk_pct ~ '%' if srv._disk_pct is not none else '-' }} (Total: {{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}, Sisa: {{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }})">
             {% if srv._disk_pct is not none %}
-              <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-                <div style="display:inline-flex;align-items:center;gap:7px">
-                  <div class="meter-led-track" id="tbl-disk-track-{{ srv.id }}" title="Storage: {{ srv._disk_pct }}%">
-                    {% for i in range(10) %}
-                      <span class="meter-led-seg{% if i < disk_lit %} on-{{ disk_cls }}{% endif %}"></span>
-                    {% endfor %}
-                  </div>
-                  <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="font-size:12px;color:{{ disk_color }};min-width:44px;text-align:left">{{ srv._disk_pct ~ '%' }}</strong>
+              <div class="tbl-metric-box" style="display:inline-flex;align-items:center;justify-content:center;gap:7px">
+                <div class="meter-led-track" id="tbl-disk-track-{{ srv.id }}" title="Storage: {{ srv._disk_pct }}%">
+                  {% for i in range(10) %}
+                    <span class="meter-led-seg{% if i < disk_lit %} on-{{ disk_cls }}{% endif %}"></span>
+                  {% endfor %}
                 </div>
-                <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
-                  <span id="tbl-disk-tot-{{ srv.id }}">{{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}</span> (Sisa <span id="tbl-disk-avail-{{ srv.id }}">{{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }}</span>)
-                </div>
+                <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="font-size:12px;color:{{ disk_color }};min-width:44px;text-align:left">{{ srv._disk_pct ~ '%' }}</strong>
               </div>
             {% else %}
-              <div id="tbl-disk-val-{{ srv.id }}" style="color:var(--dim);line-height:1.2;font-size:12px">-</div>
-              <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;margin-top:2px">
-                <span id="tbl-disk-tot-{{ srv.id }}">-</span> (Sisa <span id="tbl-disk-avail-{{ srv.id }}">-</span>)
+              <div class="tbl-metric-box" style="display:inline-flex;align-items:center;justify-content:center">
+                <span id="tbl-disk-val-{{ srv.id }}" style="color:var(--dim);font-size:12px">-</span>
               </div>
             {% endif %}
           </td>
@@ -2381,41 +2365,28 @@ function createAndAppendDashTableRow(srv, tbody) {
       </div>
     </td>
     <td class="col-dash-uptime mono" id="tbl-uptime-${srv.id}" style="font-size:11.5px;text-align:center;vertical-align:middle;color:var(--text)">-</td>
-    <td class="col-dash-cpu" id="tbl-cpu-td-${srv.id}" style="text-align:center;vertical-align:middle">
-      <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-        <div style="display:inline-flex;align-items:center;gap:7px">
-          <div class="meter-led-track" id="tbl-cpu-track-${srv.id}" title="-">
-            <span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span>
-          </div>
-          <strong class="mono" id="tbl-cpu-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:left">-</strong>
+    <td class="col-dash-cpu" id="tbl-cpu-td-${srv.id}" style="text-align:center;vertical-align:middle" title="Beban CPU: -">
+      <div class="tbl-metric-box" style="display:inline-flex;align-items:center;justify-content:center;gap:7px">
+        <div class="meter-led-track" id="tbl-cpu-track-${srv.id}" title="-">
+          <span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span>
         </div>
-        <div class="mono tbl-metric-subline" id="tbl-cpu-core-${srv.id}" style="font-size:10px;color:var(--dim);line-height:1.15">-</div>
+        <strong class="mono" id="tbl-cpu-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:left">-</strong>
       </div>
     </td>
-    <td class="col-dash-ram" id="tbl-mem-td-${srv.id}" style="text-align:center;vertical-align:middle">
-      <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-        <div style="display:inline-flex;align-items:center;gap:7px">
-          <div class="meter-led-track" id="tbl-mem-track-${srv.id}" title="-">
-            <span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span>
-          </div>
-          <strong class="mono" id="tbl-mem-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:left">-</strong>
+    <td class="col-dash-ram" id="tbl-mem-td-${srv.id}" style="text-align:center;vertical-align:middle" title="Penggunaan RAM: -">
+      <div class="tbl-metric-box" style="display:inline-flex;align-items:center;justify-content:center;gap:7px">
+        <div class="meter-led-track" id="tbl-mem-track-${srv.id}" title="-">
+          <span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span>
         </div>
-        <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
-          <span id="tbl-mem-used-${srv.id}">-</span> / <span id="tbl-mem-tot-${srv.id}">-</span>
-        </div>
+        <strong class="mono" id="tbl-mem-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:left">-</strong>
       </div>
     </td>
-    <td class="col-dash-disk" id="tbl-disk-td-${srv.id}" style="text-align:center;vertical-align:middle">
-      <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
-        <div style="display:inline-flex;align-items:center;gap:7px">
-          <div class="meter-led-track" id="tbl-disk-track-${srv.id}" title="-">
-            <span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span>
-          </div>
-          <strong class="mono" id="tbl-disk-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:left">-</strong>
+    <td class="col-dash-disk" id="tbl-disk-td-${srv.id}" style="text-align:center;vertical-align:middle" title="Kapasitas Disk: -">
+      <div class="tbl-metric-box" style="display:inline-flex;align-items:center;justify-content:center;gap:7px">
+        <div class="meter-led-track" id="tbl-disk-track-${srv.id}" title="-">
+          <span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span>
         </div>
-        <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
-          <span id="tbl-disk-tot-${srv.id}">-</span> (Sisa <span id="tbl-disk-avail-${srv.id}">-</span>)
-        </div>
+        <strong class="mono" id="tbl-disk-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:left">-</strong>
       </div>
     </td>
     <td class="col-dash-svc mono" id="tbl-svc-td-${srv.id}" style="text-align:center;vertical-align:middle;font-size:12px">
@@ -2684,7 +2655,7 @@ async function pollNocDashboard() {
         tblCpuCore.textContent = coreStr;
       }
       if (tblCpuTd) {
-        tblCpuTd.title = `CPU: ${srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '-'} (${coreStr})`;
+        tblCpuTd.title = `Beban CPU: ${srv.cpu != null ? srv.cpu.toFixed(1) + '%' : '-'} (${coreStr})`;
       }
 
       // Memori: Total, Beban (%), Digunakan
@@ -2719,7 +2690,7 @@ async function pollNocDashboard() {
       if (tblMemUsed) tblMemUsed.textContent = memUsedStr;
       if (tblMemTot) tblMemTot.textContent = memTotStr;
       if (tblMemTd) {
-        tblMemTd.title = `RAM: ${srv.mem_pct != null ? srv.mem_pct.toFixed(1) + '%' : '-'} (${memUsedStr} / ${memTotStr})`;
+        tblMemTd.title = `Penggunaan RAM: ${srv.mem_pct != null ? srv.mem_pct.toFixed(1) + '%' : '-'} (${memUsedStr} / ${memTotStr})`;
       }
 
       // Penyimpanan: Total, Beban (%), Tersedia
@@ -2754,7 +2725,7 @@ async function pollNocDashboard() {
       if (tblDiskTot) tblDiskTot.textContent = diskTotStr;
       if (tblDiskAvail) tblDiskAvail.textContent = diskAvailStr;
       if (tblDiskTd) {
-        tblDiskTd.title = `Storage: ${srv.disk_pct != null ? srv.disk_pct.toFixed(1) + '%' : '-'} (${diskTotStr}, Sisa: ${diskAvailStr})`;
+        tblDiskTd.title = `Kapasitas Disk: ${srv.disk_pct != null ? srv.disk_pct.toFixed(1) + '%' : '-'} (Total: ${diskTotStr}, Sisa: ${diskAvailStr})`;
       }
 
       // Layanan: Total / UP (Default: Hijau/Hijau; Ada Insiden: Hijau/Putih)
