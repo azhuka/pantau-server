@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.140
+
+- **Tipe Rilis:** Transformasi Arsitektur Shell Tata Letak Baku, Eliminasi Total Tambal Sulam Margin Negatif & Penguatan Sistem Desain NOC (*Architectural Shell Transformation, Elimination of Negative Margin Hacks & NOC Design System Fortification*)
+- **Fokus Utama:** Merombak tata letak frontend secara fundamental agar bebas dari teknik hardcode manual dan memiliki standar baku enterprise yang konsisten di semua resolusi dan skala zoom:
+  1. **Arsitektur Shell Tata Letak Baku (*Clean Shell Layout Architecture*) (`base.html` & `pantau-noc.css`):**
+     - Memisahkan tata letak utama menjadi dua tingkatan hierarki resmi: Bilah Kepala Mandiri (`{% block topbar %}`) dan Area Konten Berpadding (`.noc-content-body`).
+     - Mengeliminasi total trik tambal-sulam margin negatif (`margin-top: -12px`, `margin-left: -18px`, `width: calc(100% + 36px)`) yang sebelumnya dipaksakan di dasbor. Bilah kepala dasbor (`.dash-topbar-header`) kini mengisi 100% lebar ruang kerja secara alami dan menempel kokoh pada posisi `top: 0` tanpa kalkulasi manual yang rapuh.
+  2. **Penguatan Sistem Desain Terpusat NOC (*NOC Design System Single Source of Truth*) (`pantau-noc.css`):**
+     - Menanamkan Modul 10 (Arsitektur Shell Tata Letak Baku & Bilah Lekat Terpadu) yang menjamin seluruh bilah lekat (*sticky bars*) kompatibel dengan viewport browser tanpa memicu pergeseran layout (*zero cumulative layout shift*).
+     - Menanamkan Modul 11 (Sistem Ambang Batas Metrik Resource Baku) yang memetakan ambang utilisasi CPU, RAM, dan Penyimpanan ke 4 tingkat keparahan insiden terstandarisasi: Normal (<70% Hijau), Peringatan (70-84% Kuning), Gawat (85-94% Oranye), dan Kritis (>=95% Merah beranimasi pulsa).
+     - Menanamkan Modul 12 (Sistem Tombol Aksi Mikro Universal 26x26px) yang menyatukan seluruh tombol kontrol dan tindakan tabel berbasis ikon tunggal, menghilangkan gaya inline hardcoded yang sebelumnya tersebar di berbagai template.
+  3. **Verifikasi Visual Empiris (Headless Chromium DevTools Protocol):**
+     - Pengujian komputasi bounding client rect dan visual screenshot membuktikan bilah kepala instansi dan bilah tab rincian server menempel presisi di bibir atas layar saat digulir vertikal, dengan kerapatan informasi tinggi (*high-density NOC*) yang adaptif terhadap skala pembesaran peramban (100%–175%).
+  4. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Sinkronisasi versi SemVer `4.8.140` pada 7 berkas inti repositori.
+     - Kompilasi sintaksis Python, template Jinja2, dan skrip instalasi Bash tervalidasi sukses.
+     - Distribusi agen klien ke `/opt/pantau/agent/agent_pantau.py` dan *restart* daemon layanan `pantau-server.service` serta `agent_pantau.service`.
+
 ## Versi 4.8.139
 
 - **Tipe Rilis:** Pemulihan Akar Masalah Posisi Lengket (Sticky) Antarmuka & Pembersihan Esensi Catatan Server NOC (*Root Cause Rectification of Interface Sticky Scroll Context & Elimination of Redundant Server Notes on Hero Bar*)

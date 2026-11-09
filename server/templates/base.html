@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.138' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.140' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -820,12 +820,24 @@ body{
   flex: 1;
   min-width: 0;
   margin-left: 230px;
-  padding: 12px 18px 24px 18px;
+  padding: 0;
   transition: margin-left .2s cubic-bezier(0.4,0,0.2,1);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   box-sizing: border-box;
+}
+.noc-content-body{
+  flex: 1;
+  padding: 12px 18px 24px 18px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 992px) {
+  .noc-content-body{
+    padding: 10px 12px 20px 12px;
+  }
 }
 .app-footer{margin-top:auto;text-align:center;padding:28px 0 16px;font-size:12px;color:var(--dim);opacity:0.8}
 .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:12px}
@@ -2573,7 +2585,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.139' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.140' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
@@ -2598,7 +2610,10 @@ body.show-alert-banner .main{padding-top:72px}
 </aside>
 
 <main class="main">
+{% block topbar %}{% endblock %}
+<div class="noc-content-body">
 {% block content %}{% endblock %}
+</div>
 <footer class="app-footer">
   &copy; 2026 Pantau-Server
 </footer>

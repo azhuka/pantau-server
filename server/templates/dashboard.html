@@ -1,5 +1,61 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - Pantau Server{% endblock %}
+{% block topbar %}
+{% if brand and brand.org_name %}
+<div class="dash-topbar-header">
+  <div class="dash-header-left">
+    <div class="dash-brand-logo-box">
+      {% if brand.logo_url %}
+      <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name }}" class="dash-header-logo">
+      {% else %}
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+        <path d="M2 17l10 5 10-5"></path>
+        <path d="M2 12l10 5 10-5"></path>
+      </svg>
+      {% endif %}
+    </div>
+    <div class="dash-header-divider"></div>
+    <div class="dash-brand-wrap">
+      <div class="dash-brand-org-name">{{ brand.org_name }}</div>
+      <div class="dash-brand-sub">
+        <span class="badge badge-blue dash-badge-app">PANTAU SERVER</span>
+        <span>{{ brand.org_unit or 'Bidang Aplikasi dan Informatika' }}</span>
+        {% if brand.show_motd and brand.dash_motd %}<span class="dash-motd-text" style="opacity:0.75">&middot; &ldquo;{{ brand.dash_motd }}&rdquo;</span>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="dash-header-right">
+    <button type="button" id="kioskToggleBtn" class="dash-topbar-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
+      <svg id="kioskIconEnter" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+      </svg>
+      <svg id="kioskIconExit" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+      </svg>
+    </button>
+  </div>
+</div>
+{% else %}
+<div class="dash-topbar-header">
+  <div>
+    <h2 style="font-size:18px">Dashboard</h2>
+    <div style="font-size:13px;color:var(--dim);margin-top:2px">Ringkasan kondisi terkini seluruh server klien &amp; metrik operasional terpusat.</div>
+  </div>
+  <div class="dash-header-right">
+    <button type="button" id="kioskToggleBtn" class="dash-topbar-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
+      <svg id="kioskIconEnter" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+      </svg>
+      <svg id="kioskIconExit" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+      </svg>
+    </button>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
 {% block content %}
 {% set g_th = global_thresholds or {} %}
 {% set cpu_w = (g_th.cpu_warn if g_th.cpu_warn is defined else 85.0) or 85.0 %}
@@ -716,18 +772,15 @@
   position: sticky;
   top: 0;
   z-index: 95;
-  background: var(--bg);
-  background-image: var(--bg-gradient);
-  background-attachment: fixed;
+  background: var(--card-bg, #101726);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: calc(100% + 36px);
-  margin-top: -12px;
-  margin-left: -18px;
-  margin-right: -18px;
+  width: 100%;
+  margin: 0 0 14px 0;
   padding: 10px 18px;
-  margin-bottom: 12px;
   border-bottom: 1px solid var(--border);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   box-sizing: border-box;
@@ -735,7 +788,8 @@
   transition: top .2s ease;
 }
 [data-theme="light"] .dash-topbar-header {
-  background: #f8fafc !important;
+  background: #ffffff !important;
+  border-bottom-color: rgba(0, 0, 0, 0.1) !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
 }
 body.show-alert-banner .dash-topbar-header {
@@ -744,18 +798,10 @@ body.show-alert-banner .dash-topbar-header {
 @media (max-width: 992px) {
   .dash-topbar-header {
     top: 48px;
+    padding: 8px 12px;
   }
   body.show-alert-banner .dash-topbar-header {
     top: 96px;
-  }
-}
-@media (max-width: 768px) {
-  .dash-topbar-header {
-    width: calc(100% + 20px);
-    margin-top: -10px;
-    margin-left: -10px;
-    margin-right: -10px;
-    padding: 8px 10px;
   }
 }
 .dash-header-left {
@@ -1090,60 +1136,6 @@ body.popout-fleet_table #dash-fleet-card {
   line-height: 1;
 }
 </style>
-
-{% if brand and brand.org_name %}
-<div class="dash-topbar-header">
-  <div class="dash-header-left">
-    <div class="dash-brand-logo-box">
-      {% if brand.logo_url %}
-      <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name }}" class="dash-header-logo">
-      {% else %}
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)">
-        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-        <path d="M2 17l10 5 10-5"></path>
-        <path d="M2 12l10 5 10-5"></path>
-      </svg>
-      {% endif %}
-    </div>
-    <div class="dash-header-divider"></div>
-    <div class="dash-brand-wrap">
-      <div class="dash-brand-org-name">{{ brand.org_name }}</div>
-      <div class="dash-brand-sub">
-        <span class="badge badge-blue dash-badge-app">PANTAU SERVER</span>
-        <span>{{ brand.org_unit or 'Bidang Aplikasi dan Informatika' }}</span>
-        {% if brand.show_motd and brand.dash_motd %}<span class="dash-motd-text" style="opacity:0.75">&middot; &ldquo;{{ brand.dash_motd }}&rdquo;</span>{% endif %}
-      </div>
-    </div>
-  </div>
-  <div class="dash-header-right">
-    <button type="button" id="kioskToggleBtn" class="dash-topbar-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
-      <svg id="kioskIconEnter" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-      </svg>
-      <svg id="kioskIconExit" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
-        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-      </svg>
-    </button>
-  </div>
-</div>
-{% else %}
-<div class="dash-topbar-header">
-  <div>
-    <h2 style="font-size:18px">Dashboard</h2>
-    <div style="font-size:13px;color:var(--dim);margin-top:2px">Ringkasan kondisi terkini seluruh server klien &amp; metrik operasional terpusat.</div>
-  </div>
-  <div class="dash-header-right">
-    <button type="button" id="kioskToggleBtn" class="dash-topbar-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
-      <svg id="kioskIconEnter" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-      </svg>
-      <svg id="kioskIconExit" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
-        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-      </svg>
-    </button>
-  </div>
-</div>
-{% endif %}
 
 {% if active_maintenance_count and active_maintenance_count > 0 %}
 <div class="dash-maintenance-banner" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);border-radius:6px;padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
