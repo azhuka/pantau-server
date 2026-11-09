@@ -9812,9 +9812,21 @@ if (ackEl) ackLive(ackEl.dataset.mode, ackEl.dataset.start === '1');
 })();
 
 // ---------- hardware / network / accounts ----------
-function pctBar(id, val) {
+function pctBar(id, val, warnTh = 85, dangerTh = 95) {
   const el = document.getElementById(id);
-  if (el) el.style.width = Math.max(0, Math.min(100, val || 0)) + '%';
+  if (!el) return;
+  const pct = Math.max(0, Math.min(100, val || 0));
+  el.style.width = pct + '%';
+  const avgTh = (warnTh + dangerTh) / 2;
+  if (pct >= dangerTh) {
+    el.style.background = 'var(--red)';
+  } else if (pct >= avgTh) {
+    el.style.background = 'var(--orange, #f97316)';
+  } else if (pct >= warnTh) {
+    el.style.background = 'var(--yellow)';
+  } else {
+    el.style.background = 'var(--green)';
+  }
 }
 
 function sparkline(elId, values, color, maxVal) {
@@ -9870,7 +9882,7 @@ function renderSys(data) {
 
   const cpu = sys.cpu;
   document.getElementById('sys-cpu').textContent = cpu.toFixed(1) + '%';
-  pctBar('sys-cpu-bar', cpu);
+  pctBar('sys-cpu-bar', cpu, 85, 95);
 
   const load1 = (sys.load1 !== null && sys.load1 !== undefined) ? sys.load1 : 0;
   document.getElementById('sys-load').textContent =
@@ -9878,13 +9890,13 @@ function renderSys(data) {
 
   const memPct = (sys.mem_total > 0) ? (sys.mem_used / sys.mem_total) * 100 : 0;
   document.getElementById('sys-mem').textContent = fmtBytes(sys.mem_used) + ' / ' + fmtBytes(sys.mem_total);
-  pctBar('sys-mem-bar', memPct);
+  pctBar('sys-mem-bar', memPct, 85, 95);
 
   const swapPct = (sys.swap_total > 0) ? (sys.swap_used / sys.swap_total) * 100 : 0;
   document.getElementById('sys-swap').textContent = (sys.swap_total > 0)
     ? fmtBytes(sys.swap_used) + ' / ' + fmtBytes(sys.swap_total)
     : (isEn ? 'none' : 'tidak ada');
-  pctBar('sys-swap-bar', swapPct);
+  pctBar('sys-swap-bar', swapPct, 80, 92);
 
   document.getElementById('sys-procs').textContent = sys.procs ?? '-';
   document.getElementById('sys-uptime').textContent = fmtUptime(sys.uptime);
@@ -10066,7 +10078,7 @@ function renderSys(data) {
     return '<tr><td class="mono"><strong>' + escHtml(d.mount) + '</strong></td><td class="mono">' + escHtml(d.type) + '</td>'
       + '<td>' + fmtBytes(d.used) + ' / ' + fmtBytes(d.total) + '</td>'
       + '<td><div class="meter"><div class="meter-bar" style="width:' + Math.min(100, d.pct) + '%;'
-      + (d.pct >= 90 ? 'background:var(--red)' : (d.pct >= 80 ? 'background:var(--yellow)' : '')) + '"></div></div>'
+      + (d.pct >= 95 ? 'background:var(--red)' : (d.pct >= 90 ? 'background:var(--orange, #f97316)' : (d.pct >= 85 ? 'background:var(--yellow)' : 'background:var(--green)'))) + '"></div></div>'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">'
       + '<span style="font-size:9.5px;color:var(--dim);font-weight:600">' + d.pct + '%</span>'
       + '</div>'

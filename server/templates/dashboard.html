@@ -510,6 +510,7 @@
 }
 .meter-mini-bar.green { background: #10b981; box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
 .meter-mini-bar.yellow { background: #f59e0b; box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
+.meter-mini-bar.orange { background: #f97316; box-shadow: 0 0 5px rgba(249, 115, 22, 0.5); }
 .meter-mini-bar.red { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.6); }
 
 /* Grid View NOC Tile Styles */
@@ -568,6 +569,7 @@
 }
 .meter-bar.green { background: var(--green, #10b981); }
 .meter-bar.yellow { background: var(--yellow, #f59e0b); }
+.meter-bar.orange { background: var(--orange, #f97316); }
 .meter-bar.red { background: var(--red, #ef4444); }
 
 @media (max-width: 1040px) {
@@ -707,12 +709,11 @@
 .dash-topbar-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 28px;
   height: 28px;
-  padding: 0 10px;
+  padding: 0;
   border-radius: var(--radius-sm, 4px);
-  font-size: 11.5px;
-  font-weight: 600;
   background: var(--card);
   border: 1px solid var(--border);
   color: var(--text);
@@ -999,13 +1000,12 @@ body.popout-fleet_table #dash-fleet-card {
   </div>
   <div class="dash-header-right">
     <button type="button" id="kioskToggleBtn" class="dash-topbar-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
-      <svg id="kioskIconEnter" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <svg id="kioskIconEnter" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
       </svg>
-      <svg id="kioskIconExit" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+      <svg id="kioskIconExit" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
         <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
       </svg>
-      <span>Layar Penuh</span>
     </button>
   </div>
 </div>
@@ -1017,13 +1017,12 @@ body.popout-fleet_table #dash-fleet-card {
   </div>
   <div class="dash-header-right">
     <button type="button" id="kioskToggleBtn" class="dash-topbar-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
-      <svg id="kioskIconEnter" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <svg id="kioskIconEnter" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
       </svg>
-      <svg id="kioskIconExit" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+      <svg id="kioskIconExit" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
         <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
       </svg>
-      <span>Layar Penuh</span>
     </button>
   </div>
 </div>
@@ -1356,22 +1355,25 @@ body.popout-fleet_table #dash-fleet-card {
         {% set g_th = global_thresholds or {} %}
         {% set cpu_w = g_th.cpu_warn if g_th.cpu_warn is defined else 85.0 %}
         {% set cpu_d = g_th.cpu_danger if g_th.cpu_danger is defined else 95.0 %}
+        {% set cpu_a = (cpu_w + cpu_d) / 2 %}
         {% set ram_w = g_th.ram_warn if g_th.ram_warn is defined else 85.0 %}
         {% set ram_d = g_th.ram_danger if g_th.ram_danger is defined else 95.0 %}
+        {% set ram_a = (ram_w + ram_d) / 2 %}
         {% set disk_w = g_th.disk_warn if g_th.disk_warn is defined else 90.0 %}
         {% set disk_d = g_th.disk_danger if g_th.disk_danger is defined else 95.0 %}
+        {% set disk_a = (disk_w + disk_d) / 2 %}
 
         {% set cpu_v = srv._cpu if srv._cpu is not none else -1 %}
-        {% set cpu_cls = 'red' if cpu_v >= cpu_d else ('yellow' if cpu_v >= cpu_w else 'green') %}
-        {% set cpu_color = 'var(--red)' if cpu_v >= cpu_d else ('var(--yellow)' if cpu_v >= cpu_w else ('var(--green)' if srv._cpu is not none else 'var(--dim)')) %}
+        {% set cpu_cls = 'red' if cpu_v >= cpu_d else ('orange' if cpu_v >= cpu_a else ('yellow' if cpu_v >= cpu_w else 'green')) %}
+        {% set cpu_color = 'var(--red)' if cpu_v >= cpu_d else ('var(--orange, #f97316)' if cpu_v >= cpu_a else ('var(--yellow)' if cpu_v >= cpu_w else ('var(--green)' if srv._cpu is not none else 'var(--dim)'))) %}
 
         {% set mem_v = srv._mem_pct if srv._mem_pct is not none else -1 %}
-        {% set mem_cls = 'red' if mem_v >= ram_d else ('yellow' if mem_v >= ram_w else 'green') %}
-        {% set mem_color = 'var(--red)' if mem_v >= ram_d else ('var(--yellow)' if mem_v >= ram_w else ('var(--green)' if srv._mem_pct is not none else 'var(--dim)')) %}
+        {% set mem_cls = 'red' if mem_v >= ram_d else ('orange' if mem_v >= ram_a else ('yellow' if mem_v >= ram_w else 'green')) %}
+        {% set mem_color = 'var(--red)' if mem_v >= ram_d else ('var(--orange, #f97316)' if mem_v >= ram_a else ('var(--yellow)' if mem_v >= ram_w else ('var(--green)' if srv._mem_pct is not none else 'var(--dim)'))) %}
 
         {% set disk_v = srv._disk_pct if srv._disk_pct is not none else -1 %}
-        {% set disk_cls = 'red' if disk_v >= disk_d else ('yellow' if disk_v >= disk_w else 'green') %}
-        {% set disk_color = 'var(--red)' if disk_v >= disk_d else ('var(--yellow)' if disk_v >= disk_w else ('var(--green)' if srv._disk_pct is not none else 'var(--dim)')) %}
+        {% set disk_cls = 'red' if disk_v >= disk_d else ('orange' if disk_v >= disk_a else ('yellow' if disk_v >= disk_w else 'green')) %}
+        {% set disk_color = 'var(--red)' if disk_v >= disk_d else ('var(--orange, #f97316)' if disk_v >= disk_a else ('var(--yellow)' if disk_v >= disk_w else ('var(--green)' if srv._disk_pct is not none else 'var(--dim)'))) %}
 
         {% set tot_svcs = (srv._svc_data or []) | length %}
         {% set up_svcs = (srv._svc_data or []) | selectattr('status', 'equalto', 'up') | list | length %}
@@ -1647,7 +1649,8 @@ body.popout-fleet_table #dash-fleet-card {
               {% set cpu_val = srv._cpu or 0 %}
               {% set cpu_limit_d = cpu_d if cpu_d is defined else 95.0 %}
               {% set cpu_limit_w = cpu_w if cpu_w is defined else 85.0 %}
-              {% set cpu_cls = 'red' if cpu_val >= cpu_limit_d else ('yellow' if cpu_val >= cpu_limit_w else 'green') %}
+              {% set cpu_limit_a = (cpu_limit_w + cpu_limit_d) / 2 %}
+              {% set cpu_cls = 'red' if cpu_val >= cpu_limit_d else ('orange' if cpu_val >= cpu_limit_a else ('yellow' if cpu_val >= cpu_limit_w else 'green')) %}
               <div class="meter-bar {{ cpu_cls }}" id="card-cpu-bar-{{ srv.id }}" style="width:{{ [cpu_val, 100]|min }}%"></div>
             </div>
           </div>
@@ -1661,7 +1664,8 @@ body.popout-fleet_table #dash-fleet-card {
               {% set ram_val = srv._mem_pct or 0 %}
               {% set ram_limit_d = ram_d if ram_d is defined else 95.0 %}
               {% set ram_limit_w = ram_w if ram_w is defined else 85.0 %}
-              {% set ram_cls = 'red' if ram_val >= ram_limit_d else ('yellow' if ram_val >= ram_limit_w else 'green') %}
+              {% set ram_limit_a = (ram_limit_w + ram_limit_d) / 2 %}
+              {% set ram_cls = 'red' if ram_val >= ram_limit_d else ('orange' if ram_val >= ram_limit_a else ('yellow' if ram_val >= ram_limit_w else 'green')) %}
               <div class="meter-bar {{ ram_cls }}" id="card-ram-bar-{{ srv.id }}" style="width:{{ [ram_val, 100]|min }}%"></div>
             </div>
           </div>
@@ -1998,7 +2002,9 @@ function getThreshold(val, type) {
     w = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.disk_warn != null) ? GLOBAL_THRESHOLDS.disk_warn : 90;
     d = (GLOBAL_THRESHOLDS && GLOBAL_THRESHOLDS.disk_danger != null) ? GLOBAL_THRESHOLDS.disk_danger : 95;
   }
+  const a = (w + d) / 2;
   if (val >= d) return { cls: 'red', color: 'var(--red)' };
+  if (val >= a) return { cls: 'orange', color: 'var(--orange, #f97316)' };
   if (val >= w) return { cls: 'yellow', color: 'var(--yellow)' };
   return { cls: 'green', color: 'var(--green)' };
 }

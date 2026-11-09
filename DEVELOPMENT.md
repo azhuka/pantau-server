@@ -354,6 +354,27 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.133
+
+- **Tipe Rilis:** Tombol Ikon Layar Penuh Mandiri & Harmonisasi 4 Tingkat Indikator Metrik Resource (*Autonomous Fullscreen Icon Button & 4-Tier Severity Metric Indicator Harmonization*)
+- **Fokus Utama:** Menyempurnakan antarmuka pengguna dashboard sesuai kaidah aplikasi profesional NOC dan menyelaraskan visual indikator resource dengan arsitektur penanganan insiden:
+  1. **Tombol Layar Penuh Mandiri Tanpa Label Teks (`dashboard.html`, `profile.html`):**
+     - Mengeliminasi label teks `<span>Layar Penuh</span>` yang mubazir pada tombol `#kioskToggleBtn`.
+     - Mereformasi tombol menjadi tombol ikon bujur sangkar presisi (`28px x 28px`) berstandar aplikasi monitoring modern (Grafana, Datadog, Zabbix) yang dilengkapi dengan `title` tooltip informatif dan atribut aksesibilitas `aria-label`.
+     - Menyelaraskan pratinjau header pada halaman profil (`profile.html`) agar tetap sinkron dan identik secara visual.
+  2. **Harmonisasi 4 Tingkat Indikator Metrik Resource (CPU, RAM, Storage):**
+     - Menyesuaikan representasi warna metrik penggunaan resource agar **100% selaras dengan 4 level severity insiden sistem**:
+       - **Hijau (`green` / Normal):** Nilai pemakaian berada di bawah batas peringatan (`< warn`).
+       - **Kuning (`yellow` / Peringatan / Warning):** Nilai pemakaian mencapai ambang batas peringatan (`>= warn` hingga `< average`).
+       - **Orange (`orange` / Gawat / Average):** Nilai pemakaian mencapai tingkat gawat (`>= average` hingga `< danger`), memicu respon operasional tingkat menengah.
+       - **Merah (`red` / Kritis / Danger):** Nilai pemakaian mencapai ambang batas bahaya (`>= danger`, default 95%), menandakan saturasi kritis.
+     - Mengimplementasikan CSS styling `.meter-mini-bar.orange` dan `.meter-bar.orange` dengan variabel global `--orange` (`#f97316` tema gelap, `#ea580c` tema terang).
+     - Menyelaraskan evaluasi threshold baik saat render server (Jinja) maupun pembaruan live WebSocket/polling (fungsi JavaScript `getThreshold(val, type)`).
+     - Menyelaraskan indikator pada halaman rincian server (`services.html`) untuk grafik batang ringkasan dan partisi penyimpanan.
+  3. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Menaikkan versi sistem menjadi `v4.8.133` secara serempak pada seluruh 7 berkas inti sistem.
+     - Lolos pengujian sintaksis Python `py_compile`, verifikasi Jinja 19 template, skrip Bash `bash -n`, serta verifikasi keaktifan layanan daemon pemantauan.
+
 ## Versi 4.8.132
 
 - **Tipe Rilis:** Rekonstruksi Dinamika Sasis Tabel Responsif Zoom & Eliminasi Ruang Kosong Buatan (*Zoom-Responsive Dynamic Table Chassis & Artificial Dead-Space Elimination*)
