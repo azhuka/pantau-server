@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.134
+
+- **Tipe Rilis:** Rekonstruksi Indikator Meter Baterai LED 10-Segmen (Ala Zabbix) & Resolusi Kontras Tema Terang (*10-Segment LED Battery Gauge Reconstruction & Light Theme Contrast Resolution*)
+- **Fokus Utama:** Menyelesaikan permasalahan jalur meter yang tidak terlihat pada tema terang serta merekonstruksi indikator metrik resource (CPU, RAM, Storage) dari bar tipis 6px menjadi indikator instrumen baterai LED 10-segmen berstandar Zabbix/NOC Enterprise:
+  1. **Resolusi Jalur Meter Hilang pada Tema Terang (`dashboard.html`):**
+     - Memperbaiki kontainer jalur meter yang sebelumnya menggunakan `rgba(255, 255, 255, 0.08)` tanpa aturan tema terang sehingga hilang menyatu dengan latar belakang putih (`#ffffff`), menyisakan titik piksel hijau mengambang saat penggunaan CPU/RAM rendah.
+     - Menerapkan kontainer kapsul berbezel tegas dengan latar belakang recessed (`#f1f5f9`) dan garis tepi terdefinisi (`#cbd5e1`) pada tema terang, serta latar belakang recessed gelap (`rgba(0, 0, 0, 0.55)`) dengan garis tepi `rgba(255, 255, 255, 0.16)` pada tema gelap.
+  2. **Indikator Meter Baterai LED 10-Segmen Berstandar Zabbix (`dashboard.html`):**
+     - Menggantikan garis meter kontinu flat 6px dengan instrumen baterai LED 10-segmen (`.meter-led-track` dan `.meter-led-seg`).
+     - Setiap segmen mewakili skala proporsional 10%, dengan segmentasi aktif berkilau sesuai level keparahan (`on-green`, `on-yellow`, `on-orange`, `on-red`) dan segmen inaktif transparan yang tetap terlihat jelas untuk memberikan skala visual instan.
+     - Menyelesaikan anomali titik 1px pada beban rendah (1.4% s.d. 8.7%): penggunaan di atas 0% menyalakan minimal 1 segmen LED solid yang presisi.
+     - Menyusun tata letak instrumen di sebelah kiri dan angka persentase di sebelah kanan (`[ ❚ ░ ░ ░ ░ ░ ░ ░ ░ ░ ] XX%`), menghasilkan barisan vertikal meter yang rapi dan konsisten di seluruh baris tabel dasbor.
+  3. **Perlindungan Kontras Grid View & Kompatibilitas Lanjutan:**
+     - Menambahkan aturan kontras eksplisit untuk jalur kartu grid `.meter-track` pada tema terang.
+     - Memperbarui fungsi `updateLedMeter()` dengan eksekusi instan tanpa beban render DOM berlebih.
+  4. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Menaikkan versi sistem menjadi `v4.8.134` secara serentak pada seluruh 7 berkas inti sistem.
+     - Lolos pengujian kompilasi Python `py_compile`, verifikasi 19 template Jinja, dan skrip Bash `bash -n`.
+
 ## Versi 4.8.133
 
 - **Tipe Rilis:** Tombol Ikon Layar Penuh Mandiri & Harmonisasi 4 Tingkat Indikator Metrik Resource (*Autonomous Fullscreen Icon Button & 4-Tier Severity Metric Indicator Harmonization*)

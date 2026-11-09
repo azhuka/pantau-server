@@ -492,16 +492,92 @@
   font-weight: normal;
 }
 
-/* Mini Progress Meters with Thresholds: 1-50% Green, 51-70% Yellow, 71-100% Red */
+/* 10-Segment LED Battery Gauge (Zabbix-Style) */
+.meter-led-track {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 68px;
+  height: 12px;
+  padding: 2px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  gap: 2px;
+  box-sizing: border-box;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+[data-theme="light"] .meter-led-track {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.meter-led-seg {
+  flex: 1;
+  height: 100%;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background-color .2s ease, box-shadow .2s ease;
+}
+[data-theme="light"] .meter-led-seg {
+  background: rgba(0, 0, 0, 0.09);
+}
+.meter-led-seg.on-green {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+  box-shadow: 0 0 2px rgba(16, 185, 129, 0.5);
+}
+.meter-led-seg.on-yellow {
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+  box-shadow: 0 0 2px rgba(245, 158, 11, 0.5);
+}
+.meter-led-seg.on-orange {
+  background: linear-gradient(180deg, #fb923c 0%, #ea580c 100%);
+  box-shadow: 0 0 2px rgba(249, 115, 22, 0.5);
+}
+.meter-led-seg.on-red {
+  background: linear-gradient(180deg, #f87171 0%, #ef4444 100%);
+  box-shadow: 0 0 3px rgba(239, 68, 68, 0.6);
+}
+[data-theme="light"] .meter-led-seg.on-green {
+  background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+  box-shadow: none;
+}
+[data-theme="light"] .meter-led-seg.on-yellow {
+  background: linear-gradient(180deg, #eab308 0%, #a16207 100%);
+  box-shadow: none;
+}
+[data-theme="light"] .meter-led-seg.on-orange {
+  background: linear-gradient(180deg, #f97316 0%, #c2410c 100%);
+  box-shadow: none;
+}
+[data-theme="light"] .meter-led-seg.on-red {
+  background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
+  box-shadow: none;
+}
+
+#dash-server-table.tbl-compact .meter-led-track {
+  height: 9px !important;
+  width: 54px !important;
+  gap: 1.5px !important;
+  padding: 1.5px !important;
+}
+
+/* Mini Progress Meters with Thresholds: Kompatibilitas Lanjutan */
 .meter-mini-track {
   width: 58px;
   height: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 3px;
   overflow: hidden;
   display: inline-block;
   vertical-align: middle;
+}
+[data-theme="light"] .meter-mini-track {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
 }
 .meter-mini-bar {
   height: 100%;
@@ -555,12 +631,17 @@
   opacity: .85;
 }
 .meter-track {
-  height: 5px;
-  background: rgba(255, 255, 255, 0.07);
+  height: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
   overflow: hidden;
   position: relative;
   margin-top: 3px;
+}
+[data-theme="light"] .meter-track {
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
 }
 .meter-bar {
   height: 100%;
@@ -1366,14 +1447,20 @@ body.popout-fleet_table #dash-fleet-card {
         {% set cpu_v = srv._cpu if srv._cpu is not none else -1 %}
         {% set cpu_cls = 'red' if cpu_v >= cpu_d else ('orange' if cpu_v >= cpu_a else ('yellow' if cpu_v >= cpu_w else 'green')) %}
         {% set cpu_color = 'var(--red)' if cpu_v >= cpu_d else ('var(--orange, #f97316)' if cpu_v >= cpu_a else ('var(--yellow)' if cpu_v >= cpu_w else ('var(--green)' if srv._cpu is not none else 'var(--dim)'))) %}
+        {% set cpu_lit = 0 if cpu_v <= 0 else (1 if cpu_v < 5 else ((cpu_v / 10)|round|int)) %}
+        {% set cpu_lit = 10 if cpu_lit > 10 else cpu_lit %}
 
         {% set mem_v = srv._mem_pct if srv._mem_pct is not none else -1 %}
         {% set mem_cls = 'red' if mem_v >= ram_d else ('orange' if mem_v >= ram_a else ('yellow' if mem_v >= ram_w else 'green')) %}
         {% set mem_color = 'var(--red)' if mem_v >= ram_d else ('var(--orange, #f97316)' if mem_v >= ram_a else ('var(--yellow)' if mem_v >= ram_w else ('var(--green)' if srv._mem_pct is not none else 'var(--dim)'))) %}
+        {% set mem_lit = 0 if mem_v <= 0 else (1 if mem_v < 5 else ((mem_v / 10)|round|int)) %}
+        {% set mem_lit = 10 if mem_lit > 10 else mem_lit %}
 
         {% set disk_v = srv._disk_pct if srv._disk_pct is not none else -1 %}
         {% set disk_cls = 'red' if disk_v >= disk_d else ('orange' if disk_v >= disk_a else ('yellow' if disk_v >= disk_w else 'green')) %}
         {% set disk_color = 'var(--red)' if disk_v >= disk_d else ('var(--orange, #f97316)' if disk_v >= disk_a else ('var(--yellow)' if disk_v >= disk_w else ('var(--green)' if srv._disk_pct is not none else 'var(--dim)'))) %}
+        {% set disk_lit = 0 if disk_v <= 0 else (1 if disk_v < 5 else ((disk_v / 10)|round|int)) %}
+        {% set disk_lit = 10 if disk_lit > 10 else disk_lit %}
 
         {% set tot_svcs = (srv._svc_data or []) | length %}
         {% set up_svcs = (srv._svc_data or []) | selectattr('status', 'equalto', 'up') | list | length %}
@@ -1451,15 +1538,17 @@ body.popout-fleet_table #dash-fleet-card {
             {{ srv._uptime_str if srv._uptime_str and srv._uptime_str != '—' else '-' }}
           </td>
 
-          <!-- 5. CPU (%) dengan Visual Mini Meter Bar Terbuka & Jelas -->
+          <!-- 5. CPU (%) dengan Visual 10-Segment LED Battery Gauge (Ala Zabbix) -->
           <td class="col-dash-cpu" id="tbl-cpu-td-{{ srv.id }}" data-sort-val="{{ cpu_v }}" style="text-align:center;vertical-align:middle" title="CPU: {{ srv._cpu ~ '%' if srv._cpu is not none else '-' }} ({{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }})">
             {% if srv._cpu is not none %}
               <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
                 <div style="display:inline-flex;align-items:center;gap:7px">
-                  <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="font-size:12px;color:{{ cpu_color }};min-width:44px;text-align:right">{{ srv._cpu ~ '%' }}</strong>
-                  <div class="meter-mini-track" title="CPU: {{ srv._cpu }}%">
-                    <div class="meter-mini-bar {{ cpu_cls }}" id="tbl-cpu-bar-{{ srv.id }}" style="width:{{ [srv._cpu or 0, 100]|min }}%"></div>
+                  <div class="meter-led-track" id="tbl-cpu-track-{{ srv.id }}" title="CPU: {{ srv._cpu }}%">
+                    {% for i in range(10) %}
+                      <span class="meter-led-seg{% if i < cpu_lit %} on-{{ cpu_cls }}{% endif %}"></span>
+                    {% endfor %}
                   </div>
+                  <strong class="mono" id="tbl-cpu-val-{{ srv.id }}" style="font-size:12px;color:{{ cpu_color }};min-width:44px;text-align:left">{{ srv._cpu ~ '%' }}</strong>
                 </div>
                 <div class="mono tbl-metric-subline" id="tbl-cpu-core-{{ srv.id }}" style="font-size:10px;color:var(--dim);line-height:1.15">
                   {{ srv._cpu_cores_str if (srv.last_seen and srv._cpu_cores_str and srv._cpu_cores_str != '—') else '-' }}
@@ -1471,15 +1560,17 @@ body.popout-fleet_table #dash-fleet-card {
             {% endif %}
           </td>
 
-          <!-- 6. RAM (%) dengan Visual Mini Meter Bar Terbuka & Jelas -->
+          <!-- 6. RAM (%) dengan Visual 10-Segment LED Battery Gauge (Ala Zabbix) -->
           <td class="col-dash-ram" id="tbl-mem-td-{{ srv.id }}" data-sort-val="{{ mem_v }}" style="text-align:center;vertical-align:middle" title="RAM: {{ srv._mem_pct ~ '%' if srv._mem_pct is not none else '-' }} ({{ srv._mem_used_str if srv._mem_used_str and srv._mem_used_str != '—' else '-' }} / {{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }})">
             {% if srv._mem_pct is not none %}
               <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
                 <div style="display:inline-flex;align-items:center;gap:7px">
-                  <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="font-size:12px;color:{{ mem_color }};min-width:44px;text-align:right">{{ srv._mem_pct ~ '%' }}</strong>
-                  <div class="meter-mini-track" title="RAM: {{ srv._mem_pct }}%">
-                    <div class="meter-mini-bar {{ mem_cls }}" id="tbl-mem-bar-{{ srv.id }}" style="width:{{ [srv._mem_pct or 0, 100]|min }}%"></div>
+                  <div class="meter-led-track" id="tbl-mem-track-{{ srv.id }}" title="RAM: {{ srv._mem_pct }}%">
+                    {% for i in range(10) %}
+                      <span class="meter-led-seg{% if i < mem_lit %} on-{{ mem_cls }}{% endif %}"></span>
+                    {% endfor %}
                   </div>
+                  <strong class="mono" id="tbl-mem-val-{{ srv.id }}" style="font-size:12px;color:{{ mem_color }};min-width:44px;text-align:left">{{ srv._mem_pct ~ '%' }}</strong>
                 </div>
                 <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
                   <span id="tbl-mem-used-{{ srv.id }}">{{ srv._mem_used_str if srv._mem_used_str and srv._mem_used_str != '—' else '-' }}</span> / <span id="tbl-mem-tot-{{ srv.id }}">{{ srv._mem_total_str if srv._mem_total_str and srv._mem_total_str != '—' else '-' }}</span>
@@ -1493,15 +1584,17 @@ body.popout-fleet_table #dash-fleet-card {
             {% endif %}
           </td>
 
-          <!-- 7. STORAGE (%) dengan Visual Mini Meter Bar Terbuka & Jelas -->
+          <!-- 7. STORAGE (%) dengan Visual 10-Segment LED Battery Gauge (Ala Zabbix) -->
           <td class="col-dash-disk" id="tbl-disk-td-{{ srv.id }}" data-sort-val="{{ disk_v }}" style="text-align:center;vertical-align:middle" title="Storage: {{ srv._disk_pct ~ '%' if srv._disk_pct is not none else '-' }} ({{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}, Sisa: {{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }})">
             {% if srv._disk_pct is not none %}
               <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
                 <div style="display:inline-flex;align-items:center;gap:7px">
-                  <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="font-size:12px;color:{{ disk_color }};min-width:44px;text-align:right">{{ srv._disk_pct ~ '%' }}</strong>
-                  <div class="meter-mini-track" style="width:68px" title="Storage: {{ srv._disk_pct }}%">
-                    <div class="meter-mini-bar {{ disk_cls }}" id="tbl-disk-bar-{{ srv.id }}" style="width:{{ [srv._disk_pct or 0, 100]|min }}%"></div>
+                  <div class="meter-led-track" id="tbl-disk-track-{{ srv.id }}" title="Storage: {{ srv._disk_pct }}%">
+                    {% for i in range(10) %}
+                      <span class="meter-led-seg{% if i < disk_lit %} on-{{ disk_cls }}{% endif %}"></span>
+                    {% endfor %}
                   </div>
+                  <strong class="mono" id="tbl-disk-val-{{ srv.id }}" style="font-size:12px;color:{{ disk_color }};min-width:44px;text-align:left">{{ srv._disk_pct ~ '%' }}</strong>
                 </div>
                 <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
                   <span id="tbl-disk-tot-{{ srv.id }}">{{ srv._disk_total_str if srv._disk_total_str and srv._disk_total_str != '—' else '-' }}</span> (Sisa <span id="tbl-disk-avail-{{ srv.id }}">{{ srv._disk_avail_str if srv._disk_avail_str and srv._disk_avail_str != '—' else '-' }}</span>)
@@ -2009,6 +2102,27 @@ function getThreshold(val, type) {
   return { cls: 'green', color: 'var(--green)' };
 }
 
+// 1b. Helper Pembaruan Indikator LED 10-Segmen (Zabbix-Style Battery Gauge)
+function updateLedMeter(trackEl, pct, cls) {
+  if (!trackEl) return;
+  const val = (pct != null && !isNaN(pct) && pct >= 0) ? pct : 0;
+  let lit = 0;
+  if (val > 0 && val < 5) {
+    lit = 1;
+  } else if (val >= 5) {
+    lit = Math.min(10, Math.round(val / 10));
+  }
+  const segs = trackEl.children;
+  const onCls = 'meter-led-seg on-' + cls;
+  const offCls = 'meter-led-seg';
+  for (let i = 0; i < 10; i++) {
+    if (segs[i]) {
+      segs[i].className = (i < lit) ? onCls : offCls;
+    }
+  }
+  trackEl.title = (pct != null) ? pct.toFixed(1) + '%' : '-';
+}
+
 // 2. Layout Switching (Default: 'table', Alternative: 'grid')
 function setDashboardView(view) {
   const isTable = view === 'table';
@@ -2267,10 +2381,10 @@ function createAndAppendDashTableRow(srv, tbody) {
     <td class="col-dash-cpu" id="tbl-cpu-td-${srv.id}" style="text-align:center;vertical-align:middle">
       <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
         <div style="display:inline-flex;align-items:center;gap:7px">
-          <strong class="mono" id="tbl-cpu-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:right">-</strong>
-          <div class="meter-mini-track">
-            <div class="meter-mini-bar green" id="tbl-cpu-bar-${srv.id}" style="width:0%"></div>
+          <div class="meter-led-track" id="tbl-cpu-track-${srv.id}" title="-">
+            <span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span>
           </div>
+          <strong class="mono" id="tbl-cpu-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:left">-</strong>
         </div>
         <div class="mono tbl-metric-subline" id="tbl-cpu-core-${srv.id}" style="font-size:10px;color:var(--dim);line-height:1.15">-</div>
       </div>
@@ -2278,10 +2392,10 @@ function createAndAppendDashTableRow(srv, tbody) {
     <td class="col-dash-ram" id="tbl-mem-td-${srv.id}" style="text-align:center;vertical-align:middle">
       <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
         <div style="display:inline-flex;align-items:center;gap:7px">
-          <strong class="mono" id="tbl-mem-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:right">-</strong>
-          <div class="meter-mini-track">
-            <div class="meter-mini-bar green" id="tbl-mem-bar-${srv.id}" style="width:0%"></div>
+          <div class="meter-led-track" id="tbl-mem-track-${srv.id}" title="-">
+            <span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span>
           </div>
+          <strong class="mono" id="tbl-mem-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:left">-</strong>
         </div>
         <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
           <span id="tbl-mem-used-${srv.id}">-</span> / <span id="tbl-mem-tot-${srv.id}">-</span>
@@ -2291,10 +2405,10 @@ function createAndAppendDashTableRow(srv, tbody) {
     <td class="col-dash-disk" id="tbl-disk-td-${srv.id}" style="text-align:center;vertical-align:middle">
       <div class="tbl-metric-box" style="display:flex;flex-direction:column;align-items:center;gap:3px">
         <div style="display:inline-flex;align-items:center;gap:7px">
-          <strong class="mono" id="tbl-disk-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:right">-</strong>
-          <div class="meter-mini-track" style="width:68px">
-            <div class="meter-mini-bar green" id="tbl-disk-bar-${srv.id}" style="width:0%"></div>
+          <div class="meter-led-track" id="tbl-disk-track-${srv.id}" title="-">
+            <span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span><span class="meter-led-seg"></span>
           </div>
+          <strong class="mono" id="tbl-disk-val-${srv.id}" style="font-size:12px;min-width:44px;text-align:left">-</strong>
         </div>
         <div class="mono tbl-metric-subline" style="font-size:10px;color:var(--dim);line-height:1.15;white-space:nowrap">
           <span id="tbl-disk-tot-${srv.id}">-</span> (Sisa <span id="tbl-disk-avail-${srv.id}">-</span>)
@@ -2538,6 +2652,7 @@ async function pollNocDashboard() {
 
       // Processor: CPU
       const tblCpuVal = document.getElementById('tbl-cpu-val-' + srv.id);
+      const tblCpuTrack = document.getElementById('tbl-cpu-track-' + srv.id);
       const tblCpuBar = document.getElementById('tbl-cpu-bar-' + srv.id);
       const tblCpuCore = document.getElementById('tbl-cpu-core-' + srv.id);
       const tblCpuTd = document.getElementById('tbl-cpu-td-' + srv.id);
@@ -2546,15 +2661,20 @@ async function pollNocDashboard() {
           const th = getThreshold(srv.cpu, 'cpu');
           tblCpuVal.textContent = srv.cpu.toFixed(1) + '%';
           tblCpuVal.style.color = th.color;
+          if (tblCpuTrack) updateLedMeter(tblCpuTrack, srv.cpu, th.cls);
+          if (tblCpuBar) {
+            tblCpuBar.style.width = Math.min(srv.cpu, 100) + '%';
+            tblCpuBar.className = 'meter-mini-bar ' + th.cls;
+          }
         } else {
           tblCpuVal.textContent = '-';
           tblCpuVal.style.color = 'var(--dim)';
+          if (tblCpuTrack) updateLedMeter(tblCpuTrack, null, 'green');
+          if (tblCpuBar) {
+            tblCpuBar.style.width = '0%';
+            tblCpuBar.className = 'meter-mini-bar green';
+          }
         }
-      }
-      if (tblCpuBar && srv.cpu != null) {
-        const th = getThreshold(srv.cpu, 'cpu');
-        tblCpuBar.style.width = Math.min(srv.cpu, 100) + '%';
-        tblCpuBar.className = 'meter-mini-bar ' + th.cls;
       }
       const coreStr = (srv.cpu_cores && srv.cpu_cores !== '—') ? srv.cpu_cores : '-';
       if (tblCpuCore) {
@@ -2568,6 +2688,7 @@ async function pollNocDashboard() {
       const tblMemTot = document.getElementById('tbl-mem-tot-' + srv.id);
       const tblMemUsed = document.getElementById('tbl-mem-used-' + srv.id);
       const tblMemVal = document.getElementById('tbl-mem-val-' + srv.id);
+      const tblMemTrack = document.getElementById('tbl-mem-track-' + srv.id);
       const tblMemBar = document.getElementById('tbl-mem-bar-' + srv.id);
       const tblMemTd = document.getElementById('tbl-mem-td-' + srv.id);
       if (tblMemVal) {
@@ -2575,15 +2696,20 @@ async function pollNocDashboard() {
           const th = getThreshold(srv.mem_pct, 'mem');
           tblMemVal.textContent = srv.mem_pct.toFixed(1) + '%';
           tblMemVal.style.color = th.color;
+          if (tblMemTrack) updateLedMeter(tblMemTrack, srv.mem_pct, th.cls);
+          if (tblMemBar) {
+            tblMemBar.style.width = Math.min(srv.mem_pct, 100) + '%';
+            tblMemBar.className = 'meter-mini-bar ' + th.cls;
+          }
         } else {
           tblMemVal.textContent = '-';
           tblMemVal.style.color = 'var(--dim)';
+          if (tblMemTrack) updateLedMeter(tblMemTrack, null, 'green');
+          if (tblMemBar) {
+            tblMemBar.style.width = '0%';
+            tblMemBar.className = 'meter-mini-bar green';
+          }
         }
-      }
-      if (tblMemBar && srv.mem_pct != null) {
-        const th = getThreshold(srv.mem_pct, 'mem');
-        tblMemBar.style.width = Math.min(srv.mem_pct, 100) + '%';
-        tblMemBar.className = 'meter-mini-bar ' + th.cls;
       }
       const memUsedStr = (srv.mem_used_str && srv.mem_used_str !== '—') ? srv.mem_used_str : '-';
       const memTotStr = (srv.mem_total_str && srv.mem_total_str !== '—') ? srv.mem_total_str : '-';
@@ -2597,6 +2723,7 @@ async function pollNocDashboard() {
       const tblDiskTot = document.getElementById('tbl-disk-tot-' + srv.id);
       const tblDiskAvail = document.getElementById('tbl-disk-avail-' + srv.id);
       const tblDiskVal = document.getElementById('tbl-disk-val-' + srv.id);
+      const tblDiskTrack = document.getElementById('tbl-disk-track-' + srv.id);
       const tblDiskBar = document.getElementById('tbl-disk-bar-' + srv.id);
       const tblDiskTd = document.getElementById('tbl-disk-td-' + srv.id);
       if (tblDiskVal) {
@@ -2604,15 +2731,20 @@ async function pollNocDashboard() {
           const th = getThreshold(srv.disk_pct, 'disk');
           tblDiskVal.textContent = srv.disk_pct.toFixed(1) + '%';
           tblDiskVal.style.color = th.color;
+          if (tblDiskTrack) updateLedMeter(tblDiskTrack, srv.disk_pct, th.cls);
+          if (tblDiskBar) {
+            tblDiskBar.style.width = Math.min(srv.disk_pct, 100) + '%';
+            tblDiskBar.className = 'meter-mini-bar ' + th.cls;
+          }
         } else {
           tblDiskVal.textContent = '-';
           tblDiskVal.style.color = 'var(--dim)';
+          if (tblDiskTrack) updateLedMeter(tblDiskTrack, null, 'green');
+          if (tblDiskBar) {
+            tblDiskBar.style.width = '0%';
+            tblDiskBar.className = 'meter-mini-bar green';
+          }
         }
-      }
-      if (tblDiskBar && srv.disk_pct != null) {
-        const th = getThreshold(srv.disk_pct, 'disk');
-        tblDiskBar.style.width = Math.min(srv.disk_pct, 100) + '%';
-        tblDiskBar.className = 'meter-mini-bar ' + th.cls;
       }
       const diskTotStr = (srv.disk_total_str && srv.disk_total_str !== '—') ? srv.disk_total_str : '-';
       const diskAvailStr = (srv.disk_avail_str && srv.disk_avail_str !== '—') ? srv.disk_avail_str : '-';
