@@ -194,16 +194,16 @@
   </div>
   <div id="ll-empty" class="empty-msg" style="display:none">Belum ada aktivitas login atau sudo untuk user ini.</div>
   <div id="ll-scroll" style="{% if initial_logins and initial_logins|length > 0 %}display:block;{% else %}display:none;{% endif %}overflow-x:auto;border:1px solid var(--border);border-radius:6px">
-    <table id="ll-table">
+    <table id="ll-table" class="noc-table-dense">
       <thead>
         <tr>
-          <th style="width:130px;min-width:125px" title="Waktu aktivitas (arahkan kursor untuk rincian lengkap)">Waktu</th>
-          <th style="width:85px;min-width:85px">Pengguna</th>
-          <th style="width:115px;min-width:115px">Jenis</th>
-          <th style="width:130px;min-width:130px">Terminal</th>
-          <th style="width:125px;min-width:125px">Sumber (IP)</th>
-          <th style="width:150px;min-width:150px">Direktori (PWD)</th>
-          <th>Perintah</th>
+          <th class="col-fixed-cell" style="width:130px;min-width:125px" title="Waktu aktivitas (arahkan kursor untuk rincian lengkap)">Waktu</th>
+          <th class="col-fixed-cell" style="width:85px;min-width:85px">Pengguna</th>
+          <th class="col-fixed-cell" style="width:115px;min-width:115px">Jenis</th>
+          <th class="col-fixed-cell" style="width:130px;min-width:130px">Terminal</th>
+          <th class="col-fixed-cell" style="width:125px;min-width:125px">Sumber (IP)</th>
+          <th class="col-fixed-cell" style="width:150px;min-width:150px">Direktori (PWD)</th>
+          <th class="col-hero-cell">Perintah</th>
         </tr>
       </thead>
       <tbody></tbody>

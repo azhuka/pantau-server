@@ -415,3 +415,127 @@ table.noc-table tbody tr:hover td.col-act,
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+/* =============================================================================
+   8. SASIS VISUAL TABEL GLOBAL (UNIFIED NOC TABLE CHASSIS TOKENS)
+   ============================================================================= */
+/* Keluarga 1: Tabel Berdensitas Tinggi (Fleet, Systemd, Ports, Mounts, Incidents) */
+table.noc-table-dense {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+table.noc-table-dense th,
+table.noc-table-dense td {
+  padding: 4px 8px;
+  font-size: 11px;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+table.noc-table-dense th {
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--dim);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+table.noc-table-dense tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.035);
+  transition: background 0.12s ease;
+}
+table.noc-table-dense tbody tr:hover {
+  background: var(--card-hover, rgba(255, 255, 255, 0.035));
+}
+
+/* Keluarga 2: Tabel Terstruktur Ringkas (Users, Cron, SSL, Maintenance, Audit) */
+table.noc-table-compact {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+table.noc-table-compact th,
+table.noc-table-compact td {
+  padding: 7px 12px;
+  font-size: 11.5px;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+table.noc-table-compact th {
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--dim);
+  border-bottom: 1px solid var(--border);
+}
+table.noc-table-compact tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.035);
+  transition: background 0.12s ease;
+}
+table.noc-table-compact tbody tr:hover {
+  background: var(--card-hover, rgba(255, 255, 255, 0.035));
+}
+
+/* Token Utilitas Kolom Baku */
+.col-fixed-cell,
+th.col-fixed-cell,
+td.col-fixed-cell {
+  width: 1% !important;
+  white-space: nowrap !important;
+}
+.col-hero-cell,
+th.col-hero-cell,
+td.col-hero-cell {
+  width: auto !important;
+  min-width: 180px;
+  word-break: break-word;
+  line-height: 1.35;
+}
+.col-num-cell,
+th.col-num-cell,
+td.col-num-cell {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-align: right !important;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums;
+}
+.col-center-cell,
+th.col-center-cell,
+td.col-center-cell {
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+/* Token Tombol Mikro Aksi Tabel */
+.tbl-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+.tbl-action-btn:hover {
+  background: var(--card-hover);
+  color: var(--text-bright);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.tbl-action-btn.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+.tbl-action-btn.btn-success:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}

@@ -1939,15 +1939,15 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
     <div style="overflow-x:auto">
-      <table id="disks-table" style="width:100%">
+      <table id="disks-table" class="noc-table-dense" style="width:100%">
         <thead>
           <tr>
-            <th>Mount</th>
-            <th>Tipe</th>
-            <th>Terpakai</th>
-            <th style="width:28%" title="Persentase pemakaian ruang dan proyeksi kapasitas penyimpanan (Runway 24j)">Pemakaian &amp; Estimasi Laju</th>
-            <th title="Kecepatan baca dan tulis disk saat ini">Laju I/O (R / W)</th>
-            <th title="Persentase utilisasi waktu aktif disk (I/O util)">Util I/O</th>
+            <th class="col-hero-cell">Mount</th>
+            <th class="col-fixed-cell">Tipe</th>
+            <th class="col-fixed-cell col-num-cell">Terpakai</th>
+            <th class="col-hero-cell" title="Persentase pemakaian ruang dan proyeksi kapasitas penyimpanan (Runway 24j)">Pemakaian &amp; Estimasi Laju</th>
+            <th class="col-fixed-cell col-num-cell" title="Kecepatan baca dan tulis disk saat ini">Laju I/O (R / W)</th>
+            <th class="col-fixed-cell col-center-cell" title="Persentase utilisasi waktu aktif disk (I/O util)">Util I/O</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -2582,26 +2582,26 @@ div[style*="position: fixed"] .card {
 
   <!-- Tabel Unit Systemd -->
   <div class="table-wrap" id="sysd-table-wrap" style="overflow-x:auto">
-    <table class="table" id="tbl-systemd" style="width:100%;margin:0">
+    <table class="table noc-table-dense" id="tbl-systemd" style="width:100%;margin:0">
       <thead>
         <tr>
-          <th style="width:95px;min-width:90px;text-align:center;cursor:pointer" onclick="toggleSysdSort('status')" title="Klik untuk mengurutkan Status">
+          <th class="col-center-cell" style="cursor:pointer" onclick="toggleSysdSort('status')" title="Klik untuk mengurutkan Status">
             Status <span id="sysd-sort-status" style="font-size:10px;opacity:0.6">↕</span>
           </th>
-          <th style="width:200px;min-width:180px;cursor:pointer" onclick="toggleSysdSort('name')" title="Klik untuk mengurutkan Nama Unit">
+          <th class="col-fixed-cell" style="cursor:pointer" onclick="toggleSysdSort('name')" title="Klik untuk mengurutkan Nama Unit">
             Nama Unit <span id="sysd-sort-name" style="font-size:10px;opacity:0.6">↕</span>
           </th>
-          <th style="width:85px;min-width:80px;text-align:center;cursor:pointer" onclick="toggleSysdSort('boot')" title="Klik untuk mengurutkan Status Boot">
+          <th class="col-center-cell" style="cursor:pointer" onclick="toggleSysdSort('boot')" title="Klik untuk mengurutkan Status Boot">
             Boot <span id="sysd-sort-boot" style="font-size:10px;opacity:0.6">↕</span>
           </th>
-          <th style="width:85px;min-width:80px;text-align:center;cursor:pointer" onclick="toggleSysdSort('sub')" title="Klik untuk mengurutkan Sub-State">
+          <th class="col-center-cell" style="cursor:pointer" onclick="toggleSysdSort('sub')" title="Klik untuk mengurutkan Sub-State">
             Sub-State <span id="sysd-sort-sub" style="font-size:10px;opacity:0.6">↕</span>
           </th>
-          <th style="width:95px;min-width:90px;text-align:right;cursor:pointer" onclick="toggleSysdSort('memory')" title="Klik untuk mengurutkan Penggunaan Memori">
+          <th class="col-num-cell" style="cursor:pointer" onclick="toggleSysdSort('memory')" title="Klik untuk mengurutkan Penggunaan Memori">
             Memori <span id="sysd-sort-memory" style="font-size:10px;opacity:0.6">↕</span>
           </th>
-          <th style="min-width:180px;max-width:280px">Deskripsi</th>
-          <th class="col-act" style="width:220px;min-width:220px;text-align:center">Tindakan</th>
+          <th class="col-hero-cell">Deskripsi</th>
+          <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
         </tr>
       </thead>
       <tbody id="sysd-tbody">
@@ -2859,15 +2859,15 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
     <div style="overflow-x:auto" id="cron-table-wrap" style="display:{{ 'block' if (cron_jobs and cron_jobs.jobs) else 'none' }}">
-      <table id="cron-table">
+      <table id="cron-table" class="noc-table-compact" style="width:100%">
         <thead>
           <tr>
-            <th style="width:32px">Status</th>
-            <th title="Jadwal waktu eksekusi dalam format cron (menit jam tgl bln hari)">Jadwal (Cron Expression)</th>
-            <th title="Pengguna Linux yang menjalankan perintah">Pengguna</th>
-            <th title="Perintah atau skrip yang dieksekusi">Perintah (Command)</th>
-            <th title="Lokasi berkas konfigurasi cron pada server">Sumber Berkas</th>
-            <th class="col-act" style="width:120px;text-align:center">Tindakan</th>
+            <th class="col-fixed-cell col-center-cell">Status</th>
+            <th class="col-fixed-cell" title="Jadwal waktu eksekusi dalam format cron (menit jam tgl bln hari)">Jadwal (Cron)</th>
+            <th class="col-fixed-cell" title="Pengguna Linux yang menjalankan perintah">Pengguna</th>
+            <th class="col-hero-cell" title="Perintah atau skrip yang dieksekusi">Perintah (Command)</th>
+            <th class="col-fixed-cell" title="Lokasi berkas konfigurasi cron pada server">Sumber Berkas</th>
+            <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -3416,15 +3416,15 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
     <div style="overflow-x:auto" id="ports-wrap" style="display:{{ 'block' if listening_ports else 'none' }}">
-      <table id="ports-table" style="min-width:750px;width:100%">
+      <table id="ports-table" class="noc-table-dense" style="min-width:750px;width:100%">
         <thead>
           <tr>
-            <th data-col-title="Protokol" style="width:75px;min-width:70px" title="Protokol jaringan (TCP atau UDP)">Protokol</th>
-            <th data-col-title="Port" style="width:85px;min-width:75px" title="Nomor port jaringan yang terbuka">Port</th>
-            <th data-col-title="Bind IP" style="width:130px;min-width:115px" title="Alamat IP yang di-bind oleh socket">Bind IP</th>
-            <th data-col-title="Akses" style="width:150px;min-width:135px" title="Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)">Akses</th>
-            <th data-col-title="Proses &amp; PID" style="min-width:180px" title="Nama proses sistem dan PID yang membuka port ini">Proses &amp; PID</th>
-            <th class="col-act" data-col-title="Tindakan" style="width:125px;min-width:115px;text-align:center" title="Tindakan yang dapat dilakukan pada port ini">Tindakan</th>
+            <th class="col-fixed-cell col-center-cell" data-col-title="Protokol" title="Protokol jaringan (TCP atau UDP)">Protokol</th>
+            <th class="col-fixed-cell" data-col-title="Port" title="Nomor port jaringan yang terbuka">Port</th>
+            <th class="col-fixed-cell" data-col-title="Bind IP" title="Alamat IP yang di-bind oleh socket">Bind IP</th>
+            <th class="col-fixed-cell" data-col-title="Akses" title="Cakupan akses: Publik (terbuka ke jaringan luar) atau Lokal (loopback)">Akses</th>
+            <th class="col-hero-cell" data-col-title="Proses &amp; PID" title="Nama proses sistem dan PID yang membuka port ini">Proses &amp; PID</th>
+            <th class="col-fixed-cell col-act" data-col-title="Tindakan" style="text-align:center" title="Tindakan yang dapat dilakukan pada port ini">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -3501,16 +3501,16 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
     <div style="overflow-x:auto" id="ssl-wrap" style="display:{{ 'block' if ssl_certs else 'none' }}">
-      <table id="ssl-table">
+      <table id="ssl-table" class="noc-table-compact" style="width:100%">
         <thead>
           <tr>
-            <th title="Domain atau Subdomain yang dilindungi oleh sertifikat">Domain / Subjek</th>
-            <th title="Otoritas penerbit sertifikat (Certificate Authority)">Penerbit (CA)</th>
-            <th title="Batas waktu akhir masa berlaku sertifikat">Kedaluwarsa Pada</th>
-            <th title="Sisa hari sebelum sertifikat habis masa berlakunya">Sisa Hari</th>
-            <th title="Status kesehatan sertifikat">Status</th>
-            <th title="Lokasi berkas sertifikat di filesystem server">Lokasi Berkas</th>
-            <th class="col-act" style="width:105px;text-align:center">Tindakan</th>
+            <th class="col-hero-cell" title="Domain atau Subdomain yang dilindungi oleh sertifikat">Domain / Subjek</th>
+            <th class="col-fixed-cell" title="Otoritas penerbit sertifikat (Certificate Authority)">Penerbit (CA)</th>
+            <th class="col-fixed-cell" title="Batas waktu akhir masa berlaku sertifikat">Kedaluwarsa Pada</th>
+            <th class="col-fixed-cell col-num-cell" title="Sisa hari sebelum sertifikat habis masa berlakunya">Sisa Hari</th>
+            <th class="col-fixed-cell col-center-cell" title="Status kesehatan sertifikat">Status</th>
+            <th class="col-fixed-cell" title="Lokasi berkas sertifikat di filesystem server">Lokasi Berkas</th>
+            <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
           </tr>
         </thead>
         <tbody>

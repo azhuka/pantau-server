@@ -479,7 +479,7 @@
   
   <div id="prob-table-wrapper" style="overflow-x:auto">
     {% if open_problems %}
-    <table id="probtable" style="width:100%;min-width:980px;border-collapse:collapse">
+    <table id="probtable" class="noc-table-dense" style="width:100%;min-width:980px;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
           <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Waktu saat insiden mulai terdeteksi">WAKTU MULAI</th>
@@ -729,7 +729,7 @@
 
   {% if recent_resolved %}
   <div style="overflow-x:auto" id="prob-resolved-table-wrap">
-    <table style="width:100%;margin:0;border-collapse:collapse">
+    <table class="noc-table-dense" style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border)">
           <th class="col-time-detailed" style="color:var(--dim);text-align:left;white-space:nowrap;padding:7px 12px" title="Waktu insiden mulai terdeteksi hingga berhasil teratasi">Waktu</th>
@@ -1477,7 +1477,7 @@ window.poll = async function(opts = {}) {
       } else {
         let table = document.getElementById('probtable');
         if (!table) {
-          wrapper.innerHTML = `<table id="probtable" style="width:100%;min-width:980px;border-collapse:collapse">
+          wrapper.innerHTML = `<table id="probtable" class="noc-table-dense" style="width:100%;min-width:980px;border-collapse:collapse">
             <thead>
               <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
                 <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden mulai terdeteksi'}">${isEn ? 'START TIME' : 'WAKTU MULAI'}</th>

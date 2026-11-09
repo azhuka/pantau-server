@@ -354,6 +354,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.131
+
+- **Tipe Rilis:** Standarisasi Sasis Visual Tabel Global & Penyelarasan Tata Letak Lintas Halaman (*Global Table Chassis Standardization & Cross-Page Visual Alignment*)
+- **Fokus Utama:** Menetapkan dan menerapkan aturan visual tabel baku berskala global pada seluruh modul aplikasi, mengeliminasi metode tambal sulam parsial, serta menyelaraskan kepadatan dan estetika NOC di seluruh halaman:
+  1. **Fondasi Desain Sasis Tabel Global (`pantau-noc.css`):**
+     - Membakukan 2 keluarga tabel utama:
+       - `table.noc-table-dense`: Untuk tabel telemetri berdensitas tinggi dengan banyak kolom (Fleet Server, Insiden, Systemd, Partisi Disk, Port Jaringan). Menggunakan `table-layout: auto`, padding sel 4px 8px, font 11px, dan hover transisi halus.
+       - `table.noc-table-compact`: Untuk tabel terstruktur ringkas dengan kolom terfokus (Pengguna, Cron Job, Sertifikat SSL, Jendela Pemeliharaan, Audit, Basis Data). Menggunakan padding sel 7px 12px dan font 11.5px.
+     - Membakukan token utilitas kolom:
+       - `.col-fixed-cell`: Penguncian lebar presisi (`width: 1% !important; white-space: nowrap !important;`) untuk status, ID, waktu, dan aksi sehingga sel tidak meregang berlebihan.
+       - `.col-hero-cell`: Kolom utama adaptif (`width: auto !important; min-width: 180px; word-break: break-word;`) yang menyerap ruang sisa dan menjamin keterbacaan deskripsi/pesan.
+       - `.col-num-cell`: Tipografi angka tabular monospasi rata kanan.
+       - `.tbl-action-btn`: Standardisasi tombol mikro aksi 24px × 24px dengan transisi semantik (*danger*, *success*, *default*).
+  2. **Penyelarasan Menyeluruh di Seluruh Modul (`audit.html`, `services.html`, `profile.html`, `servers.html`, `problems.html`, `users.html`, `user_activity.html`, `maintenance.html`, `master_control.html`):**
+     - Menerapkan token sasis tabel pada seluruh tabel aplikasi, menggantikan gaya inline ad-hoc dan mencegah distorsi layout pada monitor lebar.
+     - Memperbaiki kartu pratinjau branding dasbor pada halaman profil agar identik dengan Topbar baru.
+  3. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Menaikkan versi sistem menjadi `v4.8.131` secara serentak pada 7 berkas inti sistem.
+     - Lolos uji kompilasi Jinja2, sintaksis Python `py_compile`, skrip shell `bash -n`, serta restart layanan daemon `pantau-server` dan `agent_pantau`.
+
 ## Versi 4.8.130
 
 - **Tipe Rilis:** Rekonstruksi Topbar Header Terpadu NOC, Integrasi Tombol Layar Penuh & Pemadatan Spasi Global (*Unified Full-Width Topbar Header, Integrated Wallboard Button & Global Spacing Densification*)

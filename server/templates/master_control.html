@@ -74,22 +74,22 @@
       <span class="badge badge-muted" style="font-size:10px;">Engine: InnoDB (UTF8MB4)</span>
     </div>
     <div style="overflow-x:auto;">
-      <table class="table table-dense" style="width:100%;font-size:11.5px;">
+      <table class="noc-table-compact" style="width:100%;font-size:11.5px;">
         <thead>
           <tr style="border-bottom:1px solid var(--border);">
-            <th style="text-align:left;padding:6px 8px;">Nama Tabel</th>
-            <th style="text-align:right;padding:6px 8px;">Estimasi Baris</th>
-            <th style="text-align:right;padding:6px 8px;">Ukuran (Data + Indeks)</th>
-            <th style="text-align:right;padding:6px 8px;">Persentase</th>
+            <th class="col-hero-cell" style="text-align:left;padding:6px 8px;">Nama Tabel</th>
+            <th class="col-num-cell" style="text-align:right;padding:6px 8px;">Estimasi Baris</th>
+            <th class="col-num-cell" style="text-align:right;padding:6px 8px;">Ukuran (Data + Indeks)</th>
+            <th class="col-num-cell" style="text-align:right;padding:6px 8px;">Persentase</th>
           </tr>
         </thead>
         <tbody>
           {% for t in db_status.tables %}
           <tr style="border-bottom:1px solid var(--border-subtle);">
-            <td style="padding:5px 8px;font-family:var(--font-mono);font-weight:600;color:var(--text);">{{ t.table }}</td>
-            <td style="padding:5px 8px;text-align:right;font-family:var(--font-mono);color:var(--text-muted);">{{ "{:,}".format(t.rows) }}</td>
-            <td style="padding:5px 8px;text-align:right;font-family:var(--font-mono);font-weight:600;color:var(--text);">{{ t.size_mb }} MB</td>
-            <td style="padding:5px 8px;text-align:right;font-family:var(--font-mono);color:var(--text-muted);">
+            <td class="col-hero-cell" style="padding:5px 8px;font-family:var(--font-mono);font-weight:600;color:var(--text);">{{ t.table }}</td>
+            <td class="col-num-cell" style="padding:5px 8px;text-align:right;font-family:var(--font-mono);color:var(--text-muted);">{{ "{:,}".format(t.rows) }}</td>
+            <td class="col-num-cell" style="padding:5px 8px;text-align:right;font-family:var(--font-mono);font-weight:600;color:var(--text);">{{ t.size_mb }} MB</td>
+            <td class="col-num-cell" style="padding:5px 8px;text-align:right;font-family:var(--font-mono);color:var(--text-muted);">
               {% if db_status.total_size_mb > 0 %}
                 {{ ((t.size_mb / db_status.total_size_mb) * 100)|round(1) }}%
               {% else %}

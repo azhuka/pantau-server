@@ -324,14 +324,14 @@
       </div>
 
       <div style="overflow-x:auto">
-        <table id="users-table" style="width:100%;border-collapse:collapse;font-size:11px">
+        <table id="users-table" class="noc-table-compact" style="width:100%;border-collapse:collapse">
           <thead>
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:var(--dim);text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">
-              <th style="padding:7px 12px;font-weight:600;white-space:nowrap;min-width:120px">Pengguna</th>
-              <th style="padding:7px 12px;font-weight:600;white-space:nowrap;min-width:90px">Peran</th>
-              <th style="padding:7px 12px;font-weight:600;white-space:nowrap;min-width:110px">Status &amp; 2FA</th>
-              <th style="padding:7px 12px;font-weight:600;white-space:nowrap;min-width:120px">Login Terakhir</th>
-              <th class="col-act" style="padding:7px 12px;text-align:right;font-weight:600;white-space:nowrap;min-width:200px">Tindakan</th>
+            <tr>
+              <th class="col-hero-cell">Pengguna</th>
+              <th class="col-fixed-cell">Peran</th>
+              <th class="col-fixed-cell">Status &amp; 2FA</th>
+              <th class="col-fixed-cell">Login Terakhir</th>
+              <th class="col-fixed-cell col-act" style="text-align:right">Tindakan</th>
             </tr>
           </thead>
           <tbody>
@@ -785,31 +785,40 @@
         </h3>
         <p style="font-size:11.5px;color:var(--dim);margin-bottom:14px">Simulasi susunan identitas organisasi dan pengumuman pada dashboard utama.</p>
 
-        <div style="background:var(--card-bg-subtle, var(--bg));border:1px solid var(--border);border-radius:8px;padding:22px 16px;text-align:center">
-          <div style="position:relative;display:inline-flex;flex-direction:column;justify-content:space-between;text-align:center;height:56px;max-width:calc(100% - 140px)">
-            <div id="prev-dash-logo-box" style="position:absolute;right:calc(100% + 14px);top:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;flex-shrink:0">
-              {% if brand and brand.logo_url %}
-              <img src="{{ brand.logo_url }}" alt="Logo" style="height:100%;max-height:56px;max-width:110px;width:auto;object-fit:contain">
-              {% else %}
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);filter:drop-shadow(0 0 8px rgba(56,189,248,0.4))">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                <path d="M2 17l10 5 10-5"></path>
-                <path d="M2 12l10 5 10-5"></path>
-              </svg>
-              {% endif %}
+        <div style="background:var(--card-bg-subtle, var(--bg));border:1px solid var(--border);border-radius:8px;padding:12px 16px;text-align:left">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+              <div id="prev-dash-logo-box" style="display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                {% if brand and brand.logo_url %}
+                <img src="{{ brand.logo_url }}" alt="Logo" style="max-height:36px;max-width:70px;width:auto;object-fit:contain">
+                {% else %}
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                  <path d="M2 17l10 5 10-5"></path>
+                  <path d="M2 12l10 5 10-5"></path>
+                </svg>
+                {% endif %}
+              </div>
+              <div style="width:1px;height:28px;background:var(--border);flex-shrink:0"></div>
+              <div style="display:flex;flex-direction:column;justify-content:center;min-width:0">
+                <div id="prev-dash-org" style="font-size:12.5px;font-weight:700;color:var(--text-bright);letter-spacing:0.25px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                  {{ brand.org_name if brand and brand.org_name else '(Nama Organisasi)' }}
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--dim);line-height:1.2;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                  <span class="badge badge-blue" style="font-size:8px;padding:1px 5px;font-weight:700;letter-spacing:0.5px">PANTAU SERVER</span>
+                  <span id="prev-dash-unit">{{ brand.org_unit if brand and brand.org_unit else 'Bidang Aplikasi dan Informatika' }}</span>
+                  <span id="prev-dash-motd" style="color:var(--blue);font-weight:500;{% if not (brand and brand.show_motd and brand.dash_motd) %}display:none{% endif %}">
+                    &middot; &ldquo;{{ brand.dash_motd if brand and brand.dash_motd else '' }}&rdquo;
+                  </span>
+                </div>
+              </div>
             </div>
-            <div class="dash-brand-title" style="font-size:16px;font-weight:800;letter-spacing:1.2px;color:var(--text-heading, #fff);text-transform:uppercase;line-height:1;margin:0">PANTAU SERVER</div>
-            <div id="prev-dash-org" style="font-size:13px;font-weight:700;color:var(--text);letter-spacing:0.2px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">
-              {{ brand.org_name if brand and brand.org_name else '(Nama Organisasi)' }}
-            </div>
-            <div id="prev-dash-unit" style="font-size:11px;color:var(--dim);font-style:italic;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;{% if not brand or not brand.org_unit %}display:none{% endif %}">
-              {{ brand.org_unit if brand and brand.org_unit else '' }}
+            <div style="display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 8px;border-radius:4px;font-size:11px;font-weight:600;background:var(--card);border:1px solid var(--border);color:var(--text);flex-shrink:0">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>
+              <span>Layar Penuh</span>
             </div>
           </div>
-          <div id="prev-dash-motd" style="font-size:12px;color:var(--blue);font-weight:500;margin-top:8px;{% if not (brand and brand.show_motd and brand.dash_motd) %}display:none{% endif %}">
-            (&ldquo;{{ brand.dash_motd if brand and brand.dash_motd else '' }}&rdquo;)
-          </div>
-          <div id="prev-motd-hidden-notice" style="margin-top:12px;font-size:11px;color:var(--dim);display:{% if brand and not brand.show_motd %}block{% else %}none{% endif %}">
+          <div id="prev-motd-hidden-notice" style="margin-top:8px;font-size:10.5px;color:var(--dim);display:{% if brand and not brand.show_motd %}block{% else %}none{% endif %}">
             <em>Pengumuman disembunyikan (Toggle Tampilan nonaktif).</em>
           </div>
         </div>
