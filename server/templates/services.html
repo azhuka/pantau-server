@@ -1652,15 +1652,15 @@ div[style*="position: fixed"] .card {
   {% set active_open = open_problems | rejectattr('is_ignored') | list %}
   {% set ignored_open = open_problems | selectattr('is_ignored') | list %}
   <button class="tab" data-tab="masalah" role="tab" id="tab-masalah-btn" data-i18n="tab_masalah"><span class="tab-text">Insiden</span> <span class="badge badge-{{ pmeta[problem_level][1] if (active_open and problem_level in pmeta) else 'muted' }}" id="tab-masalah-badge" style="display:{{ 'inline-block' if open_problems else 'none' }};margin-left:4px;font-size:10px;padding:1px 5px">{% if active_open %}{{ active_open|length }}{% elif ignored_open %}{{ ignored_open|length }}{% else %}0{% endif %}</span></button>
-  <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Services</span></button>
-  <button class="tab" data-tab="packages" role="tab" id="tab-packages-btn"><span class="tab-text">Packages</span>{% if apt_upgradable and apt_upgradable > 0 %} <span class="badge badge-warn" id="tab-packages-badge" style="margin-left:4px;font-size:10px;padding:1px 5px">{{ apt_upgradable }}</span>{% endif %}</button>
-  <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Tasks</span></button>
-  <button class="tab" data-tab="akun" role="tab" id="tab-akun-btn" data-i18n="tab_akun"><span class="tab-text">Users</span></button>
-  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn" data-i18n="tab_ports"><span class="tab-text">Ports</span></button>
+  <button class="tab" data-tab="layanan" role="tab" id="tab-layanan-btn" data-i18n="tab_layanan"><span class="tab-text">Layanan</span></button>
+  <button class="tab" data-tab="packages" role="tab" id="tab-packages-btn"><span class="tab-text">Paket OS</span>{% if apt_upgradable and apt_upgradable > 0 %} <span class="badge badge-warn" id="tab-packages-badge" style="margin-left:4px;font-size:10px;padding:1px 5px">{{ apt_upgradable }}</span>{% endif %}</button>
+  <button class="tab" data-tab="proses" role="tab" id="tab-proses-btn" data-i18n="tab_proses"><span class="tab-text">Proses</span></button>
+  <button class="tab" data-tab="akun" role="tab" id="tab-akun-btn" data-i18n="tab_akun"><span class="tab-text">Pengguna</span></button>
+  <button class="tab" data-tab="ports" role="tab" id="tab-ports-btn" data-i18n="tab_ports"><span class="tab-text">Port</span></button>
   <button class="tab" data-tab="firewall" role="tab" id="tab-firewall-btn" data-i18n="tab_firewall"><span class="tab-text">Firewall</span></button>
   <button class="tab" data-tab="ssl" role="tab" id="tab-ssl-btn" data-i18n="tab_ssl"><span class="tab-text">SSL/TLS</span></button>
-  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn" data-i18n="tab_cron"><span class="tab-text">Cron Jobs</span></button>
-  <button class="tab" data-tab="log" role="tab" id="tab-log-btn" data-i18n="tab_logging"><span class="tab-text">Logs</span></button>
+  <button class="tab" data-tab="cron" role="tab" id="tab-cron-btn" data-i18n="tab_cron"><span class="tab-text">Cron Job</span></button>
+  <button class="tab" data-tab="log" role="tab" id="tab-log-btn" data-i18n="tab_logging"><span class="tab-text">Log</span></button>
 </div>
 
 <div class="tab-body" id="tab-perf">
@@ -3588,9 +3588,9 @@ div[style*="position: fixed"] .card {
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <h3 style="margin:0;display:flex;align-items:center;gap:8px">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-        <span>Logging</span>
+        <span>Log Aktivitas Server</span>
       </h3>
-      <!-- Sub-view switcher modern: Log Layanan vs Log Sistem -->
+      <!-- Sub-view switcher: Log Layanan vs Log Sistem -->
       <div class="segmented-control" id="logging-sub-ctrl" style="margin-left:4px">
         <button type="button" class="btn btn-sm is-on" id="btn-sublog-svc" onclick="switchLoggingView('svc')">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -3604,26 +3604,71 @@ div[style*="position: fixed"] .card {
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span id="log-state" style="font-size:12px;color:var(--dim)"></span>
-      <button type="button" class="btn btn-ghost btn-sm" id="log-dl-btn" onclick="downloadLog()" title="Unduh log sebagai file .txt" aria-label="Unduh Log" style="display:none">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" id="log-dl-btn" onclick="downloadLog()" title="Unduh log sebagai berkas teks (.txt)" aria-label="Unduh Log" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
       </button>
     </div>
   </div>
 
   <!-- Sub-Panel 1: Log Layanan (Unit/Service) -->
   <div id="sublog-panel-svc" style="padding:10px 14px 14px">
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px">
-      <label style="font-size:12px;color:var(--dim);align-self:center">Unit:</label>
-      <select id="log-unit" onchange="changeUnit()" style="min-width:220px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
-        <option value="">— memuat —</option>
-      </select>
-      <label style="font-size:12px;color:var(--dim);align-self:center">Baris:</label>
-      <input type="number" id="log-lines" value="200" min="10" max="2000" onchange="changeUnit()"
-             style="width:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
-    </div>
-    <div style="margin-bottom:8px">
-      <input type="search" id="log-filter" placeholder="Cari di log… (filter baris)" oninput="filterLog(this.value)"
-             style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
+    <!-- Bilah Filter Log Terpadu & Rapi (Single-Row Unified NOC Filter Bar) -->
+    <div class="pantau-filter-panel" style="margin-bottom:10px;padding:8px 12px">
+      <div class="filter-row-main" style="align-items:flex-end;gap:10px;display:flex;flex-wrap:wrap">
+        <!-- 1. Dropdown Unit Layanan -->
+        <div class="filter-col" style="flex:1.2;min-width:210px;max-width:340px">
+          <label class="filter-col-label" for="log-unit">Unit Layanan</label>
+          <select id="log-unit" class="filter-select" onchange="changeUnit()" style="width:100%;font-size:12px;padding:5px 8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:5px">
+            {% set seen_units = [] %}
+            {% if services %}
+              {% for s in services %}
+                {% set u_val = s.service_name or s.process_name %}
+                {% if u_val and u_val not in seen_units %}
+                  {% set _ = seen_units.append(u_val) %}
+                  <option value="{{ u_val }}">{{ u_val }}</option>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+            {% if systemd_units %}
+              {% for u in systemd_units %}
+                {% set u_name = u.name if (u is mapping and 'name' in u) else u %}
+                {% if u_name and u_name not in seen_units %}
+                  {% set _ = seen_units.append(u_name) %}
+                  <option value="{{ u_name }}">{{ u_name }}</option>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+            {% if not seen_units %}
+              <option value="">— Memuat unit layanan… —</option>
+            {% endif %}
+          </select>
+        </div>
+
+        <!-- 2. Jumlah Baris Log -->
+        <div class="filter-col" style="width:110px">
+          <label class="filter-col-label" for="log-lines">Jml Baris</label>
+          <select id="log-lines" class="filter-select" onchange="changeUnit()" style="width:100%;font-size:12px;padding:5px 8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:5px">
+            <option value="50">50 Baris</option>
+            <option value="100">100 Baris</option>
+            <option value="200" selected>200 Baris</option>
+            <option value="500">500 Baris</option>
+            <option value="1000">1000 Baris</option>
+          </select>
+        </div>
+
+        <!-- 3. Pencarian / Filter Baris Teks -->
+        <div class="filter-col" style="flex:2;min-width:220px">
+          <label class="filter-col-label" for="log-filter">Filter Baris Log</label>
+          <input type="search" id="log-filter" class="filter-input" placeholder="Ketik kata kunci untuk memfilter baris log…" oninput="filterLog(this.value)" style="width:100%;font-size:12px;padding:5px 10px;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:5px">
+        </div>
+
+        <!-- 4. Tombol Segarkan / Refresh Log -->
+        <div class="filter-col" style="display:flex;align-items:flex-end">
+          <button type="button" class="btn btn-ghost btn-noc-icon" onclick="changeUnit()" title="Segarkan Data Log" aria-label="Segarkan Log" style="height:28px;width:28px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          </button>
+        </div>
+      </div>
     </div>
     <div id="log-empty" class="empty-msg" style="display:none">Menunggu data log dari Agen Pantau…</div>
     <pre id="log-pre" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12px;font-family:monospace;line-height:1.55;height:55vh;overflow:auto;white-space:pre-wrap;word-break:break-all;color:var(--text);display:none;margin:0"></pre>
@@ -9870,7 +9915,8 @@ function sparkline(elId, values, color, maxVal) {
 
 function syncUnits(units, extras) {
   const sel = document.getElementById('log-unit');
-  const current = new Set(Array.from(sel.options).map(o => o.value));
+  if (!sel) return false;
+  const current = new Set(Array.from(sel.options).map(o => o.value).filter(Boolean));
   let changed = false;
   const add = (u) => {
     if (!u || current.has(u)) return;
@@ -9882,6 +9928,14 @@ function syncUnits(units, extras) {
   };
   (extras || []).forEach(add);
   (units || []).forEach(add);
+  if (current.size > 0) {
+    for (let i = sel.options.length - 1; i >= 0; i--) {
+      if (!sel.options[i].value) {
+        sel.remove(i);
+        changed = true;
+      }
+    }
+  }
   return changed;
 }
 

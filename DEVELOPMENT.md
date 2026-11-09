@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.141
+
+- **Tipe Rilis:** Standardisasi Bilah Filter Log Terpadu & Eliminasi Teks Memuat Gantung (*Unified Log Filter Bar Standardization & Dangling Loading Text Elimination*)
+- **Fokus Utama:** Menyempurnakan tata letak panel Log Aktivitas Server (`services.html`) sesuai prinsip kepadatan data NOC (*high density*) dan kepatuhan Bahasa Indonesia baku:
+  1. **Bilah Filter Log Terpadu Satu Baris (*Single-Row Unified NOC Filter Bar*):**
+     - Menggabungkan selektor Unit Layanan, dropdown Jumlah Baris Log (50, 100, 200, 500, 1000 baris), masukan Pencarian / Filter Baris Teks, dan Tombol Segarkan data log ke dalam satu bilah kontainer `.pantau-filter-panel` yang sejajar, rapi, dan responsif.
+     - Mengeliminasi tata letak terpecah dua baris yang sebelumnya memakan ruang vertikal secara boros (~38px ruang vertikal berhasil dihemat).
+  2. **Eliminasi Teks Memuat Gantung (*Elimination of Stuck Loading State*):**
+     - Opsi Unit Layanan (`#log-unit`) kini langsung dirender oleh backend (server-side Jinja) dari daftar `services` dan `systemd_units` yang terdata di server.
+     - Fungsi `syncUnits` JavaScript diperbarui agar secara cerdas dan otomatis membersihkan opsi placeholder kosong (`— Memuat unit layanan… —`) ketika opsi unit valid tersedia, mencegah dropdown terhenti pada teks memuat.
+  3. **Lokalisasi Bahasa Indonesia Baku pada Tabbar Detail Server:**
+     - Menstandarisasi seluruh label tab rincian server: "Services" menjadi "Layanan", "Packages" menjadi "Paket OS", "Tasks" menjadi "Proses", "Users" menjadi "Pengguna", "Ports" menjadi "Port", "Cron Jobs" menjadi "Cron Job", "Logs" menjadi "Log", serta judul kartu menjadi "Log Aktivitas Server".
+  4. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Sinkronisasi versi SemVer `4.8.141` pada 7 berkas inti repositori.
+     - Kompilasi sintaksis Python, template Jinja2, dan skrip instalasi Bash tervalidasi sukses.
+     - Distribusi agen klien ke `/opt/pantau/agent/agent_pantau.py` dan *restart* daemon layanan `pantau-server.service` serta `agent_pantau.service`.
+
 ## Versi 4.8.140
 
 - **Tipe Rilis:** Transformasi Arsitektur Shell Tata Letak Baku, Eliminasi Total Tambal Sulam Margin Negatif & Penguatan Sistem Desain NOC (*Architectural Shell Transformation, Elimination of Negative Margin Hacks & NOC Design System Fortification*)
