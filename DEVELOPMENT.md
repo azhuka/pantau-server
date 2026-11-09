@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.139
+
+- **Tipe Rilis:** Pemulihan Akar Masalah Posisi Lengket (Sticky) Antarmuka & Pembersihan Esensi Catatan Server NOC (*Root Cause Rectification of Interface Sticky Scroll Context & Elimination of Redundant Server Notes on Hero Bar*)
+- **Fokus Utama:** Menyelesaikan akar penyebab kegagalan posisi lekat (*position: sticky*) pada peramban modern serta mengembalikan kepatuhan prinsip kepadatan informasi NOC pada baris meta server:
+  1. **Pemulihan Akar Masalah Konteks Pengguliran Lekat (`base.html`):**
+     - Mengidentifikasi dan memperbaiki akar masalah pada deklarasi global `html, body { overflow-x: hidden; }` yang memicu peramban (Chromium/Gecko/WebKit) mengkonversi `overflow-y` menjadi `auto` sehingga mematikan konteks pengguliran dokumen jendela (*window viewport*) untuk seluruh elemen turunan berposisi lekat (*position: sticky*).
+     - Mengubah deklarasi menjadi `html, body { overflow-x: clip; }` sesuai standar CSS Overflow Module Level 3, sehingga luapan horizontal tetap terpotong rapi tanpa membentuk wadah penggulir (*scroll container*) baru dan memulihkan fungsi lekat 100% pada seluruh peramban.
+     - Terverifikasi secara empiris via pengujian Chromium headless DevTools Protocol bahwa bilah kepala dasbor (`.dash-topbar-header`) dan bilah tab rincian server (`#detail-tabs.tabbar`) menempel kokoh pada posisi `top: 0` saat halaman digulir vertikal.
+  2. **Kompensasi Responsif Bilah Lengket Mobile (`dashboard.html` & `services.html`):**
+     - Menambahkan aturan kueri media `@media (max-width: 992px)` dengan offset otomatis `top: 48px` (dan `top: 96px` saat spanduk insiden darurat aktif) agar bilah kepala dasbor dan bilah tab rincian server tidak tertumpuk di balik bilah kepala navigasi mobile (`.mob-header`).
+  3. **Pembersihan Esensi Catatan Server dari Bilah Meta Utama (`services.html`):**
+     - Menghapus chip teks catatan bebas (`#hero-notes-preview`) dari bilah metadata hero server (`.hero-meta-bar`) yang sebelumnya memicu kerancuan operator terhadap status sistem real-time.
+     - Mempertahankan pengelolaan penuh catatan server pada kartu khusus catatan di tab Performa (`#server-notes-card`) dan daftar inventaris server (`servers.html`), menjaga baris hero tetap bersih, berdensitas tinggi, dan hanya memuat telemetri esensial NOC (IP, OS, isolasi jaringan, tag).
+  4. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Sinkronisasi versi SemVer `4.8.139` pada 7 berkas inti repositori.
+     - Uji kompilasi sintaksis Python, template Jinja2, dan skrip instalasi Bash.
+     - Distribusi agen klien ke `/opt/pantau/agent/agent_pantau.py` dan *restart* daemon layanan `pantau-server.service` serta `agent_pantau.service`.
+
 ## Versi 4.8.138
 
 - **Tipe Rilis:** Header Dasbor & Tab Rincian Lengket Vertikal serta Penataan Penuh Catatan Server (*Sticky Dashboard Header & Server Detail Tabbar plus Full Server Note Display*)

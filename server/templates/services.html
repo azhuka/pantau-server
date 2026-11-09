@@ -786,6 +786,14 @@
 body.show-alert-banner .tabbar {
   top: 48px !important;
 }
+@media (max-width: 992px) {
+  .tabbar {
+    top: 48px !important;
+  }
+  body.show-alert-banner .tabbar {
+    top: 96px !important;
+  }
+}
 [data-theme="light"] .tabbar {
   background: #ffffff !important;
   border-color: rgba(0, 0, 0, 0.12) !important;
@@ -1472,12 +1480,6 @@ div[style*="position: fixed"] .card {
               </span>
             {% endif %}
           {% endfor %}
-        {% endif %}
-        {% if server.notes %}
-        <span id="hero-notes-preview" class="hero-notes-chip" onclick="showTab('perf'); focusServerNotes();">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-          <span id="hero-notes-text">{{ server.notes | replace('\n', ' ') }}</span>
-        </span>
         {% endif %}
       </div>
     </div>
@@ -10990,29 +10992,10 @@ function focusServerNotes() {
 }
 
 function updateHeroNotes(notes) {
-  let heroChip = document.getElementById('hero-notes-preview');
-  const heroBar = document.querySelector('.hero-meta-bar');
-  if (notes && notes.trim()) {
-    const cleanOneLine = notes.replace(/\n+/g, ' ').trim();
-    if (!heroChip && heroBar) {
-      heroChip = document.createElement('span');
-      heroChip.id = 'hero-notes-preview';
-      heroChip.className = 'hero-notes-chip';
-      heroChip.onclick = () => { showTab('perf'); focusServerNotes(); };
-      heroChip.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg><span id="hero-notes-text"></span>';
-      heroBar.appendChild(heroChip);
-    }
-    if (heroChip) {
-      heroChip.removeAttribute('title');
-      const t = document.getElementById('hero-notes-text');
-      if (t) t.textContent = cleanOneLine;
-      heroChip.style.display = 'inline-flex';
-    }
-  } else {
-    if (heroChip) {
-      heroChip.style.display = 'none';
-    }
-  }
+  // Catatan server dikelola pada kartu khusus di tab Performa.
+  // Tidak ditampilkan sebagai teks liar pada hero bar untuk menjaga kerapatan informasi NOC.
+  const heroChip = document.getElementById('hero-notes-preview');
+  if (heroChip) heroChip.remove();
 }
 
 function saveServerNotesAuto() {
