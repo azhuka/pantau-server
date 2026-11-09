@@ -9,46 +9,42 @@
 {% set disk_w = (g_th.disk_warn if g_th.disk_warn is defined else 90.0) or 90.0 %}
 {% set disk_d = (g_th.disk_danger if g_th.disk_danger is defined else 95.0) or 95.0 %}
 <style>
-/* Insiden Terkini Table Polish */
+/* Insiden Terkini Table - Auto-Layout Enterprise Standards */
 #dash-problems-table-wrap table.dash-prob-table {
   width: 100%;
-  min-width: 980px;
   margin: 0;
   border-collapse: collapse;
-  table-layout: fixed;
 }
 #dash-problems-table-wrap table.dash-prob-table th,
 #dash-problems-table-wrap table.dash-prob-table td {
   box-sizing: border-box;
+  vertical-align: middle;
 }
 #dash-problems-table-wrap .dash-col-time {
-  width: 115px !important;
-  min-width: 110px !important;
-  max-width: 125px !important;
+  width: 1%;
+  white-space: nowrap;
   padding: 5px 12px !important;
 }
 #dash-problems-table-wrap .dash-col-server {
-  width: 180px !important;
-  min-width: 160px !important;
-  max-width: 220px !important;
+  width: 1%;
+  white-space: nowrap;
   padding: 5px 12px !important;
 }
 #dash-problems-table-wrap .dash-col-sev {
-  width: 165px !important;
-  min-width: 155px !important;
-  max-width: 180px !important;
-  padding: 4px 8px !important;
+  width: 1%;
+  white-space: nowrap;
+  padding: 4px 10px !important;
   text-align: center !important;
 }
 #dash-problems-table-wrap .dash-col-desc {
   width: auto !important;
-  min-width: 220px !important;
-  padding: 5px 18px !important;
+  padding: 5px 16px !important;
+  line-height: 1.4;
+  word-break: break-word;
 }
 #dash-problems-table-wrap .dash-col-durasi {
-  width: 120px !important;
-  min-width: 110px !important;
-  max-width: 130px !important;
+  width: 1%;
+  white-space: nowrap;
   padding: 5px 12px !important;
   text-align: right !important;
 }
@@ -705,27 +701,28 @@ body.show-alert-banner .kiosk-toggle-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 17px;
-  height: 17px;
+  width: 20px;
+  height: 20px;
   padding: 0;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  border: 1px solid transparent;
   color: var(--dim, #94a3b8);
+  opacity: 0.65;
   cursor: pointer;
   transition: all .15s ease;
   flex-shrink: 0;
   line-height: 1;
 }
 .widget-popout-btn svg {
-  width: 8.5px;
-  height: 8.5px;
+  width: 10px;
+  height: 10px;
 }
 .widget-popout-btn:hover {
-  background: rgba(56, 189, 248, 0.16);
-  border-color: rgba(56, 189, 248, 0.45);
-  color: #38bdf8;
-  transform: translateY(-1px);
+  background: rgba(56, 189, 248, 0.14);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: var(--blue, #38bdf8);
+  opacity: 1;
 }
 .widget-popout-btn:active {
   transform: scale(0.95);
@@ -916,30 +913,25 @@ body.popout-fleet_table #dash-fleet-card {
 </style>
 
 {% if brand and brand.org_name %}
-<div class="dash-org-header" style="text-align:center;margin:8px auto 20px auto;padding-top:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%">
-  <div class="dash-brand-wrap" style="position:relative;display:inline-flex;flex-direction:column;justify-content:center;gap:4px;text-align:center;min-height:68px;height:auto;max-width:calc(100% - 240px);padding:4px 0">
-    <div class="dash-brand-logo-box" style="position:absolute;right:calc(100% + 18px);top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:flex-end;flex-shrink:0">
-      {% if brand.logo_url %}
-      <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name }}" style="max-height:64px;max-width:130px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4))">
-      {% else %}
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);filter:drop-shadow(0 0 10px rgba(56,189,248,0.4))">
-        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-        <path d="M2 17l10 5 10-5"></path>
-        <path d="M2 12l10 5 10-5"></path>
-      </svg>
-      {% endif %}
-    </div>
-    <div class="dash-brand-title" style="font-size:20px;font-weight:800;letter-spacing:1.5px;color:var(--text-heading, #fff);text-transform:uppercase;line-height:1;margin:0">PANTAU SERVER</div>
-    <div style="font-size:14.5px;font-weight:700;color:var(--text-bright);letter-spacing:0.2px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">{{ brand.org_name }}</div>
-    {% if brand.org_unit %}
-    <div style="font-size:12.5px;color:var(--dim);font-style:italic;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding-bottom:1px">{{ brand.org_unit }}</div>
+<div class="dash-org-header" style="text-align:center;margin:2px auto 10px auto;display:flex;align-items:center;justify-content:center;gap:12px;width:100%">
+  <div class="dash-brand-logo-box" style="display:flex;align-items:center;justify-content:center;flex-shrink:0">
+    {% if brand.logo_url %}
+    <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name }}" style="max-height:38px;max-width:85px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.35))">
     {% else %}
-    <div style="font-size:12.5px;color:var(--dim);font-style:italic;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;padding-bottom:1px">Bidang Aplikasi dan Informatika</div>
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);filter:drop-shadow(0 0 8px rgba(56,189,248,0.4))">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+      <path d="M2 17l10 5 10-5"></path>
+      <path d="M2 12l10 5 10-5"></path>
+    </svg>
     {% endif %}
   </div>
-  {% if brand.show_motd and brand.dash_motd %}
-  <div id="dash-motd-text" style="font-size:12px;color:var(--blue);margin-top:8px;font-weight:500">(&ldquo;{{ brand.dash_motd }}&rdquo;)</div>
-  {% endif %}
+  <div class="dash-brand-wrap" style="display:inline-flex;flex-direction:column;justify-content:center;text-align:left;line-height:1.2">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="dash-brand-title" style="font-size:15px;font-weight:800;letter-spacing:1px;color:var(--text-heading, #fff);text-transform:uppercase;margin:0">PANTAU SERVER</span>
+      <span style="font-size:12px;font-weight:700;color:var(--text-bright);letter-spacing:0.2px">{{ brand.org_name }}</span>
+    </div>
+    <div style="font-size:11px;color:var(--dim);font-style:italic;line-height:1.3">{{ brand.org_unit or 'Bidang Aplikasi dan Informatika' }}{% if brand.show_motd and brand.dash_motd %} · &ldquo;{{ brand.dash_motd }}&rdquo;{% endif %}</div>
+  </div>
 </div>
 {% else %}
 <div class="topbar">
@@ -1107,15 +1099,7 @@ body.popout-fleet_table #dash-fleet-card {
   </div>
 
   <div style="overflow-x:auto;{{ '' if all_open_problems else 'display:none' }}" id="dash-problems-table-wrap">
-    <table class="dash-prob-table" style="width:100%;min-width:980px;margin:0;border-collapse:collapse;table-layout:fixed">
-      <colgroup>
-        <col style="width:115px">
-        <col style="width:180px">
-        <col style="width:165px">
-        <col style="width:300px;min-width:220px">
-        <col style="width:120px">
-        <col style="width:36px">
-      </colgroup>
+    <table class="dash-prob-table" style="width:100%;margin:0;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015);user-select:none">
           <th class="dash-col-time" style="padding:5px 12px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700">WAKTU</th>
@@ -1177,10 +1161,10 @@ body.popout-fleet_table #dash-fleet-card {
               {{ base_badge | safe }}
             {% endif %}
           </td>
-          <td class="dash-col-desc" style="padding:5px 18px;font-size:11.5px;color:var(--text);line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ p.message }}">
-            <span style="font-weight:500;color:var(--text-bright)">{{ p.message }}</span>
+          <td class="dash-col-desc" style="padding:5px 16px;font-size:11.5px;color:var(--text);line-height:1.4">
+            <span style="font-weight:600;color:var(--text-bright)">{{ p.message }}</span>
             {% if p.is_ignored and p.ignored_reason and p.ignored_reason != p.message and ('DIMATIKAN OLEH OPERATOR' not in p.ignored_reason and 'DIHENTIKAN OLEH OPERATOR' not in p.ignored_reason and 'DI-REBOOT OLEH OPERATOR' not in p.ignored_reason and 'DI-RESTART OLEH OPERATOR' not in p.ignored_reason) %}
-            <span class="badge badge-muted" style="font-size:8px;padding:0.5px 5px;margin-left:6px;font-weight:500" title="{{ p.ignored_reason }}">{{ p.ignored_reason }}</span>
+            <span class="badge badge-muted" style="font-size:8px;padding:0.5px 5px;margin-left:6px;font-weight:500">{{ p.ignored_reason }}</span>
             {% endif %}
           </td>
           <td class="dash-col-durasi" style="padding:5px 12px;white-space:nowrap;text-align:right">
@@ -1222,7 +1206,7 @@ body.popout-fleet_table #dash-fleet-card {
       <!-- Layout Switcher Toggle (Icon-only + Tooltip) -->
       <div class="view-switch-group" id="dash-view-switcher">
         <button type="button" id="btn-view-table" onclick="setDashboardView('table')" class="view-btn active" title="Tabel Operasional" aria-label="Tabel Operasional">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="9" x2="9" y2="21"></line></svg>
         </button>
         <button type="button" id="btn-view-grid" onclick="setDashboardView('grid')" class="view-btn" title="Kartu NOC" aria-label="Kartu NOC">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -1232,10 +1216,10 @@ body.popout-fleet_table #dash-fleet-card {
       <!-- Kepadatan Baris Tabel (Mode Kompak vs Standar) -->
       <div class="view-switch-group" id="dash-density-switcher" title="Kepadatan Baris Tabel">
         <button type="button" id="btn-density-compact" onclick="setTableDensity('compact')" class="view-btn active" title="Mode Kompak (1 Baris Ringkas)" aria-label="Mode Kompak (1 Baris Ringkas)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="8" x2="20" y2="8"></line><line x1="4" y1="16" x2="20" y2="16"></line></svg>
         </button>
         <button type="button" id="btn-density-standard" onclick="setTableDensity('standard')" class="view-btn" title="Mode Standar (2 Baris Rinci)" aria-label="Mode Standar (2 Baris Rinci)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="5" x2="21" y2="5"></line><line x1="3" y1="9" x2="14" y2="9" stroke-width="1.8" opacity="0.65"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="3" y1="19" x2="14" y2="19" stroke-width="1.8" opacity="0.65"></line></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
         </button>
       </div>
 
@@ -1271,8 +1255,8 @@ body.popout-fleet_table #dash-fleet-card {
         <div class="pantau-col-menu" style="display:none"></div>
       </div>
 
-      <button type="button" class="widget-popout-btn" onclick="popoutWidget('fleet_table', event)" title="Buka Tabel &amp; Grid Operasional di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
-        <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+      <button type="button" class="view-btn" onclick="popoutWidget('fleet_table', event)" title="Buka Tabel di Jendela Terpisah" aria-label="Buka di Jendela Terpisah" style="height:26px;min-width:26px;padding:4px 6px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
       </button>
     </div>
   </div>
@@ -3028,7 +3012,7 @@ async function pollNocDashboard() {
                 </div>
               </td>
               <td class="dash-col-sev" style="padding:4px 8px;white-space:nowrap;text-align:center">${sevBadge}</td>
-              <td class="dash-col-desc" style="padding:5px 18px;font-size:11.5px;color:var(--text);line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escMsg}"><span style="font-weight:500;color:var(--text-bright)">${escMsg}</span></td>
+              <td class="dash-col-desc" style="padding:5px 16px;font-size:11.5px;color:var(--text);line-height:1.4"><span style="font-weight:600;color:var(--text-bright)">${escMsg}</span></td>
               <td class="dash-col-durasi" style="padding:5px 12px;white-space:nowrap;text-align:right">
                 <span class="mono dash-dur-badge" style="font-size:10.5px;font-weight:600;color:var(--text);background:rgba(148,163,184,0.08);padding:1.5px 7px;border-radius:4px;border:1px solid rgba(148,163,184,0.18);display:inline-block">${durStr}</span>
               </td>

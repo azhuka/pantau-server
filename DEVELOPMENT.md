@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.128
+
+- **Tipe Rilis:** Standarisasi Auto-Layout Tabel Insiden, Perapian Header Branding & Ergonomi Visual NOC (*Incident Table Auto-Layout Standardization, Compact Branding Header, Icon Semantics & NOC Visual Ergonomics*)
+- **Fokus Utama:** Mengeliminasi seluruh peretasan layout rapuh (*triplek/fragile manual hacks* seperti `table-layout: fixed;` yang kaku, `<colgroup>` piksel statis, celah kosong tak proporsional, pemotongan teks insiden secara prematur, dan header berukuran berlebihan) tanpa mengubah alur kerja (*workflow*), arsitektur, atau identitas UI/UX:
+  1. **Standarisasi Auto-Layout Tabel Insiden (`dashboard.html` & `problems.html`):**
+     - Mengganti `table-layout: fixed;` kaku menjadi arsitektur auto-layout dinamis dan solid pada `#dash-problems-table-wrap table.dash-prob-table` dan `#probtable`.
+     - Mengonfigurasi kolom berukuran tetap (Waktu Mulai, Server, Keparahan, Durasi, Tindakan) menggunakan `width: 1%; white-space: nowrap;`, mengeliminasi celah kosong masif (*dead-space canyons*) di sekitar lencana status.
+     - Mengonfigurasi kolom deskripsi kejadian (`.dash-col-desc`, `.col-event`) menjadi `width: auto;` dengan pembungkusan kata alami (`word-break: break-word;` dan `line-height: 1.4`), menghilangkan pemotongan teks secara prematur sehingga insinyur NOC dapat langsung membaca rincian insiden secara komprehensif.
+     - Menghapus elemen `<colgroup>` statis baik pada rendering template Jinja2 maupun siklus perbaruan dinamis JavaScript (anti-flicker polling).
+  2. **Perapian Banner Branding Organisasi (`pantau-noc.css` & `dashboard.html`):**
+     - Menata ulang `.dash-org-header` dari format bertumpuk vertikal dengan elemen absolute melayang setinggi ~150px menjadi banner fleksibel horizontal terpusat (~40px), menghemat ~100px ruang vertikal layar sehingga daftar armada server langsung terlihat pada *viewport* pertama (*above the fold*).
+  3. **Penyempurnaan Semantik Ikon Toolbar & Tombol Popout:**
+     - Mengganti ikon ganda/duplikat pada toolbar tampilan daftar server: ikon tabel kotak untuk Tampilan Tabel (`#btn-view-table`), ikon 4-kotak kartu untuk Tampilan Kartu (`#btn-view-grid`), ikon 2-garis untuk Densitas Ringkas (`#btn-density-compact`), dan ikon 3-garis untuk Densitas Standar (`#btn-density-standard`).
+     - Menstandarisasi tombol popout widget (`.widget-popout-btn` dan tombol popout toolbar) dengan kelas `.view-btn` berukuran presisi (tinggi 26px, padding simetris, opasitas halus 0.65 saat pasif dan 1.0 saat aktif/hover).
+  4. **Sinkronisasi SemVer 7 Berkas & Verifikasi Sistem:**
+     - Menaikkan versi sistem menjadi `v4.8.128` secara serentak pada seluruh 7 berkas inti sistem.
+     - Memastikan seluruh modul lulus uji sintaksis `py_compile` dan `bash -n`, serta layanan daemon monitoring beroperasi dalam status `active (running)`.
+
 ## Versi 4.8.127
 
 - **Tipe Rilis:** Resolusi Komprehensif Antarmuka NOC, Preservasi Telemetri Polling Sistem & Penyempurnaan Grafik Riwayat (*Comprehensive NOC UI Defect Resolution, Sticky Anti-Collision, Live Poll State Persistence & Performance Chart Skeleton*)

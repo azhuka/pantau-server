@@ -179,11 +179,11 @@
   }
 }
 
-/* ---------- Tata Letak & Proporsi Kolom Tabel Insiden (Enterprise Best Practice) ---------- */
+/* ---------- Tata Letak & Proporsi Kolom Tabel Insiden (Auto-Layout Bersih & Solid) ---------- */
 #probtable {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto;
 }
 #probtable th,
 #probtable td {
@@ -191,48 +191,40 @@
 }
 #probtable th.col-time,
 #probtable td.col-time {
-  width: 115px !important;
-  min-width: 110px !important;
-  max-width: 125px !important;
-  white-space: nowrap !important;
-  font-size: 10px !important;
-  padding: 5px 10px !important;
+  width: 1%;
+  white-space: nowrap;
+  font-size: 10px;
+  padding: 5px 10px;
 }
 #probtable th.col-server,
 #probtable td.col-server {
-  width: 175px !important;
-  min-width: 160px !important;
-  max-width: 210px !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  padding: 5px 10px !important;
+  width: 1%;
+  white-space: nowrap;
+  padding: 5px 10px;
 }
 #probtable th.col-sev,
 #probtable td.col-sev {
-  width: 165px !important;
-  min-width: 155px !important;
-  max-width: 180px !important;
-  text-align: left !important;
-  padding: 4px 8px !important;
-  white-space: nowrap !important;
+  width: 1%;
+  white-space: nowrap;
+  text-align: left;
+  padding: 4px 8px;
 }
 #probtable th.col-sev .badge,
 #probtable td.col-sev .badge {
-  font-size: 8.5px !important;
-  padding: 1px 6.5px !important;
-  border-radius: 3px !important;
-  line-height: 1.2 !important;
-  letter-spacing: 0.3px !important;
-  font-weight: 700 !important;
+  font-size: 8.5px;
+  padding: 1px 6.5px;
+  border-radius: 3px;
+  line-height: 1.2;
+  letter-spacing: 0.3px;
+  font-weight: 700;
 }
 #probtable th.col-sev .badge-sub,
 #probtable td.col-sev .badge-sub {
-  font-size: 7.5px !important;
-  padding: 0.5px 4.5px !important;
-  font-weight: 600 !important;
-  line-height: 1.2 !important;
-  letter-spacing: 0.2px !important;
+  font-size: 7.5px;
+  padding: 0.5px 4.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.2px;
 }
 #probtable td.col-sev .col-sev-sub-text {
   font-size: 7.5px;
@@ -246,45 +238,43 @@
 #probtable th.col-event,
 #probtable td.col-event {
   /* Kolom Kejadian: Hero content dengan ruang fleksibel terluas & keterbacaan optimal */
-  width: auto !important;
-  min-width: 220px !important;
-  font-size: 11px !important;
-  line-height: 1.35 !important;
-  padding: 5px 14px !important;
+  width: auto;
+  min-width: 220px;
+  font-size: 11px;
+  line-height: 1.35;
+  padding: 5px 14px;
+  word-break: break-word;
 }
 #probtable td.col-event .badge {
-  font-size: 8px !important;
-  padding: 0.5px 4.5px !important;
+  font-size: 8px;
+  padding: 0.5px 4.5px;
 }
 #probtable th.col-durasi,
 #probtable td.col-durasi {
-  width: 120px !important;
-  min-width: 110px !important;
-  max-width: 130px !important;
-  white-space: nowrap !important;
-  font-size: 10px !important;
-  text-align: right !important;
-  padding: 5px 10px !important;
+  width: 1%;
+  white-space: nowrap;
+  font-size: 10px;
+  text-align: right;
+  padding: 5px 10px;
 }
 #probtable th.col-act,
 #probtable td.col-act {
-  width: 95px !important;
-  min-width: 90px !important;
-  max-width: 105px !important;
-  white-space: nowrap !important;
-  text-align: center !important;
-  padding: 5px 6px !important;
+  width: 1%;
+  white-space: nowrap;
+  text-align: center;
+  padding: 5px 6px;
 }
 #probtable th.col-tips,
 #probtable td.col-tips {
-  width: 260px !important;
-  min-width: 200px !important;
-  max-width: 320px !important;
-  font-size: 11px !important;
-  color: var(--text-muted) !important;
-  line-height: 1.35 !important;
-  vertical-align: middle !important;
-  padding: 5px 12px !important;
+  width: 25%;
+  min-width: 180px;
+  max-width: 320px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+  vertical-align: middle;
+  padding: 5px 12px;
+  word-break: break-word;
 }
 #probtable tbody tr {
   border-bottom: 1px solid rgba(255, 255, 255, 0.035);
@@ -489,16 +479,7 @@
   
   <div id="prob-table-wrapper" style="overflow-x:auto">
     {% if open_problems %}
-    <table id="probtable" style="width:100%;min-width:1160px;border-collapse:collapse;table-layout:fixed">
-      <colgroup>
-        <col style="width:130px">
-        <col style="width:160px">
-        <col style="width:140px">
-        <col style="width:320px;min-width:240px">
-        <col style="width:110px">
-        <col style="width:280px;min-width:200px">
-        <col style="width:95px">
-      </colgroup>
+    <table id="probtable" style="width:100%;min-width:980px;border-collapse:collapse">
       <thead>
         <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
           <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="Waktu saat insiden mulai terdeteksi">WAKTU MULAI</th>
@@ -1496,16 +1477,7 @@ window.poll = async function(opts = {}) {
       } else {
         let table = document.getElementById('probtable');
         if (!table) {
-          wrapper.innerHTML = `<table id="probtable" style="width:100%;min-width:1160px;border-collapse:collapse;table-layout:fixed">
-            <colgroup>
-              <col style="width:130px">
-              <col style="width:160px">
-              <col style="width:140px">
-              <col style="width:320px;min-width:240px">
-              <col style="width:110px">
-              <col style="width:280px;min-width:200px">
-              <col style="width:95px">
-            </colgroup>
+          wrapper.innerHTML = `<table id="probtable" style="width:100%;min-width:980px;border-collapse:collapse">
             <thead>
               <tr style="border-bottom:1px solid var(--border);background:rgba(255,255,255,0.015)">
                 <th class="col-time" data-col-title="Waktu Mulai" style="padding:5px 10px;font-size:10px;color:var(--dim);text-align:left;white-space:nowrap;letter-spacing:0.6px;font-weight:700" title="${isEn ? 'Time when incident was first detected' : 'Waktu saat insiden mulai terdeteksi'}">${isEn ? 'START TIME' : 'WAKTU MULAI'}</th>
