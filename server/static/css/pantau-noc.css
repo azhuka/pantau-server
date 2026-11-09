@@ -539,3 +539,111 @@ td.col-center-cell {
   border-color: rgba(16, 185, 129, 0.4);
   color: #34d399;
 }
+
+/* =============================================================================
+   9. SASIS DINAMIS TABEL DASBOR NOC (#dash-server-table)
+   Proporsional, Adaptif, dan Presisi terhadap Zoom Browser (100% - 175%)
+   ============================================================================= */
+#dash-server-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+/* Kolom Snug: Mengunci Kolom Badge, Status, Waktu, dan Indikator agar pas konten */
+#dash-server-table th.col-dash-status,
+#dash-server-table td.col-dash-status,
+#dash-server-table th.col-dash-tier,
+#dash-server-table td.col-dash-tier,
+#dash-server-table th.col-dash-plat-ip,
+#dash-server-table td.col-dash-plat-ip,
+#dash-server-table th.col-dash-uptime,
+#dash-server-table td.col-dash-uptime,
+#dash-server-table th.col-dash-svc,
+#dash-server-table td.col-dash-svc,
+#dash-server-table th.col-dash-prob,
+#dash-server-table td.col-dash-prob {
+  width: 1% !important;
+  white-space: nowrap !important;
+  box-sizing: border-box;
+}
+
+/* Kolom Dinamis Berbobot: Menyerap Sisa Ruang Layar Secara Merata */
+#dash-server-table th.col-dash-server,
+#dash-server-table td.col-dash-server {
+  width: 16% !important;
+  min-width: 130px !important;
+  max-width: 240px !important;
+  white-space: nowrap !important;
+  box-sizing: border-box;
+}
+
+#dash-server-table th.col-dash-cpu,
+#dash-server-table td.col-dash-cpu {
+  width: 25% !important;
+  min-width: 110px !important;
+  text-align: center !important;
+  box-sizing: border-box;
+}
+
+#dash-server-table th.col-dash-ram,
+#dash-server-table td.col-dash-ram {
+  width: 28% !important;
+  min-width: 130px !important;
+  text-align: center !important;
+  box-sizing: border-box;
+}
+
+#dash-server-table th.col-dash-disk,
+#dash-server-table td.col-dash-disk {
+  width: 29% !important;
+  min-width: 145px !important;
+  text-align: center !important;
+  box-sizing: border-box;
+}
+
+/* Penyelarasan Posisi & Alignment Sel */
+#dash-server-table th.col-dash-status,
+#dash-server-table td.col-dash-status,
+#dash-server-table th.col-dash-tier,
+#dash-server-table td.col-dash-tier,
+#dash-server-table th.col-dash-uptime,
+#dash-server-table td.col-dash-uptime,
+#dash-server-table th.col-dash-svc,
+#dash-server-table td.col-dash-svc,
+#dash-server-table th.col-dash-prob,
+#dash-server-table td.col-dash-prob {
+  text-align: center !important;
+}
+
+#dash-server-table th.col-dash-server,
+#dash-server-table td.col-dash-server,
+#dash-server-table th.col-dash-plat-ip,
+#dash-server-table td.col-dash-plat-ip {
+  text-align: left !important;
+}
+
+/* Mode Kompak (Ultra-Slim 1 Baris) */
+#dash-server-table.tbl-compact th.col-dash-status,
+#dash-server-table.tbl-compact td.col-dash-status,
+#dash-server-table.tbl-compact th.col-dash-tier,
+#dash-server-table.tbl-compact td.col-dash-tier,
+#dash-server-table.tbl-compact th.col-dash-plat-ip,
+#dash-server-table.tbl-compact td.col-dash-plat-ip,
+#dash-server-table.tbl-compact th.col-dash-uptime,
+#dash-server-table.tbl-compact td.col-dash-uptime,
+#dash-server-table.tbl-compact th.col-dash-svc,
+#dash-server-table.tbl-compact td.col-dash-svc,
+#dash-server-table.tbl-compact th.col-dash-prob,
+#dash-server-table.tbl-compact td.col-dash-prob,
+#dash-server-table.tbl-compact th.col-dash-server,
+#dash-server-table.tbl-compact td.col-dash-server,
+#dash-server-table.tbl-compact th.col-dash-cpu,
+#dash-server-table.tbl-compact td.col-dash-cpu,
+#dash-server-table.tbl-compact th.col-dash-ram,
+#dash-server-table.tbl-compact td.col-dash-ram,
+#dash-server-table.tbl-compact th.col-dash-disk,
+#dash-server-table.tbl-compact td.col-dash-disk {
+  padding: 3px 6px !important;
+}

@@ -2406,17 +2406,17 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
   {% if services %}
-  <table id="tbl-services">
+  <table id="tbl-services" class="noc-table-dense" style="width:100%;margin:0">
     <thead><tr>
-      <th data-col-title="Layanan" style="width:140px;min-width:130px;max-width:160px" title="Nama layanan atau daemon yang dipantau">Layanan</th>
-      <th data-col-title="Port" style="width:70px;min-width:65px;text-align:center" title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
-      <th data-col-title="Proses" style="width:110px;min-width:100px" title="Nama proses sistem operasi yang dieksekusi">Proses</th>
-      <th data-col-title="Status" style="width:80px;min-width:75px;text-align:center" title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
-      <th data-col-title="Koneksi" style="width:80px;min-width:75px;text-align:center" title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
-      <th data-col-title="Respons" style="width:105px;min-width:95px;text-align:center" title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
-      <th data-col-title="Keterangan" title="Keterangan atau hasil pemeriksaan status layanan">Keterangan</th>
-      <th data-col-title="Uptime 24j" style="width:95px;min-width:90px;text-align:center" title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
-      <th class="col-act" data-col-title="Tindakan" style="width:300px;min-width:280px;text-align:center" title="Kontrol layanan: Restart, Mulai, Berhenti, Log, Abaikan/Pantau, atau Hapus">Tindakan</th>
+      <th class="col-fixed-cell" data-col-title="Layanan" style="min-width:130px" title="Nama layanan atau daemon yang dipantau">Layanan</th>
+      <th class="col-fixed-cell col-center-cell" data-col-title="Port" title="Nomor port jaringan yang digunakan oleh layanan">Port</th>
+      <th class="col-fixed-cell" data-col-title="Proses" title="Nama proses sistem operasi yang dieksekusi">Proses</th>
+      <th class="col-fixed-cell col-center-cell" data-col-title="Status" title="Kondisi terkini layanan (up = aktif normal, down = terhenti)">Status</th>
+      <th class="col-fixed-cell col-center-cell" data-col-title="Koneksi" title="Jumlah koneksi jaringan aktif yang saat ini terhubung ke layanan">Koneksi</th>
+      <th class="col-fixed-cell col-center-cell" data-col-title="Respons" title="Waktu respons layanan dalam satuan milidetik (ms)">Respons (ms)</th>
+      <th class="col-hero-cell" data-col-title="Keterangan" title="Keterangan atau hasil pemeriksaan status layanan">Keterangan</th>
+      <th class="col-fixed-cell col-center-cell" data-col-title="Uptime 24j" title="Persentase ketersediaan layanan dalam 24 jam terakhir">Uptime 24j</th>
+      <th class="col-fixed-cell col-act" data-col-title="Tindakan" style="text-align:center" title="Kontrol layanan: Restart, Mulai, Berhenti, Log, Abaikan/Pantau, atau Hapus">Tindakan</th>
     </tr></thead>
     <tbody>
     {% for svc in services %}
@@ -2720,26 +2720,26 @@ div[style*="position: fixed"] .card {
 
     <!-- Tabel Daftar Packages -->
     <div class="table-wrap" id="pkg-table-wrap" style="overflow-x:auto">
-      <table class="table" id="tbl-packages" style="width:100%;margin:0">
+      <table class="table noc-table-dense" id="tbl-packages" style="width:100%;margin:0">
         <thead>
           <tr>
-            <th data-col-title="Status" style="width:125px;text-align:center;cursor:pointer" onclick="togglePkgSort('status')" title="Klik untuk mengurutkan Status">
+            <th class="col-fixed-cell col-center-cell" data-col-title="Status" style="cursor:pointer" onclick="togglePkgSort('status')" title="Klik untuk mengurutkan Status">
               Status <span id="pkg-sort-status" style="font-size:10px;opacity:0.6">↕</span>
             </th>
-            <th data-col-title="Nama Paket" style="min-width:180px;cursor:pointer" onclick="togglePkgSort('name')" title="Klik untuk mengurutkan Nama Paket">
+            <th class="col-fixed-cell" data-col-title="Nama Paket" style="min-width:180px;cursor:pointer" onclick="togglePkgSort('name')" title="Klik untuk mengurutkan Nama Paket">
               Nama Paket <span id="pkg-sort-name" style="font-size:10px;opacity:0.6">↕</span>
             </th>
-            <th data-col-title="Tipe" style="width:105px;text-align:center;cursor:pointer" onclick="togglePkgSort('is_user')" title="Klik untuk mengurutkan Tipe Paket (Pengguna/Sistem)">
+            <th class="col-fixed-cell col-center-cell" data-col-title="Tipe" style="cursor:pointer" onclick="togglePkgSort('is_user')" title="Klik untuk mengurutkan Tipe Paket (Pengguna/Sistem)">
               Tipe <span id="pkg-sort-is_user" style="font-size:10px;opacity:0.6">↕</span>
             </th>
-            <th data-col-title="Versi" style="width:170px;cursor:pointer" onclick="togglePkgSort('version')" title="Klik untuk mengurutkan Versi">
+            <th class="col-fixed-cell" data-col-title="Versi" style="cursor:pointer" onclick="togglePkgSort('version')" title="Klik untuk mengurutkan Versi">
               Versi <span id="pkg-sort-version" style="font-size:10px;opacity:0.6">↕</span>
             </th>
-            <th data-col-title="Ukuran" style="width:105px;text-align:right;cursor:pointer" onclick="togglePkgSort('size_kb')" title="Klik untuk mengurutkan Ukuran">
+            <th class="col-fixed-cell col-num-cell" data-col-title="Ukuran" style="cursor:pointer" onclick="togglePkgSort('size_kb')" title="Klik untuk mengurutkan Ukuran">
               Ukuran <span id="pkg-sort-size_kb" style="font-size:10px;opacity:0.6">↕</span>
             </th>
-            <th data-col-title="Deskripsi" style="min-width:240px" title="Deskripsi singkat fungsi paket">Deskripsi</th>
-            <th class="col-act" data-col-title="Tindakan" style="width:95px;min-width:85px;white-space:nowrap;text-align:center" title="Tindakan kontrol paket: Bersihkan cache, Lihat log, Upgrade paket">Tindakan</th>
+            <th class="col-hero-cell" data-col-title="Deskripsi" style="min-width:240px" title="Deskripsi singkat fungsi paket">Deskripsi</th>
+            <th class="col-fixed-cell col-act" data-col-title="Tindakan" style="text-align:center" title="Tindakan kontrol paket: Bersihkan cache, Lihat log, Upgrade paket">Tindakan</th>
           </tr>
         </thead>
         <tbody id="pkg-tbody">
@@ -2935,12 +2935,12 @@ div[style*="position: fixed"] .card {
       <span class="badge badge-muted" id="timers-count-badge">{{ (cron_jobs.timers|length) if cron_jobs and cron_jobs.timers else 0 }} timer aktif</span>
     </div>
     <div style="overflow-x:auto" id="timers-table-wrap" style="display:{{ 'block' if (cron_jobs and cron_jobs.timers) else 'none' }}">
-      <table id="systemd-timers-table">
+      <table id="systemd-timers-table" class="noc-table-compact" style="width:100%">
         <thead>
           <tr>
-            <th title="Nama unit timer systemd">Nama Timer</th>
-            <th title="Unit service yang dipicu saat timer berjalan">Layanan Yang Diaktifkan</th>
-            <th title="Rincian jadwal jadwal terakhir dan selanjutnya">Jadwal &amp; Status</th>
+            <th class="col-fixed-cell" title="Nama unit timer systemd">Nama Timer</th>
+            <th class="col-fixed-cell" title="Unit service yang dipicu saat timer berjalan">Layanan Yang Diaktifkan</th>
+            <th class="col-hero-cell" title="Rincian jadwal jadwal terakhir dan selanjutnya">Jadwal &amp; Status</th>
           </tr>
         </thead>
         <tbody>
@@ -3014,11 +3014,11 @@ div[style*="position: fixed"] .card {
 
     <h4 style="margin:14px 14px 8px 14px;font-size:12.5px;font-weight:600;color:var(--text);letter-spacing:.3px">Aturan Port &amp; Kebijakan Akses (Rules)</h4>
     <div style="overflow-x:auto" id="fw-rules-wrap" style="display:{{ 'block' if (firewall and firewall.rules) else 'none' }}">
-      <table id="fw-rules-table">
+      <table id="fw-rules-table" class="noc-table-compact" style="width:100%">
         <thead>
           <tr>
-            <th style="width:40px">#</th>
-            <th>Aturan / Deskripsi Akses Port</th>
+            <th class="col-fixed-cell col-center-cell" style="width:40px">#</th>
+            <th class="col-hero-cell">Aturan / Deskripsi Akses Port</th>
           </tr>
         </thead>
         <tbody>
@@ -3055,15 +3055,15 @@ div[style*="position: fixed"] .card {
       {% endif %}
     </div>
     <div style="overflow-x:auto" id="fw-blocked-wrap" style="display:{{ 'block' if (firewall and firewall.blocked_ips) else 'none' }}">
-      <table id="fw-blocked-table">
+      <table id="fw-blocked-table" class="noc-table-compact" style="width:100%">
         <thead>
           <tr>
-            <th>Baris</th>
-            <th>Alamat IP Sumber</th>
-            <th>Packet Terblokir</th>
-            <th>Total Byte</th>
+            <th class="col-fixed-cell col-center-cell">Baris</th>
+            <th class="col-fixed-cell">Alamat IP Sumber</th>
+            <th class="col-fixed-cell col-num-cell">Packet Terblokir</th>
+            <th class="col-fixed-cell col-num-cell">Total Byte</th>
             {% if user.has_perm('can_firewall') %}
-            <th class="col-act" style="width:120px;text-align:right">Tindakan</th>
+            <th class="col-fixed-cell col-act" style="text-align:right">Tindakan</th>
             {% endif %}
           </tr>
         </thead>
@@ -3143,15 +3143,15 @@ div[style*="position: fixed"] .card {
     </div>
     <div id="acc-empty" class="empty-msg" style="{{ 'display:none' if accounts else 'display:block' }}">Belum ada data pengguna dari server ini.</div>
     <div style="overflow-x:auto">
-      <table id="acc-table" style="min-width:850px;{{ 'display:table;width:100%' if accounts else 'display:none;width:100%' }}">
+      <table id="acc-table" class="noc-table-compact" style="min-width:850px;{{ 'display:table;width:100%' if accounts else 'display:none;width:100%' }}">
         <thead>
           <tr>
-            <th style="min-width:140px">Pengguna</th>
-            <th style="width:90px;min-width:80px">UID / GID</th>
-            <th style="min-width:160px">Grup Utama &amp; Sekunder</th>
-            <th style="min-width:160px">Direktori Home &amp; Shell</th>
-            <th style="min-width:140px">Login Terakhir &amp; Sesi</th>
-            <th class="col-act" style="width:130px;min-width:120px;text-align:center">Tindakan</th>
+            <th class="col-fixed-cell" style="min-width:140px">Pengguna</th>
+            <th class="col-fixed-cell col-num-cell" style="width:90px;min-width:80px">UID / GID</th>
+            <th class="col-hero-cell" style="min-width:160px">Grup Utama &amp; Sekunder</th>
+            <th class="col-hero-cell" style="min-width:160px">Direktori Home &amp; Shell</th>
+            <th class="col-fixed-cell" style="min-width:140px">Login Terakhir &amp; Sesi</th>
+            <th class="col-fixed-cell col-act" style="width:130px;min-width:120px;text-align:center">Tindakan</th>
           </tr>
         </thead>
         <tbody>
@@ -3261,14 +3261,14 @@ div[style*="position: fixed"] .card {
     </div>
     <div id="groups-empty" class="empty-msg" style="{{ 'display:none' if system_groups else 'display:block' }}">Belum ada data grup dari server ini.</div>
     <div style="overflow-x:auto">
-      <table id="groups-table" style="min-width:760px;{{ 'display:table;width:100%' if system_groups else 'display:none;width:100%' }}">
+      <table id="groups-table" class="noc-table-compact" style="min-width:760px;{{ 'display:table;width:100%' if system_groups else 'display:none;width:100%' }}">
         <thead>
           <tr>
-            <th style="min-width:140px">Nama Grup</th>
-            <th style="width:80px;min-width:75px">GID</th>
-            <th style="width:120px;min-width:100px">Tipe</th>
-            <th style="min-width:240px">Anggota (Members)</th>
-            <th style="width:90px;min-width:85px;text-align:center">Jumlah</th>
+            <th class="col-fixed-cell" style="min-width:140px">Nama Grup</th>
+            <th class="col-fixed-cell col-num-cell" style="width:80px;min-width:75px">GID</th>
+            <th class="col-fixed-cell col-center-cell" style="width:120px;min-width:100px">Tipe</th>
+            <th class="col-hero-cell" style="min-width:240px">Anggota (Members)</th>
+            <th class="col-fixed-cell col-center-cell" style="width:90px;min-width:85px;text-align:center">Jumlah</th>
           </tr>
         </thead>
         <tbody>

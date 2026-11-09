@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.132
+
+- **Tipe Rilis:** Rekonstruksi Dinamika Sasis Tabel Responsif Zoom & Eliminasi Ruang Kosong Buatan (*Zoom-Responsive Dynamic Table Chassis & Artificial Dead-Space Elimination*)
+- **Fokus Utama:** Menyelesaikan anomali tabel yang kaku dan distorsi ruang kosong masif saat browser di-zoom (100% hingga 175%), berkaca pada standar kepadatan dan adaptabilitas tabel pemantauan enterprise (Zabbix):
+  1. **Eliminasi Lebar Kolom Statis Kaku (`dashboard.html` & `pantau-noc.css`):**
+     - Menghapus seluruh atribut inline `width: XXpx` statis pada header tabel dasbor `#dash-server-table` yang sebelumnya memaksa peramban membuang ratusan piksel ruang kosong ke kolom Server dan Platform/IP.
+     - Menggantinya dengan arsitektur kolom berbobot proporsional:
+       - Kolom konten pas (*snug*): Status, Lingkungan (Tier), Platform & IP, Uptime, Layanan, dan Insiden dikunci menggunakan `width: 1% !important; white-space: nowrap !important;` sehingga menempel rapat tanpa celah kosong buatan.
+       - Kolom metrik dan hero adaptif: Server (16%), CPU (25%), RAM (28%), dan Storage (29%) berbagi sisa ruang layar secara harmonis.
+  2. **Skalabilitas Adaptif Zoom Browser (100% - 175%):**
+     - Pada zoom 100% (layar lebar), tabel menyebar secara simetris, seimbang, dan proporsional tanpa ada celah melar raksasa.
+     - Pada zoom 150% hingga 175%, tabel menyusut secara fleksibel mengikuti batasan minimum konten dan mengaktifkan scrolling horizontal halus tanpa merusak struktur visual baris.
+  3. **Penyelarasan Kolom pada Tabel Modul Lain (`servers.html`, `services.html`):**
+     - Menerapkan arsitektur token kolom pada tabel daftar armada server (`#servers-table`), daftar paket sistem (`#tbl-packages`), daftar layanan (`#tbl-services`), timer systemd (`#systemd-timers-table`), firewall (`#fw-rules-table`, `#fw-blocked-table`), serta akun sistem (`#acc-table`, `#groups-table`).
+  4. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Menaikkan versi sistem menjadi `v4.8.132` secara serentak pada seluruh 7 berkas inti sistem.
+     - Lolos pengujian sintaksis Python `py_compile` dan skrip Bash `bash -n`, serta verifikasi keaktifan layanan daemon pemantauan.
+
 ## Versi 4.8.131
 
 - **Tipe Rilis:** Standarisasi Sasis Visual Tabel Global & Penyelarasan Tata Letak Lintas Halaman (*Global Table Chassis Standardization & Cross-Page Visual Alignment*)
