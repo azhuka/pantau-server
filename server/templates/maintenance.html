@@ -414,7 +414,7 @@
   <div class="modal-window">
     <div class="modal-header">
       <h3 style="margin:0;font-size:14px" id="modalTitle">Tambah Jendela Pemeliharaan Terjadwal</h3>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal()" style="padding:2px 6px">✕</button>
+      <button type="button" class="probe-modal-close" onclick="closeModal()" aria-label="Tutup Jendela">&times;</button>
     </div>
     <form id="maintenanceForm" onsubmit="submitMaintenanceForm(event)">
       <div class="modal-body">
@@ -892,12 +892,12 @@ function renderTable(list) {
     // Tombol Aksi
     let actionBtns = '<div style="display:inline-flex;gap:4px;align-items:center;justify-content:flex-end;width:100%">';
     if (w.status === 'active') {
-      actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="padding:2px 6px;font-size:10px;color:var(--green)" onclick="completeWindow(${w.id})" title="Selesaikan masa pemeliharaan sekarang">Selesai</button>`;
+      actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="width:24px;height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--green)" onclick="completeWindow(${w.id})" title="Selesaikan masa pemeliharaan sekarang" aria-label="Selesaikan"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>`;
     }
     if (w.status === 'active' || w.status === 'scheduled') {
-      actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="padding:2px 6px;font-size:10px;color:var(--yellow)" onclick="cancelWindow(${w.id})" title="Batalkan jadwal pemeliharaan">Batal</button>`;
+      actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="width:24px;height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--yellow)" onclick="cancelWindow(${w.id})" title="Batalkan jadwal pemeliharaan" aria-label="Batalkan"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg></button>`;
     }
-    actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="padding:2px 6px;font-size:10px;color:var(--dim)" onclick="deleteWindow(${w.id})" title="Hapus catatan jadwal">✕</button>`;
+    actionBtns += `<button type="button" class="btn btn-sm btn-ghost" style="width:24px;height:24px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--red)" onclick="deleteWindow(${w.id})" title="Hapus catatan jadwal" aria-label="Hapus"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`;
     actionBtns += '</div>';
 
     html += `

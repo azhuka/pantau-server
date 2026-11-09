@@ -209,6 +209,41 @@ table.noc-table tbody tr:hover td.col-act,
 }
 
 /* =============================================================================
+   2.1. STANDAR TOMBOL TINDAKAN TABEL NOC (ICON-ONLY & UKURAN BAKU 26x26px)
+   ============================================================================= */
+.noc-act-btn,
+.table-act-btn,
+.user-act-btn,
+.user-act-icon-btn,
+.prob-act-cell .btn,
+.col-act .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  max-width: 26px !important;
+  padding: 0 !important;
+  border-radius: var(--radius-sm, 4px) !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  font-size: 11px !important;
+}
+
+.noc-act-btn svg,
+.table-act-btn svg,
+.user-act-btn svg,
+.user-act-icon-btn svg,
+.prob-act-cell .btn svg,
+.col-act .btn svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* =============================================================================
    3. NOC FILTER PANEL PRIMITIVE (RESPONSIF ALAMI, ZERO DOUBLE SCROLLBAR)
    ============================================================================= */
 .noc-filter-panel,

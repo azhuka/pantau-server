@@ -354,6 +354,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.137
+
+- **Tipe Rilis:** Standardisasi Tombol Aksi Tabel, Pembersihan Label Teks & Koreksi Semantik Ikon Rincian (*Table Action Button Standardization, Text Label Removal & Semantic Details Icon Rectification*)
+- **Fokus Utama:** Mengatasi ketidakkonsistenan tombol tindakan pada tabel (adanya tombol dengan label teks bercampur dengan tombol tanpa label teks) dengan menstandarisasi tombol tindakan umum menjadi tombol berbasis ikon murni (*icon-only button*) berdimensi presisi (26x26px) serta mengganti ikon "Rincian" yang sebelumnya keliru menggunakan ikon tautan luar (*external link*) menjadi ikon mata universal (*eye icon*):
+  1. **Standardisasi Tombol Aksi Tabel Pengguna & Staf (`profile.html` & `users.html`):**
+     - Menghapus label teks sekunder yang menumpuk (`Lihat`, `+2FA`, `Audit`, `Edit`, `Izin`, `Kunci`, `Buka`, `Hapus`) pada sel tindakan tabel pengguna.
+     - Mengubah seluruh tombol aksi baris menjadi tombol ikon mandiri (*icon-only button*) dengan ukuran proporsional seragam 26x26px dan tooltip (`title`) serta `aria-label` yang lengkap dan informatif.
+     - Mengganti ikon tombol setup 2FA dari gembok teks `+2FA` menjadi ikon perisai keamanan universal (*feather-shield*), reset 2FA menjadi ikon putar (*feather-refresh-cw*), dan matikan 2FA menjadi ikon lingkaran garis (*feather-slash*).
+     - Menyesuaikan lebar kolom `.col-act` dari sebelumnya dipaksa lebar (240px) menjadi dinamis menyesuaikan isi (`width: 1%; white-space: nowrap; text-align: center;`), memperluas keterbacaan kolom data lainnya.
+  2. **Koreksi Semantik Ikon "Rincian" Global (`problems.html`, `services.html`, & `dashboard.html`):**
+     - Mengganti ikon tautan luar (*external link / pop-out window* `feather-external-link`) yang sebelumnya keliru digunakan pada tombol "Rincian" menjadi ikon mata universal (*feather-eye*) yang secara universal dikenal manusia sebagai tindakan melihat, memeriksa, atau membuka rincian entitas.
+     - Menjamin konsistensi ikon "Rincian" di seluruh halaman dasbor, daftar insiden aktif/selesai, dan rincian akun pengguna server.
+  3. **Standardisasi Tombol Jadwal Pemeliharaan (`maintenance.html`):**
+     - Mengubah tombol teks `Selesai`, `Batal`, dan simbol `✕` pada tabel jadwal pemeliharaan menjadi tombol ikon standar: centang hijau (*feather-check*) untuk selesai, lingkaran garis kuning (*feather-slash*) untuk pembatalan, dan tong sampah merah (*feather-trash-2*) untuk penghapusan catatan jadwal.
+     - Memperbarui tombol tutup jendela mengambang pemeliharaan menjadi kelas baku `.probe-modal-close` dengan simbol silang baku.
+  4. **Mesin CSS Global Tombol Tindakan Tabel NOC (`pantau-noc.css`):**
+     - Menambahkan aturan kelas global `.noc-act-btn`, `.user-act-btn`, `.user-act-icon-btn`, `.col-act .btn`, dan `.prob-act-cell .btn` berdimensi baku 26x26px dengan perataan ikon vertikal/horizontal presisi dan isolasi *flex-shrink: 0*.
+  5. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Sinkronisasi versi SemVer `4.8.137` pada 7 berkas inti repositori.
+     - Validasi uji sintaksis Python, Jinja2, dan skrip shell.
+     - Distribusi agen klien ke `/opt/pantau/agent/agent_pantau.py` dan *restart* daemon layanan.
+
 ## Versi 4.8.136
 
 - **Tipe Rilis:** Standardisasi Jendela Mengambang Interaktif & Migrasi Detail Metrik Sel ke Tooltip Informatif (*Interactive Modal Architecture Standardization & Table Metric Subline Migration to Informative Tooltips*)
