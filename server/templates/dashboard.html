@@ -628,70 +628,127 @@
   }
 }
 
-/* Tombol Kiosk / Overwatch di Sudut Kanan Layar */
-.kiosk-toggle-btn {
-  position: fixed;
-  top: 18px;
-  right: 22px;
-  z-index: 1000;
-  display: inline-flex;
+/* Header Topbar Dasbor Terpadu (Enterprise / Government NOC Standard) */
+.dash-topbar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 2px 0 10px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.dash-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.dash-brand-logo-box {
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: rgba(26, 35, 54, 0.88);
+  flex-shrink: 0;
+}
+.dash-header-logo {
+  max-height: 40px;
+  max-width: 80px;
+  width: auto;
+  object-fit: contain;
+}
+.dash-header-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.dash-brand-wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+.dash-brand-org-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: 0.25px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-brand-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1.2;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-badge-app {
+  font-size: 8.5px;
+  padding: 1px 5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.dash-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+/* Tombol Layar Penuh Terintegrasi */
+.dash-topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm, 4px);
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--card);
   border: 1px solid var(--border);
-  color: var(--dim);
+  color: var(--text);
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: all .18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all .15s ease;
   user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
-.kiosk-toggle-btn:hover {
-  color: #fff;
-  background: rgba(37, 99, 235, 0.88);
-  border-color: rgba(59, 130, 246, 0.6);
-  box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
-  transform: translateY(-1px);
+.dash-topbar-btn:hover {
+  background: var(--card-hover);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: var(--blue);
 }
-.kiosk-toggle-btn:active {
-  transform: scale(0.95);
+[data-theme="light"] .dash-topbar-btn {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #1e293b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
-
-/* Tampilan saat Mode Kiosk / Overwatch Aktif (True Native Fullscreen NOC) */
-body.kiosk-mode .kiosk-toggle-btn {
-  background: rgba(15, 23, 42, 0.72);
-  border-color: rgba(255, 255, 255, 0.16);
-  color: var(--dim);
-  opacity: 0.65;
+[data-theme="light"] .dash-topbar-btn:hover {
+  background: #f8fafc;
+  border-color: rgba(37, 99, 235, 0.4);
+  color: #2563eb;
 }
-body.kiosk-mode .kiosk-toggle-btn:hover {
-  opacity: 1;
-  background: rgba(239, 68, 68, 0.88);
-  border-color: rgba(239, 68, 68, 0.6);
-  color: #fff;
-  box-shadow: 0 0 16px rgba(239, 68, 68, 0.5);
+body.kiosk-mode .dash-topbar-btn {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
 }
-body.kiosk-mode .topbar {
+body.kiosk-mode .dash-topbar-btn:hover {
+  background: rgba(239, 68, 68, 0.22);
+  color: #ef4444;
+}
+body.kiosk-mode .topbar,
+body.kiosk-mode .dash-topbar-header {
   margin-bottom: 8px !important;
-}
-body.kiosk-mode .topbar > div > div:last-child {
-  display: none !important;
-}
-body.kiosk-mode .dash-org-header {
-  margin-bottom: 10px !important;
-}
-body.kiosk-mode .dash-org-header img {
-  max-height: 44px !important;
-}
-body.kiosk-mode .dash-org-header .dash-brand-title {
-  font-size: 16px !important;
-}
-body.show-alert-banner .kiosk-toggle-btn {
-  top: 58px;
 }
 
 /* ===================================================================
@@ -708,11 +765,15 @@ body.show-alert-banner .kiosk-toggle-btn {
   background: transparent;
   border: 1px solid transparent;
   color: var(--dim, #94a3b8);
-  opacity: 0.65;
+  opacity: 0;
   cursor: pointer;
   transition: all .15s ease;
   flex-shrink: 0;
   line-height: 1;
+}
+.card:hover .widget-popout-btn,
+.kpi-link-card:hover .widget-popout-btn {
+  opacity: 0.65;
 }
 .widget-popout-btn svg {
   width: 10px;
@@ -722,7 +783,7 @@ body.show-alert-banner .kiosk-toggle-btn {
   background: rgba(56, 189, 248, 0.14);
   border-color: rgba(56, 189, 248, 0.35);
   color: var(--blue, #38bdf8);
-  opacity: 1;
+  opacity: 1 !important;
 }
 .widget-popout-btn:active {
   transform: scale(0.95);
@@ -913,24 +974,39 @@ body.popout-fleet_table #dash-fleet-card {
 </style>
 
 {% if brand and brand.org_name %}
-<div class="dash-org-header" style="text-align:center;margin:2px auto 10px auto;display:flex;align-items:center;justify-content:center;gap:12px;width:100%">
-  <div class="dash-brand-logo-box" style="display:flex;align-items:center;justify-content:center;flex-shrink:0">
-    {% if brand.logo_url %}
-    <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name }}" style="max-height:38px;max-width:85px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.35))">
-    {% else %}
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue);filter:drop-shadow(0 0 8px rgba(56,189,248,0.4))">
-      <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-      <path d="M2 17l10 5 10-5"></path>
-      <path d="M2 12l10 5 10-5"></path>
-    </svg>
-    {% endif %}
-  </div>
-  <div class="dash-brand-wrap" style="display:inline-flex;flex-direction:column;justify-content:center;text-align:left;line-height:1.2">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span class="dash-brand-title" style="font-size:15px;font-weight:800;letter-spacing:1px;color:var(--text-heading, #fff);text-transform:uppercase;margin:0">PANTAU SERVER</span>
-      <span style="font-size:12px;font-weight:700;color:var(--text-bright);letter-spacing:0.2px">{{ brand.org_name }}</span>
+<div class="dash-topbar-header">
+  <div class="dash-header-left">
+    <div class="dash-brand-logo-box">
+      {% if brand.logo_url %}
+      <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name }}" class="dash-header-logo">
+      {% else %}
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+        <path d="M2 17l10 5 10-5"></path>
+        <path d="M2 12l10 5 10-5"></path>
+      </svg>
+      {% endif %}
     </div>
-    <div style="font-size:11px;color:var(--dim);font-style:italic;line-height:1.3">{{ brand.org_unit or 'Bidang Aplikasi dan Informatika' }}{% if brand.show_motd and brand.dash_motd %} · &ldquo;{{ brand.dash_motd }}&rdquo;{% endif %}</div>
+    <div class="dash-header-divider"></div>
+    <div class="dash-brand-wrap">
+      <div class="dash-brand-org-name">{{ brand.org_name }}</div>
+      <div class="dash-brand-sub">
+        <span class="badge badge-blue dash-badge-app">PANTAU SERVER</span>
+        <span>{{ brand.org_unit or 'Bidang Aplikasi dan Informatika' }}</span>
+        {% if brand.show_motd and brand.dash_motd %}<span class="dash-motd-text" style="opacity:0.75">&middot; &ldquo;{{ brand.dash_motd }}&rdquo;</span>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="dash-header-right">
+    <button type="button" id="kioskToggleBtn" class="dash-topbar-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
+      <svg id="kioskIconEnter" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+      </svg>
+      <svg id="kioskIconExit" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+      </svg>
+      <span>Layar Penuh</span>
+    </button>
   </div>
 </div>
 {% else %}
@@ -939,19 +1015,19 @@ body.popout-fleet_table #dash-fleet-card {
     <h2 style="font-size:18px">Dashboard</h2>
     <div style="font-size:13px;color:var(--dim);margin-top:2px">Ringkasan kondisi terkini seluruh server klien &amp; metrik operasional terpusat.</div>
   </div>
+  <div class="dash-header-right">
+    <button type="button" id="kioskToggleBtn" class="dash-topbar-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
+      <svg id="kioskIconEnter" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+      </svg>
+      <svg id="kioskIconExit" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+      </svg>
+      <span>Layar Penuh</span>
+    </button>
+  </div>
 </div>
 {% endif %}
-
-<button type="button" id="kioskToggleBtn" class="kiosk-toggle-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
-  <!-- Ikon Masuk Layar Penuh (Expand) -->
-  <svg id="kioskIconEnter" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-  </svg>
-  <!-- Ikon Keluar Layar Penuh / Kembali ke Normal (Compress) -->
-  <svg id="kioskIconExit" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
-    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-  </svg>
-</button>
 
 {% if active_maintenance_count and active_maintenance_count > 0 %}
 <div class="dash-maintenance-banner" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);border-radius:6px;padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
@@ -1088,13 +1164,10 @@ body.popout-fleet_table #dash-fleet-card {
       </span>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
-      <a href="/problems" class="btn btn-ghost btn-sm" style="font-size:10.5px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;color:var(--text-bright)" title="Buka seluruh riwayat insiden armada">
-        Riwayat Lengkap
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      <a href="/problems" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 9px;display:inline-flex;align-items:center;gap:5px;color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm, 4px);height:26px;text-decoration:none" title="Buka seluruh riwayat insiden armada">
+        <span>Riwayat Lengkap</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
       </a>
-      <button type="button" class="widget-popout-btn" onclick="popoutWidget('recent_incidents', event)" title="Buka Insiden Terkini di Jendela Terpisah" aria-label="Buka di Jendela Terpisah">
-        <svg width="8.5" height="8.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-      </button>
     </div>
   </div>
 

@@ -354,6 +354,27 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.130
+
+- **Tipe Rilis:** Rekonstruksi Topbar Header Terpadu NOC, Integrasi Tombol Layar Penuh & Pemadatan Spasi Global (*Unified Full-Width Topbar Header, Integrated Wallboard Button & Global Spacing Densification*)
+- **Fokus Utama:** Menyelesaikan secara komprehensif cacat hierarki tata letak visual pada area header dan inkonsistensi elemen kontrol yang teridentifikasi pada tangkapan layar sistem:
+  1. **Rekonstruksi Topbar Header Terpadu (`dashboard.html` & `pantau-noc.css`):**
+     - Mengubah header branding dari format pulau melayang di tengah layar (*centered floating island*) menjadi Topbar Terpadu Baris Penuh (*Full-Width Topbar*) yang rata kiri dan seimbang dengan grid metrik di bawahnya.
+     - Memperbaiki hierarki tipografi: memisahkan nama instansi (`brand.org_name`) sebagai tajuk utama formal berbobot tegas di baris pertama, serta menempatkan identitas platform (`PANTAU SERVER` dalam badge biru) bersama unit kerja di baris kedua, mengeliminasi teks panjang yang bertumpuk canggung tanpa pemisah.
+     - Menyematkan garis pemisah vertikal elegan (*subtle divider*) di sebelah kanan logo resmi.
+  2. **Integrasi Tombol Layar Penuh (NOC Wallboard):**
+     - Mengeliminasi tombol `#kioskToggleBtn` yang sebelumnya melayang sendirian di koordinat `position: fixed` dengan latar belakang gelap pekat yang menabrak estetika tema terang.
+     - Mengintegrasikan tombol Layar Penuh langsung ke dalam Topbar sisi kanan sebagai tombol fungsional resmi (`.dash-topbar-btn`), mendukung penuh tema terang (*Light Theme*) dan tema gelap (*Dark Theme*) dengan transisi visual yang halus dan tinggi proporsional 28px.
+  3. **Pemadatan Spasi Kontainer Utama (`base.html`):**
+     - Memangkas padding kontainer `.main` dari `26px 36px` menjadi `12px 18px 24px 18px`, menghemat ~50px ruang kosong mati di area atas dan ~36px di samping layar sehingga seluruh dasbor naik secara ergonomis.
+  4. **Pembersihan Tombol Ganda & Penyelarasan Ikon Semantik:**
+     - Menghapus tombol popout mikro `[ ↗ ]` duplikat yang membingungkan tepat di sebelah `Riwayat Lengkap` pada kartu Insiden Terkini.
+     - Menyelaraskan tombol `Riwayat Lengkap` dengan ikon panah navigasi kanan `→` dan styling border halus yang serasi dengan tombol utilitas lainnya.
+     - Mengatur tombol popout pada kartu KPI agar tidak mengotori visual kartu metrik dan hanya muncul secara halus saat kursor diarahkan (*hover*).
+  5. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Menaikkan versi sistem menjadi `v4.8.130` secara serentak pada seluruh 7 berkas inti sistem.
+     - Lolos pengujian sintaksis Python `py_compile` dan skrip Bash `bash -n`, serta seluruh daemon pemantauan aktif beroperasi normal.
+
 ## Versi 4.8.129
 
 - **Tipe Rilis:** Eliminasi Tabel Kaku Jendela Pemeliharaan & Pembersihan Redundansi CSS Sticky Server (*Maintenance Auto-Layout Standardization & Server Sticky CSS Redundancy Cleanup*)

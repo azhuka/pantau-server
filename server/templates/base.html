@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.129' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.130' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -247,8 +247,9 @@
   color:#64748b !important;
 }
 [data-theme="light"] .dash-brand-title,
-[data-theme="light"] .dash-org-header div[style*="color:#fff"],
-[data-theme="light"] .dash-org-header div[style*="color: #fff"] {
+[data-theme="light"] .dash-brand-org-name,
+[data-theme="light"] .dash-topbar-header div[style*="color:#fff"],
+[data-theme="light"] .dash-topbar-header div[style*="color: #fff"] {
   color:#0f172a !important;
 }
 [data-theme="light"] .day-btn.is-selected {
@@ -781,7 +782,7 @@ body{
   flex: 1;
   min-width: 0;
   margin-left: 230px;
-  padding: 26px 36px;
+  padding: 12px 18px 24px 18px;
   transition: margin-left .2s cubic-bezier(0.4,0,0.2,1);
   display: flex;
   flex-direction: column;
@@ -2534,7 +2535,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.129' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.130' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
