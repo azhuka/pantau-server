@@ -730,11 +730,13 @@
   color: #c4b5fd;
   border: 1px solid rgba(167, 139, 250, 0.28);
   border-radius: 12px;
-  padding: 1px 7px;
+  padding: 2px 9px;
   font-size: 11px;
   cursor: pointer;
   transition: all .15s ease;
-  max-width: 280px;
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.35;
 }
 .hero-notes-chip:hover {
   background: rgba(167, 139, 250, 0.22);
@@ -742,9 +744,8 @@
   color: #fff;
 }
 .hero-notes-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: inline;
+  word-break: break-word;
 }
 
 /* ==========================================================================
@@ -770,9 +771,25 @@
   padding: 8px 12px !important;
 }
 .tabbar {
-  margin: 0 0 6px !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 85 !important;
+  margin: 0 0 8px !important;
   border-radius: 6px !important;
-  padding: 3px 4px !important;
+  padding: 4px 6px !important;
+  background: var(--card-bg, #101726) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+  transition: top .2s ease;
+}
+body.show-alert-banner .tabbar {
+  top: 48px !important;
+}
+[data-theme="light"] .tabbar {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
 }
 .tab {
   padding: 5px 12px 6px !important;
@@ -1457,9 +1474,9 @@ div[style*="position: fixed"] .card {
           {% endfor %}
         {% endif %}
         {% if server.notes %}
-        <span id="hero-notes-preview" class="hero-notes-chip" onclick="showTab('perf'); focusServerNotes();" title="{{ server.notes }}">
+        <span id="hero-notes-preview" class="hero-notes-chip" onclick="showTab('perf'); focusServerNotes();">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-          <span id="hero-notes-text">{{ (server.notes | replace('\n', ' '))[:40] }}{% if (server.notes|length) > 40 %}…{% endif %}</span>
+          <span id="hero-notes-text">{{ server.notes | replace('\n', ' ') }}</span>
         </span>
         {% endif %}
       </div>
@@ -10977,7 +10994,6 @@ function updateHeroNotes(notes) {
   const heroBar = document.querySelector('.hero-meta-bar');
   if (notes && notes.trim()) {
     const cleanOneLine = notes.replace(/\n+/g, ' ').trim();
-    const shortText = cleanOneLine.length > 40 ? cleanOneLine.slice(0, 40) + '…' : cleanOneLine;
     if (!heroChip && heroBar) {
       heroChip = document.createElement('span');
       heroChip.id = 'hero-notes-preview';
@@ -10987,9 +11003,9 @@ function updateHeroNotes(notes) {
       heroBar.appendChild(heroChip);
     }
     if (heroChip) {
-      heroChip.title = notes;
+      heroChip.removeAttribute('title');
       const t = document.getElementById('hero-notes-text');
-      if (t) t.textContent = shortText;
+      if (t) t.textContent = cleanOneLine;
       heroChip.style.display = 'inline-flex';
     }
   } else {

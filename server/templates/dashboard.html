@@ -713,14 +713,42 @@
 
 /* Header Topbar Dasbor Terpadu (Enterprise / Government NOC Standard) */
 .dash-topbar-header {
+  position: sticky;
+  top: 0;
+  z-index: 95;
+  background: var(--bg);
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
+  width: calc(100% + 36px);
+  margin-top: -12px;
+  margin-left: -18px;
+  margin-right: -18px;
+  padding: 10px 18px;
   margin-bottom: 12px;
-  padding: 2px 0 10px 0;
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
   gap: 12px;
+  transition: top .2s ease;
+}
+[data-theme="light"] .dash-topbar-header {
+  background: #f8fafc !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
+}
+body.show-alert-banner .dash-topbar-header {
+  top: 48px;
+}
+@media (max-width: 768px) {
+  .dash-topbar-header {
+    width: calc(100% + 20px);
+    margin-top: -10px;
+    margin-left: -10px;
+    margin-right: -10px;
+    padding: 8px 10px;
+  }
 }
 .dash-header-left {
   display: flex;
@@ -1091,7 +1119,7 @@ body.popout-fleet_table #dash-fleet-card {
   </div>
 </div>
 {% else %}
-<div class="topbar">
+<div class="dash-topbar-header">
   <div>
     <h2 style="font-size:18px">Dashboard</h2>
     <div style="font-size:13px;color:var(--dim);margin-top:2px">Ringkasan kondisi terkini seluruh server klien &amp; metrik operasional terpusat.</div>

@@ -354,6 +354,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.138
+
+- **Tipe Rilis:** Header Dasbor & Tab Rincian Lengket Vertikal serta Penataan Penuh Catatan Server (*Sticky Dashboard Header & Server Detail Tabbar plus Full Server Note Display*)
+- **Fokus Utama:** Menyelesaikan permasalahan navigasi saat pengguliran halaman vertikal dan tampilan catatan server pada header rincian:
+  1. **Header Dasbor Lengket Permanen Saat Gulir Vertikal (`dashboard.html`):**
+     - Menerapkan penataan posisi lekat (*position: sticky; top: 0; z-index: 95;*) pada bilah kepala dasbor terpadu (`.dash-topbar-header`), sehingga identitas instansi, unit organisasi, dan tombol kontrol layar penuh tetap terlihat permanen saat halaman digulir ke bawah.
+     - Mengintegrasikan kompensasi otomatis posisi `top: 48px` ketika spanduk insiden darurat aktif (`body.show-alert-banner`).
+     - Menyediakan dukungan latar belakang tembus pandang ber-filter blur (*backdrop-filter: blur(14px)*) serta bayangan elevasi halus di tema gelap maupun tema terang.
+  2. **Bilah Tab Rincian Server Lengket Vertikal (`services.html`):**
+     - Menerapkan penataan posisi lekat (*position: sticky !important; top: 0 !important; z-index: 85 !important;*) pada kontainer bilah tab navigasi `#detail-tabs.tabbar`.
+     - Memastikan seluruh tab navigasi (Performa, Insiden, Services, Packages, Tasks, Users, Ports, Firewall, SSL/TLS, Cron Jobs, Logs) tetap dapat diakses seketika di bagian atas layar tanpa mengharuskan pengguna menggulir kembali ke puncak halaman.
+  3. **Penataan Penuh Chip Catatan Server Tanpa Pemotongan & Penghapusan Tooltip Redundan (`services.html`):**
+     - Menghapus pemotongan paksa teks catatan server (`[:40]` pada Jinja dan `slice(0, 40)` pada JavaScript) serta melepas pembatasan lebar maksimal (`max-width: 280px`).
+     - Mengubah chip catatan server (`.hero-notes-chip`) agar menampilkan kalimat catatan secara utuh dan alami mengikuti ruang header yang luas.
+     - Menghapus atribut tooltip `title="{{ server.notes }}"` yang sebelumnya memunculkan popup teks duplikat saat kursor diarahkan ke catatan.
+  4. **Sinkronisasi SemVer 7 Berkas & Layanan Daemon:**
+     - Sinkronisasi versi SemVer `4.8.138` pada 7 berkas inti repositori.
+     - Validasi uji kompilasi sintaksis Python, template Jinja2, dan skrip instalasi Bash.
+     - Distribusi agen klien ke `/opt/pantau/agent/agent_pantau.py` dan *restart* daemon layanan.
+
 ## Versi 4.8.137
 
 - **Tipe Rilis:** Standardisasi Tombol Aksi Tabel, Pembersihan Label Teks & Koreksi Semantik Ikon Rincian (*Table Action Button Standardization, Text Label Removal & Semantic Details Icon Rectification*)
