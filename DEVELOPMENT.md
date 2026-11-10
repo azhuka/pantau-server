@@ -354,6 +354,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.162
+
+- **Tipe Rilis:** Standarisasi Penuh Tabel NOC, Eliminasi Tombol Menggantung, & Transparansi Estimasi Eksekusi Agen (*Full NOC Table Frontend Standardization, Elimination of Indefinite Button Spins, & Transparent Agent Execution Feedback*)
+- **Fokus Utama:** Mengatasi masalah tombol aksi yang berputar terus-menerus tanpa batas waktu, memberikan feedback estimasi waktu riil ke operator, serta menerapkan kelas tabel baku NOC `noc-table-compact` pada seluruh tabel aplikasi:
+  1. **Eliminasi Tombol Menggantung & Transparansi Waktu Eksekusi Agen (`server/templates/services.html` & `server/routers/system_ops.py`):**
+     - Memperbaiki penanganan `finally` pada fungsi eksekusi aksi firewall (`submitFirewallAction` dan `submitFirewallUnblock`) sehingga tombol tidak lagi terkunci dan berputar selamanya saat permintaan sukses dikirim ke server. Tombol otomatis dipulihkan ke keadaan awal setelah 2.5 detik.
+     - Menyematkan informasi estimasi waktu tunggu yang transparan dan lugas pada notifikasi toast dan respons controller: *"Perintah dikirim ke agen. Menunggu eksekusi (~5–10 detik)"*, sehingga operator NOC tidak lagi menunggu tanpa kepastian batas waktu.
+  2. **Standarisasi Menyeluruh Tabel Berdensitas Tinggi NOC (`services.html`):**
+     - Menerapkan kelas baku `noc-table-compact` dengan `width: 100%` pada seluruh tabel aplikasi ([`#tbl-action-history`](file:///home/bos/rj45/server/templates/services.html#L2300), `#probtable`, `#tbl-system-logs`, `#tbl-task-manager`, `#acc-action-table`, `#spec-disks-table`, `#net-table`).
+     - Menyematkan `<colgroup>` presisi dengan `table-layout: fixed` dan menyelaraskan perataan kolom pada tabel Daftar Hitam IP Terblokir (`#fw-blocked-table`) agar nomor baris rata tengah, alamat IP fleksibel proporsional, serta paket dan byte terblokir rata kanan tepat di bawah kepala kolom.
+  3. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.162` pada 7 berkas inti repositori.
+
 ## Versi 4.8.161
 
 - **Tipe Rilis:** Penyempurnaan Tata Letak Tabel Kosong, Paginasi Cerdas ≤10 Baris, dan Standarisasi Istilah Lepas Blokir (*Empty Table Layout Fix, Smart Pagination for ≤10 Rows, and Unblock Terminology Standardization*)

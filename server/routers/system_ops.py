@@ -194,7 +194,7 @@ def firewall_block_ip(
     )
     db.commit()
     if is_json:
-        return JSONResponse({"ok": True, "detail": f"Perintah blokir IP '{ip_clean}' dikirim ke agen."})
+        return JSONResponse({"ok": True, "detail": f"Perintah blokir IP '{ip_clean}' dikirim ke agen. Menunggu eksekusi (~5–10 detik)."})
     return RedirectResponse(f"/servers/{sid}?action=block", status_code=303)
 
 
@@ -232,7 +232,7 @@ def firewall_unblock_ip(
     )
     db.commit()
     if is_json:
-        return JSONResponse({"ok": True, "detail": f"Perintah lepas blokir IP '{ip_clean}' dikirim ke agen."})
+        return JSONResponse({"ok": True, "detail": f"Perintah lepas blokir IP '{ip_clean}' dikirim ke agen. Menunggu eksekusi (~5–10 detik)."})
     return RedirectResponse(f"/servers/{sid}?action=unblock", status_code=303)
 
 
@@ -304,7 +304,7 @@ def firewall_enable(
     )
     db.commit()
     if is_json:
-        return JSONResponse({"ok": True, "detail": "Perintah aktifkan firewall (UFW) dikirim ke agen."})
+        return JSONResponse({"ok": True, "detail": "Perintah aktifkan firewall (UFW) dikirim ke agen. Menunggu eksekusi (~5–10 detik)."})
     return RedirectResponse(f"/servers/{sid}?action=fw_enabled#tab-firewall", status_code=303)
 
 
@@ -376,7 +376,7 @@ def firewall_disable(
     )
     db.commit()
     if is_json:
-        return JSONResponse({"ok": True, "detail": "Perintah nonaktifkan firewall (UFW) dikirim ke agen."})
+        return JSONResponse({"ok": True, "detail": "Perintah nonaktifkan firewall (UFW) dikirim ke agen. Menunggu eksekusi (~5–10 detik)."})
     return RedirectResponse(f"/servers/{sid}?action=fw_disabled#tab-firewall", status_code=303)
 
 
@@ -430,7 +430,7 @@ def firewall_reload(
     )
     db.commit()
     if is_json:
-        return JSONResponse({"ok": True, "detail": "Perintah reload aturan firewall dikirim ke agen."})
+        return JSONResponse({"ok": True, "detail": "Perintah muat ulang (reload) firewall dikirim ke agen. Menunggu eksekusi (~5–10 detik)."})
     return RedirectResponse(f"/servers/{sid}?action=fw_reloaded#tab-firewall", status_code=303)
 
 

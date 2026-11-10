@@ -1886,7 +1886,7 @@ div[style*="position: fixed"] .card {
           <span class="badge badge-info" id="spec-disk-count" style="font-size:8.5px">{{ hardware_specs.disks|length if hardware_specs and hardware_specs.disks else 0 }} Disks</span>
         </div>
         <div style="overflow-x:auto">
-          <table style="width:100%;font-size:10px" id="spec-disks-table">
+          <table class="noc-table-compact" style="width:100%" id="spec-disks-table">
             <thead>
               <tr>
                 <th>Device</th>
@@ -1995,7 +1995,7 @@ div[style*="position: fixed"] .card {
     </div>
     <div id="net-empty" class="empty-msg" style="display:none">Belum ada data jaringan dari server ini.</div>
     <div style="overflow-x:auto">
-      <table id="net-table" style="display:none;width:100%">
+      <table id="net-table" class="noc-table-compact" style="display:none;width:100%">
         <thead>
           <tr>
             <th>Network Interface</th>
@@ -2140,7 +2140,7 @@ div[style*="position: fixed"] .card {
     </div>
   </div>
   <div style="overflow-x:auto">
-  <table id="probtable" style="width:100%">
+  <table id="probtable" class="noc-table-compact" style="width:100%">
     <thead><tr>
       <th class="col-time-detailed" style="width:135px;min-width:125px">Waktu</th>
       <th class="col-sev" style="width:92px;min-width:86px;text-align:center">Keparahan</th>
@@ -2296,16 +2296,16 @@ div[style*="position: fixed"] .card {
       </div>
     </div>
   </div>
-  <div style="overflow-x:auto">
-    <table id="tbl-action-history">
+  <div class="noc-table-wrap" style="overflow-x:auto">
+    <table id="tbl-action-history" class="noc-table-compact" style="width:100%">
       <thead>
         <tr>
-          <th class="col-time-detailed" style="white-space:nowrap;width:135px;min-width:125px">Waktu</th>
-          <th style="width:100px">Pengguna</th>
-          <th style="width:160px">Tindakan</th>
-          <th>Sasaran</th>
-          <th style="width:110px">Status</th>
-          <th>Keterangan / Hasil</th>
+          <th class="col-time-detailed col-fixed-cell" style="white-space:nowrap;width:135px;min-width:125px">Waktu</th>
+          <th class="col-fixed-cell" style="width:110px">Pengguna</th>
+          <th class="col-fixed-cell" style="width:150px">Tindakan</th>
+          <th class="col-hero-cell" style="min-width:140px">Sasaran</th>
+          <th class="col-fixed-cell col-center-cell" style="width:90px;text-align:center">Status</th>
+          <th style="min-width:240px">Keterangan / Hasil</th>
         </tr>
       </thead>
       <tbody id="action-history-tbody">
@@ -2315,11 +2315,11 @@ div[style*="position: fixed"] .card {
           <td class="mono col-time-detailed" style="white-space:nowrap" title="Waktu Eksekusi: {{ a.time.strftime('%d %b %Y %H:%M:%S') if a.time else '—' }}">{{ a.time.strftime('%d %b %H:%M:%S') if a.time else '—' }}</td>
           <td><span class="mono">{{ a.user }}</span></td>
           <td><span class="badge badge-muted">{{ a.action_label }}</span></td>
-          <td style="font-size:13px"><strong>{{ a.target }}</strong></td>
-          <td>
+          <td style="font-size:12.5px"><strong>{{ a.target }}</strong></td>
+          <td class="col-center-cell" style="text-align:center">
             <span class="badge badge-{{ a.status_cls }}">{{ a.status_label }}</span>
           </td>
-          <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">{{ a.result }}</td>
+          <td class="mono" style="font-size:11.5px;color:var(--dim);word-break:break-word">{{ a.result }}</td>
         </tr>
         {% endfor %}
       {% else %}
@@ -2765,7 +2765,7 @@ div[style*="position: fixed"] .card {
 
   <!-- Tabel Utama Task Manager (Processes) dengan Kolom Urut Interaktif -->
   <div style="overflow-x:auto">
-    <table id="tbl-task-manager" style="width:100%;font-size:10px">
+    <table id="tbl-task-manager" class="noc-table-compact" style="width:100%">
       <thead>
         <tr>
           <th style="width:80px;cursor:pointer" onclick="toggleProcSort('pid')" title="Klik untuk mengurutkan PID">
@@ -3017,27 +3017,36 @@ div[style*="position: fixed"] .card {
       {% endif %}
     </div>
     <div id="fw-blocked-wrap" style="overflow-x:auto;display:{{ 'block' if (firewall and firewall.blocked_ips) else 'none' }}">
-      <table id="fw-blocked-table" class="noc-table-compact" style="width:100%">
+      <table id="fw-blocked-table" class="noc-table-compact" style="width:100%;table-layout:fixed">
+        <colgroup>
+          <col style="width:60px">
+          <col style="width:auto">
+          <col style="width:160px">
+          <col style="width:140px">
+          {% if user.has_perm('can_firewall') %}
+          <col style="width:130px">
+          {% endif %}
+        </colgroup>
         <thead>
           <tr>
-            <th class="col-fixed-cell col-center-cell">Baris</th>
-            <th class="col-fixed-cell">Alamat IP Sumber</th>
-            <th class="col-fixed-cell col-num-cell">Packet Terblokir</th>
-            <th class="col-fixed-cell col-num-cell">Total Byte</th>
+            <th class="col-fixed-cell col-center-cell" style="width:60px;text-align:center">Baris</th>
+            <th class="col-hero-cell" style="text-align:left">Alamat IP Sumber</th>
+            <th class="col-fixed-cell col-num-cell" style="width:160px;text-align:right">Packet Terblokir</th>
+            <th class="col-fixed-cell col-num-cell" style="width:140px;text-align:right">Total Byte</th>
             {% if user.has_perm('can_firewall') %}
-            <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
+            <th class="col-fixed-cell col-act" style="width:130px;text-align:center">Tindakan</th>
             {% endif %}
           </tr>
         </thead>
         <tbody>
           {% for b in (firewall.blocked_ips if firewall and firewall.blocked_ips else []) %}
           <tr>
-            <td class="mono">{{ b.num }}</td>
-            <td class="mono" style="color:var(--red);font-weight:700">
+            <td class="mono col-center-cell" style="text-align:center">{{ b.num }}</td>
+            <td class="mono" style="color:var(--red);font-weight:700;text-align:left">
               <span class="copyable-ip" style="cursor:pointer" onclick="copyIp('{{ b.source }}', event)" title="Klik untuk salin IP">{{ b.source }}</span>
             </td>
-            <td class="mono">{{ b.pkts }}</td>
-            <td class="mono">{{ b.bytes }}</td>
+            <td class="mono col-num-cell" style="text-align:right">{{ b.pkts }}</td>
+            <td class="mono col-num-cell" style="text-align:right">{{ b.bytes }}</td>
             {% if user.has_perm('can_firewall') %}
             <td class="col-act" style="text-align:center">
               <button type="button" class="btn btn-success btn-sm" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus aturan DROP untuk IP ini"{% endif %} aria-label="Lepas Blokir" onclick="submitFirewallUnblock('{{ b.source }}', this)">
@@ -3295,7 +3304,7 @@ div[style*="position: fixed"] .card {
       <span class="badge badge-muted" id="acc-action-badge">{{ acc_acts|length }} tindakan</span>
     </div>
     <div class="table-wrap" style="overflow-x:auto">
-      <table class="table" id="acc-action-table" style="margin:0;width:100%">
+      <table id="acc-action-table" class="noc-table-compact" style="margin:0;width:100%">
         <thead>
           <tr>
             <th class="col-time-detailed" style="white-space:nowrap;width:195px;min-width:185px">Waktu</th>
@@ -3631,7 +3640,7 @@ div[style*="position: fixed"] .card {
     </div>
     {% if system_logs %}
     <div style="overflow-x:auto">
-      <table id="tbl-system-logs">
+      <table id="tbl-system-logs" class="noc-table-compact" style="width:100%">
         <thead>
           <tr>
             <th style="width:190px" title="Waktu kejadian tercatat di sistem">Waktu (Terbaru di Atas)</th>
@@ -6155,7 +6164,7 @@ async function submitFirewallAction(action, btn) {
     const res = await r.json().catch(() => ({}));
     if (r.ok && res.ok !== false) {
       requestSuccess = true;
-      showToast(res.detail || (isEn ? `Firewall ${action} command sent.` : `Perintah firewall ${action} dikirim ke agen.`), true);
+      showToast(res.detail || (isEn ? `Firewall ${action} command sent (~5–10s wait).` : `Perintah firewall ${action} dikirim ke agen. Menunggu eksekusi (~5–10 detik).`), true);
       triggerFastPoll();
       if (typeof pollSystem === 'function') pollSystem();
     } else {
@@ -6164,9 +6173,18 @@ async function submitFirewallAction(action, btn) {
   } catch(err) {
     showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
   } finally {
-    if (btn && !requestSuccess) {
-      btn.disabled = false;
-      btn.innerHTML = origHtml;
+    if (btn) {
+      if (!requestSuccess) {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      } else {
+        setTimeout(() => {
+          if (btn && btn.isConnected) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+          }
+        }, 2500);
+      }
     }
   }
 }
@@ -6208,7 +6226,7 @@ async function submitFirewallUnblock(ip, btn) {
     const res = await r.json().catch(() => ({}));
     if (r.ok && res.ok !== false) {
       requestSuccess = true;
-      showToast(res.detail || (isEn ? `Unblock IP ${ip} command sent.` : `Perintah lepas blokir IP ${ip} dikirim ke agen.`), true);
+      showToast(res.detail || (isEn ? `Unblock IP ${ip} command sent (~5–10s wait).` : `Perintah lepas blokir IP ${ip} dikirim ke agen. Menunggu eksekusi (~5–10 detik).`), true);
       triggerFastPoll();
       if (typeof pollSystem === 'function') pollSystem();
     } else {
@@ -6217,9 +6235,18 @@ async function submitFirewallUnblock(ip, btn) {
   } catch(err) {
     showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
   } finally {
-    if (btn && !requestSuccess) {
-      btn.disabled = false;
-      btn.innerHTML = origHtml;
+    if (btn) {
+      if (!requestSuccess) {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+      } else {
+        setTimeout(() => {
+          if (btn && btn.isConnected) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+          }
+        }, 2500);
+      }
     }
   }
 }
@@ -8446,7 +8473,7 @@ function renderProblemsTab(level, openList, histList) {
     </div>
   </div>
   <div style="overflow-x:auto">
-  <table id="probtable" style="width:100%">
+  <table id="probtable" class="noc-table-compact" style="width:100%">
     <thead><tr>
       <th class="col-time-detailed" style="width:135px;min-width:125px">${isEn ? 'Time' : 'Waktu'}</th>
       <th class="col-sev" style="width:92px;min-width:86px;text-align:center">${isEn ? 'Severity' : 'Keparahan'}</th>
@@ -8817,9 +8844,9 @@ function renderActionHistory(actions) {
       <td class="mono col-time-detailed" style="white-space:nowrap" title="${isEn ? 'Execution Time: ' : 'Waktu Eksekusi: '}${escHtml(fmtProbDate(a.time) || a.time || '—')}">${escHtml(fmtProbDateShort(a.time) || a.time || '—')}</td>
       <td><span class="mono">${escHtml(a.user || '-')}</span></td>
       <td><span class="badge badge-muted">${escHtml(f.act)}</span></td>
-      <td style="font-size:13px"><strong>${escHtml(f.tgt)}</strong></td>
-      <td><span class="badge badge-${escHtml(a.status_cls || 'muted')}">${escHtml(f.st)}</span></td>
-      <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">${escHtml(f.res)}</td>
+      <td style="font-size:12.5px"><strong>${escHtml(f.tgt)}</strong></td>
+      <td class="col-center-cell" style="text-align:center"><span class="badge badge-${escHtml(a.status_cls || 'muted')}">${escHtml(f.st)}</span></td>
+      <td class="mono" style="font-size:11.5px;color:var(--dim);word-break:break-word">${escHtml(f.res)}</td>
     </tr>`;
   }).join('');
 
@@ -9558,12 +9585,12 @@ function renderFirewall(fw) {
           ? `<button type="button" class="btn btn-success btn-sm" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="submitFirewallUnblock('${escHtml(b.source)}', this)" title="${isEn ? 'Unblock IP' : 'Hapus aturan DROP untuk IP ini'}" aria-label="Lepas Blokir">${svgFwUnblock} <span>${isEn ? 'Unblock' : 'Lepas Blokir'}</span></button>`
           : '';
         return `<tr>
-          <td class="mono">${escHtml(String(b.num || ''))}</td>
-          <td class="mono" style="color:var(--red);font-weight:700">
+          <td class="mono col-center-cell" style="text-align:center">${escHtml(String(b.num || ''))}</td>
+          <td class="mono" style="color:var(--red);font-weight:700;text-align:left">
             <span class="copyable-ip" style="cursor:pointer" onclick="copyIp('${escHtml(b.source)}', event)" title="${isEn ? 'Click to copy IP' : 'Klik untuk salin IP'}">${escHtml(b.source)}</span>
           </td>
-          <td class="mono">${escHtml(String(b.pkts || 0))}</td>
-          <td class="mono">${escHtml(String(b.bytes || 0))}</td>
+          <td class="mono col-num-cell" style="text-align:right">${escHtml(String(b.pkts || 0))}</td>
+          <td class="mono col-num-cell" style="text-align:right">${escHtml(String(b.bytes || 0))}</td>
           ${CAN_FIREWALL ? `<td class="col-act" style="text-align:center;white-space:nowrap">${unblockBtn}</td>` : ''}
         </tr>`;
       }).join('');
