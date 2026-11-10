@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Aktivitas {{ username }} - Pantau Server{% endblock %}
+{% block page_title %}Aktivitas User: {{ username }}{% endblock %}
 {% block content %}
-<div class="topbar">
-  <div class="topbar-left">
+<div class="page-header">
+  <div class="page-header-left">
     <a href="/servers/{{ server.id }}?tab=akun" class="btn btn-ghost btn-sm" style="height:28px;display:inline-flex;align-items:center">&larr; Kembali</a>
     <h2 style="margin:0;display:inline-flex;align-items:center;gap:6px">
       <span>Aktivitas User:</span>
@@ -10,7 +11,7 @@
       <span style="font-size:13px;color:var(--dim)">@ {{ server.hostname }}</span>
     </h2>
   </div>
-  <div class="topbar-right">
+  <div class="page-header-actions">
     <button type="button" class="btn btn-ghost btn-sm" onclick="loadActivity(false)" title="Segarkan data aktivitas sekarang" style="height:28px;display:inline-flex;align-items:center">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
       <span>Segarkan</span>
@@ -29,7 +30,6 @@
         {% endif %}
       {% endfor %}
     {% endif %}
-    {% include "topbar_user.html" %}
   </div>
 </div>
 

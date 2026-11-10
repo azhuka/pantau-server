@@ -1,17 +1,18 @@
 {% extends "base.html" %}
 {% block title %}File Manager — {{ server.hostname }}{% endblock %}
+{% block page_title %}File Manager — {{ server.hostname }}{% endblock %}
 
 {% block content %}
-<div class="topbar">
-  <div>
+<div class="page-header">
+  <div class="page-header-left">
     <h2>File Manager — {{ server.hostname }}
       <span class="mono copyable-ip" style="font-size:12px;margin-left:8px" onclick="copyIp('{{ server.ip_address }}', event)" title="Klik untuk salin IP">{{ server.ip_address }}</span>
     </h2>
-    <div style="font-size:12px;color:var(--dim);margin-top:2px">
+    <div class="page-header-desc">
       Eksplorasi, kelola, dan sunting file server secara langsung lewat protokol aman.
     </div>
   </div>
-  <div class="topbar-right">
+  <div class="page-header-actions">
     <div id="fm-lease-badge" style="display:none;align-items:center;gap:6px;padding:3px 8px;border-radius:6px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.3);font-size:11.5px;font-family:monospace;color:var(--blue);height:28px;box-sizing:border-box">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <span>Sisa Sesi:</span> <strong id="fm-lease-timer">--:--</strong>
@@ -20,7 +21,6 @@
       </button>
     </div>
     <a href="/servers/{{ server.id }}" class="btn btn-ghost btn-sm" style="height:28px;display:inline-flex;align-items:center">&larr; Kembali</a>
-    {% include "topbar_user.html" %}
   </div>
 </div>
 

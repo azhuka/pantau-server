@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Insiden - Pantau Server{% endblock %}
+{% block page_title %}Insiden Server{% endblock %}
 {% block content %}
-<div class="topbar">
-  <h2>Insiden Server</h2>
-  <div class="topbar-right">
+<div class="page-header">
+  <div class="page-header-left">
+    <h2>Insiden Server</h2>
+  </div>
+  <div class="page-header-actions">
     <span id="prob-summary-badges" style="display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center">
       {% if danger_open %}<span class="badge badge-danger">Kritis {{ danger_open }}</span>{% endif %}
       {% if average_open %}<span class="badge badge-orange">Gawat {{ average_open }}</span>{% endif %}
@@ -18,7 +21,6 @@
       <span>Ambang Batas Insiden</span>
     </button>
     {% endif %}
-    {% include "topbar_user.html" %}
   </div>
 </div>
 

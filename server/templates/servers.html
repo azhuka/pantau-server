@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Daftar Server - Pantau Server{% endblock %}
+{% block page_title %}Daftar Server{% endblock %}
 {% block content %}
 <style>
 .group-header-row {
@@ -94,10 +95,9 @@
 }
 </style>
 
-<div class="topbar">
-  <h2>Daftar Server</h2>
-  <div class="topbar-right">
-    {% include "topbar_user.html" %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h2>Daftar Server</h2>
   </div>
 </div>
 

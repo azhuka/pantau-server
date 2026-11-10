@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Log Server - Pantau Server{% endblock %}
+{% block page_title %}Log Server{% endblock %}
 {% block content %}
-<div class="topbar">
-  <h2>Log Server Pantau-Server</h2>
-  <div class="topbar-right">
-    <div class="mono" style="font-size:12px;color:var(--dim);margin-right:4px"><span id="sys-host">-</span> &middot; aktif selama <span id="sys-up">-</span></div>
-    {% include "topbar_user.html" %}
+<div class="page-header">
+  <div class="page-header-left">
+    <h2>Log Server Pantau-Server</h2>
+  </div>
+  <div class="page-header-actions">
+    <div class="mono" style="font-size:12px;color:var(--dim)"><span id="sys-host">-</span> &middot; aktif selama <span id="sys-up">-</span></div>
   </div>
 </div>
 

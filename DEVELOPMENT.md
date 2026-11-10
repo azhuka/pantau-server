@@ -507,6 +507,18 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.168
+
+- **Tipe Rilis:** Arsitektur Global Masthead Topbar Enterprise & Pemisahan Mutlak Tombol Aksi Konten Halaman (*Global Enterprise Topbar Masthead Architecture & Strict Separation from Page-Level Content Action Headers*)
+- **Fokus Utama:** Mengatasi akar permasalahan struktural UI di mana tombol khusus halaman bercampur aduk dengan profil akun operator:
+  1. **Pemisahan Mutlak Topbar Global vs Page Content Header (`server/templates/base.html`, `server/static/css/pantau-noc.css`):**
+     - Membangun bilah **Topbar Global Aplikasi (`.noc-global-topbar`)** permanen dan statis di `base.html` yang berdiri sendiri di bagian paling atas aplikasi (tinggi 38px, di atas area konten).
+     - Topbar Global murni memuat navigasi global: tombol drawer seluler, breadcrumb konteks halaman (`Pantau Server / Nama Halaman`), jam waktu UTC live per-detik (`#topbarUtcClock`), tombol mode layar penuh Kiosk NOC, dan kapsul akun operator (`.noc-topbar-user`).
+     - Seluruh tombol aksi khusus halaman (`+ Tambah Endpoint`, `Ambang Batas Insiden`, `+ Tambah Jadwal`, `Optimalkan Basis Data`, `Edit`, `Hapus`) dikembalikan sepenuhnya ke **Page Header (`.page-header`)** di dalam area konten halaman masing-masing.
+     - Mengeliminasi total keberadaan chip user dari dalam konten halaman; profil operator kini 100% konsisten berada di sudut kanan atas aplikasi secara permanen pada seluruh halaman.
+  2. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.168` secara konsisten pada 7 berkas inti repositori.
+
 ## Versi 4.8.167
 
 - **Tipe Rilis:** Standarisasi Baku Arsitektur Topbar NOC Seluruh Halaman, Eliminasi Injeksi Hack JavaScript DOM, & Penataan Ulang Bilah Navigasi Terpadu (*Standardized NOC Topbar Architecture Across All Pages, Elimination of Client-Side DOM Injection Hack, & Universal Topbar-Right Containment*)

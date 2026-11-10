@@ -1,14 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Riwayat Tindakan - Pantau Server{% endblock %}
+{% block page_title %}Riwayat Tindakan{% endblock %}
 {% set st_label = {'PENDING': 'Menunggu', 'EXECUTING': 'Dinyalakan', 'SUCCESS': 'Berhasil', 'FAILED': 'Gagal'} %}
 {% set st_cls = {'PENDING': 'inactive', 'EXECUTING': 'inactive', 'SUCCESS': 'up', 'FAILED': 'danger'} %}
 {% block content %}
-<div class="topbar">
-  <h2>Riwayat Tindakan</h2>
-  <div class="topbar-right">
+<div class="page-header">
+  <div class="page-header-left">
+    <h2>Riwayat Tindakan</h2>
+  </div>
+  <div class="page-header-actions">
     <span id="audit-live" class="badge badge-up" style="opacity:.35;transition:opacity .3s" title="Diperbarui otomatis setiap 5 detik">live</span>
     <button type="button" class="btn btn-ghost btn-sm" id="audit-refresh" title="Muat ulang data riwayat audit seketika" style="height:28px;display:inline-flex;align-items:center">Perbarui</button>
-    {% include "topbar_user.html" %}
   </div>
 </div>
 

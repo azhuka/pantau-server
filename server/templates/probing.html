@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Pemantauan Endpoint &amp; Jaringan - Pantau Server{% endblock %}
+{% block page_title %}Pemantauan Endpoint{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -479,21 +480,20 @@
 {% endblock %}
 
 {% block content %}
-<div class="topbar">
-  <div>
-    <h2 style="margin:0">Pemantauan Endpoint &amp; Jaringan</h2>
-    <div style="font-size:12.5px;color:var(--dim);margin-top:2px">
+<div class="page-header">
+  <div class="page-header-left">
+    <h2>Pemantauan Endpoint &amp; Jaringan</h2>
+    <div class="page-header-desc">
       Pantau ketersediaan &amp; latensi endpoint eksternal (HTTP/S, ICMP Ping, Port TCP).
     </div>
   </div>
-  <div class="topbar-right">
+  <div class="page-header-actions">
     {% if can_probing or user.is_master_admin() %}
     <button type="button" class="btn btn-primary btn-sm" onclick="openAddProbeModal()" style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
       <span>Tambah Endpoint</span>
     </button>
     {% endif %}
-    {% include "topbar_user.html" %}
   </div>
 </div>
 

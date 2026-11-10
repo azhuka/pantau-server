@@ -1,14 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - Pantau Server{% endblock %}
-{% block topbar %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
 {% if brand and brand.org_name %}
-<div class="dash-topbar-header">
+<div class="dash-topbar-header" style="margin-bottom:14px">
   <div class="dash-header-left">
     <div class="dash-brand-logo-box">
       {% if brand.logo_url %}
       <img src="{{ brand.logo_url }}" alt="Logo {{ brand.org_name }}" class="dash-header-logo">
       {% else %}
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)">
         <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
         <path d="M2 17l10 5 10-5"></path>
         <path d="M2 12l10 5 10-5"></path>
@@ -25,40 +27,8 @@
       </div>
     </div>
   </div>
-  <div class="dash-header-right">
-    <button type="button" id="kioskToggleBtn" class="dash-topbar-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
-      <svg id="kioskIconEnter" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-      </svg>
-      <svg id="kioskIconExit" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
-        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-      </svg>
-    </button>
-    {% include "topbar_user.html" %}
-  </div>
-</div>
-{% else %}
-<div class="dash-topbar-header">
-  <div>
-    <h2 style="font-size:18px">Dashboard</h2>
-    <div style="font-size:13px;color:var(--dim);margin-top:2px">Ringkasan kondisi terkini seluruh server klien &amp; metrik operasional terpusat.</div>
-  </div>
-  <div class="dash-header-right">
-    <button type="button" id="kioskToggleBtn" class="dash-topbar-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
-      <svg id="kioskIconEnter" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-      </svg>
-      <svg id="kioskIconExit" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
-        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-      </svg>
-    </button>
-    {% include "topbar_user.html" %}
-  </div>
 </div>
 {% endif %}
-{% endblock %}
-
-{% block content %}
 {% set g_th = global_thresholds or {} %}
 {% set cpu_w = (g_th.cpu_warn if g_th.cpu_warn is defined else 85.0) or 85.0 %}
 {% set cpu_d = (g_th.cpu_danger if g_th.cpu_danger is defined else 95.0) or 95.0 %}

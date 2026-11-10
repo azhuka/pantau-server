@@ -1,28 +1,28 @@
 {% extends "base.html" %}
 {% block title %}Master Control Center — Pantau Server{% endblock %}
+{% block page_title %}Master Control{% endblock %}
 
 {% block content %}
-<div class="topbar">
-  <div>
-    <h2 style="font-size:1.25rem;font-weight:700;margin:0;color:var(--text);display:flex;align-items:center;gap:8px;">
+<div class="page-header">
+  <div class="page-header-left">
+    <h2>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
         <line x1="8" y1="21" x2="16" y2="21"></line>
         <line x1="12" y1="17" x2="12" y2="21"></line>
       </svg>
-      Master Control Center
+      <span>Master Control Center</span>
     </h2>
-    <div style="font-size:12px;color:var(--dim);margin-top:2px;">
+    <div class="page-header-desc">
       Pusat kendali sistem, inspeksi basis data, telemetri resource internal, dan konfigurasi ambang batas monitoring.
     </div>
   </div>
-  <div class="topbar-right">
+  <div class="page-header-actions">
     <button onclick="optimizeDatabase()" id="btnOptDb" class="btn btn-sm btn-outline" style="font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:6px;height:28px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
       <span>Optimalkan Basis Data</span>
     </button>
     <a href="/profile?tab=users" class="btn btn-sm btn-ghost" style="font-size:11px;height:28px;display:inline-flex;align-items:center">Manajemen Operator</a>
-    {% include "topbar_user.html" %}
   </div>
 </div>
 
