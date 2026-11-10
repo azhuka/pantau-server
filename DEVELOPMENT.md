@@ -507,6 +507,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.170
+
+- **Tipe Rilis:** Penghapusan Elemen Jam UTC pada Topbar Global Seluruh Halaman (*Removal of UTC Clock Element from Global Topbar Across All Pages*)
+- **Fokus Utama:** Menyederhanakan bilah atas aplikasi dengan mengeliminasi kapsul jam UTC yang dinilai tidak diperlukan pada topbar global maupun topbar khusus dashboard:
+  1. **Pembersihan Markup Topbar (`server/templates/base.html`, `server/templates/dashboard.html`):**
+     - Menghapus blok `.topbar-utc-clock` beserta titik indikator `.topbar-utc-dot` dan penampung `#topbarUtcClock` dari topbar global `base.html`.
+     - Menghapus blok serupa pada kedua varian topbar dashboard (`#dashUtcClock`) di `dashboard.html`, baik varian dengan branding instansi maupun varian fallback.
+     - Tombol mode layar penuh Kiosk NOC dan kapsul akun operator tetap dipertahankan pada posisi semula di sudut kanan atas.
+  2. **Pembersihan Gaya & Skrip (`server/static/css/pantau-noc.css`, `server/templates/base.html`):**
+     - Menghapus aturan CSS `.topbar-utc-clock`, `[data-theme="light"] .topbar-utc-clock`, dan `.topbar-utc-dot` yang sudah tidak terpakai.
+     - Merampingkan fungsi `tickUtcClock()` agar hanya memperbarui jam UTC pada footer sidebar (`#clockUtc`), tanpa lagi merujuk elemen topbar yang telah dihapus.
+  3. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.170` pada 7 berkas inti repositori.
+
 ## Versi 4.8.169
 
 - **Tipe Rilis:** Eliminasi Total Redundansi Branding Dashboard & Penyelarasan Hierarki Topbar Global Tunggal (*Elimination of Duplicate Dashboard Branding & Unified Single-Topbar Hierarchy*)

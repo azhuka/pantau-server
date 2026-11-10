@@ -568,32 +568,6 @@ table.noc-table tbody tr:hover td.col-act,
   margin-left: auto !important;
 }
 
-.topbar-utc-clock {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 5px !important;
-  font-size: 11px !important;
-  font-family: var(--font-mono, monospace) !important;
-  color: var(--dim) !important;
-  background: rgba(255, 255, 255, 0.03) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 4px !important;
-  padding: 2px 7px !important;
-  height: 26px !important;
-  box-sizing: border-box !important;
-}
-[data-theme="light"] .topbar-utc-clock {
-  background: rgba(0, 0, 0, 0.02) !important;
-}
-.topbar-utc-dot {
-  width: 5px !important;
-  height: 5px !important;
-  border-radius: 50% !important;
-  background: var(--green, #22c55e) !important;
-  display: inline-block !important;
-  box-shadow: 0 0 6px var(--green, #22c55e) !important;
-}
-
 .topbar-kiosk-btn {
   width: 26px !important;
   height: 26px !important;

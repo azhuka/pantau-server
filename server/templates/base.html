@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.169' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.170' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2806,7 +2806,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.169' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.170' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
@@ -2832,10 +2832,6 @@ body.show-alert-banner .main{padding-top:72px}
     </div>
 
     <div class="topbar-global-right">
-      <div class="topbar-utc-clock" title="Waktu Koordinasi Universal (UTC)">
-        <span class="topbar-utc-dot"></span>
-        <span class="mono">UTC <span id="topbarUtcClock">--:--:--</span></span>
-      </div>
       {% include "topbar_user.html" %}
     </div>
   </header>
@@ -3728,14 +3724,10 @@ function tickAllDurations(){
 }
 setInterval(tickAllDurations, 1000);
 
-// ---------- jam UTC (semua timestamp UI memakai UTC; lokal Anda bisa berbeda) ----------
+// ---------- jam UTC footer sidebar (semua timestamp UI memakai UTC; lokal Anda bisa berbeda) ----------
 function tickUtcClock(){
   const now = new Date();
   const timeSec = now.toISOString().substring(11, 19);
-  const elTopbar = document.getElementById('topbarUtcClock');
-  if (elTopbar) elTopbar.textContent = timeSec;
-  const elDash = document.getElementById('dashUtcClock');
-  if (elDash) elDash.textContent = timeSec;
   const elFooter = document.getElementById('clockUtc');
   if (elFooter) elFooter.textContent = timeSec.substring(0, 5) + ' UTC';
 }
