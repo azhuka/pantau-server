@@ -354,6 +354,37 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.144
+
+- **Tipe Rilis:** Standardisasi Arsitektur Tombol Semantik Presisi NOC, Pemulihan Identitas Warna Lintas Tema Terang/Gelap, & Pembatas Visual Aksi Teruji (*Semantic NOC Button Architecture, Cross-Theme Color Identity Restoration, & Theme-Aware Action Divider*)
+- **Fokus Utama:** Mengeliminasi seluruh pola pewarnaan *inline style hardcode*, menegakkan konsistensi warna semantik tombol aksi di seluruh tema (Dark & Light), dan memastikan pemisah visual aksi terlihat presisi:
+  1. **Arsitektur Tombol Semantik Terstandar (Modul 13 `pantau-noc.css`):**
+     - Memperbaiki akar masalah inkonsistensi tema terang di mana tombol aksi berubah menjadi hitam monokrom (`#1e293b`) akibat override selektor `.btn-ghost`.
+     - Menyediakan kelas semantik lengkap berstandar kontras tinggi NOC: `.btn-noc-icon`, `.btn-danger`, `.btn-warn`, `.btn-success`, `.btn-info`, `.btn-primary`, dan `.btn-ghost`.
+     - Memberikan penjaga spesifik `[data-theme="light"]` dengan prioritas tinggi untuk tombol semantik (`.btn-danger`, `.btn-warn`, `.btn-success`, `.btn-info`) sehingga tidak akan pernah tertimpa menjadi monokrom hitam saat berganti tema.
+  2. **Refaktorisasi Bebas Hardcode pada Tabel Pengguna (Users / `tab-akun`):**
+     - Menggantikan string inline hardcode `style="color:var(--red)..."` dan `style="color:var(--yellow)..."` dengan kelas semantik terstruktur:
+       - Tombol Rincian: `.btn-noc-icon .btn-ghost` (netral)
+       - Tombol Putus Sesi Terminal (Logout): `.btn-noc-icon .btn-danger` (merah semantik)
+       - Tombol Kunci Pengguna: `.btn-noc-icon .btn-warn` (oranye/kuning semantik)
+       - Tombol Buka Kunci Pengguna: `.btn-noc-icon .btn-info` (biru semantik)
+       - Tombol Hapus Akun: `.btn-noc-icon .btn-danger` (merah semantik)
+  3. **Standardisasi Tombol Port & Kebijakan Akses (Ports / `tab-ports`):**
+     - Mengubah tombol *Buka / Izinkan Port (Allow)* dari kelas `.btn-primary` (yang berubah jadi biru di tema terang) menjadi `.btn-noc-icon .btn-success` (warna hijau semantik baku untuk izin/allow di kedua tema).
+     - Menstandarisasi tombol *Blokir Port (Deny)* menjadi `.btn-noc-icon .btn-warn` dengan kontras tinggi.
+     - Mengintegrasikan tombol *Kill PID* menjadi `.btn-noc-icon .btn-danger`.
+  4. **Pembaruan Tombol Proses & Tugas Sistem (Tasks / `tab-proses`):**
+     - Menstandarisasi kontrol sinyal proses langsung: *Pause/SIGSTOP* (.btn-warn), *Resume/SIGCONT* (.btn-success), dan *Hentikan/SIGTERM* (.btn-danger) bebas dari atribut style hardcode.
+  5. **Pemisah Visual Kolom Aksi Dinamis (`.act-separator`):**
+     - Menggantikan kode inline `background:rgba(255,255,255,0.18)` yang lenyap tak terlihat di tema terang menjadi kelas CSS `.act-separator` yang dinamis:
+       - Tema Gelap: `rgba(255, 255, 255, 0.18)`
+       - Tema Terang: `rgba(0, 0, 0, 0.18)`
+  6. **Sinkronisasi SemVer 7 Berkas & Verifikasi Visual CDP:**
+     - Sinkronisasi versi SemVer `4.8.144` pada 7 berkas inti repositori.
+     - Kompilasi sintaksis Python, template Jinja2, dan skrip Bash lolos 100%.
+     - Verifikasi visual live browser headless Chromium via CDP membuktikan kontras sempurna pada tema gelap dan tema terang.
+     - Distribusi agen klien ke `/opt/pantau/agent/agent_pantau.py` dan *restart* daemon layanan `pantau-server.service` serta `agent_pantau.service` berstatus aktif normal.
+
 ## Versi 4.8.143
 
 - **Tipe Rilis:** Standardisasi Sistem Tombol Universal Lintas Tema, Eliminasi Anomali Kedip Tombol Upgrade, & Pemulihan Nomenklatur Standar Sysadmin (*Universal Theme-Aware Button System, Upgrade Button Flickering Fix, & Sysadmin Technical Nomenclature Restoration*)
