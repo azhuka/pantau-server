@@ -479,61 +479,21 @@
 {% endblock %}
 
 {% block content %}
-<div class="probe-header">
+<div class="topbar">
   <div>
-    <h2>Pemantauan Endpoint &amp; Jaringan</h2>
-    <div style="font-size:12.5px;color:var(--dim);margin-top:4px">
-      Pantau kondisi endpoint (services, jaringan, port) (aplikasi, jaringan, port) dari luar
+    <h2 style="margin:0">Pemantauan Endpoint &amp; Jaringan</h2>
+    <div style="font-size:12.5px;color:var(--dim);margin-top:2px">
+      Pantau ketersediaan &amp; latensi endpoint eksternal (HTTP/S, ICMP Ping, Port TCP).
     </div>
   </div>
-  <div class="probe-controls" style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
-    <div class="filter-col-search" title="Cari nama atau target endpoint" style="min-width:180px">
-      <label class="filter-col-label" for="probeSearchInput">Cari Endpoint</label>
-      <div class="filter-search-box">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="search" id="probeSearchInput" placeholder="Cari endpoint, URL, IP, port…" oninput="handleSearchFilter()">
-      </div>
-    </div>
-    <div class="filter-col" title="Filter Protokol">
-      <label class="filter-col-label" for="probeTypeFilter">Protokol</label>
-      <select id="probeTypeFilter" class="filter-select" onchange="handleSearchFilter()">
-        <option value="all">Semua Protokol</option>
-        <option value="http">Web (HTTP / HTTPS)</option>
-        <option value="ping">Ping Jaringan (ICMP)</option>
-        <option value="tcp">Port Service (TCP)</option>
-      </select>
-    </div>
-    <div class="filter-col" title="Filter Status">
-      <label class="filter-col-label" for="probeStatusFilter">Status</label>
-      <select id="probeStatusFilter" class="filter-select" onchange="handleSearchFilter()">
-        <option value="all">Semua Status</option>
-        <option value="up">Normal (UP)</option>
-        <option value="down">Terputus (DOWN)</option>
-        <option value="degraded">Terganggu (Degraded)</option>
-        <option value="paused">Dijeda</option>
-      </select>
-    </div>
-    <div class="filter-col" title="Filter Server Target">
-      <label class="filter-col-label" for="probeServerFilter">Server</label>
-      <select id="probeServerFilter" class="filter-select" onchange="handleSearchFilter()">
-        <option value="all">Semua Node</option>
-        <option value="standalone">Mandiri / Eksternal</option>
-        {% if servers %}
-          {% for s in servers %}
-          <option value="{{ s.id }}">{{ s.hostname }}</option>
-          {% endfor %}
-        {% endif %}
-      </select>
-    </div>
-    <button type="button" class="btn btn-ghost btn-sm" onclick="fetchProbes(true)" title="Muat Ulang Data" style="height:32px;padding:0 10px;flex-shrink:0">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/></svg>
-    </button>
+  <div class="topbar-right">
     {% if can_probing or user.is_master_admin() %}
-    <button type="button" class="btn btn-primary btn-sm" onclick="openAddProbeModal()" style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;flex-shrink:0">
+    <button type="button" class="btn btn-primary btn-sm" onclick="openAddProbeModal()" style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
       <span>Tambah Endpoint</span>
     </button>
     {% endif %}
+    {% include "topbar_user.html" %}
   </div>
 </div>
 
@@ -581,6 +541,51 @@
     </div>
     <div class="probe-kpi-val" id="kpi-uptime" style="color:#38bdf8">100<span style="font-size:14px;color:var(--dim);font-weight:600;margin-left:2px">%</span></div>
   </div>
+</div>
+
+<!-- Panel Filter Pencarian Endpoint -->
+<div class="probe-controls pantau-filter-panel" style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+  <div class="filter-col-search" title="Cari nama atau target endpoint" style="min-width:180px;flex:1 1 200px">
+    <label class="filter-col-label" for="probeSearchInput">Cari Endpoint</label>
+    <div class="filter-search-box">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="search" id="probeSearchInput" placeholder="Cari endpoint, URL, IP, port…" oninput="handleSearchFilter()">
+    </div>
+  </div>
+  <div class="filter-col" title="Filter Protokol">
+    <label class="filter-col-label" for="probeTypeFilter">Protokol</label>
+    <select id="probeTypeFilter" class="filter-select" onchange="handleSearchFilter()">
+      <option value="all">Semua Protokol</option>
+      <option value="http">Web (HTTP / HTTPS)</option>
+      <option value="ping">Ping Jaringan (ICMP)</option>
+      <option value="tcp">Port Service (TCP)</option>
+    </select>
+  </div>
+  <div class="filter-col" title="Filter Status">
+    <label class="filter-col-label" for="probeStatusFilter">Status</label>
+    <select id="probeStatusFilter" class="filter-select" onchange="handleSearchFilter()">
+      <option value="all">Semua Status</option>
+      <option value="up">Normal (UP)</option>
+      <option value="down">Terputus (DOWN)</option>
+      <option value="degraded">Terganggu (Degraded)</option>
+      <option value="paused">Dijeda</option>
+    </select>
+  </div>
+  <div class="filter-col" title="Filter Server Target">
+    <label class="filter-col-label" for="probeServerFilter">Server</label>
+    <select id="probeServerFilter" class="filter-select" onchange="handleSearchFilter()">
+      <option value="all">Semua Node</option>
+      <option value="standalone">Mandiri / Eksternal</option>
+      {% if servers %}
+        {% for s in servers %}
+        <option value="{{ s.id }}">{{ s.hostname }}</option>
+        {% endfor %}
+      {% endif %}
+    </select>
+  </div>
+  <button type="button" class="btn btn-ghost btn-sm" onclick="fetchProbes(true)" title="Muat Ulang Data" style="height:32px;padding:0 10px;flex-shrink:0">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/></svg>
+  </button>
 </div>
 
 <!-- Kartu Tabel Endpoint Terpantau -->

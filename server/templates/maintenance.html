@@ -287,22 +287,25 @@
 {% endblock %}
 
 {% block content %}
-<div class="maint-header">
+<div class="topbar">
   <div>
     <h2 style="margin:0;display:flex;align-items:center;gap:8px">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
       <span>Jendela Pemeliharaan Terjadwal</span>
     </h2>
-    <div style="font-size:12px;color:var(--dim);margin-top:4px">
+    <div style="font-size:12px;color:var(--dim);margin-top:2px">
       Rencanakan jadwal pemeliharaan terencana, tekan alarm darurat palsu selama masa pemeliharaan, dan pertahankan kedaulatan operasional NOC.
     </div>
   </div>
-  {% if user and (user.is_master_admin() or user.has_perm('can_manage_servers') or user.is_operator()) %}
-  <button type="button" class="btn btn-primary" onclick="openAddModal()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-    <span>Tambah Jadwal Pemeliharaan</span>
-  </button>
-  {% endif %}
+  <div class="topbar-right">
+    {% if user and (user.is_master_admin() or user.has_perm('can_manage_servers') or user.is_operator()) %}
+    <button type="button" class="btn btn-primary btn-sm" onclick="openAddModal()" style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>Tambah Jadwal Pemeliharaan</span>
+    </button>
+    {% endif %}
+    {% include "topbar_user.html" %}
+  </div>
 </div>
 
 <!-- 3 Stat Tiles Ringkasan Metrik -->

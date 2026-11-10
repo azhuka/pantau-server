@@ -3,7 +3,10 @@
 {% block content %}
 <div class="topbar">
   <h2>API Key {{ server.hostname }}</h2>
-  <a href="/servers" class="btn btn-ghost">&larr; Kembali</a>
+  <div class="topbar-right">
+    <a href="/servers" class="btn btn-ghost btn-sm" style="height:28px;display:inline-flex;align-items:center">&larr; Kembali</a>
+    {% include "topbar_user.html" %}
+  </div>
 </div>
 
 <div class="card" style="border-color:var(--green)">

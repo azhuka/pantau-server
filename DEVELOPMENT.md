@@ -507,6 +507,28 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.167
+
+- **Tipe Rilis:** Standarisasi Baku Arsitektur Topbar NOC Seluruh Halaman, Eliminasi Injeksi Hack JavaScript DOM, & Penataan Ulang Bilah Navigasi Terpadu (*Standardized NOC Topbar Architecture Across All Pages, Elimination of Client-Side DOM Injection Hack, & Universal Topbar-Right Containment*)
+- **Fokus Utama:** Menyelesaikan permasalahan topbar berantakan dan elemen tombol terdorong canggung pada seluruh antarmuka web:
+  1. **Standarisasi Arsitektur Flexbox Topbar NOC (`server/static/css/pantau-noc.css`):**
+     - Menerapkan arsitektur dua kontainer utama pada setiap topbar: sisi kiri (`.topbar-left` atau elemen judul) dan sisi kanan (`.topbar-right` / `.dash-header-right`).
+     - Menetapkan `.topbar-right` dengan `display: inline-flex !important; align-items: center !important; gap: 8px !important; flex-shrink: 0 !important; margin-left: auto !important; flex-wrap: wrap !important;`.
+     - Menjamin tombol-tombol aksi spesifik halaman dan chip akun operator (`.noc-topbar-user`) selalu berada berdampingan di sudut kanan atas tanpa pernah terdorong ke tengah viewport layar.
+  2. **Eliminasi Total Hack Injeksi JavaScript DOM (`server/templates/base.html`):**
+     - Menghapus skrip `initTopbarUser()` dan template tersembunyi `topbarUserChipTemplate` yang sebelumnya menyisipkan chip akun operator ke elemen DOM acak secara sisi klien (*client-side*).
+     - Menggantinya dengan integrasi deklaratif sisi server (*server-side template include*) `{% include "topbar_user.html" %}` langsung di dalam `.topbar-right` pada masing-masing berkas template.
+  3. **Penataan Topbar Baku di 15 Template Halaman:**
+     - `services.html`: Membungkus tombol Edit, Hapus, dan Daftar Server bersama chip akun operator di dalam `.topbar-right`, menghilangkan masalah tombol mengambang di tengah layar.
+     - `probing.html`: Memisahkan topbar dari kontrol filter pencarian; kontrol filter dipindahkan rapi di atas tabel endpoint terpantau, sementara tombol Tambah Endpoint dan chip operator berada di topbar kanan.
+     - `maintenance.html`: Mengubah `.maint-header` menjadi `.topbar` baku dengan tombol Tambah Jadwal Pemeliharaan dan chip operator sejajar di kanan tanpa baris ganda (*wrapping*).
+     - `audit.html`: Mengintegrasikan badge live, tombol Perbarui, dan chip operator ke dalam `.topbar-right`.
+     - `profile.html`: Menggantikan `.content-header` dengan `.topbar` baku, menempatkan chip operator di sudut kanan atas sejajar dengan judul halaman.
+     - `master_control.html`: Menggantikan `.page-header` dengan `.topbar` baku, menyatukan tombol Optimalkan Basis Data, Manajemen Operator, dan chip operator di `.topbar-right`.
+     - `dashboard.html`, `servers.html`, `problems.html`, `logs.html`, `file_manager.html`, `server_form.html`, `users.html`, `user_activity.html`, `key_reveal.html`: Seluruhnya diseragamkan dengan `.topbar-right` dan `{% include "topbar_user.html" %}`.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.167` secara konsisten pada 7 berkas inti repositori.
+
 ## Versi 4.8.156
 
 - **Tipe Rilis:** Optimasi Desain Sidebar Ramping Berdensitas Tinggi, Relokasi Akun Operator ke Topbar, & Pembersihan Sidebar Footer (*Ultra-Compact Sidebar Optimization, Operator Account Relocation to Universal Topbar, & Clean Sidebar Footer*)

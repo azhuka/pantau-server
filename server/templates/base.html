@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.166' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.167' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2806,14 +2806,12 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.166' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.167' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
 
-<div id="topbarUserChipTemplate" style="display:none">
-  {% include "topbar_user.html" %}
-</div>
+
 
 <main class="main">
 {% block topbar %}{% endblock %}
@@ -2902,42 +2900,7 @@ try {
   }catch(e){}
 })();
 
-(function initTopbarUser() {
-  function attachTopbarUser() {
-    const chipTpl = document.getElementById('topbarUserChipTemplate');
-    if (!chipTpl) return;
-    const chip = chipTpl.querySelector('.noc-topbar-user');
-    if (!chip) return;
 
-    let target = document.querySelector('.dash-header-right')
-      || document.querySelector('.topbar')
-      || document.querySelector('.probe-header')
-      || document.querySelector('.maint-header')
-      || document.querySelector('.content-header')
-      || document.querySelector('.page-header');
-
-    if (target) {
-      if (!target.querySelector('.noc-topbar-user')) {
-        target.appendChild(chip);
-      }
-    } else {
-      const body = document.querySelector('.noc-content-body');
-      if (body && !document.querySelector('.noc-topbar-user')) {
-        const topBarWrap = document.createElement('div');
-        topBarWrap.className = 'topbar';
-        topBarWrap.style.justifyContent = 'flex-end';
-        topBarWrap.appendChild(chip);
-        body.insertBefore(topBarWrap, body.firstChild);
-      }
-    }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', attachTopbarUser);
-  } else {
-    attachTopbarUser();
-  }
-})();
 
 function toggleSb(){
   const b=document.body;

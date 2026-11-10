@@ -1340,7 +1340,7 @@ div[style*="position: fixed"] .card {
       <span id="agent-ver" class="badge badge-muted" style="font-size:8.5px;padding:1px 5px;font-weight:500;vertical-align:middle" title="Agen belum melaporkan versi">agen tidak dikenal</span>
     {% endif %}
   </h2>
-  <div style="display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap">
+  <div class="topbar-right">
     {% if user.is_master_admin() or user.has_perm('can_manage_servers') %}
     <a href="/servers/{{ server.id }}/edit" class="btn btn-ghost btn-sm" style="padding:4px 8px;height:26px;display:inline-flex;align-items:center;font-size:11px" title="Edit konfigurasi server" aria-label="Edit" data-i18n-title="edit">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
@@ -1360,6 +1360,7 @@ div[style*="position: fixed"] .card {
     </form>
     {% endif %}
     <a href="/servers" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;height:26px;display:inline-flex;align-items:center;gap:5px" title="Kembali ke Daftar Server">&larr; Daftar Server</a>
+    {% include "topbar_user.html" %}
   </div>
 </div>
 

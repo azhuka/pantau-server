@@ -5,9 +5,10 @@
 {% block content %}
 <div class="topbar">
   <h2>Riwayat Tindakan</h2>
-  <div style="display:flex;gap:8px;align-items:center">
+  <div class="topbar-right">
     <span id="audit-live" class="badge badge-up" style="opacity:.35;transition:opacity .3s" title="Diperbarui otomatis setiap 5 detik">live</span>
-    <button type="button" class="btn btn-ghost btn-sm" id="audit-refresh" title="Muat ulang data riwayat audit seketika">Perbarui</button>
+    <button type="button" class="btn btn-ghost btn-sm" id="audit-refresh" title="Muat ulang data riwayat audit seketika" style="height:28px;display:inline-flex;align-items:center">Perbarui</button>
+    {% include "topbar_user.html" %}
   </div>
 </div>
 

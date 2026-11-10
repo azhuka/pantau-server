@@ -2,24 +2,27 @@
 {% block title %}Pengguna & Hak Akses - Pantau Server{% endblock %}
 
 {% block content %}
-<div class="content-header">
-  <div class="header-left">
-    <h1 style="display:flex;align-items:center;gap:10px">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)">
+<div class="topbar">
+  <div>
+    <h2 style="margin:0;display:flex;align-items:center;gap:10px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
         <circle cx="9" cy="7" r="4"></circle>
         <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
       </svg>
       Manajemen Pengguna &amp; Hak Akses
-    </h1>
-    <p class="subtitle" style="color:var(--dim);font-size:13px;margin-top:4px">
+    </h2>
+    <div style="color:var(--dim);font-size:12.5px;margin-top:2px">
       {% if user.is_master_admin() %}
       Kelola akun Master Admin, delegasikan wewenang ke akun Operator, atau daftarkan akun Viewer (hanya pantau).
       {% else %}
       Kelola akun Viewer pemantau sistem (hanya-baca).
       {% endif %}
-    </p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    {% include "topbar_user.html" %}
   </div>
 </div>
 
