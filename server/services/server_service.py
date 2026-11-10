@@ -200,6 +200,8 @@ def _get_server_actions(db: Session, sid: int, limit: int = 50) -> list[dict]:
                 tgt_name = "Agen Pantau"
             elif c.action in ("reboot_host", "poweroff_host"):
                 tgt_name = server.hostname
+            elif c.action in ("firewall_enable", "firewall_disable", "firewall_reload"):
+                tgt_name = "Firewall UFW"
             else:
                 tgt_name = "—"
 
@@ -279,10 +281,15 @@ def _get_server_actions(db: Session, sid: int, limit: int = 50) -> list[dict]:
         if a.action in (
             "service_restart", "service_stop", "service_start", "login",
             "server_add", "server_delete", "user_add", "user_delete",
-            "user_create", "user_lock", "user_unlock", "user_delete", "session_terminate", "block_ip", "unblock_ip",
+            "user_create", "user_lock", "user_unlock", "user_delete", "session_terminate",
+            "block_ip", "unblock_ip",
+            "firewall_enable", "firewall_disable", "firewall_reload",
+            "firewall_block", "firewall_unblock", "firewall_port_rule",
+            "cron_add", "cron_toggle", "cron_delete",
+            "ssl_path_add", "ssl_path_remove",
             "reboot_host", "poweroff_host", "restart_agent", "agent_update", "update_agent",
             "kill_process",
-        ) or a.action.startswith("masalah_") or a.action.startswith("systemd_"):
+        ) or a.action.startswith("masalah_") or a.action.startswith("systemd_") or a.action.startswith("cmd:"):
             continue
 
         act_label = {

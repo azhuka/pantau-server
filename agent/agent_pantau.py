@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.158"
+AGENT_VERSION = "4.8.159"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -695,8 +695,215 @@ def _validate_ipv4(ip: str) -> bool:
                 or addr.is_multicast or addr.is_reserved)
 
 
+PANTAU_FIREWALL_SCRIPT_BODY = r"""#!/usr/bin/env bash
+#
+# pantau-firewall - Mitigasi terbatas (blokir IP) untuk Agen Pantau.
+#
+set -u
+
+ACTION="${1:-}"
+shift 2>/dev/null || true
+
+fail() { echo "$*" >&2; exit 1; }
+
+MAX_IP="${MAX_IP:-10}"
+IPT="/usr/sbin/iptables"
+
+case "$ACTION" in
+    block|unblock) ;;
+    enable)
+        if command -v ufw >/dev/null 2>&1; then
+            ufw allow 22/tcp >/dev/null 2>&1 || true
+            ufw allow ssh >/dev/null 2>&1 || true
+            ufw allow 8400/tcp >/dev/null 2>&1 || true
+            ufw allow 80/tcp >/dev/null 2>&1 || true
+            ufw allow 443/tcp >/dev/null 2>&1 || true
+            out="$(ufw --force enable 2>&1)" || fail "UFW enable gagal: $out"
+            echo "OK: Firewall UFW berhasil diaktifkan (port SSH, Dashboard 8400, dan Web diizinkan)"
+            exit 0
+        fi
+        fail "ufw tidak terpasang di sistem ini"
+        ;;
+    disable)
+        if command -v ufw >/dev/null 2>&1; then
+            out="$(ufw disable 2>&1)" || fail "UFW disable gagal: $out"
+            echo "OK: Firewall UFW berhasil dinonaktifkan"
+            exit 0
+        fi
+        fail "ufw tidak terpasang di sistem ini"
+        ;;
+    reload)
+        if command -v ufw >/dev/null 2>&1; then
+            out="$(ufw reload 2>&1)" || fail "UFW reload gagal: $out"
+            echo "OK: Firewall UFW berhasil dimuat ulang (reloaded)"
+            exit 0
+        fi
+        fail "ufw tidak terpasang di sistem ini"
+        ;;
+    deny-port)
+        PORT_SPEC="${1:-}"
+        [ -n "$PORT_SPEC" ] || fail "Spesifikasi port wajib diisi (misal: 8080/tcp atau 3000)"
+        PORT_NUM="${PORT_SPEC%%/*}"
+        PROTO="${PORT_SPEC##*/}"
+        [ "$PROTO" = "$PORT_NUM" ] && PROTO="tcp"
+
+        case "$PROTO" in
+            tcp|udp) ;;
+            *) fail "Protokol tidak valid: '$PROTO' (hanya tcp atau udp)" ;;
+        esac
+
+        if [ "$PORT_NUM" = "22" ] || [ "$PORT_NUM" = "8400" ]; then
+            fail "Port $PORT_NUM (SSH / Pantau Dashboard) dilindungi dan dilarang diblokir!"
+        fi
+        if ! [[ "$PORT_NUM" =~ ^[0-9]+$ ]] || [ "$PORT_NUM" -lt 1 ] || [ "$PORT_NUM" -gt 65535 ]; then
+            fail "Nomor port tidak valid: '$PORT_NUM'"
+        fi
+
+        if command -v ufw >/dev/null 2>&1; then
+            out="$(ufw deny "$PORT_NUM/$PROTO" 2>&1)" || fail "UFW deny gagal: $out"
+            echo "OK: Port $PORT_NUM/$PROTO berhasil ditutup/diblokir pada UFW"
+            exit 0
+        elif [ -x "$IPT" ]; then
+            "$IPT" -I INPUT 1 -p "$PROTO" --dport "$PORT_NUM" -j DROP || fail "iptables drop port gagal"
+            echo "OK: Port $PORT_NUM/$PROTO berhasil ditutup/diblokir pada iptables"
+            exit 0
+        fi
+        fail "Tidak ada firewall aktif (ufw / iptables) di sistem"
+        ;;
+    allow-port)
+        PORT_SPEC="${1:-}"
+        [ -n "$PORT_SPEC" ] || fail "Spesifikasi port wajib diisi (misal: 8080/tcp)"
+        PORT_NUM="${PORT_SPEC%%/*}"
+        PROTO="${PORT_SPEC##*/}"
+        [ "$PROTO" = "$PORT_NUM" ] && PROTO="tcp"
+
+        if ! [[ "$PORT_NUM" =~ ^[0-9]+$ ]] || [ "$PORT_NUM" -lt 1 ] || [ "$PORT_NUM" -gt 65535 ]; then
+            fail "Nomor port tidak valid: '$PORT_NUM'"
+        fi
+        case "$PROTO" in
+            tcp|udp) ;;
+            *) fail "Protokol tidak valid: '$PROTO' (hanya tcp atau udp)" ;;
+        esac
+
+        if command -v ufw >/dev/null 2>&1; then
+            out="$(ufw delete deny "$PORT_NUM/$PROTO" 2>&1)" || ufw allow "$PORT_NUM/$PROTO" 2>&1 || true
+            echo "OK: Aturan blokir untuk port $PORT_NUM/$PROTO berhasil dibuka pada UFW"
+            exit 0
+        elif [ -x "$IPT" ]; then
+            "$IPT" -D INPUT -p "$PROTO" --dport "$PORT_NUM" -j DROP 2>/dev/null || true
+            echo "OK: Aturan blokir untuk port $PORT_NUM/$PROTO berhasil dibuka pada iptables"
+            exit 0
+        fi
+        fail "Tidak ada firewall aktif (ufw / iptables) di sistem"
+        ;;
+    status)
+        if command -v ufw >/dev/null 2>&1; then
+            ufw status verbose 2>&1 || true
+        fi
+        echo "--- IPTABLES ---"
+        if [ -x "$IPT" ]; then
+            "$IPT" -L INPUT -n -v --line-numbers 2>&1 || true
+        fi
+        exit 0
+        ;;
+    *) fail "Aksi tidak dikenal: '${ACTION:-}' (harus 'block', 'unblock', 'enable', 'disable', 'reload', 'deny-port', 'allow-port', atau 'status')" ;;
+esac
+
+[ -x "$IPT" ] || fail "iptables tidak terpasang (install iptables)"
+
+[ "$#" -ge 1 ] || fail "Tidak ada IP diberikan"
+[ "$#" -le "$MAX_IP" ] || fail "Terlalu banyak IP (maks $MAX_IP)"
+
+IPC=0
+for ip in "$@"; do
+    case "$ip" in
+        *[!0-9.]*) fail "IP tidak valid: '$ip'" ;;
+    esac
+    IFS=. read -r o1 o2 o3 o4 rest <<EOF
+$ip
+EOF
+    for o in "$o1" "$o2" "$o3" "$o4"; do
+        [ -n "$o" ] || fail "IP tidak valid: '$ip'"
+        [ "$o" -ge 0 ] && [ "$o" -le 255 ] 2>/dev/null || fail "IP tidak valid: '$ip'"
+    done
+    [ -z "$rest" ] || fail "IP tidak valid: '$ip'"
+
+    [ "$o1" -ge 1 ] || fail "IP tidak valid/nol: '$ip'"
+    [ "$o1" -eq 10 ] && fail "IP privat (RFC1918) tidak boleh diblokir: '$ip'"
+    if [ "$o1" -eq 172 ] && [ "$o2" -ge 16 ] && [ "$o2" -le 31 ]; then
+        fail "IP privat (RFC1918) tidak boleh diblokir: '$ip'"
+    fi
+    if [ "$o1" -eq 192 ] && [ "$o2" -eq 168 ]; then
+        fail "IP privat (RFC1918) tidak boleh diblokir: '$ip'"
+    fi
+    [ "$o1" -eq 127 ] && fail "IP loopback tidak boleh diblokir: '$ip'"
+    [ "$o1" -eq 169 ] && [ "$o2" -eq 254 ] && fail "IP link-local tidak boleh diblokir: '$ip'"
+    if [ "$ACTION" = "block" ]; then
+        out="$("$IPT" -I INPUT 1 -s "$ip" -j DROP 2>&1)" || fail "iptables gagal utk $ip: $out"
+        echo "OK: INPUT DROP utk $ip"
+    else
+        out="$("$IPT" -D INPUT -s "$ip" -j DROP 2>&1)" || fail "iptables hapus gagal utk $ip (mungkin aturan tidak ada): $out"
+        echo "OK: Hapus blokir INPUT DROP utk $ip"
+    fi
+    IPC=$((IPC + 1))
+done
+
+if [ "$ACTION" = "block" ]; then
+    echo "Total $IPC IP diblokir. CATATAN: aturan volatile (hilang saat reboot); untuk permanen gunakan iptables-persistent."
+else
+    echo "Total $IPC IP dibuka blokirnya."
+fi
+exit 0
+"""
+
+
+def ensure_pantau_firewall_updated(force: bool = False) -> bool:
+    """Memastikan wrapper /usr/local/sbin/pantau-firewall mendukung aksi 'status' dan fitur terbaru.
+    Jika berkas belum ada, versi usang, atau force=True, otomatis perbarui via root langsung atau sudo pantau-file.
+    """
+    try:
+        cur_content = ""
+        if not force and os.path.isfile(PANTAU_FIREWALL):
+            try:
+                with open(PANTAU_FIREWALL, "r", encoding="utf-8", errors="replace") as f:
+                    cur_content = f.read()
+            except Exception:
+                pass
+            if "status)" in cur_content:
+                return True
+
+        content_to_write = PANTAU_FIREWALL_SCRIPT_BODY.strip() + "\n"
+        if IS_ROOT:
+            with open(PANTAU_FIREWALL, "w", encoding="utf-8") as f:
+                f.write(content_to_write)
+            os.chmod(PANTAU_FIREWALL, 0o755)
+            print("[FIREWALL] Wrapper /usr/local/sbin/pantau-firewall berhasil diperbarui (root)")
+            return True
+
+        # Jika user 'pantau', gunakan sudo pantau-file jika tersedia
+        pantau_file = "/usr/local/sbin/pantau-file"
+        if os.path.isfile(pantau_file):
+            payload_write = json.dumps({
+                "action": "write",
+                "params": {"path": PANTAU_FIREWALL, "content": content_to_write, "make_backup": False}
+            })
+            pw = subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_write, text=True, capture_output=True, timeout=10)
+            if pw.returncode == 0:
+                payload_chmod = json.dumps({
+                    "action": "chmod",
+                    "params": {"path": PANTAU_FIREWALL, "mode": "0755"}
+                })
+                subprocess.run(["/usr/bin/sudo", "-n", pantau_file], input=payload_chmod, text=True, capture_output=True, timeout=10)
+                print("[FIREWALL] Wrapper /usr/local/sbin/pantau-firewall berhasil diperbarui via pantau-file")
+                return True
+    except Exception as e:
+        print(f"[FIREWALL] Peringatan saat memastikan pantau-firewall: {e}")
+    return False
+
+
 def _exec_block_ip(command: dict) -> dict:
     """Blokir IP sumber pendekatan SSH: iptables -I INPUT 1 -s <ip> -j DROP."""
+    ensure_pantau_firewall_updated()
     params = command.get("params") or {}
     ips = [str(i) for i in (params.get("ips") or [])][:10]
     if not ips:
@@ -723,6 +930,7 @@ def _exec_block_ip(command: dict) -> dict:
 
 def _exec_unblock_ip(command: dict) -> dict:
     """Buka blokir IP: iptables -D INPUT -s <ip> -j DROP."""
+    ensure_pantau_firewall_updated()
     params = command.get("params") or {}
     ips = [str(i) for i in (params.get("ips") or [])][:10]
     if not ips:
@@ -748,6 +956,7 @@ def _exec_unblock_ip(command: dict) -> dict:
 
 def _exec_firewall_toggle(action: str) -> dict:
     """Aktifkan, nonaktifkan, atau reload firewall UFW via wrapper pantau-firewall."""
+    ensure_pantau_firewall_updated()
     sub_map = {
         "firewall_enable": "enable",
         "firewall_disable": "disable",
@@ -1656,6 +1865,7 @@ def _exec_update_agent(cfg: dict, command: dict) -> dict:
         try:
             ensure_pantau_user_updated(force=True)
             ensure_pantau_apt_updated()
+            ensure_pantau_firewall_updated(force=True)
         except Exception as we:
             print(f"[OTA] Peringatan saat pembaruan wrapper mandiri: {we}")
 
@@ -5297,6 +5507,65 @@ def collect_cron_jobs() -> dict:
 _fw_cache: dict = {"at": 0.0, "data": None}
 
 
+def _ensure_pantau_firewall_wrapper() -> None:
+    """Memastikan /usr/local/sbin/pantau-firewall memiliki penanganan case status)."""
+    wrapper_path = PANTAU_FIREWALL
+    pantau_file = PANTAU_FILE_CMD
+    if not os.path.isfile(wrapper_path):
+        return
+    try:
+        with open(wrapper_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+        if "status)" in content:
+            return
+
+        status_block = """    status)
+        if command -v ufw >/dev/null 2>&1; then
+            ufw status verbose 2>&1 || true
+        fi
+        echo "--- IPTABLES ---"
+        if [ -x "$IPT" ]; then
+            "$IPT" -L INPUT -n -v --line-numbers 2>&1 || true
+        fi
+        exit 0
+        ;;
+"""
+        idx = content.find('*) fail')
+        if idx != -1:
+            new_content = content[:idx] + status_block + content[idx:]
+        else:
+            idx = content.rfind("esac")
+            if idx != -1:
+                new_content = content[:idx] + status_block + content[idx:]
+            else:
+                return
+
+        if IS_ROOT:
+            with open(wrapper_path, "w", encoding="utf-8") as f:
+                f.write(new_content)
+            os.chmod(wrapper_path, 0o755)
+        elif os.path.isfile(pantau_file):
+            payload = json.dumps({
+                "action": "write",
+                "params": {
+                    "path": wrapper_path,
+                    "content": new_content,
+                    "make_backup": False,
+                }
+            })
+            _run_cmd(["/usr/bin/sudo", "-n", pantau_file], timeout=5, input=payload)
+            chmod_payload = json.dumps({
+                "action": "chmod",
+                "params": {
+                    "path": wrapper_path,
+                    "mode": "0755",
+                }
+            })
+            _run_cmd(["/usr/bin/sudo", "-n", pantau_file], timeout=5, input=chmod_payload)
+    except Exception as e:
+        _log_debug(f"Gagal self-heal pantau-firewall: {e}")
+
+
 def collect_firewall() -> dict:
     """Inspeksi status firewall (UFW dan/atau iptables) dan daftar IP terblokir."""
     now = time.monotonic()
@@ -5316,6 +5585,12 @@ def collect_firewall() -> dict:
         res = _run_cmd(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, "status"], timeout=6)
         if res and res.returncode == 0:
             raw_output = res.stdout
+        else:
+            # Bila returncode != 0, kemungkinan wrapper pantau-firewall belum memiliki case status)
+            _ensure_pantau_firewall_wrapper()
+            res2 = _run_cmd(["/usr/bin/sudo", "-n", PANTAU_FIREWALL, "status"], timeout=6)
+            if res2 and res2.returncode == 0:
+                raw_output = res2.stdout
     else:
         # Root langsung
         try:
@@ -5360,6 +5635,30 @@ def collect_firewall() -> dict:
                         "bytes": parts[2],
                         "source": parts[8],
                     })
+
+    # Fallback deterministik jika raw_output gagal atau backend masih unknown
+    if not raw_output or fw["backend"] == "unknown":
+        ufw_conf = "/etc/ufw/ufw.conf"
+        if os.path.isfile(ufw_conf):
+            fw["backend"] = "ufw"
+            try:
+                with open(ufw_conf, "r", encoding="utf-8", errors="ignore") as f:
+                    for line in f:
+                        line_s = line.strip()
+                        if line_s.startswith("ENABLED="):
+                            val = line_s.split("=", 1)[1].strip().lower().strip("\"'")
+                            fw["status"] = "active" if val == "yes" else "inactive"
+                            break
+            except Exception:
+                pass
+        elif shutil.which("ufw"):
+            fw["backend"] = "ufw"
+            res_sc = _run_cmd(["systemctl", "is-active", "ufw"], timeout=3)
+            if res_sc and "active" in (res_sc.stdout or "").lower():
+                fw["status"] = "active"
+        elif shutil.which("iptables"):
+            fw["backend"] = "iptables"
+            fw["status"] = "active"
 
     fw["rules"] = fw["rules"][:100]
     fw["blocked_ips"] = fw["blocked_ips"][:100]
@@ -6534,6 +6833,7 @@ def main():
     ensure_pantau_apt_updated()
     ensure_pantau_user_updated()
     ensure_pantau_history_updated()
+    ensure_pantau_firewall_updated()
     print()
 
     running = True

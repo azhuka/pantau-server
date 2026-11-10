@@ -354,6 +354,20 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.159
+
+- **Tipe Rilis:** Eliminasi Duplikasi Riwayat Tindakan & Self-Healing Deteksi Status UFW Agen (*Eliminating Duplicate Action History Records & Agent Autonomous UFW Detection Self-Healing*)
+- **Fokus Utama:** Menyelesaikan permasalahan duplikasi baris pada tabel Riwayat Tindakan serta menjamin keakuratan status firewall host secara otonom:
+  1. **Eliminasi Total Duplikasi Riwayat Tindakan (`server/services/server_service.py`):**
+     - Memperbaiki fungsi `_get_server_actions()` dengan menambahkan seluruh aksi command mitigasi (`firewall_enable`, `firewall_disable`, `firewall_reload`, `firewall_block`, `firewall_unblock`, `firewall_port_rule`, `cron_add`, `cron_toggle`, `cron_delete`, `ssl_path_add`, `ssl_path_remove`) ke daftar pengecualian audit.
+     - Menghilangkan entri ganda pada detik yang sama di mana sebelumnya tindakan `AKTIFKAN FIREWALL` dan `BLOKIR IP` muncul berdampingan dengan log `FIREWALL ENABLE` dan `FIREWALL BLOCK`.
+     - Menyematkan nama sasaran yang jelas dan informatif (`Firewall UFW`) menggantikan tanda pisah kosong (`—`).
+  2. **Deteksi Mandiri & Self-Healing Wrapper Firewall Agen (`package/opt/pantau/agent/agent_pantau.py`):**
+     - Menambahkan fungsi otonom `_ensure_pantau_firewall_wrapper()` yang secara otomatis memverifikasi dan menyisipkan penanganan subperintah `status)` ke `/usr/local/sbin/pantau-firewall` pada mesin klien.
+     - Menambahkan fallback deterministik membaca konfigurasi `/etc/ufw/ufw.conf` dan status `systemctl is-active ufw` jika pembacaan CLI gagal, mencegah status firewall terbaca salah sebagai `UNKNOWN` dan `INACTIVE`.
+  3. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.159` pada 7 berkas inti repositori.
+
 ## Versi 4.8.158
 
 - **Tipe Rilis:** Perbaikan Deteksi Status UFW, Guardrail Eksekusi Ganda Firewall, Kontrol Paginasi Baku Status Insiden, dan Standarisasi Label Tombol Aksi (*Fixing UFW Status Detection, Double Execution Guardrails, Incident Table Pagination Consistency, and Standardizing Action Button Labels*)
