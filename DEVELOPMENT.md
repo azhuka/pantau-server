@@ -354,6 +354,27 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.150
+
+- **Tipe Rilis:** Penerapan Model Baku Solid Universal Metric Chart Engine & Visualisasi Performa Interaktif Grid 2x2 (*Universal Interactive Metric Chart Engine & High-Density 2x2 Performance Grid Overhaul*)
+- **Fokus Utama:** Mengimplementasikan engine grafik performa universal berbasis objek terstandar (`NocMetricChart`) menggantikan fungsi hardcoded lama, dengan fitur interaktivitas lengkap sesuai standar pemantauan NOC:
+  1. **Universal NOC Metric Chart Engine (`server/templates/base.html`):**
+     - Membangun class `NocMetricChart` yang solid, modular, dan reusable untuk merender grafik metrik single-series maupun multi-series.
+     - Mendukung auto-scaling sumbu Y dinamis, ticks Y terukur rapi (`0%`, `25%`, `50%`, `75%`, `100%` atau nilai numerik untuk Load Average), serta ticks horizontal sumbu X waktu yang presisi.
+     - Menyediakan titik data sampel (*data point markers*) pada setiap interval metrik.
+     - Menyediakan floating tooltip interaktif dengan panah pointer bawah, border sewarna seri data, serta efek halo lingkaran ganda (*pulse outer ring & solid inner dot*) saat kursor mengarah ke titik data.
+     - Menyediakan legenda interaktif di bawah grafik dengan kemampuan klik untuk toggle visibilitas seri (*click-to-toggle series*) yang langsung memperbarui kurva garis secara reaktif dengan efek visual pudar (*faded out / strikethrough*).
+  2. **Restrukturisasi Grid Metrik Performa 2x2 (`server/templates/services.html`):**
+     - Menyusun 4 pilar metrik utama dalam grid 2x2 yang simetris, rapi, dan informatif:
+       - **CPU Usage**: Kurva biru kontras dengan info kapasitas total core CPU di kanan atas (`cap-perf-cpu`).
+       - **Memory Usage**: Kurva oranye kontras dengan info kapasitas total RAM di kanan atas (`cap-perf-mem`).
+       - **Disk Usage**: Kurva hijau kontras dengan legenda dinamis partisi storage (misal `● / (49 GB)`).
+       - **Load Average**: Tiga kurva multi-series sekaligus (`1 Minute` warna ungu, `5 Minutes` warna merah/pink, `15 Minutes` warna biru) dengan info core CPU di kanan atas serta legenda toggle interaktif di bagian bawah.
+  3. **Penyempurnaan Endpoint Backend API (`server/routers/servers.py`):**
+     - Memperluas endpoint `/api/servers/{sid}/perf` agar mengembalikan `load1`, `load5`, `load15`, `cpu_cores`, dan `ram_mb` secara lengkap baik pada data mentalah (*raw rollup*) maupun rollup historis per-jam (`SysSnapshotHour`).
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.150` pada 7 berkas inti repositori.
+
 ## Versi 4.8.149
 
 - **Tipe Rilis:** Standardisasi Total & Global Model Paginasi Universal Seluruh Modul (*Universal Table Pagination Standardization Across All Application Modules*)

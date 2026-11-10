@@ -2157,6 +2157,9 @@ def api_server_perf(
                 "t": int(h.bucket.timestamp()),
                 "cpu": round(h.cpu_avg, 1),
                 "load": round(h.load1_avg, 2) if h.load1_avg is not None else None,
+                "load1": round(h.load1_avg, 2) if h.load1_avg is not None else None,
+                "load5": round(h.load5_avg, 2) if h.load5_avg is not None else None,
+                "load15": round(h.load15_avg, 2) if h.load15_avg is not None else None,
                 "mem_used": h.mem_used_avg,
                 "mem_total": h.mem_total,
                 "swap_used": h.swap_used_avg,
@@ -2173,6 +2176,8 @@ def api_server_perf(
             (func.floor(func.unix_timestamp(SystemSnapshot.timestamp) / step_secs) * step_secs).label("tb"),
             func.avg(SystemSnapshot.cpu),
             func.avg(SystemSnapshot.load1),
+            func.avg(SystemSnapshot.load5),
+            func.avg(SystemSnapshot.load15),
             func.max(SystemSnapshot.mem_total),
             func.avg(SystemSnapshot.mem_used),
             func.max(SystemSnapshot.swap_total),
@@ -2203,22 +2208,38 @@ def api_server_perf(
             {
                 "t": int(tb_stamp),
                 "cpu": round(cpu_avg, 1) if cpu_avg is not None else None,
-                "load": round(load_avg, 2) if load_avg is not None else None,
+                "load": round(load1_avg, 2) if load1_avg is not None else None,
+                "load1": round(load1_avg, 2) if load1_avg is not None else None,
+                "load5": round(load5_avg, 2) if load5_avg is not None else None,
+                "load15": round(load15_avg, 2) if load15_avg is not None else None,
                 "mem_used": mem_used,
                 "mem_total": mem_total,
                 "swap_used": swap_used,
                 "swap_total": swap_total,
                 "disks": _parse_disks(disks_raw),
             }
-            for tb_stamp, cpu_avg, load_avg, mem_total, mem_used, swap_total, swap_used, disks_raw in raw
+            for tb_stamp, cpu_avg, load1_avg, load5_avg, load15_avg, mem_total, mem_used, swap_total, swap_used, disks_raw in raw
         ]
     )
+
+    extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    latest_sys = (
+        db.query(SystemSnapshot)
+        .filter(SystemSnapshot.server_id == sid)
+        .order_by(SystemSnapshot.timestamp.desc())
+        .first()
+    )
+    hw = _get_hardware_specs_dict(server, extra, latest_sys)
+    cpu_cores = hw.get("cpu", {}).get("cores") or hw.get("cpu", {}).get("logical_cores") or 0
+    ram_mb = round(latest_sys.mem_total / (1024 * 1024)) if (latest_sys and latest_sys.mem_total) else (hw.get("memory", {}).get("total_mb") or 0)
 
     return {
         "server_id": sid,
         "range": range,
         "from": start.isoformat(),
         "to": now.isoformat(),
+        "cpu_cores": cpu_cores,
+        "ram_mb": ram_mb,
         "points": points,
     }
 

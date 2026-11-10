@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.149' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.150' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2352,6 +2352,149 @@ body.show-alert-banner .main{padding-top:72px}
   outline: none;
 }
 
+/* =============================================================================
+   Pantau Universal Interactive Metric Chart Engine (NOC Standard)
+   ============================================================================= */
+.noc-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+@media (max-width: 960px) {
+  .noc-metric-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.noc-metric-card {
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 8px;
+  padding: 14px 16px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+.noc-metric-card:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+}
+.noc-metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.noc-metric-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text, #0f172a);
+  letter-spacing: 0.2px;
+}
+.noc-metric-capacity {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dim, #64748b);
+  font-family: var(--font-mono, monospace);
+}
+.noc-chart-box {
+  width: 100%;
+  height: 185px;
+  position: relative;
+  user-select: none;
+}
+.noc-chart-box svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.noc-chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 30;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 5px 11px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  transform: translate(-50%, -100%);
+  margin-top: -12px;
+  transition: opacity 0.1s ease, transform 0.08s ease;
+  display: none;
+  border-width: 1.5px;
+  border-style: solid;
+}
+.noc-chart-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: inherit;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+}
+[data-theme="dark"] .noc-chart-tooltip,
+[data-theme="obsidian"] .noc-chart-tooltip,
+[data-theme="navy"] .noc-chart-tooltip {
+  background: #18181b;
+  color: #f8fafc;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+}
+.noc-chart-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 10px;
+  padding-top: 4px;
+  min-height: 20px;
+}
+.noc-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text, #334155);
+  cursor: pointer;
+  user-select: none;
+  padding: 3px 8px;
+  border-radius: 4px;
+  transition: opacity 0.15s ease, filter 0.15s ease, color 0.15s ease;
+}
+.noc-legend-item:hover {
+  background: var(--card-hover, rgba(0, 0, 0, 0.04));
+}
+.noc-legend-item.is-disabled {
+  opacity: 0.35 !important;
+  color: var(--dim, #94a3b8) !important;
+  text-decoration: line-through;
+  filter: grayscale(0.8);
+}
+.noc-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.noc-legend-item.is-disabled .noc-legend-dot {
+  background: var(--dim, #94a3b8) !important;
+}
+
 /* -----------------------------------------------------------------------------
    Pantau Table Column Visibility Toggler (NOC High-Density)
    ----------------------------------------------------------------------------- */
@@ -2576,7 +2719,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.149' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.150' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
@@ -5362,6 +5505,377 @@ function attachTablePagination(target, options = {}) {
       }).length;
     }
   };
+}
+
+// =============================================================================
+// Universal NOC Metric Chart Engine (Pantau Metric Chart Standard)
+// =============================================================================
+class NocMetricChart {
+  constructor(options) {
+    this.container = typeof options.container === 'string' ? document.getElementById(options.container) : options.container;
+    this.legendContainer = typeof options.legendContainer === 'string' ? document.getElementById(options.legendContainer) : options.legendContainer;
+    this.capacityEl = typeof options.capacityEl === 'string' ? document.getElementById(options.capacityEl) : options.capacityEl;
+    this.title = options.title || '';
+    this.unit = options.unit || '%';
+    this.fixedMax = options.fixedMax !== undefined ? options.fixedMax : 100;
+    this.fixedMin = options.fixedMin !== undefined ? options.fixedMin : 0;
+    this.series = (options.series || []).map(s => ({
+      ...s,
+      visible: s.visible !== false
+    }));
+    this.points = [];
+    this.showLegend = options.showLegend !== undefined ? options.showLegend : (this.series.length > 1);
+    this.tooltipEl = null;
+
+    this.init();
+  }
+
+  init() {
+    if (!this.container) return;
+    this.container.innerHTML = '';
+    this.container.classList.add('noc-chart-box');
+
+    // Buat Tooltip element
+    this.tooltipEl = document.createElement('div');
+    this.tooltipEl.className = 'noc-chart-tooltip';
+    this.container.appendChild(this.tooltipEl);
+
+    // Event listener resize window
+    this._onResize = () => this.render();
+    window.addEventListener('resize', this._onResize);
+  }
+
+  setData(points, metadata = {}) {
+    this.points = points || [];
+    if (this.capacityEl && metadata.capacity !== undefined) {
+      this.capacityEl.textContent = metadata.capacity;
+    }
+    this.render();
+  }
+
+  setSeries(series) {
+    this.series = (series || []).map(s => ({
+      ...s,
+      visible: s.visible !== false
+    }));
+    this.render();
+  }
+
+  toggleSeries(seriesId) {
+    const s = this.series.find(x => x.id === seriesId);
+    if (!s) return;
+    s.visible = !s.visible;
+    this.render();
+  }
+
+  render() {
+    if (!this.container) return;
+    const pts = this.points;
+
+    // Bersihkan SVG lama jika ada
+    const oldSvg = this.container.querySelector('svg');
+    if (oldSvg) oldSvg.remove();
+    if (this.tooltipEl) this.tooltipEl.style.display = 'none';
+
+    // Update Legenda
+    this.renderLegend();
+
+    if (!pts || pts.length === 0) {
+      if (!this.container.querySelector('.perf-chart-empty')) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'perf-chart-empty';
+        emptyDiv.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;font-size:12px;color:var(--dim)';
+        emptyDiv.textContent = 'Belum ada data riwayat';
+        this.container.appendChild(emptyDiv);
+      }
+      return;
+    }
+
+    const existingEmpty = this.container.querySelector('.perf-chart-empty');
+    if (existingEmpty) existingEmpty.remove();
+
+    const W = 600;
+    const H = 185;
+    const PL = 44;
+    const PR = 16;
+    const PT = 14;
+    const PB = 26;
+    const iw = W - PL - PR;
+    const ih = H - PT - PB;
+
+    const t0 = pts[0].t;
+    const t1 = Math.max(pts[pts.length - 1].t, t0 + 1);
+
+    const X = t => PL + ((t - t0) / (t1 - t0)) * iw;
+
+    // Filter seri yang visible
+    const visibleSeries = this.series.filter(s => s.visible);
+
+    // Hitung Max Y
+    let yMax = 100;
+    let yTicks = [0, 25, 50, 75, 100];
+
+    if (this.fixedMax !== null && this.fixedMax !== undefined) {
+      yMax = this.fixedMax;
+      yTicks = [0, yMax * 0.25, yMax * 0.5, yMax * 0.75, yMax];
+    } else {
+      let maxVal = 0;
+      visibleSeries.forEach(s => {
+        pts.forEach(p => {
+          const v = s.getValue(p);
+          if (v !== null && v !== undefined && !isNaN(v) && v > maxVal) {
+            maxVal = v;
+          }
+        });
+      });
+
+      if (maxVal <= 0.05) {
+        yMax = 1.0;
+        yTicks = [0, 0.5, 1.0];
+      } else if (maxVal <= 2.2) {
+        yMax = 3.0;
+        yTicks = [0, 1.0, 2.0, 3.0];
+      } else if (maxVal <= 4.2) {
+        yMax = 5.0;
+        yTicks = [0, 1.0, 2.0, 3.0, 4.0, 5.0];
+      } else {
+        const step = Math.ceil(maxVal * 1.15 / 4);
+        yMax = step * 4;
+        yTicks = [0, step, step * 2, step * 3, yMax];
+      }
+    }
+
+    const Y = v => PT + ih - (Math.min(Math.max(v || 0, 0), yMax) / yMax) * ih;
+
+    // Mulai SVG
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    // 1. Grid Horizontal & Ticks Y
+    yTicks.forEach(tickVal => {
+      const y = Y(tickVal);
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', String(PL));
+      line.setAttribute('y1', y.toFixed(1));
+      line.setAttribute('x2', String(W - PR));
+      line.setAttribute('y2', y.toFixed(1));
+      line.setAttribute('stroke', 'var(--border, rgba(148,163,184,0.18))');
+      line.setAttribute('stroke-width', '1');
+      svg.appendChild(line);
+
+      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('x', String(PL - 8));
+      txt.setAttribute('y', (y + 3.5).toFixed(1));
+      txt.setAttribute('text-anchor', 'end');
+      txt.setAttribute('font-size', '10');
+      txt.setAttribute('fill', 'var(--dim, #64748b)');
+      txt.setAttribute('font-family', 'var(--font-mono, monospace)');
+      txt.textContent = (this.unit === '%' ? Math.round(tickVal) + '%' : (tickVal % 1 === 0 ? tickVal.toString() : tickVal.toFixed(1)));
+      svg.appendChild(txt);
+    });
+
+    // 2. Ticks Sumbu X (Waktu)
+    const TICKS_X = Math.min(pts.length, 7);
+    const tickIndices = [];
+    if (pts.length <= 7) {
+      for (let i = 0; i < pts.length; i++) tickIndices.push(i);
+    } else {
+      for (let i = 0; i < 7; i++) {
+        tickIndices.push(Math.round(i * (pts.length - 1) / 6));
+      }
+    }
+
+    const fmtAxisTime = t => {
+      const d = new Date(t * 1000);
+      const hh = ('0' + d.getHours()).slice(-2);
+      const mm = ('0' + d.getMinutes()).slice(-2);
+      const now = Date.now() / 1000;
+      if (now - t > 48 * 3600) {
+        return d.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+      }
+      return hh + ':' + mm;
+    };
+
+    tickIndices.forEach((idx, i) => {
+      const p = pts[idx];
+      const x = X(p.t);
+      const anchor = (i === 0) ? 'start' : (i === tickIndices.length - 1 ? 'end' : 'middle');
+      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('x', x.toFixed(1));
+      txt.setAttribute('y', String(H - 8));
+      txt.setAttribute('text-anchor', anchor);
+      txt.setAttribute('font-size', '10');
+      txt.setAttribute('fill', 'var(--dim, #64748b)');
+      txt.setAttribute('font-family', 'var(--font-mono, monospace)');
+      txt.textContent = fmtAxisTime(p.t);
+      svg.appendChild(txt);
+    });
+
+    // Kumpulkan Titik-Titik Seri untuk Interaksi
+    const seriesRenderData = [];
+
+    // 3. Render Garis Seri & Titik Sampel (Dots)
+    visibleSeries.forEach(s => {
+      const seriesPts = [];
+      pts.forEach(p => {
+        const v = s.getValue(p);
+        if (v !== null && v !== undefined && !isNaN(v)) {
+          seriesPts.push({ x: X(p.t), y: Y(v), val: v, t: p.t, raw: p, series: s });
+        }
+      });
+      if (seriesPts.length === 0) return;
+      seriesRenderData.push({ series: s, points: seriesPts });
+
+      // Gambar Polyline
+      const polyCoords = seriesPts.map(pt => `${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ');
+      const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+      polyline.setAttribute('points', polyCoords);
+      polyline.setAttribute('fill', 'none');
+      polyline.setAttribute('stroke', s.color);
+      polyline.setAttribute('stroke-width', '2');
+      polyline.setAttribute('stroke-linecap', 'round');
+      polyline.setAttribute('stroke-linejoin', 'round');
+      svg.appendChild(polyline);
+
+      // Gambar Dots di Setiap Sampel
+      seriesPts.forEach(pt => {
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx', pt.x.toFixed(1));
+        dot.setAttribute('cy', pt.y.toFixed(1));
+        dot.setAttribute('r', '2.5');
+        dot.setAttribute('fill', s.color);
+        svg.appendChild(dot);
+      });
+    });
+
+    // 4. Halo Group untuk Efek Hover
+    const haloG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    haloG.style.display = 'none';
+
+    const haloOuter = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    haloOuter.setAttribute('r', '7.5');
+    haloOuter.setAttribute('opacity', '0.28');
+    haloG.appendChild(haloOuter);
+
+    const haloInner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    haloInner.setAttribute('r', '3.5');
+    haloInner.setAttribute('stroke', '#ffffff');
+    haloInner.setAttribute('stroke-width', '1.5');
+    haloG.appendChild(haloInner);
+
+    svg.appendChild(haloG);
+
+    // 5. Interaktivitas Pointer/Mouse Move & Hover
+    const onPointerMove = e => {
+      if (seriesRenderData.length === 0) return;
+      const rect = svg.getBoundingClientRect();
+      const pointerSvgX = ((e.clientX - rect.left) / rect.width) * W;
+      const pointerSvgY = ((e.clientY - rect.top) / rect.height) * H;
+
+      // Cari titik data horizontal terdekat
+      let closestSampleIndex = -1;
+      let minXDist = Infinity;
+      pts.forEach((p, idx) => {
+        const px = X(p.t);
+        const dist = Math.abs(px - pointerSvgX);
+        if (dist < minXDist) {
+          minXDist = dist;
+          closestSampleIndex = idx;
+        }
+      });
+
+      if (closestSampleIndex === -1) return;
+      const targetTime = pts[closestSampleIndex].t;
+
+      // Kumpulkan kandidat titik dari seluruh visible series pada waktu tersebut
+      let bestCandidate = null;
+      let minYDist = Infinity;
+
+      seriesRenderData.forEach(sData => {
+        const matched = sData.points.find(pt => pt.t === targetTime);
+        if (matched) {
+          const yDist = Math.abs(matched.y - pointerSvgY);
+          if (yDist < minYDist) {
+            minYDist = yDist;
+            bestCandidate = matched;
+          }
+        }
+      });
+
+      if (!bestCandidate) return;
+
+      // Tampilkan Halo Marker
+      haloG.style.display = '';
+      haloOuter.setAttribute('cx', bestCandidate.x.toFixed(1));
+      haloOuter.setAttribute('cy', bestCandidate.y.toFixed(1));
+      haloOuter.setAttribute('fill', bestCandidate.series.color);
+
+      haloInner.setAttribute('cx', bestCandidate.x.toFixed(1));
+      haloInner.setAttribute('cy', bestCandidate.y.toFixed(1));
+      haloInner.setAttribute('fill', bestCandidate.series.color);
+
+      // Posisi Tooltip
+      const pixelX = (bestCandidate.x / W) * rect.width;
+      const pixelY = (bestCandidate.y / H) * rect.height;
+
+      const formattedVal = (this.unit === '%' ? Math.round(bestCandidate.val) + '%' : (bestCandidate.val % 1 === 0 ? bestCandidate.val.toString() : bestCandidate.val.toFixed(2)));
+      const tooltipLabel = bestCandidate.series.tooltipLabel
+        ? bestCandidate.series.tooltipLabel(bestCandidate.val, bestCandidate.raw)
+        : (bestCandidate.series.name ? `${bestCandidate.series.name}: ${formattedVal}` : `${this.title}: ${formattedVal}`);
+
+      this.tooltipEl.textContent = tooltipLabel;
+      this.tooltipEl.style.borderColor = bestCandidate.series.color;
+      this.tooltipEl.style.left = `${pixelX}px`;
+      this.tooltipEl.style.top = `${pixelY}px`;
+      this.tooltipEl.style.display = 'block';
+    };
+
+    const onPointerLeave = () => {
+      haloG.style.display = 'none';
+      if (this.tooltipEl) this.tooltipEl.style.display = 'none';
+    };
+
+    svg.addEventListener('pointermove', onPointerMove);
+    svg.addEventListener('pointerleave', onPointerLeave);
+
+    this.container.appendChild(svg);
+  }
+
+  renderLegend() {
+    if (!this.legendContainer) return;
+    if (!this.showLegend || this.series.length <= 0) {
+      this.legendContainer.innerHTML = '';
+      this.legendContainer.style.display = 'none';
+      return;
+    }
+
+    const esc = (typeof escapeHtml === 'function') ? escapeHtml : (s => String(s || ''));
+    this.legendContainer.style.display = 'flex';
+    this.legendContainer.innerHTML = this.series.map(s => {
+      const isDis = !s.visible;
+      return `<div class="noc-legend-item ${isDis ? 'is-disabled' : ''}" data-series-id="${esc(s.id)}" title="Klik untuk menampilkan / menyembunyikan ${esc(s.name)}">
+        <span class="noc-legend-dot" style="background: ${s.color}"></span>
+        <span>${esc(s.name)}</span>
+      </div>`;
+    }).join('');
+
+    this.legendContainer.querySelectorAll('.noc-legend-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const sid = el.getAttribute('data-series-id');
+        this.toggleSeries(sid);
+      });
+    });
+  }
+
+  destroy() {
+    if (this._onResize) {
+      window.removeEventListener('resize', this._onResize);
+    }
+    if (this.container) {
+      this.container.innerHTML = '';
+    }
+  }
 }
 
 // Auto-wrap stand-alone tables in a scroll container so they are smoothly swipeable on mobile

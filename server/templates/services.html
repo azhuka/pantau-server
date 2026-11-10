@@ -2033,49 +2033,47 @@ div[style*="position: fixed"] .card {
     <div id="perf-empty" class="empty-msg" style="display:none">
       Belum ada data riwayat — grafik terisi setelah agen aktif beberapa menit/jam.
     </div>
-    <div class="perf-grid">
-      <div class="perf-metric-card">
-        <div class="perf-card-header">
-          <div class="perf-card-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" style="vertical-align:middle"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
-            <span>CPU</span>
-          </div>
-          <div class="perf-card-stats" id="stats-cpu"></div>
+    <div class="noc-metric-grid">
+      <!-- 1. CPU Usage -->
+      <div class="noc-metric-card" id="card-perf-cpu">
+        <div class="noc-metric-header">
+          <div class="noc-metric-title">CPU Usage</div>
+          <div class="noc-metric-capacity" id="cap-perf-cpu">{% if server._cpu_cores %}{{ server._cpu_cores }} CPU{% elif server.cpu_cores %}{{ server.cpu_cores }} CPU{% else %}—{% endif %}</div>
         </div>
-        <div id="chart-cpu" class="perf-chart-box"></div>
+        <div class="noc-chart-box" id="chart-cpu"></div>
+        <div class="noc-chart-legend" id="legend-cpu" style="display:none"></div>
       </div>
-      <div class="perf-metric-card">
-        <div class="perf-card-header">
-          <div class="perf-card-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" style="vertical-align:middle"><path d="M6 19v-3"/><path d="M10 19v-3"/><path d="M14 19v-3"/><path d="M18 19v-3"/><path d="M6 5v3"/><path d="M10 5v3"/><path d="M14 5v3"/><path d="M18 5v3"/><rect x="2" y="8" width="20" height="8" rx="2"/></svg>
-            <span>Memori Terpakai</span>
-          </div>
-          <div class="perf-card-stats" id="stats-mem"></div>
+
+      <!-- 2. Memory Usage -->
+      <div class="noc-metric-card" id="card-perf-mem">
+        <div class="noc-metric-header">
+          <div class="noc-metric-title">Memory Usage</div>
+          <div class="noc-metric-capacity" id="cap-perf-mem">{% if server.ram_mb %}{{ (server.ram_mb / 1024)|round(1) }} GB{% else %}—{% endif %}</div>
         </div>
-        <div id="chart-mem" class="perf-chart-box"></div>
+        <div class="noc-chart-box" id="chart-mem"></div>
+        <div class="noc-chart-legend" id="legend-mem" style="display:none"></div>
       </div>
-      <div class="perf-metric-card">
-        <div class="perf-card-header">
-          <div class="perf-card-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" style="vertical-align:middle"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            <span>Swap Terpakai</span>
-          </div>
-          <div class="perf-card-stats" id="stats-swap"></div>
+
+      <!-- 3. Disk Usage -->
+      <div class="noc-metric-card" id="card-perf-disk">
+        <div class="noc-metric-header">
+          <div class="noc-metric-title">Disk Usage</div>
+          <div class="noc-metric-capacity" id="cap-perf-disk"></div>
         </div>
-        <div id="chart-swap" class="perf-chart-box"></div>
+        <div class="noc-chart-box" id="chart-disk"></div>
+        <div class="noc-chart-legend" id="legend-disk"></div>
       </div>
-      <div class="perf-metric-card">
-        <div class="perf-card-header">
-          <div class="perf-card-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2" style="vertical-align:middle"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            <span>Beban Sistem (Load 1)</span>
-          </div>
-          <div class="perf-card-stats" id="stats-load"></div>
+
+      <!-- 4. Load Average -->
+      <div class="noc-metric-card" id="card-perf-load">
+        <div class="noc-metric-header">
+          <div class="noc-metric-title">Load Average</div>
+          <div class="noc-metric-capacity" id="cap-perf-load">{% if server._cpu_cores %}{{ server._cpu_cores }} CPU{% elif server.cpu_cores %}{{ server.cpu_cores }} CPU{% else %}—{% endif %}</div>
         </div>
-        <div id="chart-load" class="perf-chart-box"></div>
+        <div class="noc-chart-box" id="chart-load"></div>
+        <div class="noc-chart-legend" id="legend-load"></div>
       </div>
     </div>
-    <div id="disk-charts-wrap" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:16px"></div>
   </div>
 
 </div>
@@ -10705,55 +10703,104 @@ function downloadLog() {
   setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
 
-// ---------- grafik disk historis ----------
-let _lastDiskPoints = [];
+// ---------- Universal NOC Metric Charts (CPU, Memory, Disk, Load Average) ----------
+let _chartCpu = null;
+let _chartMem = null;
+let _chartDisk = null;
+let _chartLoad = null;
 
-function renderDiskCharts(pts) {
-  _lastDiskPoints = pts;
-  const wrap = document.getElementById('disk-charts-wrap');
-  if (!wrap) return;
-  // Kumpulkan semua mount point unik dari semua titik
-  const mounts = [];
-  pts.forEach(p => {
-    (p.disks || []).forEach(d => {
-      if (d.mount && !mounts.includes(d.mount)) mounts.push(d.mount);
-    });
-  });
-  if (!mounts.length) { wrap.style.display = 'none'; return; }
-  wrap.style.display = 'block';
-  wrap.innerHTML = '<div style="font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;font-weight:600">Riwayat Penggunaan Disk (%)</div>'
-    + '<div class="perf-grid">'
-    + mounts.map(mount => {
-        const safeId = mount.replace(/[^a-zA-Z0-9]/g, '_');
-        const elId = 'disk-chart-' + safeId;
-        const statId = 'disk-stat-' + safeId;
-        return '<div class="perf-metric-card">'
-          + '<div class="perf-card-header">'
-          + '  <div class="perf-card-title">'
-          + '    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" style="vertical-align:middle"><path d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><line x1="6" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="18" y2="12"/></svg>'
-          + '    <span class="mono">' + escHtml(mount) + '</span>'
-          + '  </div>'
-          + '  <div class="perf-card-stats" id="' + statId + '"></div>'
-          + '</div>'
-          + '<div id="' + elId + '" class="perf-chart-box"></div>'
-          + '</div>';
-    }).join('')
-    + '</div>';
+function initNocMetricCharts() {
+  if (typeof NocMetricChart !== 'function') return;
 
-  // Render setelah DOM tersedia
-  setTimeout(() => {
-    mounts.forEach(mount => {
-      const safeId = mount.replace(/[^a-zA-Z0-9]/g, '_');
-      const elId = 'disk-chart-' + safeId;
-      const statId = 'disk-stat-' + safeId;
-      const diskPts = pts.map(p => {
-        const d = (p.disks || []).find(x => x.mount === mount);
-        return {t: p.t, v: d ? d.pct : null};
-      }).filter(x => x.v !== null).map(x => ({t: x.t, disk_pct: x.v}));
-      if (diskPts.length < 2) return;
-      renderLineChart(elId, diskPts, p => p.disk_pct, v => v.toFixed(0) + '%', '#a855f7', 100, statId);
+  if (!_chartCpu && document.getElementById('chart-cpu')) {
+    _chartCpu = new NocMetricChart({
+      container: 'chart-cpu',
+      legendContainer: 'legend-cpu',
+      capacityEl: 'cap-perf-cpu',
+      title: 'CPU Usage',
+      unit: '%',
+      fixedMax: 100,
+      showLegend: false,
+      series: [
+        {
+          id: 'cpu',
+          name: 'CPU Usage',
+          color: '#0284c7',
+          getValue: p => (p.cpu !== null && p.cpu !== undefined) ? p.cpu : null,
+          tooltipLabel: v => `CPU Usage: ${Math.round(v)}%`
+        }
+      ]
     });
-  }, 0);
+  }
+
+  if (!_chartMem && document.getElementById('chart-mem')) {
+    _chartMem = new NocMetricChart({
+      container: 'chart-mem',
+      legendContainer: 'legend-mem',
+      capacityEl: 'cap-perf-mem',
+      title: 'Memory Usage',
+      unit: '%',
+      fixedMax: 100,
+      showLegend: false,
+      series: [
+        {
+          id: 'mem',
+          name: 'Memory Usage',
+          color: '#f97316',
+          getValue: p => (p.mem_total > 0 ? (p.mem_used / p.mem_total) * 100 : null),
+          tooltipLabel: v => `Memory Usage: ${Math.round(v)}%`
+        }
+      ]
+    });
+  }
+
+  if (!_chartDisk && document.getElementById('chart-disk')) {
+    _chartDisk = new NocMetricChart({
+      container: 'chart-disk',
+      legendContainer: 'legend-disk',
+      capacityEl: 'cap-perf-disk',
+      title: 'Disk Usage',
+      unit: '%',
+      fixedMax: 100,
+      showLegend: true,
+      series: []
+    });
+  }
+
+  if (!_chartLoad && document.getElementById('chart-load')) {
+    _chartLoad = new NocMetricChart({
+      container: 'chart-load',
+      legendContainer: 'legend-load',
+      capacityEl: 'cap-perf-load',
+      title: 'Load Average',
+      unit: '',
+      fixedMax: null,
+      showLegend: true,
+      series: [
+        {
+          id: 'load1',
+          name: '1 Minute',
+          color: '#8b5cf6',
+          getValue: p => (p.load1 !== null && p.load1 !== undefined ? p.load1 : (p.load !== null && p.load !== undefined ? p.load : null)),
+          tooltipLabel: v => `Load Average: ${v.toFixed(2)}`
+        },
+        {
+          id: 'load5',
+          name: '5 Minutes',
+          color: '#f43f5e',
+          getValue: p => (p.load5 !== null && p.load5 !== undefined ? p.load5 : null),
+          tooltipLabel: v => `Load Average: ${v.toFixed(2)}`
+        },
+        {
+          id: 'load15',
+          name: '15 Minutes',
+          color: '#0284c7',
+          getValue: p => (p.load15 !== null && p.load15 !== undefined ? p.load15 : null),
+          tooltipLabel: v => `Load Average: ${v.toFixed(2)}`
+        }
+      ]
+    });
+  }
 }
 
 async function poll() {
@@ -10781,20 +10828,12 @@ function showPerfChartLoaders(label) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const txt = label ? (isEn ? `Loading metrics (${label})...` : `Memuat metrik (${label})...`) : (isEn ? 'Loading metrics...' : 'Memuat data metrik...');
   const skeletonHtml = `<div class="perf-chart-skeleton"><div class="spinner-sm"></div><span>${txt}</span></div>`;
-  ['chart-cpu', 'chart-mem', 'chart-swap', 'chart-load'].forEach(id => {
+  ['chart-cpu', 'chart-mem', 'chart-disk', 'chart-load'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = skeletonHtml;
   });
-  const diskWrap = document.getElementById('disk-charts-wrap');
-  if (diskWrap && diskWrap.style.display !== 'none') {
-    diskWrap.querySelectorAll('.perf-chart-box').forEach(el => {
-      el.innerHTML = skeletonHtml;
-    });
-  }
 }
 
-// Patch loadPerf untuk juga render disk charts
-const _origLoadPerf = loadPerf;
 async function loadPerf(range) {
   perfRange = range || perfRange;
   document.querySelectorAll('#perf-ranges .btn').forEach(b => {
@@ -10808,12 +10847,77 @@ async function loadPerf(range) {
     data = await r.json();
   } catch (e) { return; }
   const pts = data.points || [];
-  document.getElementById('perf-empty').style.display = pts.length ? 'none' : 'block';
-  renderLineChart('chart-cpu', pts, p => p.cpu, v => v.toFixed(0) + '%', PERF_COLORS.cpu, 100, 'stats-cpu');
-  renderLineChart('chart-mem', pts, pctOf, v => v.toFixed(0) + '%', PERF_COLORS.mem, 100, 'stats-mem');
-  renderLineChart('chart-swap', pts, swapPct, v => v.toFixed(0) + '%', PERF_COLORS.swap, 100, 'stats-swap');
-  renderLineChart('chart-load', pts, p => p.load, v => v.toFixed(2), PERF_COLORS.load, 0, 'stats-load');
-  renderDiskCharts(pts);
+  const emptyEl = document.getElementById('perf-empty');
+  if (emptyEl) emptyEl.style.display = pts.length ? 'none' : 'block';
+
+  initNocMetricCharts();
+
+  // 1. Update CPU
+  if (_chartCpu) {
+    const cpuCap = data.cpu_cores ? `${data.cpu_cores} CPU` : '';
+    _chartCpu.setData(pts, { capacity: cpuCap });
+  }
+
+  // 2. Update Memory
+  if (_chartMem) {
+    const memCap = data.ram_mb ? `${Math.round(data.ram_mb / 1024)} GB` : '';
+    _chartMem.setData(pts, { capacity: memCap });
+  }
+
+  // 3. Update Load Average
+  if (_chartLoad) {
+    const loadCap = data.cpu_cores ? `${data.cpu_cores} CPU` : '';
+    _chartLoad.setData(pts, { capacity: loadCap });
+  }
+
+  // 4. Update Disk Usage
+  if (_chartDisk) {
+    const diskSeriesMap = {};
+    const diskColors = ['#16a34a', '#0284c7', '#a855f7', '#eab308', '#ec4899', '#06b6d4'];
+    let cIdx = 0;
+
+    pts.forEach(p => {
+      (p.disks || []).forEach(d => {
+        if (!d.mount) return;
+        if (!diskSeriesMap[d.mount]) {
+          const totalGb = d.total ? Math.round(d.total / (1024 * 1024 * 1024)) : 0;
+          const legendLabel = totalGb > 0 ? `${d.mount} (${totalGb} GB)` : d.mount;
+          diskSeriesMap[d.mount] = {
+            id: 'disk_' + d.mount.replace(/[^a-zA-Z0-9]/g, '_'),
+            mount: d.mount,
+            name: legendLabel,
+            color: diskColors[cIdx % diskColors.length],
+            getValue: pt => {
+              const f = (pt.disks || []).find(x => x.mount === d.mount);
+              return f && f.pct !== null && f.pct !== undefined ? f.pct : null;
+            },
+            tooltipLabel: v => `Disk Usage: ${Math.round(v)}%`
+          };
+          cIdx++;
+        }
+      });
+    });
+
+    const diskSeriesList = Object.values(diskSeriesMap);
+    if (diskSeriesList.length === 0) {
+      diskSeriesList.push({
+        id: 'disk_root',
+        name: '/ (Root)',
+        color: '#16a34a',
+        getValue: p => (p.disk !== null && p.disk !== undefined ? p.disk : null),
+        tooltipLabel: v => `Disk Usage: ${Math.round(v)}%`
+      });
+    }
+
+    // Pertahankan status toggle legenda yang sudah dipilih user
+    diskSeriesList.forEach(ns => {
+      const existing = _chartDisk.series.find(os => os.id === ns.id);
+      if (existing) ns.visible = existing.visible;
+    });
+
+    _chartDisk.setSeries(diskSeriesList);
+    _chartDisk.setData(pts);
+  }
 }
 
 document.querySelectorAll('#perf-ranges .btn').forEach(b =>
