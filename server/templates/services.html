@@ -2012,6 +2012,26 @@ div[style*="position: fixed"] .card {
         <tbody></tbody>
       </table>
     </div>
+
+    <!-- Grafik Throughput Traffic Jaringan -->
+    <div id="net-chart-wrap" style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:12px;font-weight:600;color:var(--text);letter-spacing:0.3px;display:flex;align-items:center;gap:6px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          <span>Grafik Throughput Traffic Jaringan (Download / Upload)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label for="net-chart-iface" style="margin:0;font-size:11px;color:var(--dim)">Antarmuka:</label>
+          <select id="net-chart-iface" onchange="onNetChartIfaceChange(this.value)" style="padding:2px 8px;font-size:11px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer">
+            <option value="all" selected>Semua Antarmuka (Total)</option>
+          </select>
+        </div>
+      </div>
+      <div class="noc-metric-card" style="padding:10px 14px;box-shadow:none;border-color:rgba(255,255,255,0.06);background:rgba(0,0,0,0.12)">
+        <div class="noc-chart-box" id="chart-net" style="height:175px"></div>
+        <div class="noc-chart-legend" id="legend-net"></div>
+      </div>
+    </div>
   </div>
 
   <!-- 5. Riwayat Kinerja (Historical Performance Charts) -->
@@ -2022,10 +2042,10 @@ div[style*="position: fixed"] .card {
         <span style="font-size:12px;color:var(--dim)">Grafik Tren Metrik Historis Host (CPU, RAM, Disk &amp; Network)</span>
       </div>
       <div id="perf-ranges" class="segmented-control">
-        <button class="btn btn-sm" data-range="today">Hari Ini</button>
+        <button class="btn btn-sm is-on" data-range="today">Hari Ini</button>
         <button class="btn btn-sm" data-range="1h">1 Jam</button>
         <button class="btn btn-sm" data-range="6h">6 Jam</button>
-        <button class="btn btn-sm is-on" data-range="24h">24 Jam</button>
+        <button class="btn btn-sm" data-range="24h">24 Jam</button>
         <button class="btn btn-sm" data-range="7d">7 Hari</button>
         <button class="btn btn-sm" data-range="30d">30 Hari</button>
       </div>
@@ -4326,6 +4346,7 @@ function showTab(name) {
   if (typeof _initPackagesData === 'function') _initPackagesData();
   if (typeof _initSystemdData === 'function') _initSystemdData();
   initServicesTabPagination();
+  if (typeof renderAllPerfCharts === 'function') renderAllPerfCharts();
 }
 document.querySelectorAll('#detail-tabs .tab').forEach(b =>
   b.addEventListener('click', () => showTab(b.dataset.tab)));
@@ -10216,7 +10237,7 @@ function renderSys(data) {
 
 // ---------- grafik kinerja (riwayat) ----------
 const PERF_COLORS = {cpu: '#38bdf8', mem: '#22c55e', swap: '#eab308', load: '#f43f5e'};
-let perfRange = '24h';
+let perfRange = 'today';
 
 function fmtAxisTime(t) {
   const d = new Date(t * 1000);
@@ -10703,11 +10724,57 @@ function downloadLog() {
   setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
 
-// ---------- Universal NOC Metric Charts (CPU, Memory, Disk, Load Average) ----------
+// ---------- Universal NOC Metric Charts (CPU, Memory, Disk, Load Average, Network) ----------
 let _chartCpu = null;
 let _chartMem = null;
 let _chartDisk = null;
 let _chartLoad = null;
+let _chartNet = null;
+let _selectedNetIface = 'all';
+let _cachedPerfPoints = [];
+
+function calcNetRate(p, type, iface) {
+  if (!p || !Array.isArray(p.net) || !p.net.length) return null;
+  const key = type === 'rx' ? 'rx_rate' : 'tx_rate';
+  if (!iface || iface === 'all') {
+    let total = 0;
+    let found = false;
+    for (let i = 0; i < p.net.length; i++) {
+      const item = p.net[i];
+      if (item && item.iface !== 'lo' && typeof item[key] === 'number') {
+        total += item[key];
+        found = true;
+      }
+    }
+    if (!found) {
+      for (let i = 0; i < p.net.length; i++) {
+        const item = p.net[i];
+        if (item && typeof item[key] === 'number') {
+          total += item[key];
+          found = true;
+        }
+      }
+    }
+    return found ? total : null;
+  }
+  const item = p.net.find(x => x.iface === iface);
+  return (item && typeof item[key] === 'number') ? item[key] : null;
+}
+
+function onNetChartIfaceChange(val) {
+  _selectedNetIface = val;
+  if (_chartNet && _cachedPerfPoints && _cachedPerfPoints.length) {
+    _chartNet.setData(_cachedPerfPoints);
+  }
+}
+
+function renderAllPerfCharts() {
+  if (_chartCpu) _chartCpu.render();
+  if (_chartMem) _chartMem.render();
+  if (_chartDisk) _chartDisk.render();
+  if (_chartLoad) _chartLoad.render();
+  if (_chartNet) _chartNet.render();
+}
 
 function initNocMetricCharts() {
   if (typeof NocMetricChart !== 'function') return;
@@ -10801,6 +10868,33 @@ function initNocMetricCharts() {
       ]
     });
   }
+
+  if (!_chartNet && document.getElementById('chart-net')) {
+    _chartNet = new NocMetricChart({
+      container: 'chart-net',
+      legendContainer: 'legend-net',
+      title: 'Traffic Jaringan',
+      unit: 'rate',
+      fixedMax: null,
+      showLegend: true,
+      series: [
+        {
+          id: 'rx',
+          name: 'Download (RX)',
+          color: '#22c55e',
+          getValue: p => calcNetRate(p, 'rx', _selectedNetIface),
+          tooltipLabel: v => `Download (RX): ${formatNocRate(v)}`
+        },
+        {
+          id: 'tx',
+          name: 'Upload (TX)',
+          color: '#0284c7',
+          getValue: p => calcNetRate(p, 'tx', _selectedNetIface),
+          tooltipLabel: v => `Upload (TX): ${formatNocRate(v)}`
+        }
+      ]
+    });
+  }
 }
 
 async function poll() {
@@ -10828,7 +10922,7 @@ function showPerfChartLoaders(label) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const txt = label ? (isEn ? `Loading metrics (${label})...` : `Memuat metrik (${label})...`) : (isEn ? 'Loading metrics...' : 'Memuat data metrik...');
   const skeletonHtml = `<div class="perf-chart-skeleton"><div class="spinner-sm"></div><span>${txt}</span></div>`;
-  ['chart-cpu', 'chart-mem', 'chart-disk', 'chart-load'].forEach(id => {
+  ['chart-cpu', 'chart-mem', 'chart-disk', 'chart-load', 'chart-net'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = skeletonHtml;
   });
@@ -10847,6 +10941,7 @@ async function loadPerf(range) {
     data = await r.json();
   } catch (e) { return; }
   const pts = data.points || [];
+  _cachedPerfPoints = pts;
   const emptyEl = document.getElementById('perf-empty');
   if (emptyEl) emptyEl.style.display = pts.length ? 'none' : 'block';
 
@@ -10918,6 +11013,37 @@ async function loadPerf(range) {
     _chartDisk.setSeries(diskSeriesList);
     _chartDisk.setData(pts);
   }
+
+  // 5. Update Network Traffic Throughput
+  if (_chartNet) {
+    const selEl = document.getElementById('net-chart-iface');
+    if (selEl) {
+      const ifaceSet = new Set();
+      pts.forEach(p => {
+        if (Array.isArray(p.net)) {
+          p.net.forEach(n => {
+            if (n && n.iface && n.iface !== 'lo') ifaceSet.add(n.iface);
+          });
+        }
+      });
+      const currentOpts = Array.from(selEl.options).map(o => o.value);
+      const newIfaces = Array.from(ifaceSet).sort();
+      const allList = ['all', ...newIfaces];
+      if (currentOpts.join(',') !== allList.join(',')) {
+        const prevVal = selEl.value || _selectedNetIface;
+        selEl.innerHTML = '<option value="all">Semua Antarmuka (Total)</option>' +
+          newIfaces.map(ifc => `<option value="${escHtml(ifc)}">${escHtml(ifc)}</option>`).join('');
+        if (allList.includes(prevVal)) {
+          selEl.value = prevVal;
+          _selectedNetIface = prevVal;
+        } else {
+          selEl.value = 'all';
+          _selectedNetIface = 'all';
+        }
+      }
+    }
+    _chartNet.setData(pts);
+  }
 }
 
 document.querySelectorAll('#perf-ranges .btn').forEach(b =>
@@ -10934,8 +11060,8 @@ document.querySelectorAll('#perf-ranges .btn').forEach(b =>
       if (card) card.style.opacity = '1';
     });
   }));
-showPerfChartLoaders('24 Jam');
-setTimeout(() => loadPerf('24h'), 400);
+showPerfChartLoaders('Hari Ini');
+setTimeout(() => loadPerf('today'), 400);
 setInterval(() => { if (!document.hidden) loadPerf(); }, 30000);
 
 const svcSel = document.getElementById('svc-graph-sel');
@@ -10966,6 +11092,7 @@ setInterval(() => { if (!document.hidden) loadSvcHistory(); }, 30000);
   if (typeof _initPackagesData === 'function') _initPackagesData();
   if (typeof _initSystemdData === 'function') _initSystemdData();
   initServicesTabPagination();
+  if (typeof renderAllPerfCharts === 'function') renderAllPerfCharts();
 })();
 
 // --- Server Notes Functions (Direct Auto-Save & Auto-Delete) ---

@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.151
+
+- **Tipe Rilis:** Pemolesan Kurva Garis Grafik Polos Mulus, Sorotan Hover Interaktif Presisi Tinggi, Default Rentang Waktu Hari Ini & Integrasi Grafik Throughput Traffic Jaringan (*Smooth Clean Metric Lines, Hover-Only Interactive Marker Rings, Default Today Range & Network Throughput Chart Integration*)
+- **Fokus Utama:** Menyempurnakan tampilan estetika dan ergonomi grafik performa NOC agar bersih tanpa gangguan titik permanen, memperkaya visualisasi tooltip hover, menetapkan filter default ke hari berjalan, serta menambahkan kartu grafik throughput lalu lintas jaringan:
+  1. **Visualisasi Garis Grafik Polos Mulus Tanpa Titik Permanen (`server/templates/base.html`):**
+     - Menghilangkan titik-titik sampel permanen di sepanjang garis grafik sehingga seluruh kurva tampil mulus, bersih, dan polos tanpa gangguan visual ("benang").
+     - Mengimplementasikan marker titik bulat kontras ganda (*outer halo ring & inner solid dot*) yang hanya timbul secara interaktif tepat ketika kursor pengguna menyorot grafik (*hover-only marker*).
+     - Menampilkan floating tooltip popover 2 baris yang menyajikan detail waktu presisi detik (misal `10 Nov, 19:37:00`) dan metrik penggunaan resource dengan bullet indikator warna seri data.
+  2. **Filter Default Metrik "Hari Ini" (`server/templates/services.html`):**
+     - Mengubah rentang waktu default metrik performa historis dari sebelumnya 24 Jam (`24h`) menjadi "Hari Ini" (`today`), sehingga operator NOC langsung memperoleh observabilitas aktivitas terkini sejak pergantian hari tanpa noise data lampau.
+  3. **Kartu Visualisasi Throughput Jaringan Interaktif (`server/templates/services.html` & `server/routers/servers.py`):**
+     - Menambahkan kartu visualisasi grafik lalu lintas jaringan (Download RX & Upload TX) berdensitas tinggi pada kartu "Konfigurasi Jaringan & Traffic Interface".
+     - Menyediakan pemilih dropdown antarmuka jaringan (*All Interfaces / Total* dan filter spesifik antarmuka).
+     - Memperluas query snapshot backend endpoint `/api/servers/{sid}/perf` dengan data deret waktu jaringan (`net`).
+     - Menerapkan formatter laju data NOC adaptif `formatNocRate` (`B/s`, `KB/s`, `MB/s`).
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.151` pada 7 berkas inti repositori.
+
 ## Versi 4.8.150
 
 - **Tipe Rilis:** Penerapan Model Baku Solid Universal Metric Chart Engine & Visualisasi Performa Interaktif Grid 2x2 (*Universal Interactive Metric Chart Engine & High-Density 2x2 Performance Grid Overhaul*)

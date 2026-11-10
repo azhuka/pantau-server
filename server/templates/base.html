@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.150' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.151' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2719,7 +2719,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.150' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.151' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
@@ -5510,13 +5510,20 @@ function attachTablePagination(target, options = {}) {
 // =============================================================================
 // Universal NOC Metric Chart Engine (Pantau Metric Chart Standard)
 // =============================================================================
+function formatNocRate(bytesPerSec) {
+  if (bytesPerSec === null || bytesPerSec === undefined || isNaN(bytesPerSec) || bytesPerSec <= 0) return '0 B/s';
+  if (bytesPerSec < 1024) return Math.round(bytesPerSec) + ' B/s';
+  if (bytesPerSec < 1024 * 1024) return (bytesPerSec / 1024).toFixed(1) + ' KB/s';
+  return (bytesPerSec / (1024 * 1024)).toFixed(2) + ' MB/s';
+}
+
 class NocMetricChart {
   constructor(options) {
     this.container = typeof options.container === 'string' ? document.getElementById(options.container) : options.container;
     this.legendContainer = typeof options.legendContainer === 'string' ? document.getElementById(options.legendContainer) : options.legendContainer;
     this.capacityEl = typeof options.capacityEl === 'string' ? document.getElementById(options.capacityEl) : options.capacityEl;
     this.title = options.title || '';
-    this.unit = options.unit || '%';
+    this.unit = options.unit !== undefined ? options.unit : '%';
     this.fixedMax = options.fixedMax !== undefined ? options.fixedMax : 100;
     this.fixedMin = options.fixedMin !== undefined ? options.fixedMin : 0;
     this.series = (options.series || []).map(s => ({
@@ -5671,7 +5678,15 @@ class NocMetricChart {
       txt.setAttribute('font-size', '10');
       txt.setAttribute('fill', 'var(--dim, #64748b)');
       txt.setAttribute('font-family', 'var(--font-mono, monospace)');
-      txt.textContent = (this.unit === '%' ? Math.round(tickVal) + '%' : (tickVal % 1 === 0 ? tickVal.toString() : tickVal.toFixed(1)));
+      if (this.unit === '%') {
+        txt.textContent = Math.round(tickVal) + '%';
+      } else if (this.unit === 'rate') {
+        txt.textContent = formatNocRate(tickVal);
+      } else if (this.unit === '') {
+        txt.textContent = (tickVal % 1 === 0 ? tickVal.toString() : tickVal.toFixed(1));
+      } else {
+        txt.textContent = (tickVal % 1 === 0 ? tickVal.toString() : tickVal.toFixed(1)) + ' ' + this.unit;
+      }
       svg.appendChild(txt);
     });
 
@@ -5715,7 +5730,7 @@ class NocMetricChart {
     // Kumpulkan Titik-Titik Seri untuk Interaksi
     const seriesRenderData = [];
 
-    // 3. Render Garis Seri & Titik Sampel (Dots)
+    // 3. Render Garis Seri (Polos Tanpa Bulatan / Dots Permanen)
     visibleSeries.forEach(s => {
       const seriesPts = [];
       pts.forEach(p => {
@@ -5727,7 +5742,7 @@ class NocMetricChart {
       if (seriesPts.length === 0) return;
       seriesRenderData.push({ series: s, points: seriesPts });
 
-      // Gambar Polyline
+      // Gambar Polyline Mulus Polos
       const polyCoords = seriesPts.map(pt => `${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ');
       const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
       polyline.setAttribute('points', polyCoords);
@@ -5737,31 +5752,21 @@ class NocMetricChart {
       polyline.setAttribute('stroke-linecap', 'round');
       polyline.setAttribute('stroke-linejoin', 'round');
       svg.appendChild(polyline);
-
-      // Gambar Dots di Setiap Sampel
-      seriesPts.forEach(pt => {
-        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        dot.setAttribute('cx', pt.x.toFixed(1));
-        dot.setAttribute('cy', pt.y.toFixed(1));
-        dot.setAttribute('r', '2.5');
-        dot.setAttribute('fill', s.color);
-        svg.appendChild(dot);
-      });
     });
 
-    // 4. Halo Group untuk Efek Hover
+    // 4. Halo Group untuk Efek Hover (Bulat Muncul Hanya Saat Kursor Menyorot)
     const haloG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     haloG.style.display = 'none';
 
     const haloOuter = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    haloOuter.setAttribute('r', '7.5');
-    haloOuter.setAttribute('opacity', '0.28');
+    haloOuter.setAttribute('r', '8.5');
+    haloOuter.setAttribute('opacity', '0.3');
     haloG.appendChild(haloOuter);
 
     const haloInner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    haloInner.setAttribute('r', '3.5');
+    haloInner.setAttribute('r', '4');
     haloInner.setAttribute('stroke', '#ffffff');
-    haloInner.setAttribute('stroke-width', '1.5');
+    haloInner.setAttribute('stroke-width', '2');
     haloG.appendChild(haloInner);
 
     svg.appendChild(haloG);
@@ -5805,7 +5810,7 @@ class NocMetricChart {
 
       if (!bestCandidate) return;
 
-      // Tampilkan Halo Marker
+      // Menimbulkan Bulat Saat Tersorot Kursor
       haloG.style.display = '';
       haloOuter.setAttribute('cx', bestCandidate.x.toFixed(1));
       haloOuter.setAttribute('cy', bestCandidate.y.toFixed(1));
@@ -5819,12 +5824,36 @@ class NocMetricChart {
       const pixelX = (bestCandidate.x / W) * rect.width;
       const pixelY = (bestCandidate.y / H) * rect.height;
 
-      const formattedVal = (this.unit === '%' ? Math.round(bestCandidate.val) + '%' : (bestCandidate.val % 1 === 0 ? bestCandidate.val.toString() : bestCandidate.val.toFixed(2)));
-      const tooltipLabel = bestCandidate.series.tooltipLabel
-        ? bestCandidate.series.tooltipLabel(bestCandidate.val, bestCandidate.raw)
-        : (bestCandidate.series.name ? `${bestCandidate.series.name}: ${formattedVal}` : `${this.title}: ${formattedVal}`);
+      // Format Waktu Detail
+      const sampleDate = new Date(bestCandidate.t * 1000);
+      const timeFmt = sampleDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      const dateFmt = sampleDate.toLocaleDateString([], { day: '2-digit', month: 'short' });
+      const fullTimeStr = `${dateFmt}, ${timeFmt}`;
 
-      this.tooltipEl.textContent = tooltipLabel;
+      // Format Usage Resource
+      let formattedVal = '';
+      if (this.unit === '%') {
+        formattedVal = bestCandidate.val.toFixed(1) + '%';
+      } else if (this.unit === 'rate') {
+        formattedVal = formatNocRate(bestCandidate.val);
+      } else if (this.unit === '') {
+        formattedVal = (bestCandidate.val % 1 === 0 ? bestCandidate.val.toString() : bestCandidate.val.toFixed(2));
+      } else {
+        formattedVal = bestCandidate.val.toFixed(1) + ' ' + this.unit;
+      }
+
+      const seriesName = bestCandidate.series.name || this.title;
+      const usageLabel = bestCandidate.series.tooltipLabel
+        ? bestCandidate.series.tooltipLabel(bestCandidate.val, bestCandidate.raw)
+        : `${seriesName}: ${formattedVal}`;
+
+      this.tooltipEl.innerHTML = `
+        <div style="font-size:10px;color:var(--dim);margin-bottom:2px;font-family:var(--font-mono, monospace);font-weight:500">${fullTimeStr}</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text);font-weight:700">
+          <span style="width:7px;height:7px;border-radius:50%;background:${bestCandidate.series.color};display:inline-block"></span>
+          <span>${usageLabel}</span>
+        </div>
+      `;
       this.tooltipEl.style.borderColor = bestCandidate.series.color;
       this.tooltipEl.style.left = `${pixelX}px`;
       this.tooltipEl.style.top = `${pixelY}px`;

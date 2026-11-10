@@ -2183,6 +2183,7 @@ def api_server_perf(
             func.max(SystemSnapshot.swap_total),
             func.avg(SystemSnapshot.swap_used),
             func.max(SystemSnapshot.disks),
+            func.max(SystemSnapshot.net),
         )
         .filter(
             SystemSnapshot.server_id == sid,
@@ -2194,7 +2195,7 @@ def api_server_perf(
         .all()
     )
 
-    def _parse_disks(raw_json):
+    def _parse_json_list(raw_json):
         if not raw_json:
             return []
         try:
@@ -2216,9 +2217,10 @@ def api_server_perf(
                 "mem_total": mem_total,
                 "swap_used": swap_used,
                 "swap_total": swap_total,
-                "disks": _parse_disks(disks_raw),
+                "disks": _parse_json_list(disks_raw),
+                "net": _parse_json_list(net_raw),
             }
-            for tb_stamp, cpu_avg, load1_avg, load5_avg, load15_avg, mem_total, mem_used, swap_total, swap_used, disks_raw in raw
+            for tb_stamp, cpu_avg, load1_avg, load5_avg, load15_avg, mem_total, mem_used, swap_total, swap_used, disks_raw, net_raw in raw
         ]
     )
 
