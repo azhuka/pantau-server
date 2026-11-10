@@ -809,7 +809,7 @@ td.col-center-cell {
 .noc-main {
   flex: 1;
   min-width: 0;
-  margin-left: 230px;
+  margin-left: 185px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;

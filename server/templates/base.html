@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.155' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.156' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -792,25 +792,29 @@ body{
   letter-spacing:-0.011em;
 }
 
-.sidebar{width:230px;background:var(--sidebar);border-right:1px solid var(--border);padding:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:20;transition:width .2s cubic-bezier(0.4,0,0.2,1);box-shadow:var(--shadow-md)}
-.sidebar-brand{padding:18px 20px;font-size:15px;font-weight:700;letter-spacing:-0.02em;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;white-space:nowrap}
-.sidebar-brand .brand-dot{color:var(--blue)}
-.sb-toggle{margin-left:auto;cursor:pointer;color:var(--dim);font-size:15px;line-height:1;padding:5px 8px;border-radius:6px;background:none;border:1px solid transparent;font-family:inherit;transition:all .15s}
+.sidebar{width:185px;background:var(--sidebar);border-right:1px solid var(--border);padding:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:20;transition:width .2s cubic-bezier(0.4,0,0.2,1);box-shadow:var(--shadow-md)}
+.sidebar-brand{padding:12px 14px;font-size:13.5px;font-weight:700;letter-spacing:-0.02em;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.sidebar-brand .brand-dot{color:var(--blue);display:inline-flex;align-items:center}
+.sidebar-brand .brand-dot svg{width:16px;height:16px}
+.sidebar-brand .brand-label{font-size:13px;font-weight:700;color:var(--text-heading, #fff);overflow:hidden;text-overflow:ellipsis}
+.sb-toggle{margin-left:auto;cursor:pointer;color:var(--dim);font-size:13px;line-height:1;padding:4px 6px;border-radius:5px;background:none;border:1px solid transparent;font-family:inherit;transition:all .15s}
 .sb-toggle:hover{color:var(--text);background:var(--hover);border-color:var(--border)}
-.sidebar-nav{flex:1;padding:14px 10px;overflow-y:auto}
-.nav-section{padding:10px 14px 4px;font-size:10px;font-weight:700;color:var(--dim-subtle);text-transform:uppercase;letter-spacing:1px}
-.nav-link{display:flex;align-items:center;gap:10px;padding:9px 14px;color:var(--dim);text-decoration:none;font-size:13px;font-weight:500;border-radius:var(--radius-sm);transition:all .15s ease}
+.sidebar-nav{flex:1;padding:8px 6px;overflow-y:auto}
+.nav-section{padding:8px 10px 3px;font-size:9.5px;font-weight:700;color:var(--dim-subtle);text-transform:uppercase;letter-spacing:0.8px}
+.nav-link{display:flex;align-items:center;gap:8px;padding:6px 10px;color:var(--dim);text-decoration:none;font-size:11.5px;font-weight:500;border-radius:6px;transition:all .15s ease;margin-bottom:2px}
 .nav-link:hover{background:var(--sidebar-hover);color:var(--text)}
 .nav-link.active{color:var(--text-heading, #fff);background:var(--blue-bg);border:1px solid var(--blue);font-weight:600;box-shadow:0 0 10px var(--blue-bg)}
-.nav-icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
-.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--dim);background:rgba(0,0,0,0.15)}
-.sidebar-footer a{color:var(--dim);text-decoration:none;transition:color .15s}
-.sidebar-footer a:hover{color:var(--red)}
+.nav-icon{width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.nav-icon svg{width:14px;height:14px}
+.sidebar-footer{padding:8px 12px;border-top:1px solid var(--border);font-size:11px;color:var(--dim);background:rgba(0,0,0,0.14);text-align:center}
+.sb-footer-brand{font-size:11px;font-weight:700;color:var(--text);letter-spacing:0.2px}
+.sb-footer-ver{font-size:10px;color:var(--dim);font-family:var(--font-mono, monospace);margin-top:1px}
+.sb-footer-utc{font-size:9.5px;color:var(--dim-subtle, #64748b);font-family:var(--font-mono, monospace);margin-top:2px}
 
 .main{
   flex: 1;
   min-width: 0;
-  margin-left: 230px;
+  margin-left: 185px;
   padding: 0;
   transition: margin-left .2s cubic-bezier(0.4,0,0.2,1);
   display: flex;
@@ -831,9 +835,89 @@ body{
   }
 }
 .app-footer{margin-top:auto;text-align:center;padding:28px 0 16px;font-size:12px;color:var(--dim);opacity:0.8}
-.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:12px}
-.topbar h2{font-size:20px;font-weight:700;letter-spacing:-0.02em;color:var(--text-heading, #fff)}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;min-height:32px;flex-wrap:wrap}
+.topbar h2{font-size:18px;font-weight:700;letter-spacing:-0.02em;color:var(--text-heading, #fff);margin:0}
 .topbar .user-info{font-size:13px;color:var(--dim)}
+
+/* Topbar Akun Operator Terpadu */
+.noc-topbar-user{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:rgba(255,255,255,0.035);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:3px 8px 3px 5px;
+  height:28px;
+  box-sizing:border-box;
+  flex-shrink:0;
+  margin-left:auto;
+}
+[data-theme="light"] .noc-topbar-user{
+  background:rgba(0,0,0,0.03);
+  border-color:rgba(0,0,0,0.12);
+}
+.noc-user-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  text-decoration:none;
+  color:var(--text);
+  font-size:11.5px;
+  font-weight:600;
+  font-family:var(--font-mono, monospace);
+  transition:color .15s ease;
+}
+.noc-user-pill:hover{
+  color:var(--blue, #38bdf8);
+}
+.noc-user-avatar{
+  width:19px;
+  height:19px;
+  border-radius:50%;
+  background:rgba(56,189,248,0.15);
+  color:#38bdf8;
+  border:1px solid rgba(56,189,248,0.35);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  flex-shrink:0;
+}
+.noc-user-name{
+  line-height:1;
+}
+.noc-role-badge{
+  font-size:9.5px !important;
+  padding:1px 5px !important;
+  font-weight:600 !important;
+  border-radius:4px !important;
+  letter-spacing:0.2px;
+}
+.noc-user-divider{
+  width:1px;
+  height:13px;
+  background:var(--border);
+  flex-shrink:0;
+}
+.noc-user-logout{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  color:var(--dim);
+  text-decoration:none;
+  font-size:11px;
+  font-weight:500;
+  transition:all .15s ease;
+}
+.noc-user-logout:hover{
+  color:var(--red, #f87171);
+}
+.noc-user-logout svg{
+  flex-shrink:0;
+}
 
 .card{
   background:var(--card-bg, linear-gradient(180deg, rgba(26, 35, 54, 0.95) 0%, rgba(20, 27, 43, 0.98) 100%));
@@ -2721,30 +2805,15 @@ body.show-alert-banner .main{padding-top:72px}
     </a>
   </nav>
   <div class="sidebar-footer">
-    <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.155' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
-    </div>
-    {% if user %}
-    <div style="margin-bottom:6px;line-height:1.4">
-      <div style="font-weight:700;color:var(--text);font-family:ui-monospace,monospace;font-size:12px">{{ user.username }}</div>
-      <div style="margin-top:2px">
-        {% if user.is_master_admin() %}
-        <span class="badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-size:10px;padding:1px 6px">Master Admin</span>
-        {% elif user.is_operator() %}
-        <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);font-size:10px;padding:1px 6px">Operator</span>
-        {% else %}
-        <span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3);font-size:10px;padding:1px 6px">Viewer</span>
-        {% endif %}
-      </div>
-    </div>
-    <div style="font-size:11px;margin-top:4px">
-      <a href="/logout" style="color:var(--red)">Keluar</a>
-    </div>
-    {% else %}
-    <a href="/login">Masuk</a>
-    {% endif %}
+    <div class="sb-footer-brand">Pantau Server</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.156' }}</div>
+    <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
+
+<div id="topbarUserChipTemplate" style="display:none">
+  {% include "topbar_user.html" %}
+</div>
 
 <main class="main">
 {% block topbar %}{% endblock %}
@@ -2831,6 +2900,43 @@ try {
       t.setAttribute('aria-label', lbl);
     }
   }catch(e){}
+})();
+
+(function initTopbarUser() {
+  function attachTopbarUser() {
+    const chipTpl = document.getElementById('topbarUserChipTemplate');
+    if (!chipTpl) return;
+    const chip = chipTpl.querySelector('.noc-topbar-user');
+    if (!chip) return;
+
+    let target = document.querySelector('.dash-header-right')
+      || document.querySelector('.topbar')
+      || document.querySelector('.probe-header')
+      || document.querySelector('.maint-header')
+      || document.querySelector('.content-header')
+      || document.querySelector('.page-header');
+
+    if (target) {
+      if (!target.querySelector('.noc-topbar-user')) {
+        target.appendChild(chip);
+      }
+    } else {
+      const body = document.querySelector('.noc-content-body');
+      if (body && !document.querySelector('.noc-topbar-user')) {
+        const topBarWrap = document.createElement('div');
+        topBarWrap.className = 'topbar';
+        topBarWrap.style.justifyContent = 'flex-end';
+        topBarWrap.appendChild(chip);
+        body.insertBefore(topBarWrap, body.firstChild);
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachTopbarUser);
+  } else {
+    attachTopbarUser();
+  }
 })();
 
 function toggleSb(){

@@ -354,6 +354,23 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.156
+
+- **Tipe Rilis:** Optimasi Desain Sidebar Ramping Berdensitas Tinggi, Relokasi Akun Operator ke Topbar, & Pembersihan Sidebar Footer (*Ultra-Compact Sidebar Optimization, Operator Account Relocation to Universal Topbar, & Clean Sidebar Footer*)
+- **Fokus Utama:** Memperluas area kerja layar utama (*viewport*) dan menyelaraskan penempatan profil akun operator pada bilah navigasi atas:
+  1. **Sidebar Kompak & Ramping Berdensitas Tinggi NOC (`server/templates/base.html`, `server/static/css/pantau-noc.css`):**
+     - Memperkecil lebar sidebar desktop dari `230px` menjadi `185px` (-45px penghematan lebar horizontal) dengan penyesuaian margin konten utama `.main` dan `.noc-main`.
+     - Memperkecil ukuran teks navigasi menu `.nav-link` dari `13px` menjadi `11.5px` dengan padding yang lebih rapat (`6px 10px`), ukuran ikon SVG proporsional `14px`, dan heading section `9.5px`.
+     - Memperkecil brand header sidebar dari `15px` menjadi `13.5px` dengan padding 12px 14px.
+  2. **Relokasi Akun Operator ke Topbar Halaman (`server/templates/topbar_user.html`, `server/templates/base.html`):**
+     - Memindahkan seluruh elemen akun operator (inisial avatar, username, badge peran Master Admin/Operator/Viewer, dan tombol keluar) dari sidebar footer ke bilah header/topbar atas di sisi kanan.
+     - Dihadirkan dalam bentuk kapsul `.noc-topbar-user` yang elegan dan berstandar visual NOC berdensitas tinggi, mendukung tema gelap maupun terang.
+     - Mekanisme penempatan terpadu otomatis menjamin chip akun selalu tersemat di sisi kanan `.dash-header-right`, `.topbar`, `.probe-header`, `.maint-header`, `.content-header`, dan `.page-header`.
+  3. **Pembersihan Footer Sidebar (`server/templates/base.html`):**
+     - Membersihkan sidebar footer sehingga kini hanya menyajikan informasi identitas aplikasi: `Pantau Server`, label versi `v4.8.156`, dan jam waktu `UTC` live.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.156` pada 7 berkas inti repositori.
+
 ## Versi 4.8.155
 
 - **Tipe Rilis:** Pemisahan Mandiri Kartu Throughput Traffic Jaringan, Pemulihan Simetri Grid 2x2 Metrik Performa, & ViewBox SVG Responsif Real-Pixel (*Standalone Network Throughput Card, Restored Symmetrical 2x2 Performance Grid, Eliminating Native Tooltips & Dynamic Real-Pixel SVG ViewBox*)

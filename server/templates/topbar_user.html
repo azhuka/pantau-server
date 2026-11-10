@@ -1,0 +1,24 @@
+{% if user %}
+<div class="noc-topbar-user" id="topbarUserChip">
+  <a href="/profile" class="noc-user-pill" title="Profil Akun: {{ user.username }} (Klik untuk kelola akun)">
+    <span class="noc-user-avatar">{{ user.username[:1].upper() }}</span>
+    <span class="noc-user-name">{{ user.username }}</span>
+  </a>
+  {% if user.is_master_admin() %}
+  <span class="badge badge-danger noc-role-badge">Master Admin</span>
+  {% elif user.is_operator() %}
+  <span class="badge badge-blue noc-role-badge">Operator</span>
+  {% else %}
+  <span class="badge badge-muted noc-role-badge">Viewer</span>
+  {% endif %}
+  <div class="noc-user-divider"></div>
+  <a href="/logout" class="noc-user-logout" title="Keluar dari sesi Pantau Server" aria-label="Keluar">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+      <polyline points="16 17 21 12 16 7"></polyline>
+      <line x1="21" y1="12" x2="9" y2="12"></line>
+    </svg>
+    <span>Keluar</span>
+  </a>
+</div>
+{% endif %}
