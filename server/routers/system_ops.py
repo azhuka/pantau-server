@@ -257,6 +257,42 @@ def firewall_enable(
     server, err_resp = _check_server_online(db, sid, is_json=is_json, redirect_tab="firewall")
     if err_resp:
         return err_resp
+
+    extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    fw_status = "inactive"
+    if extra and extra.firewall:
+        try:
+            fw_dict = json.loads(extra.firewall)
+            if isinstance(fw_dict, dict):
+                fw_status = fw_dict.get("status", "inactive")
+        except Exception:
+            pass
+
+    if fw_status == "active":
+        if is_json:
+            return JSONResponse(
+                {"ok": False, "detail": "Firewall UFW sudah dalam status aktif (melindungi)."},
+                status_code=400,
+            )
+        return RedirectResponse(f"/servers/{sid}?action=fw_already_active#tab-firewall", status_code=303)
+
+    pending_cmd = (
+        db.query(Command)
+        .filter(
+            Command.server_id == sid,
+            Command.action == "firewall_enable",
+            Command.status.in_(["pending", "executing"]),
+        )
+        .first()
+    )
+    if pending_cmd:
+        if is_json:
+            return JSONResponse(
+                {"ok": False, "detail": "Perintah aktifkan firewall sedang dalam antrean atau sedang diproses oleh agen."},
+                status_code=400,
+            )
+        return RedirectResponse(f"/servers/{sid}?action=fw_pending#tab-firewall", status_code=303)
+
     _enqueue_mitigation(db, sid, "firewall_enable", issued_by=user.username)
     _audit(
         db,
@@ -269,7 +305,7 @@ def firewall_enable(
     db.commit()
     if is_json:
         return JSONResponse({"ok": True, "detail": "Perintah aktifkan firewall (UFW) dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}?action=fw_enabled", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action=fw_enabled#tab-firewall", status_code=303)
 
 
 @router.post("/servers/{sid}/firewall/disable")
@@ -293,6 +329,42 @@ def firewall_disable(
     server, err_resp = _check_server_online(db, sid, is_json=is_json, redirect_tab="firewall")
     if err_resp:
         return err_resp
+
+    extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+    fw_status = "active"
+    if extra and extra.firewall:
+        try:
+            fw_dict = json.loads(extra.firewall)
+            if isinstance(fw_dict, dict):
+                fw_status = fw_dict.get("status", "inactive")
+        except Exception:
+            pass
+
+    if fw_status == "inactive":
+        if is_json:
+            return JSONResponse(
+                {"ok": False, "detail": "Firewall UFW sudah dalam status nonaktif."},
+                status_code=400,
+            )
+        return RedirectResponse(f"/servers/{sid}?action=fw_already_inactive#tab-firewall", status_code=303)
+
+    pending_cmd = (
+        db.query(Command)
+        .filter(
+            Command.server_id == sid,
+            Command.action == "firewall_disable",
+            Command.status.in_(["pending", "executing"]),
+        )
+        .first()
+    )
+    if pending_cmd:
+        if is_json:
+            return JSONResponse(
+                {"ok": False, "detail": "Perintah nonaktifkan firewall sedang dalam antrean atau sedang diproses oleh agen."},
+                status_code=400,
+            )
+        return RedirectResponse(f"/servers/{sid}?action=fw_pending#tab-firewall", status_code=303)
+
     _enqueue_mitigation(db, sid, "firewall_disable", issued_by=user.username)
     _audit(
         db,
@@ -305,7 +377,7 @@ def firewall_disable(
     db.commit()
     if is_json:
         return JSONResponse({"ok": True, "detail": "Perintah nonaktifkan firewall (UFW) dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}?action=fw_disabled", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action=fw_disabled#tab-firewall", status_code=303)
 
 
 @router.post("/servers/{sid}/firewall/reload")
@@ -329,6 +401,24 @@ def firewall_reload(
     server, err_resp = _check_server_online(db, sid, is_json=is_json, redirect_tab="firewall")
     if err_resp:
         return err_resp
+
+    pending_cmd = (
+        db.query(Command)
+        .filter(
+            Command.server_id == sid,
+            Command.action == "firewall_reload",
+            Command.status.in_(["pending", "executing"]),
+        )
+        .first()
+    )
+    if pending_cmd:
+        if is_json:
+            return JSONResponse(
+                {"ok": False, "detail": "Perintah reload aturan firewall sedang dalam antrean atau sedang diproses oleh agen."},
+                status_code=400,
+            )
+        return RedirectResponse(f"/servers/{sid}?action=fw_pending#tab-firewall", status_code=303)
+
     _enqueue_mitigation(db, sid, "firewall_reload", issued_by=user.username)
     _audit(
         db,
@@ -341,7 +431,7 @@ def firewall_reload(
     db.commit()
     if is_json:
         return JSONResponse({"ok": True, "detail": "Perintah reload aturan firewall dikirim ke agen."})
-    return RedirectResponse(f"/servers/{sid}?action=fw_reloaded", status_code=303)
+    return RedirectResponse(f"/servers/{sid}?action=fw_reloaded#tab-firewall", status_code=303)
 
 
 # ---------------------------------------------------------------------------

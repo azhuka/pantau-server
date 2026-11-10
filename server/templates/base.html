@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.157' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.158' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2806,7 +2806,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.157' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.158' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
@@ -5454,25 +5454,23 @@ function attachTablePagination(target, options = {}) {
       total = visibleRows.length;
     }
 
-    const hideThreshold = isDnsGw ? 5 : 10;
-    if (total < hideThreshold || (total <= hideThreshold && (pageSize === 'all' || parseInt(pageSize, 10) >= hideThreshold))) {
+    if (total === 0) {
       bar.style.setProperty('display', 'none', 'important');
       if (!isDataCallback) {
         allRows.forEach(tr => {
-          const isMatch = visibleRows.includes(tr);
-          tr.style.display = isMatch ? '' : 'none';
+          tr.style.display = 'none';
         });
       }
       if (typeof options.onUpdate === 'function') {
         try {
-          options.onUpdate({ currentPage: 1, totalPages: 1, total, limit: total, startIdx: 0, endIdx: total, pageSize: 'all', visibleRows });
+          options.onUpdate({ currentPage: 1, totalPages: 1, total: 0, limit: 0, startIdx: 0, endIdx: 0, pageSize, visibleRows: [] });
         } catch (err) {
           console.error('Error in pagination onUpdate callback:', err);
         }
       }
       if (isDataCallback) {
         try {
-          options.onPageChange({ currentPage: 1, totalPages: 1, total, limit: total, startIdx: 0, endIdx: total, pageSize: 'all' });
+          options.onPageChange({ currentPage: 1, totalPages: 1, total: 0, limit: 0, startIdx: 0, endIdx: 0, pageSize });
         } catch (err) {
           console.error('Error in pagination onPageChange callback:', err);
         }

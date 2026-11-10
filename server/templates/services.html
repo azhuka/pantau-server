@@ -2139,6 +2139,7 @@ div[style*="position: fixed"] .card {
       </select>
     </div>
   </div>
+  <div style="overflow-x:auto">
   <table id="probtable" style="width:100%">
     <thead><tr>
       <th class="col-time-detailed" style="width:135px;min-width:125px">Waktu</th>
@@ -2264,6 +2265,8 @@ div[style*="position: fixed"] .card {
     {% endfor %}
     </tbody>
   </table>
+  </div>
+  <div class="table-pagination-bar" data-for-table="probtable" id="probtable-pagination-bar"></div>
   {% else %}
   <div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;padding:12px 0">
     <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
@@ -2930,15 +2933,18 @@ div[style*="position: fixed"] .card {
 
         {% if user.has_perm('can_firewall') %}
           {% if firewall.status == 'active' %}
-            <button type="button" class="btn btn-ghost btn-sm btn-noc-icon" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Reload aturan UFW tanpa memutus koneksi aktif"{% endif %} aria-label="Reload Aturan">
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Reload aturan UFW tanpa memutus koneksi aktif"{% endif %} aria-label="Reload Aturan">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              <span>Muat Ulang Aturan</span>
             </button>
-            <button type="button" class="btn btn-warn btn-sm btn-noc-icon" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Nonaktifkan UFW"{% endif %} aria-label="Nonaktifkan Firewall">
+            <button type="button" class="btn btn-warn btn-sm" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Nonaktifkan UFW"{% endif %} aria-label="Nonaktifkan Firewall">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
+              <span>Nonaktifkan Firewall</span>
             </button>
           {% else %}
-            <button type="button" class="btn btn-success btn-sm btn-noc-icon" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan UFW (otomatis allow SSH)"{% endif %} aria-label="Aktifkan Firewall">
+            <button type="button" class="btn btn-success btn-sm" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Aktifkan UFW (otomatis izinkan SSH agar akses tidak terputus)"{% endif %} aria-label="Aktifkan Firewall">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>Aktifkan Firewall</span>
             </button>
           {% endif %}
         {% endif %}
@@ -3003,8 +3009,9 @@ div[style*="position: fixed"] .card {
       </div>
       {% if user.has_perm('can_firewall') %}
       <div>
-        <button type="button" class="btn btn-danger btn-sm" id="btn-fw-block-modal" onclick="openBlockIpModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir sebuah alamat IP secara manual" aria-label="Blokir IP Baru"{% endif %}>
+        <button type="button" class="btn btn-danger btn-sm" id="btn-fw-block-modal" onclick="openBlockIpModal()" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Blokir sebuah alamat IP secara manual pada rantai iptables DROP" aria-label="Blokir IP Manual"{% endif %}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="9.5" y1="9.5" x2="14.5" y2="14.5"></line><line x1="14.5" y1="9.5" x2="9.5" y2="14.5"></line></svg>
+          <span id="btn-fw-block-modal-text">Blokir IP Manual</span>
         </button>
       </div>
       {% endif %}
@@ -3033,8 +3040,9 @@ div[style*="position: fixed"] .card {
             <td class="mono">{{ b.bytes }}</td>
             {% if user.has_perm('can_firewall') %}
             <td class="col-act" style="text-align:right">
-              <button type="button" class="btn btn-success btn-sm btn-noc-icon" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus aturan DROP untuk IP ini"{% endif %} aria-label="Buka Blokir" onclick="submitFirewallUnblock('{{ b.source }}', this)">
+              <button type="button" class="btn btn-success btn-sm" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus aturan DROP untuk IP ini"{% endif %} aria-label="Buka Blokir" onclick="submitFirewallUnblock('{{ b.source }}', this)">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
+                <span>Buka Blokir</span>
               </button>
             </td>
             {% endif %}
@@ -4428,7 +4436,16 @@ function initServicesTabPagination() {
   }
   // 17. Tab Insiden Host Server
   if (document.getElementById('probtable') && !_servicesTabPagination['problems']) {
-    _servicesTabPagination['problems'] = attachTablePagination('#probtable', { unitLabel: 'insiden', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 'all'] });
+    _servicesTabPagination['problems'] = attachTablePagination('#probtable', {
+      unitLabel: 'insiden',
+      defaultLimit: (typeof probLimit !== 'undefined' ? probLimit : 10),
+      pageSizeOptions: [10, 25, 50, 'all'],
+      container: document.getElementById('probtable-pagination-bar'),
+      onUpdate: function(pg) {
+        const topSel = document.getElementById('prob-limit-top');
+        if (topSel && topSel.value !== String(pg.pageSize)) topSel.value = String(pg.pageSize);
+      }
+    });
   }
   // 18. Tab Riwayat Tindakan Host Server
   if (document.getElementById('tbl-action-history') && !_servicesTabPagination['actions']) {
@@ -6116,9 +6133,16 @@ async function submitFirewallAction(action, btn) {
   });
   if (!ok) return;
 
-  const origText = btn ? btn.innerHTML : '';
-  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    const actionLabel = action === 'enable'
+      ? (isEn ? 'Enabling…' : 'Mengaktifkan…')
+      : (action === 'disable' ? (isEn ? 'Disabling…' : 'Menonaktifkan…') : (isEn ? 'Reloading…' : 'Memuat ulang…'));
+    btn.innerHTML = `<span class="spinner" style="display:inline-block;width:11px;height:11px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin-right:5px;vertical-align:middle"></span><span>${actionLabel}</span>`;
+  }
 
+  let requestSuccess = false;
   try {
     const fd = new FormData();
     fd.append('csrf_token', getCsrf());
@@ -6130,6 +6154,7 @@ async function submitFirewallAction(action, btn) {
     });
     const res = await r.json().catch(() => ({}));
     if (r.ok && res.ok !== false) {
+      requestSuccess = true;
       showToast(res.detail || (isEn ? `Firewall ${action} command sent.` : `Perintah firewall ${action} dikirim ke agen.`), true);
       triggerFastPoll();
       if (typeof pollSystem === 'function') pollSystem();
@@ -6139,7 +6164,10 @@ async function submitFirewallAction(action, btn) {
   } catch(err) {
     showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
   } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+    if (btn && !requestSuccess) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
   }
 }
 
@@ -6160,9 +6188,13 @@ async function submitFirewallUnblock(ip, btn) {
   });
   if (!ok) return;
 
-  const origText = btn ? btn.innerHTML : '';
-  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner" style="display:inline-block;width:11px;height:11px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin-right:4px;vertical-align:middle"></span><span>${isEn ? 'Unblocking…' : 'Membuka…'}</span>`;
+  }
 
+  let requestSuccess = false;
   try {
     const fd = new FormData();
     fd.append('csrf_token', getCsrf());
@@ -6175,6 +6207,7 @@ async function submitFirewallUnblock(ip, btn) {
     });
     const res = await r.json().catch(() => ({}));
     if (r.ok && res.ok !== false) {
+      requestSuccess = true;
       showToast(res.detail || (isEn ? `Unblock IP ${ip} command sent.` : `Perintah buka blokir IP ${ip} dikirim ke agen.`), true);
       triggerFastPoll();
       if (typeof pollSystem === 'function') pollSystem();
@@ -6184,7 +6217,10 @@ async function submitFirewallUnblock(ip, btn) {
   } catch(err) {
     showToast((isEn ? 'Network issue: ' : 'Kendala jaringan: ') + err.message, false);
   } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+    if (btn && !requestSuccess) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
   }
 }
 
@@ -8409,6 +8445,7 @@ function renderProblemsTab(level, openList, histList) {
       </select>
     </div>
   </div>
+  <div style="overflow-x:auto">
   <table id="probtable" style="width:100%">
     <thead><tr>
       <th class="col-time-detailed" style="width:135px;min-width:125px">${isEn ? 'Time' : 'Waktu'}</th>
@@ -8532,11 +8569,19 @@ function renderProblemsTab(level, openList, histList) {
     </tr>`;
   }
 
-  html += `</tbody></table>`;
+  html += `</tbody></table></div><div class="table-pagination-bar" data-for-table="probtable" id="probtable-pagination-bar"></div>`;
   wrap.innerHTML = html;
-  if (_servicesTabPagination && _servicesTabPagination['problems']) {
-    _servicesTabPagination['problems'].update();
-  }
+  const pBar = document.getElementById('probtable-pagination-bar');
+  _servicesTabPagination['problems'] = attachTablePagination('#probtable', {
+    unitLabel: 'insiden',
+    defaultLimit: (typeof probLimit !== 'undefined' ? probLimit : 10),
+    pageSizeOptions: [10, 25, 50, 'all'],
+    container: pBar,
+    onUpdate: function(pg) {
+      const topSel = document.getElementById('prob-limit-top');
+      if (topSel && topSel.value !== String(pg.pageSize)) topSel.value = String(pg.pageSize);
+    }
+  });
   probFilter();
 }
 
@@ -9445,6 +9490,11 @@ function renderFirewall(fw) {
     backendBadge.textContent = (f.backend || 'unknown').toUpperCase();
   }
 
+  const btnBlockModalText = document.getElementById('btn-fw-block-modal-text');
+  if (btnBlockModalText) {
+    btnBlockModalText.textContent = isEn ? 'Block IP Manually' : 'Blokir IP Manual';
+  }
+
   const actWrap = document.getElementById('fw-header-actions');
   if (actWrap && CAN_FIREWALL) {
     let btns = '';
@@ -9452,10 +9502,10 @@ function renderFirewall(fw) {
     const svgFwDisable = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
     const svgFwEnable = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>';
     if (isActive) {
-      btns = `<button type="button" class="btn btn-ghost btn-sm btn-noc-icon" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Reload UFW rules' : 'Muat ulang aturan UFW tanpa memutus koneksi'}" aria-label="Reload Aturan">${svgFwReload}</button>
-      <button type="button" class="btn btn-warn btn-sm btn-noc-icon" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Disable UFW' : 'Nonaktifkan UFW'}" aria-label="Nonaktifkan Firewall">${svgFwDisable}</button>`;
+      btns = `<button type="button" class="btn btn-ghost btn-sm" id="btn-fw-reload" onclick="submitFirewallAction('reload', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Reload UFW rules' : 'Muat ulang aturan UFW tanpa memutus koneksi'}" aria-label="Reload Aturan">${svgFwReload} <span>${isEn ? 'Reload Rules' : 'Muat Ulang Aturan'}</span></button>
+      <button type="button" class="btn btn-warn btn-sm" id="btn-fw-disable" onclick="submitFirewallAction('disable', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Disable UFW' : 'Nonaktifkan UFW'}" aria-label="Nonaktifkan Firewall">${svgFwDisable} <span>${isEn ? 'Disable Firewall' : 'Nonaktifkan Firewall'}</span></button>`;
     } else {
-      btns = `<button type="button" class="btn btn-success btn-sm btn-noc-icon" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Enable UFW (auto allows SSH)' : 'Aktifkan UFW (otomatis allow SSH)'}" aria-label="Aktifkan Firewall">${svgFwEnable}</button>`;
+      btns = `<button type="button" class="btn btn-success btn-sm" id="btn-fw-enable" onclick="submitFirewallAction('enable', this)" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Enable UFW (auto allows SSH)' : 'Aktifkan UFW (otomatis izinkan SSH)'}" aria-label="Aktifkan Firewall">${svgFwEnable} <span>${isEn ? 'Enable Firewall' : 'Aktifkan Firewall'}</span></button>`;
     }
     const badgesHtml = `<span class="badge ${isActive ? 'badge-up' : 'badge-warn'}" id="fw-status-badge">${isActive ? (isEn ? 'Active (Protecting)' : 'Aktif (Melindungi)') : (isEn ? 'Inactive (Open)' : 'Nonaktif (Terbuka)')}</span> <span class="badge badge-info" id="fw-backend-badge">${(f.backend || 'unknown').toUpperCase()}</span> `;
     actWrap.innerHTML = badgesHtml + btns;
@@ -9501,7 +9551,7 @@ function renderFirewall(fw) {
       tbody.innerHTML = bList.map(b => {
         const svgFwUnblock = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
         const unblockBtn = CAN_FIREWALL
-          ? `<button type="button" class="btn btn-success btn-sm btn-noc-icon" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="submitFirewallUnblock('${escHtml(b.source)}', this)" title="${isEn ? 'Unblock IP' : 'Hapus aturan DROP untuk IP ini'}" aria-label="Buka Blokir">${svgFwUnblock}</button>`
+          ? `<button type="button" class="btn btn-success btn-sm" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="submitFirewallUnblock('${escHtml(b.source)}', this)" title="${isEn ? 'Unblock IP' : 'Hapus aturan DROP untuk IP ini'}" aria-label="Buka Blokir">${svgFwUnblock} <span>${isEn ? 'Unblock' : 'Buka Blokir'}</span></button>`
           : '';
         return `<tr>
           <td class="mono">${escHtml(String(b.num || ''))}</td>

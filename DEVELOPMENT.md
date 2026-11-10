@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.158
+
+- **Tipe Rilis:** Perbaikan Deteksi Status UFW, Guardrail Eksekusi Ganda Firewall, Kontrol Paginasi Baku Status Insiden, dan Standarisasi Label Tombol Aksi (*Fixing UFW Status Detection, Double Execution Guardrails, Incident Table Pagination Consistency, and Standardizing Action Button Labels*)
+- **Fokus Utama:** Memperbaiki deteksi status firewall pada host, mencegah aksi klik ganda perintah operasional firewall, menjamin kehadiran bilah paginasi baku pada tabel insiden, serta menyematkan label teks eksplisit pada seluruh tombol aksi penting:
+  1. **Dukungan Sub-perintah `status` pada Skrip Firewall Host (`package/usr/local/sbin/pantau-firewall`):**
+     - Menambahkan handler `status)` pada case `$ACTION` yang menjalankan `ufw status verbose` serta verifikasi rantai `iptables -L INPUT -n -v --line-numbers`.
+     - Mengatasi masalah status firewall yang selalu terbaca `UNKNOWN` dan `INACTIVE` akibat skrip pembantu menolak perintah status dengan exit code 1.
+  2. **Guardrail Validasi & Anti Klik-Ganda pada Endpoint Firewall (`server/routers/system_ops.py`):**
+     - Menambahkan verifikasi status aktual (`active` / `inactive`) pada rute `firewall_enable` dan `firewall_disable`: menolak eksekusi jika status firewall host saat ini sudah sesuai dengan target aksi.
+     - Memeriksa antrean `Command` berstatus `pending` atau `executing` untuk mencegah pengiriman perintah mitigasi ganda ke agen pengawas.
+  3. **Penjaminan Kehadiran Bilah Paginasi Baku (`server/templates/base.html`, `server/templates/services.html`):**
+     - Memperbaiki fungsi `attachTablePagination` di berkas induk agar bilah paginasi tidak lagi disembunyikan paksa saat total data < 10 baris. Selama ada data (`total > 0`), bilah paginasi selalu tampil menampilkan informasi rentang baris, nomor halaman, dan dropdown pengatur ukuran data.
+     - Membungkus tabel insiden `#probtable` dengan pembungkus gulir responsif dan menyematkan kontainer paginasi baku `#probtable-pagination-bar` yang tersinkronisasi dua arah dengan dropdown `#prob-limit-top` baik pada inisialisasi awal Jinja2 maupun saat pembaruan dinamis AJAX/polling.
+  4. **Standarisasi Label Teks Jelas pada Seluruh Tombol Aksi Operasional Firewall (`server/templates/services.html`):**
+     - Mengganti seluruh tombol aksi firewall yang sebelumnya hanya berupa ikon tanpa teks menjadi tombol berlabel teks lugas disertai ikon SVG: "Aktifkan Firewall", "Nonaktifkan Firewall", "Muat Ulang Aturan", "Blokir IP Manual", dan "Buka Blokir".
+     - Menerapkan status visual memproses (*loading spinner*) pada tombol saat aksi dieksekusi serta menjaga tombol tetap nonaktif hingga hasil telemetri polling diterima guna mencegah eksekusi berulang dari antarmuka web.
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.158` pada 7 berkas inti repositori.
+
 ## Versi 4.8.157
 
 - **Tipe Rilis:** Eliminasi Teks Redundan & Perampingan Kapsul Akun Operator Topbar (*Eliminating Redundant Role Badges & Streamlining Topbar Account Capsule*)

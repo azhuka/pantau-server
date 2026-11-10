@@ -110,6 +110,16 @@ case "$ACTION" in
         fi
         fail "Tidak ada firewall aktif (ufw / iptables) di sistem"
         ;;
+    status)
+        if command -v ufw >/dev/null 2>&1; then
+            ufw status verbose 2>&1 || true
+        fi
+        echo "--- IPTABLES ---"
+        if [ -x "$IPT" ]; then
+            "$IPT" -L INPUT -n -v --line-numbers 2>&1 || true
+        fi
+        exit 0
+        ;;
     *) fail "Aksi tidak dikenal: '${ACTION:-}' (harus 'block', 'unblock', 'enable', 'disable', 'reload', 'deny-port', 'allow-port', atau 'status')" ;;
 esac
 
