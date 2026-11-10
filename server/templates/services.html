@@ -3049,7 +3049,7 @@ div[style*="position: fixed"] .card {
             <td class="mono col-num-cell" style="text-align:right">{{ b.bytes }}</td>
             {% if user.has_perm('can_firewall') %}
             <td class="col-act" style="text-align:center">
-              <button type="button" class="btn btn-success btn-sm" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus aturan DROP untuk IP ini"{% endif %} aria-label="Lepas Blokir" onclick="submitFirewallUnblock('{{ b.source }}', this)">
+              <button type="button" class="btn btn-success btn-sm btn-action-text" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Hapus aturan DROP untuk IP ini"{% endif %} aria-label="Lepas Blokir" onclick="submitFirewallUnblock('{{ b.source }}', this)">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
                 <span>Lepas Blokir</span>
               </button>
@@ -4999,6 +4999,8 @@ function triggerFastPoll() {
   setTimeout(runPolls, 1500);
   setTimeout(runPolls, 3000);
   setTimeout(runPolls, 5000);
+  setTimeout(runPolls, 8000);
+  setTimeout(runPolls, 12000);
 }
 
 function renderServiceActions(sid, svcId, name, status, isPending, problem, isServiceIgnored, pendingAction) {
@@ -6189,6 +6191,88 @@ async function submitFirewallAction(action, btn) {
   }
 }
 
+function addBlockedIpToUi(ip) {
+  const isEn = typeof isEnPage === 'function' ? isEnPage() : false;
+  const blockedWrap = document.getElementById('fw-blocked-wrap');
+  const blockedEmpty = document.getElementById('fw-blocked-empty');
+  const blockedTable = document.getElementById('fw-blocked-table');
+  const statBlocked = document.getElementById('fw-stat-blocked');
+  if (!blockedTable) return;
+  const tbody = blockedTable.querySelector('tbody');
+  if (!tbody) return;
+
+  const existingRows = Array.from(tbody.querySelectorAll('tr'));
+  for (const tr of existingRows) {
+    if (tr.innerText.includes(ip)) return;
+  }
+
+  const nextNum = existingRows.length + 1;
+  const svgFwUnblock = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
+  const canFw = typeof CAN_FIREWALL !== 'undefined' ? CAN_FIREWALL : true;
+  const isOnline = typeof IS_ONLINE !== 'undefined' ? IS_ONLINE : true;
+  const unblockBtn = canFw
+    ? `<button type="button" class="btn btn-success btn-sm btn-action-text" ${!isOnline ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="submitFirewallUnblock('${escHtml(ip)}', this)" title="${isEn ? 'Unblock IP' : 'Hapus aturan DROP untuk IP ini'}" aria-label="Lepas Blokir">${svgFwUnblock} <span>${isEn ? 'Unblock' : 'Lepas Blokir'}</span></button>`
+    : '';
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="mono col-center-cell" style="text-align:center">${nextNum}</td>
+    <td class="mono" style="color:var(--red);font-weight:700;text-align:left">
+      <span class="copyable-ip" style="cursor:pointer" onclick="copyIp('${escHtml(ip)}', event)" title="${isEn ? 'Click to copy IP' : 'Klik untuk salin IP'}">${escHtml(ip)}</span>
+    </td>
+    <td class="mono col-num-cell" style="text-align:right">0</td>
+    <td class="mono col-num-cell" style="text-align:right">0</td>
+    ${canFw ? `<td class="col-act" style="text-align:center;white-space:nowrap">${unblockBtn}</td>` : ''}
+  `;
+  tbody.appendChild(tr);
+
+  if (blockedWrap) blockedWrap.style.display = 'block';
+  if (blockedEmpty) blockedEmpty.style.display = 'none';
+  if (statBlocked) {
+    const curCount = parseInt(statBlocked.textContent, 10) || existingRows.length;
+    statBlocked.textContent = (curCount + 1) + ' IP';
+  }
+  if (typeof _servicesTabPagination !== 'undefined' && _servicesTabPagination['fw-blocked']) {
+    _servicesTabPagination['fw-blocked'].update();
+  }
+}
+
+function removeBlockedIpFromUi(ip) {
+  const blockedWrap = document.getElementById('fw-blocked-wrap');
+  const blockedEmpty = document.getElementById('fw-blocked-empty');
+  const blockedTable = document.getElementById('fw-blocked-table');
+  const statBlocked = document.getElementById('fw-stat-blocked');
+  if (!blockedTable) return;
+  const tbody = blockedTable.querySelector('tbody');
+  if (!tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  for (const tr of rows) {
+    if (tr.innerText.includes(ip)) {
+      tr.remove();
+      break;
+    }
+  }
+
+  const remainingRows = Array.from(tbody.querySelectorAll('tr'));
+  remainingRows.forEach((tr, idx) => {
+    const numCell = tr.querySelector('td.col-center-cell');
+    if (numCell) numCell.textContent = String(idx + 1);
+  });
+
+  if (remainingRows.length === 0) {
+    if (blockedWrap) blockedWrap.style.display = 'none';
+    if (blockedEmpty) blockedEmpty.style.display = 'block';
+  }
+  if (statBlocked) {
+    const curCount = parseInt(statBlocked.textContent, 10) || (remainingRows.length + 1);
+    statBlocked.textContent = Math.max(0, curCount - 1) + ' IP';
+  }
+  if (typeof _servicesTabPagination !== 'undefined' && _servicesTabPagination['fw-blocked']) {
+    _servicesTabPagination['fw-blocked'].update();
+  }
+}
+
 async function submitFirewallUnblock(ip, btn) {
   const isEn = isEnPage();
   if (typeof IS_ONLINE !== 'undefined' && !IS_ONLINE) {
@@ -6227,6 +6311,7 @@ async function submitFirewallUnblock(ip, btn) {
     if (r.ok && res.ok !== false) {
       requestSuccess = true;
       showToast(res.detail || (isEn ? `Unblock IP ${ip} command sent (~5–10s wait).` : `Perintah lepas blokir IP ${ip} dikirim ke agen. Menunggu eksekusi (~5–10 detik).`), true);
+      removeBlockedIpFromUi(ip);
       triggerFastPoll();
       if (typeof pollSystem === 'function') pollSystem();
     } else {
@@ -9576,24 +9661,28 @@ function renderFirewall(fw) {
   const blockedTable = document.getElementById('fw-blocked-table');
   if (blockedWrap) blockedWrap.style.display = bList.length ? 'block' : 'none';
   if (blockedEmpty) blockedEmpty.style.display = bList.length ? 'none' : 'block';
-  if (blockedTable && bList.length) {
+  if (blockedTable) {
     const tbody = blockedTable.querySelector('tbody');
     if (tbody) {
-      tbody.innerHTML = bList.map(b => {
-        const svgFwUnblock = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
-        const unblockBtn = CAN_FIREWALL
-          ? `<button type="button" class="btn btn-success btn-sm" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="submitFirewallUnblock('${escHtml(b.source)}', this)" title="${isEn ? 'Unblock IP' : 'Hapus aturan DROP untuk IP ini'}" aria-label="Lepas Blokir">${svgFwUnblock} <span>${isEn ? 'Unblock' : 'Lepas Blokir'}</span></button>`
-          : '';
-        return `<tr>
-          <td class="mono col-center-cell" style="text-align:center">${escHtml(String(b.num || ''))}</td>
-          <td class="mono" style="color:var(--red);font-weight:700;text-align:left">
-            <span class="copyable-ip" style="cursor:pointer" onclick="copyIp('${escHtml(b.source)}', event)" title="${isEn ? 'Click to copy IP' : 'Klik untuk salin IP'}">${escHtml(b.source)}</span>
-          </td>
-          <td class="mono col-num-cell" style="text-align:right">${escHtml(String(b.pkts || 0))}</td>
-          <td class="mono col-num-cell" style="text-align:right">${escHtml(String(b.bytes || 0))}</td>
-          ${CAN_FIREWALL ? `<td class="col-act" style="text-align:center;white-space:nowrap">${unblockBtn}</td>` : ''}
-        </tr>`;
-      }).join('');
+      if (bList.length) {
+        tbody.innerHTML = bList.map(b => {
+          const svgFwUnblock = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>';
+          const unblockBtn = CAN_FIREWALL
+            ? `<button type="button" class="btn btn-success btn-sm btn-action-text" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} onclick="submitFirewallUnblock('${escHtml(b.source)}', this)" title="${isEn ? 'Unblock IP' : 'Hapus aturan DROP untuk IP ini'}" aria-label="Lepas Blokir">${svgFwUnblock} <span>${isEn ? 'Unblock' : 'Lepas Blokir'}</span></button>`
+            : '';
+          return `<tr>
+            <td class="mono col-center-cell" style="text-align:center">${escHtml(String(b.num || ''))}</td>
+            <td class="mono" style="color:var(--red);font-weight:700;text-align:left">
+              <span class="copyable-ip" style="cursor:pointer" onclick="copyIp('${escHtml(b.source)}', event)" title="${isEn ? 'Click to copy IP' : 'Klik untuk salin IP'}">${escHtml(b.source)}</span>
+            </td>
+            <td class="mono col-num-cell" style="text-align:right">${escHtml(String(b.pkts || 0))}</td>
+            <td class="mono col-num-cell" style="text-align:right">${escHtml(String(b.bytes || 0))}</td>
+            ${CAN_FIREWALL ? `<td class="col-act" style="text-align:center;white-space:nowrap">${unblockBtn}</td>` : ''}
+          </tr>`;
+        }).join('');
+      } else {
+        tbody.innerHTML = '';
+      }
       if (_servicesTabPagination['fw-blocked']) _servicesTabPagination['fw-blocked'].update();
     }
   }
@@ -11375,6 +11464,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const modal = document.getElementById('block-ip-modal');
           if (modal) modal.style.display = 'none';
           this.reset();
+          addBlockedIpToUi(ipVal);
           triggerFastPoll();
           if (typeof pollSystem === 'function') pollSystem();
         } else {

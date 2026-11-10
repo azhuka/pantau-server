@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.162"
+AGENT_VERSION = "4.8.163"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -934,6 +934,7 @@ def _exec_block_ip(command: dict) -> dict:
             any_success = True
         outs.append(f"{ip}: {res['output']}")
     note = " | aturan diterapkan (iptables volatile / permanen jika ufw/iptables-persistent aktif)" if any_success else ""
+    _fw_cache["at"] = 0.0
     return {"ok": ok_all, "output": ("; ".join(outs) + note)[:2000]}
 
 
@@ -962,6 +963,7 @@ def _exec_unblock_ip(command: dict) -> dict:
         if not res["ok"]:
             ok_all = False
         outs.append(f"{ip}: {res['output']}")
+    _fw_cache["at"] = 0.0
     return {"ok": ok_all, "output": ("; ".join(outs))[:2000]}
 
 

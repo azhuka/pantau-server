@@ -232,6 +232,22 @@ table.noc-table tbody tr:hover td.col-act,
   font-size: 11px !important;
 }
 
+/* Pengecualian Tombol Kolom Tindakan yang Memiliki Label Teks (misal Lepas Blokir) */
+.col-act .btn.btn-action-text,
+.col-act .btn:has(span),
+.col-act .btn-action-label {
+  width: auto !important;
+  min-width: unset !important;
+  max-width: none !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  padding: 2px 8px !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
+
 .noc-act-btn svg,
 .table-act-btn svg,
 .user-act-btn svg,

@@ -95,6 +95,42 @@ def _get_agent_code_and_sha256() -> tuple[bytes, str, str]:
 # ---------------------------------------------------------------------------
 # FIREWALL OPERATIONS
 # ---------------------------------------------------------------------------
+def _sync_firewall_cache_ip(db: Session, sid: int, ip: str, action: str):
+    """Sinkronisasi seketika snapshot firewall di ServerExtras agar UI realtime."""
+    try:
+        extra = db.query(ServerExtras).filter(ServerExtras.server_id == sid).first()
+        if not extra:
+            return
+        fw_dict = {}
+        if extra.firewall:
+            try:
+                fw_dict = json.loads(extra.firewall)
+            except Exception:
+                fw_dict = {}
+        if not isinstance(fw_dict, dict):
+            fw_dict = {"backend": "iptables", "status": "active", "rules": [], "blocked_ips": []}
+
+        blocked = fw_dict.get("blocked_ips") or []
+        if action == "block":
+            if not any(isinstance(b, dict) and b.get("source") == ip for b in blocked):
+                blocked.append({
+                    "num": str(len(blocked) + 1),
+                    "source": ip,
+                    "pkts": "0",
+                    "bytes": "0",
+                })
+                fw_dict["blocked_ips"] = blocked
+                extra.firewall = json.dumps(fw_dict)
+        elif action == "unblock":
+            blocked = [b for b in blocked if isinstance(b, dict) and b.get("source") != ip]
+            for idx, b in enumerate(blocked, start=1):
+                b["num"] = str(idx)
+            fw_dict["blocked_ips"] = blocked
+            extra.firewall = json.dumps(fw_dict)
+    except Exception:
+        pass
+
+
 @router.post("/servers/{sid}/problems/block")
 def problem_block_ip(
     request: Request,
@@ -132,6 +168,8 @@ def problem_block_ip(
         if is_json:
             return JSONResponse({"ok": False, "detail": "Tidak ada IP valid yang dapat diblokir"}, status_code=400)
         return RedirectResponse(f"/servers/{sid}?action=noips", status_code=303)
+    for ip_item in ips:
+        _sync_firewall_cache_ip(db, sid, ip_item, "block")
     _enqueue_mitigation(db, sid, "block_ip", {"ips": ips}, issued_by=user.username)
     if is_json:
         return JSONResponse(
@@ -183,6 +221,7 @@ def firewall_block_ip(
             return JSONResponse({"ok": False, "detail": "Format IP tidak valid"}, status_code=400)
         return RedirectResponse(f"/servers/{sid}?action=invalid_ip", status_code=303)
 
+    _sync_firewall_cache_ip(db, sid, ip_clean, "block")
     _enqueue_mitigation(db, sid, "block_ip", {"ips": [ip_clean]}, issued_by=user.username)
     _audit(
         db,
@@ -221,6 +260,7 @@ def firewall_unblock_ip(
     if err_resp:
         return err_resp
     ip_clean = ip.strip()
+    _sync_firewall_cache_ip(db, sid, ip_clean, "unblock")
     _enqueue_mitigation(db, sid, "unblock_ip", {"ips": [ip_clean]}, issued_by=user.username)
     _audit(
         db,

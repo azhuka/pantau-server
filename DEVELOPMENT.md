@@ -354,6 +354,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.163
+
+- **Tipe Rilis:** Perbaikan Meluber Tombol Tindakan & Pembaruan Real-Time Tabel Firewall Tanpa Muat Ulang Halaman (*Action Button Overflow Fix & Zero-Reload Real-Time Firewall Table Synchronization*)
+- **Fokus Utama:** Mengatasi masalah tampilan tombol Lepas Blokir yang meluber akibat pembatasan ukuran icon-only di kolom tindakan, serta mengimplementasikan pembaruan instan (*Optimistic UI*) dan sinkronisasi status backend agar daftar IP terblokir otomatis terbarui tanpa perlu reload manual browser (F5):
+  1. **Perbaikan Tampilan Tombol Berlabel Teks pada Kolom Tindakan (`server/static/css/pantau-noc.css` & `server/templates/services.html`):**
+     - Menambahkan aturan pengecualian pada CSS kolom tindakan (`.col-act .btn.btn-action-text`, `.col-act .btn:has(span)`, `.col-act .btn-action-label`) dengan lebar otomatis (`width: auto !important; max-width: none !important`), bantalan proporsional 2px 8px, tinggi 24px, dan jarak antar elemen 5px.
+     - Menyematkan kelas `btn-action-text` pada tombol *"Lepas Blokir"* baik pada *server-side template* maupun generator baris dinamis JavaScript `renderFirewall()`, sehingga teks tombol tidak lagi meluber atau terpotong oleh kotak icon-only 26x26px.
+  2. **Pembaruan Seketika & Sinkronisasi Tanpa Reload Halaman (`server/templates/services.html`, `server/routers/system_ops.py`, `agent/agent_pantau.py`):**
+     - Menerapkan fungsi *Optimistic UI Update* (`addBlockedIpToUi` dan `removeBlockedIpFromUi`) pada form blokir IP manual dan tindakan lepas blokir, sehingga baris IP langsung disisipkan atau dihapus seketika dari tabel tanpa jeda waktu tunggu.
+     - Menyinkronkan status cache `extra.firewall` langsung di controller backend ([`firewall_block_ip`](file:///home/bos/rj45/server/routers/system_ops.py#L210) dan [`firewall_unblock_ip`](file:///home/bos/rj45/server/routers/system_ops.py#L250)) saat perintah diantrekan, sehingga polling berkala `/api/servers/{sid}/system` seketika menyajikan snapshot termutakhir tanpa menunggu agen merespons.
+     - Menginvalidasi cache firewall internal pada agen klien (`_fw_cache["at"] = 0.0`) seketika setelah eksekusi perintah blokir/lepas blokir agar status iptables lokal segera terbaca pada laporan telemetri berikutnya.
+     - Memperpanjang interval *fast poll* (`triggerFastPoll()`) hingga 12 detik (8000ms dan 12000ms) untuk memastikan tangkapan konfirmasi eksekusi agen remote tanpa mengharuskan operator me-reload halaman secara manual.
+  3. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.163` pada 7 berkas inti repositori.
+
 ## Versi 4.8.162
 
 - **Tipe Rilis:** Standarisasi Penuh Tabel NOC, Eliminasi Tombol Menggantung, & Transparansi Estimasi Eksekusi Agen (*Full NOC Table Frontend Standardization, Elimination of Indefinite Button Spins, & Transparent Agent Execution Feedback*)
