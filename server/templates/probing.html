@@ -984,6 +984,7 @@ function getFilteredProbes() {
 }
 
 // Render Tabel
+let probesPagination = null;
 function renderTable() {
   const tbody = document.getElementById('probesTbody');
   if (!tbody) return;
@@ -998,6 +999,7 @@ function renderTable() {
         </td>
       </tr>
     `;
+    if (probesPagination) probesPagination.update();
     return;
   }
 
@@ -1136,6 +1138,15 @@ function renderTable() {
   });
 
   tbody.innerHTML = html;
+  if (!probesPagination && typeof attachTablePagination === 'function') {
+    probesPagination = attachTablePagination('#probesTable', {
+      unitLabel: 'probe',
+      defaultLimit: 10,
+      pageSizeOptions: [10, 25, 50, 'all']
+    });
+  } else if (probesPagination) {
+    probesPagination.update();
+  }
 }
 
 // Format Waktu Relatif
@@ -1556,12 +1567,14 @@ function renderLatencySvgChart(chartData) {
 }
 
 // Render Tabel Riwayat Log
+let histLogsPagination = null;
 function renderHistoryLogsTable(logs) {
   const tbody = document.getElementById('histLogsTbody');
   if (!tbody) return;
 
   if (logs.length === 0) {
     tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--dim)">Belum ada catatan log pemeriksaan</td></tr>`;
+    if (histLogsPagination) histLogsPagination.update();
     return;
   }
 
@@ -1583,6 +1596,15 @@ function renderHistoryLogsTable(logs) {
   });
 
   tbody.innerHTML = html;
+  if (!histLogsPagination && typeof attachTablePagination === 'function') {
+    histLogsPagination = attachTablePagination('#histLogsTbody', {
+      unitLabel: 'log',
+      defaultLimit: 10,
+      pageSizeOptions: [10, 25, 'all']
+    });
+  } else if (histLogsPagination) {
+    histLogsPagination.update();
+  }
 }
 </script>
 {% endblock %}

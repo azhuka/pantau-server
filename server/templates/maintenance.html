@@ -834,6 +834,7 @@ function renderTable(list) {
   const tb = document.getElementById('maintenanceTbody');
   if (!list.length) {
     tb.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--dim)">Tidak ada jadwal pemeliharaan yang cocok dengan filter.</td></tr>`;
+    if (window._maintPagination) window._maintPagination.update();
     return;
   }
 
@@ -917,6 +918,16 @@ function renderTable(list) {
   });
 
   tb.innerHTML = html;
+
+  if (!window._maintPagination && typeof attachTablePagination === 'function') {
+    window._maintPagination = attachTablePagination('#maintenanceTable', {
+      unitLabel: 'jadwal',
+      defaultLimit: 10,
+      pageSizeOptions: [10, 25, 50, 'all']
+    });
+  } else if (window._maintPagination) {
+    window._maintPagination.update();
+  }
 }
 
 // Submit Form

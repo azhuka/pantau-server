@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.148' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.149' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2576,7 +2576,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.148' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.149' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
@@ -5136,6 +5136,7 @@ function attachTablePagination(target, options = {}) {
   let currentPage = 1;
   const unitLabel = options.unitLabel || 'baris';
   const filterFn = options.filterFn || null;
+  const isDataCallback = typeof options.onPageChange === 'function';
 
   // Temukan atau buat container pagination bar
   let bar = options.container;
@@ -5179,26 +5180,37 @@ function attachTablePagination(target, options = {}) {
   const selEl = bar.querySelector('[data-pg-select]');
 
   function update() {
-    const allRows = Array.from(tbody.querySelectorAll('tr')).filter(tr => {
-      if (tr.classList.contains('empty-msg') || tr.dataset.noPaginate === '1') return false;
-      if (tr.cells.length === 1 && tr.cells[0].colSpan > 1) return false;
-      return true;
-    });
+    let allRows = [];
+    let visibleRows = [];
+    let total = 0;
 
-    const visibleRows = allRows.filter(tr => {
-      if (filterFn) return filterFn(tr);
-      if (tr.dataset.filterHidden === '1') return false;
-      return true;
-    });
+    if (isDataCallback) {
+      total = typeof options.totalRows === 'function' ? options.totalRows() : (typeof options.totalRows === 'number' ? options.totalRows : 0);
+    } else {
+      allRows = Array.from(tbody.querySelectorAll('tr')).filter(tr => {
+        if (tr.classList.contains('empty-msg') || tr.dataset.noPaginate === '1') return false;
+        if (tr.cells.length === 1 && tr.cells[0].colSpan > 1) return false;
+        return true;
+      });
 
-    const total = visibleRows.length;
+      visibleRows = allRows.filter(tr => {
+        if (filterFn) return filterFn(tr);
+        if (tr.dataset.filterHidden === '1') return false;
+        return true;
+      });
+
+      total = visibleRows.length;
+    }
+
     const hideThreshold = isDnsGw ? 5 : 10;
     if (total < hideThreshold || (total <= hideThreshold && (pageSize === 'all' || parseInt(pageSize, 10) >= hideThreshold))) {
       bar.style.setProperty('display', 'none', 'important');
-      allRows.forEach(tr => {
-        const isMatch = visibleRows.includes(tr);
-        tr.style.display = isMatch ? '' : 'none';
-      });
+      if (!isDataCallback) {
+        allRows.forEach(tr => {
+          const isMatch = visibleRows.includes(tr);
+          tr.style.display = isMatch ? '' : 'none';
+        });
+      }
       if (typeof options.onUpdate === 'function') {
         try {
           options.onUpdate({ currentPage: 1, totalPages: 1, total, limit: total, startIdx: 0, endIdx: total, pageSize: 'all', visibleRows });
@@ -5206,10 +5218,18 @@ function attachTablePagination(target, options = {}) {
           console.error('Error in pagination onUpdate callback:', err);
         }
       }
+      if (isDataCallback) {
+        try {
+          options.onPageChange({ currentPage: 1, totalPages: 1, total, limit: total, startIdx: 0, endIdx: total, pageSize: 'all' });
+        } catch (err) {
+          console.error('Error in pagination onPageChange callback:', err);
+        }
+      }
       return;
     }
+
     bar.style.setProperty('display', 'flex', 'important');
-    const limit = (pageSize === 'all') ? total : (parseInt(pageSize, 10) || 10);
+    const limit = (pageSize === 'all') ? (total || 1) : (parseInt(pageSize, 10) || 10);
     const totalPages = Math.max(1, Math.ceil(total / (limit || 1)));
 
     if (currentPage > totalPages) currentPage = totalPages;
@@ -5218,20 +5238,22 @@ function attachTablePagination(target, options = {}) {
     const startIdx = (pageSize === 'all') ? 0 : (currentPage - 1) * limit;
     const endIdx = (pageSize === 'all') ? total : Math.min(startIdx + limit, total);
 
-    let matchedIndex = 0;
-    allRows.forEach(tr => {
-      const isMatch = visibleRows.includes(tr);
-      if (!isMatch) {
-        tr.style.display = 'none';
-      } else {
-        if (matchedIndex >= startIdx && matchedIndex < endIdx) {
-          tr.style.display = '';
-        } else {
+    if (!isDataCallback) {
+      let matchedIndex = 0;
+      allRows.forEach(tr => {
+        const isMatch = visibleRows.includes(tr);
+        if (!isMatch) {
           tr.style.display = 'none';
+        } else {
+          if (matchedIndex >= startIdx && matchedIndex < endIdx) {
+            tr.style.display = '';
+          } else {
+            tr.style.display = 'none';
+          }
+          matchedIndex++;
         }
-        matchedIndex++;
-      }
-    });
+      });
+    }
 
     const isEn = (typeof isCurrentLangEn === 'function') ? isCurrentLangEn() : false;
     let displayUnit = unitLabel;
@@ -5253,6 +5275,11 @@ function attachTablePagination(target, options = {}) {
       else if (unitLabel === 'aktivitas') displayUnit = 'activities';
       else if (unitLabel === 'log') displayUnit = 'logs';
       else if (unitLabel === 'timer') displayUnit = 'timers';
+      else if (unitLabel === 'unit') displayUnit = 'units';
+      else if (unitLabel === 'packages') displayUnit = 'packages';
+      else if (unitLabel === 'jadwal') displayUnit = 'schedules';
+      else if (unitLabel === 'probe') displayUnit = 'probes';
+      else if (unitLabel === 'tabel') displayUnit = 'tables';
       else if (unitLabel === 'baris') displayUnit = 'rows';
     }
 
@@ -5289,6 +5316,14 @@ function attachTablePagination(target, options = {}) {
       nextBtn.disabled = (currentPage >= totalPages);
     }
 
+    if (isDataCallback) {
+      try {
+        options.onPageChange({ currentPage, totalPages, total, limit, startIdx, endIdx, pageSize });
+      } catch (err) {
+        console.error('Error in pagination onPageChange callback:', err);
+      }
+    }
+
     if (typeof options.onUpdate === 'function') {
       try {
         options.onUpdate({ currentPage, totalPages, total, limit, startIdx, endIdx, pageSize, visibleRows });
@@ -5315,6 +5350,9 @@ function attachTablePagination(target, options = {}) {
     getPage: () => currentPage,
     getPageSize: () => pageSize,
     getTotalVisible: () => {
+      if (isDataCallback) {
+        return typeof options.totalRows === 'function' ? options.totalRows() : (typeof options.totalRows === 'number' ? options.totalRows : 0);
+      }
       return Array.from(tbody.querySelectorAll('tr')).filter(tr => {
         if (tr.classList.contains('empty-msg') || tr.dataset.noPaginate === '1') return false;
         if (tr.cells.length === 1 && tr.cells[0].colSpan > 1) return false;

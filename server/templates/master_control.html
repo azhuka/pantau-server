@@ -74,7 +74,7 @@
       <span class="badge badge-muted" style="font-size:10px;">Engine: InnoDB (UTF8MB4)</span>
     </div>
     <div style="overflow-x:auto;">
-      <table class="noc-table-compact" style="width:100%;font-size:11.5px;">
+      <table class="noc-table-compact" id="tbl-db-inspection" style="width:100%;font-size:11.5px;">
         <thead>
           <tr style="border-bottom:1px solid var(--border);">
             <th class="col-hero-cell" style="text-align:left;padding:6px 8px;">Nama Tabel</th>
@@ -133,6 +133,16 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof attachTablePagination === 'function' && document.getElementById('tbl-db-inspection')) {
+    attachTablePagination('#tbl-db-inspection', {
+      unitLabel: 'tabel',
+      defaultLimit: 10,
+      pageSizeOptions: [10, 25, 50, 'all']
+    });
+  }
+});
+
 async function optimizeDatabase() {
   if (!confirm("Jalankan perintah SQL OPTIMIZE TABLE untuk defragmentasi dan reklamasi ruang disk database?")) return;
   const btn = document.getElementById('btnOptDb');

@@ -354,6 +354,25 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.149
+
+- **Tipe Rilis:** Standardisasi Total & Global Model Paginasi Universal Seluruh Modul (*Universal Table Pagination Standardization Across All Application Modules*)
+- **Fokus Utama:** Mengeliminasi seluruh inkonsistensi antarmuka paginasi dan menyatukan 100% sistem paginasi tabel ke engine universal `attachTablePagination`:
+  1. **Ekspansi & Fleksibilitas Engine Paginasi Universal (`server/templates/base.html`):**
+     - Memperluas engine `attachTablePagination` agar mendukung paginasi berbasis DOM tabel terfilter maupun callback data asinkron (`onPageChange`, `totalRows`).
+     - Menambahkan kamus unit i18n lengkap: `unit`, `packages`, `jadwal`, `probe`, `tabel`, `log`, `aktivitas`, `insiden`, `server`, `pengguna`, `tindakan`.
+     - Memastikan perilaku seragam di mana kontrol paginasi otomatis disembunyikan (*auto-hide*) ketika jumlah data $\le 10$ baris atau mode semua baris aktif.
+  2. **Refactoring Total Seluruh Tabel di Tab Detail Server (`server/templates/services.html`):**
+     - Menghapus kontrol paginasi manual lama yang beraneka ragam (`#sysd-pagination-wrap`, `#pkg-pagination-wrap`, `#prob-pagination-footer`, `#action-pagination-footer`).
+     - Mendaftarkan seluruh 18 tabel komponen server (Services, Processes, Akun Pengguna, Linux System Groups, Riwayat Tindakan Akun, Port Listening, Crontab, Systemd Timers, SSL Certificates, Firewall Rules, Blocked IPs, System Log, Disks, Jaringan, Unit Systemd, Packages, Insiden Host, Riwayat Tindakan Host) ke paginasi seragam `_servicesTabPagination`.
+     - Menghapus orphan code JavaScript sisa logic lama untuk menjaga stabilitas eksekusi skrip di peramban.
+  3. **Pemasangan Paginasi Universal pada Modul yang Belum Memiliki Paginasi:**
+     - Menghubungkan tabel Probing ICMP/TCP/HTTP (`#probesTable`) dan tabel riwayat log pemeriksaan (`#histLogsTbody`) di `server/templates/probing.html`.
+     - Menghubungkan tabel Jendela Pemeliharaan Terjadwal (`#maintenanceTable`) di `server/templates/maintenance.html`.
+     - Menghubungkan tabel Alokasi Storage Database (`#tbl-db-inspection`) di `server/templates/master_control.html`.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.149` pada 7 berkas inti repositori.
+
 ## Versi 4.8.148
 
 - **Tipe Rilis:** Penegakan Baku Distingsi Istilah Asli (Packages/Services/Processes/Cron Jobs) & Pemulihan Padanan Bahasa Indonesia Terstruktur (*Strict Technical Nomenclature Separation & Natural Indonesian System Terminology Enforcement*)

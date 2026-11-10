@@ -2246,26 +2246,6 @@ div[style*="position: fixed"] .card {
     {% endfor %}
     </tbody>
   </table>
-  <div id="prob-pagination-footer" class="table-pagination-bar" style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;margin:0;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.12);font-size:11.5px;color:var(--dim);flex-wrap:wrap;gap:12px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <span id="prob-showing-summary">Menampilkan 0 insiden</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button type="button" id="prob-prev-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(-1)" style="padding:4px 10px;font-size:11px" disabled>« Sebelumnya</button>
-      <span id="prob-page-info" style="font-weight:600;font-size:11.5px">Halaman 1 dari 1</span>
-      <button type="button" id="prob-next-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(1)" style="padding:4px 10px;font-size:11px" disabled>Berikutnya »</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:11.5px;color:var(--dim)">Tampilkan:</span>
-      <select id="prob-limit-bottom" onchange="setProbLimit(this.value)"
-              style="background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 8px;font-size:11.5px;cursor:pointer">
-        <option value="10" selected>10 insiden</option>
-        <option value="25">25 insiden</option>
-        <option value="50">50 insiden</option>
-        <option value="all">Semua insiden</option>
-      </select>
-    </div>
-  </div>
   {% else %}
   <div style="font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px;padding:12px 0">
     <span style="width:10px;height:10px;border-radius:50%;background:var(--green)"></span>
@@ -2328,27 +2308,6 @@ div[style*="position: fixed"] .card {
       {% endif %}
       </tbody>
     </table>
-  </div>
-  <div id="action-pagination-footer" class="table-pagination-bar" style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;margin:0;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.12);font-size:11.5px;color:var(--dim);flex-wrap:wrap;gap:12px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <span id="action-showing-summary">Menampilkan 0 tindakan</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button type="button" id="action-prev-btn" class="btn btn-ghost btn-sm" onclick="actionChangePage(-1)" style="padding:4px 10px;font-size:11px" disabled>« Sebelumnya</button>
-      <span id="action-page-info" style="font-weight:600;font-size:11.5px">Halaman 1 dari 1</span>
-      <button type="button" id="action-next-btn" class="btn btn-ghost btn-sm" onclick="actionChangePage(1)" style="padding:4px 10px;font-size:11px" disabled>Berikutnya »</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:11.5px;color:var(--dim)">Tampilkan:</span>
-      <select id="action-limit-bottom" onchange="setActionLimit(this.value)"
-              style="background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 8px;font-size:11.5px;cursor:pointer">
-        <option value="10" selected>10 tindakan</option>
-        <option value="25">25 tindakan</option>
-        <option value="50">50 tindakan</option>
-        <option value="100">100 tindakan</option>
-        <option value="all">Semua tindakan</option>
-      </select>
-    </div>
   </div>
 </div>
 </div>
@@ -2631,26 +2590,6 @@ div[style*="position: fixed"] .card {
       </tbody>
     </table>
   </div>
-
-  <!-- Paginasi Unit Systemd (Aturan Universal <= 10 Sembunyikan) -->
-  <div id="sysd-pagination-wrap" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:8px">
-    <div id="sysd-page-info">Menampilkan 0 - 0 dari 0 unit</div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <label for="sysd-page-size" style="margin:0;font-size:11.5px">Tampilkan:</label>
-      <select id="sysd-page-size" style="padding:3px 6px;font-size:11.5px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px" onchange="changeSysdPageSize(this.value)">
-        <option value="10" selected>10</option>
-        <option value="25">25</option>
-        <option value="50">50</option>
-      </select>
-    </div>
-    <div style="display:flex;gap:4px;align-items:center">
-      <button type="button" class="btn btn-ghost btn-sm" id="sysd-first-btn" onclick="goToSysdPage(1)" title="Halaman Pertama">&laquo;</button>
-      <button type="button" class="btn btn-ghost btn-sm" id="sysd-prev-btn" onclick="goToSysdPage(_sysdCurrentPage - 1)" title="Sebelumnya">&lsaquo; Sebelumnya</button>
-      <span id="sysd-page-num" style="padding:0 8px;font-weight:600;color:var(--text)">Halaman 1 / 1</span>
-      <button type="button" class="btn btn-ghost btn-sm" id="sysd-next-btn" onclick="goToSysdPage(_sysdCurrentPage + 1)" title="Berikutnya">Berikutnya &rsaquo;</button>
-      <button type="button" class="btn btn-ghost btn-sm" id="sysd-last-btn" onclick="goToSysdPage(999999)" title="Halaman Terakhir">&raquo;</button>
-    </div>
-  </div>
 </div>
 </div>
 
@@ -2769,31 +2708,6 @@ div[style*="position: fixed"] .card {
           <!-- Diisi via JavaScript / render -->
         </tbody>
       </table>
-    </div>
-
-    <!-- Paginasi Tabel Packages Lengkap -->
-    <div id="pkg-pagination-wrap" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--dim);flex-wrap:wrap;gap:8px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span id="pkg-page-info">Menampilkan 0 - 0 dari 0 packages</span>
-        <label style="display:inline-flex;align-items:center;gap:4px;margin-left:6px;font-size:11.5px">
-          Tampilkan:
-          <select id="pkg-page-size-select" style="padding:2px 6px;font-size:11.5px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)" onchange="setPkgPageSize(this.value)">
-            <option value="10" selected>10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-            <option value="250">250</option>
-            <option value="all">Semua</option>
-          </select>
-        </label>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <button type="button" class="btn btn-ghost btn-sm" id="pkg-first-btn" onclick="pkgGoToPage(1)" disabled style="padding:3px 8px" title="Halaman Pertama">&laquo;</button>
-        <button type="button" class="btn btn-ghost btn-sm" id="pkg-prev-btn" onclick="pkgChangePage(-1)" disabled style="padding:3px 8px" title="Halaman Sebelumnya">&lsaquo; Sebelumnya</button>
-        <span id="pkg-page-num" style="padding:0 8px;font-weight:600;color:var(--text)">Halaman 1 / 1</span>
-        <button type="button" class="btn btn-ghost btn-sm" id="pkg-next-btn" onclick="pkgChangePage(1)" disabled style="padding:3px 8px" title="Halaman Berikutnya">Berikutnya &rsaquo;</button>
-        <button type="button" class="btn btn-ghost btn-sm" id="pkg-last-btn" onclick="pkgGoToPage(99999)" disabled style="padding:3px 8px" title="Halaman Terakhir">&raquo;</button>
-      </div>
     </div>
   </div>
 </div>
@@ -4484,6 +4398,22 @@ function initServicesTabPagination() {
   // 14. Tab Spesifikasi (Perangkat Storage / Disk)
   if (document.getElementById('spec-disks-table') && !_servicesTabPagination['spec-disks']) {
     _servicesTabPagination['spec-disks'] = attachTablePagination('#spec-disks-table', { unitLabel: 'disk', defaultLimit: 10, pageSizeOptions: [10, 25, 'all'] });
+  }
+  // 15. Tab Services (Unit Systemd)
+  if (document.getElementById('tbl-systemd') && !_servicesTabPagination['systemd']) {
+    _servicesTabPagination['systemd'] = attachTablePagination('#tbl-systemd', { unitLabel: 'unit', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 100, 'all'] });
+  }
+  // 16. Tab Packages (Daftar Packages Sistem)
+  if (document.getElementById('tbl-packages') && !_servicesTabPagination['packages']) {
+    _servicesTabPagination['packages'] = attachTablePagination('#tbl-packages', { unitLabel: 'packages', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 100, 250, 'all'] });
+  }
+  // 17. Tab Insiden Host Server
+  if (document.getElementById('probtable') && !_servicesTabPagination['problems']) {
+    _servicesTabPagination['problems'] = attachTablePagination('#probtable', { unitLabel: 'insiden', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 'all'] });
+  }
+  // 18. Tab Riwayat Tindakan Host Server
+  if (document.getElementById('tbl-action-history') && !_servicesTabPagination['actions']) {
+    _servicesTabPagination['actions'] = attachTablePagination('#tbl-action-history', { unitLabel: 'tindakan', defaultLimit: 10, pageSizeOptions: [10, 25, 50, 100, 'all'] });
   }
 }
 
@@ -8583,32 +8513,11 @@ function renderProblemsTab(level, openList, histList) {
     </tr>`;
   }
 
-  html += `</tbody></table>
-  <div id="prob-pagination-footer" class="table-pagination-bar" style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;margin:0;border-top:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.12);font-size:11.5px;color:var(--dim);flex-wrap:wrap;gap:12px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <span id="prob-showing-summary">${isEn ? 'Showing 0 incidents' : 'Menampilkan 0 insiden'}</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <button type="button" id="prob-prev-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(-1)" style="padding:4px 10px;font-size:11px" disabled>« ${isEn ? 'Previous' : 'Sebelumnya'}</button>
-      <span id="prob-page-info" style="font-weight:600;font-size:11.5px">${isEn ? 'Page 1 of 1' : 'Halaman 1 dari 1'}</span>
-      <button type="button" id="prob-next-btn" class="btn btn-ghost btn-sm" onclick="probChangePage(1)" style="padding:4px 10px;font-size:11px" disabled>${isEn ? 'Next' : 'Berikutnya'} »</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:11.5px;color:var(--dim)">${isEn ? 'Show:' : 'Tampilkan:'}</span>
-      <select id="prob-limit-bottom" onchange="setProbLimit(this.value)"
-              style="background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 8px;font-size:11.5px;cursor:pointer">
-        <option value="10"${String(probLimit) === '10' ? ' selected' : ''}>${isEn ? '10 incidents' : '10 insiden'}</option>
-        <option value="25"${String(probLimit) === '25' ? ' selected' : ''}>${isEn ? '25 incidents' : '25 insiden'}</option>
-        <option value="50"${String(probLimit) === '50' ? ' selected' : ''}>${isEn ? '50 incidents' : '50 insiden'}</option>
-        <option value="all"${String(probLimit) === 'all' ? ' selected' : ''}>${isEn ? 'All incidents' : 'Semua insiden'}</option>
-      </select>
-    </div>
-  </div>`;
+  html += `</tbody></table>`;
   wrap.innerHTML = html;
-  const limSelTop = document.getElementById('prob-limit-top');
-  const limSelBtm = document.getElementById('prob-limit-bottom');
-  if (limSelTop && limSelTop.value !== String(probLimit)) limSelTop.value = String(probLimit);
-  if (limSelBtm && limSelBtm.value !== String(probLimit)) limSelBtm.value = String(probLimit);
+  if (_servicesTabPagination && _servicesTabPagination['problems']) {
+    _servicesTabPagination['problems'].update();
+  }
   probFilter();
 }
 
@@ -8617,16 +8526,18 @@ function setProbLimit(lim) {
   probLimit = (lim === 'all') ? 'all' : (parseInt(lim, 10) || 10);
   probCurrentPage = 1;
   const selTop = document.getElementById('prob-limit-top');
-  const selBottom = document.getElementById('prob-limit-bottom');
   if (selTop && selTop.value !== String(lim)) selTop.value = String(lim);
-  if (selBottom && selBottom.value !== String(lim)) selBottom.value = String(lim);
-  probFilter();
+  if (_servicesTabPagination && _servicesTabPagination['problems']) {
+    _servicesTabPagination['problems'].setPageSize(lim);
+  } else {
+    probFilter();
+  }
 }
 
 function probChangePage(delta) {
-  window._lastProbSig = null;
-  probCurrentPage += delta;
-  probFilter();
+  if (_servicesTabPagination && _servicesTabPagination['problems']) {
+    _servicesTabPagination['problems'].changePage(delta);
+  }
 }
 
 function probFilter() {
@@ -8634,7 +8545,7 @@ function probFilter() {
   const sev = sel ? sel.value : '';
   const q = (document.getElementById('prob-search')?.value || '').toLowerCase().trim();
   const rows = Array.from(document.querySelectorAll('#probtable tbody tr'));
-  let matchedRows = [];
+  let matchedCount = 0;
 
   rows.forEach(tr => {
     let matchSev = false;
@@ -8643,49 +8554,16 @@ function probFilter() {
     else matchSev = (tr.dataset.sev === sev) && (tr.dataset.ignored !== '1');
 
     const matchQ = !q || (tr.dataset.text || '').includes(q);
-    if (matchSev && matchQ) {
-      matchedRows.push(tr);
-    } else {
-      tr.style.display = 'none';
-    }
+    const isMatch = matchSev && matchQ;
+    tr.dataset.filterHidden = isMatch ? '0' : '1';
+    if (isMatch) matchedCount++;
   });
-
-  const totalMatched = matchedRows.length;
-  let pageSize = (probLimit === 'all') ? totalMatched : (parseInt(probLimit, 10) || 10);
-  if (pageSize <= 0) pageSize = 10;
-  const totalPages = Math.max(1, Math.ceil(totalMatched / pageSize));
-  if (probCurrentPage > totalPages) probCurrentPage = totalPages;
-  if (probCurrentPage < 1) probCurrentPage = 1;
-
-  const startIdx = (probLimit === 'all') ? 0 : (probCurrentPage - 1) * pageSize;
-  const endIdx = (probLimit === 'all') ? totalMatched : Math.min(startIdx + pageSize, totalMatched);
-
-  matchedRows.forEach((tr, idx) => {
-    tr.style.display = (idx >= startIdx && idx < endIdx) ? '' : 'none';
-  });
-
-  const foot = document.getElementById('prob-pagination-footer');
-  if (foot) {
-    foot.style.display = (totalMatched < 10) ? 'none' : 'flex';
-  }
 
   const countElTop = document.getElementById('prob-count');
-  const countElBottom = document.getElementById('prob-showing-summary');
-  const pageInfoEl = document.getElementById('prob-page-info');
-  const prevBtn = document.getElementById('prob-prev-btn');
-  const nextBtn = document.getElementById('prob-next-btn');
+  if (countElTop) countElTop.textContent = `${matchedCount} insiden`;
 
-  const startShow = totalMatched === 0 ? 0 : startIdx + 1;
-  const endShow = endIdx;
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  const txtSummary = totalMatched === 0 ? (isEn ? '0 issues' : '0 insiden') : (isEn ? `Showing ${startShow}-${endShow} of ${totalMatched} issues` : `Menampilkan ${startShow}-${endShow} dari ${totalMatched} insiden`);
-  if (countElBottom) countElBottom.textContent = txtSummary;
-  if (pageInfoEl) pageInfoEl.textContent = isEn ? `Page ${probCurrentPage} of ${totalPages}` : `Halaman ${probCurrentPage} dari ${totalPages}`;
-  if (prevBtn) prevBtn.disabled = (probCurrentPage <= 1);
-  if (nextBtn) nextBtn.disabled = (probCurrentPage >= totalPages);
-
-  if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
-    applyAppLang();
+  if (_servicesTabPagination && _servicesTabPagination['problems']) {
+    _servicesTabPagination['problems'].update();
   }
 }
 
@@ -8700,63 +8578,23 @@ function setActionLimit(lim) {
   actionLimit = (lim === 'all') ? 'all' : (parseInt(lim, 10) || 10);
   actionCurrentPage = 1;
   const selTop = document.getElementById('action-limit-top');
-  const selBottom = document.getElementById('action-limit-bottom');
   if (selTop && selTop.value !== String(lim)) selTop.value = String(lim);
-  if (selBottom && selBottom.value !== String(lim)) selBottom.value = String(lim);
-  if (_cachedActions && _cachedActions.length) {
+  if (_servicesTabPagination && _servicesTabPagination['actions']) {
+    _servicesTabPagination['actions'].setPageSize(lim);
+  } else if (_cachedActions && _cachedActions.length) {
     renderActionHistory(_cachedActions);
-  } else {
-    filterServerActionHistory();
   }
 }
 
 function actionChangePage(delta) {
-  window._lastActionSig = null;
-  actionCurrentPage += delta;
-  if (_cachedActions && _cachedActions.length) {
-    renderActionHistory(_cachedActions);
-  } else {
-    filterServerActionHistory();
+  if (_servicesTabPagination && _servicesTabPagination['actions']) {
+    _servicesTabPagination['actions'].changePage(delta);
   }
 }
 
 function filterServerActionHistory() {
-  const rows = Array.from(document.querySelectorAll('#tbl-action-history tbody tr:not(#act-row-empty)'));
-  const total = rows.length;
-  let pageSize = (actionLimit === 'all') ? total : (parseInt(actionLimit, 10) || 10);
-  if (pageSize <= 0) pageSize = 10;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  if (actionCurrentPage > totalPages) actionCurrentPage = totalPages;
-  if (actionCurrentPage < 1) actionCurrentPage = 1;
-
-  const startIdx = (actionLimit === 'all') ? 0 : (actionCurrentPage - 1) * pageSize;
-  const endIdx = (actionLimit === 'all') ? total : Math.min(startIdx + pageSize, total);
-
-  rows.forEach((tr, idx) => {
-    tr.style.display = (idx >= startIdx && idx < endIdx) ? '' : 'none';
-  });
-
-  const countTop = document.getElementById('action-history-count');
-  const countBottom = document.getElementById('action-showing-summary');
-  const pageInfo = document.getElementById('action-page-info');
-  const prevBtn = document.getElementById('action-prev-btn');
-  const nextBtn = document.getElementById('action-next-btn');
-  const foot = document.getElementById('action-pagination-footer');
-  if (foot) {
-    foot.style.display = (total < 10) ? 'none' : 'flex';
-  }
-
-  const startShow = total === 0 ? 0 : startIdx + 1;
-  const endShow = endIdx;
-  const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  const txtSummary = total === 0 ? (isEn ? '0 actions' : '0 tindakan') : (isEn ? `Showing ${startShow}-${endShow} of ${total} actions` : `Menampilkan ${startShow}-${endShow} dari ${total} tindakan`);
-  if (countBottom) countBottom.textContent = txtSummary;
-  if (pageInfo) pageInfo.textContent = isEn ? `Page ${actionCurrentPage} of ${totalPages}` : `Halaman ${actionCurrentPage} dari ${totalPages}`;
-  if (prevBtn) prevBtn.disabled = (actionCurrentPage <= 1);
-  if (nextBtn) nextBtn.disabled = (actionCurrentPage >= totalPages);
-
-  if (typeof applyAppLang === 'function' && typeof currentLang !== 'undefined' && currentLang === 'en') {
-    applyAppLang();
+  if (_servicesTabPagination && _servicesTabPagination['actions']) {
+    _servicesTabPagination['actions'].update();
   }
 }
 
@@ -8905,25 +8743,7 @@ function renderActionHistory(actions) {
     return;
   }
 
-  let pageSize = (actionLimit === 'all') ? total : (parseInt(actionLimit, 10) || 10);
-  if (pageSize <= 0) pageSize = 10;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  if (actionCurrentPage > totalPages) actionCurrentPage = totalPages;
-  if (actionCurrentPage < 1) actionCurrentPage = 1;
-
-  const startIdx = (actionLimit === 'all') ? 0 : (actionCurrentPage - 1) * pageSize;
-  const endIdx = (actionLimit === 'all') ? total : Math.min(startIdx + pageSize, total);
-  const displayList = actions.slice(startIdx, endIdx);
-
-  const startShow = total === 0 ? 0 : startIdx + 1;
-  const endShow = endIdx;
-  const txtSummary = total === 0 ? (isEn ? '0 actions' : '0 tindakan') : (isEn ? `Showing ${startShow}-${endShow} of ${total} actions` : `Menampilkan ${startShow}-${endShow} dari ${total} tindakan`);
-  if (countBottom) countBottom.textContent = txtSummary;
-  if (pageInfo) pageInfo.textContent = isEn ? `Page ${actionCurrentPage} of ${totalPages}` : `Halaman ${actionCurrentPage} dari ${totalPages}`;
-  if (prevBtn) prevBtn.disabled = (actionCurrentPage <= 1);
-  if (nextBtn) nextBtn.disabled = (actionCurrentPage >= totalPages);
-
-  tbody.innerHTML = displayList.map(a => {
+  tbody.innerHTML = actions.map(a => {
     const f = formatActionRowI18n(a, isEn);
     return `<tr id="act-row-${escHtml(a.id || '')}">
       <td class="mono col-time-detailed" style="white-space:nowrap" title="${isEn ? 'Execution Time: ' : 'Waktu Eksekusi: '}${escHtml(fmtProbDate(a.time) || a.time || '—')}">${escHtml(fmtProbDateShort(a.time) || a.time || '—')}</td>
@@ -8934,6 +8754,10 @@ function renderActionHistory(actions) {
       <td class="mono" style="font-size:12px;color:var(--dim);max-width:320px;word-break:break-word">${escHtml(f.res)}</td>
     </tr>`;
   }).join('');
+
+  if (_servicesTabPagination && _servicesTabPagination['actions']) {
+    _servicesTabPagination['actions'].update();
+  }
 
   // Sinkronkan card Riwayat Tindakan Akun Pengguna (#tab-akun)
   const accTbody = document.getElementById('acc-action-tbody');
@@ -11489,19 +11313,6 @@ function filterPackagesTable() {
   });
 
   _applyPkgSort();
-  _pkgCurrentPage = 1;
-  renderPackagesTable();
-}
-
-function pkgChangePage(delta) {
-  const maxPage = Math.max(1, Math.ceil(_pkgFilteredList.length / _pkgPageSize));
-  _pkgCurrentPage = Math.max(1, Math.min(maxPage, _pkgCurrentPage + delta));
-  renderPackagesTable();
-}
-
-function pkgGoToPage(p) {
-  const maxPage = Math.max(1, Math.ceil(_pkgFilteredList.length / _pkgPageSize));
-  _pkgCurrentPage = Math.max(1, Math.min(maxPage, p));
   renderPackagesTable();
 }
 
@@ -11511,13 +11322,6 @@ function renderPackagesTable() {
   const emptyEl = document.getElementById('pkg-empty');
   const tableWrap = document.getElementById('pkg-table-wrap');
   const tbody = document.getElementById('pkg-tbody');
-  const pageInfo = document.getElementById('pkg-page-info');
-  const pageNum = document.getElementById('pkg-page-num');
-  const firstBtn = document.getElementById('pkg-first-btn');
-  const prevBtn = document.getElementById('pkg-prev-btn');
-  const nextBtn = document.getElementById('pkg-next-btn');
-  const lastBtn = document.getElementById('pkg-last-btn');
-  const paginationWrap = document.getElementById('pkg-pagination-wrap');
 
   if (totalBadge) totalBadge.textContent = `${_packagesList.length} packages`;
   if (upgBadge) {
@@ -11531,43 +11335,25 @@ function renderPackagesTable() {
 
   if (!_packagesList || _packagesList.length === 0) {
     if (tableWrap) tableWrap.style.display = 'none';
-    if (paginationWrap) paginationWrap.style.display = 'none';
     if (emptyEl) emptyEl.style.display = 'block';
     return;
   }
 
   if (emptyEl) emptyEl.style.display = 'none';
   if (tableWrap) tableWrap.style.display = 'block';
-  if (paginationWrap) paginationWrap.style.display = (_pkgFilteredList.length < 10) ? 'none' : 'flex';
-
-  const totalFiltered = _pkgFilteredList.length;
-  const maxPage = Math.max(1, Math.ceil(totalFiltered / _pkgPageSize));
-  _pkgCurrentPage = Math.max(1, Math.min(maxPage, _pkgCurrentPage));
-
-  const startIdx = (totalFiltered === 0) ? 0 : (_pkgCurrentPage - 1) * _pkgPageSize;
-  const endIdx = Math.min(startIdx + _pkgPageSize, totalFiltered);
-  const pageItems = _pkgFilteredList.slice(startIdx, endIdx);
-
-  if (pageInfo) {
-    pageInfo.textContent = totalFiltered === 0
-      ? 'Tidak ada packages yang sesuai kriteria filter'
-      : `Menampilkan ${startIdx + 1} - ${endIdx} dari ${totalFiltered} packages${totalFiltered !== _packagesList.length ? ' (terfilter)' : ''}`;
-  }
-  if (pageNum) pageNum.textContent = `Halaman ${_pkgCurrentPage} / ${maxPage}`;
-  if (firstBtn) firstBtn.disabled = (_pkgCurrentPage <= 1);
-  if (prevBtn) prevBtn.disabled = (_pkgCurrentPage <= 1);
-  if (nextBtn) nextBtn.disabled = (_pkgCurrentPage >= maxPage);
-  if (lastBtn) lastBtn.disabled = (_pkgCurrentPage >= maxPage);
 
   if (!tbody) return;
 
-  if (pageItems.length === 0) {
+  if (_pkgFilteredList.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--dim)">Tidak ada packages yang cocok dengan pencarian / filter.</td></tr>';
+    if (_servicesTabPagination && _servicesTabPagination['packages']) {
+      _servicesTabPagination['packages'].update();
+    }
     return;
   }
 
   const isOnline = (typeof IS_ONLINE !== 'undefined') ? IS_ONLINE : true;
-  const rowsHtml = pageItems.map(pkg => {
+  const rowsHtml = _pkgFilteredList.map(pkg => {
     const isUpg = _upgMap.has(pkg.name);
     const upgVer = isUpg ? _upgMap.get(pkg.name) : '';
     const safeName = escapeHtml(pkg.name);
@@ -11639,6 +11425,9 @@ function renderPackagesTable() {
   }).join('');
 
   tbody.innerHTML = rowsHtml;
+  if (_servicesTabPagination && _servicesTabPagination['packages']) {
+    _servicesTabPagination['packages'].update();
+  }
 }
 
 async function refreshPackagesList(manual = false) {
@@ -12029,20 +11818,6 @@ function filterSystemdTable() {
   });
 
   _applySysdSort();
-  _sysdCurrentPage = 1;
-  renderSystemdTable();
-}
-
-function changeSysdPageSize(size) {
-  _sysdPageSize = parseInt(size, 10) || 5;
-  _sysdCurrentPage = 1;
-  renderSystemdTable();
-}
-
-function goToSysdPage(p) {
-  const effectivePageSize = (_sysdFilteredList.length <= 10) ? _sysdFilteredList.length : _sysdPageSize;
-  const maxPage = Math.max(1, Math.ceil(_sysdFilteredList.length / (effectivePageSize || 1)));
-  _sysdCurrentPage = Math.max(1, Math.min(maxPage, p));
   renderSystemdTable();
 }
 
@@ -12053,13 +11828,6 @@ function renderSystemdTable() {
   const emptyEl = document.getElementById('sysd-empty');
   const tableWrap = document.getElementById('sysd-table-wrap');
   const tbody = document.getElementById('sysd-tbody');
-  const pageInfo = document.getElementById('sysd-page-info');
-  const pageNum = document.getElementById('sysd-page-num');
-  const firstBtn = document.getElementById('sysd-first-btn');
-  const prevBtn = document.getElementById('sysd-prev-btn');
-  const nextBtn = document.getElementById('sysd-next-btn');
-  const lastBtn = document.getElementById('sysd-last-btn');
-  const paginationWrap = document.getElementById('sysd-pagination-wrap');
 
   // Update counter badges
   const totalCount = _systemdList.length;
@@ -12082,7 +11850,6 @@ function renderSystemdTable() {
 
   if (!_systemdList || _systemdList.length === 0) {
     if (tableWrap) tableWrap.style.display = 'none';
-    if (paginationWrap) paginationWrap.style.display = 'none';
     if (emptyEl) emptyEl.style.display = 'block';
     return;
   }
@@ -12090,32 +11857,13 @@ function renderSystemdTable() {
   if (emptyEl) emptyEl.style.display = 'none';
   if (tableWrap) tableWrap.style.display = 'block';
 
-  const totalFiltered = _sysdFilteredList.length;
-  if (paginationWrap) paginationWrap.style.display = (totalFiltered <= 10) ? 'none' : 'flex';
-
-  const effectivePageSize = (totalFiltered <= 10) ? totalFiltered : _sysdPageSize;
-  const maxPage = Math.max(1, Math.ceil(totalFiltered / (effectivePageSize || 1)));
-  _sysdCurrentPage = Math.max(1, Math.min(maxPage, _sysdCurrentPage));
-
-  const startIdx = (totalFiltered === 0) ? 0 : (_sysdCurrentPage - 1) * effectivePageSize;
-  const endIdx = (totalFiltered <= 10) ? totalFiltered : Math.min(startIdx + effectivePageSize, totalFiltered);
-  const pageItems = _sysdFilteredList.slice(startIdx, endIdx);
-
-  if (pageInfo) {
-    pageInfo.textContent = totalFiltered === 0
-      ? 'Tidak ada unit systemd yang cocok dengan filter'
-      : `Menampilkan ${startIdx + 1} - ${endIdx} dari ${totalFiltered} unit${totalFiltered !== _systemdList.length ? ' (terfilter)' : ''}`;
-  }
-  if (pageNum) pageNum.textContent = `Halaman ${_sysdCurrentPage} / ${maxPage}`;
-  if (firstBtn) firstBtn.disabled = (_sysdCurrentPage <= 1);
-  if (prevBtn) prevBtn.disabled = (_sysdCurrentPage <= 1);
-  if (nextBtn) nextBtn.disabled = (_sysdCurrentPage >= maxPage);
-  if (lastBtn) lastBtn.disabled = (_sysdCurrentPage >= maxPage);
-
   if (!tbody) return;
 
-  if (pageItems.length === 0) {
+  if (_sysdFilteredList.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--dim)">Tidak ada unit service yang sesuai kriteria pencarian.</td></tr>';
+    if (_servicesTabPagination && _servicesTabPagination['systemd']) {
+      _servicesTabPagination['systemd'].update();
+    }
     return;
   }
 
@@ -12123,7 +11871,7 @@ function renderSystemdTable() {
   const canSvc = (typeof CAN_SERVICES !== 'undefined') ? CAN_SERVICES : true;
   const isViewer = (typeof IS_VIEWER !== 'undefined') ? IS_VIEWER : false;
 
-  const rowsHtml = pageItems.map(u => {
+  const rowsHtml = _sysdFilteredList.map(u => {
     const nameEsc = escapeHtml(u.name || '');
     const baseName = (u.name || '').replace(/\.service$/, '');
     const baseNameEsc = escapeHtml(baseName);
@@ -12235,6 +11983,9 @@ function renderSystemdTable() {
   }).join('');
 
   tbody.innerHTML = rowsHtml;
+  if (_servicesTabPagination && _servicesTabPagination['systemd']) {
+    _servicesTabPagination['systemd'].update();
+  }
 }
 
 async function refreshSystemdList(manual = false) {
