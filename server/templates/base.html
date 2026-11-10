@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.168' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.169' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2806,7 +2806,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.168' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.169' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
@@ -2814,7 +2814,7 @@ body.show-alert-banner .main{padding-top:72px}
 
 
 <main class="main">
-  <!-- Topbar Global Terpadu Standar NOC Enterprise -->
+  {% block topbar %}
   <header class="noc-global-topbar">
     <div class="topbar-global-left">
       <button type="button" class="topbar-mob-btn" onclick="toggleMobSidebar()" aria-label="Menu" title="Buka/Tutup Sidebar">
@@ -2825,7 +2825,7 @@ body.show-alert-banner .main{padding-top:72px}
         </svg>
       </button>
       <div class="topbar-breadcrumb">
-        <span class="crumb-brand">{{ brand.org_name or 'Pantau Server' }}</span>
+        <span class="crumb-brand">Pantau Server</span>
         <span class="crumb-sep">/</span>
         <span class="crumb-title">{% block page_title %}Dashboard{% endblock %}</span>
       </div>
@@ -2836,17 +2836,10 @@ body.show-alert-banner .main{padding-top:72px}
         <span class="topbar-utc-dot"></span>
         <span class="mono">UTC <span id="topbarUtcClock">--:--:--</span></span>
       </div>
-      <button type="button" id="kioskToggleBtn" class="topbar-kiosk-btn" onclick="toggleKioskMode()" title="Mode Layar Penuh (NOC Wallboard)" aria-label="Mode Layar Penuh">
-        <svg id="kioskIconEnter" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-        </svg>
-        <svg id="kioskIconExit" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
-          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-        </svg>
-      </button>
       {% include "topbar_user.html" %}
     </div>
   </header>
+  {% endblock %}
 
 <div class="noc-content-body">
 {% block content %}{% endblock %}
@@ -3741,6 +3734,8 @@ function tickUtcClock(){
   const timeSec = now.toISOString().substring(11, 19);
   const elTopbar = document.getElementById('topbarUtcClock');
   if (elTopbar) elTopbar.textContent = timeSec;
+  const elDash = document.getElementById('dashUtcClock');
+  if (elDash) elDash.textContent = timeSec;
   const elFooter = document.getElementById('clockUtc');
   if (elFooter) elFooter.textContent = timeSec.substring(0, 5) + ' UTC';
 }

@@ -500,20 +500,10 @@ table.noc-table tbody tr:hover td.col-act,
    5. NOC GLOBAL APP TOPBAR & PAGE HEADER ARCHITECTURE
    ============================================================================= */
 .noc-global-topbar {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
   height: 38px !important;
   min-height: 38px !important;
   padding: 0 18px !important;
-  background: var(--bg-card, rgba(15, 23, 42, 0.75)) !important;
-  border-bottom: 1px solid var(--border) !important;
   box-sizing: border-box !important;
-  z-index: 90 !important;
-}
-[data-theme="light"] .noc-global-topbar {
-  background: #ffffff !important;
-  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
 }
 
 .topbar-global-left {
@@ -1072,13 +1062,14 @@ body.sb-collapsed .noc-main {
 
 /* Bilah Kepala Lekat Resmi (Clean Sticky Topbar - 100% Lebar Alami Tanpa Margin Negatif) */
 .noc-topbar-sticky,
-.dash-topbar-header {
+.dash-topbar-header,
+.noc-global-topbar {
   position: sticky !important;
   top: 0 !important;
   z-index: 95 !important;
   width: 100% !important;
   margin: 0 0 14px 0 !important;
-  padding: 10px 18px !important;
+  padding: 8px 18px !important;
   background: var(--card-bg, #101726) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
@@ -1093,25 +1084,29 @@ body.sb-collapsed .noc-main {
 }
 
 [data-theme="light"] .noc-topbar-sticky,
-[data-theme="light"] .dash-topbar-header {
+[data-theme="light"] .dash-topbar-header,
+[data-theme="light"] .noc-global-topbar {
   background: #ffffff !important;
   border-bottom-color: rgba(0, 0, 0, 0.1) !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
 }
 
 body.show-alert-banner .noc-topbar-sticky,
-body.show-alert-banner .dash-topbar-header {
+body.show-alert-banner .dash-topbar-header,
+body.show-alert-banner .noc-global-topbar {
   top: 48px !important;
 }
 
 @media (max-width: 992px) {
   .noc-topbar-sticky,
-  .dash-topbar-header {
+  .dash-topbar-header,
+  .noc-global-topbar {
     top: 48px !important;
     padding: 8px 12px !important;
   }
   body.show-alert-banner .noc-topbar-sticky,
-  body.show-alert-banner .dash-topbar-header {
+  body.show-alert-banner .dash-topbar-header,
+  body.show-alert-banner .noc-global-topbar {
     top: 96px !important;
   }
 }

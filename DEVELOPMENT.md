@@ -507,6 +507,19 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
   3. **Sinkronisasi SemVer 7 Berkas:**
      - Sinkronisasi versi SemVer `4.8.157` pada 7 berkas inti repositori.
 
+## Versi 4.8.169
+
+- **Tipe Rilis:** Eliminasi Total Redundansi Branding Dashboard & Penyelarasan Hierarki Topbar Global Tunggal (*Elimination of Duplicate Dashboard Branding & Unified Single-Topbar Hierarchy*)
+- **Fokus Utama:** Menyelesaikan permasalahan visual di mana nama organisasi ditampilkan berulang kali secara canggung dan kartu branding dashboard menjadi gundul kosong:
+  1. **Harmonisasi Hierarki Topbar & Header Dashboard (`server/templates/dashboard.html`, `server/templates/base.html`):**
+     - Dashboard kini meng-override `{% block topbar %}` dengan bilah kepala dasbor terpadu (`.dash-topbar-header`) yang menggabungkan seluruh identitas instansi (Logo, Nama Dinas, Badge PANTAU SERVER, Unit Kerja, MOTD) bersama jam UTC live (`#dashUtcClock`), tombol mode layar penuh Kiosk NOC, dan kapsul akun operator (`.noc-topbar-user`) dalam satu bilah atas sticky yang megah.
+     - Mengeliminasi total kartu putih duplikat di dalam area konten dashboard; konten dashboard kini langsung menyajikan matriks telemetri server dan ringkasan insiden tanpa pemborosan ruang vertikal.
+  2. **Standarisasi Topbar Global Halaman Non-Dashboard (`server/templates/base.html`):**
+     - Pada seluruh halaman lain di luar dashboard, `{% block topbar %}` menyajikan bilah navigasi atas universal yang ringkas dan elegan: `Pantau Server / [Nama Halaman]` di sisi kiri, serta jam UTC live dan akun operator di sisi kanan.
+     - Seluruh tombol aksi khusus halaman (`+ Tambah Endpoint`, `Ambang Batas Insiden`, `+ Tambah Jadwal`, `[Edit]`, `[Hapus]`, dll.) tetap terisolasi secara murni di dalam Page Header konten masing-masing halaman.
+  3. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.169` secara konsisten pada seluruh 7 berkas inti repositori.
+
 ## Versi 4.8.168
 
 - **Tipe Rilis:** Arsitektur Global Masthead Topbar Enterprise & Pemisahan Mutlak Tombol Aksi Konten Halaman (*Global Enterprise Topbar Masthead Architecture & Strict Separation from Page-Level Content Action Headers*)
