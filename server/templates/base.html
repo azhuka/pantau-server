@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.151' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.152' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2719,7 +2719,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.151' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.152' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
@@ -5579,10 +5579,25 @@ class NocMetricChart {
     if (!this.container) return;
     const pts = this.points;
 
+    // Bersihkan skeleton loader jika ada
+    const skeleton = this.container.querySelector('.perf-chart-skeleton');
+    if (skeleton) skeleton.remove();
+
+    // Pastikan container memiliki positioning relative
+    this.container.style.position = 'relative';
+
+    // Pastikan Tooltip Element selalu terpasang di container
+    if (!this.tooltipEl || !this.container.contains(this.tooltipEl)) {
+      if (this.tooltipEl && this.tooltipEl.remove) this.tooltipEl.remove();
+      this.tooltipEl = document.createElement('div');
+      this.tooltipEl.className = 'noc-chart-tooltip';
+      this.container.appendChild(this.tooltipEl);
+    }
+    this.tooltipEl.style.display = 'none';
+
     // Bersihkan SVG lama jika ada
     const oldSvg = this.container.querySelector('svg');
     if (oldSvg) oldSvg.remove();
-    if (this.tooltipEl) this.tooltipEl.style.display = 'none';
 
     // Update Legenda
     this.renderLegend();
@@ -5603,7 +5618,8 @@ class NocMetricChart {
 
     const W = 600;
     const H = 185;
-    const PL = 44;
+    const isRate = (this.unit === 'rate');
+    const PL = isRate ? 72 : 46;
     const PR = 16;
     const PT = 14;
     const PB = 26;
@@ -5658,6 +5674,18 @@ class NocMetricChart {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     svg.setAttribute('preserveAspectRatio', 'none');
+    svg.style.pointerEvents = 'all';
+    svg.style.cursor = 'crosshair';
+
+    // 0. Background hit area transparan penuh untuk menangkap semua event kursor di seluruh bidang
+    const bgHit = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bgHit.setAttribute('x', '0');
+    bgHit.setAttribute('y', '0');
+    bgHit.setAttribute('width', String(W));
+    bgHit.setAttribute('height', String(H));
+    bgHit.setAttribute('fill', 'transparent');
+    bgHit.style.pointerEvents = 'all';
+    svg.appendChild(bgHit);
 
     // 1. Grid Horizontal & Ticks Y
     yTicks.forEach(tickVal => {
@@ -5669,6 +5697,7 @@ class NocMetricChart {
       line.setAttribute('y2', y.toFixed(1));
       line.setAttribute('stroke', 'var(--border, rgba(148,163,184,0.18))');
       line.setAttribute('stroke-width', '1');
+      line.style.pointerEvents = 'none';
       svg.appendChild(line);
 
       const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -5678,6 +5707,7 @@ class NocMetricChart {
       txt.setAttribute('font-size', '10');
       txt.setAttribute('fill', 'var(--dim, #64748b)');
       txt.setAttribute('font-family', 'var(--font-mono, monospace)');
+      txt.style.pointerEvents = 'none';
       if (this.unit === '%') {
         txt.textContent = Math.round(tickVal) + '%';
       } else if (this.unit === 'rate') {
@@ -5723,6 +5753,7 @@ class NocMetricChart {
       txt.setAttribute('font-size', '10');
       txt.setAttribute('fill', 'var(--dim, #64748b)');
       txt.setAttribute('font-family', 'var(--font-mono, monospace)');
+      txt.style.pointerEvents = 'none';
       txt.textContent = fmtAxisTime(p.t);
       svg.appendChild(txt);
     });
@@ -5751,32 +5782,41 @@ class NocMetricChart {
       polyline.setAttribute('stroke-width', '2');
       polyline.setAttribute('stroke-linecap', 'round');
       polyline.setAttribute('stroke-linejoin', 'round');
+      polyline.style.pointerEvents = 'none';
       svg.appendChild(polyline);
     });
 
-    // 4. Halo Group untuk Efek Hover (Bulat Muncul Hanya Saat Kursor Menyorot)
-    const haloG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    haloG.style.display = 'none';
+    // 4. Hover Group (Garis Hairline Vertikal + Bulatan Interaktif Timbul Saat Kursor Menyorot)
+    const hoverGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    hoverGroup.style.display = 'none';
+    hoverGroup.style.pointerEvents = 'none';
 
-    const haloOuter = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    haloOuter.setAttribute('r', '8.5');
-    haloOuter.setAttribute('opacity', '0.3');
-    haloG.appendChild(haloOuter);
+    // Garis Hairline Vertikal
+    const vGuide = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    vGuide.setAttribute('y1', String(PT));
+    vGuide.setAttribute('y2', String(PT + ih));
+    vGuide.setAttribute('stroke', 'rgba(255, 255, 255, 0.22)');
+    vGuide.setAttribute('stroke-width', '1');
+    vGuide.setAttribute('stroke-dasharray', '3,3');
+    hoverGroup.appendChild(vGuide);
 
-    const haloInner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    haloInner.setAttribute('r', '4');
-    haloInner.setAttribute('stroke', '#ffffff');
-    haloInner.setAttribute('stroke-width', '2');
-    haloG.appendChild(haloInner);
+    // Wadah Marker Bulatan Seri
+    const dotsG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    hoverGroup.appendChild(dotsG);
 
-    svg.appendChild(haloG);
+    svg.appendChild(hoverGroup);
 
     // 5. Interaktivitas Pointer/Mouse Move & Hover
     const onPointerMove = e => {
       if (seriesRenderData.length === 0) return;
       const rect = svg.getBoundingClientRect();
       const pointerSvgX = ((e.clientX - rect.left) / rect.width) * W;
-      const pointerSvgY = ((e.clientY - rect.top) / rect.height) * H;
+
+      // Batasi hanya saat kursor berada di rentang plot metrik
+      if (pointerSvgX < PL - 15 || pointerSvgX > (W - PR + 15)) {
+        onPointerLeave();
+        return;
+      }
 
       // Cari titik data horizontal terdekat
       let closestSampleIndex = -1;
@@ -5790,78 +5830,102 @@ class NocMetricChart {
         }
       });
 
-      if (closestSampleIndex === -1) return;
+      if (closestSampleIndex === -1) {
+        onPointerLeave();
+        return;
+      }
       const targetTime = pts[closestSampleIndex].t;
+      const sampleX = X(targetTime);
 
-      // Kumpulkan kandidat titik dari seluruh visible series pada waktu tersebut
-      let bestCandidate = null;
-      let minYDist = Infinity;
-
+      // Kumpulkan seluruh titik dari seri yang aktif pada waktu tersebut
+      const matchedPoints = [];
       seriesRenderData.forEach(sData => {
-        const matched = sData.points.find(pt => pt.t === targetTime);
-        if (matched) {
-          const yDist = Math.abs(matched.y - pointerSvgY);
-          if (yDist < minYDist) {
-            minYDist = yDist;
-            bestCandidate = matched;
-          }
-        }
+        const pt = sData.points.find(p => p.t === targetTime);
+        if (pt) matchedPoints.push(pt);
       });
 
-      if (!bestCandidate) return;
+      if (matchedPoints.length === 0) {
+        onPointerLeave();
+        return;
+      }
 
-      // Menimbulkan Bulat Saat Tersorot Kursor
-      haloG.style.display = '';
-      haloOuter.setAttribute('cx', bestCandidate.x.toFixed(1));
-      haloOuter.setAttribute('cy', bestCandidate.y.toFixed(1));
-      haloOuter.setAttribute('fill', bestCandidate.series.color);
+      // 1. Tampilkan dan posisikan Garis Vertikal Hairline
+      hoverGroup.style.display = '';
+      vGuide.setAttribute('x1', sampleX.toFixed(1));
+      vGuide.setAttribute('x2', sampleX.toFixed(1));
 
-      haloInner.setAttribute('cx', bestCandidate.x.toFixed(1));
-      haloInner.setAttribute('cy', bestCandidate.y.toFixed(1));
-      haloInner.setAttribute('fill', bestCandidate.series.color);
+      // 2. Gambar bulatan halo untuk setiap seri pada waktu tersebut
+      dotsG.innerHTML = '';
+      matchedPoints.forEach(pt => {
+        const outer = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        outer.setAttribute('cx', pt.x.toFixed(1));
+        outer.setAttribute('cy', pt.y.toFixed(1));
+        outer.setAttribute('r', '7.5');
+        outer.setAttribute('fill', pt.series.color);
+        outer.setAttribute('opacity', '0.35');
+        dotsG.appendChild(outer);
 
-      // Posisi Tooltip
-      const pixelX = (bestCandidate.x / W) * rect.width;
-      const pixelY = (bestCandidate.y / H) * rect.height;
+        const inner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        inner.setAttribute('cx', pt.x.toFixed(1));
+        inner.setAttribute('cy', pt.y.toFixed(1));
+        inner.setAttribute('r', '4');
+        inner.setAttribute('fill', pt.series.color);
+        inner.setAttribute('stroke', '#ffffff');
+        inner.setAttribute('stroke-width', '2');
+        dotsG.appendChild(inner);
+      });
 
-      // Format Waktu Detail
-      const sampleDate = new Date(bestCandidate.t * 1000);
+      // 3. Format Tanggal & Jam Presisi
+      const sampleDate = new Date(targetTime * 1000);
       const timeFmt = sampleDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
       const dateFmt = sampleDate.toLocaleDateString([], { day: '2-digit', month: 'short' });
       const fullTimeStr = `${dateFmt}, ${timeFmt}`;
 
-      // Format Usage Resource
-      let formattedVal = '';
-      if (this.unit === '%') {
-        formattedVal = bestCandidate.val.toFixed(1) + '%';
-      } else if (this.unit === 'rate') {
-        formattedVal = formatNocRate(bestCandidate.val);
-      } else if (this.unit === '') {
-        formattedVal = (bestCandidate.val % 1 === 0 ? bestCandidate.val.toString() : bestCandidate.val.toFixed(2));
-      } else {
-        formattedVal = bestCandidate.val.toFixed(1) + ' ' + this.unit;
-      }
-
-      const seriesName = bestCandidate.series.name || this.title;
-      const usageLabel = bestCandidate.series.tooltipLabel
-        ? bestCandidate.series.tooltipLabel(bestCandidate.val, bestCandidate.raw)
-        : `${seriesName}: ${formattedVal}`;
+      // 4. Bangun Baris Resource Usage Tooltip
+      const rowsHtml = matchedPoints.map(pt => {
+        let valStr = '';
+        if (this.unit === '%') {
+          valStr = pt.val.toFixed(1) + '%';
+        } else if (this.unit === 'rate') {
+          valStr = formatNocRate(pt.val);
+        } else if (this.unit === '') {
+          valStr = (pt.val % 1 === 0 ? pt.val.toString() : pt.val.toFixed(2));
+        } else {
+          valStr = pt.val.toFixed(1) + ' ' + this.unit;
+        }
+        const label = pt.series.tooltipLabel
+          ? pt.series.tooltipLabel(pt.val, pt.raw)
+          : `${pt.series.name || this.title}: ${valStr}`;
+        return `
+          <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text);font-weight:600;margin-top:2px">
+            <span style="width:7px;height:7px;border-radius:50%;background:${pt.series.color};display:inline-block;flex-shrink:0"></span>
+            <span>${label}</span>
+          </div>`;
+      }).join('');
 
       this.tooltipEl.innerHTML = `
         <div style="font-size:10px;color:var(--dim);margin-bottom:2px;font-family:var(--font-mono, monospace);font-weight:500">${fullTimeStr}</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text);font-weight:700">
-          <span style="width:7px;height:7px;border-radius:50%;background:${bestCandidate.series.color};display:inline-block"></span>
-          <span>${usageLabel}</span>
-        </div>
+        ${rowsHtml}
       `;
-      this.tooltipEl.style.borderColor = bestCandidate.series.color;
-      this.tooltipEl.style.left = `${pixelX}px`;
-      this.tooltipEl.style.top = `${pixelY}px`;
+
+      // Border warna tooltip
+      this.tooltipEl.style.borderColor = (matchedPoints.length === 1) ? matchedPoints[0].series.color : 'var(--primary, #0284c7)';
+
+      // 5. Posisi Tooltip Melayang dengan Clamping Batas Tepi
+      const pixelX = (sampleX / W) * rect.width;
+      let minY = Math.min(...matchedPoints.map(pt => pt.y));
+      const pixelY = (minY / H) * rect.height;
+
+      const ttWidth = this.tooltipEl.offsetWidth || 130;
+      const clampedX = Math.max(ttWidth / 2 + 8, Math.min(rect.width - ttWidth / 2 - 8, pixelX));
+
+      this.tooltipEl.style.left = `${clampedX}px`;
+      this.tooltipEl.style.top = `${Math.max(24, pixelY)}px`;
       this.tooltipEl.style.display = 'block';
     };
 
     const onPointerLeave = () => {
-      haloG.style.display = 'none';
+      hoverGroup.style.display = 'none';
       if (this.tooltipEl) this.tooltipEl.style.display = 'none';
     };
 

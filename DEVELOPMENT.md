@@ -354,6 +354,24 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.152
+
+- **Tipe Rilis:** Penyempurnaan Area Penangkap Kursor Penuh, Garis Hairline Vertikal Multi-Series, Eliminasi Pemotongan Ticks Sumbu Y & Konsistensi Warna Jaringan (*Full-Area Pointer Capture, Vertical Hairline Crosshair, Non-Clipped Y-Axis Ticks & Network Palette Harmonization*)
+- **Fokus Utama:** Menyelesaikan permasalahan interaktivitas kursor hover dan keterbacaan label metrik pada grafik performa universal:
+  1. **Full-Area Pointer Hit Capture & Penjaminan Tooltip (`server/templates/base.html`):**
+     - Menambahkan transparent background hit rect berdimensi penuh pada SVG dengan `pointer-events="all"` sehingga event pergerakan kursor tertangkap di setiap piksel area grafik (tidak hanya saat menyentuh kurva garis).
+     - Menjamin elemen floating tooltip selalu terpasang di DOM dan dibersihkan dari skeleton loader saat pergantian rentang metrik.
+  2. **Garis Hairline Vertikal & Bulatan Multi-Series Serentak (`server/templates/base.html`):**
+     - Mengimplementasikan garis panduan vertikal halus (*vertical hairline crosshair*) putus-putus pada koordinat waktu yang disorot kursor.
+     - Memunculkan marker bulatan halo kontras pada setiap seri kurva yang aktif secara serentak di garis waktu tersebut.
+     - Tooltip popover multi-baris menyajikan rincian seluruh seri aktif sekaligus dengan batas tepi (*viewport boundary clamping*) agar tidak terpotong di tepi kartu.
+  3. **Penyesuaian Padding Kiri (PL) Bebas Pemotongan (`server/templates/base.html`):**
+     - Meningkatkan padding kiri (`PL`) menjadi 72px untuk metrik laju throughput jaringan (`unit: 'rate'`), menjamin teks label ticks sumbu Y (misal `100.0 KB/s`, `1.5 MB/s`) tidak terpotong oleh batas kiri SVG.
+  4. **Harmonisasi Warna RX/TX Antara Tabel & Grafik (`server/templates/services.html`):**
+     - Menyelaraskan warna seri grafik lalu lintas jaringan dengan tabel antarmuka host (Download RX: `#38bdf8` biru langit, Upload TX: `#34d399` hijau zamrud).
+  5. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.152` pada 7 berkas inti repositori.
+
 ## Versi 4.8.151
 
 - **Tipe Rilis:** Pemolesan Kurva Garis Grafik Polos Mulus, Sorotan Hover Interaktif Presisi Tinggi, Default Rentang Waktu Hari Ini & Integrasi Grafik Throughput Traffic Jaringan (*Smooth Clean Metric Lines, Hover-Only Interactive Marker Rings, Default Today Range & Network Throughput Chart Integration*)

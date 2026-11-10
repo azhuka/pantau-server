@@ -10881,14 +10881,14 @@ function initNocMetricCharts() {
         {
           id: 'rx',
           name: 'Download (RX)',
-          color: '#22c55e',
+          color: '#38bdf8',
           getValue: p => calcNetRate(p, 'rx', _selectedNetIface),
           tooltipLabel: v => `Download (RX): ${formatNocRate(v)}`
         },
         {
           id: 'tx',
           name: 'Upload (TX)',
-          color: '#0284c7',
+          color: '#34d399',
           getValue: p => calcNetRate(p, 'tx', _selectedNetIface),
           tooltipLabel: v => `Upload (TX): ${formatNocRate(v)}`
         }
