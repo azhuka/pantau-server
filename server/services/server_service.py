@@ -217,7 +217,7 @@ def _get_server_actions(db: Session, sid: int, limit: int = 50) -> list[dict]:
             "service_start": "Jalankan Layanan",
             "kill_process": "Hentikan Proses (Kill)",
             "block_ip": "Blokir IP",
-            "unblock_ip": "Buka Blokir IP",
+            "unblock_ip": "Lepas Blokir IP",
             "restart_agent": "Restart Agen",
             "update_agent": "Pembaruan Agen (OTA)",
             "reboot_host": "Reboot Host",

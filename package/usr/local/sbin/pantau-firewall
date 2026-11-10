@@ -166,6 +166,6 @@ done
 if [ "$ACTION" = "block" ]; then
     echo "Total $IPC IP diblokir. CATATAN: aturan volatile (hilang saat reboot); untuk permanen gunakan iptables-persistent."
 else
-    echo "Total $IPC IP dibuka blokirnya."
+    echo "Total $IPC IP dilepas blokirnya."
 fi
 exit 0

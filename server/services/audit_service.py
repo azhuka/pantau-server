@@ -64,10 +64,10 @@ AUDIT_ACTION_LABELS = {
     "cmd:stop": "Hentikan Service",
     "block_ip": "Blokir IP",
     "cmd:block_ip": "Blokir IP",
-    "unblock_ip": "Buka Blokir IP",
-    "cmd:unblock_ip": "Buka Blokir IP",
+    "unblock_ip": "Lepas Blokir IP",
+    "cmd:unblock_ip": "Lepas Blokir IP",
     "firewall_block": "Blokir IP",
-    "firewall_unblock": "Buka Blokir IP",
+    "firewall_unblock": "Lepas Blokir IP",
     "firewall_enable": "Aktifkan Firewall",
     "firewall_disable": "Nonaktifkan Firewall",
     "firewall_reload": "Muat Ulang Firewall",
@@ -228,7 +228,7 @@ AUDIT_CATEGORIES = [
         ],
         "actions": [
             ("firewall_block", "Blokir IP", "Block IP"),
-            ("firewall_unblock", "Buka Blokir IP", "Unblock IP"),
+            ("firewall_unblock", "Lepas Blokir IP", "Unblock IP"),
             ("firewall_enable", "Aktifkan Firewall", "Enable Firewall"),
             ("firewall_disable", "Nonaktifkan Firewall", "Disable Firewall"),
             ("firewall_reload", "Muat Ulang Firewall", "Reload Firewall"),
@@ -450,7 +450,7 @@ def _audit_rows(
 
         for pfx in (
             "blokir ",
-            "buka blokir ",
+            "lepas blokir ",
             "buat user ",
             "kunci user ",
             "buka kunci user ",

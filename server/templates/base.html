@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.160' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.161' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2806,7 +2806,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div class="sb-footer-brand">Pantau Server</div>
-    <div class="sb-footer-ver">v{{ app_version or '4.8.160' }}</div>
+    <div class="sb-footer-ver">v{{ app_version or '4.8.161' }}</div>
     <div class="sb-footer-utc">UTC <span id="clockUtc" style="display:inline"></span></div>
   </div>
 </aside>
@@ -5478,7 +5478,12 @@ function attachTablePagination(target, options = {}) {
       return;
     }
 
-    bar.style.setProperty('display', 'flex', 'important');
+    const minPageLimit = (Array.isArray(pageSizeOptions) && pageSizeOptions.length) ? (parseInt(pageSizeOptions[0], 10) || 10) : 10;
+    if (total <= minPageLimit) {
+      bar.style.setProperty('display', 'none', 'important');
+    } else {
+      bar.style.setProperty('display', 'flex', 'important');
+    }
     const limit = (pageSize === 'all') ? (total || 1) : (parseInt(pageSize, 10) || 10);
     const totalPages = Math.max(1, Math.ceil(total / (limit || 1)));
 

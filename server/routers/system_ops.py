@@ -206,7 +206,7 @@ def firewall_unblock_ip(
     csrf_token: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
-    """Buka blokir sebuah IP dari tab Firewall."""
+    """Lepas blokir sebuah IP dari tab Firewall."""
     user = get_current_user(request, db)
     is_json = (
         "application/json" in request.headers.get("accept", "")
@@ -226,13 +226,13 @@ def firewall_unblock_ip(
         db,
         user.username,
         "firewall_unblock",
-        f"{server.hostname}: buka blokir {ip_clean}",
+        f"{server.hostname}: lepas blokir {ip_clean}",
         "dikirim ke agen",
         server_id=sid,
     )
     db.commit()
     if is_json:
-        return JSONResponse({"ok": True, "detail": f"Perintah buka blokir IP '{ip_clean}' dikirim ke agen."})
+        return JSONResponse({"ok": True, "detail": f"Perintah lepas blokir IP '{ip_clean}' dikirim ke agen."})
     return RedirectResponse(f"/servers/{sid}?action=unblock", status_code=303)
 
 

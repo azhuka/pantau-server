@@ -354,6 +354,21 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.161
+
+- **Tipe Rilis:** Penyempurnaan Tata Letak Tabel Kosong, Paginasi Cerdas ≤10 Baris, dan Standarisasi Istilah Lepas Blokir (*Empty Table Layout Fix, Smart Pagination for ≤10 Rows, and Unblock Terminology Standardization*)
+- **Fokus Utama:** Menyelesaikan anomali visual tata letak tabel yang menggantung, menyembunyikan kontrol paginasi saat baris data sedikit, serta menstandarisasi istilah antarmuka:
+  1. **Perbaikan Tata Letak Elemen Pembungkus Tabel Kosong (`server/templates/services.html`):**
+     - Mengeliminasi duplikasi atribut `style=` pada elemen pembungkus (`#fw-blocked-wrap`, `#fw-rules-wrap`, `#cron-table-wrap`, `#timers-table-wrap`, `#ports-wrap`, `#ssl-wrap`) yang sebelumnya membuat parser browser mengabaikan `style="display:none"` dan menampilkan kepala tabel kosong menggantung di atas pesan kosong.
+     - Merapikan teks subtitle kartu dari "Alamat IP sumber yang di tutup" menjadi "Alamat IP sumber yang ditolak aksesnya (DROP)".
+  2. **Aturan Paginasi Cerdas ≤10 Baris (`server/templates/base.html` & `services.html`):**
+     - Memperbarui `attachTablePagination()` pada `base.html` agar secara otomatis menyembunyikan bilah paginasi (`display: none`) apabila total data kurang dari atau sama dengan batas minimum per halaman (`total <= minPageLimit` / 10 baris).
+     - Menyembunyikan pemilih limit tindakan (`#action-limit-wrap`) pada kartu Riwayat Tindakan saat total riwayat tindakan kurang dari atau sama dengan 10 baris, baik saat *server-side render* maupun pembaruan *client-side*.
+  3. **Standarisasi Istilah Lepas Blokir di Seluruh Lapisan Sistem:**
+     - Mengganti seluruh frasa "Buka Blokir" / "buka blokir" menjadi **"Lepas Blokir"** / **"lepas blokir"** pada rute controller, layanan audit, riwayat tindakan, antarmuka template, jendela konfirmasi, notifikasi toast, serta pesan agen klien.
+  4. **Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.161` pada 7 berkas inti repositori.
+
 ## Versi 4.8.160
 
 - **Tipe Rilis:** Dukungan Blokir IP Private (RFC1918) & Penyelarasan Integrasi UFW Agen (*Support for Private RFC1918 IP Blocking & Agent UFW Integration Harmonization*)

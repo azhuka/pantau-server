@@ -479,7 +479,7 @@ SHELL_IDLE_POLL_SECS = 0.15            # jeda antar-pendelikan stdin dari dashbo
 SHELL_POST_MIN_SECS = 0.12
 
 # Versi agen, dikirim ke dashboard di tiap laporan (badge "agen vX.Y").
-AGENT_VERSION = "4.8.160"
+AGENT_VERSION = "4.8.161"
 
 
 def tcp_health_check(port: int, addr: str) -> dict:
@@ -850,7 +850,7 @@ done
 if [ "$ACTION" = "block" ]; then
     echo "Total $IPC IP diblokir. CATATAN: aturan volatile (hilang saat reboot); untuk permanen gunakan iptables-persistent."
 else
-    echo "Total $IPC IP dibuka blokirnya."
+    echo "Total $IPC IP dilepas blokirnya."
 fi
 exit 0
 """
@@ -938,12 +938,12 @@ def _exec_block_ip(command: dict) -> dict:
 
 
 def _exec_unblock_ip(command: dict) -> dict:
-    """Buka blokir IP: iptables -D INPUT -s <ip> -j DROP."""
+    """Lepas blokir IP: iptables -D INPUT -s <ip> -j DROP."""
     ensure_pantau_firewall_updated()
     params = command.get("params") or {}
     ips = [str(i).strip() for i in (params.get("ips") or [])][:10]
     if not ips:
-        return {"ok": False, "output": "Tidak ada IP untuk dibuka blokirnya."}
+        return {"ok": False, "output": "Tidak ada IP untuk dilepas blokirnya."}
     outs: list = []
     ok_all = True
     for ip in ips:
