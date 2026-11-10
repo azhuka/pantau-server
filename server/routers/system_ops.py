@@ -89,7 +89,7 @@ def _get_agent_code_and_sha256() -> tuple[bytes, str, str]:
                 return data, h, file_version
             except Exception as e:
                 logger.warning("[AGENT CODE] Gagal membaca %s: %s", p, e)
-    raise HTTPException(status_code=404, detail="Berkas agen tidak ditemukan di dashboard")
+    raise HTTPException(status_code=404, detail="File agen tidak ditemukan di dashboard")
 
 
 # ---------------------------------------------------------------------------
@@ -468,7 +468,7 @@ def server_agent_update(
         .first()
     )
     if existing:
-        msg = "Pembaruan agen sedang diproses atau dalam antrean."
+        msg = "Pembaruan agen sedang diproses atau dalam antrean queue."
         if is_json:
             return JSONResponse({"ok": True, "status": "already_pending", "message": msg})
         return RedirectResponse(f"/servers/{sid}?action=agent_updating", status_code=303)
@@ -620,7 +620,7 @@ def host_reboot(
     totp: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
-    """Reboot OS server klien (admin). Wajib kata sandi operator."""
+    """Reboot OS server klien (admin). Wajib password operator."""
     return _host_control(request, sid, db, "reboot_host", csrf_token, password, totp)
 
 
@@ -633,7 +633,7 @@ def host_poweroff(
     totp: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
-    """Poweroff OS server klien (admin). Wajib kata sandi operator."""
+    """Poweroff OS server klien (admin). Wajib password operator."""
     return _host_control(request, sid, db, "poweroff_host", csrf_token, password, totp)
 
 
@@ -1209,7 +1209,7 @@ def server_ssl_remove_path(
 # ---------------------------------------------------------------------------
 @router.api_route("/api/agent/latest-code", methods=["GET", "HEAD"])
 def api_agent_latest_code():
-    """Unduh kode sumber Agen Pantau terbaru langsung dari dashboard dengan verifikasi SHA-256."""
+    """Download source code Agen Pantau terbaru langsung dari dashboard dengan verifikasi SHA-256."""
     data, sha256_hash, version = _get_agent_code_and_sha256()
     return Response(
         content=data,
@@ -1224,7 +1224,7 @@ def api_agent_latest_code():
 
 @router.api_route("/api/agent/wrapper/{wrapper_name}", methods=["GET", "HEAD"])
 def api_agent_wrapper(wrapper_name: str):
-    """Unduh berkas wrapper resmi Agen Pantau (mis. pantau-user, pantau-apt, dll.)."""
+    """Download file wrapper resmi Agen Pantau (mis. pantau-user, pantau-apt, dll.)."""
     allowed_wrappers = {
         "pantau-user",
         "pantau-apt",
@@ -1247,7 +1247,7 @@ def api_agent_wrapper(wrapper_name: str):
         wrapper_path = Path("/usr/local/sbin") / clean_name
 
     if not wrapper_path.is_file():
-        raise HTTPException(status_code=404, detail=f"Berkas wrapper '{clean_name}' tidak tersedia di server.")
+        raise HTTPException(status_code=404, detail=f"File wrapper '{clean_name}' tidak tersedia di server.")
 
     content = wrapper_path.read_bytes()
     sha256_hash = hashlib.sha256(content).hexdigest()

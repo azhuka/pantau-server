@@ -1350,7 +1350,7 @@ div[style*="position: fixed"] .card {
           data-guardrail-title="Hapus Server dari Pantau"
           data-guardrail-target="{{ server.hostname }}"
           data-guardrail-badge="Hapus Permanen"
-          data-guardrail-msg="Server <strong>{{ server.hostname }}</strong> ({{ server.ip_address }}) beserta seluruh riwayat metrik, snapshot, serta pencatatan insiden akan dihapus secara permanen dari basis data."
+          data-guardrail-msg="Server <strong>{{ server.hostname }}</strong> ({{ server.ip_address }}) beserta seluruh riwayat metrik, snapshot, serta pencatatan insiden akan dihapus secara permanen dari database."
           data-guardrail-btn="Hapus Server Sekarang"
           data-guardrail-color="danger">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -1881,7 +1881,7 @@ div[style*="position: fixed"] .card {
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:6px">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-            <strong style="font-size:13px">Perangkat Penyimpanan ({% if platform_info and platform_info.type == 'lxc' %}Alokasi Kontainer{% else %}Block Devices{% endif %})</strong>
+            <strong style="font-size:13px">Perangkat Storage / Disk ({% if platform_info and platform_info.type == 'lxc' %}Alokasi Kontainer{% else %}Block Devices{% endif %})</strong>
           </div>
           <span class="badge badge-info" id="spec-disk-count" style="font-size:8.5px">{{ hardware_specs.disks|length if hardware_specs and hardware_specs.disks else 0 }} Disks</span>
         </div>
@@ -1939,7 +1939,7 @@ div[style*="position: fixed"] .card {
                 </tr>
                 {% endfor %}
               {% else %}
-                <tr><td colspan="7" class="empty-msg" style="padding:12px">Tidak ada data perangkat penyimpanan.</td></tr>
+                <tr><td colspan="7" class="empty-msg" style="padding:12px">Tidak ada data perangkat storage / disk.</td></tr>
               {% endif %}
             </tbody>
           </table>
@@ -1953,7 +1953,7 @@ div[style*="position: fixed"] .card {
   <div class="card" id="disks-wrap" style="display:none">
     <div class="card-header" style="align-items:center;justify-content:space-between">
       <div>
-        <h3 style="margin:0">Partisi Penyimpanan &amp; Laju I/O Disk</h3>
+        <h3 style="margin:0">Partisi Disk &amp; Laju I/O Storage</h3>
         <span style="font-size:12px;color:var(--dim)">Pemakaian ruang filesystem dan kecepatan baca/tulis disk secara real-time</span>
       </div>
     </div>
@@ -1964,7 +1964,7 @@ div[style*="position: fixed"] .card {
             <th class="col-hero-cell">Mount</th>
             <th class="col-fixed-cell">Tipe</th>
             <th class="col-fixed-cell col-num-cell">Terpakai</th>
-            <th class="col-hero-cell" title="Persentase pemakaian ruang dan proyeksi kapasitas penyimpanan (Runway 24j)">Pemakaian &amp; Estimasi Laju</th>
+            <th class="col-hero-cell" title="Persentase pemakaian ruang dan proyeksi kapasitas storage / disk (Runway 24j)">Pemakaian &amp; Estimasi Laju</th>
             <th class="col-fixed-cell col-num-cell" title="Kecepatan baca dan tulis disk saat ini">Laju I/O (R / W)</th>
             <th class="col-fixed-cell col-center-cell" title="Persentase utilisasi waktu aktif disk (I/O util)">Util I/O</th>
           </tr>
@@ -2005,8 +2005,8 @@ div[style*="position: fixed"] .card {
             <th>Status</th>
             <th title="Total akumulasi byte diterima sejak boot">RX Total</th>
             <th title="Total akumulasi byte dikirim sejak boot">TX Total</th>
-            <th title="Kecepatan unduh / lalu lintas masuk saat ini">Laju Masuk (RX)</th>
-            <th title="Kecepatan unggah / lalu lintas keluar saat ini">Laju Keluar (TX)</th>
+            <th title="Kecepatan download (RX) / lalu lintas masuk">Laju Masuk (RX)</th>
+            <th title="Kecepatan upload (TX) / lalu lintas keluar">Laju Keluar (TX)</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -2205,7 +2205,7 @@ div[style*="position: fixed"] .card {
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
                 </button>
               {% elif p.action == 'terminate_session' and p.tty and (user.is_master_admin() or user.has_perm('can_manage_servers') or user.has_perm('can_users_sys')) %}
-                <button type="button" class="btn btn-danger btn-sm" onclick="terminateSession({{ server.id }}, '{{ p.tty }}', '{{ p.session_user }}', this)" title="Putus paksa sesi terminal remote {{ p.tty }}" aria-label="Putus Sesi">
+                <button type="button" class="btn btn-danger btn-sm" onclick="terminateSession({{ server.id }}, '{{ p.tty }}', '{{ p.session_user }}', this)" title="Terminate session terminal remote {{ p.tty }}" aria-label="Putus Sesi">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 </button>
               {% endif %}
@@ -2889,7 +2889,7 @@ div[style*="position: fixed"] .card {
             <th class="col-fixed-cell" title="Jadwal waktu eksekusi dalam format cron (menit jam tgl bln hari)">Jadwal (Cron)</th>
             <th class="col-fixed-cell" title="Pengguna Linux yang menjalankan perintah">Pengguna</th>
             <th class="col-hero-cell" title="Perintah atau skrip yang dieksekusi">Perintah (Command)</th>
-            <th class="col-fixed-cell" title="Lokasi berkas konfigurasi cron pada server">Sumber Berkas</th>
+            <th class="col-fixed-cell" title="Lokasi file konfigurasi cron pada server">Sumber File</th>
             <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
           </tr>
         </thead>
@@ -3172,7 +3172,7 @@ div[style*="position: fixed"] .card {
             <th class="col-fixed-cell" style="min-width:140px">Pengguna</th>
             <th class="col-fixed-cell col-num-cell" style="width:90px;min-width:80px">UID / GID</th>
             <th class="col-hero-cell" style="min-width:160px">Grup Utama &amp; Sekunder</th>
-            <th class="col-hero-cell" style="min-width:160px">Direktori Home &amp; Shell</th>
+            <th class="col-hero-cell" style="min-width:160px">Home Directory &amp; Shell</th>
             <th class="col-fixed-cell" style="min-width:140px">Login Terakhir &amp; Sesi</th>
             <th class="col-fixed-cell col-act" style="width:130px;min-width:120px;text-align:center">Tindakan</th>
           </tr>
@@ -3232,7 +3232,7 @@ div[style*="position: fixed"] .card {
                 {% if a.sessions and (user.has_perm('can_users_sys') or user.has_perm('can_manage_servers') or user.is_master_admin()) %}
                   {% for s in a.sessions %}
                     {% if s.tty %}
-                    <button type="button" class="btn btn-danger btn-sm btn-noc-icon" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Putus paksa sesi terminal {{ s.tty }} ({{ a.user }})"{% endif %} aria-label="Putus Sesi" onclick="terminateSession({{ server.id }}, '{{ s.tty }}', '{{ a.user }}', this)">
+                    <button type="button" class="btn btn-danger btn-sm btn-noc-icon" {% if not is_online %}disabled style="opacity:0.35;cursor:not-allowed" title="Server offline — aksi dinonaktifkan"{% else %}title="Terminate session terminal {{ s.tty }} ({{ a.user }})"{% endif %} aria-label="Putus Sesi" onclick="terminateSession({{ server.id }}, '{{ s.tty }}', '{{ a.user }}', this)">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                     </button>
                     {% endif %}
@@ -3532,7 +3532,7 @@ div[style*="position: fixed"] .card {
             <th class="col-fixed-cell" title="Batas waktu akhir masa berlaku sertifikat">Kedaluwarsa Pada</th>
             <th class="col-fixed-cell col-num-cell" title="Sisa hari sebelum sertifikat habis masa berlakunya">Sisa Hari</th>
             <th class="col-fixed-cell col-center-cell" title="Status kesehatan sertifikat">Status</th>
-            <th class="col-fixed-cell" title="Lokasi berkas sertifikat di filesystem server">Lokasi Berkas</th>
+            <th class="col-fixed-cell" title="Lokasi file sertifikat di filesystem server">Lokasi File</th>
             <th class="col-fixed-cell col-act" style="text-align:center">Tindakan</th>
           </tr>
         </thead>
@@ -3579,7 +3579,7 @@ div[style*="position: fixed"] .card {
       </table>
     </div>
     <div class="empty-msg" id="ssl-empty" style="padding:24px 0;display:{{ 'none' if ssl_certs else 'block' }}">
-      Tidak ada berkas sertifikat SSL lokal ditemukan pada direktori standar (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).<br>
+      Tidak ada file sertifikat SSL lokal ditemukan pada directory standar (/etc/letsencrypt/live/, /etc/ssl/certs/, /etc/nginx/ssl/).<br>
       <span style="font-size:12px;color:var(--dim)">Gunakan tombol <strong>Tambah Lokasi Sertifikat</strong> untuk mendaftarkan path sertifikat kustom.</span>
     </div>
   </div>
@@ -3666,9 +3666,9 @@ div[style*="position: fixed"] .card {
           <input type="search" id="log-filter" class="filter-input" placeholder="Ketik kata kunci untuk memfilter baris log…" oninput="filterLog(this.value)" style="width:100%;font-size:12px;padding:5px 10px;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:5px">
         </div>
 
-        <!-- 4. Tombol Segarkan / Refresh Log -->
+        <!-- 4. Tombol Refresh Log -->
         <div class="filter-col" style="display:flex;align-items:flex-end">
-          <button type="button" class="btn btn-ghost btn-noc-icon" onclick="changeUnit()" title="Segarkan Data Log" aria-label="Segarkan Log" style="height:28px;width:28px">
+          <button type="button" class="btn btn-ghost btn-noc-icon" onclick="changeUnit()" title="Refresh Log" aria-label="Segarkan Log" style="height:28px;width:28px">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
           </button>
         </div>
@@ -4001,12 +4001,12 @@ div[style*="position: fixed"] .card {
       <button type="button" class="btn btn-ghost btn-sm modal-close" onclick="closeAddSslPathModal()" style="font-size:18px;line-height:1;padding:2px 8px;cursor:pointer" aria-label="Tutup">&times;</button>
     </div>
     <p style="font-size:12px;color:var(--dim);margin:0 0 18px;line-height:1.5">
-      Path berkas sertifikat akan disimpan di <code class="mono">/etc/pantau/custom_ssl.conf</code>.
+      Path file sertifikat akan disimpan di <code class="mono">/etc/pantau/custom_ssl.conf</code>.
     </p>
     <form method="post" action="/servers/{{ server.id }}/ssl/add-path" id="add-ssl-path-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <div style="margin-bottom:18px">
-        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Path Berkas Sertifikat (.pem / .crt) *</label>
+        <label style="font-size:12px;color:var(--dim);display:block;margin-bottom:4px">Path File Sertifikat (.pem / .crt) *</label>
         <input type="text" name="path" required placeholder="Contoh: /etc/nginx/ssl/example.com.crt"
                style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:13px;font-family:monospace">
         <span style="font-size:11px;color:var(--dim);margin-top:3px;display:block">Gunakan path absolut. Berkas harus sudah ada di filesystem server.</span>
@@ -4090,7 +4090,7 @@ div[style*="position: fixed"] .card {
 
     <form id="term-unlock-form" data-no-loading onsubmit="submitTerminalUnlock(event)">
       <div style="margin-bottom:14px">
-        <label for="term-unlock-pwd" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Kata Sandi Akun Pengguna:</label>
+        <label for="term-unlock-pwd" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Password Akun User:</label>
         <input type="password" id="term-unlock-pwd" required autocomplete="current-password" placeholder="Masukkan kata sandi login Anda" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
       </div>
 
@@ -4136,14 +4136,14 @@ div[style*="position: fixed"] .card {
     </div>
     
     <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
-      Akses File Manager memberikan wewenang <strong>root penuh</strong> untuk melihat dan memanipulasi berkas sistem klien. Masukkan kata sandi akun Anda untuk membuka sesi.
+      Akses File Manager memberikan wewenang <strong>root penuh</strong> untuk melihat dan memanipulasi file sistem klien. Masukkan kata sandi akun Anda untuk membuka sesi.
     </p>
 
     <div id="fm-unlock-error" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 12px;margin-bottom:14px;color:var(--red);font-size:12px;line-height:1.4"></div>
 
     <form id="fm-unlock-form" data-no-loading onsubmit="submitFileManagerUnlock(event)">
       <div style="margin-bottom:14px">
-        <label for="fm-unlock-pwd" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Kata Sandi Akun Pengguna:</label>
+        <label for="fm-unlock-pwd" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Password Akun User:</label>
         <input type="password" id="fm-unlock-pwd" required autocomplete="current-password" placeholder="Masukkan kata sandi login Anda" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
       </div>
 
@@ -4163,7 +4163,7 @@ div[style*="position: fixed"] .card {
 
       <div style="margin-bottom:18px">
         <label for="fm-unlock-reason" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Tujuan / Alasan Akses (Opsional, untuk audit log):</label>
-        <input type="text" id="fm-unlock-reason" placeholder="Contoh: Pemeliharaan berkas konfigurasi" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
+        <input type="text" id="fm-unlock-reason" placeholder="Contoh: Pemeliharaan file konfigurasi" style="width:100%;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;box-sizing:border-box">
       </div>
 
       <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center">
@@ -4481,7 +4481,7 @@ function initServicesTabPagination() {
   if (document.getElementById('net-table') && !_servicesTabPagination['net']) {
     _servicesTabPagination['net'] = attachTablePagination('#net-table', { unitLabel: 'antarmuka', defaultLimit: 10, pageSizeOptions: [10, 25, 'all'] });
   }
-  // 14. Tab Spesifikasi (Perangkat Penyimpanan)
+  // 14. Tab Spesifikasi (Perangkat Storage / Disk)
   if (document.getElementById('spec-disks-table') && !_servicesTabPagination['spec-disks']) {
     _servicesTabPagination['spec-disks'] = attachTablePagination('#spec-disks-table', { unitLabel: 'disk', defaultLimit: 10, pageSizeOptions: [10, 25, 'all'] });
   }
@@ -5699,7 +5699,7 @@ async function terminateSession(sid, tty, username, btn) {
   const ok = await showConfirmModal({
     title: isEn ? 'Terminate Active Session' : 'Putus Sesi Terminal Aktif',
     target: tty + promptUser,
-    message: isEn ? 'Force terminate this active terminal session immediately.' : 'Putus paksa sesi terminal aktif ini segera.',
+    message: isEn ? 'Force terminate this active terminal session immediately.' : 'Terminate session terminal aktif ini segera.',
     btnText: isEn ? 'Terminate Session' : 'Putus Sesi',
     btnClass: 'btn-danger',
     iconType: 'danger',
@@ -6141,8 +6141,8 @@ async function submitFirewallAction(action, btn) {
   let btnClass = 'btn-danger';
   let iconType = 'danger';
   if (action === 'reload') {
-    title = isEn ? 'Reload Firewall' : 'Muat Ulang Firewall';
-    promptText = isEn ? 'Reload firewall configuration?' : 'Muat ulang konfigurasi aturan firewall.';
+    title = isEn ? 'Reload Firewall' : 'Reload Firewall';
+    promptText = isEn ? 'Reload firewall configuration?' : 'Reload konfigurasi aturan firewall.';
     btnClass = 'btn-primary';
     iconType = 'primary';
   } else if (action === 'disable') {
@@ -6160,7 +6160,7 @@ async function submitFirewallAction(action, btn) {
     title: title,
     target: 'UFW Firewall',
     message: promptText,
-    btnText: action === 'disable' ? 'Nonaktifkan' : (action === 'enable' ? 'Aktifkan' : 'Muat Ulang'),
+    btnText: action === 'disable' ? 'Nonaktifkan' : (action === 'enable' ? 'Aktifkan' : 'Reload'),
     btnClass: btnClass,
     iconType: iconType,
     badge: 'FIREWALL'
@@ -6377,7 +6377,7 @@ async function submitSslRemovePath(path, btn) {
     target: path,
     message: isEn
       ? ('Remove this certificate path from active SSL monitoring.<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Scope Notice:</strong> This action only stops SSL expiration monitoring in Pantau Server. The actual certificate files on the client Linux host are NOT deleted.</div>')
-      : ('Cabut jalur sertifikat ini dari daftar pengawasan kedaluwarsa SSL.<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Pemberitahuan Batas Lingkup:</strong> Tindakan ini hanya menghentikan pemantauan di dashboard Pantau Server. Berkas sertifikat asli pada sistem operasi server klien TIDAK dihapus.</div>'),
+      : ('Lepas jalur sertifikat ini dari daftar pengawasan kedaluwarsa SSL.<br><br><div style="padding:8px 10px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:12px;line-height:1.45;color:var(--text);margin-top:6px"><strong>Pemberitahuan Batas Lingkup:</strong> Tindakan ini hanya menghentikan pemantauan di dashboard Pantau Server. Berkas sertifikat asli pada sistem operasi server klien TIDAK dihapus.</div>'),
     btnText: isEn ? 'Remove from Monitoring' : 'Cabut dari Pantauan',
     btnClass: 'btn-warning',
     iconType: 'warning',
@@ -7776,7 +7776,7 @@ async function submitTerminalUnlock(e) {
     term.connect();
   } catch (err) {
     if (errBox) {
-      errBox.textContent = err.message || 'Gagal memverifikasi kata sandi';
+      errBox.textContent = err.message || 'Gagal memverifikasi password';
       errBox.style.display = 'block';
     }
   } finally {
@@ -7882,7 +7882,7 @@ async function submitFileManagerUnlock(e) {
     window.open(`/servers/${sid}/files`, '_blank');
   } catch (err) {
     if (errBox) {
-      errBox.textContent = err.message || 'Gagal memverifikasi kata sandi';
+      errBox.textContent = err.message || 'Gagal memverifikasi password';
       errBox.style.display = 'block';
     }
   } finally {
@@ -8528,7 +8528,7 @@ function renderProblemsTab(level, openList, histList) {
         } else if (p.action === 'reset_platform' && CAN_SERVICES) {
           toolsHtml += `<button type="button" class="btn btn-primary btn-sm" onclick="resetPlatformAuto(${SID}, this)" title="${isEn ? 'Sync platform configuration to Auto Detect' : 'Sinkronkan konfigurasi platform ke Auto Deteksi'}" aria-label="Auto Platform"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></button>`;
         } else if (p.action === 'terminate_session' && p.tty && (CAN_USERS_SYS || CAN_SERVICES)) {
-          toolsHtml += `<button type="button" class="btn btn-danger btn-sm" onclick="terminateSession(${SID}, '${escapeHtml(p.tty)}', '${escapeHtml(p.session_user || '')}', this)" title="${isEn ? 'Force terminate active remote session ' + escapeHtml(p.tty) : 'Putus paksa sesi remote ' + escapeHtml(p.tty)}" aria-label="Putus Sesi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></button>`;
+          toolsHtml += `<button type="button" class="btn btn-danger btn-sm" onclick="terminateSession(${SID}, '${escapeHtml(p.tty)}', '${escapeHtml(p.session_user || '')}', this)" title="${isEn ? 'Force terminate active remote session ' + escapeHtml(p.tty) : 'Terminate session remote ' + escapeHtml(p.tty)}" aria-label="Putus Sesi"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></button>`;
         }
 
         if (p.acknowledged_by || isIgnored) {
@@ -8778,7 +8778,7 @@ function formatActionRowI18n(a, isEn) {
       'Hapus Pengguna': 'Delete User',
       'Putus Sesi Terminal': 'Terminate Terminal Session',
       'Hentikan Proses (Kill)': 'Kill Process',
-      'Muat Ulang Service': 'Reload Service',
+      'Reload Service': 'Reload Service',
       'Aktifkan Boot (Systemd)': 'Enable Boot (Systemd)',
       'Nonaktifkan Boot (Systemd)': 'Disable Boot (Systemd)',
       'Restart Service': 'Restart Service',
@@ -8813,17 +8813,17 @@ function formatActionRowI18n(a, isEn) {
       'Hapus Cron Job': 'Delete Cron Job',
       'Aktifkan Firewall': 'Enable Firewall',
       'Nonaktifkan Firewall': 'Disable Firewall',
-      'Muat Ulang Firewall': 'Reload Firewall',
+      'Reload Firewall': 'Reload Firewall',
       'Aturan Port Firewall': 'Firewall Port Rule',
       'Tambah Path SSL': 'Add SSL Path',
       'Hapus Path SSL': 'Remove SSL Path',
-      'Simpan Berkas': 'Save File',
-      'Unggah Berkas': 'Upload File',
-      'Hapus Berkas': 'Delete File',
+      'Simpan File': 'Save File',
+      'Upload File': 'Upload File',
+      'Hapus File': 'Delete File',
       'Buat Folder': 'Create Folder',
-      'Ubah Nama Berkas': 'Rename File',
-      'Ubah Izin Berkas': 'Change File Permissions',
-      'Ubah Pemilik Berkas': 'Change File Owner'
+      'Ubah Nama File': 'Rename File',
+      'Ubah Permissions File': 'Change File Permissions',
+      'Ubah Owner File': 'Change File Owner'
     };
     if (actMap[act]) act = actMap[act];
     else act = getServicesI18nText(act, true);
@@ -9252,7 +9252,7 @@ function patch(data) {
       fmBtn.style.opacity = '';
       fmBtn.style.cursor = '';
       fmBtn.disabled = false;
-      fmBtn.title = isEnHero ? 'Explore and manage server files' : 'Jelajahi dan kelola berkas server';
+      fmBtn.title = isEnHero ? 'Explore and manage server files' : 'Jelajahi dan kelola file server';
       fmBtn.dataset.i18nTitle = 'fm_tooltip';
     }
   }
@@ -10071,7 +10071,7 @@ function renderSys(data) {
         const tbody = tblDisks.querySelector('tbody');
         if (tbody) {
           if (hs.disks.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="empty-msg" style="padding:12px">Tidak ada data perangkat penyimpanan.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-msg" style="padding:12px">Tidak ada data perangkat storage / disk.</td></tr>';
           } else {
             tbody.innerHTML = hs.disks.map(d => {
               const sm = d.smart || {};
@@ -10253,7 +10253,7 @@ function renderSys(data) {
         for (const s of a.sessions) {
           if (s.tty) {
             const ttyEsc = escHtml(s.tty);
-            actions += ' <button type="button" class="btn btn-danger btn-sm btn-noc-icon" title="' + (isEn ? ('Force terminate session ' + ttyEsc + ' (' + userEsc + ')') : ('Putus paksa sesi ' + ttyEsc + ' (' + userEsc + ')')) + '" aria-label="Putus Sesi" onclick="terminateSession(' + SID + ', \'' + ttyEsc + '\', \'' + userEsc + '\', this)">' + svgLogout + '</button>';
+            actions += ' <button type="button" class="btn btn-danger btn-sm btn-noc-icon" title="' + (isEn ? ('Force terminate session ' + ttyEsc + ' (' + userEsc + ')') : ('Terminate session ' + ttyEsc + ' (' + userEsc + ')')) + '" aria-label="Putus Sesi" onclick="terminateSession(' + SID + ', \'' + ttyEsc + '\', \'' + userEsc + '\', this)">' + svgLogout + '</button>';
           }
         }
       }
@@ -11730,7 +11730,7 @@ async function clearPkgCache(pkgName) {
   const ok = await showConfirmModal({
     title: 'Bersihkan Cache Package',
     target: pkgName,
-    message: `Bersihkan berkas deb sementara dalam cache arsip untuk package ${pkgName}.`,
+    message: `Bersihkan file deb sementara dalam cache arsip untuk package ${pkgName}.`,
     btnText: 'Bersihkan Cache',
     btnClass: 'btn-warning',
     iconType: 'warning',

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token }}">
 <title>{% block title %}Pantau Server{% endblock %}</title>
-<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.145' }}">
+<link rel="stylesheet" href="/static/css/pantau-noc.css?v={{ app_version or '4.8.146' }}">
 {% block extra_head %}{% endblock %}
 <script>
 (function() {
@@ -2576,7 +2576,7 @@ body.show-alert-banner .main{padding-top:72px}
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;align-items:center;margin-bottom:6px">
-      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.145' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
+      <div style="font-size:11px;color:var(--dim)">v{{ app_version or '4.8.146' }} · UTC <span id="clockUtc" style="display:inline"></span></div>
     </div>
     {% if user %}
     <div style="margin-bottom:6px;line-height:1.4">
@@ -3550,7 +3550,7 @@ function getAlertGroupDesc(key, firstMsg) {
     return 'Service sistem ' + key.split(':')[1] + ' dilaporkan terhenti (down) atau mengalami kegagalan proses.';
   }
   if (key && key.startsWith('disk_ro:')) {
-    return 'Sistem berkas partisi disk ' + (key.split(':')[1] || '') + ' terkunci dalam mode Read-Only akibat proteksi kernel atau kegagalan I/O storage. Seluruh operasi tulis ditolak.';
+    return 'Filesystem partisi disk ' + (key.split(':')[1] || '') + ' terkunci dalam mode Read-Only akibat proteksi kernel atau kegagalan I/O storage. Seluruh operasi tulis ditolak.';
   }
   if (key === 'ram_critical') {
     return 'Penggunaan memori RAM telah mendekati batas maksimal sistem.';
@@ -3562,7 +3562,7 @@ function getAlertGroupDesc(key, firstMsg) {
     return 'Beban pemrosesan CPU telah mencapai tingkat saturasi jenuh secara berkelanjutan.';
   }
   if (key && key.startsWith('disk_critical:')) {
-    return 'Ruang penyimpanan disk pada partisi ' + (key.split(':')[1] || '') + ' hampir habis.';
+    return 'Kapasitas disk/storage pada partisi ' + (key.split(':')[1] || '') + ' hampir habis.';
   }
   return firstMsg || 'Terdeteksi insiden kritis yang memerlukan penanganan operator.';
 }
@@ -4315,13 +4315,13 @@ function renderProblemDetailModal(p) {
     } else if (p.key.startsWith('disk_')) {
       causeText = isEn
         ? `Storage partition is nearly full (${_esc(pMsg)}).`
-        : `Penyimpanan partisi disk hampir penuh (${_esc(p.message)}).`;
+        : `Storage partisi disk hampir penuh (${_esc(p.message)}).`;
       impactText = isEn
         ? 'Applications cannot write new files, databases risk read-only state or crash, logging halts.'
-        : 'Aplikasi tidak dapat menulis berkas baru, database berisiko read-only atau crash.';
+        : 'Aplikasi tidak dapat menulis file baru, database berisiko read-only atau crash.';
       recoList = isEn
         ? ['Find largest directories: sudo du -xh --max-depth=2 / | sort -rh | head -15', 'Vacuum journal logs: sudo journalctl --vacuum-size=200M', 'Clean APT package cache: sudo apt clean']
-        : ['Periksa direktori terbesar: sudo du -xh --max-depth=2 / | sort -rh | head -15', 'Bersihkan log systemd lama: sudo journalctl --vacuum-size=200M', 'Bersihkan cache packages: sudo apt clean'];
+        : ['Periksa directory terbesar: sudo du -xh --max-depth=2 / | sort -rh | head -15', 'Bersihkan log systemd lama: sudo journalctl --vacuum-size=200M', 'Bersihkan cache packages: sudo apt clean'];
       cmdList = ['df -h', 'sudo du -xh --max-depth=2 / | sort -rh | head -15', 'sudo journalctl --disk-usage'];
     } else if (['security_danger', 'failed_logins'].includes(p.key)) {
       causeText = isEn
@@ -4578,10 +4578,10 @@ setInterval(alertFetch, 5000);
       <input type="text" id="guardrail-name-input" class="form-control" autocomplete="off" placeholder="Ketik persis nama host" style="width:100%;padding:7px 10px;font-size:12.5px;background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:6px;color:var(--input-text, #fff);font-family:var(--font-mono)">
     </div>
 
-    <!-- Input Verifikasi Kata Sandi Akun Operator -->
+    <!-- Input Verifikasi Password Akun Operator -->
     <div id="guardrail-pwd-group" style="display:none;margin-bottom:12px">
       <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);margin-bottom:4px">
-        Kata Sandi Akun Operator
+        Password Akun Operator
       </label>
       <input type="password" id="guardrail-pwd-input" class="form-control" placeholder="Masukkan kata sandi akun Anda" autocomplete="current-password" style="width:100%;padding:7px 10px;font-size:12.5px;background:var(--input-bg, #0d1117);border:1px solid var(--modal-border, #30363d);border-radius:6px;color:var(--input-text, #fff)">
     </div>

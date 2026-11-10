@@ -354,6 +354,26 @@ Grafik riwayat kinerja 24h, 7d, atau 30d menggunakan downsampling SQL adaptif di
 
 # Bagian II: Catatan Riwayat Perubahan Versi (Changelog)
 
+## Versi 4.8.146
+
+- **Tipe Rilis:** Penuntasan Menyeluruh Istilah Teknis Global Standar Komputer & Sysadmin di Seluruh Modul Pantau Server (*Complete End-to-End Technical Standardization of Global Sysadmin/NOC Nomenclature*)
+- **Fokus Utama:** Menyisir dan menuntaskan eliminasi terjemahan harfiah yang kaku pada modul File Manager, User Activity, Profile, Master Control, Terminal, dan Router Backend:
+  1. **Standardisasi File Manager & Operasi File:**
+     - Mengubah seluruh istilah "berkas", "unduh", "unggah", "direktori", "cadangan" menjadi istilah standar dunia komputer: **`File`**, **`Download`**, **`Upload`**, **`Directory / Folder`**, **`Backup`**, **`Restore`**.
+     - Memperbarui dialog, modal editor, placeholder input, notifikasi toast, dan batasan ukuran (*Maksimal ukuran file 100 MB*).
+  2. **Standardisasi Autentikasi & Akun (Password vs Kata Sandi):**
+     - Mengubah seluruh istilah "kata sandi" / "sandi" di modul Profile, Users, Sudo Step-up Terminal/File Manager, dan Auth menjadi **`Password`** (`Password Saat Ini`, `Password Baru`, `Konfirmasi Password`, `Reset Password`, `Password Akun User`, `Auth Failure`).
+  3. **Standardisasi Storage, Disk, & Database:**
+     - Menyelaraskan istilah "penyimpanan" dan "basis data" pada tabel server, spesifikasi perangkat, master control, dan guardrail konfirmasi menjadi **`Disk / Storage`** dan **`Database`** (`Perangkat Storage / Disk`, `Partisi Disk & Laju I/O Storage`, `Alokasi Storage Tabel Database`, `Database MySQL`).
+  4. **Standardisasi Kontrol Sesi & Firewall:**
+     - Mengubah "putus paksa sesi" menjadi **`Terminate session`** / **`Kill session`** pada tabel sesi remote aktif TTY/PTS.
+     - Mengubah aksi "muat ulang" firewall/service menjadi **`Reload Firewall`** / **`Reload Service`**.
+     - Mengubah "segarkan" log/proses menjadi **`Refresh Log`** / **`Refresh`**.
+  5. **Kompilasi, Restart Layanan, & Sinkronisasi SemVer 7 Berkas:**
+     - Sinkronisasi versi SemVer `4.8.146` pada 7 berkas inti repositori.
+     - Kompilasi sintaksis Python (`py_compile`), template Jinja2, dan skrip Bash (`bash -n`) lolos 100%.
+     - Distribusi agen klien ke `/opt/pantau/agent/agent_pantau.py` dan restart daemon `pantau-server.service` serta `agent_pantau.service` berstatus aktif normal (*running*).
+
 ## Versi 4.8.145
 
 - **Tipe Rilis:** Penegakan Komprehensif Nomenklatur & Terminologi Teknis Standar Sysadmin/NOC di Seluruh Lapisan Aplikasi Pantau Server (*Comprehensive Enforcement of Global Sysadmin/NOC Technical Nomenclature Across All Application Layers*)

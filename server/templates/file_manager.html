@@ -8,7 +8,7 @@
       <span class="mono copyable-ip" style="font-size:12px;margin-left:8px" onclick="copyIp('{{ server.ip_address }}', event)" title="Klik untuk salin IP">{{ server.ip_address }}</span>
     </h2>
     <div style="font-size:12px;color:var(--dim);margin-top:2px">
-      Eksplorasi, kelola, dan sunting berkas server secara langsung lewat protokol aman.
+      Eksplorasi, kelola, dan sunting file server secara langsung lewat protokol aman.
     </div>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
@@ -125,10 +125,10 @@
         <button type="button" class="fm-nav-btn" id="fm-btn-up" onclick="fmGoUp()" title="Ke Folder Induk" aria-label="Ke Folder Induk">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
         </button>
-        <button type="button" class="fm-nav-btn" id="fm-btn-home" onclick="fmGoHome()" title="Ke Direktori Root (/)" aria-label="Root">
+        <button type="button" class="fm-nav-btn" id="fm-btn-home" onclick="fmGoHome()" title="Ke Root Directory (/)" aria-label="Root">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
         </button>
-        <button type="button" class="fm-nav-btn" onclick="fmRefresh()" title="Muat Ulang Direktori" aria-label="Muat Ulang">
+        <button type="button" class="fm-nav-btn" onclick="fmRefresh()" title="Refresh Directory" aria-label="Reload">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
         </button>
       </div>
@@ -138,7 +138,7 @@
         <div id="fm-breadcrumbs" class="fm-breadcrumbs"></div>
         <form id="fm-path-form" class="fm-path-form" onsubmit="fmSubmitPathInput(event)">
           <span style="font-family:monospace;color:var(--blue);font-weight:600">&gt;</span>
-          <input type="text" id="fm-path-input" class="fm-path-input" placeholder="/path/ke/direktori" autocomplete="off" spellcheck="false">
+          <input type="text" id="fm-path-input" class="fm-path-input" placeholder="/path/ke/directory" autocomplete="off" spellcheck="false">
           <button type="button" class="fm-address-toggle" onclick="fmTogglePathInput(false)" title="Batal">&times;</button>
         </form>
         <button type="button" class="fm-address-toggle" id="fm-address-pencil" onclick="fmTogglePathInput(true)" title="Ketik / Tempel Path Manual" aria-label="Sunting Path">
@@ -149,7 +149,7 @@
 
     <!-- Action & Search Toolbar -->
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input type="text" id="fm-filter" class="fm-search-input" oninput="fmFilterItems(this.value)" placeholder="Filter berkas di folder ini..." {% if not is_online %}disabled title="Server offline"{% endif %}>
+      <input type="text" id="fm-filter" class="fm-search-input" oninput="fmFilterItems(this.value)" placeholder="Filter file di folder ini..." {% if not is_online %}disabled title="Server offline"{% endif %}>
       <button type="button" class="btn btn-sm" id="fm-btn-paste" onclick="fmPasteClipboard()" style="display:none;align-items:center;gap:5px;border-color:var(--blue);color:var(--blue)">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
         <span>Tempel</span>
@@ -160,20 +160,20 @@
       </button>
       <button type="button" id="fm-btn-new-file" class="btn btn-sm" onclick="fmOpenNewFile()" style="display:inline-flex;align-items:center;gap:5px" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% endif %}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
-        <span>Berkas Baru</span>
+        <span>File Baru</span>
       </button>
       <button type="button" id="fm-btn-upload" class="btn btn-sm btn-primary" onclick="fmOpenUpload()" style="display:inline-flex;align-items:center;gap:5px" {% if not is_online %}disabled title="Server offline — aksi dinonaktifkan"{% endif %}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        <span>Unggah Berkas</span>
+        <span>Upload File</span>
       </button>
     </div>
   </div>
 
   <!-- Sub-Bar: Item Count & Visual Disk Storage Meter -->
   <div class="fm-status-bar">
-    <div id="fm-stats-info" style="display:flex;align-items:center;gap:6px">Memuat berkas…</div>
+    <div id="fm-stats-info" style="display:flex;align-items:center;gap:6px">Memuat file…</div>
     <div id="fm-disk-info" class="fm-disk-meter" style="display:none">
-      <span>Penyimpanan:</span>
+      <span>Storage:</span>
       <div class="fm-disk-bar"><div class="fm-disk-fill" id="fm-disk-fill" style="width:0%"></div></div>
       <span id="fm-disk-text" style="color:var(--text);font-family:monospace"></span>
     </div>
@@ -230,15 +230,15 @@
   </div>
 </div>
 
-<!-- MODAL: Editor Berkas -->
+<!-- MODAL: File Editor -->
 <div id="fm-editor-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card fm-modal-card-editor" id="fm-editor-card">
     <div class="fm-modal-header">
       <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
-        <span>Editor Berkas:</span>
+        <span>File Editor:</span>
         <code id="fm-editor-path" style="background:var(--card);padding:2px 6px;border-radius:4px;color:var(--blue);word-break:break-all"></code>
         <span id="fm-editor-perms" class="badge badge-muted"></span>
-        <span class="badge badge-info" title="Salinan cadangan otomatis dibuat sebelum file ditimpa">auto .bak</span>
+        <span class="badge badge-info" title="Backup otomatis (.bak) dibuat sebelum file disimpan">auto .bak</span>
         <span id="fm-editor-status" style="font-size:12px;margin-left:8px"></span>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
@@ -258,7 +258,7 @@
             ↺ Pulihkan dari .bak
           </button>
           <button type="button" class="btn btn-sm" onclick="fmReloadEditor()">
-            ↻ Muat Ulang
+            ↻ Reload
           </button>
         </div>
       </div>
@@ -298,21 +298,21 @@
   </div>
 </div>
 
-<!-- MODAL: Unggah Berkas -->
+<!-- MODAL: Upload File -->
 <div id="fm-upload-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card">
     <div class="fm-modal-header">
-      <span id="fm-upload-modal-title">Unggah Berkas ke Server</span>
+      <span id="fm-upload-modal-title">Upload File ke Server</span>
       <button type="button" class="btn btn-ghost" onclick="fmCloseUpload()">&times;</button>
     </div>
     <form id="fm-upload-form" onsubmit="fmSubmitUpload(event)">
       <div class="fm-modal-body">
         <div style="margin-bottom:12px;font-size:13px;color:var(--dim)">
-          Direktori Tujuan: <code id="fm-upload-dest" style="color:var(--blue);font-weight:600"></code>
+          Directory Tujuan: <code id="fm-upload-dest" style="color:var(--blue);font-weight:600"></code>
         </div>
         <div style="border:2px dashed var(--border);padding:24px;border-radius:8px;text-align:center;background:var(--bg)">
           <input type="file" id="fm-upload-input" style="font-size:13px;width:100%" required>
-          <div style="font-size:12px;color:var(--dim);margin-top:8px">Maksimal ukuran berkas 100 MB.</div>
+          <div style="font-size:12px;color:var(--dim);margin-top:8px">Maksimal ukuran file 100 MB.</div>
         </div>
         <div id="fm-upload-progress" style="display:none;margin-top:12px">
           <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
@@ -325,7 +325,7 @@
       </div>
       <div class="fm-modal-footer">
         <button type="button" class="btn btn-ghost" onclick="fmCloseUpload()">Batal</button>
-        <button type="submit" id="fm-upload-submit-btn" class="btn btn-primary">Unggah Sekarang</button>
+        <button type="submit" id="fm-upload-submit-btn" class="btn btn-primary">Upload Sekarang</button>
       </div>
     </form>
   </div>
@@ -377,7 +377,7 @@
   </div>
 </div>
 
-<!-- MODAL: Hapus Berkas/Folder -->
+<!-- MODAL: Hapus File/Folder -->
 <div id="fm-delete-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card" style="border-color:rgba(239,68,68,0.4)">
     <div class="fm-modal-header" style="color:var(--red)">
@@ -385,12 +385,12 @@
       <button type="button" class="btn btn-ghost" onclick="fmCloseDelete()">&times;</button>
     </div>
     <div class="fm-modal-body">
-      <p style="font-size:14px;margin-bottom:10px">Apakah Anda yakin ingin menghapus <span id="fm-delete-type">berkas</span> berikut secara permanen?</p>
+      <p style="font-size:14px;margin-bottom:10px">Apakah Anda yakin ingin menghapus <span id="fm-delete-type">file</span> berikut secara permanen?</p>
       <div style="background:var(--bg);padding:10px 14px;border-radius:6px;border:1px solid var(--border);margin-bottom:14px">
         <code id="fm-delete-path" style="color:var(--red);word-break:break-all;font-size:13px"></code>
       </div>
       <div style="font-size:12px;color:var(--dim)">
-        Tindakan ini tidak dapat dibatalkan. Berkas atau seluruh sub-folder di dalamnya akan dihapus dari server klien.
+        Tindakan ini tidak dapat dibatalkan. File atau seluruh sub-folder di dalamnya akan dihapus dari server klien.
       </div>
       <div id="fm-delete-error" style="display:none;color:var(--red);font-size:12px;margin-top:10px"></div>
     </div>
@@ -401,7 +401,7 @@
   </div>
 </div>
 
-<!-- MODAL: Prompt Buat Baru (Folder/Berkas) -->
+<!-- MODAL: Prompt Buat Baru (Folder/File) -->
 <div id="fm-prompt-modal" class="fm-modal-backdrop" style="display:none">
   <div class="fm-modal-card">
     <div class="fm-modal-header">
@@ -439,7 +439,7 @@
       <div id="fm-bulk-delete-list" style="background:var(--bg);padding:10px 14px;border-radius:6px;border:1px solid var(--border);margin-bottom:14px;max-height:160px;overflow-y:auto;font-family:monospace;font-size:12px;display:flex;flex-direction:column;gap:4px">
       </div>
       <div style="font-size:12px;color:var(--dim)">
-        Tindakan ini tidak dapat dibatalkan. Berkas atau seluruh sub-folder di dalamnya akan dihapus dari server klien.
+        Tindakan ini tidak dapat dibatalkan. File atau seluruh sub-folder di dalamnya akan dihapus dari server klien.
       </div>
       <div id="fm-bulk-delete-error" style="display:none;color:var(--red);font-size:12px;margin-top:10px"></div>
     </div>
@@ -495,14 +495,14 @@
     </div>
     
     <p style="font-size:12.5px;color:var(--dim);margin:0 0 16px 0;line-height:1.5">
-      Sesi File Manager membutuhkan izin otentikasi (sudo step-up) untuk wewenang <strong>root penuh</strong>. Masukkan kata sandi akun Anda untuk membuka sesi.
+      Sesi File Manager membutuhkan izin otentikasi (sudo step-up) untuk wewenang <strong>root penuh</strong>. Masukkan password akun Anda untuk membuka sesi.
     </p>
 
     <div id="fm-page-unlock-error" style="display:none;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);border-radius:6px;padding:8px 12px;margin-bottom:14px;color:var(--red);font-size:12px;line-height:1.4"></div>
 
     <form id="fm-page-unlock-form" data-no-loading onsubmit="submitFmPageUnlock(event)">
       <div style="margin-bottom:14px">
-        <label for="fm-page-unlock-pwd" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Kata Sandi Akun Pengguna:</label>
+        <label for="fm-page-unlock-pwd" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Password Akun User:</label>
         <input type="password" id="fm-page-unlock-pwd" required autocomplete="current-password" placeholder="Masukkan kata sandi login Anda" style="width:100%;padding:8px 12px;background:var(--input-bg, #0d1117);border:1px solid var(--input-border, #30363d);border-radius:6px;color:var(--input-text, var(--text));font-size:13px;box-sizing:border-box">
       </div>
 
@@ -522,7 +522,7 @@
 
       <div style="margin-bottom:18px">
         <label for="fm-page-unlock-reason" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text)">Tujuan / Alasan Akses (Opsional, untuk audit log):</label>
-        <input type="text" id="fm-page-unlock-reason" placeholder="Contoh: Pemeliharaan berkas konfigurasi" style="width:100%;padding:8px 12px;background:var(--input-bg, #0d1117);border:1px solid var(--input-border, #30363d);border-radius:6px;color:var(--input-text, var(--text));font-size:13px;box-sizing:border-box">
+        <input type="text" id="fm-page-unlock-reason" placeholder="Contoh: Pemeliharaan file konfigurasi" style="width:100%;padding:8px 12px;background:var(--input-bg, #0d1117);border:1px solid var(--input-border, #30363d);border-radius:6px;color:var(--input-text, var(--text));font-size:13px;box-sizing:border-box">
       </div>
 
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
@@ -616,7 +616,7 @@ function startFmLeaseCountdown(seconds) {
     if (fmLeaseSecondsLeft <= 0) {
       stopFmLeaseCountdown();
       fmIsUnlocked = 0;
-      showFmPageUnlockModal('Sesi File Manager telah kedaluwarsa. Masukkan kata sandi akun Anda kembali untuk melanjutkan.');
+      showFmPageUnlockModal('Sesi File Manager telah kedaluwarsa. Masukkan password akun Anda kembali untuk melanjutkan.');
       return;
     }
     if (timer) timer.textContent = formatLeaseTime(fmLeaseSecondsLeft);
@@ -682,7 +682,7 @@ async function submitFmPageUnlock(e) {
 
   if (!password) {
     if (errBox) {
-      errBox.textContent = 'Kata sandi akun wajib diisi.';
+      errBox.textContent = 'Password akun wajib diisi.';
       errBox.style.display = 'block';
     }
     return;
@@ -732,7 +732,7 @@ async function lockFileManagerSession() {
   const ok = await showConfirmModal({
     title: 'Kunci Sesi File Manager',
     target: typeof SERVER_NAME !== 'undefined' ? SERVER_NAME : ('Server #' + SID),
-    message: 'Kunci kembali sesi File Manager sekarang. Akses berkas akan memerlukan otentikasi ulang.',
+    message: 'Kunci kembali sesi File Manager sekarang. Akses file akan memerlukan otentikasi ulang.',
     btnText: 'Kunci Sesi',
     btnClass: 'btn-warning',
     iconType: 'warning',
@@ -773,7 +773,7 @@ async function fmFetch(url, options = {}) {
   if (res.status === 423) {
     stopFmLeaseCountdown();
     fmIsUnlocked = 0;
-    showFmPageUnlockModal('Sesi otentikasi File Manager terkunci atau telah kedaluwarsa. Masukkan kata sandi akun untuk membuka sesi.');
+    showFmPageUnlockModal('Sesi otentikasi File Manager terkunci atau telah kedaluwarsa. Masukkan password akun untuk membuka sesi.');
     const err = new Error('Sesi File Manager terkunci (HTTP 423)');
     err.isLocked = true;
     throw err;
@@ -804,7 +804,7 @@ let fmDeleteTarget = null;
 let fmRenameTarget = null;
 
 // ===========================================================================
-// NAVIGASI & LOAD DIREKTORI
+// NAVIGASI & LOAD DIRECTORY
 // ===========================================================================
 function fmUpdateNavButtons() {
   const btnBack = document.getElementById('fm-btn-back');
@@ -880,7 +880,7 @@ function fmSubmitPathInput(e) {
 function fmSortItems(items) {
   const sorted = [...items];
   sorted.sort((a, b) => {
-    // Direktori selalu di atas
+    // Directory selalu di atas
     if (a.is_dir && !b.is_dir) return -1;
     if (!a.is_dir && b.is_dir) return 1;
 
@@ -1095,7 +1095,7 @@ async function fmPasteClipboard() {
     fmLoadDir(fmCurrentPath, false);
   } catch (err) {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    showToast((isEn ? 'Failed to paste file/folder: ' : 'Gagal menempel berkas/folder: ') + err.message, false);
+    showToast((isEn ? 'Failed to paste file/folder: ' : 'Gagal menempel file/folder: ') + err.message, false);
   } finally {
     if (btnPaste) btnPaste.disabled = false;
   }
@@ -1110,7 +1110,7 @@ async function fmLoadDir(path, pushHistory = true) {
   if (!IS_ONLINE) {
     errBanner.textContent = isEn
       ? 'Server is currently offline. File operations are disabled until the server and agent are active.'
-      : 'Server sedang offline. Operasi berkas dinonaktifkan sampai server dan agen aktif.';
+      : 'Server sedang offline. Operasi file dinonaktifkan sampai server dan agen aktif.';
     errBanner.style.display = 'block';
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--dim)">
       ⚠️ ` + (isEn ? 'Server is offline. Ensure agent_pantau service is running.' : 'Server sedang offline. Pastikan service agent_pantau aktif.') + `
@@ -1132,7 +1132,7 @@ async function fmLoadDir(path, pushHistory = true) {
     const data = await res.json();
 
     if (!res.ok || !data.ok) {
-      throw new Error(data.detail || data.error || (isEn ? 'Failed to read directory' : 'Gagal membaca direktori'));
+      throw new Error(data.detail || data.error || (isEn ? 'Failed to read directory' : 'Gagal membaca directory'));
     }
 
     fmCurrentPath = data.current_path || '/';
@@ -1173,7 +1173,7 @@ async function fmLoadDir(path, pushHistory = true) {
     });
 
     const folderWord = isEn ? (dirCount === 1 ? 'folder' : 'folders') : 'folder';
-    const fileWord = isEn ? (fileCount === 1 ? 'file' : 'files') : 'berkas';
+    const fileWord = isEn ? (fileCount === 1 ? 'file' : 'files') : (fileCount === 1 ? 'file' : 'files');
     statsInfo.innerHTML = `<span><strong>${dirCount}</strong> ${folderWord}</span> &bull; <span><strong>${fileCount}</strong> ${fileWord}</span> &bull; <span class="dim">${formatBytes(totalSize)}</span>`;
 
     const diskInfo = document.getElementById('fm-disk-info');
@@ -1198,7 +1198,7 @@ async function fmLoadDir(path, pushHistory = true) {
       fmUpdateNavButtons();
       return;
     }
-    errBanner.textContent = (isEn ? 'Failed to open directory: ' : 'Gagal membuka direktori: ') + err.message;
+    errBanner.textContent = (isEn ? 'Failed to open directory: ' : 'Gagal membuka directory: ') + err.message;
     errBanner.style.display = 'block';
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--red)">
       ⚠️ ${escapeHtml(err.message)}
@@ -1268,7 +1268,7 @@ function fmRenderItems(items) {
   tbody.innerHTML = '';
 
   if (!items || items.length === 0 && fmCurrentPath === '/') {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--dim)">` + (isEn ? 'This directory is empty.' : 'Direktori ini kosong.') + `</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--dim)">` + (isEn ? 'This directory is empty.' : 'Directory ini kosong.') + `</td></tr>`;
     fmUpdateSelectionUI();
     fmUpdateClipboardUI();
     return;
@@ -1339,7 +1339,7 @@ function fmRenderItems(items) {
       <td>${dateStr}</td>
       <td class="col-act fm-actions-cell">
         ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'View & Edit File' : 'Lihat & Edit Berkas'}" onclick="fmOpenFile('${safePath}')">${FM_ICONS.edit}</button>` : ''}
-        ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Download File' : 'Unduh Berkas'}" onclick="fmDownloadFile('${safePath}')">${FM_ICONS.download}</button>` : ''}
+        ${!item.is_dir ? `<button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Download File' : 'Download File'}" onclick="fmDownloadFile('${safePath}')">${FM_ICONS.download}</button>` : ''}
         <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Copy' : 'Salin (Copy)'}" onclick="fmCopySingle('${safePath}')">${FM_ICONS.copy}</button>
         <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Cut' : 'Potong (Cut)'}" onclick="fmCutSingle('${safePath}')">${FM_ICONS.cut}</button>
         <button type="button" class="fm-act-btn" ${!IS_ONLINE ? 'disabled style="opacity:0.35;cursor:not-allowed"' : ''} title="${isEn ? 'Change Permissions & Owner (chmod/chown)' : 'Ubah Hak Akses & Pemilik (chmod/chown)'}" onclick="fmOpenChmod('${safePath}', '${item.mode_octal || '0644'}', '${escapeHtml(item.owner || '')}', '${escapeHtml(item.group || '')}')">${FM_ICONS.chmod}</button>
@@ -1369,7 +1369,7 @@ async function fmOpenFile(filePath) {
 
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   pathEl.textContent = filePath;
-  textarea.value = isEn ? 'Loading file content...' : 'Memuat isi berkas...';
+  textarea.value = isEn ? 'Loading file content...' : 'Memuat isi file...';
   textarea.disabled = true;
   saveBtn.disabled = true;
   statusEl.textContent = '';
@@ -1384,13 +1384,13 @@ async function fmOpenFile(filePath) {
     const data = await res.json();
 
     if (!res.ok || !data.ok) {
-      throw new Error(data.detail || data.error || (isEn ? 'Failed to read file content' : 'Gagal membaca isi berkas'));
+      throw new Error(data.detail || data.error || (isEn ? 'Failed to read file content' : 'Gagal membaca isi file'));
     }
 
     if (data.is_binary) {
       textarea.value = isEn
         ? ('[Binary file / cannot be displayed as text]\n\nSize: ' + formatBytes(data.size || 0))
-        : ('[Berkas biner / tidak dapat ditampilkan sebagai teks]\n\nUkuran: ' + formatBytes(data.size || 0));
+        : ('[File biner / tidak dapat ditampilkan sebagai teks]\n\nUkuran: ' + formatBytes(data.size || 0));
       textarea.disabled = true;
       saveBtn.disabled = true;
       sizeEl.textContent = formatBytes(data.size || 0) + (isEn ? ' (Binary)' : ' (Biner)');
@@ -1413,7 +1413,7 @@ async function fmOpenFile(filePath) {
       modal.style.display = 'none';
       return;
     }
-    textarea.value = (isEn ? '[Failed to open file: ' : '[Gagal membuka berkas: ') + err.message + ']';
+    textarea.value = (isEn ? '[Failed to open file: ' : '[Gagal membuka file: ') + err.message + ']';
     textarea.disabled = true;
     saveBtn.disabled = true;
     statusEl.innerHTML = `<span style="color:var(--red)">${escapeHtml(err.message)}</span>`;
@@ -1481,7 +1481,7 @@ async function fmSaveFile() {
 
     const data = await res.json();
     if (!res.ok || !data.ok) {
-      throw new Error(data.detail || data.error || (isEn ? 'Failed to save file' : 'Gagal menyimpan berkas'));
+      throw new Error(data.detail || data.error || (isEn ? 'Failed to save file' : 'Gagal menyimpan file'));
     }
 
     statusEl.innerHTML = '<span style="color:var(--green)">' + (isEn ? '✓ Saved' : '✓ Tersimpan') + '</span>';
@@ -1500,10 +1500,10 @@ async function fmRestoreBak() {
   if (!fmEditingPath) return;
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const ok = await showConfirmModal({
-    title: isEn ? 'Restore Backup File (.bak)' : 'Pulihkan Cadangan Berkas (.bak)',
+    title: isEn ? 'Restore Backup File (.bak)' : 'Restore Backup File (.bak)',
     target: fmEditingPath,
-    message: isEn ? 'Restore the content of this file to its latest .bak backup copy.' : 'Kembalikan isi berkas ini ke salinan cadangan (.bak) terakhir.',
-    btnText: isEn ? 'Restore File' : 'Pulihkan Berkas',
+    message: isEn ? 'Restore the content of this file to its latest .bak backup copy.' : 'Kembalikan isi file ini ke salinan cadangan (.bak) terakhir.',
+    btnText: isEn ? 'Restore File' : 'Restore File',
     btnClass: 'btn-warning',
     iconType: 'warning',
     badge: 'RESTORE'
@@ -1521,7 +1521,7 @@ async function fmRestoreBak() {
     const textarea = document.getElementById('fm-editor-text');
     textarea.value = data.content || '';
     await fmSaveFile();
-    showToast(isEn ? 'File successfully restored from .bak backup!' : 'Berkas berhasil dipulihkan dari cadangan .bak!', true);
+    showToast(isEn ? 'File successfully restored from .bak backup!' : 'File berhasil di-restore dari backup .bak!', true);
   } catch (err) {
     showToast((isEn ? 'Failed to restore: ' : 'Gagal memulihkan: ') + err.message, false);
   }
@@ -1542,28 +1542,28 @@ document.getElementById('fm-editor-text').addEventListener('keydown', function(e
 });
 
 // ===========================================================================
-// UNDUH (DOWNLOAD) BERKAS
+// DOWNLOAD FILE
 // ===========================================================================
 function fmDownloadFile(filePath) {
   window.open(`/api/servers/${SID}/files/download?path=` + encodeURIComponent(filePath), '_blank');
 }
 
 // ===========================================================================
-// UNGGAH (UPLOAD) BERKAS
+// UPLOAD FILE
 // ===========================================================================
 function fmOpenUpload() {
   if (!IS_ONLINE) {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    showToast(isEn ? 'Cannot upload file: Server is currently offline.' : 'Tidak dapat mengunggah berkas: Server sedang offline.', false);
+    showToast(isEn ? 'Cannot upload file: Server is currently offline.' : 'Tidak dapat meng-upload file: Server sedang offline.', false);
     return;
   }
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   const titleEl = document.getElementById('fm-upload-modal-title');
-  if (titleEl) titleEl.textContent = isEn ? '↑ Upload File to Server' : '↑ Unggah Berkas ke Server';
+  if (titleEl) titleEl.textContent = isEn ? '↑ Upload File to Server' : '↑ Upload File ke Server';
   const submitBtn = document.getElementById('fm-upload-submit-btn');
   if (submitBtn) {
     submitBtn.disabled = false;
-    submitBtn.textContent = isEn ? 'Upload Now' : 'Unggah Sekarang';
+    submitBtn.textContent = isEn ? 'Upload Now' : 'Upload Sekarang';
   }
   document.getElementById('fm-upload-dest').textContent = fmCurrentPath;
   document.getElementById('fm-upload-input').value = '';
@@ -1611,7 +1611,7 @@ async function fmSubmitUpload(e) {
 
     const data = await res.json();
     if (!res.ok || !data.ok) {
-      throw new Error(data.detail || data.error || (isEn ? 'Failed to upload file' : 'Gagal mengunggah berkas'));
+      throw new Error(data.detail || data.error || (isEn ? 'Failed to upload file' : 'Gagal meng-upload file'));
     }
 
     progressBar.style.width = '100%';
@@ -1759,7 +1759,7 @@ async function fmSubmitRename(e) {
 function fmOpenDelete(path, isDir) {
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
   fmDeleteTarget = path;
-  document.getElementById('fm-delete-type').textContent = isDir ? 'folder' : (isEn ? 'file' : 'berkas');
+  document.getElementById('fm-delete-type').textContent = isDir ? 'folder' : ('file');
   document.getElementById('fm-delete-path').textContent = path;
   document.getElementById('fm-delete-error').style.display = 'none';
   document.getElementById('fm-delete-btn').disabled = false;
@@ -1800,7 +1800,7 @@ async function fmSubmitDelete() {
 }
 
 // ===========================================================================
-// PROMPT: BUAT FOLDER & BERKAS BARU
+// PROMPT: BUAT FOLDER & FILE BARU
 // ===========================================================================
 function fmOpenNewFolder() {
   if (!IS_ONLINE) {
@@ -1840,19 +1840,19 @@ function fmOpenNewFolder() {
 function fmOpenNewFile() {
   if (!IS_ONLINE) {
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-    showToast(isEn ? 'Cannot create file: Server is currently offline.' : 'Tidak dapat membuat berkas: Server sedang offline.', false);
+    showToast(isEn ? 'Cannot create file: Server is currently offline.' : 'Tidak dapat membuat file: Server sedang offline.', false);
     return;
   }
   const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || ((localStorage.getItem('app_lang') || 'id') === 'en');
-  document.getElementById('fm-prompt-title').textContent = isEn ? 'Create New File' : 'Buat Berkas Baru';
-  document.getElementById('fm-prompt-label').textContent = isEn ? 'File Name:' : 'Nama Berkas:';
+  document.getElementById('fm-prompt-title').textContent = isEn ? 'Create New File' : 'Buat File Baru';
+  document.getElementById('fm-prompt-label').textContent = isEn ? 'File Name:' : 'Nama File:';
   document.getElementById('fm-prompt-dest').textContent = fmCurrentPath;
   const inp = document.getElementById('fm-prompt-input');
   inp.value = '';
   document.getElementById('fm-prompt-error').style.display = 'none';
   const subBtn = document.getElementById('fm-prompt-submit-btn');
   subBtn.disabled = false;
-  subBtn.textContent = isEn ? 'Create File' : 'Buat Berkas';
+  subBtn.textContent = isEn ? 'Create File' : 'Buat File';
 
   fmPromptCallback = async (name) => {
     const fullPath = fmCurrentPath.replace(/\/+$/, '') + '/' + name.trim();
@@ -1863,7 +1863,7 @@ function fmOpenNewFile() {
       body: JSON.stringify({ path: fullPath })
     });
     const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || (isEn ? 'Failed to create file' : 'Gagal membuat berkas'));
+    if (!res.ok || !data.ok) throw new Error(data.detail || data.error || (isEn ? 'Failed to create file' : 'Gagal membuat file'));
     fmClosePrompt();
     await fmLoadDir(fmCurrentPath, false);
     fmOpenFile(fullPath);
@@ -2039,7 +2039,7 @@ document.addEventListener('keydown', (e) => {
 
   const isCtrl = e.ctrlKey || e.metaKey;
 
-  // Ctrl+A: Pilih semua berkas & folder dalam direktori saat ini
+  // Ctrl+A: Pilih semua file & folder dalam directory saat ini
   if (isCtrl && e.key.toLowerCase() === 'a') {
     e.preventDefault();
     fmToggleSelectAll(true);
@@ -2058,7 +2058,7 @@ document.addEventListener('keydown', (e) => {
       fmCutSelected();
     }
   }
-  // Ctrl+V: Tempel item dari clipboard ke direktori saat ini
+  // Ctrl+V: Tempel item dari clipboard ke directory saat ini
   else if (isCtrl && e.key.toLowerCase() === 'v') {
     if (fmClipboard && fmClipboard.items && fmClipboard.items.length > 0) {
       e.preventDefault();
@@ -2097,20 +2097,20 @@ function updateFmTooltips(isEn) {
     'fm-btn-back': { id: 'Kembali', en: 'Back' },
     'fm-btn-forward': { id: 'Maju', en: 'Forward' },
     'fm-btn-up': { id: 'Ke Folder Induk', en: 'To Parent Folder' },
-    'fm-btn-home': { id: 'Ke Direktori Root (/)', en: 'To Root Directory (/)' },
+    'fm-btn-home': { id: 'Ke Root Directory (/)', en: 'To Root Directory (/)' },
     'fm-address-pencil': { id: 'Ketik / Tempel Path Manual', en: 'Type / Paste Path Manually' },
     'fm-btn-new-folder': { id: !IS_ONLINE ? 'Server offline — aksi dinonaktifkan' : 'Buat Folder Baru', en: !IS_ONLINE ? 'Server offline — actions disabled' : 'Create New Folder' },
-    'fm-btn-new-file': { id: !IS_ONLINE ? 'Server offline — aksi dinonaktifkan' : 'Buat Berkas Baru', en: !IS_ONLINE ? 'Server offline — actions disabled' : 'Create New File' },
-    'fm-btn-upload': { id: !IS_ONLINE ? 'Server offline — aksi dinonaktifkan' : 'Unggah Berkas ke Server', en: !IS_ONLINE ? 'Server offline — actions disabled' : 'Upload File to Server' },
+    'fm-btn-new-file': { id: !IS_ONLINE ? 'Server offline — aksi dinonaktifkan' : 'Buat File Baru', en: !IS_ONLINE ? 'Server offline — actions disabled' : 'Create New File' },
+    'fm-btn-upload': { id: !IS_ONLINE ? 'Server offline — aksi dinonaktifkan' : 'Upload File ke Server', en: !IS_ONLINE ? 'Server offline — actions disabled' : 'Upload File to Server' },
     'fm-editor-fs-btn': { id: 'Layar Penuh (Toggle Fullscreen)', en: 'Fullscreen (Toggle Fullscreen)' },
-    'fm-filter': { id: !IS_ONLINE ? 'Server offline' : 'Filter berkas di folder ini...', en: !IS_ONLINE ? 'Server offline' : 'Filter files in this folder...' }
+    'fm-filter': { id: !IS_ONLINE ? 'Server offline' : 'Filter file di folder ini...', en: !IS_ONLINE ? 'Server offline' : 'Filter files in this folder...' }
   };
   for (const [id, t] of Object.entries(map)) {
     const el = document.getElementById(id);
     if (el) el.title = isEn ? t.en : t.id;
   }
   const refreshBtn = document.querySelector('.fm-nav-btn[onclick="fmRefresh()"]');
-  if (refreshBtn) refreshBtn.title = isEn ? 'Refresh Directory' : 'Muat Ulang Direktori';
+  if (refreshBtn) refreshBtn.title = isEn ? 'Refresh Directory' : 'Refresh Directory';
   const closeInputBtn = document.querySelector('.fm-address-toggle[onclick="fmTogglePathInput(false)"]');
   if (closeInputBtn) closeInputBtn.title = isEn ? 'Cancel' : 'Batal';
   const selectAll = document.getElementById('fm-select-all');
@@ -2120,7 +2120,7 @@ function updateFmTooltips(isEn) {
   const cutBtn = document.querySelector('button[onclick="fmCutSelected()"]');
   if (cutBtn) cutBtn.title = isEn ? 'Cut (Ctrl+X)' : 'Potong (Ctrl+X)';
   const autoBak = document.querySelector('.badge.badge-info[title]');
-  if (autoBak) autoBak.title = isEn ? 'Automatic backup copy created before file overwrite' : 'Salinan cadangan otomatis dibuat sebelum file ditimpa';
+  if (autoBak) autoBak.title = isEn ? 'Automatic backup copy created before file overwrite' : 'Backup otomatis (.bak) dibuat sebelum file disimpan';
 }
 
 // Sinkronisasi alih bahasa seketika
@@ -2147,7 +2147,7 @@ window.onAppLangChanged = function(lang) {
       const statsInfo = document.getElementById('fm-stats-info');
       if (statsInfo) {
         const folderWord = isEn ? (dirCount === 1 ? 'folder' : 'folders') : 'folder';
-        const fileWord = isEn ? (fileCount === 1 ? 'file' : 'files') : 'berkas';
+        const fileWord = isEn ? (fileCount === 1 ? 'file' : 'files') : (fileCount === 1 ? 'file' : 'files');
         statsInfo.innerHTML = `<span><strong>${dirCount}</strong> ${folderWord}</span> &bull; <span><strong>${fileCount}</strong> ${fileWord}</span> &bull; <span class="dim">${formatBytes(totalSize)}</span>`;
       }
     }

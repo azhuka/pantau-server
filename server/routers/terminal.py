@@ -237,12 +237,12 @@ def api_terminal_unlock(
     reason = _clean_str(body.get("reason"), "", 255)
 
     if not password:
-        raise HTTPException(status_code=400, detail="Kata sandi akun pengguna diperlukan")
+        raise HTTPException(status_code=400, detail="Password akun user diperlukan")
 
     if not pwd_ctx.verify(password, user.password_hash):
-        _audit(db, user.username, "terminal_unlock_fail", f"{server.hostname} (kata sandi salah)", "gagal")
+        _audit(db, user.username, "terminal_unlock_fail", f"{server.hostname} (password salah)", "gagal")
         db.commit()
-        raise HTTPException(status_code=401, detail="Kata sandi akun salah. Akses terminal ditolak.")
+        raise HTTPException(status_code=401, detail="Password akun salah. Akses terminal ditolak.")
 
     if user.totp_enabled and user.totp_secret:
         if not totp_code or not security_auth.verify_totp(user.totp_secret, totp_code):

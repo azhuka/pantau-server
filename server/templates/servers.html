@@ -192,7 +192,7 @@
         <th class="col-hero-cell" data-col-title="Sistem Operasi" style="min-width:120px" title="Distribusi sistem operasi, versi kernel, dan arsitektur">Sistem Operasi</th>
         <th class="col-hero-cell" data-col-title="Prosesor" style="min-width:110px" title="Model prosesor (CPU) dan jumlah inti">Prosesor</th>
         <th class="sortable col-fixed-cell col-num-cell" data-sort-key="mem" data-col-title="Memori" style="cursor:pointer;min-width:85px" title="Kapasitas total memori utama (RAM) dan Swap">Memori <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
-        <th class="col-fixed-cell col-num-cell" data-col-title="Penyimpanan" style="min-width:95px" title="Daftar partisi dan kapasitas penyimpanan fisik (Disk)">Penyimpanan</th>
+        <th class="col-fixed-cell col-num-cell" data-col-title="Disk" style="min-width:95px" title="Daftar partisi dan kapasitas storage fisik (Disk)">Disk / Storage</th>
         <th class="sortable col-fixed-cell col-center-cell" data-sort-key="uptime" data-col-title="Uptime" style="cursor:pointer;min-width:90px" title="Durasi waktu aktif server sejak boot terakhir">Uptime <span class="sort-arrow" style="display:inline-flex;align-items:center;margin-left:3px;vertical-align:middle;color:var(--dim);opacity:0.45"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg></span></th>
         <th class="col-fixed-cell col-center-cell" data-col-title="Agen &amp; APT" style="min-width:80px;text-align:center" title="Versi agen pemantau dan ketersediaan pembaruan packages (APT)">Agen &amp; APT</th>
         <th class="col-fixed-cell col-center-cell" data-col-title="Tag" style="min-width:60px" title="Label kategori dan pengelompokan server">Tag</th>
@@ -419,7 +419,7 @@
                 data-guardrail-title="Hapus Server dari Pantau"
                 data-guardrail-target="{{ srv.hostname }} ({{ srv.ip_address }})"
                 data-guardrail-badge="Hapus Permanen"
-                data-guardrail-msg="Hapus permanen server dan seluruh riwayat metrik dari basis data."
+                data-guardrail-msg="Hapus permanen server dan seluruh riwayat metrik dari database."
                 data-guardrail-btn="Hapus Server"
                 data-guardrail-color="danger">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -704,7 +704,7 @@ function createAndAppendServersRow(srv, tbody) {
               data-guardrail-title="Hapus Server dari Pantau"
               data-guardrail-target="${_srvEsc(srv.hostname || '')} (${_srvEsc(srv.ip_address || '')})"
               data-guardrail-badge="Hapus Permanen"
-              data-guardrail-msg="Hapus permanen server dan seluruh riwayat metrik dari basis data."
+              data-guardrail-msg="Hapus permanen server dan seluruh riwayat metrik dari database."
               data-guardrail-btn="Hapus Server"
               data-guardrail-color="danger">
           <input type="hidden" name="csrf_token" value="${_srvEsc(CSRF_TOKEN)}">

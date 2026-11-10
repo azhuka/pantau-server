@@ -12,14 +12,14 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
       Segarkan
     </button>
-    <button type="button" class="btn btn-ghost btn-sm" onclick="exportCsv()" title="Unduh riwayat aktivitas sebagai CSV">
+    <button type="button" class="btn btn-ghost btn-sm" onclick="exportCsv()" title="Download riwayat aktivitas CSV">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
       Ekspor CSV
     </button>
     {% if account and account.sessions and not user.is_viewer() %}
       {% for s in account.sessions %}
         {% if s.tty %}
-          <button type="button" class="btn btn-danger btn-sm" onclick="terminateSession('{{ s.tty }}', this)" title="Putus paksa sesi terminal {{ s.tty }}">
+          <button type="button" class="btn btn-danger btn-sm" onclick="terminateSession('{{ s.tty }}', this)" title="Terminate session terminal {{ s.tty }}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
             Putus Sesi {{ s.tty }}
           </button>
@@ -202,7 +202,7 @@
           <th class="col-fixed-cell" style="width:115px;min-width:115px">Jenis</th>
           <th class="col-fixed-cell" style="width:130px;min-width:130px">Terminal</th>
           <th class="col-fixed-cell" style="width:125px;min-width:125px">Sumber (IP)</th>
-          <th class="col-fixed-cell" style="width:150px;min-width:150px">Direktori (PWD)</th>
+          <th class="col-fixed-cell" style="width:150px;min-width:150px">Directory (PWD)</th>
           <th class="col-hero-cell">Perintah</th>
         </tr>
       </thead>
@@ -604,7 +604,7 @@ function renderLoginsData(rawLogins) {
             if (x.raw_action) tipLines.push('Aksi D-Bus: ' + x.raw_action);
           }
           if (x.target_user) tipLines.push('Jalankan Sebagai: ' + x.target_user);
-          if (x.pwd && x.pwd !== '—') tipLines.push('Direktori (PWD): ' + x.pwd);
+          if (x.pwd && x.pwd !== '—') tipLines.push('Directory (PWD): ' + x.pwd);
           if (x.tty && x.tty !== '—') tipLines.push('Terminal: ' + x.tty);
           if (isSudoGagal || isPolkitGagal) {
             tipLines.push('Status: Gagal' + (x.alert ? ' (' + x.alert + ')' : ''));
@@ -622,10 +622,10 @@ function renderLoginsData(rawLogins) {
             || actualCmd.toLowerCase().includes('percobaan');
 
           if (isGenericAuthMsg) {
-            methodCell = '<span style="color:var(--red);font-size:11px;font-weight:600">Kata Sandi Salah</span> '
+            methodCell = '<span style="color:var(--red);font-size:11px;font-weight:600">Password Salah (Auth Failure)</span> '
               + '<span style="color:var(--dim);font-size:10.5px">· Percobaan Otentikasi Ditolak</span>';
           } else {
-            const cleanAlert = (x.alert && !x.alert.toLowerCase().includes('sorry')) ? x.alert : 'Kata Sandi Salah';
+            const cleanAlert = (x.alert && !x.alert.toLowerCase().includes('sorry')) ? x.alert : 'Password Salah (Auth Failure)';
             methodCell = '<span style="color:var(--red);font-weight:600;font-size:10.5px">' + escapeHtml(cleanAlert) + ':</span> '
               + '<code class="cmd-code" style="border-color:rgba(248,113,113,0.3)" title="' + escapeHtml(cmdTooltip) + '">' + escapeHtml(actualCmd) + '</code>';
           }
@@ -861,7 +861,7 @@ async function terminateSession(tty, btn) {
   const ok = await showConfirmModal({
     title: isEn ? 'Terminate Active Session' : 'Putus Sesi Terminal',
     target: tty + ' (' + USERNAME + ')',
-    message: isEn ? 'Force terminate this active terminal session immediately.' : 'Putus paksa sesi terminal aktif ini segera.',
+    message: isEn ? 'Force terminate this active terminal session immediately.' : 'Terminate session terminal aktif ini segera.',
     btnText: isEn ? 'Terminate' : 'Putus Sesi',
     btnClass: 'btn-danger',
     iconType: 'danger',

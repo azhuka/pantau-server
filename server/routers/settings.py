@@ -1,7 +1,7 @@
 """
 Router Pengaturan Sistem & Master Control Center Pantau Server.
 Menyediakan portal manajemen Master Control untuk Master Administrator:
-inspeksi dan optimasi basis data MySQL (reclaim fragmented storage, ukuran tabel),
+inspeksi dan optimasi database MySQL (reclaim fragmented storage, ukuran tabel),
 telemetri sumber daya host pusat, ambang batas insiden global (thresholds),
 serta tata kelola sistem berkepadatan tinggi.
 """
@@ -216,7 +216,7 @@ def api_master_control_status(
     user: User = Depends(require_master_admin),
     db: Session = Depends(get_db),
 ):
-    """Telemetri real-time status basis data dan server pusat untuk Master Control."""
+    """Telemetri real-time status database dan server pusat untuk Master Control."""
     db_status = get_database_status(db)
     servers_count = db.query(Server).count()
     users_count = db.query(User).count()
@@ -268,11 +268,11 @@ def api_master_control_optimize_db(
             db,
             user.username,
             "db_optimize",
-            target="Basis Data MySQL",
+            target="Database MySQL",
             result=f"Optimasi {len(tables_to_optimize)} tabel selesai",
         )
         db.commit()
-        return {"ok": True, "message": "Optimasi tabel basis data berhasil dijalankan", "details": results}
+        return {"ok": True, "message": "Optimasi tabel database berhasil dijalankan", "details": results}
     except Exception as exc:
-        logger.error("[Master Control] Optimasi basis data gagal: %s", exc)
-        raise HTTPException(status_code=500, detail=f"Gagal mengoptimasi basis data: {exc}")
+        logger.error("[Master Control] Optimasi database gagal: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Gagal mengoptimasi database: {exc}")

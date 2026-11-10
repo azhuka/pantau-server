@@ -13,13 +13,13 @@
       Master Control Center
     </h1>
     <p style="font-size:11.5px;color:var(--text-muted);margin:0;">
-      Pusat kendali arsitektur proyek, inspeksi basis data, sumber daya host internal, dan tata kelola ambang batas sistem.
+      Pusat kendali arsitektur proyek, inspeksi database, sumber daya host internal, dan tata kelola ambang batas sistem.
     </p>
   </div>
   <div style="display:flex;gap:8px;align-items:center;">
     <button onclick="optimizeDatabase()" id="btnOptDb" class="btn btn-sm btn-outline" style="font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-      Optimalkan Basis Data
+      Optimalkan Database
     </button>
     <a href="/profile?tab=users" class="btn btn-sm btn-ghost" style="font-size:11px;">Manajemen Operator</a>
   </div>
@@ -60,7 +60,7 @@
       <span style="font-size:1.6rem;font-weight:700;color:var(--text);font-family:var(--font-mono);">{{ (host_mem.used / 1024 / 1024 / 1024)|round(1) }}</span>
       <span style="font-size:11px;color:var(--text-muted);">/ {{ (host_mem.total / 1024 / 1024 / 1024)|round(1) }} GB</span>
     </div>
-    <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">Penyimpanan mentalah otomatis dipangkas</div>
+    <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">Storage mentah otomatis dipangkas</div>
   </div>
 </div>
 
@@ -69,7 +69,7 @@
   <div class="card" style="padding:14px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <h3 style="font-size:12.5px;font-weight:700;margin:0;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;">
-        Alokasi Penyimpanan Tabel Basis Data
+        Alokasi Storage Tabel Database
       </h3>
       <span class="badge badge-muted" style="font-size:10px;">Engine: InnoDB (UTF8MB4)</span>
     </div>
@@ -134,7 +134,7 @@
 
 <script>
 async function optimizeDatabase() {
-  if (!confirm("Jalankan perintah SQL OPTIMIZE TABLE untuk defragmentasi dan reklamasi ruang disk basis data?")) return;
+  if (!confirm("Jalankan perintah SQL OPTIMIZE TABLE untuk defragmentasi dan reklamasi ruang disk database?")) return;
   const btn = document.getElementById('btnOptDb');
   btn.disabled = true;
   btn.innerText = "Mengoptimasi...";
@@ -148,7 +148,7 @@ async function optimizeDatabase() {
     });
     const data = await res.json();
     if (data.ok) {
-      alert("Optimasi basis data berhasil dijalankan!");
+      alert("Optimasi database berhasil dijalankan!");
       location.reload();
     } else {
       alert("Gagal: " + (data.detail || data.error));
@@ -157,7 +157,7 @@ async function optimizeDatabase() {
     alert("Terjadi kesalahan jaringan: " + e.message);
   } finally {
     btn.disabled = false;
-    btn.innerText = "Optimalkan Basis Data";
+    btn.innerText = "Optimalkan Database";
   }
 }
 </script>

@@ -121,7 +121,7 @@ def login_submit(
             logger.warning("[AUTH] Login gagal terlalu banyak dari IP %s — kunci %d detik", ip, lock_secs)
         db.commit()
         if is_json:
-            return JSONResponse(status_code=400, content={"detail": "Username atau kata sandi salah."})
+            return JSONResponse(status_code=400, content={"detail": "Username atau password salah."})
         return tpl(request, "login.html", {"error": "Username atau password salah"})
 
     if not user.is_active:
@@ -234,7 +234,7 @@ def login_2fa_submit(
             user.recovery_codes = updated_hashes
 
     if not is_valid:
-        msg = "Kode verifikasi 2FA atau kode cadangan darurat tidak cocok."
+        msg = "Kode verifikasi 2FA atau kode backup darurat tidak cocok."
         if is_json:
             return JSONResponse(status_code=400, content={"detail": msg})
         return tpl(

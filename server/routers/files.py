@@ -104,7 +104,7 @@ class FileManagerDispatcher:
         except asyncio.TimeoutError:
             raise HTTPException(
                 status_code=504,
-                detail="Agen server tidak merespons permintaan berkas (timeout). Pastikan service agent_pantau aktif.",
+                detail="Agen server tidak merespons permintaan file (timeout). Pastikan service agent_pantau aktif.",
             )
         finally:
             self._waiters.pop(req_id, None)
@@ -135,7 +135,7 @@ def _get_active_online_server(db: Session, sid: int) -> Server:
     if _server_stale(server):
         raise HTTPException(
             status_code=409,
-            detail="Server sedang offline. Operasi berkas dinonaktifkan sampai service agent_pantau kembali aktif.",
+            detail="Server sedang offline. Operasi file dinonaktifkan sampai service agent_pantau kembali aktif.",
         )
     return server
 
@@ -219,19 +219,19 @@ def api_server_files_unlock(
     reason = _clean_str(body.get("reason"), "", 255)
 
     if not password:
-        raise HTTPException(status_code=400, detail="Kata sandi akun pengguna diperlukan")
+        raise HTTPException(status_code=400, detail="Password akun user diperlukan")
 
     if not pwd_ctx.verify(password, user.password_hash):
         _audit(
             db,
             user.username,
             "file_manager_unlock_fail",
-            f"{server.hostname} (kata sandi salah)",
+            f"{server.hostname} (password salah)",
             "gagal",
             server_id=sid,
         )
         db.commit()
-        raise HTTPException(status_code=401, detail="Kata sandi akun salah. Akses File Manager ditolak.")
+        raise HTTPException(status_code=401, detail="Password akun salah. Akses File Manager ditolak.")
 
     if user.totp_enabled and user.totp_secret:
         if not totp_code or not security_auth.verify_totp(user.totp_secret, totp_code):
@@ -288,7 +288,7 @@ async def api_server_files_ls(
     server = _get_active_online_server(db, sid)
     res = await file_dispatcher.dispatch(sid, "ls", {"path": path})
     if not res.get("ok"):
-        raise HTTPException(status_code=400, detail=res.get("error", "Gagal membaca direktori"))
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal membaca directory"))
     return res
 
 
@@ -365,7 +365,7 @@ async def api_server_files_mkdir(
 
     res = await file_dispatcher.dispatch(sid, "mkdir", {"path": path, "mode": mode})
     if not res.get("ok"):
-        raise HTTPException(status_code=400, detail=res.get("error", "Gagal membuat direktori"))
+        raise HTTPException(status_code=400, detail=res.get("error", "Gagal membuat directory"))
 
     _audit(db, user.username, "file_mkdir", f"{server.hostname}:{path}", "berhasil", server_id=sid)
     db.commit()
@@ -717,7 +717,7 @@ async def api_server_files_batch_chmod(
 async def api_agent_file_requests(
     x_api_key: str = Header(alias="X-Api-Key"),
 ):
-    """Agen mem-poll permintaan berkas secara cepat/long-poll (tahan hingga 15 dtk)."""
+    """Agen mem-poll permintaan file secara cepat/long-poll (tahan hingga 15 dtk)."""
     server_id = _get_cached_server_id(x_api_key)
     if not server_id:
         raise HTTPException(status_code=401, detail="Invalid API key")
@@ -743,7 +743,7 @@ async def api_agent_file_result(
     x_api_key: str = Header(alias="X-Api-Key"),
     db: Session = Depends(get_db),
 ):
-    """Agen melaporkan hasil eksekusi operasi berkas."""
+    """Agen melaporkan hasil eksekusi operasi file."""
     server = db.query(Server).filter(Server.api_key == hash_api_key(x_api_key)).first()
     if not server:
         raise HTTPException(status_code=401, detail="Invalid API key")

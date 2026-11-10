@@ -62,7 +62,7 @@
         <polyline points="7 10 12 15 17 10"></polyline>
         <line x1="12" y1="15" x2="12" y2="3"></line>
       </svg>
-      Unduh Berkas Teks
+      Download File Teks (.txt)
     </button>
   </div>
 </div>
@@ -135,7 +135,7 @@
             </span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="color:var(--dim)">Kata Sandi Terakhir Diubah</span>
+            <span style="color:var(--dim)">Password Terakhir Diubah</span>
             <span style="color:var(--text)" class="mono">
               {% if user.password_changed_at %}
               {{ user.password_changed_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}
@@ -200,7 +200,7 @@
         {% if user.totp_enabled %}
         <div style="background:var(--card-bg-subtle, var(--bg));border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:11.5px">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="color:var(--dim)">Kode Pemulihan Cadangan Tersedia:</span>
+            <span style="color:var(--dim)">Backup / Recovery Codes Tersedia:</span>
             <strong style="color:var(--blue);font-size:12.5px">{{ recovery_codes_remaining }} kode</strong>
           </div>
         </div>
@@ -213,10 +213,10 @@
 
       <div style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;flex-wrap:wrap">
         {% if user.totp_enabled %}
-        <form method="POST" action="/profile/2fa/regenerate-recovery" data-confirm data-title="Buat Ulang Kode Cadangan" data-target="{{ user.username }}" data-msg="Membuat kode baru akan menghapus semua kode pemulihan lama yang belum terpakai." data-btn-text="Buat Ulang" data-btn-class="btn-warning" data-icon="warning" data-badge="2FA" style="display:inline">
+        <form method="POST" action="/profile/2fa/regenerate-recovery" data-confirm data-title="Generate Ulang Recovery Codes" data-target="{{ user.username }}" data-msg="Membuat kode baru akan menghapus semua kode pemulihan lama yang belum terpakai." data-btn-text="Buat Ulang" data-btn-class="btn-warning" data-icon="warning" data-badge="2FA" style="display:inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button type="submit" class="btn btn-ghost btn-sm" style="font-size:11px;padding:5px 10px">
-            Buat Ulang Kode Cadangan
+            Generate Ulang Recovery Codes
           </button>
         </form>
         <form method="POST" action="/profile/2fa/disable" data-confirm data-title="Nonaktifkan 2FA" data-target="{{ user.username }}" data-msg="Matikan perlindungan Autentikasi Dua Langkah (2FA) untuk akun Anda." data-btn-text="Matikan 2FA" data-btn-class="btn-danger" data-icon="danger" data-badge="2FA" style="display:inline">
@@ -453,7 +453,7 @@
 
                   <!-- Tombol 2: EDIT Akun Pengguna -->
                   {% if u.id == user.id %}
-                  <!-- Edit Akun Sendiri: Membuka Modal Edit Akun (Username & Kata Sandi) -->
+                  <!-- Edit Akun Sendiri: Membuka Modal Edit Akun (Username & Password) -->
                   <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick="openEditMyAccountModal()" title="Edit kredensial akun Anda (username &amp; kata sandi)" aria-label="Edit">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -461,7 +461,7 @@
                     </svg>
                   </button>
                   {% elif can_manage_users and (not u.is_master_admin() or user.is_master_admin()) %}
-                  <!-- Edit Akun Orang Lain: Membuka Modal Edit Hak Akses & Reset Sandi -->
+                  <!-- Edit Akun Orang Lain: Membuka Modal Edit Hak Akses & Reset Password -->
                   <button type="button" class="btn btn-ghost btn-sm user-act-btn" onclick='openEditUserModal({{ u.id }}, {{ u.username|tojson }}, {{ u.role|tojson }}, {{ u.is_active }}, {{ uperms|tojson }}, {{ u.is_master_admin()|tojson }})' title="Edit akun &amp; wewenang {{ u.username }}" aria-label="Edit">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -684,7 +684,7 @@
               <input type="file" id="brand-logo-file" name="logo_file" accept=".png,.jpg,.jpeg,.svg,.webp,.ico" style="display:none" onchange="previewLogoFile(this)">
               <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('brand-logo-file').click()" style="padding:8px 14px;font-size:12px">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                Unggah Logo Baru
+                Upload Logo Baru
               </button>
               <span id="logo-file-name" style="font-size:12px;color:var(--blue);font-weight:500"></span>
             </div>
@@ -945,13 +945,13 @@
       </div>
 
       <div class="form-group" style="margin-bottom:14px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Kata Sandi Saat Ini</label>
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Password Saat Ini</label>
         <input type="password" name="current_password" autocomplete="current-password" placeholder="Masukkan kata sandi saat ini untuk konfirmasi" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
         <div style="font-size:10.5px;color:var(--dim);margin-top:4px">Wajib dimasukkan jika Anda mengubah username atau mengganti kata sandi.</div>
       </div>
 
       <div class="form-group" style="margin-bottom:14px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Kata Sandi Baru <span style="font-weight:normal;color:var(--dim);text-transform:none">(Opsional)</span></label>
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Password Baru <span style="font-weight:normal;color:var(--dim);text-transform:none">(Opsional)</span></label>
         <input type="password" id="p-new" name="password" autocomplete="new-password" placeholder="Kosongkan jika kata sandi tidak ingin diubah" oninput="checkStrength(this.value)" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
         <div id="strength-meter" style="height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:6px;overflow:hidden">
           <div id="strength-bar" style="width:0%;height:100%;transition:all .2s"></div>
@@ -960,12 +960,12 @@
       </div>
 
       <div class="form-group" style="margin-bottom:16px">
-        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Konfirmasi Kata Sandi Baru</label>
-        <input type="password" name="confirm_password" autocomplete="new-password" placeholder="Ulangi kata sandi baru" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
+        <label style="display:block;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Konfirmasi Password Baru</label>
+        <input type="password" name="confirm_password" autocomplete="new-password" placeholder="Konfirmasi password baru" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
       </div>
 
       <div style="font-size:11.5px;color:var(--dim);line-height:1.4;margin-bottom:16px;background:rgba(56,189,248,0.06);padding:10px;border-radius:6px;border-left:3px solid var(--blue)">
-        <strong>Keamanan Sesi:</strong> Mengganti kata sandi akan otomatis mencabut seluruh sesi aktif Anda di perangkat lain.
+        <strong>Keamanan Sesi:</strong> Mengganti password akan otomatis mencabut seluruh sesi aktif Anda di perangkat lain.
       </div>
 
       <div style="display:flex;justify-content:flex-end;gap:10px">
@@ -1045,7 +1045,7 @@
         </div>
         <div>
           <h3 style="font-size:15px;font-weight:700;margin:0" id="edit-user-title">Edit Akun Pengguna</h3>
-          <span style="font-size:11px;color:var(--dim)">Ubah wewenang peran dan reset kata sandi staf.</span>
+          <span style="font-size:11px;color:var(--dim)">Ubah wewenang peran dan reset password staf.</span>
         </div>
       </div>
       <button type="button" onclick="closeEditUserModal()" class="btn btn-ghost btn-sm" style="padding:4px 8px;border-radius:6px" aria-label="Tutup">
@@ -1064,22 +1064,22 @@
           <input type="text" id="edit-username" name="username" required minlength="3" maxlength="50" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px">
         </div>
 
-        <!-- Input Reset Kata Sandi Pengguna (Admin Override) -->
+        <!-- Input Reset Password User (Admin Override) -->
         <div class="form-group" style="margin-bottom:14px;background:var(--card-bg-subtle, var(--bg));border:1px solid var(--border);border-radius:8px;padding:12px">
           <label style="display:block;font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">
-            Reset Kata Sandi Pengguna <span style="color:var(--dim);font-weight:normal;text-transform:none">(Opsional)</span>
+            Reset Password User <span style="color:var(--dim);font-weight:normal;text-transform:none">(Opsional)</span>
           </label>
           <p style="font-size:11px;color:var(--dim);margin:0 0 10px 0;line-height:1.4">
-            Kosongkan jika kata sandi staf tidak ingin diubah. Mengubah kata sandi staf akan otomatis mencabut seluruh sesi aktif akun ini.
+            Kosongkan jika password staf tidak ingin diubah. Mengubah password staf akan otomatis mencabut seluruh sesi aktif akun ini.
           </p>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div>
-              <label style="display:block;font-size:10px;font-weight:600;color:var(--dim);text-transform:uppercase;margin-bottom:4px">Kata Sandi Baru</label>
+              <label style="display:block;font-size:10px;font-weight:600;color:var(--dim);text-transform:uppercase;margin-bottom:4px">Password Baru</label>
               <input type="password" id="edit-password" name="password" autocomplete="new-password" placeholder="Minimal 12 karakter kuat" oninput="checkEditPwdStrength(this.value)" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px">
             </div>
             <div>
               <label style="display:block;font-size:10px;font-weight:600;color:var(--dim);text-transform:uppercase;margin-bottom:4px">Konfirmasi Kata Sandi</label>
-              <input type="password" id="edit-confirm-password" name="confirm_password" autocomplete="new-password" placeholder="Ulangi kata sandi baru" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px">
+              <input type="password" id="edit-confirm-password" name="confirm_password" autocomplete="new-password" placeholder="Konfirmasi password baru" style="width:100%;padding:8px 10px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px">
             </div>
           </div>
           <div id="edit-pwd-hint" style="font-size:10.5px;color:var(--dim);margin-top:6px">Jika diisi, minimal 12 karakter kombinasi huruf besar, huruf kecil, angka, dan simbol khusus.</div>
@@ -1208,7 +1208,7 @@
         <h4 style="margin:0;font-size:15px;color:var(--green);font-weight:700">2FA Berhasil Diaktifkan!</h4>
       </div>
       <p style="font-size:12.5px;color:var(--text);line-height:1.5;margin-bottom:14px">
-        Berikan 8 kode cadangan darurat (recovery codes) di bawah ini kepada pemilik akun <strong id="admin-2fa-success-user" style="color:var(--blue)"></strong> untuk disimpan di tempat yang aman (mis. password manager). Setiap kode hanya dapat dipakai <strong>satu kali</strong> bila ponsel hilang.
+        Berikan 8 backup recovery codes (recovery codes) di bawah ini kepada pemilik akun <strong id="admin-2fa-success-user" style="color:var(--blue)"></strong> untuk disimpan di tempat yang aman (mis. password manager). Setiap kode hanya dapat dipakai <strong>satu kali</strong> bila ponsel hilang.
       </p>
 
       <div id="admin-2fa-codes-grid" style="display:grid;grid-template-columns:repeat(2, 1fr);gap:8px;margin-bottom:16px;background:var(--input-bg);padding:12px;border-radius:8px;border:1px solid var(--border)">
@@ -1222,7 +1222,7 @@
             Salin Semua Kode
           </button>
           <button type="button" class="btn btn-ghost btn-sm" onclick="downloadAdminRecoveryCodes()">
-            Unduh Berkas Teks
+            Download File Teks (.txt)
           </button>
         </div>
         <button type="button" class="btn btn-primary btn-sm" onclick="finishAdmin2faModal()" style="font-weight:700">
@@ -1260,7 +1260,7 @@ function switchProfileTab(tabName) {
   }
 }
 
-// Modal Edit Akun Sendiri (Username & Kata Sandi)
+// Modal Edit Akun Sendiri (Username & Password)
 function openEditMyAccountModal() {
   const modal = document.getElementById('editMyAccountModal');
   if (modal) modal.style.display = 'flex';
@@ -1290,7 +1290,7 @@ function previewLogoFile(input) {
   if (input.files && input.files[0]) {
     const file = input.files[0];
     if (file.size > 2 * 1024 * 1024) {
-      alert('Ukuran berkas logo melebihi batas 2 MB.');
+      alert('Ukuran file logo melebihi batas 2 MB.');
       input.value = '';
       if (fileNameSpan) fileNameSpan.textContent = '';
       return;
@@ -1523,7 +1523,7 @@ function openViewUserModal(arg1, username, role, isActive, totpEnabled, lastLogi
     if (u.role === 'master_admin' || u.role === 'admin') {
       roleSummaryEl.innerHTML = `
         <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:12px 14px;color:#fca5a5;line-height:1.5;font-size:12px">
-          <strong>Hak Istimewa Mutlak (Setara Root):</strong> Memiliki kendali penuh tanpa batasan pada seluruh modul sistem, mencakup observasi metrik, manajemen server &amp; services, eksekusi Web Terminal, File Manager, jejak audit, dan konfigurasi platform.
+          <strong>Hak Istimewa Mutlak (Setara Root):</strong> Memiliki kendali penuh tanpa batasan pada seluruh modul sistem, mencakup observasi metrik, manajemen server &amp; services, eksekusi Web Terminal, File Manager, audit log, dan konfigurasi platform.
         </div>
       `;
     } else if (u.role === 'operator') {
@@ -1688,7 +1688,7 @@ function checkStrength(p) {
 function checkAddPwdStrength(p) {
   const hint = document.getElementById('add-pwd-hint');
   if (p.length >= 12 && /[A-Z]/.test(p) && /[a-z]/.test(p) && /[0-9]/.test(p) && /[^a-zA-Z0-9]/.test(p)) {
-    hint.textContent = '✔ Kata sandi memenuhi standar NIST SP 800-63B';
+    hint.textContent = '✔ Password memenuhi standar NIST SP 800-63B';
     hint.style.color = '#4ade80';
   } else {
     hint.textContent = 'Minimal 12 karakter, huruf besar, huruf kecil, angka, dan simbol.';
@@ -1699,12 +1699,12 @@ function checkAddPwdStrength(p) {
 function checkEditPwdStrength(p) {
   const hint = document.getElementById('edit-pwd-hint');
   if (!p) {
-    hint.textContent = 'Kosongkan jika kata sandi tidak ingin diubah.';
+    hint.textContent = 'Kosongkan jika password tidak ingin diubah.';
     hint.style.color = 'var(--dim)';
     return;
   }
   if (p.length >= 12 && /[A-Z]/.test(p) && /[a-z]/.test(p) && /[0-9]/.test(p) && /[^a-zA-Z0-9]/.test(p)) {
-    hint.textContent = '✔ Kata sandi memenuhi standar NIST SP 800-63B';
+    hint.textContent = '✔ Password memenuhi standar NIST SP 800-63B';
     hint.style.color = '#4ade80';
   } else {
     hint.textContent = 'Minimal 12 karakter, huruf besar, huruf kecil, angka, dan simbol.';
@@ -1755,11 +1755,11 @@ function copyRecoveryCodes() {
   const text = getRecoveryCodesText();
   if (!text) {
     if (typeof showToast === 'function') {
-      showToast('Tidak ada kode cadangan darurat untuk disalin.', false);
+      showToast('Tidak ada backup recovery codes untuk disalin.', false);
     }
     return;
   }
-  const msg = 'Seluruh kode cadangan darurat berhasil disalin ke papan klip!';
+  const msg = 'Seluruh backup recovery codes berhasil disalin ke papan klip!';
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => {
       if (typeof showToast === 'function') {
@@ -1779,7 +1779,7 @@ function downloadRecoveryCodes() {
   const text = getRecoveryCodesText();
   if (!text) {
     if (typeof showToast === 'function') {
-      showToast('Tidak ada kode cadangan darurat untuk diunduh.', false);
+      showToast('Tidak ada backup recovery codes untuk diunduh.', false);
     }
     return;
   }
@@ -1794,11 +1794,11 @@ function downloadRecoveryCodes() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     if (typeof showToast === 'function') {
-      showToast('Berkas kode cadangan darurat berhasil diunduh!', true);
+      showToast('Berkas backup recovery codes berhasil diunduh!', true);
     }
   } catch (e) {
     if (typeof showToast === 'function') {
-      showToast('Gagal mengunduh berkas kode: ' + e.message, false);
+      showToast('Gagal men-download file backup codes: ' + e.message, false);
     }
   }
 }
@@ -1961,7 +1961,7 @@ async function submitAdmin2faConfirm() {
 function copyAdminRecoveryCodes() {
   const text = _currentAdmin2faCodes.join('\n');
   if (!text) return;
-  const msg = 'Kode cadangan darurat untuk ' + _currentAdmin2faUsername + ' berhasil disalin!';
+  const msg = 'Backup recovery codes untuk ' + _currentAdmin2faUsername + ' berhasil disalin!';
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => {
       if (typeof showToast === 'function') showToast(msg, true);
@@ -1993,7 +1993,7 @@ function downloadAdminRecoveryCodes() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    if (typeof showToast === 'function') showToast('Berkas kode cadangan berhasil diunduh!', true);
+    if (typeof showToast === 'function') showToast('File backup codes berhasil di-download!', true);
   } catch (e) {
     alert('Gagal mengunduh: ' + e.message);
   }

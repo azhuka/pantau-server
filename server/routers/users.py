@@ -198,11 +198,11 @@ def profile_change_password(
     _verify_csrf_form(request, csrf_token)
 
     if not pwd_ctx.verify(current_password, user.password_hash):
-        return RedirectResponse(_flash_profile_users(False, "Kata sandi saat ini tidak cocok"), status_code=303)
+        return RedirectResponse(_flash_profile_users(False, "Password saat ini tidak cocok"), status_code=303)
 
     if new_password != confirm_password:
         return RedirectResponse(
-            _flash_profile_users(False, "Konfirmasi kata sandi baru tidak cocok"), status_code=303
+            _flash_profile_users(False, "Konfirmasi password baru tidak cocok"), status_code=303
         )
 
     valid, err_msg = security_auth.validate_password_strength(new_password)
@@ -221,7 +221,7 @@ def profile_change_password(
     _audit(db, user.username, "change_password", "profil sendiri", "berhasil (sesi lain dicabut)")
     db.commit()
     return RedirectResponse(
-        _flash_profile_users(True, "Kata sandi berhasil diperbarui. Sesi perangkat lain telah dicabut."),
+        _flash_profile_users(True, "Password berhasil diperbarui. Sesi perangkat lain telah dicabut."),
         status_code=303,
     )
 
@@ -261,7 +261,7 @@ def profile_enable_2fa(
         db=db,
         newly_generated_codes=plain_codes,
         flash_ok=True,
-        flash_msg="2FA berhasil diaktifkan! Harap simpan kode cadangan darurat di bawah ini sekarang.",
+        flash_msg="2FA berhasil diaktifkan! Harap simpan kode backup darurat di bawah ini sekarang.",
     )
 
 
@@ -364,7 +364,7 @@ async def profile_update_branding(
             if ext not in ALLOWED_LOGO_EXTS:
                 return RedirectResponse(
                     _flash_profile_branding(
-                        False, "Format logo harus berupa berkas gambar raster/aman (.png, .jpg, .jpeg, .webp, .ico)"
+                        False, "Format logo harus berupa file gambar raster/aman (.png, .jpg, .jpeg, .webp, .ico)"
                     ),
                     status_code=303,
                 )
@@ -372,7 +372,7 @@ async def profile_update_branding(
             content = await logo_file.read()
             if len(content) > 2 * 1024 * 1024:
                 return RedirectResponse(
-                    _flash_profile_branding(False, "Ukuran berkas logo maksimal 2 MB"),
+                    _flash_profile_branding(False, "Ukuran file logo maksimal 2 MB"),
                     status_code=303,
                 )
 
@@ -628,7 +628,7 @@ async def user_edit_submit(
             cur_pwd = current_password.strip()
             if not cur_pwd or not pwd_ctx.verify(cur_pwd, user.password_hash):
                 return RedirectResponse(
-                    _flash_profile_users(False, "Kata sandi saat ini tidak cocok"), status_code=303
+                    _flash_profile_users(False, "Password saat ini tidak cocok"), status_code=303
                 )
         dup = db.query(User).filter(User.username == clean_user, User.id != uid).first()
         if dup:
@@ -643,13 +643,13 @@ async def user_edit_submit(
             cur_pwd = current_password.strip()
             if not cur_pwd or not pwd_ctx.verify(cur_pwd, user.password_hash):
                 return RedirectResponse(
-                    _flash_profile_users(False, "Kata sandi saat ini tidak cocok"), status_code=303
+                    _flash_profile_users(False, "Password saat ini tidak cocok"), status_code=303
                 )
 
         conf_pwd = confirm_password.strip()
         if pwd_clean != conf_pwd:
             return RedirectResponse(
-                _flash_profile_users(False, "Konfirmasi kata sandi baru tidak cocok"), status_code=303
+                _flash_profile_users(False, "Konfirmasi password baru tidak cocok"), status_code=303
             )
 
         valid, err_msg = security_auth.validate_password_strength(pwd_clean)
